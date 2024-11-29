@@ -121,7 +121,7 @@ const DashboardScreen = ({ navigation }) => {
         </Card>
 
         {/* Lista de Tareas */}
-        <Card title="Lista de Tareas" onPress={() => {}}>
+        <Card title="Lista de Tareas" onPress={() => navigation.navigate('Tasks')}>
           {tasks.map((task) => (
             <View key={task.id} style={styles.taskItem}>
               <TouchableOpacity
