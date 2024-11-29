@@ -15,6 +15,7 @@ import AlarmScreen from './screens/AlarmScreen';
 import JournalScreen from './screens/JournalScreen';
 import TimerScreen from './screens/TimerScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import SettingsScreen from './screens/SettingsScreen';
 
 
 // Crea el stack de navegación
@@ -89,6 +90,11 @@ const App = () => {
         <Stack.Screen 
           name="Profile" 
           component={ProfileScreen} 
+          options={{ headerShown: false }} 
+        />
+        <Stack.Screen 
+          name="Settings" 
+          component={SettingsScreen} 
           options={{ headerShown: false }} 
         />
       </Stack.Navigator>
