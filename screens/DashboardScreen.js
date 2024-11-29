@@ -11,6 +11,7 @@ import {
   Vibration,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { GestureHandlerRootView, PanGestureHandler, State } from 'react-native-gesture-handler';
 
 const { width, height } = Dimensions.get('window');
 
@@ -67,7 +68,30 @@ const DashboardScreen = ({ navigation }) => {
     { habit: 'Relajación', value: 50 },
   ];
 
-  const [drawerAnimation] = useState(new Animated.Value(width));
+  const [drawerAnimation] = useState(new Animated.Value(width)); 
+
+  const handleGesture = Animated.event(
+    [{ nativeEvent: { translationX: drawerAnimation } }],
+    { useNativeDriver: true }
+  );
+
+  const handleGestureEnd = ({ nativeEvent }) => {
+    if (nativeEvent.translationX > 100) {
+      // Si el deslizamiento es suficiente, cierra el drawer
+      Animated.timing(drawerAnimation, {
+        toValue: width,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => setDrawerVisible(false));
+    } else {
+      // Si no, vuelve a su posición original
+      Animated.timing(drawerAnimation, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  };
 
   const toggleDrawer = () => {
     const toValue = drawerVisible ? width : 0; // Posición fuera o dentro de la pantalla
@@ -100,33 +124,43 @@ const DashboardScreen = ({ navigation }) => {
     setMotivationalPhrase(phrases[randomIndex]);
   }, []);
 
-  return (
-    <View style={styles.container}>
-      {/* Barra lateral */}
-      {drawerVisible && (
-  <Animated.View style={[styles.drawer, { transform: [{ translateX: drawerAnimation }] }]}>
-    <Text style={styles.drawerTitle}>Opciones</Text>
-    <TouchableOpacity
-      onPress={() => {
-        navigation.navigate('Settings');
-        toggleDrawer();
-      }}
-      style={styles.drawerItem}
-    >
-      <Icon name="cog" size={24} color="#1D1B70" />
-      <Text style={styles.drawerText}>Configuración</Text>
-    </TouchableOpacity>
-    <TouchableOpacity
-      onPress={toggleDrawer}
-      style={styles.drawerItem}
-    >
-      <Icon name="logout" size={24} color="#1D1B70" />
-      <Text style={styles.drawerText}>Cerrar Sesión</Text>
-    </TouchableOpacity>
-  </Animated.View>
-)}
-
-
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={styles.container}>
+          {/* Barra lateral */}
+          {drawerVisible && (
+            <PanGestureHandler
+              onGestureEvent={handleGesture}
+              onHandlerStateChange={({ nativeEvent }) => {
+                if (nativeEvent.state === State.END) {
+                  handleGestureEnd({ nativeEvent });
+                }
+              }}
+            >
+              <Animated.View
+                style={[
+                  styles.drawer,
+                  { transform: [{ translateX: drawerAnimation }] },
+                ]}
+              >
+                <Text style={styles.drawerTitle}>Opciones</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    navigation.navigate('Settings');
+                    toggleDrawer();
+                  }}
+                  style={styles.drawerItem}
+                >
+                  <Icon name="cog" size={24} color="#1D1B70" />
+                  <Text style={styles.drawerText}>Configuración</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={toggleDrawer} style={styles.drawerItem}>
+                  <Icon name="logout" size={24} color="#1D1B70" />
+                  <Text style={styles.drawerText}>Cerrar Sesión</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            </PanGestureHandler>
+          )}
       {/* Contenido Principal */}
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Saludo Personalizado */}
@@ -254,11 +288,10 @@ const DashboardScreen = ({ navigation }) => {
           <Icon name="account-circle" size={width / 12} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
-
-    </View>
+      </View>
+    </GestureHandlerRootView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
