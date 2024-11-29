@@ -1,79 +1,52 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Anto - Asistente Virtual de Bienestar Emocional
 
-# Getting Started
+¡Bienvenido a **Anto**! Una aplicación diseñada para mejorar tu bienestar emocional y ayudarte a gestionar tu día a día de manera más sencilla e intuitiva.
 
->**Note**: Make sure you have completed the [React Native - Environment Setup](https://reactnative.dev/docs/environment-setup) instructions till "Creating a new application" step, before proceeding.
+## 🚀 Funcionalidades
 
-## Step 1: Start the Metro Server
+- **Chat con Inteligencia Artificial**: Interactúa con **Anto**, un asistente virtual empático diseñado para brindarte apoyo emocional, consejos prácticos y compañía.
+- **Seguimiento de Hábitos**: Monitorea tu progreso en actividades diarias para fomentar una rutina saludable.
+- **Gestión de Alarmas**: Configura recordatorios para medicamentos, citas y otros eventos importantes.
+- **Registro Emocional**: Reflexiona sobre tus emociones y observa patrones a lo largo del tiempo.
+- **Recursos Útiles**: Accede a guías, tutoriales y consejos motivacionales.
+- **Pantalla de Ayuda**: Encuentra respuestas a preguntas frecuentes, información sobre el uso de datos y contacto directo con soporte.
 
-First, you will need to start **Metro**, the JavaScript _bundler_ that ships _with_ React Native.
+## 🛠️ Tecnologías Usadas
 
-To start Metro, run the following command from the _root_ of your React Native project:
+- **Frontend**: React Native.
+- **Backend**: Node.js con Express.js.
+- **Base de Datos**: MongoDB.
+- **Integraciones**: API de OpenAI y almacenamiento seguro para datos personales.
+- **Estilo**: Diseño limpio y centrado en el usuario, con una paleta de colores que transmite tranquilidad y profesionalismo.
 
-```bash
-# using npm
-npm start
+## 🎨 Diseño de la Aplicación
 
-# OR using Yarn
-yarn start
-```
+**Anto** utiliza un diseño centrado en el usuario:
 
-## Step 2: Start your Application
+- **Paleta de colores**: Tonos suaves como azul (#1D1B70) para transmitir calma.
+- **Interactividad**: Animaciones fluidas y transiciones cuidadas.
+- **Tipografía legible** para maximizar la claridad en la lectura.
 
-Let Metro Bundler run in its _own_ terminal. Open a _new_ terminal from the _root_ of your React Native project. Run the following command to start your _Android_ or _iOS_ app:
+## 🛡️ Privacidad y Seguridad
 
-### For Android
+Tu privacidad es nuestra prioridad. Toda la información personal que compartas está:
 
-```bash
-# using npm
-npm run android
+- **Encriptada** para garantizar seguridad.
+- **Almacenada de manera segura** en servidores confiables.
+- **Nunca compartida con terceros** bajo ninguna circunstancia.
 
-# OR using Yarn
-yarn android
-```
+Consulta nuestra [Política de Privacidad](https://www.tuapp.com/privacidad) para más detalles.
 
-### For iOS
+## 👨‍💻 Sobre el Desarrollador
 
-```bash
-# using npm
-npm run ios
+Soy **Marcelo Ull Marambio**, un desarrollador apasionado por la inteligencia artificial y la psicología. Este proyecto está inspirado en mi hija **Anto**, quien es mi mayor motivación. 
 
-# OR using Yarn
-yarn ios
-```
+Mi objetivo es crear herramientas que puedan mejorar la vida de las personas y hacer del mundo un lugar más empático y conectado.
 
-If everything is set up _correctly_, you should see your new app running in your _Android Emulator_ or _iOS Simulator_ shortly provided you have set up your emulator/simulator correctly.
+## 📬 Contacto
 
-This is one way to run your app — you can also run it directly from within Android Studio and Xcode respectively.
+Si tienes preguntas, comentarios o simplemente quieres conectar, no dudes en contactarme:
 
-## Step 3: Modifying your App
-
-Now that you have successfully run the app, let's modify it.
-
-1. Open `App.tsx` in your text editor of choice and edit some lines.
-2. For **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Developer Menu** (<kbd>Ctrl</kbd> + <kbd>M</kbd> (on Window and Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (on macOS)) to see your changes!
-
-   For **iOS**: Hit <kbd>Cmd ⌘</kbd> + <kbd>R</kbd> in your iOS Simulator to reload the app and see your changes!
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [Introduction to React Native](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you can't get this to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- **Correo**: [marcelo0.nicolas@gmail.com](mailto:marcelo0.nicolas@gmail.com)
+- **Instagram**: [@mar.cere](https://www.instagram.com/mar.cere/)
+- **LinkedIn**: [Marcelo Ull Marambio](https://www.linkedin.com/in/marcelo-ull-marambio-7314a6177/)

@@ -181,7 +181,7 @@ const DashboardScreen = ({ navigation }) => {
       <View style={styles.floatingBar}>
         <TouchableOpacity
           style={styles.floatingButton}
-          onPress={() => navigation.navigate('Home')}
+          onPress={() => navigation.navigate('Journal')}
         >
           <Icon name="home" size={width / 12} color="#FFFFFF" />
         </TouchableOpacity>
@@ -196,7 +196,7 @@ const DashboardScreen = ({ navigation }) => {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.floatingButton}
-          onPress={() => navigation.navigate('Profile')}
+          onPress={() => navigation.navigate('Timer')}
         >
           <Icon name="account-circle" size={width / 12} color="#FFFFFF" />
         </TouchableOpacity>

@@ -12,6 +12,8 @@ import RecoverScreen from './screens/RecoverScreen';
 import HabitsScreen from './screens/HabitsScreen';
 import TaskScreen from './screens/TaskScreen';
 import AlarmScreen from './screens/AlarmScreen';
+import JournalScreen from './screens/JournalScreen';
+import TimerScreen from './screens/TimerScreen';
 
 
 // Crea el stack de navegación
@@ -71,6 +73,16 @@ const App = () => {
         <Stack.Screen 
           name="Alarms" 
           component={AlarmScreen} 
+          options={{ headerShown: false }} 
+        />
+        <Stack.Screen 
+          name="Journal" 
+          component={JournalScreen} 
+          options={{ headerShown: false }} 
+        />
+        <Stack.Screen 
+          name="Timer" 
+          component={TimerScreen} 
           options={{ headerShown: false }} 
         />
       </Stack.Navigator>
