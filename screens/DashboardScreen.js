@@ -146,6 +146,16 @@ const DashboardScreen = ({ navigation }) => {
                 <Text style={styles.drawerTitle}>Opciones</Text>
                 <TouchableOpacity
                   onPress={() => {
+                    navigation.navigate('Profile');
+                    toggleDrawer();
+                  }}
+                  style={styles.drawerItem}
+                >
+                  <Icon name="cog" size={24} color="#1D1B70" />
+                  <Text style={styles.drawerText}>Mi perfil</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
                     navigation.navigate('Settings');
                     toggleDrawer();
                   }}
