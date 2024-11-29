@@ -9,7 +9,6 @@ import {
   TextInput,
   Modal,
   Alert,
-  Animated,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -22,8 +21,6 @@ const HabitScreen = () => {
       name: 'Ejercicio Diario',
       weeklyProgress: [50, 70, 80, 90, 100, 60, 40],
       monthlyProgress: [50, 60, 70, 80, 90, 100, 80, 70, 60, 50],
-      days: ['L', 'M', 'X', 'J', 'V', 'S', 'D'],
-      months: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
       benefit: 'El ejercicio diario mejora tu salud física y mental.',
       category: 'Salud',
     },
@@ -32,8 +29,6 @@ const HabitScreen = () => {
       name: 'Meditación',
       weeklyProgress: [20, 40, 60, 80, 100, 90, 70],
       monthlyProgress: [20, 30, 40, 50, 60, 70, 80, 90, 100, 80],
-      days: ['L', 'M', 'X', 'J', 'V', 'S', 'D'],
-      months: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
       benefit: 'La meditación reduce el estrés y aumenta la concentración.',
       category: 'Relajación',
     },
@@ -43,8 +38,13 @@ const HabitScreen = () => {
   const [viewMode, setViewMode] = useState('weekly');
   const [modalVisible, setModalVisible] = useState(false);
   const [newHabit, setNewHabit] = useState({ name: '', category: '', benefit: '' });
-  const [sortMode, setSortMode] = useState('alphabetical'); // Default sort mode
-  const scale = useState(new Animated.Value(1))[0];
+
+  const categoryColors = {
+    Salud: '#4CAF50', // Verde
+    Relajación: '#FFC107', // Amarillo
+    Educación: '#2196F3', // Azul
+    Otros: '#9C27B0', // Morado
+  };
 
   const toggleExpansion = (id) => {
     setExpandedHabitId(expandedHabitId === id ? null : id);
@@ -68,8 +68,6 @@ const HabitScreen = () => {
         name: newHabit.name,
         weeklyProgress: Array(7).fill(0),
         monthlyProgress: Array(10).fill(0),
-        days: ['L', 'M', 'X', 'J', 'V', 'S', 'D'],
-        months: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
         benefit: newHabit.benefit,
         category: newHabit.category,
       },
@@ -94,17 +92,12 @@ const HabitScreen = () => {
   };
 
   const markHabitAsDone = (id) => {
-    Animated.sequence([
-      Animated.timing(scale, { toValue: 1.5, duration: 150, useNativeDriver: true }),
-      Animated.timing(scale, { toValue: 1, duration: 150, useNativeDriver: true }),
-    ]).start();
-
     const updatedHabits = habits.map((habit) =>
       habit.id === id
         ? {
             ...habit,
             weeklyProgress: habit.weeklyProgress.map((value, index) =>
-              index === new Date().getDay() - 1 ? value + 10 : value
+              index === new Date().getDay() - 1 ? Math.min(value + 10, 100) : value
             ),
           }
         : habit
@@ -113,20 +106,16 @@ const HabitScreen = () => {
     Alert.alert('¡Hábito Completado!', 'Has registrado este hábito como realizado hoy.');
   };
 
-  const sortHabits = (mode) => {
-    const sortedHabits = [...habits].sort((a, b) => {
-      if (mode === 'alphabetical') return a.name.localeCompare(b.name);
-      if (mode === 'progress') return b.weeklyProgress.reduce((x, y) => x + y) - a.weeklyProgress.reduce((x, y) => x + y);
-    });
-    setHabits(sortedHabits);
-    setSortMode(mode);
+  const calculateAverageProgress = (progress) => {
+    if (progress.length === 0) return 0;
+    return progress.reduce((acc, val) => acc + val, 0) / progress.length;
   };
 
   const renderHabitItem = ({ item }) => {
     const isExpanded = expandedHabitId === item.id;
-
-    const chartData = viewMode === 'weekly' ? item.weeklyProgress : item.monthlyProgress;
-    const labels = viewMode === 'weekly' ? item.days : item.months;
+    const progressData = viewMode === 'weekly' ? item.weeklyProgress : item.monthlyProgress;
+    const averageProgress = calculateAverageProgress(progressData);
+    const progressColor = categoryColors[item.category] || categoryColors['Otros'];
 
     return (
       <View style={styles.habitItem}>
@@ -137,28 +126,41 @@ const HabitScreen = () => {
         {isExpanded && (
           <View style={styles.habitDetails}>
             <Text style={styles.habitBenefit}>{item.benefit}</Text>
-            <View style={styles.chartContainer}>
-             
-              <View style={styles.xAxis}>
-                {labels.map((label, index) => (
-                  <Text key={index} style={styles.xAxisLabel}>
-                    {label}
-                  </Text>
-                ))}
-              </View>
+            <Text style={styles.progressLabel}>
+              {viewMode === 'weekly' ? 'Progreso Semanal' : 'Progreso Mensual'}: {averageProgress.toFixed(1)}%
+            </Text>
+            <View style={styles.progressBar}>
+              <View
+                style={[
+                  styles.progressFill,
+                  { width: `${averageProgress}%`, backgroundColor: progressColor },
+                ]}
+              />
             </View>
             <View style={styles.actionButtons}>
-              <Animated.View style={{ transform: [{ scale }] }}>
-                <TouchableOpacity style={styles.doneButton} onPress={() => markHabitAsDone(item.id)}>
-                  <Icon name="check" size={20} color="#FFFFFF" />
-                  <Text style={styles.doneButtonText}>Marcar como Hecho</Text>
-                </TouchableOpacity>
-              </Animated.View>
-              <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteHabit(item.id)}>
+              <TouchableOpacity
+                style={styles.doneButton}
+                onPress={() => markHabitAsDone(item.id)}
+              >
+                <Icon name="check" size={20} color="#FFFFFF" />
+                <Text style={styles.doneButtonText}>Marcar como Realizado</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => handleDeleteHabit(item.id)}
+              >
                 <Icon name="trash-can-outline" size={20} color="#FFFFFF" />
                 <Text style={styles.deleteButtonText}>Eliminar</Text>
               </TouchableOpacity>
             </View>
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={toggleViewMode}
+            >
+              <Text style={styles.toggleButtonText}>
+                {viewMode === 'weekly' ? 'Cambiar a Mensual' : 'Cambiar a Semanal'}
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -168,14 +170,6 @@ const HabitScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Mis Hábitos</Text>
-      <View style={styles.sortButtons}>
-        <TouchableOpacity style={styles.sortButton} onPress={() => sortHabits('alphabetical')}>
-          <Text style={styles.sortButtonText}>Ordenar por Nombre</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.sortButton} onPress={() => sortHabits('progress')}>
-          <Text style={styles.sortButtonText}>Ordenar por Progreso</Text>
-        </TouchableOpacity>
-      </View>
       <FlatList
         data={habits}
         renderItem={renderHabitItem}
@@ -185,7 +179,12 @@ const HabitScreen = () => {
       <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
         <Icon name="plus" size={24} color="#FFFFFF" />
       </TouchableOpacity>
-      <Modal visible={modalVisible} transparent={true} animationType="slide" onRequestClose={() => setModalVisible(false)}>
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Agregar Nuevo Hábito</Text>
@@ -214,7 +213,10 @@ const HabitScreen = () => {
               <TouchableOpacity style={styles.modalButton} onPress={handleAddHabit}>
                 <Text style={styles.modalButtonText}>Guardar</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setModalVisible(false)}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setModalVisible(false)}
+              >
                 <Text style={styles.modalButtonText}>Cancelar</Text>
               </TouchableOpacity>
             </View>
@@ -224,7 +226,6 @@ const HabitScreen = () => {
     </View>
   );
 };
-
 
 
 const styles = StyleSheet.create({
@@ -266,34 +267,20 @@ const styles = StyleSheet.create({
     marginBottom: height / 50,
     fontStyle: 'italic',
   },
-  chartContainer: {
-    height: height / 4,
+  progressBar: {
+    height: 10,
+    backgroundColor: '#A3ADDB',
+    borderRadius: 5,
     marginBottom: height / 50,
   },
-  chart: {
-    flex: 1,
+  progressFill: {
+    height: '100%',
+    borderRadius: 5,
   },
-  xAxis: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: height / 60,
-  },
-  xAxisLabel: {
+  progressLabel: {
     fontSize: width / 30,
     color: '#1D1B70',
-  },
-  toggleButton: {
-    backgroundColor: '#5127DB',
-    borderRadius: 10,
-    paddingVertical: height / 90,
-    paddingHorizontal: width / 20,
-    alignItems: 'center',
-    alignSelf: 'center',
-  },
-  toggleButtonText: {
-    color: '#FFFFFF',
-    fontSize: width / 28,
-    fontWeight: 'bold',
+    marginBottom: height / 80,
   },
   addButton: {
     position: 'absolute',
@@ -354,17 +341,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 10,
   },
-  doneButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#37657F',
-    padding: 10,
-    borderRadius: 8,
-  },
-  doneButtonText: {
-    color: '#FFFFFF',
-    marginLeft: 5,
-  },
   deleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -376,19 +352,19 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginLeft: 5,
   },
-  sortButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
+  toggleButton: {
+    backgroundColor: '#5127DB',
+    borderRadius: 10,
+    paddingVertical: height / 90,
+    paddingHorizontal: width / 20,
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginTop: height / 50,
   },
-  sortButton: {
-    backgroundColor: '#A3ADDB',
-    borderRadius: 8,
-    padding: 10,
-  },
-  sortButtonText: {
-    color: '#1D1B70',
-    fontSize: width / 30,
+  toggleButtonText: {
+    color: '#FFFFFF',
+    fontSize: width / 28,
+    fontWeight: 'bold',
   },
 });
 
