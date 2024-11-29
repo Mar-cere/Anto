@@ -11,6 +11,7 @@ import HelpScreen from './screens/HelpScreen';
 import RecoverScreen from './screens/RecoverScreen';
 import HabitsScreen from './screens/HabitsScreen';
 import TaskScreen from './screens/TaskScreen';
+import AlarmScreen from './screens/AlarmScreen';
 
 
 // Crea el stack de navegación
@@ -65,6 +66,11 @@ const App = () => {
         <Stack.Screen 
           name="Tasks" 
           component={TaskScreen} 
+          options={{ headerShown: false }} 
+        />
+        <Stack.Screen 
+          name="Alarms" 
+          component={AlarmScreen} 
           options={{ headerShown: false }} 
         />
       </Stack.Navigator>
