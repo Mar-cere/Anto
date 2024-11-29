@@ -1,5 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Image,View, Text, StyleSheet, Dimensions, TouchableOpacity, ScrollView, Animated, Vibration,
+import {
+  Image,
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  TouchableOpacity,
+  ScrollView,
+  Animated,
+  Vibration,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -19,7 +28,9 @@ const DashboardScreen = ({ navigation }) => {
   const [userName, setUserName] = useState('Usuario');
   const [motivationalPhrase, setMotivationalPhrase] = useState('');
   const [selectedEmotion, setSelectedEmotion] = useState(null);
+  const [drawerVisible, setDrawerVisible] = useState(false); // Estado para la barra lateral
   const emotionScale = useState(new Animated.Value(1))[0];
+
   const [tasks, setTasks] = useState([
     { id: 1, text: 'Completar ejercicio diario', done: false },
     { id: 2, text: 'Escribir en el diario', done: false },
@@ -56,6 +67,17 @@ const DashboardScreen = ({ navigation }) => {
     { habit: 'Relajación', value: 50 },
   ];
 
+  const [drawerAnimation] = useState(new Animated.Value(width));
+
+  const toggleDrawer = () => {
+    const toValue = drawerVisible ? width : 0; // Posición fuera o dentro de la pantalla
+    Animated.timing(drawerAnimation, {
+      toValue,
+      duration: 500,
+      useNativeDriver: true,
+    }).start(() => setDrawerVisible(!drawerVisible));
+  };
+
   const handleEmotionSelect = (emotion) => {
     Vibration.vibrate(50);
     Animated.sequence([
@@ -80,20 +102,51 @@ const DashboardScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      {/* Barra lateral */}
+      {drawerVisible && (
+  <Animated.View style={[styles.drawer, { transform: [{ translateX: drawerAnimation }] }]}>
+    <Text style={styles.drawerTitle}>Opciones</Text>
+    <TouchableOpacity
+      onPress={() => {
+        navigation.navigate('Settings');
+        toggleDrawer();
+      }}
+      style={styles.drawerItem}
+    >
+      <Icon name="cog" size={24} color="#1D1B70" />
+      <Text style={styles.drawerText}>Configuración</Text>
+    </TouchableOpacity>
+    <TouchableOpacity
+      onPress={toggleDrawer}
+      style={styles.drawerItem}
+    >
+      <Icon name="logout" size={24} color="#1D1B70" />
+      <Text style={styles.drawerText}>Cerrar Sesión</Text>
+    </TouchableOpacity>
+  </Animated.View>
+)}
+
+
+      {/* Contenido Principal */}
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Saludo Personalizado */}
-        <View style={styles.greetingContainer}>
-          <Text style={styles.greetingText}>¡Hola, {userName}!</Text>
-          <Text style={styles.motivationalText}>{motivationalPhrase}</Text>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.greetingText}>¡Hola, {userName}!</Text>
+            <Text style={styles.motivationalText}>{motivationalPhrase}</Text>
+          </View>
+          <TouchableOpacity onPress={toggleDrawer} style={styles.drawerButton}>
+            <Icon name="menu" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
 
-        {/* Detección de Emociones */}
+        {/* Contenido restante */}
         <Card title="¿Cómo te sientes hoy?" onPress={() => {}}>
           <View style={styles.emotionContainer}>
             {emotions.map((emotion) => (
               <TouchableOpacity
                 key={emotion.id}
-                onPress={() => handleEmotionSelect(emotion)}
+                onPress={() => Vibration.vibrate(50)}
               >
                 <Animated.View
                   style={[
@@ -163,8 +216,8 @@ const DashboardScreen = ({ navigation }) => {
           ))}
         </Card>
 
-        {/* Notificaciones */}
-        <Card
+      {/* Notificaciones */}
+      <Card
           title="Notificaciones Recientes"
           onPress={() => navigation.navigate('Notifications')}
         >
@@ -209,19 +262,22 @@ const DashboardScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1D1B70'
+    backgroundColor: '#1D1B70',
   },
   scrollContainer: {
-    paddingBottom: height / 8
+    paddingBottom: height / 8,
   },
-  greetingContainer: {
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: height / 16,
-    paddingHorizontal: width / 15
+    paddingHorizontal: width / 15,
   },
   greetingText: {
     fontSize: width / 12,
     color: '#FFFFFF',
-    fontWeight: 'bold'
+    fontWeight: 'bold',
   },
   motivationalText: {
     fontSize: width / 25,
@@ -264,6 +320,70 @@ const styles = StyleSheet.create({
   emotionContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around'
+  },
+  drawerButton: {
+    backgroundColor: '#5127DB',
+    padding: 8,
+    borderRadius: 8,
+  },
+  drawer: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: width / 2,
+    height: '100%',
+    backgroundColor: '#CECFDB',
+    padding: width / 20,
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: -2, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5, // Para Android
+  },
+  drawerTitle: {
+    fontSize: width / 18,
+    fontWeight: 'bold',
+    color: '#1D1B70',
+    marginBottom: height / 40,
+  },
+  drawerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: height / 40,
+  },
+  drawerText: {
+    fontSize: width / 25,
+    color: '#1D1B70',
+    marginLeft: width / 30,
+  },
+  card: {
+    backgroundColor: '#CECFDB',
+    borderRadius: 15,
+    padding: width / 20,
+    marginHorizontal: width / 25,
+    marginBottom: height / 42,
+  },
+  cardTitle: {
+    fontSize: width / 20,
+    color: '#1D1B70',
+    fontWeight: 'bold',
+    marginBottom: height / 100,
+  },
+  emotionContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  emojiButton: {
+    width: width / 7,
+    height: width / 7,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: width / 14,
+    backgroundColor: '#A3ADDB',
+  },
+  selectedEmojiButton: {
+    backgroundColor: '#5127DB',
   },
   emojiButton: {
     width: width / 7,
@@ -326,7 +446,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  
 });
 
 export default DashboardScreen;
