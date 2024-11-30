@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, TextInput, TouchableOpacity, Alert, ActivityIndicator, Animated } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { 
+  View, Text, StyleSheet, Dimensions, TextInput, TouchableOpacity, Alert, ActivityIndicator, Animated 
+} from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
-const { width, height } = Dimensions.get('window'); // Dimensiones para diseño responsivo
+const { width, height } = Dimensions.get('window');
 
 const SignInScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
@@ -15,32 +17,29 @@ const SignInScreen = ({ navigation }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPasswordVisible, setPasswordVisible] = useState(false);
   const [isTermsAccepted, setTermsAccepted] = useState(false);
-  const progressAnim = new Animated.Value(0); // Animación para progreso
+  const [progressAnim] = useState(new Animated.Value(0)); // Barra de progreso
 
-  // Validar formato de correo electrónico
   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  // Manejar cambios en los campos de entrada
   const handleInputChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
   };
 
-  // Calcular progreso del formulario
   const calculateProgress = () => {
     const totalFields = 4;
     const completedFields = Object.values(formData).filter(Boolean).length;
     return (completedFields / totalFields) * 100;
   };
 
-  // Animar progreso
-  Animated.timing(progressAnim, {
-    toValue: calculateProgress(),
-    duration: 300,
-    useNativeDriver: false,
-  }).start();
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: calculateProgress(),
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  }, [formData]);
 
-  // Validar y manejar el registro
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     const { name, email, password, confirmPassword } = formData;
 
     if (!name || !email || !password || !confirmPassword) {
@@ -50,6 +49,11 @@ const SignInScreen = ({ navigation }) => {
 
     if (!validateEmail(email)) {
       Alert.alert('Error', 'Por favor, introduce un correo electrónico válido.');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres.');
       return;
     }
 
@@ -64,11 +68,29 @@ const SignInScreen = ({ navigation }) => {
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
+
+    try {
+      const response = await fetch('http://localhost:5001/api/users/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Ocurrió un error al registrarte.');
+      }
+
       Alert.alert('Éxito', '¡Tu cuenta ha sido creada exitosamente!');
-      setIsSubmitting(false);
       navigation.navigate('Login');
-    }, 2000); // Simulación de creación de cuenta
+    } catch (error) {
+      Alert.alert('Error', error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -77,16 +99,13 @@ const SignInScreen = ({ navigation }) => {
       extraScrollHeight={20}
       enableOnAndroid={true}
     >
-      {/* Título */}
       <Text style={styles.titleText}>Crear Cuenta</Text>
       <Text style={styles.subTitleText}>Por favor, llena los campos para registrarte.</Text>
 
-      {/* Barra de progreso */}
       <View style={styles.progressContainer}>
         <Animated.View style={[styles.progressBar, { width: `${progressAnim.__getValue()}%` }]} />
       </View>
 
-      {/* Campos de Entrada */}
       <TextInput
         style={styles.input}
         placeholder="Nombre"
@@ -102,7 +121,6 @@ const SignInScreen = ({ navigation }) => {
         onChangeText={(text) => handleInputChange('email', text)}
         value={formData.email}
       />
-      {/* Campo de contraseña con opción de mostrar */}
       <View style={styles.passwordContainer}>
         <TextInput
           style={styles.passwordInput}
@@ -121,14 +139,13 @@ const SignInScreen = ({ navigation }) => {
 
       <TextInput
         style={styles.input}
-        placeholder="Confirmar Contraseña"
+        placeholder="Confirma tu Contraseña"
         placeholderTextColor="#A3ADDB"
         secureTextEntry
         onChangeText={(text) => handleInputChange('confirmPassword', text)}
         value={formData.confirmPassword}
       />
 
-      {/* Checkbox de Términos */}
       <TouchableOpacity
         style={styles.checkboxContainer}
         onPress={() => setTermsAccepted(!isTermsAccepted)}
@@ -139,7 +156,6 @@ const SignInScreen = ({ navigation }) => {
         </Text>
       </TouchableOpacity>
 
-      {/* Botón de Registro */}
       <TouchableOpacity
         style={[styles.mainButton, isSubmitting && styles.disabledButton]}
         activeOpacity={0.8}
@@ -153,7 +169,6 @@ const SignInScreen = ({ navigation }) => {
         )}
       </TouchableOpacity>
 
-      {/* Enlace para iniciar sesión */}
       <TouchableOpacity
         onPress={() => navigation.navigate('LogIn')}
         style={styles.linkContainer}
@@ -163,6 +178,7 @@ const SignInScreen = ({ navigation }) => {
     </KeyboardAwareScrollView>
   );
 };
+
 
 const styles = StyleSheet.create({
   scrollContainer: {
