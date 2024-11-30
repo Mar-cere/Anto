@@ -39,7 +39,7 @@ Consulta nuestra [Política de Privacidad](https://www.tuapp.com/privacidad) par
 
 ## 👨‍💻 Sobre el Desarrollador
 
-Soy **Marcelo Ull Marambio**, un desarrollador apasionado por la inteligencia artificial y la psicología. Este proyecto está inspirado en mi hija **Anto**, quien es mi mayor motivación. 
+Soy **Marcelo Nicolás Ull Marambio**, un desarrollador apasionado por la inteligencia artificial y la psicología. Este proyecto está inspirado en mi hija **Antonella**, quien es mi mayor motivación. 
 
 Mi objetivo es crear herramientas que puedan mejorar la vida de las personas y hacer del mundo un lugar más empático y conectado.
 
