@@ -85,7 +85,7 @@ const SignInScreen = ({ navigation }) => {
       }
 
       Alert.alert('Éxito', '¡Tu cuenta ha sido creada exitosamente!');
-      navigation.navigate('Login');
+      navigation.navigate('Dash');
     } catch (error) {
       Alert.alert('Error', error.message);
     } finally {
@@ -122,14 +122,16 @@ const SignInScreen = ({ navigation }) => {
         value={formData.email}
       />
       <View style={styles.passwordContainer}>
-        <TextInput
-          style={styles.passwordInput}
-          placeholder="Contraseña"
-          placeholderTextColor="#A3ADDB"
-          secureTextEntry={!isPasswordVisible}
-          onChangeText={(text) => handleInputChange('password', text)}
-          value={formData.password}
-        />
+      <TextInput
+        style={styles.passwordInput}
+        placeholder="Contraseña"
+        placeholderTextColor="#A3ADDB"
+        secureTextEntry={!isPasswordVisible}
+        onChangeText={(text) => handleInputChange('password', text)}
+        value={formData.password}
+        autoComplete="off" // Desactiva autocompletado
+        autoCorrect={false} // Desactiva corrección automática
+      />
         <TouchableOpacity onPress={() => setPasswordVisible(!isPasswordVisible)}>
           <Text style={styles.toggleText}>
             {isPasswordVisible ? 'Ocultar' : 'Mostrar'}

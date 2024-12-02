@@ -1,12 +1,12 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const User = require('../models/User'); // Importa el modelo de usuario
+const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
 
-// Clave secreta para JWT
+// Clave secreta para JWT (usando dotenv para mayor seguridad)
 const JWT_SECRET = process.env.JWT_SECRET || 'your_secret_key_here';
 
 // Middleware para parsear el cuerpo de las solicitudes
@@ -16,30 +16,36 @@ router.use(express.json());
 router.post('/register', async (req, res) => {
   const { email, password, name } = req.body;
 
+  // Validaciones
   if (!email || !password || !name) {
     return res.status(400).json({ message: 'Todos los campos son obligatorios.' });
   }
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: 'El formato del correo electrónico no es válido.' });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres.' });
+  }
+
   try {
-    // Verificar si el usuario ya existe
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'El usuario ya existe.' });
     }
 
-    // Generar un hash para el nombre y contraseña
-    const hashedName = await bcrypt.hash(name, 10);
+    // Generar hash de contraseña
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Crear un nuevo usuario
     const newUser = new User({
-      name: hashedName,
+      name, // Almacenar nombre en texto plano (opcionalmente puedes ofuscarlo)
       email,
       password: hashedPassword,
       uuid: uuidv4(), // Generar un UUID único
     });
 
-    // Guardar el usuario en la base de datos
     await newUser.save();
 
     return res.status(201).json({ message: 'Usuario registrado con éxito.' });
@@ -58,26 +64,28 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    // Verificar si el usuario existe
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado.' });
     }
 
-    // Comparar la contraseña proporcionada con el hash almacenado
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Credenciales inválidas.' });
     }
 
-    // Generar un token JWT
+    // Generar token JWT
     const token = jwt.sign(
       { id: user._id, email: user.email },
       JWT_SECRET,
-      { expiresIn: '1h' } // Tiempo de expiración
+      { expiresIn: '1h' }
     );
 
-    return res.status(200).json({ message: 'Inicio de sesión exitoso.', token });
+    return res.status(200).json({
+      message: 'Inicio de sesión exitoso.',
+      token,
+      user: { id: user._id, name: user.name, email: user.email }, // Evitar enviar contraseña
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: 'Error interno del servidor.' });
@@ -85,4 +93,3 @@ router.post('/login', async (req, res) => {
 });
 
 module.exports = router;
-
