@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Dimensions, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const { width, height } = Dimensions.get('window'); // Dimensiones responsivas
 
@@ -24,31 +26,52 @@ const LogScreen = ({ navigation }) => {
   };
 
   // Validar y manejar el inicio de sesión
-  const handleLogin = () => {
+  const handleLogin = async () => {
     const { email, password } = formData;
-
+  
     if (!email || !password) {
       setErrorMessage('Por favor, completa todos los campos.');
       return;
     }
-
+  
     if (!validateEmail(email)) {
       setErrorMessage('Por favor, introduce un correo electrónico válido.');
       return;
     }
-
+  
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false); // Desactiva el indicador de carga
-      Alert.alert('Éxito', '¡Inicio de sesión exitoso!', [
-        {
-          text: 'OK',
-          onPress: () => navigation.navigate('Dash'), // Redirige al Dashboard
+  
+    try {
+      const response = await fetch('http://localhost:5001/api/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      ]);
-    }, 2000);
-     // Simulación de inicio de sesión
+        body: JSON.stringify({ email, password }),
+      });
+  
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Error en el inicio de sesión');
+      }
+  
+      const data = await response.json();
+  
+      // Manejo del token (si existe)
+      if (data.token) {
+        await AsyncStorage.setItem('userToken', data.token); // Guarda el token
+        await AsyncStorage.setItem('userData', JSON.stringify(data.user)); // Guarda los datos del usuario
+  
+        // Navega al Dashboard
+        navigation.replace('Dash');
+      }
+    } catch (error) {
+      setErrorMessage(error.message || 'Error inesperado');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+  
 
   return (
     <KeyboardAwareScrollView

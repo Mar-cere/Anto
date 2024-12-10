@@ -2,93 +2,111 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
-
-// Clave secreta para JWT (usando dotenv para mayor seguridad)
 const JWT_SECRET = process.env.JWT_SECRET || 'your_secret_key_here';
+const SALT_ROUNDS = 10;
 
-// Middleware para parsear el cuerpo de las solicitudes
-router.use(express.json());
-
-// Ruta de registro
+// Registro de usuario
 router.post('/register', async (req, res) => {
-  const { email, password, name } = req.body;
+  const { name, email, password } = req.body;
 
-  // Validaciones
-  if (!email || !password || !name) {
+  console.log('[Registro] Datos recibidos:', { name, email });
+
+  if (!name || !email || !password) {
+    console.log('[Registro] Faltan campos obligatorios');
     return res.status(400).json({ message: 'Todos los campos son obligatorios.' });
   }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return res.status(400).json({ message: 'El formato del correo electrónico no es válido.' });
-  }
-
-  if (password.length < 6) {
-    return res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres.' });
-  }
-
   try {
-    const existingUser = await User.findOne({ email });
+    // Normalizar email a minúsculas antes de la búsqueda
+    const normalizedEmail = email.toLowerCase();
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    
     if (existingUser) {
+      console.log('[Registro] Usuario ya existente con el email:', normalizedEmail);
       return res.status(400).json({ message: 'El usuario ya existe.' });
     }
 
-    // Generar hash de contraseña
-    const hashedPassword = await bcrypt.hash(password, 10);
+    console.log('[Registro] Creando hash para la contraseña...');
+    const salt = await bcrypt.genSalt(SALT_ROUNDS);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    
+    console.log('[Registro] Configuración del hash:', hashedPassword.substring(0, 7));
 
     const newUser = new User({
-      name, // Almacenar nombre en texto plano (opcionalmente puedes ofuscarlo)
-      email,
+      name,
+      email: normalizedEmail,
       password: hashedPassword,
-      uuid: uuidv4(), // Generar un UUID único
     });
 
-    await newUser.save();
+    console.log('[Registro] Guardando nuevo usuario en la base de datos...');
+    const savedUser = await newUser.save();
+    
+    console.log('[Registro] Usuario registrado con éxito:', {
+      id: savedUser._id,
+      email: savedUser.email,
+      hashConfig: savedUser.password.substring(0, 7)
+    });
 
-    return res.status(201).json({ message: 'Usuario registrado con éxito.' });
+    res.status(201).json({ message: 'Usuario registrado con éxito.' });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: 'Error interno del servidor.' });
+    console.error('[Registro] Error:', error.message);
+    res.status(500).json({ message: 'Error interno del servidor.' });
   }
 });
 
-// Ruta de inicio de sesión
+// Inicio de sesión
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
+    console.log('[Inicio de sesión] Faltan campos obligatorios');
     return res.status(400).json({ message: 'Todos los campos son obligatorios.' });
   }
 
   try {
-    const user = await User.findOne({ email });
+    // Normalizar email a minúsculas antes de la búsqueda
+    const normalizedEmail = email.toLowerCase();
+    console.log('[Inicio de sesión] Buscando usuario con el email:', normalizedEmail);
+    
+    const user = await User.findOne({ email: normalizedEmail });
+
     if (!user) {
+      console.log('[Inicio de sesión] Usuario no encontrado con el email:', normalizedEmail);
       return res.status(404).json({ message: 'Usuario no encontrado.' });
     }
 
+    console.log('[Inicio de sesión] Comparando contraseña...');
+    console.log('[Inicio de sesión] Algoritmo del hash almacenado:', user.password.substring(0, 7));
+    
     const isPasswordValid = await bcrypt.compare(password, user.password);
+    console.log('[Inicio de sesión] ¿Contraseña válida?:', isPasswordValid);
+
     if (!isPasswordValid) {
+      console.log('[Inicio de sesión] Credenciales inválidas');
       return res.status(401).json({ message: 'Credenciales inválidas.' });
     }
 
-    // Generar token JWT
     const token = jwt.sign(
-      { id: user._id, email: user.email },
-      JWT_SECRET,
+      { id: user._id, email: user.email }, 
+      JWT_SECRET, 
       { expiresIn: '1h' }
     );
 
-    return res.status(200).json({
+    console.log('[Inicio de sesión] Inicio de sesión exitoso');
+    res.status(200).json({
       message: 'Inicio de sesión exitoso.',
       token,
-      user: { id: user._id, name: user.name, email: user.email }, // Evitar enviar contraseña
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        email: user.email 
+      },
     });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: 'Error interno del servidor.' });
+    console.error('[Inicio de sesión] Error:', error.message);
+    res.status(500).json({ message: 'Error interno del servidor.' });
   }
 });
 

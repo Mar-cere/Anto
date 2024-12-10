@@ -1,13 +1,13 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
-const { v4: uuidv4 } = require('uuid'); // Biblioteca para generar UUID
+const { v4: uuidv4 } = require('uuid');
 
 const UserSchema = new mongoose.Schema(
   {
     uuid: {
       type: String,
       unique: true,
-      default: uuidv4, // Genera un UUID único automáticamente
+      default: uuidv4,
     },
     name: {
       type: String,
@@ -20,7 +20,7 @@ const UserSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      match: [/^\S+@\S+\.\S+$/, 'Por favor ingresa un correo válido'], // Validación de correo
+      match: [/^\S+@\S+\.\S+$/, 'Por favor ingresa un correo válido'],
     },
     password: {
       type: String,
@@ -29,11 +29,11 @@ const UserSchema = new mongoose.Schema(
     preferences: {
       language: {
         type: String,
-        default: 'es', // Idioma predeterminado
+        default: 'es',
       },
       theme: {
         type: String,
-        default: 'light', // Tema predeterminado
+        default: 'light',
       },
     },
     journalEntries: [
@@ -62,7 +62,7 @@ const UserSchema = new mongoose.Schema(
     ],
     role: {
       type: String,
-      enum: ['admin', 'user'], // Posibles roles
+      enum: ['admin', 'user'],
       default: 'user',
     },
     isActive: {
@@ -79,38 +79,17 @@ const UserSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true, // Agrega automáticamente createdAt y updatedAt
+    timestamps: true,
   }
 );
 
-// Middleware para hash de contraseñas (usando bcrypt)
-UserSchema.pre('save', async function (next) {
-  // Hash de contraseñas
-  if (this.isModified('password')) {
-    try {
-      const salt = await bcrypt.genSalt(10);
-      this.password = await bcrypt.hash(this.password, salt);
-    } catch (error) {
-      return next(error);
-    }
+// Método para comparar contraseñas
+UserSchema.methods.comparePassword = async function (candidatePassword) {
+  try {
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
+    throw new Error('Error al comparar contraseñas');
   }
-
-  // Encriptar nombres
-  if (this.isModified('name')) {
-    try {
-      const salt = await bcrypt.genSalt(10);
-      this.name = await bcrypt.hash(this.name, salt);
-    } catch (error) {
-      return next(error);
-    }
-  }
-
-  next();
-});
-
-// Verificar el nombre desencriptado
-UserSchema.methods.verifyName = async function (name) {
-  return bcrypt.compare(name, this.name);
 };
 
 const User = mongoose.model('User', UserSchema);

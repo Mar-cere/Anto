@@ -1,7 +1,9 @@
 const express = require('express');
-const mongoose = require('mongoose'); // Asegúrate de importar mongoose si estás usando MongoDB
-const userRoutes = require('./routes/userRoutes');
-require('dotenv').config(); // Importar dotenv para manejar variables de entorno
+const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+const userRoutes = require('./routes/userRoutes'); // Rutas de usuarios
+
+dotenv.config();
 
 const app = express();
 
@@ -24,7 +26,7 @@ connectDB();
 app.use(express.json()); // Parsear JSON en las solicitudes
 
 // Rutas
-app.use('/api/users', userRoutes);
+app.use('/api/users', userRoutes); // Rutas básicas de usuario
 
 // Manejo de errores 404
 app.use((req, res) => {
