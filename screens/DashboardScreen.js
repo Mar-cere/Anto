@@ -104,8 +104,12 @@ const DashboardScreen = ({ navigation }) => {
     }).start(() => setDrawerVisible(!drawerVisible));
   };
 
-  const handleEmotionSelect = (emotion) => {
+  const handleEmotionSelect = async (emotion) => {
+    console.log('[handleEmotionSelect] Emoji seleccionado:', emotion);
+  
     Vibration.vibrate(50);
+  
+    // Animación al seleccionar un emoji
     Animated.sequence([
       Animated.timing(emotionScale, {
         toValue: 1.2,
@@ -117,9 +121,50 @@ const DashboardScreen = ({ navigation }) => {
         duration: 150,
         useNativeDriver: true,
       }),
-    ]).start();
+    ]).start(() => console.log('[handleEmotionSelect] Animación completada'));
+  
     setSelectedEmotion(emotion);
+  
+    // Crear el objeto de estado emocional
+    const emotionData = {
+      emotion: emotion.label,
+      emoji: emotion.emoji,
+      timestamp: new Date().toISOString(),
+    };
+  
+    console.log('[handleEmotionSelect] Datos a enviar:', emotionData);
+  
+    try {
+      // Obtener authToken de AsyncStorage
+      const authToken = await AsyncStorage.getItem('userToken');
+  
+      if (!authToken) {
+        throw new Error('Token de autenticación no disponible');
+      }
+  
+      const response = await fetch('http://localhost:5001/api/emotions/emotions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(emotionData),
+      });
+  
+      console.log('[handleEmotionSelect] Respuesta del servidor:', response);
+  
+      if (!response.ok) {
+        throw new Error(`Error en la API: ${response.statusText}`);
+      }
+  
+      const result = await response.json();
+      console.log('[handleEmotionSelect] Estado emocional registrado con éxito:', result);
+    } catch (error) {
+      console.error('[handleEmotionSelect] Error al registrar el estado emocional:', error.message);
+    }
   };
+  
+  
   
   useEffect(() => {
     const fetchUserNameFromServer = async () => {
@@ -219,27 +264,28 @@ const DashboardScreen = ({ navigation }) => {
 
         {/* Contenido restante */}
         <Card title="¿Cómo te sientes hoy?" onPress={() => {}}>
-          <View style={styles.emotionContainer}>
-            {emotions.map((emotion) => (
-              <TouchableOpacity
-                key={emotion.id}
-                onPress={() => Vibration.vibrate(50)}
-              >
-                <Animated.View
-                  style={[
-                    styles.emojiButton,
-                    selectedEmotion?.id === emotion.id && styles.selectedEmojiButton,
-                    selectedEmotion?.id === emotion.id && {
-                      transform: [{ scale: emotionScale }],
-                    },
-                  ]}
-                >
-                  <Text style={styles.emoji}>{emotion.emoji}</Text>
-                </Animated.View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Card>
+  <View style={styles.emotionContainer}>
+    {emotions.map((emotion) => (
+      <TouchableOpacity
+        key={emotion.id}
+        onPress={() => handleEmotionSelect(emotion)} // Llamar a la función
+      >
+        <Animated.View
+          style={[
+            styles.emojiButton,
+            selectedEmotion?.id === emotion.id && styles.selectedEmojiButton,
+            selectedEmotion?.id === emotion.id && {
+              transform: [{ scale: emotionScale }],
+            },
+          ]}
+        >
+          <Text style={styles.emoji}>{emotion.emoji}</Text>
+        </Animated.View>
+      </TouchableOpacity>
+    ))}
+  </View>
+</Card>
+
 
         {/* Alarmas */}
         <Card title="Mis Alarmas" onPress={() => navigation.navigate('Alarms')}>

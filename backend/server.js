@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const userRoutes = require('./routes/userRoutes'); // Rutas de usuarios
+const emotionRoutes = require('./routes/emotionRoutes'); // Rutas de emociones
 
 dotenv.config();
 
@@ -10,13 +11,14 @@ const app = express();
 // Conexión a MongoDB
 const connectDB = async () => {
   try {
+    console.log('[Conexión DB] Intentando conectar a MongoDB...');
     await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    console.log('Conexión exitosa a MongoDB');
+    console.log('[Conexión DB] Conexión exitosa a MongoDB');
   } catch (error) {
-    console.error('Error al conectar a MongoDB:', error.message);
+    console.error('[Conexión DB] Error al conectar a MongoDB:', error.message);
     process.exit(1); // Detiene el servidor si no se conecta a la base de datos
   }
 };
@@ -24,21 +26,33 @@ connectDB();
 
 // Middleware
 app.use(express.json()); // Parsear JSON en las solicitudes
+console.log('[Middleware] Middleware JSON activado.');
 
 // Rutas
-app.use('/api/users', userRoutes); // Rutas básicas de usuario
+app.use('/api/users', (req, res, next) => {
+  console.log(`[Rutas] Accediendo a /api/users con método ${req.method}`);
+  next();
+}, userRoutes);
+
+app.use('/api/emotions', (req, res, next) => {
+  console.log(`[Rutas] Accediendo a /api/emotions con método ${req.method}`);
+  next();
+}, emotionRoutes);
 
 // Manejo de errores 404
 app.use((req, res) => {
+  console.warn(`[Errores 404] Ruta no encontrada: ${req.originalUrl}`);
   res.status(404).json({ message: 'Ruta no encontrada' });
 });
 
 // Manejo de errores global
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('[Errores Globales] Stack de errores:', err.stack);
   res.status(500).json({ message: 'Error interno del servidor' });
 });
 
 // Puerto de escucha
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => console.log(`Servidor corriendo en el puerto ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`[Servidor] Servidor corriendo en el puerto ${PORT}`);
+});
