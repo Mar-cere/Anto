@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-
+const { validateUser, authenticateToken } = require('../middlewares/authMiddleware');
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your_secret_key_here';
 const SALT_ROUNDS = 10;
@@ -109,5 +109,23 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ message: 'Error interno del servidor.' });
   }
 });
+
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+    res.status(200).json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+    });
+  } catch (error) {
+    console.error('Error al obtener datos del usuario:', error.message);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
 
 module.exports = router;

@@ -4,6 +4,7 @@ const User = require('../models/User');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_secret_key_here';
 
+// Middleware para validar credenciales del usuario
 const validateUser = async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -41,5 +42,23 @@ const validateUser = async (req, res, next) => {
   }
 };
 
-module.exports = validateUser;
+// Middleware para autenticar token JWT
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Obtener token del encabezado
 
+  if (!token) {
+    return res.status(401).json({ message: 'Acceso denegado. No se proporcionó un token.' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: 'Token inválido o expirado.' });
+    }
+
+    req.user = user; // Añadir datos del usuario al request
+    next(); // Continuar con la ruta
+  });
+};
+
+module.exports = { validateUser, authenticateToken };

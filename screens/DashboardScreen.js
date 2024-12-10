@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { GestureHandlerRootView, PanGestureHandler, State } from 'react-native-gesture-handler';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import motivationalPhrases from '../resources/motivationalPhrases';
 
 const { width, height } = Dimensions.get('window');
 
@@ -118,11 +120,42 @@ const DashboardScreen = ({ navigation }) => {
     ]).start();
     setSelectedEmotion(emotion);
   };
-
+  
   useEffect(() => {
-    const randomIndex = Math.floor(Math.random() * phrases.length);
-    setMotivationalPhrase(phrases[randomIndex]);
+    const fetchUserNameFromServer = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        if (token) {
+          const response = await fetch('http://localhost:5001/api/users/me', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+  
+          if (response.ok) {
+            const data = await response.json();
+            setUserName(data.name || 'Usuario');
+          } else {
+            console.error('Error al obtener datos del usuario:', response.status);
+          }
+        }
+      } catch (error) {
+        console.error('Error al cargar los datos del usuario:', error);
+      }
+    };
+  
+    fetchUserNameFromServer();
   }, []);
+  
+  useEffect(() => {
+    const pickRandomPhrase = () => {
+      const randomIndex = Math.floor(Math.random() * motivationalPhrases.length);
+      setMotivationalPhrase(motivationalPhrases[randomIndex]);
+    };
+  
+    pickRandomPhrase();
+  }, []);
+  
 
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
