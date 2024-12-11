@@ -10,9 +10,12 @@ import {
   Alert,
   Switch,
   Dimensions,
+  ScrollView,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 
 const { width, height } = Dimensions.get('window');
 
@@ -22,13 +25,51 @@ const AlarmScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [newAlarm, setNewAlarm] = useState({
-    time: '',
+    time: new Date(),
     label: '',
     category: 'General',
-    active: true
-  });
+    active: true,
+    repeatDays: {
+      monday: false,
+      tuesday: false,
+      wednesday: false,
+      thursday: false,
+      friday: false,
+      saturday: false,
+      sunday: false,
+    }
+    });
+
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   const categories = ['Medicamentos', 'Pausas', 'Hábitos', 'Citas', 'General'];
+
+  const daysOfWeek = [
+    { key: 'monday', label: 'L' },
+    { key: 'tuesday', label: 'M' },
+    { key: 'wednesday', label: 'X' },
+    { key: 'thursday', label: 'J' },
+    { key: 'friday', label: 'V' },
+    { key: 'saturday', label: 'S' },
+    { key: 'sunday', label: 'D' },
+  ];
+
+  const handleTimeChange = (event, selectedDate) => {
+    setShowTimePicker(false);
+    if (selectedDate) {
+      setNewAlarm(prev => ({ ...prev, time: selectedDate }));
+    }
+  };
+
+  const toggleDay = (day) => {
+    setNewAlarm(prev => ({
+      ...prev,
+      repeatDays: {
+        ...prev.repeatDays,
+        [day]: !prev.repeatDays[day]
+      }
+    }));
+  };
 
   const validateTimeFormat = (time) => {
     const timeRegex = /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i;
@@ -77,43 +118,70 @@ const AlarmScreen = () => {
   }, [token]);
 
   const handleAddAlarm = async () => {
-    if (!newAlarm.time || !newAlarm.label) {
-      Alert.alert('Error', 'Por favor, completa todos los campos obligatorios');
-      return;
-    }
-
-    if (!validateTimeFormat(newAlarm.time)) {
-      Alert.alert('Error', 'Formato de hora inválido. Use formato 12h (ejemplo: 08:00 AM)');
-      return;
-    }
-
     try {
+      if (!newAlarm.time || !newAlarm.label) {
+        Alert.alert('Error', 'Por favor, completa todos los campos obligatorios');
+        return;
+      }
+
+      const formattedTime = formatTime(newAlarm.time);
+      console.log('Tiempo formateado:', formattedTime); // Para debugging
+
+      const alarmToSend = {
+        ...newAlarm,
+        time: formattedTime,
+      };
+
+      console.log('Datos a enviar:', alarmToSend); // Para debugging
+
       const response = await fetch('http://localhost:5001/api/alarms', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(newAlarm),
+        body: JSON.stringify(alarmToSend),
       });
+
+      const responseData = await response.json();
 
       if (!response.ok) {
-        throw new Error('Error al crear la alarma');
+        throw new Error(responseData.message || 'Error al crear la alarma');
       }
 
-      const createdAlarm = await response.json();
-      setAlarms(prev => [...prev, createdAlarm]);
+      setAlarms(prev => [...prev, responseData]);
       setModalVisible(false);
       setNewAlarm({
-        time: '',
+        time: new Date(),
         label: '',
         category: 'General',
-        active: true
+        active: true,
+        repeatDays: {
+          monday: false,
+          tuesday: false,
+          wednesday: false,
+          thursday: false,
+          friday: false,
+          saturday: false,
+          sunday: false,
+        }
       });
     } catch (error) {
-      Alert.alert('Error', 'No se pudo crear la alarma');
-      console.error(error);
+      Alert.alert('Error', error.message || 'No se pudo crear la alarma');
+      console.error('Error completo:', error);
     }
+  };
+
+
+  const formatTime = (date) => {
+    if (!(date instanceof Date)) {
+      return '';
+    }
+    // Formatear la hora en el formato correcto "HH:MM AM/PM"
+    const hours = date.getHours() % 12 || 12;
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const ampm = date.getHours() >= 12 ? 'PM' : 'AM';
+    return `${hours}:${minutes} ${ampm}`;
   };
 
   const handleDeleteAlarm = async (id) => {
@@ -214,28 +282,71 @@ const AlarmScreen = () => {
         <Icon name="plus" size={24} color="#FFFFFF" />
       </TouchableOpacity>
       <Modal
-        visible={modalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Agregar Nueva Alarma</Text>
+      visible={modalVisible}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setModalVisible(false)}
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <ScrollView>
+            <Text style={styles.modalTitle}>Nueva Alarma</Text>
+
+            {/* Selector de Hora */}
+            <TouchableOpacity
+              style={styles.timeSelector}
+              onPress={() => setShowTimePicker(true)}
+            >
+              <Text style={styles.timeText}>
+                {formatTime(newAlarm.time)}
+              </Text>
+            </TouchableOpacity>
+
+            {showTimePicker && (
+              <DateTimePicker
+                value={newAlarm.time}
+                mode="time"
+                is24Hour={false}
+                display="spinner"
+                onChange={handleTimeChange}
+              />
+            )}
+
+            {/* Selector de Días */}
+            <View style={styles.daysContainer}>
+              <Text style={styles.sectionTitle}>Repetir</Text>
+              <View style={styles.daysRow}>
+                {daysOfWeek.map(({ key, label }) => (
+                  <TouchableOpacity
+                    key={key}
+                    style={[
+                      styles.dayButton,
+                      newAlarm.repeatDays[key] && styles.dayButtonSelected
+                    ]}
+                    onPress={() => toggleDay(key)}
+                  >
+                    <Text style={[
+                      styles.dayText,
+                      newAlarm.repeatDays[key] && styles.dayTextSelected
+                    ]}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Etiqueta */}
             <TextInput
               style={styles.input}
-              placeholder="Hora (ej: 08:00 AM)"
-              placeholderTextColor="#A3ADDB"
-              value={newAlarm.time}
-              onChangeText={(text) => setNewAlarm((prev) => ({ ...prev, time: text }))}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Etiqueta"
+              placeholder="Nombre de la alarma"
               placeholderTextColor="#A3ADDB"
               value={newAlarm.label}
-              onChangeText={(text) => setNewAlarm((prev) => ({ ...prev, label: text }))}
+              onChangeText={(text) => setNewAlarm(prev => ({ ...prev, label: text }))}
             />
+
+            {/* Categorías */}
+            <Text style={styles.sectionTitle}>Categoría</Text>
             <View style={styles.categoryContainer}>
               {categories.map((category) => (
                 <TouchableOpacity
@@ -244,14 +355,24 @@ const AlarmScreen = () => {
                     styles.categoryButton,
                     newAlarm.category === category && styles.selectedCategory,
                   ]}
-                  onPress={() => setNewAlarm((prev) => ({ ...prev, category }))}
+                  onPress={() => setNewAlarm(prev => ({ ...prev, category }))}
                 >
-                  <Text style={styles.categoryText}>{category}</Text>
+                  <Text style={[
+                    styles.categoryText,
+                    newAlarm.category === category && styles.selectedCategoryText
+                  ]}>
+                    {category}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
+
+            {/* Botones */}
             <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.modalButton} onPress={handleAddAlarm}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.saveButton]} 
+                onPress={handleAddAlarm}
+              >
                 <Text style={styles.modalButtonText}>Guardar</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -261,9 +382,10 @@ const AlarmScreen = () => {
                 <Text style={styles.modalButtonText}>Cancelar</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </ScrollView>
         </View>
-      </Modal>
+      </View>
+    </Modal>
     </View>
   );
 };
@@ -394,6 +516,75 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  timeSelector: {
+    backgroundColor: '#5127DB',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  timeText: {
+    color: '#FFFFFF',
+    fontSize: width / 12,
+    fontWeight: 'bold',
+  },
+  daysContainer: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: width / 25,
+    color: '#1D1B70',
+    marginBottom: 10,
+    fontWeight: 'bold',
+  },
+  daysRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  dayButton: {
+    width: width / 12,
+    height: width / 12,
+    borderRadius: width / 24,
+    borderWidth: 1,
+    borderColor: '#5127DB',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  dayButtonSelected: {
+    backgroundColor: '#5127DB',
+  },
+  dayText: {
+    color: '#5127DB',
+    fontSize: width / 32,
+    fontWeight: 'bold',
+  },
+  dayTextSelected: {
+    color: '#FFFFFF',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: width / 15,
+    width: '90%',
+    maxHeight: '80%',
+  },
+  saveButton: {
+    backgroundColor: '#5127DB',
+    flex: 1,
+    marginRight: 10,
+  },
+  cancelButton: {
+    backgroundColor: '#A3ADDB',
+    flex: 1,
+    marginLeft: 10,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
   },
 });
 

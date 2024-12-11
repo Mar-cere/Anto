@@ -20,13 +20,33 @@ router.get('/', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, async (req, res) => {
   console.log('[POST Alarmas] Solicitud recibida. Datos:', req.body);
   try {
-    const newAlarm = new Alarm({ ...req.body, userId: req.user.id });
+    // Validar el formato de la hora antes de crear la alarma
+    const timeRegex = /^(0?[1-9]|1[0-2]):[0-5][0-9]\s*(AM|PM)$/i;
+    if (!timeRegex.test(req.body.time)) {
+      console.log('[POST Alarmas] Formato de hora inválido:', req.body.time);
+      return res.status(400).json({ 
+        message: 'Formato de hora inválido. Use formato 12h (ejemplo: 8:00 AM)' 
+      });
+    }
+
+    // Normalizar el formato de la hora
+    const normalizedTime = req.body.time.replace(/\s+/g, ' ').toUpperCase();
+
+    const newAlarm = new Alarm({
+      ...req.body,
+      userId: req.user.id,
+      time: normalizedTime
+    });
+
     const savedAlarm = await newAlarm.save();
     console.log('[POST Alarmas] Alarma guardada:', savedAlarm);
     res.status(201).json(savedAlarm);
   } catch (error) {
-    console.error('[POST Alarmas] Error al guardar alarma:', error.message);
-    res.status(500).json({ message: 'Error al guardar alarma.', error: error.message });
+    console.error('[POST Alarmas] Error al guardar alarma:', error);
+    res.status(500).json({ 
+      message: 'Error al guardar alarma.', 
+      error: error.message 
+    });
   }
 });
 

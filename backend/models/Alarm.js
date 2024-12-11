@@ -11,7 +11,7 @@ const AlarmSchema = new mongoose.Schema({
     required: true,
     validate: {
       validator: function(v) {
-        return /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i.test(v);
+        return /^(0?[1-9]|1[0-2]):[0-5][0-9]\s*(AM|PM)$/i.test(v);
       },
       message: props => `${props.value} no es un formato de hora válido!`
     }
@@ -25,6 +25,15 @@ const AlarmSchema = new mongoose.Schema({
     type: String,
     enum: ['Medicamentos', 'Pausas', 'Hábitos', 'Citas', 'General'],
     default: 'General',
+  },
+  repeatDays: {
+    monday: { type: Boolean, default: false },
+    tuesday: { type: Boolean, default: false },
+    wednesday: { type: Boolean, default: false },
+    thursday: { type: Boolean, default: false },
+    friday: { type: Boolean, default: false },
+    saturday: { type: Boolean, default: false },
+    sunday: { type: Boolean, default: false },
   },
   active: {
     type: Boolean,
