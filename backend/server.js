@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const userRoutes = require('./routes/userRoutes'); // Rutas de usuarios
 const emotionRoutes = require('./routes/emotionRoutes'); // Rutas de emociones
+const alarmRoutes = require('./routes/alarmRoutes');
 
 dotenv.config();
 
@@ -38,6 +39,11 @@ app.use('/api/emotions', (req, res, next) => {
   console.log(`[Rutas] Accediendo a /api/emotions con método ${req.method}`);
   next();
 }, emotionRoutes);
+
+app.use('/api/alarms', (req, res, next) => {
+  console.log(`[Rutas] Accediendo a /api/alarms con método ${req.method}`);
+  next();
+}, alarmRoutes);
 
 // Manejo de errores 404
 app.use((req, res) => {
