@@ -9,6 +9,7 @@ import {
   ScrollView,
   Animated,
   Vibration,
+  Switch,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { GestureHandlerRootView, PanGestureHandler, State } from 'react-native-gesture-handler';
@@ -34,17 +35,7 @@ const DashboardScreen = ({ navigation }) => {
   const [drawerVisible, setDrawerVisible] = useState(false); // Estado para la barra lateral
   const emotionScale = useState(new Animated.Value(1))[0];
 
-  const [tasks, setTasks] = useState([
-    { id: 1, text: 'Completar ejercicio diario', done: false },
-    { id: 2, text: 'Escribir en el diario', done: false },
-  ]);
-
-  const phrases = [
-    "Hoy es un gran día para brillar.",
-    "Recuerda, eres más fuerte de lo que crees.",
-    "Pequeños pasos llevan a grandes logros.",
-    "Respira profundo, estás haciendo un buen trabajo.",
-  ];
+  const [tasks, setTasks] = useState([]);
 
   const emotions = [
     { id: 1, emoji: '😊', label: 'Feliz' },
@@ -52,11 +43,6 @@ const DashboardScreen = ({ navigation }) => {
     { id: 3, emoji: '😠', label: 'Enojado' },
     { id: 4, emoji: '😨', label: 'Ansioso' },
     { id: 5, emoji: '😌', label: 'Relajado' },
-  ];
-
-  const alarms = [
-    { id: 1, time: '08:00 AM', label: 'Tomar Medicamento' },
-    { id: 2, time: '05:00 PM', label: 'Ejercicio Diario' },
   ];
 
   const notifications = [
@@ -191,7 +177,88 @@ const DashboardScreen = ({ navigation }) => {
   
     fetchUserNameFromServer();
   }, []);
-  
+
+  const formatTime = (time) => {
+    return time.toUpperCase();
+  };
+
+  const getDaysText = (repeatDays) => {
+    if (!repeatDays) return '';
+    
+    const days = {
+      monday: 'L',
+      tuesday: 'M',
+      wednesday: 'X',
+      thursday: 'J',
+      friday: 'V',
+      saturday: 'S',
+      sunday: 'D'
+    };
+
+    const selectedDays = Object.entries(repeatDays)
+      .filter(([_, isSelected]) => isSelected)
+      .map(([day, _]) => days[day]);
+
+    if (selectedDays.length === 0) return 'Una vez';
+    if (selectedDays.length === 7) return 'Todos los días';
+    return selectedDays.join(' · ');
+  };
+
+  const [alarms, setAlarms] = useState([]);
+
+  useEffect(() => {
+    const fetchAlarms = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        const response = await fetch('http://localhost:5001/api/alarms', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Error al cargar las alarmas');
+        }
+
+        const data = await response.json();
+        setAlarms(data);
+      } catch (error) {
+        console.error('Error al cargar las alarmas:', error);
+      }
+    };
+
+    fetchAlarms();
+  }, []);
+
+  const toggleAlarm = async (id) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const alarm = alarms.find(a => a._id === id);
+      
+      const response = await fetch(`http://localhost:5001/api/alarms/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ...alarm,
+          active: !alarm.active
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al actualizar la alarma');
+      }
+
+      const updatedAlarm = await response.json();
+      setAlarms(prev => prev.map(a => a._id === id ? updatedAlarm : a));
+    } catch (error) {
+      console.error('Error al actualizar la alarma:', error);
+    }
+  };
+
   useEffect(() => {
     const pickRandomPhrase = () => {
       const randomIndex = Math.floor(Math.random() * motivationalPhrases.length);
@@ -200,6 +267,39 @@ const DashboardScreen = ({ navigation }) => {
   
     pickRandomPhrase();
   }, []);
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        const response = await fetch('http://localhost:5001/api/tasks', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+        });
+  
+        if (!response.ok) {
+          throw new Error('Error al cargar las tareas');
+        }
+  
+        const data = await response.json();
+        setTasks(data);
+      } catch (error) {
+        console.error('Error al cargar las tareas:', error);
+      }
+    };
+  
+    fetchTasks();
+  }, []);
+
+  const formatDate = (date) => {
+    const d = new Date(date);
+    return d.toLocaleDateString('es-ES', { 
+      day: '2-digit',
+      month: 'short'
+    });
+  };
   
 
     return (
@@ -264,67 +364,108 @@ const DashboardScreen = ({ navigation }) => {
 
         {/* Contenido restante */}
         <Card title="¿Cómo te sientes hoy?" onPress={() => {}}>
-  <View style={styles.emotionContainer}>
-    {emotions.map((emotion) => (
-      <TouchableOpacity
-        key={emotion.id}
-        onPress={() => handleEmotionSelect(emotion)} // Llamar a la función
-      >
-        <Animated.View
-          style={[
-            styles.emojiButton,
-            selectedEmotion?.id === emotion.id && styles.selectedEmojiButton,
-            selectedEmotion?.id === emotion.id && {
-              transform: [{ scale: emotionScale }],
-            },
-          ]}
-        >
-          <Text style={styles.emoji}>{emotion.emoji}</Text>
-        </Animated.View>
-      </TouchableOpacity>
-    ))}
-  </View>
-</Card>
-
+          <View style={styles.emotionContainer}>
+            {emotions.map((emotion) => (
+              <TouchableOpacity
+                key={emotion.id}
+                onPress={() => handleEmotionSelect(emotion)} // Llamar a la función
+              >
+                <Animated.View
+                  style={[
+                    styles.emojiButton,
+                    selectedEmotion?.id === emotion.id && styles.selectedEmojiButton,
+                    selectedEmotion?.id === emotion.id && {
+                      transform: [{ scale: emotionScale }],
+                    },
+                  ]}
+                >
+                  <Text style={styles.emoji}>{emotion.emoji}</Text>
+                </Animated.View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Card>
 
         {/* Alarmas */}
-        <Card title="Mis Alarmas" onPress={() => navigation.navigate('Alarms')}>
-          {alarms.map((alarm) => (
-            <Text key={alarm.id} style={styles.cardSubtitle}>
-              {alarm.time} - {alarm.label}
-            </Text>
-          ))}
+        <Card title="Próximas Alarmas" onPress={() => navigation.navigate('Alarms')}>
+          {alarms.length > 0 ? (
+            alarms.slice(0, 2).map((alarm) => (
+              <View key={alarm._id} style={styles.alarmItem}>
+                <View style={styles.alarmTimeContainer}>
+                  <Text style={styles.alarmTime}>{formatTime(alarm.time)}</Text>
+                </View>
+                <View style={styles.alarmInfoContainer}>
+                  <View>
+                    <Text style={styles.alarmLabel}>{alarm.label}</Text>
+                  </View>
+                  <Switch
+                    value={alarm.active}
+                    onValueChange={() => toggleAlarm(alarm._id)}
+                    trackColor={{ false: '#767577', true: '#5127DB' }}
+                    thumbColor={alarm.active ? '#FFFFFF' : '#f4f3f4'}
+                  />
+                </View>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.noAlarmsText}>No hay alarmas configuradas</Text>
+          )}
+          {alarms.length > 2 && (
+            <TouchableOpacity 
+              style={styles.viewMoreButton}
+              onPress={() => navigation.navigate('Alarms')}
+            >
+              <Text style={styles.viewMoreText}>Ver más alarmas</Text>
+            </TouchableOpacity>
+          )}
         </Card>
 
         {/* Lista de Tareas */}
-        <Card title="Lista de Tareas" onPress={() => navigation.navigate('Tasks')}>
-          {tasks.map((task) => (
-            <View key={task.id} style={styles.taskItem}>
-              <TouchableOpacity
-                onPress={() =>
-                  setTasks((prev) =>
-                    prev.map((t) =>
-                      t.id === task.id ? { ...t, done: !t.done } : t
-                    )
-                  )
-                }
-              >
-                <Icon
-                  name={task.done ? 'checkbox-marked' : 'checkbox-blank-outline'}
-                  size={20}
-                  color={task.done ? '#5127DB' : '#A3ADDB'}
-                />
-              </TouchableOpacity>
-              <Text
-                style={[
-                  styles.taskText,
-                  task.done && styles.taskTextDone,
-                ]}
-              >
-                {task.text}
-              </Text>
+        <Card title="Tareas Pendientes" onPress={() => navigation.navigate('Tasks')}>
+          {tasks.length > 0 ? (
+            tasks
+              .filter(task => !task.completed)
+              .slice(0, 3)
+              .map((task) => (
+                <View key={task._id} style={styles.taskItem}>
+                  <View style={styles.taskHeader}>
+                    <View style={styles.taskMainInfo}>
+                      <Text style={styles.taskTitle} numberOfLines={1}>
+                        {task.title}
+                      </Text>
+                      <Text style={styles.taskDate}>
+                        {formatDate(task.dueDate)}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.taskFooter}>
+                    <View style={styles.categoryBadge}>
+                      <Text style={styles.categoryText}>{task.category}</Text>
+                    </View>
+                    {task.subtasks.length > 0 && (
+                      <Text style={styles.subtasksCount}>
+                        {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length} subtareas
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              ))
+          ) : (
+            <View style={styles.emptyStateContainer}>
+              <Icon name="checkbox-marked-circle-outline" size={24} color="#A3ADDB" />
+              <Text style={styles.noTasksText}>No hay tareas pendientes</Text>
             </View>
-          ))}
+          )}
+          {tasks.filter(task => !task.completed).length > 3 && (
+            <TouchableOpacity 
+              style={styles.viewMoreButton}
+              onPress={() => navigation.navigate('Tasks')}
+            >
+              <Text style={styles.viewMoreText}>
+                Ver más tareas ({tasks.filter(task => !task.completed).length})
+              </Text>
+            </TouchableOpacity>
+          )}
         </Card>
 
         {/* Progreso de Hábitos */}
@@ -381,6 +522,7 @@ const DashboardScreen = ({ navigation }) => {
     </GestureHandlerRootView>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -550,6 +692,84 @@ const styles = StyleSheet.create({
     resizeMode: 'contain', // Asegura que la imagen se ajuste sin distorsión
     marginVertical: height / 350, // Espaciado vertical
   },
+  taskItem: {
+    backgroundColor: '#F0EFFF',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+  },
+  taskHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  taskMainInfo: {
+    flex: 1,
+    marginRight: 10,
+  },
+  taskTitle: {
+    fontSize: width / 30,
+    color: '#1D1B70',
+    fontWeight: '500',
+  },
+  taskDate: {
+    fontSize: width / 35,
+    color: '#5127DB',
+    marginTop: 2,
+  },
+  priorityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  priorityText: {
+    color: '#FFFFFF',
+    fontSize: width / 35,
+    fontWeight: '500',
+  },
+  taskFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  categoryBadge: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  categoryText: {
+    color: '#5127DB',
+    fontSize: width / 35,
+  },
+  subtasksCount: {
+    fontSize: width / 35,
+    color: '#A3ADDB',
+  },
+  emptyStateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 15,
+    gap: 8,
+  },
+  noTasksText: {
+    color: '#A3ADDB',
+    fontSize: width / 32,
+  },
+  viewMoreButton: {
+    alignItems: 'center',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E8E8E8',
+    marginTop: 8,
+  },
+  viewMoreText: {
+    color: '#5127DB',
+    fontSize: width / 30,
+    fontWeight: '500',
+  },
   floatingBar: {
     position: 'absolute',
     bottom: height / 40,
@@ -567,6 +787,64 @@ const styles = StyleSheet.create({
   floatingButton: {
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  alarmItem: {
+    backgroundColor: '#F0EFFF',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+  },
+  alarmTimeContainer: {
+    marginBottom: 4,
+  },
+  alarmTime: {
+    fontSize: width / 25,
+    fontWeight: 'bold',
+    color: '#1D1B70',
+  },
+  alarmRepeat: {
+    fontSize: width / 35,
+    color: '#5127DB',
+    marginTop: 2,
+  },
+  alarmInfoContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  alarmLabel: {
+    fontSize: width / 30,
+    color: '#1D1B70',
+    marginBottom: 4,
+  },
+  categoryBadge: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  categoryText: {
+    color: '#5127DB',
+    fontSize: width / 35,
+  },
+  noAlarmsText: {
+    color: '#A3ADDB',
+    textAlign: 'center',
+    padding: 10,
+  },
+  viewMoreButton: {
+    alignItems: 'center',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E8E8E8',
+    marginTop: 8,
+  },
+  viewMoreText: {
+    color: '#5127DB',
+    fontSize: width / 30,
+    fontWeight: '500',
   },
 });
 
