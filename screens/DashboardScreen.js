@@ -81,6 +81,53 @@ const DashboardScreen = ({ navigation }) => {
     }
   };
 
+  const toggleTaskCompletion = async (taskId) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const task = tasks.find(t => t._id === taskId);
+      
+      // Animación al marcar/desmarcar
+      Animated.sequence([
+        Animated.timing(emotionScale, {
+          toValue: 0.9,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(emotionScale, {
+          toValue: 1,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      const response = await fetch(`http://localhost:5001/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ...task,
+          completed: !task.completed
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Error al actualizar la tarea');
+      }
+  
+      // Actualizar el estado local
+      setTasks(prev => 
+        prev.map(t => t._id === taskId ? { ...t, completed: !t.completed } : t)
+      );
+
+      // Vibración sutil al completar
+      Vibration.vibrate(50);
+    } catch (error) {
+      console.error('Error al actualizar tarea:', error);
+    }
+  };
+
   const toggleDrawer = () => {
     const toValue = drawerVisible ? width : 0; // Posición fuera o dentro de la pantalla
     Animated.timing(drawerAnimation, {
@@ -284,7 +331,9 @@ const DashboardScreen = ({ navigation }) => {
         }
   
         const data = await response.json();
-        setTasks(data);
+        // Ordenar tareas por fecha de vencimiento
+        const sortedTasks = data.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+        setTasks(sortedTasks);
       } catch (error) {
         console.error('Error al cargar las tareas:', error);
       }
@@ -422,51 +471,44 @@ const DashboardScreen = ({ navigation }) => {
 
         {/* Lista de Tareas */}
         <Card title="Tareas Pendientes" onPress={() => navigation.navigate('Tasks')}>
-          {tasks.length > 0 ? (
-            tasks
-              .filter(task => !task.completed)
-              .slice(0, 3)
-              .map((task) => (
-                <View key={task._id} style={styles.taskItem}>
-                  <View style={styles.taskHeader}>
-                    <View style={styles.taskMainInfo}>
-                      <Text style={styles.taskTitle} numberOfLines={1}>
-                        {task.title}
-                      </Text>
-                      <Text style={styles.taskDate}>
-                        {formatDate(task.dueDate)}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.taskFooter}>
-                    <View style={styles.categoryBadge}>
-                      <Text style={styles.categoryText}>{task.category}</Text>
-                    </View>
-                    {task.subtasks.length > 0 && (
-                      <Text style={styles.subtasksCount}>
-                        {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length} subtareas
-                      </Text>
-                    )}
-                  </View>
-                </View>
-              ))
-          ) : (
-            <View style={styles.emptyStateContainer}>
-              <Icon name="checkbox-marked-circle-outline" size={24} color="#A3ADDB" />
-              <Text style={styles.noTasksText}>No hay tareas pendientes</Text>
-            </View>
-          )}
-          {tasks.filter(task => !task.completed).length > 3 && (
-            <TouchableOpacity 
-              style={styles.viewMoreButton}
-              onPress={() => navigation.navigate('Tasks')}
-            >
-              <Text style={styles.viewMoreText}>
-                Ver más tareas ({tasks.filter(task => !task.completed).length})
-              </Text>
-            </TouchableOpacity>
-          )}
-        </Card>
+  {tasks.filter(task => !task.completed).length > 0 ? (
+    tasks
+      .filter(task => !task.completed)
+      .slice(0, 3)
+      .map((task) => (
+        <View key={task._id} style={styles.taskItem}>
+          <TouchableOpacity 
+            style={styles.taskCheckbox}
+            onPress={() => toggleTaskCompletion(task._id)}
+          >
+            <Icon 
+              name={task.completed ? "checkbox-marked" : "checkbox-blank-outline"} 
+              size={24} 
+              color="#5127DB" 
+            />
+          </TouchableOpacity>
+          <Text style={styles.taskTitle} numberOfLines={1}>
+            {task.title}
+          </Text>
+        </View>
+      ))
+  ) : (
+    <View style={styles.emptyStateContainer}>
+      <Icon name="check-circle-outline" size={24} color="#A3ADDB" />
+      <Text style={styles.noTasksText}>¡Todo al día! No hay tareas pendientes</Text>
+    </View>
+  )}
+  {tasks.filter(task => !task.completed).length > 3 && (
+    <TouchableOpacity 
+      style={styles.viewMoreButton}
+      onPress={() => navigation.navigate('Tasks')}
+    >
+      <Text style={styles.viewMoreText}>
+        Ver más tareas ({tasks.filter(task => !task.completed).length - 3})
+      </Text>
+    </TouchableOpacity>
+  )}
+</Card>
 
         {/* Progreso de Hábitos */}
         <Card title="Progreso de Hábitos" onPress={() => navigation.navigate('Habits')}>
@@ -570,16 +612,18 @@ const styles = StyleSheet.create({
   taskItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: height / 100
+    backgroundColor: '#F0EFFF',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
   },
-  taskText: {
-    fontSize: width / 30,
+  taskCheckbox: {
+    marginRight: 12,
+  },
+  taskTitle: {
+    flex: 1,
+    fontSize: width / 28,
     color: '#1D1B70',
-    marginLeft: 10
-  },
-  taskTextDone: {
-    textDecorationLine: 'line-through',
-    color: '#A3ADDB'
   },
   emotionContainer: {
     flexDirection: 'row',
@@ -691,61 +735,6 @@ const styles = StyleSheet.create({
     height: width / 10, // Asegura proporción cuadrada
     resizeMode: 'contain', // Asegura que la imagen se ajuste sin distorsión
     marginVertical: height / 350, // Espaciado vertical
-  },
-  taskItem: {
-    backgroundColor: '#F0EFFF',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 8,
-  },
-  taskHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  taskMainInfo: {
-    flex: 1,
-    marginRight: 10,
-  },
-  taskTitle: {
-    fontSize: width / 30,
-    color: '#1D1B70',
-    fontWeight: '500',
-  },
-  taskDate: {
-    fontSize: width / 35,
-    color: '#5127DB',
-    marginTop: 2,
-  },
-  priorityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  priorityText: {
-    color: '#FFFFFF',
-    fontSize: width / 35,
-    fontWeight: '500',
-  },
-  taskFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  categoryBadge: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  categoryText: {
-    color: '#5127DB',
-    fontSize: width / 35,
-  },
-  subtasksCount: {
-    fontSize: width / 35,
-    color: '#A3ADDB',
   },
   emptyStateContainer: {
     flexDirection: 'row',
