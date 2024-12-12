@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,43 +7,60 @@ import {
   TextInput,
   TouchableOpacity,
   Modal,
-  Alert,
   Dimensions,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
-const JournalScreen = ({ navigation }) => {
-  const [entries, setEntries] = useState([
-    {
-      id: '1',
-      title: 'Día de reflexión',
-      content: 'Hoy pensé mucho sobre mi futuro y mis metas...',
-      date: '25/11/2024',
-      category: 'Reflexión',
-    },
-    {
-      id: '2',
-      title: 'Logro importante',
-      content: 'Hoy logré completar un gran proyecto en el trabajo.',
-      date: '24/11/2024',
-      category: 'Meta',
-    },
-  ]);
-
+const JournalScreen = () => {
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
-  const [filteredEntries, setFilteredEntries] = useState(entries);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [newEntry, setNewEntry] = useState({
-    title: '',
-    content: '',
-    category: '',
+    mood: '',
+    thoughts: '',
+    gratitude: '',
+    improvements: '',
+    activities: [],
+    tags: []
   });
 
   const categories = ['Reflexión', 'Meta', 'Día Duro', 'Otro'];
+  const [filteredEntries, setFilteredEntries] = useState([]);
 
+  useEffect(() => {
+    fetchEntries();
+  }, []);
+
+  const fetchEntries = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch('http://localhost:5001/api/journals', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al cargar las entradas');
+      }
+
+      const data = await response.json();
+      setEntries(data);
+    } catch (error) {
+      console.error('Error:', error);
+      Alert.alert('Error', 'No se pudieron cargar las entradas del diario');
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleSearch = (text) => {
     setSearchText(text);
     if (text.trim() === '') {
@@ -57,27 +74,46 @@ const JournalScreen = ({ navigation }) => {
     }
   };
 
-  const handleAddEntry = () => {
-    if (!newEntry.title.trim() || !newEntry.content.trim() || !newEntry.category.trim()) {
-      Alert.alert('Error', 'Por favor completa todos los campos.');
+  const handleAddEntry = async () => {
+    if (!newEntry.thoughts.trim() || !newEntry.mood) {
+      Alert.alert('Error', 'Por favor completa al menos el estado de ánimo y los pensamientos');
       return;
     }
 
-    const newId = (entries.length + 1).toString();
-    const date = new Date().toLocaleDateString();
-    setEntries([
-      ...entries,
-      { id: newId, ...newEntry, date },
-    ]);
-    setNewEntry({ title: '', content: '', category: '' });
-    setFilteredEntries([
-      ...entries,
-      { id: newId, ...newEntry, date },
-    ]);
-    setModalVisible(false);
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch('http://localhost:5001/api/journals', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newEntry),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al crear la entrada');
+      }
+
+      const savedEntry = await response.json();
+      setEntries(prevEntries => [savedEntry, ...prevEntries]);
+      setNewEntry({
+        mood: '',
+        thoughts: '',
+        gratitude: '',
+        improvements: '',
+        activities: [],
+        tags: []
+      });
+      setModalVisible(false);
+      Alert.alert('¡Éxito!', 'Entrada creada correctamente');
+    } catch (error) {
+      console.error('Error:', error);
+      Alert.alert('Error', 'No se pudo crear la entrada');
+    }
   };
 
-  const handleDeleteEntry = (id) => {
+  const handleDeleteEntry = async (id) => {
     Alert.alert(
       'Eliminar Entrada',
       '¿Estás seguro de que deseas eliminar esta entrada?',
@@ -86,16 +122,40 @@ const JournalScreen = ({ navigation }) => {
         {
           text: 'Eliminar',
           style: 'destructive',
-          onPress: () => {
-            const updatedEntries = entries.filter((entry) => entry.id !== id);
-            setEntries(updatedEntries);
-            setFilteredEntries(updatedEntries);
-            if (selectedEntry?.id === id) setSelectedEntry(null);
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem('userToken');
+              const response = await fetch(`http://localhost:5001/api/journals/${id}`, {
+                method: 'DELETE',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                },
+              });
+
+              if (!response.ok) {
+                throw new Error('Error al eliminar la entrada');
+              }
+
+              setEntries(prevEntries => prevEntries.filter(entry => entry._id !== id));
+              setSelectedEntry(null);
+            } catch (error) {
+              console.error('Error:', error);
+              Alert.alert('Error', 'No se pudo eliminar la entrada');
+            }
           },
         },
       ]
     );
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#5127DB" />
+      </View>
+    );
+  }
 
   const renderEntryItem = ({ item }) => (
     <TouchableOpacity
