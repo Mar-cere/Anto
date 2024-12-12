@@ -45,16 +45,10 @@ const DashboardScreen = ({ navigation }) => {
     { id: 5, emoji: '😌', label: 'Relajado' },
   ];
 
-  const notifications = [
-    { id: '1', text: '¡Nueva entrada en el diario disponible!' },
-    { id: '2', text: 'Recuerda tu cita con el psicólogo mañana.' },
-    { id: '3', text: 'Ejercicio diario completado, ¡sigue así!' },
-  ];
+  const [notifications, setNotifications] = useState([]);
 
-  const habitProgress = [
-    { habit: 'Ejercicio Diario', value: 70 },
-    { habit: 'Relajación', value: 50 },
-  ];
+
+  const [habits, setHabits] = useState([]);
 
   const [drawerAnimation] = useState(new Animated.Value(width)); 
 
@@ -196,9 +190,7 @@ const DashboardScreen = ({ navigation }) => {
       console.error('[handleEmotionSelect] Error al registrar el estado emocional:', error.message);
     }
   };
-  
-  
-  
+
   useEffect(() => {
     const fetchUserNameFromServer = async () => {
       try {
@@ -223,6 +215,31 @@ const DashboardScreen = ({ navigation }) => {
     };
   
     fetchUserNameFromServer();
+  }, []);
+
+  useEffect(() => {
+    const fetchHabits = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        const response = await fetch('http://localhost:5001/api/habits', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+        });
+  
+        if (!response.ok) {
+          throw new Error('Error al cargar los hábitos');
+        }
+  
+        const data = await response.json();
+        setHabits(data);
+      } catch (error) {
+        console.error('Error al cargar los hábitos:', error);
+      }
+    };
+  
+    fetchHabits();
   }, []);
 
   const formatTime = (time) => {
@@ -315,6 +332,14 @@ const DashboardScreen = ({ navigation }) => {
     pickRandomPhrase();
   }, []);
 
+  const getAverageProgress = (habit, period = 'weekly') => {
+    const progress = period === 'weekly' ? habit.weeklyProgress : habit.monthlyProgress;
+    if (!progress || progress.length === 0) return 0;
+    
+    const sum = progress.reduce((acc, curr) => acc + curr.value, 0);
+    return Math.round(sum / progress.length);
+  };
+
   useEffect(() => {
     const fetchTasks = async () => {
       try {
@@ -341,6 +366,67 @@ const DashboardScreen = ({ navigation }) => {
   
     fetchTasks();
   }, []);
+
+  const markNotificationAsRead = async (id) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`http://localhost:5001/api/notifications/${id}/read`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+      });
+  
+      if (!response.ok) {
+        throw new Error('Error al marcar la notificación');
+      }
+  
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif._id === id ? { ...notif, isRead: true } : notif
+        )
+      );
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        const response = await fetch('http://localhost:5001/api/notifications', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+        });
+  
+        if (!response.ok) {
+          throw new Error('Error al cargar las notificaciones');
+        }
+  
+        const data = await response.json();
+        setNotifications(data);
+      } catch (error) {
+        console.error('Error al cargar las notificaciones:', error);
+      }
+    };
+  
+    fetchNotifications();
+  }, []);
+  
+  // Función para obtener el icono según el tipo de notificación
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'alarm': return 'alarm';
+      case 'task': return 'checkbox-marked-circle-outline';
+      case 'habit': return 'star-circle-outline';
+      default: return 'bell-outline';
+    }
+  };
+  
 
   const formatDate = (date) => {
     const d = new Date(date);
@@ -512,28 +598,82 @@ const DashboardScreen = ({ navigation }) => {
 
         {/* Progreso de Hábitos */}
         <Card title="Progreso de Hábitos" onPress={() => navigation.navigate('Habits')}>
-          {habitProgress.map((habit, index) => (
-            <View key={index} style={styles.habitProgress}>
-              <Text style={styles.cardSubtitle}>{habit.habit}</Text>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: `${habit.value}%` }]} />
-              </View>
-            </View>
-          ))}
-        </Card>
+  {habits.length > 0 ? (
+    habits.slice(0, 2).map((habit) => (
+      <View key={habit._id} style={styles.habitProgress}>
+        <View style={styles.habitHeader}>
+          <Text style={styles.cardSubtitle}>{habit.name}</Text>
+        </View>
+        <View style={styles.progressBar}>
+          <View 
+            style={[
+              styles.progressFill, 
+              { 
+                width: `${getAverageProgress(habit, 'weekly')}%`,
+                backgroundColor: "#5127DB",
+              }
+            ]} 
+          />
+        </View>
+      </View>
+    ))
+  ) : (
+    <Text style={styles.noHabitsText}>No hay hábitos registrados</Text>
+  )}
+  {habits.length > 2 && (
+    <TouchableOpacity 
+      style={styles.viewMoreButton}
+      onPress={() => navigation.navigate('Habits')}
+    >
+      <Text style={styles.viewMoreText}>Ver más hábitos</Text>
+    </TouchableOpacity>
+  )}
+</Card>
 
       {/* Notificaciones */}
-      <Card
-          title="Notificaciones Recientes"
-          onPress={() => navigation.navigate('Notifications')}
+      <Card title="Notificaciones">
+  {notifications.length > 0 ? (
+    notifications
+      .filter(notif => !notif.isRead)
+      .slice(0, 3)
+      .map((notification) => (
+        <TouchableOpacity 
+          key={notification._id}
+          style={styles.notificationItem}
+          onPress={() => markNotificationAsRead(notification._id)}
         >
-          {notifications.map((notification) => (
-            <View key={notification.id} style={styles.notificationItem}>
-              <Icon name="bell" size={width / 20} color="#1D1B70" />
-              <Text style={styles.notificationText}>{notification.text}</Text>
-            </View>
-          ))}
-        </Card>
+          <View style={styles.notificationIcon}>
+            <Icon 
+              name={getNotificationIcon(notification.type)} 
+              size={24} 
+              color="#5127DB" 
+            />
+          </View>
+          <View style={styles.notificationContent}>
+            <Text style={styles.notificationTitle}>{notification.title}</Text>
+            <Text style={styles.notificationMessage} numberOfLines={1}>
+              {notification.message}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      ))
+  ) : (
+    <View style={styles.emptyStateContainer}>
+      <Icon name="bell-off-outline" size={24} color="#A3ADDB" />
+      <Text style={styles.noNotificationsText}>No hay notificaciones pendientes</Text>
+    </View>
+  )}
+  {notifications.filter(n => !n.isRead).length > 3 && (
+    <TouchableOpacity 
+      style={styles.viewMoreButton}
+      onPress={() => navigation.navigate('Notifications')}
+    >
+      <Text style={styles.viewMoreText}>
+        Ver más notificaciones ({notifications.filter(n => !n.isRead).length - 3})
+      </Text>
+    </TouchableOpacity>
+  )}
+</Card>
       </ScrollView>
 
       {/* Barra Flotante */}
@@ -834,6 +974,77 @@ const styles = StyleSheet.create({
     color: '#5127DB',
     fontSize: width / 30,
     fontWeight: '500',
+  },
+  habitProgress: {
+    marginBottom: height / 50,
+  },
+  habitHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressBar: {
+    width: '100%',
+    height: 8,
+    backgroundColor: '#A3ADDB',
+    borderRadius: 5,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 5,
+  },
+  noHabitsText: {
+    color: '#A3ADDB',
+    textAlign: 'center',
+    padding: 10,
+  },
+  viewMoreButton: {
+    alignItems: 'center',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E8E8E8',
+    marginTop: 8,
+  },
+  viewMoreText: {
+    color: '#5127DB',
+    fontSize: width / 30,
+    fontWeight: '500',
+  },
+  notificationItem: {
+    flexDirection: 'row',
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#F0EFFF',
+    marginBottom: 8,
+    alignItems: 'center',
+  },
+  notificationIcon: {
+    marginRight: 12,
+  },
+  notificationContent: {
+    flex: 1,
+  },
+  notificationTitle: {
+    fontSize: width / 28,
+    color: '#1D1B70',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  notificationMessage: {
+    fontSize: width / 32,
+    color: '#5127DB',
+  },
+  emptyStateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 15,
+    gap: 8,
+  },
+  noNotificationsText: {
+    color: '#A3ADDB',
+    fontSize: width / 32,
   },
 });
 

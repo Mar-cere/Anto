@@ -6,6 +6,7 @@ const emotionRoutes = require('./routes/emotionRoutes'); // Rutas de emociones
 const alarmRoutes = require('./routes/alarmRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const habitRoutes = require('./routes/habitRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 dotenv.config();
 
 const app = express();
@@ -52,9 +53,14 @@ app.use('/api/tasks', (req, res, next) => {
 }, taskRoutes);
 
 app.use('/api/habits', (req, res, next) => {
-  console.log(`[Rutas] Accediendo a /api/habits con método ${req.method}`);
-  next();
+    console.log(`[Rutas] Accediendo a /api/habits con método ${req.method}`);
+    next();
 }, habitRoutes);
+
+app.use('/api/notifications', (req, res, next) => {
+    console.log(`[Rutas] Accediendo a /api/notifications con método ${req.method}`);
+    next();
+}, notificationRoutes);
 
 // Manejo de errores 404
 app.use((req, res) => {
