@@ -6,15 +6,32 @@ const JournalSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  date: {
-    type: Date,
+  title: {
+    type: String,
     required: true,
-    default: Date.now
+    trim: true,
+    maxlength: 200
+  },
+  content: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 5000
   },
   mood: {
     type: String,
     required: true,
     enum: ['Excelente', 'Bien', 'Normal', 'Mal', 'Terrible']
+  },
+  category: {
+    type: String,
+    required: true,
+    enum: ['Reflexión', 'Meta', 'Día Duro', 'Otro']
+  },
+  date: {
+    type: Date,
+    required: true,
+    default: Date.now
   },
   activities: [{
     type: String,
@@ -24,11 +41,6 @@ const JournalSchema = new mongoose.Schema({
     type: String,
     trim: true,
     maxlength: 1000
-  },
-  thoughts: {
-    type: String,
-    trim: true,
-    maxlength: 2000
   },
   improvements: {
     type: String,
@@ -54,6 +66,7 @@ const JournalSchema = new mongoose.Schema({
 // Índices para mejorar el rendimiento
 JournalSchema.index({ userId: 1, date: -1 });
 JournalSchema.index({ userId: 1, mood: 1 });
+JournalSchema.index({ userId: 1, category: 1 });
 JournalSchema.index({ userId: 1, tags: 1 });
 
 const Journal = mongoose.model('Journal', JournalSchema);
