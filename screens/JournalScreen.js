@@ -60,10 +60,11 @@ const JournalScreen = () => {
       }
 
       const data = await response.json();
+      console.log('Diarios recibidos:', data);
       setEntries(data);
       setFilteredEntries(data);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error al cargar diarios:', error);
       Alert.alert('Error', 'No se pudieron cargar las entradas del diario');
     } finally {
       setLoading(false);
@@ -168,9 +169,17 @@ const JournalScreen = () => {
       style={styles.entryItem}
       onPress={() => setSelectedEntry(item)}
     >
-      <Text style={styles.entryTitle}>{item.title}</Text>
-      <Text style={styles.entryDate}>{item.date}</Text>
-      <Text style={styles.entryCategory}>{item.category}</Text>
+      <View style={styles.entryHeader}>
+        <Text style={styles.entryTitle}>{item.title}</Text>
+        <Text style={styles.entryDate}>
+          {new Date(item.date).toLocaleDateString('es-ES')}
+        </Text>
+      </View>
+      <Text style={styles.entryMood}>Estado: {item.mood}</Text>
+      <Text style={styles.entryCategory}>Categoría: {item.category}</Text>
+      <Text style={styles.entryContent} numberOfLines={2}>
+        {item.content}
+      </Text>
     </TouchableOpacity>
   );
 
@@ -192,9 +201,13 @@ const JournalScreen = () => {
       <FlatList
         data={filteredEntries}
         renderItem={renderEntryItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item._id}
         contentContainerStyle={styles.entryList}
-        ListEmptyComponent={<Text style={styles.emptyListText}>No hay entradas.</Text>}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No hay entradas en el diario</Text>
+          </View>
+        }
       />
 
       {/* Botón Flotante para Añadir Entrada */}
@@ -355,23 +368,40 @@ const styles = StyleSheet.create({
     paddingBottom: height / 10,
   },
   entryItem: {
-    backgroundColor: '#CECFDB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 10,
-    padding: width / 25,
-    marginBottom: height / 50,
+    padding: 15,
+    marginBottom: 10,
+    elevation: 2,
+  },
+  entryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   entryTitle: {
-    fontSize: width / 22,
-    color: '#1D1B70',
+    fontSize: 18,
     fontWeight: 'bold',
+    color: '#1D1B70',
   },
   entryDate: {
-    fontSize: width / 28,
-    color: '#37657F',
+    fontSize: 14,
+    color: '#666',
+  },
+  entryMood: {
+    fontSize: 14,
+    color: '#5127DB',
+    marginBottom: 4,
   },
   entryCategory: {
-    fontSize: width / 30,
-    color: '#5127DB',
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  entryContent: {
+    fontSize: 14,
+    color: '#333',
   },
   addButton: {
     position: 'absolute',
@@ -467,11 +497,15 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: width / 28,
   },
-  emptyListText: {
-    textAlign: 'center',
-    color: '#A3ADDB',
-    fontSize: width / 30,
-    marginTop: height / 50,
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  emptyText: {
+    color: '#666',
+    fontSize: 16,
   },
   moodContainer: {
     flexDirection: 'row',

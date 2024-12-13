@@ -8,6 +8,7 @@ const taskRoutes = require('./routes/taskRoutes');
 const habitRoutes = require('./routes/habitRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const journalRoutes = require('./routes/journalRoutes');
+const timerRoutes = require('./routes/timerRoutes');
 dotenv.config();
 
 const app = express();
@@ -67,6 +68,11 @@ app.use('/api/journals', (req, res, next) => {
     console.log(`[Rutas] Accediendo a /api/journals con método ${req.method}`);
     next();
 }, journalRoutes);
+
+app.use('/api/timers', (req, res, next) => {
+    console.log(`[Rutas] Accediendo a /api/timers con método ${req.method}`);
+    next();
+}, timerRoutes);
 
 // Manejo de errores 404
 app.use((req, res) => {

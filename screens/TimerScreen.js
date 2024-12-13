@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -18,6 +19,9 @@ const TimerScreen = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [customTime, setCustomTime] = useState('');
+  const [timerName, setTimerName] = useState('');
+  const [timerType, setTimerType] = useState('pomodoro');
+  const [timerNotes, setTimerNotes] = useState('');
 
   useEffect(() => {
     let timer;
@@ -54,18 +58,124 @@ const TimerScreen = () => {
     Alert.alert('Modo Meditación', 'El temporizador se configuró en 10 minutos.');
   };
 
-  const handleCustomTimeSubmit = () => {
+  const handleCustomTimeSubmit = async () => {
     const minutes = parseInt(customTime, 10);
     if (isNaN(minutes) || minutes <= 0) {
       Alert.alert('Error', 'Por favor ingresa un tiempo válido en minutos.');
       return;
     }
-    setTime(minutes * 60);
-    setIsRunning(false);
-    setModalVisible(false);
-    Alert.alert('Tiempo Personalizado', `El temporizador se configuró en ${minutes} minutos.`);
-    setCustomTime('');
+
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      await fetch('http://localhost:5001/api/timers', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: timerName,
+          duration: minutes * 60,
+          type: timerType,
+          notes: timerNotes,
+          startTime: new Date()
+        })
+      });
+
+      setTime(minutes * 60);
+      setModalVisible(false);
+      setTimerName('');
+      setTimerNotes('');
+      setCustomTime('');
+      Alert.alert('Timer Configurado', `Timer configurado para ${minutes} minutos.`);
+    } catch (error) {
+      console.error('Error:', error);
+      Alert.alert('Error', 'No se pudo guardar la configuración del timer');
+    }
   };
+
+  const renderTimerModal = () => (
+    <Modal
+      visible={modalVisible}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setModalVisible(false)}
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Configurar Timer</Text>
+          
+          <TextInput
+            style={styles.input}
+            placeholder="Nombre del timer (opcional)"
+            placeholderTextColor="#A3ADDB"
+            value={timerName}
+            onChangeText={setTimerName}
+          />
+
+          <Text style={styles.modalSubtitle}>Tipo de Timer</Text>
+          <View style={styles.typeContainer}>
+            {['pomodoro', 'meditation', 'break', 'custom'].map((type) => (
+              <TouchableOpacity
+                key={type}
+                style={[
+                  styles.typeButton,
+                  timerType === type && styles.selectedType
+                ]}
+                onPress={() => setTimerType(type)}
+              >
+                <Text style={[
+                  styles.typeText,
+                  timerType === type && styles.selectedTypeText
+                ]}>
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Duración (minutos)"
+            placeholderTextColor="#A3ADDB"
+            keyboardType="numeric"
+            value={customTime}
+            onChangeText={setCustomTime}
+          />
+
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="Notas (opcional)"
+            placeholderTextColor="#A3ADDB"
+            multiline
+            numberOfLines={3}
+            value={timerNotes}
+            onChangeText={setTimerNotes}
+          />
+
+          <View style={styles.modalButtons}>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cancelButton]}
+              onPress={() => {
+                setModalVisible(false);
+                setTimerName('');
+                setTimerNotes('');
+                setCustomTime('');
+              }}
+            >
+              <Text style={styles.modalButtonText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={handleCustomTimeSubmit}
+            >
+              <Text style={styles.modalButtonText}>Guardar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
 
   return (
     <View style={styles.container}>
@@ -100,38 +210,7 @@ const TimerScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Modal para tiempo personalizado */}
-      <Modal
-        visible={modalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Configurar Tiempo Personalizado</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ingresa minutos"
-              placeholderTextColor="#A3ADDB"
-              keyboardType="numeric"
-              value={customTime}
-              onChangeText={setCustomTime}
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.modalButton} onPress={handleCustomTimeSubmit}>
-                <Text style={styles.modalButtonText}>Guardar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.modalButtonText}>Cancelar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {renderTimerModal()}
     </View>
   );
 };
@@ -236,6 +315,38 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     backgroundColor: '#A3ADDB',
+  },
+  typeContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  typeButton: {
+    backgroundColor: '#A3ADDB',
+    borderRadius: 10,
+    padding: 10,
+    marginVertical: 5,
+    width: '48%',
+  },
+  selectedType: {
+    backgroundColor: '#5127DB',
+  },
+  typeText: {
+    color: '#1D1B70',
+    textAlign: 'center',
+  },
+  selectedTypeText: {
+    color: '#FFFFFF',
+  },
+  textArea: {
+    height: 80,
+    textAlignVertical: 'top',
+  },
+  modalSubtitle: {
+    fontSize: width / 25,
+    color: '#1D1B70',
+    marginVertical: 10,
   },
 });
 
