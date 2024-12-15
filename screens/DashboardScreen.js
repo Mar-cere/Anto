@@ -7,6 +7,7 @@ import {
   Dimensions,
   TouchableOpacity,
   ScrollView,
+  PanResponder,
   Animated,
   Vibration,
   Switch,
@@ -46,7 +47,7 @@ const DashboardScreen = ({ navigation }) => {
   ];
 
   const [notifications, setNotifications] = useState([]);
-
+  
 
   const [habits, setHabits] = useState([]);
 
@@ -126,7 +127,7 @@ const DashboardScreen = ({ navigation }) => {
     const toValue = drawerVisible ? width : 0; // Posición fuera o dentro de la pantalla
     Animated.timing(drawerAnimation, {
       toValue,
-      duration: 500,
+      duration: 150,
       useNativeDriver: true,
     }).start(() => setDrawerVisible(!drawerVisible));
   };
@@ -778,10 +779,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
     top: 0,
-    width: width / 2,
+    width: width / 2.2,
     height: '100%',
     backgroundColor: '#CECFDB',
-    padding: width / 20,
+    padding: width / 30,
     zIndex: 10,
     shadowColor: '#000',
     shadowOffset: { width: -2, height: 2 },

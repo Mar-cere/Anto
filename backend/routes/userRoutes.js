@@ -112,20 +112,49 @@ router.post('/login', async (req, res) => {
 
 router.get('/me', authenticateToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).select('-password');
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
-    res.status(200).json({
-      id: user._id,
-      name: user.name,
-      email: user.email,
-    });
+    res.json(user);
   } catch (error) {
-    console.error('Error al obtener datos del usuario:', error.message);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error('Error:', error);
+    res.status(500).json({ message: 'Error del servidor' });
   }
 });
 
+// Actualizar perfil de usuario
+router.put('/profile', authenticateToken, async (req, res) => {
+  try {
+    const { name, email, phone } = req.body;
+
+    // Validaciones
+    if (!name || !email) {
+      return res.status(400).json({ message: 'Nombre y email son requeridos' });
+    }
+
+    // Verificar si el email ya existe
+    const existingUser = await User.findOne({ 
+      email, 
+      _id: { $ne: req.user.id } 
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ message: 'El email ya está en uso' });
+    }
+
+    // Actualizar usuario
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      { name, email, phone },
+      { new: true }
+    ).select('-password');
+
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ message: 'Error al actualizar el perfil' });
+  }
+});
 
 module.exports = router;

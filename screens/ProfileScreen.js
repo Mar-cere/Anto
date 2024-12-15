@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,28 +10,76 @@ import {
   Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
 const ProfileScreen = ({ navigation }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({
-    name: 'Usuario',
-    email: 'usuario@email.com',
-    phone: '123-456-7890',
-    bio: 'Aquí puedes escribir algo sobre ti...',
+    name: '',
+    email: '',
+    phone: '',
   });
 
   const [editedProfile, setEditedProfile] = useState({ ...profile });
 
-  const handleSave = () => {
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch('http://localhost:5001/api/users/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al obtener perfil');
+      }
+
+      const userData = await response.json();
+      setProfile(userData);
+      setEditedProfile(userData);
+    } catch (error) {
+      console.error('Error:', error);
+      Alert.alert('Error', 'No se pudo cargar la información del perfil');
+    }
+  };
+
+  const handleSave = async () => {
     if (!editedProfile.name.trim() || !editedProfile.email.trim()) {
       Alert.alert('Error', 'El nombre y el correo son obligatorios.');
       return;
     }
-    setProfile(editedProfile);
-    setIsEditing(false);
-    Alert.alert('Guardado', 'Tu información ha sido actualizada.');
+
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch('http://localhost:5001/api/users/profile', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(editedProfile)
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al actualizar perfil');
+      }
+
+      const updatedProfile = await response.json();
+      setProfile(updatedProfile);
+      setIsEditing(false);
+      Alert.alert('Éxito', 'Perfil actualizado correctamente');
+    } catch (error) {
+      console.error('Error:', error);
+      Alert.alert('Error', 'No se pudo actualizar el perfil');
+    }
   };
 
   return (
@@ -46,15 +94,6 @@ const ProfileScreen = ({ navigation }) => {
           >
             <Icon name="pencil" size={24} color="#FFFFFF" />
             <Text style={styles.editButtonText}>Editar</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Foto de Perfil */}
-      <View style={styles.profilePicContainer}>
-        {isEditing && (
-          <TouchableOpacity style={styles.editPicButton}>
-            <Icon name="camera" size={20} color="#FFFFFF" />
           </TouchableOpacity>
         )}
       </View>
@@ -108,23 +147,6 @@ const ProfileScreen = ({ navigation }) => {
             />
           ) : (
             <Text style={styles.infoText}>{profile.phone}</Text>
-          )}
-        </View>
-
-        <View style={styles.infoRow}>
-          <Icon name="information-outline" size={24} color="#1D1B70" />
-          {isEditing ? (
-            <TextInput
-              style={[styles.input, { height: height / 8 }]}
-              value={editedProfile.bio}
-              onChangeText={(text) =>
-                setEditedProfile((prev) => ({ ...prev, bio: text }))
-              }
-              placeholder="Biografía"
-              multiline
-            />
-          ) : (
-            <Text style={[styles.infoText, { fontStyle: 'italic' }]}>{profile.bio}</Text>
           )}
         </View>
       </View>

@@ -1,6 +1,6 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
 const userRoutes = require('./routes/userRoutes'); // Rutas de usuarios
 const emotionRoutes = require('./routes/emotionRoutes'); // Rutas de emociones
 const alarmRoutes = require('./routes/alarmRoutes');
@@ -9,7 +9,8 @@ const habitRoutes = require('./routes/habitRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const journalRoutes = require('./routes/journalRoutes');
 const timerRoutes = require('./routes/timerRoutes');
-dotenv.config();
+const messageRoutes = require('./routes/messageRoutes');
+const OpenAI = require('openai');
 
 const app = express();
 
@@ -73,6 +74,12 @@ app.use('/api/timers', (req, res, next) => {
     console.log(`[Rutas] Accediendo a /api/timers con método ${req.method}`);
     next();
 }, timerRoutes);
+
+app.use('/api/messages', (req, res, next) => {
+    console.log(`[Rutas] Accediendo a /api/messages con método ${req.method}`);
+    next();
+}, messageRoutes);
+  
 
 // Manejo de errores 404
 app.use((req, res) => {

@@ -9,35 +9,57 @@ import {
   Dimensions,
   Animated,
   Vibration,
+  Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
 const ChatScreen = () => {
-  const [messages, setMessages] = useState([
-    { id: '1', text: '¡Hola! ¿Cómo estás?', sender: 'User' },
-    { id: '2', text: '¡Hola! Estoy aquí para ayudarte. 😊', sender: 'AI' },
-  ]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [messageCounter, setMessageCounter] = useState(0); // Contador para IDs únicos
 
-  const handleSend = () => {
+  const generateTempId = () => {
+    setMessageCounter(prev => prev + 1);
+    return `temp-${Date.now()}-${messageCounter}`;
+  };
+
+  const handleSend = async () => {
     if (input.trim() === '') return;
 
-    const userMessage = { id: Date.now().toString(), text: input, sender: 'User' };
-    setMessages((prev) => [...prev, userMessage]);
-    setInput('');
-
     setIsTyping(true);
-    setTimeout(() => {
-      const aiMessage = {
-        id: Date.now().toString(),
-        text: 'Esto es una respuesta automática.',
-        sender: 'AI',
-      };
-      setMessages((prev) => [...prev, aiMessage]);
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch('http://localhost:5001/api/messages', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ text: input })
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al enviar mensaje');
+      }
+
+      const newMessages = await response.json();
+      // Asegurarse de que cada mensaje tenga un ID único
+      const messagesWithIds = newMessages.map(msg => ({
+        ...msg,
+        _id: msg._id || generateTempId()
+      }));
+      
+      setMessages(prev => [...prev, ...messagesWithIds]);
+      setInput('');
+    } catch (error) {
+      console.error('Error:', error);
+      Alert.alert('Error', 'No se pudo enviar el mensaje');
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   const renderMessage = ({ item }) => {
@@ -59,8 +81,9 @@ const ChatScreen = () => {
       <FlatList
         data={messages}
         renderItem={renderMessage}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item._id || generateTempId()} // Usar ID de MongoDB o generar uno temporal
         contentContainerStyle={styles.messagesContainer}
+        inverted={false}
       />
 
       {isTyping && (
@@ -77,7 +100,11 @@ const ChatScreen = () => {
           placeholder="Escribe un mensaje..."
           placeholderTextColor="#A3ADDB"
         />
-        <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
+        <TouchableOpacity 
+          style={styles.sendButton} 
+          onPress={handleSend}
+          disabled={isTyping}
+        >
           <Text style={styles.sendButtonText}>Enviar</Text>
         </TouchableOpacity>
       </View>
