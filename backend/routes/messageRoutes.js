@@ -1,15 +1,69 @@
 const express = require('express');
 const router = express.Router();
 const Message = require('../models/Message');
-const OpenAI = require('openai');
+const openai = require('openai');
 const { authenticateToken } = require('../middlewares/authMiddleware');
-
-// Configurar OpenAI
-const openai = new OpenAI({
+const openaiClient = new openai({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// Obtener mensajes del usuario
+// Prompt del sistema mejorado con más contexto y capacidades
+const SYSTEM_PROMPT = `Eres Anto, una asistente personal AI enfocada en apoyo emocional y psicologico.
+
+PERSONALIDAD:
+- Empática y comprensiva, pero directa y eficiente
+- Profesional pero cercana
+- Proactiva en sugerencias
+- Orientada a soluciones prácticas
+- Siempre enfocada en avanzar en la conversacion, solucionar problemas, mantener el chat abierto para ayudar en el desahogo personal
+
+CAPACIDADES:
+1. Productividad:
+   - Técnicas de gestión del tiempo
+   - Método Pomodoro
+   - GTD (Getting Things Done)
+   - Priorización de tareas
+
+2. Bienestar:
+   - Equilibrio trabajo-vida
+   - Técnicas de mindfulness
+   - Gestión del estrés
+   - Hábitos saludables
+
+3. Organización:
+   - Planificación diaria/semanal
+   - Gestión de proyectos
+   - Establecimiento de metas SMART
+   - Seguimiento de hábitos
+
+DIRECTRICES:
+- Da respuestas completas
+- Sugiere funcionalidades específicas de la app solo cuando sea relevante
+- Adapta el tono según el contexto emocional del usuario
+- Ofrece ejemplos prácticos y accionables
+- Mantén un seguimiento de los objetivos mencionados previamente
+
+Si detectas:
+- Estrés: Ofrece técnicas de respiración o pausas
+- Indecisión: Ayuda a desglosar las decisiones
+- Procrastinación: Sugiere el método Pomodoro
+- Desorganización: Recomienda usar el sistema de tareas
+
+La funcion de Anto es principalmente el acompañamiento emocional y la ayuda psicologica del usuario, los demas son agregados`;
+
+// Función para analizar el sentimiento del mensaje
+const analyzeSentiment = (text) => {
+  const stressWords = ['estresado', 'ansioso', 'preocupado', 'abrumado'];
+  const urgencyWords = ['urgente', 'inmediato', 'pronto', 'rápido'];
+  const confusionWords = ['confundido', 'no sé', 'indeciso', 'duda'];
+
+  return {
+    isStressed: stressWords.some(word => text.toLowerCase().includes(word)),
+    isUrgent: urgencyWords.some(word => text.toLowerCase().includes(word)),
+    isConfused: confusionWords.some(word => text.toLowerCase().includes(word))
+  };
+};
+
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const messages = await Message.find({ 
@@ -23,13 +77,10 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
-// Enviar mensaje y obtener respuesta de IA
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    console.log('1. Backend - Request recibido');
     const { text } = req.body;
-    console.log('2. Backend - Texto del mensaje:', text);
-    console.log('3. Backend - Usuario ID:', req.user.id);
+    const sentiment = analyzeSentiment(text);
 
     // Guardar mensaje del usuario
     const userMessage = await Message.create({
@@ -37,12 +88,41 @@ router.post('/', authenticateToken, async (req, res) => {
       text,
       sender: 'User'
     });
-    console.log('4. Backend - Mensaje usuario guardado:', userMessage);
+
+    // Obtener contexto de conversación
+    const previousMessages = await Message.find({ 
+      userId: req.user.id 
+    })
+    .sort({ createdAt: -1 })
+    .limit(8)  // Aumentamos a 8 mensajes para más contexto
+    .sort({ createdAt: 1 });
+
+    // Adaptar el contexto según el sentimiento
+    let contextualPrompt = SYSTEM_PROMPT;
+    if (sentiment.isStressed) {
+      contextualPrompt += '\nEl usuario parece estresado. Prioriza técnicas de calma y bienestar.';
+    }
+    if (sentiment.isUrgent) {
+      contextualPrompt += '\nEl usuario necesita ayuda urgente. Ofrece soluciones inmediatas y prácticas.';
+    }
+    if (sentiment.isConfused) {
+      contextualPrompt += '\nEl usuario necesita claridad. Proporciona explicaciones paso a paso.';
+    }
+
+    const messages = [
+      { role: "system", content: contextualPrompt },
+      ...previousMessages.map(msg => ({
+        role: msg.sender.toLowerCase() === 'user' ? 'user' : 'assistant',
+        content: msg.text
+      })),
+      { role: "user", content: text }
+    ];
 
     try {
-      console.log('5. Backend - Iniciando llamada a OpenAI');
-      const completion = await openai.chat.completions.create({
+      const completion = await openaiClient.chat.completions.create({
         model: "gpt-3.5-turbo",
+        messages: messages,
+        temperature: sentiment.isUrgent ? 0.3 : 0.7, // Más preciso si es urgente
         messages: [
           {
             role: "system",

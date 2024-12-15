@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,6 @@ import {
   FlatList,
   Dimensions,
   Animated,
-  Vibration,
-  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -19,11 +17,61 @@ const ChatScreen = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [messageCounter, setMessageCounter] = useState(0); // Contador para IDs únicos
+  const flatListRef = useRef(null);
+  const typingAnimation = useRef(new Animated.Value(0)).current;
 
-  const generateTempId = () => {
-    setMessageCounter(prev => prev + 1);
-    return `temp-${Date.now()}-${messageCounter}`;
+  // Animación del indicador de escritura
+  useEffect(() => {
+    if (isTyping) {
+      Animated.sequence([
+        Animated.timing(typingAnimation, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(typingAnimation, {
+          toValue: 0.3,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        if (isTyping) {
+          // Repetir la animación si aún está escribiendo
+          typingAnimation.setValue(0);
+        }
+      });
+    }
+  }, [isTyping]);
+
+  // Scroll automático a nuevos mensajes
+  const scrollToBottom = () => {
+    if (flatListRef.current && messages.length > 0) {
+      flatListRef.current.scrollToEnd({ animated: true });
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const renderMessage = ({ item, index }) => {
+    const isUser = item.sender === 'User';
+    return (
+      <Animated.View
+        style={[
+          styles.messageBubble,
+          isUser ? styles.userMessage : styles.aiMessage,
+          {
+            opacity: new Animated.Value(1),
+            transform: [{
+              translateY: new Animated.Value(0)
+            }]
+          }
+        ]}
+      >
+        <Text style={styles.messageText}>{item.text}</Text>
+      </Animated.View>
+    );
   };
 
   const handleSend = async () => {
@@ -46,13 +94,7 @@ const ChatScreen = () => {
       }
 
       const newMessages = await response.json();
-      // Asegurarse de que cada mensaje tenga un ID único
-      const messagesWithIds = newMessages.map(msg => ({
-        ...msg,
-        _id: msg._id || generateTempId()
-      }));
-      
-      setMessages(prev => [...prev, ...messagesWithIds]);
+      setMessages(prev => [...prev, ...newMessages]);
       setInput('');
     } catch (error) {
       console.error('Error:', error);
@@ -62,34 +104,29 @@ const ChatScreen = () => {
     }
   };
 
-  const renderMessage = ({ item }) => {
-    const isUser = item.sender === 'User';
-    return (
-      <View
-        style={[
-          styles.messageBubble,
-          isUser ? styles.userMessage : styles.aiMessage,
-        ]}
-      >
-        <Text style={styles.messageText}>{item.text}</Text>
-      </View>
-    );
-  };
-
   return (
     <View style={styles.container}>
       <FlatList
+        ref={flatListRef}
         data={messages}
         renderItem={renderMessage}
-        keyExtractor={item => item._id || generateTempId()} // Usar ID de MongoDB o generar uno temporal
+        keyExtractor={item => item._id}
         contentContainerStyle={styles.messagesContainer}
-        inverted={false}
+        onContentSizeChange={scrollToBottom}
+        onLayout={scrollToBottom}
       />
 
       {isTyping && (
-        <View style={styles.typingIndicator}>
+        <Animated.View 
+          style={[
+            styles.typingIndicator,
+            {
+              opacity: typingAnimation
+            }
+          ]}
+        >
           <Text style={styles.typingText}>Anto está escribiendo...</Text>
-        </View>
+        </Animated.View>
       )}
 
       <View style={styles.inputContainer}>
@@ -126,8 +163,9 @@ const styles = StyleSheet.create({
   messageBubble: {
     padding: 12,
     borderRadius: 15,
-    marginVertical: 8,
+    marginVertical: 4,
     maxWidth: '75%',
+    transform: [{ scale: 1 }],
   },
   userMessage: {
     backgroundColor: '#5127DB',
@@ -144,12 +182,17 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   typingIndicator: {
-    paddingVertical: 10,
-    alignItems: 'flex-start',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    backgroundColor: 'rgba(163, 173, 219, 0.1)',
+    borderRadius: 20,
+    marginBottom: 10,
+    alignSelf: 'flex-start',
+    marginLeft: 10,
   },
   typingText: {
-    fontSize: 14,
     color: '#A3ADDB',
+    fontSize: 14,
   },
   inputContainer: {
     flexDirection: 'row',
