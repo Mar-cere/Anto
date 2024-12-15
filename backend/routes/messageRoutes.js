@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Message = require('../models/Message');
+const User = require('../models/User');
 const openai = require('openai');
 const { authenticateToken } = require('../middlewares/authMiddleware');
 const openaiClient = new openai({
@@ -8,60 +9,61 @@ const openaiClient = new openai({
 });
 
 // Prompt del sistema mejorado con más contexto y capacidades
-const SYSTEM_PROMPT = `Eres Anto, una asistente personal AI enfocada en apoyo emocional y psicologico.
+const SYSTEM_PROMPT = `Eres Anto, una psicóloga virtual con formación en terapias humanistas y cognitivas conductuales. Tu propósito principal es proporcionar apoyo emocional, validar sentimientos y guiar al usuario hacia reflexiones útiles.
 
 PERSONALIDAD:
-- Empática y comprensiva, pero directa y eficiente
-- Profesional pero cercana
-- Proactiva en sugerencias
-- Orientada a soluciones prácticas
-- Siempre enfocada en avanzar en la conversacion, solucionar problemas, mantener el chat abierto para ayudar en el desahogo personal
+- Cálida y comprensiva, pero profesional y estructurada.
+- Siempre utiliza frases que validen los sentimientos del usuario, como "Entiendo cómo te sientes", "Eso debe ser difícil para ti", o "Gracias por compartir eso conmigo."
+- Si el usuario parece molesto o inseguro, prioriza mostrar empatía antes de ofrecer consejos.
 
-CAPACIDADES:
-1. Productividad:
-   - Técnicas de gestión del tiempo
-   - Método Pomodoro
-   - GTD (Getting Things Done)
-   - Priorización de tareas
+FUNCIONES PRINCIPALES:
+1. Escuchar y validar emociones:
+   - Usa preguntas abiertas para profundizar, como "¿Puedes contarme más sobre eso?" o "¿Qué crees que te está afectando más?"
+   - Evita trivializar las emociones del usuario.
+2. Ofrecer estrategias psicológicas:
+   - Si el usuario está ansioso, utiliza técnicas de mindfulness.
+   - Si el usuario está bloqueado, sugiere dividir tareas en pasos pequeños.
+3. Generar confianza:
+   - Responde de manera personalizada utilizando detalles que el usuario haya mencionado previamente.
 
-2. Bienestar:
-   - Equilibrio trabajo-vida
-   - Técnicas de mindfulness
-   - Gestión del estrés
-   - Hábitos saludables
+DIRECTRICES DE ESTILO:
+- Usa lenguaje sencillo, pero profesional.
+- Limita tus respuestas a 2-3 párrafos claros y concisos.
+- Utiliza ejemplos prácticos para ayudar al usuario a visualizar soluciones.
 
-3. Organización:
-   - Planificación diaria/semanal
-   - Gestión de proyectos
-   - Establecimiento de metas SMART
-   - Seguimiento de hábitos
+TERAPIA COGNITIVA-CONDUCTUAL (CBT):
+- Ayuda al usuario a identificar patrones de pensamiento negativos y reformularlos:
+   - "¿Qué evidencias tienes para respaldar ese pensamiento?"
+   - "¿Hay otra forma de interpretar esta situación?"
+   - "¿Cómo crees que este pensamiento está afectando tus emociones y acciones?"
 
-DIRECTRICES:
-- Da respuestas completas
-- Sugiere funcionalidades específicas de la app solo cuando sea relevante
-- Adapta el tono según el contexto emocional del usuario
-- Ofrece ejemplos prácticos y accionables
-- Mantén un seguimiento de los objetivos mencionados previamente
+ADAPTACIÓN:
+- Si el usuario está en crisis emocional, prioriza técnicas de calma y redirige al círculo de apoyo.
+- Si el usuario está reflexivo, fomenta el autodescubrimiento con preguntas introspectivas.
 
-Si detectas:
-- Estrés: Ofrece técnicas de respiración o pausas
-- Indecisión: Ayuda a desglosar las decisiones
-- Procrastinación: Sugiere el método Pomodoro
-- Desorganización: Recomienda usar el sistema de tareas
-
-La funcion de Anto es principalmente el acompañamiento emocional y la ayuda psicologica del usuario, los demas son agregados`;
+AUTOEVALUACIONES Y ESCALAS EMOCIONALES:
+- Al inicio de la interacción, pregunta: "¿Cómo te sientes en una escala del 1 al 10?"
+- Utiliza esta información para ajustar las respuestas.
+- Al final de la conversación, pregunta: "¿Qué tan útil te resultó esta conversación en una escala del 1 al 10?"
+`;
 
 // Función para analizar el sentimiento del mensaje
 const analyzeSentiment = (text) => {
-  const stressWords = ['estresado', 'ansioso', 'preocupado', 'abrumado'];
-  const urgencyWords = ['urgente', 'inmediato', 'pronto', 'rápido'];
-  const confusionWords = ['confundido', 'no sé', 'indeciso', 'duda'];
+  const keywords = {
+    stress: ['estresado', 'ansioso', 'preocupado', 'abrumado'],
+    urgency: ['urgente', 'inmediato', 'pronto', 'rápido'],
+    confusion: ['confundido', 'no sé', 'indeciso', 'duda']
+  };
 
   return {
-    isStressed: stressWords.some(word => text.toLowerCase().includes(word)),
-    isUrgent: urgencyWords.some(word => text.toLowerCase().includes(word)),
-    isConfused: confusionWords.some(word => text.toLowerCase().includes(word))
+    isStressed: keywords.stress.some(word => text.toLowerCase().includes(word)),
+    isUrgent: keywords.urgency.some(word => text.toLowerCase().includes(word)),
+    isConfused: keywords.confusion.some(word => text.toLowerCase().includes(word))
   };
+};
+
+const detectLanguage = (text) => {
+  return text.match(/[áéíóúñ]/i) ? 'es' : 'en';
 };
 
 router.get('/', authenticateToken, async (req, res) => {
@@ -69,8 +71,9 @@ router.get('/', authenticateToken, async (req, res) => {
     const messages = await Message.find({ 
       userId: req.user.id 
     }).sort({ createdAt: 1 });
-    
-    res.json(messages);
+
+    const filteredMessages = messages.filter(msg => msg.isImportant);
+    res.json(filteredMessages);
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ message: 'Error al obtener mensajes' });
@@ -80,13 +83,22 @@ router.get('/', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const { text } = req.body;
+    if (!text || typeof text !== 'string' || text.trim() === '' || text.length > 500) {
+      return res.status(400).json({ message: 'El mensaje no puede estar vacío o demasiado largo' });
+    }
+
     const sentiment = analyzeSentiment(text);
+
+    // Detectar idioma
+    const language = detectLanguage(text);
+    const localizedPrompt = language === 'es' ? SYSTEM_PROMPT : 'You are Anto, a friendly personal assistant focused on emotional support.';
 
     // Guardar mensaje del usuario
     const userMessage = await Message.create({
       userId: req.user.id,
       text,
-      sender: 'User'
+      sender: 'User',
+      isImportant: true
     });
 
     // Obtener contexto de conversación
@@ -94,11 +106,13 @@ router.post('/', authenticateToken, async (req, res) => {
       userId: req.user.id 
     })
     .sort({ createdAt: -1 })
-    .limit(8)  // Aumentamos a 8 mensajes para más contexto
+    .limit(15)  // Más mensajes para contexto extendido
     .sort({ createdAt: 1 });
 
+    const filteredMessages = previousMessages.filter(msg => msg.isImportant);
+
     // Adaptar el contexto según el sentimiento
-    let contextualPrompt = SYSTEM_PROMPT;
+    let contextualPrompt = localizedPrompt;
     if (sentiment.isStressed) {
       contextualPrompt += '\nEl usuario parece estresado. Prioriza técnicas de calma y bienestar.';
     }
@@ -109,9 +123,12 @@ router.post('/', authenticateToken, async (req, res) => {
       contextualPrompt += '\nEl usuario necesita claridad. Proporciona explicaciones paso a paso.';
     }
 
+    // Ajustar la temperatura según el estado emocional
+    const temperature = sentiment.isUrgent ? 0.3 : 0.7;
+
     const messages = [
       { role: "system", content: contextualPrompt },
-      ...previousMessages.map(msg => ({
+      ...filteredMessages.map(msg => ({
         role: msg.sender.toLowerCase() === 'user' ? 'user' : 'assistant',
         content: msg.text
       })),
@@ -121,39 +138,37 @@ router.post('/', authenticateToken, async (req, res) => {
     try {
       const completion = await openaiClient.chat.completions.create({
         model: "gpt-3.5-turbo",
-        messages: messages,
-        temperature: sentiment.isUrgent ? 0.3 : 0.7, // Más preciso si es urgente
-        messages: [
-          {
-            role: "system",
-            content: "Eres un asistente amigable y profesional llamado Anto. Tus respuestas son concisas y útiles."
-          },
-          {
-            role: "user",
-            content: text
-          }
-        ],
+        messages,
+        temperature,
         max_tokens: 150,
-        temperature: 0.7,
       });
-      console.log('6. Backend - Respuesta de OpenAI recibida');
 
       const aiMessage = await Message.create({
         userId: req.user.id,
         text: completion.choices[0].message.content,
-        sender: 'AI'
+        sender: 'AI',
+        isImportant: true
       });
-      console.log('7. Backend - Respuesta AI guardada:', aiMessage);
+
+      // Autoevaluación al final
+      aiMessage.text += '\n\nAntes de terminar, ¿puedes decirme qué tan útil te pareció esta conversación en una escala del 1 al 10?';
 
       res.json([userMessage, aiMessage]);
-      console.log('8. Backend - Respuesta enviada al frontend');
     } catch (aiError) {
-      console.error('Backend - Error de OpenAI:', aiError);
-      
+      console.error('Backend - Error de OpenAI:', aiError.response?.data || aiError.message);
+
+      let errorMessage = "Lo siento, estoy teniendo problemas para procesar tu mensaje. ¿Podrías intentarlo de nuevo?";
+      if (aiError.response?.status === 429) {
+        errorMessage = "El servicio está saturado en este momento. Por favor, intenta más tarde.";
+      } else if (aiError.response?.status === 400) {
+        errorMessage = "Hubo un error con el mensaje enviado. Intenta reformular tu pregunta.";
+      }
+
       const aiMessage = await Message.create({
         userId: req.user.id,
-        text: "Lo siento, estoy teniendo problemas para procesar tu mensaje. ¿Podrías intentarlo de nuevo?",
-        sender: 'AI'
+        text: errorMessage,
+        sender: 'AI',
+        isImportant: false
       });
 
       res.json([userMessage, aiMessage]);

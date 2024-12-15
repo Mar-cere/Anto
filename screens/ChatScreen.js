@@ -8,6 +8,7 @@ import {
   FlatList,
   Dimensions,
   Animated,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -18,32 +19,38 @@ const ChatScreen = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const flatListRef = useRef(null);
-  const typingAnimation = useRef(new Animated.Value(0)).current;
+  const typingDots = useRef(new Animated.Value(0)).current;
 
-  // Animación del indicador de escritura
+  // Inicializar mensajes con una respuesta proactiva
+  useEffect(() => {
+    if (messages.length === 0) {
+      setMessages([{ sender: 'AI', text: '¡Hola! ¿En qué puedo ayudarte hoy?' }]);
+    }
+  }, []);
+
+  // Indicador de escritura interactivo (animación de puntos)
   useEffect(() => {
     if (isTyping) {
-      Animated.sequence([
-        Animated.timing(typingAnimation, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(typingAnimation, {
-          toValue: 0.3,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        if (isTyping) {
-          // Repetir la animación si aún está escribiendo
-          typingAnimation.setValue(0);
-        }
-      });
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(typingDots, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(typingDots, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      typingDots.stopAnimation();
     }
   }, [isTyping]);
 
-  // Scroll automático a nuevos mensajes
+  // Scroll automático al final
   const scrollToBottom = () => {
     if (flatListRef.current && messages.length > 0) {
       flatListRef.current.scrollToEnd({ animated: true });
@@ -54,51 +61,55 @@ const ChatScreen = () => {
     scrollToBottom();
   }, [messages]);
 
-  const renderMessage = ({ item, index }) => {
+  const renderMessage = ({ item }) => {
     const isUser = item.sender === 'User';
     return (
-      <Animated.View
+      <View
         style={[
           styles.messageBubble,
           isUser ? styles.userMessage : styles.aiMessage,
-          {
-            opacity: new Animated.Value(1),
-            transform: [{
-              translateY: new Animated.Value(0)
-            }]
-          }
         ]}
       >
         <Text style={styles.messageText}>{item.text}</Text>
-      </Animated.View>
+      </View>
     );
   };
 
   const handleSend = async () => {
     if (input.trim() === '') return;
 
+    const userMessage = { sender: 'User', text: input };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
     setIsTyping(true);
+
     try {
       const token = await AsyncStorage.getItem('userToken');
       const response = await fetch('http://localhost:5001/api/messages', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text: input })
+        body: JSON.stringify({ text: input }),
       });
 
       if (!response.ok) {
-        throw new Error('Error al enviar mensaje');
+        if (response.status === 401) {
+          Alert.alert('Error', 'Autenticación fallida. Por favor, inicia sesión.');
+        } else if (response.status === 500) {
+          Alert.alert('Error', 'Problema del servidor. Inténtalo más tarde.');
+        } else {
+          Alert.alert('Error', 'Algo salió mal. Inténtalo de nuevo.');
+        }
+        return;
       }
 
       const newMessages = await response.json();
-      setMessages(prev => [...prev, ...newMessages]);
-      setInput('');
+      setMessages((prev) => [...prev, ...newMessages]);
     } catch (error) {
       console.error('Error:', error);
-      Alert.alert('Error', 'No se pudo enviar el mensaje');
+      Alert.alert('Error', 'No se pudo enviar el mensaje. Verifica tu conexión.');
     } finally {
       setIsTyping(false);
     }
@@ -110,23 +121,27 @@ const ChatScreen = () => {
         ref={flatListRef}
         data={messages}
         renderItem={renderMessage}
-        keyExtractor={item => item._id}
+        keyExtractor={(item, index) => index.toString()}
         contentContainerStyle={styles.messagesContainer}
         onContentSizeChange={scrollToBottom}
         onLayout={scrollToBottom}
       />
 
       {isTyping && (
-        <Animated.View 
-          style={[
-            styles.typingIndicator,
-            {
-              opacity: typingAnimation
-            }
-          ]}
-        >
-          <Text style={styles.typingText}>Anto está escribiendo...</Text>
-        </Animated.View>
+        <View style={styles.typingIndicator}>
+          <Animated.Text
+            style={[
+              styles.typingText,
+              { opacity: typingDots.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.3, 1],
+                }),
+              },
+            ]}
+          >
+            Anto está escribiendo...
+          </Animated.Text>
+        </View>
       )}
 
       <View style={styles.inputContainer}>
@@ -137,8 +152,8 @@ const ChatScreen = () => {
           placeholder="Escribe un mensaje..."
           placeholderTextColor="#A3ADDB"
         />
-        <TouchableOpacity 
-          style={styles.sendButton} 
+        <TouchableOpacity
+          style={styles.sendButton}
           onPress={handleSend}
           disabled={isTyping}
         >
@@ -152,7 +167,7 @@ const ChatScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1D1B70', // Fondo consistente
+    backgroundColor: '#1D1B70',
     paddingHorizontal: width / 20,
     paddingVertical: height / 30,
   },
@@ -165,7 +180,6 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginVertical: 4,
     maxWidth: '75%',
-    transform: [{ scale: 1 }],
   },
   userMessage: {
     backgroundColor: '#5127DB',
