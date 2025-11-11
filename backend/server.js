@@ -85,28 +85,47 @@ console.log(`🌍 Ambiente: ${config.app.environment}`);
 // Configuración de proxy (necesario para rate limiting detrás de proxy)
 app.set('trust proxy', 1);
 
+// Ruta de prueba simple (lo más básico posible)
+app.get('/', (req, res) => {
+  res.status(200).json({ message: 'Server is running', timestamp: new Date().toISOString() });
+});
+
 // Ruta de health check (PRIMERO, antes de cualquier middleware)
 // Esta ruta debe estar disponible siempre, incluso si otros servicios fallan
 app.get('/health', (req, res) => {
-  console.log('📊 Health check solicitado');
-  const mongoStatus = getMongoDBStatus();
-  res.status(200).json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    mongodb: mongoStatus,
-    services: {
-      [SERVICES.TASKS]: 'active',
-      [SERVICES.HABITS]: 'active',
-      [SERVICES.USERS]: 'active',
-      [SERVICES.AUTH]: 'active',
-      [SERVICES.CHAT]: 'active',
-      [SERVICES.CLOUDINARY]: 'active'
-    },
-    version: APP_VERSION
-  });
+  try {
+    console.log('📊 Health check solicitado - Inicio');
+    const mongoStatus = getMongoDBStatus();
+    const response = { 
+      status: 'ok', 
+      timestamp: new Date().toISOString(),
+      mongodb: mongoStatus,
+      services: {
+        [SERVICES.TASKS]: 'active',
+        [SERVICES.HABITS]: 'active',
+        [SERVICES.USERS]: 'active',
+        [SERVICES.AUTH]: 'active',
+        [SERVICES.CHAT]: 'active',
+        [SERVICES.CLOUDINARY]: 'active'
+      },
+      version: APP_VERSION
+    };
+    console.log('📤 Enviando respuesta de health');
+    res.status(200).json(response);
+    console.log('✅ Respuesta enviada');
+  } catch (error) {
+    console.error('❌ Error en health check:', error);
+    res.status(200).json({ 
+      status: 'ok', 
+      timestamp: new Date().toISOString(),
+      mongodb: 'error',
+      error: error.message,
+      version: APP_VERSION
+    });
+  }
 });
 
-console.log('✅ Ruta /health registrada');
+console.log('✅ Rutas / y /health registradas');
 
 // Configuración de seguridad básica
 app.use(helmet({

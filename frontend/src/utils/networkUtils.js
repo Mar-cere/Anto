@@ -63,4 +63,4 @@ const checkServerStatus = async (maxRetries = MAX_RETRIES) => {
   return false;
 };
 
-export { checkServerStatus }; 
+export { checkServerStatus };

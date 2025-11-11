@@ -19,7 +19,7 @@ const getApiUrl = () => {
   }
   
   // URL de producción en Render
-  return 'https://antobackend.onrender.com';
+  return 'https://anto-ion2.onrender.com';
 };
 
 export const API_URL = getApiUrl();
