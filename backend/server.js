@@ -108,15 +108,58 @@ if (config.app.environment === 'development') {
 }
 
 // Conexión a MongoDB
-mongoose.connect(config.mongodb.uri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log('✅ Conexión exitosa a MongoDB'))
-.catch(err => {
-  console.error('❌ Error conectando a MongoDB:', err);
-  process.exit(1);
-});
+const connectMongoDB = async () => {
+  try {
+    // Verificar que la URI esté definida
+    if (!config.mongodb.uri) {
+      throw new Error('MONGO_URI no está definida en las variables de entorno');
+    }
+
+    // Validar formato de URI
+    if (!config.mongodb.uri.startsWith('mongodb://') && !config.mongodb.uri.startsWith('mongodb+srv://')) {
+      throw new Error('MONGO_URI debe comenzar con mongodb:// o mongodb+srv://');
+    }
+
+    // Asegurar que la URI tenga un nombre de base de datos
+    let mongoUri = config.mongodb.uri;
+    if (!mongoUri.includes('/?') && !mongoUri.match(/\/[^?]+(\?|$)/)) {
+      // Si no tiene nombre de base de datos, agregar uno por defecto
+      const separator = mongoUri.includes('?') ? '&' : '?';
+      mongoUri = mongoUri.replace(/\?/, `${separator}dbName=anto`);
+    }
+
+    await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 10000, // Timeout de 10 segundos
+      socketTimeoutMS: 45000, // Timeout de socket de 45 segundos
+      maxPoolSize: 10, // Mantener hasta 10 conexiones en el pool
+      retryWrites: true,
+      w: 'majority'
+    });
+
+    console.log('✅ Conexión exitosa a MongoDB');
+    console.log(`📊 Base de datos: ${mongoose.connection.name || 'default'}`);
+    
+    // Manejar eventos de conexión
+    mongoose.connection.on('error', (err) => {
+      console.error('❌ Error en la conexión de MongoDB:', err);
+    });
+
+    mongoose.connection.on('disconnected', () => {
+      console.warn('⚠️ MongoDB desconectado. Intentando reconectar...');
+    });
+
+  } catch (err) {
+    console.error('❌ Error conectando a MongoDB:', err);
+    console.error('💡 Verifica que:');
+    console.error('   1. La URI de MongoDB esté correcta en el archivo .env');
+    console.error('   2. Tu conexión a internet esté activa');
+    console.error('   3. El cluster de MongoDB Atlas esté accesible');
+    console.error('   4. Tu IP esté en la whitelist de MongoDB Atlas');
+    process.exit(1);
+  }
+};
+
+connectMongoDB();
 
 // Rutas de la API
 app.use('/api/tasks', taskRoutes);
