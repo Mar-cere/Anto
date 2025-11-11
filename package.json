@@ -8,8 +8,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
-
+    "lint": "expo lint",
     "branch:feature": "node scripts/createBranch.js feature",
     "branch:fix": "node scripts/createBranch.js fix",
     "branch:merge-dev": "git checkout dev && git pull && git merge main && git push",
