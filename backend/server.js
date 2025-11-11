@@ -85,11 +85,43 @@ app.set('trust proxy', 1);
 app.use(helmet());
 
 // Configuración de CORS
-app.use(cors({
-  origin: config.app.frontendUrl,
+// En producción, permitir múltiples orígenes o usar el frontendUrl configurado
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Permitir requests sin origin (mobile apps, Postman, etc.)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // Lista de orígenes permitidos
+    const allowedOrigins = [
+      config.app.frontendUrl,
+      'https://antobackend.onrender.com',
+      'http://localhost:3000',
+      'http://localhost:19006', // Expo dev server
+      /^https:\/\/.*\.onrender\.com$/, // Cualquier subdominio de Render
+    ];
+    
+    // Verificar si el origen está permitido
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return allowed === origin;
+    });
+    
+    if (isAllowed || config.app.environment === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error('No permitido por CORS'));
+    }
+  },
   methods: ALLOWED_HTTP_METHODS,
-  allowedHeaders: ALLOWED_HEADERS
-}));
+  allowedHeaders: [...ALLOWED_HEADERS, 'X-Requested-With'],
+  credentials: true
+};
+
+app.use(cors(corsOptions));
 
 // Configuración de rate limiting
 const limiter = rateLimit({
@@ -107,17 +139,38 @@ if (config.app.environment === 'development') {
   app.use(morgan('dev'));
 }
 
-// Conexión a MongoDB
+// Ruta de health check (ANTES de la conexión a MongoDB para que siempre responda)
+app.get('/health', (req, res) => {
+  const mongoStatus = getMongoDBStatus();
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    mongodb: mongoStatus,
+    services: {
+      [SERVICES.TASKS]: 'active',
+      [SERVICES.HABITS]: 'active',
+      [SERVICES.USERS]: 'active',
+      [SERVICES.AUTH]: 'active',
+      [SERVICES.CHAT]: 'active',
+      [SERVICES.CLOUDINARY]: 'active'
+    },
+    version: APP_VERSION
+  });
+});
+
+// Conexión a MongoDB (no bloquea el inicio del servidor)
 const connectMongoDB = async () => {
   try {
     // Verificar que la URI esté definida
     if (!config.mongodb.uri) {
-      throw new Error('MONGO_URI no está definida en las variables de entorno');
+      console.warn('⚠️ MONGO_URI no está definida en las variables de entorno');
+      return;
     }
 
     // Validar formato de URI
     if (!config.mongodb.uri.startsWith('mongodb://') && !config.mongodb.uri.startsWith('mongodb+srv://')) {
-      throw new Error('MONGO_URI debe comenzar con mongodb:// o mongodb+srv://');
+      console.warn('⚠️ MONGO_URI debe comenzar con mongodb:// o mongodb+srv://');
+      return;
     }
 
     // Asegurar que la URI tenga un nombre de base de datos
@@ -155,10 +208,12 @@ const connectMongoDB = async () => {
     console.error('   2. Tu conexión a internet esté activa');
     console.error('   3. El cluster de MongoDB Atlas esté accesible');
     console.error('   4. Tu IP esté en la whitelist de MongoDB Atlas');
-    process.exit(1);
+    console.warn('⚠️ El servidor continuará sin MongoDB. Algunas funcionalidades no estarán disponibles.');
+    // NO hacer process.exit(1) para que el servidor pueda iniciar
   }
 };
 
+// Conectar a MongoDB de forma asíncrona (no bloquea el inicio)
 connectMongoDB();
 
 // Rutas de la API
@@ -169,24 +224,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/cloudinary', cloudinaryRoutes);
 
-// Ruta de health check
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    mongodb: getMongoDBStatus(),
-    services: {
-      [SERVICES.TASKS]: 'active',
-      [SERVICES.HABITS]: 'active',
-      [SERVICES.USERS]: 'active',
-      [SERVICES.AUTH]: 'active',
-      [SERVICES.CHAT]: 'active',
-      [SERVICES.CLOUDINARY]: 'active'
-    },
-    version: APP_VERSION
-  });
-});
-
 // Manejo de rutas no encontradas
 app.use((req, res) => {
   res.status(404).json({ message: 'Ruta no encontrada' });
@@ -196,10 +233,14 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 // Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+// En producción (Render), escuchar en 0.0.0.0 para aceptar conexiones externas
+const HOST = config.app.environment === 'production' ? '0.0.0.0' : 'localhost';
+
+app.listen(PORT, HOST, () => {
+  console.log(`🚀 Servidor corriendo en ${HOST}:${PORT}`);
   console.log(`📝 Ambiente: ${config.app.environment}`);
   console.log(`🔗 URL Frontend: ${config.app.frontendUrl}`);
+  console.log(`🌐 Servidor accesible desde: ${HOST === '0.0.0.0' ? 'cualquier IP' : 'localhost'}`);
 });
 
 // Manejo de señales de terminación

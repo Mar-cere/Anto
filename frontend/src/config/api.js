@@ -1,16 +1,32 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { checkServerStatus } from '../utils/networkUtils';
 import { Platform } from 'react-native';
 
-// Detectar si estamos en simulador
-const isSimulator = Platform.OS === 'ios' && Platform.isPad === undefined && !Platform.isTVOS;
+// Configuración de URL del API
+// Prioridad: Variable de entorno > Detección automática > URL por defecto
+const getApiUrl = () => {
+  // Si hay una variable de entorno, usarla (útil para diferentes entornos)
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+  
+  // Detectar si estamos en simulador (solo para desarrollo local)
+  const isSimulator = Platform.OS === 'ios' && Platform.isPad === undefined && !Platform.isTVOS;
+  const isDevelopment = __DEV__; // Variable global de React Native/Expo
+  
+  // En desarrollo y simulador, usar localhost; en producción, usar Render
+  if (isDevelopment && isSimulator) {
+    return 'http://localhost:5001';
+  }
+  
+  // URL de producción en Render
+  return 'https://antobackend.onrender.com';
+};
 
-// Asegúrate de que esta URL sea exactamente la misma que tu servidor
-export const API_URL = isSimulator 
-  ? 'http://localhost:5001'  // URL local para simulador
-  : 'https://antobackend.onrender.com'; // URL de producción para dispositivos reales
+export const API_URL = getApiUrl();
 
-console.log('Usando API_URL:', API_URL);
+console.log('🌐 Usando API_URL:', API_URL);
+console.log('📱 Plataforma:', Platform.OS);
+console.log('🔧 Modo:', __DEV__ ? 'development' : 'production');
 
 export const ENDPOINTS = {
   // Auth
