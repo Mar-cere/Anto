@@ -4,11 +4,15 @@ package-lock.json
 yarn.lock
 
 # Archivos de entorno (contienen información sensible)
+**/.env
+**/.env.*
+**/.env.local
 .env
 .env.local
 .env*.local
 backend/.env
 frontend/.env
+*.env
 
 # Expo
 .expo/
