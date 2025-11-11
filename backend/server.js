@@ -78,11 +78,40 @@ const handleShutdown = (signal) => {
 const app = express();
 const PORT = config.app.port;
 
+console.log('🔧 Inicializando servidor...');
+console.log(`📋 Puerto configurado: ${PORT}`);
+console.log(`🌍 Ambiente: ${config.app.environment}`);
+
 // Configuración de proxy (necesario para rate limiting detrás de proxy)
 app.set('trust proxy', 1);
 
+// Ruta de health check (PRIMERO, antes de cualquier middleware)
+// Esta ruta debe estar disponible siempre, incluso si otros servicios fallan
+app.get('/health', (req, res) => {
+  console.log('📊 Health check solicitado');
+  const mongoStatus = getMongoDBStatus();
+  res.status(200).json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    mongodb: mongoStatus,
+    services: {
+      [SERVICES.TASKS]: 'active',
+      [SERVICES.HABITS]: 'active',
+      [SERVICES.USERS]: 'active',
+      [SERVICES.AUTH]: 'active',
+      [SERVICES.CHAT]: 'active',
+      [SERVICES.CLOUDINARY]: 'active'
+    },
+    version: APP_VERSION
+  });
+});
+
+console.log('✅ Ruta /health registrada');
+
 // Configuración de seguridad básica
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false // Desactivar CSP para APIs
+}));
 
 // Configuración de CORS
 // En producción, permitir múltiples orígenes o usar el frontendUrl configurado
@@ -96,7 +125,7 @@ const corsOptions = {
     // Lista de orígenes permitidos
     const allowedOrigins = [
       config.app.frontendUrl,
-      'https://antobackend.onrender.com',
+      'https://anto-ion2.onrender.com',
       'http://localhost:3000',
       'http://localhost:19006', // Expo dev server
       /^https:\/\/.*\.onrender\.com$/, // Cualquier subdominio de Render
@@ -123,13 +152,6 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Configuración de rate limiting
-const limiter = rateLimit({
-  windowMs: RATE_LIMIT_WINDOW_MS,
-  max: RATE_LIMIT_MAX_REQUESTS
-});
-app.use(limiter);
-
 // Middlewares de parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -139,24 +161,13 @@ if (config.app.environment === 'development') {
   app.use(morgan('dev'));
 }
 
-// Ruta de health check (ANTES de la conexión a MongoDB para que siempre responda)
-app.get('/health', (req, res) => {
-  const mongoStatus = getMongoDBStatus();
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    mongodb: mongoStatus,
-    services: {
-      [SERVICES.TASKS]: 'active',
-      [SERVICES.HABITS]: 'active',
-      [SERVICES.USERS]: 'active',
-      [SERVICES.AUTH]: 'active',
-      [SERVICES.CHAT]: 'active',
-      [SERVICES.CLOUDINARY]: 'active'
-    },
-    version: APP_VERSION
-  });
+// Configuración de rate limiting (excluir /health)
+const limiter = rateLimit({
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  max: RATE_LIMIT_MAX_REQUESTS,
+  skip: (req) => req.path === '/health' // Excluir /health del rate limiting
 });
+app.use(limiter);
 
 // Conexión a MongoDB (no bloquea el inicio del servidor)
 const connectMongoDB = async () => {
