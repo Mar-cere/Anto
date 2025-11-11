@@ -244,14 +244,17 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 // Iniciar servidor
-// En producción (Render), escuchar en 0.0.0.0 para aceptar conexiones externas
-const HOST = config.app.environment === 'production' ? '0.0.0.0' : 'localhost';
+// Siempre escuchar en 0.0.0.0 para que funcione en Render y otros servicios en la nube
+// 0.0.0.0 también funciona en localhost, así que es seguro usarlo siempre
+const HOST = '0.0.0.0';
+const isRender = process.env.RENDER === 'true' || !!process.env.PORT;
 
 app.listen(PORT, HOST, () => {
   console.log(`🚀 Servidor corriendo en ${HOST}:${PORT}`);
   console.log(`📝 Ambiente: ${config.app.environment}`);
   console.log(`🔗 URL Frontend: ${config.app.frontendUrl}`);
-  console.log(`🌐 Servidor accesible desde: ${HOST === '0.0.0.0' ? 'cualquier IP' : 'localhost'}`);
+  console.log(`🌐 Servidor accesible desde: ${HOST === '0.0.0.0' ? 'cualquier IP (Render)' : 'localhost'}`);
+  console.log(`🔍 Render detectado: ${isRender ? 'Sí' : 'No'}`);
 });
 
 // Manejo de señales de terminación
