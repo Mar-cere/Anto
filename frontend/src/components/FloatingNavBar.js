@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity, Animated, StyleSheet, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import React from 'react';
+import { Animated, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /**
@@ -27,22 +27,48 @@ const FloatingNavBar = ({ activeTab, onTabPress, animValues = {} }) => {
         return;
       }
 
-      // Si no, usa navigation directamente
-      switch (screen) {
-        case 'Dash':
-          navigation.navigate('Dash');
-          break;
-        case 'Calendar':
-          navigation.navigate('Tasks');
-          break;
-        case 'Settings':
-          navigation.navigate('Settings');
-          break;
-        case 'Chat':
-          navigation.navigate('Chat');
-          break;
-        default:
-          navigation.navigate(screen);
+      // Mapeo de nombres de pantalla a nombres de ruta del TabNavigator
+      const routeMap = {
+        'Dash': 'Inicio',
+        'Inicio': 'Inicio',
+        'Chat': 'Chat',
+        'Profile': 'Perfil',
+        'Perfil': 'Perfil',
+        'Settings': 'Ajustes',
+        'Ajustes': 'Ajustes',
+        'Calendar': 'Tasks',
+        'Tasks': 'Tasks',
+        'Pomodoro': 'Pomodoro'
+      };
+
+      // Obtener el nombre de ruta correcto
+      const routeName = routeMap[screen] || screen;
+
+      // Obtener el Tab Navigator padre si estamos dentro de uno
+      // Cuando DashScreen está dentro del TabNavigator, necesitamos usar su navegación
+      const tabNavigator = navigation.getParent();
+      
+      // Verificar si estamos dentro de un Tab Navigator
+      if (tabNavigator) {
+        const state = tabNavigator.getState();
+        // Si el estado tiene type 'tab', estamos en un Tab Navigator
+        if (state?.type === 'tab' || (state?.routes && state.routes.length > 0)) {
+          // Navegar usando el Tab Navigator directamente
+          tabNavigator.navigate(routeName);
+          return;
+        }
+      }
+
+      // Si no estamos en un Tab Navigator, intentar navegar al TabNavigator con la pantalla específica
+      try {
+        navigation.navigate('MainTabs', { screen: routeName });
+      } catch (e) {
+        // Si falla, intentar navegar directamente (puede funcionar si la ruta está en el Stack)
+        try {
+          navigation.navigate(routeName);
+        } catch (error) {
+          console.error('Error al navegar a', routeName, ':', error);
+        }
       }
     } catch (error) {
       console.error('Error al navegar:', error);

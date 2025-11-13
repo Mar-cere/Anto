@@ -22,12 +22,35 @@ const createTransporter = () => {
     throw error;
   }
   
+  // Configuración mejorada para entornos de producción (Render, etc.)
+  // Intentar primero con puerto 587 (TLS), si falla, usar 465 (SSL)
+  const useSSL = process.env.EMAIL_USE_SSL === 'true';
+  const port = useSSL ? 465 : 587;
+  
+  console.log(`[Mailer] 🔧 Configurando transporter con puerto ${port} (SSL: ${useSSL})`);
+  
   return nodemailer.createTransport({
     service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: port,
+    secure: useSSL, // true para 465, false para 587
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_APP_PASSWORD
-    }
+    },
+    // Opciones de conexión mejoradas para evitar timeouts
+    connectionTimeout: 15000, // 15 segundos (aumentado)
+    greetingTimeout: 15000, // 15 segundos (aumentado)
+    socketTimeout: 15000, // 15 segundos (aumentado)
+    // Opciones adicionales para entornos de producción
+    tls: {
+      rejectUnauthorized: false, // Permite certificados autofirmados (útil en algunos entornos)
+      ciphers: 'SSLv3' // Forzar SSLv3 para compatibilidad
+    },
+    // Pool de conexiones
+    pool: false, // Desactivar pool para evitar problemas de conexión
+    // Requerir TLS
+    requireTLS: !useSSL
   });
 };
 
@@ -214,6 +237,12 @@ const sendEmail = async (email, template, emailType) => {
       console.error('[Mailer] 💡 Cómo obtener App Password: https://myaccount.google.com/apppasswords');
     } else if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
       console.error('[Mailer] 💡 Error de conexión: Verifica tu conexión a internet');
+    } else if (error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
+      console.error('[Mailer] 💡 Error de timeout: El servidor no pudo conectarse a Gmail SMTP');
+      console.error('[Mailer] 💡 Posibles soluciones:');
+      console.error('[Mailer]   1. Verifica que el servidor tenga acceso saliente al puerto 587');
+      console.error('[Mailer]   2. Considera usar un servicio de email alternativo (SendGrid, Mailgun, etc.)');
+      console.error('[Mailer]   3. Verifica que Gmail no esté bloqueando conexiones desde este servidor');
     }
     throw error;
   }
