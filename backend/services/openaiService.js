@@ -16,6 +16,13 @@ import responseGenerator from './responseGenerator.js';
 
 dotenv.config();
 
+// Validar que la API key esté configurada
+if (!process.env.OPENAI_API_KEY) {
+  console.error('❌ ERROR: OPENAI_API_KEY no está configurada en las variables de entorno');
+  console.error('💡 Configura OPENAI_API_KEY en tu archivo .env o en las variables de entorno de Render');
+  console.error('💡 Puedes obtener tu API key en: https://platform.openai.com/account/api-keys');
+}
+
 // Cliente de OpenAI
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -637,24 +644,44 @@ class OpenAIService {
       );
 
       // 4. Generar Respuesta con OpenAI
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
-            content: prompt.systemMessage
-          },
-          ...prompt.contextMessages,
-          {
-            role: 'user',
-            content: mensaje.content
-          }
-        ],
-        temperature: this.determinarTemperatura(analisisContextual),
-        max_tokens: this.determinarLongitudRespuesta(analisisContextual),
-        presence_penalty: 0.6,
-        frequency_penalty: 0.6
-      });
+      // Validar API key antes de hacer la petición
+      if (!process.env.OPENAI_API_KEY) {
+        throw new Error('OPENAI_API_KEY no está configurada. Configura esta variable de entorno en Render.');
+      }
+
+      let completion;
+      try {
+        completion = await openai.chat.completions.create({
+          model: 'gpt-4-turbo-preview',
+          messages: [
+            {
+              role: 'system',
+              content: prompt.systemMessage
+            },
+            ...prompt.contextMessages,
+            {
+              role: 'user',
+              content: mensaje.content
+            }
+          ],
+          temperature: this.determinarTemperatura(analisisContextual),
+          max_tokens: this.determinarLongitudRespuesta(analisisContextual),
+          presence_penalty: 0.6,
+          frequency_penalty: 0.6
+        });
+      } catch (apiError) {
+        // Manejar errores específicos de autenticación
+        if (apiError.status === 401 || apiError.code === 'invalid_api_key') {
+          console.error('❌ ERROR DE AUTENTICACIÓN CON OPENAI:');
+          console.error('   La API key proporcionada es incorrecta o ha expirado');
+          console.error('   Verifica que OPENAI_API_KEY esté correctamente configurada en Render');
+          console.error('   Puedes obtener una nueva API key en: https://platform.openai.com/account/api-keys');
+          console.error('   Error completo:', apiError.message);
+          throw new Error('Error de autenticación con OpenAI. Verifica tu API key en las variables de entorno de Render.');
+        }
+        // Re-lanzar otros errores
+        throw apiError;
+      }
 
       const respuestaGenerada = completion.choices[0].message.content;
 
@@ -939,11 +966,24 @@ ESTRUCTURA DE RESPUESTA:
   async manejarError(error, mensaje) {
     console.error('Error en OpenAI Service:', error);
     
+    // Mensaje de error más específico según el tipo
+    let errorMessage = "Lo siento, ha ocurrido un error. Por favor, intenta de nuevo o contacta a soporte si el problema persiste.";
+    
+    if (error.status === 401 || error.code === 'invalid_api_key') {
+      errorMessage = "Error de configuración del servicio. Por favor, contacta a soporte.";
+      console.error('❌ Error de autenticación: La API key de OpenAI es incorrecta o no está configurada');
+    } else if (error.status === 429) {
+      errorMessage = "El servicio está temporalmente ocupado. Por favor, intenta de nuevo en unos momentos.";
+    } else if (error.status >= 500) {
+      errorMessage = "El servicio está experimentando problemas técnicos. Por favor, intenta de nuevo más tarde.";
+    }
+    
     return {
-      content: "Lo siento, ha ocurrido un error. Por favor, intenta de nuevo o contacta a soporte si el problema persiste.",
+      content: errorMessage,
       context: {
         error: true,
         errorType: error.name,
+        errorCode: error.code || error.status,
         errorMessage: error.message,
         timestamp: new Date()
       }
