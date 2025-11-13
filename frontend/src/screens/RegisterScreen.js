@@ -16,6 +16,8 @@ import {
   Alert,
   Animated,
   ImageBackground,
+  Modal,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -26,27 +28,36 @@ import {
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import ParticleBackground from '../components/ParticleBackground';
 import { api, ENDPOINTS } from '../config/api';
+import {
+  ANIMATION_DELAYS,
+  ANIMATION_DURATIONS,
+  ANIMATION_SCALES,
+  ANIMATION_VALUES,
+} from '../constants/animations';
 import { ROUTES } from '../constants/routes';
+import { REGISTER as TEXTS } from '../constants/translations';
+import { OPACITIES, SCALES, STATUS_BAR } from '../constants/ui';
+import { VALIDATION_LENGTHS, VALIDATION_REGEX } from '../constants/validation';
 import { colors, globalStyles } from '../styles/globalStyles';
 import { checkServerStatus } from '../utils/networkUtils';
 
-// Constantes de animación
-const ANIMATION_INITIAL_DELAY = 500; // ms
-const ANIMATION_DURATION = 800; // ms
-const INITIAL_TRANSLATE_Y = 30;
-const INITIAL_OPACITY = 0;
-const FINAL_OPACITY = 1;
-const FINAL_TRANSLATE_Y = 0;
-const BUTTON_PRESS_SCALE = 0.95;
+// Constantes de animación (usando constantes compartidas)
+const ANIMATION_INITIAL_DELAY = ANIMATION_DELAYS.LONG;
+const ANIMATION_DURATION = ANIMATION_DURATIONS.SLOW;
+const INITIAL_TRANSLATE_Y = ANIMATION_VALUES.INITIAL_TRANSLATE_Y;
+const INITIAL_OPACITY = ANIMATION_VALUES.INITIAL_OPACITY;
+const FINAL_OPACITY = ANIMATION_VALUES.FINAL_OPACITY;
+const FINAL_TRANSLATE_Y = ANIMATION_VALUES.FINAL_TRANSLATE_Y;
+const BUTTON_PRESS_SCALE = ANIMATION_SCALES.BUTTON_PRESS;
 
-// Constantes de validación
-const MIN_NAME_LENGTH = 2;
-const MAX_NAME_LENGTH = 50;
-const MIN_USERNAME_LENGTH = 3;
-const MAX_USERNAME_LENGTH = 20;
-const MIN_PASSWORD_LENGTH = 8;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const USERNAME_REGEX = /^[a-z0-9_]+$/;
+// Constantes de validación (usando constantes compartidas)
+const MIN_NAME_LENGTH = VALIDATION_LENGTHS.NAME_MIN;
+const MAX_NAME_LENGTH = VALIDATION_LENGTHS.NAME_MAX;
+const MIN_USERNAME_LENGTH = VALIDATION_LENGTHS.USERNAME_MIN;
+const MAX_USERNAME_LENGTH = VALIDATION_LENGTHS.USERNAME_MAX;
+const MIN_PASSWORD_LENGTH = VALIDATION_LENGTHS.PASSWORD_MIN;
+const EMAIL_REGEX = VALIDATION_REGEX.EMAIL;
+const USERNAME_REGEX = VALIDATION_REGEX.USERNAME;
 
 // Constantes de AsyncStorage
 const STORAGE_KEYS = {
@@ -56,59 +67,18 @@ const STORAGE_KEYS = {
   SAVED_EMAIL: 'savedEmail'
 };
 
-// Constantes de mensajes de error
-const ERROR_MESSAGES = {
-  NAME_MIN: 'El nombre debe tener al menos 2 caracteres',
-  NAME_MAX: 'El nombre debe tener máximo 50 caracteres',
-  USERNAME_REQUIRED: 'El nombre de usuario es obligatorio',
-  USERNAME_MIN: 'El nombre de usuario debe tener al menos 3 caracteres',
-  USERNAME_MAX: 'El nombre de usuario debe tener máximo 20 caracteres',
-  USERNAME_MIN_SHORT: 'Mínimo 3 caracteres',
-  USERNAME_MAX_SHORT: 'Máximo 20 caracteres',
-  EMAIL_REQUIRED: 'El correo es obligatorio',
-  EMAIL_INVALID: 'Introduce un correo válido',
-  PASSWORD_REQUIRED: 'La contraseña es obligatoria',
-  PASSWORD_MIN: 'La contraseña debe tener al menos 8 caracteres',
-  CONFIRM_PASSWORD_REQUIRED: 'Debes confirmar la contraseña',
-  PASSWORDS_MISMATCH: 'Las contraseñas no coinciden',
-  TERMS_REQUIRED: 'Debes aceptar los términos y condiciones',
-  CONNECTION_ERROR: 'No se pudo conectar con el servidor. Por favor, verifica tu conexión a internet.',
-  SERVER_ERROR: 'No se pudo establecer conexión con el servidor. Por favor:\n\n1. Verifica tu conexión a internet\n2. Espera unos minutos y vuelve a intentar\n3. Si el problema persiste, contacta al soporte',
-  NETWORK_ERROR: 'Error de conexión. Por favor:\n\n1. Verifica tu conexión a internet\n2. Intenta nuevamente en unos momentos\n3. Si el problema persiste, contacta al soporte',
-  ALREADY_EXISTS: 'El email o nombre de usuario ya está registrado',
-  INVALID_DATA: 'Por favor, verifica que todos los campos sean correctos',
-  TOO_MANY_ATTEMPTS: 'Demasiados intentos de registro. Por favor, espera un momento',
-  NO_TOKEN: 'No se recibió token de autenticación',
-  GENERIC_ERROR: 'Ocurrió un error durante el registro'
-};
+// Constantes de mensajes de error (usando traducciones)
+const ERROR_MESSAGES = TEXTS.ERRORS;
 
-// Constantes de textos
-const TEXTS = {
-  TITLE: 'Crear Cuenta',
-  SUBTITLE: 'Por favor, llena los campos para registrarte.',
-  NAME_PLACEHOLDER: 'Nombre completo (opcional)',
-  USERNAME_PLACEHOLDER: 'Nombre de usuario',
-  EMAIL_PLACEHOLDER: 'Correo Electrónico',
-  PASSWORD_PLACEHOLDER: 'Contraseña',
-  CONFIRM_PASSWORD_PLACEHOLDER: 'Confirma tu Contraseña',
-  TERMS_TEXT: 'Acepto los ',
-  TERMS_LINK: 'términos y condiciones',
-  TERMS_ALERT_TITLE: 'Términos y Condiciones',
-  TERMS_ALERT_MESSAGE: 'Aquí irían los términos y condiciones de la aplicación.',
-  REGISTER_BUTTON: 'Registrarse',
-  SIGN_IN_LINK: '¿Ya tienes una cuenta? Inicia Sesión',
-  ERROR_TITLE: 'Error en el registro'
-};
-
-// Constantes de estilos
-const IMAGE_OPACITY = 0.1;
+// Constantes de estilos específicas de esta pantalla
+const IMAGE_OPACITY = OPACITIES.IMAGE_BACKGROUND;
 const HORIZONTAL_PADDING = 20;
 const VERTICAL_PADDING = 40;
 const TITLE_MARGIN_TOP = 60;
 const TITLE_MARGIN_BOTTOM = 10;
 const SUBTITLE_MARGIN_BOTTOM = 30;
-const LOADING_SCALE = 1.5;
-const STATUS_BAR_STYLE = 'light-content';
+const LOADING_SCALE = SCALES.LOADING;
+const STATUS_BAR_STYLE = STATUS_BAR.STYLE;
 const STATUS_BAR_BACKGROUND = colors.background;
 const CHECKBOX_SIZE = 20;
 const CHECKBOX_BORDER_WIDTH = 2;
@@ -118,7 +88,7 @@ const CHECKBOX_ICON_SIZE = 16;
 const EYE_ICON_SIZE = 24;
 const BUTTON_ICON_SIZE = 22;
 const BUTTON_ICON_MARGIN = 8;
-const ACTIVE_OPACITY = 0.7;
+const ACTIVE_OPACITY = OPACITIES.HOVER;
 const BUTTON_ACTIVE_OPACITY = 0.85;
 
 // Constantes de servidor
@@ -222,6 +192,8 @@ const RegisterScreen = ({ navigation }) => {
   const [isPasswordVisible, setPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [isTermsAccepted, setTermsAccepted] = useState(false);
+  const [isNameInfoModalVisible, setNameInfoModalVisible] = useState(false);
+  const [isTermsModalVisible, setTermsModalVisible] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(true);
 
@@ -434,6 +406,20 @@ const RegisterScreen = ({ navigation }) => {
                 />
               </View>
               {errors.name ? <Text style={globalStyles.errorText}>{errors.name}</Text> : null}
+              
+              {/* Link de información sobre nombre real */}
+              <TouchableOpacity 
+                onPress={() => setNameInfoModalVisible(true)}
+                style={styles.nameInfoLink}
+                activeOpacity={ACTIVE_OPACITY}
+              >
+                <Ionicons 
+                  name="information-circle-outline" 
+                  size={16} 
+                  color={colors.primary}
+                />
+                <Text style={styles.nameInfoLinkText}>{TEXTS.NAME_INFO_LINK}</Text>
+              </TouchableOpacity>
             </View>
 
             {/* Campo de Username */}
@@ -556,7 +542,7 @@ const RegisterScreen = ({ navigation }) => {
                 {TEXTS.TERMS_TEXT}
                 <Text 
                   style={styles.termsLink} 
-                  onPress={() => Alert.alert(TEXTS.TERMS_ALERT_TITLE, TEXTS.TERMS_ALERT_MESSAGE)}
+                  onPress={() => setTermsModalVisible(true)}
                 >
                   {TEXTS.TERMS_LINK}
                 </Text>.
@@ -599,6 +585,77 @@ const RegisterScreen = ({ navigation }) => {
           </Animated.View>
         )}
       </ImageBackground>
+
+      {/* Modal de información sobre nombre real */}
+      <Modal
+        visible={isNameInfoModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setNameInfoModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{TEXTS.NAME_INFO_MODAL_TITLE}</Text>
+              <TouchableOpacity
+                onPress={() => setNameInfoModalVisible(false)}
+                style={styles.modalCloseButton}
+                activeOpacity={ACTIVE_OPACITY}
+              >
+                <Ionicons name="close" size={24} color={colors.white} />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.modalMessage}>{TEXTS.NAME_INFO_MODAL_MESSAGE}</Text>
+            
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setNameInfoModalVisible(false)}
+              activeOpacity={BUTTON_ACTIVE_OPACITY}
+            >
+              <Text style={styles.modalButtonText}>{TEXTS.MODAL_CLOSE}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de términos y condiciones */}
+      <Modal
+        visible={isTermsModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setTermsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{TEXTS.TERMS_ALERT_TITLE}</Text>
+              <TouchableOpacity
+                onPress={() => setTermsModalVisible(false)}
+                style={styles.modalCloseButton}
+                activeOpacity={ACTIVE_OPACITY}
+              >
+                <Ionicons name="close" size={24} color={colors.white} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView 
+              style={styles.modalScrollView}
+              showsVerticalScrollIndicator={true}
+            >
+              <Text style={styles.modalMessage}>{TEXTS.TERMS_ALERT_MESSAGE}</Text>
+            </ScrollView>
+            
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setTermsModalVisible(false)}
+              activeOpacity={BUTTON_ACTIVE_OPACITY}
+            >
+              <Text style={styles.modalButtonText}>{TEXTS.MODAL_CLOSE}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAwareScrollView>
   );
 };
@@ -683,6 +740,84 @@ const styles = StyleSheet.create({
   },
   loadingIndicator: {
     transform: [{ scale: LOADING_SCALE }],
+  },
+  nameInfoLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    marginTop: 8,
+    marginLeft: 5,
+  },
+  nameInfoLinkText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 6,
+    lineHeight: 16,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: colors.background,
+    borderRadius: 20,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+    maxHeight: '80%',
+    borderWidth: 1,
+    borderColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+    alignSelf: 'center',
+  },
+  modalScrollView: {
+    maxHeight: 300,
+    marginBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: colors.white,
+    flex: 1,
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: '#A3B8E8',
+    lineHeight: 24,
+    marginBottom: 24,
+    textAlign: 'left',
+  },
+  modalButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

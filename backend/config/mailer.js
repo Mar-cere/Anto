@@ -194,6 +194,11 @@ const emailTemplates = {
 // Helper: enviar correo genérico
 const sendEmail = async (email, template, emailType) => {
   try {
+    // Verificar configuración antes de intentar enviar
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
+      throw new Error('Variables de entorno EMAIL_USER y EMAIL_APP_PASSWORD no están configuradas');
+    }
+
     const transporter = createTransporter();
     
     await transporter.sendMail({
@@ -202,10 +207,13 @@ const sendEmail = async (email, template, emailType) => {
       ...template
     });
     
-    console.log(`✉️ ${emailType} enviado a:`, email);
+    console.log(`✉️ ${emailType} enviado exitosamente a:`, email);
     return true;
   } catch (error) {
-    console.error(`[Mailer] Error al enviar ${emailType}:`, error);
+    console.error(`[Mailer] ❌ Error al enviar ${emailType} a ${email}:`, error.message);
+    if (error.message.includes('Variables de entorno')) {
+      console.error('[Mailer] 💡 Solución: Configura EMAIL_USER y EMAIL_APP_PASSWORD en tu archivo .env');
+    }
     throw error;
   }
 };

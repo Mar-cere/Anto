@@ -21,6 +21,7 @@ export const globalStyles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
+    marginBottom: 20,
   },
   errorText: {
     color: '#FF6B6B',

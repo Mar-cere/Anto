@@ -11,7 +11,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { memo, useCallback, useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -32,61 +32,25 @@ import PomodoroCard from '../components/PomodoroCard';
 import QuoteSection from '../components/QuoteSection';
 import TaskCard from '../components/TaskCard';
 import { api, ENDPOINTS } from '../config/api';
+import { ANIMATION_DURATIONS, ANIMATION_OPACITIES, ANIMATION_SCALES } from '../constants/animations';
+import { DASH } from '../constants/translations';
+import { BORDERS, OPACITIES, SPACING, STATUS_BAR } from '../constants/ui';
 import { colors } from '../styles/globalStyles';
 import { getGreetingByHourAndDayAndName } from '../utils/greetings';
-
-// Constantes de animación
-const REFRESH_ANIMATION_DURATION = 300; // ms
-const REFRESH_SCALE_MIN = 1;
-const REFRESH_SCALE_MAX = 1.05;
-const REFRESH_OPACITY_MIN = 1;
-const REFRESH_OPACITY_MAX = 0.7;
-
-// Constantes de textos
-const TEXTS = {
-  LOADING: 'Cargando tu panel...',
-  RETRY: 'Reintentar',
-  DISMISS: 'Descartar',
-  ERROR_PREFIX: '⚠️ ',
-  ERROR_USER: 'No se pudo cargar usuario. Intenta de nuevo.',
-  ERROR_TASKS: 'No se pudo cargar tareas. Intenta de nuevo.',
-  ERROR_HABITS: 'No se pudo cargar hábitos. Intenta de nuevo.',
-  ERROR_GENERIC: 'Error al cargar los datos',
-  TASKS_LABEL: 'Lista de tareas',
-  HABITS_LABEL: 'Lista de hábitos',
-  POMODORO_LABEL: 'Pomodoro',
-  NAVBAR_LABEL: 'Barra de navegación'
-};
-
-// Constantes de estilos
-const IMAGE_OPACITY = 0.1;
-const STATUS_BAR_STYLE = 'light-content';
-const STATUS_BAR_BACKGROUND = colors.background;
-const CONTENT_PADDING_BOTTOM = 120;
-const ERROR_BORDER_LEFT_WIDTH = 4;
-const ERROR_PADDING = 15;
-const ERROR_MARGIN_BOTTOM = 20;
-const ERROR_BUTTON_PADDING_HORIZONTAL = 15;
-const ERROR_BUTTON_PADDING_VERTICAL = 8;
-const ERROR_BUTTON_BORDER_RADIUS = 5;
-const ERROR_BUTTON_MARGIN_LEFT = 10;
-const ERROR_TEXT_MARGIN_BOTTOM = 10;
-const LOADING_TEXT_MARGIN_TOP = 10;
-const DEFAULT_STATUS_BAR_HEIGHT = 44;
 
 // Componente para mostrar errores con opciones de recuperación
 const ErrorMessage = ({ message, onRetry, onDismiss }) => (
   <View style={styles.errorContainer}>
-    <Text style={styles.errorText}>{TEXTS.ERROR_PREFIX}{message}</Text>
+    <Text style={styles.errorText}>{DASH.ERROR_PREFIX}{message}</Text>
     <View style={styles.errorButtonsContainer}>
       {onRetry && (
         <TouchableOpacity style={styles.errorButton} onPress={onRetry}>
-          <Text style={styles.errorButtonText}>{TEXTS.RETRY}</Text>
+          <Text style={styles.errorButtonText}>{DASH.RETRY}</Text>
         </TouchableOpacity>
       )}
       {onDismiss && (
         <TouchableOpacity style={styles.errorButton} onPress={onDismiss}>
-          <Text style={styles.errorButtonText}>{TEXTS.DISMISS}</Text>
+          <Text style={styles.errorButtonText}>{DASH.DISMISS}</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -131,15 +95,15 @@ const DashScreen = () => {
       // Cargar datos en paralelo usando api helper
       const [userData, tasks, habits] = await Promise.all([
         api.get(ENDPOINTS.ME).catch(() => {
-          setError(TEXTS.ERROR_USER);
+          setError(DASH.ERROR_USER);
           return {};
         }),
         api.get(ENDPOINTS.TASKS).catch(() => {
-          setError(TEXTS.ERROR_TASKS);
+          setError(DASH.ERROR_TASKS);
           return [];
         }),
         api.get(ENDPOINTS.HABITS).catch(() => {
-          setError(TEXTS.ERROR_HABITS);
+          setError(DASH.ERROR_HABITS);
           return [];
         })
       ]);
@@ -169,7 +133,7 @@ const DashScreen = () => {
       setError(null);
     } catch (error) {
       console.error('Error en loadData:', error);
-      setError(TEXTS.ERROR_GENERIC);
+      setError(DASH.ERROR_GENERIC);
       setLoading(false);
       setRefreshing(false);
     }
@@ -183,53 +147,53 @@ const DashScreen = () => {
   }, [loadData, loading]);
 
   // Animación al refrescar
-  const triggerRefreshAnim = () => {
+  const triggerRefreshAnim = useCallback(() => {
     Animated.sequence([
       Animated.timing(refreshAnim, {
         toValue: 1,
-        duration: REFRESH_ANIMATION_DURATION,
+        duration: ANIMATION_DURATIONS.FAST,
         useNativeDriver: true,
         easing: Easing.out(Easing.ease)
       }),
       Animated.timing(refreshAnim, {
         toValue: 0,
-        duration: REFRESH_ANIMATION_DURATION,
+        duration: ANIMATION_DURATIONS.FAST,
         useNativeDriver: true,
         easing: Easing.in(Easing.ease)
       })
     ]).start();
-  };
+  }, [refreshAnim]);
+
+  // Estilos de animación para refresh (debe estar antes de cualquier return condicional)
+  const refreshAnimationStyle = useMemo(() => ({
+    transform: [{ 
+      scale: refreshAnim.interpolate({ 
+        inputRange: [0, 1], 
+        outputRange: [ANIMATION_SCALES.REFRESH_MIN, ANIMATION_SCALES.REFRESH_MAX] 
+      }) 
+    }],
+    opacity: refreshAnim.interpolate({ 
+      inputRange: [0, 1], 
+      outputRange: [ANIMATION_OPACITIES.REFRESH_MIN, ANIMATION_OPACITIES.REFRESH_MAX] 
+    })
+  }), [refreshAnim]);
+
+  // Avatar por defecto
+  const avatarToShow = avatarUrl || require('../images/avatar.png');
 
   // Componente de carga
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>{TEXTS.LOADING}</Text>
+        <Text style={styles.loadingText}>{DASH.LOADING}</Text>
       </View>
     );
   }
 
-  // Avatar por defecto
-  const avatarToShow = avatarUrl || require('../images/avatar.png');
-
-  // Estilos de animación para refresh
-  const refreshAnimationStyle = {
-    transform: [{ 
-      scale: refreshAnim.interpolate({ 
-        inputRange: [0, 1], 
-        outputRange: [REFRESH_SCALE_MIN, REFRESH_SCALE_MAX] 
-      }) 
-    }],
-    opacity: refreshAnim.interpolate({ 
-      inputRange: [0, 1], 
-      outputRange: [REFRESH_OPACITY_MIN, REFRESH_OPACITY_MAX] 
-    })
-  };
-
   return (
     <View style={styles.container}>
-      <StatusBar barStyle={STATUS_BAR_STYLE} backgroundColor={STATUS_BAR_BACKGROUND} />
+      <StatusBar barStyle={STATUS_BAR.STYLE} backgroundColor={colors.background} />
       <ImageBackground
         source={require('../images/back.png')}
         style={styles.background}
@@ -250,7 +214,7 @@ const DashScreen = () => {
             triggerRefreshAnim();
             loadData(true);
           }}
-          contentContainerStyle={{ paddingBottom: CONTENT_PADDING_BOTTOM }}
+          contentContainerStyle={{ paddingBottom: SPACING.CONTENT_PADDING_BOTTOM }}
         >
           <QuoteSection />
           {error && (
@@ -267,7 +231,7 @@ const DashScreen = () => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 loadData(true);
               }}
-              accessibilityLabel={TEXTS.TASKS_LABEL}
+              accessibilityLabel={DASH.TASKS_LABEL}
             />
           </Animated.View>
           <Animated.View style={refreshAnimationStyle}>
@@ -277,12 +241,12 @@ const DashScreen = () => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 loadData(true);
               }}
-              accessibilityLabel={TEXTS.HABITS_LABEL}
+              accessibilityLabel={DASH.HABITS_LABEL}
             />
           </Animated.View>
-          <PomodoroCard accessibilityLabel={TEXTS.POMODORO_LABEL} />
+          <PomodoroCard accessibilityLabel={DASH.POMODORO_LABEL} />
         </DashboardScroll>
-        <FloatingNavBar activeTab="home" accessibilityLabel={TEXTS.NAVBAR_LABEL} />
+        <FloatingNavBar activeTab="home" accessibilityLabel={DASH.NAVBAR_LABEL} />
       </ImageBackground>
     </View>
   );
@@ -302,18 +266,18 @@ const styles = StyleSheet.create({
   loadingText: {
     color: '#A3B8E8',
     fontSize: 18,
-    marginTop: LOADING_TEXT_MARGIN_TOP,
+    marginTop: SPACING.LOADING_TEXT_MARGIN_TOP,
   },
   background: {
     flex: 1,
     width: '100%',
   },
   imageStyle: {
-    opacity: IMAGE_OPACITY,
+    opacity: OPACITIES.IMAGE_BACKGROUND,
   },
   headerFixed: {
     backgroundColor: colors.background,
-    paddingTop: StatusBar.currentHeight || DEFAULT_STATUS_BAR_HEIGHT,
+    paddingTop: StatusBar.currentHeight || STATUS_BAR.DEFAULT_HEIGHT,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(163, 184, 232, 0.1)',
     zIndex: 2,
@@ -321,15 +285,15 @@ const styles = StyleSheet.create({
   errorContainer: {
     backgroundColor: 'rgba(255, 99, 71, 0.2)',
     borderRadius: 10,
-    padding: ERROR_PADDING,
-    marginBottom: ERROR_MARGIN_BOTTOM,
-    borderLeftWidth: ERROR_BORDER_LEFT_WIDTH,
+    padding: SPACING.ERROR_PADDING,
+    marginBottom: SPACING.ERROR_MARGIN_BOTTOM,
+    borderLeftWidth: BORDERS.ERROR_LEFT_WIDTH,
     borderLeftColor: '#FF6347',
   },
   errorText: {
     color: colors.white,
     fontSize: 16,
-    marginBottom: ERROR_TEXT_MARGIN_BOTTOM,
+    marginBottom: SPACING.ERROR_TEXT_MARGIN_BOTTOM,
   },
   errorButtonsContainer: {
     flexDirection: 'row',
@@ -340,10 +304,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   errorButton: {
-    paddingHorizontal: ERROR_BUTTON_PADDING_HORIZONTAL,
-    paddingVertical: ERROR_BUTTON_PADDING_VERTICAL,
-    borderRadius: ERROR_BUTTON_BORDER_RADIUS,
+    paddingHorizontal: SPACING.ERROR_BUTTON_PADDING_HORIZONTAL,
+    paddingVertical: SPACING.ERROR_BUTTON_PADDING_VERTICAL,
+    borderRadius: BORDERS.ERROR_BUTTON_RADIUS,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    marginLeft: ERROR_BUTTON_MARGIN_LEFT,
+    marginLeft: SPACING.ERROR_BUTTON_MARGIN_LEFT,
   },
 });

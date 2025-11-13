@@ -245,9 +245,20 @@ router.post('/register', registerLimiter, async (req, res) => {
     await user.save();
 
     // Enviar correo de bienvenida (no bloquea si falla)
-    mailer.sendWelcomeEmail(email, username).catch(err => {
-      console.error('Error enviando correo de bienvenida:', err);
-    });
+    mailer.sendWelcomeEmail(email, username)
+      .then(success => {
+        if (success) {
+          console.log(`✅ Correo de bienvenida enviado a: ${email}`);
+        } else {
+          console.warn(`⚠️ No se pudo enviar correo de bienvenida a: ${email}`);
+        }
+      })
+      .catch(err => {
+        console.error('❌ Error enviando correo de bienvenida:', err.message);
+        if (err.message.includes('Variables de entorno')) {
+          console.error('💡 Configura EMAIL_USER y EMAIL_APP_PASSWORD en tu archivo .env para habilitar el envío de correos');
+        }
+      });
 
     // Generar tokens
     const { accessToken, refreshToken } = generateTokens(user._id);

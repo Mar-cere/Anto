@@ -13,6 +13,7 @@ import React from 'react';
 import { ROUTES } from '../constants/routes';
 import DashScreen from '../screens/DashScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
+import FaQScreen from '../screens/FaQScreen';
 import HabitsScreen from '../screens/HabitsScreen';
 import HelpScreen from '../screens/HelpScreen';
 import HomeScreen from '../screens/HomeScreen';
@@ -142,6 +143,11 @@ const StackNavigator = () => {
       <Stack.Screen 
         name={ROUTE_NAMES.HELP} 
         component={HelpScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen 
+        name={ROUTE_NAMES.FAQ} 
+        component={FaQScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

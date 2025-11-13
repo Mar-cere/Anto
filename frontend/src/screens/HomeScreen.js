@@ -22,42 +22,36 @@ import {
 import AnimatedButton from '../components/AnimatedButton';
 import EmotionBanner from '../components/EmotionBanner';
 import ParticleBackground from '../components/ParticleBackground';
+import {
+  ANIMATION_DELAYS,
+  ANIMATION_DURATIONS,
+  ANIMATION_VALUES
+} from '../constants/animations';
 import { ROUTES } from '../constants/routes';
+import { HOME as TEXTS } from '../constants/translations';
+import { OPACITIES, SCALES, STATUS_BAR } from '../constants/ui';
 import emotions from '../data/emotions';
 import { colors, globalStyles } from '../styles/globalStyles';
 
-// Constantes de animación
-const ANIMATION_INITIAL_DELAY = 1500; // ms
-const ANIMATION_DURATION = 800; // ms
-const INITIAL_TRANSLATE_Y = 30;
-const INITIAL_OPACITY = 0;
-const FINAL_OPACITY = 1;
-const FINAL_TRANSLATE_Y = 0;
+// Constantes específicas de esta pantalla
+const ANIMATION_INITIAL_DELAY = ANIMATION_DELAYS.SCREEN_ENTRY;
+const ANIMATION_DURATION = ANIMATION_DURATIONS.SLOW;
+const INITIAL_TRANSLATE_Y = ANIMATION_VALUES.INITIAL_TRANSLATE_Y;
+const INITIAL_OPACITY = ANIMATION_VALUES.INITIAL_OPACITY;
+const FINAL_OPACITY = ANIMATION_VALUES.FINAL_OPACITY;
+const FINAL_TRANSLATE_Y = ANIMATION_VALUES.FINAL_TRANSLATE_Y;
+const INITIAL_SCALE = ANIMATION_VALUES.INITIAL_SCALE;
+const INITIAL_BUTTON_OPACITY = ANIMATION_VALUES.INITIAL_BUTTON_OPACITY;
 
-// Constantes de valores iniciales de animación
-const INITIAL_SCALE = 1;
-const INITIAL_BUTTON_OPACITY = 1;
-
-// Constantes de estilos
-const IMAGE_OPACITY = 0.1;
+// Constantes de estilos específicas de esta pantalla
+const IMAGE_OPACITY = OPACITIES.IMAGE_BACKGROUND;
 const HORIZONTAL_PADDING = 30;
 const TEXT_MARGIN_BOTTOM = 50;
 const FOOTER_BOTTOM = 40;
-const LOADING_SCALE = 1.5;
-
-// Constantes de textos
-const TEXTS = {
-  WELCOME: '¡Bienvenido!',
-  SUBTITLE: 'Nos alegra verte aquí.',
-  SIGN_IN: 'Iniciar Sesión',
-  REGISTER: 'Crear cuenta',
-  FAQ: 'Preguntas Frecuentes',
-  SIGN_IN_HINT: 'Toca para ir a la pantalla de inicio de sesión',
-  REGISTER_HINT: 'Toca para ir a la pantalla de registro'
-};
+const LOADING_SCALE = SCALES.LOADING;
 
 // Constantes de StatusBar
-const STATUS_BAR_STYLE = 'light-content';
+const STATUS_BAR_STYLE = STATUS_BAR.STYLE;
 
 // Mapeo de rutas para navegación
 const ROUTE_MAP = {
