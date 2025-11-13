@@ -35,7 +35,9 @@ const COLORS = {
 // Helper: crear transporter de nodemailer
 const createTransporter = () => {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
-    throw new Error('Variables de entorno EMAIL_USER y EMAIL_APP_PASSWORD son requeridas');
+    const error = new Error('Variables de entorno EMAIL_USER y EMAIL_APP_PASSWORD son requeridas para enviar correos');
+    console.error('[Mailer] ⚠️ Configuración faltante:', error.message);
+    throw error;
   }
   
   return nodemailer.createTransport({
