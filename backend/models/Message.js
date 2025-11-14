@@ -43,14 +43,22 @@ const messageSchema = new mongoose.Schema({
       emotional: {
         mainEmotion: {
           type: String,
-          enum: ['tristeza', 'ansiedad', 'enojo', 'alegria', 'miedo', 'verguenza', 'culpa', 'esperanza', 'neutral']
+          enum: ['tristeza', 'ansiedad', 'enojo', 'alegria', 'miedo', 'verguenza', 'culpa', 'esperanza', 'neutral'],
+          required: false
         },
         intensity: {
           type: Number,
           min: 0,
-          max: 10
+          max: 10,
+          required: false
         },
-        secondary: [String]
+        secondary: {
+          type: [String],
+          default: []
+        },
+        category: String,
+        confidence: Number,
+        requiresAttention: Boolean
       },
       contextual: {
         intent: String,
@@ -71,6 +79,11 @@ messageSchema.index({ userId: 1, conversationId: 1 });
 messageSchema.index({ conversationId: 1, createdAt: -1 });
 messageSchema.index({ role: 1 });
 
-const Message = mongoose.models.Message || mongoose.model('Message', messageSchema);
+// Eliminar modelo de caché si existe para forzar actualización del esquema
+if (mongoose.models.Message) {
+  delete mongoose.models.Message;
+}
+
+const Message = mongoose.model('Message', messageSchema);
 
 export default Message;
