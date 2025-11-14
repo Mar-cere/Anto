@@ -330,7 +330,7 @@ class OpenAIService {
 
 CONTEXTO ACTUAL:
 - Momento del día: ${timeOfDay}
-      - Estado emocional: ${contexto.emotional?.mainEmotion || DEFAULT_VALUES.EMOTION} (intensidad: ${contexto.emotional?.intensity || DEFAULT_VALUES.INTENSITY})
+- Estado emocional: ${contexto.emotional?.mainEmotion || DEFAULT_VALUES.EMOTION} (intensidad: ${contexto.emotional?.intensity || DEFAULT_VALUES.INTENSITY})
 - Temas recurrentes: ${contexto.memory?.recurringThemes?.join(', ') || 'ninguno'}
 - Estilo comunicativo preferido: ${userStyle}
 - Fase terapéutica: ${contexto.therapeutic?.currentPhase || DEFAULT_VALUES.PHASE}
@@ -343,12 +343,14 @@ DIRECTRICES:
 4. Evita repeticiones exactas de respuestas anteriores
 5. Prioriza la validación emocional cuando sea apropiado
 6. Incluye elementos de apoyo concretos y sugerencias útiles
+7. **IMPORTANTE: Sé conciso. Limita tus respuestas a máximo 150 palabras (aproximadamente 2-3 oraciones). Sé directo y claro.**
 
-ESTRUCTURA DE RESPUESTA:
-1. Reconocimiento específico de la situación/emoción
-2. Validación o normalización cuando sea apropiado
-3. Elemento de apoyo o sugerencia concreta
-4. Pregunta exploratoria o invitación a profundizar`;
+ESTRUCTURA DE RESPUESTA (CONCISA):
+1. Reconocimiento específico de la situación/emoción (1 oración)
+2. Validación o elemento de apoyo concreto (1 oración)
+3. Pregunta exploratoria breve o invitación a profundizar (opcional, 1 oración)
+
+Recuerda: Menos es más. Una respuesta breve y empática es más efectiva que una larga.`;
 
     const contextMessages = await this.generarMensajesContexto(contexto);
 
@@ -428,6 +430,15 @@ ESTRUCTURA DE RESPUESTA:
 
     let respuestaMejorada = respuesta.trim();
 
+    // Validar longitud máxima (caracteres y palabras)
+    const caracteres = respuestaMejorada.length;
+    const palabras = respuestaMejorada.split(/\s+/).filter(w => w.length > 0).length;
+    
+    if (caracteres > THRESHOLDS.MAX_CHARACTERS_RESPONSE || palabras > THRESHOLDS.MAX_WORDS_RESPONSE) {
+      console.log(`📏 Respuesta demasiado larga (${caracteres} caracteres, ${palabras} palabras). Reduciendo...`);
+      respuestaMejorada = this.reducirRespuesta(respuestaMejorada);
+    }
+
     // Validar si es genérica
     if (this.esRespuestaGenerica(respuestaMejorada)) {
       respuestaMejorada = this.expandirRespuesta(respuestaMejorada);
@@ -436,6 +447,15 @@ ESTRUCTURA DE RESPUESTA:
     // Validar y ajustar coherencia emocional
     if (!this.esCoherenteConEmocion(respuestaMejorada, contexto.emotional)) {
       respuestaMejorada = this.ajustarCoherenciaEmocional(respuestaMejorada, contexto.emotional);
+    }
+    
+    // Validar longitud final después de ajustes
+    const caracteresFinal = respuestaMejorada.length;
+    const palabrasFinal = respuestaMejorada.split(/\s+/).filter(w => w.length > 0).length;
+    
+    if (caracteresFinal > THRESHOLDS.MAX_CHARACTERS_RESPONSE || palabrasFinal > THRESHOLDS.MAX_WORDS_RESPONSE) {
+      console.log(`📏 Respuesta aún demasiado larga después de ajustes (${caracteresFinal} caracteres, ${palabrasFinal} palabras). Reduciendo nuevamente...`);
+      respuestaMejorada = this.reducirRespuesta(respuestaMejorada);
     }
     
     return respuestaMejorada;
@@ -549,17 +569,43 @@ ESTRUCTURA DE RESPUESTA:
   }
 
   /**
-   * Reduce respuestas muy largas manteniendo las primeras oraciones
+   * Reduce respuestas muy largas manteniendo las primeras oraciones más importantes
    * @param {string} respuesta - Respuesta original
    * @returns {string} Respuesta reducida
    */
   reducirRespuesta(respuesta) {
     if (!respuesta) return ERROR_MESSAGES.DEFAULT_FALLBACK;
     
+    // Dividir en oraciones
     const oraciones = respuesta.split(/[.!?]+/).filter(s => s.trim());
-    if (oraciones.length <= 3) return respuesta;
     
-    return oraciones.slice(0, 3).join('. ').trim() + '.';
+    // Si tiene 3 o menos oraciones, retornar tal cual
+    if (oraciones.length <= 3) {
+      // Pero aún así verificar longitud de caracteres
+      if (respuesta.length <= THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
+        return respuesta;
+      }
+    }
+    
+    // Tomar las primeras 2-3 oraciones más importantes
+    const oracionesReducidas = oraciones.slice(0, 2);
+    let respuestaReducida = oracionesReducidas.join('. ').trim();
+    
+    // Si aún es muy larga, truncar por caracteres
+    if (respuestaReducida.length > THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
+      respuestaReducida = respuestaReducida.substring(0, THRESHOLDS.MAX_CHARACTERS_RESPONSE - 3).trim();
+      // Asegurar que termine en un punto
+      if (!respuestaReducida.endsWith('.') && !respuestaReducida.endsWith('!') && !respuestaReducida.endsWith('?')) {
+        respuestaReducida += '...';
+      }
+    } else {
+      // Agregar punto final si no lo tiene
+      if (!respuestaReducida.endsWith('.') && !respuestaReducida.endsWith('!') && !respuestaReducida.endsWith('?')) {
+        respuestaReducida += '.';
+      }
+    }
+    
+    return respuestaReducida;
   }
 
   /**
