@@ -43,7 +43,7 @@ const messageSchema = new mongoose.Schema({
       emotional: {
         mainEmotion: {
           type: String,
-          enum: ['feliz', 'triste', 'ansioso', 'enojado', 'neutral', 'otro']
+          enum: ['tristeza', 'ansiedad', 'enojo', 'alegria', 'miedo', 'verguenza', 'culpa', 'esperanza', 'neutral']
         },
         intensity: {
           type: Number,
