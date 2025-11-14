@@ -181,7 +181,8 @@ class OpenAIService {
           contextual: analisisContextual,
           profile: perfilUsuario,
           therapeutic: registroTerapeutico,
-          memory: memoriaContextual
+          memory: memoriaContextual,
+          history: contexto.history || [] // Incluir historial de conversación si está disponible
         }
       );
 
@@ -351,26 +352,30 @@ CONTEXTO ACTUAL:
 
 DIRECTRICES:
 1. Mantén un tono ${userStyle} y profesional
-2. Adapta la respuesta al estado emocional actual
-3. Considera el historial y contexto previo
+2. Adapta la respuesta al estado emocional actual (${contexto.emotional?.mainEmotion || DEFAULT_VALUES.EMOTION}, intensidad: ${contexto.emotional?.intensity || DEFAULT_VALUES.INTENSITY})
+3. Considera el historial y contexto previo - mantén continuidad emocional con mensajes anteriores
 4. Evita repeticiones exactas de respuestas anteriores
 5. Prioriza la validación emocional cuando sea apropiado
 6. Incluye elementos de apoyo concretos y sugerencias útiles
 7. **CRÍTICO: Sé MUY conciso. Máximo 100 palabras (2-3 oraciones cortas). Evita explicaciones largas, listas extensas o repeticiones. Ve directo al punto.**
+8. **IMPORTANTE: Mantén el contexto emocional. Si el usuario mencionó sentirse mal, conecta tus respuestas con ese estado emocional. No cambies abruptamente de tema emocional.**
 
 ESTRUCTURA DE RESPUESTA (MUY CONCISA):
-1. Reconocimiento empático de la situación (1 oración corta)
-2. Validación o apoyo concreto (1 oración corta)
+1. Reconocimiento empático de la situación (1 oración corta) - EVITA repetir "entiendo" si ya lo dijiste antes
+2. Validación o apoyo concreto específico al contexto emocional (1 oración corta)
 3. Pregunta breve o invitación a continuar (opcional, muy breve)
 
-REGLAS DE BREVEDAD:
+REGLAS DE BREVEDAD Y COHERENCIA:
 - NO uses listas largas
-- NO repitas la misma idea
+- NO repitas la misma idea o frase
 - NO agregues explicaciones innecesarias
+- NO cambies abruptamente de tema emocional
 - SÍ sé directo, empático y claro
 - SÍ enfócate en lo esencial
+- SÍ mantén continuidad con el contexto emocional previo
+- SÍ conecta tus respuestas con el estado emocional del usuario
 
-Recuerda: Una respuesta breve, empática y directa es mucho más efectiva que una larga.`;
+Recuerda: Una respuesta breve, empática, directa y contextualmente coherente es mucho más efectiva que una larga o genérica.`;
 
     const contextMessages = await this.generarMensajesContexto(contexto);
 
@@ -388,8 +393,23 @@ Recuerda: Una respuesta breve, empática y directa es mucho más efectiva que un
   async generarMensajesContexto(contexto) {
     const messages = [];
 
-    // Agregar última interacción si existe
-    if (contexto.memory?.lastInteraction) {
+    // Agregar historial de conversación reciente si está disponible (últimos 3-5 mensajes)
+    if (contexto.history && Array.isArray(contexto.history) && contexto.history.length > 0) {
+      // Tomar los últimos 5 mensajes del historial
+      const historialReciente = contexto.history.slice(-5);
+      
+      historialReciente.forEach(msg => {
+        if (msg.role && msg.content) {
+          messages.push({
+            role: msg.role === 'user' ? 'user' : 'assistant',
+            content: msg.content
+          });
+        }
+      });
+    }
+
+    // Agregar última interacción si existe y no está ya en el historial
+    if (contexto.memory?.lastInteraction && !messages.some(m => m.content === contexto.memory.lastInteraction)) {
       messages.push({
         role: 'assistant',
         content: contexto.memory.lastInteraction
@@ -519,23 +539,27 @@ Recuerda: Una respuesta breve, empática y directa es mucho más efectiva que un
       }
 
       const { mainEmotion, intensity } = contextoEmocional;
+      const respuestaLower = respuesta.toLowerCase();
+
+      // Verificar si ya tiene reconocimiento emocional para evitar redundancia
+      const tieneReconocimiento = /(?:entiendo|comprendo|reconozco|veo|noto|siento).*(?:tristeza|ansiedad|enojo|alegría|miedo|emoción|sentimiento|situación)/i.test(respuesta);
 
       // Si la emoción principal está presente, asegurar que la respuesta sea coherente
-      if (mainEmotion && EMOTIONAL_COHERENCE_PHRASES[mainEmotion]) {
+      if (mainEmotion && EMOTIONAL_COHERENCE_PHRASES[mainEmotion] && !tieneReconocimiento) {
         const frasesClave = EMOTIONAL_COHERENCE_PHRASES[mainEmotion];
         const tieneCoherencia = frasesClave.some(frase => 
-          respuesta.toLowerCase().includes(frase.toLowerCase())
+          respuestaLower.includes(frase.toLowerCase())
         );
 
         if (!tieneCoherencia) {
-          // Ajustar la respuesta para incluir reconocimiento emocional
+          // Ajustar la respuesta para incluir reconocimiento emocional (solo si no está ya presente)
           const fraseInicial = frasesClave[Math.floor(Math.random() * frasesClave.length)];
           respuesta = `${fraseInicial}. ${respuesta}`;
         }
       }
 
-      // Ajustar tono según intensidad emocional
-      if (intensity >= THRESHOLDS.INTENSITY_HIGH) {
+      // Ajustar tono según intensidad emocional (solo si no se agregó ya una frase)
+      if (intensity >= THRESHOLDS.INTENSITY_HIGH && !tieneReconocimiento) {
         respuesta = this.ajustarTonoAlta(respuesta);
       } else if (intensity <= THRESHOLDS.INTENSITY_LOW) {
         respuesta = this.ajustarTonoBaja(respuesta);
@@ -556,9 +580,21 @@ Recuerda: Una respuesta breve, empática y directa es mucho más efectiva que un
   ajustarTonoAlta(respuesta) {
     if (!respuesta) return ERROR_MESSAGES.DEFAULT_FALLBACK;
     
+    const respuestaLower = respuesta.toLowerCase();
+    
+    // Verificar si ya tiene frases empáticas para evitar redundancia
+    const tieneEmpatia = /(?:entiendo|comprendo|reconozco|veo|noto|siento|importante|difícil|complicado)/i.test(respuesta);
+    
     // Asegurar un tono más empático y contenedor para emociones intensas
-    if (!respuesta.includes('Entiendo que')) {
-      return `Entiendo que esto es importante para ti. ${respuesta}`;
+    if (!tieneEmpatia) {
+      // Usar frases más variadas y naturales
+      const frasesEmpaticas = [
+        'Entiendo que esto es importante para ti.',
+        'Comprendo que esto te afecta.',
+        'Veo que estás pasando por un momento difícil.'
+      ];
+      const frase = frasesEmpaticas[Math.floor(Math.random() * frasesEmpaticas.length)];
+      return `${frase} ${respuesta}`;
     }
     return respuesta;
   }

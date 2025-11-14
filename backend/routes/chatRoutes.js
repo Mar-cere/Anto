@@ -215,11 +215,21 @@ router.post('/messages', protect, async (req, res) => {
         await userMessage.save();
 
         // 5. Generar respuesta usando el análisis ya realizado
+        // Preparar historial de conversación en formato para el prompt (últimos 5 mensajes)
+        const historialParaPrompt = conversationHistory
+          .slice(0, 5) // Últimos 5 mensajes (ya están ordenados descendente)
+          .reverse() // Invertir para orden cronológico (más antiguo primero)
+          .map(msg => ({
+            role: msg.role || 'user',
+            content: msg.content || ''
+          }))
+          .filter(msg => msg.content.trim().length > 0);
+
         logs.push(`[${Date.now() - startTime}ms] Generando respuesta con análisis previo`);
         const response = await openaiService.generarRespuesta(
           userMessage,
           {
-            history: conversationHistory,
+            history: historialParaPrompt,
             emotional: emotionalAnalysis,
             contextual: contextualAnalysis,
             profile: userProfile,
