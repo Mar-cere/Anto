@@ -43,8 +43,14 @@ const messageSchema = new mongoose.Schema({
       emotional: {
         mainEmotion: {
           type: String,
-          enum: ['tristeza', 'ansiedad', 'enojo', 'alegria', 'miedo', 'verguenza', 'culpa', 'esperanza', 'neutral'],
-          required: false
+          // Enum flexible: acepta las emociones válidas pero no falla si hay otras
+          enum: {
+            values: ['tristeza', 'ansiedad', 'enojo', 'alegria', 'miedo', 'verguenza', 'culpa', 'esperanza', 'neutral'],
+            message: 'La emoción {VALUE} no es válida. Emociones válidas: tristeza, ansiedad, enojo, alegria, miedo, verguenza, culpa, esperanza, neutral'
+          },
+          required: false,
+          // Si el valor no está en el enum, usar 'neutral' como fallback
+          default: 'neutral'
         },
         intensity: {
           type: Number,

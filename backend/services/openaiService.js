@@ -226,23 +226,55 @@ class OpenAIService {
       );
 
       // 6. Actualizar Registros
+      // Normalizar objeto emocional para asegurar compatibilidad con el esquema
+      const emocionalNormalizado = this.normalizarAnalisisEmocional(analisisEmocional);
+      
       // Primero crear y guardar el mensaje del asistente
-      const assistantMessage = new Message({
-        userId: mensaje.userId,
-        conversationId: mensaje.conversationId,
-        content: respuestaValidada,
-        role: 'assistant',
-        metadata: {
-          timestamp: new Date(),
-          type: 'text',
-          status: 'sent',
-          context: {
-            emotional: analisisEmocional,
-            contextual: analisisContextual
+      let assistantMessage;
+      try {
+        assistantMessage = new Message({
+          userId: mensaje.userId,
+          conversationId: mensaje.conversationId,
+          content: respuestaValidada,
+          role: 'assistant',
+          metadata: {
+            timestamp: new Date(),
+            type: 'text',
+            status: 'sent',
+            context: {
+              emotional: emocionalNormalizado,
+              contextual: analisisContextual
+            }
           }
+        });
+        await assistantMessage.save();
+      } catch (saveError) {
+        // Si hay error de validación del enum, intentar guardar sin el campo emocional problemático
+        if (saveError.name === 'ValidationError' && saveError.errors?.['metadata.context.emotional.mainEmotion']) {
+          console.warn('⚠️ Error de validación de enum emocional. Guardando sin contexto emocional:', saveError.message);
+          assistantMessage = new Message({
+            userId: mensaje.userId,
+            conversationId: mensaje.conversationId,
+            content: respuestaValidada,
+            role: 'assistant',
+            metadata: {
+              timestamp: new Date(),
+              type: 'text',
+              status: 'sent',
+              context: {
+                emotional: {
+                  mainEmotion: 'neutral',
+                  intensity: emocionalNormalizado.intensity || DEFAULT_VALUES.INTENSITY
+                },
+                contextual: analisisContextual
+              }
+            }
+          });
+          await assistantMessage.save();
+        } else {
+          throw saveError;
         }
-      });
-      await assistantMessage.save();
+      }
 
       // Luego actualizar los registros en paralelo
       await Promise.all([
@@ -626,6 +658,61 @@ ESTRUCTURA DE RESPUESTA:
    */
   getTimeOfDay() {
     return getTimeOfDay();
+  }
+
+  /**
+   * Normaliza el objeto de análisis emocional para asegurar compatibilidad con el esquema de Message
+   * @param {Object} analisisEmocional - Objeto de análisis emocional
+   * @returns {Object} Objeto emocional normalizado
+   */
+  normalizarAnalisisEmocional(analisisEmocional) {
+    if (!analisisEmocional || typeof analisisEmocional !== 'object') {
+      return {
+        mainEmotion: DEFAULT_VALUES.EMOTION,
+        intensity: DEFAULT_VALUES.INTENSITY
+      };
+    }
+
+    // Valores válidos del enum según el modelo Message
+    const emocionesValidas = ['tristeza', 'ansiedad', 'enojo', 'alegria', 'miedo', 'verguenza', 'culpa', 'esperanza', 'neutral'];
+    
+    // Normalizar mainEmotion
+    let mainEmotion = analisisEmocional.mainEmotion || DEFAULT_VALUES.EMOTION;
+    if (!emocionesValidas.includes(mainEmotion)) {
+      console.warn(`⚠️ Emoción no válida detectada: "${mainEmotion}". Usando valor por defecto: "${DEFAULT_VALUES.EMOTION}"`);
+      mainEmotion = DEFAULT_VALUES.EMOTION;
+    }
+
+    // Normalizar intensity
+    let intensity = analisisEmocional.intensity;
+    if (typeof intensity !== 'number' || isNaN(intensity)) {
+      intensity = DEFAULT_VALUES.INTENSITY;
+    } else {
+      // Asegurar que esté en el rango válido (0-10)
+      intensity = Math.max(0, Math.min(10, intensity));
+    }
+
+    // Construir objeto normalizado
+    const normalizado = {
+      mainEmotion,
+      intensity
+    };
+
+    // Agregar campos opcionales si existen
+    if (Array.isArray(analisisEmocional.secondary)) {
+      normalizado.secondary = analisisEmocional.secondary;
+    }
+    if (analisisEmocional.category) {
+      normalizado.category = analisisEmocional.category;
+    }
+    if (typeof analisisEmocional.confidence === 'number') {
+      normalizado.confidence = analisisEmocional.confidence;
+    }
+    if (typeof analisisEmocional.requiresAttention === 'boolean') {
+      normalizado.requiresAttention = analisisEmocional.requiresAttention;
+    }
+
+    return normalizado;
   }
 
   /**

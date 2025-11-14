@@ -223,22 +223,51 @@ router.post('/messages', protect, async (req, res) => {
         }
 
         // 6. Crear y guardar mensaje del asistente
-        assistantMessage = new Message({
-          userId: req.user._id,
-          content: response.content,
-          role: 'assistant',
-          conversationId,
-          metadata: {
-            status: 'sent',
-            context: {
-              emotional: emotionalAnalysis,
-              contextual: contextualAnalysis,
-              response: JSON.stringify(response.context)
+        // Normalizar objeto emocional para asegurar compatibilidad con el esquema
+        const emocionalNormalizado = openaiService.normalizarAnalisisEmocional(emotionalAnalysis);
+        
+        try {
+          assistantMessage = new Message({
+            userId: req.user._id,
+            content: response.content,
+            role: 'assistant',
+            conversationId,
+            metadata: {
+              status: 'sent',
+              context: {
+                emotional: emocionalNormalizado,
+                contextual: contextualAnalysis,
+                response: JSON.stringify(response.context)
+              }
             }
+          });
+          await assistantMessage.save();
+        } catch (saveError) {
+          // Si hay error de validación del enum, intentar guardar con 'neutral' como fallback
+          if (saveError.name === 'ValidationError' && saveError.errors?.['metadata.context.emotional.mainEmotion']) {
+            console.warn('⚠️ Error de validación de enum emocional. Guardando con neutral como fallback:', saveError.message);
+            assistantMessage = new Message({
+              userId: req.user._id,
+              content: response.content,
+              role: 'assistant',
+              conversationId,
+              metadata: {
+                status: 'sent',
+                context: {
+                  emotional: {
+                    mainEmotion: 'neutral',
+                    intensity: emocionalNormalizado.intensity || 5
+                  },
+                  contextual: contextualAnalysis,
+                  response: JSON.stringify(response.context)
+                }
+              }
+            });
+            await assistantMessage.save();
+          } else {
+            throw saveError;
           }
-        });
-
-        await assistantMessage.save();
+        }
 
         // 7. Actualizar registros en paralelo
         logs.push(`[${Date.now() - startTime}ms] Actualizando registros adicionales`);
