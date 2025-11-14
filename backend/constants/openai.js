@@ -7,9 +7,9 @@ export const OPENAI_MODEL = 'gpt-4-turbo-preview';
 
 // Longitudes de respuesta (tokens)
 export const RESPONSE_LENGTHS = {
-  SHORT: 100,    // Respuestas cortas (saludos, confirmaciones)
-  MEDIUM: 150,   // Respuestas normales (la mayoría de casos)
-  LONG: 250,     // Respuestas largas (solo para situaciones urgentes/crisis)
+  SHORT: 80,     // Respuestas cortas (saludos, confirmaciones)
+  MEDIUM: 120,   // Respuestas normales (la mayoría de casos) - 2-3 oraciones
+  LONG: 180,     // Respuestas largas (solo para situaciones urgentes/crisis) - máximo 4-5 oraciones
   CONTEXT_ANALYSIS: 100
 };
 
@@ -42,8 +42,8 @@ export const DEFAULT_VALUES = {
 // Umbrales de análisis
 export const THRESHOLDS = {
   MIN_WORDS_RESPONSE: 10,
-  MAX_WORDS_RESPONSE: 150,      // Máximo de palabras en una respuesta
-  MAX_CHARACTERS_RESPONSE: 800, // Máximo de caracteres en una respuesta
+  MAX_WORDS_RESPONSE: 100,      // Máximo de palabras en una respuesta (2-3 oraciones)
+  MAX_CHARACTERS_RESPONSE: 500, // Máximo de caracteres en una respuesta
   MIN_HISTORY_LENGTH: 3,
   RECENT_MESSAGES_COUNT: 5,
   THEMES_FOR_EXPLORATION: 2,

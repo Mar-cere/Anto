@@ -61,11 +61,21 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
 ---
 
 ### **PASO 4: Análisis Paralelo del Mensaje**
-**Ubicación:** `chatRoutes.js:199-202`
+**Ubicación:** `chatRoutes.js:197-212`
+
+#### 4.0. Preparación del Historial Emocional (líneas 199-206)
+**Optimización:** Se extraen los patrones emocionales del historial de conversación para mejorar el análisis.
+
+**Proceso:**
+1. Filtra mensajes del historial que tengan análisis emocional previo
+2. Extrae `mainEmotion`, `intensity` y `timestamp` de cada mensaje
+3. Toma solo los últimos 3 mensajes para ajuste de tendencia emocional
+4. Pasa estos patrones al analizador emocional para ajustar la intensidad según tendencias
 
 #### 4.1. Análisis Emocional
 **Servicio:** `emotionalAnalyzer.analyzeEmotion()`  
-**Archivo:** `backend/services/emotionalAnalyzer.js`
+**Archivo:** `backend/services/emotionalAnalyzer.js`  
+**Parámetros:** `content` (string), `previousEmotionalPatterns` (array de patrones previos)
 
 ##### Filtros de Emociones (líneas 29-55):
 1. **Emoción: `tristeza`**
@@ -106,12 +116,14 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
    - Patrón: `/(?:me siento|estoy|siento que|creo que)/i`
    - Aumenta confianza en `+0.1`
 
-##### Filtros de Ajuste por Historial (líneas 101-109):
+##### Filtros de Ajuste por Historial (líneas 490-543):
 - Ventana de historial: `HISTORY_WINDOW_SIZE` (3 mensajes)
+- Extracción de patrones: Se extraen del historial de conversación en `chatRoutes.js` (líneas 199-206)
 - Tendencias detectadas:
-  - `TREND_INCREASING`: Intensidad `+1`
-  - `TREND_DECREASING`: Intensidad `-1`
-  - `TREND_STABLE`: Sin cambio
+  - `TREND_INCREASING`: Intensidad `+1` (si la última intensidad > promedio + umbral)
+  - `TREND_DECREASING`: Intensidad `-1` (si la última intensidad < promedio - umbral)
+  - `TREND_STABLE`: Sin cambio (si está dentro del umbral)
+- **Mejora:** El historial se extrae del historial de conversación real, no se recalcula
 
 ##### Filtros de Longitud (líneas 169-172):
 - Si palabras > `WORD_COUNT_THRESHOLD` (20): Intensidad `+1`
@@ -232,14 +244,22 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
    - Verifica que el cliente de OpenAI esté inicializado
    - Lanza error descriptivo si falta
 
-#### 6.1. Análisis Completo (líneas 140-151)
-**Análisis en paralelo:**
-- `analisisEmocional`: Re-análisis emocional usando contenido normalizado
-- `analisisContextual`: Re-análisis contextual con mensaje normalizado
+#### 6.1. Análisis Completo (líneas 140-164)
+**Optimización:** El análisis se reutiliza del contexto si está disponible (evita duplicación).
+
+**Si el análisis viene en el contexto (desde `chatRoutes.js`):**
+- Se reutiliza `analisisEmocional` del contexto
+- Se reutiliza `analisisContextual` del contexto
+- Se reutiliza `perfilUsuario` del contexto
+- Se reutiliza `registroTerapeutico` del contexto
+
+**Si el análisis NO viene en el contexto (fallback):**
+- `analisisEmocional`: Análisis emocional usando contenido normalizado
+- `analisisContextual`: Análisis contextual con mensaje normalizado
 - `perfilUsuario`: Perfil completo del usuario (con `.catch(() => null)` para no bloquear)
 - `registroTerapeutico`: Registro terapéutico (con `.catch(() => null)` para no bloquear)
 
-**Nota:** Los errores en `getUserProfile` y `TherapeuticRecord.findOne` no bloquean el flujo principal.
+**Nota:** Los errores en `getUserProfile` y `TherapeuticRecord.findOne` no bloquean el flujo principal. El análisis se hace una sola vez en `chatRoutes.js` y se reutiliza aquí para evitar duplicación.
 
 #### 6.2. Obtención de Memoria Contextual (líneas 153-161)
 **Servicio:** `memoryService.getRelevantContext()`
@@ -638,6 +658,8 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
 - **Normalización de contenido:** Todo el contenido se normaliza con `trim()` antes de procesar
 - **Validación robusta:** Validación de tipo, longitud y existencia en todos los métodos críticos
 - **Manejo de errores mejorado:** Logging detallado con contexto (userId, conversationId) para debugging
+- **Optimización de análisis:** El análisis emocional y contextual se hace una sola vez en `chatRoutes.js` y se reutiliza en `openaiService.generarRespuesta()` para evitar duplicación
+- **Mejora del análisis emocional:** Se extraen patrones emocionales del historial de conversación real para ajustar la intensidad según tendencias detectadas
 - **Duplicación de lógica:** Existe duplicación entre `openaiService.generarRespuesta()` (que crea y guarda el mensaje) y `chatRoutes.js` (que también lo hace). Esto se mantiene por compatibilidad pero debería consolidarse en el futuro.
 
 ---

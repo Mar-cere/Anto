@@ -137,18 +137,31 @@ class OpenAIService {
         throw new Error('OPENAI_API_KEY no está configurada. Configura esta variable de entorno en Render.');
       }
 
-      // 1. Análisis Completo (en paralelo para optimizar rendimiento)
-      const [
-        analisisEmocional,
-        analisisContextual,
-        perfilUsuario,
-        registroTerapeutico
-      ] = await Promise.all([
-        emotionalAnalyzer.analyzeEmotion(contenidoNormalizado),
-        contextAnalyzer.analizarMensaje({ ...mensaje, content: contenidoNormalizado }),
-        personalizationService.getUserProfile(mensaje.userId).catch(() => null),
-        TherapeuticRecord.findOne({ userId: mensaje.userId }).catch(() => null)
-      ]);
+      // 1. Análisis Completo - Usar análisis del contexto si está disponible, sino hacerlo aquí
+      let analisisEmocional = contexto.emotional;
+      let analisisContextual = contexto.contextual;
+      let perfilUsuario = contexto.profile;
+      let registroTerapeutico = contexto.therapeutic;
+
+      // Si no viene el análisis emocional, hacerlo
+      if (!analisisEmocional) {
+        analisisEmocional = await emotionalAnalyzer.analyzeEmotion(contenidoNormalizado);
+      }
+
+      // Si no viene el análisis contextual, hacerlo
+      if (!analisisContextual) {
+        analisisContextual = await contextAnalyzer.analizarMensaje({ ...mensaje, content: contenidoNormalizado });
+      }
+
+      // Si no viene el perfil, obtenerlo
+      if (!perfilUsuario) {
+        perfilUsuario = await personalizationService.getUserProfile(mensaje.userId).catch(() => null);
+      }
+
+      // Si no viene el registro terapéutico, obtenerlo
+      if (!registroTerapeutico) {
+        registroTerapeutico = await TherapeuticRecord.findOne({ userId: mensaje.userId }).catch(() => null);
+      }
 
       // 2. Obtener Memoria y Contexto
       const memoriaContextual = await memoryService.getRelevantContext(
@@ -343,14 +356,21 @@ DIRECTRICES:
 4. Evita repeticiones exactas de respuestas anteriores
 5. Prioriza la validación emocional cuando sea apropiado
 6. Incluye elementos de apoyo concretos y sugerencias útiles
-7. **IMPORTANTE: Sé conciso. Limita tus respuestas a máximo 150 palabras (aproximadamente 2-3 oraciones). Sé directo y claro.**
+7. **CRÍTICO: Sé MUY conciso. Máximo 100 palabras (2-3 oraciones cortas). Evita explicaciones largas, listas extensas o repeticiones. Ve directo al punto.**
 
-ESTRUCTURA DE RESPUESTA (CONCISA):
-1. Reconocimiento específico de la situación/emoción (1 oración)
-2. Validación o elemento de apoyo concreto (1 oración)
-3. Pregunta exploratoria breve o invitación a profundizar (opcional, 1 oración)
+ESTRUCTURA DE RESPUESTA (MUY CONCISA):
+1. Reconocimiento empático de la situación (1 oración corta)
+2. Validación o apoyo concreto (1 oración corta)
+3. Pregunta breve o invitación a continuar (opcional, muy breve)
 
-Recuerda: Menos es más. Una respuesta breve y empática es más efectiva que una larga.`;
+REGLAS DE BREVEDAD:
+- NO uses listas largas
+- NO repitas la misma idea
+- NO agregues explicaciones innecesarias
+- SÍ sé directo, empático y claro
+- SÍ enfócate en lo esencial
+
+Recuerda: Una respuesta breve, empática y directa es mucho más efectiva que una larga.`;
 
     const contextMessages = await this.generarMensajesContexto(contexto);
 
@@ -579,22 +599,25 @@ Recuerda: Menos es más. Una respuesta breve y empática es más efectiva que un
     // Dividir en oraciones
     const oraciones = respuesta.split(/[.!?]+/).filter(s => s.trim());
     
-    // Si tiene 3 o menos oraciones, retornar tal cual
-    if (oraciones.length <= 3) {
-      // Pero aún así verificar longitud de caracteres
-      if (respuesta.length <= THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
-        return respuesta;
-      }
+    // Si tiene 2 o menos oraciones y está dentro del límite, retornar tal cual
+    if (oraciones.length <= 2 && respuesta.length <= THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
+      return respuesta;
     }
     
-    // Tomar las primeras 2-3 oraciones más importantes
+    // Tomar solo las primeras 2 oraciones (más importantes)
     const oracionesReducidas = oraciones.slice(0, 2);
     let respuestaReducida = oracionesReducidas.join('. ').trim();
     
-    // Si aún es muy larga, truncar por caracteres
+    // Si aún es muy larga, truncar por caracteres de forma inteligente
     if (respuestaReducida.length > THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
-      respuestaReducida = respuestaReducida.substring(0, THRESHOLDS.MAX_CHARACTERS_RESPONSE - 3).trim();
-      // Asegurar que termine en un punto
+      // Truncar en el último espacio antes del límite para no cortar palabras
+      const truncado = respuestaReducida.substring(0, THRESHOLDS.MAX_CHARACTERS_RESPONSE - 3);
+      const ultimoEspacio = truncado.lastIndexOf(' ');
+      respuestaReducida = ultimoEspacio > 0 
+        ? truncado.substring(0, ultimoEspacio).trim()
+        : truncado.trim();
+      
+      // Asegurar que termine correctamente
       if (!respuestaReducida.endsWith('.') && !respuestaReducida.endsWith('!') && !respuestaReducida.endsWith('?')) {
         respuestaReducida += '...';
       }

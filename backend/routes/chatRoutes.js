@@ -194,18 +194,28 @@ router.post('/messages', protect, async (req, res) => {
           TherapeuticRecord.findOne({ userId: req.user._id })
         ]);
 
-        // 3. Análisis y generación de respuesta
-        logs.push(`[${Date.now() - startTime}ms] Realizando análisis del mensaje`);
+        // 3. Análisis completo del mensaje (en paralelo para optimizar rendimiento)
+        // Extraer patrones emocionales del historial para mejorar el análisis
+        const previousEmotionalPatterns = conversationHistory
+          .filter(msg => msg.metadata?.context?.emotional?.mainEmotion)
+          .map(msg => ({
+            emotion: msg.metadata.context.emotional.mainEmotion,
+            intensity: msg.metadata.context.emotional.intensity || 5,
+            timestamp: msg.createdAt
+          }))
+          .slice(-3); // Solo los últimos 3 para ajuste de tendencia
+
+        logs.push(`[${Date.now() - startTime}ms] Realizando análisis completo del mensaje`);
         const [emotionalAnalysis, contextualAnalysis] = await Promise.all([
-          emotionalAnalyzer.analyzeEmotion(content, conversationHistory),
+          emotionalAnalyzer.analyzeEmotion(content, previousEmotionalPatterns),
           contextAnalyzer.analizarMensaje(userMessage, conversationHistory)
         ]);
 
         // 4. Guardar mensaje del usuario primero
         await userMessage.save();
 
-        // 5. Generar respuesta
-        logs.push(`[${Date.now() - startTime}ms] Generando respuesta`);
+        // 5. Generar respuesta usando el análisis ya realizado
+        logs.push(`[${Date.now() - startTime}ms] Generando respuesta con análisis previo`);
         const response = await openaiService.generarRespuesta(
           userMessage,
           {
