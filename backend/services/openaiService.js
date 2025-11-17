@@ -10,6 +10,7 @@ import {
   ERROR_MESSAGES,
   GENERIC_RESPONSE_PATTERNS,
   GREETING_VARIATIONS,
+  HISTORY_LIMITS,
   MESSAGE_INTENTS,
   OPENAI_MODEL,
   PENALTIES,
@@ -393,10 +394,10 @@ Recuerda: Una respuesta breve, empática, directa y contextualmente coherente es
   async generarMensajesContexto(contexto) {
     const messages = [];
 
-    // Agregar historial de conversación reciente si está disponible (últimos 3-5 mensajes)
+    // Agregar historial de conversación reciente si está disponible
     if (contexto.history && Array.isArray(contexto.history) && contexto.history.length > 0) {
-      // Tomar los últimos 5 mensajes del historial
-      const historialReciente = contexto.history.slice(-5);
+      // Tomar los últimos N mensajes del historial según el límite configurado
+      const historialReciente = contexto.history.slice(-HISTORY_LIMITS.MESSAGES_IN_PROMPT);
       
       historialReciente.forEach(msg => {
         if (msg.role && msg.content) {

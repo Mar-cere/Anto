@@ -39,6 +39,12 @@ export const DEFAULT_VALUES = {
   PHASE: 'inicial'
 };
 
+// Límites de historial
+export const HISTORY_LIMITS = {
+  MESSAGES_IN_PROMPT: 8,        // Número de mensajes del historial a incluir en el prompt de OpenAI
+  RECENT_MESSAGES_COUNT: 5      // Número de mensajes recientes para análisis
+};
+
 // Umbrales de análisis
 export const THRESHOLDS = {
   MIN_WORDS_RESPONSE: 10,

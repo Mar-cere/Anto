@@ -16,6 +16,7 @@ import {
   progressTracker,
   userProfileService
 } from '../services/index.js';
+import { HISTORY_LIMITS } from '../constants/openai.js';
 
 const router = express.Router();
 
@@ -215,9 +216,9 @@ router.post('/messages', protect, async (req, res) => {
         await userMessage.save();
 
         // 5. Generar respuesta usando el análisis ya realizado
-        // Preparar historial de conversación en formato para el prompt (últimos 5 mensajes)
+        // Preparar historial de conversación en formato para el prompt
         const historialParaPrompt = conversationHistory
-          .slice(0, 5) // Últimos 5 mensajes (ya están ordenados descendente)
+          .slice(0, HISTORY_LIMITS.MESSAGES_IN_PROMPT) // Últimos N mensajes (ya están ordenados descendente)
           .reverse() // Invertir para orden cronológico (más antiguo primero)
           .map(msg => ({
             role: msg.role || 'user',
