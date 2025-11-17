@@ -17,6 +17,7 @@ import {
   userProfileService
 } from '../services/index.js';
 import { HISTORY_LIMITS } from '../constants/openai.js';
+import { evaluateSuicideRisk } from '../constants/crisis.js';
 
 const router = express.Router();
 
@@ -218,6 +219,14 @@ router.post('/messages', protect, async (req, res) => {
           contextAnalyzer.analizarMensaje(userMessage, conversationHistory)
         ]);
 
+        // Evaluar riesgo de crisis/suicida
+        const riskLevel = evaluateSuicideRisk(emotionalAnalysis, contextualAnalysis, content);
+        const isCrisis = riskLevel !== 'LOW' || contextualAnalysis?.intencion?.tipo === 'CRISIS';
+        
+        if (isCrisis) {
+          logs.push(`[${Date.now() - startTime}ms] ⚠️ Crisis detectada - Nivel de riesgo: ${riskLevel}`);
+        }
+
         // 4. Guardar mensaje del usuario primero
         await userMessage.save();
 
@@ -240,7 +249,13 @@ router.post('/messages', protect, async (req, res) => {
             emotional: emotionalAnalysis,
             contextual: contextualAnalysis,
             profile: userProfile,
-            therapeutic: therapeuticRecord
+            therapeutic: therapeuticRecord,
+            // Agregar información de crisis si se detecta
+            crisis: isCrisis ? {
+              riskLevel,
+              country: userProfile?.preferences?.country || 'GENERAL', // Por ahora GENERAL, se puede mejorar después
+              detectedAt: new Date()
+            } : undefined
           }
         );
 

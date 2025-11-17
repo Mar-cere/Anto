@@ -4,6 +4,10 @@
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
 import {
+  generateCrisisMessage,
+  generateCrisisSystemPrompt
+} from '../constants/crisis.js';
+import {
   ANALYSIS_DIMENSIONS,
   buildPersonalizedPrompt,
   DEFAULT_VALUES,
@@ -347,7 +351,7 @@ class OpenAIService {
     const lastInteraction = contexto.memory?.lastInteraction || 'ninguna';
 
     // Construir prompt personalizado usando la función helper
-    const systemMessage = buildPersonalizedPrompt({
+    let systemMessage = buildPersonalizedPrompt({
       emotion,
       intensity,
       phase,
@@ -357,6 +361,15 @@ class OpenAIService {
       recurringThemes,
       lastInteraction
     });
+
+    // Si hay una crisis detectada, agregar el prompt de crisis al inicio
+    if (contexto.crisis?.riskLevel) {
+      const crisisPrompt = generateCrisisSystemPrompt(
+        contexto.crisis.riskLevel,
+        contexto.crisis.country || 'GENERAL'
+      );
+      systemMessage = `${crisisPrompt}\n\n---\n\n${systemMessage}`;
+    }
 
     const contextMessages = await this.generarMensajesContexto(contexto);
 
@@ -398,10 +411,14 @@ class OpenAIService {
     }
 
     // Agregar alerta de crisis si es necesario
-    if (contexto.emotional?.requiresUrgentCare || contexto.contextual?.intencion?.tipo === MESSAGE_INTENTS.CRISIS) {
+    if (contexto.emotional?.requiresUrgentCare || contexto.contextual?.intencion?.tipo === MESSAGE_INTENTS.CRISIS || contexto.crisis?.riskLevel) {
+      const riskLevel = contexto.crisis?.riskLevel || 'MEDIUM';
+      const country = contexto.crisis?.country || 'GENERAL';
+      const crisisMessage = generateCrisisMessage(riskLevel, country);
+      
       messages.push({
         role: 'system',
-        content: 'IMPORTANTE: Usuario en posible estado de crisis. Priorizar contención y seguridad.'
+        content: `🚨 SITUACIÓN DE CRISIS DETECTADA (Nivel: ${riskLevel})\n\n${crisisMessage}\n\nIMPORTANTE: Prioriza la seguridad del usuario. Proporciona recursos de emergencia de forma clara y directa.`
       });
     }
 

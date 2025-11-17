@@ -151,6 +151,41 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
    - Requiere seguimiento: `true`
    - Confianza: `0.8`
 
+#### 4.3. Evaluación de Riesgo de Crisis (NUEVO)
+**Ubicación:** `chatRoutes.js:222-228`  
+**Función:** `evaluateSuicideRisk()`  
+**Archivo:** `backend/constants/crisis.js`
+
+##### Proceso de Evaluación:
+1. **Factores de riesgo evaluados:**
+   - Intención de tipo `CRISIS` (+3 puntos)
+   - Indicadores directos de ideación suicida (+4 puntos)
+   - Plan específico mencionado (+3 puntos)
+   - Despedidas o mensajes finales (+2 puntos)
+   - Desesperanza extrema (+2 puntos)
+   - Intensidad emocional >= 9 (+2 puntos)
+   - Tristeza extrema (intensidad >= 8) (+2 puntos)
+   - Expresiones de rendición (+1 punto)
+
+2. **Factores protectores (reducen riesgo):**
+   - Búsqueda de ayuda (-1 punto)
+   - Emoción secundaria de esperanza (-1 punto)
+   - Expresiones de mejora (-1 punto)
+
+3. **Niveles de riesgo:**
+   - `HIGH`: Score >= 7
+   - `MEDIUM`: Score >= 4
+   - `LOW`: Score < 4
+
+##### Resultado:
+```javascript
+{
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH',
+  isCrisis: boolean,
+  country: string // País del usuario (o 'GENERAL')
+}
+```
+
 2. **Intención: `AYUDA_EMOCIONAL`**
    - Patrones: `backend/config/patrones.js:31-42`
    - Requiere seguimiento: `true`
@@ -315,14 +350,32 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
 - Directrices (tono, adaptación emocional, consideración de historial)
 - Estructura de respuesta (4 pasos definidos)
 
-##### Mensajes de Contexto Adicionales (líneas 334-354):
+##### Mensajes de Contexto Adicionales (líneas 374-426):
 **Método:** `generarMensajesContexto()`
 1. **Última interacción:**
    - Si existe `contexto.memory?.lastInteraction`: Se agrega como mensaje del asistente
 
-2. **Alerta de crisis:**
-   - Si `contexto.emotional?.requiresUrgentCare` o `contexto.contextual?.intencion?.tipo === MESSAGE_INTENTS.CRISIS`
-   - Se agrega mensaje del sistema: "IMPORTANTE: Usuario en posible estado de crisis. Priorizar contención y seguridad."
+2. **Alerta de crisis (MEJORADO):**
+   - Si `contexto.emotional?.requiresUrgentCare`, `contexto.contextual?.intencion?.tipo === MESSAGE_INTENTS.CRISIS`, o `contexto.crisis?.riskLevel`
+   - Se genera mensaje de crisis personalizado usando `generateCrisisMessage()` de `backend/constants/crisis.js`
+   - El mensaje incluye:
+     - Recursos de emergencia específicos por país
+     - Líneas de prevención del suicidio
+     - Líneas de salud mental
+     - Líneas de texto de crisis
+     - Mensajes de seguridad y apoyo
+   - El nivel de riesgo determina qué recursos se incluyen:
+     - `HIGH`: Todos los recursos de emergencia + urgencia máxima
+     - `MEDIUM`: Líneas de ayuda + plan de seguridad
+     - `LOW`: Apoyo general + plan de seguridad
+
+3. **Prompt del sistema para crisis (NUEVO):**
+   - Si `contexto.crisis?.riskLevel` existe, se agrega un prompt completo de crisis al inicio del `systemMessage`
+   - El prompt incluye:
+     - Protocolo de intervención según nivel de riesgo
+     - Recursos de emergencia disponibles
+     - Instrucciones críticas para la IA
+     - Generado por `generateCrisisSystemPrompt()` de `backend/constants/crisis.js`
 
 #### 6.4. Generación con OpenAI (líneas 177-209)
 
@@ -488,10 +541,25 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
 10. ✅ Requiere atención: Si `negative` && `intensity >= 7`
 
 ### **FILTROS DE INTENCIÓN:**
-1. ✅ `CRISIS` (13 patrones, requiere seguimiento)
-2. ✅ `AYUDA_EMOCIONAL` (11 patrones, requiere seguimiento)
-3. ✅ `CONSULTA_IMPORTANTE` (11 patrones)
-4. ✅ `CONVERSACION_GENERAL` (16 patrones)
+1. ✅ `CRISIS` (73 patrones, requiere seguimiento)
+2. ✅ `AYUDA_EMOCIONAL` (patrones expandidos, requiere seguimiento)
+3. ✅ `CONSULTA_IMPORTANTE` (patrones expandidos)
+4. ✅ `CONVERSACION_GENERAL` (patrones expandidos)
+
+### **FILTROS DE CRISIS Y RIESGO:**
+1. ✅ **Evaluación de riesgo suicida** (`backend/constants/crisis.js:evaluateSuicideRisk`)
+   - Factores de riesgo: intención CRISIS, ideación suicida, plan específico, despedidas, desesperanza, intensidad emocional
+   - Factores protectores: búsqueda de ayuda, esperanza, mejoras
+   - Niveles: `LOW`, `MEDIUM`, `HIGH`
+2. ✅ **Recursos de emergencia por país** (`backend/constants/crisis.js:EMERGENCY_LINES`)
+   - Líneas de emergencia, prevención del suicidio, salud mental, texto de crisis
+   - Países: ARGENTINA, MEXICO, ESPANA, COLOMBIA, CHILE, PERU, GENERAL
+3. ✅ **Protocolo de intervención en crisis** (`backend/constants/crisis.js:CRISIS_PROTOCOL`)
+   - Pasos estructurados según nivel de riesgo
+   - Acciones específicas por nivel (LOW, MEDIUM, HIGH)
+4. ✅ **Mensajes de crisis estructurados** (`backend/constants/crisis.js:CRISIS_MESSAGES`)
+   - Mensajes personalizados según nivel de riesgo
+   - Integración automática en prompts de OpenAI
 
 ### **FILTROS DE TEMA:**
 1. ✅ `EMOCIONAL` (24 patrones)
@@ -667,7 +735,7 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
 ## 🔍 SERVICIOS INVOLUCRADOS
 
 1. **emotionalAnalyzer** (`backend/services/emotionalAnalyzer.js`)
-   - Análisis emocional con 5 emociones principales
+   - Análisis emocional con 9 emociones principales
    - Cálculo de intensidad y confianza
    - Detección de emociones secundarias
 
@@ -676,7 +744,13 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
    - Análisis de tema (5 categorías)
    - Evaluación de urgencia
 
-3. **openaiService** (`backend/services/openaiService.js`)
+3. **crisis.js** (`backend/constants/crisis.js`) (NUEVO)
+   - Evaluación de riesgo suicida
+   - Recursos de emergencia por país
+   - Protocolo de intervención en crisis
+   - Generación de mensajes y prompts de crisis
+
+4. **openaiService** (`backend/services/openaiService.js`)
    - Generación de respuesta con GPT-4
    - Construcción de prompt contextualizado
    - Validación y mejora de respuesta
@@ -685,7 +759,7 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
      - Valores por defecto, umbrales, períodos del día
      - Patrones de validación, coherencia emocional, mensajes de error
 
-4. **memoryService** (`backend/services/memoryService.js`)
+5. **memoryService** (`backend/services/memoryService.js`)
    - Recuperación de contexto relevante (optimizado con consultas paralelas)
    - Gestión de memoria contextual
    - Análisis de tendencias temporales
@@ -694,16 +768,16 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
      - Umbrales de intensidad, límites, períodos de interacción
      - Ventanas de tiempo, configuración de patrones, días de la semana
 
-5. **personalizationService** (`backend/services/personalizationService.js`)
+6. **personalizationService** (`backend/services/personalizationService.js`)
    - Gestión de perfil de usuario
    - Preferencias de comunicación
    - Patrones detectados
 
-6. **progressTracker** (`backend/services/progressTracker.js`)
+7. **progressTracker** (`backend/services/progressTracker.js`)
    - Seguimiento de progreso del usuario
    - Estadísticas de interacción
 
-7. **userProfileService** (`backend/services/userProfileService.js`)
+8. **userProfileService** (`backend/services/userProfileService.js`)
    - Actualización de perfil
    - Detección de patrones
 
@@ -729,6 +803,13 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
   - Consultas paralelas en `getRelevantContext()` para mejor rendimiento
   - Nuevos métodos para análisis de tendencias temporales y patrones avanzados
   - Constantes centralizadas en `backend/constants/memory.js`
+- **Sistema de crisis implementado:**
+  - Evaluación automática de riesgo suicida en `chatRoutes.js` usando `evaluateSuicideRisk()`
+  - Recursos de emergencia por país en `backend/constants/crisis.js`
+  - Protocolo estructurado de intervención según nivel de riesgo (LOW, MEDIUM, HIGH)
+  - Integración automática en prompts de OpenAI para respuestas de crisis
+  - Mensajes de crisis personalizados según nivel de riesgo detectado
+  - Prompt del sistema de crisis agregado automáticamente cuando se detecta riesgo
 - **Duplicación de lógica:** Existe duplicación entre `openaiService.generarRespuesta()` (que crea y guarda el mensaje) y `chatRoutes.js` (que también lo hace). Esto se mantiene por compatibilidad pero debería consolidarse en el futuro.
 
 ---
