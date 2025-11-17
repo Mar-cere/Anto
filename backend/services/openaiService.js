@@ -4,6 +4,8 @@
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
 import {
+  ANALYSIS_DIMENSIONS,
+  buildPersonalizedPrompt,
   DEFAULT_VALUES,
   EMOTIONAL_COHERENCE_PATTERNS,
   EMOTIONAL_COHERENCE_PHRASES,
@@ -14,10 +16,12 @@ import {
   MESSAGE_INTENTS,
   OPENAI_MODEL,
   PENALTIES,
+  PROMPT_CONFIG,
   RESPONSE_LENGTHS,
   TEMPERATURES,
   THRESHOLDS,
-  TIME_PERIODS
+  TIME_PERIODS,
+  VALIDATION_LIMITS
 } from '../constants/openai.js';
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
@@ -72,14 +76,7 @@ class OpenAIService {
   constructor() {
     // Constantes de configuración
     this.RESPONSE_LENGTHS = RESPONSE_LENGTHS;
-
-    // Dimensiones de análisis terapéutico
-    this.ANALYSIS_DIMENSIONS = {
-      EMOTIONAL: ['reconocimiento', 'regulación', 'expresión'],
-      COGNITIVE: ['pensamientos', 'creencias', 'sesgos'],
-      BEHAVIORAL: ['patrones', 'estrategias', 'cambios'],
-      RELATIONAL: ['vínculos', 'comunicación', 'límites']
-    };
+    this.ANALYSIS_DIMENSIONS = ANALYSIS_DIMENSIONS;
 
     this.defaultResponse = {
       content: ERROR_MESSAGES.INVALID_MESSAGE,
@@ -129,8 +126,8 @@ class OpenAIService {
         throw new Error('Mensaje inválido: el contenido está vacío');
       }
 
-      if (contenidoNormalizado.length > 2000) {
-        throw new Error('Mensaje inválido: el contenido excede el límite de 2000 caracteres');
+      if (contenidoNormalizado.length > VALIDATION_LIMITS.MAX_INPUT_CHARACTERS) {
+        throw new Error(`Mensaje inválido: el contenido excede el límite de ${VALIDATION_LIMITS.MAX_INPUT_CHARACTERS} caracteres`);
       }
 
       // Validar API key antes de continuar
@@ -339,44 +336,27 @@ class OpenAIService {
    */
   async construirPromptContextualizado(mensaje, contexto) {
     const timeOfDay = this.getTimeOfDay();
-    const userStyle = contexto.profile?.communicationPreferences || DEFAULT_VALUES.COMMUNICATION_STYLE;
+    
+    // Extraer valores del contexto con valores por defecto
+    const emotion = contexto.emotional?.mainEmotion || DEFAULT_VALUES.EMOTION;
+    const intensity = contexto.emotional?.intensity || DEFAULT_VALUES.INTENSITY;
+    const phase = contexto.therapeutic?.currentPhase || DEFAULT_VALUES.PHASE;
+    const intent = contexto.contextual?.intencion?.tipo || MESSAGE_INTENTS.EMOTIONAL_SUPPORT;
+    const communicationStyle = contexto.profile?.communicationPreferences || DEFAULT_VALUES.COMMUNICATION_STYLE;
+    const recurringThemes = contexto.memory?.recurringThemes || [];
+    const lastInteraction = contexto.memory?.lastInteraction || 'ninguna';
 
-    const systemMessage = `Eres Anto, un asistente terapéutico profesional y empático.
-
-CONTEXTO ACTUAL:
-- Momento del día: ${timeOfDay}
-- Estado emocional: ${contexto.emotional?.mainEmotion || DEFAULT_VALUES.EMOTION} (intensidad: ${contexto.emotional?.intensity || DEFAULT_VALUES.INTENSITY})
-- Temas recurrentes: ${contexto.memory?.recurringThemes?.join(', ') || 'ninguno'}
-- Estilo comunicativo preferido: ${userStyle}
-- Fase terapéutica: ${contexto.therapeutic?.currentPhase || DEFAULT_VALUES.PHASE}
-- Última interacción: ${contexto.memory?.lastInteraction || 'ninguna'}
-
-DIRECTRICES:
-1. Mantén un tono ${userStyle} y profesional
-2. Adapta la respuesta al estado emocional actual (${contexto.emotional?.mainEmotion || DEFAULT_VALUES.EMOTION}, intensidad: ${contexto.emotional?.intensity || DEFAULT_VALUES.INTENSITY})
-3. Considera el historial y contexto previo - mantén continuidad emocional con mensajes anteriores
-4. Evita repeticiones exactas de respuestas anteriores
-5. Prioriza la validación emocional cuando sea apropiado
-6. Incluye elementos de apoyo concretos y sugerencias útiles
-7. **CRÍTICO: Sé MUY conciso. Máximo 100 palabras (2-3 oraciones cortas). Evita explicaciones largas, listas extensas o repeticiones. Ve directo al punto.**
-8. **IMPORTANTE: Mantén el contexto emocional. Si el usuario mencionó sentirse mal, conecta tus respuestas con ese estado emocional. No cambies abruptamente de tema emocional.**
-
-ESTRUCTURA DE RESPUESTA (MUY CONCISA):
-1. Reconocimiento empático de la situación (1 oración corta) - EVITA repetir "entiendo" si ya lo dijiste antes
-2. Validación o apoyo concreto específico al contexto emocional (1 oración corta)
-3. Pregunta breve o invitación a continuar (opcional, muy breve)
-
-REGLAS DE BREVEDAD Y COHERENCIA:
-- NO uses listas largas
-- NO repitas la misma idea o frase
-- NO agregues explicaciones innecesarias
-- NO cambies abruptamente de tema emocional
-- SÍ sé directo, empático y claro
-- SÍ enfócate en lo esencial
-- SÍ mantén continuidad con el contexto emocional previo
-- SÍ conecta tus respuestas con el estado emocional del usuario
-
-Recuerda: Una respuesta breve, empática, directa y contextualmente coherente es mucho más efectiva que una larga o genérica.`;
+    // Construir prompt personalizado usando la función helper
+    const systemMessage = buildPersonalizedPrompt({
+      emotion,
+      intensity,
+      phase,
+      intent,
+      communicationStyle,
+      timeOfDay,
+      recurringThemes,
+      lastInteraction
+    });
 
     const contextMessages = await this.generarMensajesContexto(contexto);
 
@@ -637,18 +617,18 @@ Recuerda: Una respuesta breve, empática, directa y contextualmente coherente es
     const oraciones = respuesta.split(/[.!?]+/).filter(s => s.trim());
     
     // Si tiene 2 o menos oraciones y está dentro del límite, retornar tal cual
-    if (oraciones.length <= 2 && respuesta.length <= THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
+    if (oraciones.length <= VALIDATION_LIMITS.MAX_SENTENCES_REDUCE && respuesta.length <= THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
       return respuesta;
     }
     
-    // Tomar solo las primeras 2 oraciones (más importantes)
-    const oracionesReducidas = oraciones.slice(0, 2);
+    // Tomar solo las primeras N oraciones (más importantes)
+    const oracionesReducidas = oraciones.slice(0, VALIDATION_LIMITS.MAX_SENTENCES_REDUCE);
     let respuestaReducida = oracionesReducidas.join('. ').trim();
     
     // Si aún es muy larga, truncar por caracteres de forma inteligente
     if (respuestaReducida.length > THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
       // Truncar en el último espacio antes del límite para no cortar palabras
-      const truncado = respuestaReducida.substring(0, THRESHOLDS.MAX_CHARACTERS_RESPONSE - 3);
+      const truncado = respuestaReducida.substring(0, THRESHOLDS.MAX_CHARACTERS_RESPONSE - PROMPT_CONFIG.TRUNCATE_BUFFER);
       const ultimoEspacio = truncado.lastIndexOf(' ');
       respuestaReducida = ultimoEspacio > 0 
         ? truncado.substring(0, ultimoEspacio).trim()
@@ -656,7 +636,7 @@ Recuerda: Una respuesta breve, empática, directa y contextualmente coherente es
       
       // Asegurar que termine correctamente
       if (!respuestaReducida.endsWith('.') && !respuestaReducida.endsWith('!') && !respuestaReducida.endsWith('?')) {
-        respuestaReducida += '...';
+        respuestaReducida += PROMPT_CONFIG.TRUNCATE_ELLIPSIS;
       }
     } else {
       // Agregar punto final si no lo tiene
@@ -794,8 +774,8 @@ Recuerda: Una respuesta breve, empática, directa y contextualmente coherente es
     if (typeof intensity !== 'number' || isNaN(intensity)) {
       intensity = DEFAULT_VALUES.INTENSITY;
     } else {
-      // Asegurar que esté en el rango válido (0-10)
-      intensity = Math.max(0, Math.min(10, intensity));
+      // Asegurar que esté en el rango válido
+      intensity = Math.max(VALIDATION_LIMITS.INTENSITY_MIN, Math.min(VALIDATION_LIMITS.INTENSITY_MAX, intensity));
     }
 
     // Construir objeto normalizado
