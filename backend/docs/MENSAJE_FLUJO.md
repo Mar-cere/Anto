@@ -435,30 +435,26 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
 
 ---
 
-### **PASO 9: Validación de Coherencia Emocional Final (en chatRoutes)**
-**Ubicación:** `chatRoutes.js:220-223`
-
-#### Filtro aplicado:
-- Verifica coherencia emocional con `openaiService.esCoherenteConEmocion()`
-- Si no es coherente: Ajusta con `openaiService.ajustarCoherenciaEmocional()`
-- **Nota:** Esta validación es redundante ya que se hace dentro de `generarRespuesta()`, pero se mantiene como validación adicional
-
----
-
-### **PASO 10: Creación y Guardado del Mensaje del Asistente (en chatRoutes)**
-**Ubicación:** `chatRoutes.js:225-241`
+### **PASO 9: Creación y Guardado del Mensaje del Asistente (en chatRoutes)**
+**Ubicación:** `chatRoutes.js:250-280`
 
 #### Metadata guardada:
 - `status: 'sent'`
-- `context.emotional`: Análisis emocional completo
+- `context.emotional`: Análisis emocional completo (normalizado)
 - `context.contextual`: Análisis contextual completo
 - `context.response`: Contexto de la respuesta (JSON stringificado)
 
-**Nota:** Este paso es redundante ya que `generarRespuesta()` ya crea y guarda el mensaje. Se mantiene por compatibilidad.
+**Nota:** Este paso crea y guarda el mensaje del asistente. La respuesta ya viene validada y mejorada desde `generarRespuesta()`, que incluye:
+- Validación de longitud
+- Validación de respuestas genéricas
+- Validación y ajuste de coherencia emocional (en `validarYMejorarRespuesta()`)
+- Reducción de longitud si es necesario
+
+**Nota sobre duplicación eliminada:** La validación de coherencia emocional que antes se hacía aquí (líneas 247-250) fue eliminada porque ya se realiza dentro de `generarRespuesta()` en el método `validarYMejorarRespuesta()` (líneas 468-471 de `openaiService.js`).
 
 ---
 
-### **PASO 11: Actualización de Registros en Paralelo (en chatRoutes)**
+### **PASO 10: Actualización de Registros en Paralelo (en chatRoutes)**
 **Ubicación:** `chatRoutes.js:243-262`
 
 #### Actualizaciones:

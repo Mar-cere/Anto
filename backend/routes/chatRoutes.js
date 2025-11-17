@@ -244,10 +244,8 @@ router.post('/messages', protect, async (req, res) => {
           }
         );
 
-        // Validar coherencia emocional
-        if (!openaiService.esCoherenteConEmocion(response.content, emotionalAnalysis)) {
-          response.content = openaiService.ajustarCoherenciaEmocional(response.content, emotionalAnalysis);
-        }
+        // Nota: La validación de coherencia emocional ya se realiza dentro de generarRespuesta()
+        // en el método validarYMejorarRespuesta(), por lo que no es necesario hacerla aquí
 
         // 6. Crear y guardar mensaje del asistente
         // Normalizar objeto emocional para asegurar compatibilidad con el esquema
