@@ -21,7 +21,7 @@ import { HISTORY_LIMITS } from '../constants/openai.js';
 const router = express.Router();
 
 // Constantes de configuración
-const LIMITE_MENSAJES = 50;
+const LIMITE_MENSAJES = 100; // Aumentado de 50 a 100 para permitir conversaciones más largas
 const VENTANA_CONTEXTO = 30 * 60 * 1000; // 30 minutos en milisegundos
 const HISTORIAL_LIMITE = 10; // Número de mensajes para contexto
 
@@ -161,9 +161,15 @@ router.post('/messages', protect, async (req, res) => {
       });
     }
 
+    // Validar límite de mensajes (permitir crear el mensaje si estamos justo en el límite)
+    // El límite se aplica ANTES de crear el nuevo mensaje, así que si hay LIMITE_MENSAJES o más, no permitimos crear más
     const messageCount = await Message.countDocuments({ conversationId });
     if (messageCount >= LIMITE_MENSAJES) {
-      return res.status(400).json({ message: 'Límite de mensajes alcanzado' });
+      return res.status(400).json({ 
+        message: `Límite de mensajes alcanzado (${LIMITE_MENSAJES} mensajes por conversación). Por favor, crea una nueva conversación para continuar.`,
+        limit: LIMITE_MENSAJES,
+        currentCount: messageCount
+      });
     }
 
     logs.push(`[${Date.now() - startTime}ms] Iniciando procesamiento de mensaje`);
