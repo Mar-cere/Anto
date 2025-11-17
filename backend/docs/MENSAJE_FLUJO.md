@@ -261,11 +261,22 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
 
 **Nota:** Los errores en `getUserProfile` y `TherapeuticRecord.findOne` no bloquean el flujo principal. El análisis se hace una sola vez en `chatRoutes.js` y se reutiliza aquí para evitar duplicación.
 
-#### 6.2. Obtención de Memoria Contextual (líneas 153-161)
-**Servicio:** `memoryService.getRelevantContext()`
-- Recupera contexto relevante del historial
-- Usa contenido normalizado
-- Considera análisis emocional y contextual
+#### 6.2. Obtención de Memoria Contextual (líneas 167-175)
+**Servicio:** `memoryService.getRelevantContext()`  
+**Archivo:** `backend/services/memoryService.js` (líneas 83-126)  
+**Constantes:** `backend/constants/memory.js`
+
+**Optimizaciones implementadas:**
+- **Consultas paralelas:** Obtiene interacciones recientes y período actual en paralelo
+- **Análisis paralelo:** Analiza contexto, extrae temas y encuentra patrones comunes simultáneamente
+- **Optimización MongoDB:** `getRecentInteractions()` usa agregaciones de MongoDB para ordenar y limitar en la BD
+
+**Proceso:**
+1. Obtiene interacciones recientes usando agregación MongoDB optimizada
+2. Analiza contexto de interacciones (timing, frecuencia, temas)
+3. Extrae temas recientes de las interacciones
+4. Encuentra patrones comunes (tiempo, temas, emociones)
+5. Retorna contexto completo con patrones, contexto actual e historial
 
 #### 6.3. Construcción del Prompt Contextualizado (líneas 163-173)
 **Método:** `construirPromptContextualizado()` (líneas 293-327)
@@ -574,34 +585,86 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
 
 ### **FILTROS DE MEMORIA Y CONTEXTO:**
 **Servicio:** `memoryService.getRelevantContext()`  
-**Archivo:** `backend/services/memoryService.js`
+**Archivo:** `backend/services/memoryService.js`  
+**Constantes:** `backend/constants/memory.js`
+
+#### **Métodos Principales:**
+1. ✅ **`getRelevantContext(userId, content, currentAnalysis)`** (líneas 83-126)
+   - Recupera contexto relevante del historial
+   - Usa consultas paralelas para optimizar rendimiento
+   - Retorna patrones, contexto actual e historial
+
+2. ✅ **`getRecentInteractions(userId, limit)`** (líneas 134-171)
+   - **Optimizado con agregación MongoDB:** Ordena y limita en la BD
+   - Usa `$unwind`, `$sort`, `$limit` para eficiencia
+   - Fallback al método anterior si la agregación falla
+   - Límite por defecto: `LIMITS.DEFAULT_QUERY` (10)
+
+3. ✅ **`analyzeTemporalTrends(userId, options)`** (NUEVO)
+   - Analiza tendencias temporales en las interacciones
+   - Detecta mejoras/empeoramientos emocionales
+   - Identifica patrones semanales y diarios
+   - Genera resumen automático de tendencias
+
+4. ✅ **`detectAdvancedPatterns(userId)`** (NUEVO)
+   - Detecta correlaciones entre emociones y días/horas
+   - Identifica triggers emocionales (eventos que preceden emociones)
+   - Detecta ciclos emocionales (patrones que se repiten)
+   - Analiza transiciones emocionales
+
+#### **Filtros y Constantes:**
 
 1. ✅ **Filtro de interacciones recientes:**
-   - Límite: `INTERACTIONS_LIMIT` (50 interacciones)
-   - Orden: Por fecha descendente
+   - Límite almacenado: `LIMITS.INTERACTIONS` (50 interacciones)
+   - Límite consulta: `LIMITS.DEFAULT_QUERY` (10 por defecto)
+   - Orden: Por fecha descendente (optimizado con agregación MongoDB)
+   - Constantes: `backend/constants/memory.js:LIMITS`
 
 2. ✅ **Filtro de períodos de interacción:**
    - `MORNING`: 5-11
    - `AFTERNOON`: 12-17
    - `EVENING`: 18-21
    - `NIGHT`: 22-4
+   - Constantes: `backend/constants/memory.js:INTERACTION_PERIODS`
 
 3. ✅ **Filtro de intensidad emocional:**
-   - `INTENSITY_HIGH_THRESHOLD`: 7
-   - `INTENSITY_LOW_THRESHOLD`: 4
+   - `INTENSITY.HIGH_THRESHOLD`: 7
+   - `INTENSITY.LOW_THRESHOLD`: 4
+   - `INTENSITY.DEFAULT`: 5
+   - `INTENSITY.MIN`: 1, `INTENSITY.MAX`: 10
+   - Constantes: `backend/constants/memory.js:INTENSITY`
 
 4. ✅ **Análisis de patrones temporales:**
    - Patrones por hora del día
    - Frecuencia de interacción por período
+   - Cálculo de frecuencia diaria y semanal (últimas 24h y 7 días)
 
 5. ✅ **Análisis de patrones temáticos:**
    - Temas más frecuentes
    - Frecuencia de cada tema
+   - Extracción de temas de `metadata.topics` y `patterns`
 
 6. ✅ **Análisis de patrones emocionales:**
    - Emociones más frecuentes
    - Intensidad promedio
    - Tendencias emocionales
+   - Compatible con estructuras `metadata.emotional.mainEmotion` y `emotion` directo
+
+7. ✅ **Análisis de tendencias temporales (NUEVO):**
+   - Tendencias emocionales: `improving`, `declining`, `stable`
+   - Tendencias de intensidad: `increasing`, `decreasing`, `stable`
+   - Patrones semanales: Detección de días con mayor actividad emocional
+   - Patrones diarios: Horas pico y períodos más activos
+   - Ventana de análisis: Configurable (por defecto 30 días)
+   - Constantes: `backend/constants/memory.js:TIME_WINDOWS`, `LIMITS.TREND_ANALYSIS` (30)
+
+8. ✅ **Detección de patrones avanzados (NUEVO):**
+   - **Correlaciones:** Emociones con días de la semana, períodos del día, horas
+   - **Triggers:** Eventos que preceden emociones negativas (dentro de 24h)
+   - **Ciclos:** Patrones emocionales que se repiten semanalmente
+   - **Transiciones:** Análisis de cambios entre emociones
+   - Umbrales: `PATTERN_CONFIG.MIN_CORRELATION_STRENGTH` (0.6), `PATTERN_CONFIG.MIN_PATTERN_OCCURRENCES` (3)
+   - Constantes: `backend/constants/memory.js:PATTERN_CONFIG`, `LIMITS.PATTERN_DETECTION` (20)
 
 ---
 
@@ -627,8 +690,13 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
      - Patrones de validación, coherencia emocional, mensajes de error
 
 4. **memoryService** (`backend/services/memoryService.js`)
-   - Recuperación de contexto relevante
+   - Recuperación de contexto relevante (optimizado con consultas paralelas)
    - Gestión de memoria contextual
+   - Análisis de tendencias temporales
+   - Detección de patrones avanzados (correlaciones, triggers, ciclos, transiciones)
+   - **Constantes:** `backend/constants/memory.js`
+     - Umbrales de intensidad, límites, períodos de interacción
+     - Ventanas de tiempo, configuración de patrones, días de la semana
 
 5. **personalizationService** (`backend/services/personalizationService.js`)
    - Gestión de perfil de usuario
@@ -660,6 +728,11 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
 - **Manejo de errores mejorado:** Logging detallado con contexto (userId, conversationId) para debugging
 - **Optimización de análisis:** El análisis emocional y contextual se hace una sola vez en `chatRoutes.js` y se reutiliza en `openaiService.generarRespuesta()` para evitar duplicación
 - **Mejora del análisis emocional:** Se extraen patrones emocionales del historial de conversación real para ajustar la intensidad según tendencias detectadas
+- **Optimización de memoryService:** 
+  - Consultas MongoDB optimizadas con agregaciones (ordenamiento y limitación en la BD)
+  - Consultas paralelas en `getRelevantContext()` para mejor rendimiento
+  - Nuevos métodos para análisis de tendencias temporales y patrones avanzados
+  - Constantes centralizadas en `backend/constants/memory.js`
 - **Duplicación de lógica:** Existe duplicación entre `openaiService.generarRespuesta()` (que crea y guarda el mensaje) y `chatRoutes.js` (que también lo hace). Esto se mantiene por compatibilidad pero debería consolidarse en el futuro.
 
 ---
@@ -721,20 +794,34 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
     - 4 estrategias: activas, evitativas, apoyo, reflexivas
 
 ### **FILTROS DE MEMORIA Y CONTEXTO:**
-16. ✅ Revisar filtros de memoria en `memoryService.js` (líneas 83-100)
-    - Interacciones recientes, períodos de interacción
-17. ✅ Revisar análisis de patrones en `memoryService.js` (líneas 219-264)
+16. ✅ Revisar filtros de memoria en `memoryService.js` (líneas 83-126)
+    - Interacciones recientes (optimizado con agregación MongoDB)
+    - Períodos de interacción
+    - Consultas paralelas para mejor rendimiento
+    - Constantes: `backend/constants/memory.js`
+17. ✅ Revisar análisis de patrones en `memoryService.js` (líneas 164-200, 218-325)
     - Patrones temporales, temáticos, emocionales
-18. ✅ Revisar detección de patrones emocionales en `memoryService.js` (líneas 407-449)
+    - Cálculo de frecuencia diaria y semanal
+    - Compatibilidad con múltiples estructuras de datos
+18. ✅ Revisar detección de patrones emocionales en `memoryService.js` (líneas 304-325, 456-525)
     - Intensidad, fluctuación, emociones dominantes
-19. ✅ Revisar análisis cognitivo en `memoryService.js` (líneas 456-474)
+    - Análisis de tendencias emocionales a lo largo del tiempo
+19. ✅ Revisar análisis cognitivo en `memoryService.js` (líneas 532-551)
     - Patrones cognitivos por categoría
+20. ✅ Revisar análisis de tendencias temporales en `memoryService.js` (NUEVO)
+    - `analyzeTemporalTrends()`: Tendencias emocionales, intensidad, patrones semanales/diarios
+    - Detección de mejoras/empeoramientos
+    - Generación de resúmenes automáticos
+21. ✅ Revisar detección de patrones avanzados en `memoryService.js` (NUEVO)
+    - `detectAdvancedPatterns()`: Correlaciones, triggers, ciclos, transiciones
+    - Configuración de umbrales en `PATTERN_CONFIG`
+    - Análisis de confianza basado en cantidad de interacciones
 
 ### **FILTROS DE PERSONALIZACIÓN:**
-20. ✅ Revisar estilos de comunicación en `personalizationService.js` (líneas 28-53)
+22. ✅ Revisar estilos de comunicación en `personalizationService.js` (líneas 28-53)
     - 4 estilos: EMPATICO, DIRECTO, EXPLORATORIO, ESTRUCTURADO
-21. ✅ Revisar análisis de patrones en `personalizationService.js` (líneas 277-291)
+23. ✅ Revisar análisis de patrones en `personalizationService.js` (líneas 277-291)
     - Patrones emocionales, temporales, temáticos
-22. ✅ Revisar determinación de estilo en `personalizationService.js` (líneas 383-404)
+24. ✅ Revisar determinación de estilo en `personalizationService.js` (líneas 383-404)
     - Lógica de determinación de estilo comunicativo
 

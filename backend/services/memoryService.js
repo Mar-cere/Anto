@@ -2,33 +2,30 @@
  * Servicio de Memoria - Gestiona el contexto, patrones e insights del usuario
  */
 import mongoose from 'mongoose';
+import {
+  EMOTION_NEUTRAL,
+  HORARIO_PERIODS,
+  INTENSITY,
+  INTERACTION_PERIODS,
+  LIMITS
+} from '../constants/memory.js';
 import UserInsight from '../models/UserInsight.js';
 
 class MemoryService {
   constructor() {
-    // Constantes de configuración
-    this.INTENSITY_DEFAULT = 5;
-    this.INTENSITY_HIGH_THRESHOLD = 7;
-    this.INTENSITY_LOW_THRESHOLD = 4;
-    this.EMOTION_NEUTRAL = 'neutral';
-    this.INTERACTIONS_LIMIT = 50;
-    this.DEFAULT_LIMIT = 10;
+    // Constantes importadas desde archivo centralizado
+    this.INTENSITY_DEFAULT = INTENSITY.DEFAULT;
+    this.INTENSITY_HIGH_THRESHOLD = INTENSITY.HIGH_THRESHOLD;
+    this.INTENSITY_LOW_THRESHOLD = INTENSITY.LOW_THRESHOLD;
+    this.EMOTION_NEUTRAL = EMOTION_NEUTRAL;
+    this.INTERACTIONS_LIMIT = LIMITS.INTERACTIONS;
+    this.DEFAULT_LIMIT = LIMITS.DEFAULT_QUERY;
     
     // Períodos de interacción (24 horas)
-    this.interactionPeriods = {
-      MORNING: { start: 5, end: 11 },
-      AFTERNOON: { start: 12, end: 17 },
-      EVENING: { start: 18, end: 21 },
-      NIGHT: { start: 22, end: 4 }
-    };
+    this.interactionPeriods = INTERACTION_PERIODS;
     
     // Períodos de horario (en español)
-    this.horarioPeriods = {
-      mañana: { start: 5, end: 11 },
-      tarde: { start: 12, end: 17 },
-      noche: { start: 18, end: 21 },
-      madrugada: { start: 22, end: 4 }
-    };
+    this.horarioPeriods = HORARIO_PERIODS;
   }
   
   // Helper: validar que el userId es válido
@@ -74,7 +71,7 @@ class MemoryService {
   }
 
   /**
-   * Obtiene el contexto relevante para un usuario y mensaje
+   * Obtiene el contexto relevante para un usuario y mensaje (optimizado con consultas paralelas)
    * @param {string|ObjectId} userId - ID del usuario
    * @param {string} content - Contenido del mensaje
    * @param {Object} currentAnalysis - Análisis actual (opcional)
@@ -90,9 +87,18 @@ class MemoryService {
         throw new Error('content válido es requerido');
       }
       
-      const recentInteractions = await this.getRecentInteractions(userId);
-      const interactionContext = this.analyzeInteractionContext(recentInteractions);
-      const currentPeriod = this.getCurrentPeriod();
+      // Obtener interacciones recientes y período actual en paralelo
+      const [recentInteractions, currentPeriod] = await Promise.all([
+        this.getRecentInteractions(userId),
+        Promise.resolve(this.getCurrentPeriod())
+      ]);
+
+      // Analizar contexto y extraer información en paralelo
+      const [interactionContext, recentTopics, commonPatterns] = await Promise.all([
+        Promise.resolve(this.analyzeInteractionContext(recentInteractions)),
+        Promise.resolve(this.extractRecentTopics(recentInteractions)),
+        Promise.resolve(this.findCommonPatterns(recentInteractions))
+      ]);
 
       return {
         patterns: {
@@ -103,11 +109,11 @@ class MemoryService {
         currentContext: {
           period: currentPeriod,
           analysis: currentAnalysis,
-          recentTopics: this.extractRecentTopics(recentInteractions)
+          recentTopics
         },
         history: {
           lastInteraction: recentInteractions[0] || null,
-          commonPatterns: this.findCommonPatterns(recentInteractions)
+          commonPatterns
         }
       };
     } catch (error) {
@@ -126,7 +132,7 @@ class MemoryService {
   }
 
   /**
-   * Obtiene las interacciones recientes de un usuario
+   * Obtiene las interacciones recientes de un usuario (optimizado con agregación MongoDB)
    * @param {string|ObjectId} userId - ID del usuario
    * @param {number} limit - Límite de interacciones (opcional, por defecto 10)
    * @returns {Promise<Array>} Lista de interacciones ordenadas por timestamp descendente
@@ -137,22 +143,36 @@ class MemoryService {
         throw new Error('userId válido es requerido');
       }
       
-      // Obtener interacciones del modelo UserInsight
-      const userInsight = await UserInsight.findOne({ userId })
-        .select('interactions')
-        .lean();
+      // Usar agregación de MongoDB para ordenar y limitar en la BD (más eficiente)
+      const result = await UserInsight.aggregate([
+        { $match: { userId: mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId } },
+        { $project: { interactions: 1 } },
+        { $unwind: '$interactions' },
+        { $sort: { 'interactions.timestamp': -1 } },
+        { $limit: limit },
+        { $replaceRoot: { newRoot: '$interactions' } }
+      ]);
       
-      if (!userInsight || !this.isValidArray(userInsight.interactions)) {
-        return [];
-      }
-      
-      // Ordenar por timestamp descendente y limitar
-      return userInsight.interactions
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-        .slice(0, limit);
+      return result || [];
     } catch (error) {
       console.error('[MemoryService] Error obteniendo interacciones recientes:', error, { userId });
-      return [];
+      // Fallback al método anterior si la agregación falla
+      try {
+        const userInsight = await UserInsight.findOne({ userId })
+          .select('interactions')
+          .lean();
+        
+        if (!userInsight || !this.isValidArray(userInsight.interactions)) {
+          return [];
+        }
+        
+        return userInsight.interactions
+          .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+          .slice(0, limit);
+      } catch (fallbackError) {
+        console.error('[MemoryService] Error en fallback:', fallbackError);
+        return [];
+      }
     }
   }
 
@@ -175,11 +195,24 @@ class MemoryService {
       return context;
     }
 
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
     interactions.forEach(interaction => {
       if (interaction?.timestamp) {
-        const hour = new Date(interaction.timestamp).getHours();
+        const timestamp = new Date(interaction.timestamp);
+        const hour = timestamp.getHours();
         const period = this.getPeriodFromHour(hour);
         context.timing[period] = (context.timing[period] || 0) + 1;
+
+        // Calcular frecuencia diaria y semanal
+        if (timestamp >= oneDayAgo) {
+          context.frequency.daily++;
+        }
+        if (timestamp >= oneWeekAgo) {
+          context.frequency.weekly++;
+        }
       }
     });
 
@@ -199,14 +232,28 @@ class MemoryService {
     }
     
     interactions.forEach(interaction => {
+      // Buscar temas en metadata.topics (si existe)
       if (interaction?.metadata?.topics && Array.isArray(interaction.metadata.topics)) {
         interaction.metadata.topics.forEach(topic => topics.add(topic));
+      }
+      // También buscar en patterns si tiene información de temas
+      if (interaction?.patterns && typeof interaction.patterns === 'object') {
+        Object.keys(interaction.patterns).forEach(patternKey => {
+          if (patternKey.toLowerCase().includes('topic') || patternKey.toLowerCase().includes('tema')) {
+            topics.add(patternKey);
+          }
+        });
       }
     });
 
     return Array.from(topics);
   }
 
+  /**
+   * Encuentra patrones comunes en las interacciones
+   * @param {Array} interactions - Lista de interacciones
+   * @returns {Object} Patrones comunes con tiempo, temas y emociones
+   */
   findCommonPatterns(interactions) {
     return {
       timePatterns: this.analyzeTimePatterns(interactions),
@@ -250,9 +297,18 @@ class MemoryService {
     }
     
     interactions.forEach(interaction => {
+      // Buscar temas en metadata.topics (si existe)
       if (interaction?.metadata?.topics && Array.isArray(interaction.metadata.topics)) {
         interaction.metadata.topics.forEach(topic => {
           topics[topic] = (topics[topic] || 0) + 1;
+        });
+      }
+      // También buscar en patterns si tiene información de temas
+      if (interaction?.patterns && typeof interaction.patterns === 'object') {
+        Object.keys(interaction.patterns).forEach(patternKey => {
+          if (patternKey.toLowerCase().includes('topic') || patternKey.toLowerCase().includes('tema')) {
+            topics[patternKey] = (topics[patternKey] || 0) + 1;
+          }
         });
       }
     });
@@ -273,8 +329,14 @@ class MemoryService {
     }
     
     interactions.forEach(interaction => {
+      // Buscar emoción en metadata.emotional.mainEmotion (estructura de Message)
       if (interaction?.metadata?.emotional?.mainEmotion) {
         const emotion = interaction.metadata.emotional.mainEmotion;
+        emotions[emotion] = (emotions[emotion] || 0) + 1;
+      }
+      // También buscar en emotion directamente (estructura de UserInsight)
+      else if (interaction?.emotion) {
+        const emotion = interaction.emotion;
         emotions[emotion] = (emotions[emotion] || 0) + 1;
       }
     });
@@ -312,7 +374,7 @@ class MemoryService {
    * Actualiza los insights del usuario con una nueva interacción
    * @param {string|ObjectId} userId - ID del usuario
    * @param {Object} message - Mensaje del usuario
-   * @param {Object} analysis - Análisis del mensaje
+   * @param {Object} analysis - Análisis del mensaje (puede tener emotional, contextual, etc.)
    * @returns {Promise<Object|null>} Documento actualizado o null si hay error
    */
   async updateUserInsights(userId, message, analysis) {
@@ -326,15 +388,22 @@ class MemoryService {
       }
       
       const timestamp = new Date();
-      const hora = timestamp.getHours();
-      const emotionalIntensity = analysis?.emotionalContext?.intensity || this.INTENSITY_DEFAULT;
+      
+      // Extraer emoción e intensidad de diferentes estructuras posibles
+      const emotionalAnalysis = analysis?.emotional || analysis?.emotionalContext || {};
+      const emotionalIntensity = emotionalAnalysis?.intensity || 
+                                 analysis?.intensity || 
+                                 this.INTENSITY_DEFAULT;
+      const emotion = emotionalAnalysis?.mainEmotion || 
+                     emotionalAnalysis?.emotion || 
+                     this.EMOTION_NEUTRAL;
       
       // Crear interacción (según estructura del modelo UserInsight)
       const interaction = {
         timestamp,
-        emotion: analysis?.emotionalContext?.mainEmotion || this.EMOTION_NEUTRAL,
-        intensity: emotionalIntensity,
-        patterns: analysis?.patterns || {},
+        emotion,
+        intensity: Math.max(1, Math.min(10, emotionalIntensity)), // Asegurar rango válido
+        patterns: analysis?.patterns || analysis?.contextual?.patterns || {},
         goals: analysis?.goals || {}
       };
 
@@ -374,7 +443,7 @@ class MemoryService {
 
   /**
    * Analiza la tendencia emocional en las interacciones
-   * @param {Array} interactions - Lista de interacciones
+   * @param {Array} interactions - Lista de interacciones (ordenadas descendente por timestamp)
    * @returns {Object} Tendencia emocional con última emoción, historial y patrones
    */
   analyzeEmotionalTrend(interactions) {
@@ -386,14 +455,21 @@ class MemoryService {
       };
     }
     
-    const emotions = interactions.map(i => ({
-      emotion: i.emotion || this.EMOTION_NEUTRAL,
-      intensity: i.intensity || this.INTENSITY_DEFAULT,
-      timestamp: i.timestamp
-    }));
+    const emotions = interactions.map(i => {
+      // Extraer emoción de diferentes estructuras posibles
+      const emotion = i?.metadata?.emotional?.mainEmotion || i?.emotion || this.EMOTION_NEUTRAL;
+      const intensity = i?.metadata?.emotional?.intensity || i?.intensity || this.INTENSITY_DEFAULT;
+      
+      return {
+        emotion,
+        intensity,
+        timestamp: i.timestamp
+      };
+    });
 
+    // Las interacciones están ordenadas descendente, así que la más reciente es la primera
     return {
-      latest: emotions[emotions.length - 1]?.emotion || this.EMOTION_NEUTRAL,
+      latest: emotions[0]?.emotion || this.EMOTION_NEUTRAL,
       history: emotions,
       patterns: this.detectEmotionalPatterns(emotions)
     };
@@ -411,7 +487,7 @@ class MemoryService {
         baja: 0
       },
       fluctuación: [],
-      emocionesDominantes: new Map()
+      emocionesDominantes: {} // Cambiado de Map a objeto para serialización JSON
     };
 
     if (!this.isValidArray(emotions)) {
@@ -427,12 +503,9 @@ class MemoryService {
         patterns.intensidad.baja++;
       }
 
-      // Contar emociones dominantes
+      // Contar emociones dominantes (usando objeto en lugar de Map)
       const emotion = e.emotion || this.EMOTION_NEUTRAL;
-      patterns.emocionesDominantes.set(
-        emotion,
-        (patterns.emocionesDominantes.get(emotion) || 0) + 1
-      );
+      patterns.emocionesDominantes[emotion] = (patterns.emocionesDominantes[emotion] || 0) + 1;
 
       // Detectar fluctuaciones (cambios de emoción)
       if (patterns.fluctuación.length > 0) {
