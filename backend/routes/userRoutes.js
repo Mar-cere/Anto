@@ -482,10 +482,15 @@ router.get('/me/emergency-contacts', authenticateToken, validateUserObjectId, as
 // Agregar un contacto de emergencia
 router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, async (req, res) => {
   try {
-    const { error, value } = emergencyContactSchema.validate(req.body);
-    const { sendTestEmail } = req.body; // Opcional: enviar email de prueba
+    // Extraer sendTestEmail antes de validar (no es parte del esquema de contacto)
+    const { sendTestEmail, ...contactData } = req.body;
+    
+    const { error, value } = emergencyContactSchema.validate(contactData, { 
+      allowUnknown: false // No permitir campos desconocidos
+    });
     
     if (error) {
+      console.error('Error de validación:', error.details);
       return res.status(400).json({ 
         message: 'Datos inválidos',
         errors: error.details.map(d => d.message)
