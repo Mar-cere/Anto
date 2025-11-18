@@ -208,9 +208,18 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
         });
       });
 
-      await Promise.all(savePromises);
+      const results = await Promise.all(savePromises);
       
-      Alert.alert('Éxito', `${contactsToSave.length} contacto(s) agregado(s) exitosamente`, [
+      // Verificar si algún email de prueba falló
+      const failedTestEmails = results.filter(r => r.testEmailSent === false);
+      const hasTestEmailErrors = results.some(r => r.testEmailError);
+      
+      let message = `${contactsToSave.length} contacto(s) agregado(s) exitosamente`;
+      if (failedTestEmails.length > 0 || hasTestEmailErrors) {
+        message += '\n\n⚠️ Nota: No se pudieron enviar algunos emails de prueba. El contacto se guardó correctamente, pero verifica la configuración del servidor de email.';
+      }
+      
+      Alert.alert('Éxito', message, [
         { text: 'OK', onPress: () => {
           onSave?.();
           onClose();

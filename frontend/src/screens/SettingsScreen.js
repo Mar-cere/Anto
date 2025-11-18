@@ -585,10 +585,20 @@ const SettingsScreen = () => {
                         onPress={async () => {
                           try {
                             const response = await api.post(ENDPOINTS.EMERGENCY_CONTACT_TEST(contact._id));
-                            Alert.alert(TEXTS.SUCCESS, TEXTS.TEST_EMAIL_SENT);
+                            if (response.testEmailSent) {
+                              Alert.alert(TEXTS.SUCCESS, TEXTS.TEST_EMAIL_SENT);
+                            } else {
+                              Alert.alert(
+                                'Aviso',
+                                response.message || 'No se pudo enviar el email de prueba. Verifica la configuración del servidor de email.'
+                              );
+                            }
                           } catch (error) {
                             console.error('Error enviando email de prueba:', error);
-                            Alert.alert(TEXTS.ERROR, TEXTS.TEST_EMAIL_ERROR);
+                            Alert.alert(
+                              'Aviso',
+                              error.response?.data?.message || TEXTS.TEST_EMAIL_ERROR
+                            );
                           }
                         }}
                         style={styles.contactActionButton}

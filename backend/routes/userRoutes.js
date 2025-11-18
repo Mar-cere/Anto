@@ -540,6 +540,7 @@ router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, a
 
     // Enviar email de prueba si se solicita
     let testEmailSent = false;
+    let testEmailError = null;
     if (sendTestEmail === true) {
       try {
         const mailer = (await import('../config/mailer.js')).default;
@@ -548,17 +549,30 @@ router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, a
           newContact.name,
           user.name || user.username || 'Usuario'
         );
+        if (!testEmailSent) {
+          testEmailError = 'No se pudo enviar el email de prueba. Verifica la configuración del servidor de email.';
+        }
       } catch (emailError) {
         console.error('Error enviando email de prueba:', emailError);
+        testEmailError = emailError.message || 'Error al enviar email de prueba';
         // No fallar la creación del contacto si falla el email de prueba
       }
     }
 
-    res.status(201).json({
+    const response = {
       message: 'Contacto de emergencia agregado exitosamente',
-      contact: user.emergencyContacts[user.emergencyContacts.length - 1],
-      testEmailSent: sendTestEmail ? testEmailSent : undefined
-    });
+      contact: user.emergencyContacts[user.emergencyContacts.length - 1]
+    };
+
+    // Incluir información del email de prueba solo si se solicitó
+    if (sendTestEmail === true) {
+      response.testEmailSent = testEmailSent;
+      if (testEmailError) {
+        response.testEmailError = testEmailError;
+      }
+    }
+
+    res.status(201).json(response);
   } catch (error) {
     console.error('Error al agregar contacto de emergencia:', error);
     res.status(500).json({ 
@@ -740,11 +754,22 @@ router.post('/me/emergency-contacts/:contactId/test', authenticateToken, validat
     }
 
     const mailer = (await import('../config/mailer.js')).default;
-    const emailSent = await mailer.sendEmergencyContactTestEmail(
-      contact.email,
-      contact.name,
-      user.name || user.username || 'Usuario'
-    );
+    let emailSent = false;
+    let emailError = null;
+    
+    try {
+      emailSent = await mailer.sendEmergencyContactTestEmail(
+        contact.email,
+        contact.name,
+        user.name || user.username || 'Usuario'
+      );
+      if (!emailSent) {
+        emailError = 'No se pudo enviar el email de prueba. Verifica la configuración del servidor de email.';
+      }
+    } catch (error) {
+      console.error('Error enviando email de prueba:', error);
+      emailError = error.message || 'Error al enviar email de prueba';
+    }
 
     if (emailSent) {
       res.json({
@@ -753,16 +778,20 @@ router.post('/me/emergency-contacts/:contactId/test', authenticateToken, validat
           _id: contact._id,
           name: contact.name,
           email: contact.email
-        }
+        },
+        testEmailSent: true
       });
     } else {
-      res.status(500).json({
-        message: 'Error al enviar email de prueba',
+      // Retornar 200 en lugar de 500, ya que el contacto existe y el error es solo del email
+      res.status(200).json({
+        message: 'El contacto existe, pero no se pudo enviar el email de prueba. Verifica la configuración del servidor de email.',
         contact: {
           _id: contact._id,
           name: contact.name,
           email: contact.email
-        }
+        },
+        testEmailSent: false,
+        error: emailError || 'Error de conexión con el servidor de email'
       });
     }
   } catch (error) {
