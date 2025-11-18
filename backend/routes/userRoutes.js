@@ -6,9 +6,15 @@ import crypto from 'crypto';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import Joi from 'joi';
+import mongoose from 'mongoose';
 import { authenticateToken } from '../middleware/auth.js';
 import { validateUserObjectId } from '../middleware/validation.js';
 import User from '../models/User.js';
+
+// Helper para validar ObjectId
+const isValidObjectId = (id) => {
+  return mongoose.Types.ObjectId.isValid(id);
+};
 
 const router = express.Router();
 
