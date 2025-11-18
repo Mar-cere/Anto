@@ -1,8 +1,10 @@
 /**
  * Configuración de Mailer - Gestiona el envío de correos electrónicos
+ * Soporta SendGrid (preferido) y Gmail SMTP (fallback)
  */
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 import { APP_NAME, APP_NAME_FULL, EMAIL_FROM_NAME, LOGO_URL } from '../constants/app.js';
 import {
   CODE_EXPIRATION_MINUTES,
@@ -13,6 +15,18 @@ import {
 } from '../constants/email.js';
 
 dotenv.config();
+
+// Configurar SendGrid si está disponible
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_USER;
+const USE_SENDGRID = !!SENDGRID_API_KEY;
+
+if (USE_SENDGRID) {
+  sgMail.setApiKey(SENDGRID_API_KEY);
+  console.log('[Mailer] ✅ SendGrid configurado correctamente');
+} else {
+  console.log('[Mailer] ⚠️ SendGrid no configurado, usando Gmail SMTP como fallback');
+}
 
 // Helper: crear transporter de nodemailer
 const createTransporter = () => {
@@ -198,16 +212,48 @@ const emailTemplates = {
   })
 };
 
-// Helper: enviar correo genérico
-const sendEmail = async (email, template, emailType) => {
+// Helper: enviar correo con SendGrid
+const sendEmailWithSendGrid = async (email, template, emailType) => {
+  try {
+    const msg = {
+      to: email,
+      from: {
+        email: SENDGRID_FROM_EMAIL,
+        name: EMAIL_FROM_NAME
+      },
+      subject: template.subject,
+      html: template.html
+    };
+
+    console.log(`[Mailer] 📧 [SendGrid] Intentando enviar ${emailType} a: ${email}`);
+    console.log(`[Mailer] 📧 [SendGrid] Desde: ${SENDGRID_FROM_EMAIL}`);
+    
+    const response = await sgMail.send(msg);
+    
+    console.log(`[Mailer] ✉️ [SendGrid] ${emailType} enviado exitosamente a: ${email}`);
+    if (response[0]?.headers?.['x-message-id']) {
+      console.log(`[Mailer] 📬 [SendGrid] Message ID: ${response[0].headers['x-message-id']}`);
+    }
+    return true;
+  } catch (error) {
+    console.error(`[Mailer] ❌ [SendGrid] Error al enviar ${emailType} a ${email}:`, error.message);
+    if (error.response?.body) {
+      console.error(`[Mailer] 📋 [SendGrid] Error response:`, JSON.stringify(error.response.body, null, 2));
+    }
+    throw error;
+  }
+};
+
+// Helper: enviar correo con Gmail SMTP (fallback)
+const sendEmailWithGmail = async (email, template, emailType) => {
   try {
     // Verificar configuración antes de intentar enviar
     if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
       throw new Error('Variables de entorno EMAIL_USER y EMAIL_APP_PASSWORD no están configuradas');
     }
 
-    console.log(`[Mailer] 📧 Intentando enviar ${emailType} a: ${email}`);
-    console.log(`[Mailer] 📧 Desde: ${process.env.EMAIL_USER}`);
+    console.log(`[Mailer] 📧 [Gmail] Intentando enviar ${emailType} a: ${email}`);
+    console.log(`[Mailer] 📧 [Gmail] Desde: ${process.env.EMAIL_USER}`);
     
     const transporter = createTransporter();
     
@@ -219,32 +265,53 @@ const sendEmail = async (email, template, emailType) => {
     
     const info = await transporter.sendMail(mailOptions);
     
-    console.log(`[Mailer] ✉️ ${emailType} enviado exitosamente a: ${email}`);
-    console.log(`[Mailer] 📬 Message ID: ${info.messageId}`);
+    console.log(`[Mailer] ✉️ [Gmail] ${emailType} enviado exitosamente a: ${email}`);
+    console.log(`[Mailer] 📬 [Gmail] Message ID: ${info.messageId}`);
     return true;
   } catch (error) {
-    console.error(`[Mailer] ❌ Error al enviar ${emailType} a ${email}:`, error.message);
+    console.error(`[Mailer] ❌ [Gmail] Error al enviar ${emailType} a ${email}:`, error.message);
     if (error.response) {
-      console.error(`[Mailer] 📋 Error response:`, error.response);
+      console.error(`[Mailer] 📋 [Gmail] Error response:`, error.response);
     }
     if (error.code) {
-      console.error(`[Mailer] 🔢 Error code:`, error.code);
+      console.error(`[Mailer] 🔢 [Gmail] Error code:`, error.code);
     }
-    if (error.message.includes('Variables de entorno')) {
+    throw error;
+  }
+};
+
+// Helper: enviar correo genérico (intenta SendGrid primero, luego Gmail)
+const sendEmail = async (email, template, emailType) => {
+  // Intentar primero con SendGrid si está configurado
+  if (USE_SENDGRID) {
+    try {
+      return await sendEmailWithSendGrid(email, template, emailType);
+    } catch (sendGridError) {
+      console.error('[Mailer] ⚠️ SendGrid falló, intentando con Gmail como fallback...');
+      // Continuar con el fallback a Gmail
+    }
+  }
+
+  // Fallback a Gmail SMTP
+  try {
+    return await sendEmailWithGmail(email, template, emailType);
+  } catch (gmailError) {
+    // Log de errores de Gmail
+    if (gmailError.message.includes('Variables de entorno')) {
       console.error('[Mailer] 💡 Solución: Configura EMAIL_USER y EMAIL_APP_PASSWORD en tu archivo .env');
-    } else if (error.message.includes('Invalid login') || error.message.includes('authentication')) {
+    } else if (gmailError.message.includes('Invalid login') || gmailError.message.includes('authentication')) {
       console.error('[Mailer] 💡 Error de autenticación: Verifica que EMAIL_APP_PASSWORD sea una App Password válida de Gmail');
       console.error('[Mailer] 💡 Cómo obtener App Password: https://myaccount.google.com/apppasswords');
-    } else if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
+    } else if (gmailError.message.includes('ENOTFOUND') || gmailError.message.includes('ECONNREFUSED')) {
       console.error('[Mailer] 💡 Error de conexión: Verifica tu conexión a internet');
-    } else if (error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
+    } else if (gmailError.code === 'ETIMEDOUT' || gmailError.message.includes('timeout')) {
       console.error('[Mailer] 💡 Error de timeout: El servidor no pudo conectarse a Gmail SMTP');
       console.error('[Mailer] 💡 Posibles soluciones:');
       console.error('[Mailer]   1. Verifica que el servidor tenga acceso saliente al puerto 587');
-      console.error('[Mailer]   2. Considera usar un servicio de email alternativo (SendGrid, Mailgun, etc.)');
+      console.error('[Mailer]   2. Configura SENDGRID_API_KEY para usar SendGrid (recomendado)');
       console.error('[Mailer]   3. Verifica que Gmail no esté bloqueando conexiones desde este servidor');
     }
-    throw error;
+    throw gmailError;
   }
 };
 
