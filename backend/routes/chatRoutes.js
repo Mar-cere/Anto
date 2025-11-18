@@ -18,6 +18,7 @@ import {
 } from '../services/index.js';
 import { HISTORY_LIMITS } from '../constants/openai.js';
 import { evaluateSuicideRisk } from '../constants/crisis.js';
+import emergencyAlertService from '../services/emergencyAlertService.js';
 
 const router = express.Router();
 
@@ -225,6 +226,27 @@ router.post('/messages', protect, async (req, res) => {
         
         if (isCrisis) {
           logs.push(`[${Date.now() - startTime}ms] ⚠️ Crisis detectada - Nivel de riesgo: ${riskLevel}`);
+          
+          // Enviar alertas a contactos de emergencia si el riesgo es MEDIUM o HIGH
+          if (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') {
+            try {
+              const alertResult = await emergencyAlertService.sendEmergencyAlerts(
+                req.user._id,
+                riskLevel,
+                content // No enviar el contenido completo por privacidad, pero se puede usar para contexto
+              );
+              
+              if (alertResult.sent) {
+                logs.push(`[${Date.now() - startTime}ms] 📧 Alertas enviadas a ${alertResult.successfulSends}/${alertResult.totalContacts} contactos de emergencia`);
+              } else {
+                logs.push(`[${Date.now() - startTime}ms] ⚠️ No se pudieron enviar alertas: ${alertResult.reason || 'Error desconocido'}`);
+              }
+            } catch (error) {
+              // No bloquear el flujo principal si falla el envío de alertas
+              console.error('[ChatRoutes] Error enviando alertas de emergencia:', error);
+              logs.push(`[${Date.now() - startTime}ms] ❌ Error enviando alertas de emergencia: ${error.message}`);
+            }
+          }
         }
 
         // 4. Guardar mensaje del usuario primero

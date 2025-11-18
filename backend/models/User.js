@@ -190,6 +190,54 @@ const userSchema = new mongoose.Schema({
       enum: ['monthly', 'yearly'],
       default: null
     }
+  },
+  // Contactos de emergencia (máximo 2)
+  emergencyContacts: {
+    type: [{
+      name: {
+        type: String,
+        required: true,
+        trim: true,
+        maxlength: [100, 'El nombre del contacto no puede exceder 100 caracteres']
+      },
+      email: {
+        type: String,
+        required: true,
+        trim: true,
+        lowercase: true,
+        match: [/^\S+@\S+\.\S+$/, 'Por favor ingresa un correo válido']
+      },
+      phone: {
+        type: String,
+        trim: true,
+        default: null
+      },
+      relationship: {
+        type: String,
+        trim: true,
+        default: null,
+        maxlength: [50, 'La relación no puede exceder 50 caracteres']
+      },
+      enabled: {
+        type: Boolean,
+        default: true
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now
+      },
+      lastReminderSent: {
+        type: Date,
+        default: null
+      }
+    }],
+    default: [],
+    validate: {
+      validator: function(v) {
+        return v.length <= 2;
+      },
+      message: 'Solo se permiten máximo 2 contactos de emergencia'
+    }
   }
 }, {
   timestamps: true,

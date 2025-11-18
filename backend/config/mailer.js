@@ -305,6 +305,118 @@ const mailer = {
       }
       return false;
     }
+  },
+
+  /**
+   * Enviar email genérico personalizado
+   * @param {Object} options - Opciones del email
+   * @param {string} options.to - Email del destinatario
+   * @param {string} options.subject - Asunto del email
+   * @param {string} options.html - Contenido HTML del email
+   * @returns {Promise<boolean>} true si se envió correctamente
+   */
+  sendCustomEmail: async ({ to, subject, html }) => {
+    try {
+      const template = { subject, html };
+      return await sendEmail(to, template, 'Email personalizado');
+    } catch (error) {
+      console.error('[Mailer] ❌ Error al enviar email personalizado:', error.message);
+      return false;
+    }
+  },
+
+  /**
+   * Enviar email de prueba a contacto de emergencia
+   * @param {string} email - Email del contacto
+   * @param {string} contactName - Nombre del contacto
+   * @param {string} userName - Nombre del usuario
+   * @returns {Promise<boolean>} true si se envió correctamente
+   */
+  sendEmergencyContactTestEmail: async (email, contactName, userName) => {
+    try {
+      const subject = `🧪 Prueba de Alerta - ${APP_NAME}`;
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+            }
+            .header {
+              background-color: #0A1533;
+              color: white;
+              padding: 20px;
+              text-align: center;
+              border-radius: 8px 8px 0 0;
+            }
+            .content {
+              background-color: #f9f9f9;
+              padding: 30px;
+              border: 1px solid #ddd;
+              border-top: none;
+              border-radius: 0 0 8px 8px;
+            }
+            .test-box {
+              background-color: #e3f2fd;
+              border-left: 4px solid #2196F3;
+              padding: 15px;
+              margin: 20px 0;
+              border-radius: 4px;
+            }
+            .footer {
+              margin-top: 30px;
+              padding-top: 20px;
+              border-top: 1px solid #ddd;
+              font-size: 12px;
+              color: #666;
+              text-align: center;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>🧪 Prueba de Alerta - ${APP_NAME}</h1>
+          </div>
+          <div class="content">
+            <p>Hola ${contactName},</p>
+            
+            <div class="test-box">
+              <h2 style="margin-top: 0;">⚠️ Esta es una PRUEBA</h2>
+              <p>Este es un email de prueba enviado por <strong>${userName}</strong> para verificar que el sistema de alertas de emergencia funciona correctamente.</p>
+              <p><strong>No hay ninguna situación de emergencia real.</strong></p>
+            </div>
+
+            <p>Si recibiste este email, significa que:</p>
+            <ul>
+              <li>✅ Tu dirección de email está correctamente configurada</li>
+              <li>✅ El sistema puede contactarte en caso de emergencia</li>
+              <li>✅ Las alertas llegarán a tu bandeja de entrada</li>
+            </ul>
+
+            <p>En caso de una emergencia real, recibirás un email similar pero con información sobre la situación y recursos de ayuda.</p>
+
+            <div class="footer">
+              <p>Este es un mensaje automático de prueba de ${APP_NAME}.</p>
+              <p>Si no deberías recibir estos emails, por favor contacta a ${userName}.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+      
+      const template = { subject, html };
+      return await sendEmail(email, template, 'Email de prueba de contacto de emergencia');
+    } catch (error) {
+      console.error('[Mailer] ❌ Error al enviar email de prueba:', error.message);
+      return false;
+    }
   }
 };
 

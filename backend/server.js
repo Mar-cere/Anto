@@ -274,6 +274,37 @@ app.listen(PORT, HOST, () => {
   console.log(`🔗 URL Frontend: ${config.app.frontendUrl}`);
   console.log(`🌐 Servidor accesible desde: ${HOST === '0.0.0.0' ? 'cualquier IP (Render)' : 'localhost'}`);
   console.log(`🔍 Render detectado: ${isRender ? 'Sí' : 'No'}`);
+  
+  // Iniciar servicio de recordatorios periódicos (solo en producción o si está habilitado)
+  if (process.env.ENABLE_REMINDERS !== 'false') {
+    const REMINDER_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 horas
+    
+    // Ejecutar inmediatamente al iniciar (solo en producción)
+    if (config.app.environment === 'production') {
+      setTimeout(async () => {
+        try {
+          const emergencyReminderService = (await import('./services/emergencyReminderService.js')).default;
+          console.log('📧 Iniciando envío de recordatorios de contactos de emergencia...');
+          await emergencyReminderService.sendRemindersToAllUsers();
+        } catch (error) {
+          console.error('❌ Error en servicio de recordatorios:', error);
+        }
+      }, 60000); // Esperar 1 minuto después del inicio
+    }
+    
+    // Programar ejecución diaria
+    setInterval(async () => {
+      try {
+        const emergencyReminderService = (await import('./services/emergencyReminderService.js')).default;
+        console.log('📧 Ejecutando recordatorios periódicos de contactos de emergencia...');
+        await emergencyReminderService.sendRemindersToAllUsers();
+      } catch (error) {
+        console.error('❌ Error en servicio de recordatorios:', error);
+      }
+    }, REMINDER_INTERVAL_MS);
+    
+    console.log('✅ Servicio de recordatorios de contactos de emergencia iniciado (cada 24 horas)');
+  }
 });
 
 // Manejo de señales de terminación

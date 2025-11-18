@@ -24,6 +24,7 @@ import {
   View
 } from 'react-native';
 import DashboardScroll from '../components/DashboardScroll';
+import EmergencyContactsModal from '../components/EmergencyContactsModal';
 import FloatingNavBar from '../components/FloatingNavBar';
 import HabitCard from '../components/HabitCard';
 import Header from '../components/Header';
@@ -80,6 +81,9 @@ const DashScreen = () => {
   const [greeting, setGreeting] = useState('');
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [refreshAnim] = useState(new Animated.Value(0));
+  const [showEmergencyContactsModal, setShowEmergencyContactsModal] = useState(false);
+  const [emergencyContacts, setEmergencyContacts] = useState([]);
+  const [hasCheckedEmergencyContacts, setHasCheckedEmergencyContacts] = useState(false);
 
   // Función para cargar datos
   const loadData = useCallback(async (forceRefresh = false) => {
@@ -128,6 +132,11 @@ const DashScreen = () => {
         userName: userData?.username || ""
       }));
 
+      // Verificar contactos de emergencia solo una vez al cargar inicialmente
+      if (!hasCheckedEmergencyContacts) {
+        checkEmergencyContacts();
+      }
+
       setLoading(false);
       setRefreshing(false);
       setError(null);
@@ -137,7 +146,54 @@ const DashScreen = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [navigation, refreshing]);
+  }, [navigation, refreshing, hasCheckedEmergencyContacts]);
+
+  // Verificar contactos de emergencia
+  const checkEmergencyContacts = useCallback(async () => {
+    try {
+      // Verificar si el usuario ya omitió el modal anteriormente
+      const skipped = await AsyncStorage.getItem(STORAGE_KEYS.EMERGENCY_CONTACTS_SKIPPED);
+      if (skipped === 'true') {
+        // Si ya lo omitió, no mostrar el modal automáticamente
+        setHasCheckedEmergencyContacts(true);
+        return;
+      }
+
+      const response = await api.get(ENDPOINTS.EMERGENCY_CONTACTS);
+      const contacts = response.contacts || [];
+      setEmergencyContacts(contacts);
+      setHasCheckedEmergencyContacts(true);
+      
+      // Si no hay contactos, mostrar el modal
+      if (contacts.length === 0) {
+        setShowEmergencyContactsModal(true);
+      }
+    } catch (error) {
+      console.error('Error verificando contactos de emergencia:', error);
+      // Si hay error, verificar si ya se omitió antes
+      const skipped = await AsyncStorage.getItem(STORAGE_KEYS.EMERGENCY_CONTACTS_SKIPPED);
+      if (skipped !== 'true') {
+        setEmergencyContacts([]);
+        setHasCheckedEmergencyContacts(true);
+        setShowEmergencyContactsModal(true);
+      } else {
+        setHasCheckedEmergencyContacts(true);
+      }
+    }
+  }, []);
+
+  // Manejar guardado de contactos de emergencia
+  const handleEmergencyContactsSaved = useCallback(async () => {
+    // Limpiar el flag de "omitido" si se guardaron contactos
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEYS.EMERGENCY_CONTACTS_SKIPPED);
+    } catch (error) {
+      console.error('Error limpiando estado de omisión:', error);
+    }
+    
+    // Recargar contactos después de guardar
+    await checkEmergencyContacts();
+  }, [checkEmergencyContacts]);
 
   // Efecto para carga inicial
   useEffect(() => {
@@ -248,6 +304,14 @@ const DashScreen = () => {
         </DashboardScroll>
         <FloatingNavBar activeTab="home" accessibilityLabel={DASH.NAVBAR_LABEL} />
       </ImageBackground>
+      
+      {/* Modal de contactos de emergencia */}
+      <EmergencyContactsModal
+        visible={showEmergencyContactsModal}
+        onClose={() => setShowEmergencyContactsModal(false)}
+        onSave={handleEmergencyContactsSaved}
+        existingContacts={emergencyContacts}
+      />
     </View>
   );
 };

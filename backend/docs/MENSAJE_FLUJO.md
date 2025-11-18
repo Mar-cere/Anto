@@ -152,7 +152,7 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
    - Confianza: `0.8`
 
 #### 4.3. Evaluación de Riesgo de Crisis (NUEVO)
-**Ubicación:** `chatRoutes.js:222-228`  
+**Ubicación:** `chatRoutes.js:223-250`  
 **Función:** `evaluateSuicideRisk()`  
 **Archivo:** `backend/constants/crisis.js`
 
@@ -183,6 +183,46 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
   riskLevel: 'LOW' | 'MEDIUM' | 'HIGH',
   isCrisis: boolean,
   country: string // País del usuario (o 'GENERAL')
+}
+```
+
+#### 4.4. Envío de Alertas a Contactos de Emergencia (NUEVO)
+**Ubicación:** `chatRoutes.js:230-249`  
+**Servicio:** `emergencyAlertService.sendEmergencyAlerts()`  
+**Archivo:** `backend/services/emergencyAlertService.js`
+
+##### Proceso:
+1. **Condiciones para enviar alertas:**
+   - Solo se envían si `riskLevel === 'MEDIUM'` o `riskLevel === 'HIGH'`
+   - Se verifica cooldown (máximo 1 alerta por hora por usuario)
+   - Se obtienen contactos de emergencia activos del usuario (máximo 2)
+
+2. **Contenido del email de alerta:**
+   - Nombre del usuario que activó la alerta
+   - Nivel de riesgo detectado
+   - Mensaje de situación detectada
+   - Recursos de emergencia disponibles
+   - Instrucciones sobre qué hacer
+   - **Nota:** No se incluye el contenido exacto del mensaje por privacidad
+
+3. **Protecciones implementadas:**
+   - Cooldown de 60 minutos entre alertas
+   - Solo contactos habilitados reciben alertas
+   - Manejo de errores sin bloquear el flujo principal
+   - Logging detallado de envíos exitosos y fallidos
+
+##### Resultado:
+```javascript
+{
+  sent: boolean,
+  contacts: Array<{
+    contact: { name, email, relationship },
+    sent: boolean,
+    error: string | null
+  }>,
+  totalContacts: number,
+  successfulSends: number,
+  reason?: string // Si no se envió, razón
 }
 ```
 
@@ -750,7 +790,13 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
    - Protocolo de intervención en crisis
    - Generación de mensajes y prompts de crisis
 
-4. **openaiService** (`backend/services/openaiService.js`)
+4. **emergencyAlertService** (`backend/services/emergencyAlertService.js`) (NUEVO)
+   - Envío de alertas a contactos de emergencia
+   - Gestión de cooldown para evitar spam
+   - Generación de emails de alerta personalizados
+   - Manejo de contactos de emergencia del usuario
+
+5. **openaiService** (`backend/services/openaiService.js`)
    - Generación de respuesta con GPT-4
    - Construcción de prompt contextualizado
    - Validación y mejora de respuesta
@@ -759,7 +805,7 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
      - Valores por defecto, umbrales, períodos del día
      - Patrones de validación, coherencia emocional, mensajes de error
 
-5. **memoryService** (`backend/services/memoryService.js`)
+6. **memoryService** (`backend/services/memoryService.js`)
    - Recuperación de contexto relevante (optimizado con consultas paralelas)
    - Gestión de memoria contextual
    - Análisis de tendencias temporales
@@ -768,16 +814,16 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
      - Umbrales de intensidad, límites, períodos de interacción
      - Ventanas de tiempo, configuración de patrones, días de la semana
 
-6. **personalizationService** (`backend/services/personalizationService.js`)
+7. **personalizationService** (`backend/services/personalizationService.js`)
    - Gestión de perfil de usuario
    - Preferencias de comunicación
    - Patrones detectados
 
-7. **progressTracker** (`backend/services/progressTracker.js`)
+8. **progressTracker** (`backend/services/progressTracker.js`)
    - Seguimiento de progreso del usuario
    - Estadísticas de interacción
 
-8. **userProfileService** (`backend/services/userProfileService.js`)
+9. **userProfileService** (`backend/services/userProfileService.js`)
    - Actualización de perfil
    - Detección de patrones
 
@@ -810,6 +856,14 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
   - Integración automática en prompts de OpenAI para respuestas de crisis
   - Mensajes de crisis personalizados según nivel de riesgo detectado
   - Prompt del sistema de crisis agregado automáticamente cuando se detecta riesgo
+- **Sistema de alertas a contactos de emergencia:**
+  - Modelo de Usuario actualizado con campo `emergencyContacts` (máximo 2 contactos)
+  - Servicio `emergencyAlertService` para enviar alertas automáticas
+  - Alertas enviadas cuando se detecta riesgo MEDIUM o HIGH
+  - Cooldown de 60 minutos para evitar spam de alertas
+  - Emails de alerta personalizados con recursos de emergencia
+  - Rutas API para gestionar contactos de emergencia (GET, POST, PUT, DELETE, PATCH)
+  - Protección de privacidad: no se incluye el contenido exacto del mensaje en las alertas
 - **Duplicación de lógica:** Existe duplicación entre `openaiService.generarRespuesta()` (que crea y guarda el mensaje) y `chatRoutes.js` (que también lo hace). Esto se mantiene por compatibilidad pero debería consolidarse en el futuro.
 
 ---

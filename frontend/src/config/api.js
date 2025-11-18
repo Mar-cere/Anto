@@ -55,6 +55,13 @@ export const ENDPOINTS = {
   CHAT_CONVERSATION_BY_ID: (id) => `/api/chat/conversations/${id}`,
   CHAT_MESSAGE_STATUS: '/api/chat/messages/status',
   CHAT_SEARCH: '/api/chat/messages/search',
+  
+  // Emergency Contacts
+  EMERGENCY_CONTACTS: '/api/users/me/emergency-contacts',
+  EMERGENCY_CONTACT_BY_ID: (id) => `/api/users/me/emergency-contacts/${id}`,
+  EMERGENCY_CONTACT_TOGGLE: (id) => `/api/users/me/emergency-contacts/${id}/toggle`,
+  EMERGENCY_CONTACT_TEST: (id) => `/api/users/me/emergency-contacts/${id}/test`,
+  EMERGENCY_CONTACTS_TEST_ALERT: '/api/users/me/emergency-contacts/test-alert',
 };
 
 const makeRequest = (url, options) => {

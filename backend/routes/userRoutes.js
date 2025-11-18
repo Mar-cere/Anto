@@ -439,4 +439,370 @@ router.get('/me/subscription', authenticateToken, validateUserObjectId, async (r
   }
 });
 
+// ========== RUTAS DE CONTACTOS DE EMERGENCIA ==========
+
+// Esquema de validación para contactos de emergencia
+const emergencyContactSchema = Joi.object({
+  name: Joi.string().required().trim().min(2).max(100).messages({
+    'string.empty': 'El nombre del contacto es requerido',
+    'string.min': 'El nombre debe tener al menos 2 caracteres',
+    'string.max': 'El nombre no puede exceder 100 caracteres'
+  }),
+  email: Joi.string().required().email().trim().lowercase().messages({
+    'string.empty': 'El email del contacto es requerido',
+    'string.email': 'Por favor ingresa un email válido'
+  }),
+  phone: Joi.string().allow(null, '').trim().max(20).optional(),
+  relationship: Joi.string().allow(null, '').trim().max(50).optional()
+});
+
+// Obtener contactos de emergencia del usuario
+router.get('/me/emergency-contacts', authenticateToken, validateUserObjectId, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('emergencyContacts');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    res.json({
+      contacts: user.emergencyContacts || [],
+      maxContacts: 2,
+      currentCount: user.emergencyContacts?.length || 0
+    });
+  } catch (error) {
+    console.error('Error al obtener contactos de emergencia:', error);
+    res.status(500).json({ 
+      message: 'Error al obtener contactos de emergencia',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Agregar un contacto de emergencia
+router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, async (req, res) => {
+  try {
+    const { error, value } = emergencyContactSchema.validate(req.body);
+    const { sendTestEmail } = req.body; // Opcional: enviar email de prueba
+    
+    if (error) {
+      return res.status(400).json({ 
+        message: 'Datos inválidos',
+        errors: error.details.map(d => d.message)
+      });
+    }
+
+    const user = await User.findById(req.user._id).select('emergencyContacts name');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    // Verificar límite de contactos
+    if (user.emergencyContacts && user.emergencyContacts.length >= 2) {
+      return res.status(400).json({ 
+        message: 'Ya has alcanzado el límite de 2 contactos de emergencia'
+      });
+    }
+
+    // Verificar que no exista un contacto con el mismo email
+    if (user.emergencyContacts && user.emergencyContacts.some(c => c.email === value.email.toLowerCase())) {
+      return res.status(400).json({ 
+        message: 'Ya existe un contacto de emergencia con ese email'
+      });
+    }
+
+    // Validación básica de email (verificar formato)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value.email.toLowerCase())) {
+      return res.status(400).json({ 
+        message: 'El formato del email no es válido'
+      });
+    }
+
+    // Agregar el nuevo contacto
+    user.emergencyContacts = user.emergencyContacts || [];
+    const newContact = {
+      name: value.name,
+      email: value.email.toLowerCase(),
+      phone: value.phone || null,
+      relationship: value.relationship || null,
+      enabled: true
+    };
+    user.emergencyContacts.push(newContact);
+
+    await user.save();
+
+    // Enviar email de prueba si se solicita
+    let testEmailSent = false;
+    if (sendTestEmail === true) {
+      try {
+        const mailer = (await import('../config/mailer.js')).default;
+        testEmailSent = await mailer.sendEmergencyContactTestEmail(
+          newContact.email,
+          newContact.name,
+          user.name || user.username || 'Usuario'
+        );
+      } catch (emailError) {
+        console.error('Error enviando email de prueba:', emailError);
+        // No fallar la creación del contacto si falla el email de prueba
+      }
+    }
+
+    res.status(201).json({
+      message: 'Contacto de emergencia agregado exitosamente',
+      contact: user.emergencyContacts[user.emergencyContacts.length - 1],
+      testEmailSent: sendTestEmail ? testEmailSent : undefined
+    });
+  } catch (error) {
+    console.error('Error al agregar contacto de emergencia:', error);
+    res.status(500).json({ 
+      message: 'Error al agregar contacto de emergencia',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Actualizar un contacto de emergencia
+router.put('/me/emergency-contacts/:contactId', authenticateToken, validateUserObjectId, async (req, res) => {
+  try {
+    const { contactId } = req.params;
+    const { error, value } = emergencyContactSchema.validate(req.body);
+    
+    if (error) {
+      return res.status(400).json({ 
+        message: 'Datos inválidos',
+        errors: error.details.map(d => d.message)
+      });
+    }
+
+    if (!isValidObjectId(contactId)) {
+      return res.status(400).json({ message: 'ID de contacto inválido' });
+    }
+
+    const user = await User.findById(req.user._id).select('emergencyContacts');
+    
+    if (!user || !user.emergencyContacts) {
+      return res.status(404).json({ message: 'Usuario o contacto no encontrado' });
+    }
+
+    const contactIndex = user.emergencyContacts.findIndex(
+      c => c._id.toString() === contactId
+    );
+
+    if (contactIndex === -1) {
+      return res.status(404).json({ message: 'Contacto de emergencia no encontrado' });
+    }
+
+    // Verificar que el nuevo email no esté en uso por otro contacto
+    const emailInUse = user.emergencyContacts.some(
+      (c, index) => index !== contactIndex && c.email === value.email.toLowerCase()
+    );
+
+    if (emailInUse) {
+      return res.status(400).json({ 
+        message: 'Ya existe otro contacto de emergencia con ese email'
+      });
+    }
+
+    // Actualizar el contacto
+    user.emergencyContacts[contactIndex] = {
+      ...user.emergencyContacts[contactIndex].toObject(),
+      name: value.name,
+      email: value.email.toLowerCase(),
+      phone: value.phone || null,
+      relationship: value.relationship || null
+    };
+
+    await user.save();
+
+    res.json({
+      message: 'Contacto de emergencia actualizado exitosamente',
+      contact: user.emergencyContacts[contactIndex]
+    });
+  } catch (error) {
+    console.error('Error al actualizar contacto de emergencia:', error);
+    res.status(500).json({ 
+      message: 'Error al actualizar contacto de emergencia',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Eliminar un contacto de emergencia
+router.delete('/me/emergency-contacts/:contactId', authenticateToken, validateUserObjectId, async (req, res) => {
+  try {
+    const { contactId } = req.params;
+
+    if (!isValidObjectId(contactId)) {
+      return res.status(400).json({ message: 'ID de contacto inválido' });
+    }
+
+    const user = await User.findById(req.user._id).select('emergencyContacts');
+    
+    if (!user || !user.emergencyContacts) {
+      return res.status(404).json({ message: 'Usuario o contacto no encontrado' });
+    }
+
+    const contactIndex = user.emergencyContacts.findIndex(
+      c => c._id.toString() === contactId
+    );
+
+    if (contactIndex === -1) {
+      return res.status(404).json({ message: 'Contacto de emergencia no encontrado' });
+    }
+
+    user.emergencyContacts.splice(contactIndex, 1);
+    await user.save();
+
+    res.json({
+      message: 'Contacto de emergencia eliminado exitosamente'
+    });
+  } catch (error) {
+    console.error('Error al eliminar contacto de emergencia:', error);
+    res.status(500).json({ 
+      message: 'Error al eliminar contacto de emergencia',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Habilitar/deshabilitar un contacto de emergencia
+router.patch('/me/emergency-contacts/:contactId/toggle', authenticateToken, validateUserObjectId, async (req, res) => {
+  try {
+    const { contactId } = req.params;
+
+    if (!isValidObjectId(contactId)) {
+      return res.status(400).json({ message: 'ID de contacto inválido' });
+    }
+
+    const user = await User.findById(req.user._id).select('emergencyContacts');
+    
+    if (!user || !user.emergencyContacts) {
+      return res.status(404).json({ message: 'Usuario o contacto no encontrado' });
+    }
+
+    const contact = user.emergencyContacts.find(
+      c => c._id.toString() === contactId
+    );
+
+    if (!contact) {
+      return res.status(404).json({ message: 'Contacto de emergencia no encontrado' });
+    }
+
+    contact.enabled = !contact.enabled;
+    await user.save();
+
+    res.json({
+      message: `Contacto ${contact.enabled ? 'habilitado' : 'deshabilitado'} exitosamente`,
+      contact: {
+        _id: contact._id,
+        name: contact.name,
+        email: contact.email,
+        enabled: contact.enabled
+      }
+    });
+  } catch (error) {
+    console.error('Error al cambiar estado del contacto:', error);
+    res.status(500).json({ 
+      message: 'Error al cambiar estado del contacto',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Enviar email de prueba a un contacto de emergencia
+router.post('/me/emergency-contacts/:contactId/test', authenticateToken, validateUserObjectId, async (req, res) => {
+  try {
+    const { contactId } = req.params;
+
+    if (!isValidObjectId(contactId)) {
+      return res.status(400).json({ message: 'ID de contacto inválido' });
+    }
+
+    const user = await User.findById(req.user._id).select('emergencyContacts name username');
+    
+    if (!user || !user.emergencyContacts) {
+      return res.status(404).json({ message: 'Usuario o contacto no encontrado' });
+    }
+
+    const contact = user.emergencyContacts.find(
+      c => c._id.toString() === contactId
+    );
+
+    if (!contact) {
+      return res.status(404).json({ message: 'Contacto de emergencia no encontrado' });
+    }
+
+    const mailer = (await import('../config/mailer.js')).default;
+    const emailSent = await mailer.sendEmergencyContactTestEmail(
+      contact.email,
+      contact.name,
+      user.name || user.username || 'Usuario'
+    );
+
+    if (emailSent) {
+      res.json({
+        message: 'Email de prueba enviado exitosamente',
+        contact: {
+          _id: contact._id,
+          name: contact.name,
+          email: contact.email
+        }
+      });
+    } else {
+      res.status(500).json({
+        message: 'Error al enviar email de prueba',
+        contact: {
+          _id: contact._id,
+          name: contact.name,
+          email: contact.email
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error al enviar email de prueba:', error);
+    res.status(500).json({ 
+      message: 'Error al enviar email de prueba',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Probar alertas de emergencia (envía alerta de prueba a todos los contactos)
+router.post('/me/emergency-contacts/test-alert', authenticateToken, validateUserObjectId, async (req, res) => {
+  try {
+    const emergencyAlertService = (await import('../services/emergencyAlertService.js')).default;
+    
+    // Enviar alerta de prueba con nivel MEDIUM (simulado)
+    const result = await emergencyAlertService.sendEmergencyAlerts(
+      req.user._id,
+      'MEDIUM', // Nivel de riesgo simulado para prueba
+      '[PRUEBA] Este es un mensaje de prueba del sistema de alertas de emergencia. No hay ninguna situación real de riesgo.'
+    );
+
+    if (result.sent) {
+      res.json({
+        message: `Alerta de prueba enviada a ${result.successfulSends}/${result.totalContacts} contacto(s)`,
+        result: {
+          totalContacts: result.totalContacts,
+          successfulSends: result.successfulSends,
+          contacts: result.contacts
+        }
+      });
+    } else {
+      res.status(400).json({
+        message: result.reason || 'No se pudo enviar la alerta de prueba',
+        result
+      });
+    }
+  } catch (error) {
+    console.error('Error al enviar alerta de prueba:', error);
+    res.status(500).json({ 
+      message: 'Error al enviar alerta de prueba',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 export default router;

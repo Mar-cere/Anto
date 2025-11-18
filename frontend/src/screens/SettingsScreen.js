@@ -27,9 +27,12 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import EmergencyContactsModal from '../components/EmergencyContactsModal';
 import { useAuth } from '../context/AuthContext';
 import notifications from '../data/notifications';
+import { api, ENDPOINTS } from '../config/api';
 import { updateUser } from '../services/userService';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../styles/globalStyles';
 import {
   cancelAllNotifications,
@@ -77,6 +80,22 @@ const TEXTS = {
   PREFERENCES_ERROR: 'No se pudieron guardar las preferencias',
   PERMISSIONS_ERROR: 'No se pudo verificar los permisos de notificación',
   NOTIFICATION_ERROR: 'No se pudo enviar la notificación de prueba',
+  EMERGENCY_CONTACTS: 'Contactos de Emergencia',
+  EMERGENCY_CONTACTS_DESC: 'Gestiona los contactos que recibirán alertas en situaciones de riesgo',
+  NO_CONTACTS: 'No hay contactos configurados',
+  EDIT_CONTACTS: 'Editar contactos',
+  DELETE_CONTACT: 'Eliminar contacto',
+  DELETE_CONTACT_CONFIRM: '¿Estás seguro de que deseas eliminar este contacto?',
+  CONTACT_DELETED: 'Contacto eliminado exitosamente',
+  CONTACT_DELETE_ERROR: 'Error al eliminar contacto',
+  TOGGLE_CONTACT: 'Habilitar/Deshabilitar contacto',
+  TEST_CONTACT: 'Probar contacto',
+  TEST_ALERT: 'Probar alerta de emergencia',
+  TEST_ALERT_CONFIRM: '¿Estás seguro de que deseas enviar una alerta de prueba a todos tus contactos de emergencia?',
+  TEST_ALERT_SENT: 'Alerta de prueba enviada exitosamente',
+  TEST_ALERT_ERROR: 'Error al enviar alerta de prueba',
+  TEST_EMAIL_SENT: 'Email de prueba enviado exitosamente',
+  TEST_EMAIL_ERROR: 'Error al enviar email de prueba',
 };
 
 // Constantes de idiomas
@@ -151,6 +170,9 @@ const SettingsScreen = () => {
   });
   const [showMorningPicker, setShowMorningPicker] = useState(false);
   const [showEveningPicker, setShowEveningPicker] = useState(false);
+  const [emergencyContacts, setEmergencyContacts] = useState([]);
+  const [showEmergencyContactsModal, setShowEmergencyContactsModal] = useState(false);
+  const [loadingContacts, setLoadingContacts] = useState(false);
 
   // Guardar preferencias en AsyncStorage
   const savePreference = useCallback(async (key, value) => {
@@ -183,6 +205,66 @@ const SettingsScreen = () => {
       Alert.alert(TEXTS.ERROR, TEXTS.DELETE_ERROR);
     }
   }, [navigation]);
+
+  // Cargar contactos de emergencia
+  const loadEmergencyContacts = useCallback(async () => {
+    try {
+      setLoadingContacts(true);
+      const response = await api.get(ENDPOINTS.EMERGENCY_CONTACTS);
+      setEmergencyContacts(response.contacts || []);
+    } catch (error) {
+      console.error('Error cargando contactos de emergencia:', error);
+      setEmergencyContacts([]);
+    } finally {
+      setLoadingContacts(false);
+    }
+  }, []);
+
+  // Cargar contactos al montar el componente
+  useEffect(() => {
+    loadEmergencyContacts();
+  }, [loadEmergencyContacts]);
+
+  // Eliminar contacto
+  const handleDeleteContact = useCallback(async (contactId) => {
+    Alert.alert(
+      TEXTS.DELETE_CONTACT,
+      TEXTS.DELETE_CONTACT_CONFIRM,
+      [
+        { text: TEXTS.CANCEL, style: 'cancel' },
+        {
+          text: TEXTS.DELETE,
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.delete(ENDPOINTS.EMERGENCY_CONTACT_BY_ID(contactId));
+              Alert.alert(TEXTS.SUCCESS, TEXTS.CONTACT_DELETED);
+              await loadEmergencyContacts();
+            } catch (error) {
+              console.error('Error eliminando contacto:', error);
+              Alert.alert(TEXTS.ERROR, TEXTS.CONTACT_DELETE_ERROR);
+            }
+          }
+        }
+      ]
+    );
+  }, [loadEmergencyContacts]);
+
+  // Toggle contacto (habilitar/deshabilitar)
+  const handleToggleContact = useCallback(async (contactId) => {
+    try {
+      await api.patch(ENDPOINTS.EMERGENCY_CONTACT_TOGGLE(contactId));
+      await loadEmergencyContacts();
+    } catch (error) {
+      console.error('Error cambiando estado del contacto:', error);
+      Alert.alert(TEXTS.ERROR, 'No se pudo cambiar el estado del contacto');
+    }
+  }, [loadEmergencyContacts]);
+
+  // Manejar guardado de contactos
+  const handleEmergencyContactsSaved = useCallback(async () => {
+    await loadEmergencyContacts();
+  }, [loadEmergencyContacts]);
 
   useEffect(() => {
     if (user?.notificationPreferences) {
@@ -472,6 +554,126 @@ const SettingsScreen = () => {
         {/* Separador */}
         <View style={styles.separator} />
 
+        {/* Contactos de Emergencia */}
+        <Text style={styles.sectionTitle}>{TEXTS.EMERGENCY_CONTACTS}</Text>
+        <View style={styles.item}>
+          <MaterialCommunityIcons name="alert-circle" size={ICON_SIZE} color={COLORS.PRIMARY} />
+          <View style={styles.itemContent}>
+            <Text style={styles.itemText}>{TEXTS.EMERGENCY_CONTACTS_DESC}</Text>
+            {loadingContacts ? (
+              <Text style={styles.loadingText}>Cargando...</Text>
+            ) : emergencyContacts.length === 0 ? (
+              <Text style={styles.emptyText}>{TEXTS.NO_CONTACTS}</Text>
+            ) : (
+              <View style={styles.contactsList}>
+                {emergencyContacts.map((contact) => (
+                  <View key={contact._id} style={styles.contactItem}>
+                    <View style={styles.contactInfo}>
+                      <Text style={styles.contactName}>
+                        {contact.name} {!contact.enabled && '(Deshabilitado)'}
+                      </Text>
+                      <Text style={styles.contactEmail}>{contact.email}</Text>
+                      {contact.phone && (
+                        <Text style={styles.contactPhone}>{contact.phone}</Text>
+                      )}
+                      {contact.relationship && (
+                        <Text style={styles.contactRelationship}>{contact.relationship}</Text>
+                      )}
+                    </View>
+                    <View style={styles.contactActions}>
+                      <TouchableOpacity
+                        onPress={async () => {
+                          try {
+                            const response = await api.post(ENDPOINTS.EMERGENCY_CONTACT_TEST(contact._id));
+                            Alert.alert(TEXTS.SUCCESS, TEXTS.TEST_EMAIL_SENT);
+                          } catch (error) {
+                            console.error('Error enviando email de prueba:', error);
+                            Alert.alert(TEXTS.ERROR, TEXTS.TEST_EMAIL_ERROR);
+                          }
+                        }}
+                        style={styles.contactActionButton}
+                      >
+                        <Ionicons
+                          name="mail-outline"
+                          size={20}
+                          color={COLORS.PRIMARY}
+                        />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleToggleContact(contact._id)}
+                        style={styles.contactActionButton}
+                      >
+                        <MaterialCommunityIcons
+                          name={contact.enabled ? "bell-off" : "bell"}
+                          size={20}
+                          color={contact.enabled ? COLORS.ACCENT : COLORS.PRIMARY}
+                        />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleDeleteContact(contact._id)}
+                        style={styles.contactActionButton}
+                      >
+                        <MaterialCommunityIcons
+                          name="delete"
+                          size={20}
+                          color={COLORS.ERROR}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        </View>
+        <TouchableOpacity
+          style={styles.item}
+          onPress={() => setShowEmergencyContactsModal(true)}
+          accessibilityLabel={TEXTS.EDIT_CONTACTS}
+        >
+          <MaterialCommunityIcons name="plus-circle" size={ICON_SIZE} color={COLORS.PRIMARY} />
+          <Text style={styles.itemText}>
+            {emergencyContacts.length === 0 ? 'Agregar Contactos' : TEXTS.EDIT_CONTACTS}
+          </Text>
+        </TouchableOpacity>
+        
+        {emergencyContacts.length > 0 && (
+          <TouchableOpacity
+            style={styles.item}
+            onPress={() => {
+              Alert.alert(
+                TEXTS.TEST_ALERT,
+                TEXTS.TEST_ALERT_CONFIRM,
+                [
+                  { text: TEXTS.CANCEL, style: 'cancel' },
+                  {
+                    text: 'Enviar Prueba',
+                    onPress: async () => {
+                      try {
+                        const response = await api.post(ENDPOINTS.EMERGENCY_CONTACTS_TEST_ALERT);
+                        Alert.alert(
+                          TEXTS.SUCCESS,
+                          `${TEXTS.TEST_ALERT_SENT}\n\n${response.message || ''}`
+                        );
+                      } catch (error) {
+                        console.error('Error enviando alerta de prueba:', error);
+                        Alert.alert(TEXTS.ERROR, TEXTS.TEST_ALERT_ERROR);
+                      }
+                    }
+                  }
+                ]
+              );
+            }}
+            accessibilityLabel={TEXTS.TEST_ALERT}
+          >
+            <MaterialCommunityIcons name="alert-circle" size={ICON_SIZE} color={COLORS.PRIMARY} />
+            <Text style={styles.itemText}>{TEXTS.TEST_ALERT}</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Separador */}
+        <View style={styles.separator} />
+
         {/* Cuenta */}
         <Text style={styles.sectionTitle}>{TEXTS.ACCOUNT}</Text>
         <TouchableOpacity 
@@ -602,6 +804,14 @@ const SettingsScreen = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Modal de Contactos de Emergencia */}
+      <EmergencyContactsModal
+        visible={showEmergencyContactsModal}
+        onClose={() => setShowEmergencyContactsModal(false)}
+        onSave={handleEmergencyContactsSaved}
+        existingContacts={emergencyContacts}
+      />
     </SafeAreaView>
   );
 };
@@ -706,7 +916,66 @@ const styles = StyleSheet.create({
   modalButtonText: {
     color: COLORS.WHITE,
     fontSize: 16,
-    fontWeight: "500",
+  },
+  itemContent: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  loadingText: {
+    color: COLORS.ACCENT,
+    fontSize: 14,
+    marginTop: 8,
+  },
+  emptyText: {
+    color: COLORS.ACCENT,
+    fontSize: 14,
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+  contactsList: {
+    marginTop: 12,
+  },
+  contactItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(163, 184, 232, 0.1)',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(163, 184, 232, 0.2)',
+  },
+  contactInfo: {
+    flex: 1,
+  },
+  contactName: {
+    color: COLORS.WHITE,
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  contactEmail: {
+    color: COLORS.ACCENT,
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  contactPhone: {
+    color: COLORS.ACCENT,
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  contactRelationship: {
+    color: COLORS.ACCENT,
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  contactActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  contactActionButton: {
+    padding: 4,
   },
   timeSelectorContainer: {
     backgroundColor: COLORS.ITEM_BACKGROUND,

@@ -7,12 +7,26 @@ Este documento contiene ideas para mejorar el flujo del sistema desde una perspe
 ## 🚨 1. RECURSOS DE EMERGENCIA Y PROTOCOLO DE CRISIS
 
 **📊 Prioridad:** 🔴 **CRÍTICA** (Alta)  
-**⚙️ Complejidad:** 🟡 **MEDIA** (Requiere creación de constantes, funciones de evaluación y integración en prompts)
+**⚙️ Complejidad:** 🟡 **MEDIA** (Requiere creación de constantes, funciones de evaluación y integración en prompts)  
+**✅ Estado:** **IMPLEMENTADO**
 
-### **Problema Actual:**
-- Se detecta crisis pero no se proporcionan recursos específicos de emergencia
-- No hay protocolo estructurado de intervención en crisis
-- Falta información de líneas de ayuda 24/7
+### **Implementación Completada:**
+- ✅ Constantes de recursos de emergencia por país (`backend/constants/crisis.js`)
+- ✅ Función de evaluación de riesgo suicida (`evaluateSuicideRisk()`)
+- ✅ Protocolo de intervención en crisis estructurado
+- ✅ Integración en prompts de OpenAI
+- ✅ **Sistema de alertas a contactos de emergencia** (NUEVO)
+  - Modelo de Usuario con campo `emergencyContacts` (máximo 2)
+  - Servicio `emergencyAlertService` para envío automático de alertas
+  - Alertas enviadas cuando se detecta riesgo MEDIUM o HIGH
+  - Cooldown de 60 minutos para evitar spam
+  - Rutas API para gestión de contactos (`/api/users/me/emergency-contacts`)
+
+### **Problema Original (RESUELTO):**
+- ~~Se detecta crisis pero no se proporcionan recursos específicos de emergencia~~ ✅ **RESUELTO**
+- ~~No hay protocolo estructurado de intervención en crisis~~ ✅ **RESUELTO**
+- ~~Falta información de líneas de ayuda 24/7~~ ✅ **RESUELTO**
+- ~~No hay sistema de alertas a contactos de emergencia~~ ✅ **RESUELTO**
 
 ### **Mejoras Propuestas:**
 
@@ -96,9 +110,33 @@ export const evaluateSuicideRisk = (emotionalAnalysis, contextualAnalysis, messa
 ```
 
 #### C. Integración en el Prompt
-- Agregar recursos de emergencia automáticamente cuando se detecta crisis
-- Incluir protocolo de seguridad en el prompt del sistema
-- Priorizar estabilización sobre cualquier otra intervención
+- ✅ Agregar recursos de emergencia automáticamente cuando se detecta crisis
+- ✅ Incluir protocolo de seguridad en el prompt del sistema
+- ✅ Priorizar estabilización sobre cualquier otra intervención
+
+#### D. Sistema de Alertas a Contactos de Emergencia (IMPLEMENTADO)
+**Archivos:**
+- `backend/models/User.js`: Campo `emergencyContacts` agregado (máximo 2 contactos)
+- `backend/services/emergencyAlertService.js`: Servicio completo de alertas
+- `backend/routes/userRoutes.js`: Rutas API para gestión de contactos
+- `backend/routes/chatRoutes.js`: Integración de alertas en detección de crisis
+- `backend/config/mailer.js`: Método `sendCustomEmail` agregado
+
+**Rutas API disponibles:**
+- `GET /api/users/me/emergency-contacts` - Obtener contactos de emergencia
+- `POST /api/users/me/emergency-contacts` - Agregar contacto de emergencia
+- `PUT /api/users/me/emergency-contacts/:contactId` - Actualizar contacto
+- `DELETE /api/users/me/emergency-contacts/:contactId` - Eliminar contacto
+- `PATCH /api/users/me/emergency-contacts/:contactId/toggle` - Habilitar/deshabilitar contacto
+
+**Características implementadas:**
+- ✅ Máximo 2 contactos de emergencia por usuario
+- ✅ Alertas automáticas cuando se detecta riesgo MEDIUM o HIGH
+- ✅ Cooldown de 60 minutos entre alertas para evitar spam
+- ✅ Emails personalizados con recursos de emergencia
+- ✅ Protección de privacidad (no se incluye contenido del mensaje en las alertas)
+- ✅ Validación de datos (email válido, límites de caracteres)
+- ✅ Manejo de errores sin bloquear el flujo principal
 
 ---
 
