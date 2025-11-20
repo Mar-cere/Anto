@@ -39,6 +39,11 @@ import { BORDERS, OPACITIES, SPACING, STATUS_BAR } from '../constants/ui';
 import { colors } from '../styles/globalStyles';
 import { getGreetingByHourAndDayAndName } from '../utils/greetings';
 
+// Constantes de AsyncStorage
+const STORAGE_KEYS = {
+  EMERGENCY_CONTACTS_SKIPPED: 'emergencyContactsSkipped',
+};
+
 // Componente para mostrar errores con opciones de recuperación
 const ErrorMessage = ({ message, onRetry, onDismiss }) => (
   <View style={styles.errorContainer}>
