@@ -21,11 +21,17 @@ const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_USER;
 const USE_SENDGRID = !!SENDGRID_API_KEY;
 
-if (USE_SENDGRID) {
-  sgMail.setApiKey(SENDGRID_API_KEY);
-  console.log('[Mailer] ✅ SendGrid configurado correctamente');
-} else {
-  console.log('[Mailer] ⚠️ SendGrid no configurado, usando Gmail SMTP como fallback');
+// Configurar SendGrid solo si está disponible (evitar errores si el módulo no está instalado)
+try {
+  if (USE_SENDGRID) {
+    sgMail.setApiKey(SENDGRID_API_KEY);
+    console.log('[Mailer] ✅ SendGrid configurado correctamente');
+  } else {
+    console.log('[Mailer] ⚠️ SendGrid no configurado, usando Gmail SMTP como fallback');
+  }
+} catch (error) {
+  console.warn('[Mailer] ⚠️ Error configurando SendGrid:', error.message);
+  console.log('[Mailer] ⚠️ Usando Gmail SMTP como fallback');
 }
 
 // Helper: crear transporter de nodemailer

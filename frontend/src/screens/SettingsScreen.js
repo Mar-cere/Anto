@@ -210,10 +210,14 @@ const SettingsScreen = () => {
   const loadEmergencyContacts = useCallback(async () => {
     try {
       setLoadingContacts(true);
+      console.log('[Settings] Cargando contactos de emergencia...');
       const response = await api.get(ENDPOINTS.EMERGENCY_CONTACTS);
+      console.log('[Settings] Respuesta de contactos:', response);
+      console.log('[Settings] Contactos recibidos:', response.contacts);
       setEmergencyContacts(response.contacts || []);
+      console.log('[Settings] Contactos establecidos:', response.contacts || []);
     } catch (error) {
-      console.error('Error cargando contactos de emergencia:', error);
+      console.error('[Settings] Error cargando contactos de emergencia:', error);
       setEmergencyContacts([]);
     } finally {
       setLoadingContacts(false);
