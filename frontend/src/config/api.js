@@ -61,6 +61,7 @@ export const ENDPOINTS = {
   EMERGENCY_CONTACT_BY_ID: (id) => `/api/users/me/emergency-contacts/${id}`,
   EMERGENCY_CONTACT_TOGGLE: (id) => `/api/users/me/emergency-contacts/${id}/toggle`,
   EMERGENCY_CONTACT_TEST: (id) => `/api/users/me/emergency-contacts/${id}/test`,
+  EMERGENCY_CONTACT_TEST_WHATSAPP: (id) => `/api/users/me/emergency-contacts/${id}/test-whatsapp`,
   EMERGENCY_CONTACTS_TEST_ALERT: '/api/users/me/emergency-contacts/test-alert',
 };
 

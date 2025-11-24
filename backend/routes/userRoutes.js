@@ -822,11 +822,21 @@ router.post('/me/emergency-contacts/test-alert', authenticateToken, validateUser
     );
 
     if (result.sent) {
+      let message = `Alerta de prueba enviada a ${result.successfulSends}/${result.totalContacts} contacto(s)`;
+      if (result.successfulEmails > 0) {
+        message += ` (${result.successfulEmails} email(s))`;
+      }
+      if (result.successfulWhatsApp > 0) {
+        message += ` (${result.successfulWhatsApp} WhatsApp(s))`;
+      }
+
       res.json({
-        message: `Alerta de prueba enviada a ${result.successfulSends}/${result.totalContacts} contacto(s)`,
+        message,
         result: {
           totalContacts: result.totalContacts,
           successfulSends: result.successfulSends,
+          successfulEmails: result.successfulEmails,
+          successfulWhatsApp: result.successfulWhatsApp,
           contacts: result.contacts
         }
       });
@@ -840,6 +850,76 @@ router.post('/me/emergency-contacts/test-alert', authenticateToken, validateUser
     console.error('Error al enviar alerta de prueba:', error);
     res.status(500).json({ 
       message: 'Error al enviar alerta de prueba',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Enviar mensaje de prueba de WhatsApp a un contacto
+router.post('/me/emergency-contacts/:contactId/test-whatsapp', authenticateToken, validateUserObjectId, async (req, res) => {
+  try {
+    const { contactId } = req.params;
+
+    if (!isValidObjectId(contactId)) {
+      return res.status(400).json({ message: 'ID de contacto inválido' });
+    }
+
+    const user = await User.findById(req.user._id).select('emergencyContacts name username');
+    
+    if (!user || !user.emergencyContacts) {
+      return res.status(404).json({ message: 'Usuario o contacto no encontrado' });
+    }
+
+    const contact = user.emergencyContacts.find(
+      c => c._id.toString() === contactId
+    );
+
+    if (!contact) {
+      return res.status(404).json({ message: 'Contacto de emergencia no encontrado' });
+    }
+
+    if (!contact.phone) {
+      return res.status(400).json({ message: 'El contacto no tiene número de teléfono configurado' });
+    }
+
+    const whatsappService = (await import('../services/whatsappService.js')).default;
+    
+    if (!whatsappService.isConfigured()) {
+      return res.status(400).json({
+        message: 'WhatsApp no está configurado. Configura TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN y TWILIO_WHATSAPP_NUMBER'
+      });
+    }
+
+    const result = await whatsappService.sendTestMessage(
+      contact.phone,
+      { name: user.name || user.username || 'Usuario', email: user.email }
+    );
+
+    if (result.success) {
+      res.json({
+        message: 'Mensaje de prueba de WhatsApp enviado exitosamente',
+        contact: {
+          _id: contact._id,
+          name: contact.name,
+          phone: contact.phone
+        },
+        messageId: result.messageId
+      });
+    } else {
+      res.status(200).json({
+        message: result.error || 'No se pudo enviar el mensaje de WhatsApp',
+        contact: {
+          _id: contact._id,
+          name: contact.name,
+          phone: contact.phone
+        },
+        error: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error al enviar mensaje de prueba de WhatsApp:', error);
+    res.status(500).json({ 
+      message: 'Error al enviar mensaje de prueba de WhatsApp',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

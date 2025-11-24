@@ -96,6 +96,11 @@ const TEXTS = {
   TEST_ALERT_ERROR: 'Error al enviar alerta de prueba',
   TEST_EMAIL_SENT: 'Email de prueba enviado exitosamente',
   TEST_EMAIL_ERROR: 'Error al enviar email de prueba',
+  TEST_WHATSAPP: 'Probar WhatsApp',
+  TEST_WHATSAPP_SENT: 'Mensaje de WhatsApp enviado exitosamente',
+  TEST_WHATSAPP_ERROR: 'Error al enviar mensaje de WhatsApp',
+  NO_PHONE: 'El contacto no tiene número de teléfono configurado',
+  WHATSAPP_NOT_CONFIGURED: 'WhatsApp no está configurado en el servidor',
 };
 
 // Constantes de idiomas
@@ -606,6 +611,7 @@ const SettingsScreen = () => {
                           }
                         }}
                         style={styles.contactActionButton}
+                        accessibilityLabel="Probar email"
                       >
                         <Ionicons
                           name="mail-outline"
@@ -613,9 +619,43 @@ const SettingsScreen = () => {
                           color={COLORS.PRIMARY}
                         />
                       </TouchableOpacity>
+                      {contact.phone && (
+                        <TouchableOpacity
+                          onPress={async () => {
+                            try {
+                              const response = await api.post(ENDPOINTS.EMERGENCY_CONTACT_TEST_WHATSAPP(contact._id));
+                              if (response.messageId) {
+                                Alert.alert(TEXTS.SUCCESS, TEXTS.TEST_WHATSAPP_SENT);
+                              } else {
+                                Alert.alert(
+                                  'Aviso',
+                                  response.message || response.error || TEXTS.TEST_WHATSAPP_ERROR
+                                );
+                              }
+                            } catch (error) {
+                              console.error('Error enviando WhatsApp de prueba:', error);
+                              const errorMessage = error.response?.data?.message || TEXTS.TEST_WHATSAPP_ERROR;
+                              if (errorMessage.includes('no está configurado')) {
+                                Alert.alert('Aviso', TEXTS.WHATSAPP_NOT_CONFIGURED);
+                              } else {
+                                Alert.alert('Aviso', errorMessage);
+                              }
+                            }
+                          }}
+                          style={styles.contactActionButton}
+                          accessibilityLabel="Probar WhatsApp"
+                        >
+                          <Ionicons
+                            name="logo-whatsapp"
+                            size={20}
+                            color="#25D366"
+                          />
+                        </TouchableOpacity>
+                      )}
                       <TouchableOpacity
                         onPress={() => handleToggleContact(contact._id)}
                         style={styles.contactActionButton}
+                        accessibilityLabel={TEXTS.TOGGLE_CONTACT}
                       >
                         <MaterialCommunityIcons
                           name={contact.enabled ? "bell-off" : "bell"}
@@ -626,6 +666,7 @@ const SettingsScreen = () => {
                       <TouchableOpacity
                         onPress={() => handleDeleteContact(contact._id)}
                         style={styles.contactActionButton}
+                        accessibilityLabel={TEXTS.DELETE_CONTACT}
                       >
                         <MaterialCommunityIcons
                           name="delete"

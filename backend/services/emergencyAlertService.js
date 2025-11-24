@@ -4,6 +4,7 @@
  */
 import User from '../models/User.js';
 import mailer from '../config/mailer.js';
+import whatsappService from './whatsappService.js';
 import { APP_NAME } from '../constants/app.js';
 
 class EmergencyAlertService {
@@ -315,17 +316,23 @@ class EmergencyAlertService {
         }
       }
 
-      // Registrar que se envió una alerta
-      const anySent = results.some(r => r.sent);
+      // Registrar que se envió una alerta si al menos un canal (email o WhatsApp) fue exitoso
+      const anySent = results.some(r => r.email.sent || r.whatsapp.sent);
       if (anySent) {
         this.recordAlertSent(userId);
       }
+
+      // Contar envíos exitosos
+      const successfulEmails = results.filter(r => r.email.sent).length;
+      const successfulWhatsApp = results.filter(r => r.whatsapp.sent).length;
 
       return {
         sent: anySent,
         contacts: results,
         totalContacts: contacts.length,
-        successfulSends: results.filter(r => r.sent).length
+        successfulSends: results.filter(r => r.email.sent || r.whatsapp.sent).length,
+        successfulEmails,
+        successfulWhatsApp
       };
     } catch (error) {
       console.error('[EmergencyAlertService] Error en sendEmergencyAlerts:', error);
