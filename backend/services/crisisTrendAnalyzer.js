@@ -314,49 +314,83 @@ class CrisisTrendAnalyzer {
    * Obtiene el historial de crisis previas del usuario
    * @param {string} userId - ID del usuario
    * @param {number} days - Número de días hacia atrás
-   * @returns {Promise<Array>} Array de crisis previas
+   * @returns {Promise<Object>} Objeto con totalCrises, recentCrises y crisisDays
    */
   async getCrisisHistory(userId, days = 30) {
     try {
-      // Por ahora, detectamos crisis previas basándonos en mensajes con alta intensidad
-      // En el futuro, esto debería consultar el modelo CrisisEvent
+      // Usar el modelo CrisisEvent para obtener crisis reales
+      const CrisisEvent = (await import('../models/CrisisEvent.js')).default;
       const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
       
-      const crisisMessages = await Message.find({
+      const crises = await CrisisEvent.find({
         userId,
-        role: 'user',
-        createdAt: { $gte: startDate },
-        'metadata.context.emotional.intensity': { $gte: 8 },
-        'metadata.context.emotional.mainEmotion': { 
-          $in: ['tristeza', 'ansiedad', 'enojo', 'miedo'] 
-        }
+        detectedAt: { $gte: startDate }
       })
-        .select('createdAt metadata.context.emotional')
-        .sort({ createdAt: -1 })
+        .select('detectedAt riskLevel')
+        .sort({ detectedAt: -1 })
         .lean();
 
       // Agrupar por día para contar crisis
       const crisisByDay = {};
-      crisisMessages.forEach(msg => {
-        const day = msg.createdAt.toISOString().split('T')[0];
+      crises.forEach(crisis => {
+        const day = new Date(crisis.detectedAt).toISOString().split('T')[0];
         if (!crisisByDay[day]) {
           crisisByDay[day] = [];
         }
-        crisisByDay[day].push(msg);
+        crisisByDay[day].push(crisis);
       });
+
+      // Crisis recientes (últimos 7 días)
+      const recentStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const recentCrises = crises.filter(crisis => 
+        new Date(crisis.detectedAt) >= recentStart
+      ).length;
 
       return {
         totalCrises: Object.keys(crisisByDay).length,
-        recentCrises: Object.keys(crisisByDay).filter(day => {
-          const dayDate = new Date(day);
-          const daysAgo = (Date.now() - dayDate.getTime()) / (1000 * 60 * 60 * 24);
-          return daysAgo <= 7;
-        }).length,
+        recentCrises,
         crisisDays: Object.keys(crisisByDay)
       };
     } catch (error) {
       console.error('[CrisisTrendAnalyzer] Error obteniendo historial de crisis:', error);
-      return { totalCrises: 0, recentCrises: 0, crisisDays: [] };
+      // Fallback: usar mensajes si CrisisEvent no está disponible
+      try {
+        const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+        const crisisMessages = await Message.find({
+          userId,
+          role: 'user',
+          createdAt: { $gte: startDate },
+          'metadata.context.emotional.intensity': { $gte: 8 },
+          'metadata.context.emotional.mainEmotion': { 
+            $in: ['tristeza', 'ansiedad', 'enojo', 'miedo'] 
+          }
+        })
+          .select('createdAt metadata.context.emotional')
+          .sort({ createdAt: -1 })
+          .lean();
+
+        const crisisByDay = {};
+        crisisMessages.forEach(msg => {
+          const day = msg.createdAt.toISOString().split('T')[0];
+          if (!crisisByDay[day]) {
+            crisisByDay[day] = [];
+          }
+          crisisByDay[day].push(msg);
+        });
+
+        return {
+          totalCrises: Object.keys(crisisByDay).length,
+          recentCrises: Object.keys(crisisByDay).filter(day => {
+            const dayDate = new Date(day);
+            const daysAgo = (Date.now() - dayDate.getTime()) / (1000 * 60 * 60 * 24);
+            return daysAgo <= 7;
+          }).length,
+          crisisDays: Object.keys(crisisByDay)
+        };
+      } catch (fallbackError) {
+        console.error('[CrisisTrendAnalyzer] Error en fallback:', fallbackError);
+        return { totalCrises: 0, recentCrises: 0, crisisDays: [] };
+      }
     }
   }
 }
