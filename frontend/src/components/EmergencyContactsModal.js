@@ -38,6 +38,7 @@ const MAX_RELATIONSHIP_LENGTH = 50;
 const TEXTS = {
   TITLE: 'Contactos de Emergencia',
   SUBTITLE: 'Agrega hasta 2 contactos que recibirán alertas si detectamos situaciones de riesgo',
+  SUBTITLE_FIRST_TIME: '¡Bienvenido! Para tu seguridad, te recomendamos agregar contactos de emergencia que recibirán alertas si detectamos situaciones de riesgo',
   NAME_LABEL: 'Nombre completo',
   NAME_PLACEHOLDER: 'Ej: María García',
   EMAIL_LABEL: 'Correo electrónico',
@@ -66,7 +67,7 @@ const TEXTS = {
   TEST_EMAIL_ERROR: 'Error al enviar email de prueba'
 };
 
-const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [] }) => {
+const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [], isFirstTime = false }) => {
   const [contacts, setContacts] = useState([
     { name: '', email: '', phone: '', relationship: '' }
   ]);
@@ -400,7 +401,9 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
                 <Ionicons name="alert-circle" size={32} color={colors.primary} />
                 <View style={styles.headerText}>
                   <Text style={styles.modalTitle}>{TEXTS.TITLE}</Text>
-                  <Text style={styles.modalSubtitle}>{TEXTS.SUBTITLE}</Text>
+                  <Text style={styles.modalSubtitle}>
+                    {isFirstTime ? TEXTS.SUBTITLE_FIRST_TIME : TEXTS.SUBTITLE}
+                  </Text>
                 </View>
               </View>
               <TouchableOpacity

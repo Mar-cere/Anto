@@ -343,8 +343,8 @@ const CrisisDashboardScreen = () => {
         {/* Tendencias Emocionales */}
         {trends && (
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{TEXTS.TRENDS}</Text>
+            <Text style={styles.sectionTitle}>{TEXTS.TRENDS}</Text>
+            <View style={styles.periodSelectorContainer}>
               <View style={styles.periodSelector}>
                 {['7d', '30d', '90d'].map(period => (
                   <TouchableOpacity
@@ -574,7 +574,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: colors.white,
+    marginBottom: 12,
+  },
+  periodSelectorContainer: {
     marginBottom: 16,
+    alignItems: 'flex-start',
   },
   summaryGrid: {
     flexDirection: 'row',
@@ -631,11 +635,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#1D2B5F',
     borderRadius: 20,
     padding: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(26, 221, 219, 0.2)',
   },
   periodButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 16,
+    minWidth: 60,
+    alignItems: 'center',
   },
   periodButtonActive: {
     backgroundColor: colors.primary,

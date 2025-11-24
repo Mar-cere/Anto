@@ -26,6 +26,7 @@ import {
 import DashboardScroll from '../components/DashboardScroll';
 import EmergencyContactsModal from '../components/EmergencyContactsModal';
 import FloatingNavBar from '../components/FloatingNavBar';
+import OnboardingTutorial, { isTutorialCompleted } from '../components/OnboardingTutorial';
 import HabitCard from '../components/HabitCard';
 import Header from '../components/Header';
 import ParticleBackground from '../components/ParticleBackground';
@@ -89,6 +90,9 @@ const DashScreen = () => {
   const [showEmergencyContactsModal, setShowEmergencyContactsModal] = useState(false);
   const [emergencyContacts, setEmergencyContacts] = useState([]);
   const [hasCheckedEmergencyContacts, setHasCheckedEmergencyContacts] = useState(false);
+  const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [hasCheckedTutorial, setHasCheckedTutorial] = useState(false);
 
   // Función para cargar datos
   const loadData = useCallback(async (forceRefresh = false) => {
@@ -137,9 +141,26 @@ const DashScreen = () => {
         userName: userData?.username || ""
       }));
 
+      // Verificar si debe mostrarse el tutorial (solo una vez)
+      if (!hasCheckedTutorial) {
+        const tutorialCompleted = await isTutorialCompleted();
+        if (!tutorialCompleted) {
+          // Verificar si es un usuario nuevo (creado en las últimas 24 horas)
+          const userCreatedAt = userData?.createdAt ? new Date(userData.createdAt) : null;
+          const isNewUser = userCreatedAt && (Date.now() - userCreatedAt.getTime()) < 24 * 60 * 60 * 1000;
+          if (isNewUser) {
+            // Mostrar tutorial después de un pequeño delay
+            setTimeout(() => {
+              setShowTutorial(true);
+            }, 1000);
+          }
+        }
+        setHasCheckedTutorial(true);
+      }
+
       // Verificar contactos de emergencia solo una vez al cargar inicialmente
       if (!hasCheckedEmergencyContacts) {
-        checkEmergencyContacts();
+        checkEmergencyContacts(userData);
       }
 
       setLoading(false);
@@ -151,10 +172,10 @@ const DashScreen = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [navigation, refreshing, hasCheckedEmergencyContacts]);
+  }, [navigation, refreshing, hasCheckedEmergencyContacts, hasCheckedTutorial, checkEmergencyContacts]);
 
   // Verificar contactos de emergencia
-  const checkEmergencyContacts = useCallback(async () => {
+  const checkEmergencyContacts = useCallback(async (currentUserData = null) => {
     try {
       // Verificar si el usuario ya omitió el modal anteriormente
       const skipped = await AsyncStorage.getItem(STORAGE_KEYS.EMERGENCY_CONTACTS_SKIPPED);
@@ -169,9 +190,20 @@ const DashScreen = () => {
       setEmergencyContacts(contacts);
       setHasCheckedEmergencyContacts(true);
       
-      // Si no hay contactos, mostrar el modal
+      // Si no hay contactos, mostrar el modal con un pequeño delay
+      // para que el usuario pueda ver el Dashboard primero (mejor UX)
       if (contacts.length === 0) {
-        setShowEmergencyContactsModal(true);
+        // Verificar si es un usuario nuevo (creado recientemente)
+        // Si el usuario fue creado en las últimas 24 horas, considerarlo primer ingreso
+        const userDataToCheck = currentUserData || userData;
+        const userCreatedAt = userDataToCheck?.createdAt ? new Date(userDataToCheck.createdAt) : null;
+        const isNewUser = userCreatedAt && (Date.now() - userCreatedAt.getTime()) < 24 * 60 * 60 * 1000;
+        setIsFirstTimeUser(isNewUser || false);
+        
+        // Delay de 1.5 segundos para que el Dashboard se renderice completamente
+        setTimeout(() => {
+          setShowEmergencyContactsModal(true);
+        }, 1500);
       }
     } catch (error) {
       console.error('Error verificando contactos de emergencia:', error);
@@ -180,12 +212,15 @@ const DashScreen = () => {
       if (skipped !== 'true') {
         setEmergencyContacts([]);
         setHasCheckedEmergencyContacts(true);
-        setShowEmergencyContactsModal(true);
+        // Delay también en caso de error
+        setTimeout(() => {
+          setShowEmergencyContactsModal(true);
+        }, 1500);
       } else {
         setHasCheckedEmergencyContacts(true);
       }
     }
-  }, []);
+  }, [userData]);
 
   // Manejar guardado de contactos de emergencia
   const handleEmergencyContactsSaved = useCallback(async () => {
@@ -199,6 +234,17 @@ const DashScreen = () => {
     // Recargar contactos después de guardar
     await checkEmergencyContacts();
   }, [checkEmergencyContacts]);
+
+  // Manejar finalización del tutorial
+  const handleTutorialComplete = useCallback(() => {
+    setShowTutorial(false);
+    // Después del tutorial, mostrar el modal de contactos si es necesario
+    if (!hasCheckedEmergencyContacts) {
+      setTimeout(() => {
+        checkEmergencyContacts(userData);
+      }, 500);
+    }
+  }, [hasCheckedEmergencyContacts, checkEmergencyContacts, userData]);
 
   // Efecto para carga inicial
   useEffect(() => {
@@ -310,12 +356,19 @@ const DashScreen = () => {
         <FloatingNavBar activeTab="home" accessibilityLabel={DASH.NAVBAR_LABEL} />
       </ImageBackground>
       
+      {/* Tutorial de onboarding */}
+      <OnboardingTutorial
+        visible={showTutorial}
+        onComplete={handleTutorialComplete}
+      />
+
       {/* Modal de contactos de emergencia */}
       <EmergencyContactsModal
         visible={showEmergencyContactsModal}
         onClose={() => setShowEmergencyContactsModal(false)}
         onSave={handleEmergencyContactsSaved}
         existingContacts={emergencyContacts}
+        isFirstTime={isFirstTimeUser}
       />
     </View>
   );

@@ -280,6 +280,18 @@ class EmergencyAlertService {
       // Enviar alertas a cada contacto
       const results = [];
       for (const contact of contacts) {
+        const contactResult = {
+          contact: {
+            name: contact.name,
+            email: contact.email,
+            phone: contact.phone || null,
+            relationship: contact.relationship
+          },
+          email: { sent: false, error: null },
+          whatsapp: { sent: false, error: null }
+        };
+
+        // Enviar email
         try {
           const emailSent = await mailer.sendCustomEmail({
             to: contact.email,
@@ -287,33 +299,52 @@ class EmergencyAlertService {
             html: emailContent.html
           });
 
-          results.push({
-            contact: {
-              name: contact.name,
-              email: contact.email,
-              relationship: contact.relationship
-            },
-            sent: emailSent,
-            error: emailSent ? null : 'Error al enviar email'
-          });
+          contactResult.email.sent = emailSent;
+          if (!emailSent) {
+            contactResult.email.error = 'Error al enviar email';
+          }
 
           if (emailSent) {
-            console.log(`[EmergencyAlertService] ✅ Alerta enviada a ${contact.name} (${contact.email}) para usuario ${userId}`);
+            console.log(`[EmergencyAlertService] ✅ Email enviado a ${contact.name} (${contact.email}) para usuario ${userId}`);
           } else {
-            console.error(`[EmergencyAlertService] ❌ Error enviando alerta a ${contact.name} (${contact.email})`);
+            console.error(`[EmergencyAlertService] ❌ Error enviando email a ${contact.name} (${contact.email})`);
           }
         } catch (error) {
-          console.error(`[EmergencyAlertService] ❌ Error enviando alerta a ${contact.email}:`, error);
-          results.push({
-            contact: {
-              name: contact.name,
-              email: contact.email,
-              relationship: contact.relationship
-            },
-            sent: false,
-            error: error.message
-          });
+          console.error(`[EmergencyAlertService] ❌ Error enviando email a ${contact.email}:`, error);
+          contactResult.email.error = error.message;
         }
+
+        // Enviar WhatsApp si el contacto tiene teléfono
+        if (contact.phone) {
+          try {
+            const whatsappMessage = whatsappService.generateAlertMessageBody(
+              { name: user.name, email: user.email },
+              riskLevel,
+              isTest
+            );
+            
+            const whatsappResult = await whatsappService.sendWhatsAppMessage(
+              contact.phone,
+              whatsappMessage
+            );
+
+            contactResult.whatsapp.sent = whatsappResult.sent;
+            if (!whatsappResult.sent) {
+              contactResult.whatsapp.error = whatsappResult.reason || 'Error al enviar WhatsApp';
+            }
+
+            if (whatsappResult.sent) {
+              console.log(`[EmergencyAlertService] ✅ WhatsApp enviado a ${contact.name} (${contact.phone}) para usuario ${userId}`);
+            } else {
+              console.error(`[EmergencyAlertService] ❌ Error enviando WhatsApp a ${contact.name} (${contact.phone})`);
+            }
+          } catch (error) {
+            console.error(`[EmergencyAlertService] ❌ Error enviando WhatsApp a ${contact.phone}:`, error);
+            contactResult.whatsapp.error = error.message;
+          }
+        }
+
+        results.push(contactResult);
       }
 
       // Registrar que se envió una alerta si al menos un canal (email o WhatsApp) fue exitoso
