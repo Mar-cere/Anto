@@ -9,6 +9,8 @@ import goalTracker from './goalTracker.js';
 import responseGenerator from './responseGenerator.js';
 import userProfileService from './userProfileService.js';
 import emergencyAlertService from './emergencyAlertService.js';
+import crisisTrendAnalyzer from './crisisTrendAnalyzer.js';
+import crisisFollowUpService from './crisisFollowUpService.js';
 
 // Verificar que cada servicio exporte una instancia
 const services = {
@@ -21,7 +23,9 @@ const services = {
   goalTracker,
   responseGenerator,
   userProfileService,
-  emergencyAlertService
+  emergencyAlertService,
+  crisisTrendAnalyzer,
+  crisisFollowUpService
 };
 
 // Validar que cada servicio tenga sus métodos principales
@@ -41,5 +45,7 @@ export {
   goalTracker,
   responseGenerator,
   userProfileService,
-  emergencyAlertService
+  emergencyAlertService,
+  crisisTrendAnalyzer,
+  crisisFollowUpService
 }; 

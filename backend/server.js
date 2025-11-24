@@ -305,6 +305,19 @@ app.listen(PORT, HOST, () => {
     
     console.log('✅ Servicio de recordatorios de contactos de emergencia iniciado (cada 24 horas)');
   }
+
+  // Iniciar servicio de seguimiento post-crisis
+  if (process.env.ENABLE_CRISIS_FOLLOWUP !== 'false') {
+    setTimeout(async () => {
+      try {
+        const crisisFollowUpService = (await import('./services/crisisFollowUpService.js')).default;
+        console.log('📋 Iniciando servicio de seguimiento post-crisis...');
+        crisisFollowUpService.start();
+      } catch (error) {
+        console.error('❌ Error iniciando servicio de seguimiento post-crisis:', error);
+      }
+    }, 120000); // Esperar 2 minutos después del inicio para que MongoDB esté listo
+  }
 });
 
 // Manejo de señales de terminación

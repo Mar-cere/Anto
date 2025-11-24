@@ -84,13 +84,25 @@ export const CRISIS_PROTOCOL = {
         'Programar seguimiento'
       ]
     },
+    WARNING: {
+      description: 'Detección temprana - Intervención preventiva',
+      actions: [
+        'Validar emociones y preocupaciones',
+        'Ofrecer apoyo emocional proactivo',
+        'Proporcionar recursos preventivos',
+        'Sugerir técnicas de regulación emocional',
+        'Ofrecer seguimiento en 24-48 horas',
+        'Documentar para monitoreo continuo'
+      ]
+    },
     MEDIUM: {
       description: 'Recursos de emergencia + seguimiento en 24h',
       actions: [
         'Proporcionar líneas de ayuda',
         'Crear plan de seguridad básico',
         'Ofrecer seguimiento en 24 horas',
-        'Documentar para monitoreo'
+        'Documentar para monitoreo',
+        'Considerar alerta a contactos de emergencia'
       ]
     },
     HIGH: {
@@ -99,7 +111,8 @@ export const CRISIS_PROTOCOL = {
         'Proporcionar recursos de emergencia inmediatamente',
         'Instar a contactar servicios de emergencia',
         'Crear plan de seguridad detallado',
-        'Documentar para seguimiento profesional urgente'
+        'Documentar para seguimiento profesional urgente',
+        'Enviar alerta a contactos de emergencia'
       ]
     }
   }
@@ -112,17 +125,29 @@ export const CRISIS_PROTOCOL = {
  * @param {Object} emotionalAnalysis - Análisis emocional del mensaje
  * @param {Object} contextualAnalysis - Análisis contextual del mensaje
  * @param {string} messageContent - Contenido del mensaje del usuario
- * @returns {string} Nivel de riesgo: 'LOW', 'MEDIUM', 'HIGH'
+ * @param {Object} options - Opciones adicionales para evaluación
+ * @param {Object} options.trendAnalysis - Análisis de tendencias históricas (opcional)
+ * @param {Object} options.crisisHistory - Historial de crisis previas (opcional)
+ * @param {Object} options.conversationContext - Contexto de la conversación (opcional)
+ * @returns {string} Nivel de riesgo: 'LOW', 'WARNING', 'MEDIUM', 'HIGH'
  */
-export const evaluateSuicideRisk = (emotionalAnalysis, contextualAnalysis, messageContent) => {
+export const evaluateSuicideRisk = (
+  emotionalAnalysis, 
+  contextualAnalysis, 
+  messageContent,
+  options = {}
+) => {
   if (!messageContent || typeof messageContent !== 'string') {
     return 'LOW';
   }
 
   let riskScore = 0;
   const content = messageContent.toLowerCase();
+  const { trendAnalysis, crisisHistory, conversationContext } = options;
 
-  // Factores de riesgo críticos (alto peso)
+  // ========== FACTORES DE RIESGO CRÍTICOS (Alto peso) ==========
+  
+  // Intención de crisis
   if (contextualAnalysis?.intencion?.tipo === 'CRISIS') {
     riskScore += 3;
   }
@@ -139,18 +164,33 @@ export const evaluateSuicideRisk = (emotionalAnalysis, contextualAnalysis, messa
   }
   
   // Plan específico (muy alto riesgo)
-  if (/(?:tengo.*un.*plan|mi.*plan|método|medios.*para)/i.test(content)) {
+  if (/(?:tengo.*un.*plan|mi.*plan|método|medios.*para|ya.*tengo.*decidido|ya.*sé.*cómo)/i.test(content)) {
     riskScore += 3;
   }
   
   // Despedidas o mensajes finales
-  if (/(?:despedida|última.*vez|adiós|ya.*no.*estaré|no.*estaré.*más)/i.test(content)) {
+  if (/(?:despedida|última.*vez|adiós|ya.*no.*estaré|no.*estaré.*más|último.*mensaje|esto.*es.*todo)/i.test(content)) {
     riskScore += 2;
   }
   
   // Desesperanza extrema
-  if (/(?:sin.*salida|no.*hay.*salida|no.*tengo.*salida|sin.*esperanza|sin.*esperanzas)/i.test(content)) {
+  if (/(?:sin.*salida|no.*hay.*salida|no.*tengo.*salida|sin.*esperanza|sin.*esperanzas|nada.*tiene.*sentido|todo.*está.*perdido|no.*vale.*la.*pena|ya.*no.*quiero.*seguir)/i.test(content)) {
     riskScore += 2;
+  }
+  
+  // Expresiones de desesperanza indirecta (MEJORADO)
+  if (/(?:ya.*no.*quiero.*seguir.*así|no.*vale.*la.*pena|todo.*está.*perdido|nada.*tiene.*sentido|es.*inútil|no.*hay.*solución|no.*tiene.*solución|para.*qué.*sirve|no.*tiene.*sentido|no.*vale.*nada)/i.test(content)) {
+    riskScore += 1.5;
+  }
+  
+  // Expresiones de aislamiento (MEJORADO)
+  if (/(?:nadie.*me.*entiende|estoy.*solo|no.*tengo.*a.*nadie|me.*siento.*solo|nadie.*me.*escucha|me.*siento.*aislad(?:o|a)|estoy.*aislad(?:o|a)|me.*siento.*desconectad(?:o|a)|estoy.*desconectad(?:o|a)|nadie.*me.*comprende)/i.test(content)) {
+    riskScore += 1;
+  }
+  
+  // Expresiones adicionales de desesperanza (NUEVO)
+  if (/(?:nada.*tiene.*sentido|para.*qué.*vivir|no.*tiene.*propósito|sin.*propósito|sin.*razón.*de.*ser)/i.test(content)) {
+    riskScore += 1.5;
   }
   
   // Intensidad emocional muy alta
@@ -164,29 +204,130 @@ export const evaluateSuicideRisk = (emotionalAnalysis, contextualAnalysis, messa
   }
   
   // Expresiones de rendición
-  if (/(?:me.*rindo|quiero.*rendirme|no.*puedo.*más|no.*aguanto.*más|no.*soporto.*más)/i.test(content)) {
+  if (/(?:me.*rindo|quiero.*rendirme|no.*puedo.*más|no.*aguanto.*más|no.*soporto.*más|me.*doy.*por.*vencid(?:o|a))/i.test(content)) {
     riskScore += 1;
   }
+
+  // ========== FACTORES DE TENDENCIAS HISTÓRICAS (NUEVO) ==========
   
-  // Factores protectores (reducen riesgo)
-  if (/(?:ayuda|hablar|compartir|necesito.*hablar|quiero.*hablar)/i.test(content)) {
+  if (trendAnalysis) {
+    // Ajuste basado en tendencias
+    if (trendAnalysis.riskAdjustment) {
+      riskScore += trendAnalysis.riskAdjustment;
+    }
+    
+    // Deterioro rápido
+    if (trendAnalysis.trends?.rapidDecline) {
+      riskScore += 1;
+    }
+    
+    // Estado bajo sostenido
+    if (trendAnalysis.trends?.sustainedLow) {
+      riskScore += 0.5;
+    }
+    
+    // Aislamiento (reducción en comunicación)
+    if (trendAnalysis.trends?.isolation) {
+      riskScore += 0.5;
+    }
+    
+    // Escalada emocional reciente
+    if (trendAnalysis.trends?.escalation) {
+      riskScore += 1;
+    }
+  }
+
+  // ========== HISTORIAL DE CRISIS PREVIAS (NUEVO) ==========
+  
+  if (crisisHistory) {
+    // Crisis reciente (últimos 7 días)
+    if (crisisHistory.recentCrises > 0) {
+      riskScore += 2;
+    }
+    // Crisis en últimos 30 días
+    else if (crisisHistory.totalCrises > 0) {
+      riskScore += 1;
+    }
+    
+    // Múltiples crisis recientes
+    if (crisisHistory.recentCrises >= 2) {
+      riskScore += 1;
+    }
+  }
+
+  // ========== CONTEXTO CONVERSACIONAL (MEJORADO) ==========
+  
+  if (conversationContext) {
+    // Escalada emocional en la conversación
+    if (conversationContext.emotionalEscalation) {
+      riskScore += 1;
+    }
+    
+    // Rechazo de ayuda ofrecida
+    if (conversationContext.helpRejected) {
+      riskScore += 0.5;
+    }
+    
+    // Cambio abrupto en el tono
+    if (conversationContext.abruptToneChange) {
+      riskScore += 0.5;
+    }
+    
+    // Análisis de frecuencia (mensajes muy frecuentes pueden indicar ansiedad)
+    if (conversationContext.frequencyAnalysis?.veryFrequent) {
+      riskScore += 0.5;
+    }
+    
+    // Cambio en ritmo de conversación
+    if (conversationContext.frequencyAnalysis?.frequencyChange) {
+      riskScore += 0.5;
+    }
+    
+    // Silencio prolongado después de mensaje negativo
+    if (conversationContext.silenceAfterNegative) {
+      riskScore += 1;
+    }
+  }
+  
+  // ========== FACTORES PROTECTORES (Reducen riesgo) ==========
+  
+  // Búsqueda de ayuda
+  if (/(?:ayuda|hablar|compartir|necesito.*hablar|quiero.*hablar|puedo.*hablar|me.*puedes.*ayudar)/i.test(content)) {
     riskScore -= 1;
   }
+  
+  // Emoción secundaria de esperanza
   if (emotionalAnalysis?.secondary?.includes('esperanza')) {
     riskScore -= 1;
   }
-  if (/(?:mejor|mejorando|progreso|avance)/i.test(content)) {
+  
+  // Expresiones de mejora
+  if (/(?:mejor|mejorando|progreso|avance|me.*siento.*mejor|estoy.*mejor|voy.*mejorando)/i.test(content)) {
     riskScore -= 1;
+  }
+  
+  // Menciones de apoyo social
+  if (/(?:familia|amigos|amigo|amiga|pareja|personas.*que.*me.*quieren|tengo.*apoyo)/i.test(content)) {
+    riskScore -= 0.5;
+  }
+  
+  // Uso de técnicas de regulación
+  if (/(?:respiración|meditación|ejercicio|técnica|estrategia.*que.*me.*ayuda)/i.test(content)) {
+    riskScore -= 0.5;
   }
   
   // Asegurar que el score no sea negativo
   riskScore = Math.max(0, riskScore);
   
-  // Determinar nivel de riesgo
+  // ========== DETERMINAR NIVEL DE RIESGO ==========
+  
+  // NUEVO: Nivel WARNING para detección temprana
   if (riskScore >= 7) {
     return 'HIGH';
   } else if (riskScore >= 4) {
     return 'MEDIUM';
+  } else if (riskScore >= 2) {
+    return 'WARNING'; // Nuevo nivel para detección temprana
   } else {
     return 'LOW';
   }
@@ -229,6 +370,13 @@ export const generateCrisisMessage = (riskLevel, country = 'GENERAL') => {
     if (lines.MENTAL_HEALTH) {
       messages.push(CRISIS_MESSAGES.MENTAL_HEALTH_SUPPORT.replace('{MENTAL_HEALTH_LINE}', lines.MENTAL_HEALTH));
     }
+    messages.push(CRISIS_MESSAGES.SAFETY_PLAN);
+  } else if (riskLevel === 'WARNING') {
+    // WARNING - Intervención preventiva
+    messages.push('He notado algunas señales que me preocupan. Es importante que sepas que estoy aquí para apoyarte.');
+    messages.push(CRISIS_MESSAGES.PROFESSIONAL_HELP);
+    messages.push('Si en algún momento sientes que necesitas hablar con alguien, estas líneas están disponibles 24/7:');
+    messages.push(CRISIS_MESSAGES.SUICIDE_PREVENTION.replace('{SUICIDE_LINE}', lines.SUICIDE_PREVENTION));
     messages.push(CRISIS_MESSAGES.SAFETY_PLAN);
   } else {
     // LOW risk - mensaje de apoyo general

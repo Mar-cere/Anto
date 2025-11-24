@@ -8,6 +8,7 @@ import Habit from './Habit.js';
 import Task from './Task.js';
 import UserGoals from './UserGoals.js';
 import Conversation from './Conversation.js';
+import CrisisEvent from './CrisisEvent.js';
 
 // Validar que todos los modelos estén correctamente exportados
 const models = {
@@ -21,6 +22,7 @@ const models = {
   Task,
   UserGoals,
   Conversation,
+  CrisisEvent,
 };
 
 // Verificar que cada modelo sea válido
@@ -41,6 +43,7 @@ export {
   Task,
   UserGoals,
   Conversation,
+  CrisisEvent,
 };
 
 export default models; 
