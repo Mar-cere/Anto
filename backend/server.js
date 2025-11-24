@@ -26,6 +26,7 @@ import cloudinaryRoutes from './routes/cloudinary.js';
 import habitRoutes from './routes/habitRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import crisisRoutes from './routes/crisisRoutes.js';
 
 // Constantes de configuración
 const APP_VERSION = '1.2.0';
@@ -252,6 +253,7 @@ app.use('/api/habits', habitRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/crisis', crisisRoutes);
 app.use('/api/cloudinary', cloudinaryRoutes);
 
 // Manejo de rutas no encontradas

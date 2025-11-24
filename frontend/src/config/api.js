@@ -63,6 +63,15 @@ export const ENDPOINTS = {
   EMERGENCY_CONTACT_TEST: (id) => `/api/users/me/emergency-contacts/${id}/test`,
   EMERGENCY_CONTACT_TEST_WHATSAPP: (id) => `/api/users/me/emergency-contacts/${id}/test-whatsapp`,
   EMERGENCY_CONTACTS_TEST_ALERT: '/api/users/me/emergency-contacts/test-alert',
+  
+  // Crisis Metrics
+  CRISIS_SUMMARY: '/api/crisis/summary',
+  CRISIS_TRENDS: '/api/crisis/trends',
+  CRISIS_BY_MONTH: '/api/crisis/by-month',
+  CRISIS_HISTORY: '/api/crisis/history',
+  CRISIS_ALERTS_STATS: '/api/crisis/alerts-stats',
+  CRISIS_FOLLOWUP_STATS: '/api/crisis/followup-stats',
+  CRISIS_EMOTION_DISTRIBUTION: '/api/crisis/emotion-distribution',
 };
 
 const makeRequest = (url, options) => {

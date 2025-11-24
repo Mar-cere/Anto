@@ -101,6 +101,8 @@ const TEXTS = {
   TEST_WHATSAPP_ERROR: 'Error al enviar mensaje de WhatsApp',
   NO_PHONE: 'El contacto no tiene número de teléfono configurado',
   WHATSAPP_NOT_CONFIGURED: 'WhatsApp no está configurado en el servidor',
+  CRISIS_DASHBOARD: 'Dashboard de Crisis',
+  CRISIS_DASHBOARD_DESC: 'Ver métricas y estadísticas de crisis detectadas',
 };
 
 // Constantes de idiomas
@@ -726,6 +728,23 @@ const SettingsScreen = () => {
           </TouchableOpacity>
         )}
 
+        {/* Dashboard de Crisis */}
+        <TouchableOpacity
+          style={styles.item}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate('CrisisDashboard');
+          }}
+          accessibilityLabel={TEXTS.CRISIS_DASHBOARD}
+        >
+          <MaterialCommunityIcons name="chart-line" size={ICON_SIZE} color={COLORS.PRIMARY} />
+          <View style={styles.itemContent}>
+            <Text style={styles.itemText}>{TEXTS.CRISIS_DASHBOARD}</Text>
+            <Text style={styles.itemSubtext}>{TEXTS.CRISIS_DASHBOARD_DESC}</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={COLORS.ACCENT} />
+        </TouchableOpacity>
+
         {/* Separador */}
         <View style={styles.separator} />
 
@@ -913,6 +932,13 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 16,
     fontSize: 16,
+    color: COLORS.WHITE,
+  },
+  itemSubtext: {
+    fontSize: 12,
+    color: COLORS.ACCENT,
+    marginTop: 4,
+    opacity: 0.7,
     color: COLORS.WHITE,
   },
   languageText: {

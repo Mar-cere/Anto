@@ -11,6 +11,7 @@ import userProfileService from './userProfileService.js';
 import emergencyAlertService from './emergencyAlertService.js';
 import crisisTrendAnalyzer from './crisisTrendAnalyzer.js';
 import crisisFollowUpService from './crisisFollowUpService.js';
+import crisisMetricsService from './crisisMetricsService.js';
 
 // Verificar que cada servicio exporte una instancia
 const services = {
@@ -25,7 +26,8 @@ const services = {
   userProfileService,
   emergencyAlertService,
   crisisTrendAnalyzer,
-  crisisFollowUpService
+  crisisFollowUpService,
+  crisisMetricsService
 };
 
 // Validar que cada servicio tenga sus métodos principales
@@ -47,5 +49,6 @@ export {
   userProfileService,
   emergencyAlertService,
   crisisTrendAnalyzer,
-  crisisFollowUpService
+  crisisFollowUpService,
+  crisisMetricsService
 }; 
