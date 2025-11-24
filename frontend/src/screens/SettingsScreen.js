@@ -12,6 +12,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from "@react-navigation/native";
+import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
 import React, { useCallback, useEffect, useState } from "react";
 import {
