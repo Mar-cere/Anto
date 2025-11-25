@@ -248,17 +248,27 @@ const connectMongoDB = async () => {
 connectMongoDB();
 
 // Rutas de la API
+console.log('📋 Registrando rutas de la API...');
 app.use('/api/tasks', taskRoutes);
+console.log('✅ Ruta /api/tasks registrada');
 app.use('/api/habits', habitRoutes);
+console.log('✅ Ruta /api/habits registrada');
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/crisis', crisisRoutes);
 app.use('/api/cloudinary', cloudinaryRoutes);
+console.log('✅ Todas las rutas registradas');
 
 // Manejo de rutas no encontradas
 app.use((req, res) => {
-  res.status(404).json({ message: 'Ruta no encontrada' });
+  console.log(`⚠️ Ruta no encontrada: ${req.method} ${req.path}`);
+  console.log(`📋 Headers:`, req.headers);
+  res.status(404).json({ 
+    message: 'Ruta no encontrada',
+    path: req.path,
+    method: req.method
+  });
 });
 
 // Manejo global de errores (debe ser el último middleware)

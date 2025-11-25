@@ -155,6 +155,8 @@ const habitSchema = Joi.object({
 
 // Obtener todos los hábitos del usuario con filtros
 router.get('/', async (req, res) => {
+  console.log('📋 GET /api/habits - Petición recibida');
+  console.log('👤 Usuario:', req.user?._id || req.user?.userId);
   try {
     const { 
       status, 

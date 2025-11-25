@@ -198,6 +198,8 @@ const updateTaskSchema = taskSchema.fork(
 
 // Obtener todas las tareas y recordatorios del usuario (con filtros y paginación)
 router.get('/', async (req, res) => {
+  console.log('📋 GET /api/tasks - Petición recibida');
+  console.log('👤 Usuario:', req.user?._id || req.user?.userId);
   try {
     const {
       type,
