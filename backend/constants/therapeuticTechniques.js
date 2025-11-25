@@ -688,26 +688,60 @@ export const selectAppropriateTechnique = (emotion, intensity = 5, phase = 'inic
 /**
  * Formatea una técnica como texto para incluir en respuestas del chat
  * @param {Object} technique - Objeto de técnica
+ * @param {Object} options - Opciones de formato { compact: boolean, maxSteps: number }
  * @returns {string} Texto formateado de la técnica
  */
-export const formatTechniqueForResponse = (technique) => {
+export const formatTechniqueForResponse = (technique, options = {}) => {
   if (!technique) return '';
 
-  let text = `\n\n💡 **Técnica sugerida: ${technique.name}** (${technique.type || 'Terapéutica'})\n\n`;
+  const { compact = false, maxSteps = 4 } = options;
+
+  // Formato compacto para cuando hay limitaciones de espacio
+  if (compact) {
+    let text = `\n\n💡 ${technique.name} (${technique.type || 'Terapéutica'})\n\n`;
+    
+    if (technique.description) {
+      text += `${technique.description}\n\n`;
+    }
+
+    // En formato compacto, mostrar solo los primeros 2-3 pasos
+    if (technique.steps && Array.isArray(technique.steps) && technique.steps.length > 0) {
+      const stepsToShow = Math.min(2, technique.steps.length);
+      text += 'Pasos principales:\n';
+      for (let i = 0; i < stepsToShow; i++) {
+        text += `${i + 1}. ${technique.steps[i]}\n`;
+      }
+      if (technique.steps.length > stepsToShow) {
+        text += `\nPuedes preguntarme por los pasos completos si te interesa.\n`;
+      }
+    }
+
+    return text;
+  }
+
+  // Formato completo
+  let text = `\n\n💡 Técnica sugerida: ${technique.name}\n`;
+  text += `${technique.type || 'Terapéutica'}\n\n`;
   
   if (technique.description) {
     text += `${technique.description}\n\n`;
   }
 
-  if (technique.steps && Array.isArray(technique.steps)) {
-    text += '**Pasos:**\n';
-    technique.steps.forEach((step, index) => {
+  if (technique.steps && Array.isArray(technique.steps) && technique.steps.length > 0) {
+    text += 'Pasos:\n';
+    const stepsToShow = Math.min(maxSteps, technique.steps.length);
+    technique.steps.slice(0, stepsToShow).forEach((step, index) => {
       text += `${index + 1}. ${step}\n`;
     });
+    
+    // Si hay más pasos, mencionarlo
+    if (technique.steps.length > stepsToShow) {
+      text += `\nHay ${technique.steps.length - stepsToShow} paso(s) adicional(es). Puedes preguntarme por los pasos completos.\n`;
+    }
   }
 
   if (technique.whenToUse) {
-    text += `\n*Cuándo usar: ${technique.whenToUse}*\n`;
+    text += `\nCuándo usar: ${technique.whenToUse}\n`;
   }
 
   return text;

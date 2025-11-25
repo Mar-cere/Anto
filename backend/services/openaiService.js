@@ -256,16 +256,34 @@ class OpenAIService {
       // 7. Agregar técnica terapéutica a la respuesta si es apropiado
       let respuestaFinal = respuestaValidada;
       if (selectedTechnique && this.shouldIncludeTechnique(analisisEmocional, analisisContextual)) {
-        const techniqueText = formatTechniqueForResponse(selectedTechnique);
-        // Agregar técnica al final de la respuesta, pero mantenerla concisa
+        // Calcular espacio disponible para la técnica
+        const espacioDisponible = THRESHOLDS.MAX_CHARACTERS_RESPONSE - respuestaValidada.length;
+        const necesitaFormatoCompacto = espacioDisponible < 300; // Menos de 300 caracteres disponibles
+        
+        // Formatear técnica (compacta si hay poco espacio)
+        const techniqueText = formatTechniqueForResponse(selectedTechnique, {
+          compact: necesitaFormatoCompacto,
+          maxSteps: necesitaFormatoCompacto ? 2 : 4
+        });
+        
+        // Agregar técnica al final de la respuesta
         respuestaFinal = `${respuestaValidada}${techniqueText}`;
         
-        // Si la respuesta final es demasiado larga, truncar la técnica
+        // Si aún es demasiado larga, usar formato muy compacto
         if (respuestaFinal.length > THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
-          const maxLength = THRESHOLDS.MAX_CHARACTERS_RESPONSE - 100; // Dejar espacio para truncar
-          respuestaFinal = respuestaValidada + '\n\n💡 **Técnica sugerida:** ' + selectedTechnique.name + 
-            '\n\n' + (selectedTechnique.description || '') + 
-            '\n\n*Puedes preguntarme más sobre esta técnica si te interesa.*';
+          const veryCompactText = formatTechniqueForResponse(selectedTechnique, {
+            compact: true,
+            maxSteps: 1
+          });
+          respuestaFinal = `${respuestaValidada}${veryCompactText}`;
+          
+          // Si aún es muy larga, solo nombre y descripción breve
+          if (respuestaFinal.length > THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
+            respuestaFinal = respuestaValidada + 
+              `\n\n💡 ${selectedTechnique.name}\n` +
+              `${selectedTechnique.description ? selectedTechnique.description.substring(0, 150) + '...' : ''}\n\n` +
+              `Puedes preguntarme más sobre esta técnica si te interesa.`;
+          }
         }
       }
 
