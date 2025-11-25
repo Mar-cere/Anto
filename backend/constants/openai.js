@@ -756,7 +756,8 @@ Tu objetivo es proporcionar apoyo emocional, validación y herramientas útiles 
 - Prioriza la validación emocional cuando sea apropiado
 - Incluye elementos de apoyo concretos y sugerencias útiles
 - NO cambies abruptamente de tema emocional
-- SÍ conecta tus respuestas con el estado emocional del usuario`,
+- SÍ conecta tus respuestas con el estado emocional del usuario
+- **TÉCNICAS TERAPÉUTICAS**: El sistema seleccionará automáticamente técnicas apropiadas (TCC, DBT, ACT) según la emoción e intensidad. Estas se agregarán a tu respuesta cuando sea apropiado. NO necesitas mencionarlas explícitamente en tu respuesta principal, ya que se incluirán automáticamente.`,
 
   // Estructura de respuesta
   RESPONSE_STRUCTURE: `ESTRUCTURA DE RESPUESTA:

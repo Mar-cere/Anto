@@ -27,6 +27,10 @@ import {
   TIME_PERIODS,
   VALIDATION_LIMITS
 } from '../constants/openai.js';
+import {
+  formatTechniqueForResponse,
+  selectAppropriateTechnique
+} from '../constants/therapeuticTechniques.js';
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import TherapeuticRecord from '../models/TherapeuticRecord.js';
@@ -231,7 +235,15 @@ class OpenAIService {
         throw new Error('No se pudo generar una respuesta válida desde OpenAI');
       }
 
-      // 5. Validar y Mejorar Respuesta
+      // 5. Seleccionar técnica terapéutica apropiada
+      const selectedTechnique = selectAppropriateTechnique(
+        analisisEmocional?.mainEmotion || DEFAULT_VALUES.EMOTION,
+        analisisEmocional?.intensity || DEFAULT_VALUES.INTENSITY,
+        registroTerapeutico?.currentPhase || DEFAULT_VALUES.PHASE,
+        analisisContextual?.intencion?.tipo || null
+      );
+
+      // 6. Validar y Mejorar Respuesta
       const respuestaValidada = await this.validarYMejorarRespuesta(
         respuestaGenerada,
         {
@@ -241,7 +253,23 @@ class OpenAIService {
         }
       );
 
-      // 6. Actualizar Registros
+      // 7. Agregar técnica terapéutica a la respuesta si es apropiado
+      let respuestaFinal = respuestaValidada;
+      if (selectedTechnique && this.shouldIncludeTechnique(analisisEmocional, analisisContextual)) {
+        const techniqueText = formatTechniqueForResponse(selectedTechnique);
+        // Agregar técnica al final de la respuesta, pero mantenerla concisa
+        respuestaFinal = `${respuestaValidada}${techniqueText}`;
+        
+        // Si la respuesta final es demasiado larga, truncar la técnica
+        if (respuestaFinal.length > THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
+          const maxLength = THRESHOLDS.MAX_CHARACTERS_RESPONSE - 100; // Dejar espacio para truncar
+          respuestaFinal = respuestaValidada + '\n\n💡 **Técnica sugerida:** ' + selectedTechnique.name + 
+            '\n\n' + (selectedTechnique.description || '') + 
+            '\n\n*Puedes preguntarme más sobre esta técnica si te interesa.*';
+        }
+      }
+
+      // 8. Actualizar Registros
       // Normalizar objeto emocional para asegurar compatibilidad con el esquema
       const emocionalNormalizado = this.normalizarAnalisisEmocional(analisisEmocional);
       
@@ -251,7 +279,7 @@ class OpenAIService {
         assistantMessage = new Message({
           userId: mensaje.userId,
           conversationId: mensaje.conversationId,
-          content: respuestaValidada,
+          content: respuestaFinal,
           role: 'assistant',
           metadata: {
             timestamp: new Date(),
@@ -259,7 +287,12 @@ class OpenAIService {
             status: 'sent',
             context: {
               emotional: emocionalNormalizado,
-              contextual: analisisContextual
+              contextual: analisisContextual,
+              therapeutic: selectedTechnique ? {
+                technique: selectedTechnique.name,
+                type: selectedTechnique.type,
+                category: selectedTechnique.category
+              } : undefined
             }
           }
         });
@@ -271,7 +304,7 @@ class OpenAIService {
           assistantMessage = new Message({
             userId: mensaje.userId,
             conversationId: mensaje.conversationId,
-            content: respuestaValidada,
+            content: respuestaFinal,
             role: 'assistant',
             metadata: {
               timestamp: new Date(),
@@ -282,7 +315,12 @@ class OpenAIService {
                   mainEmotion: 'neutral',
                   intensity: emocionalNormalizado.intensity || DEFAULT_VALUES.INTENSITY
                 },
-                contextual: analisisContextual
+                contextual: analisisContextual,
+                therapeutic: selectedTechnique ? {
+                  technique: selectedTechnique.name,
+                  type: selectedTechnique.type,
+                  category: selectedTechnique.category
+                } : undefined
               }
             }
           });
@@ -296,7 +334,7 @@ class OpenAIService {
       await Promise.all([
         this.actualizarRegistros(mensaje.userId, {
           mensaje,
-          respuesta: respuestaValidada,
+          respuesta: respuestaFinal,
           analisis: {
             emotional: analisisEmocional,
             contextual: analisisContextual
@@ -304,12 +342,12 @@ class OpenAIService {
         }),
         progressTracker.trackProgress(mensaje.userId, {
           message: mensaje,
-          response: respuestaValidada,
+          response: respuestaFinal,
           analysis: analisisEmocional
         }),
         goalTracker.updateProgress(mensaje.userId, {
           message: mensaje,
-          response: respuestaValidada,
+          response: respuestaFinal,
           context: analisisContextual
         }),
         Conversation.findByIdAndUpdate(mensaje.conversationId, { 
@@ -318,10 +356,15 @@ class OpenAIService {
       ]);
 
       return {
-        content: respuestaValidada,
+        content: respuestaFinal,
         context: {
           emotional: analisisEmocional,
           contextual: analisisContextual,
+          therapeutic: selectedTechnique ? {
+            technique: selectedTechnique.name,
+            type: selectedTechnique.type,
+            category: selectedTechnique.category
+          } : undefined,
           timestamp: new Date()
         }
       };
@@ -832,6 +875,41 @@ class OpenAIService {
     }
     
     return greetings[Math.floor(Math.random() * greetings.length)];
+  }
+
+  /**
+   * Determina si se debe incluir una técnica terapéutica en la respuesta
+   * @param {Object} analisisEmocional - Análisis emocional del mensaje
+   * @param {Object} analisisContextual - Análisis contextual del mensaje
+   * @returns {boolean} true si se debe incluir la técnica
+   */
+  shouldIncludeTechnique(analisisEmocional, analisisContextual) {
+    // No incluir técnicas en saludos simples
+    if (analisisContextual?.intencion?.tipo === MESSAGE_INTENTS.GREETING) {
+      return false;
+    }
+
+    // Incluir técnicas si la intensidad emocional es moderada o alta (5+)
+    const intensity = analisisEmocional?.intensity || DEFAULT_VALUES.INTENSITY;
+    if (intensity >= 5) {
+      return true;
+    }
+
+    // Incluir técnicas si el usuario busca ayuda específica
+    if (analisisContextual?.intencion?.tipo === MESSAGE_INTENTS.SEEKING_HELP || 
+        analisisContextual?.intencion?.tipo === MESSAGE_INTENTS.CRISIS) {
+      return true;
+    }
+
+    // No incluir técnicas si la emoción es neutral y la intensidad es baja
+    const emotion = analisisEmocional?.mainEmotion || DEFAULT_VALUES.EMOTION;
+    if (emotion === 'neutral' && intensity < 5) {
+      return false;
+    }
+
+    // Por defecto, incluir técnicas para emociones negativas
+    const negativeEmotions = ['tristeza', 'ansiedad', 'enojo', 'miedo', 'verguenza', 'culpa'];
+    return negativeEmotions.includes(emotion);
   }
 }
 
