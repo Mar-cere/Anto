@@ -324,6 +324,8 @@ router.post('/', createTaskLimiter, async (req, res) => {
 
 // Obtener tareas pendientes
 router.get('/pending', async (req, res) => {
+  console.log('📋 GET /api/tasks/pending - Petición recibida');
+  console.log('👤 Usuario:', req.user?._id || req.user?.userId);
   try {
     const { type, limit = 10 } = req.query;
     

@@ -57,6 +57,18 @@ const validateYear = (year) => {
   return !isNaN(yearNum) && yearNum >= MIN_YEAR && yearNum <= MAX_YEAR;
 };
 
+// Helper: validar semana
+const validateWeek = (week) => {
+  const weekNum = parseInt(week);
+  return !isNaN(weekNum) && weekNum >= MIN_WEEK && weekNum <= MAX_WEEK;
+};
+
+// Helper: validar mes
+const validateMonth = (month) => {
+  const monthNum = parseInt(month);
+  return !isNaN(monthNum) && monthNum >= MIN_MONTH && monthNum <= MAX_MONTH;
+};
+
 // Esquemas de validación Joi
 const notificationSchema = Joi.object({
   enabled: Joi.boolean().default(true),
@@ -281,6 +293,116 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Obtener hábitos activos (DEBE estar antes de /:id)
+router.get('/active', async (req, res) => {
+  console.log('📋 GET /api/habits/active - Petición recibida');
+  console.log('👤 Usuario:', req.user?._id || req.user?.userId);
+  try {
+    const habits = await Habit.getActiveHabits(req.user._id);
+    res.json({
+      success: true,
+      data: habits
+    });
+  } catch (error) {
+    console.error('Error al obtener hábitos activos:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error al obtener los hábitos activos',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Obtener hábitos vencidos (DEBE estar antes de /:id)
+router.get('/overdue', async (req, res) => {
+  try {
+    const habits = await Habit.getOverdueHabits(req.user._id);
+    res.json({
+      success: true,
+      data: habits
+    });
+  } catch (error) {
+    console.error('Error al obtener hábitos vencidos:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error al obtener los hábitos vencidos',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Obtener estadísticas de hábitos (DEBE estar antes de /:id)
+router.get('/stats', async (req, res) => {
+  try {
+    const stats = await Habit.getStats(req.user._id);
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Error al obtener estadísticas:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error al obtener las estadísticas',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Obtener progreso semanal (DEBE estar antes de /:id)
+router.get('/weekly-progress', async (req, res) => {
+  try {
+    const { year, week } = req.query;
+    
+    if (!validateYear(year) || !validateWeek(week)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Año o semana inválidos'
+      });
+    }
+    
+    const progress = await Habit.getWeeklyProgress(req.user._id, parseInt(year), parseInt(week));
+    res.json({
+      success: true,
+      data: progress
+    });
+  } catch (error) {
+    console.error('Error al obtener progreso semanal:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error al obtener el progreso semanal',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Obtener progreso mensual (DEBE estar antes de /:id)
+router.get('/monthly-progress', async (req, res) => {
+  try {
+    const { year, month } = req.query;
+    
+    if (!validateYear(year) || !validateMonth(month)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Año o mes inválidos'
+      });
+    }
+    
+    const progress = await Habit.getMonthlyProgress(req.user._id, parseInt(year), parseInt(month));
+    res.json({
+      success: true,
+      data: progress
+    });
+  } catch (error) {
+    console.error('Error al obtener progreso mensual:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error al obtener el progreso mensual',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 // Crear nuevo hábito
 router.post('/', createHabitLimiter, async (req, res) => {
   try {
@@ -457,202 +579,6 @@ router.patch('/:id/toggle', validateObjectId, async (req, res) => {
     res.status(400).json({ 
       success: false,
       message: 'Error al actualizar el hábito', 
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-});
-
-// Obtener hábitos activos
-router.get('/active', async (req, res) => {
-  try {
-    const habits = await Habit.getActiveHabits(req.user._id);
-    res.json({
-      success: true,
-      data: habits
-    });
-  } catch (error) {
-    console.error('Error al obtener hábitos activos:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Error al obtener los hábitos activos',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-});
-
-// Obtener hábitos vencidos
-router.get('/overdue', async (req, res) => {
-  try {
-    const habits = await Habit.getOverdueHabits(req.user._id);
-    res.json({
-      success: true,
-      data: habits
-    });
-  } catch (error) {
-    console.error('Error al obtener hábitos vencidos:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Error al obtener los hábitos vencidos',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-});
-
-// Obtener estadísticas
-router.get('/stats', async (req, res) => {
-  try {
-    const { period = 'month' } = req.query;
-    const stats = await Habit.getStats(req.user._id, period);
-    
-    res.json({ 
-      success: true,
-      data: stats[0] || {
-        totalHabits: 0,
-        activeHabits: 0,
-        totalCompletions: 0,
-        averageStreak: 0,
-        bestStreak: 0,
-        overdueHabits: 0,
-        completionRate: 0
-      }
-    });
-  } catch (error) {
-    console.error('Error al obtener estadísticas:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Error al obtener estadísticas', 
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-});
-
-// Obtener progreso semanal
-router.get('/weekly-progress', async (req, res) => {
-  try {
-    const { week, year } = req.query;
-    
-    if (!week || !year) {
-      return res.status(400).json({
-        success: false,
-        message: 'Semana y año son requeridos'
-      });
-    }
-
-    const weekNum = parseInt(week);
-    const yearNum = parseInt(year);
-
-    if (isNaN(weekNum) || weekNum < MIN_WEEK || weekNum > MAX_WEEK) {
-      return res.status(400).json({
-        success: false,
-        message: 'Número de semana inválido'
-      });
-    }
-
-    if (!validateYear(year)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Año inválido'
-      });
-    }
-
-    const habits = await Habit.find({
-      userId: req.user._id,
-      'progress.weeklyProgress': {
-        $elemMatch: { week: weekNum, year: yearNum }
-      }
-    });
-
-    const weeklyProgress = habits.map(habit => ({
-      habitId: habit._id,
-      title: habit.title,
-      icon: habit.icon,
-      completedDays: habit.progress.weeklyProgress.find(
-        wp => wp.week === weekNum && wp.year === yearNum
-      )?.completedDays || 0,
-      streak: habit.progress.streak,
-      goal: habit.goal
-    }));
-
-    res.json({ 
-      success: true, 
-      data: {
-        week: weekNum,
-        year: yearNum,
-        habits: weeklyProgress,
-        totalCompleted: weeklyProgress.reduce((sum, h) => sum + h.completedDays, 0)
-      }
-    });
-  } catch (error) {
-    console.error('Error al obtener progreso semanal:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Error al obtener progreso semanal', 
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-});
-
-// Obtener progreso mensual
-router.get('/monthly-progress', async (req, res) => {
-  try {
-    const { month, year } = req.query;
-    
-    if (!month || !year) {
-      return res.status(400).json({
-        success: false,
-        message: 'Mes y año son requeridos'
-      });
-    }
-
-    const monthNum = parseInt(month);
-    const yearNum = parseInt(year);
-
-    if (isNaN(monthNum) || monthNum < MIN_MONTH || monthNum > MAX_MONTH) {
-      return res.status(400).json({
-        success: false,
-        message: 'Número de mes inválido'
-      });
-    }
-
-    if (!validateYear(year)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Año inválido'
-      });
-    }
-
-    const habits = await Habit.find({
-      userId: req.user._id,
-      'progress.monthlyProgress': {
-        $elemMatch: { month: monthNum, year: yearNum }
-      }
-    });
-
-    const monthlyProgress = habits.map(habit => ({
-      habitId: habit._id,
-      title: habit.title,
-      icon: habit.icon,
-      completedDays: habit.progress.monthlyProgress.find(
-        mp => mp.month === monthNum && mp.year === yearNum
-      )?.completedDays || 0,
-      streak: habit.progress.streak,
-      goal: habit.goal
-    }));
-
-    res.json({ 
-      success: true, 
-      data: {
-        month: monthNum,
-        year: yearNum,
-        habits: monthlyProgress,
-        totalCompleted: monthlyProgress.reduce((sum, h) => sum + h.completedDays, 0)
-      }
-    });
-  } catch (error) {
-    console.error('Error al obtener progreso mensual:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Error al obtener progreso mensual', 
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
