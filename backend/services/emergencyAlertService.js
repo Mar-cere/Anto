@@ -317,26 +317,28 @@ class EmergencyAlertService {
         // Enviar WhatsApp si el contacto tiene teléfono
         if (contact.phone) {
           try {
-            const whatsappMessage = whatsappService.generateAlertMessageBody(
-              { name: user.name, email: user.email },
-              riskLevel,
-              isTest
-            );
-            
-            const whatsappResult = await whatsappService.sendWhatsAppMessage(
-              contact.phone,
-              whatsappMessage
-            );
+            // Usar el método correcto del servicio de WhatsApp
+            const whatsappResult = isTest
+              ? await whatsappService.sendTestMessage(
+                  contact.phone,
+                  { name: user.name, email: user.email }
+                )
+              : await whatsappService.sendEmergencyAlert(
+                  contact.phone,
+                  { name: user.name, email: user.email },
+                  riskLevel,
+                  isTest
+                );
 
-            contactResult.whatsapp.sent = whatsappResult.sent;
-            if (!whatsappResult.sent) {
-              contactResult.whatsapp.error = whatsappResult.reason || 'Error al enviar WhatsApp';
+            contactResult.whatsapp.sent = whatsappResult.success || false;
+            if (!whatsappResult.success) {
+              contactResult.whatsapp.error = whatsappResult.error || 'Error al enviar WhatsApp';
             }
 
-            if (whatsappResult.sent) {
-              console.log(`[EmergencyAlertService] ✅ WhatsApp enviado a ${contact.name} (${contact.phone}) para usuario ${userId}`);
+            if (whatsappResult.success) {
+              console.log(`[EmergencyAlertService] ✅ WhatsApp enviado a ${contact.name} (${contact.phone}) para usuario ${userId}. MessageId: ${whatsappResult.messageId || 'N/A'}`);
             } else {
-              console.error(`[EmergencyAlertService] ❌ Error enviando WhatsApp a ${contact.name} (${contact.phone})`);
+              console.error(`[EmergencyAlertService] ❌ Error enviando WhatsApp a ${contact.name} (${contact.phone}): ${whatsappResult.error || 'Error desconocido'}`);
             }
           } catch (error) {
             console.error(`[EmergencyAlertService] ❌ Error enviando WhatsApp a ${contact.phone}:`, error);
