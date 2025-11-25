@@ -6,6 +6,7 @@ import User from '../models/User.js';
 import mailer from '../config/mailer.js';
 import whatsappService from './whatsappService.js';
 import { APP_NAME } from '../constants/app.js';
+import { getFormattedEmergencyNumbers, formatEmergencyNumbers, getEmergencyNumbersFromPhone } from '../constants/emergencyNumbers.js';
 
 class EmergencyAlertService {
   constructor() {
@@ -32,6 +33,57 @@ class EmergencyAlertService {
    */
   recordAlertSent(userId) {
     this.lastAlertTimestamps.set(userId, Date.now());
+  }
+
+  /**
+   * Formatea los números de emergencia para HTML de email
+   * @param {string} phone - Número de teléfono del contacto (para detectar país)
+   * @returns {string} HTML con los números de emergencia
+   */
+  formatEmergencyNumbersForEmail(phone) {
+    const emergencyInfo = getEmergencyNumbersFromPhone(phone);
+    
+    if (!emergencyInfo) {
+      // Números por defecto si no se puede detectar el país
+      return `
+        <ul>
+          <li><strong>Emergencias:</strong> 911</li>
+          <li><strong>Línea de Prevención del Suicidio:</strong> 988 (Internacional)</li>
+          <li><strong>Texto de Crisis:</strong> 741741</li>
+        </ul>
+      `;
+    }
+    
+    let html = `<p><strong>Recursos de Emergencia (${emergencyInfo.country}):</strong></p><ul>`;
+    
+    if (emergencyInfo.emergency) {
+      html += `<li><strong>Emergencias:</strong> ${emergencyInfo.emergency}</li>`;
+    }
+    
+    if (emergencyInfo.medical && emergencyInfo.medical !== emergencyInfo.emergency) {
+      html += `<li><strong>Emergencias Médicas:</strong> ${emergencyInfo.medical}</li>`;
+    }
+    
+    if (emergencyInfo.fire && emergencyInfo.fire !== emergencyInfo.emergency) {
+      html += `<li><strong>Bomberos:</strong> ${emergencyInfo.fire}</li>`;
+    }
+    
+    if (emergencyInfo.suicidePrevention) {
+      html += `<li><strong>Línea de Prevención del Suicidio:</strong> ${emergencyInfo.suicidePrevention}</li>`;
+    }
+    
+    if (emergencyInfo.crisisText) {
+      html += `<li><strong>Texto de Crisis:</strong> ${emergencyInfo.crisisText}</li>`;
+    }
+    
+    // Si no hay línea de prevención del suicidio específica, agregar recursos internacionales
+    if (!emergencyInfo.suicidePrevention) {
+      html += `<li><strong>Línea Internacional de Prevención del Suicidio:</strong> 988 (Estados Unidos)</li>`;
+    }
+    
+    html += `</ul>`;
+    
+    return html;
   }
 
   /**
@@ -62,7 +114,7 @@ class EmergencyAlertService {
    * @param {boolean} isTest - Si es true, marca el email como prueba
    * @returns {Object} Objeto con subject y html
    */
-  generateAlertEmail(userInfo, riskLevel, messageContent = null, isTest = false) {
+  generateAlertEmail(userInfo, riskLevel, messageContent = null, isTest = false, contactPhone = null) {
     const userName = userInfo.name || userInfo.email || 'un usuario';
     const riskLevelText = {
       'LOW': 'Bajo',
@@ -188,11 +240,7 @@ class EmergencyAlertService {
           <div class="resources">
             <h3>Recursos de Emergencia</h3>
             <p>Si la situación es urgente, contacta:</p>
-            <ul>
-              <li><strong>Emergencias:</strong> 911</li>
-              <li><strong>Línea de Prevención del Suicidio:</strong> 988 (Internacional) o 135 (Argentina)</li>
-              <li><strong>Texto de Crisis:</strong> 741741</li>
-            </ul>
+            ${this.formatEmergencyNumbersForEmail(contactPhone)}
           </div>
 
           ${!isTest ? `
@@ -269,14 +317,6 @@ class EmergencyAlertService {
       // Detectar si es una prueba (mensaje contiene '[PRUEBA]' o 'PRUEBA')
       const isTest = messageContent && /\[?PRUEBA\]?/i.test(messageContent);
       
-      // Generar contenido del email
-      const emailContent = this.generateAlertEmail(
-        { name: user.name, email: user.email },
-        riskLevel,
-        messageContent,
-        isTest
-      );
-
       // Enviar alertas a cada contacto
       const results = [];
       for (const contact of contacts) {
@@ -290,6 +330,15 @@ class EmergencyAlertService {
           email: { sent: false, error: null },
           whatsapp: { sent: false, error: null }
         };
+
+        // Generar contenido del email personalizado para este contacto (según su país)
+        const emailContent = this.generateAlertEmail(
+          { name: user.name, email: user.email },
+          riskLevel,
+          messageContent,
+          isTest,
+          contact.phone || null // Pasar el teléfono del contacto para detectar país
+        );
 
         // Enviar email
         try {

@@ -10,6 +10,7 @@
  */
 
 import twilio from 'twilio';
+import { getFormattedEmergencyNumbers } from '../constants/emergencyNumbers.js';
 
 // Configuración de Twilio
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
@@ -136,9 +137,10 @@ const sendWhatsAppMessage = async (to, message) => {
  * @param {Object} userInfo - Información del usuario
  * @param {string} riskLevel - Nivel de riesgo (LOW, MEDIUM, HIGH)
  * @param {boolean} isTest - Si es una prueba
+ * @param {string} phone - Número de teléfono del contacto (para detectar país)
  * @returns {string} Mensaje formateado para WhatsApp
  */
-const generateAlertMessage = (userInfo, riskLevel, isTest = false) => {
+const generateAlertMessage = (userInfo, riskLevel, isTest = false, phone = null) => {
   const userName = userInfo.name || userInfo.email || 'un usuario';
   const riskLevelText = {
     'LOW': 'Bajo',
@@ -181,10 +183,9 @@ En caso de una emergencia real, recibirás un mensaje similar pero con informaci
   message += `• Ofrece acompañamiento\n`;
   message += `• Busca ayuda profesional si es necesario\n\n`;
 
-  message += `*Recursos de Emergencia:*\n`;
-  message += `• Emergencias: 911\n`;
-  message += `• Línea de Prevención del Suicidio: 988 (Internacional) o 135 (Argentina)\n`;
-  message += `• Texto de Crisis: 741741\n\n`;
+  // Obtener números de emergencia según el país del contacto
+  const emergencyNumbers = getFormattedEmergencyNumbers(phone);
+  message += `${emergencyNumbers}\n\n`;
 
   message += `Este es un mensaje automático. Por favor, verifica la situación directamente con ${userName}.`;
 
@@ -201,7 +202,7 @@ const whatsappService = {
    * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
    */
   sendEmergencyAlert: async (phone, userInfo, riskLevel, isTest = false) => {
-    const message = generateAlertMessage(userInfo, riskLevel, isTest);
+    const message = generateAlertMessage(userInfo, riskLevel, isTest, phone);
     return await sendWhatsAppMessage(phone, message);
   },
 
@@ -212,7 +213,7 @@ const whatsappService = {
    * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
    */
   sendTestMessage: async (phone, userInfo) => {
-    const message = generateAlertMessage(userInfo, 'MEDIUM', true);
+    const message = generateAlertMessage(userInfo, 'MEDIUM', true, phone);
     return await sendWhatsAppMessage(phone, message);
   },
 
