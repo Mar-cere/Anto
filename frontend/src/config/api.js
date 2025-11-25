@@ -161,9 +161,14 @@ export const api = {
       console.log('Headers de la respuesta:', response.headers);
 
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          errorData = { message: `Error del servidor: ${response.status} - ${response.statusText}` };
+        }
         console.error('Error en la respuesta:', errorData);
-        throw new Error(errorData.message || 'Error en la petición');
+        throw new Error(errorData.message || `Error del servidor: ${response.status} - ${response.statusText}`);
       }
 
       const data = await response.json();

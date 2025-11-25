@@ -58,7 +58,12 @@ const TabNavigator = () => {
           const iconName = TAB_ICONS[route.name] || 'help-outline';
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarStyle: { backgroundColor: TAB_BAR_BACKGROUND },
+        tabBarStyle: { 
+          height: 0,
+          opacity: 0,
+          elevation: 0,
+          backgroundColor: TAB_BAR_BACKGROUND 
+        },
         tabBarActiveTintColor: TAB_BAR_ACTIVE_TINT,
         tabBarInactiveTintColor: TAB_BAR_INACTIVE_TINT,
       })}

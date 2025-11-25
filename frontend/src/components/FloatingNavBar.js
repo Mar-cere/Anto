@@ -44,32 +44,32 @@ const FloatingNavBar = ({ activeTab, onTabPress, animValues = {} }) => {
       // Obtener el nombre de ruta correcto
       const routeName = routeMap[screen] || screen;
 
-      // Obtener el Tab Navigator padre si estamos dentro de uno
-      // Cuando DashScreen está dentro del TabNavigator, necesitamos usar su navegación
-      const tabNavigator = navigation.getParent();
-      
-      // Verificar si estamos dentro de un Tab Navigator
-      if (tabNavigator) {
-        const state = tabNavigator.getState();
-        // Si el estado tiene type 'tab', estamos en un Tab Navigator
-        if (state?.type === 'tab' || (state?.routes && state.routes.length > 0)) {
-          // Navegar usando el Tab Navigator directamente
-          tabNavigator.navigate(routeName);
-          return;
+      // Verificar si la ruta está en el TabNavigator (Inicio, Chat, Perfil, Ajustes, FaQ)
+      const tabNavigatorRoutes = ['Inicio', 'Chat', 'Perfil', 'Ajustes', 'FaQ'];
+      const isTabNavigatorRoute = tabNavigatorRoutes.includes(routeName);
+
+      if (isTabNavigatorRoute) {
+        // Intentar obtener el Tab Navigator padre
+        const tabNavigator = navigation.getParent();
+        
+        // Verificar si estamos dentro de un Tab Navigator
+        if (tabNavigator && tabNavigator.getState) {
+          const state = tabNavigator.getState();
+          // Si el estado tiene type 'tab', estamos en un Tab Navigator
+          if (state?.type === 'tab') {
+            // Navegar usando el Tab Navigator directamente
+            tabNavigator.navigate(routeName);
+            return;
+          }
         }
+
+        // Si no estamos en un Tab Navigator, navegar a MainTabs con la pantalla específica
+        navigation.navigate('MainTabs', { screen: routeName });
+        return;
       }
 
-      // Si no estamos en un Tab Navigator, intentar navegar al TabNavigator con la pantalla específica
-      try {
-        navigation.navigate('MainTabs', { screen: routeName });
-      } catch (e) {
-        // Si falla, intentar navegar directamente (puede funcionar si la ruta está en el Stack)
-        try {
-          navigation.navigate(routeName);
-        } catch (error) {
-          console.error('Error al navegar a', routeName, ':', error);
-        }
-      }
+      // Para rutas que NO están en el TabNavigator (Tasks, Pomodoro, etc.), navegar directamente
+      navigation.navigate(routeName);
     } catch (error) {
       console.error('Error al navegar:', error);
     }

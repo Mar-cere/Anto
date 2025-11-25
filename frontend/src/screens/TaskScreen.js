@@ -170,7 +170,7 @@ const TaskScreen = ({ route }) => {
       }
 
       const response = await api.get(ENDPOINTS.TASKS);
-      const itemsArray = response.data || [];
+      const itemsArray = response.data?.data || response.data || [];
       
       // Ordenar items: recordatorios primero, luego por fecha
       const sortedItems = itemsArray.sort((a, b) => {

@@ -539,7 +539,7 @@ const HabitsScreen = ({ route, navigation }) => {
       }
       
       const response = await api.get(`${ENDPOINTS.HABITS}?status=${filterType}`);
-      setHabits(response.data?.habits || []);
+      setHabits(response.data?.data?.habits || response.data?.habits || []);
     } catch (error) {
       console.error('Error al cargar hábitos:', error);
       setError(error.message || TEXTS.ERROR_LOAD);
