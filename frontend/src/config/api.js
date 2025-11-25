@@ -41,10 +41,12 @@ export const ENDPOINTS = {
   
   // Tareas
   TASKS: '/api/tasks',
+  TASKS_PENDING: '/api/tasks/pending',
   TASK_BY_ID: (id) => `/api/tasks/${id}`,
   
   // Hábitos
   HABITS: '/api/habits',
+  HABITS_ACTIVE: '/api/habits/active',
   HABIT_BY_ID: (id) => `/api/habits/${id}`,
   HABIT_COMPLETE: (id) => `/api/habits/${id}/complete`,
 

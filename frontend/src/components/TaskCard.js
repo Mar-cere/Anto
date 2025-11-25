@@ -7,8 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { commonStyles, cardColors, CardHeader, EmptyState } from './common/CardStyles';
 import * as Haptics from 'expo-haptics';
-
-const API_URL = 'https://antobackend.onrender.com';
+import { api, ENDPOINTS } from '../config/api';
 
 const TaskItem = memo(({ item, onPress }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -184,29 +183,9 @@ const TaskCard = memo(() => {
         setLoading(true);
       }
       setError(null);
-      
-      const token = await AsyncStorage.getItem('userToken');
-      
-      if (!token) {
-        throw new Error('No se encontró token de autenticación');
-      }
 
-      const response = await fetch(`${API_URL}/api/tasks/pending`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Error del servidor: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      const itemsArray = data.data || [];
+      const response = await api.get(ENDPOINTS.TASKS_PENDING);
+      const itemsArray = response.data || [];
       
       // Ordenar: recordatorios primero, luego por fecha
       const sortedItems = itemsArray.sort((a, b) => {

@@ -8,8 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { commonStyles, cardColors, CardHeader, EmptyState } from './common/CardStyles';
 import * as Haptics from 'expo-haptics';
-
-const API_URL = 'https://antobackend.onrender.com';
+import { api, ENDPOINTS } from '../config/api';
 
 const HabitItem = memo(({ habit, onPress }) => {
   const scaleAnim = new Animated.Value(1);
@@ -138,29 +137,9 @@ const HabitCard = memo(() => {
         setLoading(true);
       }
       setError(null);
-      
-      const token = await AsyncStorage.getItem('userToken');
-      
-      if (!token) {
-        throw new Error('No se encontró token de autenticación');
-      }
 
-      const response = await fetch(`${API_URL}/api/habits/active`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Error del servidor: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      const habitsArray = data.data || [];
+      const response = await api.get(ENDPOINTS.HABITS_ACTIVE);
+      const habitsArray = response.data || [];
       
       // Ordenar por streak y tomar los top 3
       const topHabits = habitsArray
