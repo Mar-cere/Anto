@@ -191,6 +191,18 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
 
   const progress = isWelcomeScreen ? 0 : ((currentStep + 1) / totalSteps) * 100;
 
+  // Reiniciar el tutorial cuando se muestra
+  React.useEffect(() => {
+    if (visible) {
+      setCurrentStep(-1); // Empezar con la pantalla de bienvenida
+      fadeAnim.setValue(1);
+      scaleAnim.setValue(1);
+      if (onHighlightChange) {
+        onHighlightChange(null);
+      }
+    }
+  }, [visible, onHighlightChange]);
+
   // Efecto para animar el icono cuando cambia el paso
   React.useEffect(() => {
     if (!isWelcomeScreen && currentStepData) {
@@ -261,7 +273,7 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
               <Text style={styles.welcomeSubtitle}>{TEXTS.WELCOME_SUBTITLE}</Text>
               <Text style={styles.welcomeDescription}>{TEXTS.WELCOME_DESCRIPTION}</Text>
             </Animated.View>
-          ) : (
+          ) : currentStepData ? (
             <Animated.View
               style={[
                 styles.stepContainer,
@@ -320,7 +332,7 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
                 ))}
               </View>
             </Animated.View>
-          )}
+          ) : null}
         </ScrollView>
 
         {/* Footer con botones de navegación */}
