@@ -96,6 +96,11 @@ const DashScreen = () => {
   const [hasCheckedTutorial, setHasCheckedTutorial] = useState(false);
   const [highlightElement, setHighlightElement] = useState(null);
 
+  // Log cuando showTutorial cambia
+  React.useEffect(() => {
+    console.log('🎬 showTutorial cambió a:', showTutorial);
+  }, [showTutorial]);
+
   // Función para cargar datos
   const loadData = useCallback(async (forceRefresh = false) => {
     if (!forceRefresh && refreshing) return;
@@ -146,16 +151,37 @@ const DashScreen = () => {
       // Verificar si debe mostrarse el tutorial (solo una vez)
       if (!hasCheckedTutorial) {
         const tutorialCompleted = await isTutorialCompleted();
+        console.log('📚 Tutorial completado?', tutorialCompleted);
+        console.log('📚 userData:', userData);
+        console.log('📚 userData.createdAt:', userData?.createdAt);
+        
         if (!tutorialCompleted) {
           // Verificar si es un usuario nuevo (creado en las últimas 24 horas)
           const userCreatedAt = userData?.createdAt ? new Date(userData.createdAt) : null;
-          const isNewUser = userCreatedAt && (Date.now() - userCreatedAt.getTime()) < 24 * 60 * 60 * 1000;
+          const now = Date.now();
+          const createdAtTime = userCreatedAt ? userCreatedAt.getTime() : 0;
+          const timeDiff = now - createdAtTime;
+          const hoursSinceCreation = timeDiff / (1000 * 60 * 60);
+          const isNewUser = userCreatedAt && timeDiff < 24 * 60 * 60 * 1000;
+          
+          console.log('👤 Usuario nuevo?', isNewUser);
+          console.log('👤 Fecha creación:', userCreatedAt);
+          console.log('👤 Tiempo desde creación (horas):', hoursSinceCreation);
+          console.log('👤 Diferencia en ms:', timeDiff);
+          
           if (isNewUser) {
+            console.log('✅ Mostrando tutorial en 1 segundo...');
+            setIsFirstTimeUser(true);
             // Mostrar tutorial después de un pequeño delay
             setTimeout(() => {
+              console.log('🎬 Activando tutorial...');
               setShowTutorial(true);
             }, 1000);
+          } else {
+            console.log('⚠️ Usuario no es nuevo, no se mostrará el tutorial automáticamente');
           }
+        } else {
+          console.log('✅ Tutorial ya completado, no se mostrará');
         }
         setHasCheckedTutorial(true);
       }
