@@ -27,6 +27,7 @@ import DashboardScroll from '../components/DashboardScroll';
 import EmergencyContactsModal from '../components/EmergencyContactsModal';
 import FloatingNavBar from '../components/FloatingNavBar';
 import OnboardingTutorial, { isTutorialCompleted } from '../components/OnboardingTutorial';
+import TutorialHighlight from '../components/TutorialHighlight';
 import HabitCard from '../components/HabitCard';
 import Header from '../components/Header';
 import ParticleBackground from '../components/ParticleBackground';
@@ -93,6 +94,7 @@ const DashScreen = () => {
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [hasCheckedTutorial, setHasCheckedTutorial] = useState(false);
+  const [highlightElement, setHighlightElement] = useState(null);
 
   // Función para cargar datos
   const loadData = useCallback(async (forceRefresh = false) => {
@@ -356,10 +358,17 @@ const DashScreen = () => {
         <FloatingNavBar activeTab="home" accessibilityLabel={DASH.NAVBAR_LABEL} />
       </ImageBackground>
       
+      {/* Overlay de resaltado para el tutorial */}
+      <TutorialHighlight
+        highlightElement={highlightElement}
+        visible={showTutorial}
+      />
+
       {/* Tutorial de onboarding */}
       <OnboardingTutorial
         visible={showTutorial}
         onComplete={handleTutorialComplete}
+        onHighlightChange={setHighlightElement}
       />
 
       {/* Modal de contactos de emergencia */}

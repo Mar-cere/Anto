@@ -7,6 +7,34 @@ import { StatusBar } from 'react-native';
 const Header = memo(({ greeting, userName, userAvatar }) => {
   const navigation = useNavigation();
   
+  const handleProfilePress = () => {
+    try {
+      // Verificar si estamos dentro de un Tab Navigator
+      const tabNavigator = navigation.getParent();
+      
+      if (tabNavigator && tabNavigator.getState) {
+        const state = tabNavigator.getState();
+        // Si el estado tiene type 'tab', estamos en un Tab Navigator
+        if (state?.type === 'tab') {
+          // Navegar usando el Tab Navigator directamente
+          tabNavigator.navigate('Perfil');
+          return;
+        }
+      }
+
+      // Si no estamos en un Tab Navigator, navegar a MainTabs con la pantalla específica
+      navigation.navigate('MainTabs', { screen: 'Perfil' });
+    } catch (error) {
+      console.error('Error al navegar a Perfil:', error);
+      // Fallback: intentar navegar directamente
+      try {
+        navigation.navigate('Perfil');
+      } catch (e) {
+        console.error('Error en fallback de navegación:', e);
+      }
+    }
+  };
+  
   return (
     <View style={styles.headerContainer}>
       <View style={styles.headerLeft}>
@@ -16,7 +44,7 @@ const Header = memo(({ greeting, userName, userAvatar }) => {
       <View style={styles.headerRight}>
         
         <TouchableOpacity 
-          onPress={() => navigation.navigate('Profile')}
+          onPress={handleProfilePress}
           style={styles.avatarContainer}
         >
           {userAvatar ? (

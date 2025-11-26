@@ -35,7 +35,8 @@ const STORAGE_KEYS = {
 // Constantes de textos
 const TEXTS = {
   WELCOME: '¡Bienvenido a Anto!',
-  WELCOME_SUBTITLE: 'Te guiaremos por las funcionalidades principales',
+  WELCOME_SUBTITLE: 'Tu compañero de bienestar emocional',
+  WELCOME_DESCRIPTION: 'Estamos aquí para acompañarte en tu camino hacia el bienestar. Te guiaremos por las funcionalidades principales.',
   SKIP: 'Omitir',
   NEXT: 'Siguiente',
   PREVIOUS: 'Anterior',
@@ -51,6 +52,7 @@ const TUTORIAL_STEPS = [
     title: 'Dashboard Principal',
     description: 'Tu centro de control. Aquí verás un resumen de tus tareas, hábitos y el estado de tu bienestar emocional.',
     color: colors.primary,
+    highlightElement: null, // No resaltar nada en el dashboard general
   },
   {
     id: 2,
@@ -58,48 +60,59 @@ const TUTORIAL_STEPS = [
     title: 'Chat de Apoyo',
     description: 'Conversa con nuestro asistente de IA. Comparte cómo te sientes y recibe apoyo emocional personalizado las 24 horas.',
     color: '#4ECDC4',
+    highlightElement: 'chat', // Resaltar el botón de chat
   },
   {
     id: 3,
     icon: 'check-circle',
     title: 'Tareas y Hábitos',
-    description: 'Organiza tu día con tareas y construye hábitos saludables. El seguimiento constante te ayuda a mantener el equilibrio.',
+    description: 'Organiza tu día con tareas pendientes y construye hábitos saludables. El seguimiento constante te ayuda a mantener el equilibrio y alcanzar tus metas.',
     color: '#FFA500',
+    highlightElement: 'tasks-habits', // Resaltar las tarjetas de tareas y hábitos
   },
   {
     id: 4,
-    icon: 'chart-line',
-    title: 'Estadísticas',
-    description: 'Visualiza tu progreso emocional, completación de tareas y seguimiento de hábitos con gráficos detallados.',
-    color: '#9B59B6',
-  },
-  {
-    id: 5,
     icon: 'alert-circle',
     title: 'Contactos de Emergencia',
     description: 'Configura contactos de confianza que recibirán alertas si detectamos situaciones de riesgo. Tu seguridad es nuestra prioridad.',
     color: '#FF6B6B',
+    highlightElement: 'settings', // Resaltar el botón de ajustes donde están los contactos
   },
   {
-    id: 6,
+    id: 5,
     icon: 'cog',
     title: 'Configuración',
     description: 'Personaliza tu experiencia: notificaciones, tema, idioma y más. Todo está en tus manos.',
     color: '#95A5A6',
+    highlightElement: 'settings', // Resaltar el botón de ajustes
   },
 ];
 
-const OnboardingTutorial = ({ visible, onComplete }) => {
+const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHighlightChange }) => {
   const navigation = useNavigation();
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(-1); // -1 = pantalla de bienvenida
   const [fadeAnim] = useState(new Animated.Value(1));
+  const [scaleAnim] = useState(new Animated.Value(1));
 
   const totalSteps = TUTORIAL_STEPS.length;
-  const currentStepData = TUTORIAL_STEPS[currentStep];
+  const isWelcomeScreen = currentStep === -1;
+  const currentStepData = currentStep >= 0 ? TUTORIAL_STEPS[currentStep] : null;
 
   const handleNext = () => {
+    if (isWelcomeScreen) {
+      // Ir al primer paso del tutorial
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setCurrentStep(0);
+      // Notificar cambio de highlight
+      if (onHighlightChange && TUTORIAL_STEPS[0].highlightElement) {
+        onHighlightChange(TUTORIAL_STEPS[0].highlightElement);
+      }
+      return;
+    }
+
     if (currentStep < totalSteps - 1) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const nextStep = currentStep + 1;
       Animated.sequence([
         Animated.timing(fadeAnim, {
           toValue: 0,
@@ -112,7 +125,11 @@ const OnboardingTutorial = ({ visible, onComplete }) => {
           useNativeDriver: true,
         }),
       ]).start();
-      setCurrentStep(currentStep + 1);
+      setCurrentStep(nextStep);
+      // Notificar cambio de highlight
+      if (onHighlightChange) {
+        onHighlightChange(TUTORIAL_STEPS[nextStep]?.highlightElement || null);
+      }
     } else {
       handleFinish();
     }
@@ -121,6 +138,7 @@ const OnboardingTutorial = ({ visible, onComplete }) => {
   const handlePrevious = () => {
     if (currentStep > 0) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const prevStep = currentStep - 1;
       Animated.sequence([
         Animated.timing(fadeAnim, {
           toValue: 0,
@@ -133,7 +151,18 @@ const OnboardingTutorial = ({ visible, onComplete }) => {
           useNativeDriver: true,
         }),
       ]).start();
-      setCurrentStep(currentStep - 1);
+      setCurrentStep(prevStep);
+      // Notificar cambio de highlight
+      if (onHighlightChange) {
+        onHighlightChange(TUTORIAL_STEPS[prevStep]?.highlightElement || null);
+      }
+    } else if (currentStep === 0) {
+      // Volver a la pantalla de bienvenida
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setCurrentStep(-1);
+      if (onHighlightChange) {
+        onHighlightChange(null);
+      }
     }
   };
 
@@ -146,6 +175,9 @@ const OnboardingTutorial = ({ visible, onComplete }) => {
   const handleFinish = async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     await markTutorialAsCompleted();
+    if (onHighlightChange) {
+      onHighlightChange(null);
+    }
     onComplete?.();
   };
 
@@ -157,7 +189,25 @@ const OnboardingTutorial = ({ visible, onComplete }) => {
     }
   };
 
-  const progress = ((currentStep + 1) / totalSteps) * 100;
+  const progress = isWelcomeScreen ? 0 : ((currentStep + 1) / totalSteps) * 100;
+
+  // Efecto para animar el icono cuando cambia el paso
+  React.useEffect(() => {
+    if (!isWelcomeScreen && currentStepData) {
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.2,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [currentStep, isWelcomeScreen]);
 
   return (
     <Modal
@@ -183,98 +233,143 @@ const OnboardingTutorial = ({ visible, onComplete }) => {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          <Animated.View
-            style={[
-              styles.stepContainer,
-              { opacity: fadeAnim }
-            ]}
-          >
-            {/* Icono */}
-            <View style={[styles.iconContainer, { backgroundColor: `${currentStepData.color}20` }]}>
-              <MaterialCommunityIcons
-                name={currentStepData.icon}
-                size={80}
-                color={currentStepData.color}
-              />
-            </View>
-
-            {/* Indicador de progreso */}
-            <View style={styles.progressContainer}>
-              <View style={styles.progressBar}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    { width: `${progress}%`, backgroundColor: currentStepData.color }
-                  ]}
+          {isWelcomeScreen ? (
+            <Animated.View
+              style={[
+                styles.stepContainer,
+                { opacity: fadeAnim }
+              ]}
+            >
+              {/* Pantalla de bienvenida */}
+              <Animated.View
+                style={[
+                  styles.iconContainer,
+                  {
+                    backgroundColor: `${colors.primary}20`,
+                    transform: [{ scale: scaleAnim }]
+                  }
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name="heart"
+                  size={100}
+                  color={colors.primary}
                 />
+              </Animated.View>
+
+              <Text style={styles.welcomeTitle}>{TEXTS.WELCOME}</Text>
+              <Text style={styles.welcomeSubtitle}>{TEXTS.WELCOME_SUBTITLE}</Text>
+              <Text style={styles.welcomeDescription}>{TEXTS.WELCOME_DESCRIPTION}</Text>
+            </Animated.View>
+          ) : (
+            <Animated.View
+              style={[
+                styles.stepContainer,
+                { opacity: fadeAnim }
+              ]}
+            >
+              {/* Icono */}
+              <Animated.View
+                style={[
+                  styles.iconContainer,
+                  {
+                    backgroundColor: `${currentStepData.color}20`,
+                    transform: [{ scale: scaleAnim }]
+                  }
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name={currentStepData.icon}
+                  size={80}
+                  color={currentStepData.color}
+                />
+              </Animated.View>
+
+              {/* Indicador de progreso */}
+              <View style={styles.progressContainer}>
+                <View style={styles.progressBar}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      { width: `${progress}%`, backgroundColor: currentStepData.color }
+                    ]}
+                  />
+                </View>
+                <Text style={styles.progressText}>
+                  {currentStep + 1} / {totalSteps}
+                </Text>
               </View>
-              <Text style={styles.progressText}>
-                {currentStep + 1} / {totalSteps}
-              </Text>
-            </View>
 
-            {/* Título y descripción */}
-            <Text style={styles.title}>{currentStepData.title}</Text>
-            <Text style={styles.description}>{currentStepData.description}</Text>
+              {/* Título y descripción */}
+              <Text style={styles.title}>{currentStepData.title}</Text>
+              <Text style={styles.description}>{currentStepData.description}</Text>
 
-            {/* Indicadores de pasos */}
-            <View style={styles.dotsContainer}>
-              {TUTORIAL_STEPS.map((_, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.dot,
-                    index === currentStep && [
-                      styles.dotActive,
-                      { backgroundColor: currentStepData.color }
-                    ]
-                  ]}
-                />
-              ))}
-            </View>
-          </Animated.View>
+              {/* Indicadores de pasos */}
+              <View style={styles.dotsContainer}>
+                {TUTORIAL_STEPS.map((_, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.dot,
+                      index === currentStep && [
+                        styles.dotActive,
+                        { backgroundColor: currentStepData.color }
+                      ]
+                    ]}
+                  />
+                ))}
+              </View>
+            </Animated.View>
+          )}
         </ScrollView>
 
         {/* Footer con botones de navegación */}
         <View style={styles.footer}>
-          <TouchableOpacity
-            onPress={handlePrevious}
-            style={[
-              styles.navButton,
-              styles.previousButton,
-              currentStep === 0 && styles.navButtonDisabled
-            ]}
-            disabled={currentStep === 0}
-            activeOpacity={0.7}
-          >
-            <MaterialCommunityIcons
-              name="chevron-left"
-              size={24}
-              color={currentStep === 0 ? '#666' : colors.white}
-            />
-            <Text
+          {!isWelcomeScreen && (
+            <TouchableOpacity
+              onPress={handlePrevious}
               style={[
-                styles.navButtonText,
-                currentStep === 0 && styles.navButtonTextDisabled
+                styles.navButton,
+                styles.previousButton,
+                currentStep === 0 && styles.navButtonDisabled
               ]}
+              disabled={currentStep === 0}
+              activeOpacity={0.7}
             >
-              {TEXTS.PREVIOUS}
-            </Text>
-          </TouchableOpacity>
+              <MaterialCommunityIcons
+                name="chevron-left"
+                size={24}
+                color={currentStep === 0 ? '#666' : colors.white}
+              />
+              <Text
+                style={[
+                  styles.navButtonText,
+                  currentStep === 0 && styles.navButtonTextDisabled
+                ]}
+              >
+                {TEXTS.PREVIOUS}
+              </Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             onPress={handleNext}
             style={[
               styles.navButton,
               styles.nextButton,
-              { backgroundColor: currentStepData.color }
+              isWelcomeScreen && styles.welcomeButton,
+              !isWelcomeScreen && { backgroundColor: currentStepData.color }
             ]}
             activeOpacity={0.8}
           >
             <Text style={styles.navButtonText}>
-              {currentStep === totalSteps - 1 ? TEXTS.FINISH : TEXTS.NEXT}
+              {isWelcomeScreen
+                ? TEXTS.GET_STARTED
+                : currentStep === totalSteps - 1
+                ? TEXTS.FINISH
+                : TEXTS.NEXT}
             </Text>
-            {currentStep < totalSteps - 1 && (
+            {!isWelcomeScreen && currentStep < totalSteps - 1 && (
               <MaterialCommunityIcons
                 name="chevron-right"
                 size={24}
@@ -419,6 +514,33 @@ const styles = StyleSheet.create({
   },
   navButtonTextDisabled: {
     color: '#666',
+  },
+  welcomeTitle: {
+    fontSize: 42,
+    fontWeight: 'bold',
+    color: colors.white,
+    textAlign: 'center',
+    marginBottom: 16,
+    marginTop: 20,
+  },
+  welcomeSubtitle: {
+    fontSize: 24,
+    color: colors.primary,
+    textAlign: 'center',
+    marginBottom: 20,
+    fontWeight: '600',
+  },
+  welcomeDescription: {
+    fontSize: 18,
+    color: colors.white,
+    textAlign: 'center',
+    lineHeight: 28,
+    opacity: 0.9,
+    paddingHorizontal: 20,
+  },
+  welcomeButton: {
+    backgroundColor: colors.primary,
+    width: '100%',
   },
 });
 
