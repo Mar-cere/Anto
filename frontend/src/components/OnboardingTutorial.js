@@ -11,11 +11,12 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
   Modal,
+  PanResponder,
   Platform,
   ScrollView,
   StyleSheet,
@@ -36,12 +37,13 @@ const STORAGE_KEYS = {
 const TEXTS = {
   WELCOME: '¡Bienvenido a Anto!',
   WELCOME_SUBTITLE: 'Tu compañero de bienestar emocional',
-  WELCOME_DESCRIPTION: 'Estamos aquí para acompañarte en tu camino hacia el bienestar. Te guiaremos por las funcionalidades principales.',
+  WELCOME_DESCRIPTION: 'Te guiaremos por las funcionalidades principales en solo unos segundos.',
   SKIP: 'Omitir',
   NEXT: 'Siguiente',
   PREVIOUS: 'Anterior',
   GET_STARTED: 'Comenzar',
   FINISH: 'Finalizar',
+  SWIPE_TO_SKIP: 'Desliza hacia abajo para omitir',
 };
 
 // Pasos del tutorial
@@ -50,7 +52,7 @@ const TUTORIAL_STEPS = [
     id: 1,
     icon: 'home',
     title: 'Dashboard Principal',
-    description: 'Tu centro de control. Aquí verás un resumen de tus tareas, hábitos y el estado de tu bienestar emocional.',
+    description: 'Tu centro de control con resumen de tareas, hábitos y bienestar emocional.',
     color: colors.primary,
     highlightElement: null, // No resaltar nada en el dashboard general
   },
@@ -58,7 +60,7 @@ const TUTORIAL_STEPS = [
     id: 2,
     icon: 'message-text',
     title: 'Chat de Apoyo',
-    description: 'Conversa con nuestro asistente de IA. Comparte cómo te sientes y recibe apoyo emocional personalizado las 24 horas.',
+    description: 'Conversa con nuestro asistente de IA. Recibe apoyo emocional personalizado 24/7.',
     color: '#4ECDC4',
     highlightElement: 'chat', // Resaltar el botón de chat
   },
@@ -66,7 +68,7 @@ const TUTORIAL_STEPS = [
     id: 3,
     icon: 'check-circle',
     title: 'Tareas y Hábitos',
-    description: 'Organiza tu día con tareas pendientes y construye hábitos saludables. El seguimiento constante te ayuda a mantener el equilibrio y alcanzar tus metas.',
+    description: 'Organiza tu día y construye hábitos saludables con seguimiento constante.',
     color: '#FFA500',
     highlightElement: 'tasks-habits', // Resaltar las tarjetas de tareas y hábitos
   },
@@ -74,17 +76,9 @@ const TUTORIAL_STEPS = [
     id: 4,
     icon: 'alert-circle',
     title: 'Contactos de Emergencia',
-    description: 'Configura contactos de confianza que recibirán alertas si detectamos situaciones de riesgo. Tu seguridad es nuestra prioridad.',
+    description: 'Configura contactos de confianza que recibirán alertas en situaciones de riesgo.',
     color: '#FF6B6B',
     highlightElement: 'settings', // Resaltar el botón de ajustes donde están los contactos
-  },
-  {
-    id: 5,
-    icon: 'cog',
-    title: 'Configuración',
-    description: 'Personaliza tu experiencia: notificaciones, tema, idioma y más. Todo está en tus manos.',
-    color: '#95A5A6',
-    highlightElement: 'settings', // Resaltar el botón de ajustes
   },
 ];
 
@@ -93,6 +87,21 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
   const [currentStep, setCurrentStep] = useState(-1); // -1 = pantalla de bienvenida
   const [fadeAnim] = useState(new Animated.Value(1));
   const [scaleAnim] = useState(new Animated.Value(1));
+  const [slideAnim] = useState(new Animated.Value(0));
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        // Detectar deslizamiento hacia abajo
+        return Math.abs(gestureState.dy) > 10 && gestureState.dy > 0;
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        // Si se deslizó hacia abajo más de 50px, omitir tutorial
+        if (gestureState.dy > 50) {
+          handleSkip();
+        }
+      },
+    })
+  ).current;
 
   const totalSteps = TUTORIAL_STEPS.length;
   const isWelcomeScreen = currentStep === -1;
@@ -102,34 +111,76 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
     if (isWelcomeScreen) {
       // Ir al primer paso del tutorial
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setCurrentStep(0);
-      // Notificar cambio de highlight
-      if (onHighlightChange && TUTORIAL_STEPS[0].highlightElement) {
-        onHighlightChange(TUTORIAL_STEPS[0].highlightElement);
-      }
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: -width,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        slideAnim.setValue(width);
+        fadeAnim.setValue(1);
+        setCurrentStep(0);
+        // Notificar cambio de highlight
+        if (onHighlightChange && TUTORIAL_STEPS[0].highlightElement) {
+          onHighlightChange(TUTORIAL_STEPS[0].highlightElement);
+        }
+        Animated.parallel([
+          Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
       return;
     }
 
     if (currentStep < totalSteps - 1) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       const nextStep = currentStep + 1;
-      Animated.sequence([
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: -width,
+          duration: 300,
+          useNativeDriver: true,
+        }),
         Animated.timing(fadeAnim, {
           toValue: 0,
-          duration: 200,
+          duration: 300,
           useNativeDriver: true,
         }),
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
-      setCurrentStep(nextStep);
-      // Notificar cambio de highlight
-      if (onHighlightChange) {
-        onHighlightChange(TUTORIAL_STEPS[nextStep]?.highlightElement || null);
-      }
+      ]).start(() => {
+        slideAnim.setValue(width);
+        fadeAnim.setValue(1);
+        setCurrentStep(nextStep);
+        // Notificar cambio de highlight
+        if (onHighlightChange) {
+          onHighlightChange(TUTORIAL_STEPS[nextStep]?.highlightElement || null);
+        }
+        Animated.parallel([
+          Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
     } else {
       handleFinish();
     }
@@ -139,30 +190,60 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
     if (currentStep > 0) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       const prevStep = currentStep - 1;
-      Animated.sequence([
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: width,
+          duration: 300,
+          useNativeDriver: true,
+        }),
         Animated.timing(fadeAnim, {
           toValue: 0,
-          duration: 200,
+          duration: 300,
           useNativeDriver: true,
         }),
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
-      setCurrentStep(prevStep);
-      // Notificar cambio de highlight
-      if (onHighlightChange) {
-        onHighlightChange(TUTORIAL_STEPS[prevStep]?.highlightElement || null);
-      }
+      ]).start(() => {
+        slideAnim.setValue(-width);
+        fadeAnim.setValue(1);
+        setCurrentStep(prevStep);
+        // Notificar cambio de highlight
+        if (onHighlightChange) {
+          onHighlightChange(TUTORIAL_STEPS[prevStep]?.highlightElement || null);
+        }
+        Animated.parallel([
+          Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
     } else if (currentStep === 0) {
       // Volver a la pantalla de bienvenida
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setCurrentStep(-1);
-      if (onHighlightChange) {
-        onHighlightChange(null);
-      }
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: width,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        slideAnim.setValue(0);
+        fadeAnim.setValue(1);
+        setCurrentStep(-1);
+        if (onHighlightChange) {
+          onHighlightChange(null);
+        }
+      });
     }
   };
 
@@ -197,6 +278,7 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
       setCurrentStep(-1); // Empezar con la pantalla de bienvenida
       fadeAnim.setValue(1);
       scaleAnim.setValue(1);
+      slideAnim.setValue(0);
       if (onHighlightChange) {
         onHighlightChange(null);
       }
@@ -228,7 +310,7 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
       transparent={true}
       onRequestClose={handleSkip}
     >
-      <View style={styles.container}>
+      <View style={styles.container} {...panResponder.panHandlers}>
         {/* Header con botón de omitir */}
         <View style={styles.header}>
           <TouchableOpacity
@@ -238,6 +320,9 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
           >
             <Text style={styles.skipButtonText}>{TEXTS.SKIP}</Text>
           </TouchableOpacity>
+          {isWelcomeScreen && (
+            <Text style={styles.swipeHint}>{TEXTS.SWIPE_TO_SKIP}</Text>
+          )}
         </View>
 
         {/* Contenido principal */}
@@ -249,7 +334,10 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
             <Animated.View
               style={[
                 styles.stepContainer,
-                { opacity: fadeAnim }
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateX: slideAnim }]
+                }
               ]}
             >
               {/* Pantalla de bienvenida */}
@@ -277,7 +365,10 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
             <Animated.View
               style={[
                 styles.stepContainer,
-                { opacity: fadeAnim }
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateX: slideAnim }]
+                }
               ]}
             >
               {/* Icono */}
@@ -300,16 +391,33 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
               {/* Indicador de progreso */}
               <View style={styles.progressContainer}>
                 <View style={styles.progressBar}>
-                  <View
+                  <Animated.View
                     style={[
                       styles.progressFill,
-                      { width: `${progress}%`, backgroundColor: currentStepData.color }
+                      {
+                        width: `${progress}%`,
+                        backgroundColor: currentStepData.color
+                      }
                     ]}
                   />
                 </View>
-                <Text style={styles.progressText}>
-                  {currentStep + 1} / {totalSteps}
-                </Text>
+                <View style={styles.progressInfo}>
+                  <Text style={styles.progressText}>
+                    {currentStep + 1} / {totalSteps}
+                  </Text>
+                  {currentStepData.highlightElement && (
+                    <View style={styles.arrowHint}>
+                      <MaterialCommunityIcons
+                        name="arrow-down"
+                        size={16}
+                        color={currentStepData.color}
+                      />
+                      <Text style={[styles.arrowText, { color: currentStepData.color }]}>
+                        Mira abajo
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
 
               {/* Título y descripción */}
@@ -402,8 +510,8 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 50 : 20,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 20,
@@ -416,6 +524,13 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 16,
     opacity: 0.7,
+  },
+  swipeHint: {
+    color: colors.white,
+    fontSize: 12,
+    opacity: 0.5,
+    marginTop: 4,
+    textAlign: 'center',
   },
   content: {
     flexGrow: 1,
@@ -442,21 +557,36 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     width: '100%',
-    height: 4,
+    height: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 2,
+    borderRadius: 3,
     overflow: 'hidden',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   progressFill: {
     height: '100%',
-    borderRadius: 2,
+    borderRadius: 3,
+  },
+  progressInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
   },
   progressText: {
     color: colors.white,
     fontSize: 12,
-    textAlign: 'center',
     opacity: 0.6,
+    fontWeight: '600',
+  },
+  arrowHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  arrowText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   title: {
     fontSize: 32,
@@ -466,12 +596,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   description: {
-    fontSize: 18,
+    fontSize: 17,
     color: colors.white,
     textAlign: 'center',
-    lineHeight: 28,
-    opacity: 0.9,
+    lineHeight: 26,
+    opacity: 0.85,
     marginBottom: 40,
+    paddingHorizontal: 10,
   },
   dotsContainer: {
     flexDirection: 'row',

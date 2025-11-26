@@ -150,36 +150,36 @@ const DashScreen = () => {
 
       // Verificar si debe mostrarse el tutorial (solo una vez)
       if (!hasCheckedTutorial) {
+        // Verificar AsyncStorage primero
         const tutorialCompleted = await isTutorialCompleted();
-        console.log('📚 Tutorial completado?', tutorialCompleted);
-        console.log('📚 userData:', userData);
-        console.log('📚 userData.createdAt:', userData?.createdAt);
+        console.log('📚 Tutorial completado en AsyncStorage?', tutorialCompleted);
         
+        // Verificar si es un usuario nuevo (creado en las últimas 24 horas)
+        const userCreatedAt = userData?.createdAt ? new Date(userData.createdAt) : null;
+        const now = Date.now();
+        const createdAtTime = userCreatedAt ? userCreatedAt.getTime() : 0;
+        const timeDiff = now - createdAtTime;
+        const hoursSinceCreation = timeDiff / (1000 * 60 * 60);
+        const isNewUser = userCreatedAt && timeDiff >= 0 && timeDiff < 24 * 60 * 60 * 1000;
+        
+        console.log('👤 Usuario nuevo?', isNewUser);
+        console.log('👤 Fecha creación:', userCreatedAt);
+        console.log('👤 Tiempo desde creación (horas):', hoursSinceCreation);
+        console.log('👤 Diferencia en ms:', timeDiff);
+        
+        // Solo mostrar tutorial si NO está completado (independientemente de si es usuario nuevo o no)
+        // Una vez completado, nunca se vuelve a mostrar
         if (!tutorialCompleted) {
-          // Verificar si es un usuario nuevo (creado en las últimas 24 horas)
-          const userCreatedAt = userData?.createdAt ? new Date(userData.createdAt) : null;
-          const now = Date.now();
-          const createdAtTime = userCreatedAt ? userCreatedAt.getTime() : 0;
-          const timeDiff = now - createdAtTime;
-          const hoursSinceCreation = timeDiff / (1000 * 60 * 60);
-          const isNewUser = userCreatedAt && timeDiff < 24 * 60 * 60 * 1000;
-          
-          console.log('👤 Usuario nuevo?', isNewUser);
-          console.log('👤 Fecha creación:', userCreatedAt);
-          console.log('👤 Tiempo desde creación (horas):', hoursSinceCreation);
-          console.log('👤 Diferencia en ms:', timeDiff);
-          
           if (isNewUser) {
-            console.log('✅ Mostrando tutorial en 1 segundo...');
             setIsFirstTimeUser(true);
-            // Mostrar tutorial después de un pequeño delay
-            setTimeout(() => {
-              console.log('🎬 Activando tutorial...');
-              setShowTutorial(true);
-            }, 1000);
+            console.log('✅ Mostrando tutorial para usuario nuevo...');
           } else {
-            console.log('⚠️ Usuario no es nuevo, no se mostrará el tutorial automáticamente');
+            console.log('✅ Mostrando tutorial para usuario existente...');
           }
+          setTimeout(() => {
+            console.log('🎬 Activando tutorial...');
+            setShowTutorial(true);
+          }, 1000);
         } else {
           console.log('✅ Tutorial ya completado, no se mostrará');
         }
