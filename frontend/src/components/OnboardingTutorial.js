@@ -31,6 +31,8 @@ const { width, height } = Dimensions.get('window');
 // Constantes de AsyncStorage
 const STORAGE_KEYS = {
   TUTORIAL_COMPLETED: 'tutorialCompleted',
+  // Helper para generar clave específica por usuario
+  getTutorialKey: (userId) => `tutorialCompleted_${userId}`,
 };
 
 // Constantes de textos
@@ -82,7 +84,7 @@ const TUTORIAL_STEPS = [
   },
 ];
 
-const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHighlightChange }) => {
+const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHighlightChange, userId = null }) => {
   const navigation = useNavigation();
   const [currentStep, setCurrentStep] = useState(-1); // -1 = pantalla de bienvenida
   const [fadeAnim] = useState(new Animated.Value(1));
@@ -249,22 +251,23 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
 
   const handleSkip = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await markTutorialAsCompleted();
+    await markTutorialAsCompleted(userId);
     onComplete?.();
   };
 
   const handleFinish = async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    await markTutorialAsCompleted();
+    await markTutorialAsCompleted(userId);
     if (onHighlightChange) {
       onHighlightChange(null);
     }
     onComplete?.();
   };
 
-  const markTutorialAsCompleted = async () => {
+  const markTutorialAsCompleted = async (userId) => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.TUTORIAL_COMPLETED, 'true');
+      const key = userId ? STORAGE_KEYS.getTutorialKey(userId) : STORAGE_KEYS.TUTORIAL_COMPLETED;
+      await AsyncStorage.setItem(key, 'true');
     } catch (error) {
       console.error('Error guardando estado del tutorial:', error);
     }
@@ -688,9 +691,10 @@ const styles = StyleSheet.create({
 });
 
 // Función helper para verificar si el tutorial ya fue completado
-export const isTutorialCompleted = async () => {
+export const isTutorialCompleted = async (userId = null) => {
   try {
-    const completed = await AsyncStorage.getItem(STORAGE_KEYS.TUTORIAL_COMPLETED);
+    const key = userId ? STORAGE_KEYS.getTutorialKey(userId) : STORAGE_KEYS.TUTORIAL_COMPLETED;
+    const completed = await AsyncStorage.getItem(key);
     return completed === 'true';
   } catch (error) {
     console.error('Error verificando estado del tutorial:', error);
@@ -699,9 +703,10 @@ export const isTutorialCompleted = async () => {
 };
 
 // Función helper para resetear el tutorial (útil para testing)
-export const resetTutorial = async () => {
+export const resetTutorial = async (userId = null) => {
   try {
-    await AsyncStorage.removeItem(STORAGE_KEYS.TUTORIAL_COMPLETED);
+    const key = userId ? STORAGE_KEYS.getTutorialKey(userId) : STORAGE_KEYS.TUTORIAL_COMPLETED;
+    await AsyncStorage.removeItem(key);
   } catch (error) {
     console.error('Error reseteando tutorial:', error);
   }

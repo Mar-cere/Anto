@@ -150,9 +150,13 @@ const DashScreen = () => {
 
       // Verificar si debe mostrarse el tutorial (solo una vez)
       if (!hasCheckedTutorial) {
-        // Verificar AsyncStorage primero
-        const tutorialCompleted = await isTutorialCompleted();
+        // Obtener userId para hacer el tutorial específico por usuario
+        const userId = userData?._id || userData?.id || null;
+        
+        // Verificar AsyncStorage con userId específico
+        const tutorialCompleted = await isTutorialCompleted(userId);
         console.log('📚 Tutorial completado en AsyncStorage?', tutorialCompleted);
+        console.log('👤 UserId:', userId);
         
         // Verificar si es un usuario nuevo (creado en las últimas 24 horas)
         const userCreatedAt = userData?.createdAt ? new Date(userData.createdAt) : null;
@@ -168,7 +172,7 @@ const DashScreen = () => {
         console.log('👤 Diferencia en ms:', timeDiff);
         
         // Solo mostrar tutorial si NO está completado (independientemente de si es usuario nuevo o no)
-        // Una vez completado, nunca se vuelve a mostrar
+        // Una vez completado, nunca se vuelve a mostrar para este usuario
         if (!tutorialCompleted) {
           if (isNewUser) {
             setIsFirstTimeUser(true);
@@ -181,7 +185,7 @@ const DashScreen = () => {
             setShowTutorial(true);
           }, 1000);
         } else {
-          console.log('✅ Tutorial ya completado, no se mostrará');
+          console.log('✅ Tutorial ya completado para este usuario, no se mostrará');
         }
         setHasCheckedTutorial(true);
       }
@@ -395,6 +399,7 @@ const DashScreen = () => {
         visible={showTutorial}
         onComplete={handleTutorialComplete}
         onHighlightChange={setHighlightElement}
+        userId={userData?._id || userData?.id || null}
       />
 
       {/* Modal de contactos de emergencia */}
