@@ -8,6 +8,7 @@
  */
 
 import { Expo } from 'expo-server-sdk';
+import { NOTIFICATION_ICON_URL } from '../constants/app.js';
 
 class PushNotificationService {
   constructor() {
@@ -70,6 +71,8 @@ class PushNotificationService {
         priority,
         channelId,
         badge: 1,
+        // Icono de la aplicación para Android (debe ser una URL pública)
+        icon: NOTIFICATION_ICON_URL,
       };
 
       // Enviar notificación
@@ -262,6 +265,8 @@ class PushNotificationService {
         priority,
         channelId,
         badge: 1,
+        // Icono de la aplicación para Android (debe ser una URL pública)
+        icon: NOTIFICATION_ICON_URL,
       }));
 
       // Enviar en chunks
