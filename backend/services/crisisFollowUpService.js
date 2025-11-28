@@ -4,8 +4,10 @@
  */
 import CrisisEvent from '../models/CrisisEvent.js';
 import Message from '../models/Message.js';
+import User from '../models/User.js';
 import { APP_NAME } from '../constants/app.js';
 import { getEmergencyLines } from '../constants/crisis.js';
+import pushNotificationService from './pushNotificationService.js';
 
 class CrisisFollowUpService {
   constructor() {
@@ -236,16 +238,38 @@ class CrisisFollowUpService {
    */
   async sendFollowUpMessage(crisisEvent) {
     try {
-      // Por ahora, solo registramos que se debería enviar
-      // En el futuro, esto podría integrarse con un sistema de notificaciones push
-      // o mensajes automáticos en la app
+      const userId = crisisEvent.userId._id || crisisEvent.userId;
+      const message = this.generateFollowUpMessage(crisisEvent);
       
-      console.log(`[CrisisFollowUpService] 📧 Seguimiento programado para usuario ${crisisEvent.userId._id || crisisEvent.userId}`);
-      console.log(`[CrisisFollowUpService] Mensaje: ${this.generateFollowUpMessage(crisisEvent)}`);
+      // Obtener usuario con token push
+      const user = await User.findById(userId).select('+pushToken');
       
-      // TODO: Integrar con sistema de notificaciones push o mensajes automáticos
-      // Por ahora, retornamos true para indicar que se procesó
-      return true;
+      if (!user || !user.pushToken) {
+        console.log(`[CrisisFollowUpService] ⚠️ Usuario ${userId} no tiene token push registrado`);
+        return false;
+      }
+
+      // Calcular horas desde la crisis
+      const hoursSinceCrisis = Math.floor(
+        (Date.now() - new Date(crisisEvent.detectedAt).getTime()) / (1000 * 60 * 60)
+      );
+
+      // Enviar notificación push
+      const result = await pushNotificationService.sendFollowUp(
+        user.pushToken,
+        {
+          hoursSinceCrisis,
+          message: message.substring(0, 200), // Limitar longitud
+        }
+      );
+
+      if (result.success) {
+        console.log(`[CrisisFollowUpService] ✅ Notificación push de seguimiento enviada a usuario ${userId}`);
+        return true;
+      } else {
+        console.error(`[CrisisFollowUpService] ❌ Error enviando notificación push: ${result.error}`);
+        return false;
+      }
     } catch (error) {
       console.error('[CrisisFollowUpService] Error enviando mensaje de seguimiento:', error);
       return false;

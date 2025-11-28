@@ -238,6 +238,18 @@ const userSchema = new mongoose.Schema({
       },
       message: 'Solo se permiten máximo 2 contactos de emergencia'
     }
+  },
+  // Token push para notificaciones
+  pushToken: {
+    type: String,
+    default: null,
+    select: false, // No incluir por defecto en consultas por seguridad
+    index: true
+  },
+  pushTokenUpdatedAt: {
+    type: Date,
+    default: null,
+    select: false
   }
 }, {
   timestamps: true,

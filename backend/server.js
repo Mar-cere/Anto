@@ -27,6 +27,8 @@ import habitRoutes from './routes/habitRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import crisisRoutes from './routes/crisisRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import testNotificationRoutes from './routes/testNotificationRoutes.js';
 
 // Constantes de configuración
 const APP_VERSION = '1.2.0';
@@ -264,6 +266,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/crisis', crisisRoutes);
 app.use('/api/cloudinary', cloudinaryRoutes);
+app.use('/api/notifications', notificationRoutes);
+// Rutas de testing (solo en desarrollo)
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/api/notifications', testNotificationRoutes);
+  console.log('✅ Rutas de testing de notificaciones registradas');
+}
 console.log('✅ Todas las rutas registradas');
 
 // Manejo de rutas no encontradas

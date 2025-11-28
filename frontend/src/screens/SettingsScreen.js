@@ -39,6 +39,12 @@ import {
   cancelAllNotifications,
   scheduleDailyNotification,
 } from '../utils/notifications';
+import {
+  registerForPushNotifications,
+  areNotificationsEnabled,
+  requestNotificationPermissions,
+  getStoredPushToken,
+} from '../services/pushNotificationService';
 
 // Constantes de textos
 const TEXTS = {
@@ -181,6 +187,8 @@ const SettingsScreen = () => {
   const [emergencyContacts, setEmergencyContacts] = useState([]);
   const [showEmergencyContactsModal, setShowEmergencyContactsModal] = useState(false);
   const [loadingContacts, setLoadingContacts] = useState(false);
+  const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(false);
+  const [pushTokenStatus, setPushTokenStatus] = useState(null);
 
   // Guardar preferencias en AsyncStorage
   const savePreference = useCallback(async (key, value) => {
@@ -362,7 +370,68 @@ const SettingsScreen = () => {
   // Configurar notificaciones al cargar el componente
   useEffect(() => {
     configureNotifications();
+    checkPushNotificationStatus();
   }, []);
+
+  // Verificar estado de notificaciones push
+  const checkPushNotificationStatus = async () => {
+    try {
+      const hasPermissions = await areNotificationsEnabled();
+      const token = await getStoredPushToken();
+      setPushNotificationsEnabled(hasPermissions && !!token);
+      setPushTokenStatus(token ? 'registered' : 'not_registered');
+    } catch (error) {
+      console.error('Error verificando estado de push notifications:', error);
+      setPushTokenStatus('error');
+    }
+  };
+
+  // Habilitar/deshabilitar notificaciones push
+  const handleTogglePushNotifications = async (value) => {
+    try {
+      if (value) {
+        // Solicitar permisos y registrar token
+        const hasPermissions = await requestNotificationPermissions();
+        if (hasPermissions) {
+          const token = await registerForPushNotifications();
+          if (token) {
+            setPushNotificationsEnabled(true);
+            setPushTokenStatus('registered');
+            Alert.alert(
+              TEXTS.SUCCESS,
+              'Notificaciones push habilitadas. Recibirás alertas sobre crisis y seguimientos.',
+              [{ text: TEXTS.OK }]
+            );
+          } else {
+            setPushNotificationsEnabled(false);
+            Alert.alert(
+              TEXTS.ERROR,
+              'No se pudo registrar el dispositivo para notificaciones push. Asegúrate de tener conexión a internet.',
+              [{ text: TEXTS.OK }]
+            );
+          }
+        } else {
+          setPushNotificationsEnabled(false);
+          Alert.alert(
+            TEXTS.PERMISSIONS_NEEDED,
+            TEXTS.PERMISSIONS_MESSAGE,
+            [{ text: TEXTS.OK }]
+          );
+        }
+      } else {
+        // Deshabilitar (el token se mantiene pero no se usará)
+        setPushNotificationsEnabled(false);
+        Alert.alert(
+          'Notificaciones deshabilitadas',
+          'Las notificaciones push han sido deshabilitadas. No recibirás alertas sobre crisis.',
+          [{ text: TEXTS.OK }]
+        );
+      }
+    } catch (error) {
+      console.error('Error configurando push notifications:', error);
+      Alert.alert(TEXTS.ERROR, 'Error configurando notificaciones push');
+    }
+  };
 
   const configureNotifications = async () => {
     await Notifications.setNotificationHandler({
@@ -529,6 +598,77 @@ const SettingsScreen = () => {
               <Text style={styles.saveButtonText}>{TEXTS.SAVE_PREFERENCES}</Text>
             </TouchableOpacity>
           </>
+        )}
+
+        {/* Notificaciones Push */}
+        <View style={styles.item}>
+          <MaterialCommunityIcons name="bell-ring" size={ICON_SIZE} color={COLORS.PRIMARY} />
+          <View style={styles.itemTextContainer}>
+            <Text style={styles.itemText}>Notificaciones Push</Text>
+            <Text style={styles.itemSubtext}>
+              Alertas sobre crisis y seguimientos
+            </Text>
+          </View>
+          <Switch
+            value={pushNotificationsEnabled}
+            onValueChange={handleTogglePushNotifications}
+            thumbColor={pushNotificationsEnabled ? COLORS.PRIMARY : COLORS.SWITCH_DISABLED}
+            accessibilityLabel="Activar o desactivar notificaciones push"
+          />
+        </View>
+
+        {pushTokenStatus && (
+          <View style={styles.statusContainer}>
+            <Text style={styles.statusText}>
+              Estado: {pushTokenStatus === 'registered' ? '✅ Registrado' : pushTokenStatus === 'not_registered' ? '⚠️ No registrado' : '❌ Error'}
+            </Text>
+          </View>
+        )}
+
+        {/* Botones de prueba (solo en desarrollo) */}
+        {__DEV__ && pushNotificationsEnabled && (
+          <View style={styles.testButtonsContainer}>
+            <Text style={styles.testSectionTitle}>Pruebas (Solo Desarrollo)</Text>
+            <TouchableOpacity
+              style={styles.testButton}
+              onPress={async () => {
+                try {
+                  await api.post(ENDPOINTS.TEST_NOTIFICATION_WARNING);
+                  Alert.alert('Éxito', 'Notificación WARNING de prueba enviada');
+                } catch (error) {
+                  Alert.alert('Error', error.message || 'Error enviando notificación de prueba');
+                }
+              }}
+            >
+              <Text style={styles.testButtonText}>Probar WARNING</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.testButton}
+              onPress={async () => {
+                try {
+                  await api.post(ENDPOINTS.TEST_NOTIFICATION_MEDIUM);
+                  Alert.alert('Éxito', 'Notificación MEDIUM de prueba enviada');
+                } catch (error) {
+                  Alert.alert('Error', error.message || 'Error enviando notificación de prueba');
+                }
+              }}
+            >
+              <Text style={styles.testButtonText}>Probar MEDIUM</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.testButton}
+              onPress={async () => {
+                try {
+                  await api.post(ENDPOINTS.TEST_NOTIFICATION_FOLLOWUP);
+                  Alert.alert('Éxito', 'Notificación de seguimiento de prueba enviada');
+                } catch (error) {
+                  Alert.alert('Error', error.message || 'Error enviando notificación de prueba');
+                }
+              }}
+            >
+              <Text style={styles.testButtonText}>Probar Seguimiento</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         <View style={styles.item}>
@@ -935,6 +1075,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.WHITE,
   },
+  itemTextContainer: {
+    flex: 1,
+    marginLeft: 16,
+  },
   itemSubtext: {
     fontSize: 12,
     color: COLORS.ACCENT,
@@ -1114,6 +1258,45 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginLeft: 8,
+  },
+  statusContainer: {
+    backgroundColor: 'rgba(163, 184, 232, 0.1)',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+    marginBottom: 16,
+    marginLeft: 56, // Alinear con el contenido del item
+  },
+  statusText: {
+    color: COLORS.ACCENT,
+    fontSize: 12,
+    textAlign: 'left',
+  },
+  testButtonsContainer: {
+    backgroundColor: 'rgba(163, 184, 232, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+    marginBottom: 16,
+    marginLeft: 56,
+  },
+  testSectionTitle: {
+    color: COLORS.ACCENT,
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  testButton: {
+    backgroundColor: COLORS.PRIMARY,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+    alignItems: 'center',
+  },
+  testButtonText: {
+    color: COLORS.WHITE,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 

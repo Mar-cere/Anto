@@ -74,6 +74,13 @@ export const ENDPOINTS = {
   CRISIS_ALERTS_STATS: '/api/crisis/alerts-stats',
   CRISIS_FOLLOWUP_STATS: '/api/crisis/followup-stats',
   CRISIS_EMOTION_DISTRIBUTION: '/api/crisis/emotion-distribution',
+  
+  // Push Notifications
+  PUSH_TOKEN: '/api/notifications/push-token',
+  // Testing (solo desarrollo)
+  TEST_NOTIFICATION_WARNING: '/api/notifications/test/crisis-warning',
+  TEST_NOTIFICATION_MEDIUM: '/api/notifications/test/crisis-medium',
+  TEST_NOTIFICATION_FOLLOWUP: '/api/notifications/test/followup',
 };
 
 const makeRequest = (url, options) => {

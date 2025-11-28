@@ -40,6 +40,7 @@ import { DASH } from '../constants/translations';
 import { BORDERS, OPACITIES, SPACING, STATUS_BAR } from '../constants/ui';
 import { colors } from '../styles/globalStyles';
 import { getGreetingByHourAndDayAndName } from '../utils/greetings';
+import { registerForPushNotifications } from '../services/pushNotificationService';
 
 // Constantes de AsyncStorage
 const STORAGE_KEYS = {
@@ -193,6 +194,14 @@ const DashScreen = () => {
       // Verificar contactos de emergencia solo una vez al cargar inicialmente
       if (!hasCheckedEmergencyContacts) {
         checkEmergencyContacts(userData);
+      }
+
+      // Registrar token push para notificaciones
+      try {
+        await registerForPushNotifications();
+      } catch (error) {
+        console.error('Error registrando notificaciones push:', error);
+        // No bloquear la carga si falla
       }
 
       setLoading(false);

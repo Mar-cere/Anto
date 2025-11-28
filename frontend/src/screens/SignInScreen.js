@@ -300,6 +300,15 @@ const SignInScreen = () => {
           formData.email
         );
 
+        // Registrar token push para notificaciones (no bloquear si falla)
+        try {
+          const { registerForPushNotifications } = await import('../services/pushNotificationService');
+          await registerForPushNotifications();
+        } catch (error) {
+          console.error('Error registrando notificaciones push:', error);
+          // No bloquear el login si falla
+        }
+
         // Navegamos al Dashboard y limpiamos el stack de navegación
         navigation.reset({
           index: 0,

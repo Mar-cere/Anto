@@ -9,6 +9,7 @@ import {
   Message,
   TherapeuticRecord
 } from '../models/index.js';
+import User from '../models/User.js';
 import {
   contextAnalyzer,
   emotionalAnalyzer,
@@ -21,6 +22,7 @@ import { evaluateSuicideRisk } from '../constants/crisis.js';
 import emergencyAlertService from '../services/emergencyAlertService.js';
 import crisisTrendAnalyzer from '../services/crisisTrendAnalyzer.js';
 import crisisFollowUpService from '../services/crisisFollowUpService.js';
+import pushNotificationService from '../services/pushNotificationService.js';
 import CrisisEvent from '../models/CrisisEvent.js';
 
 const router = express.Router();
@@ -288,6 +290,42 @@ router.post('/messages', protect, async (req, res) => {
             }
           } else if (riskLevel === 'WARNING') {
             logs.push(`[${Date.now() - startTime}ms] ⚠️ Nivel WARNING detectado - Intervención preventiva activada`);
+            
+            // Enviar notificación push al usuario para nivel WARNING
+            try {
+              const user = await User.findById(req.user._id).select('+pushToken');
+              if (user && user.pushToken) {
+                await pushNotificationService.sendCrisisWarning(
+                  user.pushToken,
+                  {
+                    emotion: emotionalAnalysis?.mainEmotion,
+                    intensity: emotionalAnalysis?.intensity
+                  }
+                );
+                logs.push(`[${Date.now() - startTime}ms] 📱 Notificación push WARNING enviada al usuario`);
+              }
+            } catch (error) {
+              console.error('[ChatRoutes] Error enviando notificación push WARNING:', error);
+              // No bloquear el flujo principal
+            }
+          }
+
+          // Enviar notificación push al usuario para niveles MEDIUM y HIGH
+          if (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') {
+            try {
+              const user = await User.findById(req.user._id).select('+pushToken');
+              if (user && user.pushToken) {
+                if (riskLevel === 'MEDIUM') {
+                  await pushNotificationService.sendCrisisMedium(user.pushToken);
+                } else if (riskLevel === 'HIGH') {
+                  await pushNotificationService.sendCrisisHigh(user.pushToken);
+                }
+                logs.push(`[${Date.now() - startTime}ms] 📱 Notificación push ${riskLevel} enviada al usuario`);
+              }
+            } catch (error) {
+              console.error('[ChatRoutes] Error enviando notificación push:', error);
+              // No bloquear el flujo principal
+            }
           }
 
           // Registrar evento de crisis para seguimiento
