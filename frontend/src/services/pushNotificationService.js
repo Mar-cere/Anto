@@ -116,11 +116,14 @@ export const registerForPushNotifications = async () => {
         undefined;
       
       if (!projectId || projectId === 'YOUR_PROJECT_ID_HERE') {
-        console.log('[PushNotifications] ⚠️ Project ID no configurado. Las notificaciones push pueden no funcionar.');
+        console.log('[PushNotifications] ⚠️ Project ID no configurado.');
+        console.log('[PushNotifications] 💡 Las notificaciones push remotas NO funcionarán sin Project ID.');
         console.log('[PushNotifications] 💡 Para configurar:');
-        console.log('[PushNotifications]    1. Obtén tu Project ID desde: https://expo.dev/accounts/[tu-cuenta]/projects/[tu-proyecto]/settings');
-        console.log('[PushNotifications]    2. Agrégalo en app.json en "extra.eas.projectId"');
-        console.log('[PushNotifications]    3. O como variable de entorno EXPO_PUBLIC_PROJECT_ID');
+        console.log('[PushNotifications]    1. Ejecuta: npx eas-cli init');
+        console.log('[PushNotifications]    2. O ve a: https://expo.dev/accounts/[TU_USUARIO]/projects');
+        console.log('[PushNotifications]    3. Crea o abre el proyecto "anto"');
+        console.log('[PushNotifications]    4. El Project ID se agregará automáticamente a app.json');
+        console.log('[PushNotifications] 💡 Mientras tanto, puedes probar con notificaciones locales desde Settings.');
         return null;
       }
       

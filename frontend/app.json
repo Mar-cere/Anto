@@ -8,11 +8,6 @@
     "scheme": "anto",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "extra": {
-      "eas": {
-        "projectId": "YOUR_PROJECT_ID_HERE"
-      }
-    },
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -38,6 +33,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "37ba58c5-a788-4f5e-a36f-6b6bb5eb7b99"
+      }
+    },
+    "owner": "marceloull"
   }
 }
