@@ -11,6 +11,8 @@ import Conversation from './Conversation.js';
 import CrisisEvent from './CrisisEvent.js';
 import EmergencyAlert from './EmergencyAlert.js';
 import TherapeuticTechniqueUsage from './TherapeuticTechniqueUsage.js';
+import Transaction from './Transaction.js';
+import Subscription from './Subscription.js';
 
 // Validar que todos los modelos estén correctamente exportados
 const models = {
@@ -27,6 +29,8 @@ const models = {
   CrisisEvent,
   EmergencyAlert,
   TherapeuticTechniqueUsage,
+  Transaction,
+  Subscription,
 };
 
 // Verificar que cada modelo sea válido
@@ -50,6 +54,8 @@ export {
   CrisisEvent,
   EmergencyAlert,
   TherapeuticTechniqueUsage,
+  Transaction,
+  Subscription,
 };
 
 export default models; 
