@@ -30,6 +30,7 @@ import crisisRoutes from './routes/crisisRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import testNotificationRoutes from './routes/testNotificationRoutes.js';
 import metricsRoutes from './routes/metricsRoutes.js';
+import therapeuticTechniquesRoutes from './routes/therapeuticTechniquesRoutes.js';
 
 // Constantes de configuración
 const APP_VERSION = '1.2.0';
@@ -269,6 +270,8 @@ app.use('/api/crisis', crisisRoutes);
 app.use('/api/cloudinary', cloudinaryRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/metrics', metricsRoutes);
+app.use('/api/therapeutic-techniques', therapeuticTechniquesRoutes);
+console.log('✅ Ruta /api/therapeutic-techniques registrada');
 // Rutas de testing (solo en desarrollo)
 if (process.env.NODE_ENV !== 'production') {
   app.use('/api/notifications', testNotificationRoutes);

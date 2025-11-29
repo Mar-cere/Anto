@@ -112,6 +112,8 @@ const TEXTS = {
   CRISIS_DASHBOARD_DESC: 'Ver métricas y estadísticas de crisis detectadas',
   ALERTS_HISTORY: 'Historial de Alertas',
   ALERTS_HISTORY_DESC: 'Ver historial, estadísticas y patrones de alertas enviadas',
+  THERAPEUTIC_TECHNIQUES: 'Técnicas Terapéuticas',
+  THERAPEUTIC_TECHNIQUES_DESC: 'Explora técnicas basadas en evidencia para tu bienestar',
 };
 
 // Constantes de idiomas
@@ -900,6 +902,22 @@ const SettingsScreen = () => {
           <View style={styles.itemContent}>
             <Text style={styles.itemText}>{TEXTS.ALERTS_HISTORY}</Text>
             <Text style={styles.itemSubtext}>{TEXTS.ALERTS_HISTORY_DESC}</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={COLORS.ACCENT} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.item}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate('TherapeuticTechniques');
+          }}
+          accessibilityLabel={TEXTS.THERAPEUTIC_TECHNIQUES}
+        >
+          <MaterialCommunityIcons name="book-open-variant" size={ICON_SIZE} color={COLORS.PRIMARY} />
+          <View style={styles.itemContent}>
+            <Text style={styles.itemText}>{TEXTS.THERAPEUTIC_TECHNIQUES}</Text>
+            <Text style={styles.itemSubtext}>{TEXTS.THERAPEUTIC_TECHNIQUES_DESC}</Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={24} color={COLORS.ACCENT} />
         </TouchableOpacity>

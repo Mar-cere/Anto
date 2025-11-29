@@ -92,6 +92,12 @@ export const ENDPOINTS = {
   METRICS_HEALTH: '/api/metrics/health',
   METRICS_ME: '/api/metrics/me',
   METRICS_BY_TYPE: (type) => `/api/metrics/type/${type}`,
+  
+  // Therapeutic Techniques
+  THERAPEUTIC_TECHNIQUES: '/api/therapeutic-techniques',
+  THERAPEUTIC_TECHNIQUES_BY_EMOTION: (emotion) => `/api/therapeutic-techniques/emotion/${emotion}`,
+  THERAPEUTIC_TECHNIQUES_USE: '/api/therapeutic-techniques/use',
+  THERAPEUTIC_TECHNIQUES_HISTORY: '/api/therapeutic-techniques/history',
 };
 
 const makeRequest = (url, options) => {
