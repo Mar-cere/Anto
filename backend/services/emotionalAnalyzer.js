@@ -46,7 +46,7 @@ class EmotionalAnalyzer {
     // Patrones de detección emocional
     this.emotionPatterns = {
       tristeza: {
-        patterns: /(?:triste(?:za)?|deprimi(?:do|da|r)|sin energía|desánimo|desmotiva(?:do|da|r)|solo|soledad|melancolía|nostalgia|abatid(?:o|a)|desesperanzad(?:o|a)|desconsolad(?:o|a)|llor(?:o|ar|ando)|llanto|vacío|vacío interior|sin ganas|sin ánimo|desgana|apático|apatía|hundid(?:o|a)|caíd(?:o|a)|desilusionad(?:o|a)|desencantad(?:o|a)|no.*tengo.*ganas|no.*me.*motiva|me.*siento.*mal(?!.*genial)|no.*me.*siento.*bien|estoy.*mal(?!.*genial)|me.*va.*mal)/i,
+        patterns: /(?:triste(?:za)?|deprimi(?:do|da|r)|sin energía|desánimo|desmotiva(?:do|da|r)|solo|soledad|melancolía|nostalgia|abatid(?:o|a)|desesperanzad(?:o|a)|desconsolad(?:o|a)|llor(?:o|ar|ando)|llanto|vacío|vacío interior|sin ganas|sin ánimo|desgana|apático|apatía|hundid(?:o|a)|caíd(?:o|a)|desilusionad(?:o|a)|desencantad(?:o|a)|no.*tengo.*ganas|no.*me.*motiva|me.*siento.*mal(?!.*genial)|no.*me.*siento.*bien|estoy.*mal(?!.*genial)|me.*va.*mal|me.*siento.*peor|estoy.*peor|peor.*que|me.*siento.*peor.*que|estoy.*peor.*que|peor.*que.*antes|estoy.*peor.*que.*antes|me.*siento.*peor.*que.*antes)/i,
         intensity: 7,
         category: 'negative'
       },
@@ -319,7 +319,10 @@ class EmotionalAnalyzer {
     // Priorizar emociones positivas primero, PERO solo si no hay prefijo negativo
     // IMPORTANTE: Priorizar miedo antes que ansiedad para evitar confusión
     // IMPORTANTE: Priorizar neutral para mensajes simples como "estoy normal"
-    const isSimpleMessage = /^(estoy|me siento|soy|está|están)\s+\w+$/i.test(content.trim());
+    // IMPORTANTE: NO considerar mensajes simples si tienen comparaciones temporales negativas
+    const hasTemporalComparison = this.temporalComparisonPattern.test(content);
+    const hasNegativeComparison = /(?:peor|más.*mal|menos.*bien)/i.test(content);
+    const isSimpleMessage = /^(estoy|me siento|soy|está|están)\s+\w+$/i.test(content.trim()) && !hasNegativeComparison;
     const emotionPriority = isSimpleMessage 
       ? ['neutral', 'alegria', 'esperanza', 'miedo', 'tristeza', 'ansiedad', 'enojo', 'verguenza', 'culpa']
       : ['alegria', 'esperanza', 'miedo', 'tristeza', 'ansiedad', 'enojo', 'verguenza', 'culpa', 'neutral'];
