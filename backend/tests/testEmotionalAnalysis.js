@@ -279,85 +279,188 @@ const testCases = [
     input: 'Me obsesiono con cosas y no puedo pensar en nada más',
     expected: { emotion: ['ansiedad', 'neutral'], category: ['negative', 'neutral'], minIntensity: 5, maxIntensity: 8 }
   },
+  
+  // ========== IDEACIÓN SUICIDA EXPLÍCITA ==========
   {
-    name: '51. Neurodivergencia - Dificultad con cambios',
-    input: 'Los cambios en mi rutina me generan mucha ansiedad',
-    expected: { emotion: 'ansiedad', category: 'negative', minIntensity: 7, maxIntensity: 9 }
+    name: '51. Ideación suicida - Pensamientos explícitos',
+    input: 'A veces pienso que sería mejor si no existiera',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 9, maxIntensity: 10 }
   },
   {
-    name: '52. Neurodivergencia - Meltdown',
-    input: 'A veces tengo crisis donde no puedo controlar mis emociones',
+    name: '52. Ideación suicida - Planificación',
+    input: 'He pensado en cómo terminar con todo esto',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 10, maxIntensity: 10 }
+  },
+  {
+    name: '53. Ideación suicida - Despedida',
+    input: 'Nadie me extrañaría si me fuera',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 9, maxIntensity: 10 }
+  },
+  
+  // ========== DESESPERANZA Y DESESPERACIÓN ==========
+  {
+    name: '54. Desesperanza - Sin salida',
+    input: 'No veo ninguna salida a esta situación',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 8, maxIntensity: 10 }
+  },
+  {
+    name: '55. Desesperanza - Sin futuro',
+    input: 'Mi futuro se ve completamente negro',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 8, maxIntensity: 10 }
+  },
+  {
+    name: '56. Desesperación - Ya no puedo más',
+    input: 'Ya no puedo más, estoy al límite',
+    expected: { emotion: ['tristeza', 'ansiedad'], category: 'negative', minIntensity: 9, maxIntensity: 10 }
+  },
+  
+  // ========== EXPRESIONES SARCÁSTICAS/IRÓNICAS ==========
+  {
+    name: '57. Sarcasmo - Positivo falso',
+    input: '¡Qué genial! Otro problema más',
+    expected: { emotion: ['enojo', 'tristeza'], category: 'negative', minIntensity: 6, maxIntensity: 8 }
+  },
+  {
+    name: '58. Ironía - Negación sarcástica',
+    input: 'Claro, porque mi vida no puede ser peor',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 7, maxIntensity: 9 }
+  },
+  
+  // ========== BURNOUT Y AGOTAMIENTO ==========
+  {
+    name: '59. Burnout - Agotamiento emocional',
+    input: 'Estoy completamente agotado, no puedo más',
+    expected: { emotion: ['tristeza', 'ansiedad'], category: 'negative', minIntensity: 8, maxIntensity: 10 }
+  },
+  {
+    name: '60. Burnout - Sin energía',
+    input: 'Me siento vacío, sin energía para nada',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 7, maxIntensity: 9 }
+  },
+  
+  // ========== SOLEDAD Y AISLAMIENTO ==========
+  {
+    name: '61. Soledad - Aislamiento social',
+    input: 'Me siento completamente solo, nadie me entiende',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 8, maxIntensity: 10 }
+  },
+  {
+    name: '62. Soledad - Desconexión',
+    input: 'Me siento desconectado de todos',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 7, maxIntensity: 9 }
+  },
+  
+  // ========== EXPRESIONES CON EMOJIS MIXTOS/CONTRADICTORIOS ==========
+  {
+    name: '63. Emojis mixtos - Contradicción',
+    input: 'Estoy bien 😊😢',
+    expected: { emotion: ['tristeza', 'alegria'], category: ['negative', 'positive'], minIntensity: 5, maxIntensity: 8 }
+  },
+  {
+    name: '64. Emojis negativos con texto positivo',
+    input: 'Todo está perfecto 😢',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 6, maxIntensity: 8 }
+  },
+  
+  // ========== NEGACIÓN COMPLEJA ==========
+  {
+    name: '65. Negación compleja - Doble negación',
+    input: 'No es que no esté triste, pero...',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 5, maxIntensity: 7 }
+  },
+  {
+    name: '66. Negación compleja - Minimización',
+    input: 'No es para tanto, solo estoy un poco triste',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 5, maxIntensity: 7 }
+  },
+  
+  // ========== EXPRESIONES TEMPORALES COMPLEJAS ==========
+  {
+    name: '67. Temporal complejo - Mejora gradual',
+    input: 'Me siento mejor que hace una semana pero peor que ayer',
+    expected: { emotion: ['alegria', 'tristeza'], category: ['positive', 'negative'], minIntensity: 5, maxIntensity: 7 }
+  },
+  {
+    name: '68. Temporal complejo - Ciclo',
+    input: 'Algunos días estoy bien, otros días muy mal',
+    expected: { emotion: ['tristeza', 'neutral'], category: ['negative', 'neutral'], minIntensity: 5, maxIntensity: 8 }
+  },
+  
+  // ========== CULPA Y VERGÜENZA ESPECÍFICAS ==========
+  {
+    name: '69. Culpa - Autoculpa',
+    input: 'Todo es mi culpa, siempre arruino todo',
+    expected: { emotion: 'culpa', category: 'negative', minIntensity: 8, maxIntensity: 10 }
+  },
+  {
+    name: '70. Vergüenza - Exposición social',
+    input: 'Me da mucha vergüenza lo que pasó ayer',
+    expected: { emotion: 'verguenza', category: 'negative', minIntensity: 7, maxIntensity: 9 }
+  },
+  
+  // ========== MIEDO ESPECÍFICO ==========
+  {
+    name: '71. Miedo - Fobia específica',
+    input: 'Tengo mucho miedo de salir de casa',
+    expected: { emotion: 'miedo', category: 'negative', minIntensity: 7, maxIntensity: 9 }
+  },
+  {
+    name: '72. Miedo - Ansiedad anticipatoria',
+    input: 'Me aterra pensar en lo que puede pasar mañana',
+    expected: { emotion: ['miedo', 'ansiedad'], category: 'negative', minIntensity: 8, maxIntensity: 10 }
+  },
+  
+  // ========== EXPRESIONES COLOQUIALES/REGIONALES ==========
+  {
+    name: '73. Coloquial - Expresión regional positiva',
+    input: 'Estoy de lo más bien',
+    expected: { emotion: 'alegria', category: 'positive', minIntensity: 6, maxIntensity: 8 }
+  },
+  {
+    name: '74. Coloquial - Expresión regional negativa',
+    input: 'Estoy hecho polvo',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 7, maxIntensity: 9 }
+  },
+  
+  // ========== CASOS LÍMITE Y AMBIGUOS ==========
+  {
+    name: '75. Ambiguo - Mensaje muy corto',
+    input: 'Ok',
+    expected: { emotion: 'neutral', category: 'neutral', minIntensity: 3, maxIntensity: 5 }
+  },
+  {
+    name: '76. Ambiguo - Sin contexto emocional',
+    input: 'Hoy es martes',
+    expected: { emotion: 'neutral', category: 'neutral', minIntensity: 3, maxIntensity: 5 }
+  },
+  {
+    name: '77. Ambiguo - Pregunta simple',
+    input: '¿Cómo estás?',
+    expected: { emotion: 'neutral', category: 'neutral', minIntensity: 3, maxIntensity: 5 }
+  },
+  
+  // ========== CRISIS MÁS ESPECÍFICAS ==========
+  {
+    name: '78. Crisis - Ataque de ansiedad',
+    input: 'Estoy teniendo un ataque de ansiedad, no puedo calmarme',
+    expected: { emotion: 'ansiedad', category: 'negative', minIntensity: 9, maxIntensity: 10 }
+  },
+  {
+    name: '79. Crisis - Disociación',
+    input: 'Siento que no estoy en mi cuerpo, como si fuera un sueño',
     expected: { emotion: 'ansiedad', category: 'negative', minIntensity: 8, maxIntensity: 10 }
   },
+  
+  // ========== EXPRESIONES DE INTENSIDAD EXTREMA ==========
   {
-    name: '53. Neurodivergencia - Dificultad con contacto físico',
-    input: 'No me gusta que me toquen, me siento incómodo',
-    expected: { emotion: ['ansiedad', 'verguenza'], category: 'negative', minIntensity: 5, maxIntensity: 8 }
+    name: '80. Intensidad extrema - Positiva',
+    input: 'ESTOY EXTREMADAMENTE FELIZ!!!',
+    expected: { emotion: 'alegria', category: 'positive', minIntensity: 10, maxIntensity: 10 }
   },
   {
-    name: '54. Neurodivergencia - Dificultad con comunicación',
-    input: 'Me cuesta expresar lo que siento, las palabras no salen',
-    expected: { emotion: ['ansiedad', 'frustración'], category: 'negative', minIntensity: 6, maxIntensity: 8 }
-  },
-  {
-    name: '55. Neurodivergencia - Dificultad con multitarea',
-    input: 'No puedo hacer varias cosas a la vez, me siento abrumado',
-    expected: { emotion: 'ansiedad', category: 'negative', minIntensity: 6, maxIntensity: 8 }
-  },
-  {
-    name: '56. Neurodivergencia - Dificultad con ruidos',
-    input: 'Los ruidos de fondo me distraen mucho, no puedo concentrarme',
-    expected: { emotion: ['ansiedad', 'enojo'], category: 'negative', minIntensity: 6, maxIntensity: 8 }
-  },
-  {
-    name: '57. Neurodivergencia - Dificultad con luces',
-    input: 'Las luces brillantes me molestan mucho, me dan dolor de cabeza',
-    expected: { emotion: ['ansiedad', 'enojo'], category: 'negative', minIntensity: 5, maxIntensity: 8 }
-  },
-  {
-    name: '58. Neurodivergencia - Dificultad con texturas',
-    input: 'Algunas texturas me dan mucha ansiedad, no puedo tocarlas',
-    expected: { emotion: 'ansiedad', category: 'negative', minIntensity: 6, maxIntensity: 8 }
-  },
-  {
-    name: '59. Neurodivergencia - Dificultad con rutinas',
-    input: 'Necesito seguir mis rutinas exactamente igual, si no me siento perdido',
-    expected: { emotion: 'ansiedad', category: 'negative', minIntensity: 6, maxIntensity: 8 }
-  },
-  {
-    name: '60. Neurodivergencia - Dificultad con transiciones',
-    input: 'Cambiar de una actividad a otra me cuesta mucho, me siento bloqueado',
-    expected: { emotion: 'ansiedad', category: 'negative', minIntensity: 6, maxIntensity: 8 }
-  },
-  {
-    name: '61. Neurodivergencia - Dificultad con contacto visual',
-    input: 'No puedo mantener contacto visual, me siento incómodo',
-    expected: { emotion: ['ansiedad', 'verguenza'], category: 'negative', minIntensity: 5, maxIntensity: 7 }
-  },
-  {
-    name: '62. Neurodivergencia - Dificultad con interpretación literal',
-    input: 'A veces tomo todo literalmente y no entiendo las bromas',
-    expected: { emotion: ['ansiedad', 'verguenza'], category: 'negative', minIntensity: 5, maxIntensity: 7 }
-  },
-  {
-    name: '63. Neurodivergencia - Dificultad con emociones propias',
-    input: 'No sé qué siento, todas las emociones se mezclan',
-    expected: { emotion: ['ansiedad', 'tristeza'], category: 'negative', minIntensity: 6, maxIntensity: 8 }
-  },
-  {
-    name: '64. Neurodivergencia - Dificultad con emociones ajenas',
-    input: 'No entiendo cómo se sienten los demás, me siento desconectado',
-    expected: { emotion: ['tristeza', 'ansiedad'], category: 'negative', minIntensity: 6, maxIntensity: 8 }
-  },
-  {
-    name: '65. Neurodivergencia - Burnout',
-    input: 'Me siento completamente agotado, como si mi cerebro se hubiera apagado',
-    expected: { emotion: ['tristeza', 'ansiedad'], category: 'negative', minIntensity: 8, maxIntensity: 10 }
-  },
-  {
-    name: '66. Neurodivergencia - Enmascaramiento',
-    input: 'Tengo que fingir ser normal todo el tiempo y estoy agotado',
-    expected: { emotion: ['tristeza', 'ansiedad'], category: 'negative', minIntensity: 8, maxIntensity: 10 }
+    name: '81. Intensidad extrema - Negativa',
+    input: 'ESTOY COMPLETAMENTE DESTROZADO!!!',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 10, maxIntensity: 10 }
   }
 ];
 

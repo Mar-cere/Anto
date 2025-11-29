@@ -87,6 +87,13 @@ const userSchema = new mongoose.Schema({
         enum: ['public', 'private', 'friends'],
         default: 'private'
       }
+    },
+    // NUEVO: Estilo de respuesta preferido
+    responseStyle: {
+      type: String,
+      enum: ['brief', 'balanced', 'deep'],
+      default: 'balanced',
+      description: 'Estilo de respuesta: brief (breve y directo), balanced (equilibrado), deep (profundo y reflexivo)'
     }
   },
   // Estadísticas del usuario

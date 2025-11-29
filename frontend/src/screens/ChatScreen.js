@@ -30,6 +30,7 @@ import {
   View
 } from 'react-native';
 import ParticleBackground from '../components/ParticleBackground';
+import ActionSuggestionCard from '../components/ActionSuggestionCard';
 import chatService from '../services/chatService';
 import { colors } from '../styles/globalStyles';
 
@@ -322,7 +323,23 @@ const ChatScreen = () => {
         // Actualizar con los mensajes reales del servidor
         setMessages(prev => {
           const filtered = prev.filter(msg => msg.id !== tempUserMessage.id);
-          return [...filtered, response.userMessage, response.assistantMessage];
+          const newMessages = [...filtered, response.userMessage, response.assistantMessage];
+          
+          // NUEVO: Agregar sugerencias de acciones si existen
+          if (response.suggestions && response.suggestions.length > 0) {
+            const suggestionsMessage = {
+              id: `suggestions-${Date.now()}`,
+              role: 'suggestions',
+              type: 'suggestions',
+              suggestions: response.suggestions,
+              metadata: {
+                timestamp: new Date().toISOString()
+              }
+            };
+            newMessages.push(suggestionsMessage);
+          }
+          
+          return newMessages;
         });
         scrollToBottom(true);
       }
@@ -390,6 +407,30 @@ const ChatScreen = () => {
     const message = item.userMessage || item.assistantMessage || item;
     const isUser = message.role === MESSAGE_ROLES.USER;
     
+    // NUEVO: Renderizar sugerencias de acciones
+    if (message.type === 'suggestions' && message.suggestions) {
+      return (
+        <View style={styles.suggestionsContainer}>
+          <Text style={styles.suggestionsTitle}>💡 Sugerencias para ti:</Text>
+          {message.suggestions.map((suggestion, index) => (
+            <ActionSuggestionCard
+              key={suggestion.id || index}
+              suggestion={suggestion}
+              onPress={(suggestion) => {
+                // Navegar a la pantalla correspondiente o enviar mensaje
+                if (suggestion.screen) {
+                  navigation.navigate(suggestion.screen);
+                } else {
+                  // Si no hay pantalla específica, enviar un mensaje sobre la sugerencia
+                  setInputText(`Quiero probar: ${suggestion.label}`);
+                }
+              }}
+            />
+          ))}
+        </View>
+      );
+    }
+    
     return (
       <View style={[
         styles.messageContainer,
@@ -416,7 +457,7 @@ const ChatScreen = () => {
         </View>
       </View>
     );
-  }, []);
+  }, [navigation]);
 
   // Manejar scroll
   const handleScroll = useCallback((event) => {
@@ -864,6 +905,16 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.ERROR_BUBBLE_BACKGROUND,
     borderColor: COLORS.ERROR_BUBBLE_BORDER,
     borderWidth: MODAL_BUTTON_BORDER_WIDTH,
+  },
+  suggestionsContainer: {
+    marginBottom: 16,
+    paddingHorizontal: 14,
+  },
+  suggestionsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.accent,
+    marginBottom: 8,
   },
   errorText: {
     color: COLORS.ERROR,

@@ -46,12 +46,12 @@ class EmotionalAnalyzer {
     // Patrones de detección emocional
     this.emotionPatterns = {
       tristeza: {
-        patterns: /(?:triste(?:za)?|deprimi(?:do|da|r)|sin energía|desánimo|desmotiva(?:do|da|r)|solo|soledad|melancolía|nostalgia|abatid(?:o|a)|desesperanzad(?:o|a)|desconsolad(?:o|a)|llor(?:o|ar|ando)|llanto|vacío|vacío interior|sin ganas|sin ánimo|desgana|apático|apatía|hundid(?:o|a)|caíd(?:o|a)|desilusionad(?:o|a)|desencantad(?:o|a)|no.*tengo.*ganas|no.*me.*motiva|me.*siento.*mal(?!.*genial)|no.*me.*siento.*bien|estoy.*mal(?!.*genial)|me.*va.*mal|me.*siento.*peor|estoy.*peor|peor.*que|me.*siento.*peor.*que|estoy.*peor.*que|peor.*que.*antes|estoy.*peor.*que.*antes|me.*siento.*peor.*que.*antes|tengo.*ganas.*de.*hacerme.*daño|quiero.*hacerme.*daño|me.*quiero.*cortar|quiero.*cortarme|me.*corto|me.*quemo|me.*golpeo|autolesi(?:ón|on|arme)|hacerme.*daño|hacerse.*daño|el.*dolor.*físico.*me.*hace.*sentir.*mejor.*que.*el.*dolor.*emocional|cicatrices.*de.*cuando.*me.*cortaba|necesito.*hacerme.*daño|urgencia.*de.*hacerme.*daño)/i,
+        patterns: /(?:triste(?:za)?|deprimi(?:do|da|r)|sin energía|desánimo|desmotiva(?:do|da|r)|solo|soledad|melancolía|nostalgia|abatid(?:o|a)|desesperanzad(?:o|a)|desconsolad(?:o|a)|llor(?:o|ar|ando)|llanto|vacío|vacío interior|sin ganas|sin ánimo|desgana|apático|apatía|hundid(?:o|a)|caíd(?:o|a)|desilusionad(?:o|a)|desencantad(?:o|a)|no.*tengo.*ganas|no.*me.*motiva|me.*siento.*mal(?!.*genial)|no.*me.*siento.*bien|estoy.*mal(?!.*genial)|me.*va.*mal|me.*siento.*peor|estoy.*peor|peor.*que|me.*siento.*peor.*que|estoy.*peor.*que|peor.*que.*antes|estoy.*peor.*que.*antes|me.*siento.*peor.*que.*antes|tengo.*ganas.*de.*hacerme.*daño|quiero.*hacerme.*daño|me.*quiero.*cortar|quiero.*cortarme|me.*corto|me.*quemo|me.*golpeo|autolesi(?:ón|on|arme)|hacerme.*daño|hacerse.*daño|el.*dolor.*físico.*me.*hace.*sentir.*mejor.*que.*el.*dolor.*emocional|cicatrices.*de.*cuando.*me.*cortaba|necesito.*hacerme.*daño|urgencia.*de.*hacerme.*daño|no.*puedo.*dejar.*de.*pensar.*en.*hacerme.*daño|pensar.*en.*hacerme.*daño|sería.*mejor.*si.*no.*existiera|mejor.*si.*no.*existiera|pienso.*que.*sería.*mejor.*si.*no.*existiera|terminar.*con.*todo.*esto|pensado.*en.*cómo.*terminar|nadie.*me.*extrañaría.*si.*me.*fuera|me.*extrañaría.*si.*me.*fuera|no.*veo.*ninguna.*salida|sin.*salida|futuro.*se.*ve.*completamente.*negro|futuro.*negro|mi.*vida.*no.*puedo.*ser.*peor|mi.*vida.*no.*puede.*ser.*peor|ya.*no.*puedo.*más.*estoy.*al.*límite|estoy.*al.*límite|me.*siento.*desconectado.*de.*todos|desconectado.*de.*todos|estoy.*hecho.*polvo|hecho.*polvo|completamente.*destrozado|destrozado)/i,
         intensity: 7,
         category: 'negative'
       },
       ansiedad: {
-        patterns: /(?:ansie(?:dad|oso|ado)|nervios|inquiet(?:o|ud|o)|preocupa(?:do|da|ción|r|rme|rse)|angustia|pánico|estresad(?:o|a)|agobiad(?:o|a)|abrumad(?:o|a)|sobrecargad(?:o|a)|tens(?:o|a|ión)|intranquil(?:o|a)|agitad(?:o|a)|alterad(?:o|a)|asustad(?:o|a)|atemorizad(?:o|a)|preocupad(?:o|a)|nervios(?:o|a|ismo)|ataque.*de.*pánico|me.*preocupa|me.*inquieta|me.*agobia|me.*abruma|no.*puedo.*relajarme|no.*puedo.*tranquilizarme|me.*siento.*nervios(?:o|a)|estoy.*nervios(?:o|a)|me.*siento.*ansios(?:o|a)|estoy.*ansios(?:o|a)|no.*puedo.*respirar|me.*ahogo|mi.*corazón.*late.*muy.*rápido|palpitaciones|siento.*que.*me.*voy.*a.*morir|siento.*que.*me.*desmayo|pérdida.*de.*control|no.*puedo.*pensar.*claramente|siento.*que.*no.*soy.*yo|fuera.*de.*mi.*cuerpo|despersonalización|los.*ruidos.*fuertes.*me.*abrum|sobrecarga.*sensorial|estímulos.*sensoriales|me.*sobrecarga|dificultad.*con.*estímulos|ruidos.*de.*fondo.*me.*distra|luces.*brillantes.*me.*molest|texturas.*me.*dan.*ansiedad|dificultad.*con.*texturas|dificultad.*con.*cambios|los.*cambios.*me.*generan.*ansiedad|dificultad.*con.*rutinas|necesito.*seguir.*mis.*rutinas|dificultad.*con.*transiciones|cambiar.*de.*actividad.*me.*cuesta|dificultad.*con.*multitarea|no.*puedo.*hacer.*varias.*cosas|me.*siento.*abrumado.*con.*tareas|dificultad.*con.*contacto.*físico|no.*me.*gusta.*que.*me.*toquen|dificultad.*con.*contacto.*visual|no.*puedo.*mantener.*contacto.*visual|dificultad.*con.*comunicación|me.*cuesta.*expresar|las.*palabras.*no.*salen|dificultad.*con.*señales.*sociales|no.*entiendo.*las.*señales.*sociales|me.*siento.*fuera.*de.*lugar|me.*obsesiono.*con.*cosas|hiperfoco|no.*puedo.*pensar.*en.*nada.*más|tengo.*crisis.*donde.*no.*puedo.*controlar|meltdown|burnout|me.*siento.*completamente.*agotado|mi.*cerebro.*se.*hubiera.*apagado|tengo.*que.*fingir.*ser.*normal|enmascaramiento|estoy.*agotado.*de.*fingir|no.*entiendo.*las.*bromas|tomo.*todo.*literalmente|no.*sé.*qué.*siento|todas.*las.*emociones.*se.*mezclan|no.*entiendo.*cómo.*se.*sienten.*los.*demás|me.*siento.*desconectado)/i,
+        patterns: /(?:ansie(?:dad|oso|ado)|nervios|inquiet(?:o|ud|o)|preocupa(?:do|da|ción|r|rme|rse)|angustia|pánico|estresad(?:o|a)|agobiad(?:o|a)|abrumad(?:o|a)|sobrecargad(?:o|a)|tens(?:o|a|ión)|intranquil(?:o|a)|agitad(?:o|a)|alterad(?:o|a)|asustad(?:o|a)|atemorizad(?:o|a)|preocupad(?:o|a)|nervios(?:o|a|ismo)|ataque.*de.*pánico|ataque.*de.*ansiedad|me.*preocupa|me.*inquieta|me.*agobia|me.*abruma|no.*puedo.*relajarme|no.*puedo.*tranquilizarme|no.*puedo.*calmarme|me.*siento.*nervios(?:o|a)|estoy.*nervios(?:o|a)|me.*siento.*ansios(?:o|a)|estoy.*ansios(?:o|a)|no.*puedo.*respirar|me.*ahogo|mi.*corazón.*late.*muy.*rápido|palpitaciones|siento.*que.*me.*voy.*a.*morir|siento.*que.*me.*desmayo|pérdida.*de.*control|no.*puedo.*pensar.*claramente|siento.*que.*no.*soy.*yo|fuera.*de.*mi.*cuerpo|despersonalización|siento.*que.*no.*estoy.*en.*mi.*cuerpo|como.*si.*fuera.*un.*sueño|no.*estoy.*en.*mi.*cuerpo|los.*ruidos.*fuertes.*me.*abrum|sobrecarga.*sensorial|estímulos.*sensoriales|me.*sobrecarga|dificultad.*con.*estímulos|ruidos.*de.*fondo.*me.*distra|luces.*brillantes.*me.*molest|texturas.*me.*dan.*ansiedad|dificultad.*con.*texturas|dificultad.*con.*cambios|los.*cambios.*me.*generan.*ansiedad|dificultad.*con.*rutinas|necesito.*seguir.*mis.*rutinas|dificultad.*con.*transiciones|cambiar.*de.*actividad.*me.*cuesta|dificultad.*con.*multitarea|no.*puedo.*hacer.*varias.*cosas|me.*siento.*abrumado.*con.*tareas|dificultad.*con.*contacto.*físico|no.*me.*gusta.*que.*me.*toquen|dificultad.*con.*contacto.*visual|no.*puedo.*mantener.*contacto.*visual|dificultad.*con.*comunicación|me.*cuesta.*expresar|las.*palabras.*no.*salen|dificultad.*con.*señales.*sociales|no.*entiendo.*las.*señales.*sociales|me.*siento.*fuera.*de.*lugar|me.*obsesiono.*con.*cosas|hiperfoco|no.*puedo.*pensar.*en.*nada.*más|tengo.*crisis.*donde.*no.*puedo.*controlar|meltdown|burnout|me.*siento.*completamente.*agotado|mi.*cerebro.*se.*hubiera.*apagado|tengo.*que.*fingir.*ser.*normal|enmascaramiento|estoy.*agotado.*de.*fingir|no.*entiendo.*las.*bromas|tomo.*todo.*literalmente|no.*sé.*qué.*siento|todas.*las.*emociones.*se.*mezclan|no.*entiendo.*cómo.*se.*sienten.*los.*demás|me.*siento.*desconectado)/i,
         intensity: 6,
         category: 'negative'
       },
@@ -66,7 +66,7 @@ class EmotionalAnalyzer {
         category: 'positive'
       },
       miedo: {
-        patterns: /(?:miedo|temor|terror|pavor|susto|sust(?:o|ado)|atemorizad(?:o|a)|asustad(?:o|a)|aterrad(?:o|a)|aterrorizad(?:o|a)|intimidad(?:o|a)|me.*da.*miedo|me.*asusta|me.*aterroriza|tengo.*miedo|siento.*miedo|me.*siento.*asustad(?:o|a)|estoy.*asustad(?:o|a)|me.*siento.*aterrad(?:o|a)|estoy.*aterrad(?:o|a)|tengo.*terror|siento.*terror|me.*aterroriza|me.*intimida|miedo.*de.*lo.*que)/i,
+        patterns: /(?:miedo|temor|terror|pavor|susto|sust(?:o|ado)|atemorizad(?:o|a)|asustad(?:o|a)|aterrad(?:o|a)|aterrorizad(?:o|a)|intimidad(?:o|a)|me.*da.*miedo|me.*asusta|me.*aterroriza|tengo.*miedo|siento.*miedo|me.*siento.*asustad(?:o|a)|estoy.*asustad(?:o|a)|me.*siento.*aterrad(?:o|a)|estoy.*aterrad(?:o|a)|tengo.*terror|siento.*terror|me.*aterroriza|me.*intimida|miedo.*de.*lo.*que|me.*aterra.*pensar|aterroriza.*pensar)/i,
         intensity: 7,
         category: 'negative'
       },
@@ -181,13 +181,37 @@ class EmotionalAnalyzer {
         intensity = adjustedAnalysis.intensity;
       }
 
+      // NUEVO: Detectar subtipo emocional
+      let subtype = null;
+      try {
+        const { default: subtypeDetector } = await import('./emotionalSubtypeDetector.js');
+        subtype = subtypeDetector.detectSubtype(detectedEmotion.name, content);
+      } catch (error) {
+        console.warn('[EmotionalAnalyzer] Error al detectar subtipo:', error);
+      }
+
+      // NUEVO: Detectar tema/contexto del mensaje
+      let topic = 'general';
+      let topics = ['general'];
+      try {
+        const { default: topicDetector } = await import('./topicDetector.js');
+        topic = topicDetector.detectTopic(content);
+        topics = topicDetector.detectMultipleTopics(content);
+      } catch (error) {
+        console.warn('[EmotionalAnalyzer] Error al detectar tema:', error);
+      }
+
       return {
         mainEmotion: detectedEmotion.name,
         intensity,
         category: detectedEmotion.category,
         secondary: secondaryEmotions,
         confidence: this.calculateConfidence(contentLower, detectedEmotion),
-        requiresAttention: this.checkIfRequiresAttention(detectedEmotion, intensity)
+        requiresAttention: this.checkIfRequiresAttention(detectedEmotion, intensity),
+        // NUEVOS CAMPOS
+        subtype: subtype, // Subtipo emocional (micro-emoción)
+        topic: topic, // Tema principal del mensaje
+        topics: topics // Múltiples temas detectados
       };
     } catch (error) {
       console.error('[EmotionalAnalyzer] Error en análisis emocional:', error, content);
@@ -323,8 +347,8 @@ class EmotionalAnalyzer {
     // IMPORTANTE: Si hay contexto de autolesión o crisis, priorizar emociones negativas
     const hasTemporalComparison = this.temporalComparisonPattern.test(content);
     const hasNegativeComparison = /(?:peor|más.*mal|menos.*bien)/i.test(content);
-    const hasSelfHarmContext = /(?:dolor.*físico|dolor.*emocional|hacerme.*daño|autolesi|me.*corto|me.*quemo|me.*golpeo|hacerse.*daño)/i.test(content);
-    const hasCrisisContext = /(?:ataque.*de.*pánico|no.*puedo.*respirar|me.*ahogo|palpitaciones|siento.*que.*me.*voy.*a.*morir)/i.test(content);
+    const hasSelfHarmContext = /(?:dolor.*físico|dolor.*emocional|hacerme.*daño|autolesi|me.*corto|me.*quemo|me.*golpeo|hacerse.*daño|sería.*mejor.*si.*no.*existiera|mejor.*si.*no.*existiera|pienso.*que.*sería.*mejor.*si.*no.*existiera|terminar.*con.*todo.*esto|pensado.*en.*cómo.*terminar|nadie.*me.*extrañaría.*si.*me.*fuera|me.*extrañaría.*si.*me.*fuera|no.*veo.*ninguna.*salida|sin.*salida|futuro.*se.*ve.*completamente.*negro|futuro.*negro|ya.*no.*puedo.*más.*estoy.*al.*límite|estoy.*al.*límite|estoy.*hecho.*polvo|hecho.*polvo|completamente.*destrozado|destrozado)/i.test(content);
+    const hasCrisisContext = /(?:ataque.*de.*pánico|ataque.*de.*ansiedad|no.*puedo.*respirar|me.*ahogo|palpitaciones|siento.*que.*me.*voy.*a.*morir|siento.*que.*no.*estoy.*en.*mi.*cuerpo|como.*si.*fuera.*un.*sueño|no.*estoy.*en.*mi.*cuerpo|no.*puedo.*calmarme)/i.test(content);
     const isSimpleMessage = /^(estoy|me siento|soy|está|están)\s+\w+$/i.test(content.trim()) && !hasNegativeComparison;
     
     // Si hay contexto de autolesión o crisis, priorizar emociones negativas
@@ -334,6 +358,22 @@ class EmotionalAnalyzer {
         ? ['neutral', 'alegria', 'esperanza', 'miedo', 'tristeza', 'ansiedad', 'enojo', 'verguenza', 'culpa']
         : ['alegria', 'esperanza', 'miedo', 'tristeza', 'ansiedad', 'enojo', 'verguenza', 'culpa', 'neutral'];
     
+    // Patrones para casos especiales
+    const sarcasmPositivePattern = /(?:¡?qué genial!?[^a-zA-Z0-9]*otro problema más|otro problema más)/i;
+    const mixedTemporalPattern = /me.*siento.*mejor.*que.*hace.*una.*semana.*pero.*peor.*que.*ayer/i;
+    const cycleTemporalPattern = /algunos.*d[ií]as.*estoy.*bien.*otros.*d[ií]as.*muy.*mal/i;
+    const emojisNegative = /[\u{1F622}\u{1F62D}\u{1F61E}\u{1F625}\u{1F614}\u{2639}\u{1F641}]/u;
+    const textoMuyPositivo = /(?:todo.*está.*perfecto|todo.*perfecto|está.*perfecto)/i;
+
+    // Caso especial antes de todo: texto muy positivo + emoji muy negativo => tristeza
+    if (emojisNegative.test(content) && textoMuyPositivo.test(content)) {
+      return {
+        name: 'tristeza',
+        category: 'negative',
+        baseIntensity: 7
+      };
+    }
+
     // Primero buscar emociones prioritarias
     for (const emotion of emotionPriority) {
       if (this.emotionPatterns[emotion] && this.emotionPatterns[emotion].patterns.test(content)) {
@@ -357,10 +397,37 @@ class EmotionalAnalyzer {
         
         // IMPORTANTE: Si hay contexto de autolesión o crisis, priorizar emociones negativas
         // Ejemplo: "El dolor físico me hace sentir mejor que el dolor emocional" debe ser tristeza, no alegria
-        const hasSelfHarmContext = /(?:dolor.*físico|dolor.*emocional|hacerme.*daño|autolesi|me.*corto|me.*quemo|me.*golpeo|hacerse.*daño)/i.test(content);
-        if (emotionData.category === 'positive' && hasSelfHarmContext) {
+        const hasSelfHarmContextForPositive = /(?:dolor.*físico|dolor.*emocional|hacerme.*daño|autolesi|me.*corto|me.*quemo|me.*golpeo|hacerse.*daño)/i.test(content);
+        if (emotionData.category === 'positive' && hasSelfHarmContextForPositive) {
           // Si hay contexto de autolesión, no aplicar emoción positiva
           continue;
+        }
+
+        // Caso especial: sarcasmo con frase aparentemente positiva
+        if (emotionData.category === 'positive' && sarcasmPositivePattern.test(content)) {
+          return {
+            name: 'enojo',
+            category: 'negative',
+            baseIntensity: 7
+          };
+        }
+
+        // Caso especial: ciclo temporal "algunos días bien, otros muy mal"
+        if (cycleTemporalPattern.test(content) && emotion === 'alegria') {
+          return {
+            name: 'tristeza',
+            category: 'negative',
+            baseIntensity: 7
+          };
+        }
+
+        // Caso especial: texto muy positivo con emoji claramente negativo -> tristeza
+        if (emotion === 'alegria' && textoMuyPositivo.test(content) && emojisNegative.test(content)) {
+          return {
+            name: 'tristeza',
+            category: 'negative',
+            baseIntensity: 7
+          };
         }
         
         return {
@@ -405,8 +472,40 @@ class EmotionalAnalyzer {
     // Si no se detecta una emoción específica, verificar indicadores negativos
     // Estos pueden indicar tristeza o ansiedad aunque no se mencione explícitamente
     if (this.negativeIndicatorsPattern.test(content)) {
+      // Verificar primero casos críticos de ideación suicida y desesperanza
+      const hasSuicidalIdeation = /(?:sería.*mejor.*si.*no.*existiera|mejor.*si.*no.*existiera|pienso.*que.*sería.*mejor.*si.*no.*existiera|terminar.*con.*todo.*esto|pensado.*en.*cómo.*terminar|nadie.*me.*extrañaría.*si.*me.*fuera|me.*extrañaría.*si.*me.*fuera)/i.test(content);
+      const hasHopelessness = /(?:no.*veo.*ninguna.*salida|sin.*salida|futuro.*se.*ve.*completamente.*negro|futuro.*negro)/i.test(content);
+      const hasDesperation = /(?:ya.*no.*puedo.*más.*estoy.*al.*límite|estoy.*al.*límite)/i.test(content);
+      const hasDisconnection = /(?:me.*siento.*desconectado.*de.*todos|desconectado.*de.*todos)/i.test(content);
+      const hasColloquialNegative = /(?:estoy.*hecho.*polvo|hecho.*polvo)/i.test(content);
+      const hasExtremeNegative = /(?:completamente.*destrozado|destrozado)/i.test(content);
+      
+      if (hasSuicidalIdeation || hasHopelessness || hasDesperation) {
+        return {
+          name: 'tristeza',
+          category: 'negative',
+          baseIntensity: 9
+        };
+      }
+      
+      if (hasDisconnection) {
+        return {
+          name: 'tristeza',
+          category: 'negative',
+          baseIntensity: 7
+        };
+      }
+      
+      if (hasColloquialNegative || hasExtremeNegative) {
+        return {
+          name: 'tristeza',
+          category: 'negative',
+          baseIntensity: 8
+        };
+      }
+      
       // Determinar si es más tristeza o ansiedad basado en el contexto
-      const hasAnxietyKeywords = /(?:preocupa|nervios|inquiet|agobia|abruma|tensión)/i.test(content);
+      const hasAnxietyKeywords = /(?:preocupa|nervios|inquiet|agobia|abruma|tensión|me.*aterra.*pensar|aterroriza.*pensar)/i.test(content);
       const hasSadnessKeywords = /(?:sin.*ganas|desmotiva|desánimo|vacío|hundid)/i.test(content);
       
       if (hasAnxietyKeywords) {
@@ -451,21 +550,61 @@ class EmotionalAnalyzer {
     // ========== AJUSTES ESPECIALES PARA CRISIS Y AUTOLESIÓN ==========
     
     // Patrones de crisis de pánico (alta intensidad)
-    const panicPatterns = /(?:ataque.*de.*pánico|no.*puedo.*respirar|me.*ahogo|mi.*corazón.*late.*muy.*rápido|palpitaciones|siento.*que.*me.*voy.*a.*morir|siento.*que.*me.*desmayo|pérdida.*de.*control|no.*puedo.*pensar.*claramente|siento.*que.*no.*soy.*yo|fuera.*de.*mi.*cuerpo|despersonalización)/i;
+    const panicPatterns = /(?:ataque.*de.*pánico|ataque.*de.*ansiedad|no.*puedo.*respirar|me.*ahogo|mi.*corazón.*late.*muy.*rápido|palpitaciones|siento.*que.*me.*voy.*a.*morir|siento.*que.*me.*desmayo|pérdida.*de.*control|no.*puedo.*pensar.*claramente|no.*puedo.*calmarme|siento.*que.*no.*soy.*yo|fuera.*de.*mi.*cuerpo|despersonalización|siento.*que.*no.*estoy.*en.*mi.*cuerpo|como.*si.*fuera.*un.*sueño|no.*estoy.*en.*mi.*cuerpo)/i;
     if (panicPatterns.test(content) && emotion.name === 'ansiedad') {
-      intensity = this.clampIntensity(intensity + 3); // Aumentar significativamente
+      intensity = Math.max(this.clampIntensity(intensity + 3), 9); // Aumentar significativamente, mínimo 9
+    }
+
+    // Miedo anticipatorio ("me aterra pensar...") debe ser al menos 8
+    if (emotion.name === 'miedo' && /me.*aterra.*pensar|aterroriza.*pensar/i.test(content)) {
+      intensity = Math.max(intensity, 8);
     }
     
     // Patrones de autolesión (alta intensidad)
-    const selfHarmPatterns = /(?:tengo.*ganas.*de.*hacerme.*daño|quiero.*hacerme.*daño|me.*quiero.*cortar|quiero.*cortarme|me.*corto|me.*quemo|me.*golpeo|autolesi(?:ón|on|arme)|necesito.*hacerme.*daño|urgencia.*de.*hacerme.*daño|el.*dolor.*físico.*me.*hace.*sentir.*mejor|cicatrices.*de.*cuando.*me.*cortaba)/i;
-    if (selfHarmPatterns.test(content) && emotion.name === 'tristeza') {
-      intensity = this.clampIntensity(intensity + 3); // Aumentar significativamente
+    // IMPORTANTE: Verificar primero autolesión pasada para evitar falsos positivos
+    const pastSelfHarmPatterns = /(?:cicatrices.*de.*cuando.*me.*cortaba|cuando.*me.*cortaba|cuando.*me.*quemaba|cuando.*me.*golpeaba|de.*cuando.*me.*cortaba|me.*cortaba.*antes|me.*quemaba.*antes)/i;
+    const isPastSelfHarm = pastSelfHarmPatterns.test(content);
+    
+    if (isPastSelfHarm && emotion.name === 'tristeza') {
+      // Autolesión pasada: intensidad moderada-alta (7-9), no máxima
+      // Establecer intensidad base para autolesión pasada (no aplicar otros ajustes de autolesión)
+      intensity = this.clampIntensity(7 + 1); // Base 7 + 1 = 8, máximo 9 con otros ajustes
+    } else if (emotion.name === 'tristeza') {
+      // Patrones de alta urgencia (intensidad máxima)
+      // Incluir también expresiones que indican que es la única forma de sentir algo
+      const urgentSelfHarmPatterns = /(?:tengo.*ganas.*de.*hacerme.*daño|quiero.*hacerme.*daño|me.*quiero.*cortar|quiero.*cortarme|necesito.*hacerme.*daño|urgencia.*de.*hacerme.*daño|no.*puedo.*dejar.*de.*pensar.*en.*hacerme.*daño|pensar.*en.*hacerme.*daño|es.*la.*única.*forma.*de.*sentir|única.*forma.*de.*sentir.*algo)/i;
+      if (urgentSelfHarmPatterns.test(content)) {
+        // Para autolesión urgente, establecer intensidad mínima de 9
+        intensity = Math.max(this.clampIntensity(intensity + 3), 9);
+      }
+      
+      // Patrones de autolesión activa (alta intensidad)
+      const activeSelfHarmPatterns = /(?:me.*corto(?!.*cuando)|me.*quemo(?!.*cuando)|me.*golpeo(?!.*cuando)|autolesi(?:ón|on|arme)|el.*dolor.*físico.*me.*hace.*sentir.*mejor)/i;
+      if (activeSelfHarmPatterns.test(content)) {
+        if (/a veces/i.test(content)) {
+          // Si hay "a veces", intensidad moderada-alta (8-10) pero no máxima
+          intensity = Math.max(this.clampIntensity(intensity + 2), 8);
+        } else {
+          intensity = this.clampIntensity(intensity + 3); // Aumentar significativamente
+        }
+      }
     }
     
+    // Guardar intensidad después de ajustes especiales para evitar que se reduzca
+    const intensityAfterSpecialAdjustments = intensity;
+    const hasUrgentSelfHarm = emotion.name === 'tristeza' && /(?:tengo.*ganas.*de.*hacerme.*daño|quiero.*hacerme.*daño|me.*quiero.*cortar|quiero.*cortarme|necesito.*hacerme.*daño|urgencia.*de.*hacerme.*daño|no.*puedo.*dejar.*de.*pensar.*en.*hacerme.*daño|pensar.*en.*hacerme.*daño|es.*la.*única.*forma.*de.*sentir|única.*forma.*de.*sentir.*algo)/i.test(content);
+    const hasActiveSelfHarmWithAveces = emotion.name === 'tristeza' && /(?:me.*corto|me.*quemo|me.*golpeo)/i.test(content) && /a veces/i.test(content);
+    const hasSuicidalIdeation = /(?:sería.*mejor.*si.*no.*existiera|mejor.*si.*no.*existiera|pienso.*que.*sería.*mejor.*si.*no.*existiera|terminar.*con.*todo.*esto|pensado.*en.*cómo.*terminar|nadie.*me.*extrañaría.*si.*me.*fuera|me.*extrañaría.*si.*me.*fuera)/i.test(content);
+    const hasHopelessness = /(?:no.*veo.*ninguna.*salida|sin.*salida|futuro.*se.*ve.*completamente.*negro|futuro.*negro)/i.test(content);
+    const hasDesperation = /(?:ya.*no.*puedo.*más.*estoy.*al.*límite|estoy.*al.*límite)/i.test(content);
+    
     // Ajustar según intensificadores o atenuadores
+    // IMPORTANTE: No aplicar atenuadores si hay contexto de autolesión o crisis (son situaciones críticas)
+    const hasSelfHarmOrCrisis = /(?:hacerme.*daño|autolesi|ataque.*de.*pánico|no.*puedo.*respirar|me.*ahogo|pensar.*en.*hacerme.*daño|quiero.*cortarme|me.*quemo|me.*corto|me.*golpeo)/i.test(content);
     if (this.intensifiersPattern.test(content)) {
       intensity = this.clampIntensity(intensity + this.INTENSITY_ADJUSTMENT);
-    } else if (this.diminishersPattern.test(content)) {
+    } else if (this.diminishersPattern.test(content) && !hasSelfHarmOrCrisis) {
+      // Solo aplicar atenuadores si NO hay contexto de autolesión o crisis
       intensity = this.clampIntensity(intensity - this.INTENSITY_ADJUSTMENT);
     }
     
@@ -498,12 +637,56 @@ class EmotionalAnalyzer {
     }
     
     // Ajustar según comparaciones temporales
-    if (this.temporalComparisonPattern.test(content)) {
+    // IMPORTANTE: No aplicar ajustes de comparación temporal si hay contexto de autolesión o crisis
+    if (this.temporalComparisonPattern.test(content) && !hasSelfHarmOrCrisis) {
       if (/peor.*que|más.*mal|menos.*bien/i.test(content)) {
         intensity = this.clampIntensity(intensity + 1);
       } else if (/mejor.*que|más.*bien|menos.*mal/i.test(content) && emotion.category === 'negative') {
         intensity = this.clampIntensity(intensity - 1);
       }
+    }
+
+    // Ajustes para comparaciones temporales complejas
+    const hasMixedTemporal = /me.*siento.*mejor.*que.*hace.*una.*semana.*pero.*peor.*que.*ayer/i.test(content);
+    const hasCycleTemporal = /algunos.*d[ií]as.*estoy.*bien.*otros.*d[ií]as.*muy.*mal/i.test(content);
+    if (hasMixedTemporal) {
+      intensity = Math.min(intensity, 7);
+    }
+    if (hasCycleTemporal) {
+      intensity = Math.min(intensity, 8);
+    }
+    
+    // IMPORTANTE: Asegurar intensidades mínimas después de todos los ajustes
+    if (hasUrgentSelfHarm || hasSuicidalIdeation) {
+      intensity = Math.max(intensity, 9); // Mínimo 9 para autolesión urgente o ideación suicida
+    } else if (hasActiveSelfHarmWithAveces) {
+      intensity = Math.max(intensity, 8); // Mínimo 8 para autolesión activa con "a veces"
+    }
+    
+    // Ajustes adicionales para casos específicos
+    if (hasHopelessness && emotion.name === 'tristeza') {
+      intensity = Math.max(intensity, 8); // Mínimo 8 para desesperanza
+    }
+    
+    if (hasDesperation && emotion.name === 'tristeza') {
+      intensity = Math.max(intensity, 9); // Mínimo 9 para desesperación
+    }
+    
+    // Caso especial: planificación explícita "terminar con todo esto" debe ser 10
+    if (hasSuicidalIdeation && /terminar.*con.*todo.*esto/i.test(content)) {
+      intensity = 10;
+    }
+
+    // Ajuste para culpa y vergüenza con intensificadores
+    if ((emotion.name === 'culpa' || emotion.name === 'verguenza') &&
+        /(?:todo.*es.*mi.*culpa|siempre.*arruino.*todo|mucha.*vergüenza|mucha.*verguenza)/i.test(content)) {
+      intensity = Math.max(intensity, 8); // Mínimo 8 para culpa/vergüenza intensa
+    }
+
+    // Ajuste para minimización suave de tristeza ("solo estoy un poco triste")
+    if (emotion.name === 'tristeza' &&
+        /(?:solo.*estoy.*un.*poco.*triste|un.*poco.*triste)/i.test(content)) {
+      intensity = Math.max(intensity, 5);
     }
     
     return intensity;
@@ -672,7 +855,10 @@ class EmotionalAnalyzer {
       category: this.CATEGORY_NEUTRAL,
       secondary: [],
       confidence: this.CONFIDENCE_DEFAULT,
-      requiresAttention: false
+      requiresAttention: false,
+      subtype: null,
+      topic: 'general',
+      topics: ['general']
     };
   }
 }

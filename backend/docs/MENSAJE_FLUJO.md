@@ -128,7 +128,36 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
 ##### Filtros de Longitud (líneas 169-172):
 - Si palabras > `WORD_COUNT_THRESHOLD` (20): Intensidad `+1`
 
-##### Resultado del Análisis Emocional:
+##### NUEVO: Detección de Subtipos Emocionales (v2.0)
+**Servicio:** `emotionalSubtypeDetector.detectSubtype()`  
+**Archivo:** `backend/services/emotionalSubtypeDetector.js`
+
+**Subtipos detectados por emoción:**
+- **Tristeza:** duelo, soledad, fracaso, desesperanza, vacío, rechazo
+- **Ansiedad:** social, anticipatoria, rendimiento, salud, separación, generalizada
+- **Enojo:** injusticia, límite, frustración, traición, impotencia
+- **Miedo:** fobia, anticipatorio, abandono, fracaso, muerte
+- **Culpa:** autoculpa, responsabilidad, daño, omisión
+- **Vergüenza:** exposición, autoimagen, comportamiento
+- **Alegría:** logro, conexión, gratitud, esperanza, placer
+
+##### NUEVO: Detección de Temas/Contextos (v2.0)
+**Servicio:** `topicDetector.detectTopic()`  
+**Archivo:** `backend/services/topicDetector.js`
+
+**Temas detectados:**
+- relaciones, trabajo, salud, autoimagen, futuro, pasado, soledad, pérdida, dinero, general
+
+##### NUEVO: Memoria Emocional de Sesión (v2.0)
+**Servicio:** `sessionEmotionalMemory`  
+**Archivo:** `backend/services/sessionEmotionalMemory.js`
+
+**Funcionalidades:**
+- Mantiene buffer de últimas 20 emociones detectadas por usuario
+- Analiza tendencias: racha negativa, volatilidad, emoción dominante
+- Detecta patrones temporales en la sesión actual
+
+##### Resultado del Análisis Emocional (ACTUALIZADO):
 ```javascript
 {
   mainEmotion: string,        // Emoción principal detectada
@@ -136,7 +165,11 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
   category: string,           // 'positive' | 'negative' | 'neutral'
   secondary: string[],        // Emociones secundarias
   confidence: number,         // 0-1
-  requiresAttention: boolean  // true si category='negative' && intensity>=7
+  requiresAttention: boolean, // true si category='negative' && intensity>=7
+  // NUEVOS CAMPOS v2.0:
+  subtype: string | null,     // Subtipo emocional detectado
+  topic: string,              // Tema principal del mensaje
+  topics: string[]            // Múltiples temas detectados
 }
 ```
 
@@ -353,6 +386,26 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
 4. Encuentra patrones comunes (tiempo, temas, emociones)
 5. Retorna contexto completo con patrones, contexto actual e historial
 
+#### 6.2.5. NUEVO: Memoria Emocional de Sesión (v2.0)
+**Ubicación:** `chatRoutes.js:240-244`  
+**Servicio:** `sessionEmotionalMemory`  
+**Archivo:** `backend/services/sessionEmotionalMemory.js`
+
+**Proceso:**
+1. Se agrega el análisis emocional al buffer de sesión del usuario
+2. Se analizan tendencias de la sesión actual (racha negativa, volatilidad, emoción dominante)
+3. Las tendencias se incluyen en el contexto para personalizar la respuesta
+
+**Tendencias analizadas:**
+- `streakNegative`: Racha de mensajes con emociones negativas consecutivos
+- `streakAnxiety`: Racha de mensajes con ansiedad
+- `streakSadness`: Racha de mensajes con tristeza
+- `recentTopics`: Temas más frecuentes en los últimos mensajes
+- `emotionalVolatility`: Cambios de emoción en la sesión
+- `averageIntensity`: Intensidad promedio en la sesión
+- `dominantEmotion`: Emoción más frecuente
+- `trend`: Tendencia general ('worsening', 'improving', 'stable')
+
 #### 6.3. Construcción del Prompt Contextualizado (líneas 163-173)
 **Método:** `construirPromptContextualizado()` (líneas 293-327)
 
@@ -384,6 +437,23 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
    - Obtiene de `contexto.emotional?.mainEmotion`
    - Valor por defecto: `DEFAULT_VALUES.EMOTION` (`'neutral'`)
    - Intensidad por defecto: `DEFAULT_VALUES.INTENSITY` (`5`)
+
+7. **NUEVO: Filtro de subtipo emocional (v2.0):**
+   - Obtiene de `contexto.emotional?.subtype`
+   - Se incluye en el prompt para personalización específica
+
+8. **NUEVO: Filtro de tema/contexto (v2.0):**
+   - Obtiene de `contexto.emotional?.topic`
+   - Se incluye en el prompt para contextualizar la respuesta
+
+9. **NUEVO: Filtro de tendencias de sesión (v2.0):**
+   - Obtiene de `contexto.sessionTrends`
+   - Incluye información sobre rachas, volatilidad y tendencias
+
+10. **NUEVO: Filtro de estilo de respuesta (v2.0):**
+    - Obtiene de `contexto.profile?.preferences?.responseStyle`
+    - Valores: `'brief'`, `'balanced'`, `'deep'`
+    - Ajusta el tono y longitud de la respuesta
 
 ##### Estructura del System Message:
 - Contexto actual (momento del día, estado emocional, temas, estilo, fase)
@@ -451,6 +521,56 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
 - Normaliza con `trim()`
 - Valida que la respuesta no esté vacía
 - Lanza error si no se generó respuesta válida
+
+#### 6.5.5. NUEVO: Plantillas Terapéuticas por Emoción + Subtipo (v2.0)
+**Ubicación:** `openaiService.js:238-250`  
+**Servicio:** `therapeuticTemplateService`  
+**Archivo:** `backend/services/therapeuticTemplateService.js`
+
+**Proceso:**
+1. Se verifica si existe una plantilla para la combinación emoción + subtipo
+2. Si existe, se construye una base terapéutica estructurada con:
+   - Validación emocional
+   - Psicoeducación breve
+   - Pregunta exploratoria
+3. La base se integra con la respuesta generada por OpenAI
+
+#### 6.5.6. NUEVO: Protocolos Terapéuticos Multi-Turno (v2.0)
+**Ubicación:** `openaiService.js:232-250`  
+**Servicio:** `therapeuticProtocolService`  
+**Archivo:** `backend/services/therapeuticProtocolService.js`
+
+**Proceso:**
+1. Se verifica si hay un protocolo activo para el usuario
+2. Si no hay protocolo activo, se evalúa si se debe iniciar uno según:
+   - Emoción e intensidad detectadas
+   - Subtipo emocional
+   - Contexto de crisis
+3. Si hay protocolo activo, se obtiene la intervención del paso actual
+4. La respuesta se adapta según el paso del protocolo
+
+**Protocolos disponibles:**
+- `panic_protocol`: Para crisis de pánico (4 pasos)
+- `guilt_protocol`: Para culpa intensa (4 pasos)
+- `loneliness_protocol`: Para soledad (3 pasos)
+
+#### 6.5.7. NUEVO: Chequeos de Seguridad (v2.0)
+**Ubicación:** `openaiService.js:252-260`  
+**Método:** `addSafetyChecks()`
+
+**Proceso:**
+- Si la intensidad es >= 8, se agregan preguntas de seguridad
+- Si la intensidad es >= 9, se agregan recursos de emergencia
+- Se incluyen mensajes de apoyo y recursos disponibles
+
+#### 6.5.8. NUEVO: Respuestas con Elecciones (v2.0)
+**Ubicación:** `openaiService.js:262-270`  
+**Método:** `addResponseChoices()`
+
+**Proceso:**
+- Se generan 2-3 opciones según la emoción detectada
+- Las opciones permiten al usuario elegir cómo continuar
+- Se adaptan según la emoción, intensidad y tema
 
 #### 6.6. Validación y Mejora de Respuesta (líneas 218-226)
 **Método:** `validarYMejorarRespuesta()` (líneas 392-410)
@@ -546,6 +666,28 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
 **Nota sobre duplicación eliminada:** La validación de coherencia emocional que antes se hacía aquí (líneas 247-250) fue eliminada porque ya se realiza dentro de `generarRespuesta()` en el método `validarYMejorarRespuesta()` (líneas 468-471 de `openaiService.js`).
 
 ---
+
+### **PASO 9.5. NUEVO: Generación de Sugerencias de Acciones (v2.0)**
+**Ubicación:** `chatRoutes.js:520-530`  
+**Servicio:** `actionSuggestionService`  
+**Archivo:** `backend/services/actionSuggestionService.js`
+
+**Proceso:**
+1. Se generan sugerencias basadas en:
+   - Emoción principal
+   - Intensidad emocional
+   - Tema detectado
+   - Subtipo emocional (si existe)
+2. Las sugerencias se formatean para la UI
+3. Se incluyen en la respuesta JSON
+
+**Tipos de sugerencias:**
+- Ejercicios de respiración
+- Técnicas de grounding
+- Herramientas de comunicación
+- Ejercicios de autocompasión
+- Actividades de autocuidado
+- Y más según el contexto
 
 ### **PASO 10: Actualización de Registros en Paralelo (en chatRoutes)**
 **Ubicación:** `chatRoutes.js:243-262`

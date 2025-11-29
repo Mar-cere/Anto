@@ -17,6 +17,8 @@ import {
   progressTracker,
   userProfileService
 } from '../services/index.js';
+import sessionEmotionalMemory from '../services/sessionEmotionalMemory.js';
+import actionSuggestionService from '../services/actionSuggestionService.js';
 import { HISTORY_LIMITS } from '../constants/openai.js';
 import { evaluateSuicideRisk } from '../constants/crisis.js';
 import emergencyAlertService from '../services/emergencyAlertService.js';
@@ -235,6 +237,12 @@ router.post('/messages', protect, async (req, res) => {
             return null; // No bloquear si falla
           })
         ]);
+
+        // NUEVO: Agregar análisis emocional a la memoria de sesión
+        sessionEmotionalMemory.addAnalysis(req.user._id.toString(), emotionalAnalysis);
+        
+        // NUEVO: Obtener tendencias de la sesión actual
+        const sessionTrends = sessionEmotionalMemory.analyzeTrends(req.user._id.toString());
 
         // Analizar contexto conversacional para detectar escaladas y patrones
         const conversationContext = {
@@ -532,6 +540,13 @@ router.post('/messages', protect, async (req, res) => {
           logs.push(`[${Date.now() - startTime}ms] Advertencia: Error en actualizaciones secundarias`);
         });
 
+        // NUEVO: Generar sugerencias de acciones
+        const actionSuggestions = actionSuggestionService.generateSuggestions(
+          emotionalAnalysis,
+          contextualAnalysis
+        );
+        const formattedSuggestions = actionSuggestionService.formatSuggestions(actionSuggestions);
+
         logs.push(`[${Date.now() - startTime}ms] Proceso completado exitosamente`);
         
         return res.status(201).json({
@@ -541,6 +556,8 @@ router.post('/messages', protect, async (req, res) => {
             emotional: emotionalAnalysis,
             contextual: contextualAnalysis
           },
+          // NUEVO: Agregar sugerencias de acciones
+          suggestions: formattedSuggestions,
           processingTime: Date.now() - startTime
         });
 

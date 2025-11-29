@@ -832,7 +832,12 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
     communicationStyle = DEFAULT_VALUES.COMMUNICATION_STYLE,
     timeOfDay = 'afternoon',
     recurringThemes = [],
-    lastInteraction = 'ninguna'
+    lastInteraction = 'ninguna',
+    // NUEVOS PARÁMETROS
+    subtype = null,
+    topic = 'general',
+    sessionTrends = null,
+    responseStyle = 'balanced'
   } = context;
 
   // Obtener directrices específicas
@@ -915,6 +920,47 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
     .replace('{reflection}', styleGuidelines.reflection)
     .replace('{directness}', styleGuidelines.directness)
     .replace('{examples}', styleGuidelines.examples) + '\n\n';
+
+  // NUEVO: Información de subtipo emocional si existe
+  if (subtype) {
+    prompt += `📌 Subtipo emocional detectado: ${subtype}\n`;
+    prompt += `Considera este matiz específico al responder. El usuario está experimentando ${emotion} con características de ${subtype}.\n\n`;
+  }
+
+  // NUEVO: Información de tema/contexto si existe
+  if (topic && topic !== 'general') {
+    prompt += `📌 Tema principal del mensaje: ${topic}\n`;
+    prompt += `Contextualiza tu respuesta considerando que el usuario está hablando sobre ${topic}.\n\n`;
+  }
+
+  // NUEVO: Tendencias de sesión si existen
+  if (sessionTrends && sessionTrends.messageCount > 0) {
+    prompt += `📊 Tendencias de la sesión actual:\n`;
+    if (sessionTrends.streakNegative > 0) {
+      prompt += `- Racha de ${sessionTrends.streakNegative} mensajes con emociones negativas consecutivos\n`;
+    }
+    if (sessionTrends.trend === 'worsening') {
+      prompt += `- Tendencia: empeoramiento emocional en la sesión\n`;
+    } else if (sessionTrends.trend === 'improving') {
+      prompt += `- Tendencia: mejora emocional en la sesión\n`;
+    }
+    if (sessionTrends.recentTopics && sessionTrends.recentTopics.length > 0) {
+      prompt += `- Temas recurrentes: ${sessionTrends.recentTopics.join(', ')}\n`;
+    }
+    prompt += `\n`;
+  }
+
+  // NUEVO: Estilo de respuesta preferido
+  if (responseStyle === 'brief') {
+    prompt += `📝 Estilo de respuesta: BREVE\n`;
+    prompt += `Responde de forma concisa y directa. Máximo 2-3 oraciones. Evita explicaciones extensas.\n\n`;
+  } else if (responseStyle === 'deep') {
+    prompt += `📝 Estilo de respuesta: PROFUNDO\n`;
+    prompt += `Puedes explayarte un poco más, pero sin superar ${THRESHOLDS.MAX_WORDS_RESPONSE} palabras. Incluye reflexiones y exploraciones más detalladas.\n\n`;
+  } else {
+    prompt += `📝 Estilo de respuesta: EQUILIBRADO\n`;
+    prompt += `Mantén un balance entre concisión y profundidad. 2-3 oraciones bien desarrolladas.\n\n`;
+  }
 
   // Reglas generales
   prompt += PROMPT_TEMPLATES.GENERAL_RULES

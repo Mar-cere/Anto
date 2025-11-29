@@ -40,6 +40,9 @@ import goalTracker from './goalTracker.js';
 import memoryService from './memoryService.js';
 import personalizationService from './personalizationService.js';
 import progressTracker from './progressTracker.js';
+import sessionEmotionalMemory from './sessionEmotionalMemory.js';
+import therapeuticProtocolService from './therapeuticProtocolService.js';
+import therapeuticTemplateService from './therapeuticTemplateService.js';
 
 dotenv.config();
 
@@ -235,17 +238,65 @@ class OpenAIService {
         throw new Error('No se pudo generar una respuesta válida desde OpenAI');
       }
 
-      // 5. Seleccionar técnica terapéutica apropiada
-      const selectedTechnique = selectAppropriateTechnique(
-        analisisEmocional?.mainEmotion || DEFAULT_VALUES.EMOTION,
-        analisisEmocional?.intensity || DEFAULT_VALUES.INTENSITY,
-        registroTerapeutico?.currentPhase || DEFAULT_VALUES.PHASE,
-        analisisContextual?.intencion?.tipo || null
+      // 5. NUEVO: Verificar si hay un protocolo activo o si se debe iniciar uno
+      let activeProtocol = therapeuticProtocolService.getActiveProtocol(mensaje.userId);
+      let currentIntervention = null;
+      
+      if (!activeProtocol) {
+        // Verificar si se debe iniciar un protocolo
+        const protocolToStart = therapeuticProtocolService.shouldStartProtocol(
+          analisisEmocional,
+          analisisContextual
+        );
+        if (protocolToStart) {
+          activeProtocol = therapeuticProtocolService.startProtocol(mensaje.userId, protocolToStart);
+          currentIntervention = therapeuticProtocolService.getCurrentIntervention(mensaje.userId);
+        }
+      } else {
+        // Obtener la intervención del paso actual
+        currentIntervention = therapeuticProtocolService.getCurrentIntervention(mensaje.userId);
+      }
+
+      // 6. NUEVO: Obtener plantilla terapéutica si hay subtipo
+      const responseStyle = perfilUsuario?.preferences?.responseStyle || 'balanced';
+      const therapeuticBase = therapeuticTemplateService.buildTherapeuticBase(
+        analisisEmocional?.mainEmotion,
+        analisisEmocional?.subtype,
+        { style: responseStyle }
       );
 
-      // 6. Validar y Mejorar Respuesta
+      // 7. Seleccionar técnica terapéutica apropiada (si no hay protocolo activo)
+      let selectedTechnique = null;
+      if (!activeProtocol) {
+        selectedTechnique = selectAppropriateTechnique(
+          analisisEmocional?.mainEmotion || DEFAULT_VALUES.EMOTION,
+          analisisEmocional?.intensity || DEFAULT_VALUES.INTENSITY,
+          registroTerapeutico?.currentPhase || DEFAULT_VALUES.PHASE,
+          analisisContextual?.intencion?.tipo || null
+        );
+      }
+
+      // 8. NUEVO: Mejorar respuesta con plantilla terapéutica si existe
+      let respuestaMejorada = respuestaGenerada;
+      if (therapeuticBase && !activeProtocol) {
+        // Si hay una base terapéutica, usarla para guiar la respuesta
+        // La respuesta de OpenAI se puede usar como complemento
+        respuestaMejorada = `${therapeuticBase}\n\n${respuestaGenerada}`;
+      }
+
+      // 9. NUEVO: Si hay protocolo activo, adaptar respuesta según la intervención
+      if (activeProtocol && currentIntervention) {
+        // Adaptar la respuesta según el paso del protocolo
+        respuestaMejorada = this.adaptResponseToProtocol(
+          respuestaMejorada,
+          currentIntervention,
+          analisisEmocional
+        );
+      }
+
+      // 10. Validar y Mejorar Respuesta
       const respuestaValidada = await this.validarYMejorarRespuesta(
-        respuestaGenerada,
+        respuestaMejorada,
         {
           emotional: analisisEmocional,
           contextual: analisisContextual,
@@ -253,9 +304,30 @@ class OpenAIService {
         }
       );
 
-      // 7. Agregar técnica terapéutica a la respuesta si es apropiado
-      let respuestaFinal = respuestaValidada;
-      if (selectedTechnique && this.shouldIncludeTechnique(analisisEmocional, analisisContextual)) {
+      // 11. NUEVO: Agregar chequeos de seguridad si la intensidad es alta
+      let respuestaConSeguridad = respuestaValidada;
+      if (analisisEmocional?.intensity >= 8 || analisisEmocional?.requiresAttention) {
+        respuestaConSeguridad = this.addSafetyChecks(
+          respuestaValidada,
+          analisisEmocional,
+          analisisContextual
+        );
+      }
+
+      // 12. NUEVO: Agregar elecciones al final de la respuesta si es apropiado
+      let respuestaConElecciones = respuestaConSeguridad;
+      if (this.shouldAddChoices(analisisEmocional, analisisContextual, activeProtocol)) {
+        respuestaConElecciones = this.addResponseChoices(
+          respuestaConSeguridad,
+          analisisEmocional,
+          analisisContextual,
+          activeProtocol
+        );
+      }
+
+      // 13. Agregar técnica terapéutica a la respuesta si es apropiado (y no hay protocolo)
+      let respuestaFinal = respuestaConElecciones;
+      if (selectedTechnique && !activeProtocol && this.shouldIncludeTechnique(analisisEmocional, analisisContextual)) {
         // Calcular espacio disponible para la técnica
         const espacioDisponible = THRESHOLDS.MAX_CHARACTERS_RESPONSE - respuestaValidada.length;
         const necesitaFormatoCompacto = espacioDisponible < 300; // Menos de 300 caracteres disponibles
@@ -411,6 +483,12 @@ class OpenAIService {
     const recurringThemes = contexto.memory?.recurringThemes || [];
     const lastInteraction = contexto.memory?.lastInteraction || 'ninguna';
 
+    // NUEVO: Obtener tendencias de sesión
+    const sessionTrends = sessionEmotionalMemory.analyzeTrends(mensaje.userId);
+    
+    // NUEVO: Obtener estilo de respuesta del usuario
+    const responseStyle = contexto.profile?.preferences?.responseStyle || 'balanced';
+    
     // Construir prompt personalizado usando la función helper
     let systemMessage = buildPersonalizedPrompt({
       emotion,
@@ -420,7 +498,12 @@ class OpenAIService {
       communicationStyle,
       timeOfDay,
       recurringThemes,
-      lastInteraction
+      lastInteraction,
+      // NUEVOS PARÁMETROS
+      subtype: contexto.emotional?.subtype,
+      topic: contexto.emotional?.topic,
+      sessionTrends: sessionTrends,
+      responseStyle: responseStyle
     });
 
     // Si hay una crisis detectada, agregar el prompt de crisis al inicio
