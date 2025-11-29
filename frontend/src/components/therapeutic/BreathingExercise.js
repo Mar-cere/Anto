@@ -8,11 +8,14 @@ import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  Dimensions,
   StyleSheet,
   Text,
   TouchableOpacity,
   View
 } from 'react-native';
+
+const { width } = Dimensions.get('window');
 import { colors } from '../../styles/globalStyles';
 
 // Constantes de animación
@@ -255,8 +258,8 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   circleContainer: {
-    width: 250,
-    height: 250,
+    width: Math.min(280, width * 0.7),
+    height: Math.min(280, width * 0.7),
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 40,
@@ -264,20 +267,22 @@ const styles = StyleSheet.create({
   circle: {
     width: '100%',
     height: '100%',
-    borderRadius: 125,
-    borderWidth: 3,
+    borderRadius: Math.min(140, width * 0.35),
+    borderWidth: 4,
     justifyContent: 'center',
     alignItems: 'center',
   },
   phaseText: {
-    fontSize: 32,
+    fontSize: 34,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 12,
+    letterSpacing: 1,
   },
   countdownText: {
-    fontSize: 48,
+    fontSize: 52,
     fontWeight: 'bold',
     color: colors.text,
+    letterSpacing: 2,
   },
   infoContainer: {
     marginBottom: 30,
@@ -295,10 +300,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 12,
-    gap: 10,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 14,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 4,
   },
   primaryButton: {
     backgroundColor: colors.primary,

@@ -16,6 +16,7 @@ import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
+  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -23,6 +24,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FloatingNavBar from '../components/FloatingNavBar';
 import Header from '../components/Header';
 import ParticleBackground from '../components/ParticleBackground';
@@ -42,6 +44,7 @@ const CATEGORIES = {
 const TEXTS = {
   TITLE: 'Técnicas Terapéuticas',
   SUBTITLE: 'Herramientas basadas en evidencia para tu bienestar',
+  STATS: 'Estadísticas',
   CATEGORY_IMMEDIATE: 'Técnicas Inmediatas',
   CATEGORY_CBT: 'Terapia Cognitivo-Conductual (TCC)',
   CATEGORY_DBT: 'Terapia Dialéctica Conductual (DBT)',
@@ -69,6 +72,7 @@ const EMOTIONS = [
 
 const TherapeuticTechniquesScreen = () => {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const [selectedEmotion, setSelectedEmotion] = useState('all');
   const [techniques, setTechniques] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -266,20 +270,33 @@ const TherapeuticTechniquesScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
       <ParticleBackground />
       <Header title={TEXTS.TITLE} showBackButton />
       
-      <View style={styles.subtitleContainer}>
-        <Text style={styles.subtitle}>{TEXTS.SUBTITLE}</Text>
+      <View style={styles.headerActions}>
+        <View style={styles.subtitleContainer}>
+          <Text style={styles.subtitle}>{TEXTS.SUBTITLE}</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.statsButton}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate('TherapeuticTechniquesStats');
+          }}
+          activeOpacity={0.7}
+        >
+          <MaterialCommunityIcons name="chart-line" size={20} color={colors.primary} />
+          <Text style={styles.statsButtonText}>{TEXTS.STATS}</Text>
+        </TouchableOpacity>
       </View>
 
       {renderEmotionFilter()}
       {renderContent()}
 
       <FloatingNavBar />
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -288,35 +305,60 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  subtitleContainer: {
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 15,
   },
+  subtitleContainer: {
+    flex: 1,
+  },
+  statsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: `${colors.primary}20`,
+  },
+  statsButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+  },
   subtitle: {
     fontSize: 14,
     color: colors.textSecondary,
-    textAlign: 'center',
+    lineHeight: 20,
   },
   emotionFilter: {
-    maxHeight: 60,
-    marginBottom: 10,
+    maxHeight: 70,
+    marginBottom: 15,
   },
   emotionFilterContent: {
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    gap: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 12,
   },
   emotionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 20,
     backgroundColor: colors.cardBackground,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
-    gap: 6,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   emotionButtonActive: {
     backgroundColor: colors.primary,
@@ -335,16 +377,17 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   categorySection: {
-    marginBottom: 30,
+    marginBottom: 32,
   },
   categoryTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     color: colors.text,
-    marginBottom: 15,
+    marginBottom: 16,
+    letterSpacing: 0.5,
   },
   centerContainer: {
     flex: 1,

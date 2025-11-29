@@ -3,9 +3,16 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'react-native';
+import { colors } from '../styles/globalStyles';
 
-const Header = memo(({ greeting, userName, userAvatar }) => {
+const Header = memo(({ greeting, userName, userAvatar, title, showBackButton }) => {
   const navigation = useNavigation();
+  
+  const handleBackPress = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    }
+  };
   
   const handleProfilePress = () => {
     try {
@@ -35,6 +42,25 @@ const Header = memo(({ greeting, userName, userAvatar }) => {
     }
   };
   
+  // Si se pasa title y showBackButton, renderizar header simple con botón de retroceso
+  if (title && showBackButton) {
+    return (
+      <View style={styles.headerContainer}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity
+            onPress={handleBackPress}
+            style={styles.backButton}
+            activeOpacity={0.7}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color={colors.white} />
+          </TouchableOpacity>
+          <Text style={styles.title}>{title}</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Header original con greeting y avatar
   return (
     <View style={styles.headerContainer}>
       <View style={styles.headerLeft}>
@@ -42,7 +68,6 @@ const Header = memo(({ greeting, userName, userAvatar }) => {
       </View>
       
       <View style={styles.headerRight}>
-        
         <TouchableOpacity 
           onPress={handleProfilePress}
           style={styles.avatarContainer}
@@ -74,11 +99,25 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: colors.white,
+    letterSpacing: 0.5,
   },
   greeting: {
     fontSize: 20,

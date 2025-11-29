@@ -6,6 +6,15 @@ export const colors = {
   white: '#FFFFFF',
   text: '#FFFFFF',
   accent: '#1ADDDB',
+  // Colores secundarios
+  textSecondary: '#A3B8E8',
+  cardBackground: 'rgba(29, 43, 95, 0.8)',
+  border: 'rgba(26, 221, 219, 0.15)',
+  // Colores de estado
+  error: '#FF6B6B',
+  success: '#4CAF50',
+  warning: '#FFD93D',
+  info: '#6BCB77',
 };
 
 export const globalStyles = StyleSheet.create({

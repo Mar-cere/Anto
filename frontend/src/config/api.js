@@ -98,6 +98,7 @@ export const ENDPOINTS = {
   THERAPEUTIC_TECHNIQUES_BY_EMOTION: (emotion) => `/api/therapeutic-techniques/emotion/${emotion}`,
   THERAPEUTIC_TECHNIQUES_USE: '/api/therapeutic-techniques/use',
   THERAPEUTIC_TECHNIQUES_HISTORY: '/api/therapeutic-techniques/history',
+  THERAPEUTIC_TECHNIQUES_STATS: '/api/therapeutic-techniques/stats',
 };
 
 const makeRequest = (url, options) => {

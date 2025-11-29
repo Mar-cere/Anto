@@ -29,6 +29,7 @@ import EmergencyAlertsHistoryScreen from '../screens/EmergencyAlertsHistoryScree
 import SystemHealthScreen from '../screens/SystemHealthScreen';
 import TherapeuticTechniquesScreen from '../screens/TherapeuticTechniquesScreen';
 import TechniqueDetailScreen from '../screens/TechniqueDetailScreen';
+import TherapeuticTechniquesStatsScreen from '../screens/TherapeuticTechniquesStatsScreen';
 import { colors } from '../styles/globalStyles';
 import TabNavigator from './TabNavigator';
 
@@ -55,6 +56,7 @@ const ROUTE_NAMES = {
   SYSTEM_HEALTH: 'SystemHealth',
   THERAPEUTIC_TECHNIQUES: 'TherapeuticTechniques',
   TECHNIQUE_DETAIL: 'TechniqueDetail',
+  THERAPEUTIC_TECHNIQUES_STATS: 'TherapeuticTechniquesStats',
 };
 
 /**
@@ -183,6 +185,11 @@ const StackNavigator = () => {
       <Stack.Screen 
         name={ROUTE_NAMES.TECHNIQUE_DETAIL} 
         component={TechniqueDetailScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen 
+        name={ROUTE_NAMES.THERAPEUTIC_TECHNIQUES_STATS} 
+        component={TherapeuticTechniquesStatsScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

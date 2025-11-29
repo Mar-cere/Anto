@@ -8,6 +8,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
 import {
+  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -15,6 +16,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FloatingNavBar from '../components/FloatingNavBar';
 import Header from '../components/Header';
 import ParticleBackground from '../components/ParticleBackground';
@@ -45,6 +47,7 @@ const INTERACTIVE_TECHNIQUES = {
 const TechniqueDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
+  const insets = useSafeAreaInsets();
   const { technique } = route.params || {};
 
   const [showExercise, setShowExercise] = useState(false);
@@ -52,13 +55,21 @@ const TechniqueDetailScreen = () => {
 
   if (!technique) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
         <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+        <ParticleBackground />
         <Header title="Técnica" showBackButton />
         <View style={styles.errorContainer}>
+          <MaterialCommunityIcons name="alert-circle" size={48} color={colors.error} />
           <Text style={styles.errorText}>Técnica no encontrada</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.retryButtonText}>Volver</Text>
+          </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -76,12 +87,20 @@ const TechniqueDetailScreen = () => {
     setExerciseCompleted(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     
+    // Calcular duración si está disponible
+    const duration = data?.duration || null;
+    
     // Registrar uso de técnica en backend
     try {
       await api.post(ENDPOINTS.THERAPEUTIC_TECHNIQUES_USE, {
         techniqueId: technique.id || technique.name,
+        techniqueName: technique.name,
+        techniqueType: technique.type || technique.category || 'immediate',
+        emotion: technique.emotion || null,
         completed: true,
-        data: data || {},
+        duration: duration,
+        exerciseData: data || {},
+        completedAt: new Date().toISOString(),
       });
     } catch (error) {
       console.error('Error registrando uso de técnica:', error);
@@ -233,13 +252,13 @@ const TechniqueDetailScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
       <ParticleBackground />
       <Header title={technique.name} showBackButton />
       {renderContent()}
       {!showExercise && <FloatingNavBar />}
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -253,10 +272,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 28,
   },
   typeBadge: {
     alignSelf: 'flex-start',
@@ -271,12 +290,14 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   title: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: 'bold',
     color: colors.text,
+    lineHeight: 38,
+    letterSpacing: 0.3,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 28,
   },
   sectionTitleRow: {
     flexDirection: 'row',
@@ -285,20 +306,23 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 19,
+    fontWeight: '700',
     color: colors.text,
-    marginBottom: 12,
+    marginBottom: 14,
+    letterSpacing: 0.3,
   },
   sectionContent: {
     fontSize: 16,
     color: colors.textSecondary,
-    lineHeight: 24,
+    lineHeight: 26,
+    letterSpacing: 0.2,
   },
   stepItem: {
     flexDirection: 'row',
-    marginBottom: 16,
-    gap: 12,
+    marginBottom: 18,
+    gap: 14,
+    alignItems: 'flex-start',
   },
   stepNumber: {
     width: 32,
@@ -318,7 +342,8 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: colors.text,
-    lineHeight: 24,
+    lineHeight: 26,
+    letterSpacing: 0.2,
   },
   subTechnique: {
     marginBottom: 20,
@@ -337,11 +362,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    gap: 10,
-    marginTop: 20,
+    paddingVertical: 18,
+    paddingHorizontal: 28,
+    borderRadius: 14,
+    gap: 12,
+    marginTop: 24,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   exerciseButtonText: {
     fontSize: 18,
@@ -379,10 +409,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
+    gap: 16,
   },
   errorText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.error,
+    textAlign: 'center',
+    fontWeight: '600',
   },
 });
 
