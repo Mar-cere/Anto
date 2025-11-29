@@ -82,7 +82,7 @@ const transactionSchema = new mongoose.Schema({
   // Plan asociado (si aplica)
   plan: {
     type: String,
-    enum: ['monthly', 'yearly', null],
+    enum: ['weekly', 'monthly', 'quarterly', 'semestral', 'yearly', null],
     default: null,
   },
 

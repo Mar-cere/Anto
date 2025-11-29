@@ -20,7 +20,7 @@ const router = express.Router();
 
 // Esquema de validación para crear checkout
 const createCheckoutSchema = Joi.object({
-  plan: Joi.string().valid('monthly', 'yearly').required(),
+  plan: Joi.string().valid('weekly', 'monthly', 'quarterly', 'semestral', 'yearly').required(),
   successUrl: Joi.string().uri().optional(),
   cancelUrl: Joi.string().uri().optional(),
 });
@@ -49,20 +49,43 @@ router.get('/plans', (req, res) => {
     }
 
     const currency = 'CLP';
+    
+    // Calcular precios
+    const weeklyAmount = getPlanPrice('weekly');
     const monthlyAmount = getPlanPrice('monthly');
+    const quarterlyAmount = getPlanPrice('quarterly');
+    const semestralAmount = getPlanPrice('semestral');
     const yearlyAmount = getPlanPrice('yearly');
-    const monthlyFormatted = formatAmount(monthlyAmount, currency);
-    const yearlyFormatted = formatAmount(yearlyAmount, currency);
-    const savingsAmount = monthlyAmount * 12 - yearlyAmount;
+    
+    // Calcular ahorros vs mensual
+    const monthlyEquivalent = monthlyAmount;
+    const quarterlySavings = (monthlyAmount * 3) - quarterlyAmount;
+    const semestralSavings = (monthlyAmount * 6) - semestralAmount;
+    const yearlySavings = (monthlyAmount * 12) - yearlyAmount;
 
     const plans = {
+      weekly: {
+        id: 'weekly',
+        name: 'Premium Semanal',
+        amount: weeklyAmount,
+        formattedAmount: formatAmount(weeklyAmount, currency),
+        interval: 'week',
+        currency: currency,
+        features: [
+          'Chat ilimitado',
+          'Todas las técnicas terapéuticas',
+          'Análisis emocional avanzado',
+          'Historial completo',
+        ],
+      },
       monthly: {
         id: 'monthly',
         name: 'Premium Mensual',
         amount: monthlyAmount,
-        formattedAmount: monthlyFormatted,
+        formattedAmount: formatAmount(monthlyAmount, currency),
         interval: 'month',
         currency: currency,
+        discount: '5%',
         features: [
           'Chat ilimitado',
           'Todas las técnicas terapéuticas',
@@ -72,18 +95,49 @@ router.get('/plans', (req, res) => {
           'Soporte prioritario',
         ],
       },
+      quarterly: {
+        id: 'quarterly',
+        name: 'Premium Trimestral',
+        amount: quarterlyAmount,
+        formattedAmount: formatAmount(quarterlyAmount, currency),
+        interval: 'quarter',
+        currency: currency,
+        discount: '10%',
+        savings: formatAmount(quarterlySavings, currency),
+        features: [
+          'Todo lo del plan mensual',
+          'Ahorro de $600 CLP',
+          'Facturación trimestral',
+        ],
+      },
+      semestral: {
+        id: 'semestral',
+        name: 'Premium Semestral',
+        amount: semestralAmount,
+        formattedAmount: formatAmount(semestralAmount, currency),
+        interval: 'semester',
+        currency: currency,
+        discount: '15%',
+        savings: formatAmount(semestralSavings, currency),
+        features: [
+          'Todo lo del plan mensual',
+          'Ahorro de $1,600 CLP',
+          'Facturación semestral',
+        ],
+      },
       yearly: {
         id: 'yearly',
         name: 'Premium Anual',
         amount: yearlyAmount,
-        formattedAmount: yearlyFormatted,
+        formattedAmount: formatAmount(yearlyAmount, currency),
         interval: 'year',
         currency: currency,
-        discount: '33%',
-        savings: formatAmount(savingsAmount, currency),
+        discount: '20%',
+        savings: formatAmount(yearlySavings, currency),
         features: [
           'Todo lo del plan mensual',
-          'Ahorro de 2 meses',
+          'Ahorro de $4,200 CLP',
+          'Mejor precio por mes',
           'Acceso anticipado a nuevas features',
         ],
       },

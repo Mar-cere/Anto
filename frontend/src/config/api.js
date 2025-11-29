@@ -99,6 +99,15 @@ export const ENDPOINTS = {
   THERAPEUTIC_TECHNIQUES_USE: '/api/therapeutic-techniques/use',
   THERAPEUTIC_TECHNIQUES_HISTORY: '/api/therapeutic-techniques/history',
   THERAPEUTIC_TECHNIQUES_STATS: '/api/therapeutic-techniques/stats',
+  
+  // Payments and Subscriptions
+  PAYMENT_PLANS: '/api/payments/plans',
+  PAYMENT_CREATE_CHECKOUT: '/api/payments/create-checkout-session',
+  PAYMENT_SUBSCRIPTION_STATUS: '/api/payments/subscription-status',
+  PAYMENT_CANCEL_SUBSCRIPTION: '/api/payments/cancel-subscription',
+  PAYMENT_UPDATE_METHOD: '/api/payments/update-payment-method',
+  PAYMENT_TRANSACTIONS: '/api/payments/transactions',
+  PAYMENT_TRANSACTIONS_STATS: '/api/payments/transactions/stats',
 };
 
 const makeRequest = (url, options) => {

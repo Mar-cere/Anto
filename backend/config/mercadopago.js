@@ -46,8 +46,20 @@ export const MERCADOPAGO_CONFIG = {
   
   // Precios de los planes (en pesos chilenos)
   prices: {
-    monthly: parseInt(process.env.MERCADOPAGO_PRICE_MONTHLY || '9990', 10), // $9.990 CLP
-    yearly: parseInt(process.env.MERCADOPAGO_PRICE_YEARLY || '79990', 10), // $79.990 CLP
+    weekly: parseInt(process.env.MERCADOPAGO_PRICE_WEEKLY || '950', 10), // $950 CLP
+    monthly: parseInt(process.env.MERCADOPAGO_PRICE_MONTHLY || '3600', 10), // $3,600 CLP (5% descuento)
+    quarterly: parseInt(process.env.MERCADOPAGO_PRICE_QUARTERLY || '10200', 10), // $10,200 CLP (10% descuento)
+    semestral: parseInt(process.env.MERCADOPAGO_PRICE_SEMESTRAL || '19400', 10), // $19,400 CLP (15% descuento)
+    yearly: parseInt(process.env.MERCADOPAGO_PRICE_YEARLY || '36900', 10), // $36,900 CLP (20% descuento)
+  },
+  
+  // IDs de Preapproval Plans (creados en el panel de Mercado Pago)
+  preapprovalPlanIds: {
+    weekly: process.env.MERCADOPAGO_PREAPPROVAL_PLAN_ID_WEEKLY || '',
+    monthly: process.env.MERCADOPAGO_PREAPPROVAL_PLAN_ID_MONTHLY || '',
+    quarterly: process.env.MERCADOPAGO_PREAPPROVAL_PLAN_ID_QUARTERLY || '',
+    semestral: process.env.MERCADOPAGO_PREAPPROVAL_PLAN_ID_SEMESTRAL || '',
+    yearly: process.env.MERCADOPAGO_PREAPPROVAL_PLAN_ID_YEARLY || '',
   },
   
   // Configuración de trial (días)
@@ -73,6 +85,17 @@ export const isMercadoPagoConfigured = () => {
 // Helper: obtener el precio según el plan
 export const getPlanPrice = (plan) => {
   return MERCADOPAGO_CONFIG.prices[plan] || 0;
+};
+
+// Helper: obtener el ID del Preapproval Plan según el plan
+export const getPreapprovalPlanId = (plan) => {
+  return MERCADOPAGO_CONFIG.preapprovalPlanIds[plan] || null;
+};
+
+// Helper: generar URL de checkout para Preapproval Plan
+export const getPreapprovalCheckoutUrl = (planId) => {
+  if (!planId) return null;
+  return `https://www.mercadopago.cl/subscriptions/checkout?preapproval_plan_id=${planId}`;
 };
 
 // Helper: formatear monto para mostrar

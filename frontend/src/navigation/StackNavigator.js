@@ -30,6 +30,7 @@ import SystemHealthScreen from '../screens/SystemHealthScreen';
 import TherapeuticTechniquesScreen from '../screens/TherapeuticTechniquesScreen';
 import TechniqueDetailScreen from '../screens/TechniqueDetailScreen';
 import TherapeuticTechniquesStatsScreen from '../screens/TherapeuticTechniquesStatsScreen';
+import SubscriptionScreen from '../screens/SubscriptionScreen';
 import { colors } from '../styles/globalStyles';
 import TabNavigator from './TabNavigator';
 
@@ -57,6 +58,7 @@ const ROUTE_NAMES = {
   THERAPEUTIC_TECHNIQUES: 'TherapeuticTechniques',
   TECHNIQUE_DETAIL: 'TechniqueDetail',
   THERAPEUTIC_TECHNIQUES_STATS: 'TherapeuticTechniquesStats',
+  SUBSCRIPTION: 'Subscription',
 };
 
 /**
@@ -190,6 +192,11 @@ const StackNavigator = () => {
       <Stack.Screen 
         name={ROUTE_NAMES.THERAPEUTIC_TECHNIQUES_STATS} 
         component={TherapeuticTechniquesStatsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen 
+        name={ROUTE_NAMES.SUBSCRIPTION} 
+        component={SubscriptionScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

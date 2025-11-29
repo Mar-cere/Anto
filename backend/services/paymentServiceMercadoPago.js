@@ -8,19 +8,19 @@
  * @author AntoApp Team
  */
 
-import { preferenceClient, subscriptionClient, MERCADOPAGO_CONFIG, getPlanPrice, isMercadoPagoConfigured } from '../config/mercadopago.js';
+import { preferenceClient, subscriptionClient, MERCADOPAGO_CONFIG, getPlanPrice, getPreapprovalPlanId, getPreapprovalCheckoutUrl, isMercadoPagoConfigured } from '../config/mercadopago.js';
 import Transaction from '../models/Transaction.js';
 import Subscription from '../models/Subscription.js';
 import User from '../models/User.js';
 
 class PaymentServiceMercadoPago {
   /**
-   * Crear preferencia de pago para suscripción
+   * Crear sesión de checkout para suscripción recurrente usando Preapproval Plans
    * @param {string} userId - ID del usuario
    * @param {string} plan - Plan seleccionado ('monthly' o 'yearly')
-   * @param {string} successUrl - URL de éxito
-   * @param {string} cancelUrl - URL de cancelación
-   * @returns {Promise<Object>} - Preferencia de pago de Mercado Pago
+   * @param {string} successUrl - URL de éxito (opcional, para redirección después del pago)
+   * @param {string} cancelUrl - URL de cancelación (opcional)
+   * @returns {Promise<Object>} - URL de checkout de Mercado Pago
    */
   async createCheckoutSession(userId, plan, successUrl = null, cancelUrl = null) {
     if (!isMercadoPagoConfigured()) {
@@ -32,45 +32,16 @@ class PaymentServiceMercadoPago {
       throw new Error('Usuario no encontrado');
     }
 
-    const price = getPlanPrice(plan);
-    if (!price || price <= 0) {
-      throw new Error(`Plan ${plan} no está configurado`);
+    // Obtener el ID del Preapproval Plan
+    const preapprovalPlanId = getPreapprovalPlanId(plan);
+    if (!preapprovalPlanId) {
+      throw new Error(`Preapproval Plan ID para ${plan} no está configurado. Por favor, configura MERCADOPAGO_PREAPPROVAL_PLAN_ID_${plan.toUpperCase()} en las variables de entorno`);
     }
 
-    // Crear preferencia de pago
-    const preference = await preferenceClient.create({
-      body: {
-        items: [
-          {
-            title: `Suscripción Premium ${plan === 'monthly' ? 'Mensual' : 'Anual'} - AntoApp`,
-            description: `Plan Premium ${plan === 'monthly' ? 'Mensual' : 'Anual'} con acceso completo a todas las funcionalidades`,
-            quantity: 1,
-            unit_price: price,
-            currency_id: MERCADOPAGO_CONFIG.currency,
-          },
-        ],
-        payer: {
-          name: user.name || user.username,
-          email: user.email,
-        },
-        back_urls: {
-          success: successUrl || MERCADOPAGO_CONFIG.successUrl,
-          failure: cancelUrl || MERCADOPAGO_CONFIG.cancelUrl,
-          pending: MERCADOPAGO_CONFIG.pendingUrl,
-        },
-        auto_return: 'approved',
-        notification_url: process.env.MERCADOPAGO_WEBHOOK_URL || `${process.env.API_URL}/api/payments/webhook`,
-        statement_descriptor: 'ANTOAPP PREMIUM',
-        metadata: {
-          userId: userId.toString(),
-          plan: plan,
-          username: user.username,
-        },
-        // Configuración para suscripciones recurrentes
-        // Nota: Mercado Pago maneja suscripciones de forma diferente
-        // Para suscripciones recurrentes, se usa Preapproval
-      },
-    });
+    const price = getPlanPrice(plan);
+    
+    // Generar URL de checkout para Preapproval Plan
+    const checkoutUrl = getPreapprovalCheckoutUrl(preapprovalPlanId);
 
     // Registrar transacción pendiente
     await Transaction.create({
@@ -80,20 +51,23 @@ class PaymentServiceMercadoPago {
       currency: MERCADOPAGO_CONFIG.currency.toLowerCase(),
       status: 'pending',
       paymentProvider: 'mercadopago',
-      providerTransactionId: preference.id,
+      providerTransactionId: preapprovalPlanId, // Usar el plan ID como referencia
       plan: plan,
-      description: `Suscripción ${plan} - Preferencia creada`,
+      description: `Suscripción ${plan} - Checkout iniciado`,
       metadata: {
-        preferenceId: preference.id,
+        preapprovalPlanId: preapprovalPlanId,
         plan: plan,
-        initPoint: preference.init_point,
+        checkoutUrl: checkoutUrl,
+        successUrl: successUrl || MERCADOPAGO_CONFIG.successUrl,
+        cancelUrl: cancelUrl || MERCADOPAGO_CONFIG.cancelUrl,
       },
     });
 
     return {
-      sessionId: preference.id,
-      url: preference.init_point, // URL de pago
-      preferenceId: preference.id,
+      sessionId: preapprovalPlanId,
+      url: checkoutUrl,
+      preferenceId: preapprovalPlanId, // Mantener compatibilidad
+      preapprovalPlanId: preapprovalPlanId,
     };
   }
 
