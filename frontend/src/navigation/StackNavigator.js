@@ -26,6 +26,7 @@ import TaskScreen from '../screens/TaskScreen';
 import VerifyCodeScreen from '../screens/VerifyCodeScreen';
 import CrisisDashboardScreen from '../screens/CrisisDashboardScreen';
 import EmergencyAlertsHistoryScreen from '../screens/EmergencyAlertsHistoryScreen';
+import SystemHealthScreen from '../screens/SystemHealthScreen';
 import { colors } from '../styles/globalStyles';
 import TabNavigator from './TabNavigator';
 
@@ -49,6 +50,7 @@ const ROUTE_NAMES = {
   POMODORO: 'Pomodoro',
   CRISIS_DASHBOARD: 'CrisisDashboard',
   EMERGENCY_ALERTS_HISTORY: 'EmergencyAlertsHistory',
+  SYSTEM_HEALTH: 'SystemHealth',
 };
 
 /**

@@ -86,6 +86,12 @@ export const ENDPOINTS = {
   EMERGENCY_ALERTS: '/api/users/me/emergency-alerts',
   EMERGENCY_ALERTS_STATS: '/api/users/me/emergency-alerts/stats',
   EMERGENCY_ALERTS_PATTERNS: '/api/users/me/emergency-alerts/patterns',
+  
+  // Metrics
+  METRICS_SYSTEM: '/api/metrics/system',
+  METRICS_HEALTH: '/api/metrics/health',
+  METRICS_ME: '/api/metrics/me',
+  METRICS_BY_TYPE: (type) => `/api/metrics/type/${type}`,
 };
 
 const makeRequest = (url, options) => {

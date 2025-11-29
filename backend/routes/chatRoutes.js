@@ -19,6 +19,7 @@ import {
 } from '../services/index.js';
 import sessionEmotionalMemory from '../services/sessionEmotionalMemory.js';
 import actionSuggestionService from '../services/actionSuggestionService.js';
+import metricsService from '../services/metricsService.js';
 import { HISTORY_LIMITS } from '../constants/openai.js';
 import { evaluateSuicideRisk } from '../constants/crisis.js';
 import emergencyAlertService from '../services/emergencyAlertService.js';
@@ -240,6 +241,16 @@ router.post('/messages', protect, async (req, res) => {
 
         // NUEVO: Agregar análisis emocional a la memoria de sesión
         sessionEmotionalMemory.addAnalysis(req.user._id.toString(), emotionalAnalysis);
+        
+        // NUEVO: Registrar métrica de análisis emocional
+        metricsService.recordMetric('emotional_analysis', emotionalAnalysis, req.user._id.toString());
+        
+        // NUEVO: Registrar métrica de memoria de sesión
+        const sessionBuffer = sessionEmotionalMemory.getBuffer(req.user._id.toString());
+        metricsService.recordMetric('session_memory', {
+          action: 'add',
+          bufferSize: sessionBuffer.length
+        }, req.user._id.toString());
         
         // NUEVO: Obtener tendencias de la sesión actual
         const sessionTrends = sessionEmotionalMemory.analyzeTrends(req.user._id.toString());
@@ -540,12 +551,29 @@ router.post('/messages', protect, async (req, res) => {
           logs.push(`[${Date.now() - startTime}ms] Advertencia: Error en actualizaciones secundarias`);
         });
 
+        // NUEVO: Registrar métrica de generación de respuesta
+        const responseTime = Date.now() - responseStartTime;
+        metricsService.recordMetric('response_generation', {
+          time: responseTime,
+          success: true
+        }, req.user._id.toString());
+
         // NUEVO: Generar sugerencias de acciones
         const actionSuggestions = actionSuggestionService.generateSuggestions(
           emotionalAnalysis,
           contextualAnalysis
         );
         const formattedSuggestions = actionSuggestionService.formatSuggestions(actionSuggestions);
+        
+        // NUEVO: Registrar métrica de sugerencias generadas
+        if (actionSuggestions.length > 0) {
+          actionSuggestions.forEach(suggestion => {
+            metricsService.recordMetric('action_suggestion', {
+              action: 'generate',
+              suggestionType: suggestion
+            }, req.user._id.toString());
+          });
+        }
 
         logs.push(`[${Date.now() - startTime}ms] Proceso completado exitosamente`);
         

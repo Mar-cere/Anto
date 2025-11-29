@@ -8,6 +8,56 @@ class SessionEmotionalMemory {
     // Buffer por usuario (userId -> array de análisis emocionales)
     this.sessionBuffers = new Map();
     this.MAX_BUFFER_SIZE = 20; // Máximo de mensajes a recordar por sesión
+    this.CLEANUP_INTERVAL = 30 * 60 * 1000; // 30 minutos
+    this.INACTIVE_THRESHOLD = 2 * 60 * 60 * 1000; // 2 horas de inactividad
+    
+    // Iniciar limpieza automática periódica
+    this.startAutoCleanup();
+  }
+
+  /**
+   * Inicia la limpieza automática de buffers inactivos
+   */
+  startAutoCleanup() {
+    // Limpiar cada 30 minutos
+    setInterval(() => {
+      this.cleanupInactiveBuffers();
+    }, this.CLEANUP_INTERVAL);
+  }
+
+  /**
+   * Limpia buffers de usuarios inactivos
+   */
+  cleanupInactiveBuffers() {
+    const now = Date.now();
+    const keysToDelete = [];
+
+    for (const [userId, buffer] of this.sessionBuffers.entries()) {
+      if (buffer.length === 0) {
+        keysToDelete.push(userId);
+        continue;
+      }
+
+      // Obtener timestamp del último análisis
+      const lastAnalysis = buffer[buffer.length - 1];
+      const lastTimestamp = lastAnalysis?.timestamp || 0;
+      const timeSinceLastActivity = now - lastTimestamp;
+
+      // Si ha pasado más del umbral de inactividad, limpiar
+      if (timeSinceLastActivity > this.INACTIVE_THRESHOLD) {
+        keysToDelete.push(userId);
+      }
+    }
+
+    // Eliminar buffers inactivos
+    keysToDelete.forEach(key => {
+      this.sessionBuffers.delete(key);
+      console.log(`[SessionEmotionalMemory] Limpiado buffer inactivo para usuario: ${key}`);
+    });
+
+    if (keysToDelete.length > 0) {
+      console.log(`[SessionEmotionalMemory] Limpieza automática: ${keysToDelete.length} buffers eliminados`);
+    }
   }
 
   /**
@@ -79,25 +129,36 @@ class SessionEmotionalMemory {
     let streakAnxiety = 0;
     let streakSadness = 0;
     
+    // Contar racha negativa desde el final
     for (let i = buffer.length - 1; i >= 0; i--) {
       const analysis = buffer[i];
       
       if (analysis.category === 'negative') {
         streakNegative++;
       } else {
-        break;
+        break; // Si encontramos una emoción no negativa, romper
       }
+    }
+    
+    // Contar racha de ansiedad desde el final
+    for (let i = buffer.length - 1; i >= 0; i--) {
+      const analysis = buffer[i];
       
       if (analysis.mainEmotion === 'ansiedad') {
         streakAnxiety++;
       } else {
-        break;
+        break; // Si encontramos otra emoción, romper
       }
+    }
+    
+    // Contar racha de tristeza desde el final
+    for (let i = buffer.length - 1; i >= 0; i--) {
+      const analysis = buffer[i];
       
       if (analysis.mainEmotion === 'tristeza') {
         streakSadness++;
       } else {
-        break;
+        break; // Si encontramos otra emoción, romper
       }
     }
 

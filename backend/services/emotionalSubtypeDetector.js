@@ -7,7 +7,7 @@ class EmotionalSubtypeDetector {
     // Subtipos para cada emoción principal
     this.subtypes = {
       tristeza: {
-        duelo: /(?:duelo|pérdida|extrañ(?:o|ar)|ech(?:o|ar).*de.*menos|ya.*no.*está|se.*fue|mur(?:ió|ió)|fallec(?:ió|ió)|despedida|despedir)/i,
+        duelo: /(?:duelo|pérdida|extrañ(?:o|ar|o.*mucho)|ech(?:o|ar).*de.*menos|ya.*no.*está|se.*fue|mur(?:ió|ió)|fallec(?:ió|ió)|falleció|despedida|despedir|abuela.*falleció|abuela.*murió)/i,
         soledad: /(?:solo|soledad|aislado|desconectado|nadie.*me.*entiende|me.*siento.*solo|sin.*compañía|abandonad(?:o|a)|me.*siento.*abandonad(?:o|a))/i,
         fracaso: /(?:fracas(?:o|ado|ar)|fall(?:é|e|ar|ado)|no.*pude|no.*puedo|no.*sirvo|no.*valgo|inútil|incompetente|no.*soy.*capaz|no.*me.*sale)/i,
         desesperanza: /(?:sin.*esperanza|sin.*salida|sin.*futuro|no.*tiene.*sentido|para.*qué|no.*vale.*la.*pena|futuro.*negro|sin.*luz)/i,
@@ -15,8 +15,8 @@ class EmotionalSubtypeDetector {
         rechazo: /(?:rechazad(?:o|a)|me.*rechazaron|no.*me.*quieren|me.*abandonaron|me.*dejaron|me.*ignoran)/i
       },
       ansiedad: {
-        social: /(?:miedo.*social|ansiedad.*social|vergüenza.*social|miedo.*a.*hablar|miedo.*a.*gente|me.*juzgan|qué.*pensarán|me.*observan|me.*evalúan)/i,
-        anticipatoria: /(?:miedo.*a.*lo.*que.*puede.*pasar|ansiedad.*por.*el.*futuro|preocupación.*por.*mañana|me.*preocupa.*lo.*que.*viene|anticipación.*negativa)/i,
+        social: /(?:miedo.*social|ansiedad.*social|vergüenza.*social|miedo.*(?:a|de).*hablar|miedo.*(?:a|de).*hablar.*en.*público|hablar.*en.*público|miedo.*a.*gente|me.*juzgan|qué.*pensarán|me.*observan|me.*evalúan|miedo.*a.*ser.*juzgad(?:o|a)|miedo.*a.*la.*opinión)/i,
+        anticipatoria: /(?:miedo.*a.*lo.*que.*puede.*pasar|ansiedad.*por.*el.*futuro|preocupación.*por.*mañana|me.*preocupa.*lo.*que.*viene|anticipación.*negativa|me.*preocupa.*mucho.*lo.*que.*puede.*pasar|preocupa.*lo.*que.*puede.*pasar|miedo.*a.*lo.*que.*viene|ansiedad.*por.*mañana)/i,
         rendimiento: /(?:ansiedad.*por.*rendir|miedo.*a.*fallar|presión.*por.*hacerlo.*bien|miedo.*a.*no.*cumplir|ansiedad.*por.*exámenes|ansiedad.*por.*trabajo)/i,
         salud: /(?:ansiedad.*por.*salud|hipocondría|miedo.*a.*enfermar|preocupación.*por.*síntomas|ansiedad.*médica)/i,
         separación: /(?:ansiedad.*de.*separación|miedo.*a.*estar.*solo|miedo.*a.*perder|miedo.*a.*que.*se.*vayan)/i,

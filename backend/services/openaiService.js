@@ -38,6 +38,7 @@ import contextAnalyzer from './contextAnalyzer.js';
 import emotionalAnalyzer from './emotionalAnalyzer.js';
 import goalTracker from './goalTracker.js';
 import memoryService from './memoryService.js';
+import metricsService from './metricsService.js';
 import personalizationService from './personalizationService.js';
 import progressTracker from './progressTracker.js';
 import sessionEmotionalMemory from './sessionEmotionalMemory.js';
@@ -251,6 +252,12 @@ class OpenAIService {
         if (protocolToStart) {
           activeProtocol = therapeuticProtocolService.startProtocol(mensaje.userId, protocolToStart);
           currentIntervention = therapeuticProtocolService.getCurrentIntervention(mensaje.userId);
+          
+          // NUEVO: Registrar métrica de protocolo iniciado
+          metricsService.recordMetric('protocol', {
+            action: 'start',
+            protocolType: protocolToStart
+          }, mensaje.userId);
         }
       } else {
         // Obtener la intervención del paso actual
@@ -264,6 +271,15 @@ class OpenAIService {
         analisisEmocional?.subtype,
         { style: responseStyle }
       );
+      
+      // NUEVO: Registrar métrica de uso de plantilla terapéutica
+      if (therapeuticBase && analisisEmocional?.subtype) {
+        metricsService.recordMetric('therapeutic_template', {
+          emotion: analisisEmocional.mainEmotion,
+          subtype: analisisEmocional.subtype,
+          style: responseStyle
+        }, mensaje.userId);
+      }
 
       // 7. Seleccionar técnica terapéutica apropiada (si no hay protocolo activo)
       let selectedTechnique = null;

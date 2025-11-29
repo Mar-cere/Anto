@@ -46,7 +46,7 @@ class EmotionalAnalyzer {
     // Patrones de detección emocional
     this.emotionPatterns = {
       tristeza: {
-        patterns: /(?:triste(?:za)?|deprimi(?:do|da|r)|sin energía|desánimo|desmotiva(?:do|da|r)|solo|soledad|melancolía|nostalgia|abatid(?:o|a)|desesperanzad(?:o|a)|desconsolad(?:o|a)|llor(?:o|ar|ando)|llanto|vacío|vacío interior|sin ganas|sin ánimo|desgana|apático|apatía|hundid(?:o|a)|caíd(?:o|a)|desilusionad(?:o|a)|desencantad(?:o|a)|no.*tengo.*ganas|no.*me.*motiva|me.*siento.*mal(?!.*genial)|no.*me.*siento.*bien|estoy.*mal(?!.*genial)|me.*va.*mal|me.*siento.*peor|estoy.*peor|peor.*que|me.*siento.*peor.*que|estoy.*peor.*que|peor.*que.*antes|estoy.*peor.*que.*antes|me.*siento.*peor.*que.*antes|tengo.*ganas.*de.*hacerme.*daño|quiero.*hacerme.*daño|me.*quiero.*cortar|quiero.*cortarme|me.*corto|me.*quemo|me.*golpeo|autolesi(?:ón|on|arme)|hacerme.*daño|hacerse.*daño|el.*dolor.*físico.*me.*hace.*sentir.*mejor.*que.*el.*dolor.*emocional|cicatrices.*de.*cuando.*me.*cortaba|necesito.*hacerme.*daño|urgencia.*de.*hacerme.*daño|no.*puedo.*dejar.*de.*pensar.*en.*hacerme.*daño|pensar.*en.*hacerme.*daño|sería.*mejor.*si.*no.*existiera|mejor.*si.*no.*existiera|pienso.*que.*sería.*mejor.*si.*no.*existiera|terminar.*con.*todo.*esto|pensado.*en.*cómo.*terminar|nadie.*me.*extrañaría.*si.*me.*fuera|me.*extrañaría.*si.*me.*fuera|no.*veo.*ninguna.*salida|sin.*salida|futuro.*se.*ve.*completamente.*negro|futuro.*negro|mi.*vida.*no.*puedo.*ser.*peor|mi.*vida.*no.*puede.*ser.*peor|ya.*no.*puedo.*más.*estoy.*al.*límite|estoy.*al.*límite|me.*siento.*desconectado.*de.*todos|desconectado.*de.*todos|estoy.*hecho.*polvo|hecho.*polvo|completamente.*destrozado|destrozado)/i,
+        patterns: /(?:triste(?:za)?|deprimi(?:do|da|r)|sin energía|desánimo|desmotiva(?:do|da|r)|solo|soledad|melancolía|nostalgia|abatid(?:o|a)|desesperanzad(?:o|a)|desconsolad(?:o|a)|llor(?:o|ar|ando)|llanto|vacío|vacío interior|sin ganas|sin ánimo|desgana|apático|apatía|hundid(?:o|a)|caíd(?:o|a)|desilusionad(?:o|a)|desencantad(?:o|a)|no.*tengo.*ganas|no.*me.*motiva|me.*siento.*mal(?!.*genial)|no.*me.*siento.*bien|estoy.*mal(?!.*genial)|me.*va.*mal|me.*siento.*peor|estoy.*peor|peor.*que|me.*siento.*peor.*que|estoy.*peor.*que|peor.*que.*antes|estoy.*peor.*que.*antes|me.*siento.*peor.*que.*antes|tengo.*ganas.*de.*hacerme.*daño|quiero.*hacerme.*daño|me.*quiero.*cortar|quiero.*cortarme|me.*corto|me.*quemo|me.*golpeo|autolesi(?:ón|on|arme)|hacerme.*daño|hacerse.*daño|el.*dolor.*físico.*me.*hace.*sentir.*mejor.*que.*el.*dolor.*emocional|cicatrices.*de.*cuando.*me.*cortaba|necesito.*hacerme.*daño|urgencia.*de.*hacerme.*daño|no.*puedo.*dejar.*de.*pensar.*en.*hacerme.*daño|pensar.*en.*hacerme.*daño|sería.*mejor.*si.*no.*existiera|mejor.*si.*no.*existiera|pienso.*que.*sería.*mejor.*si.*no.*existiera|terminar.*con.*todo.*esto|pensado.*en.*cómo.*terminar|nadie.*me.*extrañaría.*si.*me.*fuera|me.*extrañaría.*si.*me.*fuera|no.*veo.*ninguna.*salida|sin.*salida|futuro.*se.*ve.*completamente.*negro|futuro.*negro|mi.*vida.*no.*puedo.*ser.*peor|mi.*vida.*no.*puede.*ser.*peor|ya.*no.*puedo.*más.*estoy.*al.*límite|estoy.*al.*límite|me.*siento.*desconectado.*de.*todos|desconectado.*de.*todos|estoy.*hecho.*polvo|hecho.*polvo|completamente.*destrozado|destrozado|extrañ(?:o|ar|o.*mucho)|ech(?:o|ar).*de.*menos|pérdida|duelo|ya.*no.*está|se.*fue|mur(?:ió|ió)|fallec(?:ió|ió)|falleció|despedida|despedir|abuela.*falleció|abuela.*murió|madre.*falleció|madre.*murió|padre.*falleció|padre.*murió|familiar.*falleció|familiar.*murió)/i,
         intensity: 7,
         category: 'negative'
       },
@@ -165,6 +165,21 @@ class EmotionalAnalyzer {
     }
 
     try {
+      // NUEVO: Verificar caché antes de analizar
+      let cachedAnalysis = null;
+      try {
+        const { default: analysisCache } = await import('./emotionalAnalysisCache.js');
+        cachedAnalysis = analysisCache.get(content);
+        
+        if (cachedAnalysis && (!previousPatterns || previousPatterns.length === 0)) {
+          // Si hay análisis cacheado y no hay patrones previos, usar caché
+          return cachedAnalysis;
+        }
+      } catch (error) {
+        // Si falla el caché, continuar con análisis normal
+        console.warn('[EmotionalAnalyzer] Error al acceder al caché:', error);
+      }
+
       const contentLower = content.toLowerCase();
       let detectedEmotion = this.detectPrimaryEmotion(contentLower);
       let intensity = this.calculateIntensity(contentLower, detectedEmotion);
@@ -201,7 +216,7 @@ class EmotionalAnalyzer {
         console.warn('[EmotionalAnalyzer] Error al detectar tema:', error);
       }
 
-      return {
+      const analysis = {
         mainEmotion: detectedEmotion.name,
         intensity,
         category: detectedEmotion.category,
@@ -213,6 +228,18 @@ class EmotionalAnalyzer {
         topic: topic, // Tema principal del mensaje
         topics: topics // Múltiples temas detectados
       };
+
+      // NUEVO: Guardar en caché si no hay patrones previos
+      if (!previousPatterns || previousPatterns.length === 0) {
+        try {
+          const { default: analysisCache } = await import('./emotionalAnalysisCache.js');
+          analysisCache.set(content, analysis);
+        } catch (error) {
+          // Si falla, continuar sin caché
+        }
+      }
+
+      return analysis;
     } catch (error) {
       console.error('[EmotionalAnalyzer] Error en análisis emocional:', error, content);
       return this.getDefaultAnalysis();

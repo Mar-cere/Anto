@@ -29,6 +29,7 @@ import userRoutes from './routes/userRoutes.js';
 import crisisRoutes from './routes/crisisRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import testNotificationRoutes from './routes/testNotificationRoutes.js';
+import metricsRoutes from './routes/metricsRoutes.js';
 
 // Constantes de configuración
 const APP_VERSION = '1.2.0';
@@ -267,6 +268,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/crisis', crisisRoutes);
 app.use('/api/cloudinary', cloudinaryRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/metrics', metricsRoutes);
 // Rutas de testing (solo en desarrollo)
 if (process.env.NODE_ENV !== 'production') {
   app.use('/api/notifications', testNotificationRoutes);

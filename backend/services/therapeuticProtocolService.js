@@ -177,10 +177,17 @@ class TherapeuticProtocolService {
     const emotion = emotionalAnalysis?.mainEmotion;
     const intensity = emotionalAnalysis?.intensity || 0;
     const subtype = emotionalAnalysis?.subtype;
+    const content = contextualAnalysis?.content || '';
 
-    // Protocolo de pánico para ansiedad intensa con síntomas físicos
-    if (emotion === 'ansiedad' && intensity >= 9 && 
-        (subtype === 'anticipatoria' || contextualAnalysis?.intencion?.tipo === 'CRISIS')) {
+    // Protocolo de pánico para ansiedad intensa con síntomas físicos o crisis
+    // También detectar por contenido que mencione "ataque de pánico" o síntomas físicos
+    const hasPanicKeywords = /(?:ataque.*de.*pánico|no.*puedo.*respirar|me.*ahogo|palpitaciones|siento.*que.*me.*voy.*a.*morir)/i.test(content);
+    
+    if (emotion === 'ansiedad' && intensity >= 8 && 
+        (hasPanicKeywords || 
+         subtype === 'anticipatoria' || 
+         contextualAnalysis?.intencion?.tipo === 'CRISIS' ||
+         intensity >= 9)) {
       return 'panic_protocol';
     }
 

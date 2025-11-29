@@ -15,12 +15,12 @@ class TopicDetector {
         keywords: ['trabajo', 'empleo', 'estudio', 'carrera', 'examen']
       },
       salud: {
-        patterns: /(?:salud|enfermedad|dolor|síntoma|médico|doctor|hospital|medicina|tratamiento|terapia|físico|mental|psicológico|ansiedad|depresión|insomnio|fatiga|energía|dormir|comer|alimentación|peso|ejercicio|gimnasio)/i,
-        keywords: ['salud', 'enfermedad', 'dolor', 'médico', 'terapia']
+        patterns: /(?:salud|enfermedad|dolor|duele|dolores|síntoma|médico|doctor|hospital|medicina|tratamiento|terapia|físico|mental|psicológico|ansiedad|depresión|insomnio|fatiga|energía|dormir|comer|alimentación|peso|ejercicio|gimnasio|me.*duele|tengo.*dolor|dolor.*de|duele.*la|duele.*el|duele.*mi)/i,
+        keywords: ['salud', 'enfermedad', 'dolor', 'duele', 'médico', 'terapia']
       },
       autoimagen: {
-        patterns: /(?:autoestima|autoimagen|me.*siento.*fe(?:o|a)|no.*me.*gusto|mi.*cuerpo|mi.*apariencia|soy.*[a-z]+|no.*valgo|no.*sirvo|inútil|incompetente|no.*soy.*capaz|me.*siento.*inadecuad(?:o|a)|me.*siento.*menos|inferior)/i,
-        keywords: ['autoestima', 'autoimagen', 'apariencia', 'cuerpo', 'valgo']
+        patterns: /(?:autoestima|autoimagen|me.*siento.*fe(?:o|a)|no.*me.*gusto|no.*me.*gusta.*cómo.*me.*veo|no.*me.*gusta.*mi.*apariencia|mi.*cuerpo|mi.*apariencia|soy.*[a-z]+|no.*valgo|no.*sirvo|inútil|incompetente|no.*soy.*capaz|me.*siento.*inadecuad(?:o|a)|me.*siento.*menos|inferior|cómo.*me.*veo|mi.*aspecto|mi.*físico)/i,
+        keywords: ['autoestima', 'autoimagen', 'apariencia', 'cuerpo', 'valgo', 'veo']
       },
       futuro: {
         patterns: /(?:futuro|mañana|próximo|siguiente|plan|meta|objetivo|sueño|aspiración|esperanza|miedo.*al.*futuro|ansiedad.*por.*el.*futuro|qué.*pasará|incertidumbre)/i,
