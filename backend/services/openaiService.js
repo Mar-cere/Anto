@@ -597,7 +597,7 @@ class OpenAIService {
         return respuesta || ERROR_MESSAGES.DEFAULT_FALLBACK;
       }
 
-      const { mainEmotion, intensity } = contextoEmocional;
+      const { mainEmotion, intensity, category } = contextoEmocional;
       const respuestaLower = respuesta.toLowerCase();
 
       // Verificar si ya tiene reconocimiento emocional para evitar redundancia
@@ -618,8 +618,9 @@ class OpenAIService {
       }
 
       // Ajustar tono según intensidad emocional (solo si no se agregó ya una frase)
+      // IMPORTANTE: Pasar el contexto emocional completo para distinguir entre positivas y negativas
       if (intensity >= THRESHOLDS.INTENSITY_HIGH && !tieneReconocimiento) {
-        respuesta = this.ajustarTonoAlta(respuesta);
+        respuesta = this.ajustarTonoAlta(respuesta, contextoEmocional);
       } else if (intensity <= THRESHOLDS.INTENSITY_LOW) {
         respuesta = this.ajustarTonoBaja(respuesta);
       }
@@ -634,26 +635,44 @@ class OpenAIService {
   /**
    * Ajusta el tono de la respuesta para emociones de alta intensidad
    * @param {string} respuesta - Respuesta original
+   * @param {Object} contextoEmocional - Contexto emocional con mainEmotion, category e intensity
    * @returns {string} Respuesta con tono más empático
    */
-  ajustarTonoAlta(respuesta) {
+  ajustarTonoAlta(respuesta, contextoEmocional = {}) {
     if (!respuesta) return ERROR_MESSAGES.DEFAULT_FALLBACK;
     
     const respuestaLower = respuesta.toLowerCase();
+    const { mainEmotion, category } = contextoEmocional;
     
     // Verificar si ya tiene frases empáticas para evitar redundancia
-    const tieneEmpatia = /(?:entiendo|comprendo|reconozco|veo|noto|siento|importante|difícil|complicado)/i.test(respuesta);
+    const tieneEmpatia = /(?:entiendo|comprendo|reconozco|veo|noto|siento|importante|difícil|complicado|alegr|feliz|genial|comparto)/i.test(respuesta);
     
     // Asegurar un tono más empático y contenedor para emociones intensas
     if (!tieneEmpatia) {
-      // Usar frases más variadas y naturales
-      const frasesEmpaticas = [
-        'Entiendo que esto es importante para ti.',
-        'Comprendo que esto te afecta.',
-        'Veo que estás pasando por un momento difícil.'
-      ];
-      const frase = frasesEmpaticas[Math.floor(Math.random() * frasesEmpaticas.length)];
-      return `${frase} ${respuesta}`;
+      // Distinguir entre emociones positivas y negativas
+      if (category === 'positive' || mainEmotion === 'alegria' || mainEmotion === 'esperanza') {
+        // Frases para emociones positivas de alta intensidad
+        const frasesPositivas = [
+          'Me alegra mucho escuchar eso.',
+          'Qué bueno que te sientas así.',
+          'Comparto tu alegría.',
+          'Es genial que encuentres cosas que te gustan.'
+        ];
+        const frase = frasesPositivas[Math.floor(Math.random() * frasesPositivas.length)];
+        return `${frase} ${respuesta}`;
+      } else if (category === 'negative' || !category) {
+        // Frases para emociones negativas de alta intensidad (solo si es negativa)
+        const frasesEmpaticas = [
+          'Entiendo que esto es importante para ti.',
+          'Comprendo que esto te afecta.',
+          'Veo que estás pasando por un momento difícil.'
+        ];
+        const frase = frasesEmpaticas[Math.floor(Math.random() * frasesEmpaticas.length)];
+        return `${frase} ${respuesta}`;
+      } else {
+        // Para emociones neutrales o desconocidas, usar frases neutras
+        return `Entiendo que esto es importante para ti. ${respuesta}`;
+      }
     }
     return respuesta;
   }

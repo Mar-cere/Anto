@@ -46,7 +46,7 @@ class EmotionalAnalyzer {
     // Patrones de detección emocional
     this.emotionPatterns = {
       tristeza: {
-        patterns: /(?:triste(?:za)?|deprimi(?:do|da|r)|sin energía|desánimo|desmotiva(?:do|da|r)|solo|soledad|melancolía|nostalgia|abatid(?:o|a)|desesperanzad(?:o|a)|desconsolad(?:o|a)|llor(?:o|ar|ando)|llanto|vacío|vacío interior|sin ganas|sin ánimo|desgana|apático|apatía|hundid(?:o|a)|caíd(?:o|a)|desilusionad(?:o|a)|desencantad(?:o|a)|no.*tengo.*ganas|no.*me.*motiva|me.*siento.*mal|no.*me.*siento.*bien|estoy.*mal|me.*va.*mal)/i,
+        patterns: /(?:triste(?:za)?|deprimi(?:do|da|r)|sin energía|desánimo|desmotiva(?:do|da|r)|solo|soledad|melancolía|nostalgia|abatid(?:o|a)|desesperanzad(?:o|a)|desconsolad(?:o|a)|llor(?:o|ar|ando)|llanto|vacío|vacío interior|sin ganas|sin ánimo|desgana|apático|apatía|hundid(?:o|a)|caíd(?:o|a)|desilusionad(?:o|a)|desencantad(?:o|a)|no.*tengo.*ganas|no.*me.*motiva|me.*siento.*mal(?!.*genial)|no.*me.*siento.*bien|estoy.*mal(?!.*genial)|me.*va.*mal)/i,
         intensity: 7,
         category: 'negative'
       },
@@ -61,12 +61,12 @@ class EmotionalAnalyzer {
         category: 'negative'
       },
       alegria: {
-        patterns: /(?:feliz|content(?:o|a)|alegr(?:e|ía|arme)|satisfech(?:o|a)|motivad(?:o|a)|entusiasm(?:o|ado|arme)|euforia|júbilo|optimista|esperanzad(?:o|a)|ilusionad(?:o|a)|emocionad(?:o|a)|eufóric(?:o|a)|radiante|brillante|genial|fantástic(?:o|a)|maravillos(?:o|a)|increíble|excelente|perfect(?:o|a)|me.*siento.*bien|estoy.*bien|me.*va.*bien|todo.*va.*bien|me.*alegra|me.*encanta|me.*gusta|me.*emociona|estoy.*content(?:o|a)|estoy.*feliz|me.*siento.*feliz|me.*siento.*content(?:o|a)|me.*siento.*genial|estoy.*genial)/i,
+        patterns: /(?:feliz|content(?:o|a)|alegr(?:e|ía|arme)|satisfech(?:o|a)|motivad(?:o|a)|entusiasm(?:o|ado|arme)|euforia|júbilo|optimista|esperanzad(?:o|a)|ilusionad(?:o|a)|emocionad(?:o|a)|eufóric(?:o|a)|radiante|brillante|genial|fantástic(?:o|a)|maravillos(?:o|a)|increíble|excelente|perfect(?:o|a)|me.*siento.*bien|estoy.*bien|me.*va.*bien|todo.*va.*bien|me.*alegra|me.*encanta|me.*gusta|me.*emociona|estoy.*content(?:o|a)|estoy.*feliz|me.*siento.*feliz|me.*siento.*content(?:o|a)|me.*siento.*genial|estoy.*genial|gusta.*mucho|me.*gusta.*la|me.*gusta.*el|me.*gusta.*los|me.*gusta.*las|logr(?:é|e|ar|ado)|complet(?:é|e|ar|ado).*meta|complet(?:é|e|ar|ado).*objetivo|alcanc(?:é|e|ar|ado).*meta|alcanc(?:é|e|ar|ado).*objetivo|me.*siento.*mejor|estoy.*mejor|mejor.*que)/i,
         intensity: 7,
         category: 'positive'
       },
       miedo: {
-        patterns: /(?:miedo|temor|terror|pavor|pánico|susto|sust(?:o|ado)|atemorizad(?:o|a)|asustad(?:o|a)|aterrad(?:o|a)|aterrorizad(?:o|a)|intimidad(?:o|a)|me.*da.*miedo|me.*asusta|me.*aterroriza|tengo.*miedo|siento.*miedo|me.*siento.*asustad(?:o|a)|estoy.*asustad(?:o|a)|me.*siento.*aterrad(?:o|a)|estoy.*aterrad(?:o|a)|tengo.*terror|siento.*terror|me.*aterroriza|me.*intimida)/i,
+        patterns: /(?:miedo|temor|terror|pavor|susto|sust(?:o|ado)|atemorizad(?:o|a)|asustad(?:o|a)|aterrad(?:o|a)|aterrorizad(?:o|a)|intimidad(?:o|a)|me.*da.*miedo|me.*asusta|me.*aterroriza|tengo.*miedo|siento.*miedo|me.*siento.*asustad(?:o|a)|estoy.*asustad(?:o|a)|me.*siento.*aterrad(?:o|a)|estoy.*aterrad(?:o|a)|tengo.*terror|siento.*terror|me.*aterroriza|me.*intimida|miedo.*de.*lo.*que)/i,
         intensity: 7,
         category: 'negative'
       },
@@ -86,7 +86,7 @@ class EmotionalAnalyzer {
         category: 'positive'
       },
       neutral: {
-        patterns: /(?:normal|tranquil(?:o|a)|bien|regular|más o menos|asi asi|equilibrad(?:o|a)|estable|ok|okay|bien.*y.*mal|ni.*bien.*ni.*mal|ni.*feliz.*ni.*triste|estoy.*normal|me.*siento.*normal|estoy.*tranquil(?:o|a)|me.*siento.*tranquil(?:o|a)|todo.*normal|todo.*bien|todo.*regular|está.*bien|está.*ok)/i,
+        patterns: /(?:^normal$|^estoy.*normal$|^me.*siento.*normal$|tranquil(?:o|a)|bien|regular|más o menos|asi asi|equilibrad(?:o|a)|estable|ok|okay|bien.*y.*mal|ni.*bien.*ni.*mal|ni.*feliz.*ni.*triste|estoy.*tranquil(?:o|a)|me.*siento.*tranquil(?:o|a)|todo.*normal|todo.*bien|todo.*regular|está.*bien|está.*ok)/i,
         intensity: this.INTENSITY_DEFAULT,
         category: this.CATEGORY_NEUTRAL
       }
@@ -206,6 +206,31 @@ class EmotionalAnalyzer {
     }
     
     // Buscar emojis en orden de prioridad (emociones más intensas primero)
+    // IMPORTANTE: Priorizar emojis positivos si hay texto positivo, y negativos si hay texto negativo
+    const hasPositiveText = /(?:genial|feliz|contento|alegre|bien|bueno)/i.test(content);
+    const hasNegativeText = /(?:mal|triste|malo|deprimido|ansioso)/i.test(content);
+    
+    // Si hay texto positivo, priorizar emojis positivos
+    if (hasPositiveText && !hasNegativeText) {
+      const positiveEmotions = ['alegria', 'esperanza', 'neutral'];
+      for (const emotion of positiveEmotions) {
+        if (this.emojiPatterns[emotion] && this.emojiPatterns[emotion].test(content)) {
+          return emotion;
+        }
+      }
+    }
+    
+    // Si hay texto negativo, priorizar emojis negativos
+    if (hasNegativeText && !hasPositiveText) {
+      const negativeEmotions = ['tristeza', 'ansiedad', 'miedo', 'enojo', 'verguenza', 'culpa'];
+      for (const emotion of negativeEmotions) {
+        if (this.emojiPatterns[emotion] && this.emojiPatterns[emotion].test(content)) {
+          return emotion;
+        }
+      }
+    }
+    
+    // Orden por defecto (emociones más intensas primero)
     const emotionPriority = ['enojo', 'miedo', 'tristeza', 'ansiedad', 'verguenza', 'culpa', 'alegria', 'esperanza', 'neutral'];
     
     for (const emotion of emotionPriority) {
@@ -287,8 +312,63 @@ class EmotionalAnalyzer {
     }
     
     // Buscar emociones específicas por patrones de texto
+    // IMPORTANTE: Verificar primero si hay negaciones explícitas que invalidan emociones positivas
+    // Por ejemplo: "no me gusta" no debe detectarse como "alegria"
+    const hasNegativePrefix = /^(?:no|nunca|jamás|tampoco)\s+/i.test(content.trim());
+    
+    // Priorizar emociones positivas primero, PERO solo si no hay prefijo negativo
+    // IMPORTANTE: Priorizar miedo antes que ansiedad para evitar confusión
+    // IMPORTANTE: Priorizar neutral para mensajes simples como "estoy normal"
+    const isSimpleMessage = /^(estoy|me siento|soy|está|están)\s+\w+$/i.test(content.trim());
+    const emotionPriority = isSimpleMessage 
+      ? ['neutral', 'alegria', 'esperanza', 'miedo', 'tristeza', 'ansiedad', 'enojo', 'verguenza', 'culpa']
+      : ['alegria', 'esperanza', 'miedo', 'tristeza', 'ansiedad', 'enojo', 'verguenza', 'culpa', 'neutral'];
+    
+    // Primero buscar emociones prioritarias
+    for (const emotion of emotionPriority) {
+      if (this.emotionPatterns[emotion] && this.emotionPatterns[emotion].patterns.test(content)) {
+        const emotionData = this.emotionPatterns[emotion];
+        
+        // Si es una emoción positiva y hay un prefijo negativo, no aplicarla
+        // Ejemplo: "no me gusta" no debe ser "alegria"
+        if (emotionData.category === 'positive' && hasNegativePrefix) {
+          // Verificar si el patrón específico está precedido por "no"
+          const positivePatterns = ['me.*gusta', 'me.*encanta', 'me.*alegra', 'me.*emociona'];
+          const hasPositivePattern = positivePatterns.some(pattern => {
+            const regex = new RegExp(pattern, 'i');
+            return regex.test(content);
+          });
+          
+          if (hasPositivePattern && /no\s+me/i.test(content)) {
+            // Saltar esta emoción positiva, continuar buscando
+            continue;
+          }
+        }
+        
+        return {
+          name: emotion,
+          category: emotionData.category,
+          baseIntensity: emotionData.intensity
+        };
+      }
+    }
+    
+    // Luego buscar otras emociones
     for (const [emotion, data] of Object.entries(this.emotionPatterns)) {
-      if (emotion !== 'neutral' && data.patterns.test(content)) {
+      if (emotion !== 'neutral' && !emotionPriority.includes(emotion) && data.patterns.test(content)) {
+        // Misma validación para prefijos negativos
+        if (data.category === 'positive' && hasNegativePrefix) {
+          const positivePatterns = ['me.*gusta', 'me.*encanta', 'me.*alegra', 'me.*emociona'];
+          const hasPositivePattern = positivePatterns.some(pattern => {
+            const regex = new RegExp(pattern, 'i');
+            return regex.test(content);
+          });
+          
+          if (hasPositivePattern && /no\s+me/i.test(content)) {
+            continue;
+          }
+        }
+        
         return {
           name: emotion,
           category: data.category,
