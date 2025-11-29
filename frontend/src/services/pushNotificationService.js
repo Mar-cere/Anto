@@ -71,6 +71,15 @@ const setupNotificationChannels = async () => {
       lightColor: '#1ADDDB',
       sound: 'default',
     });
+
+    // Canal general para notificaciones
+    await Notifications.setNotificationChannelAsync('anto-notifications', {
+      name: 'Notificaciones Generales',
+      importance: Notifications.AndroidImportance.DEFAULT,
+      vibrationPattern: [0, 200],
+      lightColor: '#1ADDDB',
+      sound: 'default',
+    });
   }
 };
 

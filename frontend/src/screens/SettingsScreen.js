@@ -110,6 +110,8 @@ const TEXTS = {
   WHATSAPP_NOT_CONFIGURED: 'WhatsApp no está configurado en el servidor',
   CRISIS_DASHBOARD: 'Dashboard de Crisis',
   CRISIS_DASHBOARD_DESC: 'Ver métricas y estadísticas de crisis detectadas',
+  ALERTS_HISTORY: 'Historial de Alertas',
+  ALERTS_HISTORY_DESC: 'Ver historial, estadísticas y patrones de alertas enviadas',
 };
 
 // Constantes de idiomas
@@ -882,6 +884,22 @@ const SettingsScreen = () => {
           <View style={styles.itemContent}>
             <Text style={styles.itemText}>{TEXTS.CRISIS_DASHBOARD}</Text>
             <Text style={styles.itemSubtext}>{TEXTS.CRISIS_DASHBOARD_DESC}</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={COLORS.ACCENT} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.item}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate('EmergencyAlertsHistory');
+          }}
+          accessibilityLabel={TEXTS.ALERTS_HISTORY}
+        >
+          <MaterialCommunityIcons name="history" size={ICON_SIZE} color={COLORS.PRIMARY} />
+          <View style={styles.itemContent}>
+            <Text style={styles.itemText}>{TEXTS.ALERTS_HISTORY}</Text>
+            <Text style={styles.itemSubtext}>{TEXTS.ALERTS_HISTORY_DESC}</Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={24} color={COLORS.ACCENT} />
         </TouchableOpacity>

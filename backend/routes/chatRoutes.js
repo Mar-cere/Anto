@@ -24,6 +24,7 @@ import crisisTrendAnalyzer from '../services/crisisTrendAnalyzer.js';
 import crisisFollowUpService from '../services/crisisFollowUpService.js';
 import pushNotificationService from '../services/pushNotificationService.js';
 import CrisisEvent from '../models/CrisisEvent.js';
+import EmergencyAlert from '../models/EmergencyAlert.js';
 
 const router = express.Router();
 
@@ -272,10 +273,28 @@ router.post('/messages', protect, async (req, res) => {
           // WARNING no envía alertas externas, solo intervención proactiva
           if (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') {
             try {
+              // Preparar opciones para el servicio de alertas
+              const alertOptions = {
+                trendAnalysis,
+                metadata: {
+                  riskScore: calculateRiskScore(emotionalAnalysis, contextualAnalysis, content, {
+                    trendAnalysis,
+                    crisisHistory,
+                    conversationContext
+                  }),
+                  factors: extractRiskFactors(emotionalAnalysis, contextualAnalysis, content, {
+                    trendAnalysis,
+                    crisisHistory,
+                    conversationContext
+                  })
+                }
+              };
+              
               alertResult = await emergencyAlertService.sendEmergencyAlerts(
                 req.user._id,
                 riskLevel,
-                content // No enviar el contenido completo por privacidad, pero se puede usar para contexto
+                content, // No enviar el contenido completo por privacidad, pero se puede usar para contexto
+                alertOptions
               );
               
               if (alertResult.sent) {
@@ -329,8 +348,9 @@ router.post('/messages', protect, async (req, res) => {
           }
 
           // Registrar evento de crisis para seguimiento
+          let crisisEvent = null;
           try {
-            const crisisEvent = await CrisisEvent.create({
+            crisisEvent = await CrisisEvent.create({
               userId: req.user._id,
               riskLevel,
               triggerMessage: {
@@ -375,6 +395,26 @@ router.post('/messages', protect, async (req, res) => {
                 protectiveFactors: extractProtectiveFactors(emotionalAnalysis, content)
               }
             });
+
+            // Si se enviaron alertas y tenemos el crisisEvent, actualizar los registros de alerta con el crisisEventId
+            if (crisisEvent && alertResult && alertResult.sent && (riskLevel === 'MEDIUM' || riskLevel === 'HIGH')) {
+              // Actualizar las alertas recientes con el crisisEventId
+              // Esto se hace de forma asíncrona para no bloquear
+              setTimeout(async () => {
+                try {
+                  await EmergencyAlert.updateMany(
+                    {
+                      userId: req.user._id,
+                      crisisEventId: null,
+                      sentAt: { $gte: new Date(Date.now() - 60000) } // Último minuto
+                    },
+                    { $set: { crisisEventId: crisisEvent._id } }
+                  );
+                } catch (error) {
+                  console.error('[ChatRoutes] Error actualizando crisisEventId en alertas:', error);
+                }
+              }, 1000);
+            }
 
             // Programar seguimientos automáticos
             if (riskLevel !== 'LOW') {

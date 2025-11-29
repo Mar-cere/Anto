@@ -81,6 +81,11 @@ export const ENDPOINTS = {
   TEST_NOTIFICATION_WARNING: '/api/notifications/test/crisis-warning',
   TEST_NOTIFICATION_MEDIUM: '/api/notifications/test/crisis-medium',
   TEST_NOTIFICATION_FOLLOWUP: '/api/notifications/test/followup',
+  
+  // Emergency Alerts History
+  EMERGENCY_ALERTS: '/api/users/me/emergency-alerts',
+  EMERGENCY_ALERTS_STATS: '/api/users/me/emergency-alerts/stats',
+  EMERGENCY_ALERTS_PATTERNS: '/api/users/me/emergency-alerts/patterns',
 };
 
 const makeRequest = (url, options) => {

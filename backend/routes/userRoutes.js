@@ -818,7 +818,8 @@ router.post('/me/emergency-contacts/test-alert', authenticateToken, validateUser
     const result = await emergencyAlertService.sendEmergencyAlerts(
       req.user._id,
       'MEDIUM', // Nivel de riesgo simulado para prueba
-      '[PRUEBA] Este es un mensaje de prueba del sistema de alertas de emergencia. No hay ninguna situación real de riesgo.'
+      '[PRUEBA] Este es un mensaje de prueba del sistema de alertas de emergencia. No hay ninguna situación real de riesgo.',
+      { isTest: true } // Marcar como prueba
     );
 
     if (result.sent) {
@@ -920,6 +921,90 @@ router.post('/me/emergency-contacts/:contactId/test-whatsapp', authenticateToken
     console.error('Error al enviar mensaje de prueba de WhatsApp:', error);
     res.status(500).json({ 
       message: 'Error al enviar mensaje de prueba de WhatsApp',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Obtener historial de alertas de emergencia
+router.get('/me/emergency-alerts', authenticateToken, validateUserObjectId, async (req, res) => {
+  try {
+    const EmergencyAlert = (await import('../models/EmergencyAlert.js')).default;
+    const {
+      limit = 50,
+      skip = 0,
+      startDate,
+      endDate,
+      riskLevel,
+      status
+    } = req.query;
+
+    const options = {
+      limit: parseInt(limit),
+      skip: parseInt(skip),
+      startDate: startDate ? new Date(startDate) : null,
+      endDate: endDate ? new Date(endDate) : null,
+      riskLevel: riskLevel || null,
+      status: status || null
+    };
+
+    const alerts = await EmergencyAlert.getUserAlerts(req.user._id, options);
+
+    res.json({
+      success: true,
+      data: alerts,
+      pagination: {
+        limit: options.limit,
+        skip: options.skip,
+        total: alerts.length
+      }
+    });
+  } catch (error) {
+    console.error('Error obteniendo historial de alertas:', error);
+    res.status(500).json({
+      message: 'Error al obtener historial de alertas',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Obtener estadísticas de alertas
+router.get('/me/emergency-alerts/stats', authenticateToken, validateUserObjectId, async (req, res) => {
+  try {
+    const EmergencyAlert = (await import('../models/EmergencyAlert.js')).default;
+    const { days = 30 } = req.query;
+
+    const stats = await EmergencyAlert.getUserAlertStats(req.user._id, parseInt(days));
+
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Error obteniendo estadísticas de alertas:', error);
+    res.status(500).json({
+      message: 'Error al obtener estadísticas de alertas',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Obtener patrones detectados en las alertas
+router.get('/me/emergency-alerts/patterns', authenticateToken, validateUserObjectId, async (req, res) => {
+  try {
+    const EmergencyAlert = (await import('../models/EmergencyAlert.js')).default;
+    const { days = 90 } = req.query;
+
+    const patterns = await EmergencyAlert.detectPatterns(req.user._id, parseInt(days));
+
+    res.json({
+      success: true,
+      data: patterns
+    });
+  } catch (error) {
+    console.error('Error detectando patrones de alertas:', error);
+    res.status(500).json({
+      message: 'Error al detectar patrones de alertas',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

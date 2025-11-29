@@ -9,6 +9,7 @@ import Task from './Task.js';
 import UserGoals from './UserGoals.js';
 import Conversation from './Conversation.js';
 import CrisisEvent from './CrisisEvent.js';
+import EmergencyAlert from './EmergencyAlert.js';
 
 // Validar que todos los modelos estén correctamente exportados
 const models = {
@@ -23,6 +24,7 @@ const models = {
   UserGoals,
   Conversation,
   CrisisEvent,
+  EmergencyAlert,
 };
 
 // Verificar que cada modelo sea válido
@@ -44,6 +46,7 @@ export {
   UserGoals,
   Conversation,
   CrisisEvent,
+  EmergencyAlert,
 };
 
 export default models; 

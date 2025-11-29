@@ -25,6 +25,7 @@ import SignInScreen from '../screens/SignInScreen';
 import TaskScreen from '../screens/TaskScreen';
 import VerifyCodeScreen from '../screens/VerifyCodeScreen';
 import CrisisDashboardScreen from '../screens/CrisisDashboardScreen';
+import EmergencyAlertsHistoryScreen from '../screens/EmergencyAlertsHistoryScreen';
 import { colors } from '../styles/globalStyles';
 import TabNavigator from './TabNavigator';
 
@@ -47,6 +48,7 @@ const ROUTE_NAMES = {
   HELP: 'Help',
   POMODORO: 'Pomodoro',
   CRISIS_DASHBOARD: 'CrisisDashboard',
+  EMERGENCY_ALERTS_HISTORY: 'EmergencyAlertsHistory',
 };
 
 /**
@@ -155,6 +157,11 @@ const StackNavigator = () => {
       <Stack.Screen 
         name={ROUTE_NAMES.CRISIS_DASHBOARD} 
         component={CrisisDashboardScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen 
+        name={ROUTE_NAMES.EMERGENCY_ALERTS_HISTORY} 
+        component={EmergencyAlertsHistoryScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

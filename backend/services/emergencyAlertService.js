@@ -2,11 +2,12 @@
  * Servicio de Alertas de Emergencia - Envía notificaciones a contactos de emergencia
  * cuando se detectan tendencias suicidas o situaciones de crisis
  */
-import User from '../models/User.js';
 import mailer from '../config/mailer.js';
-import whatsappService from './whatsappService.js';
 import { APP_NAME } from '../constants/app.js';
-import { getFormattedEmergencyNumbers, formatEmergencyNumbers, getEmergencyNumbersFromPhone } from '../constants/emergencyNumbers.js';
+import { getEmergencyNumbersFromPhone } from '../constants/emergencyNumbers.js';
+import EmergencyAlert from '../models/EmergencyAlert.js';
+import User from '../models/User.js';
+import whatsappService from './whatsappService.js';
 
 class EmergencyAlertService {
   constructor() {
@@ -269,9 +270,10 @@ class EmergencyAlertService {
    * @param {string} userId - ID del usuario
    * @param {string} riskLevel - Nivel de riesgo (LOW, MEDIUM, HIGH)
    * @param {string} messageContent - Contenido del mensaje (opcional, para contexto)
+   * @param {Object} options - Opciones adicionales (crisisEventId, trendAnalysis, metadata)
    * @returns {Promise<Object>} Resultado del envío de alertas
    */
-  async sendEmergencyAlerts(userId, riskLevel, messageContent = null) {
+  async sendEmergencyAlerts(userId, riskLevel, messageContent = null, options = {}) {
     try {
       // Solo enviar alertas para riesgo MEDIUM o HIGH
       if (riskLevel === 'LOW') {
@@ -314,11 +316,16 @@ class EmergencyAlertService {
         };
       }
 
-      // Detectar si es una prueba (mensaje contiene '[PRUEBA]' o 'PRUEBA')
-      const isTest = messageContent && /\[?PRUEBA\]?/i.test(messageContent);
+      // Detectar si es una prueba (mensaje contiene '[PRUEBA]' o 'PRUEBA' o viene en opciones)
+      const isTest = options.isTest || (messageContent && /\[?PRUEBA\]?/i.test(messageContent));
+      
+      // Extraer opciones
+      const { crisisEventId, trendAnalysis, metadata: alertMetadata } = options;
       
       // Enviar alertas a cada contacto
       const results = [];
+      const alertRecords = []; // Para guardar en la base de datos
+      
       for (const contact of contacts) {
         const contactResult = {
           contact: {
@@ -396,6 +403,69 @@ class EmergencyAlertService {
         }
 
         results.push(contactResult);
+
+        // Determinar estado de la alerta
+        let alertStatus = 'failed';
+        if (contactResult.email.sent && contactResult.whatsapp.sent) {
+          alertStatus = 'sent';
+        } else if (contactResult.email.sent || contactResult.whatsapp.sent) {
+          alertStatus = 'partial';
+        }
+
+        // Crear registro de alerta para guardar en BD
+        const alertRecord = {
+          userId,
+          crisisEventId: crisisEventId || null,
+          riskLevel,
+          contact: {
+            contactId: contact._id,
+            name: contact.name,
+            email: contact.email,
+            phone: contact.phone || null,
+            relationship: contact.relationship || null
+          },
+          channels: {
+            email: {
+              sent: contactResult.email.sent,
+              sentAt: contactResult.email.sent ? new Date() : null,
+              error: contactResult.email.error || null,
+              messageId: null // Se puede agregar si el servicio de email lo proporciona
+            },
+            whatsapp: {
+              sent: contactResult.whatsapp.sent,
+              sentAt: contactResult.whatsapp.sent ? new Date() : null,
+              error: contactResult.whatsapp.error || null,
+              messageId: null // Se puede agregar si WhatsApp lo proporciona
+            }
+          },
+          isTest,
+          sentAt: new Date(),
+          status: alertStatus,
+          triggerMessagePreview: messageContent ? messageContent.substring(0, 200) : null,
+          trendAnalysis: trendAnalysis ? {
+            rapidDecline: trendAnalysis.trends?.rapidDecline || false,
+            sustainedLow: trendAnalysis.trends?.sustainedLow || false,
+            isolation: trendAnalysis.trends?.isolation || false,
+            escalation: trendAnalysis.trends?.escalation || false,
+            warnings: trendAnalysis.warnings || []
+          } : undefined,
+          metadata: {
+            riskScore: alertMetadata?.riskScore || null,
+            factors: alertMetadata?.factors || [],
+            cooldownActive: !this.canSendAlert(userId),
+            totalContactsNotified: contacts.length
+          }
+        };
+
+        alertRecords.push(alertRecord);
+      }
+
+      // Guardar alertas en la base de datos (en paralelo, no bloquear el flujo)
+      if (alertRecords.length > 0) {
+        EmergencyAlert.insertMany(alertRecords).catch(error => {
+          console.error('[EmergencyAlertService] Error guardando alertas en BD:', error);
+          // No lanzar error, solo loguear - el envío ya se completó
+        });
       }
 
       // Registrar que se envió una alerta si al menos un canal (email o WhatsApp) fue exitoso
@@ -414,7 +484,8 @@ class EmergencyAlertService {
         totalContacts: contacts.length,
         successfulSends: results.filter(r => r.email.sent || r.whatsapp.sent).length,
         successfulEmails,
-        successfulWhatsApp
+        successfulWhatsApp,
+        alertRecordsCount: alertRecords.length
       };
     } catch (error) {
       console.error('[EmergencyAlertService] Error en sendEmergencyAlerts:', error);
