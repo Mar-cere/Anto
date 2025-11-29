@@ -187,6 +187,177 @@ const testCases = [
     name: '33. "Me gusta" SÍ debe ser positivo',
     input: 'Me gusta la música',
     expected: { emotion: 'alegria', category: 'positive', minIntensity: 6, maxIntensity: 8, notEmotion: 'tristeza' }
+  },
+  
+  // ========== CASOS DE CRISIS DE PÁNICO ==========
+  {
+    name: '34. Crisis de pánico - Ataque de pánico',
+    input: 'Estoy teniendo un ataque de pánico, no puedo respirar',
+    expected: { emotion: 'ansiedad', category: 'negative', minIntensity: 9, maxIntensity: 10 }
+  },
+  {
+    name: '35. Crisis de pánico - Sensación de ahogo',
+    input: 'Siento que me ahogo, mi corazón late muy rápido',
+    expected: { emotion: 'ansiedad', category: 'negative', minIntensity: 9, maxIntensity: 10 }
+  },
+  {
+    name: '36. Crisis de pánico - Miedo a morir',
+    input: 'Siento que me voy a morir, no puedo controlar mi respiración',
+    expected: { emotion: ['ansiedad', 'miedo'], category: 'negative', minIntensity: 9, maxIntensity: 10 }
+  },
+  {
+    name: '37. Crisis de pánico - Síntomas físicos',
+    input: 'Tengo palpitaciones, sudoración y siento que me desmayo',
+    expected: { emotion: 'ansiedad', category: 'negative', minIntensity: 8, maxIntensity: 10 }
+  },
+  {
+    name: '38. Crisis de pánico - Pérdida de control',
+    input: 'Siento que pierdo el control, no puedo pensar claramente',
+    expected: { emotion: 'ansiedad', category: 'negative', minIntensity: 9, maxIntensity: 10 }
+  },
+  {
+    name: '39. Crisis de pánico - Despersonalización',
+    input: 'Siento que no soy yo, como si estuviera fuera de mi cuerpo',
+    expected: { emotion: 'ansiedad', category: 'negative', minIntensity: 8, maxIntensity: 10 }
+  },
+  
+  // ========== CASOS DE PRINCIPIOS DE AUTOLESIÓN ==========
+  {
+    name: '40. Autolesión - Pensamientos de hacerse daño',
+    input: 'Tengo ganas de hacerme daño',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 9, maxIntensity: 10 }
+  },
+  {
+    name: '41. Autolesión - Cortarse',
+    input: 'Quiero cortarme, siento que es la única forma de sentir algo',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 9, maxIntensity: 10 }
+  },
+  {
+    name: '42. Autolesión - Quemarse',
+    input: 'A veces me quemo para sentir algo diferente',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 8, maxIntensity: 10 }
+  },
+  {
+    name: '43. Autolesión - Golpearse',
+    input: 'Me golpeo cuando me siento muy mal',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 8, maxIntensity: 10 }
+  },
+  {
+    name: '44. Autolesión - Sentir alivio con dolor',
+    input: 'El dolor físico me hace sentir mejor que el dolor emocional',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 9, maxIntensity: 10 }
+  },
+  {
+    name: '45. Autolesión - Pensamientos recurrentes',
+    input: 'No puedo dejar de pensar en hacerme daño',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 9, maxIntensity: 10 }
+  },
+  {
+    name: '46. Autolesión - Cicatrices',
+    input: 'Tengo muchas cicatrices de cuando me cortaba',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 7, maxIntensity: 9 }
+  },
+  {
+    name: '47. Autolesión - Urgencia',
+    input: 'Necesito hacerme daño ahora mismo',
+    expected: { emotion: 'tristeza', category: 'negative', minIntensity: 10, maxIntensity: 10 }
+  },
+  
+  // ========== CASOS DE SOSPECHA DE NEURODIVERGENCIA ==========
+  {
+    name: '48. Neurodivergencia - Dificultad con estímulos sensoriales',
+    input: 'Los ruidos fuertes me abruman mucho, siento que me sobrecarga',
+    expected: { emotion: ['ansiedad', 'miedo'], category: 'negative', minIntensity: 6, maxIntensity: 9 }
+  },
+  {
+    name: '49. Neurodivergencia - Dificultad social',
+    input: 'No entiendo las señales sociales, siempre me siento fuera de lugar',
+    expected: { emotion: ['ansiedad', 'tristeza'], category: 'negative', minIntensity: 6, maxIntensity: 8 }
+  },
+  {
+    name: '50. Neurodivergencia - Hiperfoco',
+    input: 'Me obsesiono con cosas y no puedo pensar en nada más',
+    expected: { emotion: ['ansiedad', 'neutral'], category: ['negative', 'neutral'], minIntensity: 5, maxIntensity: 8 }
+  },
+  {
+    name: '51. Neurodivergencia - Dificultad con cambios',
+    input: 'Los cambios en mi rutina me generan mucha ansiedad',
+    expected: { emotion: 'ansiedad', category: 'negative', minIntensity: 7, maxIntensity: 9 }
+  },
+  {
+    name: '52. Neurodivergencia - Meltdown',
+    input: 'A veces tengo crisis donde no puedo controlar mis emociones',
+    expected: { emotion: 'ansiedad', category: 'negative', minIntensity: 8, maxIntensity: 10 }
+  },
+  {
+    name: '53. Neurodivergencia - Dificultad con contacto físico',
+    input: 'No me gusta que me toquen, me siento incómodo',
+    expected: { emotion: ['ansiedad', 'verguenza'], category: 'negative', minIntensity: 5, maxIntensity: 8 }
+  },
+  {
+    name: '54. Neurodivergencia - Dificultad con comunicación',
+    input: 'Me cuesta expresar lo que siento, las palabras no salen',
+    expected: { emotion: ['ansiedad', 'frustración'], category: 'negative', minIntensity: 6, maxIntensity: 8 }
+  },
+  {
+    name: '55. Neurodivergencia - Dificultad con multitarea',
+    input: 'No puedo hacer varias cosas a la vez, me siento abrumado',
+    expected: { emotion: 'ansiedad', category: 'negative', minIntensity: 6, maxIntensity: 8 }
+  },
+  {
+    name: '56. Neurodivergencia - Dificultad con ruidos',
+    input: 'Los ruidos de fondo me distraen mucho, no puedo concentrarme',
+    expected: { emotion: ['ansiedad', 'enojo'], category: 'negative', minIntensity: 6, maxIntensity: 8 }
+  },
+  {
+    name: '57. Neurodivergencia - Dificultad con luces',
+    input: 'Las luces brillantes me molestan mucho, me dan dolor de cabeza',
+    expected: { emotion: ['ansiedad', 'enojo'], category: 'negative', minIntensity: 5, maxIntensity: 8 }
+  },
+  {
+    name: '58. Neurodivergencia - Dificultad con texturas',
+    input: 'Algunas texturas me dan mucha ansiedad, no puedo tocarlas',
+    expected: { emotion: 'ansiedad', category: 'negative', minIntensity: 6, maxIntensity: 8 }
+  },
+  {
+    name: '59. Neurodivergencia - Dificultad con rutinas',
+    input: 'Necesito seguir mis rutinas exactamente igual, si no me siento perdido',
+    expected: { emotion: 'ansiedad', category: 'negative', minIntensity: 6, maxIntensity: 8 }
+  },
+  {
+    name: '60. Neurodivergencia - Dificultad con transiciones',
+    input: 'Cambiar de una actividad a otra me cuesta mucho, me siento bloqueado',
+    expected: { emotion: 'ansiedad', category: 'negative', minIntensity: 6, maxIntensity: 8 }
+  },
+  {
+    name: '61. Neurodivergencia - Dificultad con contacto visual',
+    input: 'No puedo mantener contacto visual, me siento incómodo',
+    expected: { emotion: ['ansiedad', 'verguenza'], category: 'negative', minIntensity: 5, maxIntensity: 7 }
+  },
+  {
+    name: '62. Neurodivergencia - Dificultad con interpretación literal',
+    input: 'A veces tomo todo literalmente y no entiendo las bromas',
+    expected: { emotion: ['ansiedad', 'verguenza'], category: 'negative', minIntensity: 5, maxIntensity: 7 }
+  },
+  {
+    name: '63. Neurodivergencia - Dificultad con emociones propias',
+    input: 'No sé qué siento, todas las emociones se mezclan',
+    expected: { emotion: ['ansiedad', 'tristeza'], category: 'negative', minIntensity: 6, maxIntensity: 8 }
+  },
+  {
+    name: '64. Neurodivergencia - Dificultad con emociones ajenas',
+    input: 'No entiendo cómo se sienten los demás, me siento desconectado',
+    expected: { emotion: ['tristeza', 'ansiedad'], category: 'negative', minIntensity: 6, maxIntensity: 8 }
+  },
+  {
+    name: '65. Neurodivergencia - Burnout',
+    input: 'Me siento completamente agotado, como si mi cerebro se hubiera apagado',
+    expected: { emotion: ['tristeza', 'ansiedad'], category: 'negative', minIntensity: 8, maxIntensity: 10 }
+  },
+  {
+    name: '66. Neurodivergencia - Enmascaramiento',
+    input: 'Tengo que fingir ser normal todo el tiempo y estoy agotado',
+    expected: { emotion: ['tristeza', 'ansiedad'], category: 'negative', minIntensity: 8, maxIntensity: 10 }
   }
 ];
 
