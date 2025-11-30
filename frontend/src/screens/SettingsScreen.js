@@ -116,6 +116,8 @@ const TEXTS = {
   THERAPEUTIC_TECHNIQUES_DESC: 'Explora técnicas basadas en evidencia para tu bienestar',
   SUBSCRIPTION: 'Suscripción Premium',
   SUBSCRIPTION_DESC: 'Gestiona tu suscripción y planes disponibles',
+  TRANSACTION_HISTORY: 'Historial de Transacciones',
+  TRANSACTION_HISTORY_DESC: 'Ver historial completo de tus pagos y suscripciones',
 };
 
 // Constantes de idiomas
@@ -941,6 +943,21 @@ const SettingsScreen = () => {
           <View style={styles.itemContent}>
             <Text style={styles.itemText}>{TEXTS.SUBSCRIPTION}</Text>
             <Text style={styles.itemSubtext}>{TEXTS.SUBSCRIPTION_DESC}</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={COLORS.ACCENT} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.item}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate('TransactionHistory');
+          }}
+          accessibilityLabel={TEXTS.TRANSACTION_HISTORY}
+        >
+          <MaterialCommunityIcons name="receipt" size={ICON_SIZE} color={COLORS.PRIMARY} />
+          <View style={styles.itemContent}>
+            <Text style={styles.itemText}>{TEXTS.TRANSACTION_HISTORY}</Text>
+            <Text style={styles.itemSubtext}>{TEXTS.TRANSACTION_HISTORY_DESC}</Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={24} color={COLORS.ACCENT} />
         </TouchableOpacity>

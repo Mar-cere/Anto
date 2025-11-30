@@ -98,12 +98,22 @@ export const ENDPOINTS = {
   THERAPEUTIC_TECHNIQUES_BY_EMOTION: (emotion) => `/api/therapeutic-techniques/emotion/${emotion}`,
   THERAPEUTIC_TECHNIQUES_USE: '/api/therapeutic-techniques/use',
   THERAPEUTIC_TECHNIQUES_HISTORY: '/api/therapeutic-techniques/history',
+  
+  // Payments & Subscriptions
+  PAYMENT_PLANS: '/api/payments/plans',
+  PAYMENT_CREATE_CHECKOUT: '/api/payments/create-checkout-session',
+  PAYMENT_SUBSCRIPTION_STATUS: '/api/payments/subscription-status',
+  PAYMENT_CANCEL_SUBSCRIPTION: '/api/payments/cancel-subscription',
+  PAYMENT_UPDATE_METHOD: '/api/payments/update-payment-method',
+  PAYMENT_TRANSACTIONS: '/api/payments/transactions',
+  PAYMENT_TRANSACTIONS_STATS: '/api/payments/transactions/stats',
   THERAPEUTIC_TECHNIQUES_STATS: '/api/therapeutic-techniques/stats',
   
   // Payments and Subscriptions
   PAYMENT_PLANS: '/api/payments/plans',
   PAYMENT_CREATE_CHECKOUT: '/api/payments/create-checkout-session',
   PAYMENT_SUBSCRIPTION_STATUS: '/api/payments/subscription-status',
+  PAYMENT_TRIAL_INFO: '/api/payments/trial-info',
   PAYMENT_CANCEL_SUBSCRIPTION: '/api/payments/cancel-subscription',
   PAYMENT_UPDATE_METHOD: '/api/payments/update-payment-method',
   PAYMENT_TRANSACTIONS: '/api/payments/transactions',
@@ -176,7 +186,9 @@ export const api = {
           };
         }
         const errorMessage = errorData.error || errorData.message || `Error del servidor: ${response.status}`;
-        throw new Error(errorMessage);
+        const error = new Error(errorMessage);
+        error.response = { status: response.status, data: errorData };
+        throw error;
       }
 
       const responseData = await response.json();
@@ -245,7 +257,9 @@ export const api = {
           };
         }
         const errorMessage = errorData.error || errorData.message || `Error del servidor: ${response.status}`;
-        throw new Error(errorMessage);
+        const error = new Error(errorMessage);
+        error.response = { status: response.status, data: errorData };
+        throw error;
       }
 
       return await response.json();
@@ -274,7 +288,9 @@ export const api = {
           };
         }
         const errorMessage = errorData.error || errorData.message || `Error del servidor: ${response.status}`;
-        throw new Error(errorMessage);
+        const error = new Error(errorMessage);
+        error.response = { status: response.status, data: errorData };
+        throw error;
       }
 
       return await response.json();
@@ -304,7 +320,9 @@ export const api = {
           };
         }
         const errorMessage = errorData.error || errorData.message || `Error del servidor: ${response.status}`;
-        throw new Error(errorMessage);
+        const error = new Error(errorMessage);
+        error.response = { status: response.status, data: errorData };
+        throw error;
       }
 
       return await response.json();

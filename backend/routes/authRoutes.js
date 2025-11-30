@@ -234,9 +234,9 @@ router.post('/register', registerLimiter, async (req, res) => {
         lastActive: new Date()
       },
       subscription: {
-        status: 'free',
+        status: 'trial',
         trialStartDate: new Date(),
-        trialEndDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000) // 21 días
+        trialEndDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) // 3 días de trial
       },
       ...(name && name.trim() ? { name: name.trim() } : {})
     };

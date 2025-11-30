@@ -68,7 +68,7 @@ export const MERCADOPAGO_CONFIG = {
   },
   
   // Configuración de trial (días)
-  trialDays: parseInt(process.env.MERCADOPAGO_TRIAL_DAYS || '21', 10),
+  trialDays: parseInt(process.env.MERCADOPAGO_TRIAL_DAYS || '3', 10),
   
   // Moneda
   currency: process.env.MERCADOPAGO_CURRENCY || 'CLP',

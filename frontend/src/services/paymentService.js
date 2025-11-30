@@ -83,6 +83,28 @@ class PaymentService {
   }
 
   /**
+   * Obtener información del trial
+   * @returns {Promise<Object>} - Información del trial
+   */
+  async getTrialInfo() {
+    try {
+      const response = await api.get(ENDPOINTS.PAYMENT_TRIAL_INFO);
+      return {
+        success: true,
+        ...response,
+      };
+    } catch (error) {
+      console.error('Error obteniendo info de trial:', error);
+      return {
+        success: false,
+        error: error.message || 'Error al obtener información del trial',
+        isInTrial: false,
+        daysRemaining: 0,
+      };
+    }
+  }
+
+  /**
    * Obtener estado de suscripción
    * @returns {Promise<Object>} - Estado de la suscripción
    */

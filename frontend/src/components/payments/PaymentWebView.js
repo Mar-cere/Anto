@@ -6,28 +6,31 @@
  * @author AntoApp Team
  */
 
-import React, { useState, useRef } from 'react';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import React, { useRef, useState } from 'react';
 import {
-  View,
-  StyleSheet,
   ActivityIndicator,
-  TouchableOpacity,
-  Text,
   SafeAreaView,
   StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { WebView } from 'react-native-webview';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { WebView } from 'react-native-webview';
 import { colors } from '../../styles/globalStyles';
-import * as Haptics from 'expo-haptics';
 
 // Constantes
 const TEXTS = {
   CLOSE: 'Cerrar',
-  LOADING: 'Cargando...',
+  LOADING: 'Cargando página de pago...',
+  LOADING_PAYMENT: 'Procesando tu pago de forma segura...',
   ERROR: 'Error al cargar el pago',
   RETRY: 'Reintentar',
+  SECURE_PAYMENT: 'Pago seguro con Mercado Pago',
+  PROCESSING: 'Procesando...',
 };
 
 const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
@@ -35,6 +38,8 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
   const webViewRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [progress, setProgress] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Detectar cuando la navegación cambia
   const handleNavigationStateChange = (navState) => {
@@ -42,14 +47,21 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
 
     // Detectar URLs de éxito/cancelación de Mercado Pago
     // Mercado Pago redirige a URLs específicas después del pago
-    if (currentUrl.includes('success') || currentUrl.includes('approved')) {
+    if (currentUrl.includes('success') || currentUrl.includes('approved') || 
+        currentUrl.includes('collection_status=approved')) {
+      setIsProcessing(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      onSuccess?.();
-    } else if (currentUrl.includes('cancel') || currentUrl.includes('cancelled')) {
+      // Pequeño delay para mostrar feedback visual
+      setTimeout(() => {
+        onSuccess?.();
+      }, 500);
+    } else if (currentUrl.includes('cancel') || currentUrl.includes('cancelled') ||
+               currentUrl.includes('collection_status=cancelled')) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       onCancel?.();
-    } else if (currentUrl.includes('pending')) {
+    } else if (currentUrl.includes('pending') || currentUrl.includes('collection_status=pending')) {
       // Pago pendiente
+      setIsProcessing(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Info);
     }
 
@@ -72,6 +84,12 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
   // Manejar cuando termina de cargar
   const handleLoadEnd = () => {
     setLoading(false);
+    setProgress(100);
+  };
+
+  // Manejar progreso de carga
+  const handleLoadProgress = ({ nativeEvent }) => {
+    setProgress(nativeEvent.progress * 100);
   };
 
   // Manejar cuando comienza a cargar
@@ -107,11 +125,31 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
         <View style={styles.placeholder} />
       </View>
 
+      {/* Progress bar */}
+      {loading && progress < 100 && (
+        <View style={styles.progressBarContainer}>
+          <View style={[styles.progressBar, { width: `${progress}%` }]} />
+        </View>
+      )}
+
       {/* Loading indicator */}
       {loading && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>{TEXTS.LOADING}</Text>
+          <Text style={styles.loadingText}>
+            {isProcessing ? TEXTS.LOADING_PAYMENT : TEXTS.LOADING}
+          </Text>
+          {isProcessing && (
+            <Text style={styles.secureText}>{TEXTS.SECURE_PAYMENT}</Text>
+          )}
+        </View>
+      )}
+
+      {/* Processing indicator */}
+      {isProcessing && !loading && (
+        <View style={styles.processingContainer}>
+          <ActivityIndicator size="small" color={colors.primary} />
+          <Text style={styles.processingText}>{TEXTS.PROCESSING}</Text>
         </View>
       )}
 
@@ -135,6 +173,7 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
         onError={handleError}
         onLoadEnd={handleLoadEnd}
         onLoadStart={handleLoadStart}
+        onLoadProgress={handleLoadProgress}
         startInLoadingState={true}
         javaScriptEnabled={true}
         domStorageEnabled={true}
@@ -225,6 +264,40 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  progressBarContainer: {
+    height: 3,
+    backgroundColor: colors.border,
+    width: '100%',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: colors.primary,
+  },
+  secureText: {
+    marginTop: 8,
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  processingContainer: {
+    position: 'absolute',
+    top: 60,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.cardBackground,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    zIndex: 1,
+  },
+  processingText: {
+    marginLeft: 8,
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 

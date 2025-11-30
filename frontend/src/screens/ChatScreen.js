@@ -16,6 +16,7 @@ import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Dimensions,
   FlatList,
@@ -31,8 +32,11 @@ import {
 } from 'react-native';
 import ParticleBackground from '../components/ParticleBackground';
 import ActionSuggestionCard from '../components/ActionSuggestionCard';
+import TrialBanner from '../components/TrialBanner';
 import chatService from '../services/chatService';
+import paymentService from '../services/paymentService';
 import { colors } from '../styles/globalStyles';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -56,6 +60,7 @@ const TEXTS = {
 // Constantes de AsyncStorage
 const STORAGE_KEYS = {
   CONVERSATION_ID: 'currentConversationId',
+  TRIAL_BANNER_DISMISSED: 'trialBannerDismissed',
 };
 
 // Constantes de tipos de mensajes
@@ -206,6 +211,8 @@ const ChatScreen = () => {
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [trialInfo, setTrialInfo] = useState(null);
+  const [trialBannerDismissed, setTrialBannerDismissed] = useState(false);
   
   // Referencias
   const flatListRef = useRef(null);
@@ -257,6 +264,7 @@ const ChatScreen = () => {
   // Efecto inicial
   useEffect(() => {
     initializeConversation();
+    loadTrialInfo();
     
     // Animación de entrada
     Animated.timing(fadeAnim, {
@@ -284,7 +292,7 @@ const ChatScreen = () => {
       errorUnsubscribe();
       chatService.closeSocket();
     };
-  }, [initializeConversation, fadeAnim]);
+  }, [initializeConversation, loadTrialInfo, fadeAnim]);
 
   // Scroll al final
   const scrollToBottom = useCallback((animated = true) => {
@@ -346,6 +354,29 @@ const ChatScreen = () => {
 
     } catch (error) {
       console.error('Error al enviar mensaje:', error);
+      
+      // Verificar si es un error de suscripción
+      if (error.message?.includes('suscripción') || error.message?.includes('subscription') || 
+          (error.response?.status === 403 && error.response?.data?.requiresSubscription)) {
+        // Remover el mensaje temporal del usuario
+        setMessages(prev => prev.filter(msg => msg.id !== tempUserMessage.id));
+        
+        // Mostrar alerta y redirigir a suscripción
+        Alert.alert(
+          'Suscripción requerida',
+          error.response?.data?.message || error.message || 'Necesitas una suscripción activa para usar el chat. Tu período de prueba ha expirado.',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+              text: 'Ver planes',
+              onPress: () => {
+                navigation.navigate('Subscription');
+              }
+            }
+          ]
+        );
+        return;
+      }
       
       const errorMessage = {
         id: `${MESSAGE_ID_PREFIXES.ERROR}-${Date.now()}`,
@@ -533,12 +564,14 @@ const ChatScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
+      // Recargar info de trial cuando la pantalla recibe foco
+      loadTrialInfo();
       // Al entrar, puedes cargar mensajes
       return () => {
         // Al salir, limpia los mensajes
         setMessages([]);
       };
-    }, [])
+    }, [loadTrialInfo])
   );
 
   return (
@@ -579,6 +612,15 @@ const ChatScreen = () => {
         </TouchableOpacity>
       </View>
       
+      {/* Trial Banner */}
+      {trialInfo && trialInfo.isInTrial && !trialBannerDismissed && (
+        <TrialBanner
+          daysRemaining={trialInfo.daysRemaining}
+          onDismiss={handleTrialBannerDismiss}
+          dismissed={trialBannerDismissed}
+        />
+      )}
+
       {/* Chat Container */}
       <Animated.View style={[styles.chatContainer, { opacity: fadeAnim }]}>
         {isLoading ? (

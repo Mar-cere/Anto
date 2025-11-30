@@ -267,6 +267,10 @@ const userSchema = new mongoose.Schema({
 // Índices adicionales para optimizar consultas (email y username ya tienen índice en el schema)
 userSchema.index({ 'stats.lastActive': -1 });
 userSchema.index({ createdAt: -1 });
+// Índices compuestos para consultas frecuentes
+userSchema.index({ 'subscription.status': 1, 'subscription.trialEndDate': 1 });
+userSchema.index({ 'subscription.status': 1, 'subscription.subscriptionEndDate': 1 });
+userSchema.index({ email: 1, isActive: 1 });
 
 // Virtuals: propiedades calculadas al acceder
 userSchema.virtual('daysSinceRegistration').get(function() {

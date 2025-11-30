@@ -1,94 +1,78 @@
 /**
- * Modelo de Mensaje - Gestiona los mensajes del chat entre usuarios y el asistente IA
+ * Modelo de Mensaje
+ * 
+ * Gestiona los mensajes del chat entre usuarios y la IA.
+ * Incluye optimizaciones de índices para mejorar el rendimiento.
+ * 
+ * @author AntoApp Team
  */
+
 import mongoose from 'mongoose';
 
 const messageSchema = new mongoose.Schema({
-  // Referencias
+  // Usuario que envió el mensaje
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
-    index: true
+    index: true,
   },
+
+  // ID de la conversación
   conversationId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Conversation',
     required: true,
-    index: true
+    index: true,
   },
+
   // Contenido del mensaje
   content: {
     type: String,
     required: true,
     trim: true,
-    minlength: 1
   },
+
+  // Rol del mensaje (user o assistant)
   role: {
     type: String,
-    enum: ['user', 'assistant', 'system'],
-    default: 'user',
-    index: true
+    enum: ['user', 'assistant'],
+    required: true,
+    index: true,
   },
+
   // Metadatos del mensaje
   metadata: {
-    // Estado de entrega del mensaje
-    status: {
-      type: String,
-      enum: ['sent', 'delivered', 'read', 'failed'],
-      default: 'sent'
-    },
-    // Contexto del mensaje (análisis emocional y contextual)
-    context: {
-      emotional: {
-        mainEmotion: {
-          type: String,
-          // Enum flexible: acepta las emociones válidas pero no falla si hay otras
-          enum: {
-            values: ['tristeza', 'ansiedad', 'enojo', 'alegria', 'miedo', 'verguenza', 'culpa', 'esperanza', 'neutral'],
-            message: 'La emoción {VALUE} no es válida. Emociones válidas: tristeza, ansiedad, enojo, alegria, miedo, verguenza, culpa, esperanza, neutral'
-          },
-          required: false,
-          // Si el valor no está en el enum, usar 'neutral' como fallback
-          default: 'neutral'
-        },
-        intensity: {
-          type: Number,
-          min: 0,
-          max: 10,
-          required: false
-        },
-        secondary: {
-          type: [String],
-          default: []
-        },
-        category: String,
-        confidence: Number,
-        requiresAttention: Boolean
-      },
-      contextual: {
-        intent: String,
-        topics: [String],
-        urgent: Boolean
-      },
-      response: mongoose.Schema.Types.Mixed
-    },
-    // Información de error (si existe)
-    error: String
-  }
+    type: mongoose.Schema.Types.Mixed,
+    default: {},
+  },
 }, {
-  timestamps: true // Crea createdAt y updatedAt automáticamente
+  timestamps: true, // Agrega createdAt y updatedAt automáticamente
 });
 
-// Índices para optimizar consultas
-messageSchema.index({ userId: 1, conversationId: 1 });
+// Índices compuestos para consultas frecuentes
+messageSchema.index({ userId: 1, createdAt: -1 });
 messageSchema.index({ conversationId: 1, createdAt: -1 });
-messageSchema.index({ role: 1 });
+messageSchema.index({ userId: 1, conversationId: 1, createdAt: -1 });
+messageSchema.index({ role: 1, createdAt: -1 });
+messageSchema.index({ 'metadata.status': 1, createdAt: -1 });
 
-// Eliminar modelo de caché si existe para forzar actualización del esquema
-if (mongoose.models.Message) {
-  delete mongoose.models.Message;
-}
+// Índice de texto para búsquedas (opcional, solo si se necesita búsqueda de texto)
+// messageSchema.index({ content: 'text' });
+
+// Índice para consultas de análisis emocional
+messageSchema.index({ 
+  userId: 1, 
+  'metadata.context.emotional.mainEmotion': 1, 
+  createdAt: -1 
+});
+
+// Índice para consultas de crisis
+messageSchema.index({ 
+  userId: 1, 
+  'metadata.crisis.riskLevel': 1, 
+  createdAt: -1 
+});
 
 const Message = mongoose.model('Message', messageSchema);
 

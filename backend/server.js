@@ -32,6 +32,8 @@ import testNotificationRoutes from './routes/testNotificationRoutes.js';
 import metricsRoutes from './routes/metricsRoutes.js';
 import therapeuticTechniquesRoutes from './routes/therapeuticTechniquesRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import paymentRecoveryRoutes from './routes/paymentRecoveryRoutes.js';
+import paymentMetricsRoutes from './routes/paymentMetricsRoutes.js';
 
 // Constantes de configuración
 const APP_VERSION = '1.2.0';
@@ -275,6 +277,10 @@ app.use('/api/therapeutic-techniques', therapeuticTechniquesRoutes);
 console.log('✅ Ruta /api/therapeutic-techniques registrada');
 app.use('/api/payments', paymentRoutes);
 console.log('✅ Ruta /api/payments registrada');
+app.use('/api/payments', paymentRecoveryRoutes);
+console.log('✅ Ruta /api/payments/recovery registrada');
+app.use('/api/payments', paymentMetricsRoutes);
+console.log('✅ Ruta /api/payments/metrics registrada');
 // Rutas de testing (solo en desarrollo)
 if (process.env.NODE_ENV !== 'production') {
   app.use('/api/notifications', testNotificationRoutes);

@@ -4,6 +4,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import { authenticateToken as protect } from '../middleware/auth.js';
+import { requireActiveSubscription } from '../middleware/checkSubscription.js';
 import {
   Conversation,
   Message,
@@ -120,7 +121,7 @@ router.get('/conversations/:conversationId', protect, validarConversationId, val
 });
 
 // Crear nueva conversación con mensaje de bienvenida
-router.post('/conversations', protect, async (req, res) => {
+router.post('/conversations', protect, requireActiveSubscription(true), async (req, res) => {
   try {
     const userId = req.user._id;
     
@@ -157,7 +158,7 @@ router.post('/conversations', protect, async (req, res) => {
 });
 
 // Crear nuevo mensaje
-router.post('/messages', protect, async (req, res) => {
+router.post('/messages', protect, requireActiveSubscription(true), async (req, res) => {
   const startTime = Date.now();
   const logs = [];
   let userMessage = null;
@@ -200,16 +201,18 @@ router.post('/messages', protect, async (req, res) => {
       try {
         // 2. Obtener contexto e historial
         logs.push(`[${Date.now() - startTime}ms] Obteniendo contexto e historial`);
+        // Optimización: Usar índices compuestos y proyección para reducir datos transferidos
         const [conversationHistory, userProfile, therapeuticRecord] = await Promise.all([
           Message.find({ 
             conversationId,
             createdAt: { $gte: new Date(Date.now() - VENTANA_CONTEXTO) }
           })
+          .select('content role metadata.context.emotional createdAt') // Solo campos necesarios
           .sort({ createdAt: -1 })
           .limit(HISTORIAL_LIMITE)
           .lean(),
           userProfileService.getOrCreateProfile(req.user._id),
-          TherapeuticRecord.findOne({ userId: req.user._id })
+          TherapeuticRecord.findOne({ userId: req.user._id }).lean() // Usar lean() para mejor rendimiento
         ]);
 
         // 3. Análisis completo del mensaje (en paralelo para optimizar rendimiento)
@@ -711,13 +714,13 @@ router.patch('/messages/status', protect, async (req, res) => {
       });
     }
 
-    // Verificar que los mensajes existen y pertenecen al usuario
-    const messages = await Message.find({ 
+    // Optimización: Solo verificar existencia, no cargar datos completos
+    const messageCount = await Message.countDocuments({ 
       _id: { $in: validIds }, 
       userId: req.user._id 
     });
     
-    if (messages.length !== validIds.length) {
+    if (messageCount !== validIds.length) {
       return res.status(400).json({ 
         message: 'Algunos mensajes no existen o no pertenecen al usuario' 
       });
@@ -808,7 +811,9 @@ router.get('/messages/search', protect, async (req, res) => {
       };
     }
 
+    // Optimización: Usar proyección para reducir datos transferidos
     const messages = await Message.find(searchQuery)
+      .select('content role metadata createdAt') // Solo campos necesarios
       .sort({ createdAt: -1 })
       .limit(LIMITE_MENSAJES)
       .lean();

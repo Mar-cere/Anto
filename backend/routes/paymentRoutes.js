@@ -201,6 +201,33 @@ router.post(
 );
 
 /**
+ * GET /api/payments/trial-info
+ * Obtener información del trial del usuario
+ */
+router.get(
+  '/trial-info',
+  authenticateToken,
+  validateUserObjectId,
+  async (req, res) => {
+    try {
+      const trialNotificationService = (await import('../services/trialNotificationService.js')).default;
+      const trialInfo = await trialNotificationService.getTrialInfo(req.user._id);
+      
+      res.json({
+        success: true,
+        ...trialInfo,
+      });
+    } catch (error) {
+      console.error('Error obteniendo info de trial:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error al obtener información del trial',
+      });
+    }
+  }
+);
+
+/**
  * GET /api/payments/subscription-status
  * Obtener estado de suscripción del usuario
  */
@@ -348,6 +375,41 @@ router.get(
 );
 
 /**
+ * GET /api/payments/transactions
+ * Obtener historial de transacciones del usuario
+ */
+router.get(
+  '/transactions',
+  authenticateToken,
+  validateUserObjectId,
+  async (req, res) => {
+    try {
+      const userId = req.user._id;
+      const { limit = 50, skip = 0, status, type } = req.query;
+
+      const transactions = await Transaction.getUserTransactions(userId, {
+        limit: parseInt(limit, 10),
+        skip: parseInt(skip, 10),
+        status,
+        type,
+      });
+
+      res.json({
+        success: true,
+        transactions,
+        count: transactions.length,
+      });
+    } catch (error) {
+      console.error('Error obteniendo transacciones:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error al obtener transacciones',
+      });
+    }
+  }
+);
+
+/**
  * GET /api/payments/transactions/stats
  * Obtener estadísticas de transacciones
  */
@@ -391,11 +453,19 @@ router.get(
  */
 router.post('/webhook', express.json(), async (req, res) => {
   try {
+    // Registrar webhook recibido
+    console.log('[PAYMENT_WEBHOOK] Webhook recibido:', {
+      type: req.body.type,
+      data: req.body.data,
+      timestamp: new Date().toISOString(),
+      ip: req.ip,
+    });
+
     const result = await paymentService.handleWebhook(req.body, null);
 
     res.json(result);
   } catch (error) {
-    console.error('Error procesando webhook:', error);
+    console.error('[PAYMENT_WEBHOOK] Error procesando webhook:', error);
     res.status(400).json({
       error: error.message || 'Webhook processing failed',
     });

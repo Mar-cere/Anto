@@ -12,6 +12,7 @@ import { preferenceClient, preapprovalClient, preapprovalPlanClient, MERCADOPAGO
 import Transaction from '../models/Transaction.js';
 import Subscription from '../models/Subscription.js';
 import User from '../models/User.js';
+import paymentAuditService from './paymentAuditService.js';
 
 class PaymentServiceMercadoPago {
   /**
@@ -28,9 +29,30 @@ class PaymentServiceMercadoPago {
         throw new Error('Mercado Pago no está configurado correctamente. Verifica que MERCADOPAGO_ACCESS_TOKEN esté configurado.');
       }
 
-      const user = await User.findById(userId);
+      // Validar y obtener usuario con información completa
+      if (!userId || typeof userId.toString !== 'function') {
+        throw new Error('ID de usuario inválido');
+      }
+
+      const userIdString = userId.toString();
+      const user = await User.findById(userIdString).select('email username name subscription');
       if (!user) {
+        await paymentAuditService.logEvent('CHECKOUT_CREATION_FAILED', {
+          reason: 'user_not_found',
+          userId: userIdString,
+          plan,
+        }, userIdString);
         throw new Error('Usuario no encontrado');
+      }
+
+      // Validar que el userId sea un ObjectId válido
+      if (!userIdString.match(/^[0-9a-fA-F]{24}$/)) {
+        await paymentAuditService.logEvent('CHECKOUT_CREATION_FAILED', {
+          reason: 'invalid_user_id_format',
+          userId: userIdString,
+          plan,
+        }, userIdString);
+        throw new Error('ID de usuario con formato inválido');
       }
 
       // Validar que el plan sea válido
@@ -56,10 +78,11 @@ class PaymentServiceMercadoPago {
         throw new Error(`No se pudo generar la URL de checkout para el plan ${plan}`);
       }
 
-      // Registrar transacción pendiente
+      // Registrar transacción pendiente con información completa del usuario
+      let transaction;
       try {
-        await Transaction.create({
-          userId: userId,
+        transaction = await Transaction.create({
+          userId: userIdString,
           type: 'subscription',
           amount: price,
           currency: MERCADOPAGO_CONFIG.currency.toLowerCase(),
@@ -74,10 +97,33 @@ class PaymentServiceMercadoPago {
             checkoutUrl: checkoutUrl,
             successUrl: successUrl || MERCADOPAGO_CONFIG.successUrl,
             cancelUrl: cancelUrl || MERCADOPAGO_CONFIG.cancelUrl,
+            // Información del usuario para auditoría
+            userEmail: user.email,
+            userName: user.name || user.username,
+            userId: userIdString,
+            createdAt: new Date().toISOString(),
           },
         });
+
+        // Registrar evento de auditoría
+        await paymentAuditService.logEvent('CHECKOUT_CREATED', {
+          transactionId: transaction._id.toString(),
+          userId: userIdString,
+          userEmail: user.email,
+          userName: user.name || user.username,
+          plan,
+          amount: price,
+          preapprovalPlanId,
+        }, userIdString, transaction._id.toString());
       } catch (dbError) {
         console.error('Error creando transacción en la base de datos:', dbError);
+        await paymentAuditService.logEvent('CHECKOUT_CREATION_FAILED', {
+          reason: 'database_error',
+          userId: userIdString,
+          userEmail: user.email,
+          plan,
+          error: dbError.message,
+        }, userIdString);
         throw new Error(`Error al registrar la transacción: ${dbError.message}`);
       }
 
@@ -256,9 +302,27 @@ class PaymentServiceMercadoPago {
     // Mercado Pago envía notificaciones IPN
     // El formato depende del tipo de notificación
 
-    const { type, data: notificationData } = data;
-
     try {
+      // Mercado Pago puede enviar diferentes formatos
+      // Formato 1: { type: 'payment', data: {...} }
+      // Formato 2: { action: 'payment.created', data: {...} }
+      // Formato 3: Directamente el objeto de notificación
+
+      let type = data.type || data.action?.split('.')[0] || 'unknown';
+      let notificationData = data.data || data;
+
+      // Normalizar tipo
+      if (type.includes('payment')) type = 'payment';
+      if (type.includes('subscription')) type = 'subscription';
+      if (type.includes('preapproval')) type = 'preapproval';
+
+      // Registrar webhook recibido
+      await paymentAuditService.logEvent('WEBHOOK_RECEIVED', {
+        type,
+        hasData: !!notificationData,
+        signature: signature ? 'present' : 'missing',
+      }, null);
+
       switch (type) {
         case 'payment':
           await this.handlePaymentNotification(notificationData);
@@ -270,54 +334,104 @@ class PaymentServiceMercadoPago {
           await this.handlePreapprovalNotification(notificationData);
           break;
         default:
-          console.log(`Tipo de notificación no manejado: ${type}`);
+          console.log(`[WEBHOOK] Tipo de notificación no manejado: ${type}`, data);
+          await paymentAuditService.logEvent('WEBHOOK_UNKNOWN_TYPE', {
+            type,
+            data: JSON.stringify(data).substring(0, 500), // Limitar tamaño
+          }, null);
       }
 
-      return { received: true, type };
+      return { received: true, type, processed: true };
     } catch (error) {
-      console.error('Error procesando notificación de Mercado Pago:', error);
+      console.error('[WEBHOOK] Error procesando notificación de Mercado Pago:', error);
+      await paymentAuditService.logEvent('WEBHOOK_PROCESSING_ERROR', {
+        error: error.message,
+        stack: error.stack?.substring(0, 500),
+      }, null);
       throw error;
     }
   }
 
   // Handlers de notificaciones
   async handlePaymentNotification(paymentData) {
-    const paymentId = paymentData.id;
-    const preferenceId = paymentData.preference_id;
+    try {
+      const paymentId = paymentData.id;
+      const preferenceId = paymentData.preference_id || paymentData.preapproval_plan_id;
 
-    // Buscar transacción por preference ID
-    const transaction = await Transaction.findOne({
-      providerTransactionId: preferenceId,
-    });
+      if (!paymentId) {
+        console.warn('[PAYMENT_WEBHOOK] Payment ID no encontrado en notificación');
+        return;
+      }
 
-    if (!transaction) {
-      console.warn(`Transacción no encontrada para preference: ${preferenceId}`);
-      return;
-    }
+      // Buscar transacción por preference ID o payment ID
+      let transaction = await Transaction.findOne({
+        $or: [
+          { providerTransactionId: preferenceId },
+          { providerTransactionId: paymentId },
+          { 'metadata.paymentId': paymentId },
+        ],
+      }).populate('userId', 'email username name');
 
-    // Actualizar estado según el estado del pago
-    const statusMap = {
-      approved: 'completed',
-      pending: 'processing',
-      rejected: 'failed',
-      cancelled: 'canceled',
-      refunded: 'refunded',
-    };
+      if (!transaction) {
+        console.warn(`[PAYMENT_WEBHOOK] Transacción no encontrada para preference: ${preferenceId} o payment: ${paymentId}`);
+        await paymentAuditService.logEvent('PAYMENT_NOTIFICATION_ORPHAN', {
+          paymentId,
+          preferenceId,
+          status: paymentData.status,
+        }, null);
+        return;
+      }
 
-    transaction.status = statusMap[paymentData.status] || 'pending';
-    transaction.providerTransactionId = paymentId; // Actualizar con payment ID
-    transaction.processedAt = new Date();
-    transaction.metadata = {
-      ...transaction.metadata,
-      paymentId: paymentId,
-      paymentStatus: paymentData.status,
-    };
+      const userId = transaction.userId._id || transaction.userId;
+      const userIdString = userId.toString();
 
-    await transaction.save();
+      // Actualizar estado según el estado del pago
+      const statusMap = {
+        approved: 'completed',
+        pending: 'processing',
+        rejected: 'failed',
+        cancelled: 'canceled',
+        refunded: 'refunded',
+      };
 
-    // Si el pago fue aprobado, activar suscripción
-    if (paymentData.status === 'approved') {
-      await this.activateSubscriptionFromPayment(transaction);
+      const oldStatus = transaction.status;
+      transaction.status = statusMap[paymentData.status] || 'pending';
+      transaction.providerTransactionId = paymentId; // Actualizar con payment ID
+      transaction.processedAt = new Date();
+      transaction.metadata = {
+        ...transaction.metadata,
+        paymentId: paymentId,
+        paymentStatus: paymentData.status,
+        notificationReceivedAt: new Date().toISOString(),
+        previousStatus: oldStatus,
+      };
+
+      await transaction.save();
+
+      // Registrar notificación recibida
+      await paymentAuditService.logEvent('PAYMENT_NOTIFICATION_RECEIVED', {
+        transactionId: transaction._id.toString(),
+        userId: userIdString,
+        userEmail: transaction.userId.email,
+        paymentId,
+        status: paymentData.status,
+        oldStatus,
+        newStatus: transaction.status,
+      }, userIdString, transaction._id.toString());
+
+      // Si el pago fue aprobado, activar suscripción
+      if (paymentData.status === 'approved') {
+        try {
+          await this.activateSubscriptionFromPayment(transaction);
+        } catch (activationError) {
+          console.error('[PAYMENT_WEBHOOK] Error activando suscripción:', activationError);
+          // El error ya se registra en activateSubscriptionFromPayment
+          throw activationError;
+        }
+      }
+    } catch (error) {
+      console.error('[PAYMENT_WEBHOOK] Error procesando notificación de pago:', error);
+      throw error;
     }
   }
 
@@ -336,49 +450,211 @@ class PaymentServiceMercadoPago {
   }
 
   async handlePreapprovalNotification(preapprovalData) {
-    // Manejar notificaciones de preapproval
-    console.log('Preapproval notification:', preapprovalData);
+    try {
+      // Las notificaciones de preapproval vienen cuando se crea/actualiza una suscripción
+      const preapprovalId = preapprovalData.id;
+      const status = preapprovalData.status;
+      const payerEmail = preapprovalData.payer_email;
+      const planId = preapprovalData.preapproval_plan_id;
+
+      console.log('[PREAPPROVAL_WEBHOOK] Notificación recibida:', {
+        preapprovalId,
+        status,
+        payerEmail,
+        planId,
+      });
+
+      // Buscar transacción por plan ID
+      const transaction = await Transaction.findOne({
+        $or: [
+          { providerTransactionId: planId },
+          { 'metadata.preapprovalPlanId': planId },
+        ],
+      }).populate('userId', 'email username name');
+
+      if (!transaction) {
+        console.warn(`[PREAPPROVAL_WEBHOOK] Transacción no encontrada para plan: ${planId}`);
+        await paymentAuditService.logEvent('PREAPPROVAL_NOTIFICATION_ORPHAN', {
+          preapprovalId,
+          planId,
+          status,
+          payerEmail,
+        }, null);
+        return;
+      }
+
+      const userId = transaction.userId._id || transaction.userId;
+      const userIdString = userId.toString();
+
+      // Validar que el email del payer coincida con el usuario
+      if (payerEmail && transaction.userId.email && payerEmail.toLowerCase() !== transaction.userId.email.toLowerCase()) {
+        console.warn(`[PREAPPROVAL_WEBHOOK] Email del payer no coincide: ${payerEmail} vs ${transaction.userId.email}`);
+        await paymentAuditService.logEvent('PREAPPROVAL_EMAIL_MISMATCH', {
+          transactionId: transaction._id.toString(),
+          userId: userIdString,
+          payerEmail,
+          userEmail: transaction.userId.email,
+        }, userIdString, transaction._id.toString());
+      }
+
+      // Actualizar transacción
+      transaction.metadata = {
+        ...transaction.metadata,
+        preapprovalId,
+        preapprovalStatus: status,
+        payerEmail,
+        preapprovalNotificationReceivedAt: new Date().toISOString(),
+      };
+
+      // Si el preapproval está autorizado, actualizar estado
+      if (status === 'authorized') {
+        transaction.status = 'completed';
+        transaction.processedAt = new Date();
+        await transaction.save();
+
+        // Activar suscripción
+        try {
+          await this.activateSubscriptionFromPayment(transaction);
+        } catch (activationError) {
+          console.error('[PREAPPROVAL_WEBHOOK] Error activando suscripción:', activationError);
+          throw activationError;
+        }
+      } else if (status === 'cancelled' || status === 'paused') {
+        transaction.status = 'canceled';
+        await transaction.save();
+      }
+
+      // Registrar evento
+      await paymentAuditService.logEvent('PREAPPROVAL_NOTIFICATION_RECEIVED', {
+        transactionId: transaction._id.toString(),
+        userId: userIdString,
+        userEmail: transaction.userId.email,
+        preapprovalId,
+        status,
+        planId,
+      }, userIdString, transaction._id.toString());
+    } catch (error) {
+      console.error('[PREAPPROVAL_WEBHOOK] Error procesando notificación:', error);
+      throw error;
+    }
   }
 
   async activateSubscriptionFromPayment(transaction) {
-    const userId = transaction.userId;
-    const plan = transaction.plan;
+    try {
+      // Validar transacción
+      if (!transaction || !transaction.userId) {
+        throw new Error('Transacción inválida: falta userId');
+      }
 
-    // Buscar o crear suscripción
-    let subscription = await Subscription.findOne({ userId });
+      const userId = transaction.userId._id || transaction.userId;
+      const userIdString = userId.toString();
+      const plan = transaction.plan;
 
-    if (!subscription) {
-      subscription = new Subscription({
-        userId: userId,
-        plan: plan,
-        status: 'active',
-      });
-    }
+      if (!plan) {
+        throw new Error('Transacción inválida: falta plan');
+      }
 
-    // Calcular fechas del período
-    const now = new Date();
-    const periodEnd = new Date(now);
-    if (plan === 'monthly') {
-      periodEnd.setMonth(periodEnd.getMonth() + 1);
-    } else {
-      periodEnd.setFullYear(periodEnd.getFullYear() + 1);
-    }
+      // Validar que el usuario existe
+      const user = await User.findById(userIdString).select('email username name subscription');
+      if (!user) {
+        throw new Error(`Usuario no encontrado: ${userIdString}`);
+      }
 
-    subscription.status = 'active';
-    subscription.currentPeriodStart = now;
-    subscription.currentPeriodEnd = periodEnd;
-    subscription.mercadopagoTransactionId = transaction.providerTransactionId;
+      // Calcular fechas del período según el plan
+      const now = new Date();
+      const periodEnd = new Date(now);
+      
+      const planDurations = {
+        weekly: () => periodEnd.setDate(periodEnd.getDate() + 7),
+        monthly: () => periodEnd.setMonth(periodEnd.getMonth() + 1),
+        quarterly: () => periodEnd.setMonth(periodEnd.getMonth() + 3),
+        semestral: () => periodEnd.setMonth(periodEnd.getMonth() + 6),
+        yearly: () => periodEnd.setFullYear(periodEnd.getFullYear() + 1),
+      };
 
-    await subscription.save();
+      if (planDurations[plan]) {
+        planDurations[plan]();
+      } else {
+        throw new Error(`Plan inválido: ${plan}`);
+      }
 
-    // Actualizar usuario
-    const user = await User.findById(userId);
-    if (user) {
+      // Buscar o crear suscripción
+      let subscription = await Subscription.findOne({ userId: userIdString });
+
+      if (!subscription) {
+        subscription = new Subscription({
+          userId: userIdString,
+          plan: plan,
+          status: 'active',
+          currentPeriodStart: now,
+          currentPeriodEnd: periodEnd,
+          mercadopagoTransactionId: transaction.providerTransactionId,
+          metadata: {
+            activatedFrom: transaction._id.toString(),
+            activatedAt: now.toISOString(),
+            userEmail: user.email,
+            userName: user.name || user.username,
+          },
+        });
+      } else {
+        subscription.status = 'active';
+        subscription.plan = plan;
+        subscription.currentPeriodStart = now;
+        subscription.currentPeriodEnd = periodEnd;
+        subscription.mercadopagoTransactionId = transaction.providerTransactionId;
+        subscription.metadata = {
+          ...subscription.metadata,
+          lastActivatedFrom: transaction._id.toString(),
+          lastActivatedAt: now.toISOString(),
+        };
+      }
+
+      await subscription.save();
+
+      // Actualizar usuario
       user.subscription.status = 'premium';
       user.subscription.plan = plan;
       user.subscription.subscriptionStartDate = now;
       user.subscription.subscriptionEndDate = periodEnd;
       await user.save();
+
+      // Registrar evento de auditoría
+      await paymentAuditService.logEvent('SUBSCRIPTION_ACTIVATED', {
+        transactionId: transaction._id.toString(),
+        subscriptionId: subscription._id.toString(),
+        userId: userIdString,
+        userEmail: user.email,
+        userName: user.name || user.username,
+        plan,
+        periodStart: now.toISOString(),
+        periodEnd: periodEnd.toISOString(),
+      }, userIdString, transaction._id.toString());
+
+      console.log(`✅ Suscripción activada para usuario ${userIdString} (${user.email}) - Plan: ${plan}`);
+
+      return {
+        success: true,
+        subscriptionId: subscription._id.toString(),
+        userId: userIdString,
+        plan,
+        periodStart: now,
+        periodEnd: periodEnd,
+      };
+    } catch (error) {
+      console.error('❌ Error activando suscripción desde pago:', error);
+      
+      // Registrar error en auditoría
+      if (transaction && transaction.userId) {
+        const userId = transaction.userId._id || transaction.userId;
+        await paymentAuditService.logEvent('SUBSCRIPTION_ACTIVATION_FAILED', {
+          transactionId: transaction._id?.toString(),
+          userId: userId.toString(),
+          plan: transaction.plan,
+          error: error.message,
+        }, userId.toString(), transaction._id?.toString());
+      }
+      
+      throw error;
     }
   }
 }
