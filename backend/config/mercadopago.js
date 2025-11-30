@@ -7,10 +7,14 @@
  * @author AntoApp Team
  */
 
-import { MercadoPagoConfig, Preference, Subscription } from 'mercadopago';
+// Importar Mercado Pago SDK (CommonJS module)
+import mercadopago from 'mercadopago';
 import dotenv from 'dotenv';
 
 dotenv.config();
+
+// Desestructurar las clases del SDK
+const { MercadoPagoConfig, Preference, PreApproval, PreApprovalPlan } = mercadopago;
 
 // Validar que exista el access token de Mercado Pago
 if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
@@ -29,7 +33,8 @@ const client = new MercadoPagoConfig({
 
 // Clientes para diferentes recursos
 export const preferenceClient = new Preference(client);
-export const subscriptionClient = new Subscription(client);
+export const preapprovalClient = new PreApproval(client);
+export const preapprovalPlanClient = new PreApprovalPlan(client);
 
 // Constantes de configuración
 export const MERCADOPAGO_CONFIG = {
