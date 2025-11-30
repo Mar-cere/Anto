@@ -21,8 +21,8 @@ const router = express.Router();
 // Esquema de validación para crear checkout
 const createCheckoutSchema = Joi.object({
   plan: Joi.string().valid('weekly', 'monthly', 'quarterly', 'semestral', 'yearly').required(),
-  successUrl: Joi.string().uri().optional(),
-  cancelUrl: Joi.string().uri().optional(),
+  successUrl: Joi.string().uri().allow(null, '').optional(),
+  cancelUrl: Joi.string().uri().allow(null, '').optional(),
 });
 
 // Esquema de validación para cancelar suscripción
@@ -164,10 +164,15 @@ router.post(
     try {
       const { error, value } = createCheckoutSchema.validate(req.body);
       if (error) {
+        console.error('Error de validación en create-checkout-session:', error.details);
         return res.status(400).json({
           success: false,
           error: 'Datos inválidos',
-          details: error.details.map(d => d.message),
+          message: error.details.map(d => d.message).join(', '),
+          details: error.details.map(d => ({
+            field: d.path.join('.'),
+            message: d.message,
+          })),
         });
       }
 

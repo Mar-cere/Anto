@@ -41,11 +41,12 @@ class PaymentService {
    */
   async createCheckoutSession(plan, successUrl = null, cancelUrl = null) {
     try {
-      const response = await api.post(ENDPOINTS.PAYMENT_CREATE_CHECKOUT, {
-        plan,
-        successUrl,
-        cancelUrl,
-      });
+      // Construir el payload, omitiendo null/undefined
+      const payload = { plan };
+      if (successUrl) payload.successUrl = successUrl;
+      if (cancelUrl) payload.cancelUrl = cancelUrl;
+      
+      const response = await api.post(ENDPOINTS.PAYMENT_CREATE_CHECKOUT, payload);
 
       return {
         success: true,
