@@ -38,16 +38,11 @@ const updatePaymentMethodSchema = Joi.object({
 /**
  * GET /api/payments/plans
  * Obtener información de los planes disponibles
+ * Nota: Este endpoint no requiere autenticación ni configuración completa de Mercado Pago
+ * ya que solo devuelve información estática de los planes.
  */
 router.get('/plans', (req, res) => {
   try {
-    if (!isMercadoPagoConfigured()) {
-      return res.status(503).json({
-        success: false,
-        error: 'Sistema de pagos no configurado',
-      });
-    }
-
     const currency = 'CLP';
     
     // Calcular precios

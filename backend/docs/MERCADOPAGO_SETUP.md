@@ -17,13 +17,72 @@
 3. Verifica tu identidad (requerido para recibir pagos)
 4. Activa tu cuenta
 
-### 2. Obtener Credenciales
+### 2. Obtener Credenciales (Access Token)
 
-1. Ve al Panel de Mercado Pago: https://www.mercadopago.cl/developers/panel
-2. Navega a **Tus integraciones** → **Credenciales**
-3. Copia las siguientes credenciales:
-   - **Access Token** (TEST-xxx para pruebas, APP_USR-xxx para producción)
-   - **Public Key** (TEST-xxx para pruebas, APP_USR-xxx para producción)
+**Paso a paso detallado:**
+
+#### Opción A: Desde el Panel de Desarrolladores (Recomendado)
+
+1. **Inicia sesión en Mercado Pago:**
+   - Ve a: https://www.mercadopago.cl
+   - Inicia sesión con tu cuenta
+
+2. **Accede al Panel de Desarrolladores:**
+   - Ve directamente a: https://www.mercadopago.cl/developers/panel
+   - O desde el menú: **Tu negocio** → **Desarrolladores**
+
+3. **Navega a Credenciales:**
+   - En el menú lateral izquierdo, busca **"Tus integraciones"**
+   - Haz clic en **"Credenciales"** o **"Credenciales de producción"**
+
+4. **Selecciona tu aplicación:**
+   - Si ya tienes una aplicación creada, selecciónala
+   - Si no tienes una, haz clic en **"Crear aplicación"** y completa:
+     - Nombre: `AntoApp` (o el nombre que prefieras)
+     - Descripción: `Aplicación de asistente AI terapéutico`
+     - Categoría: `Servicios`
+
+5. **Copia el Access Token:**
+   - Busca la sección **"Credenciales de producción"** o **"Credenciales de prueba"**
+   - Para **pruebas (TEST)**: Busca el token que comienza con `TEST-`
+   - Para **producción**: Busca el token que comienza con `APP_USR-`
+   - Haz clic en el botón **"Ver"** o **"Mostrar"** junto al Access Token
+   - **Copia el token completo** (es largo, asegúrate de copiarlo completo)
+
+#### Opción B: Desde el Panel Principal
+
+1. **Inicia sesión en Mercado Pago:**
+   - Ve a: https://www.mercadopago.cl
+   - Inicia sesión
+
+2. **Accede a Configuración:**
+   - Haz clic en tu nombre de usuario (arriba a la derecha)
+   - Selecciona **"Configuración"** o **"Tu cuenta"**
+
+3. **Ve a Credenciales:**
+   - En el menú, busca **"Desarrolladores"** o **"Integraciones"**
+   - Haz clic en **"Credenciales"**
+
+4. **Copia el Access Token:**
+   - Sigue los pasos 4-5 de la Opción A
+
+#### 🔑 Tipos de Tokens:
+
+| Tipo | Prefijo | Uso | Dónde encontrarlo |
+|------|---------|-----|-------------------|
+| **Test** | `TEST-` | Desarrollo y pruebas | Panel → Credenciales de prueba |
+| **Producción** | `APP_USR-` | Ambiente real | Panel → Credenciales de producción |
+
+#### ⚠️ Importante:
+
+- **Para desarrollo**: Usa el token que comienza con `TEST-`
+- **Para producción**: Usa el token que comienza con `APP_USR-`
+- **Nunca compartas** tu Access Token públicamente
+- **Guarda el token** de forma segura (variables de entorno, no en el código)
+
+#### 📝 Nota sobre Public Key:
+
+El **Public Key** no es necesario para el backend (solo se usa en el frontend para integraciones directas). Para este proyecto, solo necesitas el **Access Token**.
 
 ### 3. Configurar Precios
 
@@ -47,7 +106,9 @@ MERCADOPAGO_PRICE_YEARLY=79990  # $79.990 CLP
 
 ### 5. Configurar Variables de Entorno
 
-Agrega las siguientes variables a tu archivo `.env`:
+#### Para Desarrollo Local (.env)
+
+Crea o edita el archivo `.env` en la carpeta `backend/`:
 
 ```env
 # Mercado Pago Configuration
