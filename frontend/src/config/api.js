@@ -166,8 +166,17 @@ export const api = {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error en la petición');
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          errorData = { 
+            message: `Error del servidor: ${response.status} - ${response.statusText}`,
+            error: response.statusText
+          };
+        }
+        const errorMessage = errorData.error || errorData.message || `Error del servidor: ${response.status}`;
+        throw new Error(errorMessage);
       }
 
       const responseData = await response.json();
@@ -226,8 +235,17 @@ export const api = {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error en la petición');
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          errorData = { 
+            message: `Error del servidor: ${response.status} - ${response.statusText}`,
+            error: response.statusText
+          };
+        }
+        const errorMessage = errorData.error || errorData.message || `Error del servidor: ${response.status}`;
+        throw new Error(errorMessage);
       }
 
       return await response.json();
@@ -246,8 +264,17 @@ export const api = {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error en la petición');
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          errorData = { 
+            message: `Error del servidor: ${response.status} - ${response.statusText}`,
+            error: response.statusText
+          };
+        }
+        const errorMessage = errorData.error || errorData.message || `Error del servidor: ${response.status}`;
+        throw new Error(errorMessage);
       }
 
       return await response.json();
@@ -267,8 +294,17 @@ export const api = {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error en la petición');
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          errorData = { 
+            message: `Error del servidor: ${response.status} - ${response.statusText}`,
+            error: response.statusText
+          };
+        }
+        const errorMessage = errorData.error || errorData.message || `Error del servidor: ${response.status}`;
+        throw new Error(errorMessage);
       }
 
       return await response.json();

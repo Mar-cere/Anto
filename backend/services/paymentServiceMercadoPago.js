@@ -23,52 +23,75 @@ class PaymentServiceMercadoPago {
    * @returns {Promise<Object>} - URL de checkout de Mercado Pago
    */
   async createCheckoutSession(userId, plan, successUrl = null, cancelUrl = null) {
-    if (!isMercadoPagoConfigured()) {
-      throw new Error('Mercado Pago no está configurado correctamente');
-    }
+    try {
+      if (!isMercadoPagoConfigured()) {
+        throw new Error('Mercado Pago no está configurado correctamente. Verifica que MERCADOPAGO_ACCESS_TOKEN esté configurado.');
+      }
 
-    const user = await User.findById(userId);
-    if (!user) {
-      throw new Error('Usuario no encontrado');
-    }
+      const user = await User.findById(userId);
+      if (!user) {
+        throw new Error('Usuario no encontrado');
+      }
 
-    // Obtener el ID del Preapproval Plan
-    const preapprovalPlanId = getPreapprovalPlanId(plan);
-    if (!preapprovalPlanId) {
-      throw new Error(`Preapproval Plan ID para ${plan} no está configurado. Por favor, configura MERCADOPAGO_PREAPPROVAL_PLAN_ID_${plan.toUpperCase()} en las variables de entorno`);
-    }
+      // Validar que el plan sea válido
+      const validPlans = ['weekly', 'monthly', 'quarterly', 'semestral', 'yearly'];
+      if (!validPlans.includes(plan)) {
+        throw new Error(`Plan inválido: ${plan}. Los planes válidos son: ${validPlans.join(', ')}`);
+      }
 
-    const price = getPlanPrice(plan);
-    
-    // Generar URL de checkout para Preapproval Plan
-    const checkoutUrl = getPreapprovalCheckoutUrl(preapprovalPlanId);
+      // Obtener el ID del Preapproval Plan
+      const preapprovalPlanId = getPreapprovalPlanId(plan);
+      if (!preapprovalPlanId) {
+        throw new Error(`Preapproval Plan ID para ${plan} no está configurado. Por favor, configura MERCADOPAGO_PREAPPROVAL_PLAN_ID_${plan.toUpperCase()} en las variables de entorno`);
+      }
 
-    // Registrar transacción pendiente
-    await Transaction.create({
-      userId: userId,
-      type: 'subscription',
-      amount: price,
-      currency: MERCADOPAGO_CONFIG.currency.toLowerCase(),
-      status: 'pending',
-      paymentProvider: 'mercadopago',
-      providerTransactionId: preapprovalPlanId, // Usar el plan ID como referencia
-      plan: plan,
-      description: `Suscripción ${plan} - Checkout iniciado`,
-      metadata: {
+      const price = getPlanPrice(plan);
+      if (!price || price <= 0) {
+        throw new Error(`Precio inválido para el plan ${plan}. Verifica la configuración de precios.`);
+      }
+      
+      // Generar URL de checkout para Preapproval Plan
+      const checkoutUrl = getPreapprovalCheckoutUrl(preapprovalPlanId);
+      if (!checkoutUrl) {
+        throw new Error(`No se pudo generar la URL de checkout para el plan ${plan}`);
+      }
+
+      // Registrar transacción pendiente
+      try {
+        await Transaction.create({
+          userId: userId,
+          type: 'subscription',
+          amount: price,
+          currency: MERCADOPAGO_CONFIG.currency.toLowerCase(),
+          status: 'pending',
+          paymentProvider: 'mercadopago',
+          providerTransactionId: preapprovalPlanId, // Usar el plan ID como referencia
+          plan: plan,
+          description: `Suscripción ${plan} - Checkout iniciado`,
+          metadata: {
+            preapprovalPlanId: preapprovalPlanId,
+            plan: plan,
+            checkoutUrl: checkoutUrl,
+            successUrl: successUrl || MERCADOPAGO_CONFIG.successUrl,
+            cancelUrl: cancelUrl || MERCADOPAGO_CONFIG.cancelUrl,
+          },
+        });
+      } catch (dbError) {
+        console.error('Error creando transacción en la base de datos:', dbError);
+        throw new Error(`Error al registrar la transacción: ${dbError.message}`);
+      }
+
+      return {
+        sessionId: preapprovalPlanId,
+        url: checkoutUrl,
+        preferenceId: preapprovalPlanId, // Mantener compatibilidad
         preapprovalPlanId: preapprovalPlanId,
-        plan: plan,
-        checkoutUrl: checkoutUrl,
-        successUrl: successUrl || MERCADOPAGO_CONFIG.successUrl,
-        cancelUrl: cancelUrl || MERCADOPAGO_CONFIG.cancelUrl,
-      },
-    });
-
-    return {
-      sessionId: preapprovalPlanId,
-      url: checkoutUrl,
-      preferenceId: preapprovalPlanId, // Mantener compatibilidad
-      preapprovalPlanId: preapprovalPlanId,
-    };
+      };
+    } catch (error) {
+      console.error('Error en createCheckoutSession:', error);
+      // Re-lanzar el error con el mensaje original
+      throw error;
+    }
   }
 
   /**
