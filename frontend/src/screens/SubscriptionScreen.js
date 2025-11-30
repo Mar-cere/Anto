@@ -27,9 +27,9 @@ import Header from '../components/Header';
 import FloatingNavBar from '../components/FloatingNavBar';
 import PlanCard from '../components/payments/PlanCard';
 import SubscriptionStatus from '../components/payments/SubscriptionStatus';
+import PaymentWebView from '../components/payments/PaymentWebView';
 import paymentService from '../services/paymentService';
 import { colors } from '../styles/globalStyles';
-import { Linking } from 'react-native';
 
 // Constantes de textos
 const TEXTS = {
@@ -59,6 +59,8 @@ const SubscriptionScreen = () => {
   const [subscribing, setSubscribing] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [error, setError] = useState(null);
+  const [showPaymentWebView, setShowPaymentWebView] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState(null);
 
   // Cargar planes y estado de suscripción
   const loadData = useCallback(async () => {
@@ -118,23 +120,9 @@ const SubscriptionScreen = () => {
         return;
       }
 
-      // Abrir URL de Mercado Pago
-      const urlOpened = await paymentService.openPaymentUrl(checkoutResponse.url);
-
-      if (!urlOpened) {
-        Alert.alert(
-          TEXTS.SUBSCRIBE_ERROR,
-          'No se pudo abrir la página de pago. Por favor, intenta nuevamente.'
-        );
-        return;
-      }
-
-      // Mostrar mensaje informativo
-      Alert.alert(
-        TEXTS.OPENING_PAYMENT,
-        'Serás redirigido a Mercado Pago para completar el pago. Una vez completado, serás redirigido de vuelta a la aplicación.',
-        [{ text: 'Entendido' }]
-      );
+      // Mostrar WebView con el checkout de Mercado Pago
+      setPaymentUrl(checkoutResponse.url);
+      setShowPaymentWebView(true);
     } catch (err) {
       console.error('Error en suscripción:', err);
       Alert.alert(
@@ -273,6 +261,61 @@ const SubscriptionScreen = () => {
       </ScrollView>
     );
   };
+
+  // Manejar éxito del pago
+  const handlePaymentSuccess = () => {
+    setShowPaymentWebView(false);
+    setPaymentUrl(null);
+    Alert.alert(
+      '¡Pago exitoso!',
+      'Tu suscripción ha sido activada correctamente.',
+      [
+        {
+          text: 'Entendido',
+          onPress: () => {
+            loadData(); // Recargar datos para mostrar el nuevo estado
+          },
+        },
+      ]
+    );
+  };
+
+  // Manejar cancelación del pago
+  const handlePaymentCancel = () => {
+    setShowPaymentWebView(false);
+    setPaymentUrl(null);
+    Alert.alert(
+      'Pago cancelado',
+      'El pago fue cancelado. Puedes intentar nuevamente cuando lo desees.',
+      [{ text: 'Entendido' }]
+    );
+  };
+
+  // Manejar error en el pago
+  const handlePaymentError = (errorMessage) => {
+    setShowPaymentWebView(false);
+    setPaymentUrl(null);
+    Alert.alert(
+      TEXTS.SUBSCRIBE_ERROR,
+      errorMessage || 'Ocurrió un error durante el proceso de pago. Por favor, intenta nuevamente.'
+    );
+  };
+
+  // Si se está mostrando el WebView de pago, renderizarlo
+  if (showPaymentWebView && paymentUrl) {
+    return (
+      <PaymentWebView
+        url={paymentUrl}
+        onClose={() => {
+          setShowPaymentWebView(false);
+          setPaymentUrl(null);
+        }}
+        onSuccess={handlePaymentSuccess}
+        onCancel={handlePaymentCancel}
+        onError={handlePaymentError}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
