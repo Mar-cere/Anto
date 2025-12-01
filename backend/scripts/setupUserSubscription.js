@@ -13,23 +13,32 @@
 import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Subscription from '../models/Subscription.js';
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import config from '../config/config.js';
 
-// Configurar dotenv
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-dotenv.config({ path: join(__dirname, '..', '.env') });
-
-// Conectar a MongoDB
+// Conectar a MongoDB usando la misma configuración que el servidor
 const connectDB = async () => {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/anto';
-    await mongoose.connect(mongoUri);
+    if (!config.mongodb.uri) {
+      console.error('❌ MONGO_URI o MONGODB_URI no está definida en las variables de entorno');
+      process.exit(1);
+    }
+
+    const mongoUri = config.mongodb.uri;
+    console.log(`🔌 Conectando a MongoDB...`);
+    console.log(`   URI: ${mongoUri.replace(/\/\/.*@/, '//***:***@')}`); // Ocultar credenciales
+    
+    await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10,
+      retryWrites: true,
+      w: 'majority'
+    });
+    
     console.log('✅ Conectado a MongoDB');
+    console.log(`📊 Base de datos: ${mongoose.connection.name || 'default'}\n`);
   } catch (error) {
-    console.error('❌ Error conectando a MongoDB:', error);
+    console.error('❌ Error conectando a MongoDB:', error.message);
     process.exit(1);
   }
 };
