@@ -41,6 +41,8 @@ import { BORDERS, OPACITIES, SPACING, STATUS_BAR } from '../constants/ui';
 import { colors } from '../styles/globalStyles';
 import { getGreetingByHourAndDayAndName } from '../utils/greetings';
 import { registerForPushNotifications } from '../services/pushNotificationService';
+import paymentService from '../services/paymentService';
+import TrialBanner from '../components/TrialBanner';
 
 // Constantes de AsyncStorage
 const STORAGE_KEYS = {
@@ -96,6 +98,8 @@ const DashScreen = () => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [hasCheckedTutorial, setHasCheckedTutorial] = useState(false);
   const [highlightElement, setHighlightElement] = useState(null);
+  const [trialInfo, setTrialInfo] = useState(null);
+  const [trialBannerDismissed, setTrialBannerDismissed] = useState(false);
 
   // Log cuando showTutorial cambia
   React.useEffect(() => {
@@ -201,6 +205,17 @@ const DashScreen = () => {
         await registerForPushNotifications();
       } catch (error) {
         console.error('Error registrando notificaciones push:', error);
+        // No bloquear la carga si falla
+      }
+
+      // Cargar información del trial
+      try {
+        const trialInfoResult = await paymentService.getTrialInfo();
+        if (trialInfoResult.success && trialInfoResult.isInTrial) {
+          setTrialInfo(trialInfoResult);
+        }
+      } catch (error) {
+        console.error('Error cargando info de trial:', error);
         // No bloquear la carga si falla
       }
 
@@ -364,6 +379,14 @@ const DashScreen = () => {
           }}
           contentContainerStyle={{ paddingBottom: SPACING.CONTENT_PADDING_BOTTOM }}
         >
+          {/* Trial Banner */}
+          {trialInfo && trialInfo.isInTrial && !trialBannerDismissed && (
+            <TrialBanner
+              daysRemaining={trialInfo.daysRemaining}
+              onDismiss={handleTrialBannerDismiss}
+              dismissed={trialBannerDismissed}
+            />
+          )}
           <QuoteSection />
           {error && (
             <ErrorMessage 

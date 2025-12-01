@@ -98,6 +98,21 @@ app.get('/', (req, res) => {
   res.status(200).json({ message: 'Server is running', timestamp: new Date().toISOString() });
 });
 
+// Health check endpoint
+app.get('/health', async (req, res) => {
+  const health = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    database: getMongoDBStatus(),
+    environment: config.app.environment,
+    version: APP_VERSION,
+  };
+  
+  const statusCode = health.database === 'connected' ? 200 : 503;
+  res.status(statusCode).json(health);
+});
+
 // Ruta de health check (PRIMERO, antes de cualquier middleware)
 // Esta ruta debe estar disponible siempre, incluso si otros servicios fallan
 app.get('/health', (req, res) => {
@@ -281,6 +296,8 @@ app.use('/api/payments', paymentRecoveryRoutes);
 console.log('✅ Ruta /api/payments/recovery registrada');
 app.use('/api/payments', paymentMetricsRoutes);
 console.log('✅ Ruta /api/payments/metrics registrada');
+app.use('/api/health', healthRoutes);
+console.log('✅ Ruta /api/health registrada');
 // Rutas de testing (solo en desarrollo)
 if (process.env.NODE_ENV !== 'production') {
   app.use('/api/notifications', testNotificationRoutes);

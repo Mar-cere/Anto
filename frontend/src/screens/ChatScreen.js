@@ -35,8 +35,8 @@ import ActionSuggestionCard from '../components/ActionSuggestionCard';
 import TrialBanner from '../components/TrialBanner';
 import chatService from '../services/chatService';
 import paymentService from '../services/paymentService';
+import * as Notifications from 'expo-notifications';
 import { colors } from '../styles/globalStyles';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 

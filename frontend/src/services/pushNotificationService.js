@@ -80,6 +80,16 @@ const setupNotificationChannels = async () => {
       lightColor: '#1ADDDB',
       sound: 'default',
     });
+
+    // Canal para notificaciones de trial y suscripciones
+    await Notifications.setNotificationChannelAsync('anto-trial', {
+      name: 'Trial y Suscripciones',
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FFA500',
+      sound: 'default',
+      enableVibrate: true,
+    });
   }
 };
 
