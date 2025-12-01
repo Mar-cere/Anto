@@ -222,6 +222,27 @@ const ChatScreen = () => {
   // Navegación
   const navigation = useNavigation();
   
+  // Cargar información del trial
+  const loadTrialInfo = useCallback(async () => {
+    try {
+      const trialInfoResult = await paymentService.getTrialInfo();
+      if (trialInfoResult.success && trialInfoResult.isInTrial) {
+        setTrialInfo(trialInfoResult);
+      } else {
+        setTrialInfo(null);
+      }
+    } catch (error) {
+      console.error('[ChatScreen] Error cargando info de trial:', error);
+      // No bloquear la carga si falla
+      setTrialInfo(null);
+    }
+  }, []);
+
+  // Manejar el dismiss del banner de trial
+  const handleTrialBannerDismiss = useCallback(() => {
+    setTrialBannerDismissed(true);
+  }, []);
+
   // Inicializar chat
   const initializeConversation = useCallback(async () => {
     try {

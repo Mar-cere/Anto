@@ -2422,3 +2422,523 @@
 {"level":"info","message":"Payment: subscription_created","plan":"monthly","timestamp":"2025-12-01T20:05:55.781Z","userId":"123"}
 {"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:05:55.964Z"}
 {"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:05:58.363Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:12:08.772Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:12:08.780Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:12:08.773Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:12:08.774Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:12:08.774Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:12:08.802Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:12:08.803Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:12:08.804Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:12:08.781Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:12:08.782Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:12:08.782Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:12:08.804Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:12:08.805Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:12:08.806Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:12:08.804Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:12:08.806Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:12:08.806Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:12:08.806Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:12:08.823Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:12:08.824Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:12:08.824Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:12:08.832Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:12:08.834Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:12:08.834Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:12:08.835Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:12:08.853Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:12:08.853Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:12:08.854Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:12:08.820Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:12:08.822Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:12:08.823Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:12:08.823Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:12:08.842Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:12:08.847Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:12:08.855Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:12:08.857Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:12:08.859Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:12:08.858Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:12:08.858Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:12:08.859Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:12:08.879Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:12:08.880Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:12:08.880Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:12:08.860Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:12:08.860Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:12:08.860Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:12:08.881Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:12:08.882Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:12:08.882Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:12:08.902Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:12:08.900Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:12:08.902Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:12:08.902Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:12:08.905Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:12:08.900Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:12:08.902Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:12:08.903Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:12:08.905Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:12:08.902Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:12:08.906Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:12:08.909Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:12:08.907Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:12:08.910Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:12:10.090Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:12:10.409Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:12:11.147Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:12:11.148Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:12:11.148Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:12:11.148Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:12:11.161Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:12:11.161Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:12:11.162Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:12:11.171Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:12:11.171Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:12:11.372Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:12:11.373Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:12:11.373Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:12:11.373Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:12:11.380Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:12:11.381Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:12:11.381Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:12:11.390Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:12:11.390Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:12:11.772Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:12:12.026Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:12:12.070Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:12:12.079Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:12:12.097Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:12:12.782Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:12:12.783Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:12:12.784Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:12:12.784Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:12:12.813Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:12:12.813Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:12:12.814Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:12:12.837Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:12:12.837Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:12:13.272Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:12:13.273Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:12:13.273Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:12:13.274Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:12:13.282Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:12:13.283Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:12:13.284Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:12:13.321Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:12:13.321Z"}
+{"level":"error","message":"Test error message","timestamp":"2025-12-01T20:12:13.414Z"}
+{"level":"warn","message":"Test warning message","timestamp":"2025-12-01T20:12:13.418Z"}
+{"level":"info","message":"Test info message","timestamp":"2025-12-01T20:12:13.419Z"}
+{"action":"test","level":"info","message":"Test message","timestamp":"2025-12-01T20:12:13.421Z","userId":"123"}
+{"apiKey":"[REDACTED]","level":"info","message":"Test message","password":"[REDACTED]","timestamp":"2025-12-01T20:12:13.421Z","token":"[REDACTED]","user":{"email":"test@example.com","password":"[REDACTED]"}}
+{"context":{"ip":"127.0.0.1","method":"GET","path":"/api/test","url":"/api/test","userAgent":"test-agent","userId":"123"},"level":"info","message":"Request received","timestamp":"2025-12-01T20:12:13.421Z"}
+{"context":{"ip":"127.0.0.1","method":"POST","path":"/api/test","url":"/api/test","userAgent":"test-agent"},"error":{"message":"Test error","name":"Error","stack":"Error: Test error\n    at Object.<anonymous> (/Users/marceloull/Documents/Anto/backend/tests/unit/utils/logger.test.js:89:21)\n    at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)\n    at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)\n    at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)\n    at jestAdapter (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)\n    at runTestInternal (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:367:16)\n    at runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:444:34)\n    at Object.worker (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/testWorker.js:106:12)"},"level":"error","message":"Request error","timestamp":"2025-12-01T20:12:13.425Z"}
+{"collection":"users","level":"info","message":"Database: find","timestamp":"2025-12-01T20:12:13.426Z"}
+{"level":"info","message":"External Service [OpenAI]: generate response","model":"gpt-4","timestamp":"2025-12-01T20:12:13.426Z"}
+{"level":"info","message":"Auth: login","timestamp":"2025-12-01T20:12:13.427Z","userId":"123"}
+{"level":"info","message":"Payment: subscription_created","plan":"monthly","timestamp":"2025-12-01T20:12:13.427Z","userId":"123"}
+{"context":{"ip":"127.0.0.1","method":"GET","path":"/test","userAgent":"test-agent"},"error":{"code":"BAD_REQUEST","message":"Test error","name":"AppError","stack":"AppError: Test error\n    at Object.<anonymous> (/Users/marceloull/Documents/Anto/backend/tests/unit/middleware/errorHandler.test.js:13:21)\n    at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)\n    at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)\n    at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)\n    at jestAdapter (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)\n    at runTestInternal (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:367:16)\n    at runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:444:34)\n    at Object.worker (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/testWorker.js:106:12)"},"level":"error","message":"Error en request","timestamp":"2025-12-01T20:12:13.578Z"}
+{"error":{"code":"BAD_REQUEST","message":"Test error","name":"AppError","statusCode":400,"timestamp":"2025-12-01T20:12:13.574Z"},"level":"error","message":"Error response sent","method":"GET","path":"/test","statusCode":400,"timestamp":"2025-12-01T20:12:13.580Z"}
+{"context":{"ip":"127.0.0.1","method":"GET","path":"/test","userAgent":"test-agent"},"error":{"name":"ValidationError"},"level":"error","message":"Error en request","timestamp":"2025-12-01T20:12:13.581Z"}
+{"error":{"code":"VALIDATION_ERROR","errors":{"0":{"field":"email","message":"Email inválido"}},"message":"Error de validación","name":"ValidationError","statusCode":400,"timestamp":"2025-12-01T20:12:13.582Z"},"level":"error","message":"Error response sent","method":"GET","path":"/test","statusCode":400,"timestamp":"2025-12-01T20:12:13.582Z"}
+{"context":{"ip":"127.0.0.1","method":"GET","path":"/test","userAgent":"test-agent"},"error":{"message":"Invalid token","name":"JsonWebTokenError"},"level":"error","message":"Error en request","timestamp":"2025-12-01T20:12:13.582Z"}
+{"error":{"code":"UNAUTHORIZED","message":"Token inválido","name":"AuthenticationError","statusCode":401,"timestamp":"2025-12-01T20:12:13.582Z"},"level":"error","message":"Error response sent","method":"GET","path":"/test","statusCode":401,"timestamp":"2025-12-01T20:12:13.582Z"}
+{"context":{"ip":"127.0.0.1","method":"GET","path":"/test","userAgent":"test-agent"},"error":{"message":"Unknown error","name":"Error","stack":"Error: Unknown error\n    at Object.<anonymous> (/Users/marceloull/Documents/Anto/backend/tests/unit/middleware/errorHandler.test.js:104:21)\n    at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)\n    at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)\n    at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)\n    at jestAdapter (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)\n    at runTestInternal (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:367:16)\n    at runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:444:34)\n    at Object.worker (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/testWorker.js:106:12)"},"level":"error","message":"Error en request","timestamp":"2025-12-01T20:12:13.583Z"}
+{"error":{"code":"INTERNAL_SERVER_ERROR","message":"Unknown error","name":"AppError","statusCode":500,"timestamp":"2025-12-01T20:12:13.583Z"},"level":"error","message":"Error response sent","method":"GET","path":"/test","statusCode":500,"timestamp":"2025-12-01T20:12:13.583Z"}
+{"level":"warn","message":"Route not found","method":"GET","path":"/api/nonexistent","timestamp":"2025-12-01T20:12:13.583Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:12:13.667Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:12:13.917Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:12:14.622Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:12:15.758Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:15:16.256Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:15:16.257Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:15:16.257Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:15:16.257Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:15:16.343Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:15:16.344Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:15:16.344Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:15:16.389Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:15:16.389Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:15:16.346Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:15:16.348Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:15:16.349Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:15:16.349Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:15:16.399Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:15:16.399Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:15:16.400Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:15:16.349Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:15:16.350Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:15:16.352Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:15:16.355Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:15:16.395Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:15:16.396Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:15:16.396Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:15:16.359Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:15:16.360Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:15:16.361Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:15:16.361Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:15:16.407Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:15:16.408Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:15:16.408Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:15:16.435Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:15:16.393Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:15:16.435Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:15:16.441Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:15:16.395Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:15:16.396Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:15:16.396Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:15:16.422Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:15:16.423Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:15:16.424Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:15:16.443Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:15:16.441Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:15:16.443Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:15:16.456Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:15:16.457Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:15:16.965Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:15:16.966Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:15:16.966Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:15:16.967Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:15:16.979Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:15:16.980Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:15:16.980Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:15:16.993Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:15:16.993Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:15:17.211Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:15:17.213Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:15:17.213Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:15:17.214Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:15:17.224Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:15:17.224Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:15:17.224Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:15:17.236Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:15:17.236Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:15:17.597Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:15:18.441Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:15:18.441Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:15:18.442Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:15:18.442Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:15:18.449Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:15:18.449Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:15:18.450Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:15:18.456Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:15:18.456Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:15:18.775Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:15:19.075Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:15:19.507Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:15:19.508Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:15:19.508Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:15:19.508Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:15:19.515Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:15:19.515Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:15:19.516Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:15:19.528Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:15:19.528Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:15:19.704Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:15:19.725Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:15:19.803Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:15:19.804Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:15:19.804Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:15:19.804Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:15:19.812Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:15:19.812Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:15:19.813Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:15:19.821Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:15:19.821Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:15:20.101Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:15:20.204Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:15:20.620Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:15:20.621Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:15:20.621Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:15:20.621Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:15:20.638Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:15:20.639Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:15:20.640Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:15:20.660Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:15:20.660Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:15:20.908Z"}
+{"level":"error","message":"Test error message","timestamp":"2025-12-01T20:15:21.185Z"}
+{"level":"warn","message":"Test warning message","timestamp":"2025-12-01T20:15:21.194Z"}
+{"level":"info","message":"Test info message","timestamp":"2025-12-01T20:15:21.196Z"}
+{"action":"test","level":"info","message":"Test message","timestamp":"2025-12-01T20:15:21.199Z","userId":"123"}
+{"apiKey":"[REDACTED]","level":"info","message":"Test message","password":"[REDACTED]","timestamp":"2025-12-01T20:15:21.200Z","token":"[REDACTED]","user":{"email":"test@example.com","password":"[REDACTED]"}}
+{"context":{"ip":"127.0.0.1","method":"GET","path":"/api/test","url":"/api/test","userAgent":"test-agent","userId":"123"},"level":"info","message":"Request received","timestamp":"2025-12-01T20:15:21.201Z"}
+{"context":{"ip":"127.0.0.1","method":"POST","path":"/api/test","url":"/api/test","userAgent":"test-agent"},"error":{"message":"Test error","name":"Error","stack":"Error: Test error\n    at Object.<anonymous> (/Users/marceloull/Documents/Anto/backend/tests/unit/utils/logger.test.js:89:21)\n    at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)\n    at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)\n    at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)\n    at jestAdapter (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)\n    at runTestInternal (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:367:16)\n    at runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:444:34)\n    at Object.worker (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/testWorker.js:106:12)"},"level":"error","message":"Request error","timestamp":"2025-12-01T20:15:21.203Z"}
+{"collection":"users","level":"info","message":"Database: find","timestamp":"2025-12-01T20:15:21.205Z"}
+{"level":"info","message":"External Service [OpenAI]: generate response","model":"gpt-4","timestamp":"2025-12-01T20:15:21.205Z"}
+{"level":"info","message":"Auth: login","timestamp":"2025-12-01T20:15:21.205Z","userId":"123"}
+{"level":"info","message":"Payment: subscription_created","plan":"monthly","timestamp":"2025-12-01T20:15:21.205Z","userId":"123"}
+{"context":{"ip":"127.0.0.1","method":"GET","path":"/test","userAgent":"test-agent"},"error":{"code":"BAD_REQUEST","message":"Test error","name":"AppError","stack":"AppError: Test error\n    at Object.<anonymous> (/Users/marceloull/Documents/Anto/backend/tests/unit/middleware/errorHandler.test.js:13:21)\n    at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)\n    at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)\n    at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)\n    at jestAdapter (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)\n    at runTestInternal (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:367:16)\n    at runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:444:34)\n    at Object.worker (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/testWorker.js:106:12)"},"level":"error","message":"Error en request","timestamp":"2025-12-01T20:15:21.312Z"}
+{"error":{"code":"BAD_REQUEST","message":"Test error","name":"AppError","statusCode":400,"timestamp":"2025-12-01T20:15:21.309Z"},"level":"error","message":"Error response sent","method":"GET","path":"/test","statusCode":400,"timestamp":"2025-12-01T20:15:21.314Z"}
+{"context":{"ip":"127.0.0.1","method":"GET","path":"/test","userAgent":"test-agent"},"error":{"name":"ValidationError"},"level":"error","message":"Error en request","timestamp":"2025-12-01T20:15:21.318Z"}
+{"error":{"code":"VALIDATION_ERROR","errors":{"0":{"field":"email","message":"Email inválido"}},"message":"Error de validación","name":"ValidationError","statusCode":400,"timestamp":"2025-12-01T20:15:21.319Z"},"level":"error","message":"Error response sent","method":"GET","path":"/test","statusCode":400,"timestamp":"2025-12-01T20:15:21.319Z"}
+{"context":{"ip":"127.0.0.1","method":"GET","path":"/test","userAgent":"test-agent"},"error":{"message":"Invalid token","name":"JsonWebTokenError"},"level":"error","message":"Error en request","timestamp":"2025-12-01T20:15:21.320Z"}
+{"error":{"code":"UNAUTHORIZED","message":"Token inválido","name":"AuthenticationError","statusCode":401,"timestamp":"2025-12-01T20:15:21.320Z"},"level":"error","message":"Error response sent","method":"GET","path":"/test","statusCode":401,"timestamp":"2025-12-01T20:15:21.320Z"}
+{"context":{"ip":"127.0.0.1","method":"GET","path":"/test","userAgent":"test-agent"},"error":{"message":"Unknown error","name":"Error","stack":"Error: Unknown error\n    at Object.<anonymous> (/Users/marceloull/Documents/Anto/backend/tests/unit/middleware/errorHandler.test.js:104:21)\n    at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)\n    at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)\n    at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)\n    at jestAdapter (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)\n    at runTestInternal (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:367:16)\n    at runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:444:34)\n    at Object.worker (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/testWorker.js:106:12)"},"level":"error","message":"Error en request","timestamp":"2025-12-01T20:15:21.320Z"}
+{"error":{"code":"INTERNAL_SERVER_ERROR","message":"Unknown error","name":"AppError","statusCode":500,"timestamp":"2025-12-01T20:15:21.320Z"},"level":"error","message":"Error response sent","method":"GET","path":"/test","statusCode":500,"timestamp":"2025-12-01T20:15:21.320Z"}
+{"level":"warn","message":"Route not found","method":"GET","path":"/api/nonexistent","timestamp":"2025-12-01T20:15:21.321Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:15:21.409Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:15:23.263Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:15:25.208Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:19.633Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:19.635Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:19.636Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:19.636Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:19.656Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:19.657Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:19.657Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:19.649Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:19.651Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:19.651Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:19.652Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:19.673Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:19.674Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:19.674Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:19.701Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:19.703Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:19.702Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:19.703Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:19.663Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:19.684Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:19.684Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:19.685Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:19.685Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:19.705Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:19.705Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:19.705Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:19.665Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:19.666Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:19.668Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:19.699Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:19.700Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:19.702Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:19.695Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:19.722Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:19.697Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:19.697Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:19.698Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:19.714Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:19.714Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:19.715Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:19.730Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:19.723Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:19.730Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:19.738Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:19.739Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:20.444Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:20.445Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:20.445Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:20.445Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:20.456Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:20.456Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:20.457Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:20.466Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:20.466Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:20.584Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:20.585Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:20.586Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:20.586Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:20.594Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:20.594Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:20.594Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:20.601Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:20.601Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:20.853Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:21.769Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:21.770Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:21.770Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:21.770Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:21.786Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:21.788Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:21.790Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:21.821Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:21.821Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:22.144Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:22.488Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:22.940Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:22.940Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:22.941Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:22.941Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:22.951Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:22.952Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:22.952Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:22.958Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:22.958Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:23.203Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:23.421Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:23.520Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:23.524Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:23.525Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:23.526Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:23.534Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:23.535Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:23.535Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:23.553Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:23.559Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:23.560Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:23.808Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:24.155Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:24.161Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:24.161Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:24.162Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:24.216Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:24.216Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:24.217Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:24.236Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:24.237Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:24.551Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:24.864Z"}
+{"context":{"ip":"127.0.0.1","method":"GET","path":"/test","userAgent":"test-agent"},"error":{"code":"BAD_REQUEST","message":"Test error","name":"AppError","stack":"AppError: Test error\n    at Object.<anonymous> (/Users/marceloull/Documents/Anto/backend/tests/unit/middleware/errorHandler.test.js:13:21)\n    at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)\n    at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)\n    at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)\n    at jestAdapter (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)\n    at runTestInternal (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:367:16)\n    at runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:444:34)\n    at Object.worker (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/testWorker.js:106:12)"},"level":"error","message":"Error en request","timestamp":"2025-12-01T20:17:24.919Z"}
+{"error":{"code":"BAD_REQUEST","message":"Test error","name":"AppError","statusCode":400,"timestamp":"2025-12-01T20:17:24.916Z"},"level":"error","message":"Error response sent","method":"GET","path":"/test","statusCode":400,"timestamp":"2025-12-01T20:17:24.921Z"}
+{"context":{"ip":"127.0.0.1","method":"GET","path":"/test","userAgent":"test-agent"},"error":{"name":"ValidationError"},"level":"error","message":"Error en request","timestamp":"2025-12-01T20:17:24.924Z"}
+{"error":{"code":"VALIDATION_ERROR","errors":{"0":{"field":"email","message":"Email inválido"}},"message":"Error de validación","name":"ValidationError","statusCode":400,"timestamp":"2025-12-01T20:17:24.925Z"},"level":"error","message":"Error response sent","method":"GET","path":"/test","statusCode":400,"timestamp":"2025-12-01T20:17:24.926Z"}
+{"context":{"ip":"127.0.0.1","method":"GET","path":"/test","userAgent":"test-agent"},"error":{"message":"Invalid token","name":"JsonWebTokenError"},"level":"error","message":"Error en request","timestamp":"2025-12-01T20:17:24.927Z"}
+{"error":{"code":"UNAUTHORIZED","message":"Token inválido","name":"AuthenticationError","statusCode":401,"timestamp":"2025-12-01T20:17:24.928Z"},"level":"error","message":"Error response sent","method":"GET","path":"/test","statusCode":401,"timestamp":"2025-12-01T20:17:24.928Z"}
+{"context":{"ip":"127.0.0.1","method":"GET","path":"/test","userAgent":"test-agent"},"error":{"message":"Unknown error","name":"Error","stack":"Error: Unknown error\n    at Object.<anonymous> (/Users/marceloull/Documents/Anto/backend/tests/unit/middleware/errorHandler.test.js:104:21)\n    at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)\n    at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)\n    at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)\n    at jestAdapter (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)\n    at runTestInternal (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:367:16)\n    at runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:444:34)\n    at Object.worker (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/testWorker.js:106:12)"},"level":"error","message":"Error en request","timestamp":"2025-12-01T20:17:24.929Z"}
+{"error":{"code":"INTERNAL_SERVER_ERROR","message":"Unknown error","name":"AppError","statusCode":500,"timestamp":"2025-12-01T20:17:24.929Z"},"level":"error","message":"Error response sent","method":"GET","path":"/test","statusCode":500,"timestamp":"2025-12-01T20:17:24.929Z"}
+{"level":"warn","message":"Route not found","method":"GET","path":"/api/nonexistent","timestamp":"2025-12-01T20:17:24.930Z"}
+{"level":"error","message":"Test error message","timestamp":"2025-12-01T20:17:25.144Z"}
+{"level":"warn","message":"Test warning message","timestamp":"2025-12-01T20:17:25.149Z"}
+{"level":"info","message":"Test info message","timestamp":"2025-12-01T20:17:25.150Z"}
+{"action":"test","level":"info","message":"Test message","timestamp":"2025-12-01T20:17:25.153Z","userId":"123"}
+{"apiKey":"[REDACTED]","level":"info","message":"Test message","password":"[REDACTED]","timestamp":"2025-12-01T20:17:25.154Z","token":"[REDACTED]","user":{"email":"test@example.com","password":"[REDACTED]"}}
+{"context":{"ip":"127.0.0.1","method":"GET","path":"/api/test","url":"/api/test","userAgent":"test-agent","userId":"123"},"level":"info","message":"Request received","timestamp":"2025-12-01T20:17:25.154Z"}
+{"context":{"ip":"127.0.0.1","method":"POST","path":"/api/test","url":"/api/test","userAgent":"test-agent"},"error":{"message":"Test error","name":"Error","stack":"Error: Test error\n    at Object.<anonymous> (/Users/marceloull/Documents/Anto/backend/tests/unit/utils/logger.test.js:89:21)\n    at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)\n    at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)\n    at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)\n    at jestAdapter (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)\n    at runTestInternal (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:367:16)\n    at runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:444:34)\n    at Object.worker (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/testWorker.js:106:12)"},"level":"error","message":"Request error","timestamp":"2025-12-01T20:17:25.157Z"}
+{"collection":"users","level":"info","message":"Database: find","timestamp":"2025-12-01T20:17:25.160Z"}
+{"level":"info","message":"External Service [OpenAI]: generate response","model":"gpt-4","timestamp":"2025-12-01T20:17:25.161Z"}
+{"level":"info","message":"Auth: login","timestamp":"2025-12-01T20:17:25.161Z","userId":"123"}
+{"level":"info","message":"Payment: subscription_created","plan":"monthly","timestamp":"2025-12-01T20:17:25.162Z","userId":"123"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:25.547Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:26.656Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:35.862Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:35.857Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:35.858Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:35.858Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:35.858Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:35.877Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:35.878Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:35.878Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:35.863Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:35.863Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:35.863Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:35.879Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:35.879Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:35.879Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:35.907Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:35.907Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:35.907Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:35.907Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:35.898Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:35.899Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:35.899Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:35.899Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:35.915Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:35.916Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:35.919Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:35.904Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:35.905Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:35.905Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:35.905Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:35.929Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:35.930Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:35.930Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:35.953Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:35.956Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:35.953Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:35.957Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:35.950Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:35.951Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:35.951Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:35.951Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:35.967Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:35.968Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:35.969Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:35.983Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:35.983Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:35.985Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:35.986Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:35.986Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:35.986Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:36.000Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:36.000Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:36.001Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:36.010Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:35.986Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:35.987Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:35.988Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:35.988Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:36.002Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:36.003Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:36.003Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:36.010Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:36.018Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:36.019Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:36.939Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:37.474Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:38.245Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:38.245Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:38.246Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:38.246Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:38.253Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:38.253Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:38.253Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:38.317Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:38.317Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:38.920Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:39.179Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:39.231Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:39.270Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:39.504Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:39.505Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:39.505Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:39.505Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:39.516Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:39.517Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:39.518Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:39.531Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:39.531Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:39.910Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:39.910Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:39.911Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:39.911Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:39.919Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:39.919Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:39.920Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:39.933Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:39.933Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:40.165Z"}
+{"level":"info","message":"🔧 Inicializando servidor...","timestamp":"2025-12-01T20:17:40.263Z"}
+{"level":"info","message":"📋 Puerto configurado: 5001","timestamp":"2025-12-01T20:17:40.264Z"}
+{"level":"info","message":"🌍 Ambiente: test","timestamp":"2025-12-01T20:17:40.264Z"}
+{"level":"info","message":"✅ Rutas / y /health registradas","timestamp":"2025-12-01T20:17:40.265Z"}
+{"level":"info","message":"📋 Registrando rutas de la API...","timestamp":"2025-12-01T20:17:40.277Z"}
+{"level":"info","message":"✅ Todas las rutas registradas","timestamp":"2025-12-01T20:17:40.277Z"}
+{"level":"info","message":"✅ Swagger configurado en /api-docs","timestamp":"2025-12-01T20:17:40.278Z"}
+{"level":"info","message":"✅ Conexión exitosa a MongoDB","timestamp":"2025-12-01T20:17:40.286Z"}
+{"level":"info","message":"📊 Base de datos: anto-test","timestamp":"2025-12-01T20:17:40.286Z"}
+{"level":"error","message":"Test error message","timestamp":"2025-12-01T20:17:40.498Z"}
+{"level":"warn","message":"Test warning message","timestamp":"2025-12-01T20:17:40.500Z"}
+{"level":"info","message":"Test info message","timestamp":"2025-12-01T20:17:40.500Z"}
+{"action":"test","level":"info","message":"Test message","timestamp":"2025-12-01T20:17:40.502Z","userId":"123"}
+{"apiKey":"[REDACTED]","level":"info","message":"Test message","password":"[REDACTED]","timestamp":"2025-12-01T20:17:40.503Z","token":"[REDACTED]","user":{"email":"test@example.com","password":"[REDACTED]"}}
+{"context":{"ip":"127.0.0.1","method":"GET","path":"/api/test","url":"/api/test","userAgent":"test-agent","userId":"123"},"level":"info","message":"Request received","timestamp":"2025-12-01T20:17:40.503Z"}
+{"context":{"ip":"127.0.0.1","method":"POST","path":"/api/test","url":"/api/test","userAgent":"test-agent"},"error":{"message":"Test error","name":"Error","stack":"Error: Test error\n    at Object.<anonymous> (/Users/marceloull/Documents/Anto/backend/tests/unit/utils/logger.test.js:89:21)\n    at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)\n    at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)\n    at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)\n    at jestAdapter (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)\n    at runTestInternal (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:367:16)\n    at runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:444:34)\n    at Object.worker (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/testWorker.js:106:12)"},"level":"error","message":"Request error","timestamp":"2025-12-01T20:17:40.504Z"}
+{"collection":"users","level":"info","message":"Database: find","timestamp":"2025-12-01T20:17:40.505Z"}
+{"level":"info","message":"External Service [OpenAI]: generate response","model":"gpt-4","timestamp":"2025-12-01T20:17:40.505Z"}
+{"level":"info","message":"Auth: login","timestamp":"2025-12-01T20:17:40.505Z","userId":"123"}
+{"level":"info","message":"Payment: subscription_created","plan":"monthly","timestamp":"2025-12-01T20:17:40.506Z","userId":"123"}
+{"context":{"ip":"127.0.0.1","method":"GET","path":"/test","userAgent":"test-agent"},"error":{"code":"BAD_REQUEST","message":"Test error","name":"AppError","stack":"AppError: Test error\n    at Object.<anonymous> (/Users/marceloull/Documents/Anto/backend/tests/unit/middleware/errorHandler.test.js:13:21)\n    at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)\n    at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)\n    at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)\n    at jestAdapter (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)\n    at runTestInternal (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:367:16)\n    at runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:444:34)\n    at Object.worker (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/testWorker.js:106:12)"},"level":"error","message":"Error en request","timestamp":"2025-12-01T20:17:40.679Z"}
+{"error":{"code":"BAD_REQUEST","message":"Test error","name":"AppError","statusCode":400,"timestamp":"2025-12-01T20:17:40.678Z"},"level":"error","message":"Error response sent","method":"GET","path":"/test","statusCode":400,"timestamp":"2025-12-01T20:17:40.680Z"}
+{"context":{"ip":"127.0.0.1","method":"GET","path":"/test","userAgent":"test-agent"},"error":{"name":"ValidationError"},"level":"error","message":"Error en request","timestamp":"2025-12-01T20:17:40.682Z"}
+{"error":{"code":"VALIDATION_ERROR","errors":{"0":{"field":"email","message":"Email inválido"}},"message":"Error de validación","name":"ValidationError","statusCode":400,"timestamp":"2025-12-01T20:17:40.682Z"},"level":"error","message":"Error response sent","method":"GET","path":"/test","statusCode":400,"timestamp":"2025-12-01T20:17:40.682Z"}
+{"context":{"ip":"127.0.0.1","method":"GET","path":"/test","userAgent":"test-agent"},"error":{"message":"Invalid token","name":"JsonWebTokenError"},"level":"error","message":"Error en request","timestamp":"2025-12-01T20:17:40.682Z"}
+{"error":{"code":"UNAUTHORIZED","message":"Token inválido","name":"AuthenticationError","statusCode":401,"timestamp":"2025-12-01T20:17:40.683Z"},"level":"error","message":"Error response sent","method":"GET","path":"/test","statusCode":401,"timestamp":"2025-12-01T20:17:40.683Z"}
+{"context":{"ip":"127.0.0.1","method":"GET","path":"/test","userAgent":"test-agent"},"error":{"message":"Unknown error","name":"Error","stack":"Error: Unknown error\n    at Object.<anonymous> (/Users/marceloull/Documents/Anto/backend/tests/unit/middleware/errorHandler.test.js:104:21)\n    at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)\n    at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)\n    at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)\n    at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)\n    at jestAdapter (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)\n    at runTestInternal (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:367:16)\n    at runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:444:34)\n    at Object.worker (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/testWorker.js:106:12)"},"level":"error","message":"Error en request","timestamp":"2025-12-01T20:17:40.683Z"}
+{"error":{"code":"INTERNAL_SERVER_ERROR","message":"Unknown error","name":"AppError","statusCode":500,"timestamp":"2025-12-01T20:17:40.683Z"},"level":"error","message":"Error response sent","method":"GET","path":"/test","statusCode":500,"timestamp":"2025-12-01T20:17:40.683Z"}
+{"level":"warn","message":"Route not found","method":"GET","path":"/api/nonexistent","timestamp":"2025-12-01T20:17:40.683Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:40.702Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:40.888Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:41.459Z"}
+{"level":"warn","message":"⚠️ MongoDB desconectado. Intentando reconectar...","timestamp":"2025-12-01T20:17:42.757Z"}

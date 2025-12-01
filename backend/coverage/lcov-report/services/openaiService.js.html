@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">3.8% </span>
+                <span class="strong">6.03% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>12/315</span>
+                <span class='fraction'>19/315</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0.6% </span>
+                <span class="strong">2.71% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>2/331</span>
+                <span class='fraction'>9/331</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">6.06% </span>
+                <span class="strong">12.12% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>2/33</span>
+                <span class='fraction'>4/33</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">4.06% </span>
+                <span class="strong">6.1% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>12/295</span>
+                <span class='fraction'>18/295</span>
             </div>
         
             
@@ -1193,8 +1193,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2119,14 +2119,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2243,9 +2243,9 @@ const getTimeOfDay = <span class="fstat-no" title="function not covered" >()</sp
 };
 &nbsp;
 // Helper: obtener período del día en inglés (para saludos)
-const getTimeOfDayEnglish = <span class="fstat-no" title="function not covered" >()</span> =&gt; {
-  const hour = <span class="cstat-no" title="statement not covered" >new Date().getHours();</span>
-<span class="cstat-no" title="statement not covered" >  if (hour &gt;= TIME_PERIODS.AFTERNOON_START &amp;&amp; hour &lt; TIME_PERIODS.AFTERNOON_END) <span class="cstat-no" title="statement not covered" >return 'afternoon';</span></span>
+const getTimeOfDayEnglish = () =&gt; {
+  const hour = new Date().getHours();
+  <span class="missing-if-branch" title="else path not taken" >E</span>if (hour &gt;= TIME_PERIODS.AFTERNOON_START &amp;&amp; hour &lt; TIME_PERIODS.AFTERNOON_END) return 'afternoon';
 <span class="cstat-no" title="statement not covered" >  if (hour &gt;= TIME_PERIODS.EVENING_START &amp;&amp; hour &lt; TIME_PERIODS.EVENING_END) <span class="cstat-no" title="statement not covered" >return 'evening';</span></span>
 <span class="cstat-no" title="statement not covered" >  if (hour &gt;= TIME_PERIODS.EVENING_END || hour &lt; TIME_PERIODS.MORNING_START) <span class="cstat-no" title="statement not covered" >return 'night';</span></span>
 <span class="cstat-no" title="statement not covered" >  return 'morning';</span>
@@ -3169,15 +3169,15 @@ class OpenAIService {
    * @param {Object} userPreferences - Preferencias del usuario (opcional, no usado actualmente)
    * @returns {string} Saludo personalizado
    */
-<span class="fstat-no" title="function not covered" >  ge</span>nerarSaludoPersonalizado(userPreferences = <span class="branch-0 cbranch-no" title="branch not covered" >{})</span> {
-    const timeOfDay = <span class="cstat-no" title="statement not covered" >getTimeOfDayEnglish();</span>
-    const greetings = <span class="cstat-no" title="statement not covered" >GREETING_VARIATIONS[timeOfDay] || GREETING_VARIATIONS.morning;</span>
+  generarSaludoPersonalizado(userPreferences = <span class="branch-0 cbranch-no" title="branch not covered" >{})</span> {
+    const timeOfDay = getTimeOfDayEnglish();
+    const greetings = GREETING_VARIATIONS[timeOfDay] || <span class="branch-1 cbranch-no" title="branch not covered" >GREETING_VARIATIONS.morning;</span>
     
-<span class="cstat-no" title="statement not covered" >    if (!greetings || greetings.length === 0) {</span>
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (!greetings || greetings.length === 0) {
 <span class="cstat-no" title="statement not covered" >      return GREETING_VARIATIONS.morning[0] || '¡Hola! ¿Cómo puedo ayudarte hoy?';</span>
     }
     
-<span class="cstat-no" title="statement not covered" >    return greetings[Math.floor(Math.random() * greetings.length)];</span>
+    return greetings[Math.floor(Math.random() * greetings.length)];
   }
 &nbsp;
   /**
@@ -3223,7 +3223,7 @@ export default new OpenAIService(); </pre></td></tr></table></pre>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-01T20:05:59.737Z
+                at 2025-12-01T20:17:43.973Z
             </div>
         <script src="../prettify.js"></script>
         <script>

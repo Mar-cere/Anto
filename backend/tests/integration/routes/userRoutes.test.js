@@ -69,6 +69,8 @@ describe('User Routes', () => {
 
   beforeEach(async () => {
     await clearDatabase();
+    // Esperar un momento después de limpiar la base de datos
+    await new Promise(resolve => setTimeout(resolve, 100));
     ({ user: testUser, token: authToken } = await createUserAndToken());
     // Esperar un momento para que se guarde el usuario
     await new Promise(resolve => setTimeout(resolve, 200));

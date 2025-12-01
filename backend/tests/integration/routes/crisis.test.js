@@ -28,11 +28,12 @@ describe('Crisis Routes', () => {
   beforeEach(async () => {
     await clearDatabase();
     // Usar datos únicos para evitar duplicados
-    const timestamp = Date.now().toString().slice(-6);
+    // Usar timestamp completo + random para mayor unicidad
+    const timestamp = Date.now().toString() + Math.random().toString(36).substring(2, 8);
     const uniqueUser = {
       ...validUser,
-      email: `test${timestamp}@example.com`,
-      username: `test${timestamp}`,
+      email: `test${timestamp.slice(-12)}@example.com`,
+      username: `test${timestamp.slice(-12)}`,
     };
     const salt = crypto.randomBytes(16).toString('hex');
     const hash = crypto.pbkdf2Sync(uniqueUser.password, salt, 1000, 64, 'sha512').toString('hex');
@@ -64,6 +65,9 @@ describe('Crisis Routes', () => {
       process.env.JWT_SECRET || 'test-secret-key-for-jwt-signing-min-32-chars',
       { expiresIn: '1h' }
     );
+    
+    // Esperar un momento para que se guarde el usuario
+    await new Promise(resolve => setTimeout(resolve, 200));
   });
 
   afterAll(async () => {

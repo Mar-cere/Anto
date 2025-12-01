@@ -29,11 +29,12 @@ describe('Habit Routes', () => {
   beforeEach(async () => {
     await clearDatabase();
     // Usar datos únicos para evitar duplicados
-    const timestamp = Date.now().toString().slice(-6);
+    // Usar timestamp completo + random para mayor unicidad
+    const timestamp = Date.now().toString() + Math.random().toString(36).substring(2, 8);
     const uniqueUser = {
       ...validUser,
-      email: `test${timestamp}@example.com`,
-      username: `test${timestamp}`,
+      email: `test${timestamp.slice(-12)}@example.com`,
+      username: `test${timestamp.slice(-12)}`,
     };
     const salt = crypto.randomBytes(16).toString('hex');
     const hash = crypto.pbkdf2Sync(uniqueUser.password, salt, 1000, 64, 'sha512').toString('hex');
@@ -65,6 +66,9 @@ describe('Habit Routes', () => {
       process.env.JWT_SECRET || 'test-secret-key-for-jwt-signing-min-32-chars',
       { expiresIn: '1h' }
     );
+    
+    // Esperar un momento para que se guarde el usuario
+    await new Promise(resolve => setTimeout(resolve, 200));
   });
 
   afterAll(async () => {
@@ -249,6 +253,15 @@ describe('Habit Routes', () => {
       });
       const habitId = habit._id.toString();
 
+      // Esperar un momento para que se guarde el hábito
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Verificar que el hábito se guardó correctamente
+      const savedHabit = await Habit.findById(habitId);
+      if (!savedHabit) {
+        throw new Error('Hábito no se guardó correctamente');
+      }
+
       const updateReminderTime = new Date(Date.now() + 60 * 60 * 1000);
       const updateData = {
         title: 'Updated Title',
@@ -260,9 +273,6 @@ describe('Habit Routes', () => {
           enabled: true
         }
       };
-
-      // Esperar un momento para que se guarde el hábito
-      await new Promise(resolve => setTimeout(resolve, 200));
 
       const response = await request(app)
         .put(`/api/habits/${habitId}`)
@@ -294,7 +304,13 @@ describe('Habit Routes', () => {
       const habitId = habit._id.toString();
 
       // Esperar un momento para que se guarde el hábito
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Verificar que el hábito se guardó correctamente
+      const savedHabit = await Habit.findById(habitId);
+      if (!savedHabit) {
+        throw new Error('Hábito no se guardó correctamente');
+      }
 
       const response = await request(app)
         .delete(`/api/habits/${habitId}`)

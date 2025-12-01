@@ -160,12 +160,23 @@ describe('Subscription Model', () => {
       currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     });
 
+    // Esperar un momento para que se guarde inicialmente
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     subscription.status = 'canceled';
     subscription.cancelAtPeriodEnd = true;
     subscription.canceledAt = new Date();
     await subscription.save();
 
-    // Recargar la suscripción desde la base de datos
+    // Esperar un momento para que se guarde
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // Verificar directamente en el documento guardado sin recargar
+    expect(subscription.status).toBe('canceled');
+    expect(subscription.cancelAtPeriodEnd).toBe(true);
+    expect(subscription.canceledAt).toBeDefined();
+
+    // También verificar recargando desde la BD
     const updatedSubscription = await Subscription.findById(subscription._id);
     expect(updatedSubscription).not.toBeNull();
     expect(updatedSubscription.status).toBe('canceled');

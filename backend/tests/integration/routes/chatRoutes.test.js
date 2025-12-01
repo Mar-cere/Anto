@@ -150,7 +150,13 @@ describe('Chat Routes', () => {
       const conversationId = conversation._id.toString();
 
       // Esperar un momento para que se guarde la conversación
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Verificar que la conversación se guardó correctamente
+      const savedConversation = await Conversation.findById(conversationId);
+      if (!savedConversation) {
+        throw new Error('Conversación no se guardó correctamente');
+      }
 
       // Crear algunos mensajes
       await Message.create([
@@ -169,7 +175,7 @@ describe('Chat Routes', () => {
       ]);
 
       // Esperar un momento para que se guarden los mensajes
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       const response = await request(app)
         .get(`/api/chat/conversations/${conversationId}`)

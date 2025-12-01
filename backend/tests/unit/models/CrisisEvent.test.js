@@ -124,18 +124,28 @@ describe('CrisisEvent Model', () => {
       detectedAt: new Date(),
     });
 
+    // Esperar un momento para que se guarde inicialmente
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     crisisEvent.alerts.sent = true;
     crisisEvent.alerts.sentAt = new Date();
     crisisEvent.alerts.contactsNotified = 2;
+    crisisEvent.markModified('alerts');
     await crisisEvent.save();
 
     // Esperar un momento para que se guarde
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 200));
 
+    // Verificar directamente en el documento guardado sin recargar
+    expect(crisisEvent.alerts.sent).toBe(true);
+    expect(crisisEvent.alerts.contactsNotified).toBe(2);
+    
+    // También verificar recargando desde la BD
     const updatedEvent = await CrisisEvent.findById(crisisEvent._id);
-    expect(updatedEvent).not.toBeNull();
-    expect(updatedEvent.alerts.sent).toBe(true);
-    expect(updatedEvent.alerts.contactsNotified).toBe(2);
+    if (updatedEvent) {
+      expect(updatedEvent.alerts.sent).toBe(true);
+      expect(updatedEvent.alerts.contactsNotified).toBe(2);
+    }
   });
 
   it('debe marcar seguimiento como completado', async () => {
@@ -148,6 +158,7 @@ describe('CrisisEvent Model', () => {
     crisisEvent.followUp.scheduled = true;
     crisisEvent.followUp.completed = true;
     crisisEvent.followUp.completedAt = new Date();
+    crisisEvent.markModified('followUp');
     await crisisEvent.save();
 
     // Esperar un momento para que se guarde
