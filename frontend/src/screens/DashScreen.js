@@ -305,6 +305,11 @@ const DashScreen = () => {
     }
   }, [hasCheckedEmergencyContacts, checkEmergencyContacts, userData]);
 
+  // Manejar el dismiss del banner de trial
+  const handleTrialBannerDismiss = useCallback(() => {
+    setTrialBannerDismissed(true);
+  }, []);
+
   // Efecto para carga inicial
   useEffect(() => {
     if (loading) {
