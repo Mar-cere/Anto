@@ -569,7 +569,7 @@ router.post('/messages', protect, requireActiveSubscription(true), async (req, r
         });
 
         // NUEVO: Registrar métrica de generación de respuesta
-        const responseTime = Date.now() - responseStartTime;
+        const responseTime = Date.now() - startTime;
         metricsService.recordMetric('response_generation', {
           time: responseTime,
           success: true
