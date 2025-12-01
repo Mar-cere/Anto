@@ -11,6 +11,7 @@
 
 import User from '../models/User.js';
 import Subscription from '../models/Subscription.js';
+import pushNotificationService from './pushNotificationService.js';
 
 class TrialNotificationService {
   /**
@@ -79,23 +80,22 @@ class TrialNotificationService {
    */
   async sendTrialExpirationNotification(userId, daysRemaining) {
     try {
-      const user = await User.findById(userId).select('email username');
+      const user = await User.findById(userId).select('email username pushToken');
       if (!user) return;
 
-      const title = daysRemaining === 1 
-        ? '⏰ Tu trial expira mañana'
-        : `⏰ Tu trial expira en ${daysRemaining} días`;
-
-      const body = daysRemaining === 1
-        ? 'Tu período de prueba expira mañana. Suscríbete para continuar usando todas las funciones premium.'
-        : `Tu período de prueba expira en ${daysRemaining} días. No te pierdas todas las funciones premium.`;
-
-      // Nota: Las notificaciones push se envían desde el frontend
-      // Este método solo registra el evento para logging
       console.log(`[TrialNotificationService] Trial próximo a expirar para usuario ${userId}: ${daysRemaining} días restantes`);
       
-      // Aquí podrías integrar con el servicio de notificaciones push del backend
-      // si tienes un sistema de notificaciones push desde el servidor
+      // Enviar notificación push si el usuario tiene token
+      if (user.pushToken) {
+        try {
+          await pushNotificationService.sendTrialExpiring(user.pushToken, { daysRemaining });
+          console.log(`[TrialNotificationService] Notificación push enviada a usuario ${userId}`);
+        } catch (pushError) {
+          console.error('[TrialNotificationService] Error enviando notificación push:', pushError);
+        }
+      } else {
+        console.log(`[TrialNotificationService] Usuario ${userId} no tiene pushToken configurado`);
+      }
     } catch (error) {
       console.error('[TrialNotificationService] Error enviando notificación:', error);
     }

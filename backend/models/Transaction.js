@@ -119,6 +119,10 @@ transactionSchema.index({ userId: 1, createdAt: -1 });
 transactionSchema.index({ userId: 1, status: 1 });
 transactionSchema.index({ providerTransactionId: 1, paymentProvider: 1 });
 transactionSchema.index({ type: 1, status: 1, createdAt: -1 });
+// Índices adicionales para optimización
+transactionSchema.index({ status: 1, createdAt: -1 }); // Para métricas y reportes
+transactionSchema.index({ subscriptionId: 1, status: 1 }); // Para consultas de suscripción
+transactionSchema.index({ createdAt: -1 }); // Para ordenamiento global
 
 // Método estático: obtener transacciones de un usuario
 transactionSchema.statics.getUserTransactions = async function(userId, options = {}) {

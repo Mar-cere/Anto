@@ -81,9 +81,22 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
   const handleError = (syntheticEvent) => {
     const { nativeEvent } = syntheticEvent;
     console.error('Error en WebView:', nativeEvent);
-    setError(nativeEvent.description || TEXTS.ERROR);
+    
+    // Determinar tipo de error
+    let errorMessage = TEXTS.ERROR;
+    if (nativeEvent.description) {
+      if (nativeEvent.description.includes('network') || nativeEvent.description.includes('internet')) {
+        errorMessage = 'Error de conexión. Verifica tu conexión a internet.';
+      } else if (nativeEvent.description.includes('timeout')) {
+        errorMessage = 'Tiempo de espera agotado. Por favor, intenta nuevamente.';
+      } else {
+        errorMessage = nativeEvent.description;
+      }
+    }
+    
+    setError(errorMessage);
     setLoading(false);
-    onError?.(nativeEvent.description || TEXTS.ERROR);
+    onError?.(errorMessage);
   };
 
   // Manejar cuando termina de cargar

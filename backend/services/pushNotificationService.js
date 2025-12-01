@@ -53,6 +53,11 @@ class PushNotificationService {
       // Recordatorios preventivos
       WELLNESS_TIP: 'wellness_tip',
       SELF_CARE_REMINDER: 'self_care_reminder',
+      
+      // Trial y suscripciones
+      TRIAL_EXPIRING: 'trial_expiring',
+      TRIAL_EXPIRED: 'trial_expired',
+      SUBSCRIPTION_REMINDER: 'subscription_reminder',
     };
   }
 
@@ -594,6 +599,73 @@ class PushNotificationService {
   }
 
   /**
+   * Envía notificación de trial próximo a expirar
+   * @param {string} pushToken - Token push
+   * @param {Object} options - Opciones adicionales
+   * @returns {Promise<Object>}
+   */
+  async sendTrialExpiring(pushToken, options = {}) {
+    const { daysRemaining } = options;
+    
+    const title = daysRemaining === 1 
+      ? '⏰ Tu trial expira mañana'
+      : `⏰ Tu trial expira en ${daysRemaining} días`;
+    
+    const body = daysRemaining === 1
+      ? 'Tu período de prueba expira mañana. Suscríbete para continuar usando todas las funciones premium.'
+      : `Tu período de prueba expira en ${daysRemaining} días. No te pierdas todas las funciones premium.`;
+    
+    return this.sendNotification(
+      pushToken,
+      title,
+      body,
+      {
+        action: 'open_subscription',
+        daysRemaining,
+      },
+      this.NOTIFICATION_TYPES.TRIAL_EXPIRING
+    );
+  }
+
+  /**
+   * Envía notificación de trial expirado
+   * @param {string} pushToken - Token push
+   * @param {Object} options - Opciones adicionales
+   * @returns {Promise<Object>}
+   */
+  async sendTrialExpired(pushToken, options = {}) {
+    return this.sendNotification(
+      pushToken,
+      '⏰ Tu trial ha expirado',
+      'Tu período de prueba ha terminado. Suscríbete ahora para continuar disfrutando de todas las funciones premium.',
+      {
+        action: 'open_subscription',
+      },
+      this.NOTIFICATION_TYPES.TRIAL_EXPIRED
+    );
+  }
+
+  /**
+   * Envía recordatorio de suscripción
+   * @param {string} pushToken - Token push
+   * @param {Object} options - Opciones adicionales
+   * @returns {Promise<Object>}
+   */
+  async sendSubscriptionReminder(pushToken, options = {}) {
+    const { message } = options;
+    
+    return this.sendNotification(
+      pushToken,
+      '💎 Recordatorio de suscripción',
+      message || 'No te pierdas todas las funciones premium. Suscríbete ahora y continúa tu viaje de bienestar.',
+      {
+        action: 'open_subscription',
+      },
+      this.NOTIFICATION_TYPES.SUBSCRIPTION_REMINDER
+    );
+  }
+
+  /**
    * Envía notificaciones a múltiples tokens
    * @param {Array<string>} pushTokens - Array de tokens
    * @param {string} title - Título
@@ -704,6 +776,11 @@ class PushNotificationService {
       [this.NOTIFICATION_TYPES.MOTIVATIONAL_MESSAGE]: 'anto-reminders',
       [this.NOTIFICATION_TYPES.MORNING_MOTIVATION]: 'anto-reminders',
       [this.NOTIFICATION_TYPES.EVENING_REFLECTION]: 'anto-reminders',
+      
+      // Trial y suscripciones - canal de recordatorios
+      [this.NOTIFICATION_TYPES.TRIAL_EXPIRING]: 'anto-reminders',
+      [this.NOTIFICATION_TYPES.TRIAL_EXPIRED]: 'anto-reminders',
+      [this.NOTIFICATION_TYPES.SUBSCRIPTION_REMINDER]: 'anto-reminders',
     };
     return channelMap[type] || 'anto-notifications';
   }
@@ -749,6 +826,11 @@ class PushNotificationService {
       [this.NOTIFICATION_TYPES.MORNING_MOTIVATION]: 'default',
       [this.NOTIFICATION_TYPES.EVENING_REFLECTION]: 'default',
       [this.NOTIFICATION_TYPES.GRATITUDE_REMINDER]: 'default',
+      
+      // Trial y suscripciones - alta prioridad
+      [this.NOTIFICATION_TYPES.TRIAL_EXPIRING]: 'high',
+      [this.NOTIFICATION_TYPES.TRIAL_EXPIRED]: 'high',
+      [this.NOTIFICATION_TYPES.SUBSCRIPTION_REMINDER]: 'high',
     };
     return priorityMap[type] || 'default';
   }

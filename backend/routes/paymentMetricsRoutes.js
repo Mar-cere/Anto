@@ -96,6 +96,115 @@ router.get('/metrics/overview', authenticateToken, async (req, res) => {
 
     const conversionRate = newTrials > 0 ? (trialConversions / newTrials) * 100 : 0;
 
+    // Calcular MRR (Monthly Recurring Revenue)
+    const mrrData = await Subscription.aggregate([
+      {
+        $match: {
+          status: 'active',
+          currentPeriodEnd: { $gte: now },
+        },
+      },
+      {
+        $lookup: {
+          from: 'transactions',
+          localField: 'mercadopagoTransactionId',
+          foreignField: 'providerTransactionId',
+          as: 'transaction',
+        },
+      },
+      {
+        $unwind: {
+          path: '$transaction',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $group: {
+          _id: '$plan',
+          count: { $sum: 1 },
+          totalAmount: { $sum: { $ifNull: ['$transaction.amount', 0] } },
+        },
+      },
+    ]);
+
+    // Calcular MRR basado en planes activos
+    let mrr = 0;
+    const planPrices = {
+      weekly: 950 * 4.33, // Aproximación mensual
+      monthly: 3600,
+      quarterly: 10200 / 3,
+      semestral: 19400 / 6,
+      yearly: 36900 / 12,
+    };
+
+    mrrData.forEach(plan => {
+      const monthlyPrice = planPrices[plan._id] || 0;
+      mrr += monthlyPrice * plan.count;
+    });
+
+    // Calcular Churn Rate (últimos 30 días)
+    const canceledLast30Days = await Subscription.countDocuments({
+      status: 'canceled',
+      canceledAt: { $gte: last30Days },
+    });
+
+    const activeAtStartOfPeriod = await Subscription.countDocuments({
+      status: 'active',
+      currentPeriodStart: { $lte: last30Days },
+    });
+
+    const churnRate = activeAtStartOfPeriod > 0 
+      ? (canceledLast30Days / activeAtStartOfPeriod) * 100 
+      : 0;
+
+    // Calcular LTV (Lifetime Value) promedio
+    const ltvData = await Transaction.aggregate([
+      {
+        $match: {
+          status: 'completed',
+          type: 'subscription',
+        },
+      },
+      {
+        $group: {
+          _id: '$userId',
+          totalSpent: { $sum: '$amount' },
+          transactionCount: { $sum: 1 },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          averageLTV: { $avg: '$totalSpent' },
+          medianLTV: { $avg: '$totalSpent' }, // Aproximación
+          totalUsers: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const ltv = ltvData[0] || { averageLTV: 0, medianLTV: 0, totalUsers: 0 };
+
+    // Métricas por plan
+    const metricsByPlan = await Subscription.aggregate([
+      {
+        $match: {
+          status: { $in: ['active', 'trialing'] },
+        },
+      },
+      {
+        $group: {
+          _id: '$plan',
+          count: { $sum: 1 },
+          active: {
+            $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] },
+          },
+          trialing: {
+            $sum: { $cond: [{ $eq: ['$status', 'trialing'] }, 1, 0] },
+          },
+        },
+      },
+    ]);
+
     res.json({
       success: true,
       metrics: {
@@ -126,6 +235,23 @@ router.get('/metrics/overview', authenticateToken, async (req, res) => {
           trialToPremiumRate: conversionRate.toFixed(2),
           newTrials7Days: newTrials,
           conversions7Days: trialConversions,
+        },
+        advanced: {
+          mrr: Math.round(mrr), // Monthly Recurring Revenue
+          churnRate: churnRate.toFixed(2), // Churn rate en porcentaje
+          ltv: {
+            average: Math.round(ltv.averageLTV || 0),
+            median: Math.round(ltv.medianLTV || 0),
+            totalUsers: ltv.totalUsers,
+          },
+          byPlan: metricsByPlan.reduce((acc, plan) => {
+            acc[plan._id] = {
+              total: plan.count,
+              active: plan.active,
+              trialing: plan.trialing,
+            };
+            return acc;
+          }, {}),
         },
         issues: {
           unactivatedPayments: unactivatedPayments.length,

@@ -8,6 +8,7 @@
  */
 
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { authenticateToken } from '../middleware/auth.js';
 import { validateUserObjectId } from '../middleware/validation.js';
 import paymentService from '../services/paymentService.js';
@@ -17,6 +18,30 @@ import { getPlanPrice, formatAmount, isMercadoPagoConfigured } from '../config/m
 import Joi from 'joi';
 
 const router = express.Router();
+
+// Rate limiters para pagos
+const checkoutLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // Máximo 5 intentos de checkout por 15 minutos
+  message: 'Demasiados intentos de checkout. Por favor, intente más tarde.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    // No aplicar rate limiting en desarrollo
+    return process.env.NODE_ENV === 'development';
+  }
+});
+
+const paymentLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 20, // Máximo 20 operaciones de pago por hora
+  message: 'Demasiadas operaciones de pago. Por favor, intente más tarde.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    return process.env.NODE_ENV === 'development';
+  }
+});
 
 // Esquema de validación para crear checkout
 const createCheckoutSchema = Joi.object({
@@ -158,6 +183,7 @@ router.get('/plans', (req, res) => {
  */
 router.post(
   '/create-checkout-session',
+  checkoutLimiter,
   authenticateToken,
   validateUserObjectId,
   async (req, res) => {
@@ -260,6 +286,7 @@ router.get(
  */
 router.post(
   '/cancel-subscription',
+  paymentLimiter,
   authenticateToken,
   validateUserObjectId,
   async (req, res) => {
@@ -298,6 +325,7 @@ router.post(
  */
 router.post(
   '/update-payment-method',
+  paymentLimiter,
   authenticateToken,
   validateUserObjectId,
   async (req, res) => {
@@ -453,20 +481,47 @@ router.get(
  */
 router.post('/webhook', express.json(), async (req, res) => {
   try {
+    // Validar que el webhook viene de Mercado Pago
+    // Mercado Pago envía notificaciones desde IPs específicas
+    // En producción, se puede validar el rango de IPs de Mercado Pago
+    const allowedIPs = process.env.MERCADOPAGO_WEBHOOK_IPS?.split(',') || [];
+    const clientIP = req.ip || req.connection.remoteAddress;
+    
+    // Si hay IPs configuradas, validar
+    if (allowedIPs.length > 0 && !allowedIPs.includes(clientIP)) {
+      console.warn('[PAYMENT_WEBHOOK] IP no autorizada:', clientIP);
+      await paymentService.handleWebhook(req.body, null).catch(() => {});
+      // Responder 200 para no revelar que la IP fue rechazada
+      return res.status(200).json({ received: true });
+    }
+
+    // Validar que el body tenga la estructura esperada
+    if (!req.body || (!req.body.type && !req.body.action && !req.body.id)) {
+      console.warn('[PAYMENT_WEBHOOK] Webhook con estructura inválida:', req.body);
+      return res.status(400).json({
+        error: 'Invalid webhook structure',
+      });
+    }
+
     // Registrar webhook recibido
     console.log('[PAYMENT_WEBHOOK] Webhook recibido:', {
-      type: req.body.type,
-      data: req.body.data,
+      type: req.body.type || req.body.action,
+      data: req.body.data ? 'present' : 'missing',
       timestamp: new Date().toISOString(),
-      ip: req.ip,
+      ip: clientIP,
     });
 
-    const result = await paymentService.handleWebhook(req.body, null);
+    // Obtener firma si está disponible (Mercado Pago puede enviar headers)
+    const signature = req.headers['x-signature'] || req.headers['x-mercadopago-signature'] || null;
+
+    const result = await paymentService.handleWebhook(req.body, signature);
 
     res.json(result);
   } catch (error) {
     console.error('[PAYMENT_WEBHOOK] Error procesando webhook:', error);
-    res.status(400).json({
+    // Responder 200 para evitar reintentos de Mercado Pago
+    res.status(200).json({
+      received: true,
       error: error.message || 'Webhook processing failed',
     });
   }

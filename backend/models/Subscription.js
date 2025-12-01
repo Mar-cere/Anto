@@ -114,6 +114,10 @@ const subscriptionSchema = new mongoose.Schema({
 // Índices adicionales
 subscriptionSchema.index({ status: 1, currentPeriodEnd: 1 });
 subscriptionSchema.index({ userId: 1, status: 1 });
+// Índices adicionales para optimización
+subscriptionSchema.index({ status: 1, trialEnd: 1 }); // Para consultas de trial
+subscriptionSchema.index({ plan: 1, status: 1 }); // Para métricas por plan
+subscriptionSchema.index({ currentPeriodEnd: 1 }); // Para suscripciones que expiran
 
 // Virtual: verificar si la suscripción está activa
 subscriptionSchema.virtual('isActive').get(function() {
