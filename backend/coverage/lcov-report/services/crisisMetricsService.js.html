@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">53.19% </span>
+                <span class="strong">46.8% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>75/141</span>
+                <span class='fraction'>66/141</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">20.51% </span>
+                <span class="strong">19.23% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>16/78</span>
+                <span class='fraction'>15/78</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">17.94% </span>
+                <span class="strong">15.38% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>7/39</span>
+                <span class='fraction'>6/39</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">55.55% </span>
+                <span class="strong">48.88% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>75/135</span>
+                <span class='fraction'>66/135</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -806,32 +806,32 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1219,21 +1219,21 @@ class CrisisMetricsService {
    * @param {number} days - Número de días hacia atrás (default: 30)
    * @returns {Promise&lt;Object&gt;} Estadísticas de seguimiento
    */
-  async getFollowUpStatistics(userId, days = <span class="branch-0 cbranch-no" title="branch not covered" >30)</span> {
-    try {
-      const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+<span class="fstat-no" title="function not covered" >  as</span>ync getFollowUpStatistics(userId, days = <span class="branch-0 cbranch-no" title="branch not covered" >30)</span> {
+<span class="cstat-no" title="statement not covered" >    try {</span>
+      const startDate = <span class="cstat-no" title="statement not covered" >new Date(Date.now() - days * 24 * 60 * 60 * 1000);</span>
       
-      const crises = await CrisisEvent.find({
+      const crises = <span class="cstat-no" title="statement not covered" >await CrisisEvent.find({</span>
         userId,
         detectedAt: { $gte: startDate }
       }).lean();
 &nbsp;
-      const scheduled = crises.filter(<span class="fstat-no" title="function not covered" >c </span>=&gt; <span class="cstat-no" title="statement not covered" >c.followUp?.scheduled)</span>.length;
-      const completed = crises.filter(<span class="fstat-no" title="function not covered" >c </span>=&gt; <span class="cstat-no" title="statement not covered" >c.followUp?.completed)</span>.length;
-      const pending = scheduled - completed;
+      const scheduled = <span class="cstat-no" title="statement not covered" >crises.filter(<span class="fstat-no" title="function not covered" >c </span>=&gt; <span class="cstat-no" title="statement not covered" >c.followUp?.scheduled)</span>.length;</span>
+      const completed = <span class="cstat-no" title="statement not covered" >crises.filter(<span class="fstat-no" title="function not covered" >c </span>=&gt; <span class="cstat-no" title="statement not covered" >c.followUp?.completed)</span>.length;</span>
+      const pending = <span class="cstat-no" title="statement not covered" >scheduled - completed;</span>
 &nbsp;
       // Outcomes
-      const outcomes = {
+      const outcomes = <span class="cstat-no" title="statement not covered" >{</span>
         resolved: crises.filter(<span class="fstat-no" title="function not covered" >c </span>=&gt; <span class="cstat-no" title="statement not covered" >c.outcome === 'resolved')</span>.length,
         ongoing: crises.filter(<span class="fstat-no" title="function not covered" >c </span>=&gt; <span class="cstat-no" title="statement not covered" >c.outcome === 'ongoing')</span>.length,
         escalated: crises.filter(<span class="fstat-no" title="function not covered" >c </span>=&gt; <span class="cstat-no" title="statement not covered" >c.outcome === 'escalated')</span>.length,
@@ -1241,11 +1241,11 @@ class CrisisMetricsService {
         unknown: crises.filter(<span class="fstat-no" title="function not covered" >c </span>=&gt; <span class="cstat-no" title="statement not covered" >c.outcome === 'unknown')</span>.length
       };
 &nbsp;
-      const completionRate = scheduled &gt; 0
-        ? <span class="branch-0 cbranch-no" title="branch not covered" >Math.round((completed / scheduled) * 100) / 100</span>
+      const completionRate = <span class="cstat-no" title="statement not covered" >scheduled &gt; 0</span>
+        ? Math.round((completed / scheduled) * 100) / 100
         : 0;
 &nbsp;
-      return {
+<span class="cstat-no" title="statement not covered" >      return {</span>
         scheduled,
         completed,
         pending,
@@ -1312,7 +1312,7 @@ export default crisisMetricsService;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-01T17:32:19.898Z
+                at 2025-12-01T20:05:59.737Z
             </div>
         <script src="../prettify.js"></script>
         <script>

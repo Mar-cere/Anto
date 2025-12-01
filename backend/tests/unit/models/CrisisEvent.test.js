@@ -151,13 +151,15 @@ describe('CrisisEvent Model', () => {
     await crisisEvent.save();
 
     // Esperar un momento para que se guarde
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 200));
 
     // Recargar el evento desde la base de datos usando el documento guardado
     const updatedEvent = await CrisisEvent.findById(crisisEvent._id);
     expect(updatedEvent).not.toBeNull();
-    expect(updatedEvent.followUp.completed).toBe(true);
-    expect(updatedEvent.followUp.completedAt).toBeDefined();
+    if (updatedEvent) {
+      expect(updatedEvent.followUp.completed).toBe(true);
+      expect(updatedEvent.followUp.completedAt).toBeDefined();
+    }
   });
 
   it('debe establecer resolvedAt cuando se resuelve', async () => {

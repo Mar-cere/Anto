@@ -172,14 +172,7 @@ const updatePasswordSchema = Joi.object({
 // Obtener datos del usuario actual
 router.get('/me', authenticateToken, validateUserObjectId, async (req, res) => {
   try {
-    // Asegurar que req.user._id sea un ObjectId válido
-    const userId = mongoose.Types.ObjectId.isValid(req.user._id) 
-      ? new mongoose.Types.ObjectId(req.user._id) 
-      : req.user._id;
-    
-    const user = await User.findById(userId)
-      .select('-password -salt -__v -resetPasswordCode -resetPasswordExpires')
-      .lean();
+    const user = await findUserById(req.user._id, '-password -salt -__v -resetPasswordCode -resetPasswordExpires', true);
     
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });

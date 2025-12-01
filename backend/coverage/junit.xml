@@ -1,89 +1,77 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="206" failures="11" errors="0" time="12.65">
-  <testsuite name="Check Subscription Middleware" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:06" time="0.794" tests="6">
-    <testcase classname="Check Subscription Middleware requireActiveSubscription debe permitir acceso con suscripción activa" name="Check Subscription Middleware requireActiveSubscription debe permitir acceso con suscripción activa" time="0.007">
+<testsuites name="jest tests" tests="206" failures="14" errors="0" time="11.028">
+  <testsuite name="CrisisEvent Model" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:48" time="2.279" tests="8">
+    <testcase classname="CrisisEvent Model debe crear y guardar un evento de crisis exitosamente" name="CrisisEvent Model debe crear y guardar un evento de crisis exitosamente" time="0.609">
     </testcase>
-    <testcase classname="Check Subscription Middleware requireActiveSubscription debe permitir acceso con trial activo cuando allowTrial es true" name="Check Subscription Middleware requireActiveSubscription debe permitir acceso con trial activo cuando allowTrial es true" time="0.004">
+    <testcase classname="CrisisEvent Model no debe guardar un evento sin userId" name="CrisisEvent Model no debe guardar un evento sin userId" time="0.017">
     </testcase>
-    <testcase classname="Check Subscription Middleware requireActiveSubscription debe rechazar acceso sin suscripción activa cuando allowTrial es false" name="Check Subscription Middleware requireActiveSubscription debe rechazar acceso sin suscripción activa cuando allowTrial es false" time="0.001">
+    <testcase classname="CrisisEvent Model no debe guardar un evento sin riskLevel" name="CrisisEvent Model no debe guardar un evento sin riskLevel" time="0.01">
     </testcase>
-    <testcase classname="Check Subscription Middleware requireActiveSubscription debe rechazar acceso sin usuario autenticado" name="Check Subscription Middleware requireActiveSubscription debe rechazar acceso sin usuario autenticado" time="0.002">
+    <testcase classname="CrisisEvent Model debe validar que el riskLevel sea válido" name="CrisisEvent Model debe validar que el riskLevel sea válido" time="0.028">
     </testcase>
-    <testcase classname="Check Subscription Middleware requireActiveSubscription debe rechazar acceso con ID de usuario inválido" name="Check Subscription Middleware requireActiveSubscription debe rechazar acceso con ID de usuario inválido" time="0.001">
+    <testcase classname="CrisisEvent Model debe tener valores por defecto correctos" name="CrisisEvent Model debe tener valores por defecto correctos" time="0.015">
     </testcase>
-    <testcase classname="Check Subscription Middleware requireActiveSubscription debe rechazar acceso cuando el usuario no existe" name="Check Subscription Middleware requireActiveSubscription debe rechazar acceso cuando el usuario no existe" time="0">
+    <testcase classname="CrisisEvent Model debe marcar alertas como enviadas" name="CrisisEvent Model debe marcar alertas como enviadas" time="0.143">
     </testcase>
-  </testsuite>
-  <testsuite name="CrisisEvent Model" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:07" time="2.516" tests="8">
-    <testcase classname="CrisisEvent Model debe crear y guardar un evento de crisis exitosamente" name="CrisisEvent Model debe crear y guardar un evento de crisis exitosamente" time="0.085">
+    <testcase classname="CrisisEvent Model debe marcar seguimiento como completado" name="CrisisEvent Model debe marcar seguimiento como completado" time="0.229">
     </testcase>
-    <testcase classname="CrisisEvent Model no debe guardar un evento sin userId" name="CrisisEvent Model no debe guardar un evento sin userId" time="0.013">
-    </testcase>
-    <testcase classname="CrisisEvent Model no debe guardar un evento sin riskLevel" name="CrisisEvent Model no debe guardar un evento sin riskLevel" time="0.009">
-    </testcase>
-    <testcase classname="CrisisEvent Model debe validar que el riskLevel sea válido" name="CrisisEvent Model debe validar que el riskLevel sea válido" time="0.04">
-    </testcase>
-    <testcase classname="CrisisEvent Model debe tener valores por defecto correctos" name="CrisisEvent Model debe tener valores por defecto correctos" time="0.09">
-    </testcase>
-    <testcase classname="CrisisEvent Model debe marcar alertas como enviadas" name="CrisisEvent Model debe marcar alertas como enviadas" time="0.473">
-    </testcase>
-    <testcase classname="CrisisEvent Model debe marcar seguimiento como completado" name="CrisisEvent Model debe marcar seguimiento como completado" time="0.193">
-    </testcase>
-    <testcase classname="CrisisEvent Model debe establecer resolvedAt cuando se resuelve" name="CrisisEvent Model debe establecer resolvedAt cuando se resuelve" time="0.032">
+    <testcase classname="CrisisEvent Model debe establecer resolvedAt cuando se resuelve" name="CrisisEvent Model debe establecer resolvedAt cuando se resuelve" time="0.017">
     </testcase>
   </testsuite>
-  <testsuite name="Metrics Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:06" time="4.489" tests="4">
-    <testcase classname="Metrics Routes GET /api/metrics/system debe obtener métricas generales del sistema" name="Metrics Routes GET /api/metrics/system debe obtener métricas generales del sistema" time="0.065">
+  <testsuite name="Crisis Routes" errors="0" failures="1" skipped="0" timestamp="2025-12-01T20:05:48" time="4.058" tests="12">
+    <testcase classname="Crisis Routes GET /api/crisis/summary debe obtener resumen de crisis del usuario" name="Crisis Routes GET /api/crisis/summary debe obtener resumen de crisis del usuario" time="0.112">
     </testcase>
-    <testcase classname="Metrics Routes GET /api/metrics/system debe rechazar request sin autenticación" name="Metrics Routes GET /api/metrics/system debe rechazar request sin autenticación" time="0.017">
+    <testcase classname="Crisis Routes GET /api/crisis/summary debe aceptar parámetro days" name="Crisis Routes GET /api/crisis/summary debe aceptar parámetro days" time="0.076">
     </testcase>
-    <testcase classname="Metrics Routes GET /api/metrics/me debe obtener métricas del usuario" name="Metrics Routes GET /api/metrics/me debe obtener métricas del usuario" time="0.025">
+    <testcase classname="Crisis Routes GET /api/crisis/summary debe rechazar request sin autenticación" name="Crisis Routes GET /api/crisis/summary debe rechazar request sin autenticación" time="0.014">
     </testcase>
-    <testcase classname="Metrics Routes GET /api/metrics/health debe obtener estadísticas de salud del sistema" name="Metrics Routes GET /api/metrics/health debe obtener estadísticas de salud del sistema" time="0.02">
+    <testcase classname="Crisis Routes GET /api/crisis/trends debe obtener tendencias emocionales" name="Crisis Routes GET /api/crisis/trends debe obtener tendencias emocionales" time="0.034">
     </testcase>
-  </testsuite>
-  <testsuite name="Crisis Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:06" time="5.027" tests="12">
-    <testcase classname="Crisis Routes GET /api/crisis/summary debe obtener resumen de crisis del usuario" name="Crisis Routes GET /api/crisis/summary debe obtener resumen de crisis del usuario" time="0.075">
+    <testcase classname="Crisis Routes GET /api/crisis/trends debe aceptar parámetro period" name="Crisis Routes GET /api/crisis/trends debe aceptar parámetro period" time="0.014">
     </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/summary debe aceptar parámetro days" name="Crisis Routes GET /api/crisis/summary debe aceptar parámetro days" time="0.039">
+    <testcase classname="Crisis Routes GET /api/crisis/by-month debe obtener crisis agrupadas por mes" name="Crisis Routes GET /api/crisis/by-month debe obtener crisis agrupadas por mes" time="0.011">
     </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/summary debe rechazar request sin autenticación" name="Crisis Routes GET /api/crisis/summary debe rechazar request sin autenticación" time="0.02">
+    <testcase classname="Crisis Routes GET /api/crisis/by-month debe aceptar parámetro months" name="Crisis Routes GET /api/crisis/by-month debe aceptar parámetro months" time="0.024">
     </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/trends debe obtener tendencias emocionales" name="Crisis Routes GET /api/crisis/trends debe obtener tendencias emocionales" time="0.024">
+    <testcase classname="Crisis Routes GET /api/crisis/history debe obtener historial de crisis" name="Crisis Routes GET /api/crisis/history debe obtener historial de crisis" time="0.019">
     </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/trends debe aceptar parámetro period" name="Crisis Routes GET /api/crisis/trends debe aceptar parámetro period" time="0.02">
+    <testcase classname="Crisis Routes GET /api/crisis/history debe aceptar parámetros de paginación" name="Crisis Routes GET /api/crisis/history debe aceptar parámetros de paginación" time="0.024">
     </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/by-month debe obtener crisis agrupadas por mes" name="Crisis Routes GET /api/crisis/by-month debe obtener crisis agrupadas por mes" time="0.033">
+    <testcase classname="Crisis Routes GET /api/crisis/alerts-stats debe obtener estadísticas de alertas" name="Crisis Routes GET /api/crisis/alerts-stats debe obtener estadísticas de alertas" time="0.015">
     </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/by-month debe aceptar parámetro months" name="Crisis Routes GET /api/crisis/by-month debe aceptar parámetro months" time="0.033">
+    <testcase classname="Crisis Routes GET /api/crisis/followup-stats debe obtener estadísticas de seguimiento" name="Crisis Routes GET /api/crisis/followup-stats debe obtener estadísticas de seguimiento" time="0.007">
+      <failure>MongoServerError: E11000 duplicate key error collection: anto-test.users index: username_1 dup key: { username: &quot;test552181&quot; }
+    at InsertOneOperation.execute (/Users/marceloull/Documents/Anto/backend/node_modules/mongodb/src/operations/insert.ts:88:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at tryOperation (/Users/marceloull/Documents/Anto/backend/node_modules/mongodb/src/operations/execute_operation.ts:283:14)
+    at executeOperation (/Users/marceloull/Documents/Anto/backend/node_modules/mongodb/src/operations/execute_operation.ts:115:12)
+    at Collection.insertOne (/Users/marceloull/Documents/Anto/backend/node_modules/mongodb/src/collection.ts:285:12)</failure>
     </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/history debe obtener historial de crisis" name="Crisis Routes GET /api/crisis/history debe obtener historial de crisis" time="0.158">
-    </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/history debe aceptar parámetros de paginación" name="Crisis Routes GET /api/crisis/history debe aceptar parámetros de paginación" time="0.068">
-    </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/alerts-stats debe obtener estadísticas de alertas" name="Crisis Routes GET /api/crisis/alerts-stats debe obtener estadísticas de alertas" time="0.031">
-    </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/followup-stats debe obtener estadísticas de seguimiento" name="Crisis Routes GET /api/crisis/followup-stats debe obtener estadísticas de seguimiento" time="0.043">
-    </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/emotion-distribution debe obtener distribución de emociones" name="Crisis Routes GET /api/crisis/emotion-distribution debe obtener distribución de emociones" time="0.066">
+    <testcase classname="Crisis Routes GET /api/crisis/emotion-distribution debe obtener distribución de emociones" name="Crisis Routes GET /api/crisis/emotion-distribution debe obtener distribución de emociones" time="0.011">
     </testcase>
   </testsuite>
-  <testsuite name="Task Routes" errors="0" failures="1" skipped="0" timestamp="2025-12-01T17:32:06" time="5.088" tests="9">
-    <testcase classname="Task Routes POST /api/tasks debe crear una nueva tarea con datos válidos" name="Task Routes POST /api/tasks debe crear una nueva tarea con datos válidos" time="0.079">
+  <testsuite name="Task Routes" errors="0" failures="3" skipped="0" timestamp="2025-12-01T20:05:48" time="4.073" tests="9">
+    <testcase classname="Task Routes POST /api/tasks debe crear una nueva tarea con datos válidos" name="Task Routes POST /api/tasks debe crear una nueva tarea con datos válidos" time="0.102">
     </testcase>
-    <testcase classname="Task Routes POST /api/tasks debe rechazar crear tarea sin autenticación" name="Task Routes POST /api/tasks debe rechazar crear tarea sin autenticación" time="0.036">
+    <testcase classname="Task Routes POST /api/tasks debe rechazar crear tarea sin autenticación" name="Task Routes POST /api/tasks debe rechazar crear tarea sin autenticación" time="0.049">
     </testcase>
-    <testcase classname="Task Routes POST /api/tasks debe rechazar crear tarea sin título" name="Task Routes POST /api/tasks debe rechazar crear tarea sin título" time="0.029">
+    <testcase classname="Task Routes POST /api/tasks debe rechazar crear tarea sin título" name="Task Routes POST /api/tasks debe rechazar crear tarea sin título" time="0.035">
     </testcase>
-    <testcase classname="Task Routes GET /api/tasks debe obtener todas las tareas del usuario" name="Task Routes GET /api/tasks debe obtener todas las tareas del usuario" time="0.199">
+    <testcase classname="Task Routes GET /api/tasks debe obtener todas las tareas del usuario" name="Task Routes GET /api/tasks debe obtener todas las tareas del usuario" time="0.045">
+      <failure>Error: expect(received).toBeGreaterThan(expected)
+
+Expected: &gt; 0
+Received:   0
+    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/tasks.test.js:195:41)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
     </testcase>
-    <testcase classname="Task Routes GET /api/tasks debe filtrar tareas por status" name="Task Routes GET /api/tasks debe filtrar tareas por status" time="0.129">
+    <testcase classname="Task Routes GET /api/tasks debe filtrar tareas por status" name="Task Routes GET /api/tasks debe filtrar tareas por status" time="0.018">
     </testcase>
-    <testcase classname="Task Routes GET /api/tasks/:id debe obtener una tarea específica" name="Task Routes GET /api/tasks/:id debe obtener una tarea específica" time="0.076">
+    <testcase classname="Task Routes GET /api/tasks/:id debe obtener una tarea específica" name="Task Routes GET /api/tasks/:id debe obtener una tarea específica" time="0.023">
     </testcase>
-    <testcase classname="Task Routes GET /api/tasks/:id debe rechazar obtener tarea de otro usuario" name="Task Routes GET /api/tasks/:id debe rechazar obtener tarea de otro usuario" time="0.048">
+    <testcase classname="Task Routes GET /api/tasks/:id debe rechazar obtener tarea de otro usuario" name="Task Routes GET /api/tasks/:id debe rechazar obtener tarea de otro usuario" time="0.023">
     </testcase>
-    <testcase classname="Task Routes PUT /api/tasks/:id debe actualizar una tarea existente" name="Task Routes PUT /api/tasks/:id debe actualizar una tarea existente" time="0.084">
+    <testcase classname="Task Routes PUT /api/tasks/:id debe actualizar una tarea existente" name="Task Routes PUT /api/tasks/:id debe actualizar una tarea existente" time="0.033">
       <failure>Error: expected 200 &quot;OK&quot;, got 400 &quot;Bad Request&quot;
     at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/tasks.test.js:340:10)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
@@ -99,19 +87,47 @@
     at emitCloseNT (node:net:2383:8)
     at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
-    <testcase classname="Task Routes DELETE /api/tasks/:id debe eliminar una tarea existente" name="Task Routes DELETE /api/tasks/:id debe eliminar una tarea existente" time="0.058">
+    <testcase classname="Task Routes DELETE /api/tasks/:id debe eliminar una tarea existente" name="Task Routes DELETE /api/tasks/:id debe eliminar una tarea existente" time="0.025">
+      <failure>Error: expected 200 &quot;OK&quot;, got 500 &quot;Internal Server Error&quot;
+    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/tasks.test.js:369:10)
+    at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)
+    at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/testWorker.js:106:12)
+----
+    at Test._assertStatus (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:309:14)
+    at /Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:365:13
+    at Test._assertFunction (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:342:13)
+    at Test.assert (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:195:23)
+    at localAssert (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:138:14)
+    at Server.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:152:11)
+    at Object.onceWrapper (node:events:638:28)
+    at Server.emit (node:events:524:28)
+    at emitCloseNT (node:net:2383:8)
+    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
   </testsuite>
-  <testsuite name="Chat Routes" errors="0" failures="1" skipped="0" timestamp="2025-12-01T17:32:07" time="5.283" tests="7">
-    <testcase classname="Chat Routes GET /api/chat/conversations debe obtener las conversaciones del usuario" name="Chat Routes GET /api/chat/conversations debe obtener las conversaciones del usuario" time="0.266">
+  <testsuite name="Chat Routes" errors="0" failures="1" skipped="0" timestamp="2025-12-01T20:05:48" time="4.3" tests="7">
+    <testcase classname="Chat Routes GET /api/chat/conversations debe obtener las conversaciones del usuario" name="Chat Routes GET /api/chat/conversations debe obtener las conversaciones del usuario" time="0.267">
     </testcase>
-    <testcase classname="Chat Routes GET /api/chat/conversations debe rechazar request sin autenticación" name="Chat Routes GET /api/chat/conversations debe rechazar request sin autenticación" time="0.034">
+    <testcase classname="Chat Routes GET /api/chat/conversations debe rechazar request sin autenticación" name="Chat Routes GET /api/chat/conversations debe rechazar request sin autenticación" time="0.021">
     </testcase>
-    <testcase classname="Chat Routes POST /api/chat/conversations debe crear una nueva conversación" name="Chat Routes POST /api/chat/conversations debe crear una nueva conversación" time="0.129">
+    <testcase classname="Chat Routes POST /api/chat/conversations debe crear una nueva conversación" name="Chat Routes POST /api/chat/conversations debe crear una nueva conversación" time="0.048">
     </testcase>
-    <testcase classname="Chat Routes POST /api/chat/conversations debe rechazar request sin autenticación" name="Chat Routes POST /api/chat/conversations debe rechazar request sin autenticación" time="0.04">
+    <testcase classname="Chat Routes POST /api/chat/conversations debe rechazar request sin autenticación" name="Chat Routes POST /api/chat/conversations debe rechazar request sin autenticación" time="0.013">
     </testcase>
-    <testcase classname="Chat Routes GET /api/chat/conversations/:conversationId debe obtener mensajes de una conversación" name="Chat Routes GET /api/chat/conversations/:conversationId debe obtener mensajes de una conversación" time="0.268">
+    <testcase classname="Chat Routes GET /api/chat/conversations/:conversationId debe obtener mensajes de una conversación" name="Chat Routes GET /api/chat/conversations/:conversationId debe obtener mensajes de una conversación" time="0.226">
       <failure>Error: expected 200 &quot;OK&quot;, got 404 &quot;Not Found&quot;
     at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/chatRoutes.test.js:177:10)
 ----
@@ -126,25 +142,41 @@
     at emitCloseNT (node:net:2383:8)
     at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
-    <testcase classname="Chat Routes GET /api/chat/conversations/:conversationId debe rechazar obtener conversación de otro usuario" name="Chat Routes GET /api/chat/conversations/:conversationId debe rechazar obtener conversación de otro usuario" time="0.066">
+    <testcase classname="Chat Routes GET /api/chat/conversations/:conversationId debe rechazar obtener conversación de otro usuario" name="Chat Routes GET /api/chat/conversations/:conversationId debe rechazar obtener conversación de otro usuario" time="0.013">
     </testcase>
-    <testcase classname="Chat Routes DELETE /api/chat/conversations/:conversationId debe eliminar una conversación" name="Chat Routes DELETE /api/chat/conversations/:conversationId debe eliminar una conversación" time="0.037">
+    <testcase classname="Chat Routes DELETE /api/chat/conversations/:conversationId debe eliminar una conversación" name="Chat Routes DELETE /api/chat/conversations/:conversationId debe eliminar una conversación" time="0.02">
     </testcase>
   </testsuite>
-  <testsuite name="Habit Routes" errors="0" failures="2" skipped="0" timestamp="2025-12-01T17:32:06" time="5.624" tests="8">
-    <testcase classname="Habit Routes POST /api/habits debe crear un nuevo hábito con datos válidos" name="Habit Routes POST /api/habits debe crear un nuevo hábito con datos válidos" time="0.077">
+  <testsuite name="Metrics Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:50" time="2.266" tests="4">
+    <testcase classname="Metrics Routes GET /api/metrics/system debe obtener métricas generales del sistema" name="Metrics Routes GET /api/metrics/system debe obtener métricas generales del sistema" time="0.058">
     </testcase>
-    <testcase classname="Habit Routes POST /api/habits debe rechazar crear hábito sin autenticación" name="Habit Routes POST /api/habits debe rechazar crear hábito sin autenticación" time="0.009">
+    <testcase classname="Metrics Routes GET /api/metrics/system debe rechazar request sin autenticación" name="Metrics Routes GET /api/metrics/system debe rechazar request sin autenticación" time="0.067">
     </testcase>
-    <testcase classname="Habit Routes POST /api/habits debe rechazar crear hábito con datos inválidos" name="Habit Routes POST /api/habits debe rechazar crear hábito con datos inválidos" time="0.041">
+    <testcase classname="Metrics Routes GET /api/metrics/me debe obtener métricas del usuario" name="Metrics Routes GET /api/metrics/me debe obtener métricas del usuario" time="0.033">
     </testcase>
-    <testcase classname="Habit Routes GET /api/habits debe obtener todos los hábitos del usuario" name="Habit Routes GET /api/habits debe obtener todos los hábitos del usuario" time="0.28">
+    <testcase classname="Metrics Routes GET /api/metrics/health debe obtener estadísticas de salud del sistema" name="Metrics Routes GET /api/metrics/health debe obtener estadísticas de salud del sistema" time="0.024">
     </testcase>
-    <testcase classname="Habit Routes GET /api/habits debe filtrar hábitos por status" name="Habit Routes GET /api/habits debe filtrar hábitos por status" time="0.075">
+  </testsuite>
+  <testsuite name="Habit Routes" errors="0" failures="3" skipped="0" timestamp="2025-12-01T20:05:48" time="4.779" tests="8">
+    <testcase classname="Habit Routes POST /api/habits debe crear un nuevo hábito con datos válidos" name="Habit Routes POST /api/habits debe crear un nuevo hábito con datos válidos" time="0.071">
     </testcase>
-    <testcase classname="Habit Routes GET /api/habits/active debe obtener hábitos activos" name="Habit Routes GET /api/habits/active debe obtener hábitos activos" time="0.044">
+    <testcase classname="Habit Routes POST /api/habits debe rechazar crear hábito sin autenticación" name="Habit Routes POST /api/habits debe rechazar crear hábito sin autenticación" time="0.059">
+      <failure>MongoServerError: E11000 duplicate key error collection: anto-test.users index: username_1 dup key: { username: &quot;test551986&quot; }
+    at InsertOneOperation.execute (/Users/marceloull/Documents/Anto/backend/node_modules/mongodb/src/operations/insert.ts:88:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at tryOperation (/Users/marceloull/Documents/Anto/backend/node_modules/mongodb/src/operations/execute_operation.ts:283:14)
+    at executeOperation (/Users/marceloull/Documents/Anto/backend/node_modules/mongodb/src/operations/execute_operation.ts:115:12)
+    at Collection.insertOne (/Users/marceloull/Documents/Anto/backend/node_modules/mongodb/src/collection.ts:285:12)</failure>
     </testcase>
-    <testcase classname="Habit Routes PUT /api/habits/:id debe actualizar un hábito existente" name="Habit Routes PUT /api/habits/:id debe actualizar un hábito existente" time="0.308">
+    <testcase classname="Habit Routes POST /api/habits debe rechazar crear hábito con datos inválidos" name="Habit Routes POST /api/habits debe rechazar crear hábito con datos inválidos" time="0.024">
+    </testcase>
+    <testcase classname="Habit Routes GET /api/habits debe obtener todos los hábitos del usuario" name="Habit Routes GET /api/habits debe obtener todos los hábitos del usuario" time="0.241">
+    </testcase>
+    <testcase classname="Habit Routes GET /api/habits debe filtrar hábitos por status" name="Habit Routes GET /api/habits debe filtrar hábitos por status" time="0.02">
+    </testcase>
+    <testcase classname="Habit Routes GET /api/habits/active debe obtener hábitos activos" name="Habit Routes GET /api/habits/active debe obtener hábitos activos" time="0.018">
+    </testcase>
+    <testcase classname="Habit Routes PUT /api/habits/:id debe actualizar un hábito existente" name="Habit Routes PUT /api/habits/:id debe actualizar un hábito existente" time="0.257">
       <failure>Error: expected 200 &quot;OK&quot;, got 404 &quot;Not Found&quot;
     at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/habits.test.js:271:10)
 ----
@@ -159,7 +191,7 @@
     at emitCloseNT (node:net:2383:8)
     at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
-    <testcase classname="Habit Routes DELETE /api/habits/:id debe eliminar un hábito existente" name="Habit Routes DELETE /api/habits/:id debe eliminar un hábito existente" time="0.318">
+    <testcase classname="Habit Routes DELETE /api/habits/:id debe eliminar un hábito existente" name="Habit Routes DELETE /api/habits/:id debe eliminar un hábito existente" time="0.277">
       <failure>Error: expected 200 &quot;OK&quot;, got 404 &quot;Not Found&quot;
     at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/habits.test.js:302:10)
 ----
@@ -175,226 +207,229 @@
     at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
   </testsuite>
-  <testsuite name="Task Model" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:12" time="0.529" tests="11">
-    <testcase classname="Task Model debe crear y guardar una tarea exitosamente" name="Task Model debe crear y guardar una tarea exitosamente" time="0.04">
-    </testcase>
-    <testcase classname="Task Model no debe guardar una tarea sin título" name="Task Model no debe guardar una tarea sin título" time="0.012">
-    </testcase>
-    <testcase classname="Task Model no debe guardar una tarea sin dueDate" name="Task Model no debe guardar una tarea sin dueDate" time="0.008">
-    </testcase>
-    <testcase classname="Task Model debe validar que el status sea válido" name="Task Model debe validar que el status sea válido" time="0.012">
-    </testcase>
-    <testcase classname="Task Model debe validar que la prioridad sea válida" name="Task Model debe validar que la prioridad sea válida" time="0.007">
-    </testcase>
-    <testcase classname="Task Model debe tener valores por defecto correctos" name="Task Model debe tener valores por defecto correctos" time="0.006">
-    </testcase>
-    <testcase classname="Task Model debe generar un ID único automáticamente" name="Task Model debe generar un ID único automáticamente" time="0.01">
-    </testcase>
-    <testcase classname="Task Model debe excluir campos sensibles en toJSON" name="Task Model debe excluir campos sensibles en toJSON" time="0.01">
-    </testcase>
-    <testcase classname="Task Model debe calcular daysUntilDue correctamente" name="Task Model debe calcular daysUntilDue correctamente" time="0.005">
-    </testcase>
-    <testcase classname="Task Model debe marcar tarea como completada" name="Task Model debe marcar tarea como completada" time="0.04">
-    </testcase>
-    <testcase classname="Task Model debe realizar soft delete correctamente" name="Task Model debe realizar soft delete correctamente" time="0.027">
+  <testsuite name="Emergency Alert Service" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:52" time="1.68" tests="1">
+    <testcase classname="Emergency Alert Service sendEmergencyAlerts debe enviar alertas de emergencia" name="Emergency Alert Service sendEmergencyAlerts debe enviar alertas de emergencia" time="1.283">
     </testcase>
   </testsuite>
-  <testsuite name="Payment Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:11" time="2.078" tests="8">
-    <testcase classname="Payment Routes GET /api/payments/plans debe obtener información de los planes disponibles" name="Payment Routes GET /api/payments/plans debe obtener información de los planes disponibles" time="0.195">
+  <testsuite name="Crisis Metrics Service" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:54" time="0.427" tests="4">
+    <testcase classname="Crisis Metrics Service getCrisisSummary debe retornar un resumen de crisis" name="Crisis Metrics Service getCrisisSummary debe retornar un resumen de crisis" time="0.126">
     </testcase>
-    <testcase classname="Payment Routes GET /api/payments/plans no debe requerir autenticación" name="Payment Routes GET /api/payments/plans no debe requerir autenticación" time="0.049">
+    <testcase classname="Crisis Metrics Service getEmotionalTrends debe retornar tendencias emocionales" name="Crisis Metrics Service getEmotionalTrends debe retornar tendencias emocionales" time="0.015">
     </testcase>
-    <testcase classname="Payment Routes GET /api/payments/subscription-status debe obtener el estado de la suscripción del usuario" name="Payment Routes GET /api/payments/subscription-status debe obtener el estado de la suscripción del usuario" time="0.052">
+    <testcase classname="Crisis Metrics Service getCrisisByMonth debe retornar crisis agrupadas por mes" name="Crisis Metrics Service getCrisisByMonth debe retornar crisis agrupadas por mes" time="0.006">
     </testcase>
-    <testcase classname="Payment Routes GET /api/payments/subscription-status debe rechazar request sin autenticación" name="Payment Routes GET /api/payments/subscription-status debe rechazar request sin autenticación" time="0.023">
-    </testcase>
-    <testcase classname="Payment Routes GET /api/payments/transactions debe obtener las transacciones del usuario" name="Payment Routes GET /api/payments/transactions debe obtener las transacciones del usuario" time="0.052">
-    </testcase>
-    <testcase classname="Payment Routes GET /api/payments/transactions debe rechazar request sin autenticación" name="Payment Routes GET /api/payments/transactions debe rechazar request sin autenticación" time="0.043">
-    </testcase>
-    <testcase classname="Payment Routes GET /api/payments/transactions/stats debe obtener estadísticas de transacciones" name="Payment Routes GET /api/payments/transactions/stats debe obtener estadísticas de transacciones" time="0.031">
-    </testcase>
-    <testcase classname="Payment Routes GET /api/payments/transactions/stats debe rechazar request sin autenticación" name="Payment Routes GET /api/payments/transactions/stats debe rechazar request sin autenticación" time="0.064">
+    <testcase classname="Crisis Metrics Service getAlertStatistics debe retornar estadísticas de alertas" name="Crisis Metrics Service getAlertStatistics debe retornar estadísticas de alertas" time="0.006">
     </testcase>
   </testsuite>
-  <testsuite name="Subscription Model" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:13" time="0.32" tests="9">
-    <testcase classname="Subscription Model debe crear y guardar una suscripción exitosamente" name="Subscription Model debe crear y guardar una suscripción exitosamente" time="0.023">
+  <testsuite name="Transaction Model" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:54" time="0.201" tests="8">
+    <testcase classname="Transaction Model debe crear y guardar una transacción exitosamente" name="Transaction Model debe crear y guardar una transacción exitosamente" time="0.013">
     </testcase>
-    <testcase classname="Subscription Model no debe guardar una suscripción sin userId" name="Subscription Model no debe guardar una suscripción sin userId" time="0.008">
+    <testcase classname="Transaction Model no debe guardar una transacción sin userId" name="Transaction Model no debe guardar una transacción sin userId" time="0.004">
     </testcase>
-    <testcase classname="Subscription Model no debe guardar una suscripción sin plan" name="Subscription Model no debe guardar una suscripción sin plan" time="0.003">
-    </testcase>
-    <testcase classname="Subscription Model debe validar que el status sea válido" name="Subscription Model debe validar que el status sea válido" time="0.003">
-    </testcase>
-    <testcase classname="Subscription Model debe validar que el plan sea válido" name="Subscription Model debe validar que el plan sea válido" time="0.003">
-    </testcase>
-    <testcase classname="Subscription Model debe tener valores por defecto correctos" name="Subscription Model debe tener valores por defecto correctos" time="0.004">
-    </testcase>
-    <testcase classname="Subscription Model debe permitir userId único" name="Subscription Model debe permitir userId único" time="0.016">
-    </testcase>
-    <testcase classname="Subscription Model debe guardar información de Mercado Pago" name="Subscription Model debe guardar información de Mercado Pago" time="0.004">
-    </testcase>
-    <testcase classname="Subscription Model debe manejar cancelación de suscripción" name="Subscription Model debe manejar cancelación de suscripción" time="0.008">
-    </testcase>
-  </testsuite>
-  <testsuite name="Transaction Model" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:13" time="0.194" tests="8">
-    <testcase classname="Transaction Model debe crear y guardar una transacción exitosamente" name="Transaction Model debe crear y guardar una transacción exitosamente" time="0.022">
-    </testcase>
-    <testcase classname="Transaction Model no debe guardar una transacción sin userId" name="Transaction Model no debe guardar una transacción sin userId" time="0.006">
-    </testcase>
-    <testcase classname="Transaction Model no debe guardar una transacción sin type" name="Transaction Model no debe guardar una transacción sin type" time="0.006">
+    <testcase classname="Transaction Model no debe guardar una transacción sin type" name="Transaction Model no debe guardar una transacción sin type" time="0.005">
     </testcase>
     <testcase classname="Transaction Model debe validar que el type sea válido" name="Transaction Model debe validar que el type sea válido" time="0.007">
     </testcase>
-    <testcase classname="Transaction Model debe validar que el status sea válido" name="Transaction Model debe validar que el status sea válido" time="0.003">
+    <testcase classname="Transaction Model debe validar que el status sea válido" name="Transaction Model debe validar que el status sea válido" time="0.01">
     </testcase>
-    <testcase classname="Transaction Model debe tener valores por defecto correctos" name="Transaction Model debe tener valores por defecto correctos" time="0.003">
+    <testcase classname="Transaction Model debe tener valores por defecto correctos" name="Transaction Model debe tener valores por defecto correctos" time="0.006">
     </testcase>
-    <testcase classname="Transaction Model debe guardar información de Mercado Pago" name="Transaction Model debe guardar información de Mercado Pago" time="0.003">
+    <testcase classname="Transaction Model debe guardar información de Mercado Pago" name="Transaction Model debe guardar información de Mercado Pago" time="0.004">
     </testcase>
-    <testcase classname="Transaction Model debe guardar metadata adicional" name="Transaction Model debe guardar metadata adicional" time="0.003">
-    </testcase>
-  </testsuite>
-  <testsuite name="Crisis Metrics Service" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:13" time="0.319" tests="4">
-    <testcase classname="Crisis Metrics Service getCrisisSummary debe retornar un resumen de crisis" name="Crisis Metrics Service getCrisisSummary debe retornar un resumen de crisis" time="0.13">
-    </testcase>
-    <testcase classname="Crisis Metrics Service getEmotionalTrends debe retornar tendencias emocionales" name="Crisis Metrics Service getEmotionalTrends debe retornar tendencias emocionales" time="0.008">
-    </testcase>
-    <testcase classname="Crisis Metrics Service getCrisisByMonth debe retornar crisis agrupadas por mes" name="Crisis Metrics Service getCrisisByMonth debe retornar crisis agrupadas por mes" time="0.005">
-    </testcase>
-    <testcase classname="Crisis Metrics Service getAlertStatistics debe retornar estadísticas de alertas" name="Crisis Metrics Service getAlertStatistics debe retornar estadísticas de alertas" time="0.005">
+    <testcase classname="Transaction Model debe guardar metadata adicional" name="Transaction Model debe guardar metadata adicional" time="0.004">
     </testcase>
   </testsuite>
-  <testsuite name="Habit Model" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:13" time="0.169" tests="9">
-    <testcase classname="Habit Model debe crear y guardar un hábito exitosamente" name="Habit Model debe crear y guardar un hábito exitosamente" time="0.007">
+  <testsuite name="Payment Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:52" time="2.183" tests="8">
+    <testcase classname="Payment Routes GET /api/payments/plans debe obtener información de los planes disponibles" name="Payment Routes GET /api/payments/plans debe obtener información de los planes disponibles" time="0.071">
     </testcase>
-    <testcase classname="Habit Model no debe guardar un hábito sin título" name="Habit Model no debe guardar un hábito sin título" time="0.002">
+    <testcase classname="Payment Routes GET /api/payments/plans no debe requerir autenticación" name="Payment Routes GET /api/payments/plans no debe requerir autenticación" time="0.015">
     </testcase>
-    <testcase classname="Habit Model no debe guardar un hábito sin icono" name="Habit Model no debe guardar un hábito sin icono" time="0.002">
+    <testcase classname="Payment Routes GET /api/payments/subscription-status debe obtener el estado de la suscripción del usuario" name="Payment Routes GET /api/payments/subscription-status debe obtener el estado de la suscripción del usuario" time="0.022">
+    </testcase>
+    <testcase classname="Payment Routes GET /api/payments/subscription-status debe rechazar request sin autenticación" name="Payment Routes GET /api/payments/subscription-status debe rechazar request sin autenticación" time="0.009">
+    </testcase>
+    <testcase classname="Payment Routes GET /api/payments/transactions debe obtener las transacciones del usuario" name="Payment Routes GET /api/payments/transactions debe obtener las transacciones del usuario" time="0.017">
+    </testcase>
+    <testcase classname="Payment Routes GET /api/payments/transactions debe rechazar request sin autenticación" name="Payment Routes GET /api/payments/transactions debe rechazar request sin autenticación" time="0.014">
+    </testcase>
+    <testcase classname="Payment Routes GET /api/payments/transactions/stats debe obtener estadísticas de transacciones" name="Payment Routes GET /api/payments/transactions/stats debe obtener estadísticas de transacciones" time="0.064">
+    </testcase>
+    <testcase classname="Payment Routes GET /api/payments/transactions/stats debe rechazar request sin autenticación" name="Payment Routes GET /api/payments/transactions/stats debe rechazar request sin autenticación" time="0.01">
+    </testcase>
+  </testsuite>
+  <testsuite name="Habit Model" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:54" time="0.208" tests="9">
+    <testcase classname="Habit Model debe crear y guardar un hábito exitosamente" name="Habit Model debe crear y guardar un hábito exitosamente" time="0.015">
+    </testcase>
+    <testcase classname="Habit Model no debe guardar un hábito sin título" name="Habit Model no debe guardar un hábito sin título" time="0.004">
+    </testcase>
+    <testcase classname="Habit Model no debe guardar un hábito sin icono" name="Habit Model no debe guardar un hábito sin icono" time="0.003">
     </testcase>
     <testcase classname="Habit Model debe usar frecuencia por defecto si no se proporciona" name="Habit Model debe usar frecuencia por defecto si no se proporciona" time="0.002">
     </testcase>
-    <testcase classname="Habit Model debe validar que el icono sea válido" name="Habit Model debe validar que el icono sea válido" time="0.002">
+    <testcase classname="Habit Model debe validar que el icono sea válido" name="Habit Model debe validar que el icono sea válido" time="0.001">
     </testcase>
-    <testcase classname="Habit Model debe validar que la frecuencia sea válida" name="Habit Model debe validar que la frecuencia sea válida" time="0.001">
+    <testcase classname="Habit Model debe validar que la frecuencia sea válida" name="Habit Model debe validar que la frecuencia sea válida" time="0.002">
     </testcase>
-    <testcase classname="Habit Model debe tener valores por defecto correctos" name="Habit Model debe tener valores por defecto correctos" time="0.002">
+    <testcase classname="Habit Model debe tener valores por defecto correctos" name="Habit Model debe tener valores por defecto correctos" time="0.001">
     </testcase>
     <testcase classname="Habit Model debe generar un ID único automáticamente" name="Habit Model debe generar un ID único automáticamente" time="0.002">
     </testcase>
-    <testcase classname="Habit Model debe excluir campos sensibles en toJSON" name="Habit Model debe excluir campos sensibles en toJSON" time="0.004">
+    <testcase classname="Habit Model debe excluir campos sensibles en toJSON" name="Habit Model debe excluir campos sensibles en toJSON" time="0.002">
     </testcase>
   </testsuite>
-  <testsuite name="Therapeutic Techniques Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:12" time="1.941" tests="5">
-    <testcase classname="Therapeutic Techniques Routes GET /api/therapeutic-techniques debe obtener todas las técnicas terapéuticas disponibles" name="Therapeutic Techniques Routes GET /api/therapeutic-techniques debe obtener todas las técnicas terapéuticas disponibles" time="0.034">
+  <testsuite name="Therapeutic Techniques Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:53" time="2.008" tests="5">
+    <testcase classname="Therapeutic Techniques Routes GET /api/therapeutic-techniques debe obtener todas las técnicas terapéuticas disponibles" name="Therapeutic Techniques Routes GET /api/therapeutic-techniques debe obtener todas las técnicas terapéuticas disponibles" time="0.035">
     </testcase>
-    <testcase classname="Therapeutic Techniques Routes GET /api/therapeutic-techniques debe rechazar request sin autenticación" name="Therapeutic Techniques Routes GET /api/therapeutic-techniques debe rechazar request sin autenticación" time="0.01">
+    <testcase classname="Therapeutic Techniques Routes GET /api/therapeutic-techniques debe rechazar request sin autenticación" name="Therapeutic Techniques Routes GET /api/therapeutic-techniques debe rechazar request sin autenticación" time="0.009">
     </testcase>
-    <testcase classname="Therapeutic Techniques Routes GET /api/therapeutic-techniques/emotion/:emotion debe obtener técnicas filtradas por emoción" name="Therapeutic Techniques Routes GET /api/therapeutic-techniques/emotion/:emotion debe obtener técnicas filtradas por emoción" time="0.008">
+    <testcase classname="Therapeutic Techniques Routes GET /api/therapeutic-techniques/emotion/:emotion debe obtener técnicas filtradas por emoción" name="Therapeutic Techniques Routes GET /api/therapeutic-techniques/emotion/:emotion debe obtener técnicas filtradas por emoción" time="0.009">
     </testcase>
-    <testcase classname="Therapeutic Techniques Routes GET /api/therapeutic-techniques/history debe obtener historial de técnicas utilizadas" name="Therapeutic Techniques Routes GET /api/therapeutic-techniques/history debe obtener historial de técnicas utilizadas" time="0.024">
+    <testcase classname="Therapeutic Techniques Routes GET /api/therapeutic-techniques/history debe obtener historial de técnicas utilizadas" name="Therapeutic Techniques Routes GET /api/therapeutic-techniques/history debe obtener historial de técnicas utilizadas" time="0.015">
     </testcase>
-    <testcase classname="Therapeutic Techniques Routes GET /api/therapeutic-techniques/stats debe obtener estadísticas de técnicas" name="Therapeutic Techniques Routes GET /api/therapeutic-techniques/stats debe obtener estadísticas de técnicas" time="0.024">
+    <testcase classname="Therapeutic Techniques Routes GET /api/therapeutic-techniques/stats debe obtener estadísticas de técnicas" name="Therapeutic Techniques Routes GET /api/therapeutic-techniques/stats debe obtener estadísticas de técnicas" time="0.041">
     </testcase>
   </testsuite>
-  <testsuite name="User Model" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:14" time="0.213" tests="10">
-    <testcase classname="User Model comparePassword debe comparar correctamente una contraseña válida" name="User Model comparePassword debe comparar correctamente una contraseña válida" time="0.005">
+  <testsuite name="Cloudinary Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:53" time="1.91" tests="2">
+    <testcase classname="Cloudinary Routes POST /api/cloudinary/signature debe rechazar request sin autenticación" name="Cloudinary Routes POST /api/cloudinary/signature debe rechazar request sin autenticación" time="0.042">
     </testcase>
-    <testcase classname="User Model comparePassword debe rechazar una contraseña incorrecta" name="User Model comparePassword debe rechazar una contraseña incorrecta" time="0.002">
+    <testcase classname="Cloudinary Routes POST /api/cloudinary/signature debe rechazar request sin datos requeridos" name="Cloudinary Routes POST /api/cloudinary/signature debe rechazar request sin datos requeridos" time="0.019">
     </testcase>
-    <testcase classname="User Model toJSON debe excluir campos sensibles del JSON" name="User Model toJSON debe excluir campos sensibles del JSON" time="0.015">
+  </testsuite>
+  <testsuite name="Health Check Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:52" time="2.796" tests="4">
+    <testcase classname="Health Check Routes GET /health debe retornar información de salud (puede ser 200 o 503 dependiendo de MongoDB)" name="Health Check Routes GET /health debe retornar información de salud (puede ser 200 o 503 dependiendo de MongoDB)" time="0.039">
     </testcase>
-    <testcase classname="User Model updateLastActive debe actualizar lastActive y totalSessions" name="User Model updateLastActive debe actualizar lastActive y totalSessions" time="0.001">
+    <testcase classname="Health Check Routes GET /health debe incluir información de servicios" name="Health Check Routes GET /health debe incluir información de servicios" time="0.005">
+    </testcase>
+    <testcase classname="Health Check Routes GET /health debe retornar status 200 si MongoDB está conectado" name="Health Check Routes GET /health debe retornar status 200 si MongoDB está conectado" time="1.011">
+    </testcase>
+    <testcase classname="Health Check Routes GET / debe retornar mensaje de servidor corriendo" name="Health Check Routes GET / debe retornar mensaje de servidor corriendo" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="Task Model" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:54" time="0.471" tests="11">
+    <testcase classname="Task Model debe crear y guardar una tarea exitosamente" name="Task Model debe crear y guardar una tarea exitosamente" time="0.045">
+    </testcase>
+    <testcase classname="Task Model no debe guardar una tarea sin título" name="Task Model no debe guardar una tarea sin título" time="0.016">
+    </testcase>
+    <testcase classname="Task Model no debe guardar una tarea sin dueDate" name="Task Model no debe guardar una tarea sin dueDate" time="0.007">
+    </testcase>
+    <testcase classname="Task Model debe validar que el status sea válido" name="Task Model debe validar que el status sea válido" time="0.009">
+    </testcase>
+    <testcase classname="Task Model debe validar que la prioridad sea válida" name="Task Model debe validar que la prioridad sea válida" time="0.009">
+    </testcase>
+    <testcase classname="Task Model debe tener valores por defecto correctos" name="Task Model debe tener valores por defecto correctos" time="0.012">
+    </testcase>
+    <testcase classname="Task Model debe generar un ID único automáticamente" name="Task Model debe generar un ID único automáticamente" time="0.007">
+    </testcase>
+    <testcase classname="Task Model debe excluir campos sensibles en toJSON" name="Task Model debe excluir campos sensibles en toJSON" time="0.01">
+    </testcase>
+    <testcase classname="Task Model debe calcular daysUntilDue correctamente" name="Task Model debe calcular daysUntilDue correctamente" time="0.009">
+    </testcase>
+    <testcase classname="Task Model debe marcar tarea como completada" name="Task Model debe marcar tarea como completada" time="0.029">
+    </testcase>
+    <testcase classname="Task Model debe realizar soft delete correctamente" name="Task Model debe realizar soft delete correctamente" time="0.014">
+    </testcase>
+  </testsuite>
+  <testsuite name="Subscription Model" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:54" time="0.471" tests="9">
+    <testcase classname="Subscription Model debe crear y guardar una suscripción exitosamente" name="Subscription Model debe crear y guardar una suscripción exitosamente" time="0.025">
+    </testcase>
+    <testcase classname="Subscription Model no debe guardar una suscripción sin userId" name="Subscription Model no debe guardar una suscripción sin userId" time="0.01">
+    </testcase>
+    <testcase classname="Subscription Model no debe guardar una suscripción sin plan" name="Subscription Model no debe guardar una suscripción sin plan" time="0.011">
+    </testcase>
+    <testcase classname="Subscription Model debe validar que el status sea válido" name="Subscription Model debe validar que el status sea válido" time="0.005">
+    </testcase>
+    <testcase classname="Subscription Model debe validar que el plan sea válido" name="Subscription Model debe validar que el plan sea válido" time="0.007">
+    </testcase>
+    <testcase classname="Subscription Model debe tener valores por defecto correctos" name="Subscription Model debe tener valores por defecto correctos" time="0.007">
+    </testcase>
+    <testcase classname="Subscription Model debe permitir userId único" name="Subscription Model debe permitir userId único" time="0.027">
+    </testcase>
+    <testcase classname="Subscription Model debe guardar información de Mercado Pago" name="Subscription Model debe guardar información de Mercado Pago" time="0.006">
+    </testcase>
+    <testcase classname="Subscription Model debe manejar cancelación de suscripción" name="Subscription Model debe manejar cancelación de suscripción" time="0.027">
+    </testcase>
+  </testsuite>
+  <testsuite name="Metrics Service" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:55" time="0.299" tests="3">
+    <testcase classname="Metrics Service getUserMetrics debe retornar métricas para un usuario" name="Metrics Service getUserMetrics debe retornar métricas para un usuario" time="0.003">
+    </testcase>
+    <testcase classname="Metrics Service getUserMetrics debe retornar métricas vacías para un usuario nuevo" name="Metrics Service getUserMetrics debe retornar métricas vacías para un usuario nuevo" time="0.021">
+    </testcase>
+    <testcase classname="Metrics Service recordMetric debe registrar una métrica" name="Metrics Service recordMetric debe registrar una métrica" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="Authentication Middleware" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:55" time="0.111" tests="5">
+    <testcase classname="Authentication Middleware authenticateToken debe autenticar un token válido" name="Authentication Middleware authenticateToken debe autenticar un token válido" time="0.004">
+    </testcase>
+    <testcase classname="Authentication Middleware authenticateToken debe rechazar request sin token" name="Authentication Middleware authenticateToken debe rechazar request sin token" time="0.001">
+    </testcase>
+    <testcase classname="Authentication Middleware authenticateToken debe rechazar token inválido" name="Authentication Middleware authenticateToken debe rechazar token inválido" time="0.003">
+    </testcase>
+    <testcase classname="Authentication Middleware authenticateToken debe rechazar token expirado" name="Authentication Middleware authenticateToken debe rechazar token expirado" time="0.003">
+    </testcase>
+    <testcase classname="Authentication Middleware authenticateToken debe aceptar token sin Bearer prefix (compatibilidad)" name="Authentication Middleware authenticateToken debe aceptar token sin Bearer prefix (compatibilidad)" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="User Model" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:55" time="0.296" tests="10">
+    <testcase classname="User Model comparePassword debe comparar correctamente una contraseña válida" name="User Model comparePassword debe comparar correctamente una contraseña válida" time="0.007">
+    </testcase>
+    <testcase classname="User Model comparePassword debe rechazar una contraseña incorrecta" name="User Model comparePassword debe rechazar una contraseña incorrecta" time="0.003">
+    </testcase>
+    <testcase classname="User Model toJSON debe excluir campos sensibles del JSON" name="User Model toJSON debe excluir campos sensibles del JSON" time="0.031">
+    </testcase>
+    <testcase classname="User Model updateLastActive debe actualizar lastActive y totalSessions" name="User Model updateLastActive debe actualizar lastActive y totalSessions" time="0.002">
     </testcase>
     <testcase classname="User Model incrementTasksCompleted debe incrementar tasksCompleted" name="User Model incrementTasksCompleted debe incrementar tasksCompleted" time="0.001">
     </testcase>
-    <testcase classname="User Model updateHabitsStreak debe actualizar habitsStreak si el nuevo valor es mayor" name="User Model updateHabitsStreak debe actualizar habitsStreak si el nuevo valor es mayor" time="0">
+    <testcase classname="User Model updateHabitsStreak debe actualizar habitsStreak si el nuevo valor es mayor" name="User Model updateHabitsStreak debe actualizar habitsStreak si el nuevo valor es mayor" time="0.001">
     </testcase>
-    <testcase classname="User Model updateHabitsStreak no debe actualizar habitsStreak si el nuevo valor es menor" name="User Model updateHabitsStreak no debe actualizar habitsStreak si el nuevo valor es menor" time="0.001">
+    <testcase classname="User Model updateHabitsStreak no debe actualizar habitsStreak si el nuevo valor es menor" name="User Model updateHabitsStreak no debe actualizar habitsStreak si el nuevo valor es menor" time="0">
     </testcase>
-    <testcase classname="User Model Validaciones debe validar formato de email" name="User Model Validaciones debe validar formato de email" time="0.001">
+    <testcase classname="User Model Validaciones debe validar formato de email" name="User Model Validaciones debe validar formato de email" time="0.002">
     </testcase>
     <testcase classname="User Model Validaciones debe validar longitud mínima de username" name="User Model Validaciones debe validar longitud mínima de username" time="0.001">
     </testcase>
     <testcase classname="User Model Validaciones debe validar formato de username (solo letras minúsculas, números y guiones bajos)" name="User Model Validaciones debe validar formato de username (solo letras minúsculas, números y guiones bajos)" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="Cloudinary Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:12" time="1.879" tests="2">
-    <testcase classname="Cloudinary Routes POST /api/cloudinary/signature debe rechazar request sin autenticación" name="Cloudinary Routes POST /api/cloudinary/signature debe rechazar request sin autenticación" time="0.04">
+  <testsuite name="Error Handler Middleware" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:55" time="0.133" tests="7">
+    <testcase classname="Error Handler Middleware errorHandler debe manejar AppError correctamente" name="Error Handler Middleware errorHandler debe manejar AppError correctamente" time="0.005">
     </testcase>
-    <testcase classname="Cloudinary Routes POST /api/cloudinary/signature debe rechazar request sin datos requeridos" name="Cloudinary Routes POST /api/cloudinary/signature debe rechazar request sin datos requeridos" time="0.028">
+    <testcase classname="Error Handler Middleware errorHandler debe convertir errores de Mongoose a AppError" name="Error Handler Middleware errorHandler debe convertir errores de Mongoose a AppError" time="0.001">
+    </testcase>
+    <testcase classname="Error Handler Middleware errorHandler debe manejar errores de JWT" name="Error Handler Middleware errorHandler debe manejar errores de JWT" time="0.002">
+    </testcase>
+    <testcase classname="Error Handler Middleware errorHandler debe manejar errores desconocidos" name="Error Handler Middleware errorHandler debe manejar errores desconocidos" time="0.002">
+    </testcase>
+    <testcase classname="Error Handler Middleware notFoundHandler debe crear un error 404" name="Error Handler Middleware notFoundHandler debe crear un error 404" time="0.001">
+    </testcase>
+    <testcase classname="Error Handler Middleware asyncHandler debe ejecutar función async correctamente" name="Error Handler Middleware asyncHandler debe ejecutar función async correctamente" time="0.001">
+    </testcase>
+    <testcase classname="Error Handler Middleware asyncHandler debe capturar errores y pasarlos a next" name="Error Handler Middleware asyncHandler debe capturar errores y pasarlos a next" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="Validation Middleware" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:14" time="0.181" tests="3">
-    <testcase classname="Validation Middleware validateUserObjectId debe pasar con un ObjectId válido" name="Validation Middleware validateUserObjectId debe pasar con un ObjectId válido" time="0.006">
+  <testsuite name="Validation Middleware" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:55" time="0.273" tests="3">
+    <testcase classname="Validation Middleware validateUserObjectId debe pasar con un ObjectId válido" name="Validation Middleware validateUserObjectId debe pasar con un ObjectId válido" time="0.001">
     </testcase>
     <testcase classname="Validation Middleware validateUserObjectId debe rechazar un ObjectId inválido" name="Validation Middleware validateUserObjectId debe rechazar un ObjectId inválido" time="0.001">
     </testcase>
     <testcase classname="Validation Middleware validateUserObjectId debe rechazar si no hay user en request" name="Validation Middleware validateUserObjectId debe rechazar si no hay user en request" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="Metrics Service" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:14" time="0.187" tests="3">
-    <testcase classname="Metrics Service getUserMetrics debe retornar métricas para un usuario" name="Metrics Service getUserMetrics debe retornar métricas para un usuario" time="0.001">
-    </testcase>
-    <testcase classname="Metrics Service getUserMetrics debe retornar métricas vacías para un usuario nuevo" name="Metrics Service getUserMetrics debe retornar métricas vacías para un usuario nuevo" time="0">
-    </testcase>
-    <testcase classname="Metrics Service recordMetric debe registrar una métrica" name="Metrics Service recordMetric debe registrar una métrica" time="0.001">
+  <testsuite name="Sanitize Input" errors="0" failures="0" skipped="1" timestamp="2025-12-01T20:05:55" time="0.082" tests="1">
+    <testcase classname="Sanitize Input debe estar deshabilitado temporalmente" name="Sanitize Input debe estar deshabilitado temporalmente" time="0">
+      <skipped/>
     </testcase>
   </testsuite>
-  <testsuite name="Error Handler Middleware" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:14" time="0.103" tests="7">
-    <testcase classname="Error Handler Middleware errorHandler debe manejar AppError correctamente" name="Error Handler Middleware errorHandler debe manejar AppError correctamente" time="0.007">
-    </testcase>
-    <testcase classname="Error Handler Middleware errorHandler debe convertir errores de Mongoose a AppError" name="Error Handler Middleware errorHandler debe convertir errores de Mongoose a AppError" time="0.001">
-    </testcase>
-    <testcase classname="Error Handler Middleware errorHandler debe manejar errores de JWT" name="Error Handler Middleware errorHandler debe manejar errores de JWT" time="0">
-    </testcase>
-    <testcase classname="Error Handler Middleware errorHandler debe manejar errores desconocidos" name="Error Handler Middleware errorHandler debe manejar errores desconocidos" time="0.001">
-    </testcase>
-    <testcase classname="Error Handler Middleware notFoundHandler debe crear un error 404" name="Error Handler Middleware notFoundHandler debe crear un error 404" time="0.001">
-    </testcase>
-    <testcase classname="Error Handler Middleware asyncHandler debe ejecutar función async correctamente" name="Error Handler Middleware asyncHandler debe ejecutar función async correctamente" time="0">
-    </testcase>
-    <testcase classname="Error Handler Middleware asyncHandler debe capturar errores y pasarlos a next" name="Error Handler Middleware asyncHandler debe capturar errores y pasarlos a next" time="0">
-    </testcase>
-  </testsuite>
-  <testsuite name="Logger" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:14" time="0.066" tests="13">
-    <testcase classname="Logger Logging básico debe loguear mensajes de error" name="Logger Logging básico debe loguear mensajes de error" time="0.001">
-    </testcase>
-    <testcase classname="Logger Logging básico debe loguear mensajes de warning" name="Logger Logging básico debe loguear mensajes de warning" time="0">
-    </testcase>
-    <testcase classname="Logger Logging básico debe loguear mensajes de info" name="Logger Logging básico debe loguear mensajes de info" time="0">
-    </testcase>
-    <testcase classname="Logger Logging básico debe loguear mensajes HTTP" name="Logger Logging básico debe loguear mensajes HTTP" time="0.001">
-    </testcase>
-    <testcase classname="Logger Logging básico debe loguear mensajes de debug" name="Logger Logging básico debe loguear mensajes de debug" time="0">
-    </testcase>
-    <testcase classname="Logger Logging con metadata debe loguear con metadata adicional" name="Logger Logging con metadata debe loguear con metadata adicional" time="0">
-    </testcase>
-    <testcase classname="Logger Logging con metadata debe sanitizar datos sensibles en metadata" name="Logger Logging con metadata debe sanitizar datos sensibles en metadata" time="0">
-    </testcase>
-    <testcase classname="Logger Logging con request debe loguear request correctamente" name="Logger Logging con request debe loguear request correctamente" time="0">
-    </testcase>
-    <testcase classname="Logger Logging con request debe loguear error de request correctamente" name="Logger Logging con request debe loguear error de request correctamente" time="0.003">
-    </testcase>
-    <testcase classname="Logger Logging especializado debe loguear operaciones de base de datos" name="Logger Logging especializado debe loguear operaciones de base de datos" time="0">
-    </testcase>
-    <testcase classname="Logger Logging especializado debe loguear operaciones de servicios externos" name="Logger Logging especializado debe loguear operaciones de servicios externos" time="0.001">
-    </testcase>
-    <testcase classname="Logger Logging especializado debe loguear eventos de autenticación" name="Logger Logging especializado debe loguear eventos de autenticación" time="0">
-    </testcase>
-    <testcase classname="Logger Logging especializado debe loguear eventos de pago" name="Logger Logging especializado debe loguear eventos de pago" time="0">
-    </testcase>
-  </testsuite>
-  <testsuite name="Error Classes" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:14" time="0.051" tests="22">
-    <testcase classname="Error Classes AppError debe crear un error con status code por defecto" name="Error Classes AppError debe crear un error con status code por defecto" time="0.002">
+  <testsuite name="Error Classes" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:55" time="0.111" tests="22">
+    <testcase classname="Error Classes AppError debe crear un error con status code por defecto" name="Error Classes AppError debe crear un error con status code por defecto" time="0.001">
     </testcase>
     <testcase classname="Error Classes AppError debe crear un error con status code personalizado" name="Error Classes AppError debe crear un error con status code personalizado" time="0">
     </testcase>
-    <testcase classname="Error Classes AppError debe serializar a JSON correctamente" name="Error Classes AppError debe serializar a JSON correctamente" time="0.002">
+    <testcase classname="Error Classes AppError debe serializar a JSON correctamente" name="Error Classes AppError debe serializar a JSON correctamente" time="0.001">
     </testcase>
     <testcase classname="Error Classes ValidationError debe crear un error de validación" name="Error Classes ValidationError debe crear un error de validación" time="0">
     </testcase>
-    <testcase classname="Error Classes ValidationError debe incluir errores específicos" name="Error Classes ValidationError debe incluir errores específicos" time="0.002">
+    <testcase classname="Error Classes ValidationError debe incluir errores específicos" name="Error Classes ValidationError debe incluir errores específicos" time="0.001">
     </testcase>
     <testcase classname="Error Classes AuthenticationError debe crear un error de autenticación" name="Error Classes AuthenticationError debe crear un error de autenticación" time="0">
     </testcase>
@@ -404,15 +439,15 @@
     </testcase>
     <testcase classname="Error Classes ConflictError debe crear un error de conflicto" name="Error Classes ConflictError debe crear un error de conflicto" time="0">
     </testcase>
-    <testcase classname="Error Classes RateLimitError debe crear un error de límite de tasa" name="Error Classes RateLimitError debe crear un error de límite de tasa" time="0">
+    <testcase classname="Error Classes RateLimitError debe crear un error de límite de tasa" name="Error Classes RateLimitError debe crear un error de límite de tasa" time="0.001">
     </testcase>
     <testcase classname="Error Classes ExternalServiceError debe crear un error de servicio externo" name="Error Classes ExternalServiceError debe crear un error de servicio externo" time="0">
     </testcase>
     <testcase classname="Error Classes DatabaseError debe crear un error de base de datos" name="Error Classes DatabaseError debe crear un error de base de datos" time="0">
     </testcase>
-    <testcase classname="Error Classes OpenAIError debe crear un error de OpenAI" name="Error Classes OpenAIError debe crear un error de OpenAI" time="0">
+    <testcase classname="Error Classes OpenAIError debe crear un error de OpenAI" name="Error Classes OpenAIError debe crear un error de OpenAI" time="0.001">
     </testcase>
-    <testcase classname="Error Classes SubscriptionRequiredError debe crear un error de suscripción requerida" name="Error Classes SubscriptionRequiredError debe crear un error de suscripción requerida" time="0">
+    <testcase classname="Error Classes SubscriptionRequiredError debe crear un error de suscripción requerida" name="Error Classes SubscriptionRequiredError debe crear un error de suscripción requerida" time="0.001">
     </testcase>
     <testcase classname="Error Classes handleMongooseError debe convertir ValidationError de Mongoose" name="Error Classes handleMongooseError debe convertir ValidationError de Mongoose" time="0.001">
     </testcase>
@@ -424,42 +459,57 @@
     </testcase>
     <testcase classname="Error Classes handleJWTError debe convertir TokenExpiredError" name="Error Classes handleJWTError debe convertir TokenExpiredError" time="0">
     </testcase>
-    <testcase classname="Error Classes isOperationalError debe retornar true para errores operacionales" name="Error Classes isOperationalError debe retornar true para errores operacionales" time="0">
+    <testcase classname="Error Classes isOperationalError debe retornar true para errores operacionales" name="Error Classes isOperationalError debe retornar true para errores operacionales" time="0.002">
     </testcase>
-    <testcase classname="Error Classes isOperationalError debe retornar false para errores no operacionales" name="Error Classes isOperationalError debe retornar false para errores no operacionales" time="0">
+    <testcase classname="Error Classes isOperationalError debe retornar false para errores no operacionales" name="Error Classes isOperationalError debe retornar false para errores no operacionales" time="0.003">
     </testcase>
     <testcase classname="Error Classes isOperationalError debe retornar false para errores estándar" name="Error Classes isOperationalError debe retornar false para errores estándar" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="Authentication Middleware" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:14" time="0.055" tests="5">
-    <testcase classname="Authentication Middleware authenticateToken debe autenticar un token válido" name="Authentication Middleware authenticateToken debe autenticar un token válido" time="0.005">
+  <testsuite name="Logger" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:55" time="0.165" tests="13">
+    <testcase classname="Logger Logging básico debe loguear mensajes de error" name="Logger Logging básico debe loguear mensajes de error" time="0.009">
     </testcase>
-    <testcase classname="Authentication Middleware authenticateToken debe rechazar request sin token" name="Authentication Middleware authenticateToken debe rechazar request sin token" time="0">
+    <testcase classname="Logger Logging básico debe loguear mensajes de warning" name="Logger Logging básico debe loguear mensajes de warning" time="0.001">
     </testcase>
-    <testcase classname="Authentication Middleware authenticateToken debe rechazar token inválido" name="Authentication Middleware authenticateToken debe rechazar token inválido" time="0.001">
+    <testcase classname="Logger Logging básico debe loguear mensajes de info" name="Logger Logging básico debe loguear mensajes de info" time="0.001">
     </testcase>
-    <testcase classname="Authentication Middleware authenticateToken debe rechazar token expirado" name="Authentication Middleware authenticateToken debe rechazar token expirado" time="0.001">
+    <testcase classname="Logger Logging básico debe loguear mensajes HTTP" name="Logger Logging básico debe loguear mensajes HTTP" time="0">
     </testcase>
-    <testcase classname="Authentication Middleware authenticateToken debe aceptar token sin Bearer prefix (compatibilidad)" name="Authentication Middleware authenticateToken debe aceptar token sin Bearer prefix (compatibilidad)" time="0">
+    <testcase classname="Logger Logging básico debe loguear mensajes de debug" name="Logger Logging básico debe loguear mensajes de debug" time="0.001">
+    </testcase>
+    <testcase classname="Logger Logging con metadata debe loguear con metadata adicional" name="Logger Logging con metadata debe loguear con metadata adicional" time="0">
+    </testcase>
+    <testcase classname="Logger Logging con metadata debe sanitizar datos sensibles en metadata" name="Logger Logging con metadata debe sanitizar datos sensibles en metadata" time="0.001">
+    </testcase>
+    <testcase classname="Logger Logging con request debe loguear request correctamente" name="Logger Logging con request debe loguear request correctamente" time="0">
+    </testcase>
+    <testcase classname="Logger Logging con request debe loguear error de request correctamente" name="Logger Logging con request debe loguear error de request correctamente" time="0.011">
+    </testcase>
+    <testcase classname="Logger Logging especializado debe loguear operaciones de base de datos" name="Logger Logging especializado debe loguear operaciones de base de datos" time="0.001">
+    </testcase>
+    <testcase classname="Logger Logging especializado debe loguear operaciones de servicios externos" name="Logger Logging especializado debe loguear operaciones de servicios externos" time="0">
+    </testcase>
+    <testcase classname="Logger Logging especializado debe loguear eventos de autenticación" name="Logger Logging especializado debe loguear eventos de autenticación" time="0">
+    </testcase>
+    <testcase classname="Logger Logging especializado debe loguear eventos de pago" name="Logger Logging especializado debe loguear eventos de pago" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="Sanitize Input" errors="0" failures="0" skipped="1" timestamp="2025-12-01T17:32:14" time="0.033" tests="1">
-    <testcase classname="Sanitize Input debe estar deshabilitado temporalmente" name="Sanitize Input debe estar deshabilitado temporalmente" time="0">
-      <skipped/>
+  <testsuite name="Check Subscription Middleware" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:55" time="0.374" tests="6">
+    <testcase classname="Check Subscription Middleware requireActiveSubscription debe permitir acceso con suscripción activa" name="Check Subscription Middleware requireActiveSubscription debe permitir acceso con suscripción activa" time="0.036">
+    </testcase>
+    <testcase classname="Check Subscription Middleware requireActiveSubscription debe permitir acceso con trial activo cuando allowTrial es true" name="Check Subscription Middleware requireActiveSubscription debe permitir acceso con trial activo cuando allowTrial es true" time="0.004">
+    </testcase>
+    <testcase classname="Check Subscription Middleware requireActiveSubscription debe rechazar acceso sin suscripción activa cuando allowTrial es false" name="Check Subscription Middleware requireActiveSubscription debe rechazar acceso sin suscripción activa cuando allowTrial es false" time="0.002">
+    </testcase>
+    <testcase classname="Check Subscription Middleware requireActiveSubscription debe rechazar acceso sin usuario autenticado" name="Check Subscription Middleware requireActiveSubscription debe rechazar acceso sin usuario autenticado" time="0.001">
+    </testcase>
+    <testcase classname="Check Subscription Middleware requireActiveSubscription debe rechazar acceso con ID de usuario inválido" name="Check Subscription Middleware requireActiveSubscription debe rechazar acceso con ID de usuario inválido" time="0">
+    </testcase>
+    <testcase classname="Check Subscription Middleware requireActiveSubscription debe rechazar acceso cuando el usuario no existe" name="Check Subscription Middleware requireActiveSubscription debe rechazar acceso cuando el usuario no existe" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="Health Check Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:12" time="2.892" tests="4">
-    <testcase classname="Health Check Routes GET /health debe retornar información de salud (puede ser 200 o 503 dependiendo de MongoDB)" name="Health Check Routes GET /health debe retornar información de salud (puede ser 200 o 503 dependiendo de MongoDB)" time="0.016">
-    </testcase>
-    <testcase classname="Health Check Routes GET /health debe incluir información de servicios" name="Health Check Routes GET /health debe incluir información de servicios" time="0.003">
-    </testcase>
-    <testcase classname="Health Check Routes GET /health debe retornar status 200 si MongoDB está conectado" name="Health Check Routes GET /health debe retornar status 200 si MongoDB está conectado" time="1.034">
-    </testcase>
-    <testcase classname="Health Check Routes GET / debe retornar mensaje de servidor corriendo" name="Health Check Routes GET / debe retornar mensaje de servidor corriendo" time="0.003">
-    </testcase>
-  </testsuite>
-  <testsuite name="User Routes" errors="0" failures="7" skipped="0" timestamp="2025-12-01T17:32:06" time="8.392" tests="15">
-    <testcase classname="User Routes GET /api/users/me debe obtener información del usuario autenticado" name="User Routes GET /api/users/me debe obtener información del usuario autenticado" time="0.269">
+  <testsuite name="User Routes" errors="0" failures="6" skipped="0" timestamp="2025-12-01T20:05:48" time="7.86" tests="15">
+    <testcase classname="User Routes GET /api/users/me debe obtener información del usuario autenticado" name="User Routes GET /api/users/me debe obtener información del usuario autenticado" time="0.253">
       <failure>Error: expected 200 &quot;OK&quot;, got 404 &quot;Not Found&quot;
     at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/userRoutes.test.js:87:10)
     at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)
@@ -488,9 +538,9 @@
     at emitCloseNT (node:net:2383:8)
     at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
-    <testcase classname="User Routes GET /api/users/me debe rechazar request sin autenticación" name="User Routes GET /api/users/me debe rechazar request sin autenticación" time="0.253">
+    <testcase classname="User Routes GET /api/users/me debe rechazar request sin autenticación" name="User Routes GET /api/users/me debe rechazar request sin autenticación" time="0.222">
     </testcase>
-    <testcase classname="User Routes GET /api/users/me/stats debe obtener estadísticas del usuario" name="User Routes GET /api/users/me/stats debe obtener estadísticas del usuario" time="0.271">
+    <testcase classname="User Routes GET /api/users/me/stats debe obtener estadísticas del usuario" name="User Routes GET /api/users/me/stats debe obtener estadísticas del usuario" time="0.228">
       <failure>Error: expected 200 &quot;OK&quot;, got 404 &quot;Not Found&quot;
     at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/userRoutes.test.js:107:10)
     at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)
@@ -519,71 +569,17 @@
     at emitCloseNT (node:net:2383:8)
     at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
-    <testcase classname="User Routes GET /api/users/me/stats debe rechazar request sin autenticación" name="User Routes GET /api/users/me/stats debe rechazar request sin autenticación" time="0.257">
+    <testcase classname="User Routes GET /api/users/me/stats debe rechazar request sin autenticación" name="User Routes GET /api/users/me/stats debe rechazar request sin autenticación" time="0.261">
     </testcase>
-    <testcase classname="User Routes PUT /api/users/me debe actualizar el perfil del usuario" name="User Routes PUT /api/users/me debe actualizar el perfil del usuario" time="0.322">
-      <failure>Error: expected 200 &quot;OK&quot;, got 404 &quot;Not Found&quot;
-    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/userRoutes.test.js:136:10)
-    at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)
-    at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)
-    at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/testWorker.js:106:12)
-----
-    at Test._assertStatus (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:309:14)
-    at /Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:365:13
-    at Test._assertFunction (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:342:13)
-    at Test.assert (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:195:23)
-    at localAssert (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:138:14)
-    at Server.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:152:11)
-    at Object.onceWrapper (node:events:638:28)
-    at Server.emit (node:events:524:28)
-    at emitCloseNT (node:net:2383:8)
-    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
+    <testcase classname="User Routes PUT /api/users/me debe actualizar el perfil del usuario" name="User Routes PUT /api/users/me debe actualizar el perfil del usuario" time="0.307">
     </testcase>
-    <testcase classname="User Routes PUT /api/users/me debe rechazar actualización con datos inválidos" name="User Routes PUT /api/users/me debe rechazar actualización con datos inválidos" time="0.297">
+    <testcase classname="User Routes PUT /api/users/me debe rechazar actualización con datos inválidos" name="User Routes PUT /api/users/me debe rechazar actualización con datos inválidos" time="0.271">
     </testcase>
-    <testcase classname="User Routes PUT /api/users/me debe rechazar request sin autenticación" name="User Routes PUT /api/users/me debe rechazar request sin autenticación" time="0.263">
+    <testcase classname="User Routes PUT /api/users/me debe rechazar request sin autenticación" name="User Routes PUT /api/users/me debe rechazar request sin autenticación" time="0.259">
     </testcase>
-    <testcase classname="User Routes PUT /api/users/me/password debe actualizar la contraseña con contraseña actual correcta" name="User Routes PUT /api/users/me/password debe actualizar la contraseña con contraseña actual correcta" time="0.277">
-      <failure>Error: expected 200 &quot;OK&quot;, got 404 &quot;Not Found&quot;
-    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/userRoutes.test.js:176:10)
-    at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)
-    at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)
-    at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/testWorker.js:106:12)
-----
-    at Test._assertStatus (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:309:14)
-    at /Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:365:13
-    at Test._assertFunction (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:342:13)
-    at Test.assert (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:195:23)
-    at localAssert (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:138:14)
-    at Server.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:152:11)
-    at Object.onceWrapper (node:events:638:28)
-    at Server.emit (node:events:524:28)
-    at emitCloseNT (node:net:2383:8)
-    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
+    <testcase classname="User Routes PUT /api/users/me/password debe actualizar la contraseña con contraseña actual correcta" name="User Routes PUT /api/users/me/password debe actualizar la contraseña con contraseña actual correcta" time="0.278">
     </testcase>
-    <testcase classname="User Routes PUT /api/users/me/password debe rechazar actualización con contraseña actual incorrecta" name="User Routes PUT /api/users/me/password debe rechazar actualización con contraseña actual incorrecta" time="0.293">
+    <testcase classname="User Routes PUT /api/users/me/password debe rechazar actualización con contraseña actual incorrecta" name="User Routes PUT /api/users/me/password debe rechazar actualización con contraseña actual incorrecta" time="0.292">
       <failure>Error: expected 400 &quot;Bad Request&quot;, got 404 &quot;Not Found&quot;
     at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/userRoutes.test.js:191:10)
     at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)
@@ -612,9 +608,9 @@
     at emitCloseNT (node:net:2383:8)
     at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
-    <testcase classname="User Routes PUT /api/users/me/password debe rechazar contraseña nueva muy corta" name="User Routes PUT /api/users/me/password debe rechazar contraseña nueva muy corta" time="0.22">
+    <testcase classname="User Routes PUT /api/users/me/password debe rechazar contraseña nueva muy corta" name="User Routes PUT /api/users/me/password debe rechazar contraseña nueva muy corta" time="0.248">
     </testcase>
-    <testcase classname="User Routes GET /api/users/me/subscription debe obtener información de suscripción del usuario" name="User Routes GET /api/users/me/subscription debe obtener información de suscripción del usuario" time="0.232">
+    <testcase classname="User Routes GET /api/users/me/subscription debe obtener información de suscripción del usuario" name="User Routes GET /api/users/me/subscription debe obtener información de suscripción del usuario" time="0.213">
       <failure>Error: expected 200 &quot;OK&quot;, got 404 &quot;Not Found&quot;
     at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/userRoutes.test.js:217:10)
     at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)
@@ -643,7 +639,7 @@
     at emitCloseNT (node:net:2383:8)
     at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
-    <testcase classname="User Routes GET /api/users/me/emergency-contacts debe obtener contactos de emergencia del usuario" name="User Routes GET /api/users/me/emergency-contacts debe obtener contactos de emergencia del usuario" time="0.257">
+    <testcase classname="User Routes GET /api/users/me/emergency-contacts debe obtener contactos de emergencia del usuario" name="User Routes GET /api/users/me/emergency-contacts debe obtener contactos de emergencia del usuario" time="0.235">
       <failure>Error: expected 200 &quot;OK&quot;, got 404 &quot;Not Found&quot;
     at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/userRoutes.test.js:247:10)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
@@ -659,41 +655,64 @@
     at emitCloseNT (node:net:2383:8)
     at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
-    <testcase classname="User Routes POST /api/users/me/emergency-contacts debe crear un nuevo contacto de emergencia" name="User Routes POST /api/users/me/emergency-contacts debe crear un nuevo contacto de emergencia" time="0.23">
+    <testcase classname="User Routes POST /api/users/me/emergency-contacts debe crear un nuevo contacto de emergencia" name="User Routes POST /api/users/me/emergency-contacts debe crear un nuevo contacto de emergencia" time="0.254">
+      <failure>Error: expected 201 &quot;Created&quot;, got 404 &quot;Not Found&quot;
+    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/userRoutes.test.js:268:10)
+    at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)
+    at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)
+    at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/testWorker.js:106:12)
+----
+    at Test._assertStatus (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:309:14)
+    at /Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:365:13
+    at Test._assertFunction (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:342:13)
+    at Test.assert (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:195:23)
+    at localAssert (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:138:14)
+    at Server.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:152:11)
+    at Object.onceWrapper (node:events:638:28)
+    at Server.emit (node:events:524:28)
+    at emitCloseNT (node:net:2383:8)
+    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
-    <testcase classname="User Routes POST /api/users/me/emergency-contacts debe rechazar contacto con datos inválidos" name="User Routes POST /api/users/me/emergency-contacts debe rechazar contacto con datos inválidos" time="0.279">
+    <testcase classname="User Routes POST /api/users/me/emergency-contacts debe rechazar contacto con datos inválidos" name="User Routes POST /api/users/me/emergency-contacts debe rechazar contacto con datos inválidos" time="0.403">
     </testcase>
-    <testcase classname="User Routes DELETE /api/users/me debe eliminar la cuenta del usuario" name="User Routes DELETE /api/users/me debe eliminar la cuenta del usuario" time="0.223">
+    <testcase classname="User Routes DELETE /api/users/me debe eliminar la cuenta del usuario" name="User Routes DELETE /api/users/me debe eliminar la cuenta del usuario" time="0.343">
     </testcase>
   </testsuite>
-  <testsuite name="Emergency Alert Service" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:14" time="1.5" tests="1">
-    <testcase classname="Emergency Alert Service sendEmergencyAlerts debe enviar alertas de emergencia" name="Emergency Alert Service sendEmergencyAlerts debe enviar alertas de emergencia" time="1.182">
+  <testsuite name="Auth Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-01T20:05:48" time="10.208" tests="12">
+    <testcase classname="Auth Routes POST /api/auth/register debe registrar un nuevo usuario con datos válidos" name="Auth Routes POST /api/auth/register debe registrar un nuevo usuario con datos válidos" time="0.219">
     </testcase>
-  </testsuite>
-  <testsuite name="Auth Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-01T17:32:10" time="8.484" tests="12">
-    <testcase classname="Auth Routes POST /api/auth/register debe registrar un nuevo usuario con datos válidos" name="Auth Routes POST /api/auth/register debe registrar un nuevo usuario con datos válidos" time="0.239">
+    <testcase classname="Auth Routes POST /api/auth/register debe rechazar registro con datos inválidos" name="Auth Routes POST /api/auth/register debe rechazar registro con datos inválidos" time="0.012">
     </testcase>
-    <testcase classname="Auth Routes POST /api/auth/register debe rechazar registro con datos inválidos" name="Auth Routes POST /api/auth/register debe rechazar registro con datos inválidos" time="0.023">
+    <testcase classname="Auth Routes POST /api/auth/register debe rechazar registro con email duplicado" name="Auth Routes POST /api/auth/register debe rechazar registro con email duplicado" time="2.087">
     </testcase>
-    <testcase classname="Auth Routes POST /api/auth/register debe rechazar registro con email duplicado" name="Auth Routes POST /api/auth/register debe rechazar registro con email duplicado" time="2.081">
+    <testcase classname="Auth Routes POST /api/auth/register debe rechazar registro con username duplicado" name="Auth Routes POST /api/auth/register debe rechazar registro con username duplicado" time="2.028">
     </testcase>
-    <testcase classname="Auth Routes POST /api/auth/register debe rechazar registro con username duplicado" name="Auth Routes POST /api/auth/register debe rechazar registro con username duplicado" time="2.044">
+    <testcase classname="Auth Routes POST /api/auth/register debe rechazar registro sin campos requeridos" name="Auth Routes POST /api/auth/register debe rechazar registro sin campos requeridos" time="2.024">
     </testcase>
-    <testcase classname="Auth Routes POST /api/auth/register debe rechazar registro sin campos requeridos" name="Auth Routes POST /api/auth/register debe rechazar registro sin campos requeridos" time="2.027">
+    <testcase classname="Auth Routes POST /api/auth/login debe hacer login con credenciales válidas" name="Auth Routes POST /api/auth/login debe hacer login con credenciales válidas" time="0.057">
     </testcase>
-    <testcase classname="Auth Routes POST /api/auth/login debe hacer login con credenciales válidas" name="Auth Routes POST /api/auth/login debe hacer login con credenciales válidas" time="0.055">
+    <testcase classname="Auth Routes POST /api/auth/login debe rechazar login con email incorrecto" name="Auth Routes POST /api/auth/login debe rechazar login con email incorrecto" time="0.021">
     </testcase>
-    <testcase classname="Auth Routes POST /api/auth/login debe rechazar login con email incorrecto" name="Auth Routes POST /api/auth/login debe rechazar login con email incorrecto" time="0.02">
+    <testcase classname="Auth Routes POST /api/auth/login debe rechazar login con password incorrecto" name="Auth Routes POST /api/auth/login debe rechazar login con password incorrecto" time="0.013">
     </testcase>
-    <testcase classname="Auth Routes POST /api/auth/login debe rechazar login con password incorrecto" name="Auth Routes POST /api/auth/login debe rechazar login con password incorrecto" time="0.014">
+    <testcase classname="Auth Routes POST /api/auth/login debe rechazar login sin campos requeridos" name="Auth Routes POST /api/auth/login debe rechazar login sin campos requeridos" time="0.013">
     </testcase>
-    <testcase classname="Auth Routes POST /api/auth/login debe rechazar login sin campos requeridos" name="Auth Routes POST /api/auth/login debe rechazar login sin campos requeridos" time="0.009">
+    <testcase classname="Auth Routes GET /api/users/me debe retornar información del usuario autenticado" name="Auth Routes GET /api/users/me debe retornar información del usuario autenticado" time="0.023">
     </testcase>
-    <testcase classname="Auth Routes GET /api/users/me debe retornar información del usuario autenticado" name="Auth Routes GET /api/users/me debe retornar información del usuario autenticado" time="0.019">
+    <testcase classname="Auth Routes GET /api/users/me debe rechazar request sin token" name="Auth Routes GET /api/users/me debe rechazar request sin token" time="0.022">
     </testcase>
-    <testcase classname="Auth Routes GET /api/users/me debe rechazar request sin token" name="Auth Routes GET /api/users/me debe rechazar request sin token" time="0.029">
-    </testcase>
-    <testcase classname="Auth Routes GET /api/users/me debe rechazar request con token inválido" name="Auth Routes GET /api/users/me debe rechazar request con token inválido" time="0.014">
+    <testcase classname="Auth Routes GET /api/users/me debe rechazar request con token inválido" name="Auth Routes GET /api/users/me debe rechazar request con token inválido" time="0.017">
     </testcase>
   </testsuite>
 </testsuites>
