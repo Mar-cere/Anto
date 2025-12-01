@@ -1014,6 +1014,54 @@ class OpenAIService {
   }
 
   /**
+   * Determina si se deben agregar elecciones de respuesta al final
+   * @param {Object} analisisEmocional - Análisis emocional del mensaje
+   * @param {Object} analisisContextual - Análisis contextual del mensaje
+   * @param {Object} activeProtocol - Protocolo activo (opcional)
+   * @returns {boolean} true si se deben agregar elecciones
+   */
+  shouldAddChoices(analisisEmocional, analisisContextual, activeProtocol) {
+    // No agregar elecciones si hay un protocolo activo
+    if (activeProtocol) {
+      return false;
+    }
+
+    // No agregar elecciones en saludos simples
+    if (analisisContextual?.intencion?.tipo === MESSAGE_INTENTS.GREETING) {
+      return false;
+    }
+
+    // Agregar elecciones si la intensidad emocional es moderada o alta (5+)
+    const intensity = analisisEmocional?.intensity || DEFAULT_VALUES.INTENSITY;
+    if (intensity >= 5) {
+      return true;
+    }
+
+    // Agregar elecciones si el usuario busca ayuda específica
+    if (analisisContextual?.intencion?.tipo === MESSAGE_INTENTS.SEEKING_HELP || 
+        analisisContextual?.intencion?.tipo === MESSAGE_INTENTS.CRISIS) {
+      return true;
+    }
+
+    // Por defecto, no agregar elecciones
+    return false;
+  }
+
+  /**
+   * Agrega elecciones de respuesta al final del mensaje
+   * @param {string} respuesta - Respuesta base
+   * @param {Object} analisisEmocional - Análisis emocional del mensaje
+   * @param {Object} analisisContextual - Análisis contextual del mensaje
+   * @param {Object} activeProtocol - Protocolo activo (opcional)
+   * @returns {string} Respuesta con elecciones agregadas
+   */
+  addResponseChoices(respuesta, analisisEmocional, analisisContextual, activeProtocol) {
+    // Por ahora, retornar la respuesta sin modificar
+    // Esta funcionalidad puede ser implementada más adelante
+    return respuesta;
+  }
+
+  /**
    * Determina si se debe incluir una técnica terapéutica en la respuesta
    * @param {Object} analisisEmocional - Análisis emocional del mensaje
    * @param {Object} analisisContextual - Análisis contextual del mensaje
