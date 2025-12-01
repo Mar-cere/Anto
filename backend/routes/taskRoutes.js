@@ -38,9 +38,13 @@ router.use(authenticateToken);
 
 // Helper: buscar tarea por ID y validar propiedad
 const findTaskById = async (taskId, userId, populate = false) => {
+  // Asegurar que los IDs sean ObjectIds válidos
+  if (!mongoose.Types.ObjectId.isValid(taskId) || !mongoose.Types.ObjectId.isValid(userId)) {
+    return null;
+  }
   const query = Task.findOne({
-    _id: taskId,
-    userId
+    _id: new mongoose.Types.ObjectId(taskId),
+    userId: new mongoose.Types.ObjectId(userId)
   });
   
   if (populate) {
@@ -215,7 +219,9 @@ router.get('/', async (req, res) => {
 
     // Construir query base
     let query = { 
-      userId: req.user._id,
+      userId: mongoose.Types.ObjectId.isValid(req.user._id) 
+        ? new mongoose.Types.ObjectId(req.user._id) 
+        : req.user._id,
       deletedAt: { $exists: false }
     };
     

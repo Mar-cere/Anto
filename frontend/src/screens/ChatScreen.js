@@ -254,7 +254,7 @@ const ChatScreen = () => {
       await chatService.saveMessages([welcomeMessage]);
       
     } catch (error) {
-      console.error('Error al inicializar chat:', error);
+      console.error('[ChatScreen] Error al inicializar chat:', error.message);
       setError(TEXTS.ERROR_LOAD);
     } finally {
       setIsLoading(false);
@@ -283,7 +283,7 @@ const ChatScreen = () => {
     });
 
     const errorUnsubscribe = chatService.onError((error) => {
-      console.error('Error en el chat:', error);
+      console.error('[ChatScreen] Error en el chat:', error.message || error);
       setError(TEXTS.ERROR_COMMUNICATION);
     });
 
@@ -426,7 +426,7 @@ const ChatScreen = () => {
         }
       }
     } catch (error) {
-      console.error('Error al recargar mensajes:', error);
+      console.error('[ChatScreen] Error al recargar mensajes:', error.message);
     } finally {
       setRefreshing(false);
     }

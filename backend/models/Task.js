@@ -335,7 +335,7 @@ taskSchema.statics.getStats = async function(userId) {
   const stats = await this.aggregate([
     { 
       $match: { 
-        userId: mongoose.Types.ObjectId(userId),
+        userId: new mongoose.Types.ObjectId(userId),
         deletedAt: { $exists: false }
       } 
     },

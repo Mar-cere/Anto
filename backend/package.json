@@ -7,7 +7,11 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "init-achievements": "node scripts/initAchievements.js"
+    "init-achievements": "node scripts/initAchievements.js",
+    "test": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "test:watch": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
+    "test:unit": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern=unit",
+    "test:integration": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern=integration"
   },
   "keywords": [
     "backend",
@@ -23,6 +27,7 @@
   "license": "ISC",
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
+    "@sentry/node": "^10.27.0",
     "bcrypt": "^5.1.1",
     "cloudinary": "^2.6.1",
     "cors": "^2.8.5",
@@ -31,6 +36,7 @@
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.1.0",
+    "isomorphic-dompurify": "^2.9.0",
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
     "mercadopago": "^2.11.0",
@@ -41,10 +47,18 @@
     "nodemailer": "^7.0.10",
     "openai": "^4.95.0",
     "socket.io": "^4.8.1",
-    "twilio": "^5.3.5"
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "twilio": "^5.3.5",
+    "winston": "^3.15.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.0"
+    "@sentry/profiling-node": "^10.27.0",
+    "@types/jest": "^29.5.14",
+    "jest": "^29.7.0",
+    "jest-junit": "^16.0.0",
+    "nodemon": "^3.0.0",
+    "supertest": "^7.0.0"
   },
   "engines": {
     "node": "20.x",

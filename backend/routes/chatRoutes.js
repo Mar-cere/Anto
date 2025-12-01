@@ -63,9 +63,15 @@ const validarConversationId = (req, res, next) => {
 // Middleware: validar que la conversación existe y pertenece al usuario
 const validarConversacion = async (req, res, next) => {
   const { conversationId } = req.params;
+  
+  // Asegurar que los IDs sean ObjectIds válidos
+  if (!mongoose.Types.ObjectId.isValid(conversationId) || !mongoose.Types.ObjectId.isValid(req.user._id)) {
+    return res.status(400).json({ message: 'ID de conversación o usuario inválido' });
+  }
+  
   const conversation = await Conversation.findOne({ 
-    _id: conversationId, 
-    userId: req.user._id 
+    _id: new mongoose.Types.ObjectId(conversationId), 
+    userId: new mongoose.Types.ObjectId(req.user._id) 
   });
   
   if (!conversation) {
@@ -87,9 +93,17 @@ router.get('/conversations/:conversationId', protect, validarConversationId, val
       role 
     } = req.query;
 
+    // Asegurar que los IDs sean ObjectIds válidos
+    const userId = mongoose.Types.ObjectId.isValid(req.user._id) 
+      ? new mongoose.Types.ObjectId(req.user._id) 
+      : req.user._id;
+    const convId = mongoose.Types.ObjectId.isValid(conversationId) 
+      ? new mongoose.Types.ObjectId(conversationId) 
+      : conversationId;
+    
     const query = {
-      conversationId,
-      userId: req.user._id,
+      conversationId: convId,
+      userId: userId,
       ...(status && { 'metadata.status': status }),
       ...(role && { role })
     };
@@ -675,9 +689,16 @@ router.get('/conversations', protect, async (req, res) => {
       { $limit: parseInt(limit) }
     ]);
 
+    // Calcular estadísticas básicas
+    const stats = {
+      total: conversations.length,
+      active: conversations.filter(c => !c.archived).length,
+      archived: conversations.filter(c => c.archived).length
+    };
+
     res.json({ 
       conversations,
-      stats: await userProfileService.getConversationStats(req.user._id)
+      stats
     });
   } catch (error) {
     console.error('Error al obtener conversaciones:', error);

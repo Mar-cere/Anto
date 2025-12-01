@@ -8,6 +8,7 @@
  * @author AntoApp Team
  */
 
+import compression from 'compression';
 import cors from 'cors';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
@@ -17,7 +18,9 @@ import morgan from 'morgan';
 
 // Importación de configuración y middleware
 import config from './config/config.js';
-import { errorHandler } from './middleware/errorHandler.js';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import logger from './utils/logger.js';
+import { initializeSentry } from './utils/sentry.js';
 
 // Importación de rutas
 import authRoutes from './routes/authRoutes.js';
@@ -34,6 +37,8 @@ import therapeuticTechniquesRoutes from './routes/therapeuticTechniquesRoutes.js
 import paymentRoutes from './routes/paymentRoutes.js';
 import paymentRecoveryRoutes from './routes/paymentRecoveryRoutes.js';
 import paymentMetricsRoutes from './routes/paymentMetricsRoutes.js';
+import healthRoutes from './routes/healthRoutes.js';
+import { setupSwagger } from './config/swagger.js';
 
 // Constantes de configuración
 const APP_VERSION = '1.2.0';
@@ -68,16 +73,17 @@ const getMongoDBStatus = () => {
 const closeMongoDBConnection = async () => {
   try {
     await mongoose.connection.close();
-    console.log('✅ Conexión a MongoDB cerrada correctamente');
+    logger.info('✅ Conexión a MongoDB cerrada correctamente');
   } catch (err) {
-    console.error('❌ Error al cerrar conexión a MongoDB:', err);
+    logger.error('❌ Error al cerrar conexión a MongoDB', { error: err.message });
   }
 };
 
 // Helper: manejar señales de terminación
 const handleShutdown = (signal) => {
-  console.log(`👋 Recibida señal ${signal}. Cerrando servidor...`);
+  logger.info(`👋 Recibida señal ${signal}. Cerrando servidor...`);
   closeMongoDBConnection().then(() => {
+    logger.info('👋 Servidor cerrado correctamente');
     process.exit(0);
   });
 };
@@ -86,9 +92,9 @@ const handleShutdown = (signal) => {
 const app = express();
 const PORT = config.app.port;
 
-console.log('🔧 Inicializando servidor...');
-console.log(`📋 Puerto configurado: ${PORT}`);
-console.log(`🌍 Ambiente: ${config.app.environment}`);
+logger.info('🔧 Inicializando servidor...');
+logger.info(`📋 Puerto configurado: ${PORT}`);
+logger.info(`🌍 Ambiente: ${config.app.environment}`);
 
 // Configuración de proxy (necesario para rate limiting detrás de proxy)
 app.set('trust proxy', 1);
@@ -98,26 +104,10 @@ app.get('/', (req, res) => {
   res.status(200).json({ message: 'Server is running', timestamp: new Date().toISOString() });
 });
 
-// Health check endpoint
-app.get('/health', async (req, res) => {
-  const health = {
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    database: getMongoDBStatus(),
-    environment: config.app.environment,
-    version: APP_VERSION,
-  };
-  
-  const statusCode = health.database === 'connected' ? 200 : 503;
-  res.status(statusCode).json(health);
-});
-
-// Ruta de health check (PRIMERO, antes de cualquier middleware)
+// Health check endpoint básico (antes de middlewares pesados)
 // Esta ruta debe estar disponible siempre, incluso si otros servicios fallan
 app.get('/health', (req, res) => {
   try {
-    console.log('📊 Health check solicitado - Inicio');
     const mongoStatus = getMongoDBStatus();
     const response = { 
       status: 'ok', 
@@ -133,13 +123,12 @@ app.get('/health', (req, res) => {
       },
       version: APP_VERSION
     };
-    console.log('📤 Enviando respuesta de health');
-    res.status(200).json(response);
-    console.log('✅ Respuesta enviada');
+    const statusCode = mongoStatus === 'connected' ? 200 : 503;
+    res.status(statusCode).json(response);
   } catch (error) {
-    console.error('❌ Error en health check:', error);
-    res.status(200).json({ 
-      status: 'ok', 
+    logger.error('❌ Error en health check', { error: error.message });
+    res.status(503).json({ 
+      status: 'error', 
       timestamp: new Date().toISOString(),
       mongodb: 'error',
       error: error.message,
@@ -148,7 +137,7 @@ app.get('/health', (req, res) => {
   }
 });
 
-console.log('✅ Rutas / y /health registradas');
+logger.info('✅ Rutas / y /health registradas');
 
 // Configuración de seguridad básica
 app.use(helmet({
@@ -242,26 +231,24 @@ const connectMongoDB = async () => {
       w: 'majority'
     });
 
-    console.log('✅ Conexión exitosa a MongoDB');
-    console.log(`📊 Base de datos: ${mongoose.connection.name || 'default'}`);
+    logger.info('✅ Conexión exitosa a MongoDB');
+    logger.info(`📊 Base de datos: ${mongoose.connection.name || 'default'}`);
     
     // Manejar eventos de conexión
     mongoose.connection.on('error', (err) => {
-      console.error('❌ Error en la conexión de MongoDB:', err);
+      logger.error('❌ Error en la conexión de MongoDB', { error: err.message });
     });
 
     mongoose.connection.on('disconnected', () => {
-      console.warn('⚠️ MongoDB desconectado. Intentando reconectar...');
+      logger.warn('⚠️ MongoDB desconectado. Intentando reconectar...');
     });
 
   } catch (err) {
-    console.error('❌ Error conectando a MongoDB:', err);
-    console.error('💡 Verifica que:');
-    console.error('   1. La URI de MongoDB esté correcta en el archivo .env');
-    console.error('   2. Tu conexión a internet esté activa');
-    console.error('   3. El cluster de MongoDB Atlas esté accesible');
-    console.error('   4. Tu IP esté en la whitelist de MongoDB Atlas');
-    console.warn('⚠️ El servidor continuará sin MongoDB. Algunas funcionalidades no estarán disponibles.');
+    logger.error('❌ Error conectando a MongoDB', { 
+      error: err.message,
+      stack: err.stack 
+    });
+    logger.warn('⚠️ El servidor continuará sin MongoDB. Algunas funcionalidades no estarán disponibles.');
     // NO hacer process.exit(1) para que el servidor pueda iniciar
   }
 };
@@ -270,17 +257,9 @@ const connectMongoDB = async () => {
 connectMongoDB();
 
 // Rutas de la API
-console.log('📋 Registrando rutas de la API...');
-app.use('/api/tasks', (req, res, next) => {
-  console.log(`📥 [TASKS] ${req.method} ${req.path}`);
-  next();
-}, taskRoutes);
-console.log('✅ Ruta /api/tasks registrada');
-app.use('/api/habits', (req, res, next) => {
-  console.log(`📥 [HABITS] ${req.method} ${req.path}`);
-  next();
-}, habitRoutes);
-console.log('✅ Ruta /api/habits registrada');
+logger.info('📋 Registrando rutas de la API...');
+app.use('/api/tasks', taskRoutes);
+app.use('/api/habits', habitRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
@@ -289,48 +268,51 @@ app.use('/api/cloudinary', cloudinaryRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/therapeutic-techniques', therapeuticTechniquesRoutes);
-console.log('✅ Ruta /api/therapeutic-techniques registrada');
 app.use('/api/payments', paymentRoutes);
-console.log('✅ Ruta /api/payments registrada');
 app.use('/api/payments', paymentRecoveryRoutes);
-console.log('✅ Ruta /api/payments/recovery registrada');
 app.use('/api/payments', paymentMetricsRoutes);
-console.log('✅ Ruta /api/payments/metrics registrada');
 app.use('/api/health', healthRoutes);
-console.log('✅ Ruta /api/health registrada');
+
 // Rutas de testing (solo en desarrollo)
 if (process.env.NODE_ENV !== 'production') {
   app.use('/api/notifications', testNotificationRoutes);
-  console.log('✅ Rutas de testing de notificaciones registradas');
+  logger.debug('✅ Rutas de testing de notificaciones registradas');
 }
-console.log('✅ Todas las rutas registradas');
 
-// Manejo de rutas no encontradas
-app.use((req, res) => {
-  console.log(`⚠️ Ruta no encontrada: ${req.method} ${req.path}`);
-  console.log(`📋 Headers:`, req.headers);
-  res.status(404).json({ 
-    message: 'Ruta no encontrada',
-    path: req.path,
-    method: req.method
-  });
-});
+logger.info('✅ Todas las rutas registradas');
+
+// Inicializar Sentry si está configurado (después de crear app)
+initializeSentry(app);
+
+// Configurar Swagger (solo en desarrollo o si está habilitado)
+if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true') {
+  setupSwagger(app);
+  logger.info('✅ Swagger configurado en /api-docs');
+}
+
+// Manejo de rutas no encontradas (debe ir antes del errorHandler)
+app.use(notFoundHandler);
 
 // Manejo global de errores (debe ser el último middleware)
 app.use(errorHandler);
 
-// Iniciar servidor
-// Siempre escuchar en 0.0.0.0 para que funcione en Render y otros servicios en la nube
-// 0.0.0.0 también funciona en localhost, así que es seguro usarlo siempre
-const HOST = '0.0.0.0';
-const isRender = process.env.RENDER === 'true' || !!process.env.PORT;
+// Exportar la app para tests (antes de iniciar el servidor)
+export { app };
 
-app.listen(PORT, HOST, () => {
-  console.log(`🚀 Servidor corriendo en ${HOST}:${PORT}`);
-  console.log(`📝 Ambiente: ${config.app.environment}`);
-  console.log(`🔗 URL Frontend: ${config.app.frontendUrl}`);
-  console.log(`🌐 Servidor accesible desde: ${HOST === '0.0.0.0' ? 'cualquier IP (Render)' : 'localhost'}`);
-  console.log(`🔍 Render detectado: ${isRender ? 'Sí' : 'No'}`);
+// Iniciar servidor solo si no estamos en modo test
+// En modo test, el servidor no se inicia automáticamente para evitar conflictos de puerto
+if (process.env.NODE_ENV !== 'test') {
+  // Siempre escuchar en 0.0.0.0 para que funcione en Render y otros servicios en la nube
+  // 0.0.0.0 también funciona en localhost, así que es seguro usarlo siempre
+  const HOST = '0.0.0.0';
+  const isRender = process.env.RENDER === 'true' || !!process.env.PORT;
+
+  app.listen(PORT, HOST, () => {
+  logger.info(`🚀 Servidor corriendo en ${HOST}:${PORT}`);
+  logger.info(`📝 Ambiente: ${config.app.environment}`);
+  logger.info(`🔗 URL Frontend: ${config.app.frontendUrl}`);
+  logger.info(`🌐 Servidor accesible desde: ${HOST === '0.0.0.0' ? 'cualquier IP (Render)' : 'localhost'}`);
+  logger.info(`🔍 Render detectado: ${isRender ? 'Sí' : 'No'}`);
   
   // Iniciar servicio de recordatorios periódicos (solo en producción o si está habilitado)
   if (process.env.ENABLE_REMINDERS !== 'false') {
@@ -341,10 +323,10 @@ app.listen(PORT, HOST, () => {
       setTimeout(async () => {
         try {
           const emergencyReminderService = (await import('./services/emergencyReminderService.js')).default;
-          console.log('📧 Iniciando envío de recordatorios de contactos de emergencia...');
+          logger.info('📧 Iniciando envío de recordatorios de contactos de emergencia...');
           await emergencyReminderService.sendRemindersToAllUsers();
         } catch (error) {
-          console.error('❌ Error en servicio de recordatorios:', error);
+          logger.error('❌ Error en servicio de recordatorios', { error: error.message });
         }
       }, 60000); // Esperar 1 minuto después del inicio
     }
@@ -353,14 +335,14 @@ app.listen(PORT, HOST, () => {
     setInterval(async () => {
       try {
         const emergencyReminderService = (await import('./services/emergencyReminderService.js')).default;
-        console.log('📧 Ejecutando recordatorios periódicos de contactos de emergencia...');
+        logger.info('📧 Ejecutando recordatorios periódicos de contactos de emergencia...');
         await emergencyReminderService.sendRemindersToAllUsers();
       } catch (error) {
-        console.error('❌ Error en servicio de recordatorios:', error);
+        logger.error('❌ Error en servicio de recordatorios', { error: error.message });
       }
     }, REMINDER_INTERVAL_MS);
     
-    console.log('✅ Servicio de recordatorios de contactos de emergencia iniciado (cada 24 horas)');
+    logger.info('✅ Servicio de recordatorios de contactos de emergencia iniciado (cada 24 horas)');
   }
 
   // Iniciar servicio de seguimiento post-crisis
@@ -368,17 +350,20 @@ app.listen(PORT, HOST, () => {
     setTimeout(async () => {
       try {
         const crisisFollowUpService = (await import('./services/crisisFollowUpService.js')).default;
-        console.log('📋 Iniciando servicio de seguimiento post-crisis...');
+        logger.info('📋 Iniciando servicio de seguimiento post-crisis...');
         crisisFollowUpService.start();
       } catch (error) {
-        console.error('❌ Error iniciando servicio de seguimiento post-crisis:', error);
+        logger.error('❌ Error iniciando servicio de seguimiento post-crisis', { error: error.message });
       }
     }, 120000); // Esperar 2 minutos después del inicio para que MongoDB esté listo
   }
-});
+  });
+}
 
-// Manejo de señales de terminación
-process.on('SIGTERM', () => handleShutdown('SIGTERM'));
-process.on('SIGINT', () => handleShutdown('SIGINT'));
+// Manejo de señales de terminación (solo si el servidor se inició)
+if (process.env.NODE_ENV !== 'test') {
+  process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+  process.on('SIGINT', () => handleShutdown('SIGINT'));
+}
 
 export default app;

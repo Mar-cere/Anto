@@ -317,7 +317,7 @@ habitSchema.pre('save', function(next) {
 // Métodos estáticos: operaciones sobre la colección
 habitSchema.statics.getStats = async function(userId) {
   return this.aggregate([
-    { $match: { userId: mongoose.Types.ObjectId(userId) } },
+    { $match: { userId: new mongoose.Types.ObjectId(userId) } },
     {
       $group: {
         _id: null,

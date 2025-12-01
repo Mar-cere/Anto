@@ -25,8 +25,39 @@ const getMongoDBStatus = () => {
 };
 
 /**
- * GET /api/health
- * Health check básico
+ * @swagger
+ * /health:
+ *   get:
+ *     summary: Health check del servidor
+ *     tags: [Health]
+ *     description: Verifica el estado de salud del servidor y sus dependencias
+ *     responses:
+ *       200:
+ *         description: Servidor funcionando correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: ok
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *                 mongodb:
+ *                   type: string
+ *                   example: connected
+ *                 services:
+ *                   type: object
+ *                 version:
+ *                   type: string
+ *       503:
+ *         description: Servidor con problemas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/', async (req, res) => {
   const health = {

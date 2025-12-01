@@ -24,9 +24,12 @@ const getApiUrl = () => {
 
 export const API_URL = getApiUrl();
 
-console.log('🌐 Usando API_URL:', API_URL);
-console.log('📱 Plataforma:', Platform.OS);
-console.log('🔧 Modo:', __DEV__ ? 'development' : 'production');
+// Solo loguear en desarrollo
+if (__DEV__) {
+  console.log('🌐 Usando API_URL:', API_URL);
+  console.log('📱 Plataforma:', Platform.OS);
+  console.log('🔧 Modo: development');
+}
 
 export const ENDPOINTS = {
   // Auth
@@ -103,21 +106,14 @@ export const ENDPOINTS = {
   PAYMENT_PLANS: '/api/payments/plans',
   PAYMENT_CREATE_CHECKOUT: '/api/payments/create-checkout-session',
   PAYMENT_SUBSCRIPTION_STATUS: '/api/payments/subscription-status',
-  PAYMENT_CANCEL_SUBSCRIPTION: '/api/payments/cancel-subscription',
-  PAYMENT_UPDATE_METHOD: '/api/payments/update-payment-method',
-  PAYMENT_TRANSACTIONS: '/api/payments/transactions',
-  PAYMENT_TRANSACTIONS_STATS: '/api/payments/transactions/stats',
-  THERAPEUTIC_TECHNIQUES_STATS: '/api/therapeutic-techniques/stats',
-  
-  // Payments and Subscriptions
-  PAYMENT_PLANS: '/api/payments/plans',
-  PAYMENT_CREATE_CHECKOUT: '/api/payments/create-checkout-session',
-  PAYMENT_SUBSCRIPTION_STATUS: '/api/payments/subscription-status',
   PAYMENT_TRIAL_INFO: '/api/payments/trial-info',
   PAYMENT_CANCEL_SUBSCRIPTION: '/api/payments/cancel-subscription',
   PAYMENT_UPDATE_METHOD: '/api/payments/update-payment-method',
   PAYMENT_TRANSACTIONS: '/api/payments/transactions',
   PAYMENT_TRANSACTIONS_STATS: '/api/payments/transactions/stats',
+  
+  // Therapeutic Techniques Stats
+  THERAPEUTIC_TECHNIQUES_STATS: '/api/therapeutic-techniques/stats',
 };
 
 const makeRequest = (url, options) => {
@@ -154,7 +150,10 @@ const makeRequest = (url, options) => {
 // Función auxiliar para obtener headers con autorización
 const getAuthHeaders = async () => {
   const token = await AsyncStorage.getItem('userToken');
-  console.log('Token de autenticación:', token ? 'Presente' : 'No presente');
+  // Solo loguear en desarrollo
+  if (__DEV__) {
+    console.log('Token de autenticación:', token ? 'Presente' : 'No presente');
+  }
   return {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -166,7 +165,9 @@ const getAuthHeaders = async () => {
 export const api = {
   post: async (endpoint, data) => {
     try {
-      console.log(`Iniciando petición a ${endpoint}`);
+      if (__DEV__) {
+        console.log(`[API] POST ${endpoint}`);
+      }
       const headers = await getAuthHeaders();
       
       const response = await fetch(`${API_URL}${endpoint}`, {
@@ -192,10 +193,13 @@ export const api = {
       }
 
       const responseData = await response.json();
-      console.log(`Respuesta de ${endpoint}:`, responseData);
+      if (__DEV__) {
+        console.log(`[API] POST ${endpoint} - Success`);
+      }
       return responseData;
     } catch (error) {
-      console.error(`Error en ${endpoint}:`, error);
+      // Siempre loguear errores, pero sin datos sensibles
+      console.error(`[API] POST ${endpoint} - Error:`, error.message);
       throw error;
     }
   },
@@ -206,16 +210,14 @@ export const api = {
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `${API_URL}${endpoint}?${queryString}` : `${API_URL}${endpoint}`;
       
-      console.log('URL completa de la petición:', url);
-      console.log('Headers de la petición:', headers);
+      if (__DEV__) {
+        console.log(`[API] GET ${endpoint}`);
+      }
       
       const response = await fetch(url, {
         method: 'GET',
         headers
       });
-
-      console.log('Status de la respuesta:', response.status);
-      console.log('Headers de la respuesta:', response.headers);
 
       if (!response.ok) {
         let errorData;
@@ -224,15 +226,17 @@ export const api = {
         } catch (e) {
           errorData = { message: `Error del servidor: ${response.status} - ${response.statusText}` };
         }
-        console.error('Error en la respuesta:', errorData);
+        console.error(`[API] GET ${endpoint} - Error:`, errorData.message || response.status);
         throw new Error(errorData.message || `Error del servidor: ${response.status} - ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log('Datos recibidos en api.get:', data);
+      if (__DEV__) {
+        console.log(`[API] GET ${endpoint} - Success`);
+      }
       return data;
     } catch (error) {
-      console.error(`Error en ${endpoint}:`, error);
+      console.error(`[API] GET ${endpoint} - Error:`, error.message);
       throw error;
     }
   },
@@ -264,7 +268,7 @@ export const api = {
 
       return await response.json();
     } catch (error) {
-      console.error(`Error en ${endpoint}:`, error);
+      console.error(`[API] PUT ${endpoint} - Error:`, error.message);
       throw error;
     }
   },
@@ -295,7 +299,7 @@ export const api = {
 
       return await response.json();
     } catch (error) {
-      console.error(`Error en ${endpoint}:`, error);
+      console.error(`[API] DELETE ${endpoint} - Error:`, error.message);
       throw error;
     }
   },
@@ -327,7 +331,7 @@ export const api = {
 
       return await response.json();
     } catch (error) {
-      console.error(`Error en ${endpoint}:`, error);
+      console.error(`[API] PATCH ${endpoint} - Error:`, error.message);
       throw error;
     }
   }
@@ -346,11 +350,12 @@ export const checkServerConnection = async () => {
 
 export const login = async (credentials) => {
   try {
-    console.log('Iniciando login con:', credentials);
+    if (__DEV__) {
+      console.log('[Auth] Iniciando login');
+    }
     
     // Usar el helper api.post en lugar de fetch directamente
     const data = await api.post(ENDPOINTS.LOGIN, credentials);
-    console.log('Respuesta del servidor:', data);
 
     if (data.token && data.user) {
       // Guardar el token
@@ -359,9 +364,9 @@ export const login = async (credentials) => {
       // Guardar los datos del usuario completos
       await AsyncStorage.setItem('userData', JSON.stringify(data.user));
       
-      console.log('Datos guardados exitosamente');
-      console.log('Token guardado:', data.token);
-      console.log('Usuario guardado:', data.user);
+      if (__DEV__) {
+        console.log('[Auth] Login exitoso');
+      }
 
       return {
         success: true,
@@ -374,7 +379,7 @@ export const login = async (credentials) => {
       throw new Error('Respuesta del servidor incompleta');
     }
   } catch (error) {
-    console.error('Error en login:', error);
+    console.error('[Auth] Error en login:', error.message);
     return {
       success: false,
       error: error.message
@@ -399,8 +404,9 @@ export const checkAuthStatus = async () => {
     const token = await AsyncStorage.getItem('userToken');
     const userData = await AsyncStorage.getItem('userData');
     
-    console.log('Token almacenado:', token);
-    console.log('Datos de usuario almacenados:', userData);
+    if (__DEV__) {
+      console.log('[Auth] Verificando autenticación:', token ? 'Token presente' : 'Sin token');
+    }
     
     if (token && userData) {
       return {
@@ -412,7 +418,7 @@ export const checkAuthStatus = async () => {
     
     return { isAuthenticated: false };
   } catch (error) {
-    console.error('Error verificando autenticación:', error);
+    console.error('[Auth] Error verificando autenticación:', error.message);
     return { isAuthenticated: false };
   }
 };
@@ -422,11 +428,12 @@ const checkStoredData = async () => {
   try {
     const token = await AsyncStorage.getItem('userToken');
     const userData = await AsyncStorage.getItem('userData');
-    console.log('Token almacenado:', token);
-    console.log('UserData almacenado:', userData);
+    if (__DEV__) {
+      console.log('[Auth] Datos almacenados:', { hasToken: !!token, hasUserData: !!userData });
+    }
     return { token, userData };
   } catch (error) {
-    console.error('Error checking stored data:', error);
+    console.error('[Auth] Error verificando datos almacenados:', error.message);
     return { token: null, userData: null };
   }
 };

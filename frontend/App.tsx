@@ -12,6 +12,7 @@ import React from 'react';
 import { Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { AuthProvider } from './src/context/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
+import ErrorBoundary from './src/components/ErrorBoundary';
 import { colors } from './src/styles/globalStyles';
 
 // Constantes de configuración
@@ -31,16 +32,18 @@ const BACKGROUND_COLOR = colors.background;
  */
 export default function App() {
   return (
-    <AuthProvider>
-      <View style={styles.container}>
-        <StatusBar 
-          barStyle={STATUS_BAR_STYLE}
-          backgroundColor={STATUS_BAR_BACKGROUND}
-          translucent={STATUS_BAR_TRANSLUCENT}
-        />
-        <AppNavigator />
-      </View>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <View style={styles.container}>
+          <StatusBar 
+            barStyle={STATUS_BAR_STYLE}
+            backgroundColor={STATUS_BAR_BACKGROUND}
+            translucent={STATUS_BAR_TRANSLUCENT}
+          />
+          <AppNavigator />
+        </View>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

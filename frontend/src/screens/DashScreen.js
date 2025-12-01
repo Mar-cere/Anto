@@ -101,9 +101,11 @@ const DashScreen = () => {
   const [trialInfo, setTrialInfo] = useState(null);
   const [trialBannerDismissed, setTrialBannerDismissed] = useState(false);
 
-  // Log cuando showTutorial cambia
+  // Log cuando showTutorial cambia (solo en desarrollo)
   React.useEffect(() => {
-    console.log('🎬 showTutorial cambió a:', showTutorial);
+    if (__DEV__) {
+      console.log('🎬 showTutorial cambió a:', showTutorial);
+    }
   }, [showTutorial]);
 
   // Función para cargar datos
@@ -160,8 +162,11 @@ const DashScreen = () => {
         
         // Verificar AsyncStorage con userId específico
         const tutorialCompleted = await isTutorialCompleted(userId);
-        console.log('📚 Tutorial completado en AsyncStorage?', tutorialCompleted);
-        console.log('👤 UserId:', userId);
+        
+        if (__DEV__) {
+          console.log('📚 Tutorial completado en AsyncStorage?', tutorialCompleted);
+          console.log('👤 UserId:', userId);
+        }
         
         // Verificar si es un usuario nuevo (creado en las últimas 24 horas)
         const userCreatedAt = userData?.createdAt ? new Date(userData.createdAt) : null;
@@ -171,26 +176,24 @@ const DashScreen = () => {
         const hoursSinceCreation = timeDiff / (1000 * 60 * 60);
         const isNewUser = userCreatedAt && timeDiff >= 0 && timeDiff < 24 * 60 * 60 * 1000;
         
-        console.log('👤 Usuario nuevo?', isNewUser);
-        console.log('👤 Fecha creación:', userCreatedAt);
-        console.log('👤 Tiempo desde creación (horas):', hoursSinceCreation);
-        console.log('👤 Diferencia en ms:', timeDiff);
+        if (__DEV__) {
+          console.log('👤 Usuario nuevo?', isNewUser);
+          console.log('👤 Fecha creación:', userCreatedAt);
+          console.log('👤 Tiempo desde creación (horas):', hoursSinceCreation);
+        }
         
         // Solo mostrar tutorial si NO está completado (independientemente de si es usuario nuevo o no)
         // Una vez completado, nunca se vuelve a mostrar para este usuario
         if (!tutorialCompleted) {
           if (isNewUser) {
             setIsFirstTimeUser(true);
-            console.log('✅ Mostrando tutorial para usuario nuevo...');
-          } else {
-            console.log('✅ Mostrando tutorial para usuario existente...');
           }
           setTimeout(() => {
-            console.log('🎬 Activando tutorial...');
+            if (__DEV__) {
+              console.log('🎬 Activando tutorial...');
+            }
             setShowTutorial(true);
           }, 1000);
-        } else {
-          console.log('✅ Tutorial ya completado para este usuario, no se mostrará');
         }
         setHasCheckedTutorial(true);
       }

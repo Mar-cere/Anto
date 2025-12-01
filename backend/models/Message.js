@@ -33,10 +33,10 @@ const messageSchema = new mongoose.Schema({
     trim: true,
   },
 
-  // Rol del mensaje (user o assistant)
+  // Rol del mensaje (user, assistant o system)
   role: {
     type: String,
-    enum: ['user', 'assistant'],
+    enum: ['user', 'assistant', 'system'],
     required: true,
     index: true,
   },

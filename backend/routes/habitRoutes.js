@@ -4,6 +4,7 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import Joi from 'joi';
+import mongoose from 'mongoose';
 import { authenticateToken } from '../middleware/auth.js';
 import { validateObjectId } from '../middleware/validation.js';
 import Habit from '../models/Habit.js';
@@ -45,9 +46,13 @@ router.use(authenticateToken);
 
 // Helper: buscar hábito por ID y validar propiedad
 const findHabitById = async (habitId, userId) => {
+  // Asegurar que los IDs sean ObjectIds válidos
+  if (!mongoose.Types.ObjectId.isValid(habitId) || !mongoose.Types.ObjectId.isValid(userId)) {
+    return null;
+  }
   return await Habit.findOne({
-    _id: habitId,
-    userId
+    _id: new mongoose.Types.ObjectId(habitId),
+    userId: new mongoose.Types.ObjectId(userId)
   });
 };
 
@@ -182,8 +187,13 @@ router.get('/', async (req, res) => {
       sort = '-createdAt'
     } = req.query;
 
+    // Asegurar que req.user._id sea un ObjectId válido
+    const userId = mongoose.Types.ObjectId.isValid(req.user._id) 
+      ? new mongoose.Types.ObjectId(req.user._id) 
+      : req.user._id;
+    
     const query = { 
-      userId: req.user._id,
+      userId: userId,
       deletedAt: { $exists: false }
     };
 
@@ -254,7 +264,12 @@ router.get('/', async (req, res) => {
                 {
                   $and: [
                     { $eq: ['$status.archived', false] },
-                    { $in: [new Date().toISOString().split('T')[0], '$progress.completedDates'] }
+                    { 
+                      $in: [
+                        new Date().toISOString().split('T')[0], 
+                        { $ifNull: ['$progress.completedDates', []] }
+                      ] 
+                    }
                   ]
                 },
                 1,
@@ -416,9 +431,14 @@ router.post('/', createHabitLimiter, async (req, res) => {
       });
     }
 
+    // Asegurar que req.user._id sea un ObjectId válido
+    const userId = mongoose.Types.ObjectId.isValid(req.user._id) 
+      ? new mongoose.Types.ObjectId(req.user._id) 
+      : req.user._id;
+
     const habit = new Habit({
       ...value,
-      userId: req.user._id,
+      userId: userId,
       status: {
         archived: false,
         isOverdue: false
@@ -464,9 +484,14 @@ router.put('/:id', validateObjectId, updateHabitLimiter, async (req, res) => {
       });
     }
 
+    // Asegurar que req.user._id sea un ObjectId válido
+    const userId = mongoose.Types.ObjectId.isValid(req.user._id) 
+      ? new mongoose.Types.ObjectId(req.user._id) 
+      : req.user._id;
+    
     // Actualizar hábito (Mongoose timestamps maneja updatedAt automáticamente)
     const habit = await Habit.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
+      { _id: req.params.id, userId: userId },
       value,
       { new: true, runValidators: true }
     );

@@ -7,6 +7,7 @@
  * @author AntoApp Team
  */
 
+import mongoose from 'mongoose';
 import Subscription from '../models/Subscription.js';
 import User from '../models/User.js';
 import paymentAuditService from '../services/paymentAuditService.js';
@@ -56,11 +57,15 @@ export const requireActiveSubscription = (allowTrial = true) => {
       const accessVerification = await paymentAuditService.verifyUserAccess(userIdString);
       
       // Buscar suscripción en modelo separado
-      let subscription = await Subscription.findOne({ userId: userIdString });
+      // Asegurar que userIdString sea un ObjectId válido
+      const userIdObjectId = mongoose.Types.ObjectId.isValid(userIdString) 
+        ? new mongoose.Types.ObjectId(userIdString) 
+        : userIdString;
+      let subscription = await Subscription.findOne({ userId: userIdObjectId });
 
       // Si no existe, verificar en modelo User
       if (!subscription) {
-        const user = await User.findById(userIdString).select('subscription email username name');
+        const user = await User.findById(userIdObjectId).select('subscription email username name');
         if (!user) {
           // Registrar intento de acceso con usuario inexistente
           await paymentAuditService.logEvent('SUBSCRIPTION_CHECK_FAILED', {

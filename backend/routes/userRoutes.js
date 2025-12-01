@@ -64,14 +64,23 @@ const calculateDaysLeft = (endDate) => {
 
 // Helper: buscar usuario por ID
 const findUserById = async (userId, select = '', lean = false) => {
-  let query = User.findById(userId);
-  if (select) {
-    query = query.select(select);
+  // Asegurar que userId sea un ObjectId válido
+  if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+    return null;
   }
-  if (lean) {
-    query = query.lean();
+  try {
+    const objectId = new mongoose.Types.ObjectId(userId);
+    let query = User.findById(objectId);
+    if (select) {
+      query = query.select(select);
+    }
+    if (lean) {
+      query = query.lean();
+    }
+    return await query;
+  } catch (error) {
+    return null;
   }
-  return await query;
 };
 
 // Helper: hashear contraseña
@@ -163,7 +172,12 @@ const updatePasswordSchema = Joi.object({
 // Obtener datos del usuario actual
 router.get('/me', authenticateToken, validateUserObjectId, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id)
+    // Asegurar que req.user._id sea un ObjectId válido
+    const userId = mongoose.Types.ObjectId.isValid(req.user._id) 
+      ? new mongoose.Types.ObjectId(req.user._id) 
+      : req.user._id;
+    
+    const user = await User.findById(userId)
       .select('-password -salt -__v -resetPasswordCode -resetPasswordExpires')
       .lean();
     
@@ -351,9 +365,14 @@ router.get('/avatar-url/:publicId', authenticateToken, avatarLimiter, async (req
   try {
     const { publicId } = req.params;
 
+    // Asegurar que req.user._id sea un ObjectId válido
+    const userId = mongoose.Types.ObjectId.isValid(req.user._id) 
+      ? new mongoose.Types.ObjectId(req.user._id) 
+      : req.user._id;
+    
     // Validar que el publicId pertenece al usuario
     const user = await User.findOne({ 
-      _id: req.user._id,
+      _id: userId,
       avatar: { $regex: publicId }
     });
 
@@ -399,7 +418,10 @@ router.delete('/me', authenticateToken, validateUserObjectId, async (req, res) =
     // Soft delete: desactivar cuenta y modificar email/username para evitar conflictos
     user.isActive = false;
     user.email = `${user.email}_deleted_${Date.now()}`;
-    user.username = `${user.username}_deleted_${Date.now()}`;
+    // Asegurar que el username no exceda 20 caracteres
+    const timestamp = Date.now().toString().slice(-6);
+    const baseUsername = user.username.slice(0, 10); // Tomar primeros 10 caracteres
+    user.username = `${baseUsername}_del_${timestamp}`.slice(0, 20); // Asegurar máximo 20 caracteres
     user.deletedAt = new Date();
     await user.save();
 
@@ -465,7 +487,12 @@ const emergencyContactSchema = Joi.object({
 // Obtener contactos de emergencia del usuario
 router.get('/me/emergency-contacts', authenticateToken, validateUserObjectId, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select('emergencyContacts');
+    // Asegurar que req.user._id sea un ObjectId válido
+    const userId = mongoose.Types.ObjectId.isValid(req.user._id) 
+      ? new mongoose.Types.ObjectId(req.user._id) 
+      : req.user._id;
+    
+    const user = await User.findById(userId).select('emergencyContacts');
     
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
@@ -503,7 +530,12 @@ router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, a
       });
     }
 
-    const user = await User.findById(req.user._id).select('emergencyContacts name');
+    // Asegurar que req.user._id sea un ObjectId válido
+    const userId = mongoose.Types.ObjectId.isValid(req.user._id) 
+      ? new mongoose.Types.ObjectId(req.user._id) 
+      : req.user._id;
+    
+    const user = await User.findById(userId).select('emergencyContacts name');
     
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
@@ -531,8 +563,7 @@ router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, a
       });
     }
 
-    // Agregar el nuevo contacto
-    user.emergencyContacts = user.emergencyContacts || [];
+    // Agregar el nuevo contacto usando findByIdAndUpdate para evitar problemas de versión
     const newContact = {
       name: value.name,
       email: value.email.toLowerCase(),
@@ -540,9 +571,16 @@ router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, a
       relationship: value.relationship || null,
       enabled: true
     };
-    user.emergencyContacts.push(newContact);
-
-    await user.save();
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $push: { emergencyContacts: newContact } },
+      { new: true, select: 'emergencyContacts name username' }
+    );
+    
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
 
     // Enviar email de prueba si se solicita
     let testEmailSent = false;
@@ -553,7 +591,7 @@ router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, a
         testEmailSent = await mailer.sendEmergencyContactTestEmail(
           newContact.email,
           newContact.name,
-          user.name || user.username || 'Usuario'
+          updatedUser.name || updatedUser.username || 'Usuario'
         );
         if (!testEmailSent) {
           testEmailError = 'No se pudo enviar el email de prueba. Verifica la configuración del servidor de email.';
@@ -567,7 +605,7 @@ router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, a
 
     const response = {
       message: 'Contacto de emergencia agregado exitosamente',
-      contact: user.emergencyContacts[user.emergencyContacts.length - 1]
+      contact: updatedUser.emergencyContacts[updatedUser.emergencyContacts.length - 1]
     };
 
     // Incluir información del email de prueba solo si se solicitó
@@ -605,7 +643,12 @@ router.put('/me/emergency-contacts/:contactId', authenticateToken, validateUserO
       return res.status(400).json({ message: 'ID de contacto inválido' });
     }
 
-    const user = await User.findById(req.user._id).select('emergencyContacts');
+    // Asegurar que req.user._id sea un ObjectId válido
+    const userId = mongoose.Types.ObjectId.isValid(req.user._id) 
+      ? new mongoose.Types.ObjectId(req.user._id) 
+      : req.user._id;
+    
+    const user = await User.findById(userId).select('emergencyContacts');
     
     if (!user || !user.emergencyContacts) {
       return res.status(404).json({ message: 'Usuario o contacto no encontrado' });
@@ -663,7 +706,12 @@ router.delete('/me/emergency-contacts/:contactId', authenticateToken, validateUs
       return res.status(400).json({ message: 'ID de contacto inválido' });
     }
 
-    const user = await User.findById(req.user._id).select('emergencyContacts');
+    // Asegurar que req.user._id sea un ObjectId válido
+    const userId = mongoose.Types.ObjectId.isValid(req.user._id) 
+      ? new mongoose.Types.ObjectId(req.user._id) 
+      : req.user._id;
+    
+    const user = await User.findById(userId).select('emergencyContacts');
     
     if (!user || !user.emergencyContacts) {
       return res.status(404).json({ message: 'Usuario o contacto no encontrado' });
@@ -701,7 +749,12 @@ router.patch('/me/emergency-contacts/:contactId/toggle', authenticateToken, vali
       return res.status(400).json({ message: 'ID de contacto inválido' });
     }
 
-    const user = await User.findById(req.user._id).select('emergencyContacts');
+    // Asegurar que req.user._id sea un ObjectId válido
+    const userId = mongoose.Types.ObjectId.isValid(req.user._id) 
+      ? new mongoose.Types.ObjectId(req.user._id) 
+      : req.user._id;
+    
+    const user = await User.findById(userId).select('emergencyContacts');
     
     if (!user || !user.emergencyContacts) {
       return res.status(404).json({ message: 'Usuario o contacto no encontrado' });
@@ -745,7 +798,12 @@ router.post('/me/emergency-contacts/:contactId/test', authenticateToken, validat
       return res.status(400).json({ message: 'ID de contacto inválido' });
     }
 
-    const user = await User.findById(req.user._id).select('emergencyContacts name username');
+    // Asegurar que req.user._id sea un ObjectId válido
+    const userId = mongoose.Types.ObjectId.isValid(req.user._id) 
+      ? new mongoose.Types.ObjectId(req.user._id) 
+      : req.user._id;
+    
+    const user = await User.findById(userId).select('emergencyContacts name username');
     
     if (!user || !user.emergencyContacts) {
       return res.status(404).json({ message: 'Usuario o contacto no encontrado' });
@@ -865,7 +923,12 @@ router.post('/me/emergency-contacts/:contactId/test-whatsapp', authenticateToken
       return res.status(400).json({ message: 'ID de contacto inválido' });
     }
 
-    const user = await User.findById(req.user._id).select('emergencyContacts name username');
+    // Asegurar que req.user._id sea un ObjectId válido
+    const userId = mongoose.Types.ObjectId.isValid(req.user._id) 
+      ? new mongoose.Types.ObjectId(req.user._id) 
+      : req.user._id;
+    
+    const user = await User.findById(userId).select('emergencyContacts name username');
     
     if (!user || !user.emergencyContacts) {
       return res.status(404).json({ message: 'Usuario o contacto no encontrado' });
