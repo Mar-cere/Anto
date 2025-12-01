@@ -22,6 +22,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { colors } from '../../styles/globalStyles';
 
+// Verificar que WebView esté disponible
+if (!WebView) {
+  console.error('WebView no está disponible. Asegúrate de que react-native-webview esté instalado correctamente.');
+}
+
 // Constantes
 const TEXTS = {
   CLOSE: 'Cerrar',
@@ -180,6 +185,9 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
         allowsBackForwardNavigationGestures={true}
+        // Configuraciones específicas para Android
+        androidHardwareAccelerationDisabled={false}
+        mixedContentMode="always"
         // User agent para mejor compatibilidad
         userAgent="Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36"
       />
