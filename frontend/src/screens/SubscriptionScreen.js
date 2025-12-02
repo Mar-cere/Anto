@@ -120,9 +120,64 @@ const SubscriptionScreen = () => {
         return;
       }
 
-      // Mostrar WebView con el checkout de Mercado Pago
-      setPaymentUrl(checkoutResponse.url);
-      setShowPaymentWebView(true);
+      // Validar que la URL sea válida
+      if (!checkoutResponse.url) {
+        Alert.alert(
+          TEXTS.SUBSCRIBE_ERROR,
+          'No se recibió una URL válida para el pago'
+        );
+        return;
+      }
+
+      // Intentar abrir en navegador externo primero (más confiable para Mercado Pago)
+      // Si el usuario cancela o hay error, mostrar WebView como fallback
+      const { Linking } = require('react-native');
+      const canOpen = await Linking.canOpenURL(checkoutResponse.url);
+      
+      if (canOpen) {
+        // Preguntar al usuario cómo prefiere abrir el pago
+        Alert.alert(
+          'Método de pago',
+          '¿Cómo prefieres realizar el pago?',
+          [
+            {
+              text: 'En la app',
+              onPress: () => {
+                setPaymentUrl(checkoutResponse.url);
+                setShowPaymentWebView(true);
+              }
+            },
+            {
+              text: 'En navegador',
+              style: 'default',
+              onPress: async () => {
+                try {
+                  await Linking.openURL(checkoutResponse.url);
+                  // Después de abrir en navegador, mostrar mensaje informativo
+                  Alert.alert(
+                    'Pago en proceso',
+                    'Se abrió Mercado Pago en tu navegador. Una vez completado el pago, vuelve a la app para ver tu suscripción actualizada.',
+                    [{ text: 'Entendido' }]
+                  );
+                } catch (error) {
+                  console.error('Error abriendo URL:', error);
+                  // Fallback a WebView si falla abrir en navegador
+                  setPaymentUrl(checkoutResponse.url);
+                  setShowPaymentWebView(true);
+                }
+              }
+            },
+            {
+              text: 'Cancelar',
+              style: 'cancel'
+            }
+          ]
+        );
+      } else {
+        // Si no se puede abrir en navegador, usar WebView directamente
+        setPaymentUrl(checkoutResponse.url);
+        setShowPaymentWebView(true);
+      }
     } catch (err) {
       console.error('Error en suscripción:', err);
       Alert.alert(

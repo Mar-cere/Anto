@@ -112,8 +112,16 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
     console.error('Error en WebView:', nativeEvent);
     
     // Ignorar errores de "about:srcdoc" que pueden ocurrir con iframes
-    if (nativeEvent.url && nativeEvent.url.includes('about:srcdoc')) {
-      console.warn('Ignorando error de about:srcdoc (iframe interno)');
+    if (nativeEvent.url && (nativeEvent.url.includes('about:srcdoc') || nativeEvent.url.includes('about:blank'))) {
+      console.warn('Ignorando error de about:srcdoc/about:blank (iframe interno)');
+      return;
+    }
+    
+    // Ignorar errores de código -1003 (DNS/red) si la URL es de Mercado Pago
+    // Estos errores pueden ser falsos positivos cuando Mercado Pago redirige
+    if (nativeEvent.code === -1003 && nativeEvent.url && nativeEvent.url.includes('mercadopago')) {
+      console.warn('Ignorando error de DNS para Mercado Pago (puede ser redirección)');
+      // No mostrar error inmediatamente, esperar a ver si la página carga
       return;
     }
     
@@ -125,14 +133,15 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
       } else if (nativeEvent.description.includes('timeout')) {
         errorMessage = 'Tiempo de espera agotado. Por favor, intenta nuevamente.';
       } else if (nativeEvent.description.includes('No se encontró ningún servidor')) {
-        errorMessage = 'No se pudo conectar con Mercado Pago. Verifica tu conexión a internet.';
+        // Para errores de DNS con Mercado Pago, sugerir usar navegador externo
+        errorMessage = 'No se pudo conectar con Mercado Pago en la app. Te recomendamos usar el navegador externo.';
       } else {
         errorMessage = nativeEvent.description;
       }
     }
     
-    // Solo mostrar error si no es un error de iframe interno
-    if (!nativeEvent.url || !nativeEvent.url.includes('about:')) {
+    // Solo mostrar error si no es un error de iframe interno o redirección de Mercado Pago
+    if (!nativeEvent.url || (!nativeEvent.url.includes('about:') && !(nativeEvent.code === -1003 && nativeEvent.url.includes('mercadopago')))) {
       setError(errorMessage);
       setLoading(false);
       onError?.(errorMessage);
