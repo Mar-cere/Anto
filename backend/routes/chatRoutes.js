@@ -29,6 +29,7 @@ import crisisFollowUpService from '../services/crisisFollowUpService.js';
 import pushNotificationService from '../services/pushNotificationService.js';
 import CrisisEvent from '../models/CrisisEvent.js';
 import EmergencyAlert from '../models/EmergencyAlert.js';
+import { cursorPaginate } from '../utils/pagination.js';
 
 const router = express.Router();
 
@@ -664,11 +665,78 @@ router.post('/messages', protect, requireActiveSubscription(true), async (req, r
 // Obtener todas las conversaciones del usuario con estadísticas
 router.get('/conversations', protect, async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, cursor, paginationType = 'offset' } = req.query;
+    
+    // Usar cursor-based pagination si se especifica o si hay muchos resultados
+    if (paginationType === 'cursor' || cursor) {
+      const result = await cursorPaginate({
+        query: { userId: new mongoose.Types.ObjectId(req.user._id) },
+        model: Message,
+        cursor: cursor || null,
+        limit: parseInt(limit),
+        sort: { createdAt: -1 },
+        select: 'conversationId content role metadata.context.emotional createdAt'
+      });
+      
+      // Agrupar por conversación
+      const conversationMap = new Map();
+      result.data.forEach(msg => {
+        const convId = msg.conversationId.toString();
+        if (!conversationMap.has(convId)) {
+          conversationMap.set(convId, {
+            _id: msg.conversationId,
+            lastMessage: msg.content,
+            lastMessageRole: msg.role,
+            updatedAt: msg.createdAt,
+            messageCount: 1,
+            emotionalContext: msg.metadata?.context?.emotional
+          });
+        } else {
+          const conv = conversationMap.get(convId);
+          conv.messageCount++;
+          if (msg.createdAt > conv.updatedAt) {
+            conv.updatedAt = msg.createdAt;
+            conv.lastMessage = msg.content;
+            conv.lastMessageRole = msg.role;
+            conv.emotionalContext = msg.metadata?.context?.emotional;
+          }
+        }
+      });
+      
+      const conversations = Array.from(conversationMap.values());
+      
+      return res.json({
+        conversations,
+        pagination: {
+          type: 'cursor',
+          nextCursor: result.nextCursor,
+          hasMore: result.hasMore,
+          count: conversations.length
+        }
+      });
+    }
+    
+    // Paginación tradicional (offset-based)
     const skip = (page - 1) * limit;
     
+    // Optimización: Usar índices existentes (userId, createdAt) y proyección
     const conversations = await Message.aggregate([
-      { $match: { userId: req.user._id } },
+      { 
+        $match: { 
+          userId: new mongoose.Types.ObjectId(req.user._id) 
+        } 
+      },
+      {
+        // Optimización: Proyectar solo campos necesarios antes de agrupar
+        $project: {
+          conversationId: 1,
+          content: 1,
+          role: 1,
+          createdAt: 1,
+          'metadata.status': 1,
+          'metadata.context.emotional': 1
+        }
+      },
       { 
         $group: {
           _id: '$conversationId',

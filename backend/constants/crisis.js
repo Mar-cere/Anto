@@ -64,6 +64,143 @@ export const CRISIS_MESSAGES = {
   PROFESSIONAL_HELP: 'Es importante que hables con un profesional de salud mental. Puedo ayudarte a encontrar recursos en tu área.'
 };
 
+// ========== TRADUCCIONES DE MENSAJES DE ALERTA ==========
+export const ALERT_MESSAGES = {
+  es: {
+    // Asuntos
+    TEST_SUBJECT: '🧪 [PRUEBA] Alerta de {APP_NAME} - {USER_NAME}',
+    ALERT_SUBJECT: '🚨 Alerta de {APP_NAME} - {USER_NAME} necesita apoyo',
+    
+    // Niveles de riesgo
+    RISK_LEVEL: {
+      LOW: 'Bajo',
+      MEDIUM: 'Medio',
+      HIGH: 'Alto',
+      WARNING: 'Advertencia',
+      UNKNOWN: 'Desconocido'
+    },
+    
+    // Mensajes de prueba
+    TEST_HEADER: '🧪 Esta es una PRUEBA',
+    TEST_DESCRIPTION: 'Este es un email de prueba del sistema de alertas de emergencia.',
+    TEST_EXPLANATION: 'No hay ninguna situación de emergencia real. {USER_NAME} está probando que el sistema funciona correctamente.',
+    TEST_SUCCESS: 'Si recibiste este email, significa que:',
+    TEST_SUCCESS_ITEM_1: '✅ Tu dirección de email está correctamente configurada',
+    TEST_SUCCESS_ITEM_2: '✅ El sistema puede contactarte en caso de emergencia',
+    TEST_SUCCESS_ITEM_3: '✅ Las alertas llegarán a tu bandeja de entrada',
+    TEST_FOOTER: 'En caso de una emergencia real, recibirás un email similar pero con información sobre la situación y recursos de ayuda.',
+    
+    // Mensajes de alerta
+    ALERT_HEADER: '🚨 Alerta de {APP_NAME}',
+    ALERT_GREETING: 'Hola,',
+    ALERT_INTRO: 'Has sido designado como contacto de emergencia de <strong>{USER_NAME}</strong> en {APP_NAME}.',
+    SITUATION_DETECTED: '⚠️ Situación Detectada',
+    RISK_LEVEL_LABEL: 'Nivel de Riesgo:',
+    SITUATION_DESCRIPTION: 'Nuestro sistema ha detectado señales de que {USER_NAME} podría estar pasando por un momento difícil y necesita apoyo.',
+    HIGH_RISK_WARNING: 'Esta es una situación de alto riesgo que requiere atención inmediata.',
+    
+    // Qué puedes hacer
+    WHAT_CAN_YOU_DO: '¿Qué puedes hacer?',
+    ACTION_CONTACT: '<strong>Contacta a {USER_NAME} directamente</strong> - Tu apoyo personal es muy valioso',
+    ACTION_LISTEN: '<strong>Escucha sin juzgar</strong> - A veces solo necesitan alguien que los escuche',
+    ACTION_SUPPORT: '<strong>Ofrece acompañamiento</strong> - Pregunta cómo puedes ayudar',
+    ACTION_PROFESSIONAL: '<strong>Busca ayuda profesional</strong> - Si la situación es grave, contacta servicios de emergencia',
+    
+    // Recursos
+    EMERGENCY_RESOURCES: 'Recursos de Emergencia',
+    EMERGENCY_RESOURCES_DESC: 'Si la situación es urgente, contacta:',
+    
+    // Footer
+    IMPORTANT_NOTE: 'Importante: Esta alerta se genera automáticamente cuando nuestro sistema detecta señales de riesgo. Por favor, verifica la situación directamente con {USER_NAME}.',
+    ERROR_NOTE: 'Si crees que esta alerta fue enviada por error o si {USER_NAME} ya está recibiendo el apoyo necesario, puedes ignorar este mensaje.',
+    FOOTER_AUTO: 'Este es un mensaje automático de {APP_NAME}.',
+    FOOTER_NO_REPLY: 'Por favor, no respondas a este correo. Si necesitas contactar a {USER_NAME}, usa los medios de contacto que tengas con él/ella.',
+    FOOTER_PRIVACY: 'Tu privacidad es importante. Este correo se envió solo porque fuiste designado como contacto de emergencia.',
+    
+    // WhatsApp
+    WHATSAPP_TEST: '[PRUEBA] Alerta de {APP_NAME}',
+    WHATSAPP_TEST_MESSAGE: 'Esta es una prueba del sistema de alertas. {USER_NAME} está verificando que el sistema funciona correctamente. No hay emergencia real.',
+    WHATSAPP_ALERT: '🚨 Alerta de {APP_NAME}',
+    WHATSAPP_INTRO: 'Has sido designado como contacto de emergencia de {USER_NAME}.',
+    WHATSAPP_SITUATION: 'Nuestro sistema ha detectado señales de que {USER_NAME} podría necesitar apoyo.',
+    WHATSAPP_RISK_LEVEL: 'Nivel de riesgo: {RISK_LEVEL}',
+    WHATSAPP_ACTIONS: 'Por favor, contacta a {USER_NAME} directamente. Tu apoyo es muy valioso.',
+    WHATSAPP_EMERGENCY: 'Si es urgente, contacta servicios de emergencia: {EMERGENCY}',
+    WHATSAPP_FOOTER: 'Esta es una alerta automática. Verifica la situación directamente con {USER_NAME}.'
+  },
+  en: {
+    // Subjects
+    TEST_SUBJECT: '🧪 [TEST] Alert from {APP_NAME} - {USER_NAME}',
+    ALERT_SUBJECT: '🚨 Alert from {APP_NAME} - {USER_NAME} needs support',
+    
+    // Risk levels
+    RISK_LEVEL: {
+      LOW: 'Low',
+      MEDIUM: 'Medium',
+      HIGH: 'High',
+      WARNING: 'Warning',
+      UNKNOWN: 'Unknown'
+    },
+    
+    // Test messages
+    TEST_HEADER: '🧪 This is a TEST',
+    TEST_DESCRIPTION: 'This is a test email from the emergency alert system.',
+    TEST_EXPLANATION: 'There is no real emergency situation. {USER_NAME} is testing that the system works correctly.',
+    TEST_SUCCESS: 'If you received this email, it means:',
+    TEST_SUCCESS_ITEM_1: '✅ Your email address is correctly configured',
+    TEST_SUCCESS_ITEM_2: '✅ The system can contact you in case of emergency',
+    TEST_SUCCESS_ITEM_3: '✅ Alerts will arrive in your inbox',
+    TEST_FOOTER: 'In case of a real emergency, you will receive a similar email but with information about the situation and help resources.',
+    
+    // Alert messages
+    ALERT_HEADER: '🚨 Alert from {APP_NAME}',
+    ALERT_GREETING: 'Hello,',
+    ALERT_INTRO: 'You have been designated as an emergency contact for <strong>{USER_NAME}</strong> in {APP_NAME}.',
+    SITUATION_DETECTED: '⚠️ Situation Detected',
+    RISK_LEVEL_LABEL: 'Risk Level:',
+    SITUATION_DESCRIPTION: 'Our system has detected signs that {USER_NAME} might be going through a difficult time and needs support.',
+    HIGH_RISK_WARNING: 'This is a high-risk situation that requires immediate attention.',
+    
+    // What can you do
+    WHAT_CAN_YOU_DO: 'What can you do?',
+    ACTION_CONTACT: '<strong>Contact {USER_NAME} directly</strong> - Your personal support is very valuable',
+    ACTION_LISTEN: '<strong>Listen without judging</strong> - Sometimes they just need someone to listen',
+    ACTION_SUPPORT: '<strong>Offer support</strong> - Ask how you can help',
+    ACTION_PROFESSIONAL: '<strong>Seek professional help</strong> - If the situation is serious, contact emergency services',
+    
+    // Resources
+    EMERGENCY_RESOURCES: 'Emergency Resources',
+    EMERGENCY_RESOURCES_DESC: 'If the situation is urgent, contact:',
+    
+    // Footer
+    IMPORTANT_NOTE: 'Important: This alert is automatically generated when our system detects risk signals. Please verify the situation directly with {USER_NAME}.',
+    ERROR_NOTE: 'If you believe this alert was sent by mistake or if {USER_NAME} is already receiving the necessary support, you can ignore this message.',
+    FOOTER_AUTO: 'This is an automatic message from {APP_NAME}.',
+    FOOTER_NO_REPLY: 'Please do not reply to this email. If you need to contact {USER_NAME}, use the contact methods you have with them.',
+    FOOTER_PRIVACY: 'Your privacy is important. This email was sent only because you were designated as an emergency contact.',
+    
+    // WhatsApp
+    WHATSAPP_TEST: '[TEST] Alert from {APP_NAME}',
+    WHATSAPP_TEST_MESSAGE: 'This is a test of the alert system. {USER_NAME} is verifying that the system works correctly. There is no real emergency.',
+    WHATSAPP_ALERT: '🚨 Alert from {APP_NAME}',
+    WHATSAPP_INTRO: 'You have been designated as an emergency contact for {USER_NAME}.',
+    WHATSAPP_SITUATION: 'Our system has detected signs that {USER_NAME} might need support.',
+    WHATSAPP_RISK_LEVEL: 'Risk level: {RISK_LEVEL}',
+    WHATSAPP_ACTIONS: 'Please contact {USER_NAME} directly. Your support is very valuable.',
+    WHATSAPP_EMERGENCY: 'If urgent, contact emergency services: {EMERGENCY}',
+    WHATSAPP_FOOTER: 'This is an automatic alert. Verify the situation directly with {USER_NAME}.'
+  }
+};
+
+/**
+ * Obtiene los mensajes traducidos según el idioma
+ * @param {string} language - Código de idioma ('es' o 'en')
+ * @returns {Object} Objeto con mensajes traducidos
+ */
+export const getAlertMessages = (language = 'es') => {
+  return ALERT_MESSAGES[language] || ALERT_MESSAGES.es;
+};
+
 // ========== PROTOCOLO DE INTERVENCIÓN EN CRISIS ==========
 export const CRISIS_PROTOCOL = {
   STEPS: [

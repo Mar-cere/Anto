@@ -18,6 +18,8 @@ import {
   getDBTTechniques,
   getACTTechniques,
 } from '../constants/therapeuticTechniques.js';
+import { getMindfulnessTechniques, getAllGroundingTechniques } from '../constants/mindfulnessTechniques.js';
+import { getPsychoeducationModule, getAvailableTopics } from '../constants/psychoeducation.js';
 
 const router = express.Router();
 
@@ -149,6 +151,92 @@ router.get('/emotion/:emotion', authenticateToken, (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Error al obtener técnicas terapéuticas',
+    });
+  }
+});
+
+/**
+ * GET /api/therapeutic-techniques/mindfulness
+ * Obtiene técnicas de mindfulness por emoción
+ */
+router.get('/mindfulness/:emotion?', authenticateToken, (req, res) => {
+  try {
+    const { emotion } = req.params;
+    
+    if (emotion) {
+      const techniques = getMindfulnessTechniques(emotion);
+      res.json({
+        success: true,
+        data: techniques,
+        count: techniques.length,
+        emotion
+      });
+    } else {
+      const allTechniques = getAllGroundingTechniques();
+      res.json({
+        success: true,
+        data: allTechniques,
+        count: Object.keys(allTechniques).reduce((sum, key) => sum + Object.keys(allTechniques[key]).length, 0)
+      });
+    }
+  } catch (error) {
+    console.error('Error obteniendo técnicas de mindfulness:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error al obtener técnicas de mindfulness'
+    });
+  }
+});
+
+/**
+ * GET /api/therapeutic-techniques/psychoeducation/:topic
+ * Obtiene información psicoeducativa sobre un tema
+ */
+router.get('/psychoeducation/:topic', authenticateToken, (req, res) => {
+  try {
+    const { topic } = req.params;
+    const module = getPsychoeducationModule(topic);
+    
+    if (!module) {
+      const availableTopics = getAvailableTopics();
+      return res.status(404).json({
+        success: false,
+        error: `Tema no encontrado: ${topic}`,
+        availableTopics
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: module,
+      topic
+    });
+  } catch (error) {
+    console.error('Error obteniendo psicoeducación:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error al obtener información psicoeducativa'
+    });
+  }
+});
+
+/**
+ * GET /api/therapeutic-techniques/psychoeducation
+ * Obtiene lista de temas disponibles de psicoeducación
+ */
+router.get('/psychoeducation', authenticateToken, (req, res) => {
+  try {
+    const topics = getAvailableTopics();
+    res.json({
+      success: true,
+      data: topics,
+      count: topics.length
+    });
+  } catch (error) {
+    console.error('Error obteniendo temas de psicoeducación:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error al obtener temas de psicoeducación'
     });
   }
 });

@@ -32,9 +32,11 @@ import {
 } from 'react-native';
 import ParticleBackground from '../components/ParticleBackground';
 import ActionSuggestionCard from '../components/ActionSuggestionCard';
+import ProtocolProgressIndicator from '../components/ProtocolProgressIndicator';
 import TrialBanner from '../components/TrialBanner';
 import chatService from '../services/chatService';
 import paymentService from '../services/paymentService';
+import websocketService from '../services/websocketService';
 import * as Notifications from 'expo-notifications';
 import { colors } from '../styles/globalStyles';
 
@@ -315,6 +317,52 @@ const ChatScreen = () => {
     };
   }, [initializeConversation, loadTrialInfo, fadeAnim]);
 
+  // Conectar WebSocket y configurar listeners para alertas de emergencia
+  useEffect(() => {
+    const connectWebSocket = async () => {
+      try {
+        // Obtener userId desde AsyncStorage
+        const userData = await AsyncStorage.getItem('userData');
+        if (userData) {
+          const parsed = JSON.parse(userData);
+          const userId = parsed._id || parsed.id;
+          if (userId) {
+            await websocketService.connect(userId);
+          }
+        }
+      } catch (error) {
+        console.error('[ChatScreen] Error conectando WebSocket:', error);
+      }
+    };
+
+    connectWebSocket();
+
+    // Listener para alertas de emergencia
+    const unsubscribeAlert = websocketService.on('emergency:alert:sent', (data) => {
+      console.log('[ChatScreen] Alerta de emergencia recibida en tiempo real:', data);
+      
+      // Mostrar notificación local
+      if (data && !data.isTest) {
+        Alert.alert(
+          '🚨 Alerta de Emergencia Enviada',
+          `Hemos notificado a ${data.successfulSends} de ${data.totalContacts} contacto(s) de emergencia.`,
+          [{ text: 'OK' }]
+        );
+      }
+    });
+
+    // Listener para errores
+    const unsubscribeError = websocketService.on('error', (error) => {
+      console.error('[ChatScreen] Error en WebSocket:', error);
+    });
+
+    return () => {
+      unsubscribeAlert();
+      unsubscribeError();
+      websocketService.disconnect();
+    };
+  }, []);
+
   // Scroll al final
   const scrollToBottom = useCallback((animated = true) => {
     if (flatListRef.current && messages.length > 0) {
@@ -476,6 +524,19 @@ const ChatScreen = () => {
                   // Si no hay pantalla específica, enviar un mensaje sobre la sugerencia
                   setInputText(`Quiero probar: ${suggestion.label}`);
                 }
+              }}
+              onDismiss={() => {
+                // Remover la sugerencia de la lista
+                setMessages(prev => prev.filter((msg, i) => {
+                  if (msg.type === 'suggestions' && msg.suggestions) {
+                    const updatedSuggestions = msg.suggestions.filter((s, idx) => idx !== index);
+                    if (updatedSuggestions.length === 0) {
+                      return false; // Remover el mensaje completo si no quedan sugerencias
+                    }
+                    return true;
+                  }
+                  return true;
+                }));
               }}
             />
           ))}

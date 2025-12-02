@@ -32,6 +32,10 @@ import TechniqueDetailScreen from '../screens/TechniqueDetailScreen';
 import TherapeuticTechniquesStatsScreen from '../screens/TherapeuticTechniquesStatsScreen';
 import SubscriptionScreen from '../screens/SubscriptionScreen';
 import TransactionHistoryScreen from '../screens/TransactionHistoryScreen';
+import BreathingExerciseScreen from '../screens/techniques/BreathingExerciseScreen';
+import GroundingTechniqueScreen from '../screens/techniques/GroundingTechniqueScreen';
+import SelfCompassionScreen from '../screens/techniques/SelfCompassionScreen';
+import CommunicationToolScreen from '../screens/techniques/CommunicationToolScreen';
 import { colors } from '../styles/globalStyles';
 import TabNavigator from './TabNavigator';
 
@@ -205,6 +209,28 @@ const StackNavigator = () => {
       <Stack.Screen
         name={ROUTE_NAMES.TRANSACTION_HISTORY}
         component={TransactionHistoryScreen}
+        options={{ headerShown: false }}
+      />
+      
+      {/* Pantallas de técnicas interactivas */}
+      <Stack.Screen
+        name="BreathingExercise"
+        component={BreathingExerciseScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="GroundingTechnique"
+        component={GroundingTechniqueScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SelfCompassion"
+        component={SelfCompassionScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="CommunicationTool"
+        component={CommunicationToolScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

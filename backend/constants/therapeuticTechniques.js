@@ -67,6 +67,42 @@ export const IMMEDIATE_TECHNIQUES = {
       whenToUse: 'Cuando la ansiedad te hace sentir desconectado o abrumado por pensamientos acelerados.'
     },
     {
+      name: 'Grounding Sensorial - Temperatura',
+      type: 'DBT',
+      steps: [
+        'Alterna agua fría y caliente en tus manos',
+        'Siente la diferencia de temperatura',
+        'Enfócate solo en la sensación',
+        'Repite 3-5 veces'
+      ],
+      description: 'Usar sensaciones físicas intensas ayuda a anclarte en el presente.',
+      whenToUse: 'Cuando necesitas una sensación física fuerte para salir de pensamientos ansiosos.'
+    },
+    {
+      name: 'Grounding Mental - Categorías',
+      type: 'DBT',
+      steps: [
+        'Elige una categoría (colores, países, animales, etc.)',
+        'Nombra 5 cosas en esa categoría',
+        'Cambia a otra categoría',
+        'Repite con 3-5 categorías diferentes'
+      ],
+      description: 'Usar el pensamiento lógico ayuda a distraerte de la ansiedad.',
+      whenToUse: 'Cuando los pensamientos ansiosos son muy intensos y necesitas distracción mental.'
+    },
+    {
+      name: 'Body Scan Mindfulness',
+      type: 'DBT',
+      steps: [
+        'Escanea tu cuerpo de pies a cabeza',
+        'Nota sensaciones sin juzgar',
+        'Observa tensión o relajación',
+        'Respira en cada área que notes tensión'
+      ],
+      description: 'El escaneo corporal aumenta la conciencia del cuerpo y reduce la ansiedad física.',
+      whenToUse: 'Cuando la ansiedad se manifiesta físicamente (tensión, palpitaciones, etc.).'
+    },
+    {
       name: 'Reestructuración Cognitiva Rápida',
       type: 'CBT',
       steps: [

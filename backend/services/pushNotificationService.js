@@ -9,6 +9,7 @@
 
 import { Expo } from 'expo-server-sdk';
 import { NOTIFICATION_ICON_URL } from '../constants/app.js';
+import NotificationEngagement from '../models/NotificationEngagement.js';
 
 class PushNotificationService {
   constructor() {
@@ -58,6 +59,9 @@ class PushNotificationService {
       TRIAL_EXPIRING: 'trial_expiring',
       TRIAL_EXPIRED: 'trial_expired',
       SUBSCRIPTION_REMINDER: 'subscription_reminder',
+      
+      // Alertas de emergencia
+      EMERGENCY_ALERT_SENT: 'emergency_alert_sent',
     };
   }
 
@@ -77,9 +81,10 @@ class PushNotificationService {
    * @param {string} body - Cuerpo de la notificación
    * @param {Object} data - Datos adicionales
    * @param {string} type - Tipo de notificación
+   * @param {string} userId - ID del usuario (opcional, para tracking)
    * @returns {Promise<Object>} Resultado del envío
    */
-  async sendNotification(pushToken, title, body, data = {}, type = 'default') {
+  async sendNotification(pushToken, title, body, data = {}, type = 'default', userId = null) {
     try {
       // Validar token
       if (!this.isValidToken(pushToken)) {
@@ -126,13 +131,38 @@ class PushNotificationService {
 
       // Verificar resultados
       const ticket = tickets[0];
-      if (ticket.status === 'ok') {
+      const result = ticket.status === 'ok'
+        ? { success: true, ticketId: ticket.id, title, body }
+        : { success: false, error: ticket.message || 'Error desconocido', title, body };
+
+      // Registrar engagement si se proporciona userId
+      if (userId) {
+        try {
+          await NotificationEngagement.create({
+            userId,
+            notificationType: type,
+            pushToken,
+            status: result.success ? 'sent' : 'error',
+            notificationData: {
+              title,
+              body,
+              data
+            },
+            error: result.error || null
+          });
+        } catch (engagementError) {
+          // No bloquear si falla el registro de engagement
+          console.warn('[PushNotificationService] Error registrando engagement:', engagementError.message);
+        }
+      }
+
+      if (result.success) {
         console.log('[PushNotificationService] ✅ Notificación enviada exitosamente');
-        return { success: true, ticketId: ticket.id };
       } else {
         console.error('[PushNotificationService] ❌ Error en ticket:', ticket);
-        return { success: false, error: ticket.message || 'Error desconocido' };
       }
+
+      return result;
     } catch (error) {
       console.error('[PushNotificationService] ❌ Error enviando notificación:', error);
       return { success: false, error: error.message };
@@ -666,6 +696,38 @@ class PushNotificationService {
   }
 
   /**
+   * Envía notificación al usuario cuando se envían alertas de emergencia
+   * @param {string} pushToken - Token push
+   * @param {Object} options - Opciones adicionales
+   * @returns {Promise<Object>}
+   */
+  async sendEmergencyAlertSent(pushToken, options = {}) {
+    const { successfulSends, totalContacts, riskLevel, isTest } = options;
+    
+    const title = isTest 
+      ? '🧪 Alerta de Prueba Enviada'
+      : '🚨 Alerta de Emergencia Enviada';
+    
+    const body = isTest
+      ? `Se envió una alerta de prueba a ${successfulSends} de ${totalContacts} contacto(s) de emergencia.`
+      : `Hemos detectado una situación de riesgo y hemos notificado a ${successfulSends} de ${totalContacts} contacto(s) de emergencia.`;
+    
+    return this.sendNotification(
+      pushToken,
+      title,
+      body,
+      {
+        action: 'open_emergency_alerts',
+        riskLevel,
+        successfulSends,
+        totalContacts,
+        isTest: isTest || false,
+      },
+      this.NOTIFICATION_TYPES.EMERGENCY_ALERT_SENT
+    );
+  }
+
+  /**
    * Envía notificaciones a múltiples tokens
    * @param {Array<string>} pushTokens - Array de tokens
    * @param {string} title - Título
@@ -781,6 +843,9 @@ class PushNotificationService {
       [this.NOTIFICATION_TYPES.TRIAL_EXPIRING]: 'anto-reminders',
       [this.NOTIFICATION_TYPES.TRIAL_EXPIRED]: 'anto-reminders',
       [this.NOTIFICATION_TYPES.SUBSCRIPTION_REMINDER]: 'anto-reminders',
+      
+      // Alertas de emergencia - canal de crisis
+      [this.NOTIFICATION_TYPES.EMERGENCY_ALERT_SENT]: 'anto-crisis',
     };
     return channelMap[type] || 'anto-notifications';
   }
@@ -831,6 +896,9 @@ class PushNotificationService {
       [this.NOTIFICATION_TYPES.TRIAL_EXPIRING]: 'high',
       [this.NOTIFICATION_TYPES.TRIAL_EXPIRED]: 'high',
       [this.NOTIFICATION_TYPES.SUBSCRIPTION_REMINDER]: 'high',
+      
+      // Alertas de emergencia - alta prioridad
+      [this.NOTIFICATION_TYPES.EMERGENCY_ALERT_SENT]: 'high',
     };
     return priorityMap[type] || 'default';
   }

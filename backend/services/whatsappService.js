@@ -11,6 +11,8 @@
 
 import twilio from 'twilio';
 import { getFormattedEmergencyNumbers } from '../constants/emergencyNumbers.js';
+import { getAlertMessages } from '../constants/crisis.js';
+import { APP_NAME } from '../constants/app.js';
 
 // Configuración de Twilio
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
@@ -138,56 +140,34 @@ const sendWhatsAppMessage = async (to, message) => {
  * @param {string} riskLevel - Nivel de riesgo (LOW, MEDIUM, HIGH)
  * @param {boolean} isTest - Si es una prueba
  * @param {string} phone - Número de teléfono del contacto (para detectar país)
+ * @param {string} language - Idioma del usuario ('es' o 'en', default: 'es')
  * @returns {string} Mensaje formateado para WhatsApp
  */
-const generateAlertMessage = (userInfo, riskLevel, isTest = false, phone = null) => {
-  const userName = userInfo.name || userInfo.email || 'un usuario';
-  const riskLevelText = {
-    'LOW': 'Bajo',
-    'MEDIUM': 'Medio',
-    'HIGH': 'Alto'
-  }[riskLevel] || 'Desconocido';
+const generateAlertMessage = (userInfo, riskLevel, isTest = false, phone = null, language = 'es') => {
+  const messages = getAlertMessages(language);
+  const userName = userInfo.name || userInfo.email || (language === 'en' ? 'a user' : 'un usuario');
+  const riskLevelText = messages.RISK_LEVEL[riskLevel] || messages.RISK_LEVEL.UNKNOWN;
 
   if (isTest) {
-    return `🧪 *PRUEBA - Alerta de ${process.env.APP_NAME || 'Anto'}*
-
-Hola,
-
-Este es un mensaje de *PRUEBA* del sistema de alertas de emergencia.
-
-${userName} está probando que el sistema funciona correctamente.
-
-*No hay ninguna situación de emergencia real.*
-
-Si recibiste este mensaje, significa que:
-✅ Tu número está correctamente configurado
-✅ El sistema puede contactarte en caso de emergencia
-✅ Las alertas llegarán a tu WhatsApp
-
-En caso de una emergencia real, recibirás un mensaje similar pero con información sobre la situación y recursos de ayuda.`;
+    return `${messages.WHATSAPP_TEST.replace('{APP_NAME}', APP_NAME)}\n\n${messages.WHATSAPP_TEST_MESSAGE.replace('{USER_NAME}', userName).replace('{APP_NAME}', APP_NAME)}`;
   }
 
-  let message = `🚨 *Alerta de Emergencia - ${process.env.APP_NAME || 'Anto'}*\n\n`;
-  message += `Has sido designado como contacto de emergencia de *${userName}*.\n\n`;
-  message += `*Situación Detectada:*\n`;
-  message += `Nivel de Riesgo: *${riskLevelText}*\n\n`;
-  message += `Nuestro sistema ha detectado señales de que ${userName} podría estar pasando por un momento difícil y necesita apoyo.\n\n`;
+  let message = `${messages.WHATSAPP_ALERT.replace('{APP_NAME}', APP_NAME)}\n\n`;
+  message += `${messages.WHATSAPP_INTRO.replace('{USER_NAME}', userName).replace('{APP_NAME}', APP_NAME)}\n\n`;
+  message += `${messages.WHATSAPP_SITUATION.replace('{USER_NAME}', userName)}\n\n`;
+  message += `${messages.WHATSAPP_RISK_LEVEL.replace('{RISK_LEVEL}', riskLevelText)}\n\n`;
 
   if (riskLevel === 'HIGH') {
-    message += `⚠️ *Esta es una situación de ALTO RIESGO que requiere atención inmediata.*\n\n`;
+    message += `⚠️ *${messages.HIGH_RISK_WARNING}*\n\n`;
   }
 
-  message += `*¿Qué puedes hacer?*\n`;
-  message += `• Contacta a ${userName} directamente\n`;
-  message += `• Escucha sin juzgar\n`;
-  message += `• Ofrece acompañamiento\n`;
-  message += `• Busca ayuda profesional si es necesario\n\n`;
+  message += `${messages.WHATSAPP_ACTIONS.replace('{USER_NAME}', userName)}\n\n`;
 
   // Obtener números de emergencia según el país del contacto
   const emergencyNumbers = getFormattedEmergencyNumbers(phone);
   message += `${emergencyNumbers}\n\n`;
 
-  message += `Este es un mensaje automático. Por favor, verifica la situación directamente con ${userName}.`;
+  message += `${messages.WHATSAPP_FOOTER.replace('{USER_NAME}', userName)}`;
 
   return message;
 };
@@ -199,10 +179,11 @@ const whatsappService = {
    * @param {Object} userInfo - Información del usuario
    * @param {string} riskLevel - Nivel de riesgo (LOW, MEDIUM, HIGH)
    * @param {boolean} isTest - Si es una prueba
+   * @param {string} language - Idioma del usuario ('es' o 'en', default: 'es')
    * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
    */
-  sendEmergencyAlert: async (phone, userInfo, riskLevel, isTest = false) => {
-    const message = generateAlertMessage(userInfo, riskLevel, isTest, phone);
+  sendEmergencyAlert: async (phone, userInfo, riskLevel, isTest = false, language = 'es') => {
+    const message = generateAlertMessage(userInfo, riskLevel, isTest, phone, language);
     return await sendWhatsAppMessage(phone, message);
   },
 
@@ -210,10 +191,11 @@ const whatsappService = {
    * Envía mensaje de prueba por WhatsApp
    * @param {string} phone - Número de teléfono del contacto
    * @param {Object} userInfo - Información del usuario
+   * @param {string} language - Idioma del usuario ('es' o 'en', default: 'es')
    * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
    */
-  sendTestMessage: async (phone, userInfo) => {
-    const message = generateAlertMessage(userInfo, 'MEDIUM', true, phone);
+  sendTestMessage: async (phone, userInfo, language = 'es') => {
+    const message = generateAlertMessage(userInfo, 'MEDIUM', true, phone, language);
     return await sendWhatsAppMessage(phone, message);
   },
 

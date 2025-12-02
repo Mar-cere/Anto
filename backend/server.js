@@ -13,6 +13,7 @@ import cors from 'cors';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
+import http from 'http';
 import mongoose from 'mongoose';
 import morgan from 'morgan';
 
@@ -31,14 +32,17 @@ import taskRoutes from './routes/taskRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import crisisRoutes from './routes/crisisRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import notificationEngagementRoutes from './routes/notificationEngagementRoutes.js';
 import testNotificationRoutes from './routes/testNotificationRoutes.js';
 import metricsRoutes from './routes/metricsRoutes.js';
 import therapeuticTechniquesRoutes from './routes/therapeuticTechniquesRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import paymentRecoveryRoutes from './routes/paymentRecoveryRoutes.js';
 import paymentMetricsRoutes from './routes/paymentMetricsRoutes.js';
+import responseFeedbackRoutes from './routes/responseFeedbackRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
 import { setupSwagger } from './config/swagger.js';
+import { setupSocketIO } from './config/socket.js';
 
 // Constantes de configuración
 const APP_VERSION = '1.2.0';
@@ -187,6 +191,9 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Compresión de respuestas (gzip)
+app.use(compression());
+
 // Middleware de logging (solo en desarrollo)
 if (config.app.environment === 'development') {
   app.use(morgan('dev'));
@@ -266,11 +273,13 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/crisis', crisisRoutes);
 app.use('/api/cloudinary', cloudinaryRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/notifications', notificationEngagementRoutes);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/therapeutic-techniques', therapeuticTechniquesRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/payments', paymentRecoveryRoutes);
 app.use('/api/payments', paymentMetricsRoutes);
+app.use('/api/feedback', responseFeedbackRoutes);
 app.use('/api/health', healthRoutes);
 
 // Rutas de testing (solo en desarrollo)
@@ -307,7 +316,16 @@ if (process.env.NODE_ENV !== 'test') {
   const HOST = '0.0.0.0';
   const isRender = process.env.RENDER === 'true' || !!process.env.PORT;
 
-  app.listen(PORT, HOST, () => {
+  // Crear servidor HTTP para Socket.IO
+  const server = http.createServer(app);
+  
+  // Configurar Socket.IO
+  const io = setupSocketIO(server);
+  
+  // Exportar io para uso en otros módulos
+  app.set('io', io);
+  
+  server.listen(PORT, HOST, () => {
   logger.info(`🚀 Servidor corriendo en ${HOST}:${PORT}`);
   logger.info(`📝 Ambiente: ${config.app.environment}`);
   logger.info(`🔗 URL Frontend: ${config.app.frontendUrl}`);
@@ -356,6 +374,19 @@ if (process.env.NODE_ENV !== 'test') {
         logger.error('❌ Error iniciando servicio de seguimiento post-crisis', { error: error.message });
       }
     }, 120000); // Esperar 2 minutos después del inicio para que MongoDB esté listo
+  }
+
+  // Iniciar servicio de programación de notificaciones
+  if (process.env.ENABLE_NOTIFICATION_SCHEDULER !== 'false') {
+    setTimeout(async () => {
+      try {
+        const notificationScheduler = (await import('./services/notificationScheduler.js')).default;
+        logger.info('📅 Iniciando servicio de programación de notificaciones...');
+        notificationScheduler.start();
+      } catch (error) {
+        logger.error('❌ Error iniciando servicio de programación de notificaciones', { error: error.message });
+      }
+    }, 180000); // Esperar 3 minutos después del inicio para que MongoDB esté listo
   }
   });
 }

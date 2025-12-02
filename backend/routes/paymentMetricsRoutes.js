@@ -158,12 +158,20 @@ router.get('/metrics/overview', authenticateToken, async (req, res) => {
       : 0;
 
     // Calcular LTV (Lifetime Value) promedio
+    // Optimización: Usar índices existentes (status, type)
     const ltvData = await Transaction.aggregate([
       {
         $match: {
           status: 'completed',
           type: 'subscription',
         },
+      },
+      {
+        // Optimización: Proyectar solo campos necesarios
+        $project: {
+          userId: 1,
+          amount: 1
+        }
       },
       {
         $group: {
@@ -185,11 +193,19 @@ router.get('/metrics/overview', authenticateToken, async (req, res) => {
     const ltv = ltvData[0] || { averageLTV: 0, medianLTV: 0, totalUsers: 0 };
 
     // Métricas por plan
+    // Optimización: Usar índices existentes (status, plan)
     const metricsByPlan = await Subscription.aggregate([
       {
         $match: {
           status: { $in: ['active', 'trialing'] },
         },
+      },
+      {
+        // Optimización: Proyectar solo campos necesarios
+        $project: {
+          plan: 1,
+          status: 1
+        }
       },
       {
         $group: {

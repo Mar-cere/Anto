@@ -962,6 +962,42 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
     prompt += `Mantén un balance entre concisión y profundidad. 2-3 oraciones bien desarrolladas.\n\n`;
   }
 
+  // NUEVO: Información sobre resistencia, recaídas, necesidades implícitas, etc.
+  if (context.resistance) {
+    const intervention = context.resistance.intervention;
+    prompt += `⚠️ RESISTENCIA DETECTADA: ${context.resistance.type}\n`;
+    prompt += `Enfoque: ${intervention.approach}\n`;
+    prompt += `Usa estas técnicas: ${intervention.techniques.join(', ')}\n`;
+    prompt += `Ejemplo de prompt: ${intervention.prompts[0]}\n\n`;
+  }
+
+  if (context.relapseSigns) {
+    prompt += `⚠️ SEÑALES DE RECAÍDA DETECTADAS: ${context.relapseSigns.patterns.join(', ')}\n`;
+    prompt += `Normaliza: Las recaídas son parte del proceso. No significa que haya fallado.\n`;
+    prompt += `Activa: Pregunta qué estrategias funcionaron antes.\n\n`;
+  }
+
+  if (context.implicitNeeds && context.implicitNeeds.length > 0) {
+    prompt += `📌 NECESIDADES IMPLÍCITAS DETECTADAS: ${context.implicitNeeds.map(n => n.type).join(', ')}\n`;
+    prompt += `Explora estas necesidades subyacentes con preguntas abiertas y validación.\n\n`;
+  }
+
+  if (context.strengths && context.strengths.length > 0) {
+    prompt += `💪 FORTALEZAS IDENTIFICADAS: ${context.strengths.map(s => s.type).join(', ')}\n`;
+    prompt += `Reconoce y construye sobre estas fortalezas en tu respuesta.\n\n`;
+  }
+
+  if (context.selfEfficacy && context.selfEfficacy.needsIntervention) {
+    prompt += `📊 AUTOEFICACIA: Nivel ${context.selfEfficacy.level}\n`;
+    prompt += `Trabaja en construir confianza en las capacidades del usuario.\n`;
+    prompt += `Recuerda logros pasados y celebra pequeños pasos.\n\n`;
+  }
+
+  if (context.socialSupport && context.socialSupport.needsIntervention) {
+    prompt += `👥 APOYO SOCIAL: Nivel ${context.socialSupport.level}\n`;
+    prompt += `Explora y fortalece la red de apoyo del usuario.\n\n`;
+  }
+
   // Reglas generales
   prompt += PROMPT_TEMPLATES.GENERAL_RULES
     .replace('{maxWords}', THRESHOLDS.MAX_WORDS_RESPONSE)

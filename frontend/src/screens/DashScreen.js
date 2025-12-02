@@ -26,6 +26,7 @@ import {
 import DashboardScroll from '../components/DashboardScroll';
 import EmergencyContactsModal from '../components/EmergencyContactsModal';
 import FloatingNavBar from '../components/FloatingNavBar';
+import websocketService from '../services/websocketService';
 import OnboardingTutorial, { isTutorialCompleted } from '../components/OnboardingTutorial';
 import TutorialHighlight from '../components/TutorialHighlight';
 import HabitCard from '../components/HabitCard';
@@ -100,6 +101,7 @@ const DashScreen = () => {
   const [highlightElement, setHighlightElement] = useState(null);
   const [trialInfo, setTrialInfo] = useState(null);
   const [trialBannerDismissed, setTrialBannerDismissed] = useState(false);
+  const [emergencyAlertNotification, setEmergencyAlertNotification] = useState(null);
 
   // Log cuando showTutorial cambia (solo en desarrollo)
   React.useEffect(() => {
@@ -146,6 +148,12 @@ const DashScreen = () => {
       setUserData(userData || {});
       setTasks(Array.isArray(tasks) ? tasks : []);
       setHabits(Array.isArray(habits) ? habits : []);
+
+      // Conectar WebSocket para notificaciones en tiempo real
+      const userId = userData?._id || userData?.id;
+      if (userId) {
+        await websocketService.connect(userId);
+      }
 
       // Generar saludo
       const now = new Date();
@@ -316,6 +324,41 @@ const DashScreen = () => {
       loadData();
     }
   }, [loadData, loading]);
+
+  // Configurar listeners de WebSocket para alertas de emergencia
+  useEffect(() => {
+    // Listener para alertas de emergencia
+    const unsubscribeAlert = websocketService.on('emergency:alert:sent', (data) => {
+      console.log('[DashScreen] Alerta de emergencia recibida en tiempo real:', data);
+      setEmergencyAlertNotification(data);
+      
+      // Mostrar notificación local
+      if (data && !data.isTest) {
+        Alert.alert(
+          '🚨 Alerta de Emergencia Enviada',
+          `Hemos notificado a ${data.successfulSends} de ${data.totalContacts} contacto(s) de emergencia.`,
+          [{ text: 'OK' }]
+        );
+      }
+    });
+
+    // Listener para errores
+    const unsubscribeError = websocketService.on('error', (error) => {
+      console.error('[DashScreen] Error en WebSocket:', error);
+    });
+
+    return () => {
+      unsubscribeAlert();
+      unsubscribeError();
+    };
+  }, []);
+
+  // Limpiar conexión al desmontar
+  useEffect(() => {
+    return () => {
+      websocketService.disconnect();
+    };
+  }, []);
 
   // Animación al refrescar
   const triggerRefreshAnim = useCallback(() => {

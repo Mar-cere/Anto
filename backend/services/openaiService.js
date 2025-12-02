@@ -31,6 +31,13 @@ import {
   formatTechniqueForResponse,
   selectAppropriateTechnique
 } from '../constants/therapeuticTechniques.js';
+import { getResistanceIntervention } from '../constants/resistancePatterns.js';
+import { getRelapseIntervention } from '../constants/relapsePrevention.js';
+import { getImplicitNeedIntervention } from '../constants/implicitNeeds.js';
+import { generateStrengthQuestion } from '../constants/strengthsAndResources.js';
+import { generateSelfEfficacyIntervention } from '../constants/selfEfficacy.js';
+import { getSocialSupportIntervention } from '../constants/socialSupport.js';
+import { getPsychoeducationModule } from '../constants/psychoeducation.js';
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import TherapeuticRecord from '../models/TherapeuticRecord.js';
@@ -341,6 +348,10 @@ class OpenAIService {
         );
       }
 
+      // 12.5. NUEVO: Las intervenciones para resistencia, recaídas, necesidades implícitas, etc.
+      // ya están integradas en el prompt, así que el modelo de OpenAI las considerará automáticamente
+      // al generar la respuesta. No necesitamos agregar texto adicional aquí.
+
       // 13. Agregar técnica terapéutica a la respuesta si es apropiado (y no hay protocolo)
       let respuestaFinal = respuestaConElecciones;
       if (selectedTechnique && !activeProtocol && this.shouldIncludeTechnique(analisisEmocional, analisisContextual)) {
@@ -519,7 +530,14 @@ class OpenAIService {
       subtype: contexto.emotional?.subtype,
       topic: contexto.emotional?.topic,
       sessionTrends: sessionTrends,
-      responseStyle: responseStyle
+      responseStyle: responseStyle,
+      // NUEVOS: Análisis psicológicos adicionales
+      resistance: contexto.contextual?.resistance || null,
+      relapseSigns: contexto.contextual?.relapseSigns || null,
+      implicitNeeds: contexto.contextual?.implicitNeeds || null,
+      strengths: contexto.contextual?.strengths || null,
+      selfEfficacy: contexto.contextual?.selfEfficacy || null,
+      socialSupport: contexto.contextual?.socialSupport || null
     });
 
     // Si hay una crisis detectada, agregar el prompt de crisis al inicio

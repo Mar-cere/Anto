@@ -4,7 +4,9 @@
  */
 import CrisisEvent from '../models/CrisisEvent.js';
 import Message from '../models/Message.js';
+import TherapeuticTechniqueUsage from '../models/TherapeuticTechniqueUsage.js';
 import crisisTrendAnalyzer from './crisisTrendAnalyzer.js';
+import { selectAppropriateTechnique } from '../constants/therapeuticTechniques.js';
 
 class CrisisMetricsService {
   /**
@@ -403,6 +405,273 @@ class CrisisMetricsService {
       };
     } catch (error) {
       console.error('[CrisisMetricsService] Error obteniendo distribución de emociones:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Compara métricas entre dos períodos
+   * @param {string} userId - ID del usuario
+   * @param {number} currentDays - Días del período actual
+   * @param {number} previousDays - Días del período anterior
+   * @returns {Promise<Object>} Comparación de períodos
+   */
+  async comparePeriods(userId, currentDays = 30, previousDays = 30) {
+    try {
+      const currentStart = new Date(Date.now() - currentDays * 24 * 60 * 60 * 1000);
+      const previousStart = new Date(Date.now() - (currentDays + previousDays) * 24 * 60 * 60 * 1000);
+      const previousEnd = currentStart;
+
+      const [currentCrises, previousCrises] = await Promise.all([
+        CrisisEvent.find({
+          userId,
+          detectedAt: { $gte: currentStart }
+        }).lean(),
+        CrisisEvent.find({
+          userId,
+          detectedAt: { $gte: previousStart, $lt: previousEnd }
+        }).lean()
+      ]);
+
+      const currentSummary = await this.getCrisisSummary(userId, currentDays);
+      const previousSummary = {
+        totalCrises: previousCrises.length,
+        crisesByLevel: {
+          LOW: previousCrises.filter(c => c.riskLevel === 'LOW').length,
+          WARNING: previousCrises.filter(c => c.riskLevel === 'WARNING').length,
+          MEDIUM: previousCrises.filter(c => c.riskLevel === 'MEDIUM').length,
+          HIGH: previousCrises.filter(c => c.riskLevel === 'HIGH').length
+        },
+        resolutionRate: previousCrises.length > 0
+          ? previousCrises.filter(c => c.outcome === 'resolved' || c.resolvedAt !== null).length / previousCrises.length
+          : 0
+      };
+
+      return {
+        current: currentSummary,
+        previous: previousSummary,
+        comparison: {
+          totalCrisesChange: currentSummary.totalCrises - previousSummary.totalCrises,
+          totalCrisesChangePercent: previousSummary.totalCrises > 0
+            ? ((currentSummary.totalCrises - previousSummary.totalCrises) / previousSummary.totalCrises * 100).toFixed(1)
+            : currentSummary.totalCrises > 0 ? 100 : 0,
+          resolutionRateChange: currentSummary.resolutionRate - previousSummary.resolutionRate,
+          resolutionRateChangePercent: previousSummary.resolutionRate > 0
+            ? ((currentSummary.resolutionRate - previousSummary.resolutionRate) / previousSummary.resolutionRate * 100).toFixed(1)
+            : currentSummary.resolutionRate > 0 ? 100 : 0
+        }
+      };
+    } catch (error) {
+      console.error('[CrisisMetricsService] Error comparando períodos:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Genera datos para exportación CSV
+   * @param {string} userId - ID del usuario
+   * @param {number} days - Número de días hacia atrás
+   * @returns {Promise<Object>} Datos formateados para CSV
+   */
+  async getExportData(userId, days = 30) {
+    try {
+      const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+      
+      const [summary, trends, monthlyData, history, alertsStats, followUpStats] = await Promise.all([
+        this.getCrisisSummary(userId, days),
+        this.getEmotionalTrends(userId, '30d'),
+        this.getCrisisByMonth(userId, Math.ceil(days / 30)),
+        this.getCrisisHistory(userId, { limit: 1000, offset: 0 }),
+        this.getAlertStatistics(userId, days),
+        this.getFollowUpStatistics(userId, days)
+      ]);
+
+      return {
+        summary,
+        trends,
+        monthlyData,
+        history: history.crises,
+        alertsStats,
+        followUpStats,
+        exportDate: new Date().toISOString(),
+        period: days
+      };
+    } catch (error) {
+      console.error('[CrisisMetricsService] Error obteniendo datos para exportación:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene recomendaciones de técnicas basadas en crisis detectadas
+   * @param {string} userId - ID del usuario
+   * @param {number} days - Número de días hacia atrás
+   * @returns {Promise<Object>} Recomendaciones de técnicas
+   */
+  async getTechniqueRecommendations(userId, days = 30) {
+    try {
+      const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+      
+      // Obtener crisis recientes
+      const recentCrises = await CrisisEvent.find({
+        userId,
+        detectedAt: { $gte: startDate }
+      })
+        .select('triggerMessage.emotionalAnalysis riskLevel')
+        .sort({ detectedAt: -1 })
+        .limit(10)
+        .lean();
+
+      // Obtener técnicas más efectivas del usuario
+      const mostEffectiveTechniques = await TherapeuticTechniqueUsage.getMostUsedTechniques(userId, 5);
+      
+      // Analizar emociones más frecuentes en crisis
+      const emotionCounts = {};
+      recentCrises.forEach(crisis => {
+        const emotion = crisis.triggerMessage?.emotionalAnalysis?.mainEmotion || 'neutral';
+        emotionCounts[emotion] = (emotionCounts[emotion] || 0) + 1;
+      });
+
+      const mostFrequentEmotion = Object.keys(emotionCounts).reduce((a, b) => 
+        emotionCounts[a] > emotionCounts[b] ? a : b, 'neutral'
+      );
+
+      // Obtener nivel de riesgo promedio
+      const riskLevelValues = { LOW: 1, WARNING: 2, MEDIUM: 3, HIGH: 4 };
+      const avgRiskLevel = recentCrises.length > 0
+        ? recentCrises.reduce((sum, c) => sum + (riskLevelValues[c.riskLevel] || 2), 0) / recentCrises.length
+        : 2;
+      const avgIntensity = avgRiskLevel < 1.5 ? 4 : avgRiskLevel < 2.5 ? 6 : avgRiskLevel < 3.5 ? 7 : 9;
+
+      // Seleccionar técnicas recomendadas
+      const recommendedTechniques = [];
+      
+      // Técnica basada en emoción más frecuente
+      if (mostFrequentEmotion !== 'neutral') {
+        const technique = selectAppropriateTechnique(mostFrequentEmotion, avgIntensity, 'intermedia');
+        if (technique) {
+          recommendedTechniques.push({
+            ...technique,
+            reason: `Basada en tu emoción más frecuente en crisis: ${mostFrequentEmotion}`,
+            priority: 'high'
+          });
+        }
+      }
+
+      // Técnicas más efectivas del usuario
+      mostEffectiveTechniques.slice(0, 2).forEach(tech => {
+        if (tech.averageEffectiveness && tech.averageEffectiveness >= 3.5) {
+          recommendedTechniques.push({
+            techniqueId: tech.techniqueId,
+            name: tech.techniqueName,
+            type: tech.techniqueType,
+            reason: `Técnica que te ha funcionado bien (efectividad: ${tech.averageEffectiveness}/5)`,
+            priority: 'medium',
+            effectiveness: tech.averageEffectiveness
+          });
+        }
+      });
+
+      return {
+        recommendedTechniques,
+        mostFrequentEmotion,
+        recentCrisesCount: recentCrises.length,
+        period: days
+      };
+    } catch (error) {
+      console.error('[CrisisMetricsService] Error obteniendo recomendaciones:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene análisis de efectividad de técnicas por tipo de crisis
+   * @param {string} userId - ID del usuario
+   * @param {number} days - Número de días hacia atrás
+   * @returns {Promise<Object>} Análisis de efectividad
+   */
+  async getTechniqueEffectivenessAnalysis(userId, days = 30) {
+    try {
+      const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+      
+      // Obtener técnicas usadas en el período
+      const techniquesUsed = await TherapeuticTechniqueUsage.find({
+        userId,
+        createdAt: { $gte: startDate }
+      })
+        .select('techniqueId techniqueName techniqueType emotion effectiveness completed emotionalIntensityBefore emotionalIntensityAfter')
+        .lean();
+
+      // Obtener crisis resueltas en el período
+      const resolvedCrises = await CrisisEvent.find({
+        userId,
+        detectedAt: { $gte: startDate },
+        outcome: 'resolved'
+      })
+        .select('detectedAt resolvedAt riskLevel triggerMessage.emotionalAnalysis')
+        .lean();
+
+      // Analizar correlación entre uso de técnicas y resolución de crisis
+      const techniqueEffectiveness = {};
+      
+      techniquesUsed.forEach(usage => {
+        const key = usage.techniqueId;
+        if (!techniqueEffectiveness[key]) {
+          techniqueEffectiveness[key] = {
+            techniqueId: usage.techniqueId,
+            techniqueName: usage.techniqueName,
+            techniqueType: usage.techniqueType,
+            totalUses: 0,
+            completedUses: 0,
+            totalEffectiveness: 0,
+            effectivenessCount: 0,
+            intensityReduction: 0,
+            intensityReductionCount: 0
+          };
+        }
+
+        techniqueEffectiveness[key].totalUses++;
+        if (usage.completed) {
+          techniqueEffectiveness[key].completedUses++;
+        }
+        if (usage.effectiveness) {
+          techniqueEffectiveness[key].totalEffectiveness += usage.effectiveness;
+          techniqueEffectiveness[key].effectivenessCount++;
+        }
+        if (usage.emotionalIntensityBefore && usage.emotionalIntensityAfter) {
+          const reduction = usage.emotionalIntensityBefore - usage.emotionalIntensityAfter;
+          techniqueEffectiveness[key].intensityReduction += reduction;
+          techniqueEffectiveness[key].intensityReductionCount++;
+        }
+      });
+
+      // Calcular promedios
+      const effectivenessData = Object.values(techniqueEffectiveness).map(tech => ({
+        ...tech,
+        completionRate: tech.totalUses > 0 ? tech.completedUses / tech.totalUses : 0,
+        averageEffectiveness: tech.effectivenessCount > 0 
+          ? tech.totalEffectiveness / tech.effectivenessCount 
+          : null,
+        averageIntensityReduction: tech.intensityReductionCount > 0
+          ? tech.intensityReduction / tech.intensityReductionCount
+          : null
+      }));
+
+      // Ordenar por efectividad promedio
+      effectivenessData.sort((a, b) => {
+        const aScore = (a.averageEffectiveness || 0) + (a.averageIntensityReduction || 0);
+        const bScore = (b.averageEffectiveness || 0) + (b.averageIntensityReduction || 0);
+        return bScore - aScore;
+      });
+
+      return {
+        techniques: effectivenessData,
+        totalTechniquesUsed: techniquesUsed.length,
+        resolvedCrisesCount: resolvedCrises.length,
+        period: days
+      };
+    } catch (error) {
+      console.error('[CrisisMetricsService] Error analizando efectividad:', error);
       throw error;
     }
   }

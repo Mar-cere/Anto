@@ -27,7 +27,10 @@ const SOCKET_EVENTS = {
   CANCEL_RESPONSE: 'cancel:response',
   ERROR: 'error',
   CONNECTION: 'connection',
-  DISCONNECT: 'disconnect'
+  DISCONNECT: 'disconnect',
+  // Eventos de alertas de emergencia
+  EMERGENCY_ALERT_SENT: 'emergency:alert:sent',
+  EMERGENCY_ALERT_UPDATED: 'emergency:alert:updated',
 };
 
 // Helper: obtener URLs permitidas para CORS
@@ -186,5 +189,26 @@ export const setupSocketIO = (server) => {
     });
   });
 
+  // Exportar instancia de io y eventos para uso en otros módulos
+  io.SOCKET_EVENTS = SOCKET_EVENTS;
+  
   return io;
+};
+
+// Helper: Emitir evento de alerta de emergencia a un usuario específico
+export const emitEmergencyAlert = (io, userId, alertData) => {
+  if (!io || !userId) {
+    console.error('[SocketIO] No se puede emitir alerta: io o userId no válidos');
+    return;
+  }
+  
+  try {
+    io.to(userId.toString()).emit(SOCKET_EVENTS.EMERGENCY_ALERT_SENT, {
+      ...alertData,
+      timestamp: new Date().toISOString()
+    });
+    console.log(`[SocketIO] ✅ Alerta de emergencia emitida a usuario ${userId}`);
+  } catch (error) {
+    console.error('[SocketIO] Error emitiendo alerta de emergencia:', error);
+  }
 };

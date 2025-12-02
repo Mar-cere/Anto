@@ -29,6 +29,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import EmergencyContactsModal from '../components/EmergencyContactsModal';
+import EditEmergencyContactModal from '../components/EditEmergencyContactModal';
 import { useAuth } from '../context/AuthContext';
 import notifications from '../data/notifications';
 import { api, ENDPOINTS } from '../config/api';
@@ -194,6 +195,8 @@ const SettingsScreen = () => {
   const [showEveningPicker, setShowEveningPicker] = useState(false);
   const [emergencyContacts, setEmergencyContacts] = useState([]);
   const [showEmergencyContactsModal, setShowEmergencyContactsModal] = useState(false);
+  const [showEditContactModal, setShowEditContactModal] = useState(false);
+  const [selectedContact, setSelectedContact] = useState(null);
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(false);
   const [pushTokenStatus, setPushTokenStatus] = useState(null);
@@ -711,6 +714,53 @@ const SettingsScreen = () => {
           </TouchableOpacity>
         </View>
 
+        {/* Estilo de Respuesta */}
+        <View style={styles.item}>
+          <MaterialCommunityIcons name="format-text" size={ICON_SIZE} color={COLORS.PRIMARY} />
+          <View style={styles.itemTextContainer}>
+            <Text style={styles.itemText}>Estilo de Respuesta</Text>
+            <Text style={styles.itemSubtext}>
+              Cómo prefieres que Anto responda
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={async () => {
+              const styles = ['brief', 'balanced', 'deep'];
+              const labels = {
+                brief: 'Breve',
+                balanced: 'Equilibrado',
+                deep: 'Profundo',
+              };
+              const currentStyle = user?.preferences?.responseStyle || 'balanced';
+              const currentIndex = styles.indexOf(currentStyle);
+              const nextIndex = (currentIndex + 1) % styles.length;
+              const nextStyle = styles[nextIndex];
+
+              try {
+                await updateUser(user._id, {
+                  'preferences.responseStyle': nextStyle,
+                });
+                updateUserContext({
+                  ...user,
+                  preferences: {
+                    ...user.preferences,
+                    responseStyle: nextStyle,
+                  },
+                });
+                Alert.alert('Éxito', `Estilo de respuesta cambiado a: ${labels[nextStyle]}`);
+              } catch (error) {
+                Alert.alert(TEXTS.ERROR, 'No se pudo actualizar el estilo de respuesta');
+              }
+            }}
+            accessibilityLabel="Cambiar estilo de respuesta"
+          >
+            <Text style={styles.languageText}>
+              {user?.preferences?.responseStyle === 'brief' ? 'Breve' :
+               user?.preferences?.responseStyle === 'deep' ? 'Profundo' : 'Equilibrado'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Separador */}
         <View style={styles.separator} />
 
@@ -803,6 +853,20 @@ const SettingsScreen = () => {
                           />
                         </TouchableOpacity>
                       )}
+                      <TouchableOpacity
+                        onPress={() => {
+                          setSelectedContact(contact);
+                          setShowEditContactModal(true);
+                        }}
+                        style={styles.contactActionButton}
+                        accessibilityLabel="Editar contacto"
+                      >
+                        <Ionicons
+                          name="pencil-outline"
+                          size={20}
+                          color={COLORS.PRIMARY}
+                        />
+                      </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => handleToggleContact(contact._id)}
                         style={styles.contactActionButton}
@@ -1102,6 +1166,17 @@ const SettingsScreen = () => {
         onClose={() => setShowEmergencyContactsModal(false)}
         onSave={handleEmergencyContactsSaved}
         existingContacts={emergencyContacts}
+      />
+
+      {/* Modal de Edición de Contacto */}
+      <EditEmergencyContactModal
+        visible={showEditContactModal}
+        onClose={() => {
+          setShowEditContactModal(false);
+          setSelectedContact(null);
+        }}
+        onSave={handleEmergencyContactsSaved}
+        contact={selectedContact}
       />
     </SafeAreaView>
   );

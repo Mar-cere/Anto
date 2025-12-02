@@ -249,8 +249,16 @@ router.get('/', async (req, res) => {
     ]);
 
     // Calcular estadísticas adicionales
+    // Optimización: Proyectar solo campos necesarios antes de agrupar
     const stats = await Habit.aggregate([
       { $match: query },
+      {
+        // Optimización: Proyectar solo campos necesarios
+        $project: {
+          'status.archived': 1,
+          'progress.completedDates': 1
+        }
+      },
       {
         $group: {
           _id: null,

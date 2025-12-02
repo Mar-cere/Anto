@@ -2,6 +2,12 @@
  * Analizador de Contexto - Detecta intención, tema y urgencia en mensajes del usuario
  */
 import { PATRONES_INTENCION, PATRONES_TEMA } from '../config/patrones.js';
+import { detectResistance } from '../constants/resistancePatterns.js';
+import { detectRelapseSigns } from '../constants/relapsePrevention.js';
+import { detectImplicitNeeds } from '../constants/implicitNeeds.js';
+import { identifyStrengths } from '../constants/strengthsAndResources.js';
+import { evaluateSelfEfficacy } from '../constants/selfEfficacy.js';
+import { assessSocialSupport } from '../constants/socialSupport.js';
 
 class ContextAnalyzer {
   constructor() {
@@ -83,6 +89,26 @@ class ContextAnalyzer {
     
     try {
       const contenidoActual = this.analizarContenidoActual(mensaje);
+      const content = mensaje.content || '';
+      
+      // NUEVO: Detectar resistencia al cambio
+      const resistance = detectResistance(content);
+      
+      // NUEVO: Detectar señales de recaída
+      const relapseSigns = detectRelapseSigns(content);
+      
+      // NUEVO: Detectar necesidades implícitas
+      const implicitNeeds = detectImplicitNeeds(content);
+      
+      // NUEVO: Identificar fortalezas
+      const strengths = identifyStrengths(content);
+      
+      // NUEVO: Evaluar autoeficacia
+      const selfEfficacy = evaluateSelfEfficacy(content);
+      
+      // NUEVO: Evaluar apoyo social
+      const socialSupport = assessSocialSupport(content);
+      
       return {
         intencion: contenidoActual.intencion,
         tema: contenidoActual.tema,
@@ -92,7 +118,14 @@ class ContextAnalyzer {
           temasRecurrentes: [],
           patronesIdentificados: []
         },
-        sugerencias: []
+        sugerencias: [],
+        // NUEVOS: Análisis psicológicos adicionales
+        resistance: resistance || null,
+        relapseSigns: relapseSigns || null,
+        implicitNeeds: implicitNeeds.length > 0 ? implicitNeeds : null,
+        strengths: strengths.length > 0 ? strengths : null,
+        selfEfficacy: selfEfficacy || null,
+        socialSupport: socialSupport || null
       };
     } catch (error) {
       console.error('[ContextAnalyzer] Error en análisis de mensaje:', error, mensaje);

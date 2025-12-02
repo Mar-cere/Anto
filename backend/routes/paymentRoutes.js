@@ -15,6 +15,7 @@ import paymentService from '../services/paymentService.js';
 import Transaction from '../models/Transaction.js';
 import Subscription from '../models/Subscription.js';
 import { getPlanPrice, formatAmount, isMercadoPagoConfigured } from '../config/mercadopago.js';
+import cacheService from '../services/cacheService.js';
 import Joi from 'joi';
 
 const router = express.Router();
@@ -66,8 +67,16 @@ const updatePaymentMethodSchema = Joi.object({
  * Nota: Este endpoint no requiere autenticación ni configuración completa de Mercado Pago
  * ya que solo devuelve información estática de los planes.
  */
-router.get('/plans', (req, res) => {
+router.get('/plans', async (req, res) => {
   try {
+    const cacheKey = 'plans:all';
+    
+    // Intentar obtener del caché
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+    
     const currency = 'CLP';
     
     // Calcular precios
@@ -163,11 +172,16 @@ router.get('/plans', (req, res) => {
       },
     };
 
-    res.json({
+    const response = {
       success: true,
       plans,
       provider: 'mercadopago',
-    });
+    };
+    
+    // Guardar en caché por 1 hora (los planes son estáticos)
+    await cacheService.set(cacheKey, response, 3600);
+    
+    res.json(response);
   } catch (error) {
     console.error('Error obteniendo planes:', error);
     res.status(500).json({
@@ -264,12 +278,25 @@ router.get(
   async (req, res) => {
     try {
       const userId = req.user._id;
+      const cacheKey = cacheService.generateKey('subscription', userId);
+      
+      // Intentar obtener del caché
+      const cached = await cacheService.get(cacheKey);
+      if (cached) {
+        return res.json(cached);
+      }
+      
       const status = await paymentService.getSubscriptionStatus(userId);
 
-      res.json({
+      const response = {
         success: true,
         ...status,
-      });
+      };
+      
+      // Guardar en caché por 5 minutos (el estado puede cambiar)
+      await cacheService.set(cacheKey, response, 300);
+
+      res.json(response);
     } catch (error) {
       console.error('Error obteniendo estado de suscripción:', error);
       res.status(500).json({

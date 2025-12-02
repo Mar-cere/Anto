@@ -185,5 +185,102 @@ router.get('/emotion-distribution', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/crisis/compare-periods
+ * Compara métricas entre dos períodos
+ * Query params: currentDays (default: 30), previousDays (default: 30)
+ */
+router.get('/compare-periods', async (req, res) => {
+  try {
+    const currentDays = parseInt(req.query.currentDays) || 30;
+    const previousDays = parseInt(req.query.previousDays) || 30;
+    const comparison = await crisisMetricsService.comparePeriods(req.user._id, currentDays, previousDays);
+    
+    res.json({
+      success: true,
+      data: comparison
+    });
+  } catch (error) {
+    console.error('[CrisisRoutes] Error comparando períodos:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al comparar períodos',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/crisis/export
+ * Obtiene datos para exportación CSV
+ * Query params: days (default: 30)
+ */
+router.get('/export', async (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 30;
+    const exportData = await crisisMetricsService.getExportData(req.user._id, days);
+    
+    res.json({
+      success: true,
+      data: exportData
+    });
+  } catch (error) {
+    console.error('[CrisisRoutes] Error obteniendo datos para exportación:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener datos para exportación',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/crisis/technique-recommendations
+ * Obtiene recomendaciones de técnicas basadas en crisis detectadas
+ * Query params: days (default: 30)
+ */
+router.get('/technique-recommendations', async (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 30;
+    const recommendations = await crisisMetricsService.getTechniqueRecommendations(req.user._id, days);
+    
+    res.json({
+      success: true,
+      data: recommendations
+    });
+  } catch (error) {
+    console.error('[CrisisRoutes] Error obteniendo recomendaciones:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener recomendaciones de técnicas',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/crisis/technique-effectiveness
+ * Obtiene análisis de efectividad de técnicas por tipo de crisis
+ * Query params: days (default: 30)
+ */
+router.get('/technique-effectiveness', async (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 30;
+    const analysis = await crisisMetricsService.getTechniqueEffectivenessAnalysis(req.user._id, days);
+    
+    res.json({
+      success: true,
+      data: analysis
+    });
+  } catch (error) {
+    console.error('[CrisisRoutes] Error analizando efectividad:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al analizar efectividad de técnicas',
+      error: error.message
+    });
+  }
+});
+
 export default router;
 

@@ -7,6 +7,7 @@ import OpenAI from 'openai';
 import Message from '../models/Message.js';
 import UserProfile from '../models/UserProfile.js';
 import emotionalAnalyzer from './emotionalAnalyzer.js';
+import cacheService from './cacheService.js';
 
 dotenv.config();
 
@@ -123,11 +124,23 @@ class UserProfileService {
         throw new Error('userId válido es requerido');
       }
       
-      let userProfile = await UserProfile.findOne({ userId });
+      const cacheKey = cacheService.generateKey('profile', userId);
+      
+      // Intentar obtener del caché
+      const cached = await cacheService.get(cacheKey);
+      if (cached) {
+        return cached;
+      }
+      
+      let userProfile = await UserProfile.findOne({ userId }).lean();
       
       if (!userProfile) {
-        userProfile = await UserProfile.create(this.getDefaultProfileStructure(userId));
+        const newProfile = await UserProfile.create(this.getDefaultProfileStructure(userId));
+        userProfile = newProfile.toObject();
       }
+
+      // Guardar en caché por 1 hora
+      await cacheService.set(cacheKey, userProfile, 3600);
 
       return userProfile;
     } catch (error) {
