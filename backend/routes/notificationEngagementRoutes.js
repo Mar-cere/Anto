@@ -3,7 +3,7 @@
  */
 
 import express from 'express';
-import { authenticate } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
 import NotificationEngagement from '../models/NotificationEngagement.js';
 import mongoose from 'mongoose';
 
@@ -13,7 +13,7 @@ const router = express.Router();
  * GET /api/notifications/engagement/stats
  * Obtiene estadísticas de engagement de notificaciones del usuario
  */
-router.get('/engagement/stats', authenticate, async (req, res) => {
+router.get('/engagement/stats', authenticateToken, async (req, res) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.user._id);
     const days = parseInt(req.query.days) || 30;
@@ -40,7 +40,7 @@ router.get('/engagement/stats', authenticate, async (req, res) => {
  * GET /api/notifications/engagement/overall
  * Obtiene estadísticas generales de engagement
  */
-router.get('/engagement/overall', authenticate, async (req, res) => {
+router.get('/engagement/overall', authenticateToken, async (req, res) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.user._id);
     const days = parseInt(req.query.days) || 30;
@@ -64,7 +64,7 @@ router.get('/engagement/overall', authenticate, async (req, res) => {
  * GET /api/notifications/engagement/history
  * Obtiene el historial de notificaciones del usuario
  */
-router.get('/engagement/history', authenticate, async (req, res) => {
+router.get('/engagement/history', authenticateToken, async (req, res) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.user._id);
     const page = parseInt(req.query.page) || 1;
@@ -124,7 +124,7 @@ router.get('/engagement/history', authenticate, async (req, res) => {
  * PATCH /api/notifications/engagement/:id/status
  * Actualiza el estado de una notificación (por ejemplo, cuando el usuario la abre)
  */
-router.patch('/engagement/:id/status', authenticate, async (req, res) => {
+router.patch('/engagement/:id/status', authenticateToken, async (req, res) => {
   try {
     const notificationId = new mongoose.Types.ObjectId(req.params.id);
     const { status } = req.body;
