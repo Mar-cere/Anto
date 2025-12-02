@@ -1066,6 +1066,42 @@ class OpenAIService {
   }
 
   /**
+   * Agrega chequeos de seguridad a la respuesta cuando la intensidad emocional es alta
+   * @param {string} respuesta - Respuesta base
+   * @param {Object} analisisEmocional - Análisis emocional del mensaje
+   * @param {Object} analisisContextual - Análisis contextual del mensaje
+   * @returns {string} Respuesta con chequeos de seguridad agregados
+   */
+  addSafetyChecks(respuesta, analisisEmocional, analisisContextual) {
+    const intensity = analisisEmocional?.intensity || DEFAULT_VALUES.INTENSITY;
+    let safetyText = '';
+
+    // Si la intensidad es >= 8, agregar preguntas de seguridad
+    if (intensity >= 8) {
+      safetyText += '\n\n💙 **Preguntas de seguridad:**\n';
+      safetyText += '• ¿Estás a salvo en este momento?\n';
+      safetyText += '• ¿Hay alguien contigo o puedes contactar a alguien de confianza?\n';
+      safetyText += '• ¿Has pensado en hacerte daño a ti mismo o a otros?\n';
+    }
+
+    // Si la intensidad es >= 9, agregar recursos de emergencia
+    if (intensity >= 9) {
+      safetyText += '\n\n🚨 **Recursos de emergencia disponibles:**\n';
+      safetyText += '• **Línea de crisis:** 911 (Emergencias)\n';
+      safetyText += '• **Línea de prevención del suicidio:** 988 (24/7)\n';
+      safetyText += '• **Contactos de emergencia:** Puedes activar tus contactos de emergencia desde la app\n';
+      safetyText += '\nRecuerda que no estás solo/a. Hay personas que pueden ayudarte.';
+    }
+
+    // Mensaje de apoyo general para intensidades altas
+    if (intensity >= 8) {
+      safetyText += '\n\n💚 **Recuerda:** Es importante que busques apoyo profesional si estos sentimientos persisten o empeoran.';
+    }
+
+    return respuesta + safetyText;
+  }
+
+  /**
    * Agrega elecciones de respuesta al final del mensaje
    * @param {string} respuesta - Respuesta base
    * @param {Object} analisisEmocional - Análisis emocional del mensaje
