@@ -314,6 +314,34 @@ class EmotionalAnalyzer {
       };
     }
     
+    // IMPORTANTE: Verificar indicadores negativos ANTES de buscar emociones positivas
+    // Esto previene que "no me siento bien" se detecte como "alegria"
+    if (this.negativeIndicatorsPattern.test(content)) {
+      // Verificar casos específicos de "no me siento bien" o variantes
+      if (/no.*me.*siento.*(?:bien|muy.*bien|tan.*bien|muy.*bien)/i.test(content)) {
+        return {
+          name: 'tristeza',
+          category: 'negative',
+          baseIntensity: 6
+        };
+      }
+      if (/no.*estoy.*(?:bien|muy.*bien|tan.*bien)/i.test(content)) {
+        return {
+          name: 'tristeza',
+          category: 'negative',
+          baseIntensity: 6
+        };
+      }
+      // Otros indicadores negativos generales
+      if (/no.*puedo.*más|no.*aguanto|no.*soporto/i.test(content)) {
+        return {
+          name: 'ansiedad',
+          category: 'negative',
+          baseIntensity: 7
+        };
+      }
+    }
+
     // Verificar negación emocional explícita (puede indicar que sí siente esa emoción)
     if (this.denialPattern.test(content)) {
       // Extraer la emoción negada
@@ -406,18 +434,34 @@ class EmotionalAnalyzer {
       if (this.emotionPatterns[emotion] && this.emotionPatterns[emotion].patterns.test(content)) {
         const emotionData = this.emotionPatterns[emotion];
         
-        // Si es una emoción positiva y hay un prefijo negativo, no aplicarla
-        // Ejemplo: "no me gusta" no debe ser "alegria"
-        if (emotionData.category === 'positive' && hasNegativePrefix) {
-          // Verificar si el patrón específico está precedido por "no"
-          const positivePatterns = ['me.*gusta', 'me.*encanta', 'me.*alegra', 'me.*emociona'];
-          const hasPositivePattern = positivePatterns.some(pattern => {
-            const regex = new RegExp(pattern, 'i');
-            return regex.test(content);
-          });
+        // IMPORTANTE: Si es una emoción positiva, verificar que NO haya indicadores negativos
+        // Ejemplo: "no me siento bien" NO debe ser "alegria"
+        if (emotionData.category === 'positive') {
+          // Verificar si hay un prefijo negativo
+          if (hasNegativePrefix) {
+            // Verificar patrones específicos que no deben coincidir con negación
+            const positivePatternsWithNegation = [
+              /no\s+me\s+siento\s+(?:bien|muy\s+bien|tan\s+bien)/i,
+              /no\s+estoy\s+(?:bien|muy\s+bien|tan\s+bien)/i,
+              /no\s+me\s+gusta/i,
+              /no\s+me\s+encanta/i,
+              /no\s+me\s+alegra/i,
+              /no\s+me\s+emociona/i
+            ];
+            
+            const hasNegativePositivePattern = positivePatternsWithNegation.some(pattern => 
+              pattern.test(content)
+            );
+            
+            if (hasNegativePositivePattern) {
+              // Saltar esta emoción positiva, continuar buscando
+              continue;
+            }
+          }
           
-          if (hasPositivePattern && /no\s+me/i.test(content)) {
-            // Saltar esta emoción positiva, continuar buscando
+          // También verificar indicadores negativos generales
+          if (this.negativeIndicatorsPattern.test(content)) {
+            // Si hay indicadores negativos, no aplicar emoción positiva
             continue;
           }
         }

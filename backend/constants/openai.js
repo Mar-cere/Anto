@@ -16,11 +16,11 @@
 export const OPENAI_MODEL = 'gpt-4-turbo-preview';
 
 // ========== LONGITUDES DE RESPUESTA (tokens) ==========
-// Valores optimizados para respuestas concisas (2-3 oraciones máximo)
+// Valores optimizados para conversaciones naturales (1-2 oraciones máximo)
 export const RESPONSE_LENGTHS = {
-  SHORT: 80,     // Respuestas cortas (saludos, confirmaciones) - 1-2 oraciones
-  MEDIUM: 120,   // Respuestas normales (la mayoría de casos) - 2-3 oraciones
-  LONG: 180,     // Respuestas largas (solo para situaciones urgentes/crisis) - máximo 4-5 oraciones
+  SHORT: 50,     // Respuestas cortas (saludos, confirmaciones) - 1 oración
+  MEDIUM: 70,    // Respuestas normales (la mayoría de casos) - 1-2 oraciones
+  LONG: 100,     // Respuestas largas (solo para situaciones urgentes/crisis) - máximo 2-3 oraciones
   CONTEXT_ANALYSIS: 100  // Para análisis de contexto interno
 };
 
@@ -73,9 +73,9 @@ export const VALIDATION_LIMITS = {
 // Valores límite para validación y análisis de respuestas
 export const THRESHOLDS = {
   // Validación de longitud de respuesta
-  MIN_WORDS_RESPONSE: 10,           // Mínimo de palabras en una respuesta válida
-  MAX_WORDS_RESPONSE: 100,          // Máximo de palabras en una respuesta (2-3 oraciones)
-  MAX_CHARACTERS_RESPONSE: 500,     // Máximo de caracteres en una respuesta
+  MIN_WORDS_RESPONSE: 5,            // Mínimo de palabras en una respuesta válida
+  MAX_WORDS_RESPONSE: 50,           // Máximo de palabras en una respuesta (1-2 oraciones para conversación natural)
+  MAX_CHARACTERS_RESPONSE: 250,     // Máximo de caracteres en una respuesta
   
   // Análisis de historial
   MIN_HISTORY_LENGTH: 3,            // Mínimo de mensajes en historial para análisis
@@ -273,8 +273,8 @@ export const ANALYSIS_DIMENSIONS = {
 // ========== CONFIGURACIÓN DE PROMPT ==========
 // Configuración específica para la construcción de prompts del sistema
 export const PROMPT_CONFIG = {
-  MAX_WORDS_MENTION: 100,           // Número de palabras mencionado en el prompt (debe coincidir con THRESHOLDS.MAX_WORDS_RESPONSE)
-  MAX_SENTENCES_MENTION: 3,         // Número de oraciones mencionado en el prompt
+  MAX_WORDS_MENTION: 50,            // Número de palabras mencionado en el prompt (debe coincidir con THRESHOLDS.MAX_WORDS_RESPONSE)
+  MAX_SENTENCES_MENTION: 2,         // Número de oraciones mencionado en el prompt
   TRUNCATE_ELLIPSIS: '...',         // Texto usado al truncar respuestas
   TRUNCATE_BUFFER: 3                // Caracteres de buffer al truncar (para elipsis)
 };
@@ -490,7 +490,8 @@ export const EMOTION_SPECIFIC_GUIDELINES = {
     focus: 'compartir la alegría, reconocer logros, reforzar momentos positivos',
     avoid: 'quitar importancia a la alegría, cambiar de tema abruptamente',
     techniques: ['celebración', 'refuerzo positivo', 'savoring'],
-    tone: 'entusiasta, celebratorio, genuino'
+    tone: 'entusiasta, celebratorio, genuino',
+    warning: 'IMPORTANTE: Solo usa este enfoque si la emoción detectada es REALMENTE alegría. Si el usuario dice "no me siento bien" o expresiones similares, NO es alegría, es tristeza o ansiedad.'
   },
   miedo: {
     approach: 'seguridad y exploración gradual',
@@ -583,21 +584,21 @@ export const INTENSITY_SPECIFIC_GUIDELINES = {
     approach: 'exploración y profundización',
     focus: 'explorar más a fondo, invitar a compartir, profundizar',
     urgency: 'baja',
-    length: 'puede ser más extensa para explorar',
+    length: '1-2 oraciones, breve pero exploratoria',
     techniques: ['preguntas exploratorias', 'invitación a profundizar']
   },
   moderada: {
     approach: 'equilibrio entre validación y exploración',
     focus: 'validar y explorar, mantener equilibrio',
     urgency: 'moderada',
-    length: 'media, balanceada',
+    length: '1-2 oraciones, balanceada',
     techniques: ['validación', 'exploración moderada']
   },
   alta: {
     approach: 'estabilización y contención',
     focus: 'priorizar estabilización, validación intensa, técnicas de regulación',
     urgency: 'alta',
-    length: 'más corta, directa, enfocada en estabilización',
+    length: '1 oración, muy directa, enfocada en estabilización',
     techniques: ['contención', 'regulación emocional', 'grounding'],
     warning: 'Si es emoción negativa con intensidad alta, requiere atención especial'
   }
@@ -750,20 +751,24 @@ Tu objetivo es proporcionar apoyo emocional, validación y herramientas útiles 
 
   // Reglas generales
   GENERAL_RULES: `REGLAS GENERALES:
-- **CRÍTICO: Sé MUY conciso. Máximo {maxWords} palabras ({maxSentences} oraciones cortas)**
+- **CRÍTICO: Sé EXTREMADAMENTE conciso. Máximo {maxWords} palabras (1-2 oraciones cortas máximo). Esto es una conversación natural, no un monólogo.**
+- **IMPORTANTE: Responde como en una conversación real: breve, directo, natural. Evita explicaciones largas o múltiples párrafos.**
 - Mantén continuidad emocional con mensajes anteriores
 - Evita repeticiones exactas de respuestas anteriores
-- Prioriza la validación emocional cuando sea apropiado
-- Incluye elementos de apoyo concretos y sugerencias útiles
+- Prioriza la validación emocional cuando sea apropiado, pero de forma breve
+- Incluye elementos de apoyo concretos y sugerencias útiles, pero de forma concisa
 - NO cambies abruptamente de tema emocional
 - SÍ conecta tus respuestas con el estado emocional del usuario
+- **CRÍTICO: Si la emoción detectada es NEGATIVA (tristeza, ansiedad, enojo, miedo, vergüenza, culpa), NUNCA uses frases positivas como "es genial escuchar eso", "me alegra", "qué bueno". En su lugar, usa frases empáticas como "lamento escuchar eso", "entiendo cómo te sientes", "es válido sentirse así".**
 - **TÉCNICAS TERAPÉUTICAS**: El sistema seleccionará automáticamente técnicas apropiadas (TCC, DBT, ACT) según la emoción e intensidad. Estas se agregarán a tu respuesta cuando sea apropiado. NO necesitas mencionarlas explícitamente en tu respuesta principal, ya que se incluirán automáticamente.`,
 
   // Estructura de respuesta
   RESPONSE_STRUCTURE: `ESTRUCTURA DE RESPUESTA:
-1. Reconocimiento empático de la situación (1 oración corta)
-2. Validación o apoyo concreto específico al contexto (1 oración corta)
-3. Pregunta breve o invitación a continuar (opcional, muy breve)`
+1. Reconocimiento empático breve (1 oración corta, máximo 15 palabras)
+2. Validación o apoyo concreto (1 oración corta, máximo 15 palabras) - OPCIONAL si ya está incluido en el reconocimiento
+3. Pregunta breve o invitación a continuar (opcional, máximo 10 palabras)
+
+**IMPORTANTE**: La respuesta completa debe ser 1-2 oraciones máximo. Si puedes decir lo mismo en 1 oración, hazlo.`
 };
 
 // ========== FUNCIONES HELPER PARA PROMPTS ==========
@@ -866,13 +871,20 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
     .replace('{lastInteraction}', lastInteraction) + '\n\n';
 
   // Directrices por emoción
-  prompt += PROMPT_TEMPLATES.EMOTION_GUIDELINES
+  let emotionGuidelinesText = PROMPT_TEMPLATES.EMOTION_GUIDELINES
     .replace('{emotion}', emotion)
     .replace('{approach}', emotionGuidelines.approach)
     .replace('{focus}', emotionGuidelines.focus)
     .replace('{avoid}', emotionGuidelines.avoid)
     .replace('{techniques}', emotionGuidelines.techniques.join(', '))
-    .replace('{tone}', emotionGuidelines.tone) + '\n\n';
+    .replace('{tone}', emotionGuidelines.tone);
+  
+  // Agregar advertencia si existe
+  if (emotionGuidelines.warning) {
+    emotionGuidelinesText += `\n⚠️ ${emotionGuidelines.warning}`;
+  }
+  
+  prompt += emotionGuidelinesText + '\n\n';
 
   // Directrices por fase
   prompt += PROMPT_TEMPLATES.PHASE_GUIDELINES
@@ -953,13 +965,13 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
   // NUEVO: Estilo de respuesta preferido
   if (responseStyle === 'brief') {
     prompt += `📝 Estilo de respuesta: BREVE\n`;
-    prompt += `Responde de forma concisa y directa. Máximo 2-3 oraciones. Evita explicaciones extensas.\n\n`;
+    prompt += `Responde de forma muy concisa y directa. Máximo 1 oración (15-20 palabras). Evita explicaciones extensas.\n\n`;
   } else if (responseStyle === 'deep') {
     prompt += `📝 Estilo de respuesta: PROFUNDO\n`;
-    prompt += `Puedes explayarte un poco más, pero sin superar ${THRESHOLDS.MAX_WORDS_RESPONSE} palabras. Incluye reflexiones y exploraciones más detalladas.\n\n`;
+    prompt += `Puedes explayarte un poco más, pero sin superar ${THRESHOLDS.MAX_WORDS_RESPONSE} palabras (máximo 2 oraciones). Incluye reflexiones y exploraciones más detalladas, pero mantén la naturalidad de una conversación.\n\n`;
   } else {
     prompt += `📝 Estilo de respuesta: EQUILIBRADO\n`;
-    prompt += `Mantén un balance entre concisión y profundidad. 2-3 oraciones bien desarrolladas.\n\n`;
+    prompt += `Mantén un balance entre concisión y profundidad. 1-2 oraciones bien desarrolladas (máximo ${THRESHOLDS.MAX_WORDS_RESPONSE} palabras). Responde como en una conversación natural.\n\n`;
   }
 
   // NUEVO: Información sobre resistencia, recaídas, necesidades implícitas, etc.
