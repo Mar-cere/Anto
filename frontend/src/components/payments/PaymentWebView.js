@@ -11,6 +11,8 @@ import * as Haptics from 'expo-haptics';
 import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  Linking,
   SafeAreaView,
   StatusBar,
   StyleSheet,
@@ -34,8 +36,11 @@ const TEXTS = {
   LOADING_PAYMENT: 'Procesando tu pago de forma segura...',
   ERROR: 'Error al cargar el pago',
   RETRY: 'Reintentar',
+  OPEN_BROWSER: 'Abrir en navegador',
   SECURE_PAYMENT: 'Pago seguro con Mercado Pago',
   PROCESSING: 'Procesando...',
+  BROWSER_FALLBACK_TITLE: 'Abrir en navegador',
+  BROWSER_FALLBACK_MESSAGE: 'Si el pago no carga correctamente, puedes abrirlo en tu navegador.',
 };
 
 const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
@@ -45,6 +50,30 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Validar URL antes de cargar
+  React.useEffect(() => {
+    if (!url) {
+      setError('No se proporcionó una URL válida');
+      setLoading(false);
+      onError?.('No se proporcionó una URL válida');
+      return;
+    }
+
+    // Validar que la URL sea válida
+    try {
+      const urlObj = new URL(url);
+      if (!urlObj.protocol.startsWith('http')) {
+        setError('URL inválida. Debe comenzar con http:// o https://');
+        setLoading(false);
+        onError?.('URL inválida');
+      }
+    } catch (e) {
+      setError('URL inválida');
+      setLoading(false);
+      onError?.('URL inválida');
+    }
+  }, [url, onError]);
 
   // Detectar cuando la navegación cambia
   const handleNavigationStateChange = (navState) => {
@@ -82,21 +111,32 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
     const { nativeEvent } = syntheticEvent;
     console.error('Error en WebView:', nativeEvent);
     
+    // Ignorar errores de "about:srcdoc" que pueden ocurrir con iframes
+    if (nativeEvent.url && nativeEvent.url.includes('about:srcdoc')) {
+      console.warn('Ignorando error de about:srcdoc (iframe interno)');
+      return;
+    }
+    
     // Determinar tipo de error
     let errorMessage = TEXTS.ERROR;
     if (nativeEvent.description) {
-      if (nativeEvent.description.includes('network') || nativeEvent.description.includes('internet')) {
+      if (nativeEvent.description.includes('network') || nativeEvent.description.includes('internet') || nativeEvent.description.includes('servidor')) {
         errorMessage = 'Error de conexión. Verifica tu conexión a internet.';
       } else if (nativeEvent.description.includes('timeout')) {
         errorMessage = 'Tiempo de espera agotado. Por favor, intenta nuevamente.';
+      } else if (nativeEvent.description.includes('No se encontró ningún servidor')) {
+        errorMessage = 'No se pudo conectar con Mercado Pago. Verifica tu conexión a internet.';
       } else {
         errorMessage = nativeEvent.description;
       }
     }
     
-    setError(errorMessage);
-    setLoading(false);
-    onError?.(errorMessage);
+    // Solo mostrar error si no es un error de iframe interno
+    if (!nativeEvent.url || !nativeEvent.url.includes('about:')) {
+      setError(errorMessage);
+      setLoading(false);
+      onError?.(errorMessage);
+    }
   };
 
   // Manejar cuando termina de cargar
@@ -121,6 +161,22 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
     setError(null);
     setLoading(true);
     webViewRef.current?.reload();
+  };
+
+  // Abrir en navegador externo como fallback
+  const handleOpenInBrowser = async () => {
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+        onClose?.();
+      } else {
+        Alert.alert('Error', 'No se pudo abrir el navegador');
+      }
+    } catch (error) {
+      console.error('Error abriendo URL en navegador:', error);
+      Alert.alert('Error', 'No se pudo abrir el navegador');
+    }
   };
 
   return (
@@ -176,34 +232,65 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
         <View style={styles.errorContainer}>
           <MaterialCommunityIcons name="alert-circle" size={48} color={colors.error} />
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
-            <Text style={styles.retryButtonText}>{TEXTS.RETRY}</Text>
-          </TouchableOpacity>
+          <View style={styles.errorButtonsContainer}>
+            <TouchableOpacity style={[styles.retryButton, styles.errorButton]} onPress={handleRetry}>
+              <Text style={styles.retryButtonText}>{TEXTS.RETRY}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.retryButton, styles.browserButton]} 
+              onPress={handleOpenInBrowser}
+            >
+              <Text style={styles.retryButtonText}>{TEXTS.OPEN_BROWSER}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
       {/* WebView */}
-      <WebView
-        ref={webViewRef}
-        source={{ uri: url }}
-        style={styles.webview}
-        onNavigationStateChange={handleNavigationStateChange}
-        onError={handleError}
-        onLoadEnd={handleLoadEnd}
-        onLoadStart={handleLoadStart}
-        onLoadProgress={handleLoadProgress}
-        startInLoadingState={true}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-        sharedCookiesEnabled={true}
-        thirdPartyCookiesEnabled={true}
-        allowsBackForwardNavigationGestures={true}
-        // Configuraciones específicas para Android
-        androidHardwareAccelerationDisabled={false}
-        mixedContentMode="always"
-        // User agent para mejor compatibilidad
-        userAgent="Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36"
-      />
+      {url && (
+        <WebView
+          ref={webViewRef}
+          source={{ uri: url }}
+          style={styles.webview}
+          onNavigationStateChange={handleNavigationStateChange}
+          onError={handleError}
+          onLoadEnd={handleLoadEnd}
+          onLoadStart={handleLoadStart}
+          onLoadProgress={handleLoadProgress}
+          onHttpError={(syntheticEvent) => {
+            const { nativeEvent } = syntheticEvent;
+            console.error('Error HTTP en WebView:', nativeEvent);
+            // Solo mostrar error si es un error crítico (4xx, 5xx)
+            if (nativeEvent.statusCode >= 400) {
+              setError(`Error al cargar la página (${nativeEvent.statusCode})`);
+              setLoading(false);
+            }
+          }}
+          onShouldStartLoadWithRequest={(request) => {
+            // Permitir todas las navegaciones excepto about: y data: que pueden causar problemas
+            if (request.url.startsWith('about:') || request.url.startsWith('data:')) {
+              return false;
+            }
+            return true;
+          }}
+          startInLoadingState={true}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          sharedCookiesEnabled={true}
+          thirdPartyCookiesEnabled={true}
+          allowsBackForwardNavigationGestures={true}
+          // Configuraciones específicas para Android
+          androidHardwareAccelerationDisabled={false}
+          mixedContentMode="always"
+          // Configuraciones específicas para iOS
+          allowsInlineMediaPlayback={true}
+          mediaPlaybackRequiresUserAction={false}
+          // User agent para mejor compatibilidad
+          userAgent="Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36"
+          // Timeout para evitar que se quede cargando indefinidamente
+          timeout={30000}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -275,11 +362,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
   },
+  errorButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
   retryButton: {
     backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
+  },
+  errorButton: {
+    backgroundColor: colors.primary,
+  },
+  browserButton: {
+    backgroundColor: colors.textSecondary,
   },
   retryButtonText: {
     color: colors.white,

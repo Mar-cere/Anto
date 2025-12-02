@@ -7,27 +7,27 @@
  * @author AntoApp Team
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import * as Haptics from 'expo-haptics';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
   ActivityIndicator,
   Alert,
-  TouchableOpacity,
   SafeAreaView,
+  ScrollView,
   StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Header from '../components/Header';
 import FloatingNavBar from '../components/FloatingNavBar';
+import Header from '../components/Header';
+import PaymentWebView from '../components/payments/PaymentWebView';
 import PlanCard from '../components/payments/PlanCard';
 import SubscriptionStatus from '../components/payments/SubscriptionStatus';
-import PaymentWebView from '../components/payments/PaymentWebView';
 import paymentService from '../services/paymentService';
 import { colors } from '../styles/globalStyles';
 
@@ -303,6 +303,32 @@ const SubscriptionScreen = () => {
 
   // Si se está mostrando el WebView de pago, renderizarlo
   if (showPaymentWebView && paymentUrl) {
+    // Validar que la URL sea válida antes de mostrar el WebView
+    let isValidUrl = false;
+    try {
+      const urlObj = new URL(paymentUrl);
+      isValidUrl = urlObj.protocol.startsWith('http');
+    } catch (e) {
+      console.error('URL inválida:', paymentUrl);
+      Alert.alert(
+        'Error',
+        'La URL de pago no es válida. Por favor, intenta nuevamente.'
+      );
+      setShowPaymentWebView(false);
+      setPaymentUrl(null);
+      return null;
+    }
+
+    if (!isValidUrl) {
+      Alert.alert(
+        'Error',
+        'La URL de pago no es válida. Por favor, intenta nuevamente.'
+      );
+      setShowPaymentWebView(false);
+      setPaymentUrl(null);
+      return null;
+    }
+
     return (
       <PaymentWebView
         url={paymentUrl}
