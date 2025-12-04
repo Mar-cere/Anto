@@ -151,14 +151,14 @@ const resetPasswordSchema = Joi.object({
 });
 
 // Funciones helper
-const generateTokens = (userId) => {
+const generateTokens = async (userId, role = 'user') => {
   const accessToken = jwt.sign(
-    { userId },
+    { userId, role },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   );
   const refreshToken = jwt.sign(
-    { userId, type: 'refresh' },
+    { userId, role, type: 'refresh' },
     process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
     { expiresIn: '30d' }
   );
@@ -264,8 +264,8 @@ router.post('/register', registerLimiter, async (req, res) => {
         }
       });
 
-    // Generar tokens
-    const { accessToken, refreshToken } = generateTokens(user._id);
+    // Generar tokens con el rol del usuario
+    const { accessToken, refreshToken } = await generateTokens(user._id, user.role || 'user');
 
     res.status(201).json({
       message: 'Usuario registrado exitosamente',
@@ -329,8 +329,8 @@ router.post('/login', loginLimiter, async (req, res) => {
       });
     }
 
-    // Generar tokens
-    const { accessToken, refreshToken } = generateTokens(user._id);
+    // Generar tokens con el rol del usuario
+    const { accessToken, refreshToken } = await generateTokens(user._id, user.role || 'user');
 
     // Actualizar último login y actividad
     user.lastLogin = new Date();
@@ -372,7 +372,8 @@ router.post('/refresh', async (req, res) => {
       return res.status(401).json({ message: 'Usuario no encontrado o inactivo' });
     }
 
-    const { accessToken } = generateTokens(user._id);
+    // Generar nuevo access token con el rol actualizado del usuario
+    const { accessToken } = await generateTokens(user._id, user.role || 'user');
 
     res.json({
       accessToken,

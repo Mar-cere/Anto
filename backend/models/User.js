@@ -65,6 +65,13 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  // Rol del usuario (user, admin, moderator, emergency)
+  role: {
+    type: String,
+    enum: ['user', 'admin', 'moderator', 'emergency'],
+    default: 'user',
+    index: true
+  },
   // Preferencias de usuario
   preferences: {
     theme: {

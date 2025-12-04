@@ -33,6 +33,22 @@ const updateTaskLimiter = rateLimit({
   legacyHeaders: false
 });
 
+const deleteTaskLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 20,
+  message: 'Demasiadas eliminaciones. Por favor, intente más tarde.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const patchTaskLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 30,
+  message: 'Demasiadas modificaciones. Por favor, intente más tarde.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 // Middleware de autenticación para todas las rutas
 router.use(authenticateToken);
 
@@ -525,7 +541,7 @@ router.put('/:id', validateObjectId, updateTaskLimiter, async (req, res) => {
 });
 
 // Eliminar una tarea o recordatorio (soft delete)
-router.delete('/:id', validateObjectId, async (req, res) => {
+router.delete('/:id', validateObjectId, deleteTaskLimiter, async (req, res) => {
   try {
     const task = await findTaskById(req.params.id, req.user._id);
     
@@ -549,7 +565,7 @@ router.delete('/:id', validateObjectId, async (req, res) => {
 });
 
 // Marcar tarea como completada
-router.patch('/:id/complete', validateObjectId, async (req, res) => {
+router.patch('/:id/complete', validateObjectId, patchTaskLimiter, async (req, res) => {
   try {
     const task = await findTaskById(req.params.id, req.user._id);
     
@@ -574,7 +590,7 @@ router.patch('/:id/complete', validateObjectId, async (req, res) => {
 });
 
 // Marcar tarea como en progreso
-router.patch('/:id/in-progress', validateObjectId, async (req, res) => {
+router.patch('/:id/in-progress', validateObjectId, patchTaskLimiter, async (req, res) => {
   try {
     const task = await findTaskById(req.params.id, req.user._id);
     
@@ -599,7 +615,7 @@ router.patch('/:id/in-progress', validateObjectId, async (req, res) => {
 });
 
 // Cancelar tarea
-router.patch('/:id/cancel', validateObjectId, async (req, res) => {
+router.patch('/:id/cancel', validateObjectId, patchTaskLimiter, async (req, res) => {
   try {
     const task = await findTaskById(req.params.id, req.user._id);
     
@@ -655,7 +671,7 @@ router.post('/:id/subtasks', validateObjectId, async (req, res) => {
 });
 
 // Completar subtarea
-router.patch('/:id/subtasks/:subtaskIndex/complete', validateObjectId, async (req, res) => {
+router.patch('/:id/subtasks/:subtaskIndex/complete', validateObjectId, patchTaskLimiter, async (req, res) => {
   try {
     const subtaskIndex = parseInt(req.params.subtaskIndex);
     

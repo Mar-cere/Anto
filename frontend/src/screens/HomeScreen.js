@@ -9,9 +9,11 @@
  */
 
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   ImageBackground,
   StatusBar,
@@ -93,9 +95,37 @@ const HomeScreen = () => {
   }, [fadeAnim, translateYAnim]);
 
   // Función para manejar la navegación
-  const handleNavigation = (screen) => {
+  const handleNavigation = async (screen) => {
     const route = ROUTE_MAP[screen] || screen;
-    navigation.navigate(route);
+    
+    // Si intenta navegar al chat, verificar autenticación primero
+    if (route === ROUTES.CHAT || screen === ROUTES.CHAT) {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token) {
+          Alert.alert(
+            'Iniciar sesión requerido',
+            'Necesitas iniciar sesión para acceder al chat. ¿Deseas iniciar sesión ahora?',
+            [
+              { text: 'Cancelar', style: 'cancel' },
+              {
+                text: 'Iniciar sesión',
+                onPress: () => navigation.navigate(ROUTES.SIGN_IN)
+              }
+            ]
+          );
+          return;
+        }
+        // Si está autenticado, navegar al TabNavigator y luego al chat
+        // El TabNavigator tiene la pantalla 'Chat' como una de sus tabs
+        navigation.navigate('MainTabs', { screen: 'Chat' });
+      } catch (error) {
+        console.error('Error verificando autenticación:', error);
+        Alert.alert('Error', 'Hubo un problema al verificar tu sesión. Por favor, intenta iniciar sesión.');
+      }
+    } else {
+      navigation.navigate(route);
+    }
   };
 
   return (

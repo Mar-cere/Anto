@@ -20,29 +20,30 @@ import morgan from 'morgan';
 // Importación de configuración y middleware
 import config from './config/config.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { sanitizeAll } from './middleware/sanitizeInput.js';
 import logger from './utils/logger.js';
 import { initializeSentry } from './utils/sentry.js';
 
 // Importación de rutas
+import { setupSocketIO } from './config/socket.js';
+import { setupSwagger } from './config/swagger.js';
 import authRoutes from './routes/authRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import cloudinaryRoutes from './routes/cloudinary.js';
-import habitRoutes from './routes/habitRoutes.js';
-import taskRoutes from './routes/taskRoutes.js';
-import userRoutes from './routes/userRoutes.js';
 import crisisRoutes from './routes/crisisRoutes.js';
-import notificationRoutes from './routes/notificationRoutes.js';
-import notificationEngagementRoutes from './routes/notificationEngagementRoutes.js';
-import testNotificationRoutes from './routes/testNotificationRoutes.js';
-import metricsRoutes from './routes/metricsRoutes.js';
-import therapeuticTechniquesRoutes from './routes/therapeuticTechniquesRoutes.js';
-import paymentRoutes from './routes/paymentRoutes.js';
-import paymentRecoveryRoutes from './routes/paymentRecoveryRoutes.js';
-import paymentMetricsRoutes from './routes/paymentMetricsRoutes.js';
-import responseFeedbackRoutes from './routes/responseFeedbackRoutes.js';
+import habitRoutes from './routes/habitRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
-import { setupSwagger } from './config/swagger.js';
-import { setupSocketIO } from './config/socket.js';
+import metricsRoutes from './routes/metricsRoutes.js';
+import notificationEngagementRoutes from './routes/notificationEngagementRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import paymentMetricsRoutes from './routes/paymentMetricsRoutes.js';
+import paymentRecoveryRoutes from './routes/paymentRecoveryRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+import responseFeedbackRoutes from './routes/responseFeedbackRoutes.js';
+import taskRoutes from './routes/taskRoutes.js';
+import testNotificationRoutes from './routes/testNotificationRoutes.js';
+import therapeuticTechniquesRoutes from './routes/therapeuticTechniquesRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 
 // Constantes de configuración
 const APP_VERSION = '1.2.0';
@@ -190,6 +191,24 @@ app.use(cors(corsOptions));
 // Middlewares de parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Sanitización global de inputs (después de body parsing, antes de rutas)
+// Excluir webhooks y rutas que manejan datos binarios
+app.use((req, res, next) => {
+  // Excluir sanitización para webhooks y rutas específicas
+  const excludedPaths = [
+    '/api/payments/webhook', // Webhook de Mercado Pago necesita datos sin sanitizar
+    '/api/health', // Health check no necesita sanitización
+    '/health' // Health check básico
+  ];
+  
+  if (excludedPaths.some(path => req.path.startsWith(path))) {
+    return next();
+  }
+  
+  // Aplicar sanitización a todas las demás rutas
+  sanitizeAll(req, res, next);
+});
 
 // Compresión de respuestas (gzip)
 app.use(compression());

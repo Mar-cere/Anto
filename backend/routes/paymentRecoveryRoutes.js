@@ -13,12 +13,33 @@ import paymentAuditService from '../services/paymentAuditService.js';
 
 const router = express.Router();
 
+// Middleware: Solo administradores pueden acceder a rutas de recuperación
+const isAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Usuario no autenticado'
+    });
+  }
+
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Acceso denegado. Se requiere rol de administrador.',
+      required: 'admin',
+      current: req.user.role || 'user'
+    });
+  }
+
+  next();
+};
+
 /**
  * GET /api/payments/recovery/unactivated
  * Obtener lista de pagos completados sin suscripción activa
- * Requiere autenticación (solo para administradores en el futuro)
+ * Requiere autenticación y rol de administrador
  */
-router.get('/recovery/unactivated', authenticateToken, async (req, res) => {
+router.get('/recovery/unactivated', authenticateToken, isAdmin, async (req, res) => {
   try {
     const unactivated = await paymentAuditService.findUnactivatedPayments();
     
@@ -41,7 +62,7 @@ router.get('/recovery/unactivated', authenticateToken, async (req, res) => {
  * Intentar activar una suscripción desde una transacción
  * Requiere autenticación
  */
-router.post('/recovery/activate/:transactionId', authenticateToken, async (req, res) => {
+router.post('/recovery/activate/:transactionId', authenticateToken, isAdmin, async (req, res) => {
   try {
     const { transactionId } = req.params;
     
@@ -73,7 +94,7 @@ router.post('/recovery/activate/:transactionId', authenticateToken, async (req, 
  * Procesar todos los pagos no activados
  * Requiere autenticación
  */
-router.post('/recovery/process-all', authenticateToken, async (req, res) => {
+router.post('/recovery/process-all', authenticateToken, isAdmin, async (req, res) => {
   try {
     const results = await paymentRecoveryService.processUnactivatedPayments();
     

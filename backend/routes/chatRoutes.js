@@ -2,15 +2,24 @@
  * Rutas de Chat - Gestiona conversaciones, mensajes y análisis emocional/contextual
  */
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import mongoose from 'mongoose';
+import { evaluateSuicideRisk } from '../constants/crisis.js';
+import { HISTORY_LIMITS } from '../constants/openai.js';
 import { authenticateToken as protect } from '../middleware/auth.js';
 import { requireActiveSubscription } from '../middleware/checkSubscription.js';
+import CrisisEvent from '../models/CrisisEvent.js';
+import EmergencyAlert from '../models/EmergencyAlert.js';
 import {
   Conversation,
   Message,
   TherapeuticRecord
 } from '../models/index.js';
 import User from '../models/User.js';
+import actionSuggestionService from '../services/actionSuggestionService.js';
+import crisisFollowUpService from '../services/crisisFollowUpService.js';
+import crisisTrendAnalyzer from '../services/crisisTrendAnalyzer.js';
+import emergencyAlertService from '../services/emergencyAlertService.js';
 import {
   contextAnalyzer,
   emotionalAnalyzer,
@@ -18,17 +27,9 @@ import {
   progressTracker,
   userProfileService
 } from '../services/index.js';
-import sessionEmotionalMemory from '../services/sessionEmotionalMemory.js';
-import actionSuggestionService from '../services/actionSuggestionService.js';
 import metricsService from '../services/metricsService.js';
-import { HISTORY_LIMITS } from '../constants/openai.js';
-import { evaluateSuicideRisk } from '../constants/crisis.js';
-import emergencyAlertService from '../services/emergencyAlertService.js';
-import crisisTrendAnalyzer from '../services/crisisTrendAnalyzer.js';
-import crisisFollowUpService from '../services/crisisFollowUpService.js';
 import pushNotificationService from '../services/pushNotificationService.js';
-import CrisisEvent from '../models/CrisisEvent.js';
-import EmergencyAlert from '../models/EmergencyAlert.js';
+import sessionEmotionalMemory from '../services/sessionEmotionalMemory.js';
 import { cursorPaginate } from '../utils/pagination.js';
 
 const router = express.Router();
@@ -37,6 +38,23 @@ const router = express.Router();
 const LIMITE_MENSAJES = 100; // Aumentado de 50 a 100 para permitir conversaciones más largas
 const VENTANA_CONTEXTO = 30 * 60 * 1000; // 30 minutos en milisegundos
 const HISTORIAL_LIMITE = 10; // Número de mensajes para contexto
+
+// Rate limiters
+const deleteConversationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 10,
+  message: 'Demasiadas eliminaciones de conversaciones. Por favor, intente más tarde.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const patchMessageLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 30,
+  message: 'Demasiadas actualizaciones de mensajes. Por favor, intente más tarde.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 // Helper: validar formato de ObjectId (reutilizable)
 const isValidObjectId = (id) => {
@@ -778,7 +796,7 @@ router.get('/conversations', protect, async (req, res) => {
 });
 
 // Actualizar estado de mensajes (sent, delivered, read, failed)
-router.patch('/messages/status', protect, async (req, res) => {
+router.patch('/messages/status', protect, patchMessageLimiter, async (req, res) => {
   try {
     const { messageIds, status } = req.body;
 
@@ -844,7 +862,7 @@ router.patch('/messages/status', protect, async (req, res) => {
 });
 
 // Eliminar mensajes de una conversación (opcional: filtrar por rol)
-router.delete('/conversations/:conversationId', protect, validarConversationId, validarConversacion, async (req, res) => {
+router.delete('/conversations/:conversationId', protect, validarConversationId, validarConversacion, deleteConversationLimiter, async (req, res) => {
   try {
     const { conversationId } = req.params;
     const { role } = req.query;

@@ -14,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Easing,
   ImageBackground,

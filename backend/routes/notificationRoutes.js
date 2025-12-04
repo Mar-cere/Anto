@@ -7,10 +7,19 @@
  */
 
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { authenticateToken } from '../middleware/auth.js';
 import User from '../models/User.js';
 
 const router = express.Router();
+
+const deletePushTokenLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5,
+  message: 'Demasiadas eliminaciones de tokens. Por favor, intente más tarde.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 /**
  * POST /api/notifications/push-token
@@ -62,7 +71,7 @@ router.post('/push-token', authenticateToken, async (req, res) => {
  * DELETE /api/notifications/push-token
  * Elimina el token push del usuario (útil para logout)
  */
-router.delete('/push-token', authenticateToken, async (req, res) => {
+router.delete('/push-token', authenticateToken, deletePushTokenLimiter, async (req, res) => {
   try {
     const userId = req.user._id;
 

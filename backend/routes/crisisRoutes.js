@@ -2,6 +2,7 @@
  * Rutas de Crisis - Gestiona endpoints para métricas y estadísticas de crisis
  */
 import express from 'express';
+import Joi from 'joi';
 import { authenticateToken as protect } from '../middleware/auth.js';
 import crisisMetricsService from '../services/crisisMetricsService.js';
 
@@ -10,14 +11,56 @@ const router = express.Router();
 // Todas las rutas requieren autenticación
 router.use(protect);
 
+// Middleware para validar query parameters
+const validateQueryParams = (schema) => {
+  return (req, res, next) => {
+    const { error, value } = schema.validate(req.query, { abortEarly: false });
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: 'Parámetros de consulta inválidos',
+        errors: error.details.map(detail => detail.message)
+      });
+    }
+    req.query = value;
+    next();
+  };
+};
+
+// Esquemas de validación para query parameters
+const daysQuerySchema = Joi.object({
+  days: Joi.number().integer().min(1).max(365).default(30)
+});
+
+const monthsQuerySchema = Joi.object({
+  months: Joi.number().integer().min(1).max(24).default(6)
+});
+
+const periodQuerySchema = Joi.object({
+  period: Joi.string().valid('7d', '30d', '90d', '180d', '365d').default('30d')
+});
+
+const historyQuerySchema = Joi.object({
+  limit: Joi.number().integer().min(1).max(100).default(20),
+  offset: Joi.number().integer().min(0).default(0),
+  riskLevel: Joi.string().valid('LOW', 'WARNING', 'MEDIUM', 'HIGH').allow(null, '').optional(),
+  startDate: Joi.date().iso().allow(null, '').optional(),
+  endDate: Joi.date().iso().min(Joi.ref('startDate')).allow(null, '').optional()
+});
+
+const comparePeriodsQuerySchema = Joi.object({
+  currentDays: Joi.number().integer().min(1).max(365).default(30),
+  previousDays: Joi.number().integer().min(1).max(365).default(30)
+});
+
 /**
  * GET /api/crisis/summary
  * Obtiene un resumen general de crisis del usuario
- * Query params: days (default: 30)
+ * Query params: days (default: 30, min: 1, max: 365)
  */
-router.get('/summary', async (req, res) => {
+router.get('/summary', validateQueryParams(daysQuerySchema), async (req, res) => {
   try {
-    const days = parseInt(req.query.days) || 30;
+    const days = req.query.days;
     const summary = await crisisMetricsService.getCrisisSummary(req.user._id, days);
     
     res.json({
@@ -37,11 +80,11 @@ router.get('/summary', async (req, res) => {
 /**
  * GET /api/crisis/trends
  * Obtiene tendencias emocionales del usuario
- * Query params: period ('7d', '30d', '90d', default: '30d')
+ * Query params: period ('7d', '30d', '90d', '180d', '365d', default: '30d')
  */
-router.get('/trends', async (req, res) => {
+router.get('/trends', validateQueryParams(periodQuerySchema), async (req, res) => {
   try {
-    const period = req.query.period || '30d';
+    const period = req.query.period;
     const trends = await crisisMetricsService.getEmotionalTrends(req.user._id, period);
     
     res.json({
@@ -61,11 +104,11 @@ router.get('/trends', async (req, res) => {
 /**
  * GET /api/crisis/by-month
  * Obtiene crisis agrupadas por mes
- * Query params: months (default: 6)
+ * Query params: months (default: 6, min: 1, max: 24)
  */
-router.get('/by-month', async (req, res) => {
+router.get('/by-month', validateQueryParams(monthsQuerySchema), async (req, res) => {
   try {
-    const months = parseInt(req.query.months) || 6;
+    const months = req.query.months;
     const monthlyData = await crisisMetricsService.getCrisisByMonth(req.user._id, months);
     
     res.json({
@@ -85,13 +128,13 @@ router.get('/by-month', async (req, res) => {
 /**
  * GET /api/crisis/history
  * Obtiene historial de crisis con detalles
- * Query params: limit, offset, riskLevel, startDate, endDate
+ * Query params: limit (1-100), offset (min: 0), riskLevel (LOW/WARNING/MEDIUM/HIGH), startDate, endDate
  */
-router.get('/history', async (req, res) => {
+router.get('/history', validateQueryParams(historyQuerySchema), async (req, res) => {
   try {
     const options = {
-      limit: parseInt(req.query.limit) || 20,
-      offset: parseInt(req.query.offset) || 0,
+      limit: req.query.limit,
+      offset: req.query.offset,
       riskLevel: req.query.riskLevel || null,
       startDate: req.query.startDate || null,
       endDate: req.query.endDate || null
@@ -116,11 +159,11 @@ router.get('/history', async (req, res) => {
 /**
  * GET /api/crisis/alerts-stats
  * Obtiene estadísticas de alertas
- * Query params: days (default: 30)
+ * Query params: days (default: 30, min: 1, max: 365)
  */
-router.get('/alerts-stats', async (req, res) => {
+router.get('/alerts-stats', validateQueryParams(daysQuerySchema), async (req, res) => {
   try {
-    const days = parseInt(req.query.days) || 30;
+    const days = req.query.days;
     const stats = await crisisMetricsService.getAlertStatistics(req.user._id, days);
     
     res.json({
@@ -140,11 +183,11 @@ router.get('/alerts-stats', async (req, res) => {
 /**
  * GET /api/crisis/followup-stats
  * Obtiene estadísticas de seguimiento
- * Query params: days (default: 30)
+ * Query params: days (default: 30, min: 1, max: 365)
  */
-router.get('/followup-stats', async (req, res) => {
+router.get('/followup-stats', validateQueryParams(daysQuerySchema), async (req, res) => {
   try {
-    const days = parseInt(req.query.days) || 30;
+    const days = req.query.days;
     const stats = await crisisMetricsService.getFollowUpStatistics(req.user._id, days);
     
     res.json({
@@ -164,11 +207,11 @@ router.get('/followup-stats', async (req, res) => {
 /**
  * GET /api/crisis/emotion-distribution
  * Obtiene distribución de emociones en crisis
- * Query params: days (default: 30)
+ * Query params: days (default: 30, min: 1, max: 365)
  */
-router.get('/emotion-distribution', async (req, res) => {
+router.get('/emotion-distribution', validateQueryParams(daysQuerySchema), async (req, res) => {
   try {
-    const days = parseInt(req.query.days) || 30;
+    const days = req.query.days;
     const distribution = await crisisMetricsService.getEmotionDistribution(req.user._id, days);
     
     res.json({
@@ -188,12 +231,12 @@ router.get('/emotion-distribution', async (req, res) => {
 /**
  * GET /api/crisis/compare-periods
  * Compara métricas entre dos períodos
- * Query params: currentDays (default: 30), previousDays (default: 30)
+ * Query params: currentDays (default: 30, min: 1, max: 365), previousDays (default: 30, min: 1, max: 365)
  */
-router.get('/compare-periods', async (req, res) => {
+router.get('/compare-periods', validateQueryParams(comparePeriodsQuerySchema), async (req, res) => {
   try {
-    const currentDays = parseInt(req.query.currentDays) || 30;
-    const previousDays = parseInt(req.query.previousDays) || 30;
+    const currentDays = req.query.currentDays;
+    const previousDays = req.query.previousDays;
     const comparison = await crisisMetricsService.comparePeriods(req.user._id, currentDays, previousDays);
     
     res.json({
@@ -213,11 +256,11 @@ router.get('/compare-periods', async (req, res) => {
 /**
  * GET /api/crisis/export
  * Obtiene datos para exportación CSV
- * Query params: days (default: 30)
+ * Query params: days (default: 30, min: 1, max: 365)
  */
-router.get('/export', async (req, res) => {
+router.get('/export', validateQueryParams(daysQuerySchema), async (req, res) => {
   try {
-    const days = parseInt(req.query.days) || 30;
+    const days = req.query.days;
     const exportData = await crisisMetricsService.getExportData(req.user._id, days);
     
     res.json({
@@ -237,11 +280,11 @@ router.get('/export', async (req, res) => {
 /**
  * GET /api/crisis/technique-recommendations
  * Obtiene recomendaciones de técnicas basadas en crisis detectadas
- * Query params: days (default: 30)
+ * Query params: days (default: 30, min: 1, max: 365)
  */
-router.get('/technique-recommendations', async (req, res) => {
+router.get('/technique-recommendations', validateQueryParams(daysQuerySchema), async (req, res) => {
   try {
-    const days = parseInt(req.query.days) || 30;
+    const days = req.query.days;
     const recommendations = await crisisMetricsService.getTechniqueRecommendations(req.user._id, days);
     
     res.json({
@@ -261,11 +304,11 @@ router.get('/technique-recommendations', async (req, res) => {
 /**
  * GET /api/crisis/technique-effectiveness
  * Obtiene análisis de efectividad de técnicas por tipo de crisis
- * Query params: days (default: 30)
+ * Query params: days (default: 30, min: 1, max: 365)
  */
-router.get('/technique-effectiveness', async (req, res) => {
+router.get('/technique-effectiveness', validateQueryParams(daysQuerySchema), async (req, res) => {
   try {
-    const days = parseInt(req.query.days) || 30;
+    const days = req.query.days;
     const analysis = await crisisMetricsService.getTechniqueEffectivenessAnalysis(req.user._id, days);
     
     res.json({

@@ -9,14 +9,14 @@
 
 import express from 'express';
 import rateLimit from 'express-rate-limit';
+import Joi from 'joi';
+import { formatAmount, getPlanPrice } from '../config/mercadopago.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validateUserObjectId } from '../middleware/validation.js';
-import paymentService from '../services/paymentService.js';
 import Transaction from '../models/Transaction.js';
-import Subscription from '../models/Subscription.js';
-import { getPlanPrice, formatAmount, isMercadoPagoConfigured } from '../config/mercadopago.js';
 import cacheService from '../services/cacheService.js';
-import Joi from 'joi';
+import paymentAuditService from '../services/paymentAuditService.js';
+import paymentService from '../services/paymentService.js';
 
 const router = express.Router();
 
@@ -131,11 +131,11 @@ router.get('/plans', async (req, res) => {
         formattedAmount: formatAmount(quarterlyAmount, currency),
         interval: 'quarter',
         currency: currency,
-        discount: '10%',
+        discount: '3%',
         savings: formatAmount(quarterlySavings, currency),
         features: [
           'Todo lo del plan mensual',
-          'Ahorro de $600 CLP',
+          `Ahorro de ${formatAmount(quarterlySavings, currency)}`,
           'Facturación trimestral',
         ],
       },
@@ -146,11 +146,11 @@ router.get('/plans', async (req, res) => {
         formattedAmount: formatAmount(semestralAmount, currency),
         interval: 'semester',
         currency: currency,
-        discount: '15%',
+        discount: '5.5%',
         savings: formatAmount(semestralSavings, currency),
         features: [
           'Todo lo del plan mensual',
-          'Ahorro de $1,600 CLP',
+          `Ahorro de ${formatAmount(semestralSavings, currency)}`,
           'Facturación semestral',
         ],
       },
@@ -161,11 +161,11 @@ router.get('/plans', async (req, res) => {
         formattedAmount: formatAmount(yearlyAmount, currency),
         interval: 'year',
         currency: currency,
-        discount: '20%',
+        discount: '15%',
         savings: formatAmount(yearlySavings, currency),
         features: [
           'Todo lo del plan mensual',
-          'Ahorro de $4,200 CLP',
+          `Ahorro de ${formatAmount(yearlySavings, currency)}`,
           'Mejor precio por mes',
           'Acceso anticipado a nuevas features',
         ],
@@ -506,27 +506,100 @@ router.get(
  * Webhook para eventos de pago de Mercado Pago
  * IMPORTANTE: Esta ruta NO debe usar authenticateToken
  */
-router.post('/webhook', express.json(), async (req, res) => {
+// Rate limiter para webhook (más permisivo pero con límite)
+const webhookLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minuto
+  max: 100, // Mercado Pago puede enviar múltiples notificaciones
+  message: 'Demasiadas solicitudes de webhook',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    // En desarrollo, no aplicar rate limiting estricto
+    return process.env.NODE_ENV === 'development';
+  }
+});
+
+router.post('/webhook', express.json(), webhookLimiter, async (req, res) => {
   try {
-    // Validar que el webhook viene de Mercado Pago
-    // Mercado Pago envía notificaciones desde IPs específicas
-    // En producción, se puede validar el rango de IPs de Mercado Pago
-    const allowedIPs = process.env.MERCADOPAGO_WEBHOOK_IPS?.split(',') || [];
-    const clientIP = req.ip || req.connection.remoteAddress;
+    const clientIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
+    const userAgent = req.get('user-agent') || 'unknown';
     
-    // Si hay IPs configuradas, validar
-    if (allowedIPs.length > 0 && !allowedIPs.includes(clientIP)) {
-      console.warn('[PAYMENT_WEBHOOK] IP no autorizada:', clientIP);
-      await paymentService.handleWebhook(req.body, null).catch(() => {});
-      // Responder 200 para no revelar que la IP fue rechazada
-      return res.status(200).json({ received: true });
+    // Validar que el webhook viene de Mercado Pago
+    // En producción, validar IPs y firma
+    const isProduction = process.env.NODE_ENV === 'production';
+    const allowedIPs = process.env.MERCADOPAGO_WEBHOOK_IPS?.split(',').map(ip => ip.trim()).filter(Boolean) || [];
+    const webhookSecret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
+    
+    // En producción, validar IP si está configurada
+    if (isProduction && allowedIPs.length > 0) {
+      // Verificar IP directa o a través de proxy
+      const isAllowedIP = allowedIPs.some(allowedIP => {
+        return clientIP === allowedIP || 
+               clientIP?.startsWith(allowedIP) ||
+               req.headers['x-forwarded-for']?.includes(allowedIP);
+      });
+      
+      if (!isAllowedIP) {
+        console.warn('[PAYMENT_WEBHOOK] IP no autorizada:', {
+          ip: clientIP,
+          forwardedFor: req.headers['x-forwarded-for'],
+          allowedIPs: allowedIPs.length,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Registrar intento no autorizado
+        await paymentAuditService.logEvent('WEBHOOK_UNAUTHORIZED_IP', {
+          ip: clientIP,
+          forwardedFor: req.headers['x-forwarded-for'],
+          userAgent,
+          hasBody: !!req.body
+        }, null).catch(() => {});
+        
+        // Responder 200 para no revelar que la IP fue rechazada
+        return res.status(200).json({ received: true });
+      }
     }
 
     // Validar que el body tenga la estructura esperada
     if (!req.body || (!req.body.type && !req.body.action && !req.body.id)) {
-      console.warn('[PAYMENT_WEBHOOK] Webhook con estructura inválida:', req.body);
+      console.warn('[PAYMENT_WEBHOOK] Webhook con estructura inválida:', {
+        hasBody: !!req.body,
+        keys: req.body ? Object.keys(req.body) : [],
+        ip: clientIP
+      });
+      
+      await paymentAuditService.logEvent('WEBHOOK_INVALID_STRUCTURE', {
+        ip: clientIP,
+        userAgent,
+        bodyKeys: req.body ? Object.keys(req.body) : []
+      }, null).catch(() => {});
+      
       return res.status(400).json({
         error: 'Invalid webhook structure',
+      });
+    }
+
+    // Validar firma si está configurada (en producción es obligatorio)
+    const signature = req.headers['x-signature'] || 
+                     req.headers['x-mercadopago-signature'] || 
+                     req.headers['x-request-id'] || 
+                     null;
+    
+    if (isProduction && webhookSecret && !signature) {
+      console.warn('[PAYMENT_WEBHOOK] Webhook sin firma en producción:', {
+        ip: clientIP,
+        type: req.body.type || req.body.action
+      });
+      
+      await paymentAuditService.logEvent('WEBHOOK_MISSING_SIGNATURE', {
+        ip: clientIP,
+        userAgent,
+        type: req.body.type || req.body.action
+      }, null).catch(() => {});
+      
+      // En producción, rechazar webhooks sin firma si está configurado el secret
+      return res.status(400).json({
+        error: 'Missing webhook signature',
       });
     }
 
@@ -534,12 +607,10 @@ router.post('/webhook', express.json(), async (req, res) => {
     console.log('[PAYMENT_WEBHOOK] Webhook recibido:', {
       type: req.body.type || req.body.action,
       data: req.body.data ? 'present' : 'missing',
+      hasSignature: !!signature,
       timestamp: new Date().toISOString(),
       ip: clientIP,
     });
-
-    // Obtener firma si está disponible (Mercado Pago puede enviar headers)
-    const signature = req.headers['x-signature'] || req.headers['x-mercadopago-signature'] || null;
 
     const result = await paymentService.handleWebhook(req.body, signature);
 

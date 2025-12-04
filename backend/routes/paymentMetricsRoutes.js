@@ -15,12 +15,33 @@ import paymentAuditService from '../services/paymentAuditService.js';
 
 const router = express.Router();
 
+// Middleware: Solo administradores pueden acceder a métricas de pagos
+const isAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Usuario no autenticado'
+    });
+  }
+
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Acceso denegado. Se requiere rol de administrador.',
+      required: 'admin',
+      current: req.user.role || 'user'
+    });
+  }
+
+  next();
+};
+
 /**
  * GET /api/payments/metrics/overview
  * Obtener métricas generales del sistema de pagos
- * Requiere autenticación (solo para administradores en el futuro)
+ * Requiere autenticación y rol de administrador
  */
-router.get('/metrics/overview', authenticateToken, async (req, res) => {
+router.get('/metrics/overview', authenticateToken, isAdmin, async (req, res) => {
   try {
     const now = new Date();
     const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -290,7 +311,7 @@ router.get('/metrics/overview', authenticateToken, async (req, res) => {
  * Obtener lista detallada de pagos no activados
  * Requiere autenticación
  */
-router.get('/metrics/unactivated', authenticateToken, async (req, res) => {
+router.get('/metrics/unactivated', authenticateToken, isAdmin, async (req, res) => {
   try {
     const unactivated = await paymentAuditService.findUnactivatedPayments();
 
@@ -313,7 +334,7 @@ router.get('/metrics/unactivated', authenticateToken, async (req, res) => {
  * Verificar salud del sistema de pagos
  * Requiere autenticación
  */
-router.get('/metrics/health', authenticateToken, async (req, res) => {
+router.get('/metrics/health', authenticateToken, isAdmin, async (req, res) => {
   try {
     const now = new Date();
     const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);

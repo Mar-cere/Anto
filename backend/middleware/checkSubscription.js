@@ -36,6 +36,30 @@ export const requireActiveSubscription = (allowTrial = true) => {
         });
       }
 
+      // Verificar si el usuario tiene rol de emergencia (bypass de suscripción)
+      const userRole = req.user?.role;
+      if (userRole === 'emergency') {
+        // Usuarios con rol emergency tienen acceso completo sin suscripción
+        req.subscription = {
+          isActive: true,
+          isInTrial: false,
+          status: 'emergency',
+          plan: 'emergency',
+          bypass: true // Flag para indicar que es bypass de emergencia
+        };
+        
+        // Registrar acceso de emergencia
+        await paymentAuditService.logEvent('SUBSCRIPTION_CHECK_EMERGENCY_BYPASS', {
+          userId: userId.toString(),
+          userEmail: req.user?.email || 'unknown',
+          ip: req.ip,
+          userAgent: req.get('user-agent'),
+          endpoint: req.path,
+        }, userId.toString());
+        
+        return next();
+      }
+
       const userIdString = userId.toString();
 
       // Validar formato de ObjectId

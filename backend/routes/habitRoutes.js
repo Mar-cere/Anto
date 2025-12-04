@@ -41,6 +41,22 @@ const updateHabitLimiter = rateLimit({
   legacyHeaders: false
 });
 
+const deleteHabitLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 10,
+  message: 'Demasiadas eliminaciones. Por favor, intente más tarde.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const patchHabitLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 20,
+  message: 'Demasiadas modificaciones. Por favor, intente más tarde.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 // Middleware de autenticación para todas las rutas
 router.use(authenticateToken);
 
@@ -527,7 +543,7 @@ router.put('/:id', validateObjectId, updateHabitLimiter, async (req, res) => {
 });
 
 // Archivar/desarchivar hábito
-router.patch('/:id/archive', validateObjectId, async (req, res) => {
+router.patch('/:id/archive', validateObjectId, patchHabitLimiter, async (req, res) => {
   try {
     const habit = await findHabitById(req.params.id, req.user._id);
     
@@ -555,7 +571,7 @@ router.patch('/:id/archive', validateObjectId, async (req, res) => {
 });
 
 // Eliminar hábito (soft delete)
-router.delete('/:id', validateObjectId, async (req, res) => {
+router.delete('/:id', validateObjectId, deleteHabitLimiter, async (req, res) => {
   try {
     const habit = await findHabitById(req.params.id, req.user._id);
     
@@ -583,7 +599,7 @@ router.delete('/:id', validateObjectId, async (req, res) => {
 });
 
 // Marcar hábito como completado/no completado
-router.patch('/:id/toggle', validateObjectId, async (req, res) => {
+router.patch('/:id/toggle', validateObjectId, patchHabitLimiter, async (req, res) => {
   try {
     const habit = await findHabitById(req.params.id, req.user._id);
     
@@ -618,7 +634,7 @@ router.patch('/:id/toggle', validateObjectId, async (req, res) => {
 });
 
 // Actualizar recordatorio del hábito
-router.patch('/:id/reminder', validateObjectId, async (req, res) => {
+router.patch('/:id/reminder', validateObjectId, patchHabitLimiter, async (req, res) => {
   try {
     const { error, value } = notificationSchema.validate(req.body, { stripUnknown: true });
     if (error) {

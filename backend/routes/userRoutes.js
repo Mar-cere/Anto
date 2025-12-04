@@ -40,6 +40,30 @@ const avatarLimiter = rateLimit({
   legacyHeaders: false
 });
 
+const deleteUserLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 3,
+  message: 'Demasiados intentos de eliminación de cuenta. Por favor, intente más tarde.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const deleteContactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 10,
+  message: 'Demasiadas eliminaciones de contactos. Por favor, intente más tarde.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const patchContactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 20,
+  message: 'Demasiadas modificaciones de contactos. Por favor, intente más tarde.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 // Configuración de Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -401,7 +425,7 @@ router.get('/avatar-url/:publicId', authenticateToken, avatarLimiter, async (req
 });
 
 // Eliminar cuenta (soft delete)
-router.delete('/me', authenticateToken, validateUserObjectId, async (req, res) => {
+router.delete('/me', authenticateToken, validateUserObjectId, deleteUserLimiter, async (req, res) => {
   try {
     const user = await findUserById(req.user._id);
     if (!user) {
@@ -691,7 +715,7 @@ router.put('/me/emergency-contacts/:contactId', authenticateToken, validateUserO
 });
 
 // Eliminar un contacto de emergencia
-router.delete('/me/emergency-contacts/:contactId', authenticateToken, validateUserObjectId, async (req, res) => {
+router.delete('/me/emergency-contacts/:contactId', authenticateToken, validateUserObjectId, deleteContactLimiter, async (req, res) => {
   try {
     const { contactId } = req.params;
 
@@ -734,7 +758,7 @@ router.delete('/me/emergency-contacts/:contactId', authenticateToken, validateUs
 });
 
 // Habilitar/deshabilitar un contacto de emergencia
-router.patch('/me/emergency-contacts/:contactId/toggle', authenticateToken, validateUserObjectId, async (req, res) => {
+router.patch('/me/emergency-contacts/:contactId/toggle', authenticateToken, validateUserObjectId, patchContactLimiter, async (req, res) => {
   try {
     const { contactId } = req.params;
 

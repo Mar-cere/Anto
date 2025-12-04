@@ -64,8 +64,9 @@ const handleTokenError = (error, res) => {
  * Middleware para autenticar usuarios mediante JWT
  * Extrae el token del header Authorization y lo verifica
  * Asigna req.user con los datos del usuario decodificado
+ * Incluye el rol del usuario desde el token o la base de datos
  */
-export function authenticateToken(req, res, next) {
+export async function authenticateToken(req, res, next) {
   const token = extractToken(req);
 
   if (!token) {
@@ -76,8 +77,22 @@ export function authenticateToken(req, res, next) {
 
   try {
     const decoded = verifyToken(token);
+    
+    // Si el token tiene rol, usarlo; si no, obtenerlo de la BD
+    let userRole = decoded.role;
+    if (!userRole) {
+      // Importar User dinámicamente para evitar dependencias circulares
+      const User = (await import('../models/User.js')).default;
+      const user = await User.findById(decoded.userId).select('role').lean();
+      userRole = user?.role || 'user';
+    }
+    
     // Asignar ambos campos para compatibilidad
-    req.user = { _id: decoded.userId, userId: decoded.userId };
+    req.user = { 
+      _id: decoded.userId, 
+      userId: decoded.userId,
+      role: userRole
+    };
     next();
   } catch (error) {
     return handleTokenError(error, res);

@@ -8,8 +8,8 @@
  */
 
 // Importar Mercado Pago SDK (CommonJS module)
-import mercadopago from 'mercadopago';
 import dotenv from 'dotenv';
+import mercadopago from 'mercadopago';
 
 dotenv.config();
 
@@ -50,12 +50,14 @@ export const MERCADOPAGO_CONFIG = {
   pendingUrl: process.env.MERCADOPAGO_PENDING_URL || 'http://localhost:3000/subscription/pending',
   
   // Precios de los planes (en pesos chilenos)
+  // Descuento máximo: 15% anual
+  // Descuentos graduales progresivos: 5% (mensual) → 3% → 5.5% → 15%
   prices: {
-    weekly: parseInt(process.env.MERCADOPAGO_PRICE_WEEKLY || '950', 10), // $950 CLP
-    monthly: parseInt(process.env.MERCADOPAGO_PRICE_MONTHLY || '3600', 10), // $3,600 CLP (5% descuento)
-    quarterly: parseInt(process.env.MERCADOPAGO_PRICE_QUARTERLY || '10200', 10), // $10,200 CLP (10% descuento)
-    semestral: parseInt(process.env.MERCADOPAGO_PRICE_SEMESTRAL || '19400', 10), // $19,400 CLP (15% descuento)
-    yearly: parseInt(process.env.MERCADOPAGO_PRICE_YEARLY || '36900', 10), // $36,900 CLP (20% descuento)
+    weekly: parseInt(process.env.MERCADOPAGO_PRICE_WEEKLY || '1300', 10), // $1,300 CLP
+    monthly: parseInt(process.env.MERCADOPAGO_PRICE_MONTHLY || '5348', 10), // $5,348 CLP (5% descuento vs semanal: $1,300 × 4.33 × 0.95)
+    quarterly: parseInt(process.env.MERCADOPAGO_PRICE_QUARTERLY || '15562', 10), // $15,562 CLP (3% descuento vs mensual)
+    semestral: parseInt(process.env.MERCADOPAGO_PRICE_SEMESTRAL || '30324', 10), // $30,324 CLP (5.5% descuento vs mensual)
+    yearly: parseInt(process.env.MERCADOPAGO_PRICE_YEARLY || '54549', 10), // $54,549 CLP (15% descuento vs mensual - máximo)
   },
   
   // IDs de Preapproval Plans (creados en el panel de Mercado Pago)

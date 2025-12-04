@@ -10,10 +10,24 @@ import metricsService from '../services/metricsService.js';
 const router = express.Router();
 
 // Middleware: Solo administradores pueden acceder a métricas globales
-// Por ahora, cualquier usuario autenticado puede ver sus propias métricas
 const isAdmin = (req, res, next) => {
-  // TODO: Implementar verificación de rol de administrador
-  // Por ahora, permitir acceso a todos los usuarios autenticados
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Usuario no autenticado'
+    });
+  }
+
+  // Verificar que el usuario tenga rol de administrador
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Acceso denegado. Se requiere rol de administrador.',
+      required: 'admin',
+      current: req.user.role || 'user'
+    });
+  }
+
   next();
 };
 

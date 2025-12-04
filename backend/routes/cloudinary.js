@@ -127,7 +127,7 @@ router.post('/signature', authenticateToken, async (req, res) => {
 });
 
 // Eliminar recurso de Cloudinary
-router.delete('/resource/:publicId', authenticateToken, async (req, res) => {
+router.delete('/resource/:publicId', authenticateToken, deleteResourceLimiter, async (req, res) => {
   try {
     const { publicId } = req.params;
     const { type } = req.query;

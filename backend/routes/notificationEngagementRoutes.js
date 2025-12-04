@@ -3,11 +3,20 @@
  */
 
 import express from 'express';
+import rateLimit from 'express-rate-limit';
+import mongoose from 'mongoose';
 import { authenticateToken } from '../middleware/auth.js';
 import NotificationEngagement from '../models/NotificationEngagement.js';
-import mongoose from 'mongoose';
 
 const router = express.Router();
+
+const patchEngagementLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 30,
+  message: 'Demasiadas actualizaciones. Por favor, intente más tarde.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 /**
  * GET /api/notifications/engagement/stats
@@ -124,7 +133,7 @@ router.get('/engagement/history', authenticateToken, async (req, res) => {
  * PATCH /api/notifications/engagement/:id/status
  * Actualiza el estado de una notificación (por ejemplo, cuando el usuario la abre)
  */
-router.patch('/engagement/:id/status', authenticateToken, async (req, res) => {
+router.patch('/engagement/:id/status', authenticateToken, patchEngagementLimiter, async (req, res) => {
   try {
     const notificationId = new mongoose.Types.ObjectId(req.params.id);
     const { status } = req.body;
