@@ -8,7 +8,8 @@ import { getEmergencyNumbersFromPhone } from '../constants/emergencyNumbers.js';
 import { getAlertMessages } from '../constants/crisis.js';
 import EmergencyAlert from '../models/EmergencyAlert.js';
 import User from '../models/User.js';
-import whatsappService from './whatsappService.js';
+import whatsappCloudService from './whatsappCloudService.js';
+import whatsappService from './whatsappService.js'; // Fallback a Twilio si Cloud API no está disponible
 import pushNotificationService from './pushNotificationService.js';
 
 class EmergencyAlertService {
@@ -376,36 +377,43 @@ class EmergencyAlertService {
         }
 
         // Enviar WhatsApp si el contacto tiene teléfono
+        // Prioridad: WhatsApp Cloud API > Twilio WhatsApp
+        // WhatsApp es OPCIONAL - si falla, el email ya fue enviado
         if (contact.phone) {
           try {
-            // Usar el método correcto del servicio de WhatsApp
-            const whatsappResult = isTest
-              ? await whatsappService.sendTestMessage(
-                  contact.phone,
-                  { name: user.name, email: user.email },
-                  userLanguage // Pasar el idioma del usuario
-                )
-              : await whatsappService.sendEmergencyAlert(
-                  contact.phone,
-                  { name: user.name, email: user.email },
-                  riskLevel,
-                  isTest,
-                  userLanguage // Pasar el idioma del usuario
-                );
-
-            contactResult.whatsapp.sent = whatsappResult.success || false;
-            if (!whatsappResult.success) {
-              contactResult.whatsapp.error = whatsappResult.error || 'Error al enviar WhatsApp';
+            let whatsappResult = null;
+            
+            // Intentar primero con WhatsApp Cloud API (más simple y gratis)
+            if (whatsappCloudService.isConfigured()) {
+              whatsappResult = isTest
+                ? await whatsappCloudService.sendTestMessage(contact.phone, { name: user.name, email: user.email }, userLanguage)
+                : await whatsappCloudService.sendEmergencyAlert(contact.phone, { name: user.name, email: user.email }, riskLevel, isTest, userLanguage);
+            }
+            // Fallback a Twilio si Cloud API no está configurado
+            else if (whatsappService.isConfigured()) {
+              whatsappResult = isTest
+                ? await whatsappService.sendTestMessage(contact.phone, { name: user.name, email: user.email }, userLanguage)
+                : await whatsappService.sendEmergencyAlert(contact.phone, { name: user.name, email: user.email }, riskLevel, isTest, userLanguage);
             }
 
-            if (whatsappResult.success) {
-              console.log(`[EmergencyAlertService] ✅ WhatsApp enviado a ${contact.name} (${contact.phone}) para usuario ${userId}. MessageId: ${whatsappResult.messageId || 'N/A'}`);
+            if (whatsappResult) {
+              contactResult.whatsapp.sent = whatsappResult.success || false;
+              contactResult.whatsapp.error = whatsappResult.success ? null : (whatsappResult.error || 'Error al enviar WhatsApp');
+
+              if (whatsappResult.success) {
+                console.log(`[EmergencyAlertService] ✅ WhatsApp enviado a ${contact.name} (${contact.phone})`);
+              } else {
+                // No es crítico - el email ya fue enviado
+                console.warn(`[EmergencyAlertService] ⚠️ WhatsApp no enviado a ${contact.name}: ${contactResult.whatsapp.error}`);
+              }
             } else {
-              console.error(`[EmergencyAlertService] ❌ Error enviando WhatsApp a ${contact.name} (${contact.phone}): ${whatsappResult.error || 'Error desconocido'}`);
+              // Ningún servicio de WhatsApp configurado
+              console.log(`[EmergencyAlertService] ℹ️ WhatsApp no configurado, solo email enviado a ${contact.name}`);
             }
           } catch (error) {
-            console.error(`[EmergencyAlertService] ❌ Error enviando WhatsApp a ${contact.phone}:`, error);
+            // WhatsApp falló, pero email ya fue enviado - no es crítico
             contactResult.whatsapp.error = error.message;
+            console.warn(`[EmergencyAlertService] ⚠️ Error enviando WhatsApp a ${contact.phone}: ${error.message}`);
           }
         }
 

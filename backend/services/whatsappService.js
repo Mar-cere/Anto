@@ -37,31 +37,41 @@ if (USE_WHATSAPP) {
 
 /**
  * Formatea un número de teléfono para WhatsApp
+ * Simplificado - solo limpia y agrega formato básico
  * @param {string} phone - Número de teléfono (puede tener varios formatos)
- * @returns {string} Número formateado para WhatsApp (whatsapp:+1234567890)
+ * @returns {string} Número formateado para WhatsApp (whatsapp:+1234567890) o null si inválido
  */
 const formatPhoneForWhatsApp = (phone) => {
-  if (!phone) return null;
+  if (!phone || typeof phone !== 'string') return null;
   
-  // Remover espacios, guiones, paréntesis
+  // Limpiar: remover espacios, guiones, paréntesis
   let cleaned = phone.replace(/[\s\-\(\)]/g, '');
+  
+  // Si ya tiene formato whatsapp:, removerlo primero
+  if (cleaned.startsWith('whatsapp:')) {
+    cleaned = cleaned.replace('whatsapp:', '');
+  }
   
   // Si empieza con +, mantenerlo
   if (cleaned.startsWith('+')) {
     return `whatsapp:${cleaned}`;
   }
   
-  // Si empieza con 0, removerlo (para números locales)
+  // Si empieza con 0, removerlo (números locales)
   if (cleaned.startsWith('0')) {
     cleaned = cleaned.substring(1);
   }
   
-  // Si no tiene código de país, asumir que es el código por defecto
-  // (puedes ajustar esto según tu país)
-  const DEFAULT_COUNTRY_CODE = process.env.DEFAULT_COUNTRY_CODE || '+1';
-  
+  // Agregar código de país si no lo tiene
+  const DEFAULT_COUNTRY_CODE = process.env.DEFAULT_COUNTRY_CODE || '+56'; // Chile por defecto
   if (!cleaned.startsWith('+')) {
     cleaned = `${DEFAULT_COUNTRY_CODE}${cleaned}`;
+  }
+  
+  // Validar que tenga al menos 10 dígitos (número mínimo razonable)
+  const digitsOnly = cleaned.replace(/\D/g, '');
+  if (digitsOnly.length < 10) {
+    return null; // Número muy corto, probablemente inválido
   }
   
   return `whatsapp:${cleaned}`;
@@ -73,63 +83,52 @@ const formatPhoneForWhatsApp = (phone) => {
  * @param {string} message - Mensaje a enviar
  * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
  */
+/**
+ * Envía un mensaje de WhatsApp
+ * Simplificado - manejo de errores más directo
+ */
 const sendWhatsAppMessage = async (to, message) => {
+  // Verificar configuración
   if (!USE_WHATSAPP || !twilioClient) {
     return {
       success: false,
-      error: 'WhatsApp no está configurado. Configura TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN y TWILIO_WHATSAPP_NUMBER'
+      error: 'WhatsApp no está configurado'
+    };
+  }
+
+  // Formatear número
+  const formattedTo = formatPhoneForWhatsApp(to);
+  if (!formattedTo) {
+    return {
+      success: false,
+      error: 'Número de teléfono inválido'
     };
   }
 
   try {
-    const formattedTo = formatPhoneForWhatsApp(to);
-    
-    if (!formattedTo) {
-      return {
-        success: false,
-        error: 'Número de teléfono inválido'
-      };
-    }
-
-    console.log(`[WhatsAppService] 📱 Enviando mensaje WhatsApp a: ${formattedTo}`);
-    
     const result = await twilioClient.messages.create({
       from: TWILIO_WHATSAPP_NUMBER,
       to: formattedTo,
       body: message
     });
 
-    console.log(`[WhatsAppService] ✅ Mensaje WhatsApp enviado exitosamente. SID: ${result.sid}`);
-    
     return {
       success: true,
       messageId: result.sid,
       status: result.status
     };
   } catch (error) {
-    console.error(`[WhatsAppService] ❌ Error enviando mensaje WhatsApp:`, error.message);
-    
-    // Errores comunes de Twilio
-    if (error.code === 21211) {
-      return {
-        success: false,
-        error: 'Número de teléfono inválido'
-      };
-    } else if (error.code === 21608) {
-      return {
-        success: false,
-        error: 'El número no está registrado en WhatsApp'
-      };
-    } else if (error.code === 21408) {
-      return {
-        success: false,
-        error: 'No se puede enviar mensajes a este número (no está en la lista de permitidos durante prueba)'
-      };
-    }
-    
+    // Manejo simplificado de errores comunes
+    const errorMessages = {
+      21211: 'Número de teléfono inválido',
+      21608: 'El número no está registrado en WhatsApp',
+      21408: 'Número no autorizado (sandbox: solo números verificados)',
+      21614: 'Número no válido para WhatsApp'
+    };
+
     return {
       success: false,
-      error: error.message || 'Error desconocido al enviar mensaje'
+      error: errorMessages[error.code] || error.message || 'Error al enviar mensaje'
     };
   }
 };
