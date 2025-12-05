@@ -96,21 +96,25 @@ const sendMessage = async (to, message) => {
   try {
     const url = `${BASE_URL}/${PHONE_NUMBER_ID}/messages`;
     
+    const payload = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: formattedTo,
+      type: 'text',
+      text: {
+        body: message
+      }
+    };
+
+    console.log(`[WhatsAppCloudService] 📤 Enviando mensaje a ${formattedTo} (URL: ${url})`);
+    
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${ACCESS_TOKEN}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to: formattedTo,
-        type: 'text',
-        text: {
-          body: message
-        }
-      })
+      body: JSON.stringify(payload)
     });
 
     const data = await response.json();
@@ -119,6 +123,16 @@ const sendMessage = async (to, message) => {
       // Manejar errores comunes de WhatsApp Cloud API
       const errorMessage = data.error?.message || `Error ${response.status}`;
       const errorCode = data.error?.code;
+      const errorType = data.error?.type;
+      const errorSubcode = data.error?.error_subcode;
+      
+      console.error(`[WhatsAppCloudService] ❌ Error ${response.status}:`, {
+        code: errorCode,
+        type: errorType,
+        subcode: errorSubcode,
+        message: errorMessage,
+        fbtrace_id: data.error?.fbtrace_id
+      });
       
       const errorMessages = {
         100: 'Parámetros inválidos',
@@ -126,22 +140,33 @@ const sendMessage = async (to, message) => {
         131026: 'El número no está registrado en WhatsApp',
         131031: 'Mensaje duplicado',
         190: 'Token de acceso inválido o expirado',
-        80007: 'Límite de mensajes alcanzado'
+        80007: 'Límite de mensajes alcanzado',
+        131048: 'El número de teléfono no está en formato válido',
+        131051: 'El número no tiene WhatsApp activo'
       };
 
       return {
         success: false,
-        error: errorMessages[errorCode] || errorMessage
+        error: errorMessages[errorCode] || errorMessage,
+        errorCode,
+        errorType,
+        errorSubcode,
+        details: data.error
       };
     }
+
+    console.log(`[WhatsAppCloudService] ✅ Mensaje enviado exitosamente. MessageId: ${data.messages?.[0]?.id || 'N/A'}`);
 
     return {
       success: true,
       messageId: data.messages?.[0]?.id || null,
-      status: 'sent'
+      status: data.messages?.[0]?.message_status || 'sent'
     };
   } catch (error) {
-    console.error('[WhatsAppCloudService] ❌ Error enviando mensaje:', error.message);
+    console.error('[WhatsAppCloudService] ❌ Error enviando mensaje:', {
+      message: error.message,
+      stack: error.stack
+    });
     return {
       success: false,
       error: error.message || 'Error desconocido al enviar mensaje'

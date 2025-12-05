@@ -945,7 +945,7 @@ router.post('/me/emergency-contacts/:contactId/test-whatsapp', authenticateToken
       ? new mongoose.Types.ObjectId(req.user._id) 
       : req.user._id;
     
-    const user = await User.findById(userId).select('emergencyContacts name username');
+    const user = await User.findById(userId).select('emergencyContacts name username email preferences.language');
     
     if (!user || !user.emergencyContacts) {
       return res.status(404).json({ message: 'Usuario o contacto no encontrado' });
@@ -963,45 +963,70 @@ router.post('/me/emergency-contacts/:contactId/test-whatsapp', authenticateToken
       return res.status(400).json({ message: 'El contacto no tiene número de teléfono configurado' });
     }
 
+    // Importar ambos servicios
+    const whatsappCloudService = (await import('../services/whatsappCloudService.js')).default;
     const whatsappService = (await import('../services/whatsappService.js')).default;
     
-    if (!whatsappService.isConfigured()) {
+    const userLanguage = user.preferences?.language || 'es';
+    const userInfo = { name: user.name || user.username || 'Usuario', email: user.email };
+
+    let result = null;
+    let serviceUsed = null;
+
+    // Intentar primero con WhatsApp Cloud API
+    if (whatsappCloudService.isConfigured()) {
+      serviceUsed = 'WhatsApp Cloud API (Meta)';
+      console.log(`[TestWhatsApp] Intentando enviar con ${serviceUsed} a ${contact.phone}`);
+      result = await whatsappCloudService.sendTestMessage(contact.phone, userInfo, userLanguage);
+    }
+    // Fallback a Twilio si Cloud API no está configurado
+    else if (whatsappService.isConfigured()) {
+      serviceUsed = 'Twilio WhatsApp';
+      console.log(`[TestWhatsApp] Intentando enviar con ${serviceUsed} a ${contact.phone}`);
+      result = await whatsappService.sendTestMessage(contact.phone, userInfo, userLanguage);
+    }
+    else {
       return res.status(400).json({
-        message: 'WhatsApp no está configurado. Configura TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN y TWILIO_WHATSAPP_NUMBER'
+        message: 'WhatsApp no está configurado',
+        details: {
+          cloudApi: whatsappCloudService.isConfigured() ? 'Configurado' : 'No configurado (falta WHATSAPP_CLOUD_ACCESS_TOKEN o WHATSAPP_CLOUD_PHONE_NUMBER_ID)',
+          twilio: whatsappService.isConfigured() ? 'Configurado' : 'No configurado (falta TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN o TWILIO_WHATSAPP_NUMBER)'
+        },
+        help: 'Configura al menos uno de los servicios. Ver: backend/docs/WHATSAPP_CLOUD_API_SETUP.md'
       });
     }
 
-    const result = await whatsappService.sendTestMessage(
-      contact.phone,
-      { name: user.name || user.username || 'Usuario', email: user.email }
-    );
-
-    if (result.success) {
+    if (result && result.success) {
       res.json({
         message: 'Mensaje de prueba de WhatsApp enviado exitosamente',
+        service: serviceUsed,
         contact: {
           _id: contact._id,
           name: contact.name,
           phone: contact.phone
         },
-        messageId: result.messageId
+        messageId: result.messageId,
+        status: result.status
       });
     } else {
-      res.status(200).json({
-        message: result.error || 'No se pudo enviar el mensaje de WhatsApp',
+      res.status(400).json({
+        message: result?.error || 'No se pudo enviar el mensaje de WhatsApp',
+        service: serviceUsed,
         contact: {
           _id: contact._id,
           name: contact.name,
           phone: contact.phone
         },
-        error: result.error
+        error: result?.error || 'Error desconocido',
+        details: result || 'No se recibió respuesta del servicio'
       });
     }
   } catch (error) {
-    console.error('Error al enviar mensaje de prueba de WhatsApp:', error);
+    console.error('[TestWhatsApp] Error al enviar mensaje de prueba de WhatsApp:', error);
     res.status(500).json({ 
       message: 'Error al enviar mensaje de prueba de WhatsApp',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Error interno del servidor',
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
