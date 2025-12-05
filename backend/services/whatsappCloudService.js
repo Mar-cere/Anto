@@ -17,10 +17,11 @@ import { getAlertMessages } from '../constants/crisis.js';
 import { APP_NAME } from '../constants/app.js';
 
 // Configuración de WhatsApp Cloud API
-const ACCESS_TOKEN = process.env.WHATSAPP_CLOUD_ACCESS_TOKEN;
-const PHONE_NUMBER_ID = process.env.WHATSAPP_CLOUD_PHONE_NUMBER_ID;
-const BUSINESS_ACCOUNT_ID = process.env.WHATSAPP_CLOUD_BUSINESS_ACCOUNT_ID;
-const API_VERSION = process.env.WHATSAPP_CLOUD_API_VERSION || 'v18.0';
+// Limpiar variables de entorno para evitar espacios o caracteres extra
+const ACCESS_TOKEN = process.env.WHATSAPP_CLOUD_ACCESS_TOKEN?.trim();
+const PHONE_NUMBER_ID = process.env.WHATSAPP_CLOUD_PHONE_NUMBER_ID?.trim();
+const BUSINESS_ACCOUNT_ID = process.env.WHATSAPP_CLOUD_BUSINESS_ACCOUNT_ID?.trim();
+const API_VERSION = (process.env.WHATSAPP_CLOUD_API_VERSION || 'v18.0').trim();
 const BASE_URL = `https://graph.facebook.com/${API_VERSION}`;
 
 // Verificar si está configurado
@@ -94,7 +95,27 @@ const sendMessage = async (to, message) => {
   }
 
   try {
-    const url = `${BASE_URL}/${PHONE_NUMBER_ID}/messages`;
+    // Validar y limpiar PHONE_NUMBER_ID para evitar caracteres extra
+    if (!PHONE_NUMBER_ID || PHONE_NUMBER_ID.trim() === '') {
+      return {
+        success: false,
+        error: 'PHONE_NUMBER_ID no está configurado o está vacío'
+      };
+    }
+
+    // Limpiar PHONE_NUMBER_ID: remover espacios y caracteres no numéricos
+    // El ID debe ser solo números
+    const cleanPhoneNumberId = PHONE_NUMBER_ID.trim().replace(/[^0-9]/g, '');
+    
+    if (!cleanPhoneNumberId) {
+      return {
+        success: false,
+        error: 'PHONE_NUMBER_ID no contiene un ID válido (debe ser numérico)'
+      };
+    }
+
+    // Construir URL correctamente
+    const url = `${BASE_URL}/${cleanPhoneNumberId}/messages`;
     
     const payload = {
       messaging_product: 'whatsapp',
@@ -106,7 +127,10 @@ const sendMessage = async (to, message) => {
       }
     };
 
-    console.log(`[WhatsAppCloudService] 📤 Enviando mensaje a ${formattedTo} (URL: ${url})`);
+    console.log(`[WhatsAppCloudService] 📤 Enviando mensaje a ${formattedTo}`);
+    console.log(`[WhatsAppCloudService] 📤 URL: ${url}`);
+    console.log(`[WhatsAppCloudService] 📤 Phone Number ID (original): "${PHONE_NUMBER_ID}"`);
+    console.log(`[WhatsAppCloudService] 📤 Phone Number ID (limpio): "${cleanPhoneNumberId}"`);
     
     const response = await fetch(url, {
       method: 'POST',
@@ -265,7 +289,9 @@ const whatsappCloudService = {
     }
 
     try {
-      const url = `${BASE_URL}/${PHONE_NUMBER_ID}?access_token=${ACCESS_TOKEN}`;
+      // Limpiar PHONE_NUMBER_ID antes de usar
+      const cleanPhoneNumberId = PHONE_NUMBER_ID.trim().replace(/[^0-9]/g, '');
+      const url = `${BASE_URL}/${cleanPhoneNumberId}?access_token=${ACCESS_TOKEN}`;
       const response = await fetch(url);
       const data = await response.json();
 
