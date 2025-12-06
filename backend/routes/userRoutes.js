@@ -10,6 +10,7 @@ import mongoose from 'mongoose';
 import { authenticateToken } from '../middleware/auth.js';
 import { validateUserObjectId } from '../middleware/validation.js';
 import User from '../models/User.js';
+import logger from '../utils/logger.js';
 
 // Helper para validar ObjectId
 const isValidObjectId = (id) => {
@@ -219,7 +220,7 @@ router.get('/me', authenticateToken, validateUserObjectId, async (req, res) => {
       daysSinceRegistration
     });
   } catch (error) {
-    console.error('Error al obtener usuario:', error);
+    logger.error('Error al obtener usuario', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
       message: 'Error al obtener datos del usuario',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -254,7 +255,7 @@ router.get('/me/stats', authenticateToken, validateUserObjectId, async (req, res
 
     res.json(stats);
   } catch (error) {
-    console.error('Error al obtener estadísticas:', error);
+    logger.error('Error al obtener estadísticas', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
       message: 'Error al obtener estadísticas',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -323,7 +324,7 @@ router.put('/me', authenticateToken, validateUserObjectId, updateProfileLimiter,
       user: user.toJSON()
     });
   } catch (error) {
-    console.error('Error al actualizar usuario:', error);
+    logger.error('Error al actualizar usuario', { error: error.message, userId: req.user._id });
     res.status(400).json({ 
       message: 'Error al actualizar el perfil',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -369,7 +370,7 @@ router.put('/me/password', authenticateToken, validateUserObjectId, updateProfil
 
     res.json({ message: 'Contraseña actualizada correctamente' });
   } catch (error) {
-    console.error('Error al cambiar contraseña:', error);
+    logger.error('Error al cambiar contraseña', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
       message: 'Error al cambiar la contraseña',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -416,7 +417,7 @@ router.get('/avatar-url/:publicId', authenticateToken, avatarLimiter, async (req
       expiresIn: AVATAR_URL_EXPIRY
     });
   } catch (error) {
-    console.error('Error generando URL de avatar:', error);
+    logger.error('Error generando URL de avatar', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
       message: 'Error al generar URL del avatar',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -447,7 +448,7 @@ router.delete('/me', authenticateToken, validateUserObjectId, deleteUserLimiter,
       deletedAt: user.deletedAt
     });
   } catch (error) {
-    console.error('Error al eliminar cuenta:', error);
+    logger.error('Error al eliminar cuenta', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
       message: 'Error al eliminar la cuenta',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -476,7 +477,7 @@ router.get('/me/subscription', authenticateToken, validateUserObjectId, async (r
       subscriptionDaysLeft
     });
   } catch (error) {
-    console.error('Error al obtener información de suscripción:', error);
+    logger.error('Error al obtener información de suscripción', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
       message: 'Error al obtener información de suscripción',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -521,7 +522,7 @@ router.get('/me/emergency-contacts', authenticateToken, validateUserObjectId, as
       currentCount: user.emergencyContacts?.length || 0
     });
   } catch (error) {
-    console.error('Error al obtener contactos de emergencia:', error);
+    logger.error('Error al obtener contactos de emergencia', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
       message: 'Error al obtener contactos de emergencia',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -540,7 +541,7 @@ router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, a
     });
     
     if (error) {
-      console.error('Error de validación:', error.details);
+      logger.warn('Error de validación en contacto de emergencia', { errors: error.details.map(d => d.message), userId: req.user._id });
       return res.status(400).json({ 
         message: 'Datos inválidos',
         errors: error.details.map(d => d.message)
@@ -614,7 +615,7 @@ router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, a
           testEmailError = 'No se pudo enviar el email de prueba. Verifica la configuración del servidor de email.';
         }
       } catch (emailError) {
-        console.error('Error enviando email de prueba:', emailError);
+        logger.error('Error enviando email de prueba', { error: emailError.message, userId: req.user._id });
         testEmailError = emailError.message || 'Error al enviar email de prueba';
         // No fallar la creación del contacto si falla el email de prueba
       }
@@ -635,7 +636,7 @@ router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, a
 
     res.status(201).json(response);
   } catch (error) {
-    console.error('Error al agregar contacto de emergencia:', error);
+    logger.error('Error al agregar contacto de emergencia', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
       message: 'Error al agregar contacto de emergencia',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -706,7 +707,7 @@ router.put('/me/emergency-contacts/:contactId', authenticateToken, validateUserO
       contact: user.emergencyContacts[contactIndex]
     });
   } catch (error) {
-    console.error('Error al actualizar contacto de emergencia:', error);
+    logger.error('Error al actualizar contacto de emergencia', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
       message: 'Error al actualizar contacto de emergencia',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -749,7 +750,7 @@ router.delete('/me/emergency-contacts/:contactId', authenticateToken, validateUs
       message: 'Contacto de emergencia eliminado exitosamente'
     });
   } catch (error) {
-    console.error('Error al eliminar contacto de emergencia:', error);
+    logger.error('Error al eliminar contacto de emergencia', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
       message: 'Error al eliminar contacto de emergencia',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -798,7 +799,7 @@ router.patch('/me/emergency-contacts/:contactId/toggle', authenticateToken, vali
       }
     });
   } catch (error) {
-    console.error('Error al cambiar estado del contacto:', error);
+    logger.error('Error al cambiar estado del contacto', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
       message: 'Error al cambiar estado del contacto',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -848,7 +849,7 @@ router.post('/me/emergency-contacts/:contactId/test', authenticateToken, validat
         emailError = 'No se pudo enviar el email de prueba. Verifica la configuración del servidor de email.';
       }
     } catch (error) {
-      console.error('Error enviando email de prueba:', error);
+      logger.error('Error enviando email de prueba', { error: error.message, userId: req.user._id });
       emailError = error.message || 'Error al enviar email de prueba';
     }
 
@@ -876,7 +877,7 @@ router.post('/me/emergency-contacts/:contactId/test', authenticateToken, validat
       });
     }
   } catch (error) {
-    console.error('Error al enviar email de prueba:', error);
+    logger.error('Error al enviar email de prueba', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
       message: 'Error al enviar email de prueba',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -923,7 +924,7 @@ router.post('/me/emergency-contacts/test-alert', authenticateToken, validateUser
       });
     }
   } catch (error) {
-    console.error('Error al enviar alerta de prueba:', error);
+    logger.error('Error al enviar alerta de prueba', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
       message: 'Error al enviar alerta de prueba',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -984,7 +985,7 @@ router.post('/me/emergency-contacts/:contactId/test-whatsapp', authenticateToken
     const userLanguage = user.preferences?.language || 'es';
     const userInfo = { name: user.name || user.username || 'Usuario', email: user.email };
 
-    console.log(`[TestWhatsApp] Enviando mensaje con Twilio WhatsApp a ${contact.phone}`);
+    logger.info('Enviando mensaje de prueba de WhatsApp', { phone: contact.phone, userId: req.user._id });
     const result = await whatsappService.sendTestMessage(contact.phone, userInfo, userLanguage);
 
     if (result && result.success) {
@@ -1030,7 +1031,7 @@ router.post('/me/emergency-contacts/:contactId/test-whatsapp', authenticateToken
       });
     }
   } catch (error) {
-    console.error('[TestWhatsApp] Error al enviar mensaje de prueba de WhatsApp:', error);
+    logger.error('Error al enviar mensaje de prueba de WhatsApp', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
       message: 'Error al enviar mensaje de prueba de WhatsApp',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Error interno del servidor',
@@ -1101,7 +1102,7 @@ router.get('/me/whatsapp-message-status/:messageSid', authenticateToken, validat
       });
     }
   } catch (error) {
-    console.error('[WhatsAppStatus] Error al obtener estado del mensaje:', error);
+    logger.error('Error al obtener estado del mensaje de WhatsApp', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
       message: 'Error al obtener estado del mensaje',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Error interno del servidor'
@@ -1143,7 +1144,7 @@ router.get('/me/emergency-alerts', authenticateToken, validateUserObjectId, asyn
       }
     });
   } catch (error) {
-    console.error('Error obteniendo historial de alertas:', error);
+    logger.error('Error obteniendo historial de alertas', { error: error.message, userId: req.user._id });
     res.status(500).json({
       message: 'Error al obtener historial de alertas',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -1164,7 +1165,7 @@ router.get('/me/emergency-alerts/stats', authenticateToken, validateUserObjectId
       data: stats
     });
   } catch (error) {
-    console.error('Error obteniendo estadísticas de alertas:', error);
+    logger.error('Error obteniendo estadísticas de alertas', { error: error.message, userId: req.user._id });
     res.status(500).json({
       message: 'Error al obtener estadísticas de alertas',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -1185,7 +1186,7 @@ router.get('/me/emergency-alerts/patterns', authenticateToken, validateUserObjec
       data: patterns
     });
   } catch (error) {
-    console.error('Error detectando patrones de alertas:', error);
+    logger.error('Error detectando patrones de alertas', { error: error.message, userId: req.user._id });
     res.status(500).json({
       message: 'Error al detectar patrones de alertas',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
