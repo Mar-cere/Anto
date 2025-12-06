@@ -277,7 +277,7 @@ const generateAlertMessage = (userInfo, riskLevel, isTest = false, phone = null,
 const whatsappService = {
   /**
    * Envía alerta de emergencia por WhatsApp
-   * Intenta primero con mensaje libre, si falla con error 63016, usa template si está configurado
+   * Usa template directamente si está configurado, sino intenta mensaje libre
    * @param {string} phone - Número de teléfono del contacto
    * @param {Object} userInfo - Información del usuario
    * @param {string} riskLevel - Nivel de riesgo (LOW, MEDIUM, HIGH)
@@ -286,60 +286,52 @@ const whatsappService = {
    * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
    */
   sendEmergencyAlert: async (phone, userInfo, riskLevel, isTest = false, language = 'es') => {
-    const message = generateAlertMessage(userInfo, riskLevel, isTest, phone, language);
-    const result = await sendWhatsAppMessage(phone, message);
+    const contentSid = isTest ? TEST_MESSAGE_TEMPLATE : EMERGENCY_ALERT_TEMPLATE;
     
-    // Si falla con error 63016 (fuera de ventana de 24h) y hay template configurado, intentar con template
-    if (!result.success && result.errorCode === 63016) {
-      const contentSid = isTest ? TEST_MESSAGE_TEMPLATE : EMERGENCY_ALERT_TEMPLATE;
-      
-      if (contentSid) {
-        console.log(`[WhatsAppService] 🔄 Intentando enviar con template "${contentSid}" debido a error 63016`);
-        const userName = userInfo.name || userInfo.email || 'un usuario';
-        // Variables para el template: {{1}} = APP_NAME, {{2}} = userName, {{3}} = riskLevel
-        const templateVars = {
-          appName: APP_NAME,
-          userName: userName,
-          riskLevel: riskLevel
-        };
-        return await sendWhatsAppTemplate(phone, contentSid, templateVars);
-      } else {
-        console.warn(`[WhatsAppService] ⚠️ Error 63016 pero no hay template configurado. Configura ${isTest ? 'TWILIO_WHATSAPP_TEST_TEMPLATE' : 'TWILIO_WHATSAPP_EMERGENCY_TEMPLATE'}`);
-      }
+    // Si hay template configurado, usarlo directamente
+    if (contentSid) {
+      console.log(`[WhatsAppService] 📤 Usando template "${contentSid}" directamente`);
+      const userName = userInfo.name || userInfo.email || 'un usuario';
+      // Variables para el template: {{1}} = APP_NAME, {{2}} = userName, {{3}} = riskLevel
+      const templateVars = {
+        appName: APP_NAME,
+        userName: userName,
+        riskLevel: riskLevel
+      };
+      return await sendWhatsAppTemplate(phone, contentSid, templateVars);
     }
     
-    return result;
+    // Si no hay template, intentar mensaje libre (puede fallar con 63016)
+    console.log(`[WhatsAppService] ⚠️ No hay template configurado, intentando mensaje libre (puede fallar fuera de ventana de 24h)`);
+    const message = generateAlertMessage(userInfo, riskLevel, isTest, phone, language);
+    return await sendWhatsAppMessage(phone, message);
   },
 
   /**
    * Envía mensaje de prueba por WhatsApp
-   * Intenta primero con mensaje libre, si falla con error 63016, usa template si está configurado
+   * Usa template directamente si está configurado, sino intenta mensaje libre
    * @param {string} phone - Número de teléfono del contacto
    * @param {Object} userInfo - Información del usuario
    * @param {string} language - Idioma del usuario ('es' o 'en', default: 'es')
    * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
    */
   sendTestMessage: async (phone, userInfo, language = 'es') => {
-    const message = generateAlertMessage(userInfo, 'MEDIUM', true, phone, language);
-    const result = await sendWhatsAppMessage(phone, message);
-    
-    // Si falla con error 63016 (fuera de ventana de 24h) y hay template configurado, intentar con template
-    if (!result.success && result.errorCode === 63016) {
-      if (TEST_MESSAGE_TEMPLATE) {
-        console.log(`[WhatsAppService] 🔄 Intentando enviar con template "${TEST_MESSAGE_TEMPLATE}" debido a error 63016`);
-        const userName = userInfo.name || userInfo.email || 'un usuario';
-        // Variables para el template: {{1}} = APP_NAME, {{2}} = userName
-        const templateVars = {
-          appName: APP_NAME,
-          userName: userName
-        };
-        return await sendWhatsAppTemplate(phone, TEST_MESSAGE_TEMPLATE, templateVars);
-      } else {
-        console.warn(`[WhatsAppService] ⚠️ Error 63016 pero no hay template configurado. Configura TWILIO_WHATSAPP_TEST_TEMPLATE`);
-      }
+    // Si hay template configurado, usarlo directamente
+    if (TEST_MESSAGE_TEMPLATE) {
+      console.log(`[WhatsAppService] 📤 Usando template "${TEST_MESSAGE_TEMPLATE}" directamente`);
+      const userName = userInfo.name || userInfo.email || 'un usuario';
+      // Variables para el template: {{1}} = APP_NAME, {{2}} = userName
+      const templateVars = {
+        appName: APP_NAME,
+        userName: userName
+      };
+      return await sendWhatsAppTemplate(phone, TEST_MESSAGE_TEMPLATE, templateVars);
     }
     
-    return result;
+    // Si no hay template, intentar mensaje libre (puede fallar con 63016)
+    console.log(`[WhatsAppService] ⚠️ No hay template configurado, intentando mensaje libre (puede fallar fuera de ventana de 24h)`);
+    const message = generateAlertMessage(userInfo, 'MEDIUM', true, phone, language);
+    return await sendWhatsAppMessage(phone, message);
   },
 
   /**
