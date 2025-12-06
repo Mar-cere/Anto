@@ -988,7 +988,7 @@ router.post('/me/emergency-contacts/:contactId/test-whatsapp', authenticateToken
     const result = await whatsappService.sendTestMessage(contact.phone, userInfo, userLanguage);
 
     if (result && result.success) {
-      res.json({
+      const response = {
         message: 'Mensaje de prueba de WhatsApp enviado exitosamente',
         service: 'Twilio WhatsApp',
         contact: {
@@ -998,7 +998,24 @@ router.post('/me/emergency-contacts/:contactId/test-whatsapp', authenticateToken
         },
         messageId: result.messageId,
         status: result.status
-      });
+      };
+
+      // Agregar advertencia si el mensaje está en cola
+      if (result.warning) {
+        response.warning = result.warning;
+        response.help = {
+          message: 'El mensaje está en cola. Si no llega, puede ser porque:',
+          reasons: [
+            'El número no está verificado en Twilio Sandbox',
+            'El número no tiene WhatsApp activo',
+            'Estás en modo sandbox y solo puedes enviar a números verificados'
+          ],
+          action: 'Verifica el número en Twilio Console > Messaging > Try it out > WhatsApp Sandbox',
+          link: 'https://console.twilio.com/us1/develop/sms/try-it-out/whatsapp-learn'
+        };
+      }
+
+      res.json(response);
     } else {
       res.status(400).json({
         message: result?.error || 'No se pudo enviar el mensaje de WhatsApp',
@@ -1018,6 +1035,76 @@ router.post('/me/emergency-contacts/:contactId/test-whatsapp', authenticateToken
       message: 'Error al enviar mensaje de prueba de WhatsApp',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Error interno del servidor',
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
+// Verificar estado de un mensaje de WhatsApp
+router.get('/me/whatsapp-message-status/:messageSid', authenticateToken, validateUserObjectId, async (req, res) => {
+  try {
+    const { messageSid } = req.params;
+
+    if (!messageSid || !messageSid.startsWith('SM')) {
+      return res.status(400).json({ 
+        message: 'SID de mensaje inválido. Debe empezar con "SM"' 
+      });
+    }
+
+    const whatsappService = (await import('../services/whatsappService.js')).default;
+    
+    if (!whatsappService.isConfigured()) {
+      return res.status(400).json({
+        message: 'WhatsApp no está configurado'
+      });
+    }
+
+    const status = await whatsappService.getMessageStatus(messageSid);
+
+    if (status.success) {
+      res.json({
+        message: 'Estado del mensaje obtenido exitosamente',
+        status: status.status,
+        messageId: status.sid,
+        details: {
+          to: status.to,
+          from: status.from,
+          dateCreated: status.dateCreated,
+          dateSent: status.dateSent,
+          dateUpdated: status.dateUpdated,
+          errorCode: status.errorCode,
+          errorMessage: status.errorMessage,
+          price: status.price,
+          priceUnit: status.priceUnit,
+          ...status.details
+        },
+        help: {
+          statusMeanings: {
+            queued: 'Mensaje en cola esperando ser enviado',
+            sending: 'Mensaje siendo enviado',
+            sent: 'Mensaje enviado exitosamente',
+            delivered: 'Mensaje entregado al destinatario',
+            read: 'Mensaje leído por el destinatario',
+            failed: 'Mensaje falló al enviar',
+            undelivered: 'Mensaje no entregado'
+          },
+          commonIssues: {
+            queued: 'Si el mensaje permanece en "queued", verifica que el número esté verificado en Twilio Sandbox',
+            failed: 'Si el mensaje falló, revisa errorCode y errorMessage para más detalles'
+          }
+        }
+      });
+    } else {
+      res.status(400).json({
+        message: 'No se pudo obtener el estado del mensaje',
+        error: status.error,
+        code: status.code
+      });
+    }
+  } catch (error) {
+    console.error('[WhatsAppStatus] Error al obtener estado del mensaje:', error);
+    res.status(500).json({ 
+      message: 'Error al obtener estado del mensaje',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Error interno del servidor'
     });
   }
 });
