@@ -106,11 +106,15 @@ const sendWhatsAppMessage = async (to, message) => {
   }
 
   try {
+    console.log(`[WhatsAppService] 📤 Enviando mensaje a ${formattedTo} desde ${TWILIO_WHATSAPP_NUMBER}`);
+    
     const result = await twilioClient.messages.create({
       from: TWILIO_WHATSAPP_NUMBER,
       to: formattedTo,
       body: message
     });
+
+    console.log(`[WhatsAppService] ✅ Mensaje enviado exitosamente. SID: ${result.sid}, Status: ${result.status}`);
 
     return {
       success: true,

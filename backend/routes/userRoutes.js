@@ -963,43 +963,34 @@ router.post('/me/emergency-contacts/:contactId/test-whatsapp', authenticateToken
       return res.status(400).json({ message: 'El contacto no tiene número de teléfono configurado' });
     }
 
-    // Importar ambos servicios
-    const whatsappCloudService = (await import('../services/whatsappCloudService.js')).default;
+    // Importar servicio de WhatsApp (Twilio)
     const whatsappService = (await import('../services/whatsappService.js')).default;
     
-    const userLanguage = user.preferences?.language || 'es';
-    const userInfo = { name: user.name || user.username || 'Usuario', email: user.email };
-
-    let result = null;
-    let serviceUsed = null;
-
-    // Intentar primero con WhatsApp Cloud API
-    if (whatsappCloudService.isConfigured()) {
-      serviceUsed = 'WhatsApp Cloud API (Meta)';
-      console.log(`[TestWhatsApp] Intentando enviar con ${serviceUsed} a ${contact.phone}`);
-      result = await whatsappCloudService.sendTestMessage(contact.phone, userInfo, userLanguage);
-    }
-    // Fallback a Twilio si Cloud API no está configurado
-    else if (whatsappService.isConfigured()) {
-      serviceUsed = 'Twilio WhatsApp';
-      console.log(`[TestWhatsApp] Intentando enviar con ${serviceUsed} a ${contact.phone}`);
-      result = await whatsappService.sendTestMessage(contact.phone, userInfo, userLanguage);
-    }
-    else {
+    if (!whatsappService.isConfigured()) {
       return res.status(400).json({
         message: 'WhatsApp no está configurado',
         details: {
-          cloudApi: whatsappCloudService.isConfigured() ? 'Configurado' : 'No configurado (falta WHATSAPP_CLOUD_ACCESS_TOKEN o WHATSAPP_CLOUD_PHONE_NUMBER_ID)',
-          twilio: whatsappService.isConfigured() ? 'Configurado' : 'No configurado (falta TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN o TWILIO_WHATSAPP_NUMBER)'
+          twilio: 'No configurado',
+          required: [
+            'TWILIO_ACCOUNT_SID',
+            'TWILIO_AUTH_TOKEN',
+            'TWILIO_WHATSAPP_NUMBER'
+          ]
         },
-        help: 'Configura al menos uno de los servicios. Ver: backend/docs/WHATSAPP_CLOUD_API_SETUP.md'
+        help: 'Configura Twilio. Ver: backend/docs/WHATSAPP_SETUP.md'
       });
     }
+
+    const userLanguage = user.preferences?.language || 'es';
+    const userInfo = { name: user.name || user.username || 'Usuario', email: user.email };
+
+    console.log(`[TestWhatsApp] Enviando mensaje con Twilio WhatsApp a ${contact.phone}`);
+    const result = await whatsappService.sendTestMessage(contact.phone, userInfo, userLanguage);
 
     if (result && result.success) {
       res.json({
         message: 'Mensaje de prueba de WhatsApp enviado exitosamente',
-        service: serviceUsed,
+        service: 'Twilio WhatsApp',
         contact: {
           _id: contact._id,
           name: contact.name,
@@ -1011,7 +1002,7 @@ router.post('/me/emergency-contacts/:contactId/test-whatsapp', authenticateToken
     } else {
       res.status(400).json({
         message: result?.error || 'No se pudo enviar el mensaje de WhatsApp',
-        service: serviceUsed,
+        service: 'Twilio WhatsApp',
         contact: {
           _id: contact._id,
           name: contact.name,
