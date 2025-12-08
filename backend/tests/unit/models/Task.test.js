@@ -93,6 +93,58 @@ describe('Task Model', () => {
       expect(error).toBeDefined();
     });
 
+    it('debe validar estimatedTime máximo', () => {
+      const task = new Task({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Tarea de prueba',
+        status: 'pending',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        estimatedTime: 1500 // Mayor que 1440 (24 horas)
+      });
+
+      const error = task.validateSync();
+      expect(error).toBeDefined();
+    });
+
+    it('debe validar estimatedTime mínimo', () => {
+      const task = new Task({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Tarea de prueba',
+        status: 'pending',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        estimatedTime: -1
+      });
+
+      const error = task.validateSync();
+      expect(error).toBeDefined();
+    });
+
+    it('debe validar progress máximo', () => {
+      const task = new Task({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Tarea de prueba',
+        status: 'pending',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        progress: 150 // Mayor que 100
+      });
+
+      const error = task.validateSync();
+      expect(error).toBeDefined();
+    });
+
+    it('debe validar progress mínimo', () => {
+      const task = new Task({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Tarea de prueba',
+        status: 'pending',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        progress: -10
+      });
+
+      const error = task.validateSync();
+      expect(error).toBeDefined();
+    });
+
     it('debe validar itemType enum', () => {
       const task = new Task({
         userId: new mongoose.Types.ObjectId(),
@@ -100,6 +152,54 @@ describe('Task Model', () => {
         status: 'pending',
         itemType: 'invalid-type',
         dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      });
+
+      const error = task.validateSync();
+      expect(error).toBeDefined();
+    });
+
+    it('debe aceptar todos los tipos de itemType válidos', () => {
+      const validTypes = ['task', 'reminder'];
+      
+      validTypes.forEach(type => {
+        const task = new Task({
+          userId: new mongoose.Types.ObjectId(),
+          title: 'Tarea de prueba',
+          status: 'pending',
+          itemType: type,
+          dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        });
+
+        const error = task.validateSync();
+        expect(error).toBeUndefined();
+      });
+    });
+
+    it('debe validar que parentTask no sea la misma tarea', () => {
+      const task = new Task({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Tarea de prueba',
+        status: 'pending',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      });
+      task._id = new mongoose.Types.ObjectId();
+      task.parentTask = task._id;
+
+      const error = task.validateSync();
+      expect(error).toBeDefined();
+    });
+
+    it('debe validar repeat.endDate después de dueDate', () => {
+      const task = new Task({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Tarea de prueba',
+        status: 'pending',
+        dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // 10 días
+        repeat: {
+          type: 'daily',
+          interval: 1,
+          endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) // 5 días (antes de dueDate)
+        }
       });
 
       const error = task.validateSync();
@@ -326,6 +426,319 @@ describe('Task Model', () => {
       });
 
       expect(task.completionRate).toBe(100);
+    });
+
+    it('isOverdue debe retornar false si no hay dueDate', () => {
+      const task = new Task({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Tarea sin fecha',
+        status: 'pending'
+      });
+
+      expect(task.isOverdue).toBe(false);
+    });
+
+    it('daysUntilDue debe retornar null si no hay dueDate', () => {
+      const task = new Task({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Tarea sin fecha',
+        status: 'pending'
+      });
+
+      expect(task.daysUntilDue).toBeNull();
+    });
+
+    it('isOverdue debe retornar false si está cancelada', () => {
+      const task = new Task({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Tarea cancelada',
+        status: 'cancelled',
+        dueDate: new Date(Date.now() - 24 * 60 * 60 * 1000)
+      });
+
+      expect(task.isOverdue).toBe(false);
+    });
+
+    it('completionRate debe calcularse correctamente con todas las subtareas completadas', () => {
+      const task = new Task({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Tarea de prueba',
+        status: 'pending',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        subtasks: [
+          { title: 'Subtarea 1', completed: true },
+          { title: 'Subtarea 2', completed: true },
+          { title: 'Subtarea 3', completed: true }
+        ]
+      });
+
+      expect(task.completionRate).toBe(100);
+    });
+
+    it('completionRate debe retornar 0% si no hay subtareas y no está completada', () => {
+      const task = new Task({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Tarea de prueba',
+        status: 'pending',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      });
+
+      expect(task.completionRate).toBe(0);
+    });
+
+    it('daysUntilDue debe calcular días negativos para fechas pasadas', () => {
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const task = new Task({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Tarea vencida',
+        status: 'pending',
+        dueDate: yesterday
+      });
+
+      expect(task.daysUntilDue).toBeLessThan(0);
+    });
+  });
+
+  describe('Middleware pre-save', () => {
+    it('debe establecer completedAt cuando status cambia a completed', async () => {
+      const task = new Task({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Tarea de prueba',
+        status: 'pending',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      });
+      await task.save();
+
+      task.status = 'completed';
+      await task.save();
+
+      expect(task.completedAt).toBeDefined();
+    });
+
+    it('debe actualizar progress basado en subtareas al guardar', async () => {
+      const task = new Task({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Tarea de prueba',
+        status: 'pending',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        subtasks: [
+          { title: 'Subtarea 1', completed: true },
+          { title: 'Subtarea 2', completed: false }
+        ]
+      });
+
+      await task.save();
+
+      expect(task.progress).toBe(50);
+    });
+  });
+
+  describe('Métodos estáticos', () => {
+    let userId;
+
+    beforeEach(() => {
+      userId = new mongoose.Types.ObjectId();
+    });
+
+    it('debe tener método getPendingItems', () => {
+      expect(typeof Task.getPendingItems).toBe('function');
+    });
+
+    it('debe tener método getOverdueItems', () => {
+      expect(typeof Task.getOverdueItems).toBe('function');
+    });
+
+    it('debe tener método getStats', () => {
+      expect(typeof Task.getStats).toBe('function');
+    });
+
+    it('getPendingItems debe retornar array vacío sin tareas', async () => {
+      const tasks = await Task.getPendingItems(userId);
+      expect(Array.isArray(tasks)).toBe(true);
+      expect(tasks.length).toBe(0);
+    });
+
+    it('getPendingItems debe filtrar por tipo', async () => {
+      const task = new Task({
+        userId,
+        title: 'Tarea de prueba',
+        status: 'pending',
+        itemType: 'task',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      });
+      await task.save();
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const tasks = await Task.getPendingItems(userId, 'task');
+      expect(tasks.length).toBeGreaterThan(0);
+      expect(tasks[0].itemType).toBe('task');
+    });
+
+    it('getPendingItems debe filtrar por categoría', async () => {
+      const task = new Task({
+        userId,
+        title: 'Tarea de prueba',
+        status: 'pending',
+        itemType: 'task',
+        category: 'work',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      });
+      await task.save();
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const tasks = await Task.getPendingItems(userId, null, { category: 'work' });
+      expect(tasks.length).toBeGreaterThan(0);
+      expect(tasks[0].category).toBe('work');
+    });
+
+    it('getPendingItems debe filtrar por prioridad', async () => {
+      const task = new Task({
+        userId,
+        title: 'Tarea de prueba',
+        status: 'pending',
+        itemType: 'task',
+        priority: 'high',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      });
+      await task.save();
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const tasks = await Task.getPendingItems(userId, null, { priority: 'high' });
+      expect(tasks.length).toBeGreaterThan(0);
+      expect(tasks[0].priority).toBe('high');
+    });
+
+    it('getOverdueItems debe retornar tareas vencidas', async () => {
+      const task = new Task({
+        userId,
+        title: 'Tarea vencida',
+        status: 'pending',
+        itemType: 'task',
+        dueDate: new Date(Date.now() - 24 * 60 * 60 * 1000) // Ayer
+      });
+      await task.save();
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const overdueTasks = await Task.getOverdueItems(userId);
+      expect(overdueTasks.length).toBeGreaterThan(0);
+    });
+
+    it('getOverdueItems no debe retornar tareas completadas', async () => {
+      const task = new Task({
+        userId,
+        title: 'Tarea vencida pero completada',
+        status: 'completed',
+        itemType: 'task',
+        dueDate: new Date(Date.now() - 24 * 60 * 60 * 1000)
+      });
+      await task.save();
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const overdueTasks = await Task.getOverdueItems(userId);
+      expect(overdueTasks.length).toBe(0);
+    });
+
+    it('getStats debe calcular estadísticas correctamente', async () => {
+      // Crear tareas de diferentes tipos y estados
+      await Task.create({
+        userId,
+        title: 'Tarea 1',
+        status: 'completed',
+        itemType: 'task',
+        dueDate: new Date()
+      });
+
+      await Task.create({
+        userId,
+        title: 'Tarea 2',
+        status: 'pending',
+        itemType: 'task',
+        dueDate: new Date()
+      });
+
+      await Task.create({
+        userId,
+        title: 'Recordatorio 1',
+        status: 'pending',
+        itemType: 'reminder',
+        dueDate: new Date()
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const stats = await Task.getStats(userId);
+      
+      expect(stats).toBeDefined();
+      expect(stats.total).toBeGreaterThan(0);
+    });
+
+    it('getPendingItems debe filtrar por categoría', async () => {
+      const task = new Task({
+        userId,
+        title: 'Tarea de prueba',
+        status: 'pending',
+        category: 'work',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      });
+      await task.save();
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const tasks = await Task.getPendingItems(userId, null, { category: 'work' });
+      expect(tasks.length).toBeGreaterThan(0);
+    });
+
+    it('getOverdueItems debe retornar tareas vencidas', async () => {
+      const task = new Task({
+        userId,
+        title: 'Tarea vencida',
+        status: 'pending',
+        dueDate: new Date(Date.now() - 24 * 60 * 60 * 1000) // Ayer
+      });
+      await task.save();
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const overdue = await Task.getOverdueItems(userId);
+      expect(overdue.length).toBeGreaterThan(0);
+    });
+
+    it('getStats debe retornar estadísticas vacías sin tareas', async () => {
+      const stats = await Task.getStats(userId);
+      
+      expect(stats).toBeDefined();
+      expect(stats.total).toBe(0);
+    });
+
+    it('getStats debe calcular estadísticas correctamente', async () => {
+      const task1 = new Task({
+        userId,
+        title: 'Tarea 1',
+        status: 'completed',
+        itemType: 'task',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      });
+      await task1.save();
+
+      const task2 = new Task({
+        userId,
+        title: 'Tarea 2',
+        status: 'pending',
+        itemType: 'task',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      });
+      await task2.save();
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const stats = await Task.getStats(userId);
+      
+      expect(stats.total).toBeGreaterThan(0);
     });
   });
 });

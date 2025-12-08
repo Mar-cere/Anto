@@ -200,6 +200,103 @@ describe('UserProgress Model', () => {
       expect(analysis.predominantEmotions).toEqual([]);
       expect(analysis.averageIntensity).toBe(0);
     });
+
+    it('debe manejar entradas sin emotionalState', () => {
+      const progress = new UserProgress({
+        userId: new mongoose.Types.ObjectId(),
+        entries: []
+      });
+
+      const entries = [{
+        context: {
+          topic: 'test'
+        }
+      }];
+
+      const analysis = progress.analyzeRecentEmotions(entries);
+      
+      expect(analysis).toBeDefined();
+      expect(analysis.predominantEmotions).toBeDefined();
+    });
+
+    it('debe actualizar métricas con múltiples entradas', async () => {
+      const userId = new mongoose.Types.ObjectId();
+      const progress = await UserProgress.create({
+        userId,
+        entries: [
+          {
+            emotionalState: {
+              mainEmotion: 'tristeza',
+              intensity: 7
+            },
+            context: {
+              topic: 'test topic 1',
+              copingStrategies: ['mindfulness']
+            },
+            sessionMetrics: {
+              duration: 30,
+              messageCount: 5,
+              responseQuality: 4
+            }
+          },
+          {
+            emotionalState: {
+              mainEmotion: 'ansiedad',
+              intensity: 6
+            },
+            context: {
+              topic: 'test topic 2',
+              copingStrategies: ['breathing']
+            },
+            sessionMetrics: {
+              duration: 25,
+              messageCount: 4,
+              responseQuality: 5
+            }
+          }
+        ]
+      });
+
+      await progress.updateOverallMetrics();
+      
+      expect(progress.overallMetrics.totalSessions).toBe(2);
+      expect(progress.overallMetrics.averageSessionDuration).toBe(27.5);
+      expect(progress.overallMetrics.emotionalTrends).toBeDefined();
+    });
+
+    it('getProgressSummary debe filtrar por días', async () => {
+      const userId = new mongoose.Types.ObjectId();
+      const oldDate = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000); // 60 días atrás
+      const progress = await UserProgress.create({
+        userId,
+        entries: [
+          {
+            timestamp: oldDate,
+            emotionalState: {
+              mainEmotion: 'tristeza',
+              intensity: 7
+            },
+            context: {
+              topic: 'old topic'
+            }
+          },
+          {
+            timestamp: new Date(),
+            emotionalState: {
+              mainEmotion: 'ansiedad',
+              intensity: 6
+            },
+            context: {
+              topic: 'recent topic'
+            }
+          }
+        ]
+      });
+
+      const summary = progress.getProgressSummary(30);
+      
+      expect(summary.recentProgress.totalSessions).toBe(1); // Solo la reciente
+    });
   });
 });
 

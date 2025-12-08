@@ -184,5 +184,165 @@ describe('CrisisEvent Model', () => {
     expect(updatedEvent.resolvedAt).toBeDefined();
     expect(updatedEvent.outcome).toBe('resolved');
   });
+
+  describe('Métodos de instancia', () => {
+    it('debe tener método markAsResolved', () => {
+      const crisisEvent = new CrisisEvent({
+        userId: userId,
+        riskLevel: 'MEDIUM',
+        detectedAt: new Date()
+      });
+
+      expect(typeof crisisEvent.markAsResolved).toBe('function');
+    });
+
+    it('markAsResolved debe marcar como resuelto', async () => {
+      const crisisEvent = await CrisisEvent.create({
+        userId: userId,
+        riskLevel: 'MEDIUM',
+        detectedAt: new Date()
+      });
+
+      await crisisEvent.markAsResolved('resolved');
+
+      expect(crisisEvent.resolvedAt).toBeDefined();
+      expect(crisisEvent.outcome).toBe('resolved');
+    });
+
+    it('debe tener método scheduleFollowUp', () => {
+      const crisisEvent = new CrisisEvent({
+        userId: userId,
+        riskLevel: 'MEDIUM',
+        detectedAt: new Date()
+      });
+
+      expect(typeof crisisEvent.scheduleFollowUp).toBe('function');
+    });
+
+    it('scheduleFollowUp debe programar seguimiento', async () => {
+      const crisisEvent = await CrisisEvent.create({
+        userId: userId,
+        riskLevel: 'MEDIUM',
+        detectedAt: new Date()
+      });
+
+      await crisisEvent.scheduleFollowUp(24);
+
+      expect(crisisEvent.followUp.scheduled).toBe(true);
+      expect(crisisEvent.followUp.scheduledAt).toBeDefined();
+    });
+
+    it('scheduleFollowUp debe usar horas por defecto de 24', async () => {
+      const crisisEvent = await CrisisEvent.create({
+        userId: userId,
+        riskLevel: 'MEDIUM',
+        detectedAt: new Date()
+      });
+
+      await crisisEvent.scheduleFollowUp();
+
+      expect(crisisEvent.followUp.scheduled).toBe(true);
+      expect(crisisEvent.followUp.scheduledAt).toBeDefined();
+    });
+  });
+
+  describe('Métodos estáticos', () => {
+    it('debe tener método getRecentCrises', () => {
+      expect(typeof CrisisEvent.getRecentCrises).toBe('function');
+    });
+
+    it('getRecentCrises debe retornar array vacío sin crisis', async () => {
+      const crises = await CrisisEvent.getRecentCrises(userId, 30);
+      expect(Array.isArray(crises)).toBe(true);
+      expect(crises.length).toBe(0);
+    });
+
+    it('getRecentCrises debe retornar crisis recientes', async () => {
+      await CrisisEvent.create({
+        userId: userId,
+        riskLevel: 'MEDIUM',
+        detectedAt: new Date()
+      });
+
+      const crises = await CrisisEvent.getRecentCrises(userId, 30);
+      expect(crises.length).toBeGreaterThan(0);
+    });
+
+    it('getRecentCrises debe filtrar por días', async () => {
+      // Crear crisis antigua
+      await CrisisEvent.create({
+        userId: userId,
+        riskLevel: 'MEDIUM',
+        detectedAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000) // 60 días atrás
+      });
+
+      // Crear crisis reciente
+      await CrisisEvent.create({
+        userId: userId,
+        riskLevel: 'HIGH',
+        detectedAt: new Date()
+      });
+
+      const crises = await CrisisEvent.getRecentCrises(userId, 30);
+      expect(crises.length).toBe(1); // Solo la reciente
+    });
+
+    it('debe tener método getPendingFollowUps', () => {
+      expect(typeof CrisisEvent.getPendingFollowUps).toBe('function');
+    });
+
+    it('getPendingFollowUps debe retornar array vacío sin seguimientos pendientes', async () => {
+      const followUps = await CrisisEvent.getPendingFollowUps();
+      expect(Array.isArray(followUps)).toBe(true);
+      expect(followUps.length).toBe(0);
+    });
+
+    it('getPendingFollowUps debe retornar seguimientos pendientes', async () => {
+      const crisisEvent = await CrisisEvent.create({
+        userId: userId,
+        riskLevel: 'MEDIUM',
+        detectedAt: new Date()
+      });
+
+      await crisisEvent.scheduleFollowUp(0); // Programar para ahora
+
+      const followUps = await CrisisEvent.getPendingFollowUps();
+      expect(followUps.length).toBeGreaterThan(0);
+    });
+
+    it('getPendingFollowUps no debe retornar seguimientos completados', async () => {
+      const crisisEvent = await CrisisEvent.create({
+        userId: userId,
+        riskLevel: 'MEDIUM',
+        detectedAt: new Date()
+      });
+
+      await crisisEvent.scheduleFollowUp(0);
+      crisisEvent.followUp.completed = true;
+      await crisisEvent.save();
+
+      const followUps = await CrisisEvent.getPendingFollowUps();
+      expect(followUps.length).toBe(0);
+    });
+
+    it('getRecentCrises debe ordenar por fecha descendente', async () => {
+      const oldDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+      await CrisisEvent.create({
+        userId: userId,
+        riskLevel: 'LOW',
+        detectedAt: oldDate
+      });
+
+      await CrisisEvent.create({
+        userId: userId,
+        riskLevel: 'HIGH',
+        detectedAt: new Date()
+      });
+
+      const crises = await CrisisEvent.getRecentCrises(userId, 30);
+      expect(crises.length).toBe(2);
+      expect(crises[0].riskLevel).toBe('HIGH'); // El más reciente primero
+    });
+  });
 });
 

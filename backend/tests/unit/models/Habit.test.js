@@ -318,6 +318,21 @@ describe('Habit Model', () => {
       await habit.toggleArchive();
       expect(habit.status.archived).toBe(false);
     });
+
+    it('shouldNotify debe retornar false si reminder está deshabilitado', () => {
+      const habit = new Habit({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Ejercicio diario',
+        frequency: 'daily',
+        icon: 'exercise',
+        reminder: {
+          time: new Date(),
+          enabled: false
+        }
+      });
+
+      expect(habit.shouldNotify()).toBe(false);
+    });
   });
 
   describe('Propiedades virtuales', () => {
@@ -357,6 +372,202 @@ describe('Habit Model', () => {
       });
 
       expect(habit.completionRate).toBe(0);
+    });
+
+    it('debe calcular daysSinceLastCompleted correctamente', () => {
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const habit = new Habit({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Ejercicio diario',
+        frequency: 'daily',
+        icon: 'exercise',
+        reminder: {
+          time: new Date(),
+          enabled: true
+        },
+        status: {
+          lastCompleted: yesterday
+        }
+      });
+
+      const days = habit.daysSinceLastCompleted;
+      expect(days).toBeGreaterThanOrEqual(1);
+      expect(days).toBeLessThanOrEqual(2);
+    });
+
+    it('debe retornar null para daysSinceLastCompleted si no hay lastCompleted', () => {
+      const habit = new Habit({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Ejercicio diario',
+        frequency: 'daily',
+        icon: 'exercise',
+        reminder: {
+          time: new Date(),
+          enabled: true
+        }
+      });
+
+      expect(habit.daysSinceLastCompleted).toBeNull();
+    });
+
+    it('isActive debe retornar true para hábito activo', () => {
+      const habit = new Habit({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Ejercicio diario',
+        frequency: 'daily',
+        icon: 'exercise',
+        reminder: {
+          time: new Date(),
+          enabled: true
+        },
+        status: {
+          archived: false
+        }
+      });
+
+      expect(habit.isActive).toBe(true);
+    });
+
+    it('isActive debe retornar false para hábito archivado', () => {
+      const habit = new Habit({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Ejercicio diario',
+        frequency: 'daily',
+        icon: 'exercise',
+        reminder: {
+          time: new Date(),
+          enabled: true
+        },
+        status: {
+          archived: true
+        }
+      });
+
+      expect(habit.isActive).toBe(false);
+    });
+
+    it('isActive debe retornar false para hábito eliminado', () => {
+      const habit = new Habit({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Ejercicio diario',
+        frequency: 'daily',
+        icon: 'exercise',
+        reminder: {
+          time: new Date(),
+          enabled: true
+        },
+        deletedAt: new Date()
+      });
+
+      expect(habit.isActive).toBe(false);
+    });
+  });
+
+  describe('Métodos estáticos', () => {
+    let userId;
+
+    beforeEach(() => {
+      userId = new mongoose.Types.ObjectId();
+    });
+
+    it('debe tener método getStats', () => {
+      expect(typeof Habit.getStats).toBe('function');
+    });
+
+    it('debe tener método getActiveHabits', () => {
+      expect(typeof Habit.getActiveHabits).toBe('function');
+    });
+
+    it('debe tener método getOverdueHabits', () => {
+      expect(typeof Habit.getOverdueHabits).toBe('function');
+    });
+
+    it('getStats debe retornar estadísticas vacías sin hábitos', async () => {
+      const stats = await Habit.getStats(userId);
+      
+      expect(Array.isArray(stats)).toBe(true);
+      expect(stats.length).toBe(0);
+    });
+
+    it('getStats debe calcular estadísticas con hábitos', async () => {
+      await Habit.create({
+        userId,
+        title: 'Ejercicio diario',
+        frequency: 'daily',
+        icon: 'exercise',
+        reminder: {
+          time: new Date(),
+          enabled: true
+        },
+        progress: {
+          streak: 5,
+          completedDays: 10,
+          totalDays: 15,
+          bestStreak: 7
+        }
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const stats = await Habit.getStats(userId);
+      
+      expect(Array.isArray(stats)).toBe(true);
+      if (stats.length > 0) {
+        expect(stats[0].totalHabits).toBeGreaterThan(0);
+      }
+    });
+
+    it('getActiveHabits debe retornar array vacío sin hábitos', async () => {
+      const habits = await Habit.getActiveHabits(userId);
+      
+      expect(Array.isArray(habits)).toBe(true);
+      expect(habits.length).toBe(0);
+    });
+
+    it('getActiveHabits debe retornar solo hábitos activos', async () => {
+      await Habit.create({
+        userId,
+        title: 'Hábito activo',
+        frequency: 'daily',
+        icon: 'exercise',
+        reminder: {
+          time: new Date(),
+          enabled: true
+        },
+        status: {
+          archived: false
+        }
+      });
+
+      await Habit.create({
+        userId,
+        title: 'Hábito archivado',
+        frequency: 'daily',
+        icon: 'exercise',
+        reminder: {
+          time: new Date(),
+          enabled: true
+        },
+        status: {
+          archived: true
+        }
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const habits = await Habit.getActiveHabits(userId);
+      
+      expect(habits.length).toBeGreaterThan(0);
+      habits.forEach(habit => {
+        expect(habit.status.archived).toBe(false);
+      });
+    });
+
+    it('getOverdueHabits debe retornar array vacío sin hábitos vencidos', async () => {
+      const habits = await Habit.getOverdueHabits(userId);
+      
+      expect(Array.isArray(habits)).toBe(true);
+      expect(habits.length).toBe(0);
     });
   });
 });

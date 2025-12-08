@@ -39,8 +39,11 @@ describe('ResponseGenerator Service', () => {
 
     it('debe detectar contenido emocional', () => {
       expect(responseGenerator.hasEmotionalContent('Estoy muy triste')).toBe(true);
+      expect(responseGenerator.hasEmotionalContent('Estoy feliz')).toBe(true);
+      expect(responseGenerator.hasEmotionalContent('Estoy enojado')).toBe(true);
       expect(responseGenerator.hasEmotionalContent('Hola cómo estás')).toBe(false);
       expect(responseGenerator.hasEmotionalContent('')).toBe(false);
+      expect(responseGenerator.hasEmotionalContent(null)).toBe(false);
     });
 
     it('debe generar respuesta de error por defecto', () => {
@@ -49,6 +52,80 @@ describe('ResponseGenerator Service', () => {
       expect(response).toBeDefined();
       expect(typeof response).toBe('string');
       expect(response.length).toBeGreaterThan(0);
+    });
+
+    it('debe obtener respuesta aleatoria', () => {
+      const responses = ['respuesta1', 'respuesta2', 'respuesta3'];
+      const result = responseGenerator.getRandomResponse(responses);
+      
+      expect(responses).toContain(result);
+    });
+
+    it('debe retornar error por defecto si array está vacío', () => {
+      const result = responseGenerator.getRandomResponse([]);
+      
+      expect(result).toBe(responseGenerator.getDefaultErrorResponse());
+    });
+  });
+
+  describe('generateResponse', () => {
+    it('debe generar respuesta general', async () => {
+      const response = await responseGenerator.generateResponse({}, 'general');
+      
+      expect(response).toBeDefined();
+      expect(typeof response).toBe('string');
+      expect(response.length).toBeGreaterThan(0);
+    });
+
+    it('debe generar respuesta emocional', async () => {
+      const response = await responseGenerator.generateResponse({}, 'emotional');
+      
+      expect(response).toBeDefined();
+      expect(typeof response).toBe('string');
+    });
+
+    it('debe generar respuesta de error', async () => {
+      const response = await responseGenerator.generateResponse({}, 'error');
+      
+      expect(response).toBeDefined();
+      expect(typeof response).toBe('string');
+    });
+
+    it('debe usar tipo general si el tipo es inválido', async () => {
+      const response = await responseGenerator.generateResponse({}, 'invalid');
+      
+      expect(response).toBeDefined();
+      expect(typeof response).toBe('string');
+    });
+  });
+
+  describe('generateFallbackResponse', () => {
+    it('debe generar respuesta emocional para mensaje con emoción', async () => {
+      const mensaje = { content: 'Estoy muy triste hoy' };
+      const response = await responseGenerator.generateFallbackResponse(mensaje);
+      
+      expect(response).toBeDefined();
+      expect(typeof response).toBe('string');
+    });
+
+    it('debe generar respuesta general para mensaje sin emoción', async () => {
+      const mensaje = { content: 'Hola, cómo estás' };
+      const response = await responseGenerator.generateFallbackResponse(mensaje);
+      
+      expect(response).toBeDefined();
+      expect(typeof response).toBe('string');
+    });
+
+    it('debe retornar error por defecto si mensaje no tiene content', async () => {
+      const response = await responseGenerator.generateFallbackResponse({});
+      
+      expect(response).toBe(responseGenerator.getDefaultErrorResponse());
+    });
+
+    it('debe retornar error por defecto si mensaje es null', async () => {
+      const response = await responseGenerator.generateFallbackResponse(null);
+      
+      expect(response).toBe(responseGenerator.getDefaultErrorResponse());
     });
   });
 });

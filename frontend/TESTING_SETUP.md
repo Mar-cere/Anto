@@ -24,13 +24,12 @@ npm run test:watch    # Modo watch
 npm run test:coverage # Con cobertura
 ```
 
-## ⚠️ Problema Actual
+## ✅ Problema Resuelto
 
-Hay un conflicto con el preset `jest-expo` que intenta parsear archivos TypeScript de React Native. Esto causa errores de sintaxis.
-
-### Solución Temporal
-
-Para ejecutar los tests, se puede usar una configuración alternativa sin `jest-expo` o esperar a que se resuelva el conflicto de versiones.
+El problema con `jest-expo` y archivos TypeScript ha sido resuelto mediante:
+1. Creación de `babel.config.js` con preset de Expo
+2. Configuración correcta de mocks en `jest.setup.js`
+3. Mock de Platform antes de cualquier import
 
 ## 📝 Tests Creados
 

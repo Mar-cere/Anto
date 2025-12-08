@@ -1,4 +1,12 @@
-import '@testing-library/jest-native/extend-expect';
+// Mock Platform primero, antes de cualquier import
+jest.mock('react-native', () => ({
+  Platform: {
+    OS: 'ios',
+    select: jest.fn((dict) => dict.ios),
+    isPad: false,
+    isTVOS: false,
+  },
+}));
 
 // Mock AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -21,13 +29,24 @@ jest.mock('expo-device', () => ({
   osVersion: '15.0',
 }));
 
-// Mock Platform
-jest.mock('react-native/Libraries/Utilities/Platform', () => ({
-  OS: 'ios',
-  select: jest.fn((dict) => dict.ios),
-  isPad: false,
-  isTVOS: false,
-}));
+// Mock axios para userService
+global.mockApiClient = {
+  get: jest.fn(),
+  post: jest.fn(),
+  put: jest.fn(),
+  delete: jest.fn(),
+  interceptors: {
+    request: { use: jest.fn() },
+    response: { use: jest.fn() }
+  }
+};
+
+jest.mock('axios', () => {
+  return {
+    create: jest.fn(() => global.mockApiClient),
+    post: jest.fn()
+  };
+});
 
 // Global mocks
 global.__DEV__ = true;
