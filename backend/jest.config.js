@@ -60,10 +60,16 @@ export default {
   // Timeout para tests
   testTimeout: 10000,
   
+  // Forzar salida después de que todos los tests terminen
+  // Esto evita que el proceso se quede colgado por conexiones abiertas
+  forceExit: true,
+  
   // Configuración de módulos ES
   // Para ES modules, necesitamos mapear las extensiones .js
   moduleNameMapper: {
-    '^(\\.{1,2}/.*)\\.js$': '$1'
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+    // Mock para isomorphic-dompurify para evitar problemas con ES modules
+    '^isomorphic-dompurify$': '<rootDir>/tests/__mocks__/isomorphic-dompurify.js'
   },
   
   // Preset para ES modules (experimental)

@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">2.88% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>6/208</span>
+                <span class='fraction'>0/208</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">3.12% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>4/128</span>
+                <span class='fraction'>0/128</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">6.66% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/15</span>
+                <span class='fraction'>0/15</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">2.92% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>6/205</span>
+                <span class='fraction'>0/205</span>
             </div>
         
             
@@ -983,17 +983,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1008,8 +1008,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1645,18 +1645,18 @@ class PaymentServiceMercadoPago {
    * @param {string} userId - ID del usuario
    * @returns {Promise&lt;Object&gt;} - Estado de la suscripción
    */
-  async getSubscriptionStatus(userId) {
-    const subscription = await Subscription.findOne({ userId });
-    const user = await User.findById(userId);
+<span class="fstat-no" title="function not covered" >  as</span>ync getSubscriptionStatus(userId) {
+    const subscription = <span class="cstat-no" title="statement not covered" >await Subscription.findOne({ userId });</span>
+    const user = <span class="cstat-no" title="statement not covered" >await User.findById(userId);</span>
 &nbsp;
-    <span class="missing-if-branch" title="if path not taken" >I</span>if (!subscription &amp;&amp; !user?.subscription) {
+<span class="cstat-no" title="statement not covered" >    if (!subscription &amp;&amp; !user?.subscription) {</span>
 <span class="cstat-no" title="statement not covered" >      return {</span>
         hasSubscription: false,
         status: 'free',
       };
     }
 &nbsp;
-    <span class="missing-if-branch" title="if path not taken" >I</span>if (subscription) {
+<span class="cstat-no" title="statement not covered" >    if (subscription) {</span>
 <span class="cstat-no" title="statement not covered" >      return {</span>
         hasSubscription: true,
         status: subscription.status,
@@ -1671,8 +1671,8 @@ class PaymentServiceMercadoPago {
       };
     }
 &nbsp;
-    const userSubscription = user.subscription;
-    return {
+    const userSubscription = <span class="cstat-no" title="statement not covered" >user.subscription;</span>
+<span class="cstat-no" title="statement not covered" >    return {</span>
       hasSubscription: userSubscription.status !== 'free',
       status: userSubscription.status,
       plan: userSubscription.plan,
@@ -2059,7 +2059,7 @@ export default new PaymentServiceMercadoPago();
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-01T20:17:43.973Z
+                at 2025-12-08T02:37:56.627Z
             </div>
         <script src="../prettify.js"></script>
         <script>

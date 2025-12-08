@@ -26,7 +26,19 @@ export const clearDatabase = async () => {
  */
 export const closeDatabase = async () => {
   if (mongoose.connection.readyState === 1) {
+    // Cerrar todas las conexiones
     await mongoose.connection.close();
+    // Forzar cierre de todas las conexiones del pool
+    await mongoose.disconnect();
+    // Dar tiempo para que la conexión se cierre completamente
+    await new Promise(resolve => setTimeout(resolve, 200));
+  } else if (mongoose.connection.readyState !== 0) {
+    // Si está en cualquier otro estado, intentar desconectar
+    try {
+      await mongoose.disconnect();
+    } catch (error) {
+      // Ignorar errores al desconectar
+    }
   }
 };
 

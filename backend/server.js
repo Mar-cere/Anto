@@ -228,6 +228,11 @@ app.use(limiter);
 
 // Conexión a MongoDB (no bloquea el inicio del servidor)
 const connectMongoDB = async () => {
+  // En modo test, no conectar automáticamente - los tests manejan su propia conexión
+  if (process.env.NODE_ENV === 'test') {
+    return;
+  }
+
   try {
     // Verificar que la URI esté definida
     if (!config.mongodb.uri) {
@@ -351,8 +356,8 @@ if (process.env.NODE_ENV !== 'test') {
   logger.info(`🌐 Servidor accesible desde: ${HOST === '0.0.0.0' ? 'cualquier IP (Render)' : 'localhost'}`);
   logger.info(`🔍 Render detectado: ${isRender ? 'Sí' : 'No'}`);
   
-  // Iniciar servicio de recordatorios periódicos (solo en producción o si está habilitado)
-  if (process.env.ENABLE_REMINDERS !== 'false') {
+  // Iniciar servicio de recordatorios periódicos (solo en producción o si está habilitado, NO en test)
+  if (process.env.ENABLE_REMINDERS !== 'false' && process.env.NODE_ENV !== 'test') {
     const REMINDER_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 horas
     
     // Ejecutar inmediatamente al iniciar (solo en producción)
@@ -382,8 +387,8 @@ if (process.env.NODE_ENV !== 'test') {
     logger.info('✅ Servicio de recordatorios de contactos de emergencia iniciado (cada 24 horas)');
   }
 
-  // Iniciar servicio de seguimiento post-crisis
-  if (process.env.ENABLE_CRISIS_FOLLOWUP !== 'false') {
+  // Iniciar servicio de seguimiento post-crisis (NO en test)
+  if (process.env.ENABLE_CRISIS_FOLLOWUP !== 'false' && process.env.NODE_ENV !== 'test') {
     setTimeout(async () => {
       try {
         const crisisFollowUpService = (await import('./services/crisisFollowUpService.js')).default;
@@ -395,8 +400,8 @@ if (process.env.NODE_ENV !== 'test') {
     }, 120000); // Esperar 2 minutos después del inicio para que MongoDB esté listo
   }
 
-  // Iniciar servicio de programación de notificaciones
-  if (process.env.ENABLE_NOTIFICATION_SCHEDULER !== 'false') {
+  // Iniciar servicio de programación de notificaciones (NO en test)
+  if (process.env.ENABLE_NOTIFICATION_SCHEDULER !== 'false' && process.env.NODE_ENV !== 'test') {
     setTimeout(async () => {
       try {
         const notificationScheduler = (await import('./services/notificationScheduler.js')).default;

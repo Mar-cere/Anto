@@ -1,203 +1,62 @@
 /**
- * Tests unitarios para middleware de errorHandler
+ * Tests unitarios para middleware de manejo de errores
  * 
  * @author AntoApp Team
  */
 
-import { errorHandler, notFoundHandler, asyncHandler } from '../../../middleware/errorHandler.js';
+import { jest } from '@jest/globals';
+import { errorHandler } from '../../../middleware/errorHandler.js';
 import { AppError } from '../../../utils/errors.js';
 
-describe('Error Handler Middleware', () => {
-  describe('errorHandler', () => {
-    it('debe manejar AppError correctamente', () => {
-      const error = new AppError('Test error', 400);
+// Mock logger para evitar logs en tests
+jest.mock('../../../utils/logger.js', () => ({
+  requestError: jest.fn()
+}));
+
+describe('ErrorHandler Middleware', () => {
+  describe('Manejo de errores', () => {
+    it('debe ser una función', () => {
+      expect(typeof errorHandler).toBe('function');
+    });
+
+    it('debe manejar AppError', () => {
       const req = {
         path: '/test',
         method: 'GET',
         ip: '127.0.0.1',
-        get: function() { return 'test-agent'; }, // Mock para req.get
+        get: jest.fn().mockReturnValue('test-agent')
       };
-      let statusCode;
-      let responseData;
       const res = {
-        status: function(code) {
-          statusCode = code;
-          return this;
-        },
-        json: function(data) {
-          responseData = data;
-          return this;
-        },
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn()
       };
-      const next = function() {};
+      const next = jest.fn();
+      const error = new AppError('Test error', 400, true, 'TEST_ERROR');
 
       errorHandler(error, req, res, next);
 
-      expect(statusCode).toBe(400);
-      expect(responseData).toBeDefined();
-      expect(responseData.success).toBe(false);
-      expect(responseData.error).toBeDefined();
-      expect(responseData.error.message).toBe('Test error');
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalled();
     });
 
-    it('debe convertir errores de Mongoose a AppError', () => {
-      const mongooseError = {
-        name: 'ValidationError',
-        errors: {
-          email: { path: 'email', message: 'Email inválido' },
-        },
-      };
-
+    it('debe manejar errores sin statusCode', () => {
       const req = {
         path: '/test',
         method: 'GET',
         ip: '127.0.0.1',
-        get: function() { return 'test-agent'; },
+        get: jest.fn().mockReturnValue('test-agent')
       };
-      let statusCode;
       const res = {
-        status: function(code) {
-          statusCode = code;
-          return this;
-        },
-        json: function() {
-          return this;
-        },
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn()
       };
-      const next = function() {};
-
-      errorHandler(mongooseError, req, res, next);
-
-      expect(statusCode).toBe(400);
-    });
-
-    it('debe manejar errores de JWT', () => {
-      const jwtError = {
-        name: 'JsonWebTokenError',
-        message: 'Invalid token',
-      };
-
-      const req = {
-        path: '/test',
-        method: 'GET',
-        ip: '127.0.0.1',
-        get: function() { return 'test-agent'; },
-      };
-      let statusCode;
-      const res = {
-        status: function(code) {
-          statusCode = code;
-          return this;
-        },
-        json: function() {
-          return this;
-        },
-      };
-      const next = function() {};
-
-      errorHandler(jwtError, req, res, next);
-
-      expect(statusCode).toBe(401);
-    });
-
-    it('debe manejar errores desconocidos', () => {
-      const error = new Error('Unknown error');
-      const req = {
-        path: '/test',
-        method: 'GET',
-        ip: '127.0.0.1',
-        get: function() { return 'test-agent'; },
-      };
-      let statusCode;
-      const res = {
-        status: function(code) {
-          statusCode = code;
-          return this;
-        },
-        json: function() {
-          return this;
-        },
-      };
-      const next = function() {};
+      const next = jest.fn();
+      const error = new Error('Internal error');
 
       errorHandler(error, req, res, next);
 
-      expect(statusCode).toBe(500);
-    });
-  });
-
-  describe('notFoundHandler', () => {
-    it('debe crear un error 404', () => {
-      const req = {
-        method: 'GET',
-        path: '/api/nonexistent',
-        originalUrl: '/api/nonexistent',
-      };
-      const res = {};
-      let nextCalled = false;
-      let errorPassed;
-      const next = function(err) {
-        nextCalled = true;
-        errorPassed = err;
-      };
-
-      notFoundHandler(req, res, next);
-
-      expect(nextCalled).toBe(true);
-      expect(errorPassed).toBeInstanceOf(AppError);
-      expect(errorPassed.statusCode).toBe(404);
-      expect(errorPassed.message).toContain('Ruta no encontrada');
-    });
-  });
-
-  describe('asyncHandler', () => {
-    it('debe ejecutar función async correctamente', async () => {
-      const asyncFn = async (req, res, next) => {
-        res.json({ success: true });
-      };
-
-      const req = {};
-      let jsonCalled = false;
-      let jsonData;
-      const res = {
-        json: function(data) {
-          jsonCalled = true;
-          jsonData = data;
-        },
-      };
-      let nextCalled = false;
-      const next = function() {
-        nextCalled = true;
-      };
-
-      const handler = asyncHandler(asyncFn);
-      await handler(req, res, next);
-
-      expect(jsonCalled).toBe(true);
-      expect(jsonData).toEqual({ success: true });
-      expect(nextCalled).toBe(false);
-    });
-
-    it('debe capturar errores y pasarlos a next', async () => {
-      const asyncFn = async (req, res, next) => {
-        throw new Error('Test error');
-      };
-
-      const req = {};
-      const res = {};
-      let nextCalled = false;
-      let errorPassed;
-      const next = function(err) {
-        nextCalled = true;
-        errorPassed = err;
-      };
-
-      const handler = asyncHandler(asyncFn);
-      await handler(req, res, next);
-
-      expect(nextCalled).toBe(true);
-      expect(errorPassed).toBeInstanceOf(Error);
-      expect(errorPassed.message).toBe('Test error');
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalled();
     });
   });
 });

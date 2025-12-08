@@ -124,28 +124,25 @@ describe('CrisisEvent Model', () => {
       detectedAt: new Date(),
     });
 
-    // Esperar un momento para que se guarde inicialmente
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Verificar que se creó correctamente
+    expect(crisisEvent._id).toBeDefined();
 
+    // Actualizar alertas
     crisisEvent.alerts.sent = true;
     crisisEvent.alerts.sentAt = new Date();
     crisisEvent.alerts.contactsNotified = 2;
     crisisEvent.markModified('alerts');
     await crisisEvent.save();
 
-    // Esperar un momento para que se guarde
-    await new Promise(resolve => setTimeout(resolve, 200));
-
-    // Verificar directamente en el documento guardado sin recargar
+    // Verificar directamente en el documento guardado
     expect(crisisEvent.alerts.sent).toBe(true);
     expect(crisisEvent.alerts.contactsNotified).toBe(2);
     
-    // También verificar recargando desde la BD
-    const updatedEvent = await CrisisEvent.findById(crisisEvent._id);
-    if (updatedEvent) {
-      expect(updatedEvent.alerts.sent).toBe(true);
-      expect(updatedEvent.alerts.contactsNotified).toBe(2);
-    }
+    // Recargar desde la BD usando el ID guardado
+    const updatedEvent = await CrisisEvent.findById(crisisEvent._id.toString());
+    expect(updatedEvent).not.toBeNull();
+    expect(updatedEvent.alerts.sent).toBe(true);
+    expect(updatedEvent.alerts.contactsNotified).toBe(2);
   });
 
   it('debe marcar seguimiento como completado', async () => {
@@ -155,22 +152,21 @@ describe('CrisisEvent Model', () => {
       detectedAt: new Date(),
     });
 
+    // Verificar que se creó correctamente
+    expect(crisisEvent._id).toBeDefined();
+
+    // Actualizar seguimiento
     crisisEvent.followUp.scheduled = true;
     crisisEvent.followUp.completed = true;
     crisisEvent.followUp.completedAt = new Date();
     crisisEvent.markModified('followUp');
     await crisisEvent.save();
 
-    // Esperar un momento para que se guarde
-    await new Promise(resolve => setTimeout(resolve, 200));
-
-    // Recargar el evento desde la base de datos usando el documento guardado
-    const updatedEvent = await CrisisEvent.findById(crisisEvent._id);
+    // Recargar el evento desde la base de datos usando el ID guardado
+    const updatedEvent = await CrisisEvent.findById(crisisEvent._id.toString());
     expect(updatedEvent).not.toBeNull();
-    if (updatedEvent) {
-      expect(updatedEvent.followUp.completed).toBe(true);
-      expect(updatedEvent.followUp.completedAt).toBeDefined();
-    }
+    expect(updatedEvent.followUp.completed).toBe(true);
+    expect(updatedEvent.followUp.completedAt).toBeDefined();
   });
 
   it('debe establecer resolvedAt cuando se resuelve', async () => {

@@ -11,9 +11,9 @@ describe('Authentication Middleware', () => {
   const JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key-for-jwt-signing-min-32-chars';
 
   describe('authenticateToken', () => {
-    it('debe autenticar un token válido', () => {
+    it('debe autenticar un token válido', async () => {
       const token = jwt.sign(
-        { userId: '507f1f77bcf86cd799439011' },
+        { userId: '507f1f77bcf86cd799439011', role: 'user' },
         JWT_SECRET,
         { expiresIn: '1h' }
       );
@@ -32,7 +32,7 @@ describe('Authentication Middleware', () => {
         nextCalled = true;
       };
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(req.user).toBeDefined();
       expect(req.user.userId).toBe('507f1f77bcf86cd799439011');
@@ -137,9 +137,9 @@ describe('Authentication Middleware', () => {
       expect(nextCalled).toBe(false);
     });
 
-    it('debe aceptar token sin Bearer prefix (compatibilidad)', () => {
+    it('debe aceptar token sin Bearer prefix (compatibilidad)', async () => {
       const token = jwt.sign(
-        { userId: '507f1f77bcf86cd799439011' },
+        { userId: '507f1f77bcf86cd799439011', role: 'user' },
         JWT_SECRET,
         { expiresIn: '1h' }
       );
@@ -158,7 +158,7 @@ describe('Authentication Middleware', () => {
         nextCalled = true;
       };
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       // El middleware actual acepta tokens sin Bearer
       expect(req.user).toBeDefined();

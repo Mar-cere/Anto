@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">5.16% </span>
+                <span class="strong">6.45% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>8/155</span>
+                <span class='fraction'>10/155</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">2.58% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/155</span>
+                <span class='fraction'>4/155</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">2.85% </span>
+                <span class="strong">8.57% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/35</span>
+                <span class='fraction'>3/35</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">5.19% </span>
+                <span class="strong">6.49% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>8/154</span>
+                <span class='fraction'>10/154</span>
             </div>
         
             
@@ -629,32 +629,32 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1194,17 +1194,17 @@ class MemoryService {
   }
   
   // Helper: validar que el userId es válido
-<span class="fstat-no" title="function not covered" >  is</span>ValidUserId(userId) {
-<span class="cstat-no" title="statement not covered" >    return userId &amp;&amp; (</span>
+  isValidUserId(userId) {
+    return userId &amp;&amp; (
       typeof userId === 'string' || 
-      userId instanceof mongoose.Types.ObjectId ||
-      mongoose.Types.ObjectId.isValid(userId)
+<span class="branch-2 cbranch-no" title="branch not covered" >      userId instanceof mongoose.Types.ObjectId </span>||
+<span class="branch-3 cbranch-no" title="branch not covered" >      mongoose.Types.ObjectId.isValid(userId)</span>
     );
   }
   
   // Helper: validar que el contenido es un string válido
-<span class="fstat-no" title="function not covered" >  is</span>ValidString(value) {
-<span class="cstat-no" title="statement not covered" >    return typeof value === 'string' &amp;&amp; value.trim().length &gt; 0;</span>
+  isValidString(value) {
+    return typeof value === 'string' &amp;&amp; value.trim().length &gt; 0;
   }
   
   // Helper: validar que es un array válido
@@ -1720,7 +1720,7 @@ export default new MemoryService();
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-01T20:17:43.973Z
+                at 2025-12-08T02:37:56.627Z
             </div>
         <script src="../prettify.js"></script>
         <script>

@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">26.08% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>12/46</span>
+                <span class='fraction'>0/46</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">26.08% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>12/46</span>
+                <span class='fraction'>0/46</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">50% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>2/4</span>
+                <span class='fraction'>0/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">26.66% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>12/45</span>
+                <span class='fraction'>0/45</span>
             </div>
         
             
@@ -309,8 +309,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -320,7 +320,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -456,33 +456,33 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -532,9 +532,9 @@ class PaymentAuditService {
    * @param {string} userId - ID del usuario
    * @param {string} transactionId - ID de transacción (opcional)
    */
-  async logEvent(eventType, data, userId, transactionId = null) {
-    try {
-      const logEntry = {
+<span class="fstat-no" title="function not covered" >  as</span>ync logEvent(eventType, data, userId, transactionId = <span class="branch-0 cbranch-no" title="branch not covered" >null)</span> {
+<span class="cstat-no" title="statement not covered" >    try {</span>
+      const logEntry = <span class="cstat-no" title="statement not covered" >{</span>
         timestamp: new Date(),
         eventType,
         userId,
@@ -544,7 +544,7 @@ class PaymentAuditService {
         userAgent: data.userAgent || null,
       };
 &nbsp;
-      console.log(`[PAYMENT_AUDIT] ${eventType}`, {
+<span class="cstat-no" title="statement not covered" >      console.log(`[PAYMENT_AUDIT] ${eventType}`, {</span>
         userId,
         transactionId,
         timestamp: logEntry.timestamp,
@@ -679,35 +679,35 @@ class PaymentAuditService {
    * @param {string} userId - ID del usuario
    * @returns {Promise&lt;Object&gt;} - Estado de acceso del usuario
    */
-  async verifyUserAccess(userId) {
-    try {
-      const user = await User.findById(userId).select('email username name subscription');
-      <span class="missing-if-branch" title="if path not taken" >I</span>if (!user) {
+<span class="fstat-no" title="function not covered" >  as</span>ync verifyUserAccess(userId) {
+<span class="cstat-no" title="statement not covered" >    try {</span>
+      const user = <span class="cstat-no" title="statement not covered" >await User.findById(userId).select('email username name subscription');</span>
+<span class="cstat-no" title="statement not covered" >      if (!user) {</span>
 <span class="cstat-no" title="statement not covered" >        return {</span>
           valid: false,
           error: 'Usuario no encontrado',
         };
       }
 &nbsp;
-      const subscription = await Subscription.findOne({ userId });
-      const now = new Date();
+      const subscription = <span class="cstat-no" title="statement not covered" >await Subscription.findOne({ userId });</span>
+      const now = <span class="cstat-no" title="statement not covered" >new Date();</span>
 &nbsp;
       // Verificar trial
-      const isInTrial = user.subscription.status === 'trial' &amp;&amp;
+      const isInTrial = <span class="cstat-no" title="statement not covered" >user.subscription.status === 'trial' &amp;&amp;</span>
                        user.subscription.trialEndDate &amp;&amp;
                        now &lt;= user.subscription.trialEndDate;
 &nbsp;
       // Verificar suscripción premium
-      const hasPremium = user.subscription.status === 'premium' &amp;&amp;
-<span class="branch-1 cbranch-no" title="branch not covered" >                        user.subscription.subscriptionEndDate </span>&amp;&amp;
-<span class="branch-2 cbranch-no" title="branch not covered" >                        now &lt;= user.subscription.subscriptionEndDate;</span>
+      const hasPremium = <span class="cstat-no" title="statement not covered" >user.subscription.status === 'premium' &amp;&amp;</span>
+                        user.subscription.subscriptionEndDate &amp;&amp;
+                        now &lt;= user.subscription.subscriptionEndDate;
 &nbsp;
       // Verificar suscripción en modelo separado
-      const hasActiveSubscription = subscription?.status === 'active' &amp;&amp;
-<span class="branch-1 cbranch-no" title="branch not covered" >                                   subscription?.isActive;</span>
+      const hasActiveSubscription = <span class="cstat-no" title="statement not covered" >subscription?.status === 'active' &amp;&amp;</span>
+                                   subscription?.isActive;
 &nbsp;
-      return {
-        valid: isInTrial || <span class="branch-1 cbranch-no" title="branch not covered" >hasPremium </span>|| <span class="branch-2 cbranch-no" title="branch not covered" >hasActiveSubscription,</span>
+<span class="cstat-no" title="statement not covered" >      return {</span>
+        valid: isInTrial || hasPremium || hasActiveSubscription,
         user: {
           id: user._id.toString(),
           email: user.email,
@@ -742,7 +742,7 @@ export default new PaymentAuditService();
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-01T20:17:43.973Z
+                at 2025-12-08T02:37:56.627Z
             </div>
         <script src="../prettify.js"></script>
         <script>
