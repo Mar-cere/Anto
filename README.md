@@ -14,7 +14,6 @@
 - [Variables de Entorno](#-variables-de-entorno)
 - [Ejecución](#-ejecución)
 - [Testing](#-testing)
-- [Deployment](#-deployment)
 - [Estructura del Proyecto](#-estructura-del-proyecto)
 - [Documentación](#-documentación)
 - [Estado del Proyecto](#-estado-del-proyecto)
@@ -95,12 +94,6 @@
 - **npm** 9.0.0 o superior
 - **MongoDB** (local o MongoDB Atlas)
 - **Expo CLI** (se instala automáticamente)
-
-### Producción
-- Servidor Node.js (Render, Heroku, AWS, etc.)
-- MongoDB Atlas o servidor MongoDB
-- Dominio con SSL/HTTPS
-- Cuentas de servicios externos (OpenAI, Mercado Pago, etc.)
 
 ---
 
@@ -237,23 +230,6 @@ Luego escanea el código QR con la app Expo Go o presiona:
 - `a` para Android Emulator
 - `w` para web
 
-### Producción
-
-#### Backend
-
-```bash
-cd backend
-npm start
-```
-
-#### Frontend
-
-```bash
-cd frontend
-eas build --platform ios
-eas build --platform android
-```
-
 ---
 
 ## 🧪 Testing
@@ -289,49 +265,6 @@ npm test
 - ✅ **Tests Frontend:** 138/141 pasando (97.9%)
 - ✅ **Tests Integración:** 121/135 pasando (89.6%)
 - ✅ **Cobertura:** 32% en funciones
-
----
-
-## 🚢 Deployment
-
-### Backend
-
-1. **Configurar variables de entorno en el servidor**
-2. **Verificar health checks:**
-   ```bash
-   curl https://tu-dominio.com/health
-   curl https://tu-dominio.com/api/health
-   ```
-3. **Configurar monitoreo externo** (UptimeRobot, Pingdom, etc.)
-4. **Configurar backups de base de datos** (MongoDB Atlas)
-
-### Frontend
-
-1. **Configurar EAS Build:**
-   ```bash
-   cd frontend
-   eas build:configure
-   ```
-
-2. **Construir para producción:**
-   ```bash
-   eas build --platform all --profile production
-   ```
-
-3. **Subir a stores:**
-   - App Store Connect (iOS)
-   - Google Play Console (Android)
-
-### Checklist Pre-Deployment
-
-- [x] Variables de entorno configuradas
-- [x] Health checks funcionando
-- [x] SSL/HTTPS configurado
-- [x] Logs centralizados configurados
-- [x] Tests pasando
-- [ ] Monitoreo externo configurado
-- [ ] Backups configurados
-- [ ] Documentación actualizada
 
 ---
 
@@ -431,11 +364,6 @@ Anto/
 - ✅ Tests pasando (97%+)
 - ✅ Código del backend corregido y optimizado
 
-### Pendiente ⚠️
-
-- [ ] Configurar monitoreo externo (UptimeRobot, Sentry)
-- [ ] Configurar backups automáticos de base de datos
-- [ ] Probar health checks en producción
 
 ---
 
