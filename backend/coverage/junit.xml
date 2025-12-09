@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="96" failures="17" errors="0" time="16.432">
-  <testsuite name="Metrics Routes" errors="0" failures="2" skipped="0" timestamp="2025-12-08T15:28:57" time="5.155" tests="4">
-    <testcase classname="Metrics Routes GET /api/metrics/system debe obtener métricas generales del sistema" name="Metrics Routes GET /api/metrics/system debe obtener métricas generales del sistema" time="0.068">
+<testsuites name="jest tests" tests="135" failures="16" errors="0" time="23.675">
+  <testsuite name="Metrics Routes" errors="0" failures="2" skipped="0" timestamp="2025-12-09T16:38:10" time="8.572" tests="4">
+    <testcase classname="Metrics Routes GET /api/metrics/system debe obtener métricas generales del sistema" name="Metrics Routes GET /api/metrics/system debe obtener métricas generales del sistema" time="0.355">
       <failure>Error: expected 200 &quot;OK&quot;, got 403 &quot;Forbidden&quot;
     at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/metrics.test.js:79:10)
     at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)
@@ -31,9 +31,9 @@
     at emitCloseNT (node:net:2383:8)
     at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
-    <testcase classname="Metrics Routes GET /api/metrics/system debe rechazar request sin autenticación" name="Metrics Routes GET /api/metrics/system debe rechazar request sin autenticación" time="0.016">
+    <testcase classname="Metrics Routes GET /api/metrics/system debe rechazar request sin autenticación" name="Metrics Routes GET /api/metrics/system debe rechazar request sin autenticación" time="0.013">
     </testcase>
-    <testcase classname="Metrics Routes GET /api/metrics/me debe obtener métricas del usuario" name="Metrics Routes GET /api/metrics/me debe obtener métricas del usuario" time="0.013">
+    <testcase classname="Metrics Routes GET /api/metrics/me debe obtener métricas del usuario" name="Metrics Routes GET /api/metrics/me debe obtener métricas del usuario" time="0.026">
     </testcase>
     <testcase classname="Metrics Routes GET /api/metrics/health debe obtener estadísticas de salud del sistema" name="Metrics Routes GET /api/metrics/health debe obtener estadísticas de salud del sistema" time="0.011">
       <failure>Error: expected 200 &quot;OK&quot;, got 403 &quot;Forbidden&quot;
@@ -66,46 +66,127 @@
     at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
   </testsuite>
-  <testsuite name="Flujo completo: Registro de Usuario" errors="0" failures="1" skipped="0" timestamp="2025-12-08T15:28:57" time="5.156" tests="3">
-    <testcase classname="Flujo completo: Registro de Usuario debe completar el flujo completo de registro de usuario" name="Flujo completo: Registro de Usuario debe completar el flujo completo de registro de usuario" time="0.094">
-      <failure>TypeError: Cannot read properties of null (reading &apos;email&apos;)
-    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/flows/userRegistrationFlow.test.js:63:24)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+  <testsuite name="Chat Routes" errors="0" failures="1" skipped="0" timestamp="2025-12-09T16:38:10" time="9.295" tests="7">
+    <testcase classname="Chat Routes GET /api/chat/conversations debe obtener las conversaciones del usuario" name="Chat Routes GET /api/chat/conversations debe obtener las conversaciones del usuario" time="0.484">
     </testcase>
-    <testcase classname="Flujo completo: Registro de Usuario debe manejar errores en el flujo de registro" name="Flujo completo: Registro de Usuario debe manejar errores en el flujo de registro" time="0.03">
+    <testcase classname="Chat Routes GET /api/chat/conversations debe rechazar request sin autenticación" name="Chat Routes GET /api/chat/conversations debe rechazar request sin autenticación" time="0.016">
     </testcase>
-    <testcase classname="Flujo completo: Registro de Usuario debe validar datos requeridos en el registro" name="Flujo completo: Registro de Usuario debe validar datos requeridos en el registro" time="0.007">
+    <testcase classname="Chat Routes POST /api/chat/conversations debe crear una nueva conversación" name="Chat Routes POST /api/chat/conversations debe crear una nueva conversación" time="0.09">
     </testcase>
-  </testsuite>
-  <testsuite name="Chat Routes" errors="0" failures="1" skipped="0" timestamp="2025-12-08T15:28:57" time="5.736" tests="7">
-    <testcase classname="Chat Routes GET /api/chat/conversations debe obtener las conversaciones del usuario" name="Chat Routes GET /api/chat/conversations debe obtener las conversaciones del usuario" time="0.067">
+    <testcase classname="Chat Routes POST /api/chat/conversations debe rechazar request sin autenticación" name="Chat Routes POST /api/chat/conversations debe rechazar request sin autenticación" time="0.039">
     </testcase>
-    <testcase classname="Chat Routes GET /api/chat/conversations debe rechazar request sin autenticación" name="Chat Routes GET /api/chat/conversations debe rechazar request sin autenticación" time="0.015">
-    </testcase>
-    <testcase classname="Chat Routes POST /api/chat/conversations debe crear una nueva conversación" name="Chat Routes POST /api/chat/conversations debe crear una nueva conversación" time="0.033">
-    </testcase>
-    <testcase classname="Chat Routes POST /api/chat/conversations debe rechazar request sin autenticación" name="Chat Routes POST /api/chat/conversations debe rechazar request sin autenticación" time="0.011">
-    </testcase>
-    <testcase classname="Chat Routes GET /api/chat/conversations/:conversationId debe obtener mensajes de una conversación" name="Chat Routes GET /api/chat/conversations/:conversationId debe obtener mensajes de una conversación" time="0.332">
+    <testcase classname="Chat Routes GET /api/chat/conversations/:conversationId debe obtener mensajes de una conversación" name="Chat Routes GET /api/chat/conversations/:conversationId debe obtener mensajes de una conversación" time="0.331">
       <failure>Error: Conversación no se guardó correctamente
     at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/chatRoutes.test.js:158:15)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
     </testcase>
-    <testcase classname="Chat Routes GET /api/chat/conversations/:conversationId debe rechazar obtener conversación de otro usuario" name="Chat Routes GET /api/chat/conversations/:conversationId debe rechazar obtener conversación de otro usuario" time="0.024">
+    <testcase classname="Chat Routes GET /api/chat/conversations/:conversationId debe rechazar obtener conversación de otro usuario" name="Chat Routes GET /api/chat/conversations/:conversationId debe rechazar obtener conversación de otro usuario" time="0.09">
     </testcase>
-    <testcase classname="Chat Routes DELETE /api/chat/conversations/:conversationId debe eliminar una conversación" name="Chat Routes DELETE /api/chat/conversations/:conversationId debe eliminar una conversación" time="0.022">
+    <testcase classname="Chat Routes DELETE /api/chat/conversations/:conversationId debe eliminar una conversación" name="Chat Routes DELETE /api/chat/conversations/:conversationId debe eliminar una conversación" time="0.036">
     </testcase>
   </testsuite>
-  <testsuite name="Flujo completo: Chat con Análisis Emocional" errors="0" failures="1" skipped="0" timestamp="2025-12-08T15:28:57" time="5.808" tests="3">
-    <testcase classname="Flujo completo: Chat con Análisis Emocional debe completar el flujo completo de chat con análisis emocional" name="Flujo completo: Chat con Análisis Emocional debe completar el flujo completo de chat con análisis emocional" time="0.294">
-      <failure>Error: expected 201 &quot;Created&quot;, got 404 &quot;Not Found&quot;
-    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/flows/chatEmotionalAnalysisFlow.test.js:90:8)
+  <testsuite name="Flujo completo: Contactos de Emergencia" errors="0" failures="0" skipped="0" timestamp="2025-12-09T16:38:10" time="10.077" tests="6">
+    <testcase classname="Flujo completo: Contactos de Emergencia debe obtener contactos de emergencia del usuario" name="Flujo completo: Contactos de Emergencia debe obtener contactos de emergencia del usuario" time="0.583">
+    </testcase>
+    <testcase classname="Flujo completo: Contactos de Emergencia debe agregar un nuevo contacto de emergencia" name="Flujo completo: Contactos de Emergencia debe agregar un nuevo contacto de emergencia" time="0.291">
+    </testcase>
+    <testcase classname="Flujo completo: Contactos de Emergencia debe actualizar un contacto de emergencia existente" name="Flujo completo: Contactos de Emergencia debe actualizar un contacto de emergencia existente" time="0.244">
+    </testcase>
+    <testcase classname="Flujo completo: Contactos de Emergencia debe eliminar un contacto de emergencia" name="Flujo completo: Contactos de Emergencia debe eliminar un contacto de emergencia" time="0.243">
+    </testcase>
+    <testcase classname="Flujo completo: Contactos de Emergencia debe validar autenticación para endpoints de contactos" name="Flujo completo: Contactos de Emergencia debe validar autenticación para endpoints de contactos" time="0.26">
+    </testcase>
+    <testcase classname="Flujo completo: Contactos de Emergencia debe validar datos requeridos al agregar contacto" name="Flujo completo: Contactos de Emergencia debe validar datos requeridos al agregar contacto" time="0.229">
+    </testcase>
+  </testsuite>
+  <testsuite name="Flujo completo: Perfil de Usuario" errors="0" failures="1" skipped="0" timestamp="2025-12-09T16:38:10" time="10.514" tests="7">
+    <testcase classname="Flujo completo: Perfil de Usuario debe obtener el perfil del usuario autenticado" name="Flujo completo: Perfil de Usuario debe obtener el perfil del usuario autenticado" time="0.589">
+    </testcase>
+    <testcase classname="Flujo completo: Perfil de Usuario debe actualizar información básica del perfil" name="Flujo completo: Perfil de Usuario debe actualizar información básica del perfil" time="0.277">
+    </testcase>
+    <testcase classname="Flujo completo: Perfil de Usuario debe actualizar preferencias del usuario" name="Flujo completo: Perfil de Usuario debe actualizar preferencias del usuario" time="0.271">
+    </testcase>
+    <testcase classname="Flujo completo: Perfil de Usuario debe actualizar contraseña del usuario" name="Flujo completo: Perfil de Usuario debe actualizar contraseña del usuario" time="0.271">
+      <failure>Error: expect(received).toContain(expected) // indexOf
+
+Expected value: 404
+Received array: [200, 400, 401]
+    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/flows/userProfileFlow.test.js:164:29)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Flujo completo: Perfil de Usuario debe obtener perfil detallado con información extendida" name="Flujo completo: Perfil de Usuario debe obtener perfil detallado con información extendida" time="0.25">
+    </testcase>
+    <testcase classname="Flujo completo: Perfil de Usuario debe validar autenticación para endpoints de perfil" name="Flujo completo: Perfil de Usuario debe validar autenticación para endpoints de perfil" time="0.233">
+    </testcase>
+    <testcase classname="Flujo completo: Perfil de Usuario debe validar permisos de acceso a perfiles de otros usuarios" name="Flujo completo: Perfil de Usuario debe validar permisos de acceso a perfiles de otros usuarios" time="0.339">
+    </testcase>
+  </testsuite>
+  <testsuite name="Habit Routes" errors="0" failures="2" skipped="0" timestamp="2025-12-09T16:38:10" time="12.107" tests="8">
+    <testcase classname="Habit Routes POST /api/habits debe crear un nuevo hábito con datos válidos" name="Habit Routes POST /api/habits debe crear un nuevo hábito con datos válidos" time="0.588">
+    </testcase>
+    <testcase classname="Habit Routes POST /api/habits debe rechazar crear hábito sin autenticación" name="Habit Routes POST /api/habits debe rechazar crear hábito sin autenticación" time="0.248">
+    </testcase>
+    <testcase classname="Habit Routes POST /api/habits debe rechazar crear hábito con datos inválidos" name="Habit Routes POST /api/habits debe rechazar crear hábito con datos inválidos" time="0.27">
+    </testcase>
+    <testcase classname="Habit Routes GET /api/habits debe obtener todos los hábitos del usuario" name="Habit Routes GET /api/habits debe obtener todos los hábitos del usuario" time="0.602">
+    </testcase>
+    <testcase classname="Habit Routes GET /api/habits debe filtrar hábitos por status" name="Habit Routes GET /api/habits debe filtrar hábitos por status" time="0.411">
+    </testcase>
+    <testcase classname="Habit Routes GET /api/habits/active debe obtener hábitos activos" name="Habit Routes GET /api/habits/active debe obtener hábitos activos" time="0.304">
+    </testcase>
+    <testcase classname="Habit Routes PUT /api/habits/:id debe actualizar un hábito existente" name="Habit Routes PUT /api/habits/:id debe actualizar un hábito existente" time="0.624">
+      <failure>Error: Hábito no se guardó correctamente
+    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/habits.test.js:262:15)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Habit Routes DELETE /api/habits/:id debe eliminar un hábito existente" name="Habit Routes DELETE /api/habits/:id debe eliminar un hábito existente" time="0.824">
+      <failure>Error: expected 200 &quot;OK&quot;, got 500 &quot;Internal Server Error&quot;
+    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/habits.test.js:318:10)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+----
+    at Test._assertStatus (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:309:14)
+    at /Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:365:13
+    at Test._assertFunction (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:342:13)
+    at Test.assert (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:195:23)
+    at localAssert (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:138:14)
+    at Server.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:152:11)
+    at Object.onceWrapper (node:events:638:28)
+    at Server.emit (node:events:524:28)
+    at emitCloseNT (node:net:2383:8)
+    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="Task Routes" errors="0" failures="2" skipped="0" timestamp="2025-12-09T16:38:10" time="12.105" tests="9">
+    <testcase classname="Task Routes POST /api/tasks debe crear una nueva tarea con datos válidos" name="Task Routes POST /api/tasks debe crear una nueva tarea con datos válidos" time="0.576">
+    </testcase>
+    <testcase classname="Task Routes POST /api/tasks debe rechazar crear tarea sin autenticación" name="Task Routes POST /api/tasks debe rechazar crear tarea sin autenticación" time="0.245">
+    </testcase>
+    <testcase classname="Task Routes POST /api/tasks debe rechazar crear tarea sin título" name="Task Routes POST /api/tasks debe rechazar crear tarea sin título" time="0.294">
+    </testcase>
+    <testcase classname="Task Routes GET /api/tasks debe obtener todas las tareas del usuario" name="Task Routes GET /api/tasks debe obtener todas las tareas del usuario" time="0.473">
+    </testcase>
+    <testcase classname="Task Routes GET /api/tasks debe filtrar tareas por status" name="Task Routes GET /api/tasks debe filtrar tareas por status" time="0.278">
+    </testcase>
+    <testcase classname="Task Routes GET /api/tasks/:id debe obtener una tarea específica" name="Task Routes GET /api/tasks/:id debe obtener una tarea específica" time="0.405">
+    </testcase>
+    <testcase classname="Task Routes GET /api/tasks/:id debe rechazar obtener tarea de otro usuario" name="Task Routes GET /api/tasks/:id debe rechazar obtener tarea de otro usuario" time="0.327">
+    </testcase>
+    <testcase classname="Task Routes PUT /api/tasks/:id debe actualizar una tarea existente" name="Task Routes PUT /api/tasks/:id debe actualizar una tarea existente" time="0.546">
+      <failure>Error: Tarea no se guardó correctamente
+    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/tasks.test.js:343:15)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Task Routes DELETE /api/tasks/:id debe eliminar una tarea existente" name="Task Routes DELETE /api/tasks/:id debe eliminar una tarea existente" time="0.719">
+      <failure>Error: expected 200 &quot;OK&quot;, got 500 &quot;Internal Server Error&quot;
+    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/tasks.test.js:397:10)
     at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)
     at new Promise (&lt;anonymous&gt;)
     at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)
     at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
     at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)
     at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)
     at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)
     at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)
     at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
@@ -125,83 +206,9 @@
     at emitCloseNT (node:net:2383:8)
     at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
-    <testcase classname="Flujo completo: Chat con Análisis Emocional debe manejar múltiples mensajes en una conversación" name="Flujo completo: Chat con Análisis Emocional debe manejar múltiples mensajes en una conversación" time="0.218">
-    </testcase>
-    <testcase classname="Flujo completo: Chat con Análisis Emocional debe validar permisos de acceso a conversaciones" name="Flujo completo: Chat con Análisis Emocional debe validar permisos de acceso a conversaciones" time="0.251">
-    </testcase>
   </testsuite>
-  <testsuite name="Habit Routes" errors="0" failures="2" skipped="0" timestamp="2025-12-08T15:28:57" time="8.268" tests="8">
-    <testcase classname="Habit Routes POST /api/habits debe crear un nuevo hábito con datos válidos" name="Habit Routes POST /api/habits debe crear un nuevo hábito con datos válidos" time="0.298">
-    </testcase>
-    <testcase classname="Habit Routes POST /api/habits debe rechazar crear hábito sin autenticación" name="Habit Routes POST /api/habits debe rechazar crear hábito sin autenticación" time="0.215">
-    </testcase>
-    <testcase classname="Habit Routes POST /api/habits debe rechazar crear hábito con datos inválidos" name="Habit Routes POST /api/habits debe rechazar crear hábito con datos inválidos" time="0.224">
-    </testcase>
-    <testcase classname="Habit Routes GET /api/habits debe obtener todos los hábitos del usuario" name="Habit Routes GET /api/habits debe obtener todos los hábitos del usuario" time="0.504">
-    </testcase>
-    <testcase classname="Habit Routes GET /api/habits debe filtrar hábitos por status" name="Habit Routes GET /api/habits debe filtrar hábitos por status" time="0.306">
-    </testcase>
-    <testcase classname="Habit Routes GET /api/habits/active debe obtener hábitos activos" name="Habit Routes GET /api/habits/active debe obtener hábitos activos" time="0.244">
-    </testcase>
-    <testcase classname="Habit Routes PUT /api/habits/:id debe actualizar un hábito existente" name="Habit Routes PUT /api/habits/:id debe actualizar un hábito existente" time="0.622">
-      <failure>Error: Hábito no se guardó correctamente
-    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/habits.test.js:262:15)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
-    </testcase>
-    <testcase classname="Habit Routes DELETE /api/habits/:id debe eliminar un hábito existente" name="Habit Routes DELETE /api/habits/:id debe eliminar un hábito existente" time="0.718">
-      <failure>Error: Hábito no se guardó correctamente
-    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/habits.test.js:312:15)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
-    </testcase>
-  </testsuite>
-  <testsuite name="Task Routes" errors="0" failures="2" skipped="0" timestamp="2025-12-08T15:28:57" time="8.508" tests="9">
-    <testcase classname="Task Routes POST /api/tasks debe crear una nueva tarea con datos válidos" name="Task Routes POST /api/tasks debe crear una nueva tarea con datos válidos" time="0.312">
-    </testcase>
-    <testcase classname="Task Routes POST /api/tasks debe rechazar crear tarea sin autenticación" name="Task Routes POST /api/tasks debe rechazar crear tarea sin autenticación" time="0.22">
-    </testcase>
-    <testcase classname="Task Routes POST /api/tasks debe rechazar crear tarea sin título" name="Task Routes POST /api/tasks debe rechazar crear tarea sin título" time="0.234">
-    </testcase>
-    <testcase classname="Task Routes GET /api/tasks debe obtener todas las tareas del usuario" name="Task Routes GET /api/tasks debe obtener todas las tareas del usuario" time="0.486">
-    </testcase>
-    <testcase classname="Task Routes GET /api/tasks debe filtrar tareas por status" name="Task Routes GET /api/tasks debe filtrar tareas por status" time="0.318">
-    </testcase>
-    <testcase classname="Task Routes GET /api/tasks/:id debe obtener una tarea específica" name="Task Routes GET /api/tasks/:id debe obtener una tarea específica" time="0.292">
-    </testcase>
-    <testcase classname="Task Routes GET /api/tasks/:id debe rechazar obtener tarea de otro usuario" name="Task Routes GET /api/tasks/:id debe rechazar obtener tarea de otro usuario" time="0.349">
-    </testcase>
-    <testcase classname="Task Routes PUT /api/tasks/:id debe actualizar una tarea existente" name="Task Routes PUT /api/tasks/:id debe actualizar una tarea existente" time="0.637">
-      <failure>Error: Tarea no se guardó correctamente
-    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/tasks.test.js:343:15)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
-    </testcase>
-    <testcase classname="Task Routes DELETE /api/tasks/:id debe eliminar una tarea existente" name="Task Routes DELETE /api/tasks/:id debe eliminar una tarea existente" time="0.634">
-      <failure>Error: Tarea no se guardó correctamente
-    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/tasks.test.js:389:15)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
-    </testcase>
-  </testsuite>
-  <testsuite name="Health Check Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-08T15:29:03" time="5.353" tests="4">
-    <testcase classname="Health Check Routes GET /health debe retornar información de salud (puede ser 200 o 503 dependiendo de MongoDB)" name="Health Check Routes GET /health debe retornar información de salud (puede ser 200 o 503 dependiendo de MongoDB)" time="0.019">
-    </testcase>
-    <testcase classname="Health Check Routes GET /health debe incluir información de servicios" name="Health Check Routes GET /health debe incluir información de servicios" time="0.007">
-    </testcase>
-    <testcase classname="Health Check Routes GET /health debe retornar status 200 si MongoDB está conectado" name="Health Check Routes GET /health debe retornar status 200 si MongoDB está conectado" time="1.952">
-    </testcase>
-    <testcase classname="Health Check Routes GET / debe retornar mensaje de servidor corriendo" name="Health Check Routes GET / debe retornar mensaje de servidor corriendo" time="0.023">
-    </testcase>
-  </testsuite>
-  <testsuite name="Flujo completo: Detección y Manejo de Crisis" errors="0" failures="0" skipped="0" timestamp="2025-12-08T15:29:03" time="5.581" tests="4">
-    <testcase classname="Flujo completo: Detección y Manejo de Crisis debe detectar y registrar un evento de crisis" name="Flujo completo: Detección y Manejo de Crisis debe detectar y registrar un evento de crisis" time="0.302">
-    </testcase>
-    <testcase classname="Flujo completo: Detección y Manejo de Crisis debe obtener estadísticas de crisis" name="Flujo completo: Detección y Manejo de Crisis debe obtener estadísticas de crisis" time="0.263">
-    </testcase>
-    <testcase classname="Flujo completo: Detección y Manejo de Crisis debe obtener eventos de crisis recientes" name="Flujo completo: Detección y Manejo de Crisis debe obtener eventos de crisis recientes" time="1.668">
-    </testcase>
-    <testcase classname="Flujo completo: Detección y Manejo de Crisis debe filtrar eventos de crisis por nivel de riesgo" name="Flujo completo: Detección y Manejo de Crisis debe filtrar eventos de crisis por nivel de riesgo" time="0.449">
-    </testcase>
-  </testsuite>
-  <testsuite name="User Routes" errors="0" failures="8" skipped="0" timestamp="2025-12-08T15:28:57" time="12.546" tests="15">
-    <testcase classname="User Routes GET /api/users/me debe obtener información del usuario autenticado" name="User Routes GET /api/users/me debe obtener información del usuario autenticado" time="0.396">
+  <testsuite name="User Routes" errors="0" failures="7" skipped="0" timestamp="2025-12-09T16:38:10" time="14.31" tests="15">
+    <testcase classname="User Routes GET /api/users/me debe obtener información del usuario autenticado" name="User Routes GET /api/users/me debe obtener información del usuario autenticado" time="0.621">
       <failure>Error: expected 200 &quot;OK&quot;, got 404 &quot;Not Found&quot;
     at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/userRoutes.test.js:89:10)
     at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)
@@ -230,13 +237,40 @@
     at emitCloseNT (node:net:2383:8)
     at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
-    <testcase classname="User Routes GET /api/users/me debe rechazar request sin autenticación" name="User Routes GET /api/users/me debe rechazar request sin autenticación" time="0.337">
+    <testcase classname="User Routes GET /api/users/me debe rechazar request sin autenticación" name="User Routes GET /api/users/me debe rechazar request sin autenticación" time="0.347">
     </testcase>
-    <testcase classname="User Routes GET /api/users/me/stats debe obtener estadísticas del usuario" name="User Routes GET /api/users/me/stats debe obtener estadísticas del usuario" time="0.328">
+    <testcase classname="User Routes GET /api/users/me/stats debe obtener estadísticas del usuario" name="User Routes GET /api/users/me/stats debe obtener estadísticas del usuario" time="0.331">
+      <failure>Error: expected 200 &quot;OK&quot;, got 404 &quot;Not Found&quot;
+    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/userRoutes.test.js:109:10)
+    at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)
+    at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)
+    at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/testWorker.js:106:12)
+----
+    at Test._assertStatus (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:309:14)
+    at /Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:365:13
+    at Test._assertFunction (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:342:13)
+    at Test.assert (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:195:23)
+    at localAssert (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:138:14)
+    at Server.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:152:11)
+    at Object.onceWrapper (node:events:638:28)
+    at Server.emit (node:events:524:28)
+    at emitCloseNT (node:net:2383:8)
+    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
-    <testcase classname="User Routes GET /api/users/me/stats debe rechazar request sin autenticación" name="User Routes GET /api/users/me/stats debe rechazar request sin autenticación" time="0.347">
+    <testcase classname="User Routes GET /api/users/me/stats debe rechazar request sin autenticación" name="User Routes GET /api/users/me/stats debe rechazar request sin autenticación" time="0.33">
     </testcase>
-    <testcase classname="User Routes PUT /api/users/me debe actualizar el perfil del usuario" name="User Routes PUT /api/users/me debe actualizar el perfil del usuario" time="0.444">
+    <testcase classname="User Routes PUT /api/users/me debe actualizar el perfil del usuario" name="User Routes PUT /api/users/me debe actualizar el perfil del usuario" time="0.416">
       <failure>Error: expected 200 &quot;OK&quot;, got 404 &quot;Not Found&quot;
     at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/userRoutes.test.js:138:10)
     at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)
@@ -265,11 +299,11 @@
     at emitCloseNT (node:net:2383:8)
     at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
-    <testcase classname="User Routes PUT /api/users/me debe rechazar actualización con datos inválidos" name="User Routes PUT /api/users/me debe rechazar actualización con datos inválidos" time="0.456">
+    <testcase classname="User Routes PUT /api/users/me debe rechazar actualización con datos inválidos" name="User Routes PUT /api/users/me debe rechazar actualización con datos inválidos" time="0.422">
     </testcase>
-    <testcase classname="User Routes PUT /api/users/me debe rechazar request sin autenticación" name="User Routes PUT /api/users/me debe rechazar request sin autenticación" time="0.354">
+    <testcase classname="User Routes PUT /api/users/me debe rechazar request sin autenticación" name="User Routes PUT /api/users/me debe rechazar request sin autenticación" time="0.397">
     </testcase>
-    <testcase classname="User Routes PUT /api/users/me/password debe actualizar la contraseña con contraseña actual correcta" name="User Routes PUT /api/users/me/password debe actualizar la contraseña con contraseña actual correcta" time="0.411">
+    <testcase classname="User Routes PUT /api/users/me/password debe actualizar la contraseña con contraseña actual correcta" name="User Routes PUT /api/users/me/password debe actualizar la contraseña con contraseña actual correcta" time="0.449">
       <failure>Error: expected 200 &quot;OK&quot;, got 404 &quot;Not Found&quot;
     at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/userRoutes.test.js:178:10)
     at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)
@@ -298,38 +332,11 @@
     at emitCloseNT (node:net:2383:8)
     at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
-    <testcase classname="User Routes PUT /api/users/me/password debe rechazar actualización con contraseña actual incorrecta" name="User Routes PUT /api/users/me/password debe rechazar actualización con contraseña actual incorrecta" time="0.432">
-      <failure>Error: expected 400 &quot;Bad Request&quot;, got 404 &quot;Not Found&quot;
-    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/userRoutes.test.js:193:10)
-    at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)
-    at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)
-    at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/testWorker.js:106:12)
-----
-    at Test._assertStatus (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:309:14)
-    at /Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:365:13
-    at Test._assertFunction (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:342:13)
-    at Test.assert (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:195:23)
-    at localAssert (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:138:14)
-    at Server.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:152:11)
-    at Object.onceWrapper (node:events:638:28)
-    at Server.emit (node:events:524:28)
-    at emitCloseNT (node:net:2383:8)
-    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
+    <testcase classname="User Routes PUT /api/users/me/password debe rechazar actualización con contraseña actual incorrecta" name="User Routes PUT /api/users/me/password debe rechazar actualización con contraseña actual incorrecta" time="0.41">
     </testcase>
-    <testcase classname="User Routes PUT /api/users/me/password debe rechazar contraseña nueva muy corta" name="User Routes PUT /api/users/me/password debe rechazar contraseña nueva muy corta" time="0.354">
+    <testcase classname="User Routes PUT /api/users/me/password debe rechazar contraseña nueva muy corta" name="User Routes PUT /api/users/me/password debe rechazar contraseña nueva muy corta" time="0.51">
     </testcase>
-    <testcase classname="User Routes GET /api/users/me/subscription debe obtener información de suscripción del usuario" name="User Routes GET /api/users/me/subscription debe obtener información de suscripción del usuario" time="0.341">
+    <testcase classname="User Routes GET /api/users/me/subscription debe obtener información de suscripción del usuario" name="User Routes GET /api/users/me/subscription debe obtener información de suscripción del usuario" time="0.397">
       <failure>Error: expected 200 &quot;OK&quot;, got 404 &quot;Not Found&quot;
     at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/userRoutes.test.js:219:10)
     at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)
@@ -358,7 +365,7 @@
     at emitCloseNT (node:net:2383:8)
     at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
-    <testcase classname="User Routes GET /api/users/me/emergency-contacts debe obtener contactos de emergencia del usuario" name="User Routes GET /api/users/me/emergency-contacts debe obtener contactos de emergencia del usuario" time="1.501">
+    <testcase classname="User Routes GET /api/users/me/emergency-contacts debe obtener contactos de emergencia del usuario" name="User Routes GET /api/users/me/emergency-contacts debe obtener contactos de emergencia del usuario" time="0.368">
       <failure>Error: expected 200 &quot;OK&quot;, got 404 &quot;Not Found&quot;
     at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/userRoutes.test.js:249:10)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
@@ -374,38 +381,11 @@
     at emitCloseNT (node:net:2383:8)
     at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
-    <testcase classname="User Routes POST /api/users/me/emergency-contacts debe crear un nuevo contacto de emergencia" name="User Routes POST /api/users/me/emergency-contacts debe crear un nuevo contacto de emergencia" time="0.782">
-      <failure>Error: expected 201 &quot;Created&quot;, got 404 &quot;Not Found&quot;
-    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/userRoutes.test.js:270:10)
-    at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)
-    at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)
-    at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/testWorker.js:106:12)
-----
-    at Test._assertStatus (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:309:14)
-    at /Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:365:13
-    at Test._assertFunction (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:342:13)
-    at Test.assert (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:195:23)
-    at localAssert (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:138:14)
-    at Server.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:152:11)
-    at Object.onceWrapper (node:events:638:28)
-    at Server.emit (node:events:524:28)
-    at emitCloseNT (node:net:2383:8)
-    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
+    <testcase classname="User Routes POST /api/users/me/emergency-contacts debe crear un nuevo contacto de emergencia" name="User Routes POST /api/users/me/emergency-contacts debe crear un nuevo contacto de emergencia" time="0.393">
     </testcase>
-    <testcase classname="User Routes POST /api/users/me/emergency-contacts debe rechazar contacto con datos inválidos" name="User Routes POST /api/users/me/emergency-contacts debe rechazar contacto con datos inválidos" time="0.416">
+    <testcase classname="User Routes POST /api/users/me/emergency-contacts debe rechazar contacto con datos inválidos" name="User Routes POST /api/users/me/emergency-contacts debe rechazar contacto con datos inválidos" time="0.348">
     </testcase>
-    <testcase classname="User Routes DELETE /api/users/me debe eliminar la cuenta del usuario" name="User Routes DELETE /api/users/me debe eliminar la cuenta del usuario" time="0.376">
+    <testcase classname="User Routes DELETE /api/users/me debe eliminar la cuenta del usuario" name="User Routes DELETE /api/users/me debe eliminar la cuenta del usuario" time="0.332">
       <failure>Error: expected 200 &quot;OK&quot;, got 404 &quot;Not Found&quot;
     at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/userRoutes.test.js:298:10)
     at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)
@@ -435,92 +415,218 @@
     at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
     </testcase>
   </testsuite>
-  <testsuite name="Crisis Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-08T15:29:02" time="7.672" tests="12">
-    <testcase classname="Crisis Routes GET /api/crisis/summary debe obtener resumen de crisis del usuario" name="Crisis Routes GET /api/crisis/summary debe obtener resumen de crisis del usuario" time="0.322">
+  <testsuite name="Crisis Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-09T16:38:19" time="6.097" tests="12">
+    <testcase classname="Crisis Routes GET /api/crisis/summary debe obtener resumen de crisis del usuario" name="Crisis Routes GET /api/crisis/summary debe obtener resumen de crisis del usuario" time="0.342">
     </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/summary debe aceptar parámetro days" name="Crisis Routes GET /api/crisis/summary debe aceptar parámetro days" time="0.237">
+    <testcase classname="Crisis Routes GET /api/crisis/summary debe aceptar parámetro days" name="Crisis Routes GET /api/crisis/summary debe aceptar parámetro days" time="0.314">
     </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/summary debe rechazar request sin autenticación" name="Crisis Routes GET /api/crisis/summary debe rechazar request sin autenticación" time="0.231">
+    <testcase classname="Crisis Routes GET /api/crisis/summary debe rechazar request sin autenticación" name="Crisis Routes GET /api/crisis/summary debe rechazar request sin autenticación" time="0.295">
     </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/trends debe obtener tendencias emocionales" name="Crisis Routes GET /api/crisis/trends debe obtener tendencias emocionales" time="0.266">
+    <testcase classname="Crisis Routes GET /api/crisis/trends debe obtener tendencias emocionales" name="Crisis Routes GET /api/crisis/trends debe obtener tendencias emocionales" time="0.304">
     </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/trends debe aceptar parámetro period" name="Crisis Routes GET /api/crisis/trends debe aceptar parámetro period" time="0.237">
+    <testcase classname="Crisis Routes GET /api/crisis/trends debe aceptar parámetro period" name="Crisis Routes GET /api/crisis/trends debe aceptar parámetro period" time="0.24">
     </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/by-month debe obtener crisis agrupadas por mes" name="Crisis Routes GET /api/crisis/by-month debe obtener crisis agrupadas por mes" time="1.57">
+    <testcase classname="Crisis Routes GET /api/crisis/by-month debe obtener crisis agrupadas por mes" name="Crisis Routes GET /api/crisis/by-month debe obtener crisis agrupadas por mes" time="0.284">
     </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/by-month debe aceptar parámetro months" name="Crisis Routes GET /api/crisis/by-month debe aceptar parámetro months" time="0.34">
+    <testcase classname="Crisis Routes GET /api/crisis/by-month debe aceptar parámetro months" name="Crisis Routes GET /api/crisis/by-month debe aceptar parámetro months" time="0.228">
     </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/history debe obtener historial de crisis" name="Crisis Routes GET /api/crisis/history debe obtener historial de crisis" time="0.298">
+    <testcase classname="Crisis Routes GET /api/crisis/history debe obtener historial de crisis" name="Crisis Routes GET /api/crisis/history debe obtener historial de crisis" time="0.247">
     </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/history debe aceptar parámetros de paginación" name="Crisis Routes GET /api/crisis/history debe aceptar parámetros de paginación" time="0.279">
+    <testcase classname="Crisis Routes GET /api/crisis/history debe aceptar parámetros de paginación" name="Crisis Routes GET /api/crisis/history debe aceptar parámetros de paginación" time="0.232">
     </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/alerts-stats debe obtener estadísticas de alertas" name="Crisis Routes GET /api/crisis/alerts-stats debe obtener estadísticas de alertas" time="0.327">
+    <testcase classname="Crisis Routes GET /api/crisis/alerts-stats debe obtener estadísticas de alertas" name="Crisis Routes GET /api/crisis/alerts-stats debe obtener estadísticas de alertas" time="0.226">
     </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/followup-stats debe obtener estadísticas de seguimiento" name="Crisis Routes GET /api/crisis/followup-stats debe obtener estadísticas de seguimiento" time="0.312">
+    <testcase classname="Crisis Routes GET /api/crisis/followup-stats debe obtener estadísticas de seguimiento" name="Crisis Routes GET /api/crisis/followup-stats debe obtener estadísticas de seguimiento" time="0.281">
     </testcase>
-    <testcase classname="Crisis Routes GET /api/crisis/emotion-distribution debe obtener distribución de emociones" name="Crisis Routes GET /api/crisis/emotion-distribution debe obtener distribución de emociones" time="0.267">
-    </testcase>
-  </testsuite>
-  <testsuite name="Therapeutic Techniques Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-08T15:29:05" time="4.893" tests="5">
-    <testcase classname="Therapeutic Techniques Routes GET /api/therapeutic-techniques debe obtener todas las técnicas terapéuticas disponibles" name="Therapeutic Techniques Routes GET /api/therapeutic-techniques debe obtener todas las técnicas terapéuticas disponibles" time="0.089">
-    </testcase>
-    <testcase classname="Therapeutic Techniques Routes GET /api/therapeutic-techniques debe rechazar request sin autenticación" name="Therapeutic Techniques Routes GET /api/therapeutic-techniques debe rechazar request sin autenticación" time="0.038">
-    </testcase>
-    <testcase classname="Therapeutic Techniques Routes GET /api/therapeutic-techniques/emotion/:emotion debe obtener técnicas filtradas por emoción" name="Therapeutic Techniques Routes GET /api/therapeutic-techniques/emotion/:emotion debe obtener técnicas filtradas por emoción" time="0.033">
-    </testcase>
-    <testcase classname="Therapeutic Techniques Routes GET /api/therapeutic-techniques/history debe obtener historial de técnicas utilizadas" name="Therapeutic Techniques Routes GET /api/therapeutic-techniques/history debe obtener historial de técnicas utilizadas" time="0.109">
-    </testcase>
-    <testcase classname="Therapeutic Techniques Routes GET /api/therapeutic-techniques/stats debe obtener estadísticas de técnicas" name="Therapeutic Techniques Routes GET /api/therapeutic-techniques/stats debe obtener estadísticas de técnicas" time="0.151">
+    <testcase classname="Crisis Routes GET /api/crisis/emotion-distribution debe obtener distribución de emociones" name="Crisis Routes GET /api/crisis/emotion-distribution debe obtener distribución de emociones" time="0.216">
     </testcase>
   </testsuite>
-  <testsuite name="Payment Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-08T15:29:06" time="4.802" tests="8">
-    <testcase classname="Payment Routes GET /api/payments/plans debe obtener información de los planes disponibles" name="Payment Routes GET /api/payments/plans debe obtener información de los planes disponibles" time="0.133">
+  <testsuite name="Flujo completo: Chat con Análisis Emocional" errors="0" failures="0" skipped="0" timestamp="2025-12-09T16:38:21" time="5.061" tests="3">
+    <testcase classname="Flujo completo: Chat con Análisis Emocional debe completar el flujo completo de chat con análisis emocional" name="Flujo completo: Chat con Análisis Emocional debe completar el flujo completo de chat con análisis emocional" time="0.803">
     </testcase>
-    <testcase classname="Payment Routes GET /api/payments/plans no debe requerir autenticación" name="Payment Routes GET /api/payments/plans no debe requerir autenticación" time="0.086">
+    <testcase classname="Flujo completo: Chat con Análisis Emocional debe manejar múltiples mensajes en una conversación" name="Flujo completo: Chat con Análisis Emocional debe manejar múltiples mensajes en una conversación" time="0.765">
     </testcase>
-    <testcase classname="Payment Routes GET /api/payments/subscription-status debe obtener el estado de la suscripción del usuario" name="Payment Routes GET /api/payments/subscription-status debe obtener el estado de la suscripción del usuario" time="0.105">
-    </testcase>
-    <testcase classname="Payment Routes GET /api/payments/subscription-status debe rechazar request sin autenticación" name="Payment Routes GET /api/payments/subscription-status debe rechazar request sin autenticación" time="0.016">
-    </testcase>
-    <testcase classname="Payment Routes GET /api/payments/transactions debe obtener las transacciones del usuario" name="Payment Routes GET /api/payments/transactions debe obtener las transacciones del usuario" time="0.05">
-    </testcase>
-    <testcase classname="Payment Routes GET /api/payments/transactions debe rechazar request sin autenticación" name="Payment Routes GET /api/payments/transactions debe rechazar request sin autenticación" time="0.061">
-    </testcase>
-    <testcase classname="Payment Routes GET /api/payments/transactions/stats debe obtener estadísticas de transacciones" name="Payment Routes GET /api/payments/transactions/stats debe obtener estadísticas de transacciones" time="0.046">
-    </testcase>
-    <testcase classname="Payment Routes GET /api/payments/transactions/stats debe rechazar request sin autenticación" name="Payment Routes GET /api/payments/transactions/stats debe rechazar request sin autenticación" time="0.034">
+    <testcase classname="Flujo completo: Chat con Análisis Emocional debe validar permisos de acceso a conversaciones" name="Flujo completo: Chat con Análisis Emocional debe validar permisos de acceso a conversaciones" time="0.727">
     </testcase>
   </testsuite>
-  <testsuite name="Cloudinary Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-08T15:29:08" time="2.674" tests="2">
-    <testcase classname="Cloudinary Routes POST /api/cloudinary/signature debe rechazar request sin autenticación" name="Cloudinary Routes POST /api/cloudinary/signature debe rechazar request sin autenticación" time="0.072">
+  <testsuite name="Flujo completo: Métricas y Estadísticas" errors="0" failures="0" skipped="0" timestamp="2025-12-09T16:38:22" time="3.651" tests="6">
+    <testcase classname="Flujo completo: Métricas y Estadísticas debe obtener métricas del sistema" name="Flujo completo: Métricas y Estadísticas debe obtener métricas del sistema" time="0.278">
     </testcase>
-    <testcase classname="Cloudinary Routes POST /api/cloudinary/signature debe rechazar request sin datos requeridos" name="Cloudinary Routes POST /api/cloudinary/signature debe rechazar request sin datos requeridos" time="0.031">
+    <testcase classname="Flujo completo: Métricas y Estadísticas debe obtener métricas de usuario" name="Flujo completo: Métricas y Estadísticas debe obtener métricas de usuario" time="0.264">
+    </testcase>
+    <testcase classname="Flujo completo: Métricas y Estadísticas debe obtener estadísticas de progreso" name="Flujo completo: Métricas y Estadísticas debe obtener estadísticas de progreso" time="0.23">
+    </testcase>
+    <testcase classname="Flujo completo: Métricas y Estadísticas debe obtener métricas de actividad" name="Flujo completo: Métricas y Estadísticas debe obtener métricas de actividad" time="0.222">
+    </testcase>
+    <testcase classname="Flujo completo: Métricas y Estadísticas debe validar autenticación para endpoints de métricas" name="Flujo completo: Métricas y Estadísticas debe validar autenticación para endpoints de métricas" time="0.218">
+    </testcase>
+    <testcase classname="Flujo completo: Métricas y Estadísticas debe obtener estadísticas del usuario desde el perfil" name="Flujo completo: Métricas y Estadísticas debe obtener estadísticas del usuario desde el perfil" time="0.247">
     </testcase>
   </testsuite>
-  <testsuite name="Auth Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-08T15:29:02" time="10.07" tests="12">
-    <testcase classname="Auth Routes POST /api/auth/register debe registrar un nuevo usuario con datos válidos" name="Auth Routes POST /api/auth/register debe registrar un nuevo usuario con datos válidos" time="0.186">
+  <testsuite name="Flujo completo: Técnicas Terapéuticas" errors="0" failures="0" skipped="0" timestamp="2025-12-09T16:38:22" time="4.126" tests="6">
+    <testcase classname="Flujo completo: Técnicas Terapéuticas debe obtener técnicas terapéuticas disponibles" name="Flujo completo: Técnicas Terapéuticas debe obtener técnicas terapéuticas disponibles" time="0.28">
     </testcase>
-    <testcase classname="Auth Routes POST /api/auth/register debe rechazar registro con datos inválidos" name="Auth Routes POST /api/auth/register debe rechazar registro con datos inválidos" time="0.035">
+    <testcase classname="Flujo completo: Técnicas Terapéuticas debe obtener técnicas por emoción" name="Flujo completo: Técnicas Terapéuticas debe obtener técnicas por emoción" time="0.268">
     </testcase>
-    <testcase classname="Auth Routes POST /api/auth/register debe rechazar registro con email duplicado" name="Auth Routes POST /api/auth/register debe rechazar registro con email duplicado" time="2.515">
+    <testcase classname="Flujo completo: Técnicas Terapéuticas debe registrar uso de técnica terapéutica" name="Flujo completo: Técnicas Terapéuticas debe registrar uso de técnica terapéutica" time="0.229">
     </testcase>
-    <testcase classname="Auth Routes POST /api/auth/register debe rechazar registro con username duplicado" name="Auth Routes POST /api/auth/register debe rechazar registro con username duplicado" time="2.184">
+    <testcase classname="Flujo completo: Técnicas Terapéuticas debe obtener estadísticas de uso de técnicas" name="Flujo completo: Técnicas Terapéuticas debe obtener estadísticas de uso de técnicas" time="0.565">
     </testcase>
-    <testcase classname="Auth Routes POST /api/auth/register debe rechazar registro sin campos requeridos" name="Auth Routes POST /api/auth/register debe rechazar registro sin campos requeridos" time="2.038">
+    <testcase classname="Flujo completo: Técnicas Terapéuticas debe obtener técnicas más usadas" name="Flujo completo: Técnicas Terapéuticas debe obtener técnicas más usadas" time="0.269">
     </testcase>
-    <testcase classname="Auth Routes POST /api/auth/login debe hacer login con credenciales válidas" name="Auth Routes POST /api/auth/login debe hacer login con credenciales válidas" time="0.037">
+    <testcase classname="Flujo completo: Técnicas Terapéuticas debe validar autenticación para endpoints de técnicas" name="Flujo completo: Técnicas Terapéuticas debe validar autenticación para endpoints de técnicas" time="0.239">
     </testcase>
-    <testcase classname="Auth Routes POST /api/auth/login debe rechazar login con email incorrecto" name="Auth Routes POST /api/auth/login debe rechazar login con email incorrecto" time="0.017">
+  </testsuite>
+  <testsuite name="Flujo completo: Registro de Usuario" errors="0" failures="0" skipped="0" timestamp="2025-12-09T16:38:20" time="6.496" tests="3">
+    <testcase classname="Flujo completo: Registro de Usuario debe completar el flujo completo de registro de usuario" name="Flujo completo: Registro de Usuario debe completar el flujo completo de registro de usuario" time="3.403">
     </testcase>
-    <testcase classname="Auth Routes POST /api/auth/login debe rechazar login con password incorrecto" name="Auth Routes POST /api/auth/login debe rechazar login con password incorrecto" time="0.012">
+    <testcase classname="Flujo completo: Registro de Usuario debe manejar errores en el flujo de registro" name="Flujo completo: Registro de Usuario debe manejar errores en el flujo de registro" time="0.149">
     </testcase>
-    <testcase classname="Auth Routes POST /api/auth/login debe rechazar login sin campos requeridos" name="Auth Routes POST /api/auth/login debe rechazar login sin campos requeridos" time="0.015">
+    <testcase classname="Flujo completo: Registro de Usuario debe validar datos requeridos en el registro" name="Flujo completo: Registro de Usuario debe validar datos requeridos en el registro" time="0.035">
     </testcase>
-    <testcase classname="Auth Routes GET /api/users/me debe retornar información del usuario autenticado" name="Auth Routes GET /api/users/me debe retornar información del usuario autenticado" time="0.024">
+  </testsuite>
+  <testsuite name="Flujo completo: Tareas y Hábitos" errors="0" failures="0" skipped="0" timestamp="2025-12-09T16:38:24" time="3.83" tests="4">
+    <testcase classname="Flujo completo: Tareas y Hábitos debe crear y completar una tarea" name="Flujo completo: Tareas y Hábitos debe crear y completar una tarea" time="0.733">
     </testcase>
-    <testcase classname="Auth Routes GET /api/users/me debe rechazar request sin token" name="Auth Routes GET /api/users/me debe rechazar request sin token" time="0.02">
+    <testcase classname="Flujo completo: Tareas y Hábitos debe crear y actualizar un hábito" name="Flujo completo: Tareas y Hábitos debe crear y actualizar un hábito" time="0.365">
     </testcase>
-    <testcase classname="Auth Routes GET /api/users/me debe rechazar request con token inválido" name="Auth Routes GET /api/users/me debe rechazar request con token inválido" time="0.017">
+    <testcase classname="Flujo completo: Tareas y Hábitos debe obtener estadísticas de tareas y hábitos" name="Flujo completo: Tareas y Hábitos debe obtener estadísticas de tareas y hábitos" time="0.467">
+    </testcase>
+    <testcase classname="Flujo completo: Tareas y Hábitos debe validar permisos de acceso a tareas y hábitos" name="Flujo completo: Tareas y Hábitos debe validar permisos de acceso a tareas y hábitos" time="0.483">
+    </testcase>
+  </testsuite>
+  <testsuite name="Auth Routes" errors="0" failures="1" skipped="0" timestamp="2025-12-09T16:38:19" time="10.707" tests="12">
+    <testcase classname="Auth Routes POST /api/auth/register debe registrar un nuevo usuario con datos válidos" name="Auth Routes POST /api/auth/register debe registrar un nuevo usuario con datos válidos" time="0.379">
+    </testcase>
+    <testcase classname="Auth Routes POST /api/auth/register debe rechazar registro con datos inválidos" name="Auth Routes POST /api/auth/register debe rechazar registro con datos inválidos" time="0.079">
+    </testcase>
+    <testcase classname="Auth Routes POST /api/auth/register debe rechazar registro con email duplicado" name="Auth Routes POST /api/auth/register debe rechazar registro con email duplicado" time="2.053">
+    </testcase>
+    <testcase classname="Auth Routes POST /api/auth/register debe rechazar registro con username duplicado" name="Auth Routes POST /api/auth/register debe rechazar registro con username duplicado" time="2.072">
+    </testcase>
+    <testcase classname="Auth Routes POST /api/auth/register debe rechazar registro sin campos requeridos" name="Auth Routes POST /api/auth/register debe rechazar registro sin campos requeridos" time="2.16">
+    </testcase>
+    <testcase classname="Auth Routes POST /api/auth/login debe hacer login con credenciales válidas" name="Auth Routes POST /api/auth/login debe hacer login con credenciales válidas" time="0.314">
+    </testcase>
+    <testcase classname="Auth Routes POST /api/auth/login debe rechazar login con email incorrecto" name="Auth Routes POST /api/auth/login debe rechazar login con email incorrecto" time="0.075">
+    </testcase>
+    <testcase classname="Auth Routes POST /api/auth/login debe rechazar login con password incorrecto" name="Auth Routes POST /api/auth/login debe rechazar login con password incorrecto" time="0.073">
+    </testcase>
+    <testcase classname="Auth Routes POST /api/auth/login debe rechazar login sin campos requeridos" name="Auth Routes POST /api/auth/login debe rechazar login sin campos requeridos" time="0.072">
+    </testcase>
+    <testcase classname="Auth Routes GET /api/users/me debe retornar información del usuario autenticado" name="Auth Routes GET /api/users/me debe retornar información del usuario autenticado" time="0.082">
+      <failure>Error: expected 200 &quot;OK&quot;, got 500 &quot;Internal Server Error&quot;
+    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/integration/routes/auth.test.js:245:10)
+    at Promise.then.completed (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:121:9)
+    at run (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/Users/marceloull/Documents/Anto/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/Users/marceloull/Documents/Anto/backend/node_modules/jest-runner/build/testWorker.js:106:12)
+----
+    at Test._assertStatus (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:309:14)
+    at /Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:365:13
+    at Test._assertFunction (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:342:13)
+    at Test.assert (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:195:23)
+    at localAssert (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:138:14)
+    at Server.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/node_modules/supertest/lib/test.js:152:11)
+    at Object.onceWrapper (node:events:638:28)
+    at Server.emit (node:events:524:28)
+    at emitCloseNT (node:net:2383:8)
+    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
+    </testcase>
+    <testcase classname="Auth Routes GET /api/users/me debe rechazar request sin token" name="Auth Routes GET /api/users/me debe rechazar request sin token" time="0.116">
+    </testcase>
+    <testcase classname="Auth Routes GET /api/users/me debe rechazar request con token inválido" name="Auth Routes GET /api/users/me debe rechazar request con token inválido" time="0.072">
+    </testcase>
+  </testsuite>
+  <testsuite name="Payment Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-09T16:38:26" time="3.735" tests="8">
+    <testcase classname="Payment Routes GET /api/payments/plans debe obtener información de los planes disponibles" name="Payment Routes GET /api/payments/plans debe obtener información de los planes disponibles" time="0.26">
+    </testcase>
+    <testcase classname="Payment Routes GET /api/payments/plans no debe requerir autenticación" name="Payment Routes GET /api/payments/plans no debe requerir autenticación" time="0.123">
+    </testcase>
+    <testcase classname="Payment Routes GET /api/payments/subscription-status debe obtener el estado de la suscripción del usuario" name="Payment Routes GET /api/payments/subscription-status debe obtener el estado de la suscripción del usuario" time="0.078">
+    </testcase>
+    <testcase classname="Payment Routes GET /api/payments/subscription-status debe rechazar request sin autenticación" name="Payment Routes GET /api/payments/subscription-status debe rechazar request sin autenticación" time="0.032">
+    </testcase>
+    <testcase classname="Payment Routes GET /api/payments/transactions debe obtener las transacciones del usuario" name="Payment Routes GET /api/payments/transactions debe obtener las transacciones del usuario" time="0.061">
+    </testcase>
+    <testcase classname="Payment Routes GET /api/payments/transactions debe rechazar request sin autenticación" name="Payment Routes GET /api/payments/transactions debe rechazar request sin autenticación" time="0.115">
+    </testcase>
+    <testcase classname="Payment Routes GET /api/payments/transactions/stats debe obtener estadísticas de transacciones" name="Payment Routes GET /api/payments/transactions/stats debe obtener estadísticas de transacciones" time="0.099">
+    </testcase>
+    <testcase classname="Payment Routes GET /api/payments/transactions/stats debe rechazar request sin autenticación" name="Payment Routes GET /api/payments/transactions/stats debe rechazar request sin autenticación" time="0.058">
+    </testcase>
+  </testsuite>
+  <testsuite name="Flujo completo: Detección y Manejo de Crisis" errors="0" failures="0" skipped="0" timestamp="2025-12-09T16:38:26" time="4.381" tests="4">
+    <testcase classname="Flujo completo: Detección y Manejo de Crisis debe detectar y registrar un evento de crisis" name="Flujo completo: Detección y Manejo de Crisis debe detectar y registrar un evento de crisis" time="0.442">
+    </testcase>
+    <testcase classname="Flujo completo: Detección y Manejo de Crisis debe obtener estadísticas de crisis" name="Flujo completo: Detección y Manejo de Crisis debe obtener estadísticas de crisis" time="0.275">
+    </testcase>
+    <testcase classname="Flujo completo: Detección y Manejo de Crisis debe obtener eventos de crisis recientes" name="Flujo completo: Detección y Manejo de Crisis debe obtener eventos de crisis recientes" time="0.365">
+    </testcase>
+    <testcase classname="Flujo completo: Detección y Manejo de Crisis debe filtrar eventos de crisis por nivel de riesgo" name="Flujo completo: Detección y Manejo de Crisis debe filtrar eventos de crisis por nivel de riesgo" time="0.403">
+    </testcase>
+  </testsuite>
+  <testsuite name="Health Check Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-09T16:38:26" time="4.092" tests="4">
+    <testcase classname="Health Check Routes GET /health debe retornar información de salud (puede ser 200 o 503 dependiendo de MongoDB)" name="Health Check Routes GET /health debe retornar información de salud (puede ser 200 o 503 dependiendo de MongoDB)" time="0.033">
+    </testcase>
+    <testcase classname="Health Check Routes GET /health debe incluir información de servicios" name="Health Check Routes GET /health debe incluir información de servicios" time="0.003">
+    </testcase>
+    <testcase classname="Health Check Routes GET /health debe retornar status 200 si MongoDB está conectado" name="Health Check Routes GET /health debe retornar status 200 si MongoDB está conectado" time="1.036">
+    </testcase>
+    <testcase classname="Health Check Routes GET / debe retornar mensaje de servidor corriendo" name="Health Check Routes GET / debe retornar mensaje de servidor corriendo" time="0.013">
+    </testcase>
+  </testsuite>
+  <testsuite name="Cloudinary Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-09T16:38:27" time="3.519" tests="2">
+    <testcase classname="Cloudinary Routes POST /api/cloudinary/signature debe rechazar request sin autenticación" name="Cloudinary Routes POST /api/cloudinary/signature debe rechazar request sin autenticación" time="0.187">
+    </testcase>
+    <testcase classname="Cloudinary Routes POST /api/cloudinary/signature debe rechazar request sin datos requeridos" name="Cloudinary Routes POST /api/cloudinary/signature debe rechazar request sin datos requeridos" time="0.124">
+    </testcase>
+  </testsuite>
+  <testsuite name="Flujo completo: Suscripción y Pago" errors="0" failures="0" skipped="0" timestamp="2025-12-09T16:38:27" time="4.781" tests="5">
+    <testcase classname="Flujo completo: Suscripción y Pago debe obtener los planes disponibles" name="Flujo completo: Suscripción y Pago debe obtener los planes disponibles" time="0.393">
+    </testcase>
+    <testcase classname="Flujo completo: Suscripción y Pago debe obtener información de trial" name="Flujo completo: Suscripción y Pago debe obtener información de trial" time="0.332">
+    </testcase>
+    <testcase classname="Flujo completo: Suscripción y Pago debe obtener el estado de suscripción del usuario" name="Flujo completo: Suscripción y Pago debe obtener el estado de suscripción del usuario" time="0.298">
+    </testcase>
+    <testcase classname="Flujo completo: Suscripción y Pago debe obtener historial de transacciones" name="Flujo completo: Suscripción y Pago debe obtener historial de transacciones" time="0.238">
+    </testcase>
+    <testcase classname="Flujo completo: Suscripción y Pago debe validar autenticación para endpoints de pago" name="Flujo completo: Suscripción y Pago debe validar autenticación para endpoints de pago" time="0.237">
+    </testcase>
+  </testsuite>
+  <testsuite name="Flujo completo: Notificaciones" errors="0" failures="0" skipped="0" timestamp="2025-12-09T16:38:29" time="3.87" tests="5">
+    <testcase classname="Flujo completo: Notificaciones debe registrar token de notificación push" name="Flujo completo: Notificaciones debe registrar token de notificación push" time="0.288">
+    </testcase>
+    <testcase classname="Flujo completo: Notificaciones debe obtener estado de notificaciones" name="Flujo completo: Notificaciones debe obtener estado de notificaciones" time="0.23">
+    </testcase>
+    <testcase classname="Flujo completo: Notificaciones debe obtener estadísticas de engagement de notificaciones" name="Flujo completo: Notificaciones debe obtener estadísticas de engagement de notificaciones" time="0.237">
+    </testcase>
+    <testcase classname="Flujo completo: Notificaciones debe validar autenticación para endpoints de notificaciones" name="Flujo completo: Notificaciones debe validar autenticación para endpoints de notificaciones" time="0.247">
+    </testcase>
+    <testcase classname="Flujo completo: Notificaciones debe actualizar preferencias de notificaciones del usuario" name="Flujo completo: Notificaciones debe actualizar preferencias de notificaciones del usuario" time="0.251">
+    </testcase>
+  </testsuite>
+  <testsuite name="Therapeutic Techniques Routes" errors="0" failures="0" skipped="0" timestamp="2025-12-09T16:38:30" time="2.983" tests="5">
+    <testcase classname="Therapeutic Techniques Routes GET /api/therapeutic-techniques debe obtener todas las técnicas terapéuticas disponibles" name="Therapeutic Techniques Routes GET /api/therapeutic-techniques debe obtener todas las técnicas terapéuticas disponibles" time="0.046">
+    </testcase>
+    <testcase classname="Therapeutic Techniques Routes GET /api/therapeutic-techniques debe rechazar request sin autenticación" name="Therapeutic Techniques Routes GET /api/therapeutic-techniques debe rechazar request sin autenticación" time="0.02">
+    </testcase>
+    <testcase classname="Therapeutic Techniques Routes GET /api/therapeutic-techniques/emotion/:emotion debe obtener técnicas filtradas por emoción" name="Therapeutic Techniques Routes GET /api/therapeutic-techniques/emotion/:emotion debe obtener técnicas filtradas por emoción" time="0.015">
+    </testcase>
+    <testcase classname="Therapeutic Techniques Routes GET /api/therapeutic-techniques/history debe obtener historial de técnicas utilizadas" name="Therapeutic Techniques Routes GET /api/therapeutic-techniques/history debe obtener historial de técnicas utilizadas" time="0.031">
+    </testcase>
+    <testcase classname="Therapeutic Techniques Routes GET /api/therapeutic-techniques/stats debe obtener estadísticas de técnicas" name="Therapeutic Techniques Routes GET /api/therapeutic-techniques/stats debe obtener estadísticas de técnicas" time="0.712">
     </testcase>
   </testsuite>
 </testsuites>

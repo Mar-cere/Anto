@@ -152,13 +152,16 @@ const resetPasswordSchema = Joi.object({
 
 // Funciones helper
 const generateTokens = async (userId, role = 'user') => {
+  // Asegurar que userId sea un string válido
+  const userIdString = userId?.toString() || userId;
+  
   const accessToken = jwt.sign(
-    { userId, role },
+    { userId: userIdString, _id: userIdString, role },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   );
   const refreshToken = jwt.sign(
-    { userId, role, type: 'refresh' },
+    { userId: userIdString, _id: userIdString, role, type: 'refresh' },
     process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
     { expiresIn: '30d' }
   );

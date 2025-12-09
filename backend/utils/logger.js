@@ -63,28 +63,56 @@ const transports = [
   }),
 ];
 
-// En producción, también guardar en archivos
+// En producción, también guardar en archivos con rotación mejorada
 if (!isDevelopment) {
-  // Logs de error
+  // Logs de error (solo errores críticos)
   transports.push(
     new winston.transports.File({
       filename: path.join(__dirname, '../../logs/error.log'),
       level: 'error',
       format: productionFormat,
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
+      maxsize: 10485760, // 10MB (aumentado)
+      maxFiles: 10, // Mantener más archivos
+      tailable: true, // Archivos más recientes primero
     })
   );
 
-  // Logs combinados
+  // Logs de warning (errores y advertencias)
+  transports.push(
+    new winston.transports.File({
+      filename: path.join(__dirname, '../../logs/warn.log'),
+      level: 'warn',
+      format: productionFormat,
+      maxsize: 10485760, // 10MB
+      maxFiles: 10,
+      tailable: true,
+    })
+  );
+
+  // Logs combinados (todos los niveles)
   transports.push(
     new winston.transports.File({
       filename: path.join(__dirname, '../../logs/combined.log'),
       format: productionFormat,
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
+      maxsize: 10485760, // 10MB
+      maxFiles: 10,
+      tailable: true,
     })
   );
+
+  // Logs de performance (solo en producción si está habilitado)
+  if (process.env.LOG_PERFORMANCE === 'true') {
+    transports.push(
+      new winston.transports.File({
+        filename: path.join(__dirname, '../../logs/performance.log'),
+        level: 'http',
+        format: productionFormat,
+        maxsize: 10485760, // 10MB
+        maxFiles: 5,
+        tailable: true,
+      })
+    );
+  }
 }
 
 // Crear el logger
@@ -190,6 +218,25 @@ const extendedLogger = {
   // Log de pago
   payment: (event, meta = {}) => {
     logger.info(`Payment: ${event}`, sanitizeData(meta));
+  },
+
+  // Log de error crítico (para alertas)
+  critical: (message, meta = {}) => {
+    logger.error(`🚨 CRITICAL: ${message}`, sanitizeData(meta));
+    
+    // En producción, también enviar a Sentry si está configurado
+    if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
+      try {
+        const { captureException, captureMessage } = require('./sentry.js');
+        if (meta.error) {
+          captureException(meta.error, meta);
+        } else {
+          captureMessage(message, 'error', meta);
+        }
+      } catch (err) {
+        // Si Sentry no está disponible, continuar sin error
+      }
+    }
   },
 };
 

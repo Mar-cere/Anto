@@ -64,7 +64,7 @@ describe('Flujo completo: Detección y Manejo de Crisis', () => {
     });
 
     authToken = jwt.sign(
-      { userId: testUser._id.toString() },
+      { userId: testUser._id.toString(), _id: testUser._id.toString() },
       process.env.JWT_SECRET || 'test-secret-key-for-jwt-signing-min-32-chars',
       { expiresIn: '1h' }
     );

@@ -11,6 +11,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import { validateUserObjectId } from '../middleware/validation.js';
 import User from '../models/User.js';
 import logger from '../utils/logger.js';
+import cacheService from '../services/cacheService.js';
 
 // Helper para validar ObjectId
 const isValidObjectId = (id) => {
@@ -197,7 +198,22 @@ const updatePasswordSchema = Joi.object({
 // Obtener datos del usuario actual
 router.get('/me', authenticateToken, validateUserObjectId, async (req, res) => {
   try {
-    const user = await findUserById(req.user._id, '-password -salt -__v -resetPasswordCode -resetPasswordExpires', true);
+    // Asegurar que tenemos un userId válido
+    const userId = req.user?._id || req.user?.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'Usuario no autenticado' });
+    }
+
+    // Intentar obtener del caché primero
+    const cacheKey = cacheService.generateKey('user', userId);
+    const cachedUser = await cacheService.get(cacheKey);
+    
+    if (cachedUser) {
+      return res.json(cachedUser);
+    }
+
+    const user = await findUserById(userId, '-password -salt -__v -resetPasswordCode -resetPasswordExpires', true);
     
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
@@ -214,13 +230,18 @@ router.get('/me', authenticateToken, validateUserObjectId, async (req, res) => {
     // Calcular días desde el registro
     const daysSinceRegistration = calculateDaysSince(user.createdAt);
 
-    res.json({
+    const userResponse = {
       ...user,
       timeSinceLastLogin,
       daysSinceRegistration
-    });
+    };
+
+    // Guardar en caché por 5 minutos
+    await cacheService.set(cacheKey, userResponse, 300);
+
+    res.json(userResponse);
   } catch (error) {
-    logger.error('Error al obtener usuario', { error: error.message, userId: req.user._id });
+    logger.error('Error al obtener usuario', { error: error.message, userId: req.user?._id || req.user?.userId });
     res.status(500).json({ 
       message: 'Error al obtener datos del usuario',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -266,6 +287,12 @@ router.get('/me/stats', authenticateToken, validateUserObjectId, async (req, res
 // Actualizar perfil del usuario
 router.put('/me', authenticateToken, validateUserObjectId, updateProfileLimiter, async (req, res) => {
   try {
+    const userId = req.user?._id || req.user?.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'Usuario no autenticado' });
+    }
+
     // Validar datos de entrada
     const { error, value } = updateProfileSchema.validate(req.body, { stripUnknown: true });
     if (error) {
@@ -275,7 +302,7 @@ router.put('/me', authenticateToken, validateUserObjectId, updateProfileLimiter,
       });
     }
 
-    const user = await findUserById(req.user._id);
+    const user = await findUserById(userId);
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
@@ -319,6 +346,10 @@ router.put('/me', authenticateToken, validateUserObjectId, updateProfileLimiter,
     // Guardar (Mongoose timestamps maneja updatedAt automáticamente)
     await user.save();
 
+    // Invalidar caché del usuario
+    const userId = req.user?._id || req.user?.userId;
+    await cacheService.invalidateUserCache(userId);
+
     res.json({
       message: 'Perfil actualizado correctamente',
       user: user.toJSON()
@@ -335,6 +366,12 @@ router.put('/me', authenticateToken, validateUserObjectId, updateProfileLimiter,
 // Cambiar contraseña del usuario
 router.put('/me/password', authenticateToken, validateUserObjectId, updateProfileLimiter, async (req, res) => {
   try {
+    const userId = req.user?._id || req.user?.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'Usuario no autenticado' });
+    }
+
     const { error, value } = updatePasswordSchema.validate(req.body, { stripUnknown: true });
     if (error) {
       return res.status(400).json({
@@ -345,7 +382,7 @@ router.put('/me/password', authenticateToken, validateUserObjectId, updateProfil
 
     const { currentPassword, newPassword } = value;
 
-    const user = await findUserById(req.user._id);
+    const user = await findUserById(userId);
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
@@ -505,12 +542,18 @@ const emergencyContactSchema = Joi.object({
 // Obtener contactos de emergencia del usuario
 router.get('/me/emergency-contacts', authenticateToken, validateUserObjectId, async (req, res) => {
   try {
-    // Asegurar que req.user._id sea un ObjectId válido
-    const userId = mongoose.Types.ObjectId.isValid(req.user._id) 
-      ? new mongoose.Types.ObjectId(req.user._id) 
-      : req.user._id;
+    const userId = req.user?._id || req.user?.userId;
     
-    const user = await User.findById(userId).select('emergencyContacts');
+    if (!userId) {
+      return res.status(401).json({ message: 'Usuario no autenticado' });
+    }
+    
+    // Asegurar que req.user._id sea un ObjectId válido
+    const userIdObjectId = mongoose.Types.ObjectId.isValid(userId) 
+      ? new mongoose.Types.ObjectId(userId) 
+      : userId;
+    
+    const user = await User.findById(userIdObjectId).select('emergencyContacts');
     
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });

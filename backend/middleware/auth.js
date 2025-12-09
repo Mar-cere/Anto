@@ -78,19 +78,31 @@ export async function authenticateToken(req, res, next) {
   try {
     const decoded = verifyToken(token);
     
+    // Obtener userId del token (puede estar en userId o _id)
+    const userId = decoded.userId || decoded._id;
+    
+    if (!userId) {
+      return res.status(HTTP_UNAUTHORIZED).json({ 
+        message: ERROR_MESSAGES.TOKEN_INVALID 
+      });
+    }
+    
     // Si el token tiene rol, usarlo; si no, obtenerlo de la BD
     let userRole = decoded.role;
     if (!userRole) {
       // Importar User dinámicamente para evitar dependencias circulares
       const User = (await import('../models/User.js')).default;
-      const user = await User.findById(decoded.userId).select('role').lean();
+      const user = await User.findById(userId).select('role').lean();
       userRole = user?.role || 'user';
     }
     
+    // Asegurar que userId sea un string válido
+    const userIdString = userId.toString();
+    
     // Asignar ambos campos para compatibilidad
     req.user = { 
-      _id: decoded.userId, 
-      userId: decoded.userId,
+      _id: userIdString, 
+      userId: userIdString,
       role: userRole
     };
     next();

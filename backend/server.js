@@ -21,6 +21,8 @@ import morgan from 'morgan';
 import config from './config/config.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { sanitizeAll } from './middleware/sanitizeInput.js';
+import { performanceMiddleware } from './middleware/performance.js';
+import { ensureIndexes } from './middleware/queryOptimizer.js';
 import logger from './utils/logger.js';
 import { initializeSentry } from './utils/sentry.js';
 
@@ -101,8 +103,19 @@ logger.info('🔧 Inicializando servidor...');
 logger.info(`📋 Puerto configurado: ${PORT}`);
 logger.info(`🌍 Ambiente: ${config.app.environment}`);
 
-// Configuración de proxy (necesario para rate limiting detrás de proxy)
+// Configuración de proxy (necesario para rate limiting detrás de proxy y SSL)
 app.set('trust proxy', 1);
+
+// Redirección HTTP → HTTPS en producción
+if (config.app.environment === 'production') {
+  app.use((req, res, next) => {
+    // Verificar si la petición es HTTP y no es un health check
+    if (req.header('x-forwarded-proto') !== 'https' && req.path !== '/health') {
+      return res.redirect(301, `https://${req.header('host')}${req.url}`);
+    }
+    next();
+  });
+}
 
 // Ruta de prueba simple (lo más básico posible)
 app.get('/', (req, res) => {
@@ -145,8 +158,29 @@ app.get('/health', (req, res) => {
 logger.info('✅ Rutas / y /health registradas');
 
 // Configuración de seguridad básica
+// Configuración de Helmet con opciones de seguridad mejoradas
 app.use(helmet({
-  contentSecurityPolicy: false // Desactivar CSP para APIs
+  contentSecurityPolicy: config.app.environment === 'production' ? {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  } : false, // Desactivar CSP en desarrollo para facilitar debugging
+  hsts: config.app.environment === 'production' ? {
+    maxAge: 31536000, // 1 año
+    includeSubDomains: true,
+    preload: true
+  } : false, // Solo en producción
+  noSniff: true,
+  xssFilter: true,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 
 // Configuración de CORS
@@ -187,6 +221,9 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// Middleware de performance (medir tiempos de respuesta)
+app.use(performanceMiddleware);
 
 // Middlewares de parsing
 app.use(express.json());
@@ -265,9 +302,17 @@ const connectMongoDB = async () => {
     logger.info('✅ Conexión exitosa a MongoDB');
     logger.info(`📊 Base de datos: ${mongoose.connection.name || 'default'}`);
     
+    // Asegurar índices después de conectar
+    try {
+      await ensureIndexes();
+    } catch (error) {
+      logger.warn('Error al crear índices:', { error: error.message });
+    }
+    
     // Manejar eventos de conexión
     mongoose.connection.on('error', (err) => {
       logger.error('❌ Error en la conexión de MongoDB', { error: err.message });
+      logger.critical('Error crítico de base de datos', { error: err });
     });
 
     mongoose.connection.on('disconnected', () => {

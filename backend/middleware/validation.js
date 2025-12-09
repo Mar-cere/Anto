@@ -49,8 +49,20 @@ export const validateObjectId = (req, res, next) => {
 export const validateUserObjectId = (req, res, next) => {
   const userId = req.user?._id || req.user?.userId;
 
+  if (!userId) {
+    return sendValidationError(res, ERROR_MESSAGES.INVALID_USER_ID);
+  }
+
   if (!isValidObjectId(userId)) {
     return sendValidationError(res, ERROR_MESSAGES.INVALID_USER_ID);
+  }
+
+  // Asegurar que req.user tenga ambos campos
+  if (req.user && !req.user._id) {
+    req.user._id = userId;
+  }
+  if (req.user && !req.user.userId) {
+    req.user.userId = userId;
   }
 
   next();
