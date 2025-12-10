@@ -8,6 +8,7 @@
  */
 
 import logger from '../utils/logger.js';
+import mongoose from 'mongoose';
 import {
   AppError,
   ValidationError,
@@ -55,9 +56,18 @@ export const errorHandler = (err, req, res, next) => {
     err.message.includes('Server selection timed out')
   )) {
     // Verificar estado de MongoDB de forma síncrona
-    const isConnected = mongoose.connection.readyState === 1;
-    
-    if (!isConnected) {
+    try {
+      const isConnected = mongoose.connection && mongoose.connection.readyState === 1;
+      
+      if (!isConnected) {
+        const appError = new ExternalServiceError(
+          'MongoDB',
+          'Servicio temporalmente no disponible. La base de datos no está conectada.'
+        );
+        return sendErrorResponse(res, appError, req);
+      }
+    } catch (mongooseError) {
+      // Si hay error al verificar mongoose, asumir que no está conectado
       const appError = new ExternalServiceError(
         'MongoDB',
         'Servicio temporalmente no disponible. La base de datos no está conectada.'

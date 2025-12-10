@@ -324,6 +324,22 @@ router.get('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Error al obtener hábitos:', error);
+    
+    // Verificar si es un error de conexión de MongoDB
+    if (error.message && (
+      error.message.includes('MongoServerSelectionError') ||
+      error.message.includes('MongoNetworkError') ||
+      error.message.includes('MongoTimeoutError') ||
+      error.message.includes('connection') ||
+      error.message.includes('connect ECONNREFUSED')
+    )) {
+      return res.status(503).json({ 
+        success: false,
+        message: 'Servicio temporalmente no disponible. La base de datos no está conectada.',
+        error: 'DATABASE_CONNECTION_ERROR'
+      });
+    }
+    
     res.status(500).json({ 
       success: false,
       message: 'Error al obtener los hábitos', 

@@ -236,13 +236,34 @@ router.get('/me', authenticateToken, validateUserObjectId, async (req, res) => {
       daysSinceRegistration
     };
 
-    // Guardar en caché por 5 minutos
-    await cacheService.set(cacheKey, userResponse, 300);
+    // Guardar en caché por 5 minutos (no crítico si falla)
+    try {
+      await cacheService.set(cacheKey, userResponse, 300);
+    } catch (cacheError) {
+      logger.warn('Error al guardar en caché', { error: cacheError.message });
+    }
 
     res.json(userResponse);
   } catch (error) {
     logger.error('Error al obtener usuario', { error: error.message, userId: req.user?._id || req.user?.userId });
+    
+    // Verificar si es un error de conexión de MongoDB
+    if (error.message && (
+      error.message.includes('MongoServerSelectionError') ||
+      error.message.includes('MongoNetworkError') ||
+      error.message.includes('MongoTimeoutError') ||
+      error.message.includes('connection') ||
+      error.message.includes('connect ECONNREFUSED')
+    )) {
+      return res.status(503).json({ 
+        success: false,
+        message: 'Servicio temporalmente no disponible. La base de datos no está conectada.',
+        error: 'DATABASE_CONNECTION_ERROR'
+      });
+    }
+    
     res.status(500).json({ 
+      success: false,
       message: 'Error al obtener datos del usuario',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
