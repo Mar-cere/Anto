@@ -11,7 +11,7 @@ const REQUIRED_ENV_VARS = ['OPENAI_API_KEY', 'MONGO_URI', 'JWT_SECRET'];
 // Constantes de valores por defecto
 const DEFAULT_PORT = 5000;
 const DEFAULT_ENVIRONMENT = 'development';
-const DEFAULT_OPENAI_MODEL = 'gpt-5-turbo';
+const DEFAULT_OPENAI_MODEL = 'gpt-4.1-turbo';
 const DEFAULT_JWT_EXPIRES_IN = '24h';
 
 // Constantes de configuración de OpenAI

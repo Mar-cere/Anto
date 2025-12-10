@@ -548,7 +548,7 @@ class UserProfileService {
       };
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-5-turbo',
+        model: 'gpt-4.1-turbo',
         messages: [
           {
             role: 'system',

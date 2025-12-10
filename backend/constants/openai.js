@@ -13,7 +13,7 @@
 // ========== CONFIGURACIÓN DEL MODELO ==========
 
 // Modelo de OpenAI a utilizar
-export const OPENAI_MODEL = 'gpt-5-turbo';
+export const OPENAI_MODEL = 'gpt-4.1';
 
 // ========== LONGITUDES DE RESPUESTA (tokens) ==========
 // Valores optimizados para conversaciones naturales (1-2 oraciones máximo)
