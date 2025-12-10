@@ -46,7 +46,7 @@ class EmotionalAnalyzer {
     // Patrones de detección emocional
     this.emotionPatterns = {
       tristeza: {
-        patterns: /(?:triste(?:za)?|deprimi(?:do|da|r)|sin energía|desánimo|desmotiva(?:do|da|r)|solo|soledad|melancolía|nostalgia|abatid(?:o|a)|desesperanzad(?:o|a)|desconsolad(?:o|a)|llor(?:o|ar|ando)|llanto|vacío|vacío interior|sin ganas|sin ánimo|desgana|apático|apatía|hundid(?:o|a)|caíd(?:o|a)|desilusionad(?:o|a)|desencantad(?:o|a)|no.*tengo.*ganas|no.*me.*motiva|me.*siento.*mal(?!.*genial)|no.*me.*siento.*bien|estoy.*mal(?!.*genial)|me.*va.*mal|me.*siento.*peor|estoy.*peor|peor.*que|me.*siento.*peor.*que|estoy.*peor.*que|peor.*que.*antes|estoy.*peor.*que.*antes|me.*siento.*peor.*que.*antes|tengo.*ganas.*de.*hacerme.*daño|quiero.*hacerme.*daño|me.*quiero.*cortar|quiero.*cortarme|me.*corto|me.*quemo|me.*golpeo|autolesi(?:ón|on|arme)|hacerme.*daño|hacerse.*daño|el.*dolor.*físico.*me.*hace.*sentir.*mejor.*que.*el.*dolor.*emocional|cicatrices.*de.*cuando.*me.*cortaba|necesito.*hacerme.*daño|urgencia.*de.*hacerme.*daño|no.*puedo.*dejar.*de.*pensar.*en.*hacerme.*daño|pensar.*en.*hacerme.*daño|sería.*mejor.*si.*no.*existiera|mejor.*si.*no.*existiera|pienso.*que.*sería.*mejor.*si.*no.*existiera|terminar.*con.*todo.*esto|pensado.*en.*cómo.*terminar|nadie.*me.*extrañaría.*si.*me.*fuera|me.*extrañaría.*si.*me.*fuera|no.*veo.*ninguna.*salida|sin.*salida|futuro.*se.*ve.*completamente.*negro|futuro.*negro|mi.*vida.*no.*puedo.*ser.*peor|mi.*vida.*no.*puede.*ser.*peor|ya.*no.*puedo.*más.*estoy.*al.*límite|estoy.*al.*límite|me.*siento.*desconectado.*de.*todos|desconectado.*de.*todos|estoy.*hecho.*polvo|hecho.*polvo|completamente.*destrozado|destrozado|extrañ(?:o|ar|o.*mucho)|ech(?:o|ar).*de.*menos|pérdida|duelo|ya.*no.*está|se.*fue|mur(?:ió|ió)|fallec(?:ió|ió)|falleció|despedida|despedir|abuela.*falleció|abuela.*murió|madre.*falleció|madre.*murió|padre.*falleció|padre.*murió|familiar.*falleció|familiar.*murió)/i,
+        patterns: /(?:triste(?:za)?|deprimi(?:do|da|r)|sin energía|desánimo|desmotiva(?:do|da|r)|(?:^|[^a-z])(?:solo|soledad)(?:[^a-z]|$)(?!.*estoy.*bien)(?!.*me.*siento.*bien)(?!.*todo.*bien)|melancolía|nostalgia|abatid(?:o|a)|desesperanzad(?:o|a)|desconsolad(?:o|a)|llor(?:o|ar|ando)|llanto|vacío|vacío interior|sin ganas|sin ánimo|desgana|apático|apatía|hundid(?:o|a)|caíd(?:o|a)|desilusionad(?:o|a)|desencantad(?:o|a)|no.*tengo.*ganas|no.*me.*motiva|me.*siento.*mal(?!.*genial)(?!.*bien)|no.*me.*siento.*bien|estoy.*mal(?!.*genial)(?!.*bien)|me.*va.*mal|me.*siento.*peor|estoy.*peor|peor.*que|me.*siento.*peor.*que|estoy.*peor.*que|peor.*que.*antes|estoy.*peor.*que.*antes|me.*siento.*peor.*que.*antes|tengo.*ganas.*de.*hacerme.*daño|quiero.*hacerme.*daño|me.*quiero.*cortar|quiero.*cortarme|me.*corto|me.*quemo|me.*golpeo|autolesi(?:ón|on|arme)|hacerme.*daño|hacerse.*daño|el.*dolor.*físico.*me.*hace.*sentir.*mejor.*que.*el.*dolor.*emocional|cicatrices.*de.*cuando.*me.*cortaba|necesito.*hacerme.*daño|urgencia.*de.*hacerme.*daño|no.*puedo.*dejar.*de.*pensar.*en.*hacerme.*daño|pensar.*en.*hacerme.*daño|sería.*mejor.*si.*no.*existiera|mejor.*si.*no.*existiera|pienso.*que.*sería.*mejor.*si.*no.*existiera|terminar.*con.*todo.*esto|pensado.*en.*cómo.*terminar|nadie.*me.*extrañaría.*si.*me.*fuera|me.*extrañaría.*si.*me.*fuera|no.*veo.*ninguna.*salida|sin.*salida|futuro.*se.*ve.*completamente.*negro|futuro.*negro|mi.*vida.*no.*puedo.*ser.*peor|mi.*vida.*no.*puede.*ser.*peor|ya.*no.*puedo.*más.*estoy.*al.*límite|estoy.*al.*límite|me.*siento.*desconectado.*de.*todos|desconectado.*de.*todos|estoy.*hecho.*polvo|hecho.*polvo|completamente.*destrozado|destrozado|extrañ(?:o|ar|o.*mucho)|ech(?:o|ar).*de.*menos|pérdida|duelo|ya.*no.*está|se.*fue|mur(?:ió|ió)|fallec(?:ió|ió)|falleció|despedida|despedir|abuela.*falleció|abuela.*murió|madre.*falleció|madre.*murió|padre.*falleció|padre.*murió|familiar.*falleció|familiar.*murió)/i,
         intensity: 7,
         category: 'negative'
       },
@@ -301,6 +301,35 @@ class EmotionalAnalyzer {
   detectPrimaryEmotion(content) {
     if (!this.isValidString(content)) {
       return this.getNeutralEmotion();
+    }
+    
+    // IMPORTANTE: Verificar primero frases positivas completas para evitar falsos positivos
+    // Esto previene que "solo estoy bien" se detecte como tristeza
+    const positivePhrases = [
+      /(?:^|[^a-z])(?:solo|solamente).*estoy.*bien/i,
+      /(?:^|[^a-z])(?:solo|solamente).*me.*siento.*bien/i,
+      /estoy.*bien/i,
+      /me.*siento.*bien/i,
+      /todo.*bien/i,
+      /está.*bien/i,
+      /están.*bien/i,
+      /muy.*bien/i,
+      /todo.*está.*bien/i
+    ];
+    
+    // Si el mensaje contiene una frase positiva clara, retornar neutral o alegría
+    for (const phrase of positivePhrases) {
+      if (phrase.test(content)) {
+        // Verificar que no haya negación antes
+        const beforeMatch = content.substring(0, content.search(phrase));
+        if (!/(?:no|nunca|jamás|tampoco)/i.test(beforeMatch)) {
+          return {
+            name: 'neutral',
+            category: 'neutral',
+            baseIntensity: this.INTENSITY_NEUTRAL
+          };
+        }
+      }
     }
     
     // Primero verificar emojis (tienen alta confianza)

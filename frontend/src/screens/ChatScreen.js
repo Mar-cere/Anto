@@ -517,9 +517,15 @@ const ChatScreen = () => {
               key={suggestion.id || index}
               suggestion={suggestion}
               onPress={(suggestion) => {
-                // Navegar a la pantalla correspondiente o enviar mensaje
+                // Navegar a la pantalla correspondiente
                 if (suggestion.screen) {
-                  navigation.navigate(suggestion.screen);
+                  try {
+                    navigation.navigate(suggestion.screen);
+                  } catch (error) {
+                    console.warn('Error navegando a pantalla:', suggestion.screen, error);
+                    // Si falla la navegación, enviar mensaje como fallback
+                    setInputText(`Quiero probar: ${suggestion.label}`);
+                  }
                 } else {
                   // Si no hay pantalla específica, enviar un mensaje sobre la sugerencia
                   setInputText(`Quiero probar: ${suggestion.label}`);

@@ -36,6 +36,17 @@ import BreathingExerciseScreen from '../screens/techniques/BreathingExerciseScre
 import GroundingTechniqueScreen from '../screens/techniques/GroundingTechniqueScreen';
 import SelfCompassionScreen from '../screens/techniques/SelfCompassionScreen';
 import CommunicationToolScreen from '../screens/techniques/CommunicationToolScreen';
+import GratitudeJournalScreen from '../screens/techniques/GratitudeJournalScreen';
+import ActivitySuggestionScreen from '../screens/techniques/ActivitySuggestionScreen';
+import MindfulnessScreen from '../screens/techniques/MindfulnessScreen';
+import SelfCareScreen from '../screens/techniques/SelfCareScreen';
+import TimeoutTechniqueScreen from '../screens/techniques/TimeoutTechniqueScreen';
+import BoundarySettingScreen from '../screens/techniques/BoundarySettingScreen';
+import TaskBreakScreen from '../screens/techniques/TaskBreakScreen';
+import GriefSupportScreen from '../screens/techniques/GriefSupportScreen';
+import MemoryExerciseScreen from '../screens/techniques/MemoryExerciseScreen';
+import ConnectionExerciseScreen from '../screens/techniques/ConnectionExerciseScreen';
+import SocialActivityScreen from '../screens/techniques/SocialActivityScreen';
 import { colors } from '../styles/globalStyles';
 import TabNavigator from './TabNavigator';
 
@@ -231,6 +242,61 @@ const StackNavigator = () => {
       <Stack.Screen
         name="CommunicationTool"
         component={CommunicationToolScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="GratitudeJournal"
+        component={GratitudeJournalScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ActivitySuggestion"
+        component={ActivitySuggestionScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Mindfulness"
+        component={MindfulnessScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SelfCare"
+        component={SelfCareScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="TimeoutTechnique"
+        component={TimeoutTechniqueScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="BoundarySetting"
+        component={BoundarySettingScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="TaskBreak"
+        component={TaskBreakScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="GriefSupport"
+        component={GriefSupportScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="MemoryExercise"
+        component={MemoryExerciseScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ConnectionExercise"
+        component={ConnectionExerciseScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SocialActivity"
+        component={SocialActivityScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

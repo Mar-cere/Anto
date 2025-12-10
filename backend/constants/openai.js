@@ -59,7 +59,7 @@ export const DEFAULT_VALUES = {
 // ========== LÍMITES DE HISTORIAL ==========
 // Controla cuánto historial se incluye en el contexto
 export const HISTORY_LIMITS = {
-  MESSAGES_IN_PROMPT: 8,        // Número de mensajes del historial a incluir en el prompt de OpenAI
+  MESSAGES_IN_PROMPT: 5,        // Número de mensajes del historial a incluir en el prompt de OpenAI (reducido para mejorar velocidad)
   RECENT_MESSAGES_COUNT: 5      // Número de mensajes recientes para análisis de contexto
 };
 

@@ -521,8 +521,12 @@ class OpenAIService {
         }
       }
 
-      // Luego actualizar los registros en paralelo
-      await Promise.all([
+      // Actualizar registros de forma asíncrona (no bloquea la respuesta al usuario)
+      // Solo actualizar lastMessage de forma síncrona, el resto puede ser asíncrono
+      Promise.all([
+        Conversation.findByIdAndUpdate(mensaje.conversationId, { 
+          lastMessage: assistantMessage._id 
+        }).catch(() => {}),
         this.actualizarRegistros(mensaje.userId, {
           mensaje,
           respuesta: respuestaFinal,
@@ -530,21 +534,18 @@ class OpenAIService {
             emotional: analisisEmocional,
             contextual: analisisContextual
           }
-        }),
+        }).catch(() => {}),
         progressTracker.trackProgress(mensaje.userId, {
           message: mensaje,
           response: respuestaFinal,
           analysis: analisisEmocional
-        }),
+        }).catch(() => {}),
         goalTracker.updateProgress(mensaje.userId, {
           message: mensaje,
           response: respuestaFinal,
           context: analisisContextual
-        }),
-        Conversation.findByIdAndUpdate(mensaje.conversationId, { 
-          lastMessage: assistantMessage._id 
-        })
-      ]);
+        }).catch(() => {})
+      ]).catch(() => {}); // Ignorar errores en operaciones no críticas
 
       return {
         content: respuestaFinal,

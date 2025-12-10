@@ -36,8 +36,8 @@ const router = express.Router();
 
 // Constantes de configuración
 const LIMITE_MENSAJES = 100; // Aumentado de 50 a 100 para permitir conversaciones más largas
-const VENTANA_CONTEXTO = 30 * 60 * 1000; // 30 minutos en milisegundos
-const HISTORIAL_LIMITE = 10; // Número de mensajes para contexto
+const VENTANA_CONTEXTO = 20 * 60 * 1000; // 20 minutos en milisegundos (reducido para mejorar velocidad)
+const HISTORIAL_LIMITE = 6; // Número de mensajes para contexto (reducido para mejorar velocidad)
 
 // Rate limiters
 const deleteConversationLimiter = rateLimit({
@@ -278,15 +278,17 @@ router.post('/messages', protect, requireActiveSubscription(true), async (req, r
         // NUEVO: Agregar análisis emocional a la memoria de sesión
         sessionEmotionalMemory.addAnalysis(req.user._id.toString(), emotionalAnalysis);
         
-        // NUEVO: Registrar métrica de análisis emocional
-        metricsService.recordMetric('emotional_analysis', emotionalAnalysis, req.user._id.toString());
-        
-        // NUEVO: Registrar métrica de memoria de sesión
-        const sessionBuffer = sessionEmotionalMemory.getBuffer(req.user._id.toString());
-        metricsService.recordMetric('session_memory', {
-          action: 'add',
-          bufferSize: sessionBuffer.length
-        }, req.user._id.toString());
+        // NUEVO: Registrar métricas de forma asíncrona (no bloquea la respuesta)
+        Promise.all([
+          metricsService.recordMetric('emotional_analysis', emotionalAnalysis, req.user._id.toString()).catch(() => {}),
+          Promise.resolve().then(() => {
+            const sessionBuffer = sessionEmotionalMemory.getBuffer(req.user._id.toString());
+            return metricsService.recordMetric('session_memory', {
+              action: 'add',
+              bufferSize: sessionBuffer.length
+            }, req.user._id.toString());
+          }).catch(() => {})
+        ]).catch(() => {}); // Ignorar errores en operaciones no críticas
         
         // NUEVO: Obtener tendencias de la sesión actual
         const sessionTrends = sessionEmotionalMemory.analyzeTrends(req.user._id.toString());
@@ -576,9 +578,10 @@ router.post('/messages', protect, requireActiveSubscription(true), async (req, r
           }
         }
 
-        // 7. Actualizar registros en paralelo
-        logs.push(`[${Date.now() - startTime}ms] Actualizando registros adicionales`);
-        await Promise.all([
+        // 7. Actualizar registros de forma asíncrona (no bloquea la respuesta)
+        // Solo actualizar lastMessage de forma síncrona, el resto puede ser asíncrono
+        Promise.all([
+          Conversation.findByIdAndUpdate(conversationId, { lastMessage: assistantMessage._id }).catch(() => {}),
           progressTracker.trackProgress(req.user._id, {
             userMessage,
             assistantMessage,
@@ -586,16 +589,12 @@ router.post('/messages', protect, requireActiveSubscription(true), async (req, r
               emotional: emotionalAnalysis,
               contextual: contextualAnalysis
             }
-          }),
+          }).catch(() => {}),
           userProfileService.actualizarPerfil(req.user._id, userMessage, {
             emotional: emotionalAnalysis,
             contextual: contextualAnalysis
-          }),
-          Conversation.findByIdAndUpdate(conversationId, { lastMessage: assistantMessage._id })
-        ]).catch(error => {
-          console.warn('Error en actualizaciones secundarias:', error);
-          logs.push(`[${Date.now() - startTime}ms] Advertencia: Error en actualizaciones secundarias`);
-        });
+          }).catch(() => {})
+        ]).catch(() => {}); // Ignorar errores en operaciones no críticas
 
         // NUEVO: Registrar métrica de generación de respuesta
         const responseTime = Date.now() - startTime;
