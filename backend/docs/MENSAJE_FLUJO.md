@@ -494,11 +494,10 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
    - `model: OPENAI_MODEL` (`'gpt-5-mini'`)
    - Constante: `backend/constants/openai.js:OPENAI_MODEL`
 
-2. **Temperatura (líneas 361-369):**
-   - Si `contexto.urgent` o `contexto.contextual?.urgencia === 'ALTA'`: `TEMPERATURES.URGENT` (`0.3`) - más preciso
-   - Si `contexto.contextual?.intencion?.tipo === MESSAGE_INTENTS.EMOTIONAL_SUPPORT`: `TEMPERATURES.EMPATHETIC` (`0.7`) - más empático
-   - Por defecto: `TEMPERATURES.BALANCED` (`0.5`)
-   - Constantes: `backend/constants/openai.js:TEMPERATURES`
+2. **Temperatura:**
+   - GPT-5 Mini solo soporta el valor por defecto (1) - no se puede especificar otro valor
+   - El parámetro `temperature` no se incluye en la llamada a la API
+   - Nota: El método `determinarTemperatura()` existe pero su resultado no se usa con GPT-5 Mini
 
 3. **Max Tokens (líneas 376-384):**
    - Si `contexto.urgent` o `contexto.contextual?.urgencia === 'ALTA'`: `RESPONSE_LENGTHS.LONG` (`400` tokens)
