@@ -2,6 +2,7 @@
  * Middleware de Autenticación - Gestiona la autenticación y autorización de usuarios
  */
 import jwt from 'jsonwebtoken';
+import logger from '../utils/logger.js';
 
 // Constantes de códigos de estado HTTP
 const HTTP_UNAUTHORIZED = 401;
@@ -90,10 +91,27 @@ export async function authenticateToken(req, res, next) {
     // Si el token tiene rol, usarlo; si no, obtenerlo de la BD
     let userRole = decoded.role;
     if (!userRole) {
-      // Importar User dinámicamente para evitar dependencias circulares
-      const User = (await import('../models/User.js')).default;
-      const user = await User.findById(userId).select('role').lean();
-      userRole = user?.role || 'user';
+      try {
+        // Verificar que MongoDB esté conectado antes de hacer la query
+        const mongoose = (await import('mongoose')).default;
+        if (mongoose.connection.readyState !== 1) {
+          // Si MongoDB no está conectado, usar rol por defecto
+          logger.warn('MongoDB no conectado, usando rol por defecto', { userId });
+          userRole = 'user';
+        } else {
+          // Importar User dinámicamente para evitar dependencias circulares
+          const User = (await import('../models/User.js')).default;
+          const user = await User.findById(userId).select('role').lean();
+          userRole = user?.role || 'user';
+        }
+      } catch (dbError) {
+        // Si hay error al consultar la BD, usar rol por defecto
+        logger.warn('Error al obtener rol de usuario, usando rol por defecto', { 
+          userId, 
+          error: dbError.message 
+        });
+        userRole = 'user';
+      }
     }
     
     // Asegurar que userId sea un string válido

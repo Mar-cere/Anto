@@ -15,6 +15,7 @@ import {
   handleMongooseError,
   handleJWTError,
   isOperationalError,
+  ExternalServiceError,
 } from '../utils/errors.js';
 
 // Helper: verificar si estamos en modo desarrollo
@@ -42,6 +43,27 @@ export const errorHandler = (err, req, res, next) => {
   if (err.name === 'ValidationError' || err.name === 'MongoServerError' || err.name === 'CastError') {
     const appError = handleMongooseError(err);
     return sendErrorResponse(res, appError, req);
+  }
+  
+  // Detectar errores de conexión de MongoDB
+  if (err.message && (
+    err.message.includes('MongoServerSelectionError') ||
+    err.message.includes('MongoNetworkError') ||
+    err.message.includes('MongoTimeoutError') ||
+    err.message.includes('connection') ||
+    err.message.includes('connect ECONNREFUSED') ||
+    err.message.includes('Server selection timed out')
+  )) {
+    // Verificar estado de MongoDB de forma síncrona
+    const isConnected = mongoose.connection.readyState === 1;
+    
+    if (!isConnected) {
+      const appError = new ExternalServiceError(
+        'MongoDB',
+        'Servicio temporalmente no disponible. La base de datos no está conectada.'
+      );
+      return sendErrorResponse(res, appError, req);
+    }
   }
   
   // Convertir errores de JWT a AppError

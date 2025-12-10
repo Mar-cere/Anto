@@ -188,6 +188,18 @@ export const handleMongooseError = (error) => {
     return new ValidationError(`ID inválido: ${error.value}`);
   }
   
+  // Detectar errores de conexión de MongoDB
+  if (error.name === 'MongoServerSelectionError' || 
+      error.name === 'MongoNetworkError' ||
+      error.name === 'MongoTimeoutError' ||
+      (error.message && (
+        error.message.includes('connection') ||
+        error.message.includes('connect ECONNREFUSED') ||
+        error.message.includes('Server selection timed out')
+      ))) {
+    return new ExternalServiceError('MongoDB', 'La base de datos no está disponible temporalmente');
+  }
+  
   return new DatabaseError('Error en la base de datos', error);
 };
 
