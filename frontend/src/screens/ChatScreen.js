@@ -34,11 +34,13 @@ import ParticleBackground from '../components/ParticleBackground';
 import ActionSuggestionCard from '../components/ActionSuggestionCard';
 import ProtocolProgressIndicator from '../components/ProtocolProgressIndicator';
 import TrialBanner from '../components/TrialBanner';
+import OfflineBanner from '../components/OfflineBanner';
 import chatService from '../services/chatService';
 import paymentService from '../services/paymentService';
 import websocketService from '../services/websocketService';
 import * as Notifications from 'expo-notifications';
 import { colors } from '../styles/globalStyles';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 const { width } = Dimensions.get('window');
 
@@ -204,6 +206,10 @@ const MESSAGE_ID_PREFIXES = {
 };
 
 const ChatScreen = () => {
+  // Estado de red
+  const { isConnected, isInternetReachable } = useNetworkStatus();
+  const isOffline = !isConnected || isInternetReachable === false;
+
   // Estados
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -423,6 +429,36 @@ const ChatScreen = () => {
 
     } catch (error) {
       console.error('Error al enviar mensaje:', error);
+      
+      // Verificar si es un error de red/offline
+      const isNetworkError = 
+        error.message?.includes('Network request failed') ||
+        error.message?.includes('network') ||
+        error.message?.includes('ECONNREFUSED') ||
+        error.message?.includes('timeout') ||
+        !isConnected ||
+        isOffline;
+      
+      if (isNetworkError) {
+        // Remover el mensaje temporal del usuario
+        setMessages(prev => prev.filter(msg => msg.id !== tempUserMessage.id));
+        
+        const networkErrorMessage = {
+          id: `${MESSAGE_ID_PREFIXES.ERROR}-${Date.now()}`,
+          content: 'Sin conexión a internet. Por favor, verifica tu conexión e intenta nuevamente.',
+          role: MESSAGE_ROLES.ASSISTANT,
+          type: MESSAGE_TYPES.ERROR,
+          metadata: {
+            timestamp: new Date().toISOString(),
+            error: true,
+            networkError: true
+          }
+        };
+
+        setMessages(prev => [...prev, networkErrorMessage]);
+        scrollToBottom(true);
+        return;
+      }
       
       // Verificar si es un error de suscripción
       if (error.message?.includes('suscripción') || error.message?.includes('subscription') || 
@@ -699,6 +735,9 @@ const ChatScreen = () => {
           <Ionicons name="ellipsis-vertical" size={ICON_SIZE_MENU} color={COLORS.WHITE} />
         </TouchableOpacity>
       </View>
+      
+      {/* Offline Banner */}
+      <OfflineBanner />
       
       {/* Trial Banner */}
       {trialInfo && trialInfo.isInTrial && !trialBannerDismissed && (

@@ -94,9 +94,19 @@ Implementar reintentos automáticos con exponential backoff para requests críti
 
 Validar que las respuestas del servidor tengan el formato esperado antes de procesarlas.
 
-### 4. Manejo de Offline
+### 4. Manejo de Offline ⚠️ **PENDIENTE**
 
-Detectar cuando no hay conexión y mostrar mensaje apropiado.
+**Estado Actual:**
+- ✅ Almacenamiento local básico (AsyncStorage) para mensajes
+- ✅ Reconexión WebSocket automática
+- ❌ No hay detección de estado de red
+- ❌ No hay cola de mensajes pendientes
+- ❌ No hay indicadores visuales de offline
+- ❌ No hay sincronización automática
+
+**Ver:** `REVISION_OFFLINE.md` para plan completo de implementación.
+
+**Prioridad:** Media (mejora UX significativa)
 
 ### 5. Cache de Requests
 

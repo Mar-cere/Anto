@@ -45,6 +45,7 @@ import { getGreetingByHourAndDayAndName } from '../utils/greetings';
 import { registerForPushNotifications } from '../services/pushNotificationService';
 import paymentService from '../services/paymentService';
 import TrialBanner from '../components/TrialBanner';
+import OfflineBanner from '../components/OfflineBanner';
 
 // Constantes de AsyncStorage
 const STORAGE_KEYS = {
@@ -415,6 +416,9 @@ const DashScreen = () => {
         imageStyle={styles.imageStyle}
       >
         <ParticleBackground />
+        
+        {/* Offline Banner */}
+        <OfflineBanner />
         <View style={styles.headerFixed}>
           <Header 
             greeting={greeting}
