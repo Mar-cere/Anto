@@ -96,6 +96,19 @@ class OpenAIService {
     // Constantes de configuración
     this.RESPONSE_LENGTHS = RESPONSE_LENGTHS;
     this.ANALYSIS_DIMENSIONS = ANALYSIS_DIMENSIONS;
+    
+    // Estadísticas de uso de tokens (para determinar límites apropiados)
+    this.tokenStats = {
+      totalRequests: 0,
+      withContent: 0,
+      withoutContent: 0,
+      completionTokens: [],
+      reasoningTokens: [],
+      actualContentTokens: [],
+      promptTokens: [],
+      finishReasons: {},
+      lastReset: new Date()
+    };
 
     this.defaultResponse = {
       content: ERROR_MESSAGES.INVALID_MESSAGE,
@@ -263,6 +276,21 @@ class OpenAIService {
       const usage = completion.usage || {};
       const reasoningTokens = usage.completion_tokens_details?.reasoning_tokens || 0;
       const actualContentTokens = usage.completion_tokens - reasoningTokens;
+      const promptTokens = usage.prompt_tokens || 0;
+      const totalTokens = usage.total_tokens || 0;
+      
+      // MONITOREO: Registrar estadísticas de uso de tokens
+      this.registrarEstadisticasTokens({
+        maxCompletionTokens: this.determinarLongitudRespuesta(analisisContextual),
+        totalCompletionTokens: usage.completion_tokens,
+        reasoningTokens: reasoningTokens,
+        actualContentTokens: actualContentTokens,
+        promptTokens: promptTokens,
+        totalTokens: totalTokens,
+        finishReason: finishReason,
+        hasContent: !!respuestaGenerada,
+        contentLength: respuestaGenerada?.length || 0
+      });
 
       // Validar que se generó una respuesta
       if (!respuestaGenerada) {
@@ -670,13 +698,19 @@ class OpenAIService {
    * @returns {number} Longitud en tokens
    */
   determinarLongitudRespuesta(contexto) {
+    // Si no hay límite específico (null), usar límite de seguridad muy alto para monitoreo
+    let limit = null;
+    
     if (contexto.urgent || contexto.contextual?.urgencia === 'ALTA') {
-      return RESPONSE_LENGTHS.LONG;
+      limit = RESPONSE_LENGTHS.LONG;
+    } else if (contexto.contextual?.intencion?.tipo === MESSAGE_INTENTS.GREETING) {
+      limit = RESPONSE_LENGTHS.SHORT;
+    } else {
+      limit = RESPONSE_LENGTHS.MEDIUM;
     }
-    if (contexto.contextual?.intencion?.tipo === MESSAGE_INTENTS.GREETING) {
-      return RESPONSE_LENGTHS.SHORT;
-    }
-    return RESPONSE_LENGTHS.MEDIUM;
+    
+    // Si el límite es null (monitoreo activo), usar límite de seguridad
+    return limit !== null ? limit : RESPONSE_LENGTHS.MAX_SAFETY_LIMIT;
   }
 
   /**
@@ -1207,6 +1241,93 @@ class OpenAIService {
     };
     
     return fallbackResponses[emotion] || fallbackResponses.neutral;
+  }
+
+  /**
+   * Registra estadísticas de uso de tokens para análisis
+   * @param {Object} stats - Estadísticas de tokens
+   */
+  registrarEstadisticasTokens(stats) {
+    this.tokenStats.totalRequests++;
+    
+    if (stats.hasContent) {
+      this.tokenStats.withContent++;
+    } else {
+      this.tokenStats.withoutContent++;
+    }
+    
+    this.tokenStats.completionTokens.push(stats.totalCompletionTokens);
+    this.tokenStats.reasoningTokens.push(stats.reasoningTokens);
+    this.tokenStats.actualContentTokens.push(stats.actualContentTokens);
+    this.tokenStats.promptTokens.push(stats.promptTokens);
+    
+    // Contar finish reasons
+    const reason = stats.finishReason || 'unknown';
+    this.tokenStats.finishReasons[reason] = (this.tokenStats.finishReasons[reason] || 0) + 1;
+    
+    // Log cada 10 requests o si hay un problema
+    if (this.tokenStats.totalRequests % 10 === 0 || !stats.hasContent) {
+      this.logEstadisticasTokens();
+    }
+  }
+  
+  /**
+   * Log de estadísticas de tokens
+   */
+  logEstadisticasTokens() {
+    const stats = this.tokenStats;
+    const avgCompletion = this.calcularPromedio(stats.completionTokens);
+    const avgReasoning = this.calcularPromedio(stats.reasoningTokens);
+    const avgContent = this.calcularPromedio(stats.actualContentTokens);
+    const avgPrompt = this.calcularPromedio(stats.promptTokens);
+    const maxCompletion = Math.max(...stats.completionTokens, 0);
+    const maxReasoning = Math.max(...stats.reasoningTokens, 0);
+    const maxContent = Math.max(...stats.actualContentTokens, 0);
+    
+    console.log('\n📊 [TOKEN STATS] Estadísticas de uso de tokens:');
+    console.log(`   Total requests: ${stats.totalRequests}`);
+    console.log(`   Con contenido: ${stats.withContent} (${((stats.withContent/stats.totalRequests)*100).toFixed(1)}%)`);
+    console.log(`   Sin contenido: ${stats.withoutContent} (${((stats.withoutContent/stats.totalRequests)*100).toFixed(1)}%)`);
+    console.log(`   Promedio completion tokens: ${avgCompletion.toFixed(0)} (máx: ${maxCompletion})`);
+    console.log(`   Promedio reasoning tokens: ${avgReasoning.toFixed(0)} (máx: ${maxReasoning})`);
+    console.log(`   Promedio contenido tokens: ${avgContent.toFixed(0)} (máx: ${maxContent})`);
+    console.log(`   Promedio prompt tokens: ${avgPrompt.toFixed(0)}`);
+    console.log(`   Finish reasons:`, stats.finishReasons);
+    console.log(`   Último reset: ${stats.lastReset.toISOString()}\n`);
+    
+    // Recomendación de límite basada en percentil 95
+    if (stats.completionTokens.length >= 10) {
+      const sorted = [...stats.completionTokens].sort((a, b) => a - b);
+      const p95 = sorted[Math.floor(sorted.length * 0.95)];
+      const recommendedLimit = Math.ceil(p95 * 1.1); // 10% de margen
+      console.log(`💡 Recomendación de límite (percentil 95 + 10%): ${recommendedLimit} tokens\n`);
+    }
+  }
+  
+  /**
+   * Calcula el promedio de un array
+   */
+  calcularPromedio(arr) {
+    if (!arr || arr.length === 0) return 0;
+    return arr.reduce((sum, val) => sum + val, 0) / arr.length;
+  }
+  
+  /**
+   * Resetea las estadísticas de tokens
+   */
+  resetTokenStats() {
+    this.tokenStats = {
+      totalRequests: 0,
+      withContent: 0,
+      withoutContent: 0,
+      completionTokens: [],
+      reasoningTokens: [],
+      actualContentTokens: [],
+      promptTokens: [],
+      finishReasons: {},
+      lastReset: new Date()
+    };
+    console.log('📊 [TOKEN STATS] Estadísticas reseteadas');
   }
 
   shouldIncludeTechnique(analisisEmocional, analisisContextual) {

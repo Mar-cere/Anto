@@ -16,15 +16,16 @@
 export const OPENAI_MODEL = 'gpt-5-mini';
 
 // ========== LONGITUDES DE RESPUESTA (tokens) ==========
-// Valores optimizados para GPT-5 Mini (incluye espacio para reasoning tokens)
+// TEMPORALMENTE SIN LÍMITE: Estamos monitoreando el uso real de tokens para establecer límites correctos
 // GPT-5 Mini usa tokens de "reasoning" que cuentan contra max_completion_tokens
-// pero no generan contenido visible. Basado en logs, usa ~200 tokens de reasoning,
-// por lo que necesitamos límites mucho más altos para asegurar contenido visible
+// pero no generan contenido visible. Estamos recopilando datos para determinar límites apropiados
 export const RESPONSE_LENGTHS = {
-  SHORT: 400,    // Respuestas cortas (saludos, confirmaciones) - 1 oración (200 reasoning + 200 contenido)
-  MEDIUM: 500,   // Respuestas normales (la mayoría de casos) - 1-2 oraciones (200 reasoning + 300 contenido)
-  LONG: 600,     // Respuestas largas (solo para situaciones urgentes/crisis) - máximo 2-3 oraciones (200 reasoning + 400 contenido)
-  CONTEXT_ANALYSIS: 500  // Para análisis de contexto interno
+  SHORT: null,   // Sin límite temporalmente - monitoreando uso real
+  MEDIUM: null,  // Sin límite temporalmente - monitoreando uso real
+  LONG: null,    // Sin límite temporalmente - monitoreando uso real
+  CONTEXT_ANALYSIS: null,  // Sin límite temporalmente - monitoreando uso real
+  // Límite máximo de seguridad (muy alto para no interferir con el monitoreo)
+  MAX_SAFETY_LIMIT: 4000  // Límite máximo de seguridad para evitar respuestas excesivamente largas
 };
 
 // ========== TEMPERATURAS PARA DIFERENTES CONTEXTOS ==========
@@ -696,8 +697,8 @@ export const COMMUNICATION_STYLE_GUIDELINES = {
 // ========== PLANTILLAS DE PROMPT ==========
 // Plantillas base para construir prompts personalizados
 export const PROMPT_TEMPLATES = {
-  // Plantilla base del sistema (optimizada para GPT-5 Mini)
-  SYSTEM_BASE: `Eres Anto, asistente terapéutico empático. Proporciona apoyo emocional breve (1-2 oraciones máximo). Responde de forma natural y contextual.`,
+  // Plantilla base del sistema (optimizada para GPT-5 Mini - muy simplificada)
+  SYSTEM_BASE: `Eres Anto, asistente terapéutico. Responde breve (1-2 oraciones), empático y natural.`,
 
   // Sección de contexto (optimizada)
   CONTEXT_SECTION: `CONTEXTO: {timeOfDay} | Emoción: {emotion} (intensidad {intensity}) | Intención: {intent} | Estilo: {communicationStyle}`,
@@ -717,11 +718,11 @@ export const PROMPT_TEMPLATES = {
   // Sección de estilo comunicativo (optimizada)
   STYLE_GUIDELINES: `Estilo {style}: {tone}. {validation}`,
 
-  // Reglas generales (optimizadas para GPT-5 Mini)
-  GENERAL_RULES: `REGLAS: Máximo {maxWords} palabras (1-2 oraciones). Responde breve y natural. Mantén continuidad emocional. Si emoción es NEGATIVA (tristeza, ansiedad, enojo, miedo, vergüenza, culpa), usa frases empáticas como "lamento escuchar eso", "entiendo cómo te sientes", NUNCA "es genial" o "qué bueno".`,
+  // Reglas generales (optimizadas para GPT-5 Mini - simplificadas para reducir reasoning)
+  GENERAL_RULES: `Responde breve (1-2 oraciones, máx {maxWords} palabras). Natural y empático. Si emoción NEGATIVA, usa "lamento escuchar eso", "entiendo", NUNCA "es genial".`,
 
-  // Estructura de respuesta (optimizada)
-  RESPONSE_STRUCTURE: `ESTRUCTURA: 1) Reconocimiento empático breve (máx 15 palabras). 2) Validación/apoyo (máx 15 palabras, opcional). 3) Pregunta breve (máx 10 palabras, opcional). Total: 1-2 oraciones máximo.`
+  // Estructura de respuesta (optimizada - simplificada)
+  RESPONSE_STRUCTURE: `Responde: 1) Reconocimiento empático (15 palabras). 2) Validación/apoyo (15 palabras, opcional). 3) Pregunta (10 palabras, opcional). Total: 1-2 oraciones.`
 };
 
 // ========== FUNCIONES HELPER PARA PROMPTS ==========
