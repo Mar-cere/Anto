@@ -284,9 +284,11 @@ export const evaluateSuicideRisk = (
 
   // ========== FACTORES DE RIESGO CRÍTICOS (Alto peso) ==========
   
-  // Intención de crisis
-  if (contextualAnalysis?.intencion?.tipo === 'CRISIS') {
+  // Intención de crisis (solo si la confianza es muy alta)
+  if (contextualAnalysis?.intencion?.tipo === 'CRISIS' && contextualAnalysis?.intencion?.confianza >= 0.9) {
     riskScore += 3;
+  } else if (contextualAnalysis?.intencion?.tipo === 'CRISIS' && contextualAnalysis?.intencion?.confianza >= 0.8) {
+    riskScore += 2; // Reducir si la confianza es menor
   }
   
   // Indicadores directos de ideación suicida
@@ -330,13 +332,21 @@ export const evaluateSuicideRisk = (
     riskScore += 1.5;
   }
   
-  // Intensidad emocional muy alta
-  if (emotionalAnalysis?.intensity >= 9) {
+  // Intensidad emocional muy alta (solo si es extrema y hay otros indicadores)
+  // No sumar solo por intensidad alta sin otros indicadores de crisis
+  if (emotionalAnalysis?.intensity >= 9 && (
+    /(?:suicid|morir|matar|acabar|terminar|desesperad)/i.test(content) ||
+    contextualAnalysis?.intencion?.tipo === 'CRISIS'
+  )) {
     riskScore += 2;
   }
   
-  // Tristeza extrema
-  if (emotionalAnalysis?.mainEmotion === 'tristeza' && emotionalAnalysis?.intensity >= 8) {
+  // Tristeza extrema (solo si hay otros indicadores de crisis)
+  // No sumar solo por tristeza sin indicadores específicos de crisis
+  if (emotionalAnalysis?.mainEmotion === 'tristeza' && emotionalAnalysis?.intensity >= 8 && (
+    /(?:suicid|morir|matar|acabar|terminar|desesperad|sin.*salida|no.*quiero.*vivir)/i.test(content) ||
+    contextualAnalysis?.intencion?.tipo === 'CRISIS'
+  )) {
     riskScore += 2;
   }
   
@@ -480,10 +490,18 @@ export const evaluateSuicideRisk = (
     riskScore = Math.max(0, riskScore - 2);
   }
   
-  // Si el mensaje menciona eventos positivos o neutrales, reducir score
-  const hasPositiveEvents = /(?:graduaci[oó]n|fiesta|celebraci[oó]n|cumpleaños|boda|nacimiento|logro|éxito|felicidad|alegría|contento|satisfecho)/i.test(content);
-  if (hasPositiveEvents && riskScore < 4) {
-    riskScore = Math.max(0, riskScore - 2);
+  // Si el mensaje menciona eventos positivos o emociones positivas, reducir score drásticamente o retornar LOW directamente
+  const hasPositiveEvents = /(?:graduaci[oó]n|fiesta|celebraci[oó]n|cumpleaños|boda|nacimiento|logro|éxito|felicidad|alegría|contento|satisfecho|feliz|alegre|orgullos[oa]|emocionad[oa])/i.test(content);
+  const hasPositiveEmotions = /(?:estoy.*feliz|me.*siento.*feliz|estoy.*alegre|me.*siento.*alegre|estoy.*content[oa]|me.*siento.*content[oa]|estoy.*emocionad[oa]|me.*siento.*emocionad[oa])/i.test(content);
+  
+  // Si hay eventos positivos o emociones positivas, reducir score drásticamente o retornar LOW directamente
+  if (hasPositiveEvents || hasPositiveEmotions) {
+    // Si el mensaje es claramente positivo, retornar LOW directamente
+    if (hasPositiveEvents && (hasPositiveEmotions || /(?:estoy|me.*siento|tengo|siento).*(?:feliz|alegre|content[oa]|emocionad[oa]|orgullos[oa])/i.test(content))) {
+      return 'LOW'; // Retornar LOW directamente para mensajes claramente positivos
+    }
+    // Si solo menciona eventos positivos pero no emociones, reducir score significativamente
+    riskScore = Math.max(0, riskScore - 5); // Reducción drástica
   }
   
   // Validación adicional: si el mensaje es una pregunta simple sobre el sistema, score = 0
@@ -495,16 +513,16 @@ export const evaluateSuicideRisk = (
   
   // ========== DETERMINAR NIVEL DE RIESGO ==========
   
-  // Umbrales ajustados para reducir falsos positivos
-  // WARNING ahora requiere score >= 3.5 (antes era 2)
-  if (riskScore >= 7) {
-    return 'HIGH';
-  } else if (riskScore >= 4) {
-    return 'MEDIUM';
-  } else if (riskScore >= 3.5) {
-    return 'WARNING'; // Umbral aumentado para reducir falsos positivos
+  // Umbrales MUY altos para reducir falsos positivos drásticamente
+  // Solo activar crisis con indicadores MUY claros y específicos
+  if (riskScore >= 10) {
+    return 'HIGH'; // Solo para situaciones extremadamente críticas
+  } else if (riskScore >= 7) {
+    return 'MEDIUM'; // Solo para situaciones claramente de crisis
+  } else if (riskScore >= 5) {
+    return 'WARNING'; // Solo para situaciones que requieren atención preventiva
   } else {
-    return 'LOW';
+    return 'LOW'; // Todo lo demás es LOW
   }
 };
 

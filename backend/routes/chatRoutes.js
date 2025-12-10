@@ -311,10 +311,13 @@ router.post('/messages', protect, requireActiveSubscription(true), async (req, r
             conversationContext
           }
         );
-        // Solo crear evento de crisis si el nivel es MEDIUM, HIGH, o si hay intención explícita de CRISIS
-        // WARNING no crea evento de crisis, solo se registra para monitoreo
+        // Solo crear evento de crisis si el nivel es MEDIUM o HIGH
+        // WARNING no crea evento de crisis ni envía alertas, solo se registra para monitoreo
+        // Solo considerar intención CRISIS si la confianza es muy alta (>= 0.9) Y el score es alto
         const isCrisis = (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') || 
-                        (contextualAnalysis?.intencion?.tipo === 'CRISIS' && contextualAnalysis?.intencion?.confianza >= 0.8);
+                        (contextualAnalysis?.intencion?.tipo === 'CRISIS' && 
+                         contextualAnalysis?.intencion?.confianza >= 0.9 && 
+                         riskLevel !== 'LOW');
         
         if (isCrisis) {
           logs.push(`[${Date.now() - startTime}ms] ⚠️ Crisis detectada - Nivel de riesgo: ${riskLevel}`);
