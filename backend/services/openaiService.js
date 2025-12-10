@@ -1,5 +1,5 @@
 /**
- * Servicio de OpenAI - Gestiona la generación de respuestas con GPT-4.1 y análisis contextual
+ * Servicio de OpenAI - Gestiona la generación de respuestas con GPT-5 Mini y análisis contextual
  */
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
@@ -127,7 +127,7 @@ class OpenAIService {
   }
 
   /**
-   * Genera una respuesta contextualizada usando OpenAI GPT-4.1
+   * Genera una respuesta contextualizada usando OpenAI GPT-5 Mini
    * @param {Object} mensaje - Mensaje del usuario con content, userId, conversationId
    * @param {Object} contexto - Contexto adicional (opcional)
    * @returns {Promise<Object>} Respuesta generada con content y context

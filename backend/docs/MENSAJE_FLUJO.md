@@ -491,7 +491,7 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
 
 ##### Filtros de Parámetros de OpenAI:
 1. **Modelo:**
-   - `model: OPENAI_MODEL` (`'gpt-4.1-turbo'`)
+   - `model: OPENAI_MODEL` (`'gpt-5-mini'`)
    - Constante: `backend/constants/openai.js:OPENAI_MODEL`
 
 2. **Temperatura (líneas 361-369):**
@@ -939,7 +939,7 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
    - Manejo de contactos de emergencia del usuario
 
 5. **openaiService** (`backend/services/openaiService.js`)
-   - Generación de respuesta con GPT-4.1
+   - Generación de respuesta con GPT-5 Mini
    - Construcción de prompt contextualizado
    - Validación y mejora de respuesta
    - **Constantes:** `backend/constants/openai.js`

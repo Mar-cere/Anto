@@ -48,7 +48,7 @@
 
 ### 🤖 Asistente AI Terapéutico
 
-- **Chat Conversacional Inteligente**: Conversaciones naturales con IA (OpenAI GPT-4.1)
+- **Chat Conversacional Inteligente**: Conversaciones naturales con IA (OpenAI GPT-5 Mini)
 - **Análisis Emocional en Tiempo Real**: Detección automática de emociones y su intensidad
 - **Respuestas Personalizadas**: Contexto adaptado a tu historial y situación actual
 - **Técnicas Terapéuticas Adaptadas**: CBT, mindfulness, técnicas de respiración y más
@@ -193,7 +193,7 @@
 - **MongoDB** - Base de datos NoSQL escalable
 - **Mongoose** - ODM para MongoDB
 - **Socket.IO** - WebSockets para tiempo real
-- **OpenAI API** - Integración con GPT-4.1 para IA conversacional
+- **OpenAI API** - Integración con GPT-5 Mini para IA conversacional
 - **Mercado Pago** - Procesamiento de pagos seguro
 - **SendGrid** - Envío de emails transaccionales
 - **Twilio** - WhatsApp y SMS para alertas
@@ -287,7 +287,7 @@ Anto/
 
 ### Funcionalidades Clave
 
-- ✅ Chat conversacional con IA (GPT-4.1)
+- ✅ Chat conversacional con IA (GPT-5 Mini)
 - ✅ Análisis emocional en tiempo real
 - ✅ Detección automática de crisis
 - ✅ Alertas de emergencia

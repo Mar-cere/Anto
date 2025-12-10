@@ -103,7 +103,7 @@ describe('Logger', () => {
 
     it('debe loguear operaciones de servicios externos', () => {
       expect(() => {
-        logger.externalService('OpenAI', 'generate response', { model: 'gpt-4.1' });
+        logger.externalService('OpenAI', 'generate response', { model: 'gpt-5-mini' });
       }).not.toThrow();
     });
 
