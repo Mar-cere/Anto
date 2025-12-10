@@ -221,7 +221,7 @@ class OpenAIService {
             }
           ],
           temperature: this.determinarTemperatura(analisisContextual),
-          max_tokens: this.determinarLongitudRespuesta(analisisContextual),
+          max_completion_tokens: this.determinarLongitudRespuesta(analisisContextual),
           presence_penalty: PENALTIES.DEFAULT,
           frequency_penalty: PENALTIES.DEFAULT
         });

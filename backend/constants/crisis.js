@@ -456,15 +456,38 @@ export const evaluateSuicideRisk = (
   // Asegurar que el score no sea negativo
   riskScore = Math.max(0, riskScore);
   
+  // ========== VALIDACIONES ADICIONALES PARA EVITAR FALSOS POSITIVOS ==========
+  
+  // Mensajes muy cortos o neutrales no deben activar crisis
+  const contentLength = content.trim().length;
+  const isVeryShort = contentLength < 10;
+  const isNeutralGreeting = /^(hola|hi|hello|buenos.*d[ií]as|buenas.*tardes|buenas.*noches|qué.*tal|qué.*pasa|qué.*pasó|qué.*hubo|qué.*hace|qué.*haces|como.*estás|como.*andas|todo.*bien|estoy.*bien|está.*bien|están.*bien)$/i.test(content.trim());
+  const isPositiveMessage = /^(todo.*bien|estoy.*bien|está.*bien|están.*bien|muy.*bien|excelente|genial|perfecto|bien.*gracias|bien.*y.*tú|bien.*y.*vos)$/i.test(content.trim());
+  
+  // Si es un saludo neutral o mensaje positivo muy corto, reducir significativamente el score
+  if (isNeutralGreeting || isPositiveMessage) {
+    riskScore = Math.max(0, riskScore - 3); // Reducir significativamente
+  } else if (isVeryShort && riskScore < 3) {
+    // Mensajes muy cortos con score bajo probablemente no son crisis
+    riskScore = Math.max(0, riskScore - 1);
+  }
+  
+  // Si el mensaje menciona eventos positivos o neutrales, reducir score
+  const hasPositiveEvents = /(?:graduaci[oó]n|fiesta|celebraci[oó]n|cumpleaños|boda|nacimiento|logro|éxito|felicidad|alegría|contento|satisfecho)/i.test(content);
+  if (hasPositiveEvents && riskScore < 4) {
+    riskScore = Math.max(0, riskScore - 1.5);
+  }
+  
   // ========== DETERMINAR NIVEL DE RIESGO ==========
   
-  // NUEVO: Nivel WARNING para detección temprana
+  // Umbrales ajustados para reducir falsos positivos
+  // WARNING ahora requiere score >= 3.5 (antes era 2)
   if (riskScore >= 7) {
     return 'HIGH';
   } else if (riskScore >= 4) {
     return 'MEDIUM';
-  } else if (riskScore >= 2) {
-    return 'WARNING'; // Nuevo nivel para detección temprana
+  } else if (riskScore >= 3.5) {
+    return 'WARNING'; // Umbral aumentado para reducir falsos positivos
   } else {
     return 'LOW';
   }

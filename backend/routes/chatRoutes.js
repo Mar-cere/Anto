@@ -311,7 +311,10 @@ router.post('/messages', protect, requireActiveSubscription(true), async (req, r
             conversationContext
           }
         );
-        const isCrisis = riskLevel !== 'LOW' || contextualAnalysis?.intencion?.tipo === 'CRISIS';
+        // Solo crear evento de crisis si el nivel es MEDIUM, HIGH, o si hay intención explícita de CRISIS
+        // WARNING no crea evento de crisis, solo se registra para monitoreo
+        const isCrisis = (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') || 
+                        (contextualAnalysis?.intencion?.tipo === 'CRISIS' && contextualAnalysis?.intencion?.confianza >= 0.8);
         
         if (isCrisis) {
           logs.push(`[${Date.now() - startTime}ms] ⚠️ Crisis detectada - Nivel de riesgo: ${riskLevel}`);
@@ -402,85 +405,89 @@ router.post('/messages', protect, requireActiveSubscription(true), async (req, r
             }
           }
 
-          // Registrar evento de crisis para seguimiento
+          // Registrar evento de crisis para seguimiento (solo MEDIUM y HIGH)
+          // WARNING no crea evento de crisis, solo se registra en logs para monitoreo
           let crisisEvent = null;
-          try {
-            crisisEvent = await CrisisEvent.create({
-              userId: req.user._id,
-              riskLevel,
-              triggerMessage: {
-                messageId: userMessage._id,
-                contentPreview: content.substring(0, 200), // Solo preview
-                emotionalAnalysis: {
-                  mainEmotion: emotionalAnalysis?.mainEmotion,
-                  intensity: emotionalAnalysis?.intensity
+          if (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') {
+            try {
+              crisisEvent = await CrisisEvent.create({
+                userId: req.user._id,
+                riskLevel,
+                triggerMessage: {
+                  messageId: userMessage._id,
+                  contentPreview: content.substring(0, 200), // Solo preview
+                  emotionalAnalysis: {
+                    mainEmotion: emotionalAnalysis?.mainEmotion,
+                    intensity: emotionalAnalysis?.intensity
+                  }
+                },
+                trendAnalysis: trendAnalysis ? {
+                  rapidDecline: trendAnalysis.trends?.rapidDecline || false,
+                  sustainedLow: trendAnalysis.trends?.sustainedLow || false,
+                  isolation: trendAnalysis.trends?.isolation || false,
+                  escalation: trendAnalysis.trends?.escalation || false,
+                  warnings: trendAnalysis.warnings || []
+                } : undefined,
+                crisisHistory: crisisHistory ? {
+                  totalCrises: crisisHistory.totalCrises || 0,
+                  recentCrises: crisisHistory.recentCrises || 0
+                } : undefined,
+                alerts: alertResult ? {
+                  sent: alertResult.sent || false,
+                  sentAt: alertResult.sent ? new Date() : undefined,
+                  contactsNotified: alertResult.successfulSends || 0,
+                  channels: {
+                    email: alertResult.successfulEmails > 0 || false,
+                    whatsapp: alertResult.successfulWhatsApp > 0 || false
+                  }
+                } : undefined,
+                metadata: {
+                  riskScore: calculateRiskScore(emotionalAnalysis, contextualAnalysis, content, {
+                    trendAnalysis,
+                    crisisHistory,
+                    conversationContext
+                  }),
+                  factors: extractRiskFactors(emotionalAnalysis, contextualAnalysis, content, {
+                    trendAnalysis,
+                    crisisHistory,
+                    conversationContext
+                  }),
+                  protectiveFactors: extractProtectiveFactors(emotionalAnalysis, content)
                 }
-              },
-              trendAnalysis: trendAnalysis ? {
-                rapidDecline: trendAnalysis.trends?.rapidDecline || false,
-                sustainedLow: trendAnalysis.trends?.sustainedLow || false,
-                isolation: trendAnalysis.trends?.isolation || false,
-                escalation: trendAnalysis.trends?.escalation || false,
-                warnings: trendAnalysis.warnings || []
-              } : undefined,
-              crisisHistory: crisisHistory ? {
-                totalCrises: crisisHistory.totalCrises || 0,
-                recentCrises: crisisHistory.recentCrises || 0
-              } : undefined,
-              alerts: (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') && alertResult ? {
-                sent: alertResult.sent || false,
-                sentAt: alertResult.sent ? new Date() : undefined,
-                contactsNotified: alertResult.successfulSends || 0,
-                channels: {
-                  email: alertResult.successfulEmails > 0 || false,
-                  whatsapp: alertResult.successfulWhatsApp > 0 || false
-                }
-              } : undefined,
-              metadata: {
-                riskScore: calculateRiskScore(emotionalAnalysis, contextualAnalysis, content, {
-                  trendAnalysis,
-                  crisisHistory,
-                  conversationContext
-                }),
-                factors: extractRiskFactors(emotionalAnalysis, contextualAnalysis, content, {
-                  trendAnalysis,
-                  crisisHistory,
-                  conversationContext
-                }),
-                protectiveFactors: extractProtectiveFactors(emotionalAnalysis, content)
+              });
+
+              // Si se enviaron alertas y tenemos el crisisEvent, actualizar los registros de alerta con el crisisEventId
+              if (crisisEvent && alertResult && alertResult.sent) {
+                // Actualizar las alertas recientes con el crisisEventId
+                // Esto se hace de forma asíncrona para no bloquear
+                setTimeout(async () => {
+                  try {
+                    await EmergencyAlert.updateMany(
+                      {
+                        userId: req.user._id,
+                        crisisEventId: null,
+                        sentAt: { $gte: new Date(Date.now() - 60000) } // Último minuto
+                      },
+                      { $set: { crisisEventId: crisisEvent._id } }
+                    );
+                  } catch (error) {
+                    console.error('[ChatRoutes] Error actualizando crisisEventId en alertas:', error);
+                  }
+                }, 1000);
               }
-            });
 
-            // Si se enviaron alertas y tenemos el crisisEvent, actualizar los registros de alerta con el crisisEventId
-            if (crisisEvent && alertResult && alertResult.sent && (riskLevel === 'MEDIUM' || riskLevel === 'HIGH')) {
-              // Actualizar las alertas recientes con el crisisEventId
-              // Esto se hace de forma asíncrona para no bloquear
-              setTimeout(async () => {
-                try {
-                  await EmergencyAlert.updateMany(
-                    {
-                      userId: req.user._id,
-                      crisisEventId: null,
-                      sentAt: { $gte: new Date(Date.now() - 60000) } // Último minuto
-                    },
-                    { $set: { crisisEventId: crisisEvent._id } }
-                  );
-                } catch (error) {
-                  console.error('[ChatRoutes] Error actualizando crisisEventId en alertas:', error);
-                }
-              }, 1000);
-            }
-
-            // Programar seguimientos automáticos
-            if (riskLevel !== 'LOW') {
+              // Programar seguimientos automáticos solo para MEDIUM y HIGH
               await crisisFollowUpService.scheduleFollowUps(crisisEvent._id, riskLevel);
-            }
 
-            logs.push(`[${Date.now() - startTime}ms] 📝 Evento de crisis registrado: ${crisisEvent._id}`);
-          } catch (error) {
-            // No bloquear el flujo principal si falla el registro
-            console.error('[ChatRoutes] Error registrando evento de crisis:', error);
-            logs.push(`[${Date.now() - startTime}ms] ⚠️ Error registrando evento de crisis: ${error.message}`);
+              logs.push(`[${Date.now() - startTime}ms] 📝 Evento de crisis registrado: ${crisisEvent._id}`);
+            } catch (error) {
+              // No bloquear el flujo principal si falla el registro
+              console.error('[ChatRoutes] Error registrando evento de crisis:', error);
+              logs.push(`[${Date.now() - startTime}ms] ⚠️ Error registrando evento de crisis: ${error.message}`);
+            }
+          } else if (riskLevel === 'WARNING') {
+            // WARNING solo se registra en logs, no crea evento de crisis
+            logs.push(`[${Date.now() - startTime}ms] 📊 WARNING detectado pero no se crea evento de crisis (solo monitoreo)`);
           }
         }
 
