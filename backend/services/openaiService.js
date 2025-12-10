@@ -240,11 +240,28 @@ class OpenAIService {
         throw apiError;
       }
 
+      // Logging para debugging
+      if (!completion) {
+        console.error('❌ OpenAI no devolvió una respuesta (completion es null/undefined)');
+        throw new Error('No se recibió respuesta de OpenAI');
+      }
+
+      if (!completion.choices || completion.choices.length === 0) {
+        console.error('❌ OpenAI no devolvió choices en la respuesta:', JSON.stringify(completion, null, 2));
+        throw new Error('La respuesta de OpenAI no contiene choices');
+      }
+
       const respuestaGenerada = completion.choices[0]?.message?.content?.trim();
 
       // Validar que se generó una respuesta
       if (!respuestaGenerada) {
-        throw new Error('No se pudo generar una respuesta válida desde OpenAI');
+        console.error('❌ OpenAI devolvió una respuesta vacía:', {
+          completion: JSON.stringify(completion, null, 2),
+          firstChoice: completion.choices[0],
+          message: completion.choices[0]?.message,
+          content: completion.choices[0]?.message?.content
+        });
+        throw new Error('No se pudo generar una respuesta válida desde OpenAI: la respuesta está vacía');
       }
 
       // 5. NUEVO: Verificar si hay un protocolo activo o si se debe iniciar uno
