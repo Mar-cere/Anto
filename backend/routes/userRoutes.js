@@ -346,8 +346,7 @@ router.put('/me', authenticateToken, validateUserObjectId, updateProfileLimiter,
     // Guardar (Mongoose timestamps maneja updatedAt automáticamente)
     await user.save();
 
-    // Invalidar caché del usuario
-    const userId = req.user?._id || req.user?.userId;
+    // Invalidar caché del usuario (userId ya está declarado arriba)
     await cacheService.invalidateUserCache(userId);
 
     res.json({
