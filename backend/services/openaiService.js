@@ -205,6 +205,14 @@ class OpenAIService {
 
       // 4. Generar Respuesta con OpenAI
 
+      // Logging del prompt para debugging (solo en desarrollo)
+      if (process.env.NODE_ENV === 'development') {
+        const promptLength = prompt.systemMessage.length;
+        const contextMessagesCount = prompt.contextMessages?.length || 0;
+        const userMessageLength = contenidoNormalizado.length;
+        console.log(`[OpenAI] Prompt length: ${promptLength} chars, Context messages: ${contextMessagesCount}, User message: ${userMessageLength} chars`);
+      }
+
       let completion;
       try {
         completion = await openai.chat.completions.create({
@@ -251,7 +259,8 @@ class OpenAIService {
         throw new Error('La respuesta de OpenAI no contiene choices');
       }
 
-      const respuestaGenerada = completion.choices[0]?.message?.content?.trim();
+      let respuestaGenerada = completion.choices[0]?.message?.content?.trim();
+      const finishReason = completion.choices[0]?.finish_reason;
 
       // Validar que se generó una respuesta
       if (!respuestaGenerada) {
@@ -259,9 +268,20 @@ class OpenAIService {
           completion: JSON.stringify(completion, null, 2),
           firstChoice: completion.choices[0],
           message: completion.choices[0]?.message,
-          content: completion.choices[0]?.message?.content
+          content: completion.choices[0]?.message?.content,
+          finishReason: finishReason,
+          promptLength: prompt.systemMessage.length,
+          contextMessagesCount: prompt.contextMessages?.length || 0,
+          maxCompletionTokens: this.determinarLongitudRespuesta(analisisContextual)
         });
-        throw new Error('No se pudo generar una respuesta válida desde OpenAI: la respuesta está vacía');
+        
+        // FALLBACK: Generar respuesta básica empática si OpenAI no responde
+        console.warn('⚠️ Usando respuesta de fallback debido a respuesta vacía de OpenAI');
+        respuestaGenerada = this.generarRespuestaFallback(analisisEmocional, analisisContextual);
+        
+        if (!respuestaGenerada) {
+          throw new Error('No se pudo generar una respuesta válida desde OpenAI: la respuesta está vacía y el fallback falló');
+        }
       }
 
       // 5. NUEVO: Verificar si hay un protocolo activo o si se debe iniciar uno
@@ -1139,6 +1159,35 @@ class OpenAIService {
    * @param {Object} analisisContextual - Análisis contextual del mensaje
    * @returns {boolean} true si se debe incluir la técnica
    */
+  /**
+   * Genera una respuesta de fallback cuando OpenAI no responde
+   * @param {Object} analisisEmocional - Análisis emocional
+   * @param {Object} analisisContextual - Análisis contextual
+   * @returns {string} Respuesta de fallback empática
+   */
+  generarRespuestaFallback(analisisEmocional, analisisContextual) {
+    const emotion = analisisEmocional?.mainEmotion || 'neutral';
+    const intensity = analisisEmocional?.intensity || 5;
+    const intent = analisisContextual?.intencion?.tipo || MESSAGE_INTENTS.EMOTIONAL_SUPPORT;
+    
+    // Respuestas empáticas básicas según emoción
+    const fallbackResponses = {
+      tristeza: intensity >= 7 
+        ? 'Lamento escuchar que te sientes así. Estoy aquí para acompañarte. ¿Quieres contarme más sobre lo que estás sintiendo?'
+        : 'Entiendo que te sientes triste. Es válido sentirse así. ¿Hay algo específico que te gustaría compartir?',
+      ansiedad: intensity >= 7
+        ? 'Veo que estás experimentando mucha ansiedad. Respira profundo. Estoy aquí contigo. ¿Qué te está generando esta ansiedad?'
+        : 'Entiendo que sientes ansiedad. Es normal sentirse así a veces. ¿Quieres hablar sobre qué la está causando?',
+      enojo: 'Entiendo que estás enojado. Es válido sentir enojo. ¿Quieres contarme qué te está molestando?',
+      miedo: 'Veo que sientes miedo. Es normal tener miedos. ¿Quieres compartir qué te está asustando?',
+      neutral: intent === MESSAGE_INTENTS.GREETING
+        ? '¡Hola! ¿Cómo puedo ayudarte hoy?'
+        : 'Te escucho. ¿Quieres contarme más sobre lo que estás pensando?'
+    };
+    
+    return fallbackResponses[emotion] || fallbackResponses.neutral;
+  }
+
   shouldIncludeTechnique(analisisEmocional, analisisContextual) {
     // No incluir técnicas en saludos simples
     if (analisisContextual?.intencion?.tipo === MESSAGE_INTENTS.GREETING) {
