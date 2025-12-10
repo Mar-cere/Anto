@@ -18,12 +18,13 @@ export const OPENAI_MODEL = 'gpt-5-mini';
 // ========== LONGITUDES DE RESPUESTA (tokens) ==========
 // Valores optimizados para GPT-5 Mini (incluye espacio para reasoning tokens)
 // GPT-5 Mini usa tokens de "reasoning" que cuentan contra max_completion_tokens
-// pero no generan contenido visible, por lo que necesitamos límites más altos
+// pero no generan contenido visible. Basado en logs, usa ~200 tokens de reasoning,
+// por lo que necesitamos límites mucho más altos para asegurar contenido visible
 export const RESPONSE_LENGTHS = {
-  SHORT: 150,    // Respuestas cortas (saludos, confirmaciones) - 1 oración (50 reasoning + 100 contenido)
-  MEDIUM: 200,   // Respuestas normales (la mayoría de casos) - 1-2 oraciones (70 reasoning + 130 contenido)
-  LONG: 300,     // Respuestas largas (solo para situaciones urgentes/crisis) - máximo 2-3 oraciones (100 reasoning + 200 contenido)
-  CONTEXT_ANALYSIS: 200  // Para análisis de contexto interno
+  SHORT: 400,    // Respuestas cortas (saludos, confirmaciones) - 1 oración (200 reasoning + 200 contenido)
+  MEDIUM: 500,   // Respuestas normales (la mayoría de casos) - 1-2 oraciones (200 reasoning + 300 contenido)
+  LONG: 600,     // Respuestas largas (solo para situaciones urgentes/crisis) - máximo 2-3 oraciones (200 reasoning + 400 contenido)
+  CONTEXT_ANALYSIS: 500  // Para análisis de contexto interno
 };
 
 // ========== TEMPERATURAS PARA DIFERENTES CONTEXTOS ==========
