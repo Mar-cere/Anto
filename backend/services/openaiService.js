@@ -426,9 +426,9 @@ class OpenAIService {
       // ya están integradas en el prompt, así que el modelo de OpenAI las considerará automáticamente
       // al generar la respuesta. No necesitamos agregar texto adicional aquí.
 
-      // 13. Agregar técnica terapéutica a la respuesta si es apropiado (y no hay protocolo)
+      // 13. Agregar técnica terapéutica a la respuesta SOLO si el usuario la solicita explícitamente (y no hay protocolo)
       let respuestaFinal = respuestaConElecciones;
-      if (selectedTechnique && !activeProtocol && this.shouldIncludeTechnique(analisisEmocional, analisisContextual)) {
+      if (selectedTechnique && !activeProtocol && this.shouldIncludeTechnique(analisisEmocional, analisisContextual, mensaje)) {
         // Calcular espacio disponible para la técnica
         const espacioDisponible = THRESHOLDS.MAX_CHARACTERS_RESPONSE - respuestaValidada.length;
         const necesitaFormatoCompacto = espacioDisponible < 300; // Menos de 300 caracteres disponibles
@@ -1325,33 +1325,15 @@ class OpenAIService {
     console.log('📊 [TOKEN STATS] Estadísticas reseteadas');
   }
 
-  shouldIncludeTechnique(analisisEmocional, analisisContextual) {
-    // No incluir técnicas en saludos simples
-    if (analisisContextual?.intencion?.tipo === MESSAGE_INTENTS.GREETING) {
-      return false;
-    }
-
-    // Incluir técnicas si la intensidad emocional es moderada o alta (5+)
-    const intensity = analisisEmocional?.intensity || DEFAULT_VALUES.INTENSITY;
-    if (intensity >= 5) {
-      return true;
-    }
-
-    // Incluir técnicas si el usuario busca ayuda específica
-    if (analisisContextual?.intencion?.tipo === MESSAGE_INTENTS.SEEKING_HELP || 
-        analisisContextual?.intencion?.tipo === MESSAGE_INTENTS.CRISIS) {
-      return true;
-    }
-
-    // No incluir técnicas si la emoción es neutral y la intensidad es baja
-    const emotion = analisisEmocional?.mainEmotion || DEFAULT_VALUES.EMOTION;
-    if (emotion === 'neutral' && intensity < 5) {
-      return false;
-    }
-
-    // Por defecto, incluir técnicas para emociones negativas
-    const negativeEmotions = ['tristeza', 'ansiedad', 'enojo', 'miedo', 'verguenza', 'culpa'];
-    return negativeEmotions.includes(emotion);
+  shouldIncludeTechnique(analisisEmocional, analisisContextual, mensaje) {
+    // Solo incluir técnicas si el usuario las solicita explícitamente
+    const contenido = mensaje?.content?.toLowerCase() || '';
+    
+    // Patrones que indican solicitud explícita de técnicas
+    const solicitudTecnica = /(?:técnica|tecnica|herramienta|estrategia|método|metodo|ejercicio|actividad|qué.*puedo.*hacer|como.*puedo|ayuda.*con|quiero.*aprender|enseñame|muestrame|dame.*una|recomiendame|sugerime|necesito.*una|puedes.*darme|ayudame.*con)/i.test(contenido);
+    
+    // Solo incluir si hay solicitud explícita
+    return solicitudTecnica;
   }
 }
 
