@@ -51,6 +51,7 @@ import progressTracker from './progressTracker.js';
 import sessionEmotionalMemory from './sessionEmotionalMemory.js';
 import therapeuticProtocolService from './therapeuticProtocolService.js';
 import therapeuticTemplateService from './therapeuticTemplateService.js';
+import cacheService from './cacheService.js';
 
 dotenv.config();
 
@@ -212,14 +213,30 @@ class OpenAIService {
           profile: perfilUsuario,
           therapeutic: registroTerapeutico,
           memory: memoriaContextual,
-          history: contexto.history || [] // Incluir historial de conversación si está disponible
+          history: contexto.history || [], // Incluir historial de conversación si está disponible
+          currentMessage: contenidoNormalizado // Para selección inteligente de historial
         }
       );
 
       // 4. Generar Respuesta con OpenAI
 
+      // MEJORA: Intentar obtener respuesta del caché si existe
+      const cacheKey = this.generateResponseCacheKey(contenidoNormalizado, analisisEmocional, analisisContextual);
+      let cachedResponse = null;
+      try {
+        cachedResponse = await cacheService.get(cacheKey);
+        if (cachedResponse && this.isCachedResponseValid(cachedResponse, analisisContextual)) {
+          console.log('[OpenAI] ✅ Respuesta obtenida del caché');
+          // Adaptar respuesta cacheada al contexto actual
+          const adaptedResponse = this.adaptCachedResponse(cachedResponse.response, analisisContextual, contenidoNormalizado);
+          return adaptedResponse;
+        }
+      } catch (cacheError) {
+        console.warn('[OpenAI] Error al obtener del caché, continuando sin caché:', cacheError.message);
+      }
+
       // Logging del prompt para debugging
-      const maxTokens = this.determinarLongitudRespuesta(analisisContextual);
+      const maxTokens = this.determinarLongitudRespuesta(analisisContextual, contenidoNormalizado);
       const promptLength = prompt.systemMessage.length;
       const contextMessagesCount = prompt.contextMessages?.length || 0;
       const userMessageLength = contenidoNormalizado.length;
@@ -240,7 +257,7 @@ class OpenAIService {
               content: contenidoNormalizado
             }
           ],
-          max_completion_tokens: this.determinarLongitudRespuesta(analisisContextual)
+          max_completion_tokens: this.determinarLongitudRespuesta(analisisContextual, contenidoNormalizado)
           // Nota: GPT-5 Mini solo soporta:
           // - temperature: valor por defecto (1) - no se puede especificar otro valor
           // - max_completion_tokens: sí soportado
@@ -281,7 +298,7 @@ class OpenAIService {
       
       // MONITOREO: Registrar estadísticas de uso de tokens
       this.registrarEstadisticasTokens({
-        maxCompletionTokens: this.determinarLongitudRespuesta(analisisContextual),
+        maxCompletionTokens: this.determinarLongitudRespuesta(analisisContextual, contenidoNormalizado),
         totalCompletionTokens: usage.completion_tokens,
         reasoningTokens: reasoningTokens,
         actualContentTokens: actualContentTokens,
@@ -298,7 +315,7 @@ class OpenAIService {
           finishReason: finishReason,
           promptLength: prompt.systemMessage.length,
           contextMessagesCount: prompt.contextMessages?.length || 0,
-          maxCompletionTokens: this.determinarLongitudRespuesta(analisisContextual),
+          maxCompletionTokens: this.determinarLongitudRespuesta(analisisContextual, contenidoNormalizado),
           totalCompletionTokens: usage.completion_tokens,
           reasoningTokens: reasoningTokens,
           actualContentTokens: actualContentTokens,
@@ -397,7 +414,8 @@ class OpenAIService {
         {
           emotional: analisisEmocional,
           contextual: analisisContextual,
-          profile: perfilUsuario
+          profile: perfilUsuario,
+          userMessage: contenidoNormalizado // Para validación de relevancia
         }
       );
 
@@ -459,6 +477,24 @@ class OpenAIService {
           }
         }
       }
+
+      // MEJORA: Guardar respuesta en caché para futuras consultas similares
+      try {
+        await cacheService.set(cacheKey, {
+          response: respuestaFinal,
+          emotional: analisisEmocional,
+          contextual: analisisContextual,
+          timestamp: Date.now()
+        }, 1800); // Cachear por 30 minutos
+        console.log('[OpenAI] ✅ Respuesta guardada en caché');
+      } catch (cacheError) {
+        console.warn('[OpenAI] Error al guardar en caché, continuando:', cacheError.message);
+      }
+
+      // MEJORA: Análisis de sentimiento asíncrono (no bloquea la respuesta)
+      this.analyzeUserSentiment(mensaje.userId, contenidoNormalizado, respuestaFinal, analisisEmocional).catch(err => {
+        console.warn('[OpenAI] Error en análisis de sentimiento (asíncrono):', err.message);
+      });
 
       // 8. Actualizar Registros
       // Normalizar objeto emocional para asegurar compatibilidad con el esquema
@@ -615,6 +651,28 @@ class OpenAIService {
       socialSupport: contexto.contextual?.socialSupport || null
     });
 
+    // MEJORA: Agregar resumen del contexto conversacional
+    const contextMessages = await this.generarMensajesContexto({
+      ...contexto,
+      currentMessage: mensaje.content
+    });
+    
+    if (contextMessages.length > 0) {
+      const conversationSummary = this.generateConversationSummary(contextMessages, contexto);
+      systemMessage += `\n\nCONTEXTO CONVERSACIONAL:\n${conversationSummary}\n`;
+      
+      // Agregar instrucción para hacer referencias cuando sea apropiado
+      if (contextMessages.length >= 2) {
+        systemMessage += `\nIMPORTANTE: Cuando sea relevante, haz referencias naturales a mensajes anteriores usando frases como "Como mencionaste antes...", "Recuerdo que dijiste...", "Siguiendo con lo que hablábamos...". Esto ayuda a mantener la coherencia conversacional.\n`;
+      }
+    }
+
+    // MEJORA: Agregar contexto de largo plazo (memoria persistente)
+    const longTermContext = await this.generateLongTermContext(mensaje.userId, contexto);
+    if (longTermContext) {
+      systemMessage += `\n\nCONTEXTO A LARGO PLAZO:\n${longTermContext}\n`;
+    }
+
     // Si hay una crisis detectada, agregar el prompt de crisis al inicio
     if (contexto.crisis?.riskLevel) {
       const crisisPrompt = generateCrisisSystemPrompt(
@@ -624,12 +682,239 @@ class OpenAIService {
       systemMessage = `${crisisPrompt}\n\n---\n\n${systemMessage}`;
     }
 
-    const contextMessages = await this.generarMensajesContexto(contexto);
-
     return {
       systemMessage,
       contextMessages
     };
+  }
+
+  /**
+   * Selecciona mensajes relevantes del historial basándose en el contexto actual
+   * @param {Array} history - Historial completo de mensajes
+   * @param {Object} currentContext - Contexto actual (emotional, contextual)
+   * @returns {Array} Mensajes seleccionados (máximo HISTORY_LIMITS.MESSAGES_IN_PROMPT)
+   */
+  selectRelevantHistory(history, currentContext) {
+    if (!history || history.length === 0) return [];
+    
+    const currentEmotion = currentContext?.emotional?.mainEmotion;
+    const currentTopic = currentContext?.emotional?.topic || currentContext?.contextual?.tema;
+    const currentContent = currentContext?.currentMessage?.toLowerCase() || '';
+    
+    // Extraer palabras clave del mensaje actual
+    const keywords = currentContent.split(/\s+/).filter(word => word.length > 3);
+    
+    // Calcular relevancia de cada mensaje
+    const scoredMessages = history.map((msg, index) => {
+      let score = 0;
+      const msgContent = (msg.content || '').toLowerCase();
+      
+      // Priorizar mensajes más recientes
+      score += (history.length - index) * 0.1;
+      
+      // Priorizar mensajes del usuario (más importantes para contexto)
+      if (msg.role === 'user') {
+        score += 2;
+      }
+      
+      // Priorizar mensajes con misma emoción
+      if (currentEmotion && msgContent.includes(currentEmotion.toLowerCase())) {
+        score += 3;
+      }
+      
+      // Priorizar mensajes con mismo tema
+      if (currentTopic && msgContent.includes(currentTopic.toLowerCase())) {
+        score += 2;
+      }
+      
+      // Priorizar mensajes con palabras clave similares
+      const matchingKeywords = keywords.filter(kw => msgContent.includes(kw)).length;
+      score += matchingKeywords * 0.5;
+      
+      // Priorizar mensajes que mencionan temas relacionados
+      const relatedTerms = ['trabajo', 'familia', 'relación', 'amigo', 'pareja', 'estudio', 'salud'];
+      const matchingTerms = relatedTerms.filter(term => 
+        currentContent.includes(term) && msgContent.includes(term)
+      ).length;
+      score += matchingTerms * 1.5;
+      
+      return { ...msg, _relevanceScore: score };
+    });
+    
+    // Ordenar por relevancia y tomar los mejores
+    const selected = scoredMessages
+      .sort((a, b) => b._relevanceScore - a._relevanceScore)
+      .slice(0, HISTORY_LIMITS.MESSAGES_IN_PROMPT)
+      .sort((a, b) => {
+        // Mantener orden cronológico dentro de los seleccionados
+        const indexA = history.findIndex(m => m === a);
+        const indexB = history.findIndex(m => m === b);
+        return indexA - indexB;
+      })
+      .map(({ _relevanceScore, ...msg }) => msg); // Remover score temporal
+    
+    // Asegurar que siempre incluimos el último mensaje del asistente si existe
+    const lastAssistant = history.filter(m => m.role === 'assistant').pop();
+    if (lastAssistant && !selected.some(m => m === lastAssistant)) {
+      selected.pop(); // Remover el menos relevante
+      selected.push(lastAssistant);
+      selected.sort((a, b) => {
+        const indexA = history.findIndex(m => m === a);
+        const indexB = history.findIndex(m => m === b);
+        return indexA - indexB;
+      });
+    }
+    
+    return selected;
+  }
+
+  /**
+   * Genera contexto de largo plazo basado en el perfil del usuario
+   * @param {string} userId - ID del usuario
+   * @param {Object} contexto - Contexto actual
+   * @returns {Promise<string>} Resumen del contexto a largo plazo
+   */
+  async generateLongTermContext(userId, contexto) {
+    try {
+      if (!userId) return null;
+
+      // Obtener perfil del usuario (usar el que ya está en contexto si está disponible)
+      let userProfile = contexto.profile;
+      if (!userProfile) {
+        userProfile = await personalizationService.getUserProfile(userId).catch(() => null);
+      }
+
+      if (!userProfile) return null;
+
+      const contextParts = [];
+
+      // Temas recurrentes
+      const recurringTopics = [];
+      if (userProfile.commonTopics && Array.isArray(userProfile.commonTopics)) {
+        const topTopics = userProfile.commonTopics
+          .sort((a, b) => (b.frequency || 0) - (a.frequency || 0))
+          .slice(0, 3)
+          .map(t => t.topic);
+        if (topTopics.length > 0) {
+          recurringTopics.push(...topTopics);
+        }
+      }
+      // También verificar en patrones.temas
+      if (userProfile.patrones?.temas && Array.isArray(userProfile.patrones.temas)) {
+        const patternTopics = userProfile.patrones.temas
+          .sort((a, b) => (b.frecuencia || 0) - (a.frecuencia || 0))
+          .slice(0, 3)
+          .map(t => t.tema);
+        patternTopics.forEach(topic => {
+          if (!recurringTopics.includes(topic)) {
+            recurringTopics.push(topic);
+          }
+        });
+      }
+      if (recurringTopics.length > 0) {
+        contextParts.push(`El usuario frecuentemente menciona: ${recurringTopics.slice(0, 3).join(', ')}.`);
+      }
+
+      // Preferencias de comunicación
+      const commStyle = userProfile.preferences?.communicationStyle || 
+                       userProfile.communicationPreferences || 
+                       'neutral';
+      if (commStyle !== 'neutral') {
+        contextParts.push(`Prefiere un estilo de comunicación: ${commStyle}.`);
+      }
+
+      // Progreso terapéutico
+      if (userProfile.metadata?.progresoGeneral) {
+        const progress = userProfile.metadata.progresoGeneral;
+        if (progress > 0) {
+          contextParts.push(`Ha mostrado progreso general: ${progress}%.`);
+        }
+      }
+
+      // Estrategias de afrontamiento efectivas
+      if (userProfile.copingStrategies && Array.isArray(userProfile.copingStrategies)) {
+        const effectiveStrategies = userProfile.copingStrategies
+          .filter(s => s.effectiveness >= 7 && s.usageCount > 0)
+          .sort((a, b) => b.effectiveness - a.effectiveness)
+          .slice(0, 2)
+          .map(s => s.strategy);
+        if (effectiveStrategies.length > 0) {
+          contextParts.push(`Estrategias que le han funcionado bien: ${effectiveStrategies.join(', ')}.`);
+        }
+      }
+
+      // Emociones predominantes
+      if (userProfile.emotionalPatterns?.predominantEmotions && 
+          Array.isArray(userProfile.emotionalPatterns.predominantEmotions)) {
+        const topEmotions = userProfile.emotionalPatterns.predominantEmotions
+          .sort((a, b) => (b.frequency || 0) - (a.frequency || 0))
+          .slice(0, 2)
+          .map(e => e.emotion);
+        if (topEmotions.length > 0) {
+          contextParts.push(`Emociones que experimenta frecuentemente: ${topEmotions.join(', ')}.`);
+        }
+      }
+
+      return contextParts.length > 0 ? contextParts.join(' ') : null;
+    } catch (error) {
+      console.error('[OpenAIService] Error generando contexto de largo plazo:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Genera un resumen del contexto conversacional actual
+   * @param {Array} history - Historial de mensajes seleccionados
+   * @param {Object} contexto - Contexto completo
+   * @returns {string} Resumen del contexto conversacional
+   */
+  generateConversationSummary(history, contexto) {
+    if (!history || history.length === 0) {
+      return 'Esta es una conversación nueva.';
+    }
+    
+    const userMessages = history.filter(m => m.role === 'user');
+    const assistantMessages = history.filter(m => m.role === 'assistant');
+    
+    // Detectar tema principal
+    const currentTopic = contexto.emotional?.topic || contexto.contextual?.tema || 'general';
+    const currentEmotion = contexto.emotional?.mainEmotion || 'neutral';
+    const intensity = contexto.emotional?.intensity || 5;
+    
+    // Determinar progreso de la conversación
+    let progress = 'inicio';
+    if (history.length >= 4) {
+      progress = 'explorando';
+    }
+    if (history.length >= 8) {
+      progress = 'profundizando';
+    }
+    
+    // Detectar si el usuario está repitiendo un tema
+    const topics = userMessages.map(m => m.content?.toLowerCase() || '').join(' ');
+    const topicWords = topics.split(/\s+/).filter(w => w.length > 4);
+    const topicCounts = {};
+    topicWords.forEach(word => {
+      topicCounts[word] = (topicCounts[word] || 0) + 1;
+    });
+    const repeatedTopics = Object.entries(topicCounts)
+      .filter(([_, count]) => count >= 2)
+      .map(([word]) => word)
+      .slice(0, 2);
+    
+    let summary = `Conversación en fase: ${progress}. `;
+    summary += `Tema principal: ${currentTopic}. `;
+    summary += `Emoción: ${currentEmotion} (intensidad ${intensity}/10). `;
+    
+    if (repeatedTopics.length > 0) {
+      summary += `El usuario ha mencionado: ${repeatedTopics.join(', ')}. `;
+    }
+    
+    if (userMessages.length > 0 && assistantMessages.length > 0) {
+      summary += `Intercambios: ${Math.min(userMessages.length, assistantMessages.length)}.`;
+    }
+    
+    return summary;
   }
 
   /**
@@ -640,12 +925,16 @@ class OpenAIService {
   async generarMensajesContexto(contexto) {
     const messages = [];
 
-    // Agregar historial de conversación reciente si está disponible
+    // Agregar historial de conversación con selección inteligente
     if (contexto.history && Array.isArray(contexto.history) && contexto.history.length > 0) {
-      // Tomar los últimos N mensajes del historial según el límite configurado
-      const historialReciente = contexto.history.slice(-HISTORY_LIMITS.MESSAGES_IN_PROMPT);
+      // Seleccionar mensajes relevantes en lugar de solo los últimos
+      const historialRelevante = this.selectRelevantHistory(contexto.history, {
+        emotional: contexto.emotional,
+        contextual: contexto.contextual,
+        currentMessage: contexto.currentMessage
+      });
       
-      historialReciente.forEach(msg => {
+      historialRelevante.forEach(msg => {
         if (msg.role && msg.content) {
           messages.push({
             role: msg.role === 'user' ? 'user' : 'assistant',
@@ -696,17 +985,73 @@ class OpenAIService {
   /**
    * Determina la longitud óptima de respuesta basada en el contexto
    * @param {Object} contexto - Contexto del mensaje
+   * @param {string} userMessage - Mensaje del usuario (opcional, para ajuste dinámico)
    * @returns {number} Longitud en tokens
    */
-  determinarLongitudRespuesta(contexto) {
-    // Usar límites optimizados basados en el contexto
+  determinarLongitudRespuesta(contexto, userMessage = '') {
+    // Ajuste dinámico basado en longitud del mensaje del usuario
+    const userMessageLength = userMessage.length;
+    let baseLength;
+    
+    // Determinar longitud base según urgencia e intención
     if (contexto.urgent || contexto.contextual?.urgencia === 'ALTA') {
-      return RESPONSE_LENGTHS.LONG;
+      baseLength = RESPONSE_LENGTHS.LONG;
     } else if (contexto.contextual?.intencion?.tipo === MESSAGE_INTENTS.GREETING) {
-      return RESPONSE_LENGTHS.SHORT;
+      baseLength = RESPONSE_LENGTHS.SHORT;
     } else {
-      return RESPONSE_LENGTHS.MEDIUM;
+      baseLength = RESPONSE_LENGTHS.MEDIUM;
     }
+    
+    // Ajustar según longitud del mensaje del usuario (respuestas proporcionales)
+    if (userMessageLength > 0) {
+      if (userMessageLength < 50) {
+        // Mensaje corto = respuesta más corta
+        baseLength = Math.min(baseLength, RESPONSE_LENGTHS.SHORT);
+      } else if (userMessageLength > 200) {
+        // Mensaje largo = respuesta más larga (pero no excesiva)
+        baseLength = Math.min(baseLength + 100, RESPONSE_LENGTHS.MAX_SAFETY_LIMIT);
+      }
+    }
+    
+    // Ajustar según intensidad emocional (mayor intensidad = más cuidado, no necesariamente más largo)
+    const intensity = contexto.emotional?.intensity || 5;
+    if (intensity >= 8) {
+      // Alta intensidad: respuestas más cuidadosas pero no necesariamente más largas
+      baseLength = Math.min(baseLength, RESPONSE_LENGTHS.MEDIUM + 100);
+    }
+    
+    return baseLength;
+  }
+
+  /**
+   * Valida si la respuesta responde directamente a la pregunta del usuario
+   * @param {string} respuesta - Respuesta a validar
+   * @param {string} mensajeUsuario - Mensaje original del usuario
+   * @returns {boolean} true si la respuesta es relevante
+   */
+  esRespuestaRelevante(respuesta, mensajeUsuario) {
+    if (!respuesta || !mensajeUsuario) return true;
+    
+    const respuestaLower = respuesta.toLowerCase();
+    const mensajeLower = mensajeUsuario.toLowerCase();
+    
+    // Extraer palabras clave del mensaje del usuario (palabras de 4+ caracteres)
+    const palabrasClave = mensajeLower.split(/\s+/).filter(p => p.length >= 4);
+    
+    // Verificar si la respuesta menciona al menos una palabra clave importante
+    const menciones = palabrasClave.filter(palabra => respuestaLower.includes(palabra)).length;
+    const ratioMenciones = palabrasClave.length > 0 ? menciones / palabrasClave.length : 1;
+    
+    // Si hay menos del 30% de menciones, puede no ser relevante
+    if (palabrasClave.length > 0 && ratioMenciones < 0.3) {
+      // Verificar si es una pregunta directa
+      const esPregunta = /[¿?]/.test(mensajeUsuario);
+      if (esPregunta && !/[¿?]/.test(respuesta) && ratioMenciones < 0.2) {
+        return false; // Pregunta sin respuesta relevante
+      }
+    }
+    
+    return true;
   }
 
   /**
@@ -721,6 +1066,18 @@ class OpenAIService {
     }
 
     let respuestaMejorada = respuesta.trim();
+
+    // MEJORA: Validar relevancia directa con el mensaje del usuario
+    if (contexto.userMessage && !this.esRespuestaRelevante(respuestaMejorada, contexto.userMessage)) {
+      console.log('⚠️ Respuesta puede no ser directamente relevante. Ajustando...');
+      // Agregar reconocimiento del mensaje del usuario si falta
+      const mensajeLower = contexto.userMessage.toLowerCase();
+      const palabrasClave = mensajeLower.split(/\s+/).filter(p => p.length >= 4).slice(0, 2);
+      if (palabrasClave.length > 0 && !palabrasClave.some(p => respuestaMejorada.toLowerCase().includes(p))) {
+        // La respuesta no menciona palabras clave, agregar reconocimiento
+        respuestaMejorada = `Entiendo. ${respuestaMejorada}`;
+      }
+    }
 
     // Validar longitud máxima (caracteres y palabras)
     const caracteres = respuestaMejorada.length;
@@ -751,6 +1108,119 @@ class OpenAIService {
     }
     
     return respuestaMejorada;
+  }
+
+  /**
+   * Genera una clave de caché para respuestas basada en el mensaje y contexto
+   * @param {string} messageContent - Contenido del mensaje
+   * @param {Object} emotionalAnalysis - Análisis emocional
+   * @param {Object} contextualAnalysis - Análisis contextual
+   * @returns {string} Clave de caché
+   */
+  generateResponseCacheKey(messageContent, emotionalAnalysis, contextualAnalysis) {
+    // Normalizar mensaje (minúsculas, sin espacios extra)
+    const normalizedMessage = messageContent.toLowerCase().trim().replace(/\s+/g, ' ');
+    
+    // Extraer características clave para el caché
+    const emotion = emotionalAnalysis?.mainEmotion || 'neutral';
+    const intent = contextualAnalysis?.intencion?.tipo || 'EMOTIONAL_SUPPORT';
+    const topic = emotionalAnalysis?.topic || contextualAnalysis?.tema || 'general';
+    
+    // Crear hash simple basado en características
+    const cacheData = {
+      message: normalizedMessage.substring(0, 100), // Primeros 100 caracteres
+      emotion,
+      intent,
+      topic
+    };
+    
+    return cacheService.generateKey('response', cacheData);
+  }
+
+  /**
+   * Valida si una respuesta cacheada sigue siendo apropiada
+   * @param {Object} cachedResponse - Respuesta cacheada
+   * @param {Object} currentContext - Contexto actual
+   * @returns {boolean} true si es válida
+   */
+  isCachedResponseValid(cachedResponse, currentContext) {
+    if (!cachedResponse || !cachedResponse.response) return false;
+    
+    // Verificar que no sea muy antigua (máximo 30 minutos)
+    const age = Date.now() - (cachedResponse.timestamp || 0);
+    if (age > 1800000) return false; // 30 minutos
+    
+    // Verificar que el contexto emocional sea similar
+    const cachedEmotion = cachedResponse.emotional?.mainEmotion;
+    const currentEmotion = currentContext?.emotional?.mainEmotion || currentContext?.mainEmotion;
+    if (cachedEmotion && currentEmotion && cachedEmotion !== currentEmotion) {
+      // Si la emoción cambió significativamente, no usar caché
+      return false;
+    }
+    
+    return true;
+  }
+
+  /**
+   * Adapta una respuesta cacheada al contexto actual
+   * @param {string} cachedResponse - Respuesta cacheada
+   * @param {Object} currentContext - Contexto actual
+   * @param {string} currentMessage - Mensaje actual del usuario
+   * @returns {string} Respuesta adaptada
+   */
+  adaptCachedResponse(cachedResponse, currentContext, currentMessage) {
+    // Si la respuesta cacheada es muy genérica, usarla tal cual
+    if (this.esRespuestaGenerica(cachedResponse)) {
+      return cachedResponse;
+    }
+    
+    // Adaptar ligeramente si es necesario
+    let adapted = cachedResponse;
+    
+    // Si el contexto tiene urgencia alta, asegurar que la respuesta refleje eso
+    if (currentContext?.urgencia === 'ALTA') {
+      if (!adapted.toLowerCase().includes('importante') && !adapted.toLowerCase().includes('urgente')) {
+        adapted = `Es importante que sepas: ${adapted}`;
+      }
+    }
+    
+    return adapted;
+  }
+
+  /**
+   * Analiza el sentimiento del usuario sobre la respuesta (asíncrono)
+   * @param {string} userId - ID del usuario
+   * @param {string} userMessage - Mensaje del usuario
+   * @param {string} assistantResponse - Respuesta del asistente
+   * @param {Object} emotionalAnalysis - Análisis emocional
+   * @returns {Promise<void>}
+   */
+  async analyzeUserSentiment(userId, userMessage, assistantResponse, emotionalAnalysis) {
+    try {
+      // Este análisis se hace de forma asíncrona y no bloquea la respuesta
+      // Se puede expandir en el futuro para:
+      // - Detectar si el usuario continúa la conversación (satisfacción)
+      // - Detectar si cambia de tema abruptamente (insatisfacción)
+      // - Ajustar preferencias del usuario basándose en patrones
+      
+      // Por ahora, solo logueamos para análisis futuro
+      // En el futuro, se puede consultar el siguiente mensaje del usuario
+      // para determinar si la respuesta fue satisfactoria
+      
+      console.log('[OpenAIService] Análisis de sentimiento registrado (asíncrono)', {
+        userId,
+        messageLength: userMessage.length,
+        responseLength: assistantResponse.length,
+        emotion: emotionalAnalysis?.mainEmotion
+      });
+      
+      // TODO: Implementar tracking de satisfacción cuando el usuario responda
+      // Esto se puede hacer consultando el siguiente mensaje del usuario
+      // y analizando si continúa el tema o cambia abruptamente
+    } catch (error) {
+      // No lanzar error, solo loguear
+      console.warn('[OpenAIService] Error en análisis de sentimiento:', error.message);
+    }
   }
 
   /**
