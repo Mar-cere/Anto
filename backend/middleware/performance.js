@@ -45,9 +45,15 @@ export const performanceMiddleware = (req, res, next) => {
     }
 
     // Agregar headers de performance (opcional, para debugging)
-    if (process.env.NODE_ENV === 'development') {
-      res.setHeader('X-Response-Time', `${duration}ms`);
-      res.setHeader('X-Memory-Used', `${memoryUsed.toFixed(2)}MB`);
+    // Solo si los headers no han sido enviados aún
+    if (process.env.NODE_ENV === 'development' && !res.headersSent) {
+      try {
+        res.setHeader('X-Response-Time', `${duration}ms`);
+        res.setHeader('X-Memory-Used', `${memoryUsed.toFixed(2)}MB`);
+      } catch (error) {
+        // Silenciar errores si los headers ya fueron enviados
+        // Esto puede ocurrir si la respuesta fue enviada antes del evento 'finish'
+      }
     }
   });
 
