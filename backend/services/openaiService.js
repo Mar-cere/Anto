@@ -698,19 +698,14 @@ class OpenAIService {
    * @returns {number} Longitud en tokens
    */
   determinarLongitudRespuesta(contexto) {
-    // Si no hay límite específico (null), usar límite de seguridad muy alto para monitoreo
-    let limit = null;
-    
+    // Usar límites optimizados basados en el contexto
     if (contexto.urgent || contexto.contextual?.urgencia === 'ALTA') {
-      limit = RESPONSE_LENGTHS.LONG;
+      return RESPONSE_LENGTHS.LONG;
     } else if (contexto.contextual?.intencion?.tipo === MESSAGE_INTENTS.GREETING) {
-      limit = RESPONSE_LENGTHS.SHORT;
+      return RESPONSE_LENGTHS.SHORT;
     } else {
-      limit = RESPONSE_LENGTHS.MEDIUM;
+      return RESPONSE_LENGTHS.MEDIUM;
     }
-    
-    // Si el límite es null (monitoreo activo), usar límite de seguridad
-    return limit !== null ? limit : RESPONSE_LENGTHS.MAX_SAFETY_LIMIT;
   }
 
   /**

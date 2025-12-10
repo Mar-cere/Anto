@@ -16,16 +16,15 @@
 export const OPENAI_MODEL = 'gpt-5-mini';
 
 // ========== LONGITUDES DE RESPUESTA (tokens) ==========
-// TEMPORALMENTE SIN LÍMITE: Estamos monitoreando el uso real de tokens para establecer límites correctos
-// GPT-5 Mini usa tokens de "reasoning" que cuentan contra max_completion_tokens
-// pero no generan contenido visible. Estamos recopilando datos para determinar límites apropiados
+// Límites optimizados basados en monitoreo: GPT-5 Mini usa ~300-500 tokens de reasoning
+// Establecemos límites que permitan reasoning + contenido sin ser excesivos
 export const RESPONSE_LENGTHS = {
-  SHORT: null,   // Sin límite temporalmente - monitoreando uso real
-  MEDIUM: null,  // Sin límite temporalmente - monitoreando uso real
-  LONG: null,    // Sin límite temporalmente - monitoreando uso real
-  CONTEXT_ANALYSIS: null,  // Sin límite temporalmente - monitoreando uso real
-  // Límite máximo de seguridad (muy alto para no interferir con el monitoreo)
-  MAX_SAFETY_LIMIT: 4000  // Límite máximo de seguridad para evitar respuestas excesivamente largas
+  SHORT: 800,    // Respuestas cortas (saludos) - 300 reasoning + 500 contenido
+  MEDIUM: 1000,  // Respuestas normales - 400 reasoning + 600 contenido
+  LONG: 1200,    // Respuestas largas (crisis) - 500 reasoning + 700 contenido
+  CONTEXT_ANALYSIS: 1000,  // Para análisis de contexto interno
+  // Límite máximo de seguridad (reducido para mejorar velocidad)
+  MAX_SAFETY_LIMIT: 1200  // Límite máximo de seguridad (reducido de 4000 para mejorar velocidad)
 };
 
 // ========== TEMPERATURAS PARA DIFERENTES CONTEXTOS ==========
@@ -861,81 +860,26 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
     .replace('{tone}', styleGuidelines.tone)
     .replace('{validation}', styleGuidelines.validation) + '\n\n';
 
-  // NUEVO: Información de subtipo emocional si existe
-  if (subtype) {
-    prompt += `📌 Subtipo emocional detectado: ${subtype}\n`;
-    prompt += `Considera este matiz específico al responder. El usuario está experimentando ${emotion} con características de ${subtype}.\n\n`;
+  // Información adicional (MUY simplificada para reducir reasoning y mejorar velocidad)
+  // Solo agregar información crítica, omitir detalles menores
+  if (subtype && intensity >= 7) {
+    prompt += `Subtipo: ${subtype}. `;
   }
-
-  // NUEVO: Información de tema/contexto si existe
-  if (topic && topic !== 'general') {
-    prompt += `📌 Tema principal del mensaje: ${topic}\n`;
-    prompt += `Contextualiza tu respuesta considerando que el usuario está hablando sobre ${topic}.\n\n`;
+  
+  // Solo agregar información crítica de resistencia/recaídas si es muy relevante
+  if (context.resistance && intensity >= 7) {
+    prompt += `Resistencia: ${context.resistance.type}. `;
   }
-
-  // NUEVO: Tendencias de sesión si existen
-  if (sessionTrends && sessionTrends.messageCount > 0) {
-    prompt += `📊 Tendencias de la sesión actual:\n`;
-    if (sessionTrends.streakNegative > 0) {
-      prompt += `- Racha de ${sessionTrends.streakNegative} mensajes con emociones negativas consecutivos\n`;
-    }
-    if (sessionTrends.trend === 'worsening') {
-      prompt += `- Tendencia: empeoramiento emocional en la sesión\n`;
-    } else if (sessionTrends.trend === 'improving') {
-      prompt += `- Tendencia: mejora emocional en la sesión\n`;
-    }
-    if (sessionTrends.recentTopics && sessionTrends.recentTopics.length > 0) {
-      prompt += `- Temas recurrentes: ${sessionTrends.recentTopics.join(', ')}\n`;
-    }
-    prompt += `\n`;
+  
+  if (context.relapseSigns && intensity >= 8) {
+    prompt += `Recaída detectada. `;
   }
-
-  // NUEVO: Estilo de respuesta preferido
-  if (responseStyle === 'brief') {
-    prompt += `📝 Estilo de respuesta: BREVE\n`;
-    prompt += `Responde de forma muy concisa y directa. Máximo 1 oración (15-20 palabras). Evita explicaciones extensas.\n\n`;
-  } else if (responseStyle === 'deep') {
-    prompt += `📝 Estilo de respuesta: PROFUNDO\n`;
-    prompt += `Puedes explayarte un poco más, pero sin superar ${THRESHOLDS.MAX_WORDS_RESPONSE} palabras (máximo 2 oraciones). Incluye reflexiones y exploraciones más detalladas, pero mantén la naturalidad de una conversación.\n\n`;
-  } else {
-    prompt += `📝 Estilo de respuesta: EQUILIBRADO\n`;
-    prompt += `Mantén un balance entre concisión y profundidad. 1-2 oraciones bien desarrolladas (máximo ${THRESHOLDS.MAX_WORDS_RESPONSE} palabras). Responde como en una conversación natural.\n\n`;
-  }
-
-  // NUEVO: Información sobre resistencia, recaídas, necesidades implícitas, etc.
-  if (context.resistance) {
-    const intervention = context.resistance.intervention;
-    prompt += `⚠️ RESISTENCIA DETECTADA: ${context.resistance.type}\n`;
-    prompt += `Enfoque: ${intervention.approach}\n`;
-    prompt += `Usa estas técnicas: ${intervention.techniques.join(', ')}\n`;
-    prompt += `Ejemplo de prompt: ${intervention.prompts[0]}\n\n`;
-  }
-
-  if (context.relapseSigns) {
-    prompt += `⚠️ SEÑALES DE RECAÍDA DETECTADAS: ${context.relapseSigns.patterns.join(', ')}\n`;
-    prompt += `Normaliza: Las recaídas son parte del proceso. No significa que haya fallado.\n`;
-    prompt += `Activa: Pregunta qué estrategias funcionaron antes.\n\n`;
-  }
-
-  if (context.implicitNeeds && context.implicitNeeds.length > 0) {
-    prompt += `📌 NECESIDADES IMPLÍCITAS DETECTADAS: ${context.implicitNeeds.map(n => n.type).join(', ')}\n`;
-    prompt += `Explora estas necesidades subyacentes con preguntas abiertas y validación.\n\n`;
-  }
-
-  if (context.strengths && context.strengths.length > 0) {
-    prompt += `💪 FORTALEZAS IDENTIFICADAS: ${context.strengths.map(s => s.type).join(', ')}\n`;
-    prompt += `Reconoce y construye sobre estas fortalezas en tu respuesta.\n\n`;
-  }
-
-  if (context.selfEfficacy && context.selfEfficacy.needsIntervention) {
-    prompt += `📊 AUTOEFICACIA: Nivel ${context.selfEfficacy.level}\n`;
-    prompt += `Trabaja en construir confianza en las capacidades del usuario.\n`;
-    prompt += `Recuerda logros pasados y celebra pequeños pasos.\n\n`;
-  }
-
-  if (context.socialSupport && context.socialSupport.needsIntervention) {
-    prompt += `👥 APOYO SOCIAL: Nivel ${context.socialSupport.level}\n`;
-    prompt += `Explora y fortalece la red de apoyo del usuario.\n\n`;
+  
+  // Omitir información menos crítica para reducir reasoning y mejorar velocidad
+  // (tendencias, fortalezas, autoeficacia, apoyo social, tema, estilo solo si es crítico)
+  
+  if (subtype || context.resistance || context.relapseSigns) {
+    prompt += `\n\n`;
   }
 
   // Reglas generales
