@@ -221,9 +221,8 @@ class OpenAIService {
             }
           ],
           temperature: this.determinarTemperatura(analisisContextual),
-          max_completion_tokens: this.determinarLongitudRespuesta(analisisContextual),
-          presence_penalty: PENALTIES.DEFAULT,
-          frequency_penalty: PENALTIES.DEFAULT
+          max_completion_tokens: this.determinarLongitudRespuesta(analisisContextual)
+          // Nota: presence_penalty y frequency_penalty no son soportados por GPT-5 Mini
         });
       } catch (apiError) {
         // Manejar errores específicos de autenticación

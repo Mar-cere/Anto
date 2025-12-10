@@ -507,8 +507,7 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
    - Constantes: `backend/constants/openai.js:RESPONSE_LENGTHS`
 
 4. **Penalizaciones:**
-   - `presence_penalty: PENALTIES.DEFAULT` (`0.6`)
-   - `frequency_penalty: PENALTIES.DEFAULT` (`0.6`)
+   - `presence_penalty` y `frequency_penalty`: No soportados por GPT-5 Mini (removidos)
    - Constantes: `backend/constants/openai.js:PENALTIES`
 
 5. **Manejo de Errores de API:**
