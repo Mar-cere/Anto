@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">11.72% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>19/162</span>
+                <span class='fraction'>0/162</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">12.41% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>19/153</span>
+                <span class='fraction'>0/153</span>
             </div>
         
             
@@ -750,47 +750,47 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1426,35 +1426,35 @@ import UserProfile from '../models/UserProfile.js';
 import emotionalAnalyzer from './emotionalAnalyzer.js';
 import cacheService from './cacheService.js';
 &nbsp;
-dotenv.config();
+<span class="cstat-no" title="statement not covered" >dotenv.config();</span>
 &nbsp;
 // Cliente de OpenAI para generación de insights
-const openai = new OpenAI({
+const openai = <span class="cstat-no" title="statement not covered" >new OpenAI({</span>
   apiKey: process.env.OPENAI_API_KEY
 });
 &nbsp;
 // Constantes de valores por defecto
-const DEFAULT_COMMUNICATION_STYLE = 'neutral';
-const DEFAULT_RESPONSE_LENGTH = 'MEDIUM';
-const DEFAULT_EMOTION = 'neutral';
-const DEFAULT_INTENSITY = 5;
-const DEFAULT_TENDENCY = 'estable';
+const DEFAULT_COMMUNICATION_STYLE = <span class="cstat-no" title="statement not covered" >'neutral';</span>
+const DEFAULT_RESPONSE_LENGTH = <span class="cstat-no" title="statement not covered" >'MEDIUM';</span>
+const DEFAULT_EMOTION = <span class="cstat-no" title="statement not covered" >'neutral';</span>
+const DEFAULT_INTENSITY = <span class="cstat-no" title="statement not covered" >5;</span>
+const DEFAULT_TENDENCY = <span class="cstat-no" title="statement not covered" >'estable';</span>
 &nbsp;
 // Constantes de umbrales
-const HOURS_FOR_INSIGHT = 24;
-const INTENSITY_THRESHOLD = 8;
-const SESSIONS_FOR_INSIGHT = 5;
-const DAYS_FOR_PATTERNS = 7;
-const DAYS_FOR_INSIGHTS = 30;
-const INTENSITY_DIFF_THRESHOLD = 2;
-const HISTORY_LIMIT = 50;
+const HOURS_FOR_INSIGHT = <span class="cstat-no" title="statement not covered" >24;</span>
+const INTENSITY_THRESHOLD = <span class="cstat-no" title="statement not covered" >8;</span>
+const SESSIONS_FOR_INSIGHT = <span class="cstat-no" title="statement not covered" >5;</span>
+const DAYS_FOR_PATTERNS = <span class="cstat-no" title="statement not covered" >7;</span>
+const DAYS_FOR_INSIGHTS = <span class="cstat-no" title="statement not covered" >30;</span>
+const INTENSITY_DIFF_THRESHOLD = <span class="cstat-no" title="statement not covered" >2;</span>
+const HISTORY_LIMIT = <span class="cstat-no" title="statement not covered" >50;</span>
 &nbsp;
 // Constantes de intensidad
-const INTENSITY_HIGH = 8;
-const INTENSITY_MEDIUM = 4;
+const INTENSITY_HIGH = <span class="cstat-no" title="statement not covered" >8;</span>
+const INTENSITY_MEDIUM = <span class="cstat-no" title="statement not covered" >4;</span>
 &nbsp;
 // Constantes de periodos del día
-const PERIODOS = {
+const PERIODOS = <span class="cstat-no" title="statement not covered" >{</span>
   MADRUGADA: { inicio: 0, fin: 5, nombre: 'madrugada' },
   MAÑANA: { inicio: 6, fin: 11, nombre: 'mañana' },
   MEDIODIA: { inicio: 12, fin: 14, nombre: 'mediodía' },
@@ -1463,10 +1463,10 @@ const PERIODOS = {
 };
 &nbsp;
 // Constantes de días de la semana
-const DIAS_SEMANA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+const DIAS_SEMANA = <span class="cstat-no" title="statement not covered" >['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];</span>
 &nbsp;
 // Constantes de dimensiones de análisis
-const DIMENSIONES_ANALISIS = {
+const DIMENSIONES_ANALISIS = <span class="cstat-no" title="statement not covered" >{</span>
   EMOCIONAL: {
     aspectos: ['intensidad', 'variabilidad', 'regulación'],
     patrones: ['recurrentes', 'situacionales', 'temporales']
@@ -1965,7 +1965,7 @@ class UserProfileService {
       };
 &nbsp;
       const completion = <span class="cstat-no" title="statement not covered" >await openai.chat.completions.create({</span>
-        model: 'gpt-4-turbo-preview',
+        model: 'gpt-5-turbo',
         messages: [
           {
             role: 'system',
@@ -2098,7 +2098,7 @@ export default new UserProfileService(); </pre></td></tr></table></pre>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-09T16:38:34.668Z
+                at 2025-12-10T01:23:11.039Z
             </div>
         <script src="../prettify.js"></script>
         <script>

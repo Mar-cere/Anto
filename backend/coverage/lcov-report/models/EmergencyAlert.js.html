@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">8.75% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>12/137</span>
+                <span class='fraction'>0/137</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">1.02% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>1/98</span>
+                <span class='fraction'>0/98</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">9.37% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>12/128</span>
+                <span class='fraction'>0/128</span>
             </div>
         
             
@@ -495,7 +495,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -606,15 +606,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -652,7 +652,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -772,8 +772,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -907,11 +907,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -921,7 +921,7 @@
  */
 import mongoose from 'mongoose';
 &nbsp;
-const emergencyAlertSchema = new mongoose.Schema({
+const emergencyAlertSchema = <span class="cstat-no" title="statement not covered" >new mongoose.Schema({</span>
   // Referencia al usuario
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -1032,15 +1032,15 @@ const emergencyAlertSchema = new mongoose.Schema({
 });
 &nbsp;
 // Índices para optimizar consultas
-emergencyAlertSchema.index({ userId: 1, sentAt: -1 });
-emergencyAlertSchema.index({ crisisEventId: 1 });
-emergencyAlertSchema.index({ 'contact.contactId': 1 });
-emergencyAlertSchema.index({ riskLevel: 1, sentAt: -1 });
-emergencyAlertSchema.index({ status: 1, sentAt: -1 });
-emergencyAlertSchema.index({ isTest: 1, sentAt: -1 });
+<span class="cstat-no" title="statement not covered" >emergencyAlertSchema.index({ userId: 1, sentAt: -1 });</span>
+<span class="cstat-no" title="statement not covered" >emergencyAlertSchema.index({ crisisEventId: 1 });</span>
+<span class="cstat-no" title="statement not covered" >emergencyAlertSchema.index({ 'contact.contactId': 1 });</span>
+<span class="cstat-no" title="statement not covered" >emergencyAlertSchema.index({ riskLevel: 1, sentAt: -1 });</span>
+<span class="cstat-no" title="statement not covered" >emergencyAlertSchema.index({ status: 1, sentAt: -1 });</span>
+<span class="cstat-no" title="statement not covered" >emergencyAlertSchema.index({ isTest: 1, sentAt: -1 });</span>
 &nbsp;
 // Método estático: obtener alertas de un usuario
-emergencyAlertSchema.statics.getUserAlerts = <span class="fstat-no" title="function not covered" >fu</span>nction(userId, options = <span class="branch-0 cbranch-no" title="branch not covered" >{})</span> {
+<span class="cstat-no" title="statement not covered" >emergencyAlertSchema.statics.getUserAlerts = <span class="fstat-no" title="function not covered" >fu</span>nction(userId, options = <span class="branch-0 cbranch-no" title="branch not covered" >{})</span> {</span>
   const {
     limit = <span class="branch-0 cbranch-no" title="branch not covered" >50,</span>
     skip = <span class="branch-0 cbranch-no" title="branch not covered" >0,</span>
@@ -1078,7 +1078,7 @@ emergencyAlertSchema.statics.getUserAlerts = <span class="fstat-no" title="funct
 };
 &nbsp;
 // Método estático: obtener estadísticas de alertas de un usuario
-emergencyAlertSchema.statics.getUserAlertStats = <span class="fstat-no" title="function not covered" >as</span>ync function(userId, days = <span class="branch-0 cbranch-no" title="branch not covered" >30)</span> {
+<span class="cstat-no" title="statement not covered" >emergencyAlertSchema.statics.getUserAlertStats = <span class="fstat-no" title="function not covered" >as</span>ync function(userId, days = <span class="branch-0 cbranch-no" title="branch not covered" >30)</span> {</span>
   const startDate = <span class="cstat-no" title="statement not covered" >new Date(Date.now() - days * 24 * 60 * 60 * 1000);</span>
 &nbsp;
   const alerts = <span class="cstat-no" title="statement not covered" >await this.find({</span>
@@ -1198,7 +1198,7 @@ emergencyAlertSchema.statics.getUserAlertStats = <span class="fstat-no" title="f
 };
 &nbsp;
 // Método estático: detectar patrones en las alertas
-emergencyAlertSchema.statics.detectPatterns = <span class="fstat-no" title="function not covered" >as</span>ync function(userId, days = <span class="branch-0 cbranch-no" title="branch not covered" >90)</span> {
+<span class="cstat-no" title="statement not covered" >emergencyAlertSchema.statics.detectPatterns = <span class="fstat-no" title="function not covered" >as</span>ync function(userId, days = <span class="branch-0 cbranch-no" title="branch not covered" >90)</span> {</span>
   const startDate = <span class="cstat-no" title="statement not covered" >new Date(Date.now() - days * 24 * 60 * 60 * 1000);</span>
 &nbsp;
   const alerts = <span class="cstat-no" title="statement not covered" >await this.find({</span>
@@ -1333,11 +1333,11 @@ emergencyAlertSchema.statics.detectPatterns = <span class="fstat-no" title="func
 };
 &nbsp;
 // Eliminar modelo de caché si existe
-<span class="missing-if-branch" title="if path not taken" >I</span>if (mongoose.models.EmergencyAlert) {
+<span class="cstat-no" title="statement not covered" >if (mongoose.models.EmergencyAlert) {</span>
 <span class="cstat-no" title="statement not covered" >  delete mongoose.models.EmergencyAlert;</span>
 }
 &nbsp;
-const EmergencyAlert = mongoose.model('EmergencyAlert', emergencyAlertSchema);
+const EmergencyAlert = <span class="cstat-no" title="statement not covered" >mongoose.model('EmergencyAlert', emergencyAlertSchema);</span>
 &nbsp;
 export default EmergencyAlert;
 &nbsp;
@@ -1348,7 +1348,7 @@ export default EmergencyAlert;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-09T16:38:34.668Z
+                at 2025-12-10T01:23:11.039Z
             </div>
         <script src="../prettify.js"></script>
         <script>

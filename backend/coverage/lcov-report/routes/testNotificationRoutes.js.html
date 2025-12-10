@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">10.81% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>4/37</span>
+                <span class='fraction'>0/37</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">10.81% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>4/37</span>
+                <span class='fraction'>0/37</span>
             </div>
         
             
@@ -230,13 +230,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -283,18 +283,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -306,6 +297,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -324,7 +324,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -383,13 +383,13 @@ import { authenticateToken } from '../middleware/auth.js';
 import User from '../models/User.js';
 import pushNotificationService from '../services/pushNotificationService.js';
 &nbsp;
-const router = express.Router();
+const router = <span class="cstat-no" title="statement not covered" >express.Router();</span>
 &nbsp;
 /**
  * POST /api/notifications/test/crisis-warning
  * Envía una notificación de prueba de crisis WARNING
  */
-router.post('/test/crisis-warning', authenticateToken, <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {
+<span class="cstat-no" title="statement not covered" >router.post('/test/crisis-warning', authenticateToken, <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const userId = <span class="cstat-no" title="statement not covered" >req.user._id;</span>
     const user = <span class="cstat-no" title="statement not covered" >await User.findById(userId).select('+pushToken');</span>
@@ -436,7 +436,7 @@ router.post('/test/crisis-warning', authenticateToken, <span class="fstat-no" ti
  * POST /api/notifications/test/crisis-medium
  * Envía una notificación de prueba de crisis MEDIUM
  */
-router.post('/test/crisis-medium', authenticateToken, <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {
+<span class="cstat-no" title="statement not covered" >router.post('/test/crisis-medium', authenticateToken, <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const userId = <span class="cstat-no" title="statement not covered" >req.user._id;</span>
     const user = <span class="cstat-no" title="statement not covered" >await User.findById(userId).select('+pushToken');</span>
@@ -477,7 +477,7 @@ router.post('/test/crisis-medium', authenticateToken, <span class="fstat-no" tit
  * POST /api/notifications/test/followup
  * Envía una notificación de prueba de seguimiento
  */
-router.post('/test/followup', authenticateToken, <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {
+<span class="cstat-no" title="statement not covered" >router.post('/test/followup', authenticateToken, <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const userId = <span class="cstat-no" title="statement not covered" >req.user._id;</span>
     const user = <span class="cstat-no" title="statement not covered" >await User.findById(userId).select('+pushToken');</span>
@@ -529,7 +529,7 @@ export default router;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-09T16:38:34.668Z
+                at 2025-12-10T01:23:11.039Z
             </div>
         <script src="../prettify.js"></script>
         <script>

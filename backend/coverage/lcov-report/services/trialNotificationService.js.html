@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">14.06% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>9/64</span>
+                <span class='fraction'>0/64</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">11.76% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>6/51</span>
+                <span class='fraction'>0/51</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">25% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/4</span>
+                <span class='fraction'>0/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">14.28% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>9/63</span>
+                <span class='fraction'>0/63</span>
             </div>
         
             
@@ -412,27 +412,27 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -610,28 +610,28 @@ class TrialNotificationService {
    * @param {string} userId - ID del usuario
    * @returns {Promise&lt;Object&gt;} - Información del trial
    */
-  async getTrialInfo(userId) {
-    try {
-      const user = await User.findById(userId).select('subscription');
-      const subscription = await Subscription.findOne({ userId });
-      const now = new Date();
+<span class="fstat-no" title="function not covered" >  as</span>ync getTrialInfo(userId) {
+<span class="cstat-no" title="statement not covered" >    try {</span>
+      const user = <span class="cstat-no" title="statement not covered" >await User.findById(userId).select('subscription');</span>
+      const subscription = <span class="cstat-no" title="statement not covered" >await Subscription.findOne({ userId });</span>
+      const now = <span class="cstat-no" title="statement not covered" >new Date();</span>
 &nbsp;
       // Verificar trial en modelo User
-      let trialEndDate = user?.subscription?.trialEndDate;
-      let isInTrial = user?.subscription?.status === 'trial' &amp;&amp; 
-<span class="branch-1 cbranch-no" title="branch not covered" >                     trialEndDate </span>&amp;&amp; 
-<span class="branch-2 cbranch-no" title="branch not covered" >                     now &lt;= trialEndDate;</span>
+      let trialEndDate = <span class="cstat-no" title="statement not covered" >user?.subscription?.trialEndDate;</span>
+      let isInTrial = <span class="cstat-no" title="statement not covered" >user?.subscription?.status === 'trial' &amp;&amp; </span>
+                     trialEndDate &amp;&amp; 
+                     now &lt;= trialEndDate;
 &nbsp;
       // Si no está en trial en User, verificar en Subscription
-      <span class="missing-if-branch" title="if path not taken" >I</span>if (!isInTrial &amp;&amp; subscription) {
+<span class="cstat-no" title="statement not covered" >      if (!isInTrial &amp;&amp; subscription) {</span>
 <span class="cstat-no" title="statement not covered" >        trialEndDate = subscription.trialEnd;</span>
 <span class="cstat-no" title="statement not covered" >        isInTrial = subscription.status === 'trialing' &amp;&amp; </span>
                    trialEndDate &amp;&amp; 
                    now &lt;= trialEndDate;
       }
 &nbsp;
-      <span class="missing-if-branch" title="else path not taken" >E</span>if (!isInTrial || <span class="branch-1 cbranch-no" title="branch not covered" >!trialEndDate)</span> {
-        return {
+<span class="cstat-no" title="statement not covered" >      if (!isInTrial || !trialEndDate) {</span>
+<span class="cstat-no" title="statement not covered" >        return {</span>
           isInTrial: false,
           daysRemaining: 0,
           trialEndDate: null,
@@ -667,7 +667,7 @@ export default new TrialNotificationService();
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-09T16:38:34.668Z
+                at 2025-12-10T01:23:11.039Z
             </div>
         <script src="../prettify.js"></script>
         <script>
