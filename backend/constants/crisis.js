@@ -461,21 +461,36 @@ export const evaluateSuicideRisk = (
   // Mensajes muy cortos o neutrales no deben activar crisis
   const contentLength = content.trim().length;
   const isVeryShort = contentLength < 10;
-  const isNeutralGreeting = /^(hola|hi|hello|buenos.*d[ií]as|buenas.*tardes|buenas.*noches|qué.*tal|qué.*pasa|qué.*pasó|qué.*hubo|qué.*hace|qué.*haces|como.*estás|como.*andas|todo.*bien|estoy.*bien|está.*bien|están.*bien)$/i.test(content.trim());
-  const isPositiveMessage = /^(todo.*bien|estoy.*bien|está.*bien|están.*bien|muy.*bien|excelente|genial|perfecto|bien.*gracias|bien.*y.*tú|bien.*y.*vos)$/i.test(content.trim());
+  const trimmedContent = content.trim();
   
-  // Si es un saludo neutral o mensaje positivo muy corto, reducir significativamente el score
-  if (isNeutralGreeting || isPositiveMessage) {
-    riskScore = Math.max(0, riskScore - 3); // Reducir significativamente
-  } else if (isVeryShort && riskScore < 3) {
-    // Mensajes muy cortos con score bajo probablemente no son crisis
-    riskScore = Math.max(0, riskScore - 1);
+  // Detectar saludos y preguntas simples (deben tener score 0)
+  // IMPORTANTE: Estas validaciones deben ir ANTES de calcular el score para evitar falsos positivos
+  const isNeutralGreeting = /^(hola|hi|hello|buenos.*d[ií]as|buenas.*tardes|buenas.*noches|qué.*tal|qué.*pasa|qué.*pasó|qué.*hubo|todo.*bien|estoy.*bien|está.*bien|están.*bien)$/i.test(trimmedContent);
+  const isSimpleQuestion = /^(quien.*eres|qué.*haces|qué.*es|qué.*sos|qué.*hace|qué.*hacen|qué.*es.*esto|quien.*sos|quien.*es|como.*funciona|para.*qué.*sirve|qué.*puedes.*hacer|qué.*ofreces|quien.*eres.*y.*qué.*haces|quien.*eres.*y.*que.*haces)$/i.test(trimmedContent);
+  const isPositiveMessage = /^(todo.*bien|estoy.*bien|está.*bien|están.*bien|muy.*bien|excelente|genial|perfecto|bien.*gracias|bien.*y.*tú|bien.*y.*vos)$/i.test(trimmedContent);
+  const isJustQuestionMarks = /^\?+$/i.test(trimmedContent);
+  
+  // Si es un saludo, pregunta simple sobre el sistema, o solo signos de interrogación, score = 0
+  if (isNeutralGreeting || isSimpleQuestion || isJustQuestionMarks || isPositiveMessage) {
+    return 'LOW'; // Retornar directamente LOW sin calcular score
+  }
+  
+  // Si es muy corto y no tiene indicadores de crisis, reducir score
+  if (isVeryShort && riskScore < 3) {
+    riskScore = Math.max(0, riskScore - 2);
   }
   
   // Si el mensaje menciona eventos positivos o neutrales, reducir score
   const hasPositiveEvents = /(?:graduaci[oó]n|fiesta|celebraci[oó]n|cumpleaños|boda|nacimiento|logro|éxito|felicidad|alegría|contento|satisfecho)/i.test(content);
   if (hasPositiveEvents && riskScore < 4) {
-    riskScore = Math.max(0, riskScore - 1.5);
+    riskScore = Math.max(0, riskScore - 2);
+  }
+  
+  // Validación adicional: si el mensaje es una pregunta simple sobre el sistema, score = 0
+  const isSystemQuestion = /(?:quien.*eres|qué.*haces|qué.*es|qué.*sos|como.*funciona|para.*qué.*sirve|qué.*puedes.*hacer|qué.*ofreces)/i.test(content);
+  if (isSystemQuestion) {
+    riskScore = 0;
+    return 'LOW';
   }
   
   // ========== DETERMINAR NIVEL DE RIESGO ==========

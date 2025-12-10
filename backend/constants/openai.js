@@ -16,12 +16,14 @@
 export const OPENAI_MODEL = 'gpt-5-mini';
 
 // ========== LONGITUDES DE RESPUESTA (tokens) ==========
-// Valores optimizados para conversaciones naturales (1-2 oraciones máximo)
+// Valores optimizados para GPT-5 Mini (incluye espacio para reasoning tokens)
+// GPT-5 Mini usa tokens de "reasoning" que cuentan contra max_completion_tokens
+// pero no generan contenido visible, por lo que necesitamos límites más altos
 export const RESPONSE_LENGTHS = {
-  SHORT: 50,     // Respuestas cortas (saludos, confirmaciones) - 1 oración
-  MEDIUM: 70,    // Respuestas normales (la mayoría de casos) - 1-2 oraciones
-  LONG: 100,     // Respuestas largas (solo para situaciones urgentes/crisis) - máximo 2-3 oraciones
-  CONTEXT_ANALYSIS: 100  // Para análisis de contexto interno
+  SHORT: 150,    // Respuestas cortas (saludos, confirmaciones) - 1 oración (50 reasoning + 100 contenido)
+  MEDIUM: 200,   // Respuestas normales (la mayoría de casos) - 1-2 oraciones (70 reasoning + 130 contenido)
+  LONG: 300,     // Respuestas largas (solo para situaciones urgentes/crisis) - máximo 2-3 oraciones (100 reasoning + 200 contenido)
+  CONTEXT_ANALYSIS: 200  // Para análisis de contexto interno
 };
 
 // ========== TEMPERATURAS PARA DIFERENTES CONTEXTOS ==========
@@ -693,82 +695,32 @@ export const COMMUNICATION_STYLE_GUIDELINES = {
 // ========== PLANTILLAS DE PROMPT ==========
 // Plantillas base para construir prompts personalizados
 export const PROMPT_TEMPLATES = {
-  // Plantilla base del sistema
-  SYSTEM_BASE: `Eres Anto, un asistente terapéutico profesional y empático.
+  // Plantilla base del sistema (optimizada para GPT-5 Mini)
+  SYSTEM_BASE: `Eres Anto, asistente terapéutico empático. Proporciona apoyo emocional breve (1-2 oraciones máximo). Responde de forma natural y contextual.`,
 
-Tu objetivo es proporcionar apoyo emocional, validación y herramientas útiles de manera breve, empática y contextualmente relevante.`,
+  // Sección de contexto (optimizada)
+  CONTEXT_SECTION: `CONTEXTO: {timeOfDay} | Emoción: {emotion} (intensidad {intensity}) | Intención: {intent} | Estilo: {communicationStyle}`,
 
-  // Sección de contexto
-  CONTEXT_SECTION: `CONTEXTO ACTUAL:
-- Momento del día: {timeOfDay}
-- Estado emocional: {emotion} (intensidad: {intensity})
-- Temas recurrentes: {recurringThemes}
-- Estilo comunicativo preferido: {communicationStyle}
-- Fase terapéutica: {phase}
-- Intención detectada: {intent}
-- Última interacción: {lastInteraction}`,
+  // Sección de directrices emocionales (optimizada)
+  EMOTION_GUIDELINES: `{emotion}: {approach}. Prioridad: {focus}. Tono: {tone}. Evitar: {avoid}.`,
 
-  // Sección de directrices emocionales
-  EMOTION_GUIDELINES: `DIRECTRICES ESPECÍFICAS PARA {emotion}:
-- Enfoque: {approach}
-- Prioridad: {focus}
-- Evitar: {avoid}
-- Técnicas recomendadas: {techniques}
-- Tono: {tone}`,
+  // Sección de directrices por fase (optimizada)
+  PHASE_GUIDELINES: `Fase {phase}: {focus}. Profundidad: {depth}.`,
 
-  // Sección de directrices por fase
-  PHASE_GUIDELINES: `DIRECTRICES PARA FASE {phase}:
-- Enfoque principal: {focus}
-- Técnicas apropiadas: {techniques}
-- Profundidad: {depth}
-- Estructura: {structure}
-- Objetivos: {goals}`,
+  // Sección de directrices por intensidad (optimizada)
+  INTENSITY_GUIDELINES: `Intensidad {intensityLevel}: {approach}. Urgencia: {urgency}.`,
 
-  // Sección de directrices por intensidad
-  INTENSITY_GUIDELINES: `DIRECTRICES POR INTENSIDAD ({intensityLevel}):
-- Enfoque: {approach}
-- Prioridad: {focus}
-- Urgencia: {urgency}
-- Longitud recomendada: {length}
-- Técnicas: {techniques}`,
+  // Sección de directrices por intención (optimizada)
+  INTENT_GUIDELINES: `Intención {intent}: {priority}. Enfoque: {focus}.`,
 
-  // Sección de directrices por intención
-  INTENT_GUIDELINES: `DIRECTRICES POR INTENCIÓN ({intent}):
-- Prioridad: {priority}
-- Enfoque: {focus}
-- Estilo de respuesta: {responseStyle}
-- Técnicas: {techniques}
-- Longitud: {length}`,
+  // Sección de estilo comunicativo (optimizada)
+  STYLE_GUIDELINES: `Estilo {style}: {tone}. {validation}`,
 
-  // Sección de estilo comunicativo
-  STYLE_GUIDELINES: `ESTILO COMUNICATIVO ({style}):
-- Tono: {tone}
-- Estructura: {structure}
-- Validación: {validation}
-- Reflexión: {reflection}
-- Directividad: {directness}
-- Ejemplos: {examples}`,
+  // Reglas generales (optimizadas para GPT-5 Mini)
+  GENERAL_RULES: `REGLAS: Máximo {maxWords} palabras (1-2 oraciones). Responde breve y natural. Mantén continuidad emocional. Si emoción es NEGATIVA (tristeza, ansiedad, enojo, miedo, vergüenza, culpa), usa frases empáticas como "lamento escuchar eso", "entiendo cómo te sientes", NUNCA "es genial" o "qué bueno".`,
 
-  // Reglas generales
-  GENERAL_RULES: `REGLAS GENERALES:
-- **CRÍTICO: Sé EXTREMADAMENTE conciso. Máximo {maxWords} palabras (1-2 oraciones cortas máximo). Esto es una conversación natural, no un monólogo.**
-- **IMPORTANTE: Responde como en una conversación real: breve, directo, natural. Evita explicaciones largas o múltiples párrafos.**
-- Mantén continuidad emocional con mensajes anteriores
-- Evita repeticiones exactas de respuestas anteriores
-- Prioriza la validación emocional cuando sea apropiado, pero de forma breve
-- Incluye elementos de apoyo concretos y sugerencias útiles, pero de forma concisa
-- NO cambies abruptamente de tema emocional
-- SÍ conecta tus respuestas con el estado emocional del usuario
-- **CRÍTICO: Si la emoción detectada es NEGATIVA (tristeza, ansiedad, enojo, miedo, vergüenza, culpa), NUNCA uses frases positivas como "es genial escuchar eso", "me alegra", "qué bueno". En su lugar, usa frases empáticas como "lamento escuchar eso", "entiendo cómo te sientes", "es válido sentirse así".**
-- **TÉCNICAS TERAPÉUTICAS**: El sistema seleccionará automáticamente técnicas apropiadas (TCC, DBT, ACT) según la emoción e intensidad. Estas se agregarán a tu respuesta cuando sea apropiado. NO necesitas mencionarlas explícitamente en tu respuesta principal, ya que se incluirán automáticamente.`,
-
-  // Estructura de respuesta
-  RESPONSE_STRUCTURE: `ESTRUCTURA DE RESPUESTA:
-1. Reconocimiento empático breve (1 oración corta, máximo 15 palabras)
-2. Validación o apoyo concreto (1 oración corta, máximo 15 palabras) - OPCIONAL si ya está incluido en el reconocimiento
-3. Pregunta breve o invitación a continuar (opcional, máximo 10 palabras)
-
-**IMPORTANTE**: La respuesta completa debe ser 1-2 oraciones máximo. Si puedes decir lo mismo en 1 oración, hazlo.`
+  // Estructura de respuesta (optimizada)
+  RESPONSE_STRUCTURE: `ESTRUCTURA: 1) Reconocimiento empático breve (máx 15 palabras). 2) Validación/apoyo (máx 15 palabras, opcional). 3) Pregunta breve (máx 10 palabras, opcional). Total: 1-2 oraciones máximo.`
 };
 
 // ========== FUNCIONES HELPER PARA PROMPTS ==========
@@ -859,16 +811,13 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
   // Construir el prompt
   let prompt = PROMPT_TEMPLATES.SYSTEM_BASE + '\n\n';
 
-  // Sección de contexto
+  // Sección de contexto (optimizada)
   prompt += PROMPT_TEMPLATES.CONTEXT_SECTION
     .replace('{timeOfDay}', timeOfDay)
     .replace('{emotion}', emotion)
     .replace('{intensity}', intensity)
-    .replace('{recurringThemes}', recurringThemes.length > 0 ? recurringThemes.join(', ') : 'ninguno')
-    .replace('{communicationStyle}', communicationStyle)
-    .replace('{phase}', phase)
     .replace('{intent}', intent)
-    .replace('{lastInteraction}', lastInteraction) + '\n\n';
+    .replace('{communicationStyle}', communicationStyle) + '\n\n';
 
   // Directrices por emoción
   let emotionGuidelinesText = PROMPT_TEMPLATES.EMOTION_GUIDELINES
@@ -886,52 +835,29 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
   
   prompt += emotionGuidelinesText + '\n\n';
 
-  // Directrices por fase
+  // Directrices por fase (optimizada)
   prompt += PROMPT_TEMPLATES.PHASE_GUIDELINES
     .replace('{phase}', phase)
     .replace('{focus}', phaseGuidelines.focus)
-    .replace('{techniques}', phaseGuidelines.techniques.join(', '))
-    .replace('{depth}', phaseGuidelines.depth)
-    .replace('{structure}', phaseGuidelines.structure)
-    .replace('{goals}', phaseGuidelines.goals) + '\n\n';
+    .replace('{depth}', phaseGuidelines.depth) + '\n\n';
 
-  // Directrices por intensidad
+  // Directrices por intensidad (optimizada)
   prompt += PROMPT_TEMPLATES.INTENSITY_GUIDELINES
     .replace('{intensityLevel}', intensityLevel)
     .replace('{approach}', intensityGuidelines.approach)
-    .replace('{focus}', intensityGuidelines.focus)
-    .replace('{urgency}', intensityGuidelines.urgency)
-    .replace('{length}', intensityGuidelines.length)
-    .replace('{techniques}', intensityGuidelines.techniques.join(', '));
-  
-  if (intensityGuidelines.warning) {
-    prompt += `\n⚠️ ${intensityGuidelines.warning}`;
-  }
-  prompt += '\n\n';
+    .replace('{urgency}', intensityGuidelines.urgency) + '\n\n';
 
-  // Directrices por intención
+  // Directrices por intención (optimizada)
   prompt += PROMPT_TEMPLATES.INTENT_GUIDELINES
     .replace('{intent}', intent)
     .replace('{priority}', intentGuidelines.priority)
-    .replace('{focus}', intentGuidelines.focus)
-    .replace('{responseStyle}', intentGuidelines.responseStyle)
-    .replace('{techniques}', intentGuidelines.techniques.join(', '))
-    .replace('{length}', intentGuidelines.length);
-  
-  if (intentGuidelines.warning) {
-    prompt += `\n⚠️ ${intentGuidelines.warning}`;
-  }
-  prompt += '\n\n';
+    .replace('{focus}', intentGuidelines.focus) + '\n\n';
 
-  // Directrices por estilo comunicativo
+  // Directrices por estilo comunicativo (optimizada)
   prompt += PROMPT_TEMPLATES.STYLE_GUIDELINES
     .replace('{style}', communicationStyle)
     .replace('{tone}', styleGuidelines.tone)
-    .replace('{structure}', styleGuidelines.structure)
-    .replace('{validation}', styleGuidelines.validation)
-    .replace('{reflection}', styleGuidelines.reflection)
-    .replace('{directness}', styleGuidelines.directness)
-    .replace('{examples}', styleGuidelines.examples) + '\n\n';
+    .replace('{validation}', styleGuidelines.validation) + '\n\n';
 
   // NUEVO: Información de subtipo emocional si existe
   if (subtype) {

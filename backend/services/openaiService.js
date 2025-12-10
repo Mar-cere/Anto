@@ -205,13 +205,12 @@ class OpenAIService {
 
       // 4. Generar Respuesta con OpenAI
 
-      // Logging del prompt para debugging (solo en desarrollo)
-      if (process.env.NODE_ENV === 'development') {
-        const promptLength = prompt.systemMessage.length;
-        const contextMessagesCount = prompt.contextMessages?.length || 0;
-        const userMessageLength = contenidoNormalizado.length;
-        console.log(`[OpenAI] Prompt length: ${promptLength} chars, Context messages: ${contextMessagesCount}, User message: ${userMessageLength} chars`);
-      }
+      // Logging del prompt para debugging
+      const maxTokens = this.determinarLongitudRespuesta(analisisContextual);
+      const promptLength = prompt.systemMessage.length;
+      const contextMessagesCount = prompt.contextMessages?.length || 0;
+      const userMessageLength = contenidoNormalizado.length;
+      console.log(`[OpenAI] Prompt length: ${promptLength} chars, Context messages: ${contextMessagesCount}, User message: ${userMessageLength} chars, Max completion tokens: ${maxTokens}`);
 
       let completion;
       try {
@@ -261,19 +260,28 @@ class OpenAIService {
 
       let respuestaGenerada = completion.choices[0]?.message?.content?.trim();
       const finishReason = completion.choices[0]?.finish_reason;
+      const usage = completion.usage || {};
+      const reasoningTokens = usage.completion_tokens_details?.reasoning_tokens || 0;
+      const actualContentTokens = usage.completion_tokens - reasoningTokens;
 
       // Validar que se generó una respuesta
       if (!respuestaGenerada) {
         console.error('❌ OpenAI devolvió una respuesta vacía:', {
-          completion: JSON.stringify(completion, null, 2),
-          firstChoice: completion.choices[0],
-          message: completion.choices[0]?.message,
-          content: completion.choices[0]?.message?.content,
           finishReason: finishReason,
           promptLength: prompt.systemMessage.length,
           contextMessagesCount: prompt.contextMessages?.length || 0,
-          maxCompletionTokens: this.determinarLongitudRespuesta(analisisContextual)
+          maxCompletionTokens: this.determinarLongitudRespuesta(analisisContextual),
+          totalCompletionTokens: usage.completion_tokens,
+          reasoningTokens: reasoningTokens,
+          actualContentTokens: actualContentTokens,
+          promptTokens: usage.prompt_tokens,
+          totalTokens: usage.total_tokens
         });
+        
+        // Si el finish_reason es 'length' y hay reasoning tokens, el límite es muy bajo
+        if (finishReason === 'length' && reasoningTokens > 0) {
+          console.warn(`⚠️ Límite de tokens alcanzado. Se usaron ${reasoningTokens} tokens de reasoning (razonamiento interno) que no generan contenido visible. Considera aumentar max_completion_tokens.`);
+        }
         
         // FALLBACK: Generar respuesta básica empática si OpenAI no responde
         console.warn('⚠️ Usando respuesta de fallback debido a respuesta vacía de OpenAI');
@@ -1169,6 +1177,19 @@ class OpenAIService {
     const emotion = analisisEmocional?.mainEmotion || 'neutral';
     const intensity = analisisEmocional?.intensity || 5;
     const intent = analisisContextual?.intencion?.tipo || MESSAGE_INTENTS.EMOTIONAL_SUPPORT;
+    const content = analisisContextual?.content || '';
+    
+    // Detectar preguntas sobre el sistema
+    const isSystemQuestion = /(?:quien.*eres|qué.*haces|qué.*es|qué.*sos|como.*funciona|para.*qué.*sirve|qué.*puedes.*hacer|qué.*ofreces)/i.test(content);
+    if (isSystemQuestion) {
+      return 'Soy Anto, tu asistente terapéutico. Estoy aquí para brindarte apoyo emocional, escucharte y ayudarte a navegar tus emociones. ¿En qué puedo ayudarte hoy?';
+    }
+    
+    // Detectar saludos
+    const isGreeting = /^(hola|hi|hello|buenos.*d[ií]as|buenas.*tardes|buenas.*noches|qué.*tal)$/i.test(content.trim());
+    if (isGreeting) {
+      return '¡Hola! Soy Anto, tu asistente terapéutico. Estoy aquí para escucharte y apoyarte. ¿Cómo puedo ayudarte hoy?';
+    }
     
     // Respuestas empáticas básicas según emoción
     const fallbackResponses = {
