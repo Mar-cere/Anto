@@ -174,6 +174,9 @@ const saveAuthData = async (tokens, user, email) => {
 };
 
 const RegisterScreen = ({ navigation }) => {
+  // Estado de red
+  const { isConnected, isInternetReachable } = useNetworkStatus();
+  const isOffline = !isConnected || isInternetReachable === false;
   // Referencias para animaciones
   const buttonScale = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(INITIAL_OPACITY)).current;
@@ -310,6 +313,18 @@ const RegisterScreen = ({ navigation }) => {
       setIsSubmitting(true);
       setIsLoading(true);
 
+      // Verificar si está offline antes de intentar registro
+      if (isOffline) {
+        Alert.alert(
+          'Sin conexión',
+          'No hay conexión a internet. Por favor, verifica tu conexión e intenta nuevamente.',
+          [{ text: 'Entendido' }]
+        );
+        setIsSubmitting(false);
+        setIsLoading(false);
+        return;
+      }
+
       // Verificar conexión con el servidor
       const isServerAvailable = await checkServerStatus(SERVER_CHECK_TIMEOUT);
       if (!isServerAvailable) {
@@ -362,6 +377,10 @@ const RegisterScreen = ({ navigation }) => {
   return (
     <KeyboardAwareScrollView contentContainerStyle={styles.container}>
       <StatusBar barStyle={STATUS_BAR_STYLE} backgroundColor={STATUS_BAR_BACKGROUND} />
+      
+      {/* Offline Banner */}
+      <OfflineBanner />
+      
       <ImageBackground 
         source={require('../images/back.png')} 
         style={styles.background} 
@@ -554,7 +573,7 @@ const RegisterScreen = ({ navigation }) => {
             <TouchableOpacity
               style={[globalStyles.modernButton, isSubmitting && globalStyles.disabledButton]}
               onPress={handleRegister}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isOffline}
               activeOpacity={BUTTON_ACTIVE_OPACITY}
               accessibilityLabel={TEXTS.REGISTER_BUTTON}
               testID="registerButton"

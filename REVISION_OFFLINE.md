@@ -232,6 +232,11 @@ const handleError = (error) => {
 - ✅ Banner visual cuando está offline
 - ✅ Mensajes de error específicos para errores de red
 - ✅ Detección de tipo de conexión (wifi, cellular, etc.)
+- ✅ **Manejo de login/registro offline:**
+  - ✅ Botones deshabilitados cuando está offline
+  - ✅ Verificación de conexión antes de intentar login/registro
+  - ✅ Mensajes de error específicos para offline
+  - ✅ Banner offline visible en pantallas de autenticación
 
 ### Nota:
 

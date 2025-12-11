@@ -28,9 +28,11 @@ import {
   View
 } from 'react-native';
 import ParticleBackground from '../components/ParticleBackground';
+import OfflineBanner from '../components/OfflineBanner';
 import { api, ENDPOINTS } from '../config/api';
 import { ROUTES } from '../constants/routes';
 import { colors, globalStyles } from '../styles/globalStyles';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 // Constantes de animación
 const ANIMATION_INITIAL_DELAY = 500; // ms
@@ -130,7 +132,24 @@ const validateField = (field, value) => {
 };
 
 // Helper: obtener mensaje de error según código de estado
-const getErrorMessage = (error) => {
+const getErrorMessage = (error, isOffline = false) => {
+  // Si está offline, siempre mostrar mensaje de conexión
+  if (isOffline) {
+    return ERROR_MESSAGES.CONNECTION_ERROR;
+  }
+  
+  // Detectar errores de red específicos
+  const isNetworkError = 
+    error.message?.includes('Network request failed') ||
+    error.message?.includes('network') ||
+    error.message?.includes('ECONNREFUSED') ||
+    error.message?.includes('timeout') ||
+    !error.response;
+  
+  if (isNetworkError) {
+    return ERROR_MESSAGES.CONNECTION_ERROR;
+  }
+  
   if (error.response?.status === HTTP_STATUS.UNAUTHORIZED) {
     return ERROR_MESSAGES.INVALID_CREDENTIALS;
   }
@@ -142,9 +161,6 @@ const getErrorMessage = (error) => {
   }
   if (error.response?.data?.message) {
     return error.response.data.message;
-  }
-  if (!error.response) {
-    return ERROR_MESSAGES.CONNECTION_ERROR;
   }
   return ERROR_MESSAGES.GENERIC_ERROR;
 };
@@ -168,6 +184,10 @@ const saveAuthData = async (tokens, user, email) => {
 
 const SignInScreen = () => {
   const navigation = useNavigation();
+  
+  // Estado de red
+  const { isConnected, isInternetReachable } = useNetworkStatus();
+  const isOffline = !isConnected || isInternetReachable === false;
   
   // Animaciones
   const fadeAnim = useRef(new Animated.Value(INITIAL_OPACITY)).current;
@@ -287,6 +307,17 @@ const SignInScreen = () => {
         return;
       }
 
+      // Verificar si está offline antes de intentar login
+      if (isOffline) {
+        Alert.alert(
+          'Sin conexión',
+          'No hay conexión a internet. Por favor, verifica tu conexión e intenta nuevamente.',
+          [{ text: 'Entendido' }]
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
       const response = await api.post(ENDPOINTS.LOGIN, {
         email: formData.email.toLowerCase().trim(),
         password: formData.password
@@ -319,7 +350,7 @@ const SignInScreen = () => {
       }
     } catch (error) {
       console.error('Error en login:', error);
-      const errorMessage = getErrorMessage(error);
+      const errorMessage = getErrorMessage(error, isOffline);
       Alert.alert('Error', errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -340,12 +371,17 @@ const SignInScreen = () => {
     !formData.email || 
     !formData.password ||
     errors.email || 
-    errors.password
+    errors.password ||
+    isOffline // Deshabilitar botón si está offline
   );
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle={STATUS_BAR_STYLE} backgroundColor={STATUS_BAR_BACKGROUND} />
+      
+      {/* Offline Banner */}
+      <OfflineBanner />
+      
       <ImageBackground 
         source={require('../images/back.png')} 
         style={styles.background} 
