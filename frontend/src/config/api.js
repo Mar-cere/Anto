@@ -116,10 +116,13 @@ export const ENDPOINTS = {
   THERAPEUTIC_TECHNIQUES_STATS: '/api/therapeutic-techniques/stats',
 };
 
+// Timeout configurable según ambiente
+const REQUEST_TIMEOUT = __DEV__ ? 30000 : 15000; // 30s en dev, 15s en prod
+
 const makeRequest = (url, options) => {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.timeout = 15000;
+    xhr.timeout = REQUEST_TIMEOUT;
 
     xhr.onload = function() {
       if (xhr.status >= 200 && xhr.status < 300) {

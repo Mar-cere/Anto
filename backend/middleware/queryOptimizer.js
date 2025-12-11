@@ -7,6 +7,7 @@
  */
 
 import mongoose from 'mongoose';
+import logger from '../utils/logger.js';
 
 /**
  * Agrega índices compuestos comunes si no existen
@@ -47,9 +48,9 @@ export const ensureIndexes = async () => {
     await Subscription.collection.createIndex({ userId: 1 });
     await Subscription.collection.createIndex({ status: 1, trialEndDate: 1 });
 
-    console.log('✅ Índices de base de datos verificados/creados');
+    logger.info('✅ Índices de base de datos verificados/creados');
   } catch (error) {
-    console.warn('⚠️ Error al crear índices (puede ser normal si ya existen):', error.message);
+    logger.warn('⚠️ Error al crear índices (puede ser normal si ya existen):', { error: error.message });
   }
 };
 
