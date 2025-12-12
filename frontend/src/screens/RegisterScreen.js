@@ -27,6 +27,7 @@ import {
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import ParticleBackground from '../components/ParticleBackground';
+import OfflineBanner from '../components/OfflineBanner';
 import { api, ENDPOINTS } from '../config/api';
 import {
   ANIMATION_DELAYS,
@@ -40,6 +41,7 @@ import { OPACITIES, SCALES, STATUS_BAR } from '../constants/ui';
 import { VALIDATION_LENGTHS, VALIDATION_REGEX } from '../constants/validation';
 import { colors, globalStyles } from '../styles/globalStyles';
 import { checkServerStatus } from '../utils/networkUtils';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 // Constantes de animación (usando constantes compartidas)
 const ANIMATION_INITIAL_DELAY = ANIMATION_DELAYS.LONG;

@@ -686,6 +686,31 @@ const ChatScreen = () => {
     );
   }, [isTyping]);
 
+  // Verificar autenticación al montar
+  useEffect(() => {
+    const checkAuthentication = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token) {
+          // Si no hay token, redirigir a SignIn
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'SignIn' }],
+          });
+          return;
+        }
+      } catch (error) {
+        console.error('[ChatScreen] Error verificando autenticación:', error);
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'SignIn' }],
+        });
+      }
+    };
+    
+    checkAuthentication();
+  }, [navigation]);
+
   useFocusEffect(
     useCallback(() => {
       // Recargar info de trial cuando la pantalla recibe foco
@@ -717,7 +742,56 @@ const ChatScreen = () => {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={async () => {
+            try {
+              // Verificar autenticación antes de volver
+              const token = await AsyncStorage.getItem('userToken');
+              
+              if (!token) {
+                // Si no hay token, ir a Home
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Home' }],
+                });
+                return;
+              }
+              
+              // Si hay token, verificar si puede volver
+              if (navigation.canGoBack()) {
+                // Verificar si estamos dentro del TabNavigator
+                const parent = navigation.getParent();
+                if (parent) {
+                  const parentState = parent.getState();
+                  const parentRoutes = parentState?.routes || [];
+                  
+                  // Si la ruta anterior en el stack es Home, volver a Home
+                  if (parentRoutes.length > 1) {
+                    const previousRoute = parentRoutes[parentRoutes.length - 2];
+                    if (previousRoute?.name === 'Home') {
+                      parent.navigate('Home');
+                      return;
+                    }
+                  }
+                }
+                
+                // Si no viene de Home, hacer goBack normal
+                navigation.goBack();
+              } else {
+                // Si no puede volver, ir a Home
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Home' }],
+                });
+              }
+            } catch (error) {
+              console.error('[ChatScreen] Error en goBack:', error);
+              // En caso de error, ir a Home
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Home' }],
+              });
+            }
+          }}
         >
           <Ionicons name="arrow-back" size={ICON_SIZE_BACK} color={COLORS.PRIMARY} />
         </TouchableOpacity>
