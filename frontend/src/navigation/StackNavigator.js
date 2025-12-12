@@ -15,7 +15,6 @@ import DashScreen from '../screens/DashScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import FaQScreen from '../screens/FaQScreen';
 import HabitsScreen from '../screens/HabitsScreen';
-import HelpScreen from '../screens/HelpScreen';
 import HomeScreen from '../screens/HomeScreen';
 import NewPasswordScreen from '../screens/NewPasswordScreen';
 import PomodoroScreen from '../screens/PomodoroScreen';
@@ -66,7 +65,6 @@ const ROUTE_NAMES = {
   TASKS: 'Tasks',
   HABITS: 'Habits',
   EDIT_PROFILE: 'EditProfile',
-  HELP: 'Help',
   POMODORO: 'Pomodoro',
   CRISIS_DASHBOARD: 'CrisisDashboard',
   EMERGENCY_ALERTS_HISTORY: 'EmergencyAlertsHistory',
@@ -85,7 +83,7 @@ const ROUTE_NAMES = {
  * Incluye:
  * - Pantallas de autenticación (SignIn, Register, RecoverPassword, etc.)
  * - TabNavigator para las pantallas principales con tabs
- * - Otras pantallas (Tasks, Habits, Pomodoro, EditProfile, Help, etc.)
+ * - Otras pantallas (Tasks, Habits, Pomodoro, EditProfile, FAQ, etc.)
  * 
  * El header está oculto por defecto para permitir headers personalizados
  * en cada pantalla.
@@ -169,11 +167,6 @@ const StackNavigator = () => {
       <Stack.Screen 
         name={ROUTE_NAMES.EDIT_PROFILE} 
         component={EditProfileScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen 
-        name={ROUTE_NAMES.HELP} 
-        component={HelpScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen 

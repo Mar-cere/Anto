@@ -465,7 +465,7 @@ const ProfileScreen = ({ navigation }) => {
 
             <TouchableOpacity 
               style={styles.optionButton}
-              onPress={() => navigation.navigate('Help')}
+              onPress={() => navigation.navigate('FaQ')}
               accessibilityLabel={TEXTS.HELP_LABEL}
             >
               <MaterialCommunityIcons 
