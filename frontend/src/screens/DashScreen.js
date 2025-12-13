@@ -34,6 +34,7 @@ import HabitCard from '../components/HabitCard';
 import Header from '../components/Header';
 import ParticleBackground from '../components/ParticleBackground';
 import PomodoroCard from '../components/PomodoroCard';
+import JournalCard from '../components/JournalCard';
 import QuoteSection from '../components/QuoteSection';
 import TaskCard from '../components/TaskCard';
 import { api, ENDPOINTS } from '../config/api';
@@ -472,6 +473,9 @@ const DashScreen = () => {
             />
           </Animated.View>
           <PomodoroCard accessibilityLabel={DASH.POMODORO_LABEL} />
+          <Animated.View style={refreshAnimationStyle}>
+            <JournalCard />
+          </Animated.View>
         </DashboardScroll>
         <FloatingNavBar activeTab="home" accessibilityLabel={DASH.NAVBAR_LABEL} />
       </ImageBackground>
