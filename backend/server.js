@@ -46,6 +46,7 @@ import taskRoutes from './routes/taskRoutes.js';
 import testNotificationRoutes from './routes/testNotificationRoutes.js';
 import therapeuticTechniquesRoutes from './routes/therapeuticTechniquesRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import journalRoutes from './routes/journalRoutes.js';
 
 // Constantes de configuración
 const APP_VERSION = '1.2.0';
@@ -336,6 +337,7 @@ connectMongoDB();
 logger.info('📋 Registrando rutas de la API...');
 app.use('/api/tasks', taskRoutes);
 app.use('/api/habits', habitRoutes);
+app.use('/api/journals', journalRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);

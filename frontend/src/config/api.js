@@ -52,6 +52,12 @@ export const ENDPOINTS = {
   HABITS_ACTIVE: '/api/habits/active',
   HABIT_BY_ID: (id) => `/api/habits/${id}`,
   HABIT_COMPLETE: (id) => `/api/habits/${id}/complete`,
+  
+  // Journals (Diario de Gratitud)
+  JOURNALS: '/api/journals',
+  JOURNAL_BY_ID: (id) => `/api/journals/${id}`,
+  JOURNALS_STATS: '/api/journals/stats',
+  JOURNAL_ARCHIVE: (id) => `/api/journals/${id}/archive`,
 
   // Chat
   CHAT: '/api/chat',

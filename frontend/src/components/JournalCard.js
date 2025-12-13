@@ -42,11 +42,19 @@ const JournalCard = () => {
     navigation.navigate('GratitudeJournal');
   };
 
+  const handleViewAll = () => {
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+    navigation.navigate('GratitudeJournal');
+  };
+
   return (
     <Animated.View style={[commonStyles.cardContainer, { transform: [{ scale: scaleAnim }] }]}>
       <CardHeader 
         icon="book-heart"
         title="Diario de Gratitud"
+        onViewAll={handleViewAll}
       />
       <TouchableOpacity
         style={styles.journalButton}

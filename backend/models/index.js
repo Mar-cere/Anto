@@ -13,6 +13,7 @@ import EmergencyAlert from './EmergencyAlert.js';
 import TherapeuticTechniqueUsage from './TherapeuticTechniqueUsage.js';
 import Transaction from './Transaction.js';
 import Subscription from './Subscription.js';
+import Journal from './Journal.js';
 
 // Validar que todos los modelos estén correctamente exportados
 const models = {
@@ -31,6 +32,7 @@ const models = {
   TherapeuticTechniqueUsage,
   Transaction,
   Subscription,
+  Journal,
 };
 
 // Verificar que cada modelo sea válido
@@ -56,6 +58,7 @@ export {
   TherapeuticTechniqueUsage,
   Transaction,
   Subscription,
+  Journal,
 };
 
 export default models; 
