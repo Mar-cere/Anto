@@ -51,17 +51,12 @@ const TEXTS = {
   EDIT_PROFILE: 'Editar perfil',
   CHANGE_AVATAR: 'Cambiar foto de perfil',
   PERSONAL_INFO: 'Información Personal',
-  PREFERENCES: 'Preferencias',
   NAME: 'Nombre',
   USERNAME: 'Nombre de Usuario',
   USERNAME_HELPER: 'El nombre de usuario no se puede cambiar',
   EMAIL: 'Correo Electrónico',
   ADD_NAME: 'Agregar nombre',
   EMAIL_PLACEHOLDER: 'Correo electrónico',
-  NOTIFICATIONS: 'Notificaciones',
-  THEME: 'Tema',
-  THEME_LIGHT: 'Claro',
-  THEME_DARK: 'Oscuro',
   SAVED: '¡Guardado!',
   PERMISSION_REQUIRED: 'Permiso requerido',
   PERMISSION_MESSAGE: 'Se necesita acceso a la galería para cambiar la foto de perfil.',
@@ -175,16 +170,9 @@ const DEFAULT_FORM_DATA = {
   avatar: null,
   name: '',
   username: '',
-  email: '',
-  notifications: true,
-  theme: 'light'
+  email: ''
 };
 
-// Constantes de temas
-const THEMES = {
-  LIGHT: 'light',
-  DARK: 'dark',
-};
 
 // Constantes de AsyncStorage
 const STORAGE_KEYS = {
@@ -271,9 +259,7 @@ const EditProfileScreen = ({ navigation }) => {
         avatar: userData.avatar || null,
         name: userData.name || '',
         username: userData.username || '',
-        email: userData.email || '',
-        notifications: userData.preferences?.notifications ?? true,
-        theme: userData.preferences?.theme || THEMES.LIGHT
+        email: userData.email || ''
       });
 
       // Cargar avatar
@@ -356,11 +342,7 @@ const EditProfileScreen = ({ navigation }) => {
       const requestData = {
         avatar: formData.avatar,
         name: formData.name.trim(),
-        email: formData.email.trim(),
-        preferences: {
-          notifications: formData.notifications,
-          theme: formData.theme
-        }
+        email: formData.email.trim()
       };
 
       const response = await api.put(ENDPOINTS.UPDATE_PROFILE, requestData);
@@ -427,18 +409,6 @@ const EditProfileScreen = ({ navigation }) => {
     return unsubscribe;
   }, [hasChanges, navigation]);
 
-  // Toggle notificaciones
-  const handleToggleNotifications = useCallback(() => {
-    if (!editing) return;
-    handleFormChange('notifications', !formData.notifications);
-  }, [editing, formData.notifications, handleFormChange]);
-
-  // Toggle tema
-  const handleToggleTheme = useCallback(() => {
-    if (!editing) return;
-    const newTheme = formData.theme === THEMES.LIGHT ? THEMES.DARK : THEMES.LIGHT;
-    handleFormChange('theme', newTheme);
-  }, [editing, formData.theme, handleFormChange]);
 
   // Cambiar avatar
   const handleAvatarChange = useCallback(async () => {
@@ -671,53 +641,6 @@ const EditProfileScreen = ({ navigation }) => {
             </View>
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{TEXTS.PREFERENCES}</Text>
-            
-            <TouchableOpacity 
-              style={styles.optionButton}
-              onPress={handleToggleNotifications}
-            >
-              <View style={styles.optionLeft}>
-                <MaterialCommunityIcons 
-                  name="bell" 
-                  size={ICON_SIZE} 
-                  color={COLORS.PRIMARY} 
-                />
-                <Text style={styles.optionText}>{TEXTS.NOTIFICATIONS}</Text>
-              </View>
-              <View style={[
-                styles.toggle,
-                formData.notifications && styles.toggleActive
-              ]}>
-                <View style={[
-                  styles.toggleCircle,
-                  formData.notifications && styles.toggleCircleActive
-                ]} />
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.optionButton}
-              onPress={handleToggleTheme}
-            >
-              <View style={styles.optionLeft}>
-                <MaterialCommunityIcons 
-                  name={formData.theme === THEMES.LIGHT ? 'white-balance-sunny' : 'moon-waning-crescent'} 
-                  size={ICON_SIZE} 
-                  color={COLORS.PRIMARY} 
-                />
-                <Text style={styles.optionText}>
-                  {TEXTS.THEME} {formData.theme === THEMES.LIGHT ? TEXTS.THEME_LIGHT : TEXTS.THEME_DARK}
-                </Text>
-              </View>
-              <MaterialCommunityIcons 
-                name="chevron-right" 
-                size={ICON_SIZE} 
-                color={COLORS.ACCENT} 
-              />
-            </TouchableOpacity>
-          </View>
         </Animated.View>
 
         {saveSuccess && (

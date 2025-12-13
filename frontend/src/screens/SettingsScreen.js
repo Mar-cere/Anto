@@ -48,6 +48,7 @@ import {
 // Constantes de textos
 const TEXTS = {
   TITLE: 'Configuración',
+  BACK: 'Volver',
   PREFERENCES: 'Preferencias',
   ACCOUNT: 'Cuenta',
   SUPPORT: 'Soporte',
@@ -484,7 +485,19 @@ const SettingsScreen = () => {
 
         {/* Header */}
         <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.headerButton}
+            onPress={() => navigation.goBack()}
+            accessibilityLabel={TEXTS.BACK}
+          >
+            <MaterialCommunityIcons 
+              name="arrow-left" 
+              size={ICON_SIZE} 
+              color={COLORS.WHITE} 
+            />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>{TEXTS.TITLE}</Text>
+          <View style={styles.headerButton} />
         </View>
 
         {/* Preferencias */}
@@ -869,14 +882,26 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 20,
+    backgroundColor: 'rgba(29, 43, 95, 0.5)',
   },
   headerTitle: {
     color: COLORS.WHITE,
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
-    marginLeft: 12,
+    textAlign: "center",
+    flex: 1,
   },
   sectionTitle: {
     color: COLORS.ACCENT,

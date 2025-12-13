@@ -34,6 +34,8 @@ import EditEmergencyContactModal from '../components/EditEmergencyContactModal';
 import { api, ENDPOINTS } from '../config/api';
 import { ROUTES } from '../constants/routes';
 import { colors } from '../styles/globalStyles';
+import paymentService from '../services/paymentService';
+import SubscriptionStatus from '../components/payments/SubscriptionStatus';
 
 // Constantes de textos
 const TEXTS = {
@@ -211,6 +213,7 @@ const ProfileScreen = () => {
   const [showEditContactModal, setShowEditContactModal] = useState(false);
   const [selectedContact, setSelectedContact] = useState(null);
   const [loadingContacts, setLoadingContacts] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
 
   // Obtener URL del avatar
   const fetchAvatarUrl = useCallback(async (publicId) => {
@@ -326,10 +329,23 @@ const ProfileScreen = () => {
     await loadEmergencyContacts();
   }, [loadEmergencyContacts]);
 
+  // Cargar estado de suscripción
+  const loadSubscriptionStatus = useCallback(async () => {
+    try {
+      const response = await paymentService.getSubscriptionStatus();
+      if (response.success) {
+        setSubscriptionStatus(response);
+      }
+    } catch (error) {
+      console.error('[ProfileScreen] Error cargando estado de suscripción:', error);
+    }
+  }, []);
+
   useEffect(() => {
     loadUserData();
     loadEmergencyContacts();
-  }, [loadUserData, loadEmergencyContacts]);
+    loadSubscriptionStatus();
+  }, [loadUserData, loadEmergencyContacts, loadSubscriptionStatus]);
 
   // Animación de refresh
   const triggerRefreshAnim = useCallback(() => {
@@ -354,7 +370,8 @@ const ProfileScreen = () => {
     triggerRefreshAnim();
     loadUserData();
     loadEmergencyContacts();
-  }, [loadUserData, loadEmergencyContacts, triggerRefreshAnim]);
+    loadSubscriptionStatus();
+  }, [loadUserData, loadEmergencyContacts, loadSubscriptionStatus, triggerRefreshAnim]);
 
   // Cerrar sesión
   const handleLogout = useCallback(() => {
@@ -450,7 +467,7 @@ const ProfileScreen = () => {
             <Text style={styles.headerTitle}>{TEXTS.PROFILE_TITLE}</Text>
             <TouchableOpacity 
               style={styles.headerButton}
-              onPress={() => navigation.navigate('Settings')}
+              onPress={() => navigation.navigate('Ajustes')}
               accessibilityLabel={TEXTS.SETTINGS}
             >
               <MaterialCommunityIcons 
@@ -492,6 +509,20 @@ const ProfileScreen = () => {
             <Text style={styles.userName}>{userData.username}</Text>
             <Text style={styles.userEmail}>{userData.email}</Text>
           </View>
+
+          {/* Estado de Suscripción */}
+          {subscriptionStatus && subscriptionStatus.hasSubscription && (
+            <View style={styles.subscriptionContainer}>
+              <Text style={styles.sectionTitle}>Suscripción</Text>
+              <SubscriptionStatus
+                status={subscriptionStatus.status}
+                plan={subscriptionStatus.plan}
+                daysRemaining={subscriptionStatus.daysRemaining}
+                trialEndDate={subscriptionStatus.trialEndDate}
+                subscriptionEndDate={subscriptionStatus.subscriptionEndDate}
+              />
+            </View>
+          )}
 
           {/* Estadísticas */}
           <View style={styles.statsContainer}>
@@ -921,6 +952,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.ACCENT,
     marginBottom: USER_EMAIL_MARGIN_BOTTOM,
+  },
+  subscriptionContainer: {
+    padding: STATS_CONTAINER_PADDING,
   },
   statsContainer: {
     padding: STATS_CONTAINER_PADDING,
