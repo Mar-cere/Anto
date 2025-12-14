@@ -70,7 +70,7 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
 
   // Cargar datos del contacto cuando se abre el modal
   useEffect(() => {
-    if (visible && contact) {
+    if (visible && contact && contact._id) {
       setFormData({
         name: contact.name || '',
         email: contact.email || '',
@@ -78,8 +78,12 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
         relationship: contact.relationship || ''
       });
       setErrors({});
+      setIsSubmitting(false);
+    } else if (visible && !contact) {
+      // Si el modal está visible pero no hay contacto, cerrarlo
+      onClose?.();
     }
-  }, [visible, contact]);
+  }, [visible, contact, onClose]);
 
   // Validar formulario
   const validateForm = useCallback(() => {
@@ -119,6 +123,12 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
 
   // Guardar cambios
   const handleSave = useCallback(async () => {
+    if (!contact || !contact._id) {
+      Alert.alert('Error', 'No se puede editar el contacto. Por favor, intenta nuevamente.');
+      onClose?.();
+      return;
+    }
+
     if (!validateForm()) {
       return;
     }
@@ -135,12 +145,12 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
       Alert.alert('Éxito', TEXTS.UPDATE_SUCCESS, [
         { text: 'OK', onPress: () => {
           onSave?.();
-          onClose();
+          onClose?.();
         }}
       ]);
     } catch (error) {
       console.error('Error actualizando contacto:', error);
-      const errorMessage = error.message || TEXTS.UPDATE_ERROR;
+      const errorMessage = error.response?.data?.message || error.message || TEXTS.UPDATE_ERROR;
       
       if (errorMessage.includes('email') || errorMessage.includes('duplicado')) {
         Alert.alert('Error', TEXTS.DUPLICATE_EMAIL);
@@ -152,7 +162,8 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
     }
   }, [formData, validateForm, contact, onSave, onClose]);
 
-  if (!contact) {
+  // No renderizar el modal si no hay contacto o si no está visible
+  if (!visible || !contact || !contact._id) {
     return null;
   }
 

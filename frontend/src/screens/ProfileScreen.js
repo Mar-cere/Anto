@@ -7,8 +7,7 @@
  * @author AntoApp Team
  */
 
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
@@ -18,7 +17,6 @@ import {
   Alert,
   Animated,
   Easing,
-  Image,
   ImageBackground,
   Platform,
   RefreshControl,
@@ -29,13 +27,13 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import EmergencyContactsModal from '../components/EmergencyContactsModal';
 import EditEmergencyContactModal from '../components/EditEmergencyContactModal';
+import EmergencyContactsModal from '../components/EmergencyContactsModal';
+import SubscriptionStatus from '../components/payments/SubscriptionStatus';
 import { api, ENDPOINTS } from '../config/api';
 import { ROUTES } from '../constants/routes';
-import { colors } from '../styles/globalStyles';
 import paymentService from '../services/paymentService';
-import SubscriptionStatus from '../components/payments/SubscriptionStatus';
+import { colors } from '../styles/globalStyles';
 
 // Constantes de textos
 const TEXTS = {
@@ -72,17 +70,6 @@ const TEXTS = {
   DELETE_CONTACT_CONFIRM: '¿Estás seguro de que deseas eliminar este contacto?',
   CONTACT_DELETED: 'Contacto eliminado exitosamente',
   CONTACT_DELETE_ERROR: 'Error al eliminar contacto',
-  TOGGLE_CONTACT: 'Habilitar/Deshabilitar contacto',
-  TEST_CONTACT: 'Probar contacto',
-  TEST_ALERT: 'Probar alerta de emergencia',
-  TEST_ALERT_CONFIRM: '¿Estás seguro de que deseas enviar una alerta de prueba a todos tus contactos de emergencia?',
-  TEST_ALERT_SENT: 'Alerta de prueba enviada exitosamente',
-  TEST_ALERT_ERROR: 'Error al enviar alerta de prueba',
-  TEST_EMAIL_SENT: 'Email de prueba enviado exitosamente',
-  TEST_EMAIL_ERROR: 'Error al enviar email de prueba',
-  TEST_WHATSAPP: 'Probar WhatsApp',
-  TEST_WHATSAPP_SENT: 'Mensaje de WhatsApp enviado exitosamente',
-  TEST_WHATSAPP_ERROR: 'Error al enviar mensaje de WhatsApp',
   NO_PHONE: 'El contacto no tiene número de teléfono configurado',
   WHATSAPP_NOT_CONFIGURED: 'WhatsApp no está configurado en el servidor',
   CRISIS_DASHBOARD: 'Dashboard de Crisis',
@@ -287,16 +274,6 @@ const ProfileScreen = () => {
     );
   }, [loadEmergencyContacts]);
 
-  // Toggle contacto (habilitar/deshabilitar)
-  const handleToggleContact = useCallback(async (contactId) => {
-    try {
-      await api.patch(ENDPOINTS.EMERGENCY_CONTACT_TOGGLE(contactId));
-      await loadEmergencyContacts();
-    } catch (error) {
-      console.error('Error cambiando estado del contacto:', error);
-      Alert.alert(TEXTS.ERROR, 'No se pudo cambiar el estado del contacto');
-    }
-  }, [loadEmergencyContacts]);
 
   // Manejar guardado de contactos
   const handleEmergencyContactsSaved = useCallback(async () => {
@@ -573,117 +550,71 @@ const ProfileScreen = () => {
                 <View style={styles.contactsList}>
                   {emergencyContacts.map((contact) => (
                     <View key={contact._id} style={styles.contactItem}>
-                      <View style={styles.contactInfo}>
-                        <Text style={styles.contactName}>
-                          {contact.name} {!contact.enabled && '(Deshabilitado)'}
-                        </Text>
-                        <Text style={styles.contactEmail}>{contact.email}</Text>
-                        {contact.phone && (
-                          <Text style={styles.contactPhone}>{contact.phone}</Text>
-                        )}
-                        {contact.relationship && (
-                          <Text style={styles.contactRelationship}>{contact.relationship}</Text>
-                        )}
-                      </View>
-                      <View style={styles.contactActions}>
-                        <TouchableOpacity
-                          onPress={async () => {
-                            try {
-                              const response = await api.post(ENDPOINTS.EMERGENCY_CONTACT_TEST(contact._id));
-                              if (response.testEmailSent) {
-                                Alert.alert(TEXTS.SUCCESS, TEXTS.TEST_EMAIL_SENT);
-                              } else {
-                                Alert.alert(
-                                  'Aviso',
-                                  response.message || 'No se pudo enviar el email de prueba. Verifica la configuración del servidor de email.'
-                                );
-                              }
-                            } catch (error) {
-                              console.error('Error enviando email de prueba:', error);
-                              Alert.alert(
-                                'Aviso',
-                                error.response?.data?.message || TEXTS.TEST_EMAIL_ERROR
-                              );
-                            }
-                          }}
-                          style={styles.contactActionButton}
-                          accessibilityLabel="Probar email"
-                        >
-                          <Ionicons
-                            name="mail-outline"
-                            size={20}
-                            color={COLORS.PRIMARY}
-                          />
-                        </TouchableOpacity>
-                        {contact.phone && (
-                          <TouchableOpacity
-                            onPress={async () => {
-                              try {
-                                const response = await api.post(ENDPOINTS.EMERGENCY_CONTACT_TEST_WHATSAPP(contact._id));
-                                if (response.messageId) {
-                                  Alert.alert(TEXTS.SUCCESS, TEXTS.TEST_WHATSAPP_SENT);
-                                } else {
-                                  Alert.alert(
-                                    'Aviso',
-                                    response.message || response.error || TEXTS.TEST_WHATSAPP_ERROR
-                                  );
+                      <View style={styles.contactMainContent}>
+                        <View style={styles.contactHeader}>
+                          <View style={styles.contactHeaderLeft}>
+                            <View style={styles.contactTitleContainer}>
+                              <Text style={styles.contactName}>
+                                {contact.name}
+                              </Text>
+                              {contact.relationship && (
+                                <Text style={styles.contactRelationship}>
+                                  {contact.relationship}
+                                </Text>
+                              )}
+                            </View>
+                          </View>
+                          <View style={styles.contactActions}>
+                            <TouchableOpacity
+                              onPress={() => {
+                                if (Platform.OS === 'ios') {
+                                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                 }
-                              } catch (error) {
-                                console.error('Error enviando WhatsApp de prueba:', error);
-                                const errorMessage = error.response?.data?.message || TEXTS.TEST_WHATSAPP_ERROR;
-                                if (errorMessage.includes('no está configurado')) {
-                                  Alert.alert('Aviso', TEXTS.WHATSAPP_NOT_CONFIGURED);
-                                } else {
-                                  Alert.alert('Aviso', errorMessage);
-                                }
-                              }
-                            }}
-                            style={styles.contactActionButton}
-                            accessibilityLabel="Probar WhatsApp"
-                          >
-                            <Ionicons
-                              name="logo-whatsapp"
-                              size={20}
-                              color="#25D366"
+                                setSelectedContact(contact);
+                                setShowEditContactModal(true);
+                              }}
+                              style={styles.contactActionButton}
+                              accessibilityLabel="Editar contacto"
+                            >
+                              <Ionicons
+                                name="pencil-outline"
+                                size={18}
+                                color={COLORS.PRIMARY}
+                              />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() => handleDeleteContact(contact._id)}
+                              style={[styles.contactActionButton, styles.contactActionButtonDelete]}
+                              accessibilityLabel={TEXTS.DELETE_CONTACT}
+                            >
+                              <MaterialCommunityIcons
+                                name="delete-outline"
+                                size={18}
+                                color={COLORS.ERROR}
+                              />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                        <View style={styles.contactDetails}>
+                          <View style={styles.contactDetailRow}>
+                            <MaterialCommunityIcons
+                              name="email-outline"
+                              size={16}
+                              color={COLORS.ACCENT}
                             />
-                          </TouchableOpacity>
-                        )}
-                        <TouchableOpacity
-                          onPress={() => {
-                            setSelectedContact(contact);
-                            setShowEditContactModal(true);
-                          }}
-                          style={styles.contactActionButton}
-                          accessibilityLabel="Editar contacto"
-                        >
-                          <Ionicons
-                            name="pencil-outline"
-                            size={20}
-                            color={COLORS.PRIMARY}
-                          />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => handleToggleContact(contact._id)}
-                          style={styles.contactActionButton}
-                          accessibilityLabel={TEXTS.TOGGLE_CONTACT}
-                        >
-                          <MaterialCommunityIcons
-                            name={contact.enabled ? "bell-off" : "bell"}
-                            size={20}
-                            color={contact.enabled ? COLORS.ACCENT : COLORS.PRIMARY}
-                          />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => handleDeleteContact(contact._id)}
-                          style={styles.contactActionButton}
-                          accessibilityLabel={TEXTS.DELETE_CONTACT}
-                        >
-                          <MaterialCommunityIcons
-                            name="delete"
-                            size={20}
-                            color={COLORS.ERROR}
-                          />
-                        </TouchableOpacity>
+                            <Text style={styles.contactDetailText}>{contact.email}</Text>
+                          </View>
+                          {contact.phone && (
+                            <View style={styles.contactDetailRow}>
+                              <MaterialCommunityIcons
+                                name="phone-outline"
+                                size={16}
+                                color={COLORS.ACCENT}
+                              />
+                              <Text style={styles.contactDetailText}>{contact.phone}</Text>
+                            </View>
+                          )}
+                        </View>
                       </View>
                     </View>
                   ))}
@@ -711,47 +642,6 @@ const ProfileScreen = () => {
               />
             </TouchableOpacity>
             
-            {emergencyContacts.length > 0 && (
-              <TouchableOpacity
-                style={styles.optionButton}
-                onPress={() => {
-                  if (Platform.OS === 'ios') {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  }
-                  Alert.alert(
-                    TEXTS.TEST_ALERT,
-                    TEXTS.TEST_ALERT_CONFIRM,
-                    [
-                      { text: TEXTS.CANCEL, style: 'cancel' },
-                      {
-                        text: 'Enviar Prueba',
-                        onPress: async () => {
-                          try {
-                            const response = await api.post(ENDPOINTS.EMERGENCY_CONTACTS_TEST_ALERT);
-                            Alert.alert(
-                              TEXTS.SUCCESS,
-                              `${TEXTS.TEST_ALERT_SENT}\n\n${response.message || ''}`
-                            );
-                          } catch (error) {
-                            console.error('Error enviando alerta de prueba:', error);
-                            Alert.alert(TEXTS.ERROR, TEXTS.TEST_ALERT_ERROR);
-                          }
-                        }
-                      }
-                    ]
-                  );
-                }}
-                accessibilityLabel={TEXTS.TEST_ALERT}
-              >
-                <MaterialCommunityIcons name="alert-circle" size={ICON_SIZE} color={COLORS.PRIMARY} />
-                <Text style={styles.optionText}>{TEXTS.TEST_ALERT}</Text>
-                <MaterialCommunityIcons 
-                  name="chevron-right" 
-                  size={ICON_SIZE} 
-                  color={COLORS.ACCENT} 
-                />
-              </TouchableOpacity>
-            )}
 
             {/* Dashboard de Crisis */}
             <TouchableOpacity
@@ -986,28 +876,33 @@ const styles = StyleSheet.create({
   contactItem: {
     backgroundColor: COLORS.CARD_BACKGROUND,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    padding: 14,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: COLORS.CARD_BORDER,
   },
-  contactInfo: {
+  contactMainContent: {
+    flex: 1,
+  },
+  contactHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 12,
+  },
+  contactHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
+  },
+  contactTitleContainer: {
+    flex: 1,
   },
   contactName: {
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.WHITE,
-    marginBottom: 4,
-  },
-  contactEmail: {
-    fontSize: 14,
-    color: COLORS.ACCENT,
-    marginBottom: 2,
-  },
-  contactPhone: {
-    fontSize: 14,
-    color: COLORS.ACCENT,
     marginBottom: 2,
   },
   contactRelationship: {
@@ -1015,15 +910,34 @@ const styles = StyleSheet.create({
     color: COLORS.ACCENT,
     fontStyle: 'italic',
   },
-  contactActions: {
+  contactDetails: {
+    marginLeft: 0,
+    gap: 6,
+  },
+  contactDetailRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
     gap: 8,
   },
+  contactDetailText: {
+    fontSize: 13,
+    color: COLORS.ACCENT,
+    flex: 1,
+  },
+  contactActions: {
+    flexDirection: 'row',
+    gap: 6,
+  },
   contactActionButton: {
-    padding: 8,
-    borderRadius: 8,
+    padding: 6,
+    borderRadius: 6,
     backgroundColor: 'rgba(26, 221, 219, 0.1)',
+    minWidth: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contactActionButtonDelete: {
+    backgroundColor: 'rgba(255, 107, 107, 0.1)',
   },
   optionContent: {
     flex: 1,
