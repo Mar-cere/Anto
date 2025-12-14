@@ -4,43 +4,36 @@
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
 import {
-  generateCrisisMessage,
-  generateCrisisSystemPrompt
+    generateCrisisMessage,
+    generateCrisisSystemPrompt
 } from '../constants/crisis.js';
 import {
-  ANALYSIS_DIMENSIONS,
-  buildPersonalizedPrompt,
-  DEFAULT_VALUES,
-  EMOTIONAL_COHERENCE_PATTERNS,
-  EMOTIONAL_COHERENCE_PHRASES,
-  ERROR_MESSAGES,
-  GENERIC_RESPONSE_PATTERNS,
-  GREETING_VARIATIONS,
-  HISTORY_LIMITS,
-  MESSAGE_INTENTS,
-  OPENAI_MODEL,
-  PENALTIES,
-  PROMPT_CONFIG,
-  RESPONSE_LENGTHS,
-  TEMPERATURES,
-  THRESHOLDS,
-  TIME_PERIODS,
-  VALIDATION_LIMITS
+    ANALYSIS_DIMENSIONS,
+    buildPersonalizedPrompt,
+    DEFAULT_VALUES,
+    EMOTIONAL_COHERENCE_PATTERNS,
+    EMOTIONAL_COHERENCE_PHRASES,
+    ERROR_MESSAGES,
+    GENERIC_RESPONSE_PATTERNS,
+    GREETING_VARIATIONS,
+    HISTORY_LIMITS,
+    MESSAGE_INTENTS,
+    OPENAI_MODEL,
+    PROMPT_CONFIG,
+    RESPONSE_LENGTHS,
+    TEMPERATURES,
+    THRESHOLDS,
+    TIME_PERIODS,
+    VALIDATION_LIMITS
 } from '../constants/openai.js';
 import {
-  formatTechniqueForResponse,
-  selectAppropriateTechnique
+    formatTechniqueForResponse,
+    selectAppropriateTechnique
 } from '../constants/therapeuticTechniques.js';
-import { getResistanceIntervention } from '../constants/resistancePatterns.js';
-import { getRelapseIntervention } from '../constants/relapsePrevention.js';
-import { getImplicitNeedIntervention } from '../constants/implicitNeeds.js';
-import { generateStrengthQuestion } from '../constants/strengthsAndResources.js';
-import { generateSelfEfficacyIntervention } from '../constants/selfEfficacy.js';
-import { getSocialSupportIntervention } from '../constants/socialSupport.js';
-import { getPsychoeducationModule } from '../constants/psychoeducation.js';
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import TherapeuticRecord from '../models/TherapeuticRecord.js';
+import cacheService from './cacheService.js';
 import contextAnalyzer from './contextAnalyzer.js';
 import emotionalAnalyzer from './emotionalAnalyzer.js';
 import goalTracker from './goalTracker.js';
@@ -51,7 +44,6 @@ import progressTracker from './progressTracker.js';
 import sessionEmotionalMemory from './sessionEmotionalMemory.js';
 import therapeuticProtocolService from './therapeuticProtocolService.js';
 import therapeuticTemplateService from './therapeuticTemplateService.js';
-import cacheService from './cacheService.js';
 
 dotenv.config();
 
@@ -235,12 +227,15 @@ class OpenAIService {
         console.warn('[OpenAI] Error al obtener del caché, continuando sin caché:', cacheError.message);
       }
 
+      // Obtener responseStyle del perfil para ajustar longitud (ya obtenido arriba en línea 366)
+      const userResponseStyle = perfilUsuario?.preferences?.responseStyle || 'balanced';
+      
       // Logging del prompt para debugging
-      const maxTokens = this.determinarLongitudRespuesta(analisisContextual, contenidoNormalizado);
+      const maxTokens = this.determinarLongitudRespuesta(analisisContextual, contenidoNormalizado, userResponseStyle);
       const promptLength = prompt.systemMessage.length;
       const contextMessagesCount = prompt.contextMessages?.length || 0;
       const userMessageLength = contenidoNormalizado.length;
-      console.log(`[OpenAI] Prompt length: ${promptLength} chars, Context messages: ${contextMessagesCount}, User message: ${userMessageLength} chars, Max completion tokens: ${maxTokens}`);
+      console.log(`[OpenAI] Prompt length: ${promptLength} chars, Context messages: ${contextMessagesCount}, User message: ${userMessageLength} chars, Max completion tokens: ${maxTokens}, Response style: ${userResponseStyle}`);
 
       let completion;
       try {
@@ -257,7 +252,7 @@ class OpenAIService {
               content: contenidoNormalizado
             }
           ],
-          max_completion_tokens: this.determinarLongitudRespuesta(analisisContextual, contenidoNormalizado)
+          max_completion_tokens: this.determinarLongitudRespuesta(analisisContextual, contenidoNormalizado, userResponseStyle)
           // Nota: GPT-5 Mini solo soporta:
           // - temperature: valor por defecto (1) - no se puede especificar otro valor
           // - max_completion_tokens: sí soportado
@@ -298,7 +293,7 @@ class OpenAIService {
       
       // MONITOREO: Registrar estadísticas de uso de tokens
       this.registrarEstadisticasTokens({
-        maxCompletionTokens: this.determinarLongitudRespuesta(analisisContextual, contenidoNormalizado),
+        maxCompletionTokens: this.determinarLongitudRespuesta(analisisContextual, contenidoNormalizado, userResponseStyle),
         totalCompletionTokens: usage.completion_tokens,
         reasoningTokens: reasoningTokens,
         actualContentTokens: actualContentTokens,
@@ -315,7 +310,7 @@ class OpenAIService {
           finishReason: finishReason,
           promptLength: prompt.systemMessage.length,
           contextMessagesCount: prompt.contextMessages?.length || 0,
-          maxCompletionTokens: this.determinarLongitudRespuesta(analisisContextual, contenidoNormalizado),
+          maxCompletionTokens: this.determinarLongitudRespuesta(analisisContextual, contenidoNormalizado, userResponseStyle),
           totalCompletionTokens: usage.completion_tokens,
           reasoningTokens: reasoningTokens,
           actualContentTokens: actualContentTokens,
@@ -986,9 +981,10 @@ class OpenAIService {
    * Determina la longitud óptima de respuesta basada en el contexto
    * @param {Object} contexto - Contexto del mensaje
    * @param {string} userMessage - Mensaje del usuario (opcional, para ajuste dinámico)
+   * @param {string} responseStyle - Estilo de respuesta preferido ('brief', 'balanced', 'deep')
    * @returns {number} Longitud en tokens
    */
-  determinarLongitudRespuesta(contexto, userMessage = '') {
+  determinarLongitudRespuesta(contexto, userMessage = '', responseStyle = 'balanced') {
     // Ajuste dinámico basado en longitud del mensaje del usuario
     const userMessageLength = userMessage.length;
     let baseLength;
@@ -1001,6 +997,22 @@ class OpenAIService {
     } else {
       baseLength = RESPONSE_LENGTHS.MEDIUM;
     }
+    
+    // Ajustar según el estilo de respuesta preferido del usuario
+    if (responseStyle === 'brief' || responseStyle === 'directo') {
+      // Respuestas breves/directas: reducir la longitud base
+      baseLength = Math.min(baseLength, RESPONSE_LENGTHS.SHORT);
+    } else if (responseStyle === 'deep' || responseStyle === 'estructurado') {
+      // Respuestas profundas/estructuradas: aumentar la longitud base
+      baseLength = Math.max(baseLength, RESPONSE_LENGTHS.MEDIUM);
+      if (baseLength === RESPONSE_LENGTHS.MEDIUM) {
+        baseLength = RESPONSE_LENGTHS.LONG;
+      }
+    } else if (responseStyle === 'empatico' || responseStyle === 'profesional' || responseStyle === 'calido') {
+      // Respuestas empáticas/profesionales/cálidas: longitud media-alta
+      baseLength = Math.max(baseLength, RESPONSE_LENGTHS.MEDIUM);
+    }
+    // balanced mantiene la longitud calculada
     
     // Ajustar según longitud del mensaje del usuario (respuestas proporcionales)
     if (userMessageLength > 0) {

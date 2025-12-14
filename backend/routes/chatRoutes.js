@@ -235,7 +235,7 @@ router.post('/messages', protect, requireActiveSubscription(true), async (req, r
         // 2. Obtener contexto e historial
         logs.push(`[${Date.now() - startTime}ms] Obteniendo contexto e historial`);
         // Optimización: Usar índices compuestos y proyección para reducir datos transferidos
-        const [conversationHistory, userProfile, therapeuticRecord] = await Promise.all([
+        const [conversationHistory, userProfile, therapeuticRecord, user] = await Promise.all([
           Message.find({ 
             conversationId,
             createdAt: { $gte: new Date(Date.now() - VENTANA_CONTEXTO) }
@@ -245,7 +245,8 @@ router.post('/messages', protect, requireActiveSubscription(true), async (req, r
           .limit(HISTORIAL_LIMITE)
           .lean(),
           userProfileService.getOrCreateProfile(req.user._id),
-          TherapeuticRecord.findOne({ userId: req.user._id }).lean() // Usar lean() para mejor rendimiento
+          TherapeuticRecord.findOne({ userId: req.user._id }).lean(), // Usar lean() para mejor rendimiento
+          User.findById(req.user._id).select('preferences').lean() // Obtener User para acceder a preferences.responseStyle
         ]);
 
         // 3. Análisis completo del mensaje (en paralelo para optimizar rendimiento)
@@ -511,13 +512,23 @@ router.post('/messages', protect, requireActiveSubscription(true), async (req, r
           .filter(msg => msg.content.trim().length > 0);
 
         logs.push(`[${Date.now() - startTime}ms] Generando respuesta con análisis previo`);
+        
+        // Combinar UserProfile con User para tener acceso a todas las preferencias
+        const combinedProfile = {
+          ...userProfile,
+          preferences: {
+            ...userProfile?.preferences,
+            ...user?.preferences // Incluir responseStyle de User
+          }
+        };
+        
         const response = await openaiService.generarRespuesta(
           userMessage,
           {
             history: historialParaPrompt,
             emotional: emotionalAnalysis,
             contextual: contextualAnalysis,
-            profile: userProfile,
+            profile: combinedProfile,
             therapeutic: therapeuticRecord,
             // Agregar información de crisis si se detecta
             crisis: isCrisis ? {

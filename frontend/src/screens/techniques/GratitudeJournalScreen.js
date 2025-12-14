@@ -19,7 +19,7 @@ import {
   View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Header from '../../components/Header';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../styles/globalStyles';
 
 const GratitudeJournalScreen = () => {
@@ -44,10 +44,22 @@ const GratitudeJournalScreen = () => {
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" />
-      <Header
-        title="Diario de Gratitud"
-        onBack={() => navigation.goBack()}
-      />
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.headerButton}
+          onPress={() => navigation.goBack()}
+          accessibilityLabel="Volver"
+        >
+          <MaterialCommunityIcons 
+            name="arrow-left" 
+            size={24} 
+            color={colors.white} 
+          />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Diario de Gratitud</Text>
+        <View style={styles.headerButton} />
+      </View>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -108,6 +120,31 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(3, 10, 36, 0.8)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(26, 221, 219, 0.1)',
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
+    backgroundColor: 'rgba(29, 43, 95, 0.5)',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.white,
+    textAlign: 'center',
+    flex: 1,
   },
   keyboardView: {
     flex: 1,

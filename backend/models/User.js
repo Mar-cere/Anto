@@ -98,9 +98,9 @@ const userSchema = new mongoose.Schema({
     // NUEVO: Estilo de respuesta preferido
     responseStyle: {
       type: String,
-      enum: ['brief', 'balanced', 'deep'],
+      enum: ['brief', 'balanced', 'deep', 'empatico', 'profesional', 'directo', 'calido', 'estructurado'],
       default: 'balanced',
-      description: 'Estilo de respuesta: brief (breve y directo), balanced (equilibrado), deep (profundo y reflexivo)'
+      description: 'Estilo de respuesta: brief (breve y directo), balanced (equilibrado), deep (profundo y reflexivo), empatico (empático y comprensivo), profesional (formal y estructurado), directo (claro y conciso), calido (cálido y cercano), estructurado (organizado y sistemático)'
     }
   },
   // Estadísticas del usuario

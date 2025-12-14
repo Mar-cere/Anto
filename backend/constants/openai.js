@@ -882,13 +882,61 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
     prompt += `\n\n`;
   }
 
-  // Reglas generales
+  // Reglas generales - ajustar según responseStyle
+  let maxWords = THRESHOLDS.MAX_WORDS_RESPONSE;
+  let responseStructure = PROMPT_TEMPLATES.RESPONSE_STRUCTURE;
+  
+  if (responseStyle === 'brief') {
+    maxWords = 30; // Respuestas más cortas
+    responseStructure = `Responde: 1) Reconocimiento empático (10 palabras). 2) Pregunta breve (8 palabras, opcional). Total: 1 oración, máximo ${maxWords} palabras.`;
+  } else if (responseStyle === 'deep') {
+    maxWords = 80; // Respuestas más largas
+    responseStructure = `Responde: 1) Reconocimiento empático (20 palabras). 2) Validación/apoyo profundo (25 palabras). 3) Reflexión o exploración (20 palabras). 4) Pregunta reflexiva (15 palabras, opcional). Total: 2-3 oraciones, máximo ${maxWords} palabras.`;
+  } else if (responseStyle === 'empatico') {
+    maxWords = 60; // Respuestas empáticas moderadas
+    responseStructure = `Responde: 1) Reconocimiento empático profundo (20 palabras). 2) Validación emocional (20 palabras). 3) Pregunta comprensiva (15 palabras, opcional). Total: 2 oraciones, máximo ${maxWords} palabras.`;
+  } else if (responseStyle === 'profesional') {
+    maxWords = 55; // Respuestas profesionales estructuradas
+    responseStructure = `Responde: 1) Reconocimiento profesional (15 palabras). 2) Análisis o orientación estructurada (20 palabras). 3) Pregunta orientativa (15 palabras, opcional). Total: 2 oraciones, máximo ${maxWords} palabras.`;
+  } else if (responseStyle === 'directo') {
+    maxWords = 35; // Respuestas directas y claras
+    responseStructure = `Responde: 1) Reconocimiento directo (12 palabras). 2) Punto principal claro (15 palabras). 3) Pregunta directa (8 palabras, opcional). Total: 1-2 oraciones, máximo ${maxWords} palabras.`;
+  } else if (responseStyle === 'calido') {
+    maxWords = 50; // Respuestas cálidas y cercanas
+    responseStructure = `Responde: 1) Reconocimiento cálido (15 palabras). 2) Apoyo cercano (20 palabras). 3) Pregunta amigable (12 palabras, opcional). Total: 2 oraciones, máximo ${maxWords} palabras.`;
+  } else if (responseStyle === 'estructurado') {
+    maxWords = 60; // Respuestas organizadas
+    responseStructure = `Responde de forma organizada: 1) Reconocimiento (15 palabras). 2) Punto 1 estructurado (15 palabras). 3) Punto 2 estructurado (15 palabras, opcional). 4) Pregunta estructurada (12 palabras, opcional). Total: 2-3 oraciones, máximo ${maxWords} palabras.`;
+  } else {
+    // balanced (default)
+    responseStructure = PROMPT_TEMPLATES.RESPONSE_STRUCTURE.replace('{maxWords}', maxWords);
+  }
+  
   prompt += PROMPT_TEMPLATES.GENERAL_RULES
-    .replace('{maxWords}', THRESHOLDS.MAX_WORDS_RESPONSE)
+    .replace('{maxWords}', maxWords)
     .replace('{maxSentences}', PROMPT_CONFIG.MAX_SENTENCES_MENTION) + '\n\n';
 
+  // Agregar instrucción específica de estilo de respuesta
+  if (responseStyle === 'brief') {
+    prompt += `ESTILO DE RESPUESTA: BREVE. Sé conciso y directo. Máximo ${maxWords} palabras. Ve al punto principal sin rodeos.\n\n`;
+  } else if (responseStyle === 'deep') {
+    prompt += `ESTILO DE RESPUESTA: PROFUNDO. Explora más a fondo, ofrece reflexiones, valida emocionalmente. Máximo ${maxWords} palabras. Puedes ser más extenso y reflexivo.\n\n`;
+  } else if (responseStyle === 'empatico') {
+    prompt += `ESTILO DE RESPUESTA: EMPÁTICO. Prioriza la comprensión emocional, la validación y el acompañamiento. Usa frases como "Entiendo cómo te sientes", "Es normal sentir eso". Máximo ${maxWords} palabras. Sé comprensivo y validante.\n\n`;
+  } else if (responseStyle === 'profesional') {
+    prompt += `ESTILO DE RESPUESTA: PROFESIONAL. Mantén un tono formal y estructurado. Usa lenguaje profesional pero accesible. Máximo ${maxWords} palabras. Sé claro, organizado y orientativo.\n\n`;
+  } else if (responseStyle === 'directo') {
+    prompt += `ESTILO DE RESPUESTA: DIRECTO. Ve directo al punto, evita rodeos. Sé claro, conciso y específico. Máximo ${maxWords} palabras. No uses lenguaje innecesario.\n\n`;
+  } else if (responseStyle === 'calido') {
+    prompt += `ESTILO DE RESPUESTA: CÁLIDO. Sé cercano, amigable y acogedor. Usa un tono cálido y humano. Máximo ${maxWords} palabras. Muestra cercanía y calidez en cada respuesta.\n\n`;
+  } else if (responseStyle === 'estructurado') {
+    prompt += `ESTILO DE RESPUESTA: ESTRUCTURADO. Organiza tu respuesta de forma sistemática. Usa puntos claros y estructura lógica. Máximo ${maxWords} palabras. Sé organizado y metódico.\n\n`;
+  } else {
+    prompt += `ESTILO DE RESPUESTA: EQUILIBRADO. Balance entre brevedad y profundidad. Máximo ${maxWords} palabras.\n\n`;
+  }
+
   // Estructura de respuesta
-  prompt += PROMPT_TEMPLATES.RESPONSE_STRUCTURE;
+  prompt += responseStructure;
 
   return prompt;
 };

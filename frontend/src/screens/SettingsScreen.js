@@ -10,7 +10,6 @@
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from "@react-navigation/native";
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
@@ -35,10 +34,6 @@ import { updateUser } from '../services/userService';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../styles/globalStyles';
 import {
-  cancelAllNotifications,
-  scheduleDailyNotification,
-} from '../utils/notifications';
-import {
   registerForPushNotifications,
   areNotificationsEnabled,
   requestNotificationPermissions,
@@ -54,11 +49,6 @@ const TEXTS = {
   SUPPORT: 'Soporte',
   ABOUT: 'Acerca de',
   NOTIFICATIONS: 'Notificaciones',
-  DARK_MODE: 'Tema oscuro',
-  LANGUAGE: 'Idioma',
-  MORNING_NOTIFICATION: 'Hora de notificación matutina',
-  EVENING_NOTIFICATION: 'Hora de notificación vespertina',
-  SAVE_PREFERENCES: 'Guardar preferencias',
   CHANGE_PASSWORD: 'Cambiar contraseña',
   LOGOUT: 'Cerrar sesión',
   DELETE_ACCOUNT: 'Eliminar cuenta',
@@ -95,20 +85,9 @@ const TEXTS = {
   TRANSACTION_HISTORY_DESC: 'Ver historial completo de tus pagos y suscripciones',
 };
 
-// Constantes de idiomas
-const LANGUAGES = ["Español", "Inglés"];
-
-// Constantes de horarios por defecto
-const DEFAULT_MORNING_HOUR = 8;
-const DEFAULT_MORNING_MINUTE = 0;
-const DEFAULT_EVENING_HOUR = 19;
-const DEFAULT_EVENING_MINUTE = 0;
-
 // Constantes de AsyncStorage
 const STORAGE_KEYS = {
   NOTIFICATIONS: 'notifications',
-  DARK_MODE: 'darkMode',
-  LANGUAGE: 'language',
 };
 
 // Constantes de navegación
@@ -149,26 +128,10 @@ const SettingsScreen = () => {
   const insets = useSafeAreaInsets();
   const { user, updateUser: updateUserContext } = useAuth();
 
-  // Estado para las preferencias (usar siempre objetos Date)
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-  const [language, setLanguage] = useState(LANGUAGES[0]);
+  // Estado para las preferencias
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [morningTime, setMorningTime] = useState(() => {
-    const d = new Date();
-    d.setHours(DEFAULT_MORNING_HOUR, DEFAULT_MORNING_MINUTE, 0, 0);
-    return d;
-  });
-  const [eveningTime, setEveningTime] = useState(() => {
-    const d = new Date();
-    d.setHours(DEFAULT_EVENING_HOUR, DEFAULT_EVENING_MINUTE, 0, 0);
-    return d;
-  });
-  const [showMorningPicker, setShowMorningPicker] = useState(false);
-  const [showEveningPicker, setShowEveningPicker] = useState(false);
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(false);
-  const [pushTokenStatus, setPushTokenStatus] = useState(null);
 
   // Guardar preferencias en AsyncStorage
   const savePreference = useCallback(async (key, value) => {
@@ -203,86 +166,6 @@ const SettingsScreen = () => {
   }, [navigation]);
 
 
-  useEffect(() => {
-    if (user?.notificationPreferences) {
-      const { morning, evening } = user.notificationPreferences;
-      const morningDate = new Date();
-      morningDate.setHours(morning.hour, morning.minute, 0, 0);
-      setMorningTime(morningDate);
-      const eveningDate = new Date();
-      eveningDate.setHours(evening.hour, evening.minute, 0, 0);
-      setEveningTime(eveningDate);
-    }
-  }, [user]);
-
-  // Sincronizar estado de notificaciones con AsyncStorage al montar
-  useEffect(() => {
-    const loadNotificationPreference = async () => {
-      try {
-        const value = await AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
-        if (value !== null) {
-          setNotificationsEnabled(JSON.parse(value));
-        }
-      } catch (e) {
-        console.log('Error cargando preferencia de notificaciones:', e);
-      }
-    };
-    loadNotificationPreference();
-  }, []);
-
-  const handleNotificationToggle = useCallback(async (value) => {
-    setNotificationsEnabled(value);
-    try {
-      await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(value));
-    } catch (e) {
-      console.log('Error guardando preferencia de notificaciones:', e);
-    }
-    if (value) {
-      await scheduleDailyNotification(morningTime.getHours(), morningTime.getMinutes());
-      await scheduleDailyNotification(eveningTime.getHours(), eveningTime.getMinutes());
-    } else {
-      await cancelAllNotifications();
-    }
-  }, [morningTime, eveningTime]);
-
-  const handleTimeChange = useCallback((event, selectedTime, isMorning) => {
-    if (Platform.OS === 'android') {
-      setShowMorningPicker(false);
-      setShowEveningPicker(false);
-    }
-    if (selectedTime) {
-      if (isMorning) {
-        setMorningTime(selectedTime);
-      } else {
-        setEveningTime(selectedTime);
-      }
-    }
-  }, []);
-
-  const saveNotificationPreferences = useCallback(async () => {
-    const preferences = {
-      morning: {
-        hour: morningTime.getHours(),
-        minute: morningTime.getMinutes()
-      },
-      evening: {
-        hour: eveningTime.getHours(),
-        minute: eveningTime.getMinutes()
-      }
-    };
-    try {
-      await updateUser(user._id, { notificationPreferences: preferences });
-      updateUserContext({ ...user, notificationPreferences: preferences });
-      if (notificationsEnabled) {
-        await cancelAllNotifications();
-        await scheduleDailyNotification(preferences.morning.hour, preferences.morning.minute);
-        await scheduleDailyNotification(preferences.evening.hour, preferences.evening.minute);
-      }
-      Alert.alert(TEXTS.SUCCESS, TEXTS.PREFERENCES_SAVED);
-    } catch (error) {
-      Alert.alert(TEXTS.ERROR, TEXTS.PREFERENCES_ERROR);
-    }
-  }, [user, morningTime, eveningTime, notificationsEnabled, updateUserContext]);
 
   // Configurar notificaciones al cargar el componente
   useEffect(() => {
@@ -296,10 +179,8 @@ const SettingsScreen = () => {
       const hasPermissions = await areNotificationsEnabled();
       const token = await getStoredPushToken();
       setPushNotificationsEnabled(hasPermissions && !!token);
-      setPushTokenStatus(token ? 'registered' : 'not_registered');
     } catch (error) {
       console.error('Error verificando estado de push notifications:', error);
-      setPushTokenStatus('error');
     }
   };
 
@@ -313,7 +194,6 @@ const SettingsScreen = () => {
           const token = await registerForPushNotifications();
           if (token) {
             setPushNotificationsEnabled(true);
-            setPushTokenStatus('registered');
             Alert.alert(
               TEXTS.SUCCESS,
               'Notificaciones push habilitadas. Recibirás alertas sobre crisis y seguimientos.',
@@ -425,59 +305,6 @@ const SettingsScreen = () => {
     }
   }, [sendTestNotification]);
 
-  // Renderizar selector de tiempo
-  const renderTimeSelector = useCallback((label, time, isMorning) => {
-    const showPicker = isMorning ? showMorningPicker : showEveningPicker;
-    const setShowPicker = isMorning ? setShowMorningPicker : setShowEveningPicker;
-    const setTime = isMorning ? setMorningTime : setEveningTime;
-
-    return (
-      <View style={styles.timeSelectorContainer}>
-        <Text style={styles.timeSelectorLabel}>{label}</Text>
-        <TouchableOpacity 
-          style={styles.timeSelectorButton}
-          onPress={() => setShowPicker(true)}
-          activeOpacity={ACTIVE_OPACITY}
-        >
-          <MaterialCommunityIcons name="clock-outline" size={ICON_SIZE} color={COLORS.PRIMARY} />
-          <Text style={styles.timeSelectorText}>
-            {time.toLocaleTimeString([], TIME_FORMAT_OPTIONS)}
-          </Text>
-        </TouchableOpacity>
-        {showPicker && (
-          <Modal
-            transparent={true}
-            animationType="fade"
-            visible={showPicker}
-            onRequestClose={() => setShowPicker(false)}
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalPickerContent}>
-                <DateTimePicker
-                  value={time}
-                  mode="time"
-                  is24Hour={true}
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={(event, date) => {
-                    handleTimeChange(event, date, isMorning);
-                    setShowPicker(false);
-                  }}
-                  textColor={COLORS.WHITE}
-                  themeVariant="dark"
-                />
-                <TouchableOpacity 
-                  onPress={() => setShowPicker(false)} 
-                  style={styles.modalPickerClose}
-                >
-                  <Text style={styles.modalPickerCloseText}>{TEXTS.CLOSE}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
-        )}
-      </View>
-    );
-  }, [showMorningPicker, showEveningPicker, morningTime, eveningTime, handleTimeChange]);
 
   return (
     <SafeAreaView style={[styles.safeArea, { paddingTop: insets.top }]}>
@@ -502,38 +329,12 @@ const SettingsScreen = () => {
 
         {/* Preferencias */}
         <Text style={styles.sectionTitle}>{TEXTS.PREFERENCES}</Text>
-        <View style={styles.item}>
-          <MaterialCommunityIcons name="bell" size={ICON_SIZE} color={COLORS.PRIMARY} />
-          <Text style={styles.itemText}>{TEXTS.NOTIFICATIONS}</Text>
-          <Switch
-            value={notificationsEnabled}
-            onValueChange={handleNotificationToggle}
-            thumbColor={notificationsEnabled ? COLORS.PRIMARY : COLORS.SWITCH_DISABLED}
-            accessibilityLabel="Activar o desactivar notificaciones"
-            testID="switch-notifications"
-          />
-        </View>
-
-        {notificationsEnabled && (
-          <>
-            {renderTimeSelector(TEXTS.MORNING_NOTIFICATION, morningTime, true)}
-            {renderTimeSelector(TEXTS.EVENING_NOTIFICATION, eveningTime, false)}
-            
-            <TouchableOpacity 
-              style={styles.saveButton} 
-              onPress={saveNotificationPreferences}
-            >
-              <MaterialCommunityIcons name="content-save" size={ICON_SIZE} color={COLORS.WHITE} />
-              <Text style={styles.saveButtonText}>{TEXTS.SAVE_PREFERENCES}</Text>
-            </TouchableOpacity>
-          </>
-        )}
-
+        
         {/* Notificaciones Push */}
         <View style={styles.item}>
           <MaterialCommunityIcons name="bell-ring" size={ICON_SIZE} color={COLORS.PRIMARY} />
           <View style={styles.itemTextContainer}>
-            <Text style={styles.itemText}>Notificaciones Push</Text>
+            <Text style={styles.itemText}>Notificaciones</Text>
             <Text style={styles.itemSubtext}>
               Alertas sobre crisis y seguimientos
             </Text>
@@ -542,17 +343,9 @@ const SettingsScreen = () => {
             value={pushNotificationsEnabled}
             onValueChange={handleTogglePushNotifications}
             thumbColor={pushNotificationsEnabled ? COLORS.PRIMARY : COLORS.SWITCH_DISABLED}
-            accessibilityLabel="Activar o desactivar notificaciones push"
+            accessibilityLabel="Activar o desactivar notificaciones"
           />
         </View>
-
-        {pushTokenStatus && (
-          <View style={styles.statusContainer}>
-            <Text style={styles.statusText}>
-              Estado: {pushTokenStatus === 'registered' ? '✅ Registrado' : pushTokenStatus === 'not_registered' ? '⚠️ No registrado' : '❌ Error'}
-            </Text>
-          </View>
-        )}
 
         {/* Botones de prueba (solo en desarrollo) */}
         {__DEV__ && pushNotificationsEnabled && (
@@ -600,54 +393,27 @@ const SettingsScreen = () => {
           </View>
         )}
 
+        {/* Personalización de Respuesta de Anto */}
         <View style={styles.item}>
-          <MaterialCommunityIcons name="theme-light-dark" size={ICON_SIZE} color={COLORS.PRIMARY} />
-          <Text style={styles.itemText}>{TEXTS.DARK_MODE}</Text>
-          <Switch
-            value={darkMode}
-            onValueChange={val => {
-              setDarkMode(val);
-              savePreference(STORAGE_KEYS.DARK_MODE, val);
-            }}
-            thumbColor={darkMode ? COLORS.PRIMARY : COLORS.SWITCH_DISABLED}
-            accessibilityLabel="Activar o desactivar tema oscuro"
-            testID="switch-darkmode"
-          />
-        </View>
-
-        <View style={styles.item}>
-          <MaterialCommunityIcons name="translate" size={ICON_SIZE} color={COLORS.PRIMARY} />
-          <Text style={styles.itemText}>{TEXTS.LANGUAGE}</Text>
-          <TouchableOpacity
-            onPress={() => {
-              const idx = LANGUAGES.indexOf(language);
-              const nextLanguage = LANGUAGES[(idx + 1) % LANGUAGES.length];
-              setLanguage(nextLanguage);
-              savePreference(STORAGE_KEYS.LANGUAGE, nextLanguage);
-            }}
-            accessibilityLabel="Cambiar idioma"
-            testID="button-language"
-          >
-            <Text style={styles.languageText}>{language}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Estilo de Respuesta */}
-        <View style={styles.item}>
-          <MaterialCommunityIcons name="format-text" size={ICON_SIZE} color={COLORS.PRIMARY} />
+          <MaterialCommunityIcons name="robot" size={ICON_SIZE} color={COLORS.PRIMARY} />
           <View style={styles.itemTextContainer}>
-            <Text style={styles.itemText}>Estilo de Respuesta</Text>
+            <Text style={styles.itemText}>Personalización de Respuesta de Anto</Text>
             <Text style={styles.itemSubtext}>
               Cómo prefieres que Anto responda
             </Text>
           </View>
           <TouchableOpacity
             onPress={async () => {
-              const styles = ['brief', 'balanced', 'deep'];
+              const styles = ['brief', 'balanced', 'deep', 'empatico', 'profesional', 'directo', 'calido', 'estructurado'];
               const labels = {
                 brief: 'Breve',
                 balanced: 'Equilibrado',
                 deep: 'Profundo',
+                empatico: 'Empático',
+                profesional: 'Profesional',
+                directo: 'Directo',
+                calido: 'Cálido',
+                estructurado: 'Estructurado',
               };
               const currentStyle = user?.preferences?.responseStyle || 'balanced';
               const currentIndex = styles.indexOf(currentStyle);
@@ -674,7 +440,12 @@ const SettingsScreen = () => {
           >
             <Text style={styles.languageText}>
               {user?.preferences?.responseStyle === 'brief' ? 'Breve' :
-               user?.preferences?.responseStyle === 'deep' ? 'Profundo' : 'Equilibrado'}
+               user?.preferences?.responseStyle === 'deep' ? 'Profundo' :
+               user?.preferences?.responseStyle === 'empatico' ? 'Empático' :
+               user?.preferences?.responseStyle === 'profesional' ? 'Profesional' :
+               user?.preferences?.responseStyle === 'directo' ? 'Directo' :
+               user?.preferences?.responseStyle === 'calido' ? 'Cálido' :
+               user?.preferences?.responseStyle === 'estructurado' ? 'Estructurado' : 'Equilibrado'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -1002,75 +773,6 @@ const styles = StyleSheet.create({
     color: COLORS.ACCENT,
     fontSize: 14,
     marginTop: 8,
-  },
-  timeSelectorContainer: {
-    backgroundColor: COLORS.ITEM_BACKGROUND,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: COLORS.ITEM_BORDER,
-  },
-  timeSelectorLabel: {
-    color: COLORS.ACCENT,
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  timeSelectorButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.TIME_SELECTOR_BACKGROUND,
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    marginTop: 8,
-  },
-  timeSelectorText: {
-    color: COLORS.WHITE,
-    fontSize: 18,
-    marginLeft: 12,
-    fontWeight: 'bold',
-  },
-  modalPickerContent: {
-    backgroundColor: COLORS.TIME_SELECTOR_BACKGROUND,
-    borderRadius: 12,
-    padding: 16,
-  },
-  modalPickerClose: {
-    marginTop: 12,
-    alignSelf: 'flex-end',
-  },
-  modalPickerCloseText: {
-    color: COLORS.PRIMARY,
-    fontWeight: 'bold',
-  },
-  saveButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.PRIMARY,
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
-  },
-  saveButtonText: {
-    color: COLORS.WHITE,
-    fontSize: 16,
-    fontWeight: "bold",
-    marginLeft: 8,
-  },
-  statusContainer: {
-    backgroundColor: 'rgba(163, 184, 232, 0.1)',
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 8,
-    marginBottom: 16,
-    marginLeft: 56, // Alinear con el contenido del item
-  },
-  statusText: {
-    color: COLORS.ACCENT,
-    fontSize: 12,
-    textAlign: 'left',
   },
   testButtonsContainer: {
     backgroundColor: 'rgba(163, 184, 232, 0.1)',
