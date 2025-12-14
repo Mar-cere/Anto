@@ -92,6 +92,20 @@ router.get('/plans', async (req, res) => {
     const semestralSavings = (monthlyAmount * 6) - semestralAmount;
     const yearlySavings = (monthlyAmount * 12) - yearlyAmount;
 
+    // Funcionalidades completas para todos los planes
+    const allFeatures = [
+      'Chat ilimitado con Anto',
+      'Todas las técnicas terapéuticas',
+      'Análisis emocional avanzado',
+      'Detección de crisis',
+      'Historial completo',
+      'Dashboard de crisis',
+      'Contactos de emergencia',
+      'Exportación de datos',
+      'Soporte prioritario',
+      'Acceso completo a todas las funcionalidades',
+    ];
+
     const plans = {
       weekly: {
         id: 'weekly',
@@ -100,12 +114,7 @@ router.get('/plans', async (req, res) => {
         formattedAmount: formatAmount(weeklyAmount, currency),
         interval: 'week',
         currency: currency,
-        features: [
-          'Chat ilimitado',
-          'Todas las técnicas terapéuticas',
-          'Análisis emocional avanzado',
-          'Historial completo',
-        ],
+        features: allFeatures,
       },
       monthly: {
         id: 'monthly',
@@ -115,14 +124,7 @@ router.get('/plans', async (req, res) => {
         interval: 'month',
         currency: currency,
         discount: '5%',
-        features: [
-          'Chat ilimitado',
-          'Todas las técnicas terapéuticas',
-          'Análisis emocional avanzado',
-          'Historial completo',
-          'Exportación de datos',
-          'Soporte prioritario',
-        ],
+        features: allFeatures,
       },
       quarterly: {
         id: 'quarterly',
@@ -133,11 +135,7 @@ router.get('/plans', async (req, res) => {
         currency: currency,
         discount: '3%',
         savings: formatAmount(quarterlySavings, currency),
-        features: [
-          'Todo lo del plan mensual',
-          `Ahorro de ${formatAmount(quarterlySavings, currency)}`,
-          'Facturación trimestral',
-        ],
+        features: allFeatures,
       },
       semestral: {
         id: 'semestral',
@@ -148,11 +146,7 @@ router.get('/plans', async (req, res) => {
         currency: currency,
         discount: '5.5%',
         savings: formatAmount(semestralSavings, currency),
-        features: [
-          'Todo lo del plan mensual',
-          `Ahorro de ${formatAmount(semestralSavings, currency)}`,
-          'Facturación semestral',
-        ],
+        features: allFeatures,
       },
       yearly: {
         id: 'yearly',
@@ -163,12 +157,7 @@ router.get('/plans', async (req, res) => {
         currency: currency,
         discount: '15%',
         savings: formatAmount(yearlySavings, currency),
-        features: [
-          'Todo lo del plan mensual',
-          `Ahorro de ${formatAmount(yearlySavings, currency)}`,
-          'Mejor precio por mes',
-          'Acceso anticipado a nuevas features',
-        ],
+        features: allFeatures,
       },
     };
 

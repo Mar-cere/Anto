@@ -34,7 +34,7 @@ import { colors } from '../styles/globalStyles';
 // Constantes de textos
 const TEXTS = {
   TITLE: 'Suscripción Premium',
-  SUBTITLE: 'Elige el plan que mejor se adapte a ti',
+  SUBTITLE: 'Todos los planes incluyen el servicio completo. Elige la duración que prefieras.',
   CURRENT_SUBSCRIPTION: 'Tu Suscripción',
   AVAILABLE_PLANS: 'Planes Disponibles',
   LOADING: 'Cargando planes...',
@@ -273,6 +273,7 @@ const SubscriptionScreen = () => {
         {/* Planes disponibles */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{TEXTS.AVAILABLE_PLANS}</Text>
+          <Text style={styles.subtitle}>{TEXTS.SUBTITLE}</Text>
           {plans.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>{TEXTS.NO_PLANS}</Text>
@@ -461,7 +462,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: colors.white,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
     marginBottom: 16,
+    lineHeight: 20,
   },
   cancelButton: {
     flexDirection: 'row',
