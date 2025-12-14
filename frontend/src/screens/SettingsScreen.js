@@ -28,7 +28,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
-import notifications from '../data/notifications';
 import { api, ENDPOINTS } from '../config/api';
 import { updateUser } from '../services/userService';
 import { Ionicons } from '@expo/vector-icons';
@@ -53,7 +52,6 @@ const TEXTS = {
   LOGOUT: 'Cerrar sesión',
   DELETE_ACCOUNT: 'Eliminar cuenta',
   FAQ: 'Preguntas frecuentes',
-  TEST_NOTIFICATION: 'Probar notificación',
   APP_INFO: 'Información de la aplicación',
   LOGOUT_TITLE: 'Cerrar sesión',
   LOGOUT_MESSAGE: '¿Estás seguro que deseas cerrar sesión?',
@@ -66,8 +64,6 @@ const TEXTS = {
   PERMISSIONS_NEEDED: 'Permisos necesarios',
   PERMISSIONS_MESSAGE: 'Necesitamos tu permiso para enviar notificaciones',
   ALLOW: 'Permitir',
-  NOTIFICATION_SENT: 'Notificación enviada',
-  NOTIFICATION_SENT_MESSAGE: 'Deberías recibir una notificación de prueba en breve',
   OK: 'OK',
   SUCCESS: 'Éxito',
   PREFERENCES_SAVED: 'Preferencias de notificaciones guardadas',
@@ -76,7 +72,6 @@ const TEXTS = {
   DELETE_ERROR: 'No se pudo eliminar la cuenta',
   PREFERENCES_ERROR: 'No se pudieron guardar las preferencias',
   PERMISSIONS_ERROR: 'No se pudo verificar los permisos de notificación',
-  NOTIFICATION_ERROR: 'No se pudo enviar la notificación de prueba',
   THERAPEUTIC_TECHNIQUES: 'Técnicas Terapéuticas',
   THERAPEUTIC_TECHNIQUES_DESC: 'Explora técnicas basadas en evidencia para tu bienestar',
   SUBSCRIPTION: 'Suscripción Premium',
@@ -96,6 +91,7 @@ const NAVIGATION_ROUTES = {
   CHANGE_PASSWORD: 'ChangePassword',
   FAQ: 'FAQ',
   FAQ_ALT: 'FaQ',
+  ABOUT: 'About',
 };
 
 // Constantes de estilos
@@ -240,70 +236,6 @@ const SettingsScreen = () => {
     });
   };
 
-  // Enviar notificación de prueba
-  const sendTestNotification = useCallback(async () => {
-    try {
-      // Seleccionar una notificación aleatoria
-      const randomIndex = Math.floor(Math.random() * notifications.length);
-      const notification = notifications[randomIndex];
-
-      // Enviar la notificación de prueba
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: notification.title,
-          body: notification.body,
-          sound: true,
-          priority: Notifications.AndroidNotificationPriority.HIGH,
-        },
-        trigger: null, // null significa que se enviará inmediatamente
-      });
-
-      Alert.alert(
-        TEXTS.NOTIFICATION_SENT,
-        TEXTS.NOTIFICATION_SENT_MESSAGE,
-        [{ text: TEXTS.OK }]
-      );
-    } catch (error) {
-      console.log("Error al enviar notificación:", error);
-      Alert.alert(TEXTS.ERROR, TEXTS.NOTIFICATION_ERROR);
-    }
-  }, []);
-
-  // Función para probar notificación
-  const testNotification = useCallback(async () => {
-    try {
-      // Verificar permisos
-      const { status } = await Notifications.getPermissionsAsync();
-      
-      if (status !== 'granted') {
-        Alert.alert(
-          TEXTS.PERMISSIONS_NEEDED,
-          TEXTS.PERMISSIONS_MESSAGE,
-          [
-            {
-              text: TEXTS.CANCEL,
-              style: "cancel"
-            },
-            {
-              text: TEXTS.ALLOW,
-              onPress: async () => {
-                const { status } = await Notifications.requestPermissionsAsync();
-                if (status === 'granted') {
-                  sendTestNotification();
-                }
-              }
-            }
-          ]
-        );
-        return;
-      }
-
-      sendTestNotification();
-    } catch (error) {
-      console.log("Error al verificar permisos:", error);
-      Alert.alert(TEXTS.ERROR, TEXTS.PERMISSIONS_ERROR);
-    }
-  }, [sendTestNotification]);
 
 
   return (
@@ -553,16 +485,6 @@ const SettingsScreen = () => {
           <Text style={styles.itemText}>{TEXTS.FAQ}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.item}
-          onPress={testNotification}
-          accessibilityLabel="Probar notificación"
-          testID="button-test-notification"
-        >
-          <MaterialCommunityIcons name="bell-ring" size={ICON_SIZE} color={COLORS.PRIMARY} />
-          <Text style={styles.itemText}>{TEXTS.TEST_NOTIFICATION}</Text>
-        </TouchableOpacity>
-
         {/* Separador */}
         <View style={styles.separator} />
 
@@ -570,7 +492,7 @@ const SettingsScreen = () => {
         <Text style={styles.sectionTitle}>{TEXTS.ABOUT}</Text>
         <TouchableOpacity 
           style={styles.item}
-          onPress={() => navigation.navigate(NAVIGATION_ROUTES.FAQ_ALT)}
+          onPress={() => navigation.navigate(NAVIGATION_ROUTES.ABOUT)}
           accessibilityLabel="Información de la aplicación"
           testID="button-about"
         >

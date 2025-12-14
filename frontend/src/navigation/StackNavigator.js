@@ -46,6 +46,7 @@ import GriefSupportScreen from '../screens/techniques/GriefSupportScreen';
 import MemoryExerciseScreen from '../screens/techniques/MemoryExerciseScreen';
 import ConnectionExerciseScreen from '../screens/techniques/ConnectionExerciseScreen';
 import SocialActivityScreen from '../screens/techniques/SocialActivityScreen';
+import AboutScreen from '../screens/AboutScreen';
 import { colors } from '../styles/globalStyles';
 import TabNavigator from './TabNavigator';
 
@@ -74,6 +75,7 @@ const ROUTE_NAMES = {
   THERAPEUTIC_TECHNIQUES_STATS: 'TherapeuticTechniquesStats',
   SUBSCRIPTION: 'Subscription',
   TRANSACTION_HISTORY: 'TransactionHistory',
+  ABOUT: 'About',
 };
 
 /**
@@ -290,6 +292,11 @@ const StackNavigator = () => {
       <Stack.Screen
         name="SocialActivity"
         component={SocialActivityScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name={ROUTE_NAMES.ABOUT}
+        component={AboutScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
