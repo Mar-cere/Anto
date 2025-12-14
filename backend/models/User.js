@@ -134,17 +134,6 @@ const userSchema = new mongoose.Schema({
     type: Date,
     select: false
   },
-  // Avatar del usuario (URL de imagen)
-  avatar: { 
-    type: String, 
-    default: null,
-    validate: {
-      validator: function(v) {
-        return v === null || v === undefined || v.startsWith('http');
-      },
-      message: 'El avatar debe ser una URL válida'
-    }
-  },
   // Configuración de notificaciones
   notificationPreferences: {
     enabled: {

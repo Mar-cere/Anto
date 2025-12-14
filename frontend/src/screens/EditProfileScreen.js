@@ -1,7 +1,7 @@
 /**
  * Pantalla de edición de perfil de usuario
  * 
- * Permite a los usuarios editar su perfil, incluyendo avatar, nombre, email y preferencias.
+ * Permite a los usuarios editar su perfil, incluyendo nombre, email y preferencias.
  * Incluye validación de formularios, subida de imágenes a Cloudinary y manejo de cambios sin guardar.
  * 
  * @author AntoApp Team
@@ -10,7 +10,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
-import * as ImagePicker from 'expo-image-picker';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -49,7 +48,6 @@ const TEXTS = {
   BACK: 'Volver',
   SAVE_CHANGES: 'Guardar cambios',
   EDIT_PROFILE: 'Editar perfil',
-  CHANGE_AVATAR: 'Cambiar foto de perfil',
   PERSONAL_INFO: 'Información Personal',
   NAME: 'Nombre',
   USERNAME: 'Nombre de Usuario',
@@ -59,7 +57,6 @@ const TEXTS = {
   EMAIL_PLACEHOLDER: 'Correo electrónico',
   SAVED: '¡Guardado!',
   PERMISSION_REQUIRED: 'Permiso requerido',
-  PERMISSION_MESSAGE: 'Se necesita acceso a la galería para cambiar la foto de perfil.',
   SESSION_EXPIRED: 'Sesión Expirada',
   SESSION_EXPIRED_MESSAGE: 'Por favor, inicia sesión nuevamente',
   NO_SESSION: 'No se encontró la sesión del usuario',
@@ -79,9 +76,6 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const BACKGROUND_OPACITY = 0.1;
 const FADE_ANIMATION_DURATION = 500;
 const FADE_ANIMATION_TO_VALUE = 1;
-const AVATAR_ANIMATION_DURATION = 150;
-const AVATAR_ANIMATION_SCALE_MAX = 1.1;
-const AVATAR_ANIMATION_SCALE_MIN = 1;
 const SAVE_SUCCESS_DELAY = 2000; // ms
 const CONTENT_PADDING_BOTTOM = 48;
 const HEADER_PADDING_HORIZONTAL = 16;
@@ -113,18 +107,11 @@ const TOGGLE_CIRCLE_SIZE = 24;
 const TOGGLE_CIRCLE_BORDER_RADIUS = 12;
 const TOGGLE_CIRCLE_TRANSLATE_X = 22;
 const PROFILE_HEADER_PADDING_VERTICAL = 24;
-const AVATAR_SIZE = 100;
-const AVATAR_BORDER_RADIUS = 50;
-const AVATAR_CONTAINER_MARGIN_BOTTOM = 16;
 const PROFILE_NAME_MARGIN_BOTTOM = 4;
 const PROFILE_USERNAME_MARGIN_BOTTOM = 16;
 const INPUT_DISABLED_OPACITY = 0.7;
 const DISABLED_BUTTON_OPACITY = 0.5;
 const INPUT_WRAPPER_PADDING_HORIZONTAL = 12;
-const CAMERA_ICON_POSITION_BOTTOM = 8;
-const CAMERA_ICON_POSITION_RIGHT = 8;
-const CAMERA_ICON_BORDER_RADIUS = 12;
-const CAMERA_ICON_PADDING = 4;
 const LOADING_TEXT_MARGIN_TOP = 10;
 const SAVE_SUCCESS_PADDING_HORIZONTAL = 18;
 const SAVE_SUCCESS_PADDING_VERTICAL = 10;
@@ -137,10 +124,8 @@ const SAVE_SUCCESS_SHADOW_RADIUS = 6;
 const SAVE_SUCCESS_ELEVATION = 6;
 const SAVE_SUCCESS_TEXT_MARGIN_LEFT = 8;
 const ICON_SIZE = 24;
-const CAMERA_ICON_SIZE = 20;
 const EMAIL_ICON_SIZE = 20;
 const EMAIL_ICON_MARGIN_RIGHT = 8;
-const AVATAR_ACTIVE_OPACITY = 0.7;
 
 // Constantes de colores
 const COLORS = {
@@ -159,15 +144,12 @@ const COLORS = {
   INPUT_DISABLED_BACKGROUND: 'rgba(29, 43, 95, 0.5)',
   TOGGLE_BACKGROUND: 'rgba(255, 255, 255, 0.1)',
   TOGGLE_ACTIVE_BACKGROUND: 'rgba(26, 221, 219, 0.3)',
-  AVATAR_CONTAINER_BACKGROUND: 'rgba(26, 221, 219, 0.1)',
-  CAMERA_ICON_BACKGROUND: colors.primary,
   SAVE_SUCCESS_BACKGROUND: 'rgba(76, 175, 80, 0.15)',
   SAVE_SUCCESS_SHADOW: '#4CAF50',
 };
 
 // Constantes de valores por defecto
 const DEFAULT_FORM_DATA = {
-  avatar: null,
   name: '',
   username: '',
   email: ''
@@ -181,19 +163,7 @@ const STORAGE_KEYS = {
 };
 
 // Constantes de imágenes
-const AVATAR_DEFAULT = require('../images/avatar.png');
 const BACKGROUND_IMAGE = require('../images/back.png');
-
-// Constantes de ImagePicker
-const IMAGE_PICKER_QUALITY = 0.7;
-const IMAGE_PICKER_ASPECT = [1, 1];
-const IMAGE_TYPE = 'image/jpeg';
-const IMAGE_NAME = 'avatar.jpg';
-const CLOUDINARY_TYPE = 'authenticated';
-
-// Constantes de animación
-const AVATAR_ANIMATION_INPUT_RANGE = [0, 1];
-const AVATAR_ANIMATION_SCALE_OUTPUT_RANGE = [AVATAR_ANIMATION_SCALE_MIN, AVATAR_ANIMATION_SCALE_MAX];
 
 const EditProfileScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
@@ -202,10 +172,8 @@ const EditProfileScreen = ({ navigation }) => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [formData, setFormData] = useState(DEFAULT_FORM_DATA);
-  const [avatarUrl, setAvatarUrl] = useState(null);
   const [errors, setErrors] = useState({});
   const [fadeAnim] = useState(new Animated.Value(0));
-  const [avatarAnim] = useState(new Animated.Value(1));
 
   // Verificar sesión
   const checkSession = useCallback(async () => {
@@ -232,17 +200,6 @@ const EditProfileScreen = ({ navigation }) => {
     }).start();
   }, [fadeAnim]);
 
-  // Obtener URL del avatar
-  const fetchAvatarUrl = useCallback(async (publicId) => {
-    if (!publicId) return null;
-    try {
-      const response = await api.get(`/api/users/avatar-url/${publicId}`);
-      return response.url || null;
-    } catch (error) {
-      console.log('Error obteniendo avatar:', error);
-      return null;
-    }
-  }, []);
 
   // Cargar datos del usuario
   const loadUserData = useCallback(async () => {
@@ -256,26 +213,17 @@ const EditProfileScreen = ({ navigation }) => {
       const userData = response.data || response;
       
       setFormData({
-        avatar: userData.avatar || null,
         name: userData.name || '',
         username: userData.username || '',
         email: userData.email || ''
       });
-
-      // Cargar avatar
-      if (userData.avatar) {
-        const url = await fetchAvatarUrl(userData.avatar);
-        setAvatarUrl(url);
-      } else {
-        setAvatarUrl(null);
-      }
     } catch (error) {
       console.error('Error al cargar datos:', error);
       handleError(error);
     } finally {
       setLoading(false);
     }
-  }, [checkSession, fetchAvatarUrl, handleError]);
+  }, [checkSession, handleError]);
 
   // Manejar errores
   const handleError = useCallback((error) => {
@@ -340,7 +288,6 @@ const EditProfileScreen = ({ navigation }) => {
     setSaving(true);
     try {
       const requestData = {
-        avatar: formData.avatar,
         name: formData.name.trim(),
         email: formData.email.trim()
       };
@@ -349,14 +296,6 @@ const EditProfileScreen = ({ navigation }) => {
       const updatedUser = response.data || response;
       
       await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUser));
-      
-      // Actualizar avatar
-      if (updatedUser.avatar) {
-        const url = await fetchAvatarUrl(updatedUser.avatar);
-        setAvatarUrl(url);
-      } else {
-        setAvatarUrl(null);
-      }
 
       Alert.alert(
         TEXTS.SUCCESS,
@@ -375,7 +314,7 @@ const EditProfileScreen = ({ navigation }) => {
     } finally {
       setSaving(false);
     }
-  }, [validateForm, formData, fetchAvatarUrl, handleError]);
+  }, [validateForm, formData, handleError]);
 
   // Cambiar valor del formulario
   const handleFormChange = useCallback((field, value) => {
@@ -410,87 +349,7 @@ const EditProfileScreen = ({ navigation }) => {
   }, [hasChanges, navigation]);
 
 
-  // Cambiar avatar
-  const handleAvatarChange = useCallback(async () => {
-    if (!editing) return;
-    
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) {
-      Alert.alert(TEXTS.PERMISSION_REQUIRED, TEXTS.PERMISSION_MESSAGE);
-      return;
-    }
-    
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: IMAGE_PICKER_ASPECT,
-        quality: IMAGE_PICKER_QUALITY,
-      });
-      
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const publicId = await uploadImageToCloudinary(result.assets[0].uri);
-        setFormData(prev => ({
-          ...prev,
-          avatar: publicId
-        }));
-        
-        const url = await fetchAvatarUrl(publicId);
-        setAvatarUrl(url);
-        setHasChanges(true);
-        
-        // Animación al cambiar avatar
-        Animated.sequence([
-          Animated.timing(avatarAnim, { 
-            toValue: AVATAR_ANIMATION_SCALE_MAX, 
-            duration: AVATAR_ANIMATION_DURATION, 
-            useNativeDriver: true 
-          }),
-          Animated.timing(avatarAnim, { 
-            toValue: AVATAR_ANIMATION_SCALE_MIN, 
-            duration: AVATAR_ANIMATION_DURATION, 
-            useNativeDriver: true 
-          })
-        ]).start();
-      }
-    } catch (error) {
-      console.log('Error al abrir picker:', error);
-      Alert.alert(TEXTS.ERROR, error.message || TEXTS.ERROR_UPLOAD_IMAGE);
-    }
-  }, [editing, fetchAvatarUrl, avatarAnim]);
 
-  // Obtener firma de Cloudinary
-  const getCloudinarySignature = useCallback(async () => {
-    const response = await api.post('/api/cloudinary/signature');
-    return response.data || response;
-  }, []);
-
-  // Subir imagen a Cloudinary
-  const uploadImageToCloudinary = useCallback(async (imageUri) => {
-    const sigData = await getCloudinarySignature();
-    const data = new FormData();
-    data.append('file', {
-      uri: imageUri,
-      type: IMAGE_TYPE,
-      name: IMAGE_NAME,
-    });
-    data.append('api_key', sigData.apiKey);
-    data.append('timestamp', sigData.timestamp);
-    data.append('upload_preset', sigData.uploadPreset);
-    data.append('signature', sigData.signature);
-    data.append('type', CLOUDINARY_TYPE);
-
-    const response = await fetch(`https://api.cloudinary.com/v1_1/${sigData.cloudName}/image/upload`, {
-      method: 'POST',
-      body: data,
-    });
-    const file = await response.json();
-    
-    if (!file.public_id) {
-      throw new Error(TEXTS.ERROR_UPLOAD_IMAGE);
-    }
-    return file.public_id;
-  }, [getCloudinarySignature]);
 
   if (loading) {
     return (
@@ -551,36 +410,6 @@ const EditProfileScreen = ({ navigation }) => {
 
         <Animated.View style={[styles.content, { opacity: fadeAnim, paddingBottom: CONTENT_PADDING_BOTTOM }]}>
           <View style={styles.profileHeader}>
-            <TouchableOpacity
-              style={styles.avatarContainer}
-              onPress={handleAvatarChange}
-              disabled={!editing}
-              activeOpacity={editing ? AVATAR_ACTIVE_OPACITY : 1}
-              accessibilityLabel={TEXTS.CHANGE_AVATAR}
-            >
-              <Animated.View style={{ transform: [{ scale: avatarAnim }] }}>
-                {avatarUrl ? (
-                  <Image
-                    source={{ uri: avatarUrl }}
-                    style={styles.avatarImage}
-                  />
-                ) : (
-                  <Image
-                    source={AVATAR_DEFAULT}
-                    style={styles.avatarImage}
-                  />
-                )}
-              </Animated.View>
-              {editing && (
-                <View style={styles.cameraIconContainer}>
-                  <MaterialCommunityIcons 
-                    name="camera" 
-                    size={CAMERA_ICON_SIZE} 
-                    color={COLORS.WHITE} 
-                  />
-                </View>
-              )}
-            </TouchableOpacity>
             <Text style={styles.profileName}>{formData.name || ""}</Text>
             <Text style={styles.profileUsername}>@{formData.username}</Text>
           </View>
@@ -790,28 +619,6 @@ const styles = StyleSheet.create({
   profileHeader: {
     alignItems: 'center',
     paddingVertical: PROFILE_HEADER_PADDING_VERTICAL,
-  },
-  avatarContainer: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_BORDER_RADIUS,
-    backgroundColor: COLORS.AVATAR_CONTAINER_BACKGROUND,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: AVATAR_CONTAINER_MARGIN_BOTTOM,
-  },
-  avatarImage: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_BORDER_RADIUS,
-  },
-  cameraIconContainer: {
-    position: 'absolute',
-    bottom: CAMERA_ICON_POSITION_BOTTOM,
-    right: CAMERA_ICON_POSITION_RIGHT,
-    backgroundColor: COLORS.CAMERA_ICON_BACKGROUND,
-    borderRadius: CAMERA_ICON_BORDER_RADIUS,
-    padding: CAMERA_ICON_PADDING,
   },
   profileName: {
     fontSize: 24,

@@ -72,17 +72,6 @@ const ErrorMessage = ({ message, onRetry, onDismiss }) => (
   </View>
 );
 
-// Helper: obtener URL del avatar
-const fetchAvatarUrl = async (publicId) => {
-  if (!publicId) return null;
-  try {
-    const response = await api.get(`/api/users/avatar-url/${publicId}`);
-    return response.url || null;
-  } catch (error) {
-    console.error('Error obteniendo avatar:', error);
-    return null;
-  }
-};
 
 const DashScreen = () => {
   const navigation = useNavigation();
@@ -93,7 +82,6 @@ const DashScreen = () => {
   const [tasks, setTasks] = useState([]);
   const [habits, setHabits] = useState([]);
   const [greeting, setGreeting] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState(null);
   const [refreshAnim] = useState(new Animated.Value(0));
   const [showEmergencyContactsModal, setShowEmergencyContactsModal] = useState(false);
   const [emergencyContacts, setEmergencyContacts] = useState([]);
@@ -140,14 +128,7 @@ const DashScreen = () => {
         })
       ]);
 
-      // Obtener URL del avatar si existe
-      let avatarUrl = null;
-      if (userData?.avatar) {
-        avatarUrl = await fetchAvatarUrl(userData.avatar);
-      }
-
       // Actualizar estados
-      setAvatarUrl(avatarUrl);
       setUserData(userData || {});
       setTasks(Array.isArray(tasks) ? tasks : []);
       setHabits(Array.isArray(habits) ? habits : []);
@@ -395,8 +376,6 @@ const DashScreen = () => {
     })
   }), [refreshAnim]);
 
-  // Avatar por defecto
-  const avatarToShow = avatarUrl || require('../images/avatar.png');
 
   // Componente de carga
   if (loading) {
@@ -423,7 +402,6 @@ const DashScreen = () => {
         <View style={styles.headerFixed}>
           <Header 
             greeting={greeting}
-            userAvatar={avatarToShow}
           />
         </View>
         <DashboardScroll 

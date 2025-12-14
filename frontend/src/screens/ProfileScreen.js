@@ -2,7 +2,7 @@
  * Pantalla de perfil de usuario
  * 
  * Permite a los usuarios ver su perfil, estadísticas, editar perfil y cerrar sesión.
- * Incluye avatar, estadísticas de tareas y hábitos, y opciones de navegación.
+ * Incluye estadísticas de tareas y hábitos, y opciones de navegación.
  * 
  * @author AntoApp Team
  */
@@ -106,9 +106,6 @@ const HEADER_BUTTON_SIZE = 40;
 const HEADER_BUTTON_BORDER_RADIUS = 20;
 const HEADER_BORDER_WIDTH = 1;
 const PROFILE_SECTION_PADDING = 20;
-const AVATAR_CONTAINER_MARGIN_BOTTOM = 16;
-const AVATAR_SIZE = 120;
-const AVATAR_BORDER_RADIUS = 60;
 const USER_NAME_MARGIN_BOTTOM = 4;
 const USER_EMAIL_MARGIN_BOTTOM = 16;
 const STATS_CONTAINER_PADDING = 16;
@@ -135,7 +132,6 @@ const LOGOUT_TEXT_MARGIN_LEFT = 8;
 const LOADING_TEXT_MARGIN_TOP = 10;
 const ICON_SIZE = 24;
 const STAT_ICON_SIZE = 24;
-const AVATAR_DEFAULT = require('../images/avatar.png');
 const BACKGROUND_IMAGE = require('../images/back.png');
 
 // Constantes de colores
@@ -155,14 +151,12 @@ const COLORS = {
   REFRESH_PROGRESS_BACKGROUND: 'rgba(29, 43, 95, 0.8)',
   LOGOUT_BUTTON_BACKGROUND: 'rgba(255, 107, 107, 0.1)',
   LOGOUT_BUTTON_BORDER: 'rgba(255, 107, 107, 0.3)',
-  AVATAR_BACKGROUND: 'rgba(29, 43, 95, 0.8)',
 };
 
 // Constantes de valores por defecto
 const DEFAULT_USER_DATA = {
   username: '',
   email: '',
-  avatar: null,
   lastLogin: null,
   preferences: {
     theme: 'light',
@@ -206,7 +200,6 @@ const ProfileScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [userData, setUserData] = useState(DEFAULT_USER_DATA);
   const [detailedStats, setDetailedStats] = useState(DEFAULT_DETAILED_STATS);
-  const [avatarUrl, setAvatarUrl] = useState(null);
   const [refreshAnim] = useState(new Animated.Value(0));
   const [emergencyContacts, setEmergencyContacts] = useState([]);
   const [showEmergencyContactsModal, setShowEmergencyContactsModal] = useState(false);
@@ -215,17 +208,6 @@ const ProfileScreen = () => {
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
 
-  // Obtener URL del avatar
-  const fetchAvatarUrl = useCallback(async (publicId) => {
-    if (!publicId) return null;
-    try {
-      const response = await api.get(`/api/users/avatar-url/${publicId}`);
-      return response.url || null;
-    } catch (error) {
-      console.log('Error obteniendo avatar:', error);
-      return null;
-    }
-  }, []);
 
   // Cargar datos del usuario
   const loadUserData = useCallback(async () => {
@@ -256,23 +238,15 @@ const ProfileScreen = () => {
           totalHabits: parsedUserData.stats?.totalHabits ?? 0,
         }));
         
-        // Cargar avatar
-        if (parsedUserData.avatar) {
-          const url = await fetchAvatarUrl(parsedUserData.avatar);
-          setAvatarUrl(url || AVATAR_DEFAULT);
-        } else {
-          setAvatarUrl(AVATAR_DEFAULT);
-        }
       }
     } catch (error) {
       console.error('Error al cargar datos del perfil:', error);
       Alert.alert(TEXTS.ERROR_LOAD, TEXTS.ERROR_LOAD_MESSAGE);
-      setAvatarUrl(AVATAR_DEFAULT);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [fetchAvatarUrl]);
+  }, []);
 
   // Cargar contactos de emergencia
   const loadEmergencyContacts = useCallback(async () => {
@@ -480,32 +454,6 @@ const ProfileScreen = () => {
 
           {/* Perfil Principal */}
           <View style={styles.profileSection}>
-            <View style={styles.avatarContainer}>
-              <Animated.View style={{
-                transform: [{ 
-                  scale: refreshAnim.interpolate({ 
-                    inputRange: REFRESH_ANIMATION_INPUT_RANGE, 
-                    outputRange: REFRESH_SCALE_OUTPUT_RANGE 
-                  }) 
-                }],
-                opacity: refreshAnim.interpolate({ 
-                  inputRange: REFRESH_ANIMATION_INPUT_RANGE, 
-                  outputRange: REFRESH_OPACITY_OUTPUT_RANGE 
-                })
-              }}>
-                {avatarUrl ? (
-                  <Image 
-                    source={typeof avatarUrl === 'string' ? { uri: avatarUrl } : avatarUrl} 
-                    style={styles.avatar}
-                  />
-                ) : (
-                  <Image 
-                    source={AVATAR_DEFAULT} 
-                    style={styles.avatar}
-                  />
-                )}
-              </Animated.View>
-            </View>
             <Text style={styles.userName}>{userData.username}</Text>
             <Text style={styles.userEmail}>{userData.email}</Text>
           </View>
@@ -931,16 +879,6 @@ const styles = StyleSheet.create({
   profileSection: {
     alignItems: 'center',
     padding: PROFILE_SECTION_PADDING,
-  },
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: AVATAR_CONTAINER_MARGIN_BOTTOM,
-  },
-  avatar: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_BORDER_RADIUS,
-    backgroundColor: COLORS.AVATAR_BACKGROUND,
   },
   userName: {
     fontSize: 24,

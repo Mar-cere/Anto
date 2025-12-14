@@ -34,10 +34,10 @@ const ALLOWED_FORMATS = ['jpg', 'png', 'gif', 'webp'];
 // Esquemas de validación Joi
 const signatureSchema = Joi.object({
   type: Joi.string()
-    .valid('avatar', 'background', 'attachment')
+    .valid('background', 'attachment')
     .required()
     .messages({
-      'any.only': 'El tipo debe ser avatar, background o attachment',
+      'any.only': 'El tipo debe ser background o attachment',
       'any.required': 'El tipo es requerido'
     }),
   folder: Joi.string()
@@ -58,14 +58,6 @@ const signatureSchema = Joi.object({
 // Presets de configuración por tipo de recurso
 const validatePreset = (type) => {
   const presets = {
-    avatar: {
-      upload_preset: 'Anto Avatar',
-      transformation: [
-        { width: 200, height: 200, crop: 'fill' },
-        { quality: 'auto' },
-        { fetch_format: 'auto' }
-      ]
-    },
     background: {
       upload_preset: 'Anto Background',
       transformation: [

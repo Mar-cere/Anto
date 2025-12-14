@@ -1,5 +1,5 @@
 /**
- * Rutas de Usuario - Gestiona perfil, contraseña, avatar, suscripción y eliminación de cuenta
+ * Rutas de Usuario - Gestiona perfil, contraseña, suscripción y eliminación de cuenta
  */
 import cloudinary from 'cloudinary';
 import crypto from 'crypto';
@@ -21,8 +21,6 @@ const isValidObjectId = (id) => {
 const router = express.Router();
 
 // Constantes de configuración
-const AVATAR_URL_EXPIRY = 300; // 5 minutos en segundos
-const AVATAR_SIZE = 200;
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 
 // Rate limiters: control de frecuencia de peticiones
@@ -34,13 +32,6 @@ const updateProfileLimiter = rateLimit({
   legacyHeaders: false
 });
 
-const avatarLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hora
-  max: 5,
-  message: 'Demasiados cambios de avatar. Por favor, intente más tarde.',
-  standardHeaders: true,
-  legacyHeaders: false
-});
 
 const deleteUserLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hora
@@ -174,12 +165,6 @@ const updateProfileSchema = Joi.object({
       motivationalMessages: Joi.boolean()
     })
   }).optional(),
-  avatar: Joi.string()
-    .uri()
-    .optional()
-    .messages({
-      'string.uri': 'El avatar debe ser una URL válida'
-    })
 });
 
 const updatePasswordSchema = Joi.object({
@@ -430,53 +415,6 @@ router.put('/me/password', authenticateToken, validateUserObjectId, updateProfil
     logger.error('Error al cambiar contraseña', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
       message: 'Error al cambiar la contraseña',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-});
-
-// Obtener URL firmada para avatar (Cloudinary)
-router.get('/avatar-url/:publicId', authenticateToken, avatarLimiter, async (req, res) => {
-  try {
-    const { publicId } = req.params;
-
-    // Asegurar que req.user._id sea un ObjectId válido
-    const userId = mongoose.Types.ObjectId.isValid(req.user._id) 
-      ? new mongoose.Types.ObjectId(req.user._id) 
-      : req.user._id;
-    
-    // Validar que el publicId pertenece al usuario
-    const user = await User.findOne({ 
-      _id: userId,
-      avatar: { $regex: publicId }
-    });
-
-    if (!user) {
-      return res.status(403).json({ 
-        message: 'No tienes permiso para acceder a este avatar' 
-      });
-    }
-
-    // Generar URL firmada con expiración
-    const url = cloudinary.url(publicId, {
-      type: 'authenticated',
-      sign_url: true,
-      expires_at: Math.floor(Date.now() / 1000) + AVATAR_URL_EXPIRY,
-      transformation: [
-        { width: AVATAR_SIZE, height: AVATAR_SIZE, crop: 'fill' },
-        { quality: 'auto' },
-        { fetch_format: 'auto' }
-      ]
-    });
-
-    res.json({ 
-      url,
-      expiresIn: AVATAR_URL_EXPIRY
-    });
-  } catch (error) {
-    logger.error('Error generando URL de avatar', { error: error.message, userId: req.user._id });
-    res.status(500).json({ 
-      message: 'Error al generar URL del avatar',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

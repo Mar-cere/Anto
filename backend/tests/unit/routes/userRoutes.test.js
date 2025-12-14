@@ -57,15 +57,6 @@ describe('User Routes', () => {
     });
   });
 
-  describe('GET /api/users/avatar-url/:publicId', () => {
-    it('debe rechazar consulta sin autenticación', async () => {
-      const response = await request(app)
-        .get('/api/users/avatar-url/test123');
-
-      expect([401, 400, 404]).toContain(response.status);
-    });
-  });
-
   describe('GET /api/users/me/subscription', () => {
     it('debe rechazar consulta sin autenticación', async () => {
       const response = await request(app)

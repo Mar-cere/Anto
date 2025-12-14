@@ -5,7 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'react-native';
 import { colors } from '../styles/globalStyles';
 
-const Header = memo(({ greeting, userName, userAvatar, title, showBackButton }) => {
+const Header = memo(({ greeting, userName, title, showBackButton }) => {
   const navigation = useNavigation();
   
   const handleBackPress = () => {
@@ -60,7 +60,7 @@ const Header = memo(({ greeting, userName, userAvatar, title, showBackButton }) 
     );
   }
 
-  // Header original con greeting y avatar
+  // Header original con greeting
   return (
     <View style={styles.headerContainer}>
       <View style={styles.headerLeft}>
@@ -70,19 +70,9 @@ const Header = memo(({ greeting, userName, userAvatar, title, showBackButton }) 
       <View style={styles.headerRight}>
         <TouchableOpacity 
           onPress={handleProfilePress}
-          style={styles.avatarContainer}
+          style={styles.profileButton}
         >
-          {userAvatar ? (
-            <Image 
-              source={{ uri: userAvatar }} 
-              style={styles.avatar}
-              defaultSource={require('../images/avatar.png')}
-            />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <MaterialCommunityIcons name="account" size={24} color="#A3B8E8" />
-            </View>
-          )}
+          <MaterialCommunityIcons name="account" size={24} color="#A3B8E8" />
         </TouchableOpacity>
       </View>
     </View>
@@ -124,22 +114,13 @@ const styles = StyleSheet.create({
     color: '#A3B8E8',
     marginBottom: 4,
   },
-  avatarContainer: {
-    borderWidth: 2,
-    borderColor: '#1ADDDB',
-    borderRadius: 22,
-    overflow: 'hidden',
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  avatarPlaceholder: {
+  profileButton: {
     width: 40,
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 20,
+    backgroundColor: 'rgba(163, 184, 232, 0.1)',
   },
 });
 
