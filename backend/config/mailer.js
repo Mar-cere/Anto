@@ -102,7 +102,7 @@ const getEmailHeader = (title, logoAlt = `${APP_NAME} Logo`) => {
 // Plantillas de correo
 const emailTemplates = {
   /**
-   * Plantilla para código de verificación
+   * Plantilla para código de verificación (recuperación de contraseña)
    */
   verificationCode: (code) => ({
     subject: `Código de Verificación - ${APP_NAME_FULL}`,
@@ -130,6 +130,44 @@ const emailTemplates = {
             </p>
             <p style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 0.95rem;">
               Si no solicitaste este código, puedes ignorar este correo.
+            </p>
+          </div>
+        </div>
+
+        ${getEmailFooter()}
+      </div>
+    `
+  }),
+
+  /**
+   * Plantilla para código de verificación de email (registro)
+   */
+  emailVerificationCode: (code, username) => ({
+    subject: `Verifica tu Email - ${APP_NAME_FULL}`,
+    html: `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: ${EMAIL_COLORS.BACKGROUND};">
+        ${getEmailHeader('Verifica tu Email')}
+        
+        <div style="background: rgba(20, 28, 56, 0.92); backdrop-filter: blur(12px); margin: -24px 24px 24px 24px; padding: 32px 24px; border-radius: 18px; box-shadow: 0 8px 32px rgba(31,38,135,0.10); border: 1px solid rgba(255,255,255,0.10);">
+          <p style="color: ${EMAIL_COLORS.TEXT_WHITE}; font-size: 1.1rem; line-height: 1.7; margin-bottom: 28px; text-align: center;">
+            ¡Hola ${username}!<br>
+            Gracias por registrarte en ${APP_NAME}. Para completar tu registro, verifica tu email con el siguiente código:
+          </p>
+
+          <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); padding: 4px; border-radius: 14px; margin: 32px 0;">
+            <div style="background: white; padding: 24px 0; border-radius: 12px;">
+              <span style="display: block; color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 2.5rem; text-align: center; letter-spacing: 12px; font-weight: bold; font-family: 'Segoe UI Mono', 'Menlo', 'Monaco', monospace;">
+                ${code}
+              </span>
+            </div>
+          </div>
+
+          <div style="margin-top: 24px; text-align: center;">
+            <p style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 1rem; margin-bottom: 8px;">
+              Este código expirará en <span style="color: ${EMAIL_COLORS.ACCENT}; font-weight: bold;">${CODE_EXPIRATION_MINUTES} minutos</span>.
+            </p>
+            <p style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 0.95rem;">
+              Si no creaste esta cuenta, puedes ignorar este correo.
             </p>
           </div>
         </div>
@@ -324,7 +362,7 @@ const sendEmail = async (email, template, emailType) => {
 // Funciones de envío de correo
 const mailer = {
   /**
-   * Enviar código de verificación
+   * Enviar código de verificación (recuperación de contraseña)
    * @param {string} email - Email del destinatario
    * @param {string} code - Código de verificación
    * @returns {Promise<boolean>} true si se envió correctamente
@@ -335,6 +373,22 @@ const mailer = {
       return await sendEmail(email, template, 'Código de verificación');
     } catch (error) {
       throw new Error('Error al enviar el correo de verificación');
+    }
+  },
+
+  /**
+   * Enviar código de verificación de email (registro)
+   * @param {string} email - Email del destinatario
+   * @param {string} code - Código de verificación
+   * @param {string} username - Nombre de usuario
+   * @returns {Promise<boolean>} true si se envió correctamente
+   */
+  sendEmailVerificationCode: async (email, code, username) => {
+    try {
+      const template = emailTemplates.emailVerificationCode(code, username);
+      return await sendEmail(email, template, 'Código de verificación de email');
+    } catch (error) {
+      throw new Error('Error al enviar el correo de verificación de email');
     }
   },
 

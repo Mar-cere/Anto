@@ -42,6 +42,20 @@ const userSchema = new mongoose.Schema({
     match: [/^\S+@\S+\.\S+$/, 'Por favor ingresa un correo válido'],
     index: true
   },
+  // Verificación de email
+  emailVerified: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  emailVerificationCode: {
+    type: String,
+    default: null
+  },
+  emailVerificationCodeExpires: {
+    type: Date,
+    default: null
+  },
   // Seguridad: contraseña hasheada y salt para encriptación
   password: {
     type: String,

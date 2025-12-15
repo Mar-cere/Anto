@@ -23,6 +23,7 @@ import RegisterScreen from '../screens/RegisterScreen';
 import SignInScreen from '../screens/SignInScreen';
 import TaskScreen from '../screens/TaskScreen';
 import VerifyCodeScreen from '../screens/VerifyCodeScreen';
+import VerifyEmailScreen from '../screens/VerifyEmailScreen';
 import CrisisDashboardScreen from '../screens/CrisisDashboardScreen';
 import EmergencyAlertsHistoryScreen from '../screens/EmergencyAlertsHistoryScreen';
 import SystemHealthScreen from '../screens/SystemHealthScreen';
@@ -130,6 +131,10 @@ const StackNavigator = () => {
       <Stack.Screen 
         name={ROUTES.VERIFY_CODE} 
         component={VerifyCodeScreen}
+      />
+      <Stack.Screen
+        name={ROUTES.VERIFY_EMAIL}
+        component={VerifyEmailScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen 

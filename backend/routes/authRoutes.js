@@ -126,6 +126,23 @@ const verifyCodeSchema = Joi.object({
     })
 });
 
+const verifyEmailSchema = Joi.object({
+  email: Joi.string()
+    .email({ tlds: { allow: false } })
+    .required()
+    .trim()
+    .lowercase(),
+  code: Joi.string()
+    .length(6)
+    .pattern(/^[0-9]+$/)
+    .required()
+    .messages({
+      'string.length': 'El código debe tener 6 dígitos',
+      'string.pattern.base': 'El código debe contener solo números',
+      'any.required': 'El código es requerido'
+    })
+});
+
 const resetPasswordSchema = Joi.object({
   email: Joi.string()
     .email({ tlds: { allow: false } })
@@ -174,6 +191,11 @@ const hashPassword = (password) => {
   return { salt, hash };
 };
 
+// Generar código de verificación de email (6 dígitos)
+const generateEmailVerificationCode = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
 const validateResetCode = (user, code) => {
   return user.resetPasswordCode &&
          user.resetPasswordExpires &&
@@ -219,12 +241,19 @@ router.post('/register', registerLimiter, async (req, res) => {
     // Generar hash de contraseña
     const { salt, hash } = hashPassword(password);
 
-    // Crear nuevo usuario
+    // Generar código de verificación de email
+    const verificationCode = generateEmailVerificationCode();
+    const codeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
+
+    // Crear nuevo usuario (sin verificar email)
     const userData = {
       email,
       username,
       password: hash,
       salt,
+      emailVerified: false,
+      emailVerificationCode: verificationCode,
+      emailVerificationCodeExpires: codeExpires,
       preferences: {
         theme: 'light',
         notifications: true,
@@ -247,35 +276,28 @@ router.post('/register', registerLimiter, async (req, res) => {
     const user = new User(userData);
     await user.save();
 
-    // Enviar correo de bienvenida (no bloquea si falla)
-    console.log(`📧 Iniciando envío de correo de bienvenida a: ${email}`);
-    mailer.sendWelcomeEmail(email, username)
-      .then(success => {
-        if (success) {
-          console.log(`✅ Correo de bienvenida enviado exitosamente a: ${email}`);
-        } else {
-          console.warn(`⚠️ No se pudo enviar correo de bienvenida a: ${email} (retornó false)`);
-        }
-      })
-      .catch(err => {
-        console.error('❌ Error capturado en promise de correo de bienvenida:', err.message);
-        if (err.stack) {
-          console.error('Stack trace:', err.stack);
-        }
-        if (err.message.includes('Variables de entorno')) {
-          console.error('💡 Configura EMAIL_USER y EMAIL_APP_PASSWORD en tu archivo .env para habilitar el envío de correos');
-        }
-      });
+    // Enviar código de verificación por email
+    try {
+      await mailer.sendEmailVerificationCode(email, verificationCode, username);
+      console.log(`✅ Código de verificación enviado a: ${email}`);
+    } catch (err) {
+      console.error('❌ Error enviando código de verificación:', err.message);
+      // No bloqueamos el registro si falla el envío del email
+      // El usuario puede solicitar reenvío después
+    }
 
-    // Generar tokens con el rol del usuario
-    const { accessToken, refreshToken } = await generateTokens(user._id, user.role || 'user');
-
+    // NO generar tokens todavía - el usuario debe verificar su email primero
+    // Retornar información de que necesita verificar email
     res.status(201).json({
-      message: 'Usuario registrado exitosamente',
-      accessToken,
-      token: accessToken, // Alias para compatibilidad con frontend
-      refreshToken,
-      user: user.toJSON()
+      message: 'Usuario registrado exitosamente. Por favor verifica tu email.',
+      requiresVerification: true,
+      email: email, // Enviar email para la pantalla de verificación
+      user: {
+        _id: user._id,
+        email: user.email,
+        username: user.username,
+        emailVerified: false
+      }
     });
 
   } catch (error) {
@@ -299,6 +321,120 @@ router.post('/register', registerLimiter, async (req, res) => {
       message: 'Error al registrar usuario',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
+  }
+});
+
+// Verificar email después del registro
+router.post('/verify-email', registerLimiter, async (req, res) => {
+  try {
+    const { error, value } = verifyEmailSchema.validate(req.body, { stripUnknown: true });
+    if (error) {
+      return res.status(400).json({
+        message: 'Datos inválidos',
+        errors: error.details.map(detail => detail.message)
+      });
+    }
+
+    const { email, code } = value;
+
+    // Buscar usuario
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'No existe una cuenta con este correo electrónico' });
+    }
+
+    // Verificar si ya está verificado
+    if (user.emailVerified) {
+      return res.status(400).json({ message: 'El email ya está verificado' });
+    }
+
+    // Validar código
+    if (!user.emailVerificationCode || 
+        !user.emailVerificationCodeExpires ||
+        user.emailVerificationCode !== code ||
+        user.emailVerificationCodeExpires < Date.now()) {
+      return res.status(400).json({ message: 'Código inválido o expirado' });
+    }
+
+    // Marcar email como verificado y limpiar código
+    user.emailVerified = true;
+    user.emailVerificationCode = undefined;
+    user.emailVerificationCodeExpires = undefined;
+    await user.save();
+
+    // Enviar correo de bienvenida ahora que el email está verificado
+    mailer.sendWelcomeEmail(email, user.username)
+      .then(success => {
+        if (success) {
+          console.log(`✅ Correo de bienvenida enviado a: ${email}`);
+        }
+      })
+      .catch(err => {
+        console.error('❌ Error enviando correo de bienvenida:', err.message);
+      });
+
+    // Generar tokens ahora que el email está verificado
+    const { accessToken, refreshToken } = await generateTokens(user._id, user.role || 'user');
+
+    res.json({
+      message: 'Email verificado exitosamente',
+      accessToken,
+      token: accessToken,
+      refreshToken,
+      user: user.toJSON()
+    });
+  } catch (error) {
+    console.error('Error verificando email:', error);
+    res.status(500).json({ message: 'Error al verificar el email' });
+  }
+});
+
+// Reenviar código de verificación de email
+router.post('/resend-verification-code', registerLimiter, async (req, res) => {
+  try {
+    const { error, value } = passwordResetSchema.validate(req.body, { stripUnknown: true });
+    if (error) {
+      return res.status(400).json({
+        message: 'Datos inválidos',
+        errors: error.details.map(detail => detail.message)
+      });
+    }
+
+    const { email } = value;
+
+    // Buscar usuario
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'No existe una cuenta con este correo electrónico' });
+    }
+
+    // Verificar si ya está verificado
+    if (user.emailVerified) {
+      return res.status(400).json({ message: 'El email ya está verificado' });
+    }
+
+    // Generar nuevo código
+    const verificationCode = generateEmailVerificationCode();
+    const codeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
+
+    user.emailVerificationCode = verificationCode;
+    user.emailVerificationCodeExpires = codeExpires;
+    await user.save();
+
+    // Enviar código por email
+    try {
+      await mailer.sendEmailVerificationCode(email, verificationCode, user.username);
+      res.json({
+        message: 'Código de verificación reenviado exitosamente',
+        expiresIn: 600 // 10 minutos en segundos
+      });
+    } catch (err) {
+      console.error('Error enviando código de verificación:', err.message);
+      res.status(500).json({ message: 'Error al enviar el código de verificación' });
+    }
+  } catch (error) {
+    console.error('Error reenviando código:', error);
+    res.status(500).json({ message: 'Error al procesar la solicitud' });
   }
 });
 
@@ -329,6 +465,15 @@ router.post('/login', loginLimiter, async (req, res) => {
     if (!user.isActive) {
       return res.status(403).json({
         message: 'Tu cuenta ha sido desactivada. Contacta al soporte.'
+      });
+    }
+
+    // Verificar si el email está verificado
+    if (!user.emailVerified) {
+      return res.status(403).json({
+        message: 'Por favor verifica tu email antes de iniciar sesión. Revisa tu correo para el código de verificación.',
+        requiresVerification: true,
+        email: user.email
       });
     }
 

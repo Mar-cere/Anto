@@ -345,8 +345,14 @@ const RegisterScreen = ({ navigation }) => {
 
       const response = await api.post(ENDPOINTS.REGISTER, userData);
 
-      // Verificar si la respuesta tiene los tokens esperados
-      if ((response.accessToken || response.token) && response.user) {
+      // Verificar si requiere verificación de email
+      if (response.requiresVerification) {
+        // Navegar a pantalla de verificación
+        navigation.navigate(ROUTES.VERIFY_EMAIL, {
+          email: response.email || formData.email,
+        });
+      } else if ((response.accessToken || response.token) && response.user) {
+        // Si ya viene verificado (caso legacy o desarrollo)
         await saveAuthData(
           { accessToken: response.accessToken, token: response.token, refreshToken: response.refreshToken },
           response.user,

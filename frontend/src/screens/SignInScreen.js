@@ -323,6 +323,29 @@ const SignInScreen = () => {
         password: formData.password
       });
 
+      // Verificar si requiere verificación de email
+      if (response.requiresVerification) {
+        Alert.alert(
+          'Email no verificado',
+          response.message || 'Por favor verifica tu email antes de iniciar sesión.',
+          [
+            {
+              text: 'Verificar ahora',
+              onPress: () => {
+                navigation.navigate(ROUTES.VERIFY_EMAIL, {
+                  email: response.email || formData.email,
+                });
+              },
+            },
+            {
+              text: 'Cancelar',
+              style: 'cancel',
+            },
+          ]
+        );
+        return;
+      }
+
       // Verificar si la respuesta tiene los tokens esperados
       if ((response.accessToken || response.token) && response.user) {
         await saveAuthData(

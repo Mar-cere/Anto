@@ -3,6 +3,7 @@ export const ROUTES = {
   REGISTER: 'Register',
   RECOVER_PASSWORD: 'RecoverPassword',
   VERIFY_CODE: 'VerifyCode',
+  VERIFY_EMAIL: 'VerifyEmail',
   NEW_PASSWORD: 'NewPassword',
   DASHBOARD: 'Dash',
   CHAT: 'Chat',
