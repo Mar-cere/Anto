@@ -397,40 +397,6 @@ router.get(
   }
 );
 
-/**
- * GET /api/payments/transactions
- * Obtener historial de transacciones del usuario
- */
-router.get(
-  '/transactions',
-  authenticateToken,
-  validateUserObjectId,
-  async (req, res) => {
-    try {
-      const userId = req.user._id;
-      const { limit = 50, skip = 0, status, type } = req.query;
-
-      const transactions = await Transaction.getUserTransactions(userId, {
-        limit: parseInt(limit, 10),
-        skip: parseInt(skip, 10),
-        status,
-        type,
-      });
-
-      res.json({
-        success: true,
-        transactions,
-        count: transactions.length,
-      });
-    } catch (error) {
-      console.error('Error obteniendo transacciones:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Error al obtener transacciones',
-      });
-    }
-  }
-);
 
 /**
  * GET /api/payments/transactions/stats

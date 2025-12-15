@@ -28,7 +28,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../components/Header';
 import FloatingNavBar from '../components/FloatingNavBar';
 import { colors } from '../styles/globalStyles';
-import api from '../config/api';
+import api, { ENDPOINTS } from '../config/api';
 
 // Constantes
 const TEXTS = {
@@ -91,7 +91,7 @@ const TransactionHistoryScreen = () => {
       }
       setError(null);
 
-      const response = await api.get(api.ENDPOINTS.PAYMENT_TRANSACTIONS);
+      const response = await api.get(ENDPOINTS.PAYMENT_TRANSACTIONS);
       
       if (response.success) {
         setTransactions(response.transactions || []);
