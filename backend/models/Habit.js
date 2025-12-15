@@ -222,12 +222,14 @@ habitSchema.methods.shouldNotify = function() {
 
 habitSchema.methods.softDelete = function() {
   this.deletedAt = new Date();
-  return this.save();
+  // Usar save con validateBeforeSave: false para evitar validaciones al eliminar
+  return this.save({ validateBeforeSave: false });
 };
 
 habitSchema.methods.restore = function() {
   this.deletedAt = undefined;
-  return this.save();
+  // Usar save con validateBeforeSave: false para evitar validaciones al restaurar
+  return this.save({ validateBeforeSave: false });
 };
 
 habitSchema.methods.toggleArchive = function() {

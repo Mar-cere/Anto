@@ -65,7 +65,7 @@ const TEXTS = {
   EMERGENCY_CONTACTS: 'Contactos de Emergencia',
   EMERGENCY_CONTACTS_DESC: 'Gestiona los contactos que recibirán alertas en situaciones de riesgo',
   NO_CONTACTS: 'No hay contactos configurados',
-  EDIT_CONTACTS: 'Editar contactos',
+  ADD_CONTACTS: 'Agregar contactos',
   DELETE_CONTACT: 'Eliminar contacto',
   DELETE_CONTACT_CONFIRM: '¿Estás seguro de que deseas eliminar este contacto?',
   CONTACT_DELETED: 'Contacto eliminado exitosamente',
@@ -621,26 +621,28 @@ const ProfileScreen = () => {
                 </View>
               )}
             </View>
-            <TouchableOpacity
-              style={styles.optionButton}
-              onPress={() => {
-                if (Platform.OS === 'ios') {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }
-                setShowEmergencyContactsModal(true);
-              }}
-              accessibilityLabel={TEXTS.EDIT_CONTACTS}
-            >
-              <MaterialCommunityIcons name="plus-circle" size={ICON_SIZE} color={COLORS.PRIMARY} />
-              <Text style={styles.optionText}>
-                {emergencyContacts.length === 0 ? 'Agregar Contactos' : TEXTS.EDIT_CONTACTS}
-              </Text>
-              <MaterialCommunityIcons 
-                name="chevron-right" 
-                size={ICON_SIZE} 
-                color={COLORS.ACCENT} 
-              />
-            </TouchableOpacity>
+            {emergencyContacts.length < 2 && (
+              <TouchableOpacity
+                style={styles.optionButton}
+                onPress={() => {
+                  if (Platform.OS === 'ios') {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }
+                  setShowEmergencyContactsModal(true);
+                }}
+                accessibilityLabel={TEXTS.ADD_CONTACTS}
+              >
+                <MaterialCommunityIcons name="plus-circle" size={ICON_SIZE} color={COLORS.PRIMARY} />
+                <Text style={styles.optionText}>
+                  {TEXTS.ADD_CONTACTS}
+                </Text>
+                <MaterialCommunityIcons 
+                  name="chevron-right" 
+                  size={ICON_SIZE} 
+                  color={COLORS.ACCENT} 
+                />
+              </TouchableOpacity>
+            )}
             
 
             {/* Dashboard de Crisis */}

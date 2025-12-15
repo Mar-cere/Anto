@@ -447,7 +447,8 @@ taskSchema.statics.getUpcomingReminders = function(userId, hours = 24) {
 
 taskSchema.methods.softDelete = function() {
   this.deletedAt = new Date();
-  return this.save();
+  // Usar save con validateBeforeSave: false para evitar validaciones al eliminar
+  return this.save({ validateBeforeSave: false });
 };
 
 const Task = mongoose.models.Task || mongoose.model('Task', taskSchema);
