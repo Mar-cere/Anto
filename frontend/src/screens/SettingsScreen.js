@@ -353,8 +353,11 @@ const SettingsScreen = () => {
               const nextStyle = styles[nextIndex];
 
               try {
-                await updateUser(user._id, {
-                  'preferences.responseStyle': nextStyle,
+                await api.put(ENDPOINTS.UPDATE_PROFILE, {
+                  preferences: {
+                    ...user.preferences,
+                    responseStyle: nextStyle,
+                  },
                 });
                 updateUserContext({
                   ...user,
@@ -365,7 +368,8 @@ const SettingsScreen = () => {
                 });
                 Alert.alert('Éxito', `Estilo de respuesta cambiado a: ${labels[nextStyle]}`);
               } catch (error) {
-                Alert.alert(TEXTS.ERROR, 'No se pudo actualizar el estilo de respuesta');
+                console.error('Error actualizando estilo de respuesta:', error);
+                Alert.alert(TEXTS.ERROR, error.response?.data?.message || 'No se pudo actualizar el estilo de respuesta');
               }
             }}
             accessibilityLabel="Cambiar estilo de respuesta"

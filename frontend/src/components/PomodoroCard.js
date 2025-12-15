@@ -116,7 +116,7 @@ const TimerDisplay = memo(({ timeLeft, totalTime, isActive, color }) => {
 });
 
 const ControlButton = memo(({ icon, onPress, color, size = 50 }) => {
-  const scaleAnim = new Animated.Value(1);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -188,20 +188,7 @@ const PomodoroCard = memo(() => {
     let interval = null;
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => {
-        setTimeLeft(time => {
-          const newTime = time - 1;
-          const progress = 1 - (newTime / modes[mode].time);
-          
-          // Animación más suave
-          Animated.timing(progressAnimation, {
-            toValue: progress,
-            duration: 1000,
-            useNativeDriver: false,
-            easing: Easing.linear
-          }).start();
-          
-          return newTime;
-        });
+        setTimeLeft(time => time - 1);
       }, 1000);
     } else if (timeLeft === 0) {
       notifyTimeUp();
@@ -212,9 +199,10 @@ const PomodoroCard = memo(() => {
         saveSessions(newCount);
       }
       setMode(mode === 'work' ? 'break' : 'work');
+      setTimeLeft(modes[mode === 'work' ? 'break' : 'work'].time);
     }
     return () => clearInterval(interval);
-  }, [isActive, timeLeft, mode]);
+  }, [isActive, timeLeft, mode, sessionsCompleted, notifyTimeUp]);
 
   return (
     <View style={commonStyles.cardContainer}>

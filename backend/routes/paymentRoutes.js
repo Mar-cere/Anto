@@ -86,24 +86,10 @@ router.get('/plans', async (req, res) => {
     const semestralAmount = getPlanPrice('semestral');
     const yearlyAmount = getPlanPrice('yearly');
     
-    // Calcular ahorros vs mensual
-    const monthlyEquivalent = monthlyAmount;
-    const quarterlySavings = (monthlyAmount * 3) - quarterlyAmount;
-    const semestralSavings = (monthlyAmount * 6) - semestralAmount;
-    const yearlySavings = (monthlyAmount * 12) - yearlyAmount;
 
-    // Funcionalidades completas para todos los planes
+    // Todos los planes incluyen el servicio completo
     const allFeatures = [
-      'Chat ilimitado con Anto',
-      'Todas las técnicas terapéuticas',
-      'Análisis emocional avanzado',
-      'Detección de crisis',
-      'Historial completo',
-      'Dashboard de crisis',
-      'Contactos de emergencia',
-      'Exportación de datos',
-      'Soporte prioritario',
-      'Acceso completo a todas las funcionalidades',
+      'Servicio completo incluido',
     ];
 
     const plans = {
@@ -123,7 +109,6 @@ router.get('/plans', async (req, res) => {
         formattedAmount: formatAmount(monthlyAmount, currency),
         interval: 'month',
         currency: currency,
-        discount: '5%',
         features: allFeatures,
       },
       quarterly: {
@@ -133,8 +118,6 @@ router.get('/plans', async (req, res) => {
         formattedAmount: formatAmount(quarterlyAmount, currency),
         interval: 'quarter',
         currency: currency,
-        discount: '3%',
-        savings: formatAmount(quarterlySavings, currency),
         features: allFeatures,
       },
       semestral: {
@@ -144,8 +127,6 @@ router.get('/plans', async (req, res) => {
         formattedAmount: formatAmount(semestralAmount, currency),
         interval: 'semester',
         currency: currency,
-        discount: '5.5%',
-        savings: formatAmount(semestralSavings, currency),
         features: allFeatures,
       },
       yearly: {
@@ -155,8 +136,6 @@ router.get('/plans', async (req, res) => {
         formattedAmount: formatAmount(yearlyAmount, currency),
         interval: 'year',
         currency: currency,
-        discount: '15%',
-        savings: formatAmount(yearlySavings, currency),
         features: allFeatures,
       },
     };

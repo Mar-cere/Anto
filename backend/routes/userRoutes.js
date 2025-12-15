@@ -142,6 +142,7 @@ const updateProfileSchema = Joi.object({
     theme: Joi.string().valid('light', 'dark', 'auto'),
     notifications: Joi.boolean(),
     language: Joi.string().valid('es', 'en'),
+    responseStyle: Joi.string().valid('brief', 'balanced', 'deep', 'empatico', 'profesional', 'directo', 'calido', 'estructurado'),
     privacy: Joi.object({
       profileVisibility: Joi.string().valid('public', 'private', 'friends')
     })

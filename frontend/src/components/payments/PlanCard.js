@@ -66,27 +66,18 @@ const PlanCard = ({
         </View>
       </View>
 
-      {plan.discount && (
-        <View style={styles.discountContainer}>
-          <Text style={styles.discount}>{plan.discount} de descuento</Text>
-          {plan.savings && (
-            <Text style={styles.savings}>Ahorra {plan.savings}</Text>
-          )}
-        </View>
-      )}
-
       <View style={styles.featuresContainer}>
-        {plan.features && plan.features.map((feature, index) => (
-          <View key={index} style={styles.feature}>
-            <MaterialCommunityIcons 
-              name="check-circle" 
-              size={18} 
-              color={colors.success} 
-              style={styles.featureIcon}
-            />
-            <Text style={styles.featureText}>{feature}</Text>
-          </View>
-        ))}
+        <View style={styles.feature}>
+          <MaterialCommunityIcons 
+            name="check-circle" 
+            size={18} 
+            color={colors.success} 
+            style={styles.featureIcon}
+          />
+          <Text style={styles.featureText}>
+            {plan.features && plan.features[0] ? plan.features[0] : 'Servicio completo incluido'}
+          </Text>
+        </View>
       </View>
 
       {!isCurrentPlan && (
@@ -188,22 +179,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
     marginLeft: 4,
-  },
-  discountContainer: {
-    backgroundColor: 'rgba(26, 221, 219, 0.2)',
-    padding: 8,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  discount: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  savings: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    marginTop: 2,
   },
   featuresContainer: {
     marginBottom: 20,
