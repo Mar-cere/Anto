@@ -35,6 +35,7 @@ import ActionSuggestionCard from '../components/ActionSuggestionCard';
 import ProtocolProgressIndicator from '../components/ProtocolProgressIndicator';
 import TrialBanner from '../components/TrialBanner';
 import OfflineBanner from '../components/OfflineBanner';
+import MarkdownText from '../components/MarkdownText';
 import chatService from '../services/chatService';
 import paymentService from '../services/paymentService';
 import websocketService from '../services/websocketService';
@@ -602,13 +603,19 @@ const ChatScreen = () => {
           isUser ? styles.userBubble : styles.botBubble,
           message.type === MESSAGE_TYPES.ERROR && styles.errorBubble
         ]}>
-          <Text style={[
-            styles.messageText,
-            isUser ? styles.userMessageText : styles.botMessageText,
-            message.type === MESSAGE_TYPES.ERROR && styles.errorText
-          ]}>
+          <MarkdownText
+            style={[
+              styles.messageText,
+              isUser ? styles.userMessageText : styles.botMessageText,
+              message.type === MESSAGE_TYPES.ERROR && styles.errorText
+            ]}
+            boldStyle={[
+              styles.messageTextBold,
+              isUser ? styles.userMessageTextBold : styles.botMessageTextBold
+            ]}
+          >
             {message.content}
-          </Text>
+          </MarkdownText>
         </View>
       </View>
     );
@@ -1027,6 +1034,17 @@ const styles = StyleSheet.create({
     color: COLORS.USER_TEXT,
   },
   botMessageText: {
+    color: COLORS.BOT_TEXT,
+  },
+  messageTextBold: {
+    fontWeight: 'bold',
+  },
+  userMessageTextBold: {
+    fontWeight: 'bold',
+    color: COLORS.USER_TEXT,
+  },
+  botMessageTextBold: {
+    fontWeight: 'bold',
     color: COLORS.BOT_TEXT,
   },
   inputContainer: {

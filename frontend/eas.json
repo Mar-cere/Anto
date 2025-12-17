@@ -27,9 +27,6 @@
         "buildType": "app-bundle",
         "gradleCommand": ":app:bundleRelease"
       },
-      "ios": {
-        "bundleIdentifier": "com.anto.app"
-      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://anto-ion2.onrender.com"
       }

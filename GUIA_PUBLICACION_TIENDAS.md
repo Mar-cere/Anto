@@ -108,18 +108,49 @@ Esto tomará aproximadamente 15-20 minutos. Recibirás un enlace para descargar 
 
 ### 2.3. Subir a App Store Connect
 
-**Opción A: Automático (Recomendado)**
+**Opción A: EAS Submit (Recomendado)**
 
 ```bash
+cd frontend
+
 # Subir automáticamente a App Store Connect
 eas submit --platform ios --latest
+
+# O subir un build específico por ID
+eas submit --platform ios --id <build-id>
 ```
 
-**Opción B: Manual**
+**Opción B: Usando xcrun altool (Línea de comandos de Apple)**
+
+Primero, necesitas crear una App-Specific Password en [appleid.apple.com](https://appleid.apple.com):
+
+```bash
+# Subir usando altool (requiere App-Specific Password)
+xcrun altool --upload-app \
+  --type ios \
+  --file "path/to/your/app.ipa" \
+  --username "tu-apple-id@example.com" \
+  --password "xxxx-xxxx-xxxx-xxxx" \
+  --asc-provider "G53VJVM874"
+```
+
+**Opción C: Usando Transporter (App de Apple)**
 
 1. Descarga el `.ipa` desde el enlace de EAS
-2. Usa **Transporter** (app de Apple) o **Xcode** para subir el build
-3. Ve a [App Store Connect](https://appstoreconnect.apple.com)
+2. Abre la app **Transporter** (disponible en Mac App Store)
+3. Arrastra el archivo `.ipa` a Transporter
+4. Haz clic en "Deliver" para subir
+
+**Opción D: Usando Xcode**
+
+1. Descarga el `.ipa` desde el enlace de EAS
+2. Abre Xcode
+3. Ve a **Window > Organizer** (o `Cmd + Shift + 2`)
+4. Arrastra el `.ipa` o usa **Distribute App**
+5. Selecciona **App Store Connect**
+6. Sigue el asistente
+
+**Nota:** La API de App Store Connect (`POST /v1/buildUploads`) requiere autenticación con JWT y es más compleja. Se recomienda usar EAS Submit o las herramientas oficiales de Apple.
 
 ### 2.4. Completar Información en App Store Connect
 

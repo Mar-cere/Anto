@@ -20,18 +20,14 @@
       "infoPlist": {
         "NSUserTrackingUsageDescription": "Esta app usa datos para mejorar tu experiencia terapéutica.",
         "NSPhotoLibraryUsageDescription": "Necesitamos acceso a tus fotos para que puedas subir imágenes en tu perfil.",
-        "NSCameraUsageDescription": "Necesitamos acceso a la cámara para que puedas tomar fotos para tu perfil."
+        "NSCameraUsageDescription": "Necesitamos acceso a la cámara para que puedas tomar fotos para tu perfil.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#030A24"
-      },
-      "icon": "./assets/icon.png",
-      "notification": {
-        "icon": "./assets/notification-icon.png",
-        "color": "#1ADDDB"
       },
       "package": "com.anto.app",
       "versionCode": 1,
@@ -53,6 +49,9 @@
         "projectId": "37ba58c5-a788-4f5e-a36f-6b6bb5eb7b99"
       }
     },
-    "owner": "marceloull"
+    "owner": "marceloull",
+    "plugins": [
+      "expo-font"
+    ]
   }
 }
