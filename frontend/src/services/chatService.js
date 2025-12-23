@@ -25,13 +25,21 @@ export const initializeSocket = async () => {
     
     const token = await AsyncStorage.getItem('userToken');
     if (!token) {
-      throw new Error('No hay token de autenticación');
+      console.warn('No hay token de autenticación al inicializar chat');
+      return false;
     }
 
     let conversationId = await AsyncStorage.getItem('currentConversationId');
     
     if (!conversationId) {
-      conversationId = await createConversation();
+      try {
+        conversationId = await createConversation();
+        console.log('Conversación creada durante inicialización:', conversationId);
+      } catch (createError) {
+        console.error('Error al crear conversación durante inicialización:', createError);
+        // No lanzar error aquí, permitir que sendMessage lo maneje
+        return false;
+      }
     }
     
     console.log('Chat inicializado:', { conversationId });
@@ -47,9 +55,26 @@ export const sendMessage = async (text) => {
   try {
     console.log('Enviando mensaje:', text);
     
-    const conversationId = await AsyncStorage.getItem('currentConversationId');
+    let conversationId = await AsyncStorage.getItem('currentConversationId');
+    
+    // Si no hay conversación activa, intentar crear una
     if (!conversationId) {
-      throw new Error('No hay conversación activa');
+      console.log('No hay conversación activa, creando una nueva...');
+      try {
+        conversationId = await createConversation();
+        console.log('Conversación creada:', conversationId);
+      } catch (createError) {
+        console.error('Error al crear conversación:', createError);
+        // Preservar el error original si es de suscripción
+        if (createError.message?.includes('suscripción') || 
+            createError.message?.includes('subscription') ||
+            createError.message?.includes('trial') ||
+            (createError.response?.status === 403 && createError.response?.data?.requiresSubscription)) {
+          // Preservar el error de suscripción para que se maneje correctamente
+          throw createError;
+        }
+        throw new Error('No se pudo crear una conversación. Por favor, intenta de nuevo.');
+      }
     }
 
     const userMessage = {

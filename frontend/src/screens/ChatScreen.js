@@ -461,16 +461,27 @@ const ChatScreen = () => {
         return;
       }
       
-      // Verificar si es un error de suscripción
-      if (error.message?.includes('suscripción') || error.message?.includes('subscription') || 
-          (error.response?.status === 403 && error.response?.data?.requiresSubscription)) {
+      // Verificar si es un error de suscripción (debe ser el primero para capturar todos los casos)
+      const isSubscriptionError = 
+        error.message?.includes('suscripción') || 
+        error.message?.includes('subscription') || 
+        error.message?.includes('trial') ||
+        error.message?.includes('Se requiere suscripción activa') ||
+        (error.response?.status === 403 && error.response?.data?.requiresSubscription);
+      
+      if (isSubscriptionError) {
         // Remover el mensaje temporal del usuario
         setMessages(prev => prev.filter(msg => msg.id !== tempUserMessage.id));
+        
+        // Obtener el mensaje del error, priorizando el del servidor
+        const errorMessage = error.response?.data?.message || 
+                           error.message || 
+                           'Necesitas una suscripción activa para usar el chat. Tu período de prueba ha expirado.';
         
         // Mostrar alerta y redirigir a suscripción
         Alert.alert(
           'Suscripción requerida',
-          error.response?.data?.message || error.message || 'Necesitas una suscripción activa para usar el chat. Tu período de prueba ha expirado.',
+          errorMessage,
           [
             { text: 'Cancelar', style: 'cancel' },
             {
@@ -481,6 +492,28 @@ const ChatScreen = () => {
             }
           ]
         );
+        return;
+      }
+      
+      // Verificar si es un error relacionado con la creación de conversación (pero no de suscripción)
+      if (error.message?.includes('No se pudo crear') || 
+          (error.message?.includes('conversación') && !isSubscriptionError)) {
+        // Remover el mensaje temporal del usuario
+        setMessages(prev => prev.filter(msg => msg.id !== tempUserMessage.id));
+        
+        const conversationErrorMessage = {
+          id: `${MESSAGE_ID_PREFIXES.ERROR}-${Date.now()}`,
+          content: 'Hubo un problema al iniciar la conversación. Por favor, intenta de nuevo.',
+          role: MESSAGE_ROLES.ASSISTANT,
+          type: MESSAGE_TYPES.ERROR,
+          metadata: {
+            timestamp: new Date().toISOString(),
+            error: true
+          }
+        };
+
+        setMessages(prev => [...prev, conversationErrorMessage]);
+        scrollToBottom(true);
         return;
       }
       

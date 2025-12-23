@@ -28,6 +28,7 @@ import {
   userProfileService
 } from '../services/index.js';
 import metricsService from '../services/metricsService.js';
+import paymentAuditService from '../services/paymentAuditService.js';
 import pushNotificationService from '../services/pushNotificationService.js';
 import sessionEmotionalMemory from '../services/sessionEmotionalMemory.js';
 import { cursorPaginate } from '../utils/pagination.js';
@@ -190,8 +191,19 @@ router.post('/conversations', protect, requireActiveSubscription(true), async (r
   }
 });
 
+// Rate limiter para envío de mensajes
+const sendMessageLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minuto
+  max: 20, // Máximo 20 mensajes por minuto
+  message: 'Demasiados mensajes enviados. Por favor, espera un momento antes de intentar de nuevo.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: false,
+  skipFailedRequests: false
+});
+
 // Crear nuevo mensaje
-router.post('/messages', protect, requireActiveSubscription(true), async (req, res) => {
+router.post('/messages', protect, requireActiveSubscription(true), sendMessageLimiter, async (req, res) => {
   const startTime = Date.now();
   const logs = [];
   let userMessage = null;
@@ -199,6 +211,68 @@ router.post('/messages', protect, requireActiveSubscription(true), async (req, r
   
   try {
     const { conversationId, content, role = 'user' } = req.body;
+
+    // SEGURIDAD: Validar formato de conversationId
+    if (!conversationId) {
+      return res.status(400).json({
+        message: 'ID de conversación requerido'
+      });
+    }
+
+    if (!isValidObjectId(conversationId)) {
+      // Registrar intento de acceso con ID inválido
+      await paymentAuditService.logEvent('SECURITY_INVALID_CONVERSATION_ID', {
+        userId: req.user._id?.toString(),
+        conversationId,
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+        endpoint: req.path,
+      }, req.user._id?.toString()).catch(() => {});
+      
+      return res.status(400).json({
+        message: 'ID de conversación inválido'
+      });
+    }
+
+    // SEGURIDAD: Validar que la conversación pertenece al usuario autenticado
+    const conversation = await Conversation.findOne({
+      _id: new mongoose.Types.ObjectId(conversationId),
+      userId: new mongoose.Types.ObjectId(req.user._id)
+    });
+
+    if (!conversation) {
+      // Registrar intento de acceso a conversación no autorizada
+      await paymentAuditService.logEvent('SECURITY_UNAUTHORIZED_CONVERSATION_ACCESS', {
+        userId: req.user._id?.toString(),
+        conversationId,
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+        endpoint: req.path,
+      }, req.user._id?.toString()).catch(() => {});
+      
+      return res.status(403).json({
+        message: 'No tienes permiso para acceder a esta conversación'
+      });
+    }
+
+    // SEGURIDAD: Validación adicional de suscripción (defense in depth)
+    // Verificar que la suscripción sigue activa después del middleware
+    if (!req.subscription || (!req.subscription.isActive && !req.subscription.isInTrial)) {
+      await paymentAuditService.logEvent('SECURITY_SUBSCRIPTION_BYPASS_ATTEMPT', {
+        userId: req.user._id?.toString(),
+        conversationId,
+        subscriptionInfo: req.subscription,
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+        endpoint: req.path,
+      }, req.user._id?.toString()).catch(() => {});
+      
+      return res.status(403).json({
+        success: false,
+        error: 'Se requiere suscripción activa o trial válido para usar el chat',
+        requiresSubscription: true
+      });
+    }
 
     if (!content?.trim()) {
       return res.status(400).json({

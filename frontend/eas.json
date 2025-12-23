@@ -49,9 +49,10 @@
         "track": "internal"
       },
       "ios": {
-        "appleId": "your-apple-id@example.com",
-        "ascAppId": "your-app-store-connect-app-id",
-        "appleTeamId": "your-apple-team-id"
+        "appleId": "marcelo.ull@gicloud.com",
+        "appleTeamId": "G53VJVM874",
+        "ascAppId": "6756631911"
+        
       }
     }
   }
