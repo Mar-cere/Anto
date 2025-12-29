@@ -2,13 +2,15 @@
  * Servicio de Pagos
  * 
  * Gestiona todas las operaciones relacionadas con pagos y suscripciones
- * usando Mercado Pago.
+ * usando StoreKit en iOS y Mercado Pago en Android.
  * 
  * @author AntoApp Team
  */
 
+import { Platform } from 'react-native';
 import { api, ENDPOINTS } from '../config/api';
 import { Linking } from 'react-native';
+import storeKitService from './storeKitService';
 
 class PaymentService {
   /**
@@ -34,12 +36,25 @@ class PaymentService {
 
   /**
    * Crear sesión de checkout
+   * En iOS usa StoreKit, en Android usa Mercado Pago
    * @param {string} plan - Plan seleccionado ('weekly', 'monthly', 'quarterly', 'semestral', 'yearly')
-   * @param {string} successUrl - URL de éxito (opcional)
-   * @param {string} cancelUrl - URL de cancelación (opcional)
-   * @returns {Promise<Object>} - Sesión de checkout
+   * @param {string} successUrl - URL de éxito (opcional, solo Android)
+   * @param {string} cancelUrl - URL de cancelación (opcional, solo Android)
+   * @returns {Promise<Object>} - Sesión de checkout o resultado de compra
    */
   async createCheckoutSession(plan, successUrl = null, cancelUrl = null) {
+    // En iOS, usar StoreKit directamente
+    if (Platform.OS === 'ios' && storeKitService.isAvailable()) {
+      // StoreKit maneja la compra directamente, no necesita "sesión de checkout"
+      // Retornamos un objeto especial que indica que se debe usar StoreKit
+      return {
+        success: true,
+        useStoreKit: true,
+        plan,
+      };
+    }
+
+    // En Android, usar Mercado Pago (comportamiento original)
     try {
       // Construir el payload, omitiendo null/undefined
       const payload = { plan };
@@ -53,6 +68,7 @@ class PaymentService {
         sessionId: response.sessionId || response.preferenceId,
         url: response.url || response.initPoint,
         preferenceId: response.preferenceId,
+        useStoreKit: false,
       };
     } catch (error) {
       console.error('Error creando sesión de checkout:', error);
@@ -61,6 +77,80 @@ class PaymentService {
         error: error.message || 'Error al crear sesión de checkout',
       };
     }
+  }
+
+  /**
+   * Comprar suscripción usando StoreKit (iOS)
+   * @param {string} plan - Plan a comprar
+   * @returns {Promise<Object>} - Resultado de la compra
+   */
+  async purchaseWithStoreKit(plan) {
+    if (!storeKitService.isAvailable()) {
+      return {
+        success: false,
+        error: 'StoreKit no está disponible en esta plataforma',
+      };
+    }
+
+    // Función para validar el recibo con el backend
+    const validateReceipt = async (receiptData) => {
+      try {
+        const response = await api.post(ENDPOINTS.PAYMENT_VALIDATE_RECEIPT, {
+          receipt: receiptData.transactionReceipt,
+          productId: receiptData.productId,
+          transactionId: receiptData.transactionId,
+          originalTransactionIdentifierIOS: receiptData.originalTransactionIdentifierIOS,
+        });
+
+        return {
+          success: response.success || false,
+          error: response.error,
+        };
+      } catch (error) {
+        console.error('Error validando recibo:', error);
+        return {
+          success: false,
+          error: error.message || 'Error al validar la compra',
+        };
+      }
+    };
+
+    return await storeKitService.purchaseSubscription(plan, validateReceipt);
+  }
+
+  /**
+   * Restaurar compras (iOS)
+   * @returns {Promise<Object>} - Compras restauradas
+   */
+  async restorePurchases() {
+    if (!storeKitService.isAvailable()) {
+      return {
+        success: false,
+        error: 'StoreKit no está disponible en esta plataforma',
+        purchases: [],
+      };
+    }
+
+    const result = await storeKitService.restorePurchases();
+    
+    if (result.success && result.purchases.length > 0) {
+      // Validar cada compra con el backend
+      for (const purchase of result.purchases) {
+        try {
+          await api.post(ENDPOINTS.PAYMENT_VALIDATE_RECEIPT, {
+            receipt: purchase.transactionReceipt,
+            productId: purchase.productId,
+            transactionId: purchase.transactionId,
+            originalTransactionIdentifierIOS: purchase.originalTransactionIdentifierIOS,
+            restore: true,
+          });
+        } catch (error) {
+          console.error('Error validando compra restaurada:', error);
+        }
+      }
+    }
+
+    return result;
   }
 
   /**

@@ -52,11 +52,11 @@ export const MERCADOPAGO_CONFIG = {
   // Precios de los planes (en pesos chilenos)
   // Todos los planes ofrecen el servicio completo, la diferencia es solo la duración
   prices: {
-    weekly: parseInt(process.env.MERCADOPAGO_PRICE_WEEKLY || '2000', 10), // $2,000 CLP
-    monthly: parseInt(process.env.MERCADOPAGO_PRICE_MONTHLY || '7000', 10), // $7,000 CLP
-    quarterly: parseInt(process.env.MERCADOPAGO_PRICE_QUARTERLY || '20000', 10), // $20,000 CLP
-    semestral: parseInt(process.env.MERCADOPAGO_PRICE_SEMESTRAL || '38000', 10), // $38,000 CLP
-    yearly: parseInt(process.env.MERCADOPAGO_PRICE_YEARLY || '70000', 10), // $70,000 CLP
+    weekly: parseInt(process.env.MERCADOPAGO_PRICE_WEEKLY || '990', 10), // $990 CLP
+    monthly: parseInt(process.env.MERCADOPAGO_PRICE_MONTHLY || '3990', 10), // $3,990 CLP
+    quarterly: parseInt(process.env.MERCADOPAGO_PRICE_QUARTERLY || '11990', 10), // $11,990 CLP
+    semestral: parseInt(process.env.MERCADOPAGO_PRICE_SEMESTRAL || '20990', 10), // $20,990 CLP
+    yearly: parseInt(process.env.MERCADOPAGO_PRICE_YEARLY || '39990', 10), // $39,990 CLP
   },
   
   // IDs de Preapproval Plans (creados en el panel de Mercado Pago)

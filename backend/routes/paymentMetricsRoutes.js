@@ -151,9 +151,11 @@ router.get('/metrics/overview', authenticateToken, isAdmin, async (req, res) => 
     // Calcular MRR basado en planes activos
     let mrr = 0;
     const planPrices = {
-      weekly: 950 * 4.33, // Aproximación mensual
-      monthly: 3600,
-      quarterly: 10200 / 3,
+      weekly: 990 * 4.33, // Aproximación mensual
+      monthly: 3990,
+      quarterly: 11990 / 3,
+      semestral: 20990 / 6,
+      yearly: 39990 / 12,
       semestral: 19400 / 6,
       yearly: 36900 / 12,
     };

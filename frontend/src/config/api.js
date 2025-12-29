@@ -119,6 +119,7 @@ export const ENDPOINTS = {
   PAYMENT_UPDATE_METHOD: '/api/payments/update-payment-method',
   PAYMENT_TRANSACTIONS: '/api/payments/transactions',
   PAYMENT_TRANSACTIONS_STATS: '/api/payments/transactions/stats',
+  PAYMENT_VALIDATE_RECEIPT: '/api/payments/validate-receipt',
   
   // Therapeutic Techniques Stats
   THERAPEUTIC_TECHNIQUES_STATS: '/api/therapeutic-techniques/stats',

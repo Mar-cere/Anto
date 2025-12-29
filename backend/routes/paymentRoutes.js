@@ -14,6 +14,7 @@ import { formatAmount, getPlanPrice } from '../config/mercadopago.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validateUserObjectId } from '../middleware/validation.js';
 import Transaction from '../models/Transaction.js';
+import appleReceiptService from '../services/appleReceiptService.js';
 import cacheService from '../services/cacheService.js';
 import paymentAuditService from '../services/paymentAuditService.js';
 import paymentService from '../services/paymentService.js';
@@ -146,8 +147,8 @@ router.get('/plans', async (req, res) => {
       provider: 'mercadopago',
     };
     
-    // Guardar en caché por 1 hora (los planes son estáticos)
-    await cacheService.set(cacheKey, response, 3600);
+    // Guardar en caché por 5 minutos (reducido para permitir actualizaciones rápidas de precios)
+    await cacheService.set(cacheKey, response, 300);
     
     res.json(response);
   } catch (error) {
@@ -430,6 +431,72 @@ router.get(
       res.status(500).json({
         success: false,
         error: 'Error al obtener estadísticas',
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/payments/validate-receipt
+ * Validar recibo de Apple App Store (StoreKit)
+ */
+const validateReceiptSchema = Joi.object({
+  receipt: Joi.string().required(),
+  productId: Joi.string().required(),
+  transactionId: Joi.string().optional(),
+  originalTransactionIdentifierIOS: Joi.string().optional(),
+  restore: Joi.boolean().default(false),
+});
+
+router.post(
+  '/validate-receipt',
+  paymentLimiter,
+  authenticateToken,
+  validateUserObjectId,
+  async (req, res) => {
+    try {
+      const { error, value } = validateReceiptSchema.validate(req.body);
+      if (error) {
+        return res.status(400).json({
+          success: false,
+          error: 'Datos inválidos',
+          details: error.details.map(d => d.message),
+        });
+      }
+
+      const { receipt, productId, transactionId, originalTransactionIdentifierIOS, restore } = value;
+      const userId = req.user._id;
+
+      // Validar recibo con Apple
+      const isSandbox = process.env.NODE_ENV !== 'production';
+      const receiptResponse = await appleReceiptService.validateReceiptWithApple(receipt, isSandbox);
+
+      // Procesar suscripción
+      const result = await appleReceiptService.processSubscription(
+        userId,
+        receiptResponse,
+        productId,
+        transactionId || originalTransactionIdentifierIOS
+      );
+
+      if (result.success) {
+        res.json({
+          success: true,
+          message: restore ? 'Compras restauradas correctamente' : 'Suscripción activada correctamente',
+          subscription: result.subscription,
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error,
+          status: result.status,
+        });
+      }
+    } catch (error) {
+      console.error('Error validando recibo de Apple:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Error al validar el recibo',
       });
     }
   }

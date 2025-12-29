@@ -14,6 +14,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -29,6 +30,7 @@ import PaymentWebView from '../components/payments/PaymentWebView';
 import PlanCard from '../components/payments/PlanCard';
 import SubscriptionStatus from '../components/payments/SubscriptionStatus';
 import paymentService from '../services/paymentService';
+import storeKitService from '../services/storeKitService';
 import { colors } from '../styles/globalStyles';
 
 // Constantes de textos
@@ -68,12 +70,58 @@ const SubscriptionScreen = () => {
       setError(null);
       setLoading(true);
 
-      // Cargar planes
-      const plansResponse = await paymentService.getPlans();
-      if (plansResponse.success) {
-        setPlans(Object.values(plansResponse.plans || {}));
+      // TEMPORAL: Usar siempre planes del backend para screenshots
+      // Cuando StoreKit esté configurado, cambiar a false para usar productos de App Store
+      const FORCE_BACKEND_PLANS = true;
+
+      if (!FORCE_BACKEND_PLANS && Platform.OS === 'ios' && storeKitService.isAvailable()) {
+        // Intentar cargar productos de StoreKit
+        await storeKitService.initialize();
+        const storeKitProducts = await storeKitService.loadProducts();
+        
+        if (storeKitProducts.success && storeKitProducts.products.length > 0) {
+          // Convertir productos de StoreKit al formato esperado
+          const formattedPlans = storeKitProducts.products.map(product => {
+            // Mapear intervalos
+            const intervalMap = {
+              weekly: 'week',
+              monthly: 'month',
+              quarterly: 'quarter',
+              semestral: 'semester',
+              yearly: 'year',
+            };
+            
+            return {
+              id: product.plan,
+              name: product.title,
+              description: product.description,
+              amount: product.priceValue || parseFloat(product.price.replace(/[^0-9.]/g, '')) || 0,
+              formattedAmount: product.price || `$${product.priceValue || 0}`,
+              price: product.price,
+              currency: product.currency || 'CLP',
+              interval: intervalMap[product.plan] || 'month',
+              duration: product.plan,
+              features: ['Servicio completo incluido'],
+            };
+          });
+          setPlans(formattedPlans);
+        } else {
+          // Fallback a planes del backend si StoreKit falla o no hay productos
+          const plansResponse = await paymentService.getPlans();
+          if (plansResponse.success) {
+            setPlans(Object.values(plansResponse.plans || {}));
+          } else {
+            setError(plansResponse.error || TEXTS.ERROR);
+          }
+        }
       } else {
-        setError(plansResponse.error || TEXTS.ERROR);
+        // Usar planes del backend (Mercado Pago) - Para Android y para screenshots
+        const plansResponse = await paymentService.getPlans();
+        if (plansResponse.success) {
+          setPlans(Object.values(plansResponse.plans || {}));
+        } else {
+          setError(plansResponse.error || TEXTS.ERROR);
+        }
       }
 
       // Cargar estado de suscripción
@@ -109,7 +157,37 @@ const SubscriptionScreen = () => {
       setSelectedPlan(plan.id);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-      // Crear sesión de checkout
+      // En iOS, usar StoreKit
+      if (Platform.OS === 'ios' && storeKitService.isAvailable()) {
+        const purchaseResult = await paymentService.purchaseWithStoreKit(plan.id);
+        
+        if (purchaseResult.success) {
+          Alert.alert(
+            '¡Suscripción exitosa!',
+            'Tu suscripción se ha activado correctamente.',
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  // Recargar datos para actualizar el estado
+                  loadData();
+                }
+              }
+            ]
+          );
+        } else if (purchaseResult.cancelled) {
+          // Usuario canceló, no mostrar error
+          console.log('Compra cancelada por el usuario');
+        } else {
+          Alert.alert(
+            TEXTS.SUBSCRIBE_ERROR,
+            purchaseResult.error || 'Ocurrió un error al procesar tu suscripción'
+          );
+        }
+        return;
+      }
+
+      // En Android, usar Mercado Pago (comportamiento original)
       const checkoutResponse = await paymentService.createCheckoutSession(plan.id);
 
       if (!checkoutResponse.success) {
@@ -188,7 +266,7 @@ const SubscriptionScreen = () => {
       setSubscribing(false);
       setSelectedPlan(null);
     }
-  }, [subscribing]);
+  }, [subscribing, loadData]);
 
   // Manejar cancelación de suscripción
   const handleCancelSubscription = useCallback(() => {
@@ -216,6 +294,56 @@ const SubscriptionScreen = () => {
         },
       ]
     );
+  }, [loadData]);
+
+  // Manejar restauración de compras (iOS)
+  const handleRestorePurchases = useCallback(async () => {
+    if (Platform.OS !== 'ios' || !storeKitService.isAvailable()) {
+      Alert.alert('Información', 'La restauración de compras solo está disponible en iOS.');
+      return;
+    }
+
+    try {
+      setSubscribing(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+      const result = await paymentService.restorePurchases();
+
+      if (result.success) {
+        if (result.purchases.length > 0) {
+          Alert.alert(
+            'Compras restauradas',
+            `Se restauraron ${result.purchases.length} compra(s). Tu suscripción ha sido actualizada.`,
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  loadData(); // Recargar datos
+                }
+              }
+            ]
+          );
+        } else {
+          Alert.alert(
+            'Sin compras',
+            'No se encontraron compras para restaurar.'
+          );
+        }
+      } else {
+        Alert.alert(
+          'Error',
+          result.error || 'No se pudieron restaurar las compras'
+        );
+      }
+    } catch (err) {
+      console.error('Error restaurando compras:', err);
+      Alert.alert(
+        'Error',
+        'Ocurrió un error al restaurar las compras'
+      );
+    } finally {
+      setSubscribing(false);
+    }
   }, [loadData]);
 
   // Renderizar contenido
@@ -304,14 +432,33 @@ const SubscriptionScreen = () => {
                 );
               })
           )}
+
+          {/* Botón para restaurar compras (solo iOS) */}
+          {Platform.OS === 'ios' && storeKitService.isAvailable() && (
+            <TouchableOpacity
+              style={styles.restoreButton}
+              onPress={handleRestorePurchases}
+              disabled={subscribing}
+            >
+              <MaterialCommunityIcons 
+                name="restore" 
+                size={20} 
+                color={colors.primary} 
+              />
+              <Text style={styles.restoreButtonText}>
+                {subscribing ? 'Restaurando...' : 'Restaurar Compras'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Información adicional */}
         <View style={styles.infoSection}>
           <MaterialCommunityIcons name="information" size={20} color={colors.textSecondary} />
           <Text style={styles.infoText}>
-            Todos los pagos son procesados de forma segura por Mercado Pago.
-            Puedes cancelar tu suscripción en cualquier momento.
+            {Platform.OS === 'ios' 
+              ? 'Los pagos se procesan de forma segura a través de App Store. Puedes cancelar tu suscripción en cualquier momento desde Configuración de Apple.'
+              : 'Todos los pagos son procesados de forma segura por Mercado Pago. Puedes cancelar tu suscripción en cualquier momento.'}
           </Text>
         </View>
       </ScrollView>
@@ -486,6 +633,24 @@ const styles = StyleSheet.create({
     color: colors.error,
     fontSize: 16,
     fontWeight: '600',
+  },
+  restoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    backgroundColor: 'transparent',
+  },
+  restoreButtonText: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
   emptyContainer: {
     padding: 32,
