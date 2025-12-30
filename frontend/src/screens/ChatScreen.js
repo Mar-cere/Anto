@@ -263,7 +263,36 @@ const ChatScreen = () => {
       if (conversationId) {
         const serverMessages = await chatService.getMessages(conversationId);
         if (serverMessages && serverMessages.length > 0) {
-          setMessages(serverMessages);
+          // Eliminar duplicados basándose en _id o id
+          const uniqueMessages = serverMessages.reduce((acc, message) => {
+            const messageId = message._id || message.id;
+            if (!messageId) {
+              console.warn('[ChatScreen] Mensaje sin ID encontrado al inicializar:', message);
+              return acc;
+            }
+            
+            // Verificar si ya existe un mensaje con este ID
+            const exists = acc.some(
+              msg => (msg._id === messageId || msg.id === messageId)
+            );
+            
+            if (!exists) {
+              acc.push(message);
+            } else {
+              console.log('[ChatScreen] Mensaje duplicado eliminado al inicializar:', messageId);
+            }
+            
+            return acc;
+          }, []);
+          
+          // Ordenar por timestamp para mantener el orden cronológico
+          uniqueMessages.sort((a, b) => {
+            const timeA = new Date(a.createdAt || a.metadata?.timestamp || 0).getTime();
+            const timeB = new Date(b.createdAt || b.metadata?.timestamp || 0).getTime();
+            return timeA - timeB;
+          });
+          
+          setMessages(uniqueMessages);
           return;
         }
       }
@@ -306,6 +335,23 @@ const ChatScreen = () => {
     // Configurar callbacks para mensajes y errores
     const messageUnsubscribe = chatService.onMessage((message) => {
       setMessages(prevMessages => {
+        // Verificar si el mensaje ya existe para evitar duplicados
+        const messageId = message._id || message.id;
+        if (!messageId) {
+          console.warn('[ChatScreen] Mensaje recibido sin ID, ignorando:', message);
+          return prevMessages;
+        }
+        
+        // Verificar si el mensaje ya existe en el array
+        const exists = prevMessages.some(
+          msg => (msg._id === messageId || msg.id === messageId)
+        );
+        
+        if (exists) {
+          console.log('[ChatScreen] Mensaje duplicado detectado, ignorando:', messageId);
+          return prevMessages;
+        }
+        
         const newMessages = [...prevMessages, message];
         chatService.saveMessages(newMessages);
         return newMessages;
@@ -406,8 +452,33 @@ const ChatScreen = () => {
       if (response?.userMessage && response?.assistantMessage) {
         // Actualizar con los mensajes reales del servidor
         setMessages(prev => {
+          // Remover el mensaje temporal del usuario
           const filtered = prev.filter(msg => msg.id !== tempUserMessage.id);
-          const newMessages = [...filtered, response.userMessage, response.assistantMessage];
+          
+          // Función helper para verificar si un mensaje ya existe
+          const messageExists = (message) => {
+            const messageId = message._id || message.id;
+            if (!messageId) return false;
+            return filtered.some(
+              msg => (msg._id === messageId || msg.id === messageId)
+            );
+          };
+          
+          const newMessages = [...filtered];
+          
+          // Agregar mensaje del usuario solo si no existe
+          if (response.userMessage && !messageExists(response.userMessage)) {
+            newMessages.push(response.userMessage);
+          } else {
+            console.log('[ChatScreen] Mensaje del usuario duplicado, ignorando');
+          }
+          
+          // Agregar mensaje del asistente solo si no existe
+          if (response.assistantMessage && !messageExists(response.assistantMessage)) {
+            newMessages.push(response.assistantMessage);
+          } else {
+            console.log('[ChatScreen] Mensaje del asistente duplicado, ignorando');
+          }
           
           // NUEVO: Agregar sugerencias de acciones si existen
           if (response.suggestions && response.suggestions.length > 0) {
@@ -420,7 +491,15 @@ const ChatScreen = () => {
                 timestamp: new Date().toISOString()
               }
             };
-            newMessages.push(suggestionsMessage);
+            // Verificar que no exista una sugerencia reciente
+            const hasRecentSuggestions = newMessages.some(
+              msg => msg.type === 'suggestions' && 
+              msg.id?.startsWith('suggestions-') &&
+              Date.now() - parseInt(msg.id.split('-')[1]) < 5000 // Menos de 5 segundos
+            );
+            if (!hasRecentSuggestions) {
+              newMessages.push(suggestionsMessage);
+            }
           }
           
           return newMessages;
@@ -561,7 +640,36 @@ const ChatScreen = () => {
       if (conversationId) {
         const serverMessages = await chatService.getMessages(conversationId);
         if (serverMessages && serverMessages.length > 0) {
-          setMessages(serverMessages);
+          // Eliminar duplicados basándose en _id o id
+          const uniqueMessages = serverMessages.reduce((acc, message) => {
+            const messageId = message._id || message.id;
+            if (!messageId) {
+              console.warn('[ChatScreen] Mensaje sin ID encontrado al recargar:', message);
+              return acc;
+            }
+            
+            // Verificar si ya existe un mensaje con este ID
+            const exists = acc.some(
+              msg => (msg._id === messageId || msg.id === messageId)
+            );
+            
+            if (!exists) {
+              acc.push(message);
+            } else {
+              console.log('[ChatScreen] Mensaje duplicado eliminado al recargar:', messageId);
+            }
+            
+            return acc;
+          }, []);
+          
+          // Ordenar por timestamp para mantener el orden cronológico
+          uniqueMessages.sort((a, b) => {
+            const timeA = new Date(a.createdAt || a.metadata?.timestamp || 0).getTime();
+            const timeB = new Date(b.createdAt || b.metadata?.timestamp || 0).getTime();
+            return timeA - timeB;
+          });
+          
+          setMessages(uniqueMessages);
         }
       }
     } catch (error) {
