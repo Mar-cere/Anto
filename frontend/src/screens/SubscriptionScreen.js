@@ -64,67 +64,67 @@ const SubscriptionScreen = () => {
   const [showPaymentWebView, setShowPaymentWebView] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState(null);
 
+  // TEMPORAL: Planes hardcodeados para screenshots
+  // TODO: Conectar con backend/StoreKit en próxima versión
+  const HARDCODED_PLANS = [
+    {
+      id: 'weekly',
+      name: 'Premium Semanal',
+      amount: 990,
+      formattedAmount: '$990',
+      interval: 'week',
+      currency: 'CLP',
+      features: ['Servicio completo incluido'],
+    },
+    {
+      id: 'monthly',
+      name: 'Premium Mensual',
+      amount: 3990,
+      formattedAmount: '$3.990',
+      interval: 'month',
+      currency: 'CLP',
+      features: ['Servicio completo incluido'],
+    },
+    {
+      id: 'quarterly',
+      name: 'Premium Trimestral',
+      amount: 11990,
+      formattedAmount: '$11.990',
+      interval: 'quarter',
+      currency: 'CLP',
+      features: ['Servicio completo incluido'],
+    },
+    {
+      id: 'semestral',
+      name: 'Premium Semestral',
+      amount: 20990,
+      formattedAmount: '$20.990',
+      interval: 'semester',
+      currency: 'CLP',
+      features: ['Servicio completo incluido'],
+    },
+    {
+      id: 'yearly',
+      name: 'Premium Anual',
+      amount: 39990,
+      formattedAmount: '$39.990',
+      interval: 'year',
+      currency: 'CLP',
+      features: ['Servicio completo incluido'],
+    },
+  ];
+
   // Cargar planes y estado de suscripción
   const loadData = useCallback(async () => {
     try {
       setError(null);
       setLoading(true);
 
-      // TEMPORAL: Usar siempre planes del backend para screenshots
-      // Cuando StoreKit esté configurado, cambiar a false para usar productos de App Store
-      const FORCE_BACKEND_PLANS = true;
+      // TEMPORAL: Usar planes hardcodeados
+      // TODO: Reemplazar con llamada al backend/StoreKit en próxima versión
+      setPlans(HARDCODED_PLANS);
 
-      if (!FORCE_BACKEND_PLANS && Platform.OS === 'ios' && storeKitService.isAvailable()) {
-        // Intentar cargar productos de StoreKit
-        await storeKitService.initialize();
-        const storeKitProducts = await storeKitService.loadProducts();
-        
-        if (storeKitProducts.success && storeKitProducts.products.length > 0) {
-          // Convertir productos de StoreKit al formato esperado
-          const formattedPlans = storeKitProducts.products.map(product => {
-            // Mapear intervalos
-            const intervalMap = {
-              weekly: 'week',
-              monthly: 'month',
-              quarterly: 'quarter',
-              semestral: 'semester',
-              yearly: 'year',
-            };
-            
-            return {
-              id: product.plan,
-              name: product.title,
-              description: product.description,
-              amount: product.priceValue || parseFloat(product.price.replace(/[^0-9.]/g, '')) || 0,
-              formattedAmount: product.price || `$${product.priceValue || 0}`,
-              price: product.price,
-              currency: product.currency || 'CLP',
-              interval: intervalMap[product.plan] || 'month',
-              duration: product.plan,
-              features: ['Servicio completo incluido'],
-            };
-          });
-          setPlans(formattedPlans);
-        } else {
-          // Fallback a planes del backend si StoreKit falla o no hay productos
-          const plansResponse = await paymentService.getPlans();
-          if (plansResponse.success) {
-            setPlans(Object.values(plansResponse.plans || {}));
-          } else {
-            setError(plansResponse.error || TEXTS.ERROR);
-          }
-        }
-      } else {
-        // Usar planes del backend (Mercado Pago) - Para Android y para screenshots
-        const plansResponse = await paymentService.getPlans();
-        if (plansResponse.success) {
-          setPlans(Object.values(plansResponse.plans || {}));
-        } else {
-          setError(plansResponse.error || TEXTS.ERROR);
-        }
-      }
-
-      // Cargar estado de suscripción
+      // Cargar estado de suscripción del backend
       const statusResponse = await paymentService.getSubscriptionStatus();
       if (statusResponse.success) {
         setSubscriptionStatus(statusResponse);
