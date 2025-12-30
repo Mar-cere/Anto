@@ -39,6 +39,8 @@ class StoreKitService {
 
   /**
    * Verificar si StoreKit está disponible (solo iOS)
+   * Nota: StoreKit NO funciona en simuladores, solo en dispositivos reales
+   * react-native-iap detectará esto y lanzará E_IAP_NOT_AVAILABLE
    */
   isAvailable() {
     return Platform.OS === 'ios';
@@ -49,8 +51,11 @@ class StoreKitService {
    */
   async initialize() {
     if (!this.isAvailable()) {
-      console.log('[StoreKit] No disponible en esta plataforma');
-      return { success: false, error: 'StoreKit solo está disponible en iOS' };
+      console.log('[StoreKit] No disponible en esta plataforma o simulador');
+      return { 
+        success: false, 
+        error: 'StoreKit solo está disponible en dispositivos iOS reales. No funciona en simulador.' 
+      };
     }
 
     if (this.isInitialized) {
@@ -71,10 +76,22 @@ class StoreKitService {
 
       return { success: true };
     } catch (error) {
+      // Manejar error específico de IAP no disponible
+      if (error.code === 'E_IAP_NOT_AVAILABLE' || error.message?.includes('E_IAP_NOT_AVAILABLE')) {
+        console.warn('[StoreKit] StoreKit no disponible (normal en simulador o si no está configurado)');
+        return {
+          success: false,
+          error: 'StoreKit no está disponible. Esto es normal si estás en un simulador. StoreKit solo funciona en dispositivos iOS reales.',
+          code: 'E_IAP_NOT_AVAILABLE',
+          isSimulator: true // Indicar que probablemente es simulador
+        };
+      }
+      
       console.error('[StoreKit] Error inicializando:', error);
       return {
         success: false,
         error: error.message || 'Error al inicializar StoreKit',
+        code: error.code
       };
     }
   }

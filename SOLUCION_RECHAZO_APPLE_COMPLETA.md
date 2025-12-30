@@ -198,25 +198,35 @@ correctamente? Esperamos tener la implementación completa en [fecha estimada].
 ### Fase 1: Soluciones Rápidas (1-2 días)
 
 - [x] Remover `NSUserTrackingUsageDescription` del código ✅
+- [x] Instalar `react-native-iap` ✅
+- [x] Implementar StoreKit en el frontend ✅
+- [x] Crear endpoint de validación de recibos en backend ✅
+- [x] Integrar StoreKit en SubscriptionScreen ✅
+- [x] Incrementar build number a "2" ✅
 - [ ] Actualizar información de privacidad en App Store Connect
 - [ ] Crear nuevos screenshots correctos
 - [ ] Subir screenshots a App Store Connect
 
-### Fase 2: Implementación StoreKit (1-2 semanas)
+### Fase 2: Configuración en App Store Connect (1-2 días)
 
-- [ ] Configurar productos en App Store Connect
-- [ ] Instalar `react-native-iap`
-- [ ] Implementar StoreKit en el frontend
-- [ ] Crear endpoint de validación de recibos en backend
+- [ ] Configurar productos en App Store Connect (5 productos)
+- [ ] Configurar Shared Secret
+- [ ] Obtener Shared Secret y agregarlo al backend
+
+### Fase 3: Testing y Preparación (1-2 días)
+
 - [ ] Probar compras en sandbox
-- [ ] Remover código de Mercado Pago (o mantenerlo solo para Android)
+- [ ] Verificar que los productos se cargan correctamente
+- [ ] Verificar validación de recibos
 
-### Fase 3: Resubmit
+### Fase 4: Resubmit
 
 - [ ] Build nuevo con StoreKit implementado
 - [ ] Actualizar Review Notes con explicación
 - [ ] Responder a los rechazos en App Store Connect
 - [ ] Subir nuevo build
+
+**📋 Ver `CHECKLIST_REENVIO_APPLE.md` para el checklist completo y detallado**
 
 ---
 

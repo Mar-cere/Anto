@@ -123,6 +123,10 @@ const SubscriptionScreen = () => {
       // TEMPORAL: Usar planes hardcodeados
       // TODO: Reemplazar con llamada al backend/StoreKit en próxima versión
       setPlans(HARDCODED_PLANS);
+      
+      // NO inicializar StoreKit automáticamente
+      // Solo se inicializará cuando el usuario intente comprar (en handleSubscribe)
+      // Esto evita errores en simulador o cuando StoreKit no está disponible
 
       // Cargar estado de suscripción del backend
       const statusResponse = await paymentService.getSubscriptionStatus();
