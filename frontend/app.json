@@ -50,7 +50,15 @@
     },
     "owner": "marceloull",
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ]
     ]
   }
 }

@@ -27,6 +27,12 @@
         "buildType": "app-bundle",
         "gradleCommand": ":app:bundleRelease"
       },
+      "ios": {
+        "cocoapods": "1.15.2",
+        "podInstall": {
+          "repoUpdate": true
+        }
+      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://anto-ion2.onrender.com"
       }
