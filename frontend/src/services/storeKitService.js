@@ -8,7 +8,38 @@
  */
 
 import { Platform } from 'react-native';
-import * as InAppPurchases from 'expo-in-app-purchases';
+
+// Importar expo-in-app-purchases de forma condicional
+let InAppPurchases = null;
+let moduleChecked = false;
+
+// Función helper para obtener el módulo de forma segura
+function getInAppPurchasesModule() {
+  // Si ya verificamos y no está disponible, retornar null
+  if (moduleChecked && !InAppPurchases) {
+    return null;
+  }
+  
+  // Si ya está cargado, retornarlo
+  if (InAppPurchases) {
+    return InAppPurchases;
+  }
+  
+  // Intentar cargar el módulo dinámicamente
+  try {
+    // Usar require.ensure o require con manejo de errores
+    const module = require('expo-in-app-purchases');
+    InAppPurchases = module;
+    moduleChecked = true;
+    return InAppPurchases;
+  } catch (error) {
+    // El módulo no está disponible (Expo Go o no compilado)
+    // Esto es normal en desarrollo, no mostrar error
+    moduleChecked = true;
+    InAppPurchases = null;
+    return null;
+  }
+}
 
 // Product IDs - Estos deben coincidir con los configurados en App Store Connect
 // Formato: com.anto.app.{plan}
@@ -37,10 +68,14 @@ class StoreKitService {
   }
 
   /**
-   * Verificar si StoreKit está disponible (solo iOS)
+   * Verificar si StoreKit está disponible (solo iOS y módulo nativo disponible)
    */
   isAvailable() {
-    return Platform.OS === 'ios';
+    if (Platform.OS !== 'ios') {
+      return false;
+    }
+    const module = getInAppPurchasesModule();
+    return module !== null;
   }
 
   /**
@@ -59,9 +94,17 @@ class StoreKitService {
       return { success: true };
     }
 
+    const module = getInAppPurchasesModule();
+    if (!module) {
+      return {
+        success: false,
+        error: 'Módulo nativo no disponible. Necesitas hacer prebuild o usar un build nativo.',
+      };
+    }
+
     try {
       // Conectar con App Store
-      const { connected } = await InAppPurchases.connectAsync();
+      const { connected } = await module.connectAsync();
       
       if (!connected) {
         return {
@@ -93,12 +136,16 @@ class StoreKitService {
    * Configurar listeners para compras
    */
   setupPurchaseListeners() {
+    const module = getInAppPurchasesModule();
+    if (!module) {
+      return;
+    }
     // Listener para actualizaciones de compras
-    this.purchaseUpdateListener = InAppPurchases.addPurchaseUpdateListener(
+    this.purchaseUpdateListener = module.addPurchaseUpdateListener(
       async (update) => {
         console.log('[StoreKit] Actualización de compra:', update);
         
-        if (update.responseCode === InAppPurchases.IAPResponseCode.OK) {
+        if (update.responseCode === module.IAPResponseCode.OK) {
           for (const purchase of update.results) {
             if (purchase.acknowledged) {
               console.log('[StoreKit] Compra ya reconocida:', purchase.productId);
@@ -106,10 +153,10 @@ class StoreKitService {
             }
 
             // Procesar la compra
-            if (purchase.purchaseState === InAppPurchases.PurchaseState.PURCHASED) {
+            if (purchase.purchaseState === module.PurchaseState.PURCHASED) {
               console.log('[StoreKit] Compra exitosa:', purchase.productId);
               // La validación se hace en el método de compra
-            } else if (purchase.purchaseState === InAppPurchases.PurchaseState.RESTORED) {
+            } else if (purchase.purchaseState === module.PurchaseState.RESTORED) {
               console.log('[StoreKit] Compra restaurada:', purchase.productId);
             }
           }
@@ -126,11 +173,20 @@ class StoreKitService {
       await this.initialize();
     }
 
+    const module = getInAppPurchasesModule();
+    if (!module) {
+      return {
+        success: false,
+        error: 'Módulo nativo no disponible',
+        products: [],
+      };
+    }
+
     try {
       const productIds = Object.values(PRODUCT_IDS);
-      const { responseCode, results } = await InAppPurchases.getProductsAsync(productIds);
+      const { responseCode, results } = await module.getProductsAsync(productIds);
       
-      if (responseCode === InAppPurchases.IAPResponseCode.OK) {
+      if (responseCode === module.IAPResponseCode.OK) {
         this.products = results;
         console.log('[StoreKit] Productos cargados:', results.length);
         
@@ -200,13 +256,21 @@ class StoreKitService {
       };
     }
 
+    const module = getInAppPurchasesModule();
+    if (!module) {
+      return {
+        success: false,
+        error: 'Módulo nativo no disponible. Necesitas hacer prebuild o usar un build nativo.',
+      };
+    }
+
     try {
       console.log('[StoreKit] Iniciando compra:', productId);
 
       // Solicitar compra
-      const { responseCode, results } = await InAppPurchases.purchaseItemAsync(productId);
+      const { responseCode, results } = await module.purchaseItemAsync(productId);
 
-      if (responseCode === InAppPurchases.IAPResponseCode.OK && results && results.length > 0) {
+      if (responseCode === module.IAPResponseCode.OK && results && results.length > 0) {
         const purchase = results[0];
         console.log('[StoreKit] Compra realizada:', purchase);
 
@@ -229,14 +293,14 @@ class StoreKitService {
         }
 
         // Finalizar la transacción
-        await InAppPurchases.finishTransactionAsync(purchase);
+        await module.finishTransactionAsync(purchase);
 
         return {
           success: true,
           purchase,
           plan: PRODUCT_ID_TO_PLAN[productId] || plan,
         };
-      } else if (responseCode === InAppPurchases.IAPResponseCode.USER_CANCELED) {
+      } else if (responseCode === module.IAPResponseCode.USER_CANCELED) {
         return {
           success: false,
           error: 'Compra cancelada por el usuario',
@@ -268,12 +332,21 @@ class StoreKitService {
       }
     }
 
+    const module = getInAppPurchasesModule();
+    if (!module) {
+      return {
+        success: false,
+        error: 'Módulo nativo no disponible',
+        purchases: [],
+      };
+    }
+
     try {
       console.log('[StoreKit] Restaurando compras...');
       
-      const { responseCode, results } = await InAppPurchases.restorePurchasesAsync();
+      const { responseCode, results } = await module.restorePurchasesAsync();
       
-      if (responseCode === InAppPurchases.IAPResponseCode.OK) {
+      if (responseCode === module.IAPResponseCode.OK) {
         console.log('[StoreKit] Compras restauradas:', results.length);
 
         return {
@@ -311,10 +384,19 @@ class StoreKitService {
       await this.initialize();
     }
 
+    const module = getInAppPurchasesModule();
+    if (!module) {
+      return {
+        success: false,
+        error: 'Módulo nativo no disponible',
+        subscriptions: [],
+      };
+    }
+
     try {
-      const { responseCode, results } = await InAppPurchases.getPurchaseHistoryAsync();
+      const { responseCode, results } = await module.getPurchaseHistoryAsync();
       
-      if (responseCode === InAppPurchases.IAPResponseCode.OK) {
+      if (responseCode === module.IAPResponseCode.OK) {
         // Filtrar solo suscripciones activas
         const activeSubscriptions = results.filter(p => {
           const plan = PRODUCT_ID_TO_PLAN[p.productId];
@@ -356,12 +438,15 @@ class StoreKitService {
     }
 
     if (this.isInitialized) {
-      try {
-        await InAppPurchases.disconnectAsync();
-        this.isInitialized = false;
-        console.log('[StoreKit] Conexión cerrada');
-      } catch (error) {
-        console.error('[StoreKit] Error cerrando conexión:', error);
+      const module = getInAppPurchasesModule();
+      if (module) {
+        try {
+          await module.disconnectAsync();
+          this.isInitialized = false;
+          console.log('[StoreKit] Conexión cerrada');
+        } catch (error) {
+          console.error('[StoreKit] Error cerrando conexión:', error);
+        }
       }
     }
   }
