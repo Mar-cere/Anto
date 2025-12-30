@@ -8,7 +8,7 @@
  */
 
 import { Platform } from 'react-native';
-import * as RNIap from 'react-native-iap';
+import * as InAppPurchases from 'expo-in-app-purchases';
 
 // Product IDs - Estos deben coincidir con los configurados en App Store Connect
 // Formato: com.anto.app.{plan}
@@ -33,14 +33,11 @@ class StoreKitService {
   constructor() {
     this.isInitialized = false;
     this.products = [];
-    this.purchaseUpdateSubscription = null;
-    this.purchaseErrorSubscription = null;
+    this.purchaseUpdateListener = null;
   }
 
   /**
    * Verificar si StoreKit está disponible (solo iOS)
-   * Nota: StoreKit NO funciona en simuladores, solo en dispositivos reales
-   * react-native-iap detectará esto y lanzará E_IAP_NOT_AVAILABLE
    */
   isAvailable() {
     return Platform.OS === 'ios';
@@ -51,10 +48,10 @@ class StoreKitService {
    */
   async initialize() {
     if (!this.isAvailable()) {
-      console.log('[StoreKit] No disponible en esta plataforma o simulador');
+      console.log('[StoreKit] No disponible en esta plataforma');
       return { 
         success: false, 
-        error: 'StoreKit solo está disponible en dispositivos iOS reales. No funciona en simulador.' 
+        error: 'StoreKit solo está disponible en iOS' 
       };
     }
 
@@ -63,12 +60,20 @@ class StoreKitService {
     }
 
     try {
-      // Inicializar conexión
-      await RNIap.initConnection();
+      // Conectar con App Store
+      const { connected } = await InAppPurchases.connectAsync();
+      
+      if (!connected) {
+        return {
+          success: false,
+          error: 'No se pudo conectar con App Store',
+        };
+      }
+
       this.isInitialized = true;
       console.log('[StoreKit] Conexión inicializada correctamente');
 
-      // Configurar listeners para actualizaciones de compras
+      // Configurar listener para actualizaciones de compras
       this.setupPurchaseListeners();
 
       // Cargar productos disponibles
@@ -76,22 +81,10 @@ class StoreKitService {
 
       return { success: true };
     } catch (error) {
-      // Manejar error específico de IAP no disponible
-      if (error.code === 'E_IAP_NOT_AVAILABLE' || error.message?.includes('E_IAP_NOT_AVAILABLE')) {
-        console.warn('[StoreKit] StoreKit no disponible (normal en simulador o si no está configurado)');
-        return {
-          success: false,
-          error: 'StoreKit no está disponible. Esto es normal si estás en un simulador. StoreKit solo funciona en dispositivos iOS reales.',
-          code: 'E_IAP_NOT_AVAILABLE',
-          isSimulator: true // Indicar que probablemente es simulador
-        };
-      }
-      
       console.error('[StoreKit] Error inicializando:', error);
       return {
         success: false,
         error: error.message || 'Error al inicializar StoreKit',
-        code: error.code
       };
     }
   }
@@ -101,17 +94,28 @@ class StoreKitService {
    */
   setupPurchaseListeners() {
     // Listener para actualizaciones de compras
-    this.purchaseUpdateSubscription = RNIap.purchaseUpdatedListener(
-      async (purchase) => {
-        console.log('[StoreKit] Compra actualizada:', purchase);
-        // La validación se hace en el método de compra
+    this.purchaseUpdateListener = InAppPurchases.addPurchaseUpdateListener(
+      async (update) => {
+        console.log('[StoreKit] Actualización de compra:', update);
+        
+        if (update.responseCode === InAppPurchases.IAPResponseCode.OK) {
+          for (const purchase of update.results) {
+            if (purchase.acknowledged) {
+              console.log('[StoreKit] Compra ya reconocida:', purchase.productId);
+              continue;
+            }
+
+            // Procesar la compra
+            if (purchase.purchaseState === InAppPurchases.PurchaseState.PURCHASED) {
+              console.log('[StoreKit] Compra exitosa:', purchase.productId);
+              // La validación se hace en el método de compra
+            } else if (purchase.purchaseState === InAppPurchases.PurchaseState.RESTORED) {
+              console.log('[StoreKit] Compra restaurada:', purchase.productId);
+            }
+          }
+        }
       }
     );
-
-    // Listener para errores de compra
-    this.purchaseErrorSubscription = RNIap.purchaseErrorListener((error) => {
-      console.error('[StoreKit] Error en compra:', error);
-    });
   }
 
   /**
@@ -124,23 +128,32 @@ class StoreKitService {
 
     try {
       const productIds = Object.values(PRODUCT_IDS);
-      const products = await RNIap.getProducts({ skus: productIds });
+      const { responseCode, results } = await InAppPurchases.getProductsAsync(productIds);
       
-      this.products = products;
-      console.log('[StoreKit] Productos cargados:', products.length);
-      
-      return {
-        success: true,
-        products: products.map(p => ({
-          id: p.productId,
-          plan: PRODUCT_ID_TO_PLAN[p.productId] || p.productId,
-          title: p.title,
-          description: p.description,
-          price: p.localizedPrice,
-          currency: p.currency,
-          priceValue: p.price,
-        })),
-      };
+      if (responseCode === InAppPurchases.IAPResponseCode.OK) {
+        this.products = results;
+        console.log('[StoreKit] Productos cargados:', results.length);
+        
+        return {
+          success: true,
+          products: results.map(p => ({
+            id: p.productId,
+            plan: PRODUCT_ID_TO_PLAN[p.productId] || p.productId,
+            title: p.title,
+            description: p.description,
+            price: p.price,
+            currency: p.currency,
+            priceValue: parseFloat(p.price),
+          })),
+        };
+      } else {
+        console.warn('[StoreKit] Error obteniendo productos:', responseCode);
+        return {
+          success: false,
+          error: `Error al obtener productos: ${responseCode}`,
+          products: [],
+        };
+      }
     } catch (error) {
       console.error('[StoreKit] Error cargando productos:', error);
       return {
@@ -160,9 +173,9 @@ class StoreKitService {
       plan: PRODUCT_ID_TO_PLAN[p.productId] || p.productId,
       title: p.title,
       description: p.description,
-      price: p.localizedPrice,
+      price: p.price,
       currency: p.currency,
-      priceValue: p.price,
+      priceValue: parseFloat(p.price),
     }));
   }
 
@@ -191,50 +204,52 @@ class StoreKitService {
       console.log('[StoreKit] Iniciando compra:', productId);
 
       // Solicitar compra
-      const purchase = await RNIap.requestSubscription(productId);
+      const { responseCode, results } = await InAppPurchases.purchaseItemAsync(productId);
 
-      console.log('[StoreKit] Compra realizada:', purchase);
+      if (responseCode === InAppPurchases.IAPResponseCode.OK && results && results.length > 0) {
+        const purchase = results[0];
+        console.log('[StoreKit] Compra realizada:', purchase);
 
-      // Validar recibo con el backend
-      if (onValidateReceipt) {
-        const validationResult = await onValidateReceipt({
-          transactionReceipt: purchase.transactionReceipt,
-          productId: purchase.productId,
-          transactionId: purchase.transactionId,
-          originalTransactionIdentifierIOS: purchase.originalTransactionIdentifierIOS,
-        });
+        // Validar recibo con el backend
+        if (onValidateReceipt) {
+          const validationResult = await onValidateReceipt({
+            transactionReceipt: purchase.transactionReceipt,
+            productId: purchase.productId,
+            transactionId: purchase.transactionId,
+            originalTransactionIdentifierIOS: purchase.originalTransactionIdentifierIOS,
+          });
 
-        if (!validationResult.success) {
-          // Si la validación falla, no finalizar la compra
-          // El usuario puede restaurar compras más tarde
-          return {
-            success: false,
-            error: validationResult.error || 'Error al validar la compra',
-            purchase,
-          };
+          if (!validationResult.success) {
+            return {
+              success: false,
+              error: validationResult.error || 'Error al validar la compra',
+              purchase,
+            };
+          }
         }
-      }
 
-      // Finalizar la transacción
-      await RNIap.finishTransaction(purchase);
+        // Finalizar la transacción
+        await InAppPurchases.finishTransactionAsync(purchase);
 
-      return {
-        success: true,
-        purchase,
-        plan: PRODUCT_ID_TO_PLAN[productId] || plan,
-      };
-    } catch (error) {
-      console.error('[StoreKit] Error en compra:', error);
-
-      // Manejar errores específicos
-      if (error.code === 'E_USER_CANCELLED') {
+        return {
+          success: true,
+          purchase,
+          plan: PRODUCT_ID_TO_PLAN[productId] || plan,
+        };
+      } else if (responseCode === InAppPurchases.IAPResponseCode.USER_CANCELED) {
         return {
           success: false,
           error: 'Compra cancelada por el usuario',
           cancelled: true,
         };
+      } else {
+        return {
+          success: false,
+          error: `Error en la compra: ${responseCode}`,
+        };
       }
-
+    } catch (error) {
+      console.error('[StoreKit] Error en compra:', error);
       return {
         success: false,
         error: error.message || 'Error al procesar la compra',
@@ -256,20 +271,28 @@ class StoreKitService {
     try {
       console.log('[StoreKit] Restaurando compras...');
       
-      const purchases = await RNIap.getAvailablePurchases();
+      const { responseCode, results } = await InAppPurchases.restorePurchasesAsync();
       
-      console.log('[StoreKit] Compras disponibles:', purchases.length);
+      if (responseCode === InAppPurchases.IAPResponseCode.OK) {
+        console.log('[StoreKit] Compras restauradas:', results.length);
 
-      return {
-        success: true,
-        purchases: purchases.map(p => ({
-          productId: p.productId,
-          plan: PRODUCT_ID_TO_PLAN[p.productId] || p.productId,
-          transactionId: p.transactionId,
-          transactionReceipt: p.transactionReceipt,
-          originalTransactionIdentifierIOS: p.originalTransactionIdentifierIOS,
-        })),
-      };
+        return {
+          success: true,
+          purchases: results.map(p => ({
+            productId: p.productId,
+            plan: PRODUCT_ID_TO_PLAN[p.productId] || p.productId,
+            transactionId: p.transactionId,
+            transactionReceipt: p.transactionReceipt,
+            originalTransactionIdentifierIOS: p.originalTransactionIdentifierIOS,
+          })),
+        };
+      } else {
+        return {
+          success: false,
+          error: `Error restaurando compras: ${responseCode}`,
+          purchases: [],
+        };
+      }
     } catch (error) {
       console.error('[StoreKit] Error restaurando compras:', error);
       return {
@@ -289,22 +312,30 @@ class StoreKitService {
     }
 
     try {
-      const purchases = await RNIap.getAvailablePurchases();
+      const { responseCode, results } = await InAppPurchases.getPurchaseHistoryAsync();
       
-      // Filtrar solo suscripciones activas
-      const activeSubscriptions = purchases.filter(p => {
-        const plan = PRODUCT_ID_TO_PLAN[p.productId];
-        return plan !== undefined;
-      });
+      if (responseCode === InAppPurchases.IAPResponseCode.OK) {
+        // Filtrar solo suscripciones activas
+        const activeSubscriptions = results.filter(p => {
+          const plan = PRODUCT_ID_TO_PLAN[p.productId];
+          return plan !== undefined;
+        });
 
-      return {
-        success: true,
-        subscriptions: activeSubscriptions.map(p => ({
-          productId: p.productId,
-          plan: PRODUCT_ID_TO_PLAN[p.productId],
-          transactionId: p.transactionId,
-        })),
-      };
+        return {
+          success: true,
+          subscriptions: activeSubscriptions.map(p => ({
+            productId: p.productId,
+            plan: PRODUCT_ID_TO_PLAN[p.productId],
+            transactionId: p.transactionId,
+          })),
+        };
+      } else {
+        return {
+          success: false,
+          error: `Error obteniendo historial: ${responseCode}`,
+          subscriptions: [],
+        };
+      }
     } catch (error) {
       console.error('[StoreKit] Error obteniendo suscripciones activas:', error);
       return {
@@ -319,19 +350,14 @@ class StoreKitService {
    * Limpiar recursos y cerrar conexión
    */
   async cleanup() {
-    if (this.purchaseUpdateSubscription) {
-      this.purchaseUpdateSubscription.remove();
-      this.purchaseUpdateSubscription = null;
-    }
-
-    if (this.purchaseErrorSubscription) {
-      this.purchaseErrorSubscription.remove();
-      this.purchaseErrorSubscription = null;
+    if (this.purchaseUpdateListener) {
+      this.purchaseUpdateListener.remove();
+      this.purchaseUpdateListener = null;
     }
 
     if (this.isInitialized) {
       try {
-        await RNIap.endConnection();
+        await InAppPurchases.disconnectAsync();
         this.isInitialized = false;
         console.log('[StoreKit] Conexión cerrada');
       } catch (error) {
@@ -356,4 +382,3 @@ class StoreKitService {
 }
 
 export default new StoreKitService();
-
