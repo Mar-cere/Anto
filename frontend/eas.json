@@ -11,6 +11,9 @@
       },
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
       }
     },
     "preview": {
@@ -20,6 +23,9 @@
       },
       "ios": {
         "simulator": false
+      },
+      "env": {
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
       }
     },
     "production": {
@@ -32,7 +38,8 @@
         "buildConfiguration": "Release"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://anto-ion2.onrender.com"
+        "EXPO_PUBLIC_API_URL": "https://anto-ion2.onrender.com",
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
       }
     },
     "production-huawei": {
