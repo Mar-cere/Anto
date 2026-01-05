@@ -1,10 +1,11 @@
 /**
  * Configuración de Mailer - Gestiona el envío de correos electrónicos
- * Soporta SendGrid (preferido) y Gmail SMTP (fallback)
+ * Soporta Gmail API (Google Workspace), SendGrid y Gmail SMTP (fallback)
  */
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
 import sgMail from '@sendgrid/mail';
+import { google } from 'googleapis';
 import { APP_NAME, APP_NAME_FULL, EMAIL_FROM_NAME, LOGO_URL } from '../constants/app.js';
 import {
   CODE_EXPIRATION_MINUTES,
@@ -16,22 +17,53 @@ import {
 
 dotenv.config();
 
+// Configurar Gmail API si está disponible (Google Workspace)
+const GMAIL_CLIENT_ID = process.env.GMAIL_CLIENT_ID;
+const GMAIL_CLIENT_SECRET = process.env.GMAIL_CLIENT_SECRET;
+const GMAIL_REFRESH_TOKEN = process.env.GMAIL_REFRESH_TOKEN;
+const GMAIL_USER_EMAIL = process.env.GMAIL_USER_EMAIL || process.env.EMAIL_USER;
+const USE_GMAIL_API = !!(GMAIL_CLIENT_ID && GMAIL_CLIENT_SECRET && GMAIL_REFRESH_TOKEN);
+
 // Configurar SendGrid si está disponible
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_USER;
-const USE_SENDGRID = !!SENDGRID_API_KEY;
+const USE_SENDGRID = !!SENDGRID_API_KEY && !USE_GMAIL_API; // Solo usar SendGrid si Gmail API no está configurado
+
+// Configurar Gmail API si está disponible
+let gmailClient = null;
+if (USE_GMAIL_API) {
+  try {
+    const oauth2Client = new google.auth.OAuth2(
+      GMAIL_CLIENT_ID,
+      GMAIL_CLIENT_SECRET,
+      'urn:ietf:wg:oauth:2.0:oob' // Para aplicaciones de servidor
+    );
+    
+    oauth2Client.setCredentials({
+      refresh_token: GMAIL_REFRESH_TOKEN
+    });
+    
+    gmailClient = google.gmail({ version: 'v1', auth: oauth2Client });
+    console.log('[Mailer] ✅ Gmail API configurado correctamente (Google Workspace)');
+  } catch (error) {
+    console.warn('[Mailer] ⚠️ Error configurando Gmail API:', error.message);
+    console.log('[Mailer] ⚠️ Intentando con otros proveedores...');
+  }
+}
 
 // Configurar SendGrid solo si está disponible (evitar errores si el módulo no está instalado)
 try {
   if (USE_SENDGRID) {
     sgMail.setApiKey(SENDGRID_API_KEY);
     console.log('[Mailer] ✅ SendGrid configurado correctamente');
-  } else {
+  } else if (!USE_GMAIL_API) {
     console.log('[Mailer] ⚠️ SendGrid no configurado, usando Gmail SMTP como fallback');
   }
 } catch (error) {
   console.warn('[Mailer] ⚠️ Error configurando SendGrid:', error.message);
-  console.log('[Mailer] ⚠️ Usando Gmail SMTP como fallback');
+  if (!USE_GMAIL_API) {
+    console.log('[Mailer] ⚠️ Usando Gmail SMTP como fallback');
+  }
 }
 
 // Helper: crear transporter de nodemailer
@@ -288,6 +320,55 @@ const sendEmailWithSendGrid = async (email, template, emailType) => {
   }
 };
 
+// Helper: enviar correo con Gmail API (Google Workspace)
+const sendEmailWithGmailAPI = async (email, template, emailType) => {
+  try {
+    if (!gmailClient || !GMAIL_USER_EMAIL) {
+      throw new Error('Gmail API no está configurado correctamente');
+    }
+
+    console.log(`[Mailer] 📧 [Gmail API] Intentando enviar ${emailType} a: ${email}`);
+    console.log(`[Mailer] 📧 [Gmail API] Desde: ${GMAIL_USER_EMAIL}`);
+
+    // Crear el mensaje en formato RFC 2822
+    const message = [
+      `From: "${EMAIL_FROM_NAME}" <${GMAIL_USER_EMAIL}>`,
+      `To: ${email}`,
+      `Subject: ${template.subject}`,
+      `Content-Type: text/html; charset=utf-8`,
+      '',
+      template.html
+    ].join('\n');
+
+    // Codificar el mensaje en base64url (formato requerido por Gmail API)
+    const encodedMessage = Buffer.from(message)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    // Enviar el email usando Gmail API
+    const response = await gmailClient.users.messages.send({
+      userId: 'me',
+      requestBody: {
+        raw: encodedMessage
+      }
+    });
+
+    console.log(`[Mailer] ✉️ [Gmail API] ${emailType} enviado exitosamente a: ${email}`);
+    if (response.data.id) {
+      console.log(`[Mailer] 📬 [Gmail API] Message ID: ${response.data.id}`);
+    }
+    return true;
+  } catch (error) {
+    console.error(`[Mailer] ❌ [Gmail API] Error al enviar ${emailType} a ${email}:`, error.message);
+    if (error.response?.data) {
+      console.error(`[Mailer] 📋 [Gmail API] Error response:`, JSON.stringify(error.response.data, null, 2));
+    }
+    throw error;
+  }
+};
+
 // Helper: enviar correo con Gmail SMTP (fallback)
 const sendEmailWithGmail = async (email, template, emailType) => {
   try {
@@ -324,15 +405,25 @@ const sendEmailWithGmail = async (email, template, emailType) => {
   }
 };
 
-// Helper: enviar correo genérico (intenta SendGrid primero, luego Gmail)
+// Helper: enviar correo genérico (prioridad: Gmail API > SendGrid > Gmail SMTP)
 const sendEmail = async (email, template, emailType) => {
-  // Intentar primero con SendGrid si está configurado
+  // Intentar primero con Gmail API si está configurado (Google Workspace)
+  if (USE_GMAIL_API && gmailClient) {
+    try {
+      return await sendEmailWithGmailAPI(email, template, emailType);
+    } catch (gmailAPIError) {
+      console.error('[Mailer] ⚠️ Gmail API falló, intentando con otros proveedores...');
+      // Continuar con otros proveedores
+    }
+  }
+
+  // Intentar con SendGrid si está configurado
   if (USE_SENDGRID) {
     try {
       return await sendEmailWithSendGrid(email, template, emailType);
     } catch (sendGridError) {
-      console.error('[Mailer] ⚠️ SendGrid falló, intentando con Gmail como fallback...');
-      // Continuar con el fallback a Gmail
+      console.error('[Mailer] ⚠️ SendGrid falló, intentando con Gmail SMTP como fallback...');
+      // Continuar con el fallback a Gmail SMTP
     }
   }
 
