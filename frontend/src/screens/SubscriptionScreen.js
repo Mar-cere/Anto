@@ -129,9 +129,19 @@ const SubscriptionScreen = () => {
       // Esto evita errores en simulador o cuando StoreKit no está disponible
 
       // Cargar estado de suscripción del backend
-      const statusResponse = await paymentService.getSubscriptionStatus();
-      if (statusResponse.success) {
-        setSubscriptionStatus(statusResponse);
+      try {
+        const statusResponse = await paymentService.getSubscriptionStatus();
+        if (statusResponse.success) {
+          setSubscriptionStatus(statusResponse);
+        } else {
+          console.warn('[SubscriptionScreen] Error obteniendo estado de suscripción:', statusResponse.error);
+          // No establecer estado si hay error, para evitar mostrar "Estado Desconocido"
+          setSubscriptionStatus(null);
+        }
+      } catch (statusError) {
+        console.error('[SubscriptionScreen] Error al cargar estado de suscripción:', statusError);
+        // No establecer estado si hay error
+        setSubscriptionStatus(null);
       }
     } catch (err) {
       console.error('Error cargando datos:', err);
@@ -153,8 +163,18 @@ const SubscriptionScreen = () => {
   );
 
   // Manejar selección de plan y suscripción
-  const handleSubscribe = useCallback(async (plan) => {
+  const handleSubscribe = useCallback(async (planIdOrPlan) => {
+    // Si se pasa un string (ID), buscar el plan completo
+    const plan = typeof planIdOrPlan === 'string' 
+      ? plans.find(p => p.id === planIdOrPlan) || { id: planIdOrPlan }
+      : planIdOrPlan;
+    
     if (subscribing) return;
+    
+    if (!plan || !plan.id) {
+      Alert.alert('Error', 'Plan no válido');
+      return;
+    }
 
     try {
       setSubscribing(true);
@@ -272,11 +292,92 @@ const SubscriptionScreen = () => {
     }
   }, [subscribing, loadData]);
 
-  // Manejar cancelación de suscripción
+  // Obtener planes más baratos que el plan actual
+  const getCheaperPlans = useCallback((currentPlanId) => {
+    if (!currentPlanId || !plans.length) return [];
+    
+    // Orden de precios: weekly < monthly < quarterly < semestral < yearly
+    const planOrder = { weekly: 1, monthly: 2, quarterly: 3, semestral: 4, yearly: 5 };
+    const currentOrder = planOrder[currentPlanId] || 999;
+    
+    // Filtrar planes más baratos (menor orden = más barato)
+    return plans
+      .filter(plan => (planOrder[plan.id] || 999) < currentOrder)
+      .sort((a, b) => (planOrder[a.id] || 999) - (planOrder[b.id] || 999));
+  }, [plans]);
+
+  // Manejar cancelación de suscripción con opción de cambiar a plan más barato
   const handleCancelSubscription = useCallback(() => {
+    const currentPlanId = subscriptionStatus?.plan;
+    const cheaperPlans = getCheaperPlans(currentPlanId);
+    
+    // Si hay planes más baratos disponibles, ofrecer cambiar primero
+    if (cheaperPlans.length > 0) {
+      const cheaperPlansText = cheaperPlans
+        .map(plan => `• ${plan.name} - ${plan.formattedAmount}`)
+        .join('\n');
+      
+      Alert.alert(
+        '¿Cambiar a un plan más económico?',
+        `Antes de cancelar, ¿te gustaría cambiar a uno de estos planes más económicos?\n\n${cheaperPlansText}\n\nO puedes cancelar tu suscripción completamente.`,
+        [
+          {
+            text: 'Ver planes más baratos',
+            onPress: () => {
+              // Mostrar opciones de planes más baratos
+              const planOptions = cheaperPlans.map(plan => ({
+                text: `${plan.name} - ${plan.formattedAmount}`,
+                onPress: () => {
+                  // Cambiar a plan más barato
+                  handleSubscribe(plan.id);
+                }
+              }));
+              
+              Alert.alert(
+                'Planes más económicos',
+                'Selecciona el plan al que deseas cambiar:',
+                [
+                  ...planOptions,
+                  {
+                    text: 'Cancelar suscripción',
+                    style: 'destructive',
+                    onPress: () => {
+                      // Proceder con cancelación
+                      confirmCancelSubscription();
+                    }
+                  },
+                  {
+                    text: 'Volver',
+                    style: 'cancel'
+                  }
+                ]
+              );
+            }
+          },
+          {
+            text: 'Cancelar suscripción',
+            style: 'destructive',
+            onPress: () => {
+              confirmCancelSubscription();
+            }
+          },
+          {
+            text: 'Volver',
+            style: 'cancel'
+          }
+        ]
+      );
+    } else {
+      // No hay planes más baratos, proceder directamente con cancelación
+      confirmCancelSubscription();
+    }
+  }, [subscriptionStatus, getCheaperPlans, handleSubscribe, confirmCancelSubscription]);
+
+  // Confirmar cancelación de suscripción
+  const confirmCancelSubscription = useCallback(async () => {
     Alert.alert(
       TEXTS.CANCEL_SUBSCRIPTION,
-      TEXTS.CANCEL_CONFIRM,
+      TEXTS.CANCEL_CONFIRM + '\n\nTu suscripción seguirá activa hasta el final del período actual.',
       [
         { text: 'No', style: 'cancel' },
         {
@@ -284,15 +385,29 @@ const SubscriptionScreen = () => {
           style: 'destructive',
           onPress: async () => {
             try {
+              setSubscribing(true);
               const response = await paymentService.cancelSubscription(false);
               if (response.success) {
-                Alert.alert('Éxito', TEXTS.CANCEL_SUCCESS);
-                loadData(); // Recargar datos
+                Alert.alert(
+                  'Suscripción cancelada',
+                  'Tu suscripción ha sido cancelada. Seguirás teniendo acceso hasta el final del período actual.',
+                  [
+                    {
+                      text: 'OK',
+                      onPress: () => {
+                        loadData(); // Recargar datos
+                      }
+                    }
+                  ]
+                );
               } else {
                 Alert.alert('Error', response.error || TEXTS.CANCEL_ERROR);
               }
             } catch (err) {
+              console.error('Error cancelando suscripción:', err);
               Alert.alert('Error', TEXTS.CANCEL_ERROR);
+            } finally {
+              setSubscribing(false);
             }
           },
         },
@@ -380,7 +495,7 @@ const SubscriptionScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* Estado de suscripción actual */}
-        {subscriptionStatus && subscriptionStatus.hasSubscription && (
+        {subscriptionStatus && subscriptionStatus.hasSubscription && subscriptionStatus.status && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{TEXTS.CURRENT_SUBSCRIPTION}</Text>
             <SubscriptionStatus

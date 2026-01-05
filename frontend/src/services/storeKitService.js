@@ -65,6 +65,7 @@ class StoreKitService {
     this.isInitialized = false;
     this.products = [];
     this.purchaseUpdateListener = null;
+    this.initializing = false; // Flag para evitar múltiples inicializaciones simultáneas
   }
 
   /**
@@ -90,8 +91,26 @@ class StoreKitService {
       };
     }
 
+    // Si ya está inicializado, retornar éxito
     if (this.isInitialized) {
       return { success: true };
+    }
+
+    // Si ya se está inicializando, esperar a que termine
+    if (this.initializing) {
+      // Esperar hasta que termine la inicialización
+      let attempts = 0;
+      while (this.initializing && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+        if (this.isInitialized) {
+          return { success: true };
+        }
+      }
+      // Si después de esperar aún no está inicializado, intentar de nuevo
+      if (!this.isInitialized) {
+        console.warn('[StoreKit] Timeout esperando inicialización, reintentando...');
+      }
     }
 
     const module = getInAppPurchasesModule();
@@ -102,11 +121,15 @@ class StoreKitService {
       };
     }
 
+    // Marcar como inicializando
+    this.initializing = true;
+
     try {
       // Conectar con App Store
       const { connected } = await module.connectAsync();
       
       if (!connected) {
+        this.initializing = false;
         return {
           success: false,
           error: 'No se pudo conectar con App Store',
@@ -114,17 +137,32 @@ class StoreKitService {
       }
 
       this.isInitialized = true;
+      this.initializing = false;
       console.log('[StoreKit] Conexión inicializada correctamente');
 
-      // Configurar listener para actualizaciones de compras
-      this.setupPurchaseListeners();
+      // Configurar listener para actualizaciones de compras (solo si no existe)
+      if (!this.purchaseUpdateListener) {
+        this.setupPurchaseListeners();
+      }
 
       // Cargar productos disponibles
       await this.loadProducts();
 
       return { success: true };
     } catch (error) {
+      this.initializing = false;
       console.error('[StoreKit] Error inicializando:', error);
+      
+      // Si el error es "Already connected", considerar como éxito
+      if (error.message && error.message.includes('Already connected')) {
+        console.log('[StoreKit] Ya estaba conectado, marcando como inicializado');
+        this.isInitialized = true;
+        if (!this.purchaseUpdateListener) {
+          this.setupPurchaseListeners();
+        }
+        return { success: true };
+      }
+      
       return {
         success: false,
         error: error.message || 'Error al inicializar StoreKit',
@@ -169,8 +207,26 @@ class StoreKitService {
    * Cargar productos disponibles desde App Store
    */
   async loadProducts() {
-    if (!this.isInitialized) {
-      await this.initialize();
+    if (!this.isInitialized && !this.initializing) {
+      const initResult = await this.initialize();
+      if (!initResult.success) {
+        return initResult;
+      }
+    } else if (this.initializing) {
+      // Esperar a que termine la inicialización
+      let attempts = 0;
+      while (this.initializing && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+        if (this.isInitialized) break;
+      }
+      if (!this.isInitialized) {
+        return {
+          success: false,
+          error: 'No se pudo inicializar StoreKit',
+          products: [],
+        };
+      }
     }
 
     const module = getInAppPurchasesModule();
@@ -241,10 +297,24 @@ class StoreKitService {
    * @param {Function} onValidateReceipt - Función para validar el recibo con el backend
    */
   async purchaseSubscription(plan, onValidateReceipt) {
-    if (!this.isInitialized) {
+    if (!this.isInitialized && !this.initializing) {
       const initResult = await this.initialize();
       if (!initResult.success) {
         return initResult;
+      }
+    } else if (this.initializing) {
+      // Esperar a que termine la inicialización
+      let attempts = 0;
+      while (this.initializing && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+        if (this.isInitialized) break;
+      }
+      if (!this.isInitialized) {
+        return {
+          success: false,
+          error: 'No se pudo inicializar StoreKit. Por favor, intenta de nuevo.',
+        };
       }
     }
 
@@ -314,6 +384,39 @@ class StoreKitService {
       }
     } catch (error) {
       console.error('[StoreKit] Error en compra:', error);
+      
+      // Manejar error "Already connected" específicamente
+      if (error.message && error.message.includes('Already connected')) {
+        console.log('[StoreKit] Ya estaba conectado, intentando comprar de nuevo...');
+        // Marcar como inicializado y reintentar
+        this.isInitialized = true;
+        // Reintentar la compra una vez
+        try {
+          const { responseCode, results } = await module.purchaseItemAsync(productId);
+          if (responseCode === module.IAPResponseCode.OK && results && results.length > 0) {
+            const purchase = results[0];
+            if (onValidateReceipt) {
+              const validationResult = await onValidateReceipt({
+                transactionReceipt: purchase.transactionReceipt,
+                productId: purchase.productId,
+                transactionId: purchase.transactionId,
+                originalTransactionIdentifierIOS: purchase.originalTransactionIdentifierIOS,
+              });
+              if (validationResult.success) {
+                await module.finishTransactionAsync(purchase);
+                return {
+                  success: true,
+                  purchase,
+                  plan: PRODUCT_ID_TO_PLAN[productId] || plan,
+                };
+              }
+            }
+          }
+        } catch (retryError) {
+          console.error('[StoreKit] Error en reintento de compra:', retryError);
+        }
+      }
+      
       return {
         success: false,
         error: error.message || 'Error al procesar la compra',

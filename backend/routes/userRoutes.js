@@ -429,6 +429,112 @@ router.delete('/me', authenticateToken, validateUserObjectId, deleteUserLimiter,
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
+    const userId = req.user._id;
+
+    // Cancelar suscripciones activas antes de eliminar la cuenta
+    try {
+      const Subscription = (await import('../models/Subscription.js')).default;
+      const paymentService = (await import('../services/paymentService.js')).default;
+      const paymentAuditService = (await import('../services/paymentAuditService.js')).default;
+
+      // Buscar suscripciones activas
+      const activeSubscriptions = await Subscription.find({
+        userId: userId,
+        status: { $in: ['active', 'trialing'] },
+      });
+
+      if (activeSubscriptions.length > 0) {
+        logger.info(`Cancelando ${activeSubscriptions.length} suscripción(es) activa(s) para usuario ${userId}`);
+
+        // Cancelar cada suscripción activa
+        for (const subscription of activeSubscriptions) {
+          try {
+            // Cancelar inmediatamente en el proveedor correspondiente
+            // Verificar si es suscripción de Mercado Pago
+            const isMercadoPago = subscription.mercadopagoSubscriptionId || 
+                                  subscription.mercadopagoTransactionId ||
+                                  subscription.mercadopagoPreferenceId ||
+                                  (subscription.metadata && subscription.metadata.provider === 'mercadopago');
+            
+            // Verificar si es suscripción de Apple
+            const isApple = (subscription.metadata && subscription.metadata.provider === 'apple') ||
+                           (subscription.metadata && subscription.metadata.appleTransactionId) ||
+                           (subscription.metadata && subscription.metadata.productId && subscription.metadata.productId.startsWith('com.anto.app'));
+
+            if (isMercadoPago) {
+              try {
+                await paymentService.cancelSubscription(userId, true); // Cancelar inmediatamente
+                logger.info(`Suscripción de Mercado Pago cancelada para usuario ${userId}`);
+              } catch (mpError) {
+                logger.warn(`Error cancelando suscripción de Mercado Pago: ${mpError.message}`);
+                // Continuar con la cancelación local aunque falle en Mercado Pago
+              }
+            } else if (isApple) {
+              // Para suscripciones de Apple, no podemos cancelarlas directamente desde el backend
+              // Apple maneja las cancelaciones desde la app o App Store Connect
+              // Solo actualizamos el estado local
+              logger.info(`Suscripción de Apple detectada para usuario ${userId}. Cancelación local aplicada.`);
+              // Nota: El usuario debería cancelar desde la app iOS o App Store Connect
+            } else {
+              // Proveedor desconocido o sin proveedor específico, cancelar localmente
+              logger.info(`Suscripción sin proveedor específico detectada para usuario ${userId}. Cancelación local aplicada.`);
+            }
+
+            // Cancelar suscripción en base de datos (cancelar inmediatamente)
+            subscription.status = 'canceled';
+            subscription.canceledAt = new Date();
+            subscription.endedAt = new Date();
+            subscription.cancelAtPeriodEnd = false;
+            
+            // Agregar información de cancelación en metadata
+            subscription.metadata = {
+              ...subscription.metadata,
+              canceledOnAccountDeletion: true,
+              accountDeletedAt: new Date().toISOString(),
+              canceledBy: 'account_deletion',
+            };
+            
+            await subscription.save();
+
+            // Determinar proveedor para auditoría
+            let provider = 'unknown';
+            if (isMercadoPago) {
+              provider = 'mercadopago';
+            } else if (isApple) {
+              provider = 'apple';
+            } else if (subscription.metadata && subscription.metadata.provider) {
+              provider = subscription.metadata.provider;
+            }
+
+            // Registrar evento de auditoría
+            await paymentAuditService.logEvent('SUBSCRIPTION_CANCELED_ON_ACCOUNT_DELETION', {
+              subscriptionId: subscription._id.toString(),
+              userId: userId.toString(),
+              plan: subscription.plan,
+              provider: provider,
+              canceledAt: subscription.canceledAt,
+              isMercadoPago,
+              isApple,
+            }, userId.toString(), null);
+
+            logger.info(`Suscripción ${subscription._id} cancelada por eliminación de cuenta`);
+          } catch (subError) {
+            logger.error(`Error cancelando suscripción ${subscription._id}:`, subError);
+            // Continuar con otras suscripciones aunque una falle
+          }
+        }
+      }
+
+      // Actualizar estado de suscripción en el modelo User
+      if (user.subscription && (user.subscription.status === 'premium' || user.subscription.status === 'trial')) {
+        user.subscription.status = 'expired';
+        user.subscription.subscriptionEndDate = new Date();
+      }
+    } catch (subscriptionError) {
+      logger.error('Error cancelando suscripciones al eliminar cuenta:', subscriptionError);
+      // Continuar con la eliminación de cuenta aunque falle la cancelación de suscripciones
+    }
+
     // Soft delete: desactivar cuenta y modificar email/username para evitar conflictos
     user.isActive = false;
     user.email = `${user.email}_deleted_${Date.now()}`;

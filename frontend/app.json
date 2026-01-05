@@ -2,7 +2,7 @@
   "expo": {
     "name": "Anto",
     "slug": "anto",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "anto",
@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anto.app",
-      "buildNumber": "5",
+      "buildNumber": "6",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Necesitamos acceso a tus fotos para que puedas subir imágenes en tu perfil.",
         "NSCameraUsageDescription": "Necesitamos acceso a la cámara para que puedas tomar fotos para tu perfil.",

@@ -153,11 +153,28 @@ const SettingsScreen = () => {
   const handleDeleteAccount = useCallback(async () => {
     setShowDeleteModal(false);
     try {
-      // Aquí iría la lógica para eliminar la cuenta
+      // Llamar al backend para eliminar la cuenta (soft delete)
+      // El backend cancelará automáticamente las suscripciones activas
+      await api.delete(ENDPOINTS.ME);
+      
+      // Limpiar datos locales después de eliminar en el backend
       await AsyncStorage.clear();
+      
+      // Navegar a la pantalla de inicio de sesión
       navigation.replace(NAVIGATION_ROUTES.SIGN_IN);
+      
+      // Mostrar mensaje de confirmación
+      Alert.alert(
+        'Cuenta eliminada',
+        'Tu cuenta ha sido eliminada correctamente. Todas tus suscripciones activas han sido canceladas.',
+        [{ text: 'OK' }]
+      );
     } catch (e) {
-      Alert.alert(TEXTS.ERROR, TEXTS.DELETE_ERROR);
+      console.error('Error eliminando cuenta:', e);
+      Alert.alert(
+        TEXTS.ERROR, 
+        e.message || TEXTS.DELETE_ERROR
+      );
     }
   }, [navigation]);
 

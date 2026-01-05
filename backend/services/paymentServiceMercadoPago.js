@@ -385,6 +385,23 @@ class PaymentServiceMercadoPago {
       const userId = transaction.userId._id || transaction.userId;
       const userIdString = userId.toString();
 
+      // Validar que el email del payer coincida con el usuario (si está disponible)
+      if (paymentData.payer?.email && transaction.userId.email) {
+        const payerEmail = paymentData.payer.email.toLowerCase().trim();
+        const userEmail = transaction.userId.email.toLowerCase().trim();
+        if (payerEmail !== userEmail) {
+          console.warn(`[PAYMENT_WEBHOOK] Email del payer no coincide: ${payerEmail} vs ${userEmail}`);
+          await paymentAuditService.logEvent('PAYMENT_EMAIL_MISMATCH', {
+            transactionId: transaction._id.toString(),
+            userId: userIdString,
+            payerEmail: paymentData.payer.email,
+            userEmail: transaction.userId.email,
+            paymentId,
+            status: paymentData.status,
+          }, userIdString, transaction._id.toString());
+        }
+      }
+
       // Actualizar estado según el estado del pago
       const statusMap = {
         approved: 'completed',
@@ -422,7 +439,29 @@ class PaymentServiceMercadoPago {
       // Si el pago fue aprobado, activar suscripción
       if (paymentData.status === 'approved') {
         try {
-          await this.activateSubscriptionFromPayment(transaction);
+          const activationResult = await this.activateSubscriptionFromPayment(transaction);
+          
+          // Verificar integridad después de activar
+          if (activationResult && activationResult.success && !activationResult.alreadyActive) {
+            const integrityCheck = await paymentAuditService.verifyTransactionIntegrity(transaction._id);
+            if (!integrityCheck.valid) {
+              console.error('[PAYMENT_WEBHOOK] Error de integridad después de activar suscripción:', integrityCheck);
+              await paymentAuditService.logEvent('SUBSCRIPTION_INTEGRITY_CHECK_FAILED', {
+                transactionId: transaction._id.toString(),
+                userId: userIdString,
+                error: integrityCheck.error,
+                requiresActivation: integrityCheck.requiresActivation,
+              }, userIdString, transaction._id.toString());
+              
+              // Si requiere activación, intentar recuperar
+              if (integrityCheck.requiresActivation) {
+                const paymentRecoveryService = (await import('./paymentRecoveryService.js')).default;
+                await paymentRecoveryService.activateFromTransaction(transaction._id.toString()).catch(err => {
+                  console.error('[PAYMENT_WEBHOOK] Error en recuperación automática:', err);
+                });
+              }
+            }
+          }
         } catch (activationError) {
           console.error('[PAYMENT_WEBHOOK] Error activando suscripción:', activationError);
           // El error ya se registra en activateSubscriptionFromPayment
@@ -578,8 +617,48 @@ class PaymentServiceMercadoPago {
         throw new Error(`Plan inválido: ${plan}`);
       }
 
-      // Buscar o crear suscripción
+      // Buscar suscripción existente
       let subscription = await Subscription.findOne({ userId: userIdString });
+
+      // Validar que no haya una suscripción activa duplicada
+      if (subscription && subscription.status === 'active' && subscription.currentPeriodEnd >= now) {
+        // Ya hay una suscripción activa, verificar si es la misma transacción
+        const existingTransactionId = subscription.metadata?.lastActivatedFrom || subscription.metadata?.activatedFrom;
+        if (existingTransactionId && existingTransactionId !== transaction._id.toString()) {
+          console.warn(`[SUBSCRIPTION_ACTIVATION] Ya existe suscripción activa para usuario ${userIdString}. Transacción existente: ${existingTransactionId}, Nueva: ${transaction._id.toString()}`);
+          await paymentAuditService.logEvent('SUBSCRIPTION_DUPLICATE_ACTIVATION_ATTEMPT', {
+            transactionId: transaction._id.toString(),
+            existingTransactionId,
+            subscriptionId: subscription._id.toString(),
+            userId: userIdString,
+            plan,
+          }, userIdString, transaction._id.toString());
+          
+          // Actualizar la transacción existente con referencia a la nueva
+          subscription.metadata = {
+            ...subscription.metadata,
+            duplicateTransactionAttempts: [
+              ...(subscription.metadata.duplicateTransactionAttempts || []),
+              {
+                transactionId: transaction._id.toString(),
+                attemptedAt: now.toISOString(),
+              }
+            ],
+          };
+          await subscription.save();
+          
+          // Retornar éxito pero indicar que ya estaba activa
+          return {
+            success: true,
+            alreadyActive: true,
+            subscriptionId: subscription._id.toString(),
+            userId: userIdString,
+            plan,
+            periodStart: subscription.currentPeriodStart,
+            periodEnd: subscription.currentPeriodEnd,
+          };
+        }
+      }
 
       if (!subscription) {
         subscription = new Subscription({
