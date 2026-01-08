@@ -721,10 +721,10 @@ export const PROMPT_TEMPLATES = {
   STYLE_GUIDELINES: `Estilo {style}: {tone}. {validation}`,
 
   // Reglas generales (optimizadas para GPT-5 Mini - simplificadas para reducir reasoning)
-  GENERAL_RULES: `Responde breve (1-2 oraciones, máx {maxWords} palabras). Natural y empático. Si emoción NEGATIVA, varía tus frases empáticas: "entiendo", "comprendo", "reconozco", "veo que", "es válido", "es normal". Evita repetir las mismas frases. NUNCA uses "es genial" o frases positivas con emociones negativas.`,
+  GENERAL_RULES: `Responde breve (1-2 oraciones, máx {maxWords} palabras). Natural y empático. Si emoción NEGATIVA, varía frases: "entiendo", "comprendo", "reconozco", "veo que", "es válido", "es normal". Evita repetir frases. NUNCA uses "es genial" con emociones negativas.`,
 
   // Estructura de respuesta (optimizada - simplificada)
-  RESPONSE_STRUCTURE: `Responde: 1) Reconocimiento empático (15 palabras). 2) Validación/apoyo (15 palabras, opcional). 3) Pregunta (10 palabras, opcional). Total: 1-2 oraciones.`
+  RESPONSE_STRUCTURE: `Responde: 1) Reconocimiento empático (12-15 palabras). 2) Validación/apoyo (10-15 palabras, opcional). 3) Pregunta (8-10 palabras, opcional). Total: 1-2 oraciones.`
 };
 
 // ========== FUNCIONES HELPER PARA PROMPTS ==========

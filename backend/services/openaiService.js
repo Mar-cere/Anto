@@ -568,7 +568,7 @@ class OpenAIService {
       socialSupport: contexto.contextual?.socialSupport || null
     });
 
-    // MEJORA: Agregar resumen del contexto conversacional
+    // OPTIMIZACIÓN: Agregar resumen del contexto conversacional (más conciso)
     const contextMessages = await this.generarMensajesContexto({
       ...contexto,
       currentMessage: mensaje.content
@@ -576,18 +576,26 @@ class OpenAIService {
     
     if (contextMessages.length > 0) {
       const conversationSummary = this.generateConversationSummary(contextMessages, contexto);
-      systemMessage += `\n\nCONTEXTO CONVERSACIONAL:\n${conversationSummary}\n`;
+      // OPTIMIZACIÓN: Resumen más conciso (máximo 100 caracteres)
+      const conciseSummary = conversationSummary.length > 100 
+        ? conversationSummary.substring(0, 97) + '...'
+        : conversationSummary;
+      systemMessage += `\n\nCONTEXTO: ${conciseSummary}`;
       
-      // Agregar instrucción para hacer referencias cuando sea apropiado
+      // Agregar instrucción solo si hay suficiente contexto
       if (contextMessages.length >= 2) {
-        systemMessage += `\nIMPORTANTE: Cuando sea relevante, haz referencias naturales a mensajes anteriores usando frases como "Como mencionaste antes...", "Recuerdo que dijiste...", "Siguiendo con lo que hablábamos...". Esto ayuda a mantener la coherencia conversacional.\n`;
+        systemMessage += `\nRef: Usa referencias naturales cuando sea relevante.`;
       }
     }
 
-    // MEJORA: Agregar contexto de largo plazo (memoria persistente)
+    // OPTIMIZACIÓN: Agregar contexto de largo plazo solo si es relevante (más conciso)
     const longTermContext = await this.generateLongTermContext(mensaje.userId, contexto);
-    if (longTermContext) {
-      systemMessage += `\n\nCONTEXTO A LARGO PLAZO:\n${longTermContext}\n`;
+    if (longTermContext && longTermContext.length > 0) {
+      // Limitar contexto de largo plazo a 150 caracteres
+      const conciseLongTerm = longTermContext.length > 150
+        ? longTermContext.substring(0, 147) + '...'
+        : longTermContext;
+      systemMessage += `\nMEMORIA: ${conciseLongTerm}`;
     }
 
     // Si hay una crisis detectada, agregar el prompt de crisis al inicio
@@ -617,43 +625,76 @@ class OpenAIService {
     const currentEmotion = currentContext?.emotional?.mainEmotion;
     const currentTopic = currentContext?.emotional?.topic || currentContext?.contextual?.tema;
     const currentContent = currentContext?.currentMessage?.toLowerCase() || '';
+    const currentIntensity = currentContext?.emotional?.intensity || 5;
     
-    // Extraer palabras clave del mensaje actual
-    const keywords = currentContent.split(/\s+/).filter(word => word.length > 3);
+    // OPTIMIZACIÓN: Extraer palabras clave más inteligentes (sustantivos y verbos importantes)
+    const stopWords = new Set(['que', 'qué', 'como', 'cómo', 'para', 'por', 'con', 'sin', 'sobre', 'entre', 'hasta', 'desde', 'durante', 'mediante', 'según', 'ante', 'bajo', 'contra', 'hacia', 'tras', 'este', 'esta', 'estos', 'estas', 'ese', 'esa', 'esos', 'esas', 'aquel', 'aquella', 'aquellos', 'aquellas', 'tengo', 'tiene', 'tienes', 'tenemos', 'tienen', 'estoy', 'está', 'estás', 'estamos', 'están', 'soy', 'es', 'eres', 'somos', 'son', 'fue', 'fueron', 'ser', 'estar', 'tener', 'hacer', 'decir', 'ir', 'ver', 'dar', 'saber', 'poder', 'querer', 'llegar', 'pasar', 'deber', 'poner', 'parecer', 'quedar', 'hablar', 'llevar', 'seguir', 'encontrar', 'llamar', 'venir', 'pensar', 'salir', 'volver', 'tomar', 'conocer', 'vivir', 'sentir', 'tratar', 'mirar', 'contar', 'empezar', 'esperar', 'buscar', 'existir', 'entrar', 'trabajar', 'escribir', 'perder', 'producir', 'ocurrir', 'entender', 'pedir', 'recibir', 'recordar', 'terminar', 'permitir', 'aparecer', 'conseguir', 'comenzar', 'servir', 'sacar', 'necesitar', 'mantener', 'resultar', 'leer', 'caer', 'cambiar', 'presentar', 'crear', 'abrir', 'considerar', 'oír', 'acabar', 'convertir', 'ganar', 'formar', 'traer', 'partir', 'morir', 'aceptar', 'realizar', 'suponer', 'comprender', 'lograr', 'explicar', 'preguntar', 'tocar', 'reconocer', 'estudiar', 'terminar', 'alcanzar', 'nacer', 'dirigir', 'correr', 'utilizar', 'pagar', 'ayudar', 'gustar', 'jugar', 'escuchar', 'cumplir', 'ofrecer', 'descubrir', 'levantar', 'intentar', 'usar', 'dejar', 'continuar', 'acabar', 'comprobar', 'vender', 'construir', 'elegir', 'actuar', 'lograr', 'ocurrir', 'permitir', 'aparecer', 'conseguir', 'comenzar', 'servir', 'sacar', 'necesitar', 'mantener', 'resultar', 'leer', 'caer', 'cambiar', 'presentar', 'crear', 'abrir', 'considerar', 'oír', 'acabar', 'convertir', 'ganar', 'formar', 'traer', 'partir', 'morir', 'aceptar', 'realizar', 'suponer', 'comprender', 'lograr', 'explicar', 'preguntar', 'tocar', 'reconocer', 'estudiar', 'terminar', 'alcanzar', 'nacer', 'dirigir', 'correr', 'utilizar', 'pagar', 'ayudar', 'gustar', 'jugar', 'escuchar', 'cumplir', 'ofrecer', 'descubrir', 'levantar', 'intentar', 'usar', 'dejar', 'continuar', 'acabar', 'comprobar', 'vender', 'construir', 'elegir', 'actuar']);
+    const keywords = currentContent
+      .split(/\s+/)
+      .filter(word => word.length > 3 && !stopWords.has(word.toLowerCase()))
+      .slice(0, 10); // Limitar a 10 palabras clave más relevantes
     
-    // Calcular relevancia de cada mensaje
+    // OPTIMIZACIÓN: Calcular relevancia mejorada
     const scoredMessages = history.map((msg, index) => {
       let score = 0;
       const msgContent = (msg.content || '').toLowerCase();
+      const recencyWeight = 1 - (index / history.length); // Más reciente = mayor peso
       
-      // Priorizar mensajes más recientes
-      score += (history.length - index) * 0.1;
+      // Priorizar mensajes más recientes (peso exponencial)
+      score += recencyWeight * 2;
       
       // Priorizar mensajes del usuario (más importantes para contexto)
       if (msg.role === 'user') {
-        score += 2;
-      }
-      
-      // Priorizar mensajes con misma emoción
-      if (currentEmotion && msgContent.includes(currentEmotion.toLowerCase())) {
         score += 3;
       }
       
-      // Priorizar mensajes con mismo tema
-      if (currentTopic && msgContent.includes(currentTopic.toLowerCase())) {
-        score += 2;
+      // Priorizar mensajes con misma emoción (muy relevante)
+      if (currentEmotion) {
+        const emotionMatch = msgContent.includes(currentEmotion.toLowerCase());
+        if (emotionMatch) {
+          score += 5;
+          // Bonus si la intensidad también es similar
+          const msgIntensity = msg.metadata?.context?.emotional?.intensity || 5;
+          if (Math.abs(msgIntensity - currentIntensity) <= 2) {
+            score += 2;
+          }
+        }
       }
       
-      // Priorizar mensajes con palabras clave similares
-      const matchingKeywords = keywords.filter(kw => msgContent.includes(kw)).length;
-      score += matchingKeywords * 0.5;
+      // Priorizar mensajes con mismo tema (muy relevante)
+      if (currentTopic) {
+        const topicMatch = msgContent.includes(currentTopic.toLowerCase());
+        if (topicMatch) {
+          score += 4;
+        }
+      }
       
-      // Priorizar mensajes que mencionan temas relacionados
-      const relatedTerms = ['trabajo', 'familia', 'relación', 'amigo', 'pareja', 'estudio', 'salud'];
-      const matchingTerms = relatedTerms.filter(term => 
-        currentContent.includes(term) && msgContent.includes(term)
-      ).length;
-      score += matchingTerms * 1.5;
+      // Priorizar mensajes con palabras clave similares (coincidencias exactas)
+      const matchingKeywords = keywords.filter(kw => {
+        const regex = new RegExp(`\\b${kw}\\b`, 'i');
+        return regex.test(msgContent);
+      }).length;
+      score += matchingKeywords * 1.5;
+      
+      // Priorizar mensajes que mencionan temas relacionados (coincidencias contextuales)
+      const relatedTerms = ['trabajo', 'familia', 'relación', 'amigo', 'pareja', 'estudio', 'salud', 'ansiedad', 'tristeza', 'enojo', 'miedo', 'alegría', 'problema', 'situación', 'momento', 'día', 'semana', 'tiempo'];
+      const matchingTerms = relatedTerms.filter(term => {
+        const currentHasTerm = new RegExp(`\\b${term}\\b`, 'i').test(currentContent);
+        const msgHasTerm = new RegExp(`\\b${term}\\b`, 'i').test(msgContent);
+        return currentHasTerm && msgHasTerm;
+      }).length;
+      score += matchingTerms * 2;
+      
+      // Penalizar mensajes muy cortos (menos informativos)
+      if (msgContent.length < 20) {
+        score -= 1;
+      }
+      
+      // Bonus para mensajes que son preguntas/respuestas relacionadas
+      if ((currentContent.includes('?') && msgContent.includes('?')) ||
+          (currentContent.includes('?') && msg.role === 'assistant')) {
+        score += 1.5;
+      }
       
       return { ...msg, _relevanceScore: score };
     });
@@ -670,7 +711,7 @@ class OpenAIService {
       })
       .map(({ _relevanceScore, ...msg }) => msg); // Remover score temporal
     
-    // Asegurar que siempre incluimos el último mensaje del asistente si existe
+    // Asegurar que siempre incluimos el último mensaje del asistente si existe (para coherencia)
     const lastAssistant = history.filter(m => m.role === 'assistant').pop();
     if (lastAssistant && !selected.some(m => m === lastAssistant)) {
       selected.pop(); // Remover el menos relevante
@@ -787,9 +828,10 @@ class OpenAIService {
    */
   generateConversationSummary(history, contexto) {
     if (!history || history.length === 0) {
-      return 'Esta es una conversación nueva.';
+      return 'Conversación nueva.';
     }
     
+    // OPTIMIZACIÓN: Resumen más conciso y eficiente
     const userMessages = history.filter(m => m.role === 'user');
     const assistantMessages = history.filter(m => m.role === 'assistant');
     
@@ -798,14 +840,8 @@ class OpenAIService {
     const currentEmotion = contexto.emotional?.mainEmotion || 'neutral';
     const intensity = contexto.emotional?.intensity || 5;
     
-    // Determinar progreso de la conversación
-    let progress = 'inicio';
-    if (history.length >= 4) {
-      progress = 'explorando';
-    }
-    if (history.length >= 8) {
-      progress = 'profundizando';
-    }
+    // Determinar progreso de la conversación (más conciso)
+    let progress = history.length >= 8 ? 'profundo' : history.length >= 4 ? 'explorando' : 'inicio';
     
     // Detectar si el usuario está repitiendo un tema
     const topics = userMessages.map(m => m.content?.toLowerCase() || '').join(' ');
@@ -819,16 +855,16 @@ class OpenAIService {
       .map(([word]) => word)
       .slice(0, 2);
     
-    let summary = `Conversación en fase: ${progress}. `;
-    summary += `Tema principal: ${currentTopic}. `;
-    summary += `Emoción: ${currentEmotion} (intensidad ${intensity}/10). `;
+    // OPTIMIZACIÓN: Resumen más conciso (máximo 100 caracteres)
+    let summary = `${progress}|${currentTopic}|${currentEmotion}(${intensity})`;
     
     if (repeatedTopics.length > 0) {
-      summary += `El usuario ha mencionado: ${repeatedTopics.join(', ')}. `;
+      summary += `|${repeatedTopics.join(',')}`;
     }
     
-    if (userMessages.length > 0 && assistantMessages.length > 0) {
-      summary += `Intercambios: ${Math.min(userMessages.length, assistantMessages.length)}.`;
+    // Limitar longitud total
+    if (summary.length > 100) {
+      summary = summary.substring(0, 97) + '...';
     }
     
     return summary;

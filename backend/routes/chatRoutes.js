@@ -312,7 +312,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
 
     logs.push(`[${Date.now() - startTime}ms] Iniciando procesamiento de mensaje`);
 
-    // 1. Crear mensaje del usuario
+    // 1. Crear y guardar mensaje del usuario INMEDIATAMENTE (optimización: no esperar análisis)
     userMessage = new Message({
       userId: req.user._id,
       content: content.trim(),
@@ -322,10 +322,13 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         status: 'sent'
       }
     });
+    // Guardar mensaje del usuario antes de análisis para respuesta más rápida
+    await userMessage.save();
+    logs.push(`[${Date.now() - startTime}ms] Mensaje del usuario guardado`);
 
     if (role === 'user') {
       try {
-        // 2. Obtener contexto e historial
+        // 2. Obtener contexto e historial (en paralelo)
         logs.push(`[${Date.now() - startTime}ms] Obteniendo contexto e historial`);
         // Optimización: Usar índices compuestos y proyección para reducir datos transferidos
         const [conversationHistory, userProfile, therapeuticRecord, user] = await Promise.all([
@@ -342,7 +345,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           User.findById(req.user._id).select('preferences').lean() // Obtener User para acceder a preferences.responseStyle
         ]);
 
-        // 3. Análisis completo del mensaje (en paralelo para optimizar rendimiento)
+        // 3. Análisis completo del mensaje (solo análisis críticos en paralelo)
         // Extraer patrones emocionales del historial para mejorar el análisis
         const previousEmotionalPatterns = conversationHistory
           .filter(msg => msg.metadata?.context?.emotional?.mainEmotion)
@@ -353,21 +356,44 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           }))
           .slice(-3); // Solo los últimos 3 para ajuste de tendencia
 
-        logs.push(`[${Date.now() - startTime}ms] Realizando análisis completo del mensaje`);
+        logs.push(`[${Date.now() - startTime}ms] Realizando análisis crítico del mensaje`);
         
-        // Análisis en paralelo: emocional, contextual y tendencias históricas
-        const [emotionalAnalysis, contextualAnalysis, trendAnalysis, crisisHistory] = await Promise.all([
+        // OPTIMIZACIÓN: Solo análisis críticos en paralelo (emocional y contextual)
+        // Análisis de tendencias y crisis se harán después si es necesario
+        const [emotionalAnalysis, contextualAnalysis] = await Promise.all([
           emotionalAnalyzer.analyzeEmotion(content, previousEmotionalPatterns),
-          contextAnalyzer.analizarMensaje(userMessage, conversationHistory),
-          crisisTrendAnalyzer.analyzeTrends(req.user._id).catch(err => {
-            console.error('[ChatRoutes] Error analizando tendencias:', err);
-            return null; // No bloquear si falla
-          }),
-          crisisTrendAnalyzer.getCrisisHistory(req.user._id, 30).catch(err => {
-            console.error('[ChatRoutes] Error obteniendo historial de crisis:', err);
-            return null; // No bloquear si falla
-          })
+          contextAnalyzer.analizarMensaje(userMessage, conversationHistory)
         ]);
+        
+        // OPTIMIZACIÓN: Análisis de tendencias y crisis solo si hay indicadores de riesgo
+        // Evaluar riesgo básico primero (más rápido)
+        const basicRiskLevel = evaluateSuicideRisk(
+          emotionalAnalysis, 
+          contextualAnalysis, 
+          content,
+          {
+            trendAnalysis: null, // No esperar análisis de tendencias
+            crisisHistory: null,
+            conversationContext: {}
+          }
+        );
+        
+        // Solo hacer análisis completo de tendencias/crisis si hay indicadores de riesgo
+        let trendAnalysis = null;
+        let crisisHistory = null;
+        if (basicRiskLevel !== 'LOW' || emotionalAnalysis?.intensity >= 7) {
+          logs.push(`[${Date.now() - startTime}ms] Indicadores de riesgo detectados, analizando tendencias`);
+          [trendAnalysis, crisisHistory] = await Promise.all([
+            crisisTrendAnalyzer.analyzeTrends(req.user._id).catch(err => {
+              console.error('[ChatRoutes] Error analizando tendencias:', err);
+              return null;
+            }),
+            crisisTrendAnalyzer.getCrisisHistory(req.user._id, 30).catch(err => {
+              console.error('[ChatRoutes] Error obteniendo historial de crisis:', err);
+              return null;
+            })
+          ]);
+        }
 
         // NUEVO: Agregar análisis emocional a la memoria de sesión
         sessionEmotionalMemory.addAnalysis(req.user._id.toString(), emotionalAnalysis);
@@ -387,14 +413,6 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         // NUEVO: Obtener tendencias de la sesión actual
         const sessionTrends = sessionEmotionalMemory.analyzeTrends(req.user._id.toString());
 
-        // Analizar contexto conversacional para detectar escaladas y patrones
-        const conversationContext = {
-          emotionalEscalation: detectEmotionalEscalation(conversationHistory, emotionalAnalysis),
-          helpRejected: detectHelpRejection(conversationHistory, content),
-          abruptToneChange: detectAbruptToneChange(conversationHistory, emotionalAnalysis),
-          frequencyAnalysis: analyzeMessageFrequency(conversationHistory, content),
-          silenceAfterNegative: detectSilenceAfterNegative(conversationHistory)
-        };
 
         // Evaluar riesgo de crisis/suicida con análisis mejorado
         const riskLevel = evaluateSuicideRisk(
@@ -426,11 +444,12 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           // Variable para almacenar resultado de alertas
           let alertResult = null;
 
-          // Enviar alertas a contactos de emergencia si el riesgo es MEDIUM o HIGH
-          // WARNING no envía alertas externas, solo intervención proactiva
-          if (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') {
+          // OPTIMIZACIÓN: Solo HIGH bloquea la respuesta, MEDIUM/WARNING se manejan después
+          let alertResult = null;
+          
+          if (riskLevel === 'HIGH') {
+            // HIGH es crítico, debe manejarse antes de responder
             try {
-              // Preparar opciones para el servicio de alertas
               const alertOptions = {
                 trendAnalysis,
                 metadata: {
@@ -450,71 +469,144 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               alertResult = await emergencyAlertService.sendEmergencyAlerts(
                 req.user._id,
                 riskLevel,
-                content, // No enviar el contenido completo por privacidad, pero se puede usar para contexto
+                content,
                 alertOptions
               );
               
               if (alertResult.sent) {
-                logs.push(`[${Date.now() - startTime}ms] 📧 Alertas enviadas a ${alertResult.successfulSends}/${alertResult.totalContacts} contactos de emergencia`);
-              } else {
-                logs.push(`[${Date.now() - startTime}ms] ⚠️ No se pudieron enviar alertas: ${alertResult.reason || 'Error desconocido'}`);
+                logs.push(`[${Date.now() - startTime}ms] 📧 Alertas HIGH enviadas a ${alertResult.successfulSends}/${alertResult.totalContacts} contactos`);
               }
-            } catch (error) {
-              // No bloquear el flujo principal si falla el envío de alertas
-              console.error('[ChatRoutes] Error enviando alertas de emergencia:', error);
-              logs.push(`[${Date.now() - startTime}ms] ❌ Error enviando alertas de emergencia: ${error.message}`);
-            }
-          } else if (riskLevel === 'WARNING') {
-            logs.push(`[${Date.now() - startTime}ms] ⚠️ Nivel WARNING detectado - Intervención preventiva activada`);
-            
-            // Enviar notificación push al usuario para nivel WARNING
-            try {
-              const user = await User.findById(req.user._id).select('+pushToken');
-              if (user && user.pushToken) {
-                await pushNotificationService.sendCrisisWarning(
-                  user.pushToken,
-                  {
-                    emotion: emotionalAnalysis?.mainEmotion,
-                    intensity: emotionalAnalysis?.intensity
-                  }
-                );
-                logs.push(`[${Date.now() - startTime}ms] 📱 Notificación push WARNING enviada al usuario`);
-              }
-            } catch (error) {
-              console.error('[ChatRoutes] Error enviando notificación push WARNING:', error);
-              // No bloquear el flujo principal
-            }
-          }
-
-          // Enviar notificación push al usuario para niveles MEDIUM y HIGH
-          if (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') {
-            try {
-              const user = await User.findById(req.user._id).select('+pushToken');
-              if (user && user.pushToken) {
-                if (riskLevel === 'MEDIUM') {
-                  await pushNotificationService.sendCrisisMedium(user.pushToken);
-                } else if (riskLevel === 'HIGH') {
+              
+              // Notificación push para HIGH
+              try {
+                const user = await User.findById(req.user._id).select('+pushToken');
+                if (user && user.pushToken) {
                   await pushNotificationService.sendCrisisHigh(user.pushToken);
+                  logs.push(`[${Date.now() - startTime}ms] 📱 Notificación push HIGH enviada`);
                 }
-                logs.push(`[${Date.now() - startTime}ms] 📱 Notificación push ${riskLevel} enviada al usuario`);
+              } catch (error) {
+                console.error('[ChatRoutes] Error enviando notificación push HIGH:', error);
               }
             } catch (error) {
-              console.error('[ChatRoutes] Error enviando notificación push:', error);
-              // No bloquear el flujo principal
+              console.error('[ChatRoutes] Error enviando alertas HIGH:', error);
+              logs.push(`[${Date.now() - startTime}ms] ❌ Error enviando alertas HIGH: ${error.message}`);
             }
           }
-
-          // Registrar evento de crisis para seguimiento (solo MEDIUM y HIGH)
-          // WARNING no crea evento de crisis, solo se registra en logs para monitoreo
+          
+          // MEDIUM y WARNING se manejan de forma asíncrona después de responder
+          // (se define la función pero se ejecuta después)
+          const handleNonCriticalCrisis = async () => {
+            if (riskLevel === 'MEDIUM') {
+              try {
+                const alertOptions = {
+                  trendAnalysis,
+                  metadata: {
+                    riskScore: calculateRiskScore(emotionalAnalysis, contextualAnalysis, content, {
+                      trendAnalysis,
+                      crisisHistory,
+                      conversationContext
+                    }),
+                    factors: extractRiskFactors(emotionalAnalysis, contextualAnalysis, content, {
+                      trendAnalysis,
+                      crisisHistory,
+                      conversationContext
+                    })
+                  }
+                };
+                
+                const mediumAlertResult = await emergencyAlertService.sendEmergencyAlerts(
+                  req.user._id,
+                  riskLevel,
+                  content,
+                  alertOptions
+                );
+                
+                const user = await User.findById(req.user._id).select('+pushToken');
+                if (user && user.pushToken) {
+                  await pushNotificationService.sendCrisisMedium(user.pushToken);
+                }
+                
+                // Crear evento de crisis
+                const crisisEvent = await CrisisEvent.create({
+                  userId: req.user._id,
+                  riskLevel,
+                  triggerMessage: {
+                    messageId: userMessage._id,
+                    contentPreview: content.substring(0, 200),
+                    emotionalAnalysis: {
+                      mainEmotion: emotionalAnalysis?.mainEmotion,
+                      intensity: emotionalAnalysis?.intensity
+                    }
+                  },
+                  trendAnalysis: trendAnalysis ? {
+                    rapidDecline: trendAnalysis.trends?.rapidDecline || false,
+                    sustainedLow: trendAnalysis.trends?.sustainedLow || false,
+                    isolation: trendAnalysis.trends?.isolation || false,
+                    escalation: trendAnalysis.trends?.escalation || false,
+                    warnings: trendAnalysis.warnings || []
+                  } : undefined,
+                  crisisHistory: crisisHistory ? {
+                    totalCrises: crisisHistory.totalCrises || 0,
+                    recentCrises: crisisHistory.recentCrises || 0
+                  } : undefined,
+                  alerts: mediumAlertResult ? {
+                    sent: mediumAlertResult.sent || false,
+                    sentAt: mediumAlertResult.sent ? new Date() : undefined,
+                    contactsNotified: mediumAlertResult.successfulSends || 0,
+                    channels: {
+                      email: mediumAlertResult.successfulEmails > 0 || false,
+                      whatsapp: mediumAlertResult.successfulWhatsApp > 0 || false
+                    }
+                  } : undefined,
+                  metadata: {
+                    riskScore: calculateRiskScore(emotionalAnalysis, contextualAnalysis, content, {
+                      trendAnalysis,
+                      crisisHistory,
+                      conversationContext
+                    }),
+                    factors: extractRiskFactors(emotionalAnalysis, contextualAnalysis, content, {
+                      trendAnalysis,
+                      crisisHistory,
+                      conversationContext
+                    }),
+                    protectiveFactors: extractProtectiveFactors(emotionalAnalysis, content)
+                  }
+                });
+                
+                if (crisisEvent && mediumAlertResult?.sent) {
+                  await crisisFollowUpService.scheduleFollowUps(crisisEvent._id, riskLevel);
+                }
+              } catch (error) {
+                console.error('[ChatRoutes] Error manejando crisis MEDIUM:', error);
+              }
+            } else if (riskLevel === 'WARNING') {
+              try {
+                const user = await User.findById(req.user._id).select('+pushToken');
+                if (user && user.pushToken) {
+                  await pushNotificationService.sendCrisisWarning(
+                    user.pushToken,
+                    {
+                      emotion: emotionalAnalysis?.mainEmotion,
+                      intensity: emotionalAnalysis?.intensity
+                    }
+                  );
+                }
+              } catch (error) {
+                console.error('[ChatRoutes] Error manejando crisis WARNING:', error);
+              }
+            }
+          };
+          
+          // Crear evento de crisis para HIGH (síncrono porque es crítico)
           let crisisEvent = null;
-          if (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') {
+          if (riskLevel === 'HIGH') {
             try {
               crisisEvent = await CrisisEvent.create({
                 userId: req.user._id,
                 riskLevel,
                 triggerMessage: {
                   messageId: userMessage._id,
-                  contentPreview: content.substring(0, 200), // Solo preview
+                  contentPreview: content.substring(0, 200),
                   emotionalAnalysis: {
                     mainEmotion: emotionalAnalysis?.mainEmotion,
                     intensity: emotionalAnalysis?.intensity
@@ -554,46 +646,24 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   protectiveFactors: extractProtectiveFactors(emotionalAnalysis, content)
                 }
               });
-
-              // Si se enviaron alertas y tenemos el crisisEvent, actualizar los registros de alerta con el crisisEventId
-              if (crisisEvent && alertResult && alertResult.sent) {
-                // Actualizar las alertas recientes con el crisisEventId
-                // Esto se hace de forma asíncrona para no bloquear
-                setTimeout(async () => {
-                  try {
-                    await EmergencyAlert.updateMany(
-                      {
-                        userId: req.user._id,
-                        crisisEventId: null,
-                        sentAt: { $gte: new Date(Date.now() - 60000) } // Último minuto
-                      },
-                      { $set: { crisisEventId: crisisEvent._id } }
-                    );
-                  } catch (error) {
-                    console.error('[ChatRoutes] Error actualizando crisisEventId en alertas:', error);
-                  }
-                }, 1000);
+              
+              if (crisisEvent && alertResult?.sent) {
+                await crisisFollowUpService.scheduleFollowUps(crisisEvent._id, riskLevel);
               }
-
-              // Programar seguimientos automáticos solo para MEDIUM y HIGH
-              await crisisFollowUpService.scheduleFollowUps(crisisEvent._id, riskLevel);
-
-              logs.push(`[${Date.now() - startTime}ms] 📝 Evento de crisis registrado: ${crisisEvent._id}`);
             } catch (error) {
-              // No bloquear el flujo principal si falla el registro
-              console.error('[ChatRoutes] Error registrando evento de crisis:', error);
-              logs.push(`[${Date.now() - startTime}ms] ⚠️ Error registrando evento de crisis: ${error.message}`);
+              console.error('[ChatRoutes] Error registrando evento de crisis HIGH:', error);
             }
-          } else if (riskLevel === 'WARNING') {
-            // WARNING solo se registra en logs, no crea evento de crisis
-            logs.push(`[${Date.now() - startTime}ms] 📊 WARNING detectado pero no se crea evento de crisis (solo monitoreo)`);
+          }
+          
+          // Ejecutar manejo de crisis no críticas después de responder (asíncrono)
+          if (riskLevel === 'MEDIUM' || riskLevel === 'WARNING') {
+            handleNonCriticalCrisis().catch(err => {
+              console.error('[ChatRoutes] Error en manejo asíncrono de crisis:', err);
+            });
           }
         }
 
-        // 4. Guardar mensaje del usuario primero
-        await userMessage.save();
-
-        // 5. Generar respuesta usando el análisis ya realizado
+        // 4. Generar respuesta usando el análisis ya realizado (mensaje ya guardado arriba)
         // Preparar historial de conversación en formato para el prompt
         const historialParaPrompt = conversationHistory
           .slice(0, HISTORY_LIMITS.MESSAGES_IN_PROMPT) // Últimos N mensajes (ya están ordenados descendente)
@@ -700,30 +770,47 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           }).catch(() => {})
         ]).catch(() => {}); // Ignorar errores en operaciones no críticas
 
-        // NUEVO: Registrar métrica de generación de respuesta
+        // OPTIMIZACIÓN: Generar sugerencias solo cuando sea apropiado (no en cada mensaje)
         const responseTime = Date.now() - startTime;
+        
+        // Determinar si debemos mostrar sugerencias basado en criterios inteligentes
+        const shouldShowSuggestions = shouldShowActionSuggestions(
+          emotionalAnalysis,
+          contextualAnalysis,
+          conversationHistory,
+          req.user._id
+        );
+        
+        // Generar sugerencias solo si es apropiado
+        let formattedSuggestions = [];
+        if (shouldShowSuggestions) {
+          try {
+            const actionSuggestions = actionSuggestionService.generateSuggestions(
+              emotionalAnalysis,
+              contextualAnalysis
+            );
+            formattedSuggestions = actionSuggestionService.formatSuggestions(actionSuggestions);
+            
+            // Registrar métricas de sugerencias
+            if (actionSuggestions.length > 0) {
+              actionSuggestions.forEach(suggestion => {
+                metricsService.recordMetric('action_suggestion', {
+                  action: 'generate',
+                  suggestionType: suggestion
+                }, req.user._id.toString()).catch(() => {});
+              });
+            }
+          } catch (error) {
+            console.error('[ChatRoutes] Error generando sugerencias:', error);
+          }
+        }
+        
+        // Registrar métrica de tiempo de respuesta de forma asíncrona
         metricsService.recordMetric('response_generation', {
           time: responseTime,
           success: true
-        }, req.user._id.toString());
-
-        // NUEVO: Generar sugerencias de acciones
-        const actionSuggestions = actionSuggestionService.generateSuggestions(
-          emotionalAnalysis,
-          contextualAnalysis
-        );
-        const formattedSuggestions = actionSuggestionService.formatSuggestions(actionSuggestions);
+        }, req.user._id.toString()).catch(() => {});
         
-        // NUEVO: Registrar métrica de sugerencias generadas
-        if (actionSuggestions.length > 0) {
-          actionSuggestions.forEach(suggestion => {
-            metricsService.recordMetric('action_suggestion', {
-              action: 'generate',
-              suggestionType: suggestion
-            }, req.user._id.toString());
-          });
-        }
-
         logs.push(`[${Date.now() - startTime}ms] Proceso completado exitosamente`);
         
         return res.status(201).json({
@@ -733,9 +820,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             emotional: emotionalAnalysis,
             contextual: contextualAnalysis
           },
-          // NUEVO: Agregar sugerencias de acciones
-          suggestions: formattedSuggestions,
-          processingTime: Date.now() - startTime
+          suggestions: formattedSuggestions, // Solo se incluyen si es apropiado
+          processingTime: responseTime
         });
 
       } catch (error) {
@@ -1160,6 +1246,85 @@ function analyzeMessageFrequency(conversationHistory, currentContent) {
   }
 
   return { veryFrequent, frequencyChange: false };
+}
+
+/**
+ * Determina si se deben mostrar sugerencias de acciones basado en criterios inteligentes
+ * @param {Object} emotionalAnalysis - Análisis emocional actual
+ * @param {Object} contextualAnalysis - Análisis contextual actual
+ * @param {Array} conversationHistory - Historial de la conversación
+ * @param {string} userId - ID del usuario
+ * @returns {boolean} true si se deben mostrar sugerencias
+ */
+function shouldShowActionSuggestions(emotionalAnalysis, contextualAnalysis, conversationHistory, userId) {
+  // CRITERIOS CRÍTICOS: Siempre mostrar sugerencias si se cumplen estos casos
+  
+  // 1. Mostrar si la intensidad emocional es alta (>= 7)
+  const intensity = emotionalAnalysis?.intensity || 5;
+  if (intensity >= 7) {
+    return true;
+  }
+  
+  // 2. Mostrar si hay intención de crisis o urgencia alta
+  if (contextualAnalysis?.intencion?.tipo === 'CRISIS' || 
+      contextualAnalysis?.urgencia === 'alta' ||
+      emotionalAnalysis?.requiresAttention) {
+    return true;
+  }
+  
+  // 3. Mostrar si hay cambio significativo de emoción (de positiva/neutral a negativa)
+  if (conversationHistory && conversationHistory.length >= 2) {
+    const recentUserMessages = conversationHistory
+      .filter(msg => msg.role === 'user' && msg.metadata?.context?.emotional?.mainEmotion)
+      .slice(0, 2);
+    
+    if (recentUserMessages.length >= 1) {
+      const previousEmotion = recentUserMessages[0].metadata.context.emotional.mainEmotion;
+      const currentEmotion = emotionalAnalysis?.mainEmotion;
+      const positiveEmotions = ['alegria', 'esperanza', 'neutral'];
+      const negativeEmotions = ['tristeza', 'ansiedad', 'enojo', 'miedo', 'verguenza', 'culpa'];
+      
+      // Cambio de positiva/neutral a negativa
+      if (positiveEmotions.includes(previousEmotion) && negativeEmotions.includes(currentEmotion)) {
+        return true;
+      }
+    }
+  }
+  
+  // CRITERIOS DE FILTRADO: No mostrar si se cumplen estos casos
+  
+  // 4. No mostrar si el usuario rechazó ayuda recientemente
+  if (conversationHistory && conversationHistory.length > 0) {
+    const recentContent = conversationHistory
+      .filter(msg => msg.role === 'user')
+      .slice(0, 3)
+      .map(msg => msg.content?.toLowerCase() || '')
+      .join(' ');
+    
+    const rejectionPatterns = /(?:no.*quiero.*ayuda|no.*necesito.*ayuda|no.*me.*ayudes|déjame.*solo|no.*me.*importa|no.*sirve.*de.*nada|no.*gracias)/i;
+    if (rejectionPatterns.test(recentContent)) {
+      return false;
+    }
+  }
+  
+  // 5. Mostrar solo cada 3-4 mensajes aproximadamente (evitar repetición excesiva)
+  // Esto solo aplica si no se cumplieron los criterios críticos arriba
+  if (conversationHistory && conversationHistory.length > 0) {
+    const userMessages = conversationHistory.filter(msg => msg.role === 'user');
+    const totalUserMessages = userMessages.length;
+    
+    // Mostrar sugerencias aproximadamente cada 3-4 mensajes
+    // Usar un rango para evitar ser demasiado predecible
+    const shouldShowByCount = totalUserMessages > 0 && 
+      (totalUserMessages % 3 === 0 || totalUserMessages % 4 === 0);
+    
+    if (!shouldShowByCount) {
+      return false;
+    }
+  }
+  
+  // 6. Por defecto, no mostrar (evitar repetición)
+  return false;
 }
 
 /**
