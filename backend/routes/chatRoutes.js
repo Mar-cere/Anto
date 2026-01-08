@@ -811,25 +811,34 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         if (cognitiveDistortions && cognitiveDistortions.length > 0) {
           Promise.resolve().then(async () => {
             try {
+              // SEGURIDAD: Validar y sanitizar datos antes de guardar
+              const safeDistortions = cognitiveDistortions
+                .filter(d => d && d.type && d.name && typeof d.confidence === 'number')
+                .map(d => ({
+                  type: String(d.type).substring(0, 50),
+                  name: String(d.name).substring(0, 200),
+                  confidence: Math.max(0, Math.min(1, d.confidence || 0)),
+                  matchedPattern: d.matchedPattern ? String(d.matchedPattern).substring(0, 200) : undefined
+                }));
+              
               const report = new CognitiveDistortionReport({
                 userId: req.user._id,
                 messageId: userMessage._id,
-                messageContent: content.substring(0, 2000), // Limitar longitud
-                distortions: cognitiveDistortions.map(d => ({
-                  type: d.type,
-                  name: d.name,
-                  confidence: d.confidence,
-                  matchedPattern: d.matchedPattern
-                })),
-                primaryDistortion: primaryDistortion ? {
-                  type: primaryDistortion.type,
-                  name: primaryDistortion.name,
-                  confidence: primaryDistortion.confidence,
-                  intervention: distortionIntervention?.intervention
+                messageContent: content ? String(content).substring(0, 2000).trim() : undefined,
+                distortions: safeDistortions,
+                primaryDistortion: primaryDistortion && safeDistortions.length > 0 ? {
+                  type: String(primaryDistortion.type || '').substring(0, 50),
+                  name: String(primaryDistortion.name || '').substring(0, 200),
+                  confidence: Math.max(0, Math.min(1, primaryDistortion.confidence || 0)),
+                  intervention: distortionIntervention?.intervention 
+                    ? String(distortionIntervention.intervention).substring(0, 500) 
+                    : undefined
                 } : null,
                 emotionalContext: {
-                  emotion: emotionalAnalysis?.mainEmotion,
-                  intensity: emotionalAnalysis?.intensity
+                  emotion: emotionalAnalysis?.mainEmotion ? String(emotionalAnalysis.mainEmotion).substring(0, 50) : undefined,
+                  intensity: typeof emotionalAnalysis?.intensity === 'number' 
+                    ? Math.max(0, Math.min(10, emotionalAnalysis.intensity)) 
+                    : undefined
                 }
               });
               await report.save();

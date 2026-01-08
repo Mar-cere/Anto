@@ -187,11 +187,18 @@ class CognitiveDistortionDetector {
    * @returns {Array} Array de distorsiones detectadas con detalles
    */
   detectDistortions(content) {
-    if (!content || typeof content !== 'string') {
+    // SEGURIDAD: Validar input
+    if (!content || typeof content !== 'string' || content.trim().length === 0) {
       return [];
     }
 
-    const contentLower = content.toLowerCase();
+    // SEGURIDAD: Limitar longitud para evitar ReDoS
+    const maxLength = 10000;
+    const safeContent = content.length > maxLength 
+      ? content.substring(0, maxLength) 
+      : content;
+
+    const contentLower = safeContent.toLowerCase();
     const detectedDistortions = [];
 
     // Verificar cada distorsión

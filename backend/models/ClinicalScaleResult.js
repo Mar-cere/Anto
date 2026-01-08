@@ -70,10 +70,13 @@ const clinicalScaleResultSchema = new mongoose.Schema({
   // Notas adicionales
   notes: {
     type: String,
-    maxlength: 1000
+    maxlength: 1000,
+    trim: true
   }
 }, {
-  timestamps: true // Crea createdAt y updatedAt automáticamente
+  timestamps: true, // Crea createdAt y updatedAt automáticamente
+  // SEGURIDAD: No incluir __v en respuestas JSON
+  versionKey: false
 });
 
 // Índices para optimizar consultas
@@ -82,14 +85,39 @@ clinicalScaleResultSchema.index({ userId: 1, createdAt: -1 });
 
 // Método para obtener el progreso del usuario
 clinicalScaleResultSchema.statics.getUserProgress = async function(userId, scaleType, days = 30) {
-  const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  // SEGURIDAD: Validar inputs
+  if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+    return {
+      hasData: false,
+      trend: 'no_data',
+      improvement: null,
+      results: []
+    };
+  }
+  
+  if (!scaleType || !['PHQ9', 'GAD7'].includes(scaleType)) {
+    return {
+      hasData: false,
+      trend: 'no_data',
+      improvement: null,
+      results: []
+    };
+  }
+  
+  // SEGURIDAD: Validar y limitar días
+  const validatedDays = Math.min(Math.max(parseInt(days) || 30, 1), 365);
+  const startDate = new Date(Date.now() - validatedDays * 24 * 60 * 60 * 1000);
+  
+  // SEGURIDAD: Usar ObjectId validado
+  const validUserId = new mongoose.Types.ObjectId(userId);
   
   const results = await this.find({
-    userId,
+    userId: validUserId,
     scaleType,
     createdAt: { $gte: startDate }
   })
   .sort({ createdAt: 1 })
+  .limit(100) // Limitar resultados para evitar sobrecarga
   .lean();
   
   if (results.length === 0) {

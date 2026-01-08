@@ -14,6 +14,8 @@ import TherapeuticTechniqueUsage from './TherapeuticTechniqueUsage.js';
 import Transaction from './Transaction.js';
 import Subscription from './Subscription.js';
 import Journal from './Journal.js';
+import ClinicalScaleResult from './ClinicalScaleResult.js';
+import CognitiveDistortionReport from './CognitiveDistortionReport.js';
 
 // Validar que todos los modelos estén correctamente exportados
 const models = {
@@ -33,6 +35,8 @@ const models = {
   Transaction,
   Subscription,
   Journal,
+  ClinicalScaleResult,
+  CognitiveDistortionReport,
 };
 
 // Verificar que cada modelo sea válido
@@ -59,6 +63,8 @@ export {
   Transaction,
   Subscription,
   Journal,
+  ClinicalScaleResult,
+  CognitiveDistortionReport,
 };
 
 export default models; 

@@ -7,6 +7,7 @@
 
 import Message from '../models/Message.js';
 import mongoose from 'mongoose';
+import logger from '../utils/logger.js';
 
 class ClinicalScalesService {
   constructor() {
@@ -183,7 +184,7 @@ class ClinicalScalesService {
       
       return null;
     } catch (error) {
-      console.error('[ClinicalScalesService] Error determinando escala:', error);
+      logger.error('[ClinicalScalesService] Error determinando escala:', error);
       return null;
     }
   }
@@ -223,7 +224,7 @@ class ClinicalScalesService {
       
       return evaluations;
     } catch (error) {
-      console.error('[ClinicalScalesService] Error obteniendo evaluaciones:', error);
+      logger.error('[ClinicalScalesService] Error obteniendo evaluaciones:', error);
       return { PHQ9: null, GAD7: null };
     }
   }
@@ -249,18 +250,37 @@ class ClinicalScalesService {
    * @returns {Object} Escala completada con puntuaciones por ítem
    */
   completeScaleAutomatically(content, scaleName, emotionalAnalysis = null, contextualAnalysis = null, recentHistory = []) {
-    const scale = this.scales[scaleName];
-    if (!scale) return null;
+    // SEGURIDAD: Validar inputs
+    if (!content || typeof content !== 'string' || content.trim().length === 0) {
+      return null;
+    }
     
-    const contentLower = content.toLowerCase();
+    if (!scaleName || !this.scales[scaleName]) {
+      return null;
+    }
+    
+    // SEGURIDAD: Limitar longitud de contenido
+    const maxContentLength = 5000;
+    const truncatedContent = content.length > maxContentLength 
+      ? content.substring(0, maxContentLength) 
+      : content;
+    
+    const scale = this.scales[scaleName];
+    const contentLower = truncatedContent.toLowerCase();
     const itemScores = [];
     let totalScore = 0;
     
+    // SEGURIDAD: Validar y limitar historial
+    const safeHistory = Array.isArray(recentHistory) 
+      ? recentHistory.slice(0, 3).filter(m => m && typeof m.content === 'string')
+      : [];
+    
     // Combinar contenido actual con historial reciente para mejor análisis
-    const combinedContent = [content, ...recentHistory.map(m => m.content || '').slice(0, 3)]
-      .filter(c => c)
+    const combinedContent = [truncatedContent, ...safeHistory.map(m => (m.content || '').substring(0, 1000))]
+      .filter(c => c && c.trim().length > 0)
       .join(' ')
-      .toLowerCase();
+      .toLowerCase()
+      .substring(0, 10000); // Limitar longitud total
     
     // Patrones mejorados para cada síntoma con múltiples variaciones
     const symptomPatterns = {

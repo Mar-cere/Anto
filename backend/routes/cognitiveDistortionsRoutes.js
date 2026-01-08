@@ -3,16 +3,28 @@
  * Endpoints para consultar reportes de distorsiones cognitivas detectadas
  */
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { authenticateToken as protect } from '../middleware/auth.js';
 import { requireActiveSubscription } from '../middleware/checkSubscription.js';
 import CognitiveDistortionReport from '../models/CognitiveDistortionReport.js';
 import cognitiveDistortionDetector from '../services/cognitiveDistortionDetector.js';
+import logger from '../utils/logger.js';
 
 const router = express.Router();
 
-// Todas las rutas requieren autenticación
+// Rate limiting para distorsiones cognitivas
+const distortionsLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 50, // Máximo 50 requests por 15 minutos
+  message: 'Demasiadas solicitudes. Por favor, espera un momento.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Todas las rutas requieren autenticación y rate limiting
 router.use(protect);
 router.use(requireActiveSubscription(true));
+router.use(distortionsLimiter);
 
 /**
  * GET /api/cognitive-distortions/types
@@ -32,10 +44,10 @@ router.get('/types', async (req, res) => {
     
     res.json({ distortions });
   } catch (error) {
-    console.error('[CognitiveDistortionsRoutes] Error obteniendo tipos:', error);
+    logger.error('[CognitiveDistortionsRoutes] Error obteniendo tipos:', error);
     res.status(500).json({
       message: 'Error al obtener tipos de distorsiones',
-      error: error.message
+      error: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : error.message
     });
   }
 });
@@ -47,6 +59,14 @@ router.get('/types', async (req, res) => {
 router.get('/:type', async (req, res) => {
   try {
     const { type } = req.params;
+    
+    // SEGURIDAD: Validar que el tipo solo contenga caracteres permitidos
+    if (!type || !/^[a-z_]+$/.test(type)) {
+      return res.status(400).json({
+        message: 'Tipo de distorsión inválido'
+      });
+    }
+    
     const distortionInfo = cognitiveDistortionDetector.getDistortionInfo(type);
     
     if (!distortionInfo) {
@@ -57,10 +77,10 @@ router.get('/:type', async (req, res) => {
     
     res.json({ distortion: distortionInfo });
   } catch (error) {
-    console.error('[CognitiveDistortionsRoutes] Error obteniendo distorsión:', error);
+    logger.error('[CognitiveDistortionsRoutes] Error obteniendo distorsión:', error);
     res.status(500).json({
       message: 'Error al obtener información de distorsión',
-      error: error.message
+      error: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : error.message
     });
   }
 });
@@ -74,17 +94,29 @@ router.get('/reports', async (req, res) => {
     const { limit = 20, page = 1, type } = req.query;
     const userId = req.user._id;
     
+    // SEGURIDAD: Validar y limitar parámetros
+    const validatedLimit = Math.min(Math.max(parseInt(limit) || 20, 1), 100); // Entre 1 y 100
+    const validatedPage = Math.max(parseInt(page) || 1, 1); // Mínimo 1
+    
     const query = { userId };
     if (type) {
-      query['primaryDistortion.type'] = type;
+      // SEGURIDAD: Validar que el tipo de distorsión existe
+      const allDistortions = cognitiveDistortionDetector.getAllDistortions();
+      if (allDistortions[type]) {
+        query['primaryDistortion.type'] = type;
+      } else {
+        return res.status(400).json({
+          message: 'Tipo de distorsión inválido'
+        });
+      }
     }
     
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const skip = (validatedPage - 1) * validatedLimit;
     
     const [reports, total] = await Promise.all([
       CognitiveDistortionReport.find(query)
         .sort({ detectedAt: -1 })
-        .limit(parseInt(limit))
+        .limit(validatedLimit)
         .skip(skip)
         .select('-__v')
         .lean(),
@@ -95,16 +127,16 @@ router.get('/reports', async (req, res) => {
       reports,
       pagination: {
         total,
-        page: parseInt(page),
-        pages: Math.ceil(total / parseInt(limit)),
-        limit: parseInt(limit)
+        page: validatedPage,
+        pages: Math.ceil(total / validatedLimit),
+        limit: validatedLimit
       }
     });
   } catch (error) {
-    console.error('[CognitiveDistortionsRoutes] Error obteniendo reportes:', error);
+    logger.error('[CognitiveDistortionsRoutes] Error obteniendo reportes:', error);
     res.status(500).json({
       message: 'Error al obtener reportes',
-      error: error.message
+      error: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : error.message
     });
   }
 });
@@ -118,17 +150,20 @@ router.get('/statistics', async (req, res) => {
     const { days = 30 } = req.query;
     const userId = req.user._id;
     
+    // SEGURIDAD: Validar y limitar días
+    const validatedDays = Math.min(Math.max(parseInt(days) || 30, 1), 365); // Entre 1 y 365 días
+    
     const statistics = await CognitiveDistortionReport.getUserStatistics(
       userId,
-      parseInt(days)
+      validatedDays
     );
     
     res.json({ statistics });
   } catch (error) {
-    console.error('[CognitiveDistortionsRoutes] Error obteniendo estadísticas:', error);
+    logger.error('[CognitiveDistortionsRoutes] Error obteniendo estadísticas:', error);
     res.status(500).json({
       message: 'Error al obtener estadísticas',
-      error: error.message
+      error: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : error.message
     });
   }
 });
@@ -142,8 +177,11 @@ router.get('/summary', async (req, res) => {
     const { days = 30 } = req.query;
     const userId = req.user._id;
     
+    // SEGURIDAD: Validar y limitar días
+    const validatedDays = Math.min(Math.max(parseInt(days) || 30, 1), 365); // Entre 1 y 365 días
+    
     const [statistics, recentReports, allTypes] = await Promise.all([
-      CognitiveDistortionReport.getUserStatistics(userId, parseInt(days)),
+      CognitiveDistortionReport.getUserStatistics(userId, validatedDays),
       CognitiveDistortionReport.find({ userId })
         .sort({ detectedAt: -1 })
         .limit(10)
@@ -170,10 +208,10 @@ router.get('/summary', async (req, res) => {
       recentReports
     });
   } catch (error) {
-    console.error('[CognitiveDistortionsRoutes] Error obteniendo resumen:', error);
+    logger.error('[CognitiveDistortionsRoutes] Error obteniendo resumen:', error);
     res.status(500).json({
       message: 'Error al obtener resumen',
-      error: error.message
+      error: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : error.message
     });
   }
 });

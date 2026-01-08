@@ -21,7 +21,8 @@ const cognitiveDistortionReportSchema = new mongoose.Schema({
   // Contenido del mensaje (para contexto)
   messageContent: {
     type: String,
-    maxlength: 2000
+    maxlength: 2000,
+    trim: true
   },
   // Distorsiones detectadas
   distortions: [{
@@ -62,7 +63,9 @@ const cognitiveDistortionReportSchema = new mongoose.Schema({
     index: true
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  // SEGURIDAD: No incluir __v en respuestas JSON
+  versionKey: false
 });
 
 // Índices para optimizar consultas
@@ -71,12 +74,29 @@ cognitiveDistortionReportSchema.index({ userId: 1, 'primaryDistortion.type': 1 }
 
 // Método estático para obtener estadísticas de distorsiones
 cognitiveDistortionReportSchema.statics.getUserStatistics = async function(userId, days = 30) {
-  const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  // SEGURIDAD: Validar inputs
+  if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+    return {
+      totalDetections: 0,
+      mostCommon: [],
+      frequencyByType: {},
+      trend: 'no_data'
+    };
+  }
+  
+  // SEGURIDAD: Validar y limitar días
+  const validatedDays = Math.min(Math.max(parseInt(days) || 30, 1), 365);
+  const startDate = new Date(Date.now() - validatedDays * 24 * 60 * 60 * 1000);
+  
+  // SEGURIDAD: Usar ObjectId validado
+  const validUserId = new mongoose.Types.ObjectId(userId);
   
   const reports = await this.find({
-    userId,
+    userId: validUserId,
     detectedAt: { $gte: startDate }
-  }).lean();
+  })
+  .limit(1000) // Limitar resultados para evitar sobrecarga
+  .lean();
   
   if (reports.length === 0) {
     return {
