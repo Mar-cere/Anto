@@ -206,7 +206,8 @@ class OpenAIService {
           therapeutic: registroTerapeutico,
           memory: memoriaContextual,
           history: contexto.history || [], // Incluir historial de conversación si está disponible
-          currentMessage: contenidoNormalizado // Para selección inteligente de historial
+          currentMessage: contenidoNormalizado, // Para selección inteligente de historial
+          currentConversationId: contexto.currentConversationId // NUEVO: Para referencias a conversaciones anteriores
         }
       );
 
@@ -565,7 +566,11 @@ class OpenAIService {
       implicitNeeds: contexto.contextual?.implicitNeeds || null,
       strengths: contexto.contextual?.strengths || null,
       selfEfficacy: contexto.contextual?.selfEfficacy || null,
-      socialSupport: contexto.contextual?.socialSupport || null
+      socialSupport: contexto.contextual?.socialSupport || null,
+      // NUEVO: Distorsiones cognitivas
+      cognitiveDistortions: contexto.contextual?.cognitiveDistortions || null,
+      primaryDistortion: contexto.contextual?.primaryDistortion || null,
+      distortionIntervention: contexto.contextual?.distortionIntervention || null
     });
 
     // OPTIMIZACIÓN: Agregar resumen del contexto conversacional (más conciso)
@@ -589,11 +594,14 @@ class OpenAIService {
     }
 
     // OPTIMIZACIÓN: Agregar contexto de largo plazo solo si es relevante (más conciso)
-    const longTermContext = await this.generateLongTermContext(mensaje.userId, contexto);
+    const longTermContext = await this.generateLongTermContext(mensaje.userId, {
+      ...contexto,
+      currentConversationId: contexto.currentConversationId || mensaje.conversationId
+    });
     if (longTermContext && longTermContext.length > 0) {
-      // Limitar contexto de largo plazo a 150 caracteres
-      const conciseLongTerm = longTermContext.length > 150
-        ? longTermContext.substring(0, 147) + '...'
+      // Limitar contexto de largo plazo a 200 caracteres (aumentado para incluir referencias)
+      const conciseLongTerm = longTermContext.length > 200
+        ? longTermContext.substring(0, 197) + '...'
         : longTermContext;
       systemMessage += `\nMEMORIA: ${conciseLongTerm}`;
     }
@@ -745,6 +753,86 @@ class OpenAIService {
       if (!userProfile) return null;
 
       const contextParts = [];
+      
+      // NUEVO: Información de género para tratamiento personalizado
+      const gender = userProfile.personalInfo?.gender;
+      const pronouns = userProfile.personalInfo?.preferredPronouns;
+      if (gender && gender !== 'prefer_not_to_say' && gender !== null) {
+        const genderMap = {
+          'male': 'masculino',
+          'female': 'femenino',
+          'other': 'otro'
+        };
+        const pronounMap = {
+          'he/him': 'él',
+          'she/her': 'ella',
+          'they/them': 'elle',
+          'other': 'otro'
+        };
+        const genderText = genderMap[gender] || gender;
+        const pronounText = pronouns ? pronounMap[pronouns] || pronouns : null;
+        if (pronounText) {
+          contextParts.push(`Tratamiento: Usa pronombres ${pronounText} (${genderText}).`);
+        } else {
+          contextParts.push(`Tratamiento: Género ${genderText}.`);
+        }
+      } else {
+        // Si no hay género definido, usar lenguaje neutro
+        contextParts.push(`Tratamiento: Usa lenguaje neutro si no conoces el género. Evita asumir género.`);
+      }
+      
+      // NUEVO: Referencias a conversaciones anteriores (última conversación previa)
+      try {
+        const Message = (await import('../models/Message.js')).default;
+        const Conversation = (await import('../models/Conversation.js')).default;
+        
+        // Obtener la conversación actual
+        const currentConversationId = contexto.currentConversationId;
+        
+        if (currentConversationId) {
+          // Buscar la última conversación previa (diferente a la actual)
+          const previousConversation = await Conversation.findOne({
+            userId,
+            _id: { $ne: currentConversationId }
+          })
+          .sort({ updatedAt: -1 })
+          .lean();
+          
+          if (previousConversation) {
+            // Obtener el último mensaje del usuario de esa conversación anterior
+            const lastUserMessage = await Message.findOne({
+              conversationId: previousConversation._id,
+              role: 'user'
+            })
+            .select('content metadata.context.emotional createdAt')
+            .sort({ createdAt: -1 })
+            .lean();
+            
+            if (lastUserMessage && lastUserMessage.metadata?.context?.emotional) {
+              const prevEmotion = lastUserMessage.metadata.context.emotional.mainEmotion;
+              const prevIntensity = lastUserMessage.metadata.context.emotional.intensity || 5;
+              const daysAgo = Math.floor((Date.now() - new Date(lastUserMessage.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+              
+              // Solo incluir si fue reciente (últimos 7 días) y había estado emocional negativo
+              if (daysAgo <= 7 && prevIntensity >= 5 && ['tristeza', 'ansiedad', 'enojo', 'miedo', 'verguenza', 'culpa'].includes(prevEmotion)) {
+                const emotionMap = {
+                  'tristeza': 'triste',
+                  'ansiedad': 'ansioso',
+                  'enojo': 'enojado',
+                  'miedo': 'asustado',
+                  'verguenza': 'avergonzado',
+                  'culpa': 'culpable'
+                };
+                const emotionText = emotionMap[prevEmotion] || prevEmotion;
+                contextParts.push(`Última conversación (hace ${daysAgo} día${daysAgo !== 1 ? 's' : ''}): estaba ${emotionText} (intensidad ${prevIntensity}/10). Puedes hacer referencia natural si es relevante.`);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('[OpenAIService] Error obteniendo conversaciones anteriores:', error);
+        // Continuar sin referencias a conversaciones anteriores
+      }
 
       // Temas recurrentes
       const recurringTopics = [];

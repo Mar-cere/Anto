@@ -34,6 +34,19 @@ const userProfileSchema = new mongoose.Schema({
     unique: true,
     index: true
   },
+  // Información personal básica
+  personalInfo: {
+    gender: {
+      type: String,
+      enum: ['male', 'female', 'other', 'prefer_not_to_say', null],
+      default: null
+    },
+    preferredPronouns: {
+      type: String,
+      enum: ['he/him', 'she/her', 'they/them', 'other', null],
+      default: null
+    }
+  },
   // Patrones temporales de interacción
   timePatterns: {
     morningInteractions: { type: TimeInteractionSchema, default: () => ({}) },

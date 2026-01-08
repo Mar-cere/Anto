@@ -8,6 +8,7 @@ import { detectImplicitNeeds } from '../constants/implicitNeeds.js';
 import { identifyStrengths } from '../constants/strengthsAndResources.js';
 import { evaluateSelfEfficacy } from '../constants/selfEfficacy.js';
 import { assessSocialSupport } from '../constants/socialSupport.js';
+import cognitiveDistortionDetector from './cognitiveDistortionDetector.js';
 
 class ContextAnalyzer {
   constructor() {
@@ -109,6 +110,11 @@ class ContextAnalyzer {
       // NUEVO: Evaluar apoyo social
       const socialSupport = assessSocialSupport(content);
       
+      // NUEVO: Detectar distorsiones cognitivas avanzadas
+      const cognitiveDistortions = cognitiveDistortionDetector.detectDistortions(content);
+      const primaryDistortion = cognitiveDistortionDetector.getPrimaryDistortion(content);
+      const distortionIntervention = cognitiveDistortionDetector.generateIntervention(cognitiveDistortions);
+      
       return {
         intencion: contenidoActual.intencion,
         tema: contenidoActual.tema,
@@ -125,7 +131,11 @@ class ContextAnalyzer {
         implicitNeeds: implicitNeeds.length > 0 ? implicitNeeds : null,
         strengths: strengths.length > 0 ? strengths : null,
         selfEfficacy: selfEfficacy || null,
-        socialSupport: socialSupport || null
+        socialSupport: socialSupport || null,
+        // NUEVO: Distorsiones cognitivas
+        cognitiveDistortions: cognitiveDistortions.length > 0 ? cognitiveDistortions : null,
+        primaryDistortion: primaryDistortion || null,
+        distortionIntervention: distortionIntervention || null
       };
     } catch (error) {
       console.error('[ContextAnalyzer] Error en análisis de mensaje:', error, mensaje);

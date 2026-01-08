@@ -733,12 +733,6 @@ const ChatScreen = () => {
         styles.messageContainer,
         isUser ? styles.userMessageContainer : styles.botMessageContainer
       ]}>
-        {!isUser && (
-          <Image 
-            source={ANTO_AVATAR} 
-            style={styles.messageAvatar}
-          />
-        )}
         <View style={[
           styles.messageBubble,
           isUser ? styles.userBubble : styles.botBubble,

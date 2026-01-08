@@ -798,7 +798,9 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
     subtype = null,
     topic = 'general',
     sessionTrends = null,
-    responseStyle = 'balanced'
+    responseStyle = 'balanced',
+    gender = null, // NUEVO: Género del usuario
+    pronouns = null // NUEVO: Pronombres preferidos
   } = context;
 
   // Obtener directrices específicas
@@ -878,6 +880,15 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
     prompt += `Recaída detectada. `;
   }
   
+  // NUEVO: Agregar información sobre distorsiones cognitivas detectadas
+  if (context.primaryDistortion && intensity >= 6) {
+    const distortion = context.primaryDistortion;
+    prompt += `Distorsión cognitiva detectada: ${distortion.name}. `;
+    if (context.distortionIntervention?.intervention) {
+      prompt += `Intervención sugerida: ${context.distortionIntervention.intervention} `;
+    }
+  }
+  
   // Omitir información menos crítica para reducir reasoning y mejorar velocidad
   // (tendencias, fortalezas, autoeficacia, apoyo social, tema, estilo solo si es crítico)
   
@@ -940,6 +951,30 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
 
   // Estructura de respuesta
   prompt += responseStructure;
+  
+  // NUEVO: Instrucciones sobre género y pronombres
+  if (gender && gender !== 'prefer_not_to_say' && gender !== null) {
+    const genderMap = {
+      'male': 'masculino',
+      'female': 'femenino',
+      'other': 'otro'
+    };
+    const pronounMap = {
+      'he/him': 'él',
+      'she/her': 'ella',
+      'they/them': 'elle',
+      'other': 'otro'
+    };
+    const genderText = genderMap[gender] || gender;
+    const pronounText = pronouns ? pronounMap[pronouns] || pronouns : null;
+    if (pronounText) {
+      prompt += `\n\nTRATAMIENTO: Usa pronombres ${pronounText} (género ${genderText}). No asumas otro género.`;
+    } else {
+      prompt += `\n\nTRATAMIENTO: Género ${genderText}. Usa pronombres apropiados para este género.`;
+    }
+  } else {
+    prompt += `\n\nTRATAMIENTO: Si no conoces el género del usuario, usa lenguaje neutro. NO asumas género. Evita usar "ella" o "él" sin saberlo.`;
+  }
 
   return prompt;
 };

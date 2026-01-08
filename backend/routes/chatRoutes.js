@@ -17,6 +17,9 @@ import {
 } from '../models/index.js';
 import User from '../models/User.js';
 import actionSuggestionService from '../services/actionSuggestionService.js';
+import clinicalScalesService from '../services/clinicalScalesService.js';
+import CognitiveDistortionReport from '../models/CognitiveDistortionReport.js';
+import ClinicalScaleResult from '../models/ClinicalScaleResult.js';
 import crisisFollowUpService from '../services/crisisFollowUpService.js';
 import crisisTrendAnalyzer from '../services/crisisTrendAnalyzer.js';
 import emergencyAlertService from '../services/emergencyAlertService.js';
@@ -31,6 +34,7 @@ import metricsService from '../services/metricsService.js';
 import paymentAuditService from '../services/paymentAuditService.js';
 import pushNotificationService from '../services/pushNotificationService.js';
 import sessionEmotionalMemory from '../services/sessionEmotionalMemory.js';
+import therapeuticProtocolService from '../services/therapeuticProtocolService.js';
 import { cursorPaginate } from '../utils/pagination.js';
 
 const router = express.Router();
@@ -182,20 +186,24 @@ router.post('/conversations', protect, requireActiveSubscription(true), async (r
     const conversation = new Conversation({ userId });
     await conversation.save();
 
-    // Generar y guardar mensaje de bienvenida personalizado
+    // Generar y guardar mensaje de bienvenida personalizado (siempre se envía primero)
     const userPreferences = await userProfileService.getPersonalizedPrompt(userId);
     const welcomeMessage = new Message({
       userId,
       content: await openaiService.generarSaludoPersonalizado(userPreferences),
-      role: 'system',
+      role: 'assistant', // Cambiar a 'assistant' para que se muestre como mensaje del chat
       conversationId: conversation._id,
       metadata: {
         context: {
           preferences: userPreferences
-        }
+        },
+        status: 'sent'
       }
     });
     await welcomeMessage.save();
+    
+    // Actualizar lastMessage de la conversación
+    await Conversation.findByIdAndUpdate(conversation._id, { lastMessage: welcomeMessage._id });
 
     res.status(201).json({
       conversationId: conversation._id.toString(),
@@ -344,6 +352,9 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           TherapeuticRecord.findOne({ userId: req.user._id }).lean(), // Usar lean() para mejor rendimiento
           User.findById(req.user._id).select('preferences').lean() // Obtener User para acceder a preferences.responseStyle
         ]);
+        
+        // NUEVO: Pasar conversationId al contexto para referencias a conversaciones anteriores
+        const currentConversationId = conversationId;
 
         // 3. Análisis completo del mensaje (solo análisis críticos en paralelo)
         // Extraer patrones emocionales del historial para mejorar el análisis
@@ -698,6 +709,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             contextual: contextualAnalysis,
             profile: combinedProfile,
             therapeutic: therapeuticRecord,
+            currentConversationId: conversationId, // NUEVO: Para referencias a conversaciones anteriores
             // Agregar información de crisis si se detecta
             crisis: isCrisis ? {
               riskLevel,
@@ -778,6 +790,114 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         // OPTIMIZACIÓN: Generar sugerencias solo cuando sea apropiado (no en cada mensaje)
         const responseTime = Date.now() - startTime;
         
+        // NUEVO: Verificar si se debe administrar una escala clínica
+        let scaleSuggestion = null;
+        try {
+          scaleSuggestion = await clinicalScalesService.shouldAdministerScale(
+            emotionalAnalysis,
+            contextualAnalysis,
+            req.user._id
+          );
+        } catch (error) {
+          console.error('[ChatRoutes] Error verificando escalas clínicas:', error);
+        }
+        
+        // NUEVO: Detectar distorsiones cognitivas (ya integrado en contextualAnalysis)
+        const cognitiveDistortions = contextualAnalysis?.cognitiveDistortions || null;
+        const primaryDistortion = contextualAnalysis?.primaryDistortion || null;
+        const distortionIntervention = contextualAnalysis?.distortionIntervention || null;
+        
+        // NUEVO: Guardar distorsiones cognitivas detectadas para reportes (asíncrono)
+        if (cognitiveDistortions && cognitiveDistortions.length > 0) {
+          Promise.resolve().then(async () => {
+            try {
+              const report = new CognitiveDistortionReport({
+                userId: req.user._id,
+                messageId: userMessage._id,
+                messageContent: content.substring(0, 2000), // Limitar longitud
+                distortions: cognitiveDistortions.map(d => ({
+                  type: d.type,
+                  name: d.name,
+                  confidence: d.confidence,
+                  matchedPattern: d.matchedPattern
+                })),
+                primaryDistortion: primaryDistortion ? {
+                  type: primaryDistortion.type,
+                  name: primaryDistortion.name,
+                  confidence: primaryDistortion.confidence,
+                  intervention: distortionIntervention?.intervention
+                } : null,
+                emotionalContext: {
+                  emotion: emotionalAnalysis?.mainEmotion,
+                  intensity: emotionalAnalysis?.intensity
+                }
+              });
+              await report.save();
+            } catch (error) {
+              console.error('[ChatRoutes] Error guardando reporte de distorsiones:', error);
+            }
+          }).catch(() => {});
+        }
+        
+        // NUEVO: Completar automáticamente la escala si se detecta
+        let automaticScaleResult = null;
+        if (scaleSuggestion) {
+          try {
+            // Obtener historial reciente para mejor análisis
+            const recentMessages = conversationHistory
+              .filter(msg => msg.role === 'user')
+              .slice(0, 3)
+              .map(msg => ({ content: msg.content || '' }));
+            
+            // Completar escala automáticamente (síncrono para incluir en respuesta)
+            const completedScale = clinicalScalesService.completeScaleAutomatically(
+              content,
+              scaleSuggestion.scale,
+              emotionalAnalysis,
+              contextualAnalysis,
+              recentMessages
+            );
+            
+            if (completedScale && completedScale.totalScore >= 0) {
+              // Guardar resultado de forma asíncrona (no bloquea la respuesta)
+              Promise.resolve().then(async () => {
+                try {
+                  const result = new ClinicalScaleResult({
+                    userId: req.user._id,
+                    scaleType: scaleSuggestion.scale,
+                    totalScore: completedScale.totalScore,
+                    itemScores: completedScale.itemScores,
+                    interpretation: completedScale.interpretation,
+                    administrationMethod: 'automatic',
+                    notes: `Completada automáticamente basada en análisis del mensaje. Confianza: ${(completedScale.confidence * 100).toFixed(0)}%`
+                  });
+                  await result.save();
+                  logs.push(`[${Date.now() - startTime}ms] ✅ Escala ${scaleSuggestion.scale} completada automáticamente: ${completedScale.totalScore} puntos`);
+                } catch (error) {
+                  console.error('[ChatRoutes] Error guardando escala automática:', error);
+                }
+              }).catch(() => {});
+              
+              // Incluir resultado en la respuesta
+              automaticScaleResult = {
+                completed: true,
+                totalScore: completedScale.totalScore,
+                interpretation: completedScale.interpretation,
+                confidence: completedScale.confidence,
+                itemScores: completedScale.itemScores.map(item => ({
+                  itemId: item.itemId,
+                  question: item.question,
+                  score: item.score
+                }))
+              };
+              
+              logs.push(`[${Date.now() - startTime}ms] 📊 Escala ${scaleSuggestion.scale} completada automáticamente: ${completedScale.totalScore} puntos (${completedScale.interpretation.severity})`);
+            }
+          } catch (error) {
+            console.error('[ChatRoutes] Error completando escala automáticamente:', error);
+          }
+        }
+        
         // Determinar si debemos mostrar sugerencias basado en criterios inteligentes
         const shouldShowSuggestions = shouldShowActionSuggestions(
           emotionalAnalysis,
@@ -826,6 +946,17 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             contextual: contextualAnalysis
           },
           suggestions: formattedSuggestions, // Solo se incluyen si es apropiado
+          // NUEVO: Información de escalas clínicas y distorsiones cognitivas
+          clinicalScale: scaleSuggestion ? {
+            ...scaleSuggestion,
+            suggestion: clinicalScalesService.generateScaleSuggestion(scaleSuggestion.scale, scaleSuggestion.reason),
+            automaticResult: automaticScaleResult || null
+          } : null,
+          cognitiveDistortions: cognitiveDistortions && cognitiveDistortions.length > 0 ? {
+            detected: cognitiveDistortions,
+            primary: primaryDistortion,
+            intervention: distortionIntervention
+          } : null,
           processingTime: responseTime
         });
 
