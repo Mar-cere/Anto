@@ -413,6 +413,14 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         // NUEVO: Obtener tendencias de la sesión actual
         const sessionTrends = sessionEmotionalMemory.analyzeTrends(req.user._id.toString());
 
+        // Analizar contexto conversacional para detectar escaladas y patrones
+        const conversationContext = {
+          emotionalEscalation: detectEmotionalEscalation(conversationHistory, emotionalAnalysis),
+          helpRejected: detectHelpRejection(conversationHistory, content),
+          abruptToneChange: detectAbruptToneChange(conversationHistory, emotionalAnalysis),
+          frequencyAnalysis: analyzeMessageFrequency(conversationHistory, content),
+          silenceAfterNegative: detectSilenceAfterNegative(conversationHistory)
+        };
 
         // Evaluar riesgo de crisis/suicida con análisis mejorado
         const riskLevel = evaluateSuicideRisk(
