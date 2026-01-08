@@ -137,8 +137,27 @@ router.get('/conversations/:conversationId', protect, validarConversationId, val
       Message.countDocuments(query)
     ]);
 
+    // Eliminar duplicados basándose en _id y contenido para evitar mensajes repetidos
+    const uniqueMessages = messages.reduce((acc, message) => {
+      const messageId = message._id?.toString();
+      if (!messageId) {
+        return acc;
+      }
+      
+      // Verificar si ya existe un mensaje con este ID
+      const exists = acc.some(
+        msg => msg._id?.toString() === messageId
+      );
+      
+      if (!exists) {
+        acc.push(message);
+      }
+      
+      return acc;
+    }, []);
+
     res.json({
-      messages: messages.reverse(),
+      messages: uniqueMessages.reverse(),
       pagination: {
         total,
         page: parseInt(page),

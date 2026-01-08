@@ -1,6 +1,6 @@
 {
   "name": "proyectoanto-backend",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Backend API para AntoApp - Aplicación de asistente AI terapéutico",
   "type": "module",
   "main": "server.js",

@@ -170,11 +170,11 @@ export const GENERIC_RESPONSE_PATTERNS = [
 // ========== PATRONES DE COHERENCIA EMOCIONAL ==========
 // Patrones regex para validar que la respuesta es coherente con la emoción detectada
 export const EMOTIONAL_COHERENCE_PATTERNS = {
-  tristeza: /(acompaño|entiendo tu tristeza|momento difícil|comprendo tu dolor)/i,
-  ansiedad: /(respira|un paso a la vez|manejar esta ansiedad|calma|tranquilo)/i,
+  tristeza: /(entiendo tu tristeza|momento difícil|comprendo tu dolor|estoy aquí|reconozco|es válido|es normal)/i,
+  ansiedad: /(respira|un paso a la vez|manejar esta ansiedad|calma|tranquilo|entiendo tu preocupación)/i,
   enojo: /(frustración|válido sentirse así|entiendo tu molestia|comprendo tu enojo)/i,
   alegria: /(me alegro|comparto tu alegría|genial|feliz por ti)/i,
-  miedo: /(entiendo tu miedo|es normal tener miedo|acompaño en este miedo)/i,
+  miedo: /(entiendo tu miedo|es normal tener miedo|estoy aquí|reconozco que esto te genera temor)/i,
   verguenza: /(entiendo tu vergüenza|es normal sentirse así|no estás solo)/i,
   culpa: /(entiendo tu culpa|es normal sentirse culpable|hablémoslo)/i,
   esperanza: /(me alegra tu esperanza|es bueno tener esperanza|sigue adelante)/i,
@@ -189,7 +189,9 @@ export const EMOTIONAL_COHERENCE_PHRASES = {
     'comprendo tu tristeza',
     'entiendo que te sientas así',
     'es normal sentirse triste',
-    'acompaño en este momento difícil'
+    'estoy aquí contigo',
+    'reconozco lo difícil que es esto',
+    'veo que estás pasando por un momento complicado'
   ],
   ansiedad: [
     'entiendo tu preocupación',
@@ -212,8 +214,9 @@ export const EMOTIONAL_COHERENCE_PHRASES = {
   miedo: [
     'entiendo tu miedo',
     'es normal tener miedo',
-    'acompaño en este miedo',
-    'hablemos de lo que te asusta'
+    'estoy aquí contigo',
+    'hablemos de lo que te asusta',
+    'reconozco que esto te genera temor'
   ],
   verguenza: [
     'entiendo tu vergüenza',
@@ -718,7 +721,7 @@ export const PROMPT_TEMPLATES = {
   STYLE_GUIDELINES: `Estilo {style}: {tone}. {validation}`,
 
   // Reglas generales (optimizadas para GPT-5 Mini - simplificadas para reducir reasoning)
-  GENERAL_RULES: `Responde breve (1-2 oraciones, máx {maxWords} palabras). Natural y empático. Si emoción NEGATIVA, usa "lamento escuchar eso", "entiendo", NUNCA "es genial".`,
+  GENERAL_RULES: `Responde breve (1-2 oraciones, máx {maxWords} palabras). Natural y empático. Si emoción NEGATIVA, varía tus frases empáticas: "entiendo", "comprendo", "reconozco", "veo que", "es válido", "es normal". Evita repetir las mismas frases. NUNCA uses "es genial" o frases positivas con emociones negativas.`,
 
   // Estructura de respuesta (optimizada - simplificada)
   RESPONSE_STRUCTURE: `Responde: 1) Reconocimiento empático (15 palabras). 2) Validación/apoyo (15 palabras, opcional). 3) Pregunta (10 palabras, opcional). Total: 1-2 oraciones.`

@@ -33,7 +33,7 @@ export const initializeSocket = async () => {
     
     if (!conversationId) {
       try {
-        conversationId = await createConversation();
+      conversationId = await createConversation();
         console.log('Conversación creada durante inicialización:', conversationId);
       } catch (createError) {
         console.error('Error al crear conversación durante inicialización:', createError);

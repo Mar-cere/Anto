@@ -284,6 +284,12 @@ class OpenAIService {
       }
 
       let respuestaGenerada = completion.choices[0]?.message?.content?.trim();
+      
+      // Capitalizar la primera letra de la respuesta
+      if (respuestaGenerada && respuestaGenerada.length > 0) {
+        respuestaGenerada = respuestaGenerada.charAt(0).toUpperCase() + respuestaGenerada.slice(1);
+      }
+      
       const finishReason = completion.choices[0]?.finish_reason;
       const usage = completion.usage || {};
       const reasoningTokens = usage.completion_tokens_details?.reasoning_tokens || 0;
@@ -491,92 +497,8 @@ class OpenAIService {
         console.warn('[OpenAI] Error en análisis de sentimiento (asíncrono):', err.message);
       });
 
-      // 8. Actualizar Registros
-      // Normalizar objeto emocional para asegurar compatibilidad con el esquema
-      const emocionalNormalizado = this.normalizarAnalisisEmocional(analisisEmocional);
-      
-      // Primero crear y guardar el mensaje del asistente
-      let assistantMessage;
-      try {
-        assistantMessage = new Message({
-          userId: mensaje.userId,
-          conversationId: mensaje.conversationId,
-          content: respuestaFinal,
-          role: 'assistant',
-          metadata: {
-            timestamp: new Date(),
-            type: 'text',
-            status: 'sent',
-            context: {
-              emotional: emocionalNormalizado,
-              contextual: analisisContextual,
-              therapeutic: selectedTechnique ? {
-                technique: selectedTechnique.name,
-                type: selectedTechnique.type,
-                category: selectedTechnique.category
-              } : undefined
-            }
-          }
-        });
-        await assistantMessage.save();
-      } catch (saveError) {
-        // Si hay error de validación del enum, intentar guardar sin el campo emocional problemático
-        if (saveError.name === 'ValidationError' && saveError.errors?.['metadata.context.emotional.mainEmotion']) {
-          console.warn('⚠️ Error de validación de enum emocional. Guardando sin contexto emocional:', saveError.message);
-          assistantMessage = new Message({
-            userId: mensaje.userId,
-            conversationId: mensaje.conversationId,
-            content: respuestaFinal,
-            role: 'assistant',
-            metadata: {
-              timestamp: new Date(),
-              type: 'text',
-              status: 'sent',
-              context: {
-                emotional: {
-                  mainEmotion: 'neutral',
-                  intensity: emocionalNormalizado.intensity || DEFAULT_VALUES.INTENSITY
-                },
-                contextual: analisisContextual,
-                therapeutic: selectedTechnique ? {
-                  technique: selectedTechnique.name,
-                  type: selectedTechnique.type,
-                  category: selectedTechnique.category
-                } : undefined
-              }
-            }
-          });
-          await assistantMessage.save();
-        } else {
-          throw saveError;
-        }
-      }
-
-      // Actualizar registros de forma asíncrona (no bloquea la respuesta al usuario)
-      // Solo actualizar lastMessage de forma síncrona, el resto puede ser asíncrono
-      Promise.all([
-        Conversation.findByIdAndUpdate(mensaje.conversationId, { 
-          lastMessage: assistantMessage._id 
-        }).catch(() => {}),
-        this.actualizarRegistros(mensaje.userId, {
-          mensaje,
-          respuesta: respuestaFinal,
-          analisis: {
-            emotional: analisisEmocional,
-            contextual: analisisContextual
-          }
-        }).catch(() => {}),
-        progressTracker.trackProgress(mensaje.userId, {
-          message: mensaje,
-          response: respuestaFinal,
-          analysis: analisisEmocional
-        }).catch(() => {}),
-        goalTracker.updateProgress(mensaje.userId, {
-          message: mensaje,
-          response: respuestaFinal,
-          context: analisisContextual
-        }).catch(() => {})
-      ]).catch(() => {}); // Ignorar errores en operaciones no críticas
+      // NOTA: El guardado del mensaje del asistente se hace en chatRoutes.js
+      // para evitar duplicados. Aquí solo retornamos la respuesta y el contexto.
 
       return {
         content: respuestaFinal,
@@ -1117,6 +1039,11 @@ class OpenAIService {
     if (caracteresFinal > THRESHOLDS.MAX_CHARACTERS_RESPONSE || palabrasFinal > THRESHOLDS.MAX_WORDS_RESPONSE) {
       console.log(`📏 Respuesta aún demasiado larga después de ajustes (${caracteresFinal} caracteres, ${palabrasFinal} palabras). Reduciendo nuevamente...`);
       respuestaMejorada = this.reducirRespuesta(respuestaMejorada);
+    }
+    
+    // Asegurar que la respuesta siempre comience con mayúscula
+    if (respuestaMejorada && respuestaMejorada.length > 0) {
+      respuestaMejorada = respuestaMejorada.charAt(0).toUpperCase() + respuestaMejorada.slice(1);
     }
     
     return respuestaMejorada;
@@ -1706,8 +1633,8 @@ class OpenAIService {
     // Respuestas empáticas básicas según emoción
     const fallbackResponses = {
       tristeza: intensity >= 7 
-        ? 'Lamento escuchar que te sientes así. Estoy aquí para acompañarte. ¿Quieres contarme más sobre lo que estás sintiendo?'
-        : 'Entiendo que te sientes triste. Es válido sentirse así. ¿Hay algo específico que te gustaría compartir?',
+        ? 'Entiendo que estás pasando por un momento difícil. Estoy aquí contigo. ¿Quieres contarme más sobre lo que estás sintiendo?'
+        : 'Comprendo que te sientes triste. Es válido sentirse así. ¿Hay algo específico que te gustaría compartir?',
       ansiedad: intensity >= 7
         ? 'Veo que estás experimentando mucha ansiedad. Respira profundo. Estoy aquí contigo. ¿Qué te está generando esta ansiedad?'
         : 'Entiendo que sientes ansiedad. Es normal sentirse así a veces. ¿Quieres hablar sobre qué la está causando?',

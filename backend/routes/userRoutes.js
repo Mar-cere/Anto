@@ -336,13 +336,15 @@ router.put('/me', authenticateToken, validateUserObjectId, updateProfileLimiter,
     // Actualizar campos (merge para objetos anidados)
     Object.keys(value).forEach(key => {
       if (key === 'preferences') {
+        // Asegurar que user.preferences existe antes de hacer el spread
         user.preferences = {
-          ...user.preferences,
+          ...(user.preferences || {}),
           ...value.preferences
         };
       } else if (key === 'notificationPreferences') {
+        // Asegurar que user.notificationPreferences existe antes de hacer el spread
         user.notificationPreferences = {
-          ...user.notificationPreferences,
+          ...(user.notificationPreferences || {}),
           ...value.notificationPreferences
         };
       } else {

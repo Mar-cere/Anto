@@ -62,7 +62,7 @@ try {
 } catch (error) {
   console.warn('[Mailer] ⚠️ Error configurando SendGrid:', error.message);
   if (!USE_GMAIL_API) {
-    console.log('[Mailer] ⚠️ Usando Gmail SMTP como fallback');
+  console.log('[Mailer] ⚠️ Usando Gmail SMTP como fallback');
   }
 }
 
@@ -285,7 +285,164 @@ const emailTemplates = {
         ${getEmailFooter()}
       </div>
     `
-  })
+  }),
+
+  /**
+   * Plantilla para correo de re-engagement (usuarios inactivos)
+   */
+  reEngagementEmail: (username, daysInactive) => {
+    const tips = [
+      '💬 Comparte cómo te sientes hoy, sin filtros ni juicios',
+      '🧘 Pide ejercicios de relajación o mindfulness',
+      '📝 Reflexiona sobre tus emociones y pensamientos',
+      '🎯 Establece pequeñas metas de bienestar diarias',
+      '💭 Revisa tus conversaciones anteriores para ver tu progreso'
+    ];
+    const randomTip = tips[Math.floor(Math.random() * tips.length)];
+
+    return {
+      subject: `Te extrañamos en ${APP_NAME} 💙`,
+      html: `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: ${EMAIL_COLORS.BACKGROUND};">
+          ${getEmailHeader(`¡Hola ${username}! 👋`)}
+          
+          <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); margin: -24px 24px 24px 24px; padding: 32px 24px; border-radius: 18px; box-shadow: 0 8px 32px rgba(31,38,135,0.10); border: 1px solid rgba(255,255,255,0.18);">
+            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.1rem; line-height: 1.7; margin-bottom: 28px; text-align: center;">
+              Hace ${daysInactive} día${daysInactive > 1 ? 's' : ''} que no nos vemos. Sabemos que la vida puede ser ajetreada, pero queremos recordarte que ${APP_NAME} está aquí para ti cuando lo necesites.
+            </p>
+
+            <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM}15 0%, ${EMAIL_COLORS.ACCENT}15 100%); padding: 24px; border-radius: 12px; margin: 24px 0; border-left: 4px solid ${EMAIL_COLORS.ACCENT};">
+              <h3 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 0; text-align: center;">💡 Tip del día:</h3>
+              <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; text-align: center; margin-bottom: 0;">
+                ${randomTip}
+              </p>
+            </div>
+
+            <h2 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 20px; text-align: center;">¿Por qué volver a ${APP_NAME}?</h2>
+            <ul style="color: #333; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+              <li><b>Espacio seguro:</b> Un lugar sin juicios donde puedes expresarte libremente</li>
+              <li><b>Disponible 24/7:</b> ${APP_NAME} está siempre disponible cuando lo necesites</li>
+              <li><b>Progreso continuo:</b> Cada conversación te ayuda a conocerte mejor</li>
+              <li><b>Herramientas prácticas:</b> Ejercicios, recordatorios y técnicas de bienestar</li>
+            </ul>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; margin-bottom: 16px;">
+                <strong>¿Listo para continuar tu camino de bienestar?</strong>
+              </p>
+              <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.95rem;">
+                Abre la app y comparte cómo te sientes hoy. No importa si es algo grande o pequeño, ${APP_NAME} está aquí para escucharte.
+              </p>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+              <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 14px;">
+                Recuerda: El bienestar emocional es un proceso continuo. Cada pequeño paso cuenta. 💙
+              </p>
+            </div>
+          </div>
+
+          ${getEmailFooter()}
+        </div>
+      `
+    };
+  },
+
+  /**
+   * Plantilla para correo de tips semanales
+   */
+  weeklyTipsEmail: (username, weekNumber) => {
+    const weeklyTips = [
+      {
+        title: '🌱 Practica la Gratitud',
+        content: 'Cada día, antes de dormir, escribe 3 cosas por las que estás agradecido. Esto ayuda a entrenar tu mente para enfocarse en lo positivo.',
+        action: 'Pregúntale a Anto: "¿Cómo puedo practicar la gratitud diariamente?"'
+      },
+      {
+        title: '🧘 Técnica de Respiración 4-7-8',
+        content: 'Inhala por 4 segundos, mantén por 7, exhala por 8. Repite 4 veces. Esta técnica ayuda a reducir la ansiedad y mejorar el sueño.',
+        action: 'Pregúntale a Anto: "Enséñame ejercicios de respiración para relajarme"'
+      },
+      {
+        title: '💭 Diario de Emociones',
+        content: 'Escribe cómo te sientes cada día. Identificar tus emociones es el primer paso para gestionarlas mejor.',
+        action: 'Pregúntale a Anto: "¿Cómo puedo llevar un diario de emociones?"'
+      },
+      {
+        title: '🌿 Mindfulness de 5 Minutos',
+        content: 'Dedica 5 minutos al día a estar presente. Observa tu respiración, los sonidos alrededor, las sensaciones de tu cuerpo.',
+        action: 'Pregúntale a Anto: "Guíame en una meditación de 5 minutos"'
+      },
+      {
+        title: '🤝 Autocompasión',
+        content: 'Trátate con la misma amabilidad que tratarías a un buen amigo. Recuerda que está bien no estar bien todo el tiempo.',
+        action: 'Pregúntale a Anto: "¿Cómo puedo practicar la autocompasión?"'
+      },
+      {
+        title: '🎯 Pequeñas Metas',
+        content: 'Establece metas pequeñas y alcanzables. Celebrar pequeños logros construye confianza y motivación.',
+        action: 'Pregúntale a Anto: "Ayúdame a establecer metas realistas de bienestar"'
+      },
+      {
+        title: '🌙 Higiene del Sueño',
+        content: 'Mantén un horario regular de sueño. Evita pantallas 1 hora antes de dormir y crea una rutina relajante.',
+        action: 'Pregúntale a Anto: "¿Cómo puedo mejorar mi calidad de sueño?"'
+      }
+    ];
+
+    const tip = weeklyTips[weekNumber % weeklyTips.length];
+
+    return {
+      subject: `💡 Tip Semanal de ${APP_NAME} - Semana ${weekNumber}`,
+      html: `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: ${EMAIL_COLORS.BACKGROUND};">
+          ${getEmailHeader(`Tip Semanal - Semana ${weekNumber} 💡`)}
+          
+          <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); margin: -24px 24px 24px 24px; padding: 32px 24px; border-radius: 18px; box-shadow: 0 8px 32px rgba(31,38,135,0.10); border: 1px solid rgba(255,255,255,0.18);">
+            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.1rem; line-height: 1.7; margin-bottom: 28px; text-align: center;">
+              ¡Hola ${username}! 👋<br>
+              Esta semana queremos compartir contigo un tip especial para tu bienestar emocional.
+            </p>
+
+            <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM}15 0%, ${EMAIL_COLORS.ACCENT}15 100%); padding: 28px; border-radius: 14px; margin: 24px 0; border-left: 5px solid ${EMAIL_COLORS.ACCENT};">
+              <h2 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 0; font-size: 1.5rem; text-align: center;">
+                ${tip.title}
+              </h2>
+              <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; line-height: 1.7; text-align: center; margin-bottom: 20px;">
+                ${tip.content}
+              </p>
+              <div style="background: white; padding: 16px; border-radius: 8px; margin-top: 16px; border: 2px dashed ${EMAIL_COLORS.ACCENT}40;">
+                <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.95rem; margin: 0; text-align: center; font-style: italic;">
+                  <strong>💬 Prueba esto:</strong><br>
+                  ${tip.action}
+                </p>
+              </div>
+            </div>
+
+            <h3 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 28px; text-align: center;">✨ Recuerda</h3>
+            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1rem; line-height: 1.6; text-align: center;">
+              El bienestar emocional es un viaje, no un destino. Cada pequeño paso que das hacia tu bienestar es valioso. ${APP_NAME} está aquí para acompañarte en cada paso del camino.
+            </p>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.95rem;">
+                ¿Tienes preguntas o quieres profundizar en este tema?<br>
+                Abre la app y conversa con ${APP_NAME}. Estamos aquí para ti. 💙
+              </p>
+            </div>
+
+            <div style="background: ${EMAIL_COLORS.PRIMARY_MEDIUM}10; padding: 20px; border-radius: 12px; margin-top: 24px; text-align: center;">
+              <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.9rem; margin: 0;">
+                <strong>📅 Próximo tip:</strong> Te enviaremos otro tip la próxima semana. ¡Mantente atento!
+              </p>
+            </div>
+          </div>
+
+          ${getEmailFooter()}
+        </div>
+      `
+    };
+  }
 };
 
 // Helper: enviar correo con SendGrid
@@ -539,6 +696,42 @@ const mailer = {
       return await sendEmail(to, template, 'Email personalizado');
     } catch (error) {
       console.error('[Mailer] ❌ Error al enviar email personalizado:', error.message);
+      return false;
+    }
+  },
+
+  /**
+   * Enviar correo de re-engagement (usuarios inactivos)
+   * @param {string} email - Email del destinatario
+   * @param {string} username - Nombre de usuario
+   * @param {number} daysInactive - Días de inactividad
+   * @returns {Promise<boolean>} true si se envió correctamente, false si falla (no crítico)
+   */
+  sendReEngagementEmail: async (email, username, daysInactive) => {
+    try {
+      const template = emailTemplates.reEngagementEmail(username, daysInactive);
+      return await sendEmail(email, template, 'Correo de re-engagement');
+    } catch (error) {
+      // No lanzamos el error para que no afecte otros procesos
+      console.error('[Mailer] ❌ Error al enviar correo de re-engagement (no crítico):', error.message);
+      return false;
+    }
+  },
+
+  /**
+   * Enviar correo de tips semanales
+   * @param {string} email - Email del destinatario
+   * @param {string} username - Nombre de usuario
+   * @param {number} weekNumber - Número de semana (para rotar tips)
+   * @returns {Promise<boolean>} true si se envió correctamente, false si falla (no crítico)
+   */
+  sendWeeklyTipsEmail: async (email, username, weekNumber = 1) => {
+    try {
+      const template = emailTemplates.weeklyTipsEmail(username, weekNumber);
+      return await sendEmail(email, template, 'Correo de tips semanales');
+    } catch (error) {
+      // No lanzamos el error para que no afecte otros procesos
+      console.error('[Mailer] ❌ Error al enviar correo de tips semanales (no crítico):', error.message);
       return false;
     }
   },

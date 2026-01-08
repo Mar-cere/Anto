@@ -370,16 +370,18 @@ const SettingsScreen = () => {
               const nextStyle = styles[nextIndex];
 
               try {
+                // Asegurar que user y preferences existan antes de hacer el spread
+                const currentPreferences = user?.preferences || {};
                 await api.put(ENDPOINTS.UPDATE_PROFILE, {
                   preferences: {
-                    ...user.preferences,
+                    ...currentPreferences,
                     responseStyle: nextStyle,
                   },
                 });
                 updateUserContext({
                   ...user,
                   preferences: {
-                    ...user.preferences,
+                    ...currentPreferences,
                     responseStyle: nextStyle,
                   },
                 });
