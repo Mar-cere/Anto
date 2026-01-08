@@ -1,6 +1,10 @@
 # 🧠 Anto App - Asistente AI Terapéutico
 
-**Anto** es una aplicación móvil de salud mental que utiliza inteligencia artificial para proporcionar apoyo terapéutico personalizado, análisis emocional avanzado, detección de crisis y herramientas de bienestar mental.
+**Versión 1.1.0** - Con Evaluación Clínica Profesional
+
+**Anto** es una aplicación móvil de salud mental que utiliza inteligencia artificial para proporcionar apoyo terapéutico personalizado, análisis emocional avanzado, detección de crisis y herramientas de bienestar mental. 
+
+**Nuevo en v1.1.0**: Escalas clínicas validadas (PHQ-9, GAD-7), detección avanzada de distorsiones cognitivas y protocolos terapéuticos estructurados basados en evidencia científica.
 
 ---
 
@@ -53,6 +57,8 @@
 - **Respuestas Personalizadas**: Contexto adaptado a tu historial y situación actual
 - **Técnicas Terapéuticas Adaptadas**: CBT, mindfulness, técnicas de respiración y más
 - **Memoria Contextual**: Recuerda conversaciones anteriores para continuidad
+- **Personalización de Género**: Respeta pronombres y género del usuario automáticamente
+- **Referencias Contextuales**: Hace referencias naturales a conversaciones anteriores cuando es relevante
 
 ### 🚨 Sistema de Detección de Crisis
 
@@ -69,6 +75,34 @@
 - **Técnicas Terapéuticas Interactivas**: Ejercicios guiados de relajación y mindfulness
 - **Dashboard de Progreso**: Visualiza tu evolución emocional y logros
 - **Estadísticas Personales**: Métricas detalladas de tu bienestar mental
+
+### 🏥 Evaluación Clínica Profesional (Nuevo en v1.1)
+
+- **Escalas Validadas Automáticas**: 
+  - **PHQ-9** (Depresión): Evaluación automática de síntomas depresivos
+  - **GAD-7** (Ansiedad): Evaluación automática de ansiedad generalizada
+  - Completado automático basado en análisis del mensaje
+  - Visualización de progreso con tendencias y mejoras
+  - Historial completo de evaluaciones
+
+- **Detección Avanzada de Distorsiones Cognitivas**:
+  - Detección automática de 15 tipos de distorsiones cognitivas
+  - Identificación de pensamientos todo-o-nada, catastrofismo, personalización, etc.
+  - Intervenciones específicas sugeridas para cada tipo
+  - Reportes detallados con estadísticas y tendencias
+  - Análisis de patrones de pensamiento a lo largo del tiempo
+
+- **Protocolos Terapéuticos Estructurados**:
+  - **Protocolo de Depresión (CBT)**: 5 pasos estructurados
+  - **Protocolo de Ansiedad Generalizada (CBT)**: 6 pasos estructurados
+  - **Protocolo de Manejo de Ira**: 5 pasos estructurados
+  - **Protocolo de Autocompasión**: 5 pasos estructurados
+  - **Protocolo de Higiene del Sueño**: 5 pasos estructurados
+  - **Protocolo de Trauma**: 6 pasos estructurados
+  - **Protocolo de TOC (ERP)**: 7 pasos estructurados
+  - **Protocolo de TEPT**: 7 pasos estructurados
+  - Activación automática cuando se detectan síntomas relevantes
+  - Seguimiento paso a paso con intervenciones específicas
 
 ### 💳 Sistema de Suscripciones
 
@@ -261,6 +295,16 @@ Anto/
 - **Crisis**: `/api/crisis/summary`, `/api/crisis/history`
 - **Tareas y Hábitos**: `/api/tasks`, `/api/habits`
 - **Pagos**: `/api/payments/plans`, `/api/payments/subscription-status`
+- **Escalas Clínicas** (Nuevo): 
+  - `/api/clinical-scales/available` - Escalas disponibles
+  - `/api/clinical-scales/:scaleType/submit` - Enviar resultados
+  - `/api/clinical-scales/:scaleType/progress` - Ver progreso
+  - `/api/clinical-scales/summary` - Resumen completo
+- **Distorsiones Cognitivas** (Nuevo):
+  - `/api/cognitive-distortions/types` - Tipos disponibles
+  - `/api/cognitive-distortions/reports` - Reportes de detecciones
+  - `/api/cognitive-distortions/statistics` - Estadísticas
+  - `/api/cognitive-distortions/summary` - Resumen completo
 
 **📝 Nota:** Consulta la documentación Swagger en `/api-docs` cuando el servidor esté corriendo.
 
@@ -270,7 +314,8 @@ Anto/
 
 ### Estado General: **Listo para Producción** ✅
 
-**Última actualización:** 2025-12-09
+**Última actualización:** 2026-01-08
+**Versión:** 1.1.0
 
 ### Completado ✅
 
@@ -284,6 +329,10 @@ Anto/
 - ✅ Optimizaciones de performance
 - ✅ Logging y monitoreo configurados
 - ✅ SSL/HTTPS y medidas de seguridad activas
+- ✅ **Escalas clínicas validadas (PHQ-9, GAD-7)** - Completado automático
+- ✅ **Detección avanzada de distorsiones cognitivas** - 15 tipos detectados
+- ✅ **Protocolos terapéuticos estructurados** - 8 protocolos basados en evidencia
+- ✅ **Reportes y estadísticas profesionales** - Análisis detallado de progreso
 
 ### Funcionalidades Clave
 
@@ -296,6 +345,10 @@ Anto/
 - ✅ Dashboard de métricas y progreso
 - ✅ Integración con Mercado Pago
 - ✅ Notificaciones personalizadas
+- ✅ **Escalas clínicas automáticas (PHQ-9, GAD-7)**
+- ✅ **Detección de distorsiones cognitivas (15 tipos)**
+- ✅ **Protocolos estructurados (Depresión, Ansiedad, Trauma, TOC, TEPT)**
+- ✅ **Reportes profesionales con estadísticas**
 
 ---
 
@@ -329,6 +382,9 @@ Anto/
 - **Adopción de Hábitos**: Mayor cumplimiento de hábitos saludables
 - **Satisfacción del Usuario**: Alta calificación y retención de usuarios
 - **Accesibilidad**: Llegar a personas que no tienen acceso a servicios tradicionales
+- **Evaluación Clínica Objetiva**: Escalas validadas para seguimiento profesional
+- **Identificación de Patrones**: Detección automática de distorsiones cognitivas
+- **Intervención Estructurada**: Protocolos basados en evidencia científica
 
 ### Beneficios a Largo Plazo
 
@@ -364,12 +420,14 @@ Para soporte técnico o preguntas:
 
 ### Próximas Funcionalidades
 
+- [ ] Más escalas clínicas (PCL-5 para TEPT, DERS para regulación emocional)
+- [ ] Visualización gráfica de progreso en escalas
+- [ ] Dashboard avanzado de distorsiones cognitivas
 - [ ] Modo offline para uso sin conexión
 - [ ] Internacionalización (multi-idioma)
 - [ ] Integración con wearables (Apple Watch, Fitbit)
 - [ ] Sistema de referidos
 - [ ] Programa de fidelización
-- [ ] Más técnicas terapéuticas especializadas
 - [ ] Integración con profesionales de la salud mental
 - [ ] Comunidad de usuarios (opcional)
 
