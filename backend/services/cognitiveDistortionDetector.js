@@ -116,7 +116,7 @@ class CognitiveDistortionDetector {
           /(?:debería|tengo.*que|debo|tendría.*que|tiene.*que.*ser)/i,
           /(?:siempre.*debo|nunca.*debería|tengo.*que.*ser.*perfecto)/i
         ],
-        intervention: 'Flexibilizar expectativas. Preguntar: "¿Qué pasaría si no fuera así? ¿De dónde viene este 'debería'?"'
+        intervention: 'Flexibilizar expectativas. Preguntar: "¿Qué pasaría si no fuera así? ¿De dónde viene este \'debería\'?"'
       },
       labeling: {
         name: 'Etiquetado',
