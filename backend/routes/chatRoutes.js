@@ -441,9 +441,6 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             logs.push(`[${Date.now() - startTime}ms] 📊 Advertencias de tendencias: ${trendAnalysis.warnings.join('; ')}`);
           }
           
-          // Variable para almacenar resultado de alertas
-          let alertResult = null;
-
           // OPTIMIZACIÓN: Solo HIGH bloquea la respuesta, MEDIUM/WARNING se manejan después
           let alertResult = null;
           
