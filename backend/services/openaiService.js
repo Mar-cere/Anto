@@ -1074,8 +1074,8 @@ class OpenAIService {
     // Ajustar según intensidad emocional (mayor intensidad = más cuidado, no necesariamente más largo)
     const intensity = contexto.emotional?.intensity || 5;
     if (intensity >= 8) {
-      // Alta intensidad: respuestas más cuidadosas pero no necesariamente más largas
-      baseLength = Math.min(baseLength, RESPONSE_LENGTHS.MEDIUM + 100);
+      // Alta intensidad: respuestas más cuidadosas, permitir más tokens para reasoning
+      baseLength = Math.max(baseLength, RESPONSE_LENGTHS.MEDIUM);
     }
     
     return baseLength;
