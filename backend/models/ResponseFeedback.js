@@ -19,7 +19,6 @@ const responseFeedbackSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Message',
     required: true,
-    index: true,
   },
 
   // Conversación relacionada

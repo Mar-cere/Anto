@@ -46,7 +46,6 @@ const subscriptionSchema = new mongoose.Schema({
   currentPeriodEnd: {
     type: Date,
     required: true,
-    index: true,
   },
 
   // Si la suscripción se cancelará al final del período

@@ -16,8 +16,7 @@ const emergencyAlertSchema = new mongoose.Schema({
   crisisEventId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'CrisisEvent',
-    default: null,
-    index: true
+    default: null
   },
   // Nivel de riesgo que activó la alerta
   riskLevel: {
