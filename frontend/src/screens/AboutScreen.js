@@ -11,6 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import React from 'react';
 import {
+  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -65,6 +66,9 @@ const TEXTS = {
   TEAM_TEXT: 'Estamos comprometidos con tu bienestar. Trabajamos constantemente para mejorar Anto, agregar nuevas funcionalidades y asegurar que siempre tengas el mejor apoyo posible en tu camino hacia una mejor salud mental.',
   CONTACT_TITLE: 'Contáctanos',
   CONTACT_EMAIL: 'marcelo.ull@antoapps.com',
+  LEGAL_TITLE: 'Legal',
+  TERMS_LINK: 'Términos de Servicio',
+  PRIVACY_LINK: 'Política de Privacidad',
   VERSION: 'Versión 1.0.0',
 };
 
@@ -194,6 +198,64 @@ const AboutScreen = () => {
           </TouchableOpacity>
         </View>
 
+        {/* Legal */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <MaterialCommunityIcons 
+              name="file-document-outline" 
+              size={28} 
+              color={COLORS.PRIMARY} 
+            />
+            <Text style={styles.sectionTitle}>{TEXTS.LEGAL_TITLE}</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.legalButton}
+            onPress={async () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              const url = 'https://www.antoapps.com/terminos';
+              const canOpen = await Linking.canOpenURL(url);
+              if (canOpen) {
+                await Linking.openURL(url);
+              }
+            }}
+          >
+            <MaterialCommunityIcons 
+              name="file-document" 
+              size={20} 
+              color={COLORS.PRIMARY} 
+            />
+            <Text style={styles.legalLinkText}>{TEXTS.TERMS_LINK}</Text>
+            <MaterialCommunityIcons 
+              name="open-in-new" 
+              size={16} 
+              color={COLORS.TEXT_SECONDARY} 
+            />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.legalButton}
+            onPress={async () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              const url = 'https://www.antoapps.com/privacidad';
+              const canOpen = await Linking.canOpenURL(url);
+              if (canOpen) {
+                await Linking.openURL(url);
+              }
+            }}
+          >
+            <MaterialCommunityIcons 
+              name="shield-lock-outline" 
+              size={20} 
+              color={COLORS.PRIMARY} 
+            />
+            <Text style={styles.legalLinkText}>{TEXTS.PRIVACY_LINK}</Text>
+            <MaterialCommunityIcons 
+              name="open-in-new" 
+              size={16} 
+              color={COLORS.TEXT_SECONDARY} 
+            />
+          </TouchableOpacity>
+        </View>
+
         {/* Versión */}
         <View style={styles.versionContainer}>
           <Text style={styles.versionText}>{TEXTS.VERSION}</Text>
@@ -297,6 +359,23 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   contactEmail: {
+    fontSize: 16,
+    color: COLORS.PRIMARY,
+    fontWeight: '500',
+  },
+  legalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(29, 43, 95, 0.6)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(26, 221, 219, 0.1)',
+    gap: 12,
+  },
+  legalLinkText: {
+    flex: 1,
     fontSize: 16,
     color: COLORS.PRIMARY,
     fontWeight: '500',

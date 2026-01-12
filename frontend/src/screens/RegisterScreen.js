@@ -16,6 +16,7 @@ import {
   Alert,
   Animated,
   ImageBackground,
+  Linking,
   Modal,
   ScrollView,
   StatusBar,
@@ -572,6 +573,21 @@ const RegisterScreen = ({ navigation }) => {
                   onPress={() => setTermsModalVisible(true)}
                 >
                   {TEXTS.TERMS_LINK}
+                </Text>
+                {' y la '}
+                <Text 
+                  style={styles.termsLink} 
+                  onPress={async () => {
+                    const url = 'https://www.antoapps.com/privacidad';
+                    const canOpen = await Linking.canOpenURL(url);
+                    if (canOpen) {
+                      await Linking.openURL(url);
+                    } else {
+                      Alert.alert('Error', 'No se pudo abrir el enlace');
+                    }
+                  }}
+                >
+                  {TEXTS.PRIVACY_LINK.toLowerCase()}
                 </Text>.
               </Text>
             </TouchableOpacity>
@@ -671,6 +687,41 @@ const RegisterScreen = ({ navigation }) => {
               showsVerticalScrollIndicator={true}
             >
               <Text style={styles.modalMessage}>{TEXTS.TERMS_ALERT_MESSAGE}</Text>
+              
+              {/* Botones de enlaces */}
+              <View style={styles.modalLinksContainer}>
+                <TouchableOpacity
+                  style={styles.modalLinkButton}
+                  onPress={async () => {
+                    const url = 'https://www.antoapps.com/terminos';
+                    const canOpen = await Linking.canOpenURL(url);
+                    if (canOpen) {
+                      await Linking.openURL(url);
+                    } else {
+                      Alert.alert('Error', 'No se pudo abrir el enlace');
+                    }
+                  }}
+                  activeOpacity={BUTTON_ACTIVE_OPACITY}
+                >
+                  <Text style={styles.modalLinkText}>{TEXTS.TERMS_FULL_LINK}</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={styles.modalLinkButton}
+                  onPress={async () => {
+                    const url = 'https://www.antoapps.com/privacidad';
+                    const canOpen = await Linking.canOpenURL(url);
+                    if (canOpen) {
+                      await Linking.openURL(url);
+                    } else {
+                      Alert.alert('Error', 'No se pudo abrir el enlace');
+                    }
+                  }}
+                  activeOpacity={BUTTON_ACTIVE_OPACITY}
+                >
+                  <Text style={styles.modalLinkText}>{TEXTS.PRIVACY_LINK}</Text>
+                </TouchableOpacity>
+              </View>
             </ScrollView>
             
             <TouchableOpacity
@@ -810,6 +861,23 @@ const styles = StyleSheet.create({
   modalScrollView: {
     maxHeight: 300,
     marginBottom: 20,
+  },
+  modalLinksContainer: {
+    marginTop: 20,
+    gap: 12,
+  },
+  modalLinkButton: {
+    backgroundColor: 'rgba(26, 221, 219, 0.1)',
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+  },
+  modalLinkText: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '600',
   },
   modalHeader: {
     flexDirection: 'row',
