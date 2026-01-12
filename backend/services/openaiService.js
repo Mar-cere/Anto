@@ -1146,14 +1146,29 @@ class OpenAIService {
       respuestaMejorada = this.reducirRespuesta(respuestaMejorada);
     }
 
-    // Validar si es genérica
+    // Validar si es genérica (solo si es muy genérica, no sobre-ajustar)
     if (this.esRespuestaGenerica(respuestaMejorada)) {
-      respuestaMejorada = this.expandirRespuesta(respuestaMejorada);
+      // Solo expandir si es realmente genérica, no sobre-modificar
+      const expanded = this.expandirRespuesta(respuestaMejorada);
+      // Solo usar la expandida si es significativamente mejor
+      if (expanded.length > respuestaMejorada.length * 1.2) {
+        respuestaMejorada = expanded;
+      }
     }
     
-    // Validar y ajustar coherencia emocional
-    if (!this.esCoherenteConEmocion(respuestaMejorada, contexto.emotional)) {
-      respuestaMejorada = this.ajustarCoherenciaEmocional(respuestaMejorada, contexto.emotional);
+    // Validar y ajustar coherencia emocional (solo si es claramente incoherente)
+    // No sobre-ajustar respuestas que ya son coherentes
+    const esClaramenteIncoherente = !this.esCoherenteConEmocion(respuestaMejorada, contexto.emotional) &&
+                                     contexto.emotional?.mainEmotion &&
+                                     contexto.emotional.mainEmotion !== 'neutral';
+    
+    if (esClaramenteIncoherente) {
+      const ajustada = this.ajustarCoherenciaEmocional(respuestaMejorada, contexto.emotional);
+      // Solo usar la ajustada si realmente mejora la coherencia
+      // Verificar que no esté agregando redundancia
+      if (ajustada !== respuestaMejorada && !ajustada.toLowerCase().includes(respuestaMejorada.toLowerCase().substring(0, 20))) {
+        respuestaMejorada = ajustada;
+      }
     }
     
     // Validar longitud final después de ajustes
@@ -1868,6 +1883,26 @@ class OpenAIService {
     
     // Solo incluir si hay solicitud explícita
     return solicitudTecnica;
+  }
+
+  /**
+   * Adapta la respuesta según el protocolo terapéutico activo
+   * @param {string} respuesta - Respuesta original generada
+   * @param {Object} intervention - Intervención actual del protocolo
+   * @param {Object} analisisEmocional - Análisis emocional del mensaje
+   * @returns {string} Respuesta adaptada al protocolo
+   */
+  adaptResponseToProtocol(respuesta, intervention, analisisEmocional) {
+    if (!intervention || !respuesta) {
+      return respuesta;
+    }
+
+    // Si la intervención tiene instrucciones específicas, seguirlas
+    // Por ahora, simplemente retornar la respuesta original
+    // En el futuro, se puede agregar lógica más específica aquí
+    // para adaptar la respuesta según el tipo de intervención
+    
+    return respuesta;
   }
 }
 
