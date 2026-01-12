@@ -126,7 +126,18 @@ class StoreKitService {
 
     try {
       // Conectar con App Store
-      const { connected } = await module.connectAsync();
+      const connectResult = await module.connectAsync();
+      
+      // Validar que el resultado sea válido
+      if (!connectResult) {
+        this.initializing = false;
+        return {
+          success: false,
+          error: 'No se recibió respuesta de App Store',
+        };
+      }
+      
+      const { connected } = connectResult;
       
       if (!connected) {
         this.initializing = false;
@@ -183,8 +194,16 @@ class StoreKitService {
       async (update) => {
         console.log('[StoreKit] Actualización de compra:', update);
         
-        if (update.responseCode === module.IAPResponseCode.OK) {
+        // Validar que update exista y tenga las propiedades necesarias
+        if (!update) {
+          console.warn('[StoreKit] Actualización de compra sin datos');
+          return;
+        }
+        
+        if (update.responseCode === module.IAPResponseCode.OK && update.results && Array.isArray(update.results)) {
           for (const purchase of update.results) {
+            if (!purchase) continue;
+            
             if (purchase.acknowledged) {
               console.log('[StoreKit] Compra ya reconocida:', purchase.productId);
               continue;
@@ -198,6 +217,8 @@ class StoreKitService {
               console.log('[StoreKit] Compra restaurada:', purchase.productId);
             }
           }
+        } else {
+          console.warn('[StoreKit] Actualización de compra con código de error:', update.responseCode);
         }
       }
     );
@@ -240,15 +261,27 @@ class StoreKitService {
 
     try {
       const productIds = Object.values(PRODUCT_IDS);
-      const { responseCode, results } = await module.getProductsAsync(productIds);
+      const productsResult = await module.getProductsAsync(productIds);
+      
+      if (!productsResult) {
+        return {
+          success: false,
+          error: 'No se recibió respuesta de App Store',
+          products: [],
+        };
+      }
+      
+      const { responseCode, results } = productsResult;
       
       if (responseCode === module.IAPResponseCode.OK) {
-        this.products = results;
-        console.log('[StoreKit] Productos cargados:', results.length);
+        // Validar que results sea un array
+        const validResults = Array.isArray(results) ? results : [];
+        this.products = validResults;
+        console.log('[StoreKit] Productos cargados:', validResults.length);
         
         return {
           success: true,
-          products: results.map(p => ({
+          products: validResults.map(p => ({
             id: p.productId,
             plan: PRODUCT_ID_TO_PLAN[p.productId] || p.productId,
             title: p.title,
@@ -280,15 +313,22 @@ class StoreKitService {
    * Obtener productos disponibles
    */
   getProducts() {
-    return this.products.map(p => ({
-      id: p.productId,
-      plan: PRODUCT_ID_TO_PLAN[p.productId] || p.productId,
-      title: p.title,
-      description: p.description,
-      price: p.price,
-      currency: p.currency,
-      priceValue: parseFloat(p.price),
-    }));
+    // Validar que products sea un array
+    if (!Array.isArray(this.products)) {
+      return [];
+    }
+    return this.products.map(p => {
+      if (!p || !p.productId) return null;
+      return {
+        id: p.productId,
+        plan: PRODUCT_ID_TO_PLAN[p.productId] || p.productId,
+        title: p.title,
+        description: p.description,
+        price: p.price,
+        currency: p.currency,
+        priceValue: parseFloat(p.price),
+      };
+    }).filter(p => p !== null); // Filtrar productos inválidos
   }
 
   /**
@@ -338,7 +378,16 @@ class StoreKitService {
       console.log('[StoreKit] Iniciando compra:', productId);
 
       // Solicitar compra
-      const { responseCode, results } = await module.purchaseItemAsync(productId);
+      const purchaseResult = await module.purchaseItemAsync(productId);
+      
+      if (!purchaseResult) {
+        return {
+          success: false,
+          error: 'No se recibió respuesta de App Store',
+        };
+      }
+      
+      const { responseCode, results } = purchaseResult;
 
       if (responseCode === module.IAPResponseCode.OK && results && results.length > 0) {
         const purchase = results[0];
@@ -392,7 +441,11 @@ class StoreKitService {
         this.isInitialized = true;
         // Reintentar la compra una vez
         try {
-          const { responseCode, results } = await module.purchaseItemAsync(productId);
+          const retryResult = await module.purchaseItemAsync(productId);
+          if (!retryResult) {
+            throw new Error('No se recibió respuesta de App Store en reintento');
+          }
+          const { responseCode, results } = retryResult;
           if (responseCode === module.IAPResponseCode.OK && results && results.length > 0) {
             const purchase = results[0];
             if (onValidateReceipt) {
@@ -447,14 +500,26 @@ class StoreKitService {
     try {
       console.log('[StoreKit] Restaurando compras...');
       
-      const { responseCode, results } = await module.restorePurchasesAsync();
+      const restoreResult = await module.restorePurchasesAsync();
+      
+      if (!restoreResult) {
+        return {
+          success: false,
+          error: 'No se recibió respuesta de App Store',
+          purchases: [],
+        };
+      }
+      
+      const { responseCode, results } = restoreResult;
       
       if (responseCode === module.IAPResponseCode.OK) {
-        console.log('[StoreKit] Compras restauradas:', results.length);
+        // Validar que results sea un array
+        const validResults = Array.isArray(results) ? results : [];
+        console.log('[StoreKit] Compras restauradas:', validResults.length);
 
         return {
           success: true,
-          purchases: results.map(p => ({
+          purchases: validResults.map(p => ({
             productId: p.productId,
             plan: PRODUCT_ID_TO_PLAN[p.productId] || p.productId,
             transactionId: p.transactionId,
@@ -497,11 +562,24 @@ class StoreKitService {
     }
 
     try {
-      const { responseCode, results } = await module.getPurchaseHistoryAsync();
+      const historyResult = await module.getPurchaseHistoryAsync();
+      
+      if (!historyResult) {
+        return {
+          success: false,
+          error: 'No se recibió respuesta de App Store',
+          subscriptions: [],
+        };
+      }
+      
+      const { responseCode, results } = historyResult;
       
       if (responseCode === module.IAPResponseCode.OK) {
+        // Validar que results sea un array
+        const validResults = Array.isArray(results) ? results : [];
         // Filtrar solo suscripciones activas
-        const activeSubscriptions = results.filter(p => {
+        const activeSubscriptions = validResults.filter(p => {
+          if (!p || !p.productId) return false;
           const plan = PRODUCT_ID_TO_PLAN[p.productId];
           return plan !== undefined;
         });

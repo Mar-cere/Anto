@@ -183,30 +183,42 @@ const SubscriptionScreen = () => {
 
       // En iOS, usar StoreKit
       if (Platform.OS === 'ios' && storeKitService.isAvailable()) {
-        const purchaseResult = await paymentService.purchaseWithStoreKit(plan.id);
-        
-        if (purchaseResult.success) {
-          Alert.alert(
-            '¡Suscripción exitosa!',
-            'Tu suscripción se ha activado correctamente.',
-            [
-              {
-                text: 'OK',
-                onPress: () => {
-                  // Recargar datos para actualizar el estado
-                  loadData();
+        try {
+          const purchaseResult = await paymentService.purchaseWithStoreKit(plan.id);
+          
+          if (purchaseResult && purchaseResult.success) {
+            Alert.alert(
+              '¡Suscripción exitosa!',
+              'Tu suscripción se ha activado correctamente.',
+              [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    // Recargar datos para actualizar el estado
+                    loadData();
+                  }
                 }
-              }
-            ]
-          );
-        } else if (purchaseResult.cancelled) {
-          // Usuario canceló, no mostrar error
-          console.log('Compra cancelada por el usuario');
-        } else {
+              ]
+            );
+          } else if (purchaseResult && purchaseResult.cancelled) {
+            // Usuario canceló, no mostrar error
+            console.log('Compra cancelada por el usuario');
+          } else {
+            const errorMessage = purchaseResult?.error || 'Ocurrió un error al procesar tu suscripción';
+            Alert.alert(
+              TEXTS.SUBSCRIBE_ERROR,
+              errorMessage
+            );
+          }
+        } catch (error) {
+          console.error('Error en compra:', error);
           Alert.alert(
             TEXTS.SUBSCRIBE_ERROR,
-            purchaseResult.error || 'Ocurrió un error al procesar tu suscripción'
+            error?.message || 'Ocurrió un error inesperado al procesar tu suscripción. Por favor, intenta de nuevo.'
           );
+        } finally {
+          setSubscribing(false);
+          setSelectedPlan(null);
         }
         return;
       }
@@ -214,10 +226,10 @@ const SubscriptionScreen = () => {
       // En Android, usar Mercado Pago (comportamiento original)
       const checkoutResponse = await paymentService.createCheckoutSession(plan.id);
 
-      if (!checkoutResponse.success) {
+      if (!checkoutResponse || !checkoutResponse.success) {
         Alert.alert(
           TEXTS.SUBSCRIBE_ERROR,
-          checkoutResponse.error || 'No se pudo crear la sesión de pago'
+          checkoutResponse?.error || 'No se pudo crear la sesión de pago'
         );
         return;
       }

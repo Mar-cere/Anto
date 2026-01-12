@@ -95,12 +95,28 @@ class PaymentService {
     // Función para validar el recibo con el backend
     const validateReceipt = async (receiptData) => {
       try {
+        // Validar que receiptData tenga los datos necesarios
+        if (!receiptData || !receiptData.transactionReceipt) {
+          return {
+            success: false,
+            error: 'Datos de recibo incompletos',
+          };
+        }
+        
         const response = await api.post(ENDPOINTS.PAYMENT_VALIDATE_RECEIPT, {
           receipt: receiptData.transactionReceipt,
           productId: receiptData.productId,
           transactionId: receiptData.transactionId,
           originalTransactionIdentifierIOS: receiptData.originalTransactionIdentifierIOS,
         });
+
+        // Validar que la respuesta sea válida
+        if (!response) {
+          return {
+            success: false,
+            error: 'No se recibió respuesta del servidor',
+          };
+        }
 
         return {
           success: response.success || false,
@@ -110,7 +126,7 @@ class PaymentService {
         console.error('Error validando recibo:', error);
         return {
           success: false,
-          error: error.message || 'Error al validar la compra',
+          error: error?.message || error?.response?.data?.error || 'Error al validar la compra',
         };
       }
     };
