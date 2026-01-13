@@ -94,9 +94,22 @@ class PaymentService {
 
     // Función para validar el recibo con el backend
     const validateReceipt = async (receiptData) => {
+      const validationStartTime = Date.now();
       try {
+        console.log('[PaymentService] 🔐 Iniciando validación de recibo', {
+          hasReceiptData: !!receiptData,
+          hasTransactionReceipt: !!receiptData?.transactionReceipt,
+          hasProductId: !!receiptData?.productId,
+          productId: receiptData?.productId,
+          timestamp: new Date().toISOString(),
+        });
+
         // Validar que receiptData tenga los datos necesarios
         if (!receiptData || !receiptData.transactionReceipt) {
+          console.error('[PaymentService] ❌ ERROR: Datos de recibo incompletos (validación inicial)', {
+            hasReceiptData: !!receiptData,
+            hasTransactionReceipt: !!receiptData?.transactionReceipt,
+          });
           return {
             success: false,
             error: 'Datos de recibo incompletos',
@@ -105,6 +118,9 @@ class PaymentService {
         
         // Validar que receiptData tenga todos los campos necesarios
         if (!receiptData.transactionReceipt) {
+          console.error('[PaymentService] ❌ ERROR: Falta transactionReceipt', {
+            receiptDataKeys: Object.keys(receiptData || {}),
+          });
           return {
             success: false,
             error: 'Datos de recibo incompletos: falta transactionReceipt',
@@ -112,6 +128,9 @@ class PaymentService {
         }
 
         if (!receiptData.productId) {
+          console.error('[PaymentService] ❌ ERROR: Falta productId', {
+            receiptDataKeys: Object.keys(receiptData || {}),
+          });
           return {
             success: false,
             error: 'Datos de recibo incompletos: falta productId',
@@ -131,11 +150,36 @@ class PaymentService {
           payload.originalTransactionIdentifierIOS = receiptData.originalTransactionIdentifierIOS;
         }
 
+        console.log('[PaymentService] 📤 Enviando validación al backend', {
+          productId: payload.productId,
+          hasReceipt: !!payload.receipt,
+          receiptLength: payload.receipt?.length || 0,
+          hasTransactionId: !!payload.transactionId,
+          hasOriginalTransactionId: !!payload.originalTransactionIdentifierIOS,
+        });
+
+        const requestStartTime = Date.now();
         const response = await api.post(ENDPOINTS.PAYMENT_VALIDATE_RECEIPT, payload);
+        const requestDuration = Date.now() - requestStartTime;
+
+        console.log('[PaymentService] 📥 Respuesta del backend recibida', {
+          productId: receiptData.productId,
+          hasResponse: !!response,
+          success: response?.success,
+          hasError: !!response?.error,
+          hasSubscription: !!response?.subscription,
+          responseTime: `${requestDuration}ms`,
+          timestamp: new Date().toISOString(),
+        });
 
         // Validar que la respuesta sea válida
         if (!response || typeof response !== 'object') {
-          console.error('[PaymentService] Respuesta inválida de validación:', response);
+          console.error('[PaymentService] ❌ ERROR: Respuesta inválida de validación', {
+            productId: receiptData.productId,
+            responseType: typeof response,
+            response: response,
+            totalDuration: Date.now() - validationStartTime,
+          });
           return {
             success: false,
             error: 'No se recibió respuesta válida del servidor',
@@ -144,11 +188,33 @@ class PaymentService {
 
         // Validar que response tenga la propiedad success
         if (typeof response.success !== 'boolean') {
-          console.error('[PaymentService] Respuesta sin propiedad success:', response);
+          console.error('[PaymentService] ❌ ERROR: Respuesta sin propiedad success', {
+            productId: receiptData.productId,
+            responseKeys: Object.keys(response || {}),
+            response: response,
+            totalDuration: Date.now() - validationStartTime,
+          });
           return {
             success: false,
             error: response.error || 'Respuesta inválida del servidor',
           };
+        }
+
+        const totalDuration = Date.now() - validationStartTime;
+        if (response.success) {
+          console.log('[PaymentService] ✅ Validación exitosa', {
+            productId: receiptData.productId,
+            hasSubscription: !!response.subscription,
+            subscriptionStatus: response.subscription?.status,
+            subscriptionPlan: response.subscription?.plan,
+            totalDuration: `${totalDuration}ms`,
+          });
+        } else {
+          console.error('[PaymentService] ❌ Validación falló', {
+            productId: receiptData.productId,
+            error: response.error,
+            totalDuration: `${totalDuration}ms`,
+          });
         }
 
         return {
@@ -157,7 +223,17 @@ class PaymentService {
           subscription: response.subscription || null,
         };
       } catch (error) {
-        console.error('Error validando recibo:', error);
+        const totalDuration = Date.now() - validationStartTime;
+        console.error('[PaymentService] ❌ EXCEPCIÓN en validación de recibo', {
+          productId: receiptData?.productId,
+          error: error?.message,
+          errorType: error?.constructor?.name,
+          hasResponse: !!error?.response,
+          responseStatus: error?.response?.status,
+          responseData: error?.response?.data,
+          stack: error?.stack,
+          totalDuration: `${totalDuration}ms`,
+        });
         return {
           success: false,
           error: error?.message || error?.response?.data?.error || 'Error al validar la compra',

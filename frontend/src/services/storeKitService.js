@@ -446,13 +446,33 @@ class StoreKitService {
 
 
     try {
-      console.log('[StoreKit] Iniciando compra:', productId);
-      console.log('[StoreKit] Productos disponibles:', this.products.map(p => p?.productId));
+      const purchaseStartTime = Date.now();
+      console.log('[StoreKit] 🛒 INICIANDO COMPRA', {
+        plan,
+        productId,
+        productsAvailable: this.products.length,
+        productIds: this.products.map(p => p?.productId),
+        timestamp: new Date().toISOString(),
+      });
 
       // Solicitar compra
+      const purchaseRequestTime = Date.now();
       const purchaseResult = await module.purchaseItemAsync(productId);
+      const purchaseRequestDuration = Date.now() - purchaseRequestTime;
+      
+      console.log('[StoreKit] 📱 Respuesta de App Store recibida', {
+        productId,
+        hasResult: !!purchaseResult,
+        responseTime: `${purchaseRequestDuration}ms`,
+        timestamp: new Date().toISOString(),
+      });
       
       if (!purchaseResult) {
+        console.error('[StoreKit] ❌ ERROR: No se recibió respuesta de App Store', {
+          productId,
+          plan,
+          totalDuration: Date.now() - purchaseStartTime,
+        });
         return {
           success: false,
           error: 'No se recibió respuesta de App Store',
@@ -460,14 +480,42 @@ class StoreKitService {
       }
       
       const { responseCode, results } = purchaseResult;
+      
+      console.log('[StoreKit] 📋 Análisis de respuesta', {
+        productId,
+        responseCode,
+        hasResults: !!results,
+        resultsLength: results?.length || 0,
+        responseCodeOK: responseCode === module.IAPResponseCode.OK,
+        responseCodeCANCELED: responseCode === module.IAPResponseCode.USER_CANCELED,
+      });
 
       if (responseCode === module.IAPResponseCode.OK && results && results.length > 0) {
         const purchase = results[0];
-        console.log('[StoreKit] Compra realizada:', purchase);
+        console.log('[StoreKit] ✅ COMPRA APROBADA POR APP STORE', {
+          productId,
+          purchaseProductId: purchase?.productId,
+          hasTransactionReceipt: !!purchase?.transactionReceipt,
+          hasTransactionId: !!purchase?.transactionId,
+          hasOriginalTransactionId: !!purchase?.originalTransactionIdentifierIOS,
+          transactionReceiptLength: purchase?.transactionReceipt?.length || 0,
+          timestamp: new Date().toISOString(),
+        });
 
         // Validar que purchase tenga los datos necesarios
         if (!purchase || !purchase.productId || !purchase.transactionReceipt) {
-          console.error('[StoreKit] Datos de compra incompletos:', purchase);
+          console.error('[StoreKit] ❌ ERROR: Datos de compra incompletos', {
+            productId,
+            plan,
+            purchase: {
+              exists: !!purchase,
+              hasProductId: !!purchase?.productId,
+              hasTransactionReceipt: !!purchase?.transactionReceipt,
+              hasTransactionId: !!purchase?.transactionId,
+              hasOriginalTransactionId: !!purchase?.originalTransactionIdentifierIOS,
+            },
+            totalDuration: Date.now() - purchaseStartTime,
+          });
           return {
             success: false,
             error: 'Datos de compra incompletos. Por favor, intenta de nuevo.',
@@ -477,6 +525,13 @@ class StoreKitService {
         // Validar recibo con el backend
         if (onValidateReceipt) {
           try {
+            const validationStartTime = Date.now();
+            console.log('[StoreKit] 🔐 INICIANDO VALIDACIÓN CON BACKEND', {
+              productId,
+              plan,
+              timestamp: new Date().toISOString(),
+            });
+
             // Validar que purchase tenga todos los datos necesarios antes de validar
             const receiptData = {
               transactionReceipt: purchase.transactionReceipt,
@@ -485,9 +540,27 @@ class StoreKitService {
               originalTransactionIdentifierIOS: purchase.originalTransactionIdentifierIOS || null,
             };
 
+            console.log('[StoreKit] 📦 Datos preparados para validación', {
+              productId: receiptData.productId,
+              hasTransactionReceipt: !!receiptData.transactionReceipt,
+              transactionReceiptLength: receiptData.transactionReceipt?.length || 0,
+              hasTransactionId: !!receiptData.transactionId,
+              hasOriginalTransactionId: !!receiptData.originalTransactionIdentifierIOS,
+            });
+
             // Validar que al menos transactionReceipt y productId estén presentes
             if (!receiptData.transactionReceipt || !receiptData.productId) {
-              console.error('[StoreKit] Datos de recibo incompletos para validación:', receiptData);
+              console.error('[StoreKit] ❌ ERROR: Datos de recibo incompletos para validación', {
+                productId,
+                plan,
+                receiptData: {
+                  hasTransactionReceipt: !!receiptData.transactionReceipt,
+                  hasProductId: !!receiptData.productId,
+                  hasTransactionId: !!receiptData.transactionId,
+                  hasOriginalTransactionId: !!receiptData.originalTransactionIdentifierIOS,
+                },
+                totalDuration: Date.now() - purchaseStartTime,
+              });
               return {
                 success: false,
                 error: 'Datos de recibo incompletos. Por favor, intenta de nuevo.',
@@ -495,11 +568,28 @@ class StoreKitService {
               };
             }
 
+            const validationRequestTime = Date.now();
             const validationResult = await onValidateReceipt(receiptData);
+            const validationRequestDuration = Date.now() - validationRequestTime;
+
+            console.log('[StoreKit] 📨 Respuesta de validación recibida', {
+              productId,
+              hasResult: !!validationResult,
+              success: validationResult?.success,
+              hasError: !!validationResult?.error,
+              errorMessage: validationResult?.error,
+              responseTime: `${validationRequestDuration}ms`,
+              timestamp: new Date().toISOString(),
+            });
 
             // Validar que validationResult exista
             if (!validationResult) {
-              console.error('[StoreKit] No se recibió respuesta de validación');
+              console.error('[StoreKit] ❌ ERROR: No se recibió respuesta de validación', {
+                productId,
+                plan,
+                validationDuration: Date.now() - validationStartTime,
+                totalDuration: Date.now() - purchaseStartTime,
+              });
               return {
                 success: false,
                 error: 'No se recibió respuesta del servidor al validar la compra',
@@ -509,7 +599,14 @@ class StoreKitService {
 
             if (!validationResult.success) {
               // Si la validación falla, NO finalizar la transacción para que el usuario pueda reintentar
-              console.error('[StoreKit] Validación de recibo falló:', validationResult.error);
+              console.error('[StoreKit] ❌ ERROR: Validación de recibo falló', {
+                productId,
+                plan,
+                error: validationResult.error,
+                hasSubscription: !!validationResult.subscription,
+                validationDuration: Date.now() - validationStartTime,
+                totalDuration: Date.now() - purchaseStartTime,
+              });
               return {
                 success: false,
                 error: validationResult.error || 'Error al validar la compra con el servidor',
@@ -517,9 +614,25 @@ class StoreKitService {
               };
             }
 
-            console.log('[StoreKit] Validación de recibo exitosa');
+            console.log('[StoreKit] ✅ VALIDACIÓN EXITOSA', {
+              productId,
+              plan,
+              hasSubscription: !!validationResult.subscription,
+              validationDuration: Date.now() - validationStartTime,
+              timestamp: new Date().toISOString(),
+            });
           } catch (validationError) {
-            console.error('[StoreKit] Error en validación de recibo:', validationError);
+            console.error('[StoreKit] ❌ EXCEPCIÓN en validación de recibo', {
+              productId,
+              plan,
+              error: validationError?.message,
+              errorType: validationError?.constructor?.name,
+              hasResponse: !!validationError?.response,
+              responseStatus: validationError?.response?.status,
+              responseData: validationError?.response?.data,
+              stack: validationError?.stack,
+              totalDuration: Date.now() - purchaseStartTime,
+            });
             // NO finalizar la transacción si hay error en la validación
             return {
               success: false,
@@ -531,9 +644,25 @@ class StoreKitService {
 
         // Solo finalizar la transacción si la validación fue exitosa
         try {
+          const finishStartTime = Date.now();
+          console.log('[StoreKit] 🏁 FINALIZANDO TRANSACCIÓN', {
+            productId,
+            plan,
+            timestamp: new Date().toISOString(),
+          });
+
           // Validar que purchase tenga los datos necesarios antes de finalizar
           if (!purchase || !purchase.productId) {
-            console.error('[StoreKit] Purchase inválido para finalizar:', purchase);
+            console.error('[StoreKit] ❌ ERROR: Purchase inválido para finalizar', {
+              productId,
+              plan,
+              purchase: {
+                exists: !!purchase,
+                hasProductId: !!purchase?.productId,
+                hasTransactionReceipt: !!purchase?.transactionReceipt,
+              },
+              totalDuration: Date.now() - purchaseStartTime,
+            });
             return {
               success: false,
               error: 'Datos de compra inválidos para finalizar',
@@ -542,9 +671,23 @@ class StoreKitService {
           }
 
           await module.finishTransactionAsync(purchase);
-          console.log('[StoreKit] ✅ Transacción finalizada correctamente');
+          const finishDuration = Date.now() - finishStartTime;
+          console.log('[StoreKit] ✅ TRANSACCIÓN FINALIZADA', {
+            productId,
+            plan,
+            finishDuration: `${finishDuration}ms`,
+            timestamp: new Date().toISOString(),
+          });
         } catch (finishError) {
-          console.error('[StoreKit] ❌ Error finalizando transacción:', finishError);
+          console.error('[StoreKit] ❌ ERROR finalizando transacción', {
+            productId,
+            plan,
+            error: finishError?.message,
+            errorType: finishError?.constructor?.name,
+            stack: finishError?.stack,
+            totalDuration: Date.now() - purchaseStartTime,
+            note: 'La compra ya fue validada, pero no se pudo finalizar la transacción',
+          });
           // Aunque falle finalizar, la compra ya fue validada, así que consideramos éxito
           // pero logueamos el error para debugging
         }
@@ -552,8 +695,21 @@ class StoreKitService {
         // Validar que el plan sea válido
         const mappedPlan = PRODUCT_ID_TO_PLAN[productId] || plan;
         if (!mappedPlan) {
-          console.warn('[StoreKit] Plan no encontrado en mapeo:', productId);
+          console.warn('[StoreKit] ⚠️ ADVERTENCIA: Plan no encontrado en mapeo', {
+            productId,
+            plan,
+            availablePlans: Object.keys(PRODUCT_ID_TO_PLAN),
+          });
         }
+
+        const totalDuration = Date.now() - purchaseStartTime;
+        console.log('[StoreKit] 🎉 COMPRA COMPLETADA EXITOSAMENTE', {
+          productId,
+          plan,
+          mappedPlan,
+          totalDuration: `${totalDuration}ms`,
+          timestamp: new Date().toISOString(),
+        });
 
         return {
           success: true,

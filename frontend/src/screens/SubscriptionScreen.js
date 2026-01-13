@@ -243,9 +243,15 @@ const SubscriptionScreen = () => {
           }
           
           if (purchaseResult.success) {
-            console.log('[SubscriptionScreen] ✅ Compra exitosa, actualizando estado...');
+            const updateStartTime = Date.now();
+            console.log('[SubscriptionScreen] ✅ COMPRA EXITOSA - Iniciando actualización de estado', {
+              plan: plan.id,
+              purchasePlan: purchaseResult.plan,
+              timestamp: new Date().toISOString(),
+            });
             
             // Esperar un momento para que el backend procese la suscripción
+            console.log('[SubscriptionScreen] ⏳ Esperando procesamiento del backend (1.5s)...');
             await new Promise(resolve => setTimeout(resolve, 1500));
             
             // Recargar datos para actualizar el estado (con reintentos)
@@ -253,21 +259,67 @@ const SubscriptionScreen = () => {
             let statusUpdated = false;
             
             while (retries > 0 && !statusUpdated) {
+              const retryStartTime = Date.now();
+              const attemptNumber = 4 - retries;
+              
               try {
+                console.log(`[SubscriptionScreen] 🔄 Intento ${attemptNumber}/3: Recargando datos...`);
                 await loadData();
+                
                 // Verificar que el estado se haya actualizado
+                console.log(`[SubscriptionScreen] 🔍 Intento ${attemptNumber}/3: Verificando estado...`);
+                const statusCheckStartTime = Date.now();
                 const newStatus = await paymentService.getSubscriptionStatus();
+                const statusCheckDuration = Date.now() - statusCheckStartTime;
+                
+                console.log(`[SubscriptionScreen] 📊 Estado recibido (intento ${attemptNumber})`, {
+                  hasStatus: !!newStatus,
+                  success: newStatus?.success,
+                  hasSubscription: newStatus?.hasSubscription,
+                  status: newStatus?.status,
+                  plan: newStatus?.plan,
+                  checkDuration: `${statusCheckDuration}ms`,
+                });
+
                 if (newStatus && newStatus.success && newStatus.hasSubscription) {
                   statusUpdated = true;
-                  console.log('[SubscriptionScreen] Estado de suscripción actualizado correctamente');
+                  const retryDuration = Date.now() - retryStartTime;
+                  console.log('[SubscriptionScreen] ✅ Estado de suscripción actualizado correctamente', {
+                    status: newStatus.status,
+                    plan: newStatus.plan,
+                    attemptNumber,
+                    retryDuration: `${retryDuration}ms`,
+                    totalUpdateDuration: Date.now() - updateStartTime,
+                  });
                 } else {
-                  console.log('[SubscriptionScreen] Estado aún no actualizado, reintentando...');
+                  const retryDuration = Date.now() - retryStartTime;
+                  console.log(`[SubscriptionScreen] ⚠️ Estado aún no actualizado (intento ${attemptNumber})`, {
+                    hasStatus: !!newStatus,
+                    success: newStatus?.success,
+                    hasSubscription: newStatus?.hasSubscription,
+                    retryDuration: `${retryDuration}ms`,
+                    waitingBeforeRetry: '1s',
+                  });
                   await new Promise(resolve => setTimeout(resolve, 1000));
                 }
               } catch (statusError) {
-                console.error('[SubscriptionScreen] Error actualizando estado:', statusError);
+                const retryDuration = Date.now() - retryStartTime;
+                console.error(`[SubscriptionScreen] ❌ ERROR en intento ${attemptNumber}`, {
+                  error: statusError?.message,
+                  errorType: statusError?.constructor?.name,
+                  hasResponse: !!statusError?.response,
+                  responseStatus: statusError?.response?.status,
+                  retryDuration: `${retryDuration}ms`,
+                });
               }
               retries--;
+            }
+
+            if (!statusUpdated) {
+              console.warn('[SubscriptionScreen] ⚠️ ADVERTENCIA: No se pudo confirmar actualización del estado después de 3 intentos', {
+                plan: plan.id,
+                totalUpdateDuration: Date.now() - updateStartTime,
+              });
             }
             
             Alert.alert(
