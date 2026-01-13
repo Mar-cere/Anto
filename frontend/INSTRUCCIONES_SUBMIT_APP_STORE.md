@@ -76,7 +76,7 @@ Después de subir, verifica en App Store Connect:
 
 ## Notas Importantes
 
-- **Build Number**: Actualmente es `8` (en `app.json`)
+- **Build Number**: Actualmente es `9` (en `app.json`)
 - **Version**: `1.1.0`
 - **Bundle ID**: `com.anto.app`
 - **ASC App ID**: `6756631911`
