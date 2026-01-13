@@ -18,6 +18,7 @@ import appleReceiptService from '../services/appleReceiptService.js';
 import cacheService from '../services/cacheService.js';
 import paymentAuditService from '../services/paymentAuditService.js';
 import paymentService from '../services/paymentService.js';
+import logger from '../utils/logger.js';
 
 const router = express.Router();
 
@@ -245,9 +246,18 @@ router.get(
   authenticateToken,
   validateUserObjectId,
   async (req, res) => {
+    const startTime = Date.now();
+    const userId = req.user._id;
+    
     try {
-      const userId = req.user._id;
+      logger.payment('GET /subscription-status iniciado', {
+        userId: userId.toString(),
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+      });
+      
       const cacheKey = cacheService.generateKey('subscription', userId);
+      logger.debug('[PaymentRoutes] Cache key generado', { cacheKey, userId: userId.toString() });
       
       // Agregar headers para evitar caché del navegador
       // Esto asegura que siempre se devuelvan datos frescos
@@ -260,10 +270,25 @@ router.get(
       // Intentar obtener del caché del servidor
       const cached = await cacheService.get(cacheKey);
       if (cached) {
+        logger.payment('GET /subscription-status: respuesta desde caché', {
+          userId: userId.toString(),
+          cached: true,
+          duration: Date.now() - startTime,
+        });
         return res.json(cached);
       }
       
+      logger.debug('[PaymentRoutes] Cache miss, obteniendo estado de suscripción', {
+        userId: userId.toString(),
+      });
+      
       const status = await paymentService.getSubscriptionStatus(userId);
+      
+      logger.debug('[PaymentRoutes] Estado de suscripción obtenido', {
+        userId: userId.toString(),
+        hasStatus: !!status,
+        statusKeys: status ? Object.keys(status) : [],
+      });
 
       const response = {
         success: true,
@@ -272,10 +297,29 @@ router.get(
       
       // Guardar en caché por 5 minutos (el estado puede cambiar)
       await cacheService.set(cacheKey, response, 300);
+      logger.debug('[PaymentRoutes] Respuesta guardada en caché', {
+        userId: userId.toString(),
+        ttl: 300,
+      });
+
+      const duration = Date.now() - startTime;
+      logger.payment('GET /subscription-status completado exitosamente', {
+        userId: userId.toString(),
+        duration,
+        cached: false,
+      });
 
       res.json(response);
     } catch (error) {
-      console.error('Error obteniendo estado de suscripción:', error);
+      const duration = Date.now() - startTime;
+      logger.requestError(req, error, 'Error obteniendo estado de suscripción');
+      logger.payment('GET /subscription-status error', {
+        userId: userId.toString(),
+        error: error.message,
+        stack: error.stack,
+        duration,
+      });
+      
       res.status(500).json({
         success: false,
         error: error.message || 'Error al obtener estado de suscripción',
@@ -462,9 +506,25 @@ router.post(
   authenticateToken,
   validateUserObjectId,
   async (req, res) => {
+    const startTime = Date.now();
+    const userId = req.user._id;
+    
     try {
+      logger.payment('POST /validate-receipt iniciado', {
+        userId: userId.toString(),
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+        hasReceipt: !!req.body.receipt,
+        hasProductId: !!req.body.productId,
+        restore: req.body.restore || false,
+      });
+
       const { error, value } = validateReceiptSchema.validate(req.body);
       if (error) {
+        logger.payment('POST /validate-receipt: validación fallida', {
+          userId: userId.toString(),
+          validationErrors: error.details.map(d => d.message),
+        });
         return res.status(400).json({
           success: false,
           error: 'Datos inválidos',
@@ -473,13 +533,49 @@ router.post(
       }
 
       const { receipt, productId, transactionId, originalTransactionIdentifierIOS, restore } = value;
-      const userId = req.user._id;
+      
+      logger.payment('POST /validate-receipt: datos validados', {
+        userId: userId.toString(),
+        productId,
+        transactionId: transactionId || 'no proporcionado',
+        originalTransactionIdentifierIOS: originalTransactionIdentifierIOS || 'no proporcionado',
+        restore,
+        receiptLength: receipt ? receipt.length : 0,
+      });
 
       // Validar recibo con Apple
       const isSandbox = process.env.NODE_ENV !== 'production';
+      logger.payment('POST /validate-receipt: iniciando validación con Apple', {
+        userId: userId.toString(),
+        isSandbox,
+        environment: process.env.NODE_ENV,
+      });
+
       const receiptResponse = await appleReceiptService.validateReceiptWithApple(receipt, isSandbox);
+      
+      logger.payment('POST /validate-receipt: respuesta de Apple recibida', {
+        userId: userId.toString(),
+        appleStatus: receiptResponse.status,
+        hasReceipt: !!receiptResponse.receipt,
+        hasLatestReceiptInfo: !!(receiptResponse.latest_receipt_info && receiptResponse.latest_receipt_info.length > 0),
+        latestReceiptInfoCount: receiptResponse.latest_receipt_info ? receiptResponse.latest_receipt_info.length : 0,
+      });
+
+      if (receiptResponse.status !== 0) {
+        logger.payment('POST /validate-receipt: recibo rechazado por Apple', {
+          userId: userId.toString(),
+          appleStatus: receiptResponse.status,
+          productId,
+        });
+      }
 
       // Procesar suscripción
+      logger.payment('POST /validate-receipt: iniciando procesamiento de suscripción', {
+        userId: userId.toString(),
+        productId,
+        transactionId: transactionId || originalTransactionIdentifierIOS,
+      });
+
       const result = await appleReceiptService.processSubscription(
         userId,
         receiptResponse,
@@ -487,13 +583,35 @@ router.post(
         transactionId || originalTransactionIdentifierIOS
       );
 
+      const duration = Date.now() - startTime;
+
       if (result.success) {
+        logger.payment('POST /validate-receipt: suscripción procesada exitosamente', {
+          userId: userId.toString(),
+          productId,
+          transactionId: transactionId || originalTransactionIdentifierIOS,
+          restore,
+          duration,
+          subscriptionStatus: result.subscription?.status,
+          subscriptionPlan: result.subscription?.plan,
+          isActive: result.subscription?.isActive,
+        });
+
         res.json({
           success: true,
           message: restore ? 'Compras restauradas correctamente' : 'Suscripción activada correctamente',
           subscription: result.subscription,
         });
       } else {
+        logger.payment('POST /validate-receipt: error procesando suscripción', {
+          userId: userId.toString(),
+          productId,
+          transactionId: transactionId || originalTransactionIdentifierIOS,
+          error: result.error,
+          status: result.status,
+          duration,
+        });
+
         res.status(400).json({
           success: false,
           error: result.error,
@@ -501,7 +619,15 @@ router.post(
         });
       }
     } catch (error) {
-      console.error('Error validando recibo de Apple:', error);
+      const duration = Date.now() - startTime;
+      logger.requestError(req, error, 'Error validando recibo de Apple');
+      logger.payment('POST /validate-receipt: excepción no manejada', {
+        userId: userId.toString(),
+        error: error.message,
+        stack: error.stack,
+        duration,
+      });
+      
       res.status(500).json({
         success: false,
         error: error.message || 'Error al validar el recibo',

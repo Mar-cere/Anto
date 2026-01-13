@@ -188,6 +188,8 @@ const SubscriptionScreen = () => {
           if (!storeKitService.isInitialized) {
             const initResult = await storeKitService.initialize();
             if (!initResult.success) {
+              setSubscribing(false);
+              setSelectedPlan(null);
               Alert.alert(
                 TEXTS.SUBSCRIBE_ERROR,
                 initResult.error || 'No se pudo conectar con App Store. Por favor, intenta de nuevo.'
@@ -202,6 +204,8 @@ const SubscriptionScreen = () => {
             console.log('[SubscriptionScreen] Cargando productos...');
             const loadResult = await storeKitService.loadProducts();
             if (!loadResult.success || !loadResult.products || loadResult.products.length === 0) {
+              setSubscribing(false);
+              setSelectedPlan(null);
               Alert.alert(
                 TEXTS.SUBSCRIBE_ERROR,
                 loadResult.error || 'No se pudieron cargar los productos. Por favor, intenta de nuevo.'
@@ -243,6 +247,7 @@ const SubscriptionScreen = () => {
             error?.message || 'Ocurrió un error inesperado al procesar tu suscripción. Por favor, intenta de nuevo.'
           );
         } finally {
+          // CRÍTICO: Siempre resetear el estado
           setSubscribing(false);
           setSelectedPlan(null);
         }

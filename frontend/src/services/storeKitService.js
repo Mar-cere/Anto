@@ -204,19 +204,24 @@ class StoreKitService {
         
         if (update.responseCode === module.IAPResponseCode.OK && update.results && Array.isArray(update.results)) {
           for (const purchase of update.results) {
-            if (!purchase) continue;
+            if (!purchase || !purchase.productId) continue;
             
+            // Verificar si la compra ya fue reconocida
             if (purchase.acknowledged) {
               console.log('[StoreKit] Compra ya reconocida:', purchase.productId);
               continue;
             }
 
-            // Procesar la compra
+            // Procesar la compra según su estado
             if (purchase.purchaseState === module.PurchaseState.PURCHASED) {
-              console.log('[StoreKit] Compra exitosa:', purchase.productId);
-              // La validación se hace en el método de compra
+              console.log('[StoreKit] Compra exitosa recibida en listener:', purchase.productId);
+              // La validación y finalización se hace en el método de compra principal
+              // Este listener solo notifica, no procesa
             } else if (purchase.purchaseState === module.PurchaseState.RESTORED) {
-              console.log('[StoreKit] Compra restaurada:', purchase.productId);
+              console.log('[StoreKit] Compra restaurada recibida en listener:', purchase.productId);
+              // Las compras restauradas se manejan en restorePurchases()
+            } else {
+              console.log('[StoreKit] Estado de compra desconocido:', purchase.purchaseState);
             }
           }
         } else {
@@ -423,26 +428,54 @@ class StoreKitService {
         const purchase = results[0];
         console.log('[StoreKit] Compra realizada:', purchase);
 
+        // Validar que purchase tenga los datos necesarios
+        if (!purchase || !purchase.productId || !purchase.transactionReceipt) {
+          console.error('[StoreKit] Datos de compra incompletos:', purchase);
+          return {
+            success: false,
+            error: 'Datos de compra incompletos. Por favor, intenta de nuevo.',
+          };
+        }
+
         // Validar recibo con el backend
         if (onValidateReceipt) {
-          const validationResult = await onValidateReceipt({
-            transactionReceipt: purchase.transactionReceipt,
-            productId: purchase.productId,
-            transactionId: purchase.transactionId,
-            originalTransactionIdentifierIOS: purchase.originalTransactionIdentifierIOS,
-          });
+          try {
+            const validationResult = await onValidateReceipt({
+              transactionReceipt: purchase.transactionReceipt,
+              productId: purchase.productId,
+              transactionId: purchase.transactionId,
+              originalTransactionIdentifierIOS: purchase.originalTransactionIdentifierIOS,
+            });
 
-          if (!validationResult.success) {
+            if (!validationResult || !validationResult.success) {
+              // Si la validación falla, NO finalizar la transacción para que el usuario pueda reintentar
+              console.error('[StoreKit] Validación de recibo falló:', validationResult?.error);
+              return {
+                success: false,
+                error: validationResult?.error || 'Error al validar la compra con el servidor',
+                purchase,
+              };
+            }
+          } catch (validationError) {
+            console.error('[StoreKit] Error en validación de recibo:', validationError);
+            // NO finalizar la transacción si hay error en la validación
             return {
               success: false,
-              error: validationResult.error || 'Error al validar la compra',
+              error: validationError?.message || 'Error al validar la compra',
               purchase,
             };
           }
         }
 
-        // Finalizar la transacción
-        await module.finishTransactionAsync(purchase);
+        // Solo finalizar la transacción si la validación fue exitosa
+        try {
+          await module.finishTransactionAsync(purchase);
+          console.log('[StoreKit] Transacción finalizada correctamente');
+        } catch (finishError) {
+          console.error('[StoreKit] Error finalizando transacción:', finishError);
+          // Aunque falle finalizar, la compra ya fue validada, así que consideramos éxito
+          // pero logueamos el error para debugging
+        }
 
         return {
           success: true,
@@ -464,20 +497,39 @@ class StoreKitService {
     } catch (error) {
       console.error('[StoreKit] Error en compra:', error);
       
+      const errorMessage = error?.message || 'Error al procesar la compra';
+      
       // Manejar error "Already connected" específicamente
-      if (error.message && error.message.includes('Already connected')) {
-        console.log('[StoreKit] Ya estaba conectado, intentando comprar de nuevo...');
+      if (errorMessage.includes('Already connected')) {
+        console.log('[StoreKit] Ya estaba conectado, marcando como inicializado y reintentando...');
         // Marcar como inicializado y reintentar
         this.isInitialized = true;
+        // Asegurar que los productos estén cargados antes de reintentar
+        if (!this.products || this.products.length === 0) {
+          await this.loadProducts();
+        }
         // Reintentar la compra una vez
         try {
           const retryResult = await module.purchaseItemAsync(productId);
           if (!retryResult) {
-            throw new Error('No se recibió respuesta de App Store en reintento');
+            return {
+              success: false,
+              error: 'No se recibió respuesta de App Store en reintento',
+            };
           }
+          
           const { responseCode, results } = retryResult;
           if (responseCode === module.IAPResponseCode.OK && results && results.length > 0) {
             const purchase = results[0];
+            
+            // Validar datos de compra
+            if (!purchase || !purchase.productId || !purchase.transactionReceipt) {
+              return {
+                success: false,
+                error: 'Datos de compra incompletos en reintento',
+              };
+            }
+            
             if (onValidateReceipt) {
               const validationResult = await onValidateReceipt({
                 transactionReceipt: purchase.transactionReceipt,
@@ -485,24 +537,141 @@ class StoreKitService {
                 transactionId: purchase.transactionId,
                 originalTransactionIdentifierIOS: purchase.originalTransactionIdentifierIOS,
               });
-              if (validationResult.success) {
-                await module.finishTransactionAsync(purchase);
+              
+              if (validationResult && validationResult.success) {
+                try {
+                  await module.finishTransactionAsync(purchase);
+                } catch (finishError) {
+                  console.error('[StoreKit] Error finalizando transacción en reintento:', finishError);
+                }
                 return {
                   success: true,
                   purchase,
                   plan: PRODUCT_ID_TO_PLAN[productId] || plan,
                 };
+              } else {
+                return {
+                  success: false,
+                  error: validationResult?.error || 'Error al validar la compra en reintento',
+                  purchase,
+                };
               }
+            } else {
+              // Si no hay función de validación, finalizar y retornar éxito
+              try {
+                await module.finishTransactionAsync(purchase);
+              } catch (finishError) {
+                console.error('[StoreKit] Error finalizando transacción en reintento:', finishError);
+              }
+              return {
+                success: true,
+                purchase,
+                plan: PRODUCT_ID_TO_PLAN[productId] || plan,
+              };
             }
+          } else if (responseCode === module.IAPResponseCode.USER_CANCELED) {
+            return {
+              success: false,
+              error: 'Compra cancelada por el usuario',
+              cancelled: true,
+            };
+          } else {
+            return {
+              success: false,
+              error: `Error en la compra (reintento): ${responseCode}`,
+            };
           }
         } catch (retryError) {
           console.error('[StoreKit] Error en reintento de compra:', retryError);
+          return {
+            success: false,
+            error: retryError?.message || 'Error al procesar la compra en reintento',
+          };
         }
+      }
+      
+      // Manejar error "Must query item from store before calling purchase"
+      if (errorMessage.includes('Must query') || errorMessage.includes('query item')) {
+        console.log('[StoreKit] Error: productos no consultados, cargando productos y reintentando...');
+        // Cargar productos y reintentar
+        const loadResult = await this.loadProducts();
+        if (loadResult.success && this.products.length > 0) {
+          // Verificar que el producto específico esté disponible
+          const productAvailable = this.products.some(p => p && p.productId === productId);
+          if (productAvailable) {
+            // Reintentar compra después de cargar productos
+            try {
+              const retryResult = await module.purchaseItemAsync(productId);
+              if (retryResult && retryResult.responseCode === module.IAPResponseCode.OK && retryResult.results && retryResult.results.length > 0) {
+                const purchase = retryResult.results[0];
+                
+                // Validar datos de compra
+                if (!purchase || !purchase.productId || !purchase.transactionReceipt) {
+                  return {
+                    success: false,
+                    error: 'Datos de compra incompletos después de cargar productos',
+                  };
+                }
+                
+                if (onValidateReceipt) {
+                  const validationResult = await onValidateReceipt({
+                    transactionReceipt: purchase.transactionReceipt,
+                    productId: purchase.productId,
+                    transactionId: purchase.transactionId,
+                    originalTransactionIdentifierIOS: purchase.originalTransactionIdentifierIOS,
+                  });
+                  if (validationResult && validationResult.success) {
+                    try {
+                      await module.finishTransactionAsync(purchase);
+                    } catch (finishError) {
+                      console.error('[StoreKit] Error finalizando transacción:', finishError);
+                    }
+                    return {
+                      success: true,
+                      purchase,
+                      plan: PRODUCT_ID_TO_PLAN[productId] || plan,
+                    };
+                  } else {
+                    return {
+                      success: false,
+                      error: validationResult?.error || 'Error al validar la compra',
+                      purchase,
+                    };
+                  }
+                } else {
+                  // Si no hay función de validación, finalizar y retornar éxito
+                  try {
+                    await module.finishTransactionAsync(purchase);
+                  } catch (finishError) {
+                    console.error('[StoreKit] Error finalizando transacción:', finishError);
+                  }
+                  return {
+                    success: true,
+                    purchase,
+                    plan: PRODUCT_ID_TO_PLAN[productId] || plan,
+                  };
+                }
+              } else if (retryResult && retryResult.responseCode === module.IAPResponseCode.USER_CANCELED) {
+                return {
+                  success: false,
+                  error: 'Compra cancelada por el usuario',
+                  cancelled: true,
+                };
+              }
+            } catch (retryError) {
+              console.error('[StoreKit] Error en reintento después de cargar productos:', retryError);
+            }
+          }
+        }
+        return {
+          success: false,
+          error: 'No se pudieron cargar los productos. Por favor, intenta de nuevo.',
+        };
       }
       
       return {
         success: false,
-        error: error.message || 'Error al procesar la compra',
+        error: errorMessage,
       };
     }
   }

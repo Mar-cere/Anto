@@ -10,6 +10,7 @@ import User from '../models/User.js';
 import Subscription from '../models/Subscription.js';
 import Transaction from '../models/Transaction.js';
 import paymentAuditService from './paymentAuditService.js';
+import logger from '../utils/logger.js';
 
 // URLs de verificación de Apple
 const APPLE_VERIFY_URL_SANDBOX = 'https://sandbox.itunes.apple.com/verifyReceipt';
@@ -41,10 +42,25 @@ class AppleReceiptService {
    * @returns {Promise<Object>} - Respuesta de Apple
    */
   async validateReceiptWithApple(receiptData, isSandbox = false) {
+    const startTime = Date.now();
     const verifyUrl = isSandbox ? APPLE_VERIFY_URL_SANDBOX : APPLE_VERIFY_URL_PRODUCTION;
+    
+    logger.externalService('Apple', 'Validando recibo', {
+      isSandbox,
+      url: verifyUrl,
+      receiptLength: receiptData ? receiptData.length : 0,
+      hasSharedSecret: !!process.env.APPLE_SHARED_SECRET,
+    });
     
     // Obtener shared secret desde variables de entorno
     const sharedSecret = process.env.APPLE_SHARED_SECRET;
+    
+    if (!sharedSecret) {
+      logger.error('[AppleReceipt] APPLE_SHARED_SECRET no configurado', {
+        isSandbox,
+      });
+      throw new Error('APPLE_SHARED_SECRET no está configurado');
+    }
     
     const payload = {
       'receipt-data': receiptData,
@@ -53,6 +69,12 @@ class AppleReceiptService {
     };
 
     try {
+      logger.debug('[AppleReceipt] Enviando petición a Apple', {
+        isSandbox,
+        url: verifyUrl,
+        payloadSize: JSON.stringify(payload).length,
+      });
+
       const response = await fetch(verifyUrl, {
         method: 'POST',
         headers: {
@@ -61,17 +83,50 @@ class AppleReceiptService {
         body: JSON.stringify(payload),
       });
 
+      const responseTime = Date.now() - startTime;
+      logger.debug('[AppleReceipt] Respuesta recibida de Apple', {
+        isSandbox,
+        status: response.status,
+        statusText: response.statusText,
+        responseTime,
+      });
+
       const data = await response.json();
+      
+      logger.externalService('Apple', 'Validación de recibo completada', {
+        isSandbox,
+        appleStatus: data.status,
+        hasReceipt: !!data.receipt,
+        hasLatestReceiptInfo: !!(data.latest_receipt_info && data.latest_receipt_info.length > 0),
+        latestReceiptInfoCount: data.latest_receipt_info ? data.latest_receipt_info.length : 0,
+        responseTime,
+      });
 
       // Si el recibo es de sandbox pero se envió a producción, intentar con sandbox
       if (data.status === 21007 && !isSandbox) {
-        console.log('[AppleReceipt] Recibo de sandbox detectado, revalidando...');
+        logger.warn('[AppleReceipt] Recibo de sandbox detectado en producción, revalidando con sandbox', {
+          originalStatus: data.status,
+        });
         return this.validateReceiptWithApple(receiptData, true);
+      }
+
+      if (data.status !== 0) {
+        logger.warn('[AppleReceipt] Recibo rechazado por Apple', {
+          isSandbox,
+          appleStatus: data.status,
+          errorMessage: this.getStatusErrorMessage(data.status),
+        });
       }
 
       return data;
     } catch (error) {
-      console.error('[AppleReceipt] Error validando recibo:', error);
+      const duration = Date.now() - startTime;
+      logger.error('[AppleReceipt] Error validando recibo con Apple', {
+        isSandbox,
+        error: error.message,
+        stack: error.stack,
+        duration,
+      });
       throw error;
     }
   }
@@ -85,10 +140,26 @@ class AppleReceiptService {
    * @returns {Promise<Object>} - Resultado del procesamiento
    */
   async processSubscription(userId, receiptResponse, productId, transactionId) {
+    const startTime = Date.now();
+    
     try {
+      logger.payment('AppleReceiptService.processSubscription iniciado', {
+        userId: userId.toString(),
+        productId,
+        transactionId: transactionId || 'no proporcionado',
+        receiptStatus: receiptResponse.status,
+      });
+
       // Verificar que el recibo es válido
       if (receiptResponse.status !== 0) {
         const errorMessage = this.getStatusErrorMessage(receiptResponse.status);
+        logger.payment('AppleReceiptService.processSubscription: recibo inválido', {
+          userId: userId.toString(),
+          productId,
+          transactionId: transactionId || 'no proporcionado',
+          appleStatus: receiptResponse.status,
+          errorMessage,
+        });
         return {
           success: false,
           error: errorMessage,
@@ -98,6 +169,14 @@ class AppleReceiptService {
 
       const receipt = receiptResponse.receipt;
       const latestReceiptInfo = receiptResponse.latest_receipt_info || [];
+      
+      logger.debug('[AppleReceipt] Procesando suscripción', {
+        userId: userId.toString(),
+        productId,
+        transactionId: transactionId || 'no proporcionado',
+        latestReceiptInfoCount: latestReceiptInfo.length,
+        hasReceipt: !!receipt,
+      });
       
       // Buscar la transacción más reciente para este producto
       const transaction = latestReceiptInfo
@@ -109,20 +188,47 @@ class AppleReceiptService {
         })[0];
 
       if (!transaction) {
+        logger.payment('AppleReceiptService.processSubscription: transacción no encontrada', {
+          userId: userId.toString(),
+          productId,
+          transactionId: transactionId || 'no proporcionado',
+          availableProductIds: latestReceiptInfo.map(t => t.product_id),
+        });
         return {
           success: false,
           error: 'No se encontró la transacción en el recibo',
         };
       }
 
+      logger.debug('[AppleReceipt] Transacción encontrada', {
+        userId: userId.toString(),
+        productId,
+        transactionProductId: transaction.product_id,
+        purchaseDateMs: transaction.purchase_date_ms,
+        expiresDateMs: transaction.expires_date_ms,
+        originalTransactionId: transaction.original_transaction_id,
+      });
+
       // Obtener información del plan
       const plan = PRODUCT_ID_TO_PLAN[productId];
       if (!plan) {
+        logger.payment('AppleReceiptService.processSubscription: Product ID no reconocido', {
+          userId: userId.toString(),
+          productId,
+          availablePlans: Object.keys(PRODUCT_ID_TO_PLAN),
+        });
         return {
           success: false,
           error: `Product ID no reconocido: ${productId}`,
         };
       }
+
+      logger.debug('[AppleReceipt] Plan identificado', {
+        userId: userId.toString(),
+        productId,
+        plan,
+        planDurationDays: PLAN_DURATION_DAYS[plan],
+      });
 
       // Calcular fechas
       const purchaseDate = new Date(parseInt(transaction.purchase_date_ms));
@@ -134,16 +240,42 @@ class AppleReceiptService {
       const now = new Date();
       const isActive = expiresDate > now;
 
+      logger.debug('[AppleReceipt] Fechas calculadas', {
+        userId: userId.toString(),
+        purchaseDate: purchaseDate.toISOString(),
+        expiresDate: expiresDate.toISOString(),
+        now: now.toISOString(),
+        isActive,
+        daysUntilExpiry: Math.floor((expiresDate - now) / (1000 * 60 * 60 * 24)),
+      });
+
       // Obtener o crear usuario
       const user = await User.findById(userId);
       if (!user) {
+        logger.payment('AppleReceiptService.processSubscription: usuario no encontrado', {
+          userId: userId.toString(),
+          productId,
+        });
         return {
           success: false,
           error: 'Usuario no encontrado',
         };
       }
 
+      logger.debug('[AppleReceipt] Usuario encontrado', {
+        userId: userId.toString(),
+        currentSubscriptionStatus: user.subscription?.status,
+        currentSubscriptionPlan: user.subscription?.plan,
+      });
+
       // Actualizar suscripción del usuario
+      logger.debug('[AppleReceipt] Actualizando suscripción del usuario', {
+        userId: userId.toString(),
+        oldStatus: user.subscription?.status,
+        newStatus: isActive ? 'premium' : 'expired',
+        plan,
+      });
+
       user.subscription = {
         status: isActive ? 'premium' : 'expired',
         plan: plan,
@@ -155,10 +287,22 @@ class AppleReceiptService {
       };
 
       await user.save();
+      logger.database('Usuario actualizado con nueva suscripción', {
+        userId: userId.toString(),
+        subscriptionStatus: user.subscription.status,
+        subscriptionPlan: user.subscription.plan,
+      });
 
       // Crear o actualizar registro en modelo Subscription
       let subscription = await Subscription.findOne({ userId });
+      const isNewSubscription = !subscription;
+      
       if (!subscription) {
+        logger.debug('[AppleReceipt] Creando nuevo registro de suscripción', {
+          userId: userId.toString(),
+          plan,
+          isActive,
+        });
         subscription = new Subscription({
           userId,
           provider: 'apple',
@@ -168,6 +312,13 @@ class AppleReceiptService {
           isInTrial: false,
         });
       } else {
+        logger.debug('[AppleReceipt] Actualizando registro de suscripción existente', {
+          userId: userId.toString(),
+          oldPlan: subscription.plan,
+          newPlan: plan,
+          oldStatus: subscription.status,
+          newStatus: isActive ? 'active' : 'expired',
+        });
         subscription.provider = 'apple';
         subscription.plan = plan;
         subscription.status = isActive ? 'active' : 'expired';
@@ -180,6 +331,14 @@ class AppleReceiptService {
       subscription.startDate = purchaseDate;
       subscription.endDate = expiresDate;
       await subscription.save();
+      
+      logger.database(isNewSubscription ? 'Nueva suscripción creada' : 'Suscripción actualizada', {
+        userId: userId.toString(),
+        subscriptionId: subscription._id.toString(),
+        plan,
+        status: subscription.status,
+        isActive: subscription.isActive,
+      });
 
       // Crear registro de transacción
       const transactionRecord = new Transaction({
@@ -199,6 +358,14 @@ class AppleReceiptService {
         },
       });
       await transactionRecord.save();
+      
+      logger.database('Transacción creada', {
+        userId: userId.toString(),
+        transactionId: transactionRecord._id.toString(),
+        amount: transactionRecord.amount,
+        currency: transactionRecord.currency,
+        status: transactionRecord.status,
+      });
 
       // Registrar evento de auditoría
       await paymentAuditService.logEvent('APPLE_SUBSCRIPTION_ACTIVATED', {
@@ -212,6 +379,16 @@ class AppleReceiptService {
         isActive,
       }, userId.toString());
 
+      const duration = Date.now() - startTime;
+      logger.payment('AppleReceiptService.processSubscription completado exitosamente', {
+        userId: userId.toString(),
+        productId,
+        plan,
+        transactionId,
+        isActive,
+        duration,
+      });
+
       return {
         success: true,
         subscription: {
@@ -223,11 +400,28 @@ class AppleReceiptService {
         },
       };
     } catch (error) {
-      console.error('[AppleReceipt] Error procesando suscripción:', error);
+      const duration = Date.now() - startTime;
+      logger.error('[AppleReceipt] Error procesando suscripción', {
+        userId: userId.toString(),
+        productId,
+        transactionId: transactionId || 'no proporcionado',
+        error: error.message,
+        stack: error.stack,
+        duration,
+      });
+      
       await paymentAuditService.logEvent('APPLE_SUBSCRIPTION_ERROR', {
         userId: userId.toString(),
+        productId,
+        transactionId: transactionId || 'no proporcionado',
         error: error.message,
-      }, userId.toString()).catch(() => {});
+        stack: error.stack,
+      }, userId.toString()).catch((auditError) => {
+        logger.error('[AppleReceipt] Error registrando evento de auditoría', {
+          originalError: error.message,
+          auditError: auditError.message,
+        });
+      });
 
       return {
         success: false,
