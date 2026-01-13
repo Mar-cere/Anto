@@ -184,6 +184,32 @@ const SubscriptionScreen = () => {
       // En iOS, usar StoreKit
       if (Platform.OS === 'ios' && storeKitService.isAvailable()) {
         try {
+          // Asegurar que StoreKit esté inicializado y los productos cargados
+          if (!storeKitService.isInitialized) {
+            const initResult = await storeKitService.initialize();
+            if (!initResult.success) {
+              Alert.alert(
+                TEXTS.SUBSCRIBE_ERROR,
+                initResult.error || 'No se pudo conectar con App Store. Por favor, intenta de nuevo.'
+              );
+              return;
+            }
+          }
+          
+          // Verificar que los productos estén cargados
+          const products = storeKitService.getProducts();
+          if (!products || products.length === 0) {
+            console.log('[SubscriptionScreen] Cargando productos...');
+            const loadResult = await storeKitService.loadProducts();
+            if (!loadResult.success || !loadResult.products || loadResult.products.length === 0) {
+              Alert.alert(
+                TEXTS.SUBSCRIBE_ERROR,
+                loadResult.error || 'No se pudieron cargar los productos. Por favor, intenta de nuevo.'
+              );
+              return;
+            }
+          }
+          
           const purchaseResult = await paymentService.purchaseWithStoreKit(plan.id);
           
           if (purchaseResult && purchaseResult.success) {

@@ -249,7 +249,15 @@ router.get(
       const userId = req.user._id;
       const cacheKey = cacheService.generateKey('subscription', userId);
       
-      // Intentar obtener del caché
+      // Agregar headers para evitar caché del navegador
+      // Esto asegura que siempre se devuelvan datos frescos
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      
+      // Intentar obtener del caché del servidor
       const cached = await cacheService.get(cacheKey);
       if (cached) {
         return res.json(cached);

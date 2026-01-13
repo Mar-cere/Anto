@@ -156,8 +156,10 @@ class StoreKitService {
         this.setupPurchaseListeners();
       }
 
-      // Cargar productos disponibles
-      await this.loadProducts();
+      // Cargar productos disponibles (no crítico si falla, se cargarán cuando se necesiten)
+      this.loadProducts().catch(err => {
+        console.warn('[StoreKit] Error precargando productos (no crítico):', err);
+      });
 
       return { success: true };
     } catch (error) {
@@ -374,8 +376,36 @@ class StoreKitService {
       };
     }
 
+    // CRÍTICO: Verificar que los productos estén cargados antes de comprar
+    // StoreKit requiere que se consulten los productos primero
+    if (!this.products || this.products.length === 0) {
+      console.log('[StoreKit] Productos no cargados, cargando ahora...');
+      const loadResult = await this.loadProducts();
+      if (!loadResult.success || !loadResult.products || loadResult.products.length === 0) {
+        return {
+          success: false,
+          error: loadResult.error || 'No se pudieron cargar los productos. Por favor, intenta de nuevo.',
+        };
+      }
+    }
+
+    // Verificar que el producto específico esté disponible
+    const productAvailable = this.products.some(p => p && p.productId === productId);
+    if (!productAvailable) {
+      console.log('[StoreKit] Producto no encontrado en lista, recargando productos...');
+      const loadResult = await this.loadProducts();
+      const stillNotAvailable = !this.products.some(p => p && p.productId === productId);
+      if (stillNotAvailable) {
+        return {
+          success: false,
+          error: `El producto ${productId} no está disponible en App Store. Verifica que esté configurado correctamente en App Store Connect.`,
+        };
+      }
+    }
+
     try {
       console.log('[StoreKit] Iniciando compra:', productId);
+      console.log('[StoreKit] Productos disponibles:', this.products.map(p => p?.productId));
 
       // Solicitar compra
       const purchaseResult = await module.purchaseItemAsync(productId);

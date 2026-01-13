@@ -231,7 +231,8 @@ export const api = {
         headers
       });
 
-      if (!response.ok) {
+      // 304 (Not Modified) es una respuesta válida, no un error
+      if (!response.ok && response.status !== 304) {
         let errorData;
         try {
           errorData = await response.json();
@@ -242,7 +243,18 @@ export const api = {
         throw new Error(errorData.message || `Error del servidor: ${response.status} - ${response.statusText}`);
       }
 
-      const data = await response.json();
+      // Para 304, devolver null o un objeto vacío (el cliente debe usar su caché)
+      // Para otros códigos exitosos, parsear el JSON
+      let data;
+      if (response.status === 304) {
+        // 304 significa que el recurso no ha cambiado, devolver un objeto indicando esto
+        data = { notModified: true };
+        if (__DEV__) {
+          console.log(`[API] GET ${endpoint} - 304 Not Modified (usando caché del cliente)`);
+        }
+      } else {
+        data = await response.json();
+      }
       if (__DEV__) {
         console.log(`[API] GET ${endpoint} - Success`);
       }

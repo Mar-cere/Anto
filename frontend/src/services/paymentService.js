@@ -217,6 +217,42 @@ class PaymentService {
   async getSubscriptionStatus() {
     try {
       const response = await api.get(ENDPOINTS.PAYMENT_SUBSCRIPTION_STATUS);
+      
+      // Si la respuesta es 304 Not Modified, usar datos del caché local si existen
+      if (response.notModified) {
+        // Intentar obtener del caché local (AsyncStorage)
+        try {
+          const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+          const cached = await AsyncStorage.getItem('subscription_status_cache');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            return {
+              success: true,
+              ...parsed,
+              fromCache: true
+            };
+          }
+        } catch (cacheError) {
+          console.warn('[PaymentService] Error leyendo caché local:', cacheError);
+        }
+        
+        // Si no hay caché local, devolver un objeto indicando que no hay cambios
+        return {
+          success: true,
+          notModified: true,
+          message: 'Estado de suscripción no ha cambiado'
+        };
+      }
+      
+      // Guardar en caché local para futuras solicitudes 304
+      try {
+        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+        await AsyncStorage.setItem('subscription_status_cache', JSON.stringify(response));
+      } catch (cacheError) {
+        // No es crítico si falla el guardado del caché
+        console.warn('[PaymentService] Error guardando caché local:', cacheError);
+      }
+      
       return {
         success: true,
         ...response,
