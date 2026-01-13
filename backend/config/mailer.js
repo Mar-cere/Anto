@@ -442,6 +442,86 @@ const emailTemplates = {
         </div>
       `
     };
+  },
+
+  /**
+   * Plantilla para correo de agradecimiento por suscripción
+   */
+  subscriptionThankYouEmail: (username, plan, periodEnd) => {
+    const planNames = {
+      weekly: 'Semanal',
+      monthly: 'Mensual',
+      quarterly: 'Trimestral',
+      semestral: 'Semestral',
+      yearly: 'Anual',
+    };
+
+    const planName = planNames[plan] || plan;
+    const periodEndDate = new Date(periodEnd).toLocaleDateString('es-CL', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+    return {
+      subject: `¡Gracias por tu suscripción a ${APP_NAME}! 🎉`,
+      html: `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: ${EMAIL_COLORS.BACKGROUND};">
+          ${getEmailHeader(`¡Gracias por tu suscripción, ${username}! 🎉`)}
+          
+          <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); margin: -24px 24px 24px 24px; padding: 32px 24px; border-radius: 18px; box-shadow: 0 8px 32px rgba(31,38,135,0.10); border: 1px solid rgba(255,255,255,0.18);">
+            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.1rem; line-height: 1.7; margin-bottom: 28px; text-align: center;">
+              ¡Hola ${username}!<br><br>
+              Queremos agradecerte por confiar en ${APP_NAME} y por unirte a nuestra comunidad premium. Tu suscripción ha sido activada exitosamente y ahora tienes acceso completo a todas las funcionalidades de la app.
+            </p>
+            
+            <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); padding: 24px; border-radius: 14px; margin: 28px 0; text-align: center;">
+              <h2 style="color: white; margin: 0 0 12px 0; font-size: 1.5rem;">
+                ✨ Plan ${planName}
+              </h2>
+              <p style="color: rgba(255,255,255,0.95); font-size: 1rem; margin: 0;">
+                Tu suscripción es válida hasta el ${periodEndDate}
+              </p>
+            </div>
+
+            <h2 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 20px; text-align: center;">
+              🎁 ¿Qué incluye tu suscripción premium?
+            </h2>
+            <ul style="color: #333; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+              <li><b>Chat ilimitado</b> con ${APP_NAME}, tu asistente terapéutico</li>
+              <li><b>Evaluaciones clínicas</b> automáticas (PHQ-9, GAD-7)</li>
+              <li><b>Detección de distorsiones cognitivas</b> en tus conversaciones</li>
+              <li><b>Protocolos terapéuticos estructurados</b> personalizados</li>
+              <li><b>Seguimiento de progreso</b> y métricas de bienestar</li>
+              <li><b>Análisis emocional avanzado</b> de tus conversaciones</li>
+              <li><b>Sin límites</b> en todas las funcionalidades</li>
+            </ul>
+
+            <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM}15 0%, ${EMAIL_COLORS.ACCENT}15 100%); padding: 24px; border-radius: 12px; margin: 24px 0; border-left: 4px solid ${EMAIL_COLORS.ACCENT};">
+              <h3 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 0; text-align: center;">💬 Comienza ahora</h3>
+              <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; text-align: center; margin-bottom: 0;">
+                Abre la app y comienza a conversar con ${APP_NAME}. Estamos aquí para acompañarte en tu camino hacia el bienestar emocional.
+              </p>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+              <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 14px;">
+                Si tienes alguna pregunta sobre tu suscripción o necesitas ayuda, no dudes en contactarnos.<br>
+                Estamos aquí para acompañarte en tu camino hacia una mejor salud emocional. 💙
+              </p>
+            </div>
+
+            <div style="border-top: 1px solid rgba(0,0,0,0.1); padding-top: 20px; margin-top: 28px; text-align: center;">
+              <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 14px; margin: 0;">
+                <strong>Próxima renovación:</strong> ${periodEndDate}
+              </p>
+            </div>
+          </div>
+
+          ${getEmailFooter()}
+        </div>
+      `
+    };
   }
 };
 
@@ -830,5 +910,8 @@ const mailer = {
     }
   }
 };
+
+// Exportar también las plantillas para uso directo
+mailer.emailTemplates = emailTemplates;
 
 export default mailer;

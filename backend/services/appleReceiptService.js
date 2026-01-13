@@ -440,6 +440,36 @@ class AppleReceiptService {
         isActive,
       }, userId.toString());
 
+      // Enviar correo de agradecimiento por suscripción (solo si está activa)
+      if (isActive) {
+        try {
+          const mailer = (await import('../config/mailer.js')).default;
+          const username = user.name || user.username || 'Usuario';
+          const emailTemplate = mailer.emailTemplates.subscriptionThankYouEmail(username, plan, expiresDate);
+          
+          await mailer.sendEmail(
+            user.email,
+            emailTemplate,
+            'Correo de agradecimiento por suscripción'
+          );
+          
+          logger.payment('Correo de agradecimiento por suscripción (Apple) enviado', {
+            userId: userId.toString(),
+            userEmail: user.email,
+            plan,
+            productId,
+          });
+        } catch (emailError) {
+          // No fallar el procesamiento si el correo falla, solo loguear el error
+          logger.error('Error enviando correo de agradecimiento por suscripción (Apple)', {
+            userId: userId.toString(),
+            userEmail: user.email,
+            error: emailError.message,
+            stack: emailError.stack,
+          });
+        }
+      }
+
       const duration = Date.now() - startTime;
       logger.payment('AppleReceiptService.processSubscription completado exitosamente', {
         userId: userId.toString(),

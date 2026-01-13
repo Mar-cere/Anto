@@ -117,7 +117,13 @@ class PaymentServiceMercadoPago {
           preapprovalPlanId,
         }, userIdString, transaction._id.toString());
       } catch (dbError) {
-        console.error('Error creando transacción en la base de datos:', dbError);
+        logger.error('Error creando transacción en la base de datos', {
+          userId: userIdString,
+          userEmail: user.email,
+          plan,
+          error: dbError.message,
+          stack: dbError.stack,
+        });
         await paymentAuditService.logEvent('CHECKOUT_CREATION_FAILED', {
           reason: 'database_error',
           userId: userIdString,
@@ -135,7 +141,12 @@ class PaymentServiceMercadoPago {
         preapprovalPlanId: preapprovalPlanId,
       };
     } catch (error) {
-      console.error('Error en createCheckoutSession:', error);
+      logger.error('Error en createCheckoutSession', {
+        userId: userId?.toString(),
+        plan,
+        error: error.message,
+        stack: error.stack,
+      });
       // Re-lanzar el error con el mensaje original
       throw error;
     }
@@ -201,7 +212,12 @@ class PaymentServiceMercadoPago {
         // Nota: Esto requiere el endpoint de cancelación de suscripciones
         // Por ahora, solo actualizamos en nuestra base de datos
       } catch (error) {
-        console.error('Error cancelando suscripción en Mercado Pago:', error);
+        logger.error('Error cancelando suscripción en Mercado Pago', {
+          userId: userId.toString(),
+          subscriptionId: subscription.mercadopagoSubscriptionId,
+          error: error.message,
+          stack: error.stack,
+        });
       }
     }
 
@@ -335,7 +351,11 @@ class PaymentServiceMercadoPago {
           await this.handlePreapprovalNotification(notificationData);
           break;
         default:
-          console.log(`[WEBHOOK] Tipo de notificación no manejado: ${type}`, data);
+          logger.warn('[WEBHOOK] Tipo de notificación no manejado', {
+            type,
+            dataKeys: data ? Object.keys(data) : [],
+            dataPreview: data ? JSON.stringify(data).substring(0, 500) : null,
+          });
           await paymentAuditService.logEvent('WEBHOOK_UNKNOWN_TYPE', {
             type,
             data: JSON.stringify(data).substring(0, 500), // Limitar tamaño
@@ -344,7 +364,11 @@ class PaymentServiceMercadoPago {
 
       return { received: true, type, processed: true };
     } catch (error) {
-      console.error('[WEBHOOK] Error procesando notificación de Mercado Pago:', error);
+      logger.error('[WEBHOOK] Error procesando notificación de Mercado Pago', {
+        error: error.message,
+        stack: error.stack,
+        type: data?.type || 'unknown',
+      });
       await paymentAuditService.logEvent('WEBHOOK_PROCESSING_ERROR', {
         error: error.message,
         stack: error.stack?.substring(0, 500),
@@ -579,7 +603,13 @@ class PaymentServiceMercadoPago {
         });
       }
     } catch (error) {
-      console.error('[PAYMENT_WEBHOOK] Error procesando notificación de pago:', error);
+      const duration = Date.now() - startTime;
+      logger.error('[PAYMENT_WEBHOOK] Error procesando notificación de pago', {
+        error: error.message,
+        stack: error.stack,
+        duration,
+        paymentData: paymentData ? { id: paymentData.id, status: paymentData.status } : null,
+      });
       throw error;
     }
   }
@@ -606,7 +636,7 @@ class PaymentServiceMercadoPago {
       const payerEmail = preapprovalData.payer_email;
       const planId = preapprovalData.preapproval_plan_id;
 
-      console.log('[PREAPPROVAL_WEBHOOK] Notificación recibida:', {
+      logger.payment('[PREAPPROVAL_WEBHOOK] Notificación recibida', {
         preapprovalId,
         status,
         payerEmail,
@@ -622,7 +652,11 @@ class PaymentServiceMercadoPago {
       }).populate('userId', 'email username name');
 
       if (!transaction) {
-        console.warn(`[PREAPPROVAL_WEBHOOK] Transacción no encontrada para plan: ${planId}`);
+        logger.warn('[PREAPPROVAL_WEBHOOK] Transacción no encontrada', {
+          planId,
+          preapprovalId,
+          payerEmail,
+        });
         await paymentAuditService.logEvent('PREAPPROVAL_NOTIFICATION_ORPHAN', {
           preapprovalId,
           planId,
@@ -637,7 +671,11 @@ class PaymentServiceMercadoPago {
 
       // Validar que el email del payer coincida con el usuario
       if (payerEmail && transaction.userId.email && payerEmail.toLowerCase() !== transaction.userId.email.toLowerCase()) {
-        console.warn(`[PREAPPROVAL_WEBHOOK] Email del payer no coincide: ${payerEmail} vs ${transaction.userId.email}`);
+        logger.warn('[PREAPPROVAL_WEBHOOK] Email del payer no coincide', {
+          transactionId: transaction._id.toString(),
+          payerEmail,
+          userEmail: transaction.userId.email,
+        });
         await paymentAuditService.logEvent('PREAPPROVAL_EMAIL_MISMATCH', {
           transactionId: transaction._id.toString(),
           userId: userIdString,
@@ -665,7 +703,12 @@ class PaymentServiceMercadoPago {
         try {
           await this.activateSubscriptionFromPayment(transaction);
         } catch (activationError) {
-          console.error('[PREAPPROVAL_WEBHOOK] Error activando suscripción:', activationError);
+          logger.error('[PREAPPROVAL_WEBHOOK] Error activando suscripción', {
+            transactionId: transaction._id.toString(),
+            userId: transaction.userId._id.toString(),
+            error: activationError.message,
+            stack: activationError.stack,
+          });
           throw activationError;
         }
       } else if (status === 'cancelled' || status === 'paused') {
@@ -683,7 +726,11 @@ class PaymentServiceMercadoPago {
         planId,
       }, userIdString, transaction._id.toString());
     } catch (error) {
-      console.error('[PREAPPROVAL_WEBHOOK] Error procesando notificación:', error);
+      logger.error('[PREAPPROVAL_WEBHOOK] Error procesando notificación', {
+        error: error.message,
+        stack: error.stack,
+        preapprovalData: preapprovalData ? { id: preapprovalData.id, status: preapprovalData.status } : null,
+      });
       throw error;
     }
   }
@@ -930,6 +977,33 @@ class PaymentServiceMercadoPago {
         periodStart: now.toISOString(),
         periodEnd: periodEnd.toISOString(),
       }, userIdString, transaction._id.toString());
+
+      // Enviar correo de agradecimiento por suscripción
+      try {
+        const mailer = (await import('../config/mailer.js')).default;
+        const username = user.name || user.username || 'Usuario';
+        const emailTemplate = mailer.emailTemplates.subscriptionThankYouEmail(username, plan, periodEnd);
+        
+        await mailer.sendEmail(
+          user.email,
+          emailTemplate,
+          'Correo de agradecimiento por suscripción'
+        );
+        
+        logger.payment('Correo de agradecimiento por suscripción enviado', {
+          userId: userIdString,
+          userEmail: user.email,
+          plan,
+        });
+      } catch (emailError) {
+        // No fallar la activación si el correo falla, solo loguear el error
+        logger.error('Error enviando correo de agradecimiento por suscripción', {
+          userId: userIdString,
+          userEmail: user.email,
+          error: emailError.message,
+          stack: emailError.stack,
+        });
+      }
 
       const duration = Date.now() - startTime;
       logger.payment('✅ Suscripción activada exitosamente', {
