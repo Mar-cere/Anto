@@ -166,7 +166,7 @@ const SubscriptionScreen = () => {
   const handleSubscribe = useCallback(async (planIdOrPlan) => {
     // Si se pasa un string (ID), buscar el plan completo
     const plan = typeof planIdOrPlan === 'string' 
-      ? plans.find(p => p.id === planIdOrPlan) || { id: planIdOrPlan }
+      ? plans.find(p => p && p.id === planIdOrPlan) || { id: planIdOrPlan }
       : planIdOrPlan;
     
     if (subscribing) return;
@@ -174,6 +174,36 @@ const SubscriptionScreen = () => {
     if (!plan || !plan.id) {
       Alert.alert('Error', 'Plan no válido');
       return;
+    }
+
+    // VALIDACIÓN CRÍTICA: Verificar si el usuario ya tiene una suscripción activa
+    if (subscriptionStatus && subscriptionStatus.hasSubscription) {
+      const status = subscriptionStatus.status;
+      const isActive = status === 'premium' || status === 'active' || status === 'trialing';
+      
+      if (isActive) {
+        const currentPlan = subscriptionStatus.plan || 'desconocido';
+        const daysRemaining = subscriptionStatus.daysRemaining || subscriptionStatus.daysRemaining;
+        const message = daysRemaining 
+          ? `Ya tienes una suscripción ${currentPlan} activa con ${daysRemaining} día(s) restante(s). ¿Deseas cambiar de plan?`
+          : `Ya tienes una suscripción ${currentPlan} activa. ¿Deseas cambiar de plan?`;
+        
+        Alert.alert(
+          'Suscripción activa',
+          message,
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+              text: 'Continuar',
+              onPress: () => {
+                // Continuar con la compra (permitir cambio de plan)
+                // El backend manejará la actualización
+              }
+            }
+          ]
+        );
+        // No retornar, permitir continuar si el usuario confirma
+      }
     }
 
     try {
@@ -216,7 +246,39 @@ const SubscriptionScreen = () => {
           
           const purchaseResult = await paymentService.purchaseWithStoreKit(plan.id);
           
-          if (purchaseResult && purchaseResult.success) {
+          // Validar que purchaseResult exista
+          if (!purchaseResult) {
+            throw new Error('No se recibió respuesta de la compra');
+          }
+          
+          if (purchaseResult.success) {
+            console.log('[SubscriptionScreen] ✅ Compra exitosa, actualizando estado...');
+            
+            // Esperar un momento para que el backend procese la suscripción
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Recargar datos para actualizar el estado (con reintentos)
+            let retries = 3;
+            let statusUpdated = false;
+            
+            while (retries > 0 && !statusUpdated) {
+              try {
+                await loadData();
+                // Verificar que el estado se haya actualizado
+                const newStatus = await paymentService.getSubscriptionStatus();
+                if (newStatus && newStatus.success && newStatus.hasSubscription) {
+                  statusUpdated = true;
+                  console.log('[SubscriptionScreen] Estado de suscripción actualizado correctamente');
+                } else {
+                  console.log('[SubscriptionScreen] Estado aún no actualizado, reintentando...');
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+              } catch (statusError) {
+                console.error('[SubscriptionScreen] Error actualizando estado:', statusError);
+              }
+              retries--;
+            }
+            
             Alert.alert(
               '¡Suscripción exitosa!',
               'Tu suscripción se ha activado correctamente.',
@@ -224,17 +286,31 @@ const SubscriptionScreen = () => {
                 {
                   text: 'OK',
                   onPress: () => {
-                    // Recargar datos para actualizar el estado
-                    loadData();
+                    // Recargar datos una vez más antes de navegar
+                    loadData().then(() => {
+                      navigation.goBack();
+                    });
                   }
                 }
               ]
             );
-          } else if (purchaseResult && purchaseResult.cancelled) {
+          } else if (purchaseResult.cancelled) {
             // Usuario canceló, no mostrar error
-            console.log('Compra cancelada por el usuario');
+            console.log('[SubscriptionScreen] Compra cancelada por el usuario');
+            // No mostrar alerta, solo resetear estado
           } else {
-            const errorMessage = purchaseResult?.error || 'Ocurrió un error al procesar tu suscripción';
+            const errorMessage = purchaseResult.error || 'Ocurrió un error al procesar tu suscripción';
+            console.error('[SubscriptionScreen] Error en compra:', errorMessage, purchaseResult);
+            
+            // Si hay un purchase en el error, puede ser que la validación falló pero la compra se procesó
+            if (purchaseResult.purchase) {
+              console.warn('[SubscriptionScreen] Compra procesada pero validación falló, intentando recargar estado...');
+              // Intentar recargar el estado por si acaso se procesó en el backend
+              setTimeout(() => {
+                loadData();
+              }, 2000);
+            }
+            
             Alert.alert(
               TEXTS.SUBSCRIBE_ERROR,
               errorMessage
@@ -542,13 +618,13 @@ const SubscriptionScreen = () => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{TEXTS.CURRENT_SUBSCRIPTION}</Text>
             <SubscriptionStatus
-              status={subscriptionStatus.status}
-              plan={subscriptionStatus.plan}
-              daysRemaining={subscriptionStatus.daysRemaining}
-              trialEndDate={subscriptionStatus.trialEndDate}
-              subscriptionEndDate={subscriptionStatus.subscriptionEndDate}
+              status={subscriptionStatus.status || 'free'}
+              plan={subscriptionStatus.plan || null}
+              daysRemaining={subscriptionStatus.daysRemaining || null}
+              trialEndDate={subscriptionStatus.trialEndDate || null}
+              subscriptionEndDate={subscriptionStatus.subscriptionEndDate || null}
             />
-            {(subscriptionStatus.status === 'premium' || subscriptionStatus.status === 'active') && (
+            {subscriptionStatus && subscriptionStatus.status && (subscriptionStatus.status === 'premium' || subscriptionStatus.status === 'active') && (
               <TouchableOpacity
                 style={styles.cancelButton}
                 onPress={handleCancelSubscription}
@@ -576,23 +652,41 @@ const SubscriptionScreen = () => {
                 return (order[a.id] || 99) - (order[b.id] || 99);
               })
               .map((plan) => {
-                const isCurrentPlan = subscriptionStatus?.plan === plan.id;
+                // Validar que plan y plan.id existan
+                if (!plan || !plan.id) {
+                  return null;
+                }
+
+                // Validar que subscriptionStatus y sus propiedades existan
+                const isCurrentPlan = subscriptionStatus && 
+                                     subscriptionStatus.plan && 
+                                     plan.id && 
+                                     subscriptionStatus.plan === plan.id;
+                
                 // Marcar anual como recomendado (mejor valor por mes)
                 const isRecommended = plan.id === 'yearly';
                 const isSelected = selectedPlan === plan.id;
+
+                // Deshabilitar si está suscribiendo, si es el plan actual, o si tiene suscripción activa
+                const hasActiveSubscription = subscriptionStatus && 
+                                              subscriptionStatus.hasSubscription && 
+                                              (subscriptionStatus.status === 'premium' || 
+                                               subscriptionStatus.status === 'active');
+                const shouldDisable = subscribing || isCurrentPlan || (hasActiveSubscription && !isCurrentPlan);
 
                 return (
                   <PlanCard
                     key={plan.id}
                     plan={plan}
                     isSelected={isSelected}
-                    isCurrentPlan={isCurrentPlan}
+                    isCurrentPlan={isCurrentPlan || false}
                     isRecommended={isRecommended}
                     onSelect={handleSubscribe}
-                    disabled={subscribing || isCurrentPlan}
+                    disabled={shouldDisable}
                   />
                 );
               })
+              .filter(Boolean) // Filtrar nulls
           )}
 
           {/* Botón para restaurar compras (solo iOS) */}

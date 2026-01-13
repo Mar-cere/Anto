@@ -103,24 +103,58 @@ class PaymentService {
           };
         }
         
-        const response = await api.post(ENDPOINTS.PAYMENT_VALIDATE_RECEIPT, {
-          receipt: receiptData.transactionReceipt,
-          productId: receiptData.productId,
-          transactionId: receiptData.transactionId,
-          originalTransactionIdentifierIOS: receiptData.originalTransactionIdentifierIOS,
-        });
-
-        // Validar que la respuesta sea válida
-        if (!response) {
+        // Validar que receiptData tenga todos los campos necesarios
+        if (!receiptData.transactionReceipt) {
           return {
             success: false,
-            error: 'No se recibió respuesta del servidor',
+            error: 'Datos de recibo incompletos: falta transactionReceipt',
+          };
+        }
+
+        if (!receiptData.productId) {
+          return {
+            success: false,
+            error: 'Datos de recibo incompletos: falta productId',
+          };
+        }
+
+        const payload = {
+          receipt: receiptData.transactionReceipt,
+          productId: receiptData.productId,
+        };
+
+        // Agregar campos opcionales solo si existen
+        if (receiptData.transactionId) {
+          payload.transactionId = receiptData.transactionId;
+        }
+        if (receiptData.originalTransactionIdentifierIOS) {
+          payload.originalTransactionIdentifierIOS = receiptData.originalTransactionIdentifierIOS;
+        }
+
+        const response = await api.post(ENDPOINTS.PAYMENT_VALIDATE_RECEIPT, payload);
+
+        // Validar que la respuesta sea válida
+        if (!response || typeof response !== 'object') {
+          console.error('[PaymentService] Respuesta inválida de validación:', response);
+          return {
+            success: false,
+            error: 'No se recibió respuesta válida del servidor',
+          };
+        }
+
+        // Validar que response tenga la propiedad success
+        if (typeof response.success !== 'boolean') {
+          console.error('[PaymentService] Respuesta sin propiedad success:', response);
+          return {
+            success: false,
+            error: response.error || 'Respuesta inválida del servidor',
           };
         }
 
         return {
-          success: response.success || false,
-          error: response.error,
+          success: response.success,
+          error: response.error || null,
+          subscription: response.subscription || null,
         };
       } catch (error) {
         console.error('Error validando recibo:', error);
@@ -149,20 +183,54 @@ class PaymentService {
 
     const result = await storeKitService.restorePurchases();
     
-    if (result.success && result.purchases.length > 0) {
+    if (result.success && result.purchases && result.purchases.length > 0) {
       // Validar cada compra con el backend
-      for (const purchase of result.purchases) {
-        try {
-          await api.post(ENDPOINTS.PAYMENT_VALIDATE_RECEIPT, {
-            receipt: purchase.transactionReceipt,
-            productId: purchase.productId,
-            transactionId: purchase.transactionId,
-            originalTransactionIdentifierIOS: purchase.originalTransactionIdentifierIOS,
-            restore: true,
-          });
-        } catch (error) {
-          console.error('Error validando compra restaurada:', error);
-        }
+      const validationPromises = result.purchases
+        .filter(p => p && p.transactionReceipt && p.productId) // Filtrar compras válidas
+        .map(async (purchase) => {
+          try {
+            const response = await api.post(ENDPOINTS.PAYMENT_VALIDATE_RECEIPT, {
+              receipt: purchase.transactionReceipt,
+              productId: purchase.productId,
+              transactionId: purchase.transactionId || null,
+              originalTransactionIdentifierIOS: purchase.originalTransactionIdentifierIOS || null,
+              restore: true,
+            });
+            
+            return {
+              success: true,
+              purchase,
+              validation: response,
+            };
+          } catch (error) {
+            console.error('[PaymentService] Error validando compra restaurada:', error);
+            return {
+              success: false,
+              purchase,
+              error: error?.message || error?.response?.data?.error || 'Error al validar compra',
+            };
+          }
+        });
+
+      // Esperar a que todas las validaciones terminen
+      const validationResults = await Promise.all(validationPromises);
+      
+      // Contar validaciones exitosas
+      const successfulValidations = validationResults.filter(r => r.success).length;
+      
+      console.log('[PaymentService] Validaciones de compras restauradas:', {
+        total: validationResults.length,
+        successful: successfulValidations,
+        failed: validationResults.length - successfulValidations,
+      });
+
+      // Si todas las validaciones fallaron, retornar error
+      if (successfulValidations === 0 && validationResults.length > 0) {
+        return {
+          success: false,
+          error: 'No se pudieron validar las compras restauradas con el servidor',
+          purchases: result.purchases,
+        };
       }
     }
 
