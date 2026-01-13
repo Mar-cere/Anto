@@ -51,7 +51,7 @@ describe('PaymentService', () => {
   describe('getPlans', () => {
     it('debe obtener planes exitosamente', async () => {
       const mockPlans = {
-        plans: [{ id: 'weekly', name: 'Semanal' }],
+        plans: [{ id: 'monthly', name: 'Mensual' }],
         provider: 'mercadopago'
       };
       if (apiMock) {

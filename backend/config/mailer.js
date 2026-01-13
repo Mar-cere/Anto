@@ -449,7 +449,6 @@ const emailTemplates = {
    */
   subscriptionThankYouEmail: (username, plan, periodEnd) => {
     const planNames = {
-      weekly: 'Semanal',
       monthly: 'Mensual',
       quarterly: 'Trimestral',
       semestral: 'Semestral',

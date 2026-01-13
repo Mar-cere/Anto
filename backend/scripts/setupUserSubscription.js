@@ -126,7 +126,7 @@ Ejemplos:
         subscription = new Subscription({
           userId: user._id,
           status: 'trialing',
-          plan: 'monthly', // Plan por defecto para trial (Subscription acepta: weekly, monthly, quarterly, semestral, yearly)
+          plan: 'monthly', // Plan por defecto para trial (Subscription acepta: monthly, quarterly, semestral, yearly)
           currentPeriodStart: now,
           currentPeriodEnd: trialEndDate,
           trialStart: now,
@@ -178,7 +178,7 @@ Ejemplos:
       await user.save();
 
       // Crear o actualizar modelo Subscription
-      // Nota: Subscription acepta: weekly, monthly, quarterly, semestral, yearly
+      // Nota: Subscription acepta: monthly, quarterly, semestral, yearly
       // User solo acepta: monthly, yearly
       const subscriptionPlan = plan === 'monthly' ? 'monthly' : 'yearly';
       

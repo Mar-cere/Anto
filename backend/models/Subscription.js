@@ -31,7 +31,7 @@ const subscriptionSchema = new mongoose.Schema({
   // Plan de suscripción
   plan: {
     type: String,
-    enum: ['weekly', 'monthly', 'quarterly', 'semestral', 'yearly'],
+    enum: ['monthly', 'quarterly', 'semestral', 'yearly'],
     required: true,
     index: true,
   },

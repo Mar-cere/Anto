@@ -31,7 +31,6 @@ const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscri
       case 'premium':
       case 'active':
         const planNames = {
-          weekly: 'Plan Semanal',
           monthly: 'Plan Mensual',
           quarterly: 'Plan Trimestral',
           semestral: 'Plan Semestral',

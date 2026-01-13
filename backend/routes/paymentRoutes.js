@@ -48,7 +48,7 @@ const paymentLimiter = rateLimit({
 
 // Esquema de validación para crear checkout
 const createCheckoutSchema = Joi.object({
-  plan: Joi.string().valid('weekly', 'monthly', 'quarterly', 'semestral', 'yearly').required(),
+  plan: Joi.string().valid('monthly', 'quarterly', 'semestral', 'yearly').required(),
   successUrl: Joi.string().uri().allow(null, '').optional(),
   cancelUrl: Joi.string().uri().allow(null, '').optional(),
 });
@@ -82,7 +82,6 @@ router.get('/plans', async (req, res) => {
     const currency = 'CLP';
     
     // Calcular precios
-    const weeklyAmount = getPlanPrice('weekly');
     const monthlyAmount = getPlanPrice('monthly');
     const quarterlyAmount = getPlanPrice('quarterly');
     const semestralAmount = getPlanPrice('semestral');
@@ -95,15 +94,6 @@ router.get('/plans', async (req, res) => {
     ];
 
     const plans = {
-      weekly: {
-        id: 'weekly',
-        name: 'Premium Semanal',
-        amount: weeklyAmount,
-        formattedAmount: formatAmount(weeklyAmount, currency),
-        interval: 'week',
-        currency: currency,
-        features: allFeatures,
-      },
       monthly: {
         id: 'monthly',
         name: 'Premium Mensual',
@@ -554,19 +544,6 @@ router.post(
 
       const { receipt, productId, transactionId, originalTransactionIdentifierIOS, restore } = value;
       
-      // Validación especial para plan semanal
-      const isWeeklyPlan = productId === 'com.anto.app.weekly';
-      if (isWeeklyPlan) {
-        logger.payment('POST /validate-receipt: ⚠️ Validando recibo de plan SEMANAL', {
-          userId: userId.toString(),
-          productId,
-          transactionId: transactionId || 'no proporcionado',
-          originalTransactionIdentifierIOS: originalTransactionIdentifierIOS || 'no proporcionado',
-          restore,
-          receiptLength: receipt ? receipt.length : 0,
-        });
-      }
-      
       logger.payment('POST /validate-receipt: datos validados', {
         userId: userId.toString(),
         productId,
@@ -574,7 +551,6 @@ router.post(
         originalTransactionIdentifierIOS: originalTransactionIdentifierIOS || 'no proporcionado',
         restore,
         receiptLength: receipt ? receipt.length : 0,
-        isWeeklyPlan,
       });
 
       // Validar recibo con Apple
@@ -620,22 +596,6 @@ router.post(
       const duration = Date.now() - startTime;
 
       if (result.success) {
-        // Log específico para plan semanal
-        if (isWeeklyPlan) {
-          logger.payment('POST /validate-receipt: ✅ Plan SEMANAL procesado exitosamente', {
-            userId: userId.toString(),
-            productId,
-            transactionId: transactionId || originalTransactionIdentifierIOS,
-            restore,
-            duration,
-            subscriptionStatus: result.subscription?.status,
-            subscriptionPlan: result.subscription?.plan,
-            isActive: result.subscription?.isActive,
-            startDate: result.subscription?.startDate,
-            endDate: result.subscription?.endDate,
-          });
-        }
-        
         logger.payment('POST /validate-receipt: suscripción procesada exitosamente', {
           userId: userId.toString(),
           productId,
@@ -653,9 +613,7 @@ router.post(
           subscription: result.subscription,
         });
       } else {
-        // Log específico para plan semanal cuando hay error
-        if (isWeeklyPlan) {
-          logger.payment('POST /validate-receipt: ❌ Error procesando plan SEMANAL', {
+        logger.error('POST /validate-receipt: Error procesando suscripción', {
             userId: userId.toString(),
             productId,
             transactionId: transactionId || originalTransactionIdentifierIOS,

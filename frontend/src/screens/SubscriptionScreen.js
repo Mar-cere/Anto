@@ -68,15 +68,6 @@ const SubscriptionScreen = () => {
   // TODO: Conectar con backend/StoreKit en próxima versión
   const HARDCODED_PLANS = [
     {
-      id: 'weekly',
-      name: 'Premium Semanal',
-      amount: 990,
-      formattedAmount: '$990',
-      interval: 'week',
-      currency: 'CLP',
-      features: ['Servicio completo incluido'],
-    },
-    {
       id: 'monthly',
       name: 'Premium Mensual',
       amount: 3990,
@@ -415,8 +406,8 @@ const SubscriptionScreen = () => {
   const getCheaperPlans = useCallback((currentPlanId) => {
     if (!currentPlanId || !plans.length) return [];
     
-    // Orden de precios: weekly < monthly < quarterly < semestral < yearly
-    const planOrder = { weekly: 1, monthly: 2, quarterly: 3, semestral: 4, yearly: 5 };
+    // Orden de precios: monthly < quarterly < semestral < yearly
+    const planOrder = { monthly: 1, quarterly: 2, semestral: 3, yearly: 4 };
     const currentOrder = planOrder[currentPlanId] || 999;
     
     // Filtrar planes más baratos (menor orden = más barato)
@@ -647,8 +638,8 @@ const SubscriptionScreen = () => {
           ) : (
             plans
               .sort((a, b) => {
-                // Ordenar planes: semanal, mensual, trimestral, semestral, anual
-                const order = { weekly: 1, monthly: 2, quarterly: 3, semestral: 4, yearly: 5 };
+                // Ordenar planes: mensual, trimestral, semestral, anual
+                const order = { monthly: 1, quarterly: 2, semestral: 3, yearly: 4 };
                 return (order[a.id] || 99) - (order[b.id] || 99);
               })
               .map((plan) => {

@@ -44,7 +44,6 @@ function getInAppPurchasesModule() {
 // Product IDs - Estos deben coincidir con los configurados en App Store Connect
 // Formato: com.anto.app.{plan}
 const PRODUCT_IDS = {
-  weekly: 'com.anto.app.weekly',
   monthly: 'com.anto.app.monthly',
   quarterly: 'com.anto.app.quarterly',
   semestral: 'com.anto.app.semestral',
@@ -53,7 +52,6 @@ const PRODUCT_IDS = {
 
 // Mapeo inverso: de productId a plan
 const PRODUCT_ID_TO_PLAN = {
-  'com.anto.app.weekly': 'weekly',
   'com.anto.app.monthly': 'monthly',
   'com.anto.app.quarterly': 'quarterly',
   'com.anto.app.semestral': 'semestral',
@@ -320,18 +318,6 @@ class StoreKitService {
         this.products = validResults;
         console.log('[StoreKit] Productos cargados:', validResults.length);
         
-        // Log específico para plan semanal
-        const weeklyProduct = validResults.find(p => p && p.productId === 'com.anto.app.weekly');
-        if (weeklyProduct) {
-          console.log('[StoreKit] ✅ Plan SEMANAL encontrado en productos:', {
-            productId: weeklyProduct.productId,
-            title: weeklyProduct.title,
-            price: weeklyProduct.price,
-          });
-        } else {
-          console.warn('[StoreKit] ⚠️ Plan SEMANAL NO encontrado en productos cargados');
-          console.log('[StoreKit] Productos disponibles:', validResults.map(p => p?.productId));
-        }
         
         return {
           success: true,
@@ -389,7 +375,7 @@ class StoreKitService {
 
   /**
    * Comprar suscripción
-   * @param {string} plan - Plan a comprar ('weekly', 'monthly', etc.)
+   * @param {string} plan - Plan a comprar ('monthly', 'quarterly', 'semestral', 'yearly')
    * @param {Function} onValidateReceipt - Función para validar el recibo con el backend
    */
   async purchaseSubscription(plan, onValidateReceipt) {
@@ -422,15 +408,6 @@ class StoreKitService {
       };
     }
 
-    // Log específico para plan semanal (para debugging)
-    if (plan === 'weekly') {
-      console.log('[StoreKit] ⚠️ Iniciando compra de plan SEMANAL:', {
-        plan,
-        productId,
-        productsLoaded: this.products.length,
-        availableProductIds: this.products.map(p => p?.productId),
-      });
-    }
 
     const module = getInAppPurchasesModule();
     if (!module) {
@@ -460,17 +437,6 @@ class StoreKitService {
       const loadResult = await this.loadProducts();
       const stillNotAvailable = !this.products.some(p => p && p.productId === productId);
       if (stillNotAvailable) {
-        // Log específico para plan semanal
-        if (plan === 'weekly') {
-          console.error('[StoreKit] ❌ Plan SEMANAL no disponible después de recargar productos:', {
-            productId,
-            availableProducts: this.products.map(p => ({
-              productId: p?.productId,
-              title: p?.title,
-              price: p?.price,
-            })),
-          });
-        }
         return {
           success: false,
           error: `El producto ${productId} no está disponible en App Store. Verifica que esté configurado correctamente en App Store Connect.`,
@@ -478,16 +444,6 @@ class StoreKitService {
       }
     }
 
-    // Log específico para plan semanal cuando el producto está disponible
-    if (plan === 'weekly') {
-      const weeklyProduct = this.products.find(p => p && p.productId === productId);
-      console.log('[StoreKit] ✅ Plan SEMANAL encontrado y disponible:', {
-        productId,
-        title: weeklyProduct?.title,
-        price: weeklyProduct?.price,
-        description: weeklyProduct?.description,
-      });
-    }
 
     try {
       console.log('[StoreKit] Iniciando compra:', productId);

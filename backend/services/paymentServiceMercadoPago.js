@@ -57,7 +57,7 @@ class PaymentServiceMercadoPago {
       }
 
       // Validar que el plan sea válido
-      const validPlans = ['weekly', 'monthly', 'quarterly', 'semestral', 'yearly'];
+      const validPlans = ['monthly', 'quarterly', 'semestral', 'yearly'];
       if (!validPlans.includes(plan)) {
         throw new Error(`Plan inválido: ${plan}. Los planes válidos son: ${validPlans.join(', ')}`);
       }
@@ -798,7 +798,6 @@ class PaymentServiceMercadoPago {
       const periodEnd = new Date(now);
       
       const planDurations = {
-        weekly: () => periodEnd.setDate(periodEnd.getDate() + 7),
         monthly: () => periodEnd.setMonth(periodEnd.getMonth() + 1),
         quarterly: () => periodEnd.setMonth(periodEnd.getMonth() + 3),
         semestral: () => periodEnd.setMonth(periodEnd.getMonth() + 6),

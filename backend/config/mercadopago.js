@@ -61,7 +61,6 @@ export const MERCADOPAGO_CONFIG = {
   
   // IDs de Preapproval Plans (creados en el panel de Mercado Pago)
   preapprovalPlanIds: {
-    weekly: process.env.MERCADOPAGO_PREAPPROVAL_PLAN_ID_WEEKLY || '',
     monthly: process.env.MERCADOPAGO_PREAPPROVAL_PLAN_ID_MONTHLY || '',
     quarterly: process.env.MERCADOPAGO_PREAPPROVAL_PLAN_ID_QUARTERLY || '',
     semestral: process.env.MERCADOPAGO_PREAPPROVAL_PLAN_ID_SEMESTRAL || '',

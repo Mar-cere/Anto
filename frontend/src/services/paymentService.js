@@ -37,7 +37,7 @@ class PaymentService {
   /**
    * Crear sesión de checkout
    * En iOS usa StoreKit, en Android usa Mercado Pago
-   * @param {string} plan - Plan seleccionado ('weekly', 'monthly', 'quarterly', 'semestral', 'yearly')
+   * @param {string} plan - Plan seleccionado ('monthly', 'quarterly', 'semestral', 'yearly')
    * @param {string} successUrl - URL de éxito (opcional, solo Android)
    * @param {string} cancelUrl - URL de cancelación (opcional, solo Android)
    * @returns {Promise<Object>} - Sesión de checkout o resultado de compra
