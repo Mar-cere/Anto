@@ -249,23 +249,29 @@ router.get(
     const startTime = Date.now();
     const userId = req.user._id;
     
+    // Agregar headers para evitar caché del navegador y deshabilitar 304
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    });
+    
+    // Deshabilitar la verificación de freshness de Express para evitar 304
+    // Esto fuerza que siempre se devuelva 200 en lugar de 304
+    req.headers['if-none-match'] = undefined;
+    req.headers['if-modified-since'] = undefined;
+    
     try {
       logger.payment('GET /subscription-status iniciado', {
         userId: userId.toString(),
         ip: req.ip,
         userAgent: req.get('user-agent'),
+        ifNoneMatch: req.get('if-none-match'),
+        ifModifiedSince: req.get('if-modified-since'),
       });
       
       const cacheKey = cacheService.generateKey('subscription', userId);
       logger.debug('[PaymentRoutes] Cache key generado', { cacheKey, userId: userId.toString() });
-      
-      // Agregar headers para evitar caché del navegador
-      // Esto asegura que siempre se devuelvan datos frescos
-      res.set({
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      });
       
       // Intentar obtener del caché del servidor
       const cached = await cacheService.get(cacheKey);
@@ -275,7 +281,13 @@ router.get(
           cached: true,
           duration: Date.now() - startTime,
         });
-        return res.json(cached);
+        // Agregar timestamp único para evitar que Express devuelva 304
+        const response = {
+          ...cached,
+          _timestamp: Date.now(), // Timestamp único para evitar 304
+        };
+        // Forzar status 200 explícitamente
+        return res.status(200).json(response);
       }
       
       logger.debug('[PaymentRoutes] Cache miss, obteniendo estado de suscripción', {
@@ -290,13 +302,20 @@ router.get(
         statusKeys: status ? Object.keys(status) : [],
       });
 
+      // Agregar timestamp único para evitar que Express devuelva 304
       const response = {
         success: true,
         ...status,
+        _timestamp: Date.now(), // Timestamp único para evitar 304
       };
       
       // Guardar en caché por 5 minutos (el estado puede cambiar)
-      await cacheService.set(cacheKey, response, 300);
+      // No incluir _timestamp en el caché para que sea consistente
+      const cacheResponse = {
+        success: true,
+        ...status,
+      };
+      await cacheService.set(cacheKey, cacheResponse, 300);
       logger.debug('[PaymentRoutes] Respuesta guardada en caché', {
         userId: userId.toString(),
         ttl: 300,
@@ -309,7 +328,8 @@ router.get(
         cached: false,
       });
 
-      res.json(response);
+      // Forzar status 200 explícitamente (no permitir 304)
+      res.status(200).json(response);
     } catch (error) {
       const duration = Date.now() - startTime;
       logger.requestError(req, error, 'Error obteniendo estado de suscripción');
@@ -534,6 +554,19 @@ router.post(
 
       const { receipt, productId, transactionId, originalTransactionIdentifierIOS, restore } = value;
       
+      // Validación especial para plan semanal
+      const isWeeklyPlan = productId === 'com.anto.app.weekly';
+      if (isWeeklyPlan) {
+        logger.payment('POST /validate-receipt: ⚠️ Validando recibo de plan SEMANAL', {
+          userId: userId.toString(),
+          productId,
+          transactionId: transactionId || 'no proporcionado',
+          originalTransactionIdentifierIOS: originalTransactionIdentifierIOS || 'no proporcionado',
+          restore,
+          receiptLength: receipt ? receipt.length : 0,
+        });
+      }
+      
       logger.payment('POST /validate-receipt: datos validados', {
         userId: userId.toString(),
         productId,
@@ -541,6 +574,7 @@ router.post(
         originalTransactionIdentifierIOS: originalTransactionIdentifierIOS || 'no proporcionado',
         restore,
         receiptLength: receipt ? receipt.length : 0,
+        isWeeklyPlan,
       });
 
       // Validar recibo con Apple
@@ -586,6 +620,22 @@ router.post(
       const duration = Date.now() - startTime;
 
       if (result.success) {
+        // Log específico para plan semanal
+        if (isWeeklyPlan) {
+          logger.payment('POST /validate-receipt: ✅ Plan SEMANAL procesado exitosamente', {
+            userId: userId.toString(),
+            productId,
+            transactionId: transactionId || originalTransactionIdentifierIOS,
+            restore,
+            duration,
+            subscriptionStatus: result.subscription?.status,
+            subscriptionPlan: result.subscription?.plan,
+            isActive: result.subscription?.isActive,
+            startDate: result.subscription?.startDate,
+            endDate: result.subscription?.endDate,
+          });
+        }
+        
         logger.payment('POST /validate-receipt: suscripción procesada exitosamente', {
           userId: userId.toString(),
           productId,
@@ -603,6 +653,23 @@ router.post(
           subscription: result.subscription,
         });
       } else {
+        // Log específico para plan semanal cuando hay error
+        if (isWeeklyPlan) {
+          logger.payment('POST /validate-receipt: ❌ Error procesando plan SEMANAL', {
+            userId: userId.toString(),
+            productId,
+            transactionId: transactionId || originalTransactionIdentifierIOS,
+            error: result.error,
+            status: result.status,
+            duration,
+            possibleCauses: [
+              'Producto no configurado correctamente en App Store Connect',
+              'Suscripción semanal puede requerir configuración especial',
+              'Verificar que el producto esté activo y disponible',
+            ],
+          });
+        }
+        
         logger.payment('POST /validate-receipt: error procesando suscripción', {
           userId: userId.toString(),
           productId,

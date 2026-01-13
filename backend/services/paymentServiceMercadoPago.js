@@ -13,6 +13,7 @@ import Transaction from '../models/Transaction.js';
 import Subscription from '../models/Subscription.js';
 import User from '../models/User.js';
 import paymentAuditService from './paymentAuditService.js';
+import logger from '../utils/logger.js';
 
 class PaymentServiceMercadoPago {
   /**
@@ -354,12 +355,22 @@ class PaymentServiceMercadoPago {
 
   // Handlers de notificaciones
   async handlePaymentNotification(paymentData) {
+    const startTime = Date.now();
     try {
       const paymentId = paymentData.id;
       const preferenceId = paymentData.preference_id || paymentData.preapproval_plan_id;
 
+      logger.payment('PAYMENT_WEBHOOK: Notificación de pago recibida', {
+        paymentId,
+        preferenceId,
+        status: paymentData.status,
+        paymentDataKeys: Object.keys(paymentData),
+      });
+
       if (!paymentId) {
-        console.warn('[PAYMENT_WEBHOOK] Payment ID no encontrado en notificación');
+        logger.warn('[PAYMENT_WEBHOOK] Payment ID no encontrado en notificación', {
+          paymentData: JSON.stringify(paymentData).substring(0, 500),
+        });
         return;
       }
 
@@ -373,7 +384,11 @@ class PaymentServiceMercadoPago {
       }).populate('userId', 'email username name');
 
       if (!transaction) {
-        console.warn(`[PAYMENT_WEBHOOK] Transacción no encontrada para preference: ${preferenceId} o payment: ${paymentId}`);
+        logger.payment('PAYMENT_WEBHOOK: Transacción no encontrada (orphan)', {
+          paymentId,
+          preferenceId,
+          status: paymentData.status,
+        });
         await paymentAuditService.logEvent('PAYMENT_NOTIFICATION_ORPHAN', {
           paymentId,
           preferenceId,
@@ -382,15 +397,37 @@ class PaymentServiceMercadoPago {
         return;
       }
 
+      logger.payment('PAYMENT_WEBHOOK: Transacción encontrada', {
+        transactionId: transaction._id.toString(),
+        userId: transaction.userId?._id?.toString() || transaction.userId?.toString(),
+        currentStatus: transaction.status,
+        plan: transaction.plan,
+        paymentStatus: paymentData.status,
+      });
+
       const userId = transaction.userId._id || transaction.userId;
       const userIdString = userId.toString();
+
+      logger.debug('[PAYMENT_WEBHOOK] Validando datos del pago', {
+        transactionId: transaction._id.toString(),
+        userId: userIdString,
+        userEmail: transaction.userId?.email,
+        payerEmail: paymentData.payer?.email,
+      });
 
       // Validar que el email del payer coincida con el usuario (si está disponible)
       if (paymentData.payer?.email && transaction.userId.email) {
         const payerEmail = paymentData.payer.email.toLowerCase().trim();
         const userEmail = transaction.userId.email.toLowerCase().trim();
         if (payerEmail !== userEmail) {
-          console.warn(`[PAYMENT_WEBHOOK] Email del payer no coincide: ${payerEmail} vs ${userEmail}`);
+          logger.warn('[PAYMENT_WEBHOOK] Email del payer no coincide', {
+            transactionId: transaction._id.toString(),
+            userId: userIdString,
+            payerEmail: paymentData.payer.email,
+            userEmail: transaction.userId.email,
+            paymentId,
+            status: paymentData.status,
+          });
           await paymentAuditService.logEvent('PAYMENT_EMAIL_MISMATCH', {
             transactionId: transaction._id.toString(),
             userId: userIdString,
@@ -412,7 +449,8 @@ class PaymentServiceMercadoPago {
       };
 
       const oldStatus = transaction.status;
-      transaction.status = statusMap[paymentData.status] || 'pending';
+      const newStatus = statusMap[paymentData.status] || 'pending';
+      transaction.status = newStatus;
       transaction.providerTransactionId = paymentId; // Actualizar con payment ID
       transaction.processedAt = new Date();
       transaction.metadata = {
@@ -423,7 +461,21 @@ class PaymentServiceMercadoPago {
         previousStatus: oldStatus,
       };
 
+      logger.payment('PAYMENT_WEBHOOK: Actualizando estado de transacción', {
+        transactionId: transaction._id.toString(),
+        userId: userIdString,
+        oldStatus,
+        newStatus,
+        paymentStatus: paymentData.status,
+        plan: transaction.plan,
+      });
+
       await transaction.save();
+      
+      logger.database('Transacción actualizada con nuevo estado', {
+        transactionId: transaction._id.toString(),
+        status: transaction.status,
+      });
 
       // Registrar notificación recibida
       await paymentAuditService.logEvent('PAYMENT_NOTIFICATION_RECEIVED', {
@@ -438,14 +490,42 @@ class PaymentServiceMercadoPago {
 
       // Si el pago fue aprobado, activar suscripción
       if (paymentData.status === 'approved') {
+        logger.payment('PAYMENT_WEBHOOK: ✅ Pago APROBADO, iniciando activación de suscripción', {
+          transactionId: transaction._id.toString(),
+          userId: userIdString,
+          plan: transaction.plan,
+          paymentId,
+        });
+
         try {
+          const activationStartTime = Date.now();
           const activationResult = await this.activateSubscriptionFromPayment(transaction);
+          const activationDuration = Date.now() - activationStartTime;
+          
+          logger.payment('PAYMENT_WEBHOOK: Resultado de activación de suscripción', {
+            transactionId: transaction._id.toString(),
+            userId: userIdString,
+            success: activationResult?.success,
+            alreadyActive: activationResult?.alreadyActive,
+            subscriptionId: activationResult?.subscriptionId,
+            duration: activationDuration,
+          });
           
           // Verificar integridad después de activar
           if (activationResult && activationResult.success && !activationResult.alreadyActive) {
+            logger.debug('[PAYMENT_WEBHOOK] Verificando integridad de suscripción', {
+              transactionId: transaction._id.toString(),
+              userId: userIdString,
+            });
+
             const integrityCheck = await paymentAuditService.verifyTransactionIntegrity(transaction._id);
             if (!integrityCheck.valid) {
-              console.error('[PAYMENT_WEBHOOK] Error de integridad después de activar suscripción:', integrityCheck);
+              logger.error('[PAYMENT_WEBHOOK] Error de integridad después de activar suscripción', {
+                transactionId: transaction._id.toString(),
+                userId: userIdString,
+                integrityCheck,
+              });
+              
               await paymentAuditService.logEvent('SUBSCRIPTION_INTEGRITY_CHECK_FAILED', {
                 transactionId: transaction._id.toString(),
                 userId: userIdString,
@@ -455,18 +535,48 @@ class PaymentServiceMercadoPago {
               
               // Si requiere activación, intentar recuperar
               if (integrityCheck.requiresActivation) {
+                logger.warn('[PAYMENT_WEBHOOK] Intentando recuperación automática de suscripción', {
+                  transactionId: transaction._id.toString(),
+                  userId: userIdString,
+                });
+
                 const paymentRecoveryService = (await import('./paymentRecoveryService.js')).default;
                 await paymentRecoveryService.activateFromTransaction(transaction._id.toString()).catch(err => {
-                  console.error('[PAYMENT_WEBHOOK] Error en recuperación automática:', err);
+                  logger.error('[PAYMENT_WEBHOOK] Error en recuperación automática', {
+                    transactionId: transaction._id.toString(),
+                    userId: userIdString,
+                    error: err.message,
+                    stack: err.stack,
+                  });
                 });
               }
+            } else {
+              logger.payment('PAYMENT_WEBHOOK: ✅ Verificación de integridad exitosa', {
+                transactionId: transaction._id.toString(),
+                userId: userIdString,
+              });
             }
           }
         } catch (activationError) {
-          console.error('[PAYMENT_WEBHOOK] Error activando suscripción:', activationError);
+          const duration = Date.now() - startTime;
+          logger.error('[PAYMENT_WEBHOOK] Error activando suscripción', {
+            transactionId: transaction._id.toString(),
+            userId: userIdString,
+            plan: transaction.plan,
+            error: activationError.message,
+            stack: activationError.stack,
+            duration,
+          });
           // El error ya se registra en activateSubscriptionFromPayment
           throw activationError;
         }
+      } else {
+        logger.payment('PAYMENT_WEBHOOK: Pago no aprobado, no se activa suscripción', {
+          transactionId: transaction._id.toString(),
+          userId: userIdString,
+          paymentStatus: paymentData.status,
+          plan: transaction.plan,
+        });
       }
     } catch (error) {
       console.error('[PAYMENT_WEBHOOK] Error procesando notificación de pago:', error);
@@ -579,9 +689,22 @@ class PaymentServiceMercadoPago {
   }
 
   async activateSubscriptionFromPayment(transaction) {
+    const startTime = Date.now();
     try {
+      logger.payment('activateSubscriptionFromPayment: Iniciando activación', {
+        transactionId: transaction._id?.toString(),
+        hasUserId: !!transaction.userId,
+        plan: transaction.plan,
+        transactionStatus: transaction.status,
+      });
+
       // Validar transacción
       if (!transaction || !transaction.userId) {
+        logger.error('activateSubscriptionFromPayment: Transacción inválida', {
+          transactionId: transaction._id?.toString(),
+          hasTransaction: !!transaction,
+          hasUserId: !!transaction?.userId,
+        });
         throw new Error('Transacción inválida: falta userId');
       }
 
@@ -590,14 +713,38 @@ class PaymentServiceMercadoPago {
       const plan = transaction.plan;
 
       if (!plan) {
+        logger.error('activateSubscriptionFromPayment: Plan no encontrado en transacción', {
+          transactionId: transaction._id.toString(),
+          userId: userIdString,
+          transactionKeys: Object.keys(transaction),
+        });
         throw new Error('Transacción inválida: falta plan');
       }
+
+      logger.debug('[activateSubscriptionFromPayment] Datos validados', {
+        transactionId: transaction._id.toString(),
+        userId: userIdString,
+        plan,
+      });
 
       // Validar que el usuario existe
       const user = await User.findById(userIdString).select('email username name subscription');
       if (!user) {
+        logger.error('activateSubscriptionFromPayment: Usuario no encontrado', {
+          transactionId: transaction._id.toString(),
+          userId: userIdString,
+          plan,
+        });
         throw new Error(`Usuario no encontrado: ${userIdString}`);
       }
+
+      logger.debug('[activateSubscriptionFromPayment] Usuario encontrado', {
+        transactionId: transaction._id.toString(),
+        userId: userIdString,
+        userEmail: user.email,
+        currentSubscriptionStatus: user.subscription?.status,
+        currentSubscriptionPlan: user.subscription?.plan,
+      });
 
       // Calcular fechas del período según el plan
       const now = new Date();
@@ -613,19 +760,49 @@ class PaymentServiceMercadoPago {
 
       if (planDurations[plan]) {
         planDurations[plan]();
+        logger.debug('[activateSubscriptionFromPayment] Fechas calculadas', {
+          transactionId: transaction._id.toString(),
+          userId: userIdString,
+          plan,
+          periodStart: now.toISOString(),
+          periodEnd: periodEnd.toISOString(),
+          daysDuration: Math.floor((periodEnd - now) / (1000 * 60 * 60 * 24)),
+        });
       } else {
+        logger.error('activateSubscriptionFromPayment: Plan inválido', {
+          transactionId: transaction._id.toString(),
+          userId: userIdString,
+          plan,
+          validPlans: Object.keys(planDurations),
+        });
         throw new Error(`Plan inválido: ${plan}`);
       }
 
       // Buscar suscripción existente
       let subscription = await Subscription.findOne({ userId: userIdString });
 
+      logger.debug('[activateSubscriptionFromPayment] Suscripción existente', {
+        transactionId: transaction._id.toString(),
+        userId: userIdString,
+        hasExistingSubscription: !!subscription,
+        existingSubscriptionStatus: subscription?.status,
+        existingSubscriptionPlan: subscription?.plan,
+        existingPeriodEnd: subscription?.currentPeriodEnd?.toISOString(),
+      });
+
       // Validar que no haya una suscripción activa duplicada
       if (subscription && subscription.status === 'active' && subscription.currentPeriodEnd >= now) {
         // Ya hay una suscripción activa, verificar si es la misma transacción
         const existingTransactionId = subscription.metadata?.lastActivatedFrom || subscription.metadata?.activatedFrom;
         if (existingTransactionId && existingTransactionId !== transaction._id.toString()) {
-          console.warn(`[SUBSCRIPTION_ACTIVATION] Ya existe suscripción activa para usuario ${userIdString}. Transacción existente: ${existingTransactionId}, Nueva: ${transaction._id.toString()}`);
+          logger.warn('[activateSubscriptionFromPayment] Intento de activación duplicada', {
+            transactionId: transaction._id.toString(),
+            userId: userIdString,
+            existingTransactionId,
+            subscriptionId: subscription._id.toString(),
+            plan,
+          });
+
           await paymentAuditService.logEvent('SUBSCRIPTION_DUPLICATE_ACTIVATION_ATTEMPT', {
             transactionId: transaction._id.toString(),
             existingTransactionId,
@@ -660,7 +837,17 @@ class PaymentServiceMercadoPago {
         }
       }
 
+      const isNewSubscription = !subscription;
+      
       if (!subscription) {
+        logger.debug('[activateSubscriptionFromPayment] Creando nueva suscripción', {
+          transactionId: transaction._id.toString(),
+          userId: userIdString,
+          plan,
+          periodStart: now.toISOString(),
+          periodEnd: periodEnd.toISOString(),
+        });
+
         subscription = new Subscription({
           userId: userIdString,
           plan: plan,
@@ -676,6 +863,17 @@ class PaymentServiceMercadoPago {
           },
         });
       } else {
+        logger.debug('[activateSubscriptionFromPayment] Actualizando suscripción existente', {
+          transactionId: transaction._id.toString(),
+          userId: userIdString,
+          subscriptionId: subscription._id.toString(),
+          oldPlan: subscription.plan,
+          newPlan: plan,
+          oldStatus: subscription.status,
+          oldPeriodEnd: subscription.currentPeriodEnd?.toISOString(),
+          newPeriodEnd: periodEnd.toISOString(),
+        });
+
         subscription.status = 'active';
         subscription.plan = plan;
         subscription.currentPeriodStart = now;
@@ -689,13 +887,37 @@ class PaymentServiceMercadoPago {
       }
 
       await subscription.save();
+      
+      logger.database(isNewSubscription ? 'Nueva suscripción creada' : 'Suscripción actualizada', {
+        transactionId: transaction._id.toString(),
+        subscriptionId: subscription._id.toString(),
+        userId: userIdString,
+        plan,
+        status: subscription.status,
+      });
 
       // Actualizar usuario
+      logger.debug('[activateSubscriptionFromPayment] Actualizando usuario', {
+        transactionId: transaction._id.toString(),
+        userId: userIdString,
+        oldStatus: user.subscription?.status,
+        newStatus: 'premium',
+        oldPlan: user.subscription?.plan,
+        newPlan: plan,
+      });
+
       user.subscription.status = 'premium';
       user.subscription.plan = plan;
       user.subscription.subscriptionStartDate = now;
       user.subscription.subscriptionEndDate = periodEnd;
       await user.save();
+
+      logger.database('Usuario actualizado con suscripción premium', {
+        transactionId: transaction._id.toString(),
+        userId: userIdString,
+        subscriptionStatus: user.subscription.status,
+        subscriptionPlan: user.subscription.plan,
+      });
 
       // Registrar evento de auditoría
       await paymentAuditService.logEvent('SUBSCRIPTION_ACTIVATED', {
@@ -709,7 +931,17 @@ class PaymentServiceMercadoPago {
         periodEnd: periodEnd.toISOString(),
       }, userIdString, transaction._id.toString());
 
-      console.log(`✅ Suscripción activada para usuario ${userIdString} (${user.email}) - Plan: ${plan}`);
+      const duration = Date.now() - startTime;
+      logger.payment('✅ Suscripción activada exitosamente', {
+        transactionId: transaction._id.toString(),
+        subscriptionId: subscription._id.toString(),
+        userId: userIdString,
+        userEmail: user.email,
+        plan,
+        periodStart: now.toISOString(),
+        periodEnd: periodEnd.toISOString(),
+        duration,
+      });
 
       return {
         success: true,
@@ -720,7 +952,15 @@ class PaymentServiceMercadoPago {
         periodEnd: periodEnd,
       };
     } catch (error) {
-      console.error('❌ Error activando suscripción desde pago:', error);
+      const duration = Date.now() - startTime;
+      logger.error('❌ Error activando suscripción desde pago', {
+        transactionId: transaction._id?.toString(),
+        userId: transaction.userId?._id?.toString() || transaction.userId?.toString(),
+        plan: transaction.plan,
+        error: error.message,
+        stack: error.stack,
+        duration,
+      });
       
       // Registrar error en auditoría
       if (transaction && transaction.userId) {
@@ -730,6 +970,7 @@ class PaymentServiceMercadoPago {
           userId: userId.toString(),
           plan: transaction.plan,
           error: error.message,
+          stack: error.stack,
         }, userId.toString(), transaction._id?.toString());
       }
       

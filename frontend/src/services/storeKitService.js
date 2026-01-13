@@ -373,6 +373,16 @@ class StoreKitService {
       };
     }
 
+    // Log específico para plan semanal (para debugging)
+    if (plan === 'weekly') {
+      console.log('[StoreKit] ⚠️ Iniciando compra de plan SEMANAL:', {
+        plan,
+        productId,
+        productsLoaded: this.products.length,
+        availableProductIds: this.products.map(p => p?.productId),
+      });
+    }
+
     const module = getInAppPurchasesModule();
     if (!module) {
       return {
@@ -401,11 +411,33 @@ class StoreKitService {
       const loadResult = await this.loadProducts();
       const stillNotAvailable = !this.products.some(p => p && p.productId === productId);
       if (stillNotAvailable) {
+        // Log específico para plan semanal
+        if (plan === 'weekly') {
+          console.error('[StoreKit] ❌ Plan SEMANAL no disponible después de recargar productos:', {
+            productId,
+            availableProducts: this.products.map(p => ({
+              productId: p?.productId,
+              title: p?.title,
+              price: p?.price,
+            })),
+          });
+        }
         return {
           success: false,
           error: `El producto ${productId} no está disponible en App Store. Verifica que esté configurado correctamente en App Store Connect.`,
         };
       }
+    }
+
+    // Log específico para plan semanal cuando el producto está disponible
+    if (plan === 'weekly') {
+      const weeklyProduct = this.products.find(p => p && p.productId === productId);
+      console.log('[StoreKit] ✅ Plan SEMANAL encontrado y disponible:', {
+        productId,
+        title: weeklyProduct?.title,
+        price: weeklyProduct?.price,
+        description: weeklyProduct?.description,
+      });
     }
 
     try {

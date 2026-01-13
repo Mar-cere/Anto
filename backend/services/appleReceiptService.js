@@ -223,6 +223,24 @@ class AppleReceiptService {
         };
       }
 
+      // Log específico para plan semanal (para debugging)
+      if (plan === 'weekly') {
+        logger.payment('AppleReceiptService.processSubscription: Procesando plan SEMANAL', {
+          userId: userId.toString(),
+          productId,
+          plan,
+          planDurationDays: PLAN_DURATION_DAYS[plan],
+          transactionData: {
+            product_id: transaction.product_id,
+            purchase_date_ms: transaction.purchase_date_ms,
+            expires_date_ms: transaction.expires_date_ms,
+            original_transaction_id: transaction.original_transaction_id,
+            is_trial_period: transaction.is_trial_period,
+            is_in_intro_offer_period: transaction.is_in_intro_offer_period,
+          },
+        });
+      }
+
       logger.debug('[AppleReceipt] Plan identificado', {
         userId: userId.toString(),
         productId,
@@ -232,13 +250,56 @@ class AppleReceiptService {
 
       // Calcular fechas
       const purchaseDate = new Date(parseInt(transaction.purchase_date_ms));
-      const expiresDate = transaction.expires_date_ms 
-        ? new Date(parseInt(transaction.expires_date_ms))
-        : new Date(purchaseDate.getTime() + PLAN_DURATION_DAYS[plan] * 24 * 60 * 60 * 1000);
+      
+      // Para suscripciones semanales, Apple puede no proporcionar expires_date_ms
+      // si la suscripción es muy corta o si hay problemas con la configuración
+      let expiresDate;
+      if (transaction.expires_date_ms) {
+        expiresDate = new Date(parseInt(transaction.expires_date_ms));
+      } else {
+        // Calcular fecha de expiración basada en la duración del plan
+        const durationMs = PLAN_DURATION_DAYS[plan] * 24 * 60 * 60 * 1000;
+        expiresDate = new Date(purchaseDate.getTime() + durationMs);
+        
+        // Log específico para plan semanal cuando no hay expires_date_ms
+        if (plan === 'weekly') {
+          logger.warn('[AppleReceipt] Plan semanal sin expires_date_ms, calculando manualmente', {
+            userId: userId.toString(),
+            productId,
+            purchaseDate: purchaseDate.toISOString(),
+            calculatedExpiresDate: expiresDate.toISOString(),
+            durationDays: PLAN_DURATION_DAYS[plan],
+          });
+        }
+      }
 
       // Verificar si la suscripción está activa
       const now = new Date();
       const isActive = expiresDate > now;
+      
+      // Validación especial para plan semanal
+      if (plan === 'weekly') {
+        const daysUntilExpiry = Math.floor((expiresDate - now) / (1000 * 60 * 60 * 24));
+        if (daysUntilExpiry < 0) {
+          logger.warn('[AppleReceipt] Plan semanal ya expirado al procesar', {
+            userId: userId.toString(),
+            productId,
+            purchaseDate: purchaseDate.toISOString(),
+            expiresDate: expiresDate.toISOString(),
+            now: now.toISOString(),
+            daysUntilExpiry,
+          });
+        } else if (daysUntilExpiry > 7) {
+          logger.warn('[AppleReceipt] Plan semanal con duración inesperada', {
+            userId: userId.toString(),
+            productId,
+            purchaseDate: purchaseDate.toISOString(),
+            expiresDate: expiresDate.toISOString(),
+            daysUntilExpiry,
+            expectedDays: 7,
+          });
+        }
+      }
 
       logger.debug('[AppleReceipt] Fechas calculadas', {
         userId: userId.toString(),
