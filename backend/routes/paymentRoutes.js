@@ -626,7 +626,6 @@ router.post(
               'Verificar que el producto esté activo y disponible',
             ],
           });
-        }
         
         logger.payment('POST /validate-receipt: error procesando suscripción', {
           userId: userId.toString(),

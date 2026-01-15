@@ -14,6 +14,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -760,6 +761,45 @@ const SubscriptionScreen = () => {
               : 'Todos los pagos son procesados de forma segura por Mercado Pago. Puedes cancelar tu suscripción en cualquier momento.'}
           </Text>
         </View>
+
+        {/* Enlaces legales requeridos */}
+        <View style={styles.legalSection}>
+          <Text style={styles.legalSectionTitle}>Información Legal</Text>
+          <TouchableOpacity
+            style={styles.legalLink}
+            onPress={async () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              const url = 'https://www.antoapps.com/terminos';
+              const canOpen = await Linking.canOpenURL(url);
+              if (canOpen) {
+                await Linking.openURL(url);
+              } else {
+                Alert.alert('Error', 'No se pudo abrir el enlace');
+              }
+            }}
+          >
+            <MaterialCommunityIcons name="file-document" size={18} color={colors.primary} />
+            <Text style={styles.legalLinkText}>Términos de Servicio</Text>
+            <MaterialCommunityIcons name="open-in-new" size={16} color={colors.textSecondary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.legalLink}
+            onPress={async () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              const url = 'https://www.antoapps.com/privacidad';
+              const canOpen = await Linking.canOpenURL(url);
+              if (canOpen) {
+                await Linking.openURL(url);
+              } else {
+                Alert.alert('Error', 'No se pudo abrir el enlace');
+              }
+            }}
+          >
+            <MaterialCommunityIcons name="shield-lock-outline" size={18} color={colors.primary} />
+            <Text style={styles.legalLinkText}>Política de Privacidad</Text>
+            <MaterialCommunityIcons name="open-in-new" size={16} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     );
   };
@@ -973,6 +1013,36 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 14,
     lineHeight: 20,
+  },
+  legalSection: {
+    marginTop: 24,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(163, 184, 232, 0.2)',
+  },
+  legalSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.white,
+    marginBottom: 12,
+  },
+  legalLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+    backgroundColor: 'rgba(29, 43, 95, 0.4)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(26, 221, 219, 0.1)',
+    gap: 12,
+  },
+  legalLinkText: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '500',
   },
 });
 
