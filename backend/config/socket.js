@@ -2,13 +2,22 @@
  * Configuración de Socket.IO - Gestiona conexiones WebSocket en tiempo real
  */
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import { Server } from 'socket.io';
+import Conversation from '../models/Conversation.js';
+import Message from '../models/Message.js';
+import User from '../models/User.js';
+import {
+  openaiService,
+  emotionalAnalyzer,
+  contextAnalyzer,
+  userProfileService
+} from '../services/index.js';
 
 // Constantes de configuración
 const DEFAULT_FRONTEND_URLS = ['http://localhost:3000', 'http://localhost:19006'];
 const PING_TIMEOUT = 60000; // 60 segundos
 const PING_INTERVAL = 25000; // 25 segundos
-const SIMULATED_RESPONSE_DELAY = 1000; // 1 segundo (solo para desarrollo)
 
 // Constantes de mensajes de error
 const ERROR_MESSAGES = {
@@ -108,7 +117,7 @@ export const setupSocketIO = (server) => {
     
     /**
      * Manejo de mensajes del usuario
-     * Procesa mensajes y genera respuestas (simulado por ahora)
+     * Procesa mensajes y genera respuestas usando OpenAI
      */
     socket.on(SOCKET_EVENTS.MESSAGE, async (data) => {
       try {
@@ -118,40 +127,134 @@ export const setupSocketIO = (server) => {
         }
         
         // Validar que el mensaje tenga contenido
-        if (!data || !data.text || typeof data.text !== 'string') {
+        if (!data || !data.text || typeof data.text !== 'string' || !data.text.trim()) {
           throw new Error('El mensaje debe contener un texto válido');
         }
+        
+        const messageText = data.text.trim();
+        const userId = new mongoose.Types.ObjectId(currentUserId);
         
         // Emitir estado de escritura de la IA
         socket.emit(SOCKET_EVENTS.AI_TYPING, true);
         
-        // Emitir confirmación de mensaje enviado
+        // 1. Obtener o crear conversación para el usuario
+        let conversation = await Conversation.findOne({ 
+          userId: userId,
+          status: 'active'
+        }).sort({ updatedAt: -1 }); // Obtener la conversación más reciente
+        
+        if (!conversation) {
+          // Crear nueva conversación si no existe
+          conversation = new Conversation({ userId });
+          await conversation.save();
+          console.log(`[SocketIO] Nueva conversación creada: ${conversation._id}`);
+        }
+        
+        // 2. Guardar mensaje del usuario
+        const userMessage = new Message({
+          userId: userId,
+          content: messageText,
+          role: 'user',
+          conversationId: conversation._id,
+          metadata: {
+            status: 'sent'
+          }
+        });
+        await userMessage.save();
+        
+        // Emitir confirmación de mensaje enviado (el frontend ya lo mostró, esto es solo confirmación)
         socket.emit(SOCKET_EVENTS.MESSAGE_SENT, {
-          ...data,
+          id: userMessage._id.toString(),
+          text: messageText,
           userId: currentUserId,
           timestamp: new Date()
         });
         
-        // TODO: Aquí se debe agregar la lógica real para procesar el mensaje:
-        // - Guardar en la base de datos
-        // - Generar respuesta usando el servicio de OpenAI
-        // - Actualizar el perfil del usuario
-        // - Emitir respuesta al cliente
+        // 3. Obtener historial de conversación para contexto (incluir el mensaje recién guardado)
+        const conversationHistory = await Message.find({
+          conversationId: conversation._id,
+          createdAt: { $gte: new Date(Date.now() - 20 * 60 * 1000) } // Últimos 20 minutos
+        })
+        .sort({ createdAt: -1 })
+        .limit(6)
+        .lean();
         
-        // Simulación de respuesta (solo para desarrollo)
-        responseTimeout = setTimeout(() => {
-          socket.emit(SOCKET_EVENTS.AI_TYPING, false);
-          socket.emit(SOCKET_EVENTS.MESSAGE_RECEIVED, {
-            userId: currentUserId,
-            text: `Respuesta al mensaje: "${data.text}"`,
-            timestamp: new Date()
-          });
-        }, SIMULATED_RESPONSE_DELAY);
+        // 4. Análisis emocional y contextual (en paralelo)
+        const [emotionalAnalysis, contextualAnalysis, userProfile] = await Promise.all([
+          emotionalAnalyzer.analyzeEmotion(messageText).catch(err => {
+            console.error('[SocketIO] Error en análisis emocional:', err);
+            return null;
+          }),
+          contextAnalyzer.analizarMensaje(userMessage, conversationHistory).catch(err => {
+            console.error('[SocketIO] Error en análisis contextual:', err);
+            return null;
+          }),
+          userProfileService.getOrCreateProfile(userId).catch(err => {
+            console.error('[SocketIO] Error obteniendo perfil:', err);
+            return null;
+          })
+        ]);
+        
+        // 5. Preparar historial para el prompt
+        const historialParaPrompt = conversationHistory
+          .slice(0, 6)
+          .reverse()
+          .map(msg => ({
+            role: msg.role || 'user',
+            content: msg.content || ''
+          }))
+          .filter(msg => msg.content.trim().length > 0);
+        
+        // 6. Generar respuesta usando OpenAI
+        const response = await openaiService.generarRespuesta(
+          userMessage,
+          {
+            history: historialParaPrompt,
+            emotional: emotionalAnalysis,
+            contextual: contextualAnalysis,
+            profile: userProfile
+          }
+        );
+        
+        // 7. Guardar mensaje del asistente
+        const assistantMessage = new Message({
+          userId: userId,
+          content: response.content,
+          role: 'assistant',
+          conversationId: conversation._id,
+          metadata: {
+            status: 'sent',
+            context: {
+              emotional: emotionalAnalysis,
+              contextual: contextualAnalysis,
+              response: JSON.stringify(response.context)
+            }
+          }
+        });
+        await assistantMessage.save();
+        
+        // 8. Actualizar última conversación
+        await Conversation.findByIdAndUpdate(conversation._id, { 
+          lastMessage: assistantMessage._id 
+        });
+        
+        // 9. Emitir respuesta al cliente
+        socket.emit(SOCKET_EVENTS.AI_TYPING, false);
+        socket.emit(SOCKET_EVENTS.MESSAGE_RECEIVED, {
+          id: assistantMessage._id.toString(),
+          text: response.content,
+          userId: currentUserId,
+          timestamp: new Date()
+        });
+        
+        console.log(`[SocketIO] Mensaje procesado para usuario ${currentUserId}`);
         
       } catch (error) {
         console.error('[SocketIO] Error en el manejo del mensaje:', error);
-        socket.emit(SOCKET_EVENTS.ERROR, { message: error.message });
         socket.emit(SOCKET_EVENTS.AI_TYPING, false);
+        socket.emit(SOCKET_EVENTS.ERROR, { 
+          message: error.message || 'Error al procesar el mensaje' 
+        });
       }
     });
     
