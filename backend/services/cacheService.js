@@ -13,6 +13,7 @@ class CacheService {
     this.redisClient = null;
     this.useRedis = false;
     this.defaultTTL = 3600; // 1 hora por defecto
+    this.locks = new Map(); // Locks para evitar cache stampede
     
     // Intentar inicializar Redis si está disponible
     this.initializeRedis();
@@ -202,20 +203,87 @@ class CacheService {
 
   /**
    * Obtiene o establece un valor en caché (patrón común)
+   * Con protección contra cache stampede usando locks
    * @param {string} key - Clave del caché
    * @param {Function} fetchFn - Función para obtener el valor si no está en caché
    * @param {number} ttl - Tiempo de vida en segundos (opcional)
+   * @param {number} lockTimeout - Tiempo máximo de espera del lock en ms (default: 5000)
    * @returns {Promise<any>} Valor del caché o resultado de fetchFn
    */
-  async getOrSet(key, fetchFn, ttl = null) {
+  async getOrSet(key, fetchFn, ttl = null, lockTimeout = 5000) {
+    // Intentar obtener del caché primero
     const cached = await this.get(key);
     if (cached !== null) {
       return cached;
     }
 
-    const value = await fetchFn();
-    await this.set(key, value, ttl);
-    return value;
+    // Verificar si hay un lock activo para esta clave
+    const lockKey = `lock:${key}`;
+    const lockPromise = this.locks.get(lockKey);
+    
+    if (lockPromise) {
+      // Hay otro proceso obteniendo este valor, esperar a que termine
+      try {
+        // Esperar a que el lock termine (puede ser éxito o error)
+        await Promise.race([
+          lockPromise,
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Lock timeout')), lockTimeout)
+          )
+        ]);
+        
+        // Después de que termine, intentar obtener del caché nuevamente
+        const cachedAfterLock = await this.get(key);
+        if (cachedAfterLock !== null) {
+          return cachedAfterLock;
+        }
+        
+        // Si no hay caché después del lock, el lock falló
+        // Continuar con la obtención normal (reintentar)
+      } catch (error) {
+        // Si el lock falló o hubo timeout, verificar si hay caché antes de reintentar
+        const cachedAfterError = await this.get(key);
+        if (cachedAfterError !== null) {
+          return cachedAfterError;
+        }
+        
+        // Si es timeout y no hay caché, continuar con la obtención normal
+        if (error.message === 'Lock timeout') {
+          console.warn(`[CacheService] Timeout esperando lock para ${key}, reintentando...`);
+        } else {
+          // Si el error es del fetchFn, relanzarlo
+          throw error;
+        }
+      }
+    }
+
+    // Crear un nuevo lock para esta clave
+    const lock = (async () => {
+      try {
+        const value = await fetchFn();
+        await this.set(key, value, ttl);
+        return value;
+      } catch (error) {
+        // Si hay error, no guardar en caché pero propagar el error
+        // El lock se eliminará en el finally
+        throw error;
+      } finally {
+        // Liberar el lock siempre, incluso si hay error
+        this.locks.delete(lockKey);
+      }
+    })();
+
+    // Guardar el lock
+    this.locks.set(lockKey, lock);
+
+    try {
+      const value = await lock;
+      return value;
+    } catch (error) {
+      // Si hay error, el lock ya se eliminó en el finally
+      // Relanzar el error para que el llamador lo maneje
+      throw error;
+    }
   }
 
   /**

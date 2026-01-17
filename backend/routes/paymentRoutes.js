@@ -263,9 +263,11 @@ router.get(
       const cacheKey = cacheService.generateKey('subscription', userId);
       logger.debug('[PaymentRoutes] Cache key generado', { cacheKey, userId: userId.toString() });
       
-      // Intentar obtener del caché del servidor
+      // Verificar si está en caché antes de usar getOrSet
+      let wasCached = false;
       const cached = await cacheService.get(cacheKey);
       if (cached) {
+        wasCached = true;
         logger.payment('GET /subscription-status: respuesta desde caché', {
           userId: userId.toString(),
           cached: true,
@@ -280,36 +282,59 @@ router.get(
         return res.status(200).json(response);
       }
       
+      // Usar getOrSet para evitar cache stampede (múltiples solicitudes simultáneas)
+      // Si hay cache miss, solo una solicitud ejecutará la consulta
       logger.debug('[PaymentRoutes] Cache miss, obteniendo estado de suscripción', {
         userId: userId.toString(),
       });
       
-      const status = await paymentService.getSubscriptionStatus(userId);
-      
-      logger.debug('[PaymentRoutes] Estado de suscripción obtenido', {
-        userId: userId.toString(),
-        hasStatus: !!status,
-        statusKeys: status ? Object.keys(status) : [],
-      });
+      let cacheResponse;
+      try {
+        cacheResponse = await cacheService.getOrSet(
+          cacheKey,
+          async () => {
+            const status = await paymentService.getSubscriptionStatus(userId);
+            
+            logger.debug('[PaymentRoutes] Estado de suscripción obtenido', {
+              userId: userId.toString(),
+              hasStatus: !!status,
+              statusKeys: status ? Object.keys(status) : [],
+            });
+
+            return {
+              success: true,
+              ...status,
+            };
+          },
+          300 // TTL de 5 minutos
+        );
+
+        logger.debug('[PaymentRoutes] Respuesta guardada en caché', {
+          userId: userId.toString(),
+          ttl: 300,
+        });
+      } catch (cacheError) {
+        logger.error('[PaymentRoutes] Error en getOrSet para subscription-status', {
+          userId: userId.toString(),
+          error: cacheError.message,
+          stack: cacheError.stack,
+        });
+        // Si hay error en el caché, intentar obtener directamente sin caché
+        logger.debug('[PaymentRoutes] Reintentando sin caché...', {
+          userId: userId.toString(),
+        });
+        const status = await paymentService.getSubscriptionStatus(userId);
+        cacheResponse = {
+          success: true,
+          ...status,
+        };
+      }
 
       // Agregar timestamp único para evitar que Express devuelva 304
       const response = {
-        success: true,
-        ...status,
+        ...cacheResponse,
         _timestamp: Date.now(), // Timestamp único para evitar 304
       };
-      
-      // Guardar en caché por 5 minutos (el estado puede cambiar)
-      // No incluir _timestamp en el caché para que sea consistente
-      const cacheResponse = {
-        success: true,
-        ...status,
-      };
-      await cacheService.set(cacheKey, cacheResponse, 300);
-      logger.debug('[PaymentRoutes] Respuesta guardada en caché', {
-        userId: userId.toString(),
-        ttl: 300,
-      });
 
       const duration = Date.now() - startTime;
       logger.payment('GET /subscription-status completado exitosamente', {

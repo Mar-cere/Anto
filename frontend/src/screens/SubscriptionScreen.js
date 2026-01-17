@@ -346,12 +346,20 @@ const SubscriptionScreen = () => {
             let errorMessage = purchaseResult.error || 'Ocurrió un error al procesar tu suscripción';
             
             // Mejorar mensajes de error para el usuario
-            if (errorMessage.includes('recibo') || errorMessage.includes('validar') || purchaseResult.appleStatus) {
-              errorMessage = 'Hubo un problema al validar tu compra. Por favor, intenta de nuevo o contacta con soporte si el problema persiste.';
+            if (purchaseResult.validationError) {
+              // Si fue un error de validación, el mensaje ya viene mejorado desde StoreKit
+              // Pero podemos mejorarlo aún más
+              if (errorMessage.includes('conectar') || errorMessage.includes('servidor') || errorMessage.includes('Network')) {
+                errorMessage = 'No se pudo conectar con el servidor para validar tu compra. Por favor, verifica tu conexión a internet e intenta de nuevo.';
+              } else if (errorMessage.includes('recibo') || errorMessage.includes('validar') || purchaseResult.appleStatus) {
+                errorMessage = 'Hubo un problema al validar tu compra. Por favor, intenta de nuevo o contacta con soporte si el problema persiste.';
+              }
             } else if (errorMessage.includes('producto') || errorMessage.includes('no está disponible')) {
               errorMessage = 'El producto seleccionado no está disponible en este momento. Por favor, intenta más tarde.';
             } else if (errorMessage.includes('conectar') || errorMessage.includes('App Store')) {
               errorMessage = 'No se pudo conectar con App Store. Por favor, verifica tu conexión a internet e intenta de nuevo.';
+            } else if (errorMessage.includes('undefined is not a function')) {
+              errorMessage = 'Error técnico al procesar la compra. Por favor, reinicia la app e intenta de nuevo.';
             }
             
             console.error('[SubscriptionScreen] Error en compra:', {

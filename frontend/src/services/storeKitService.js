@@ -65,6 +65,7 @@ class StoreKitService {
     this.purchaseUpdateListener = null;
     this.initializing = false; // Flag para evitar múltiples inicializaciones simultáneas
     this.processingPurchases = new Set(); // Set para rastrear compras en proceso
+    this.module = null; // Guardar referencia al módulo después de inicializar
   }
 
   /**
@@ -112,13 +113,16 @@ class StoreKitService {
       }
     }
 
-    const module = getInAppPurchasesModule();
+    let module = getInAppPurchasesModule();
     if (!module) {
       return {
         success: false,
         error: 'Módulo nativo no disponible. Necesitas hacer prebuild o usar un build nativo.',
       };
     }
+
+    // Guardar referencia al módulo
+    this.module = module;
 
     // Marcar como inicializando
     this.initializing = true;
@@ -186,10 +190,11 @@ class StoreKitService {
    * Configurar listeners para compras
    */
   setupPurchaseListeners() {
-    const module = getInAppPurchasesModule();
+    const module = this.module || getInAppPurchasesModule();
     if (!module) {
       return;
     }
+    this.module = module;
     // Listener para actualizaciones de compras
     // IMPORTANTE: Este listener solo notifica, NO procesa compras
     // El procesamiento se hace en purchaseSubscription() para evitar duplicados
@@ -268,7 +273,7 @@ class StoreKitService {
       }
     }
 
-    const module = getInAppPurchasesModule();
+    let module = this.module || getInAppPurchasesModule();
     if (!module) {
       return {
         success: false,
@@ -276,6 +281,7 @@ class StoreKitService {
         products: [],
       };
     }
+    this.module = module;
 
     try {
       const productIds = Object.values(PRODUCT_IDS);
@@ -392,23 +398,37 @@ class StoreKitService {
    * @param {Function} onValidateReceipt - Función para validar el recibo con el backend
    */
   async purchaseSubscription(plan, onValidateReceipt) {
-    if (!this.isInitialized && !this.initializing) {
-      const initResult = await this.initialize();
-      if (!initResult.success) {
-        return initResult;
+    // Asegurar que esté inicializado
+    if (!this.isInitialized) {
+      if (this.initializing) {
+        // Esperar a que termine la inicialización
+        let attempts = 0;
+        while (this.initializing && attempts < 50) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+          if (this.isInitialized) break;
+        }
+        if (!this.isInitialized) {
+          return {
+            success: false,
+            error: 'No se pudo inicializar StoreKit. Por favor, intenta de nuevo.',
+          };
+        }
+      } else {
+        const initResult = await this.initialize();
+        if (!initResult.success) {
+          return initResult;
+        }
       }
-    } else if (this.initializing) {
-      // Esperar a que termine la inicialización
-      let attempts = 0;
-      while (this.initializing && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-        if (this.isInitialized) break;
-      }
-      if (!this.isInitialized) {
+    }
+
+    // Verificar que el módulo esté disponible después de la inicialización
+    if (!this.module) {
+      this.module = getInAppPurchasesModule();
+      if (!this.module) {
         return {
           success: false,
-          error: 'No se pudo inicializar StoreKit. Por favor, intenta de nuevo.',
+          error: 'Módulo nativo no disponible. Por favor, reinicia la app.',
         };
       }
     }
@@ -422,11 +442,12 @@ class StoreKitService {
     }
 
 
-    const module = getInAppPurchasesModule();
-    if (!module) {
+    // Usar el módulo guardado
+    const module = this.module;
+    if (!module || typeof module.purchaseItemAsync !== 'function' || !module.IAPResponseCode) {
       return {
         success: false,
-        error: 'Módulo nativo no disponible. Necesitas hacer prebuild o usar un build nativo.',
+        error: 'Módulo de compras no disponible. Por favor, reinicia la app.',
       };
     }
 
@@ -476,7 +497,21 @@ class StoreKitService {
 
       // Solicitar compra
       const purchaseRequestTime = Date.now();
-      const purchaseResult = await module.purchaseItemAsync(productId);
+      let purchaseResult;
+      try {
+        purchaseResult = await module.purchaseItemAsync(productId);
+      } catch (purchaseError) {
+        console.error('[StoreKit] ❌ ERROR al llamar purchaseItemAsync', {
+          productId,
+          error: purchaseError?.message,
+          errorType: purchaseError?.constructor?.name,
+          stack: purchaseError?.stack,
+        });
+        return {
+          success: false,
+          error: purchaseError?.message || 'Error al procesar la compra. Por favor, intenta de nuevo.',
+        };
+      }
       const purchaseRequestDuration = Date.now() - purchaseRequestTime;
       
       // Marcar que estamos procesando esta compra para evitar duplicados en el listener
@@ -548,12 +583,11 @@ class StoreKitService {
               });
               
               // Intentar finalizar la transacción incluso si faltan datos para evitar que quede pendiente
-              if (purchase && purchase.productId) {
+              if (purchase && purchase.productId && module && typeof module.finishTransactionAsync === 'function') {
                 try {
-                  await module.finishTransactionAsync(purchase);
-                  console.log('[StoreKit] Transacción finalizada a pesar de datos incompletos');
+                  await module.finishTransactionAsync(purchase, false);
                 } catch (finishError) {
-                  console.error('[StoreKit] Error finalizando transacción con datos incompletos:', finishError);
+                  // Ignorar error de finalización si los datos están incompletos
                 }
               }
               
@@ -701,6 +735,20 @@ class StoreKitService {
               stack: validationError?.stack,
               totalDuration: Date.now() - purchaseStartTime,
             });
+            
+            // Determinar el tipo de error para dar un mensaje más claro
+            let errorMessage = 'Error al validar la compra';
+            const errorMsg = validationError?.message || '';
+            const responseData = validationError?.response?.data;
+            
+            if (errorMsg.includes('Network') || errorMsg.includes('network') || errorMsg.includes('ECONNREFUSED') || errorMsg.includes('timeout')) {
+              errorMessage = 'No se pudo conectar con el servidor. Por favor, verifica tu conexión a internet e intenta de nuevo.';
+            } else if (responseData?.error) {
+              errorMessage = responseData.error;
+            } else if (errorMsg) {
+              errorMessage = errorMsg;
+            }
+            
             // NO finalizar la transacción si hay error en la validación
             // Remover de compras en proceso
             if (purchaseKey) {
@@ -709,8 +757,9 @@ class StoreKitService {
             
             return {
               success: false,
-              error: validationError?.message || validationError?.response?.data?.error || 'Error al validar la compra',
+              error: errorMessage,
               purchase,
+              validationError: true, // Marcar que fue un error de validación
             };
           }
         }
@@ -755,15 +804,21 @@ class StoreKitService {
             console.warn('[StoreKit] ⚠️ ADVERTENCIA: No se pudo finalizar transacción, pero la validación fue exitosa. La suscripción está activa.');
             finalizationSuccess = false; // Marcar como no finalizada para intentar más tarde
           } else {
-            await module.finishTransactionAsync(purchase);
-            const finishDuration = Date.now() - finishStartTime;
-            console.log('[StoreKit] ✅ TRANSACCIÓN FINALIZADA', {
-              productId,
-              plan,
-              finishDuration: `${finishDuration}ms`,
-              timestamp: new Date().toISOString(),
-            });
-            finalizationSuccess = true;
+            // Validar que el método esté disponible antes de llamarlo
+            if (!module || typeof module.finishTransactionAsync !== 'function') {
+              console.error('[StoreKit] ❌ ERROR: finishTransactionAsync no está disponible', {
+                hasModule: !!module,
+                moduleKeys: module ? Object.keys(module) : [],
+              });
+              finalizationSuccess = false;
+            } else {
+              if (module && typeof module.finishTransactionAsync === 'function') {
+                await module.finishTransactionAsync(purchase, false);
+                finalizationSuccess = true;
+              } else {
+                finalizationSuccess = false;
+              }
+            }
           }
         } catch (finishError) {
           console.error('[StoreKit] ❌ ERROR finalizando transacción', {
@@ -785,8 +840,13 @@ class StoreKitService {
               const delay = (retryCount + 1) * 500; // 500ms, 1000ms, 1500ms
               await new Promise(resolve => setTimeout(resolve, delay));
               
-              console.log(`[StoreKit] 🔄 Reintento ${retryCount + 1}/${maxRetries} de finalización...`);
-              await module.finishTransactionAsync(purchase);
+              // Validar que el método esté disponible antes de cada reintento
+              if (!module || typeof module.finishTransactionAsync !== 'function') {
+                retryCount = maxRetries; // Salir del loop
+                break;
+              }
+              
+              await module.finishTransactionAsync(purchase, false);
               
               finalizationSuccess = true;
               console.log(`[StoreKit] ✅ TRANSACCIÓN FINALIZADA EN REINTENTO ${retryCount + 1}`);
@@ -1071,7 +1131,7 @@ class StoreKitService {
       }
     }
 
-    const module = getInAppPurchasesModule();
+    let module = this.module || getInAppPurchasesModule();
     if (!module) {
       return {
         success: false,
@@ -1079,6 +1139,7 @@ class StoreKitService {
         purchases: [],
       };
     }
+    this.module = module;
 
     try {
       console.log('[StoreKit] Restaurando compras...');
@@ -1176,7 +1237,7 @@ class StoreKitService {
       await this.initialize();
     }
 
-    const module = getInAppPurchasesModule();
+    let module = this.module || getInAppPurchasesModule();
     if (!module) {
       return {
         success: false,
@@ -1184,6 +1245,7 @@ class StoreKitService {
         subscriptions: [],
       };
     }
+    this.module = module;
 
     try {
       const historyResult = await module.getPurchaseHistoryAsync();
@@ -1242,16 +1304,13 @@ class StoreKitService {
       this.purchaseUpdateListener = null;
     }
 
-    if (this.isInitialized) {
-      const module = getInAppPurchasesModule();
-      if (module) {
-        try {
-          await module.disconnectAsync();
-          this.isInitialized = false;
-          console.log('[StoreKit] Conexión cerrada');
-        } catch (error) {
-          console.error('[StoreKit] Error cerrando conexión:', error);
-        }
+    if (this.isInitialized && this.module) {
+      try {
+        await this.module.disconnectAsync();
+        this.isInitialized = false;
+        this.module = null;
+      } catch (error) {
+        // Ignorar error al desconectar
       }
     }
   }
