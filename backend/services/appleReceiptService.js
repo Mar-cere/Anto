@@ -191,10 +191,21 @@ class AppleReceiptService {
           productId,
           transactionId: transactionId || 'no proporcionado',
           availableProductIds: latestReceiptInfo.map(t => t.product_id),
+          latestReceiptInfoCount: latestReceiptInfo.length,
         });
+        
+        // Si hay transacciones pero ninguna coincide con el productId, proporcionar más información
+        if (latestReceiptInfo.length > 0) {
+          return {
+            success: false,
+            error: `No se encontró la transacción para el producto ${productId} en el recibo. Productos disponibles: ${latestReceiptInfo.map(t => t.product_id).join(', ')}`,
+            availableProductIds: latestReceiptInfo.map(t => t.product_id),
+          };
+        }
+        
         return {
           success: false,
-          error: 'No se encontró la transacción en el recibo',
+          error: 'No se encontró ninguna transacción en el recibo',
         };
       }
 

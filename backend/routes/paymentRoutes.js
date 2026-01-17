@@ -571,11 +571,24 @@ router.post(
         latestReceiptInfoCount: receiptResponse.latest_receipt_info ? receiptResponse.latest_receipt_info.length : 0,
       });
 
+      // Si Apple rechazó el recibo, retornar error inmediatamente sin procesar
       if (receiptResponse.status !== 0) {
+        const errorMessage = appleReceiptService.getStatusErrorMessage 
+          ? appleReceiptService.getStatusErrorMessage(receiptResponse.status)
+          : `Recibo rechazado por Apple (código: ${receiptResponse.status})`;
+        
         logger.payment('POST /validate-receipt: recibo rechazado por Apple', {
           userId: userId.toString(),
           appleStatus: receiptResponse.status,
           productId,
+          errorMessage,
+        });
+        
+        return res.status(400).json({
+          success: false,
+          error: errorMessage,
+          status: receiptResponse.status,
+          appleStatus: receiptResponse.status,
         });
       }
 

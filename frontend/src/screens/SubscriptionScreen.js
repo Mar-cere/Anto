@@ -343,8 +343,22 @@ const SubscriptionScreen = () => {
             console.log('[SubscriptionScreen] Compra cancelada por el usuario');
             // No mostrar alerta, solo resetear estado
           } else {
-            const errorMessage = purchaseResult.error || 'Ocurrió un error al procesar tu suscripción';
-            console.error('[SubscriptionScreen] Error en compra:', errorMessage, purchaseResult);
+            let errorMessage = purchaseResult.error || 'Ocurrió un error al procesar tu suscripción';
+            
+            // Mejorar mensajes de error para el usuario
+            if (errorMessage.includes('recibo') || errorMessage.includes('validar') || purchaseResult.appleStatus) {
+              errorMessage = 'Hubo un problema al validar tu compra. Por favor, intenta de nuevo o contacta con soporte si el problema persiste.';
+            } else if (errorMessage.includes('producto') || errorMessage.includes('no está disponible')) {
+              errorMessage = 'El producto seleccionado no está disponible en este momento. Por favor, intenta más tarde.';
+            } else if (errorMessage.includes('conectar') || errorMessage.includes('App Store')) {
+              errorMessage = 'No se pudo conectar con App Store. Por favor, verifica tu conexión a internet e intenta de nuevo.';
+            }
+            
+            console.error('[SubscriptionScreen] Error en compra:', {
+              originalError: purchaseResult.error,
+              userFriendlyError: errorMessage,
+              purchaseResult,
+            });
             
             // Si hay un purchase en el error, puede ser que la validación falló pero la compra se procesó
             if (purchaseResult.purchase) {
