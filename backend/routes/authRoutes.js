@@ -9,6 +9,7 @@ import jwt from 'jsonwebtoken';
 import mailer from '../config/mailer.js';
 import { authenticateToken } from '../middleware/auth.js';
 import User from '../models/User.js';
+import { CURRENT_TERMS_VERSION } from '../constants/app.js';
 
 const router = express.Router();
 
@@ -77,7 +78,29 @@ const registerSchema = Joi.object({
     .messages({
       'string.min': 'El nombre debe tener al menos 2 caracteres',
       'string.max': 'El nombre debe tener máximo 50 caracteres'
-    })
+    }),
+  termsAccepted: Joi.boolean()
+    .valid(true)
+    .required()
+    .messages({
+      'any.only': 'Debes aceptar los términos y condiciones',
+      'any.required': 'Debes aceptar los términos y condiciones'
+    }),
+  termsAcceptedAt: Joi.string()
+    .isoDate()
+    .optional(),
+  privacyAccepted: Joi.boolean()
+    .valid(true)
+    .required()
+    .messages({
+      'any.only': 'Debes aceptar la política de privacidad',
+      'any.required': 'Debes aceptar la política de privacidad'
+    }),
+  privacyAcceptedAt: Joi.string()
+    .isoDate()
+    .optional(),
+  termsVersion: Joi.string()
+    .optional()
 });
 
 const loginSchema = Joi.object({
@@ -225,7 +248,7 @@ router.post('/register', registerLimiter, async (req, res) => {
       });
     }
 
-    const { email, password, username, name } = value;
+    const { email, password, username, name, termsAccepted, termsAcceptedAt, privacyAccepted, privacyAcceptedAt, termsVersion } = value;
 
     // Verificar si el usuario ya existe
     const existingUser = await User.findOne({ 
@@ -270,6 +293,11 @@ router.post('/register', registerLimiter, async (req, res) => {
         trialStartDate: new Date(),
         trialEndDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) // 3 días de trial
       },
+      termsAccepted: termsAccepted || false,
+      termsAcceptedAt: termsAcceptedAt ? new Date(termsAcceptedAt) : new Date(),
+      privacyAccepted: privacyAccepted || false,
+      privacyAcceptedAt: privacyAcceptedAt ? new Date(privacyAcceptedAt) : new Date(),
+      termsVersion: termsVersion || CURRENT_TERMS_VERSION,
       ...(name && name.trim() ? { name: name.trim() } : {})
     };
 
@@ -486,10 +514,18 @@ router.post('/login', loginLimiter, async (req, res) => {
     user.stats.totalSessions += 1;
     await user.save();
 
+    // Verificar si los términos han cambiado (informar, no bloquear)
+    const needsTermsUpdate = user.termsVersion !== CURRENT_TERMS_VERSION;
+    
     res.json({
       accessToken,
       refreshToken,
-      user: user.toJSON()
+      user: user.toJSON(),
+      ...(needsTermsUpdate && {
+        termsUpdateRequired: true,
+        currentTermsVersion: CURRENT_TERMS_VERSION,
+        userTermsVersion: user.termsVersion
+      })
     });
 
   } catch (error) {

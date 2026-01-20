@@ -198,6 +198,8 @@ const RegisterScreen = ({ navigation }) => {
   const [isPasswordVisible, setPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [isTermsAccepted, setTermsAccepted] = useState(false);
+  const [isPrivacyAccepted, setPrivacyAccepted] = useState(false);
+  const [hasViewedTerms, setHasViewedTerms] = useState(false);
   const [isNameInfoModalVisible, setNameInfoModalVisible] = useState(false);
   const [isTermsModalVisible, setTermsModalVisible] = useState(false);
   const [errors, setErrors] = useState({});
@@ -284,9 +286,12 @@ const RegisterScreen = ({ navigation }) => {
       if (!newErrors[key]) delete newErrors[key];
     });
     
-    // Validar términos
+    // Validar términos y privacidad (ambos son obligatorios)
     if (!isTermsAccepted) {
       newErrors.terms = ERROR_MESSAGES.TERMS_REQUIRED;
+    }
+    if (!isPrivacyAccepted) {
+      newErrors.privacy = 'Debes aceptar la política de privacidad';
     }
 
     setErrors(newErrors);
@@ -341,6 +346,11 @@ const RegisterScreen = ({ navigation }) => {
         email: formData.email.toLowerCase().trim(),
         username: formData.username.toLowerCase().trim(),
         password: formData.password,
+        termsAccepted: isTermsAccepted,
+        termsAcceptedAt: new Date().toISOString(),
+        privacyAccepted: isPrivacyAccepted,
+        privacyAcceptedAt: new Date().toISOString(),
+        termsVersion: '1.0', // Versión actual de términos (debe coincidir con CURRENT_TERMS_VERSION en backend)
         ...(formData.name && formData.name.trim() ? { name: formData.name.trim() } : {})
       };
 
@@ -554,7 +564,10 @@ const RegisterScreen = ({ navigation }) => {
             {/* Términos y condiciones */}
             <TouchableOpacity 
               style={styles.checkboxContainer} 
-              onPress={() => setTermsAccepted(!isTermsAccepted)}
+              onPress={() => {
+                setTermsModalVisible(true);
+                setHasViewedTerms(true);
+              }}
               activeOpacity={ACTIVE_OPACITY}
             >
               <View style={[styles.checkbox, isTermsAccepted && styles.checkboxChecked]}>
@@ -570,11 +583,58 @@ const RegisterScreen = ({ navigation }) => {
                 {TEXTS.TERMS_TEXT}
                 <Text 
                   style={styles.termsLink} 
-                  onPress={() => setTermsModalVisible(true)}
+                  onPress={() => {
+                    setTermsModalVisible(true);
+                    setHasViewedTerms(true);
+                  }}
                 >
                   {TEXTS.TERMS_LINK}
                 </Text>
-                {' y la '}
+                .
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.checkboxContainer} 
+              onPress={() => setTermsAccepted(!isTermsAccepted)}
+              activeOpacity={ACTIVE_OPACITY}
+              disabled={!hasViewedTerms}
+            >
+              <View style={[
+                styles.checkbox, 
+                isTermsAccepted && styles.checkboxChecked,
+                !hasViewedTerms && styles.checkboxDisabled
+              ]}>
+                {isTermsAccepted && (
+                  <Ionicons 
+                    name="checkmark" 
+                    size={CHECKBOX_ICON_SIZE} 
+                    color={colors.white} 
+                  />
+                )}
+              </View>
+              <Text style={[styles.termsText, !hasViewedTerms && styles.termsTextDisabled]}>
+                Acepto los términos y condiciones
+              </Text>
+            </TouchableOpacity>
+            {errors.terms && <Text style={globalStyles.errorText}>{errors.terms}</Text>}
+            
+            {/* Política de privacidad */}
+            <TouchableOpacity 
+              style={styles.checkboxContainer} 
+              onPress={() => setPrivacyAccepted(!isPrivacyAccepted)}
+              activeOpacity={ACTIVE_OPACITY}
+            >
+              <View style={[styles.checkbox, isPrivacyAccepted && styles.checkboxChecked]}>
+                {isPrivacyAccepted && (
+                  <Ionicons 
+                    name="checkmark" 
+                    size={CHECKBOX_ICON_SIZE} 
+                    color={colors.white} 
+                  />
+                )}
+              </View>
+              <Text style={styles.termsText}>
+                Acepto la{' '}
                 <Text 
                   style={styles.termsLink} 
                   onPress={async () => {
@@ -591,7 +651,7 @@ const RegisterScreen = ({ navigation }) => {
                 </Text>.
               </Text>
             </TouchableOpacity>
-            {errors.terms && <Text style={globalStyles.errorText}>{errors.terms}</Text>}
+            {errors.privacy && <Text style={globalStyles.errorText}>{errors.privacy}</Text>}
 
             {/* Botón de registro */}
             <TouchableOpacity
@@ -724,13 +784,25 @@ const RegisterScreen = ({ navigation }) => {
               </View>
             </ScrollView>
             
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={() => setTermsModalVisible(false)}
-              activeOpacity={BUTTON_ACTIVE_OPACITY}
-            >
-              <Text style={styles.modalButtonText}>{TEXTS.MODAL_CLOSE}</Text>
-            </TouchableOpacity>
+            <View style={styles.modalButtonsContainer}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={() => setTermsModalVisible(false)}
+                activeOpacity={BUTTON_ACTIVE_OPACITY}
+              >
+                <Text style={styles.modalButtonTextSecondary}>Cerrar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalButton}
+                onPress={() => {
+                  setTermsAccepted(true);
+                  setTermsModalVisible(false);
+                }}
+                activeOpacity={BUTTON_ACTIVE_OPACITY}
+              >
+                <Text style={styles.modalButtonText}>Aceptar Términos</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -799,9 +871,17 @@ const styles = StyleSheet.create({
   checkboxChecked: {
     backgroundColor: colors.primary,
   },
+  checkboxDisabled: {
+    opacity: 0.5,
+    borderColor: colors.textSecondary,
+  },
   termsText: {
     color: '#A3B8E8',
     fontSize: 16,
+  },
+  termsTextDisabled: {
+    opacity: 0.5,
+    color: colors.textSecondary,
   },
   termsLink: {
     color: colors.primary,
@@ -901,6 +981,12 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign: 'left',
   },
+  modalButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    gap: 12,
+  },
   modalButton: {
     backgroundColor: colors.primary,
     borderRadius: 12,
@@ -908,9 +994,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
+    flex: 1,
+  },
+  modalButtonSecondary: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.primary,
   },
   modalButtonText: {
     color: colors.white,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  modalButtonTextSecondary: {
+    color: colors.primary,
     fontSize: 16,
     fontWeight: 'bold',
   },

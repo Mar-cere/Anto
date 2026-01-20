@@ -267,6 +267,31 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null,
     select: false
+  },
+  // Aceptación de términos y condiciones
+  termsAccepted: {
+    type: Boolean,
+    default: false,
+    required: true
+  },
+  termsAcceptedAt: {
+    type: Date,
+    default: null
+  },
+  termsVersion: {
+    type: String,
+    default: '1.0',
+    description: 'Versión de términos aceptada (para tracking si cambian)'
+  },
+  // Aceptación de política de privacidad (GDPR requiere consentimiento separado)
+  privacyAccepted: {
+    type: Boolean,
+    default: false,
+    required: true
+  },
+  privacyAcceptedAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true,

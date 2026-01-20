@@ -670,16 +670,16 @@ class StoreKitService {
                 validationDuration: Date.now() - validationStartTime,
                 totalDuration: Date.now() - purchaseStartTime,
               });
-            // Remover de compras en proceso
-            if (purchaseKey) {
-              this.processingPurchases.delete(purchaseKey);
-            }
-            
-            return {
-              success: false,
-              error: 'No se recibió respuesta del servidor al validar la compra',
-              purchase,
-            };
+              // Remover de compras en proceso
+              if (purchaseKey) {
+                this.processingPurchases.delete(purchaseKey);
+              }
+              
+              return {
+                success: false,
+                error: 'No se recibió respuesta del servidor al validar la compra',
+                purchase,
+              };
             }
 
             if (!validationResult.success) {

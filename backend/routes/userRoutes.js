@@ -12,6 +12,7 @@ import { validateUserObjectId } from '../middleware/validation.js';
 import User from '../models/User.js';
 import logger from '../utils/logger.js';
 import cacheService from '../services/cacheService.js';
+import { CURRENT_TERMS_VERSION } from '../constants/app.js';
 
 // Helper para validar ObjectId
 const isValidObjectId = (id) => {
@@ -555,6 +556,69 @@ router.delete('/me', authenticateToken, validateUserObjectId, deleteUserLimiter,
     logger.error('Error al eliminar cuenta', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
       message: 'Error al eliminar la cuenta',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Re-aceptar términos y condiciones (cuando cambian)
+const reacceptTermsSchema = Joi.object({
+  termsAccepted: Joi.boolean().valid(true).required().messages({
+    'any.only': 'Debes aceptar los términos y condiciones',
+    'any.required': 'Debes aceptar los términos y condiciones'
+  }),
+  privacyAccepted: Joi.boolean().valid(true).required().messages({
+    'any.only': 'Debes aceptar la política de privacidad',
+    'any.required': 'Debes aceptar la política de privacidad'
+  })
+});
+
+router.post('/me/accept-terms', authenticateToken, validateUserObjectId, async (req, res) => {
+  try {
+    const userId = req.user._id || req.user.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'Usuario no autenticado' });
+    }
+
+    const { error, value } = reacceptTermsSchema.validate(req.body, { stripUnknown: true });
+    if (error) {
+      return res.status(400).json({
+        message: 'Datos inválidos',
+        errors: error.details.map(detail => detail.message)
+      });
+    }
+
+    const user = await findUserById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    if (!user.isActive) {
+      return res.status(403).json({ message: 'Tu cuenta ha sido desactivada' });
+    }
+
+    // Actualizar aceptación de términos y privacidad
+    user.termsAccepted = true;
+    user.termsAcceptedAt = new Date();
+    user.privacyAccepted = true;
+    user.privacyAcceptedAt = new Date();
+    user.termsVersion = CURRENT_TERMS_VERSION;
+    
+    await user.save();
+
+    // Invalidar caché del usuario
+    await cacheService.invalidateUserCache(userId);
+
+    res.json({
+      message: 'Términos y política de privacidad aceptados correctamente',
+      termsVersion: CURRENT_TERMS_VERSION,
+      acceptedAt: new Date()
+    });
+  } catch (error) {
+    logger.error('Error al re-aceptar términos', { error: error.message, userId: req.user._id });
+    res.status(500).json({
+      message: 'Error al actualizar aceptación de términos',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
