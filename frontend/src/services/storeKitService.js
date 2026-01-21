@@ -17,24 +17,45 @@ let moduleChecked = false;
 function getInAppPurchasesModule() {
   // Si ya verificamos y no está disponible, retornar null
   if (moduleChecked && !InAppPurchases) {
+    console.log('[StoreKit] 🔍 getInAppPurchasesModule: Módulo ya verificado y no disponible');
     return null;
   }
   
   // Si ya está cargado, retornarlo
   if (InAppPurchases) {
+    console.log('[StoreKit] ✅ getInAppPurchasesModule: Módulo ya cargado, retornando referencia');
     return InAppPurchases;
   }
   
   // Intentar cargar el módulo dinámicamente
   try {
+    console.log('[StoreKit] 🔄 getInAppPurchasesModule: Intentando cargar módulo...');
     // Usar require.ensure o require con manejo de errores
     const module = require('expo-in-app-purchases');
     InAppPurchases = module;
     moduleChecked = true;
+    
+    // Verificar métodos disponibles
+    const hasMethods = {
+      connectAsync: typeof module.connectAsync === 'function',
+      purchaseItemAsync: typeof module.purchaseItemAsync === 'function',
+      IAPResponseCode: !!module.IAPResponseCode,
+      getProductsAsync: typeof module.getProductsAsync === 'function',
+    };
+    
+    console.log('[StoreKit] ✅ getInAppPurchasesModule: Módulo cargado exitosamente', {
+      hasMethods,
+      moduleKeys: Object.keys(module),
+    });
+    
     return InAppPurchases;
   } catch (error) {
     // El módulo no está disponible (Expo Go o no compilado)
     // Esto es normal en desarrollo, no mostrar error
+    console.error('[StoreKit] ❌ getInAppPurchasesModule: Error cargando módulo', {
+      error: error.message,
+      stack: error.stack,
+    });
     moduleChecked = true;
     InAppPurchases = null;
     return null;
@@ -83,6 +104,13 @@ class StoreKitService {
    * Inicializar conexión con App Store
    */
   async initialize() {
+    console.log('[StoreKit] 🔄 initialize() llamado', {
+      isInitialized: this.isInitialized,
+      hasModule: !!this.module,
+      initializing: this.initializing,
+      timestamp: new Date().toISOString(),
+    });
+
     if (!this.isAvailable()) {
       console.log('[StoreKit] No disponible en esta plataforma');
       return { 
@@ -91,8 +119,24 @@ class StoreKitService {
       };
     }
 
-    // Si ya está inicializado, retornar éxito
-    if (this.isInitialized) {
+    // Obtener módulo primero para verificar disponibilidad
+    let module = this.module || getInAppPurchasesModule();
+    if (!module) {
+      console.error('[StoreKit] ❌ initialize: Módulo no disponible');
+      return {
+        success: false,
+        error: 'Módulo nativo no disponible. Necesitas hacer prebuild o usar un build nativo.',
+      };
+    }
+    
+    console.log('[StoreKit] ✅ initialize: Módulo obtenido', {
+      hasConnectAsync: typeof module.connectAsync === 'function',
+      hasPurchaseItemAsync: typeof module.purchaseItemAsync === 'function',
+      hasIAPResponseCode: !!module.IAPResponseCode,
+    });
+
+    // Si ya está inicializado y el módulo está disponible, retornar éxito
+    if (this.isInitialized && this.module && typeof this.module.purchaseItemAsync === 'function') {
       return { success: true };
     }
 
@@ -103,22 +147,25 @@ class StoreKitService {
       while (this.initializing && attempts < 50) {
         await new Promise(resolve => setTimeout(resolve, 100));
         attempts++;
-        if (this.isInitialized) {
+        if (this.isInitialized && this.module && typeof this.module.purchaseItemAsync === 'function') {
           return { success: true };
         }
       }
-      // Si después de esperar aún no está inicializado, intentar de nuevo
-      if (!this.isInitialized) {
+      // Si después de esperar aún no está inicializado, resetear y reintentar
+      if (!this.isInitialized || !this.module) {
         console.warn('[StoreKit] Timeout esperando inicialización, reintentando...');
+        this.initializing = false;
+        this.isInitialized = false;
+        this.module = null;
+        // Re-obtener módulo
+        module = getInAppPurchasesModule();
+        if (!module) {
+          return {
+            success: false,
+            error: 'Módulo nativo no disponible. Necesitas hacer prebuild o usar un build nativo.',
+          };
+        }
       }
-    }
-
-    let module = getInAppPurchasesModule();
-    if (!module) {
-      return {
-        success: false,
-        error: 'Módulo nativo no disponible. Necesitas hacer prebuild o usar un build nativo.',
-      };
     }
 
     // Guardar referencia al módulo
@@ -128,12 +175,69 @@ class StoreKitService {
     this.initializing = true;
 
     try {
+      // Verificar que el módulo y connectAsync estén disponibles
+      if (!module || typeof module.connectAsync !== 'function') {
+        this.initializing = false;
+        this.module = null;
+        return {
+          success: false,
+          error: 'Módulo de compras no disponible. Por favor, reinicia la app.',
+        };
+      }
+
       // Conectar con App Store
-      const connectResult = await module.connectAsync();
+      console.log('[StoreKit] 🔌 Intentando conectar con App Store...');
+      let connectResult;
+      try {
+        const connectStartTime = Date.now();
+        connectResult = await module.connectAsync();
+        const connectDuration = Date.now() - connectStartTime;
+        console.log('[StoreKit] ✅ connectAsync completado', {
+          duration: `${connectDuration}ms`,
+          hasResult: !!connectResult,
+          connected: connectResult?.connected,
+        });
+      } catch (connectError) {
+        console.error('[StoreKit] ❌ Error en connectAsync', {
+          error: connectError?.message,
+          errorType: connectError?.constructor?.name,
+          stack: connectError?.stack,
+          hasModule: !!module,
+          moduleType: typeof module,
+        });
+        // Si el error es "Already connected", considerar como éxito
+        if (connectError.message && connectError.message.includes('Already connected')) {
+          this.module = module; // Asegurar que el módulo esté guardado
+          
+          // Verificar que el módulo tenga los métodos necesarios
+          if (typeof module.purchaseItemAsync === 'function' && module.IAPResponseCode) {
+            this.isInitialized = true;
+            this.initializing = false;
+            if (!this.purchaseUpdateListener) {
+              this.setupPurchaseListeners();
+            }
+            return { success: true };
+          } else {
+            // Si el módulo no tiene los métodos, resetear y fallar
+            this.module = null;
+            this.isInitialized = false;
+            this.initializing = false;
+            return {
+              success: false,
+              error: 'Módulo de compras incompleto. Por favor, reinicia la app.',
+            };
+          }
+        }
+        // Si no es "Already connected", resetear estado y lanzar error
+        this.initializing = false;
+        this.module = null;
+        throw connectError;
+      }
       
       // Validar que el resultado sea válido
       if (!connectResult) {
         this.initializing = false;
+        this.module = null;
         return {
           success: false,
           error: 'No se recibió respuesta de App Store',
@@ -144,15 +248,29 @@ class StoreKitService {
       
       if (!connected) {
         this.initializing = false;
+        this.module = null;
         return {
           success: false,
           error: 'No se pudo conectar con App Store',
         };
       }
 
+      // Asegurar que el módulo esté guardado y verificado antes de marcar como inicializado
+      this.module = module;
+      
+      // Verificar que el módulo tenga los métodos necesarios
+      if (typeof module.purchaseItemAsync !== 'function' || !module.IAPResponseCode) {
+        this.initializing = false;
+        this.module = null;
+        this.isInitialized = false;
+        return {
+          success: false,
+          error: 'Módulo de compras incompleto. Por favor, reinicia la app.',
+        };
+      }
+      
       this.isInitialized = true;
       this.initializing = false;
-      console.log('[StoreKit] Conexión inicializada correctamente');
 
       // Configurar listener para actualizaciones de compras (solo si no existe)
       if (!this.purchaseUpdateListener) {
@@ -171,13 +289,32 @@ class StoreKitService {
       
       // Si el error es "Already connected", considerar como éxito
       if (error.message && error.message.includes('Already connected')) {
-        console.log('[StoreKit] Ya estaba conectado, marcando como inicializado');
-        this.isInitialized = true;
-        if (!this.purchaseUpdateListener) {
-          this.setupPurchaseListeners();
+        this.module = module; // Asegurar que el módulo esté guardado
+        
+        // Verificar que el módulo tenga los métodos necesarios
+        if (typeof module.purchaseItemAsync === 'function' && module.IAPResponseCode) {
+          this.isInitialized = true;
+          this.initializing = false;
+          if (!this.purchaseUpdateListener) {
+            this.setupPurchaseListeners();
+          }
+          return { success: true };
+        } else {
+          // Si el módulo no tiene los métodos, resetear y fallar
+          this.module = null;
+          this.isInitialized = false;
+          this.initializing = false;
+          return {
+            success: false,
+            error: 'Módulo de compras incompleto. Por favor, reinicia la app.',
+          };
         }
-        return { success: true };
       }
+      
+      // Resetear estado en caso de error
+      this.module = null;
+      this.isInitialized = false;
+      this.initializing = false;
       
       return {
         success: false,
@@ -398,6 +535,29 @@ class StoreKitService {
    * @param {Function} onValidateReceipt - Función para validar el recibo con el backend
    */
   async purchaseSubscription(plan, onValidateReceipt) {
+    console.log('[StoreKit] 🛒 purchaseSubscription() llamado', {
+      plan,
+      isInitialized: this.isInitialized,
+      hasModule: !!this.module,
+      initializing: this.initializing,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Obtener módulo primero para verificar disponibilidad
+    let module = this.module || getInAppPurchasesModule();
+    if (!module) {
+      console.error('[StoreKit] ❌ purchaseSubscription: Módulo no disponible al inicio');
+      return {
+        success: false,
+        error: 'Módulo nativo no disponible. Por favor, reinicia la app.',
+      };
+    }
+    this.module = module;
+    console.log('[StoreKit] ✅ purchaseSubscription: Módulo obtenido', {
+      hasPurchaseItemAsync: typeof module.purchaseItemAsync === 'function',
+      hasIAPResponseCode: !!module.IAPResponseCode,
+    });
+
     // Asegurar que esté inicializado
     if (!this.isInitialized) {
       if (this.initializing) {
@@ -409,10 +569,11 @@ class StoreKitService {
           if (this.isInitialized) break;
         }
         if (!this.isInitialized) {
-          return {
-            success: false,
-            error: 'No se pudo inicializar StoreKit. Por favor, intenta de nuevo.',
-          };
+          // Reintentar inicialización si falló
+          const initResult = await this.initialize();
+          if (!initResult.success) {
+            return initResult;
+          }
         }
       } else {
         const initResult = await this.initialize();
@@ -423,14 +584,35 @@ class StoreKitService {
     }
 
     // Verificar que el módulo esté disponible después de la inicialización
-    if (!this.module) {
-      this.module = getInAppPurchasesModule();
-      if (!this.module) {
+    module = this.module || getInAppPurchasesModule();
+    if (!module) {
+      return {
+        success: false,
+        error: 'Módulo nativo no disponible. Por favor, reinicia la app.',
+      };
+    }
+    this.module = module;
+
+    // Verificar métodos críticos antes de comprar
+    if (typeof module.purchaseItemAsync !== 'function') {
+      // Intentar re-obtener el módulo
+      module = getInAppPurchasesModule();
+      if (!module || typeof module.purchaseItemAsync !== 'function') {
+        this.module = null;
+        this.isInitialized = false;
         return {
           success: false,
-          error: 'Módulo nativo no disponible. Por favor, reinicia la app.',
+          error: 'Función de compra no disponible. Por favor, reinicia la app.',
         };
       }
+      this.module = module;
+    }
+
+    if (!module.IAPResponseCode) {
+      return {
+        success: false,
+        error: 'Configuración de compras no disponible. Por favor, reinicia la app.',
+      };
     }
 
     const productId = PRODUCT_IDS[plan];
@@ -438,16 +620,6 @@ class StoreKitService {
       return {
         success: false,
         error: `Plan no válido: ${plan}`,
-      };
-    }
-
-
-    // Usar el módulo guardado
-    const module = this.module;
-    if (!module || typeof module.purchaseItemAsync !== 'function' || !module.IAPResponseCode) {
-      return {
-        success: false,
-        error: 'Módulo de compras no disponible. Por favor, reinicia la app.',
       };
     }
 

@@ -206,18 +206,17 @@ const SubscriptionScreen = () => {
       // En iOS, usar StoreKit
       if (Platform.OS === 'ios' && storeKitService.isAvailable()) {
         try {
-          // Asegurar que StoreKit esté inicializado y los productos cargados
-          if (!storeKitService.isInitialized) {
-            const initResult = await storeKitService.initialize();
-            if (!initResult.success) {
-              setSubscribing(false);
-              setSelectedPlan(null);
-              Alert.alert(
-                TEXTS.SUBSCRIBE_ERROR,
-                initResult.error || 'No se pudo conectar con App Store. Por favor, intenta de nuevo.'
-              );
-              return;
-            }
+          // Forzar reinicialización para asegurar que todo esté listo
+          // Esto resuelve problemas de estado inconsistente entre intentos
+          const initResult = await storeKitService.initialize();
+          if (!initResult.success) {
+            setSubscribing(false);
+            setSelectedPlan(null);
+            Alert.alert(
+              TEXTS.SUBSCRIBE_ERROR,
+              initResult.error || 'No se pudo conectar con App Store. Por favor, intenta de nuevo.'
+            );
+            return;
           }
           
           // Verificar que los productos estén cargados
