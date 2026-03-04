@@ -13,7 +13,6 @@ import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Animated,
   Easing,
@@ -28,6 +27,8 @@ import DashboardScroll from '../components/DashboardScroll';
 import EmergencyContactsModal from '../components/EmergencyContactsModal';
 import FloatingNavBar from '../components/FloatingNavBar';
 import websocketService from '../services/websocketService';
+import FirstSessionHint, { isFirstSessionHintDismissed } from '../components/FirstSessionHint';
+import OnboardingQuestions from '../components/OnboardingQuestions';
 import OnboardingTutorial, { isTutorialCompleted } from '../components/OnboardingTutorial';
 import TutorialHighlight from '../components/TutorialHighlight';
 import HabitCard from '../components/HabitCard';
@@ -37,6 +38,7 @@ import PomodoroCard from '../components/PomodoroCard';
 import JournalCard from '../components/JournalCard';
 import QuoteSection from '../components/QuoteSection';
 import TaskCard from '../components/TaskCard';
+import { SkeletonBlock, SkeletonCard } from '../components/Skeleton';
 import { api, ENDPOINTS } from '../config/api';
 import { ANIMATION_DURATIONS, ANIMATION_OPACITIES, ANIMATION_SCALES } from '../constants/animations';
 import { DASH } from '../constants/translations';
@@ -89,6 +91,8 @@ const DashScreen = () => {
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [hasCheckedTutorial, setHasCheckedTutorial] = useState(false);
+  const [showFirstSessionHint, setShowFirstSessionHint] = useState(false);
+  const [showOnboardingQuestions, setShowOnboardingQuestions] = useState(false);
   const [highlightElement, setHighlightElement] = useState(null);
   const [trialInfo, setTrialInfo] = useState(null);
   const [trialBannerDismissed, setTrialBannerDismissed] = useState(false);
@@ -186,6 +190,12 @@ const DashScreen = () => {
             }
             setShowTutorial(true);
           }, 1000);
+        } else {
+          // Tutorial ya completado: mostrar hint de primera sesión si no lo cerró
+          const hintDismissed = await isFirstSessionHintDismissed(userId);
+          if (!hintDismissed) {
+            setTimeout(() => setShowFirstSessionHint(true), 800);
+          }
         }
         setHasCheckedTutorial(true);
       }
@@ -289,13 +299,20 @@ const DashScreen = () => {
   // Manejar finalización del tutorial
   const handleTutorialComplete = useCallback(() => {
     setShowTutorial(false);
-    // Después del tutorial, mostrar el modal de contactos si es necesario
+    // Primero preguntas de onboarding (opcionales), luego hint "Empezar chat"
+    setTimeout(() => setShowOnboardingQuestions(true), 800);
     if (!hasCheckedEmergencyContacts) {
       setTimeout(() => {
         checkEmergencyContacts(userData);
       }, 500);
     }
   }, [hasCheckedEmergencyContacts, checkEmergencyContacts, userData]);
+
+  // Al cerrar las preguntas de onboarding (omitir o enviar), mostrar hint "Empezar chat"
+  const handleOnboardingQuestionsDismiss = useCallback(() => {
+    setShowOnboardingQuestions(false);
+    setTimeout(() => setShowFirstSessionHint(true), 1500);
+  }, []);
 
   // Manejar el dismiss del banner de trial
   const handleTrialBannerDismiss = useCallback(() => {
@@ -380,9 +397,14 @@ const DashScreen = () => {
   // Componente de carga
   if (loading) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>{DASH.LOADING}</Text>
+      <View style={[styles.container, styles.skeletonScreen]}>
+        <View style={styles.skeletonHeader}>
+          <SkeletonBlock width="70%" height={18} radius={10} />
+          <SkeletonBlock width="45%" height={14} radius={10} style={styles.skeletonHeaderLine} />
+        </View>
+        <SkeletonCard style={styles.skeletonCard} />
+        <SkeletonCard style={styles.skeletonCard} />
+        <SkeletonCard style={styles.skeletonCard} />
       </View>
     );
   }
@@ -472,6 +494,19 @@ const DashScreen = () => {
         userId={userData?._id || userData?.id || null}
       />
 
+      {/* Preguntas iniciales para personalizar el chat (tras tutorial) */}
+      <OnboardingQuestions
+        visible={showOnboardingQuestions}
+        onDismiss={handleOnboardingQuestionsDismiss}
+      />
+
+      {/* Hint de objetivo de primera sesión (tras onboarding) */}
+      <FirstSessionHint
+        visible={showFirstSessionHint}
+        onDismiss={() => setShowFirstSessionHint(false)}
+        userId={userData?._id || userData?.id || null}
+      />
+
       {/* Modal de contactos de emergencia */}
       <EmergencyContactsModal
         visible={showEmergencyContactsModal}
@@ -499,6 +534,19 @@ const styles = StyleSheet.create({
     color: '#A3B8E8',
     fontSize: 18,
     marginTop: SPACING.LOADING_TEXT_MARGIN_TOP,
+  },
+  skeletonScreen: {
+    paddingTop: (StatusBar.currentHeight || STATUS_BAR.DEFAULT_HEIGHT) + 16,
+    paddingHorizontal: 16,
+  },
+  skeletonHeader: {
+    marginBottom: 18,
+  },
+  skeletonHeaderLine: {
+    marginTop: 10,
+  },
+  skeletonCard: {
+    marginBottom: 12,
   },
   background: {
     flex: 1,

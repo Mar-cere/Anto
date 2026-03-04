@@ -43,6 +43,7 @@ export const ENDPOINTS = {
   ME: '/api/users/me',
   PROFILE: '/api/users/me',
   UPDATE_PROFILE: '/api/users/me',
+  ONBOARDING_PREFERENCES: '/api/users/me/onboarding-preferences',
   
   // Tareas
   TASKS: '/api/tasks',

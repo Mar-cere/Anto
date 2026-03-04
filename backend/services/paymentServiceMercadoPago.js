@@ -272,8 +272,10 @@ class PaymentServiceMercadoPago {
    * @returns {Promise<Object>} - Estado de la suscripción
    */
   async getSubscriptionStatus(userId) {
-    const subscription = await Subscription.findOne({ userId });
-    const user = await User.findById(userId);
+    const subscription = await Subscription.findOne({ userId }).lean();
+    const user = await User.findById(userId)
+      .select('subscription')
+      .lean();
 
     if (!subscription && !user?.subscription) {
       return {

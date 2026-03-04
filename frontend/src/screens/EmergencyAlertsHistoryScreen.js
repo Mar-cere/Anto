@@ -30,6 +30,11 @@ import { api, ENDPOINTS } from '../config/api';
 
 const { width } = Dimensions.get('window');
 
+// FlatList performance (lazy loading)
+const FLATLIST_INITIAL_NUM_TO_RENDER = 10;
+const FLATLIST_WINDOW_SIZE = 10;
+const FLATLIST_MAX_TO_RENDER_PER_BATCH = 10;
+
 // Constantes de textos
 const TEXTS = {
   TITLE: 'Historial de Alertas',
@@ -39,6 +44,7 @@ const TEXTS = {
   REFRESHING: 'Actualizando...',
   NO_ALERTS: 'No hay alertas registradas',
   NO_ALERTS_MESSAGE: 'Aún no se han enviado alertas a tus contactos de emergencia.',
+  CONFIGURE_CONTACTS: 'Configurar contactos de emergencia',
   STATISTICS: 'Estadísticas',
   PATTERNS: 'Patrones Detectados',
   HISTORY: 'Historial',
@@ -480,9 +486,15 @@ const EmergencyAlertsHistoryScreen = () => {
           <View style={styles.tabContent}>
             {history.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <MaterialCommunityIcons name="bell-off" size={64} color="#666" />
+                <MaterialCommunityIcons name="bell-off" size={64} color={colors.textSecondary} />
                 <Text style={styles.emptyTitle}>{TEXTS.NO_ALERTS}</Text>
                 <Text style={styles.emptyMessage}>{TEXTS.NO_ALERTS_MESSAGE}</Text>
+                <TouchableOpacity
+                  style={styles.emptyCtaButton}
+                  onPress={() => navigation.navigate('MainTabs', { screen: 'Perfil' })}
+                >
+                  <Text style={styles.emptyCtaButtonText}>{TEXTS.CONFIGURE_CONTACTS}</Text>
+                </TouchableOpacity>
               </View>
             ) : (
               <FlatList
@@ -490,6 +502,9 @@ const EmergencyAlertsHistoryScreen = () => {
                 renderItem={renderHistoryItem}
                 keyExtractor={(item, index) => item._id || index.toString()}
                 scrollEnabled={false}
+                initialNumToRender={FLATLIST_INITIAL_NUM_TO_RENDER}
+                windowSize={FLATLIST_WINDOW_SIZE}
+                maxToRenderPerBatch={FLATLIST_MAX_TO_RENDER_PER_BATCH}
                 ListHeaderComponent={
                   <View style={styles.summaryCard}>
                     <Text style={styles.summaryTitle}>{TEXTS.TOTAL_ALERTS}</Text>
@@ -1059,10 +1074,22 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   emptyMessage: {
-    color: '#999',
+    color: colors.textSecondary,
     fontSize: 14,
     textAlign: 'center',
     paddingHorizontal: 40,
+  },
+  emptyCtaButton: {
+    marginTop: 24,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  emptyCtaButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

@@ -1,31 +1,81 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="13" failures="0" errors="0" time="0.155">
-  <testsuite name="Logger" errors="0" failures="0" skipped="0" timestamp="2025-12-10T01:23:08" time="0.132" tests="13">
-    <testcase classname="Logger Logging básico debe loguear mensajes de error" name="Logger Logging básico debe loguear mensajes de error" time="0.003">
+<testsuites name="jest tests" tests="37" failures="0" errors="0" time="0.46">
+  <testsuite name="User Routes" errors="0" failures="0" skipped="0" timestamp="2026-02-18T20:25:00" time="0.374" tests="20">
+    <testcase classname="User Routes GET /api/users/me debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me debe rechazar consulta sin autenticación" time="0.009">
     </testcase>
-    <testcase classname="Logger Logging básico debe loguear mensajes de warning" name="Logger Logging básico debe loguear mensajes de warning" time="0.001">
+    <testcase classname="User Routes PUT /api/users/me debe rechazar actualización sin autenticación" name="User Routes PUT /api/users/me debe rechazar actualización sin autenticación" time="0.005">
     </testcase>
-    <testcase classname="Logger Logging básico debe loguear mensajes de info" name="Logger Logging básico debe loguear mensajes de info" time="0">
+    <testcase classname="User Routes PUT /api/users/me/password debe rechazar cambio de contraseña sin autenticación" name="User Routes PUT /api/users/me/password debe rechazar cambio de contraseña sin autenticación" time="0.002">
     </testcase>
-    <testcase classname="Logger Logging básico debe loguear mensajes HTTP" name="Logger Logging básico debe loguear mensajes HTTP" time="0">
+    <testcase classname="User Routes PUT /api/users/me/password debe rechazar cambio sin contraseña actual" name="User Routes PUT /api/users/me/password debe rechazar cambio sin contraseña actual" time="0.001">
     </testcase>
-    <testcase classname="Logger Logging básico debe loguear mensajes de debug" name="Logger Logging básico debe loguear mensajes de debug" time="0">
+    <testcase classname="User Routes GET /api/users/me/subscription debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/subscription debe rechazar consulta sin autenticación" time="0.001">
     </testcase>
-    <testcase classname="Logger Logging con metadata debe loguear con metadata adicional" name="Logger Logging con metadata debe loguear con metadata adicional" time="0">
+    <testcase classname="User Routes GET /api/users/me/stats debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/stats debe rechazar consulta sin autenticación" time="0.001">
     </testcase>
-    <testcase classname="Logger Logging con metadata debe sanitizar datos sensibles en metadata" name="Logger Logging con metadata debe sanitizar datos sensibles en metadata" time="0">
+    <testcase classname="User Routes DELETE /api/users/me debe rechazar eliminación sin autenticación" name="User Routes DELETE /api/users/me debe rechazar eliminación sin autenticación" time="0.001">
     </testcase>
-    <testcase classname="Logger Logging con request debe loguear request correctamente" name="Logger Logging con request debe loguear request correctamente" time="0">
+    <testcase classname="User Routes GET /api/users/me/emergency-contacts debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/emergency-contacts debe rechazar consulta sin autenticación" time="0.001">
     </testcase>
-    <testcase classname="Logger Logging con request debe loguear error de request correctamente" name="Logger Logging con request debe loguear error de request correctamente" time="0.001">
+    <testcase classname="User Routes POST /api/users/me/emergency-contacts debe rechazar creación sin autenticación" name="User Routes POST /api/users/me/emergency-contacts debe rechazar creación sin autenticación" time="0.002">
     </testcase>
-    <testcase classname="Logger Logging especializado debe loguear operaciones de base de datos" name="Logger Logging especializado debe loguear operaciones de base de datos" time="0.001">
+    <testcase classname="User Routes POST /api/users/me/emergency-contacts debe rechazar creación sin datos requeridos" name="User Routes POST /api/users/me/emergency-contacts debe rechazar creación sin datos requeridos" time="0.001">
     </testcase>
-    <testcase classname="Logger Logging especializado debe loguear operaciones de servicios externos" name="Logger Logging especializado debe loguear operaciones de servicios externos" time="0">
+    <testcase classname="User Routes PUT /api/users/me/emergency-contacts/:contactId debe rechazar actualización sin autenticación" name="User Routes PUT /api/users/me/emergency-contacts/:contactId debe rechazar actualización sin autenticación" time="0">
     </testcase>
-    <testcase classname="Logger Logging especializado debe loguear eventos de autenticación" name="Logger Logging especializado debe loguear eventos de autenticación" time="0">
+    <testcase classname="User Routes DELETE /api/users/me/emergency-contacts/:contactId debe rechazar eliminación sin autenticación" name="User Routes DELETE /api/users/me/emergency-contacts/:contactId debe rechazar eliminación sin autenticación" time="0">
     </testcase>
-    <testcase classname="Logger Logging especializado debe loguear eventos de pago" name="Logger Logging especializado debe loguear eventos de pago" time="0.001">
+    <testcase classname="User Routes PATCH /api/users/me/emergency-contacts/:contactId/toggle debe rechazar toggle sin autenticación" name="User Routes PATCH /api/users/me/emergency-contacts/:contactId/toggle debe rechazar toggle sin autenticación" time="0.001">
+    </testcase>
+    <testcase classname="User Routes POST /api/users/me/emergency-contacts/:contactId/test debe rechazar test sin autenticación" name="User Routes POST /api/users/me/emergency-contacts/:contactId/test debe rechazar test sin autenticación" time="0.001">
+    </testcase>
+    <testcase classname="User Routes POST /api/users/me/emergency-contacts/test-alert debe rechazar test sin autenticación" name="User Routes POST /api/users/me/emergency-contacts/test-alert debe rechazar test sin autenticación" time="0">
+    </testcase>
+    <testcase classname="User Routes POST /api/users/me/emergency-contacts/:contactId/test-whatsapp debe rechazar test sin autenticación" name="User Routes POST /api/users/me/emergency-contacts/:contactId/test-whatsapp debe rechazar test sin autenticación" time="0.001">
+    </testcase>
+    <testcase classname="User Routes GET /api/users/me/emergency-alerts debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/emergency-alerts debe rechazar consulta sin autenticación" time="0.001">
+    </testcase>
+    <testcase classname="User Routes GET /api/users/me/emergency-alerts/stats debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/emergency-alerts/stats debe rechazar consulta sin autenticación" time="0">
+    </testcase>
+    <testcase classname="User Routes GET /api/users/me/emergency-alerts/patterns debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/emergency-alerts/patterns debe rechazar consulta sin autenticación" time="0">
+    </testcase>
+    <testcase classname="User Routes GET /api/users/me/whatsapp-message-status/:messageSid debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/whatsapp-message-status/:messageSid debe rechazar consulta sin autenticación" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="CacheService" errors="0" failures="0" skipped="0" timestamp="2026-02-18T20:25:00" time="0.072" tests="17">
+    <testcase classname="CacheService generateKey debe generar clave simple con string" name="CacheService generateKey debe generar clave simple con string" time="0.001">
+    </testcase>
+    <testcase classname="CacheService generateKey debe generar clave con objeto usando base64" name="CacheService generateKey debe generar clave con objeto usando base64" time="0">
+    </testcase>
+    <testcase classname="CacheService generateKey debe generar claves diferentes para objetos diferentes" name="CacheService generateKey debe generar claves diferentes para objetos diferentes" time="0.001">
+    </testcase>
+    <testcase classname="CacheService get y set (caché en memoria) debe guardar y recuperar un valor" name="CacheService get y set (caché en memoria) debe guardar y recuperar un valor" time="0">
+    </testcase>
+    <testcase classname="CacheService get y set (caché en memoria) debe retornar null para clave que no existe" name="CacheService get y set (caché en memoria) debe retornar null para clave que no existe" time="0">
+    </testcase>
+    <testcase classname="CacheService get y set (caché en memoria) debe expirar valores después del TTL" name="CacheService get y set (caché en memoria) debe expirar valores después del TTL" time="0.011">
+    </testcase>
+    <testcase classname="CacheService get y set (caché en memoria) debe mantener valores dentro del TTL" name="CacheService get y set (caché en memoria) debe mantener valores dentro del TTL" time="0.001">
+    </testcase>
+    <testcase classname="CacheService delete debe eliminar un valor del caché" name="CacheService delete debe eliminar un valor del caché" time="0">
+    </testcase>
+    <testcase classname="CacheService delete debe manejar eliminación de clave que no existe" name="CacheService delete debe manejar eliminación de clave que no existe" time="0">
+    </testcase>
+    <testcase classname="CacheService clear debe limpiar todo el caché" name="CacheService clear debe limpiar todo el caché" time="0">
+    </testcase>
+    <testcase classname="CacheService deletePattern debe eliminar claves que coincidan con el patrón" name="CacheService deletePattern debe eliminar claves que coincidan con el patrón" time="0.001">
+    </testcase>
+    <testcase classname="CacheService invalidateUserCache debe invalidar todas las claves de caché de un usuario" name="CacheService invalidateUserCache debe invalidar todas las claves de caché de un usuario" time="0">
+    </testcase>
+    <testcase classname="CacheService getStats debe retornar estadísticas del caché en memoria" name="CacheService getStats debe retornar estadísticas del caché en memoria" time="0">
+    </testcase>
+    <testcase classname="CacheService getOrSet debe retornar valor del caché si existe" name="CacheService getOrSet debe retornar valor del caché si existe" time="0">
+    </testcase>
+    <testcase classname="CacheService getOrSet debe ejecutar función y guardar resultado si no existe en caché" name="CacheService getOrSet debe ejecutar función y guardar resultado si no existe en caché" time="0.001">
+    </testcase>
+    <testcase classname="CacheService getOrSet debe ejecutar función nuevamente si el valor expiró" name="CacheService getOrSet debe ejecutar función nuevamente si el valor expiró" time="0.011">
+    </testcase>
+    <testcase classname="CacheService cleanExpired debe limpiar entradas expiradas del caché" name="CacheService cleanExpired debe limpiar entradas expiradas del caché" time="0.011">
     </testcase>
   </testsuite>
 </testsuites>

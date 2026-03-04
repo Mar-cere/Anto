@@ -11,8 +11,10 @@
 import React from 'react';
 import { Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { AuthProvider } from './src/context/AuthContext';
+import { ToastProvider } from './src/context/ToastContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
+import Toast from './src/components/Toast';
 import { colors } from './src/styles/globalStyles';
 
 // Constantes de configuración
@@ -34,14 +36,17 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <View style={styles.container}>
-          <StatusBar 
-            barStyle={STATUS_BAR_STYLE}
-            backgroundColor={STATUS_BAR_BACKGROUND}
-            translucent={STATUS_BAR_TRANSLUCENT}
-          />
-          <AppNavigator />
-        </View>
+        <ToastProvider>
+          <View style={styles.container}>
+            <StatusBar 
+              barStyle={STATUS_BAR_STYLE}
+              backgroundColor={STATUS_BAR_BACKGROUND}
+              translucent={STATUS_BAR_TRANSLUCENT}
+            />
+            <AppNavigator />
+            <Toast />
+          </View>
+        </ToastProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

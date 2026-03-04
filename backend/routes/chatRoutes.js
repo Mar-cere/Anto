@@ -93,15 +93,17 @@ const validarConversacion = async (req, res, next) => {
     return res.status(400).json({ message: 'ID de conversación o usuario inválido' });
   }
   
-  const conversation = await Conversation.findOne({ 
-    _id: new mongoose.Types.ObjectId(conversationId), 
-    userId: new mongoose.Types.ObjectId(req.user._id) 
-  });
-  
+  const conversation = await Conversation.findOne({
+    _id: new mongoose.Types.ObjectId(conversationId),
+    userId: new mongoose.Types.ObjectId(req.user._id)
+  })
+    .select('_id userId')
+    .lean();
+
   if (!conversation) {
     return res.status(404).json({ message: 'Conversación no encontrada' });
   }
-  
+
   req.conversation = conversation;
   next();
 };
@@ -265,7 +267,9 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
     const conversation = await Conversation.findOne({
       _id: new mongoose.Types.ObjectId(conversationId),
       userId: new mongoose.Types.ObjectId(req.user._id)
-    });
+    })
+      .select('_id userId')
+      .lean();
 
     if (!conversation) {
       // Registrar intento de acceso a conversación no autorizada
@@ -784,6 +788,11 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           userProfileService.actualizarPerfil(req.user._id, userMessage, {
             emotional: emotionalAnalysis,
             contextual: contextualAnalysis
+          }).catch(() => {}),
+          // Personalización a largo plazo: temas recurrentes, emociones predominantes, topicsOfInterest
+          userProfileService.updateLongTermProfileFromConversation(req.user._id, {
+            emotionalAnalysis,
+            contextualAnalysis
           }).catch(() => {})
         ]).catch(() => {}); // Ignorar errores en operaciones no críticas
 

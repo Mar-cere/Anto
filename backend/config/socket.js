@@ -138,11 +138,14 @@ export const setupSocketIO = (server) => {
         socket.emit(SOCKET_EVENTS.AI_TYPING, true);
         
         // 1. Obtener o crear conversación para el usuario
-        let conversation = await Conversation.findOne({ 
+        let conversation = await Conversation.findOne({
           userId: userId,
           status: 'active'
-        }).sort({ updatedAt: -1 }); // Obtener la conversación más reciente
-        
+        })
+          .select('_id')
+          .sort({ updatedAt: -1 })
+          .lean();
+
         if (!conversation) {
           // Crear nueva conversación si no existe
           conversation = new Conversation({ userId });

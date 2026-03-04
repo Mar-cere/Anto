@@ -13,7 +13,6 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  ActivityIndicator,
   TouchableOpacity,
   RefreshControl,
   SafeAreaView,
@@ -27,6 +26,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../components/Header';
 import FloatingNavBar from '../components/FloatingNavBar';
+import { SkeletonCard } from '../components/Skeleton';
 import { colors } from '../styles/globalStyles';
 import api, { ENDPOINTS } from '../config/api';
 
@@ -51,6 +51,7 @@ const TEXTS = {
   FILTER_BY_TYPE: 'Filtrar por tipo',
   ALL_STATUSES: 'Todos los estados',
   ALL_TYPES: 'Todos los tipos',
+  VIEW_PLANS: 'Ver planes',
 };
 
 const STATUS_COLORS = {
@@ -71,9 +72,18 @@ const STATUS_ICONS = {
   refunded: 'undo',
 };
 
+// FlatList performance (lazy loading)
+const FLATLIST_INITIAL_NUM_TO_RENDER = 10;
+const FLATLIST_WINDOW_SIZE = 10;
+const FLATLIST_MAX_TO_RENDER_PER_BATCH = 10;
+
 const TransactionHistoryScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+
+  const handleViewPlans = () => {
+    navigation.navigate('Subscription');
+  };
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -244,9 +254,10 @@ const TransactionHistoryScreen = () => {
   const renderContent = () => {
     if (loading && transactions.length === 0) {
       return (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>{TEXTS.LOADING}</Text>
+        <View style={styles.skeletonContainer}>
+          {Array.from({ length: 6 }, (_, i) => (
+            <SkeletonCard key={`tx-skeleton-${i}`} style={styles.skeletonCard} />
+          ))}
         </View>
       );
     }
@@ -269,6 +280,9 @@ const TransactionHistoryScreen = () => {
           <MaterialCommunityIcons name="receipt" size={64} color={colors.textSecondary} />
           <Text style={styles.emptyText}>{TEXTS.NO_TRANSACTIONS}</Text>
           <Text style={styles.emptySubtext}>{TEXTS.NO_TRANSACTIONS_DESC}</Text>
+          <TouchableOpacity style={styles.emptyCtaButton} onPress={handleViewPlans}>
+            <Text style={styles.emptyCtaButtonText}>{TEXTS.VIEW_PLANS}</Text>
+          </TouchableOpacity>
         </View>
       );
     }
@@ -346,6 +360,9 @@ const TransactionHistoryScreen = () => {
             />
           }
           showsVerticalScrollIndicator={false}
+          initialNumToRender={FLATLIST_INITIAL_NUM_TO_RENDER}
+          windowSize={FLATLIST_WINDOW_SIZE}
+          maxToRenderPerBatch={FLATLIST_MAX_TO_RENDER_PER_BATCH}
         />
 
         {/* Modal de filtros */}
@@ -509,6 +526,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  skeletonContainer: {
+    padding: 16,
+    paddingTop: 24,
+  },
+  skeletonCard: {
+    marginBottom: 12,
+  },
+  emptyCtaButton: {
+    marginTop: 24,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  emptyCtaButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '600',
   },
   listContent: {
     padding: 16,

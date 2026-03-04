@@ -74,9 +74,51 @@ Después de subir, verifica en App Store Connect:
 
 ---
 
+## Guideline 3.1.2 - Enlaces EULA y Política de Privacidad
+
+Apple exige enlaces **funcionales y visibles** a:
+1. **Terms of Use (EULA)** – Términos de Uso
+2. **Privacy Policy** – Política de Privacidad
+
+### En la app (ya implementado)
+- En la pantalla **Suscripción Premium**, los enlaces aparecen **al inicio** (sin hacer scroll) con el título "Términos y Política de Privacidad".
+- También hay una línea antes de los planes: "Al suscribirte aceptas nuestros Términos de Uso (EULA) y Política de Privacidad" con enlaces táctiles.
+- URLs usadas: `https://www.antoapps.com/terminos` y `https://www.antoapps.com/privacidad`.
+
+### En App Store Connect (metadata) – obligatorio
+
+1. Entra en [App Store Connect](https://appstoreconnect.apple.com) → tu app **Anto** → **App Information** (información general de la app, no de la versión).
+
+2. **Campo "Privacy Policy URL" (obligatorio)**  
+   En **App Information** hay un campo dedicado **Privacy Policy URL**. Es obligatorio para publicar.  
+   - Rellénalo con: `https://www.antoapps.com/privacidad`
+
+3. **Descripción de la app (App Description)**  
+   En la versión que envías a revisión (p. ej. en la ficha de la versión iOS), en el texto de la descripción, incluye también los enlaces (Apple lo pide explícitamente para EULA). Por ejemplo al final:
+   ```
+   Términos de Uso (EULA): https://www.antoapps.com/terminos
+   Política de Privacidad: https://www.antoapps.com/privacidad
+   ```
+
+4. **EULA (si usas EULA personalizado)**  
+   - En la ficha de la app: **App Information** → **License Agreement (EULA)**.  
+   - Si usas el EULA estándar de Apple, no hace falta cambiar esto; basta con el enlace en la descripción.
+
+5. **Review Notes (opcional pero útil)**  
+   En "App Review Information" puedes escribir por ejemplo:
+   ```
+   Enlaces requeridos (Guideline 3.1.2):
+   - Terms of Use (EULA): En pantalla "Suscripción Premium", sección superior "Términos y Política de Privacidad", primer enlace. URL: https://www.antoapps.com/terminos
+   - Privacy Policy: Misma sección, segundo enlace. URL: https://www.antoapps.com/privacidad
+   ```
+
+6. Comprueba que **https://www.antoapps.com/terminos** y **https://www.antoapps.com/privacidad** abran correctamente en el navegador antes de enviar a revisión.
+
+---
+
 ## Notas Importantes
 
-- **Build Number**: Actualmente es `9` (en `app.json`)
+- **Build Number**: Actualmente es `14` (en `app.json`)
 - **Version**: `1.1.0`
 - **Bundle ID**: `com.anto.app`
 - **ASC App ID**: `6756631911`
@@ -85,7 +127,7 @@ Si necesitas incrementar el build number para la próxima versión:
 ```json
 // En app.json
 "ios": {
-  "buildNumber": "9"  // Incrementar
+  "buildNumber": "14"  // Incrementar para cada envío
 }
 ```
 

@@ -251,9 +251,12 @@ router.post('/register', registerLimiter, async (req, res) => {
     const { email, password, username, name, termsAccepted, termsAcceptedAt, privacyAccepted, privacyAcceptedAt, termsVersion } = value;
 
     // Verificar si el usuario ya existe
-    const existingUser = await User.findOne({ 
-      $or: [{ email }, { username }] 
-    }).maxTimeMS(5000);
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }]
+    })
+      .select('_id')
+      .lean()
+      .maxTimeMS(5000);
 
     if (existingUser) {
       return res.status(400).json({ 
@@ -637,7 +640,9 @@ router.post('/verify-code', passwordResetLimiter, async (req, res) => {
     const { email, code } = value;
 
     // Buscar usuario (Joi ya normaliza email a lowercase)
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email })
+      .select('_id resetPasswordCode resetPasswordExpires')
+      .lean();
     if (!user) {
       return res.status(404).json({ message: 'No existe una cuenta con este correo electrónico' });
     }
@@ -647,7 +652,7 @@ router.post('/verify-code', passwordResetLimiter, async (req, res) => {
       return res.status(400).json({ message: 'Código inválido o expirado' });
     }
 
-    res.json({ 
+    res.json({
       message: 'Código verificado correctamente',
       expiresIn: Math.floor((user.resetPasswordExpires - Date.now()) / 1000)
     });

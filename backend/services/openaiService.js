@@ -606,6 +606,18 @@ class OpenAIService {
       systemMessage += `\nMEMORIA: ${conciseLongTerm}`;
     }
 
+    // Respuestas del onboarding inicial: usarlas para personalizar tono y enfoque del chat
+    const onboarding = contexto.profile?.onboardingAnswers;
+    if (onboarding && (onboarding.whatExpectFromApp || onboarding.whatToImproveOrWorkOn || onboarding.typeOfSpecialist)) {
+      const parts = [];
+      if (onboarding.whatExpectFromApp) parts.push(`Qué espera de la app: ${onboarding.whatExpectFromApp}`);
+      if (onboarding.whatToImproveOrWorkOn) parts.push(`Qué le gustaría mejorar o trabajar: ${onboarding.whatToImproveOrWorkOn}`);
+      if (onboarding.typeOfSpecialist) parts.push(`Tipo de apoyo que busca: ${onboarding.typeOfSpecialist}`);
+      if (parts.length > 0) {
+        systemMessage += `\n\nINFORMACIÓN QUE EL USUARIO COMPARTIÓ AL INICIO (úsala para personalizar tu tono y enfoque):\n${parts.join('\n')}`;
+      }
+    }
+
     // Si hay una crisis detectada, agregar el prompt de crisis al inicio
     if (contexto.crisis?.riskLevel) {
       const crisisPrompt = generateCrisisSystemPrompt(

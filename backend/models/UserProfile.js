@@ -34,6 +34,12 @@ const userProfileSchema = new mongoose.Schema({
     unique: true,
     index: true
   },
+  // Respuestas del onboarding inicial (para personalizar el chat)
+  onboardingAnswers: {
+    whatExpectFromApp: { type: String, trim: true, maxlength: 500, default: null },
+    whatToImproveOrWorkOn: { type: String, trim: true, maxlength: 500, default: null },
+    typeOfSpecialist: { type: String, trim: true, maxlength: 500, default: null }
+  },
   // Información personal básica
   personalInfo: {
     gender: {

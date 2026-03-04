@@ -195,8 +195,10 @@ export const requireActiveSubscription = (allowTrial = true) => {
 
       if (!isActive && (!allowTrial || !isInTrial)) {
         // Obtener información del usuario para logging
-        const user = await User.findById(userIdString).select('email username name');
-        
+        const user = await User.findById(userIdString)
+          .select('email username name')
+          .lean();
+
         // Registrar acceso denegado
         await paymentAuditService.logEvent('SUBSCRIPTION_CHECK_DENIED', {
           userId: userIdString,
@@ -232,7 +234,9 @@ export const requireActiveSubscription = (allowTrial = true) => {
       };
 
       // Registrar acceso permitido
-      const user = await User.findById(userIdString).select('email');
+      const user = await User.findById(userIdString)
+        .select('email')
+        .lean();
       await paymentAuditService.logEvent('SUBSCRIPTION_CHECK_ALLOWED', {
         userId: userIdString,
         userEmail: user?.email || 'unknown',
@@ -272,7 +276,9 @@ export const requirePremium = () => {
       const subscription = await Subscription.findOne({ userId });
       
       if (!subscription) {
-        const user = await User.findById(userId).select('subscription');
+        const user = await User.findById(userId)
+          .select('subscription')
+          .lean();
         if (!user || user.subscription.status !== 'premium') {
           return res.status(403).json({
             success: false,

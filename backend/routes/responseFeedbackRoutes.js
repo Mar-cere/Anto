@@ -38,7 +38,9 @@ router.post('/', authenticateToken, async (req, res) => {
       _id: messageId,
       userId: req.user._id,
       role: 'assistant',
-    });
+    })
+      .select('_id conversationId userId')
+      .lean();
 
     if (!message) {
       return res.status(404).json({
@@ -116,7 +118,8 @@ router.get('/message/:messageId', authenticateToken, async (req, res) => {
     const feedback = await ResponseFeedback.findOne({
       userId: req.user._id,
       messageId,
-    });
+    })
+      .lean();
 
     if (!feedback) {
       return res.status(404).json({

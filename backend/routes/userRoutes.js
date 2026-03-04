@@ -10,6 +10,8 @@ import mongoose from 'mongoose';
 import { authenticateToken } from '../middleware/auth.js';
 import { validateUserObjectId } from '../middleware/validation.js';
 import User from '../models/User.js';
+import UserProfile from '../models/UserProfile.js';
+import userProfileService from '../services/userProfileService.js';
 import logger from '../utils/logger.js';
 import cacheService from '../services/cacheService.js';
 import { CURRENT_TERMS_VERSION } from '../constants/app.js';
@@ -321,14 +323,18 @@ router.put('/me', authenticateToken, validateUserObjectId, updateProfileLimiter,
 
     // Verificar unicidad de email y username si se están actualizando
     if (value.email && value.email !== user.email) {
-      const existingEmail = await User.findOne({ email: value.email });
+      const existingEmail = await User.findOne({ email: value.email })
+        .select('_id')
+        .lean();
       if (existingEmail) {
         return res.status(400).json({ message: 'El email ya está en uso' });
       }
     }
 
     if (value.username && value.username !== user.username) {
-      const existingUsername = await User.findOne({ username: value.username });
+      const existingUsername = await User.findOne({ username: value.username })
+        .select('_id')
+        .lean();
       if (existingUsername) {
         return res.status(400).json({ message: 'El nombre de usuario ya está en uso' });
       }
@@ -444,7 +450,8 @@ router.delete('/me', authenticateToken, validateUserObjectId, deleteUserLimiter,
       const activeSubscriptions = await Subscription.find({
         userId: userId,
         status: { $in: ['active', 'trialing'] },
-      });
+      })
+        .lean();
 
       if (activeSubscriptions.length > 0) {
         logger.info(`Cancelando ${activeSubscriptions.length} suscripción(es) activa(s) para usuario ${userId}`);
@@ -573,6 +580,49 @@ const reacceptTermsSchema = Joi.object({
   })
 });
 
+// Esquema para preferencias de onboarding (preguntas iniciales para personalización del chat)
+const onboardingPreferencesSchema = Joi.object({
+  whatExpectFromApp: Joi.string().trim().max(500).allow('', null),
+  whatToImproveOrWorkOn: Joi.string().trim().max(500).allow('', null),
+  typeOfSpecialist: Joi.string().trim().max(500).allow('', null)
+}).min(1);
+
+router.patch('/me/onboarding-preferences', authenticateToken, validateUserObjectId, updateProfileLimiter, async (req, res) => {
+  try {
+    const userId = req.user._id || req.user.userId;
+    if (!userId) {
+      return res.status(401).json({ message: 'Usuario no autenticado' });
+    }
+    const { error, value } = onboardingPreferencesSchema.validate(req.body, { stripUnknown: true });
+    if (error) {
+      return res.status(400).json({
+        message: 'Datos inválidos',
+        errors: error.details.map(detail => detail.message)
+      });
+    }
+    const update = {};
+    if (value.whatExpectFromApp !== undefined) update['onboardingAnswers.whatExpectFromApp'] = value.whatExpectFromApp || null;
+    if (value.whatToImproveOrWorkOn !== undefined) update['onboardingAnswers.whatToImproveOrWorkOn'] = value.whatToImproveOrWorkOn || null;
+    if (value.typeOfSpecialist !== undefined) update['onboardingAnswers.typeOfSpecialist'] = value.typeOfSpecialist || null;
+    await userProfileService.getOrCreateProfile(userId);
+    const profile = await UserProfile.findOneAndUpdate(
+      { userId },
+      { $set: update },
+      { new: true }
+    ).lean();
+    return res.json({
+      message: 'Preferencias de onboarding guardadas',
+      onboardingAnswers: profile?.onboardingAnswers || {}
+    });
+  } catch (err) {
+    logger.error('Error al guardar preferencias de onboarding', { error: err.message, userId: req.user?._id });
+    return res.status(500).json({
+      message: 'Error al guardar preferencias',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+});
+
 router.post('/me/accept-terms', authenticateToken, validateUserObjectId, async (req, res) => {
   try {
     const userId = req.user._id || req.user.userId;
@@ -684,8 +734,9 @@ router.get('/me/emergency-contacts', authenticateToken, validateUserObjectId, as
       ? new mongoose.Types.ObjectId(userId) 
       : userId;
     
-    const user = await User.findById(userIdObjectId).select('emergencyContacts');
-    
+    const user = await User.findById(userIdObjectId)
+      .select('emergencyContacts')
+      .lean();
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
@@ -727,8 +778,9 @@ router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, a
       ? new mongoose.Types.ObjectId(req.user._id) 
       : req.user._id;
     
-    const user = await User.findById(userId).select('emergencyContacts name');
-    
+    const user = await User.findById(userId)
+      .select('emergencyContacts name')
+      .lean();
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
@@ -995,16 +1047,15 @@ router.post('/me/emergency-contacts/:contactId/test', authenticateToken, validat
       ? new mongoose.Types.ObjectId(req.user._id) 
       : req.user._id;
     
-    const user = await User.findById(userId).select('emergencyContacts name username');
-    
+    const user = await User.findById(userId)
+      .select('emergencyContacts name username')
+      .lean();
     if (!user || !user.emergencyContacts) {
       return res.status(404).json({ message: 'Usuario o contacto no encontrado' });
     }
-
     const contact = user.emergencyContacts.find(
       c => c._id.toString() === contactId
     );
-
     if (!contact) {
       return res.status(404).json({ message: 'Contacto de emergencia no encontrado' });
     }
@@ -1120,16 +1171,15 @@ router.post('/me/emergency-contacts/:contactId/test-whatsapp', authenticateToken
       ? new mongoose.Types.ObjectId(req.user._id) 
       : req.user._id;
     
-    const user = await User.findById(userId).select('emergencyContacts name username email preferences.language');
-    
+    const user = await User.findById(userId)
+      .select('emergencyContacts name username email preferences.language')
+      .lean();
     if (!user || !user.emergencyContacts) {
       return res.status(404).json({ message: 'Usuario o contacto no encontrado' });
     }
-
     const contact = user.emergencyContacts.find(
       c => c._id.toString() === contactId
     );
-
     if (!contact) {
       return res.status(404).json({ message: 'Contacto de emergencia no encontrado' });
     }

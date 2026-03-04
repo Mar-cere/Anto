@@ -25,8 +25,10 @@ import FloatingNavBar from '../components/FloatingNavBar';
 import TaskHeader from '../components/tasks/TaskHeader';
 import TaskItem from '../components/tasks/TaskItem';
 import CreateTaskModal from '../components/tasks/CreateTaskModal';
+import { SkeletonCard } from '../components/Skeleton';
 import { api, ENDPOINTS } from '../config/api';
 import { scheduleTaskNotification, cancelTaskNotifications } from '../utils/notifications';
+import { useToast } from '../context/ToastContext';
 import { colors } from '../styles/globalStyles';
 import { ROUTES } from '../constants/routes';
 
@@ -74,11 +76,13 @@ const TEXTS = {
   EMPTY_ALL: 'No tienes tareas ni recordatorios',
   EMPTY_TASK: 'No tienes tareas pendientes',
   EMPTY_REMINDER: 'No tienes recordatorios pendientes',
+  EMPTY_SUBTITLE: 'Agrega tu primera tarea y organízate mejor',
   ADD_TASK: 'Agregar tarea',
   ADD_REMINDER: 'Agregar recordatorio',
   ADD_ITEM: 'Agregar item',
   INVALID_DATA: 'Datos inválidos:',
-  ERROR_CREATE_TASK: 'Error al crear la tarea'
+  ERROR_CREATE_TASK: 'Error al crear la tarea',
+  TASK_COMPLETED: 'Tarea completada',
 };
 
 // Constantes de estilos
@@ -153,6 +157,7 @@ const TaskScreen = ({ route }) => {
   const [formData, setFormData] = useState(DEFAULT_FORM_DATA);
   const navigation = useNavigation();
   const flatListRef = useRef(null);
+  const { showToast } = useToast();
 
   // Cargar items desde la API
   const loadItems = useCallback(async (isRefresh = false) => {
@@ -248,11 +253,11 @@ const TaskScreen = ({ route }) => {
       
       // Feedback háptico
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      
-      Alert.alert(
-        TEXTS.SUCCESS, 
-        data.itemType === ITEM_TYPES.TASK ? TEXTS.TASK_CREATED : TEXTS.REMINDER_CREATED
-      );
+
+      showToast({
+        message: data.itemType === ITEM_TYPES.TASK ? TEXTS.TASK_CREATED : TEXTS.REMINDER_CREATED,
+        type: 'success',
+      });
     } catch (error) {
       console.error('Error creando tarea:', error);
       const errorMessage = error.errors?.length > 0 
@@ -280,6 +285,8 @@ const TaskScreen = ({ route }) => {
       // Feedback háptico de completado
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       await cancelTaskNotifications(id);
+
+      showToast({ message: TEXTS.TASK_COMPLETED, type: 'success' });
 
       // Esperar antes de eliminar
       setTimeout(async () => {
@@ -348,17 +355,24 @@ const TaskScreen = ({ route }) => {
         state.filterType === FILTER_TYPES.ALL ? true : item.itemType === state.filterType
       )
     : [];
+  const showSkeleton = state.loading && filteredItems.length === 0;
 
   // Renderizar item individual
-  const renderItem = useCallback(({ item }) => (
-    <TaskItem
-      key={item._id}
-      item={item}
-      onPress={item => setState(prev => ({ ...prev, selectedItem: item, detailModalVisible: true }))}
-      onToggleComplete={handleToggleComplete}
-      onDelete={handleDeleteItem}
-    />
-  ), [handleToggleComplete, handleDeleteItem]);
+  const renderItem = useCallback(({ item }) => {
+    if (showSkeleton) {
+      return <SkeletonCard />;
+    }
+
+    return (
+      <TaskItem
+        key={item._id}
+        item={item}
+        onPress={item => setState(prev => ({ ...prev, selectedItem: item, detailModalVisible: true }))}
+        onToggleComplete={handleToggleComplete}
+        onDelete={handleDeleteItem}
+      />
+    );
+  }, [handleToggleComplete, handleDeleteItem, showSkeleton]);
 
   // Mensaje si no hay tareas
   const renderEmpty = useCallback(() => {
@@ -376,14 +390,15 @@ const TaskScreen = ({ route }) => {
 
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons 
-          name="checkmark-done-circle-outline" 
-          size={EMPTY_ICON_SIZE} 
-          color={COLORS.ACCENT} 
+        <Ionicons
+          name="checkmark-done-circle-outline"
+          size={EMPTY_ICON_SIZE}
+          color={COLORS.ACCENT}
         />
         <Text style={styles.emptyText}>
           {getEmptyText()}
         </Text>
+        <Text style={styles.emptySubtext}>{TEXTS.EMPTY_SUBTITLE}</Text>
         <TouchableOpacity
           style={styles.addFirstButton}
           onPress={() => setState(prev => ({ ...prev, modalVisible: true }))}
@@ -412,7 +427,7 @@ const TaskScreen = ({ route }) => {
       />
       <FlatList
         ref={flatListRef}
-        data={filteredItems}
+        data={showSkeleton ? Array.from({ length: 6 }, (_, i) => ({ _id: `skeleton-${i}` })) : filteredItems}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         contentContainerStyle={styles.listContainer}
@@ -425,7 +440,7 @@ const TaskScreen = ({ route }) => {
             tintColor={COLORS.REFRESH_COLOR}
           />
         }
-        ListEmptyComponent={renderEmpty}
+        ListEmptyComponent={showSkeleton ? null : renderEmpty}
         removeClippedSubviews={true}
         maxToRenderPerBatch={FLATLIST_MAX_TO_RENDER}
         windowSize={FLATLIST_WINDOW_SIZE}
@@ -494,6 +509,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: EMPTY_TEXT_MARGIN_TOP,
     textAlign: 'center',
+  },
+  emptySubtext: {
+    color: COLORS.ACCENT,
+    fontSize: 14,
+    opacity: 0.9,
+    textAlign: 'center',
+    marginTop: 8,
     marginBottom: EMPTY_TEXT_MARGIN_BOTTOM,
   },
   addFirstButton: {

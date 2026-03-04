@@ -27,6 +27,7 @@ import {
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import FloatingNavBar from '../components/FloatingNavBar';
 import CreateHabitModal from '../components/habits/CreateHabitModal';
+import { SkeletonCard } from '../components/Skeleton';
 import { api, ENDPOINTS } from '../config/api';
 import { ROUTES } from '../constants/routes';
 import { colors } from '../styles/globalStyles';
@@ -49,6 +50,11 @@ const DELAY_PRESS_IN = 300; // ms
 const DELAY_COMPLETE_PRESS_IN = 500; // ms
 const HIT_SLOP_SIZE = 10;
 const ACTIVE_OPACITY = 0.7;
+
+// FlatList performance (lazy loading)
+const FLATLIST_INITIAL_NUM_TO_RENDER = 10;
+const FLATLIST_WINDOW_SIZE = 10;
+const FLATLIST_MAX_TO_RENDER_PER_BATCH = 10;
 
 // Constantes de filtros
 const FILTER_TYPES = {
@@ -85,6 +91,7 @@ const TEXTS = {
   RETRY: 'Reintentar',
   EMPTY_ACTIVE: 'No hay hábitos activos',
   EMPTY_ARCHIVED: 'No hay hábitos archivados',
+  EMPTY_ACTIVE_SUBTITLE: 'Tu primer hábito es el primer paso',
   CREATE_FIRST: 'Crear primer hábito',
   SESSION_EXPIRED: 'Sesión expirada',
   SESSION_EXPIRED_MESSAGE: 'Por favor, inicia sesión nuevamente',
@@ -726,16 +733,24 @@ const HabitsScreen = ({ route, navigation }) => {
     </View>
   );
 
+  const showSkeleton = loading && !error && habits.length === 0;
+
   // Renderizar item de hábito
-  const renderHabitItem = ({ item }) => (
-    <SwipeableHabitItem
-      item={item}
-      onPress={() => handleHabitPress(item)}
-      onComplete={() => toggleHabitComplete(item._id)}
-      onDelete={handleDeleteHabit}
-      onArchive={toggleArchiveHabit}
-    />
-  );
+  const renderHabitItem = ({ item }) => {
+    if (showSkeleton) {
+      return <SkeletonCard />;
+    }
+
+    return (
+      <SwipeableHabitItem
+        item={item}
+        onPress={() => handleHabitPress(item)}
+        onComplete={() => toggleHabitComplete(item._id)}
+        onDelete={handleDeleteHabit}
+        onArchive={toggleArchiveHabit}
+      />
+    );
+  };
 
   // Renderizar contenido
   const renderContent = () => {
@@ -761,11 +776,18 @@ const HabitsScreen = ({ route, navigation }) => {
 
     return (
       <FlatList
-        data={habits}
+        data={
+          showSkeleton
+            ? Array.from({ length: 6 }, (_, i) => ({ _id: `skeleton-${i}` }))
+            : habits
+        }
         renderItem={renderHabitItem}
         keyExtractor={item => item._id}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
+        initialNumToRender={FLATLIST_INITIAL_NUM_TO_RENDER}
+        windowSize={FLATLIST_WINDOW_SIZE}
+        maxToRenderPerBatch={FLATLIST_MAX_TO_RENDER_PER_BATCH}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -777,32 +799,35 @@ const HabitsScreen = ({ route, navigation }) => {
         ListEmptyComponent={
           !loading && (
             <View style={styles.emptyContainer}>
-              <MaterialCommunityIcons 
-                name="lightning-bolt" 
-                size={EMPTY_ICON_SIZE} 
-                color={COLORS.ACCENT} 
+              <MaterialCommunityIcons
+                name="lightning-bolt"
+                size={EMPTY_ICON_SIZE}
+                color={COLORS.ACCENT}
               />
               <Text style={styles.emptyText}>
-                {filterType === FILTER_TYPES.ACTIVE 
-                  ? TEXTS.EMPTY_ACTIVE 
+                {filterType === FILTER_TYPES.ACTIVE
+                  ? TEXTS.EMPTY_ACTIVE
                   : TEXTS.EMPTY_ARCHIVED
                 }
               </Text>
               {filterType === FILTER_TYPES.ACTIVE && (
-                <TouchableOpacity 
-                  style={styles.addFirstButton}
-                  onPress={() => {
-                    resetForm();
-                    setModalVisible(true);
-                  }}
-                >
-                  <MaterialCommunityIcons 
-                    name="plus" 
-                    size={ADD_ICON_SIZE} 
-                    color={COLORS.PRIMARY} 
-                  />
-                  <Text style={styles.addFirstText}>{TEXTS.CREATE_FIRST}</Text>
-                </TouchableOpacity>
+                <>
+                  <Text style={styles.emptySubtext}>{TEXTS.EMPTY_ACTIVE_SUBTITLE}</Text>
+                  <TouchableOpacity
+                    style={styles.addFirstButton}
+                    onPress={() => {
+                      resetForm();
+                      setModalVisible(true);
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name="plus"
+                      size={ADD_ICON_SIZE}
+                      color={COLORS.PRIMARY}
+                    />
+                    <Text style={styles.addFirstText}>{TEXTS.CREATE_FIRST}</Text>
+                  </TouchableOpacity>
+                </>
               )}
             </View>
           )
@@ -1117,6 +1142,13 @@ const styles = StyleSheet.create({
     color: COLORS.ACCENT,
     fontSize: 16,
     textAlign: 'center',
+  },
+  emptySubtext: {
+    color: COLORS.ACCENT,
+    fontSize: 14,
+    opacity: 0.9,
+    textAlign: 'center',
+    marginTop: 8,
   },
   addFirstButton: {
     flexDirection: 'row',

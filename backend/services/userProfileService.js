@@ -224,6 +224,115 @@ class UserProfileService {
   }
 
   /**
+   * Actualiza el perfil a largo plazo a partir de una interacción de chat (temas, emociones recurrentes).
+   * Se llama después de cada respuesta del asistente para que el contexto del chat mejore con el tiempo.
+   * @param {string} userId - ID del usuario
+   * @param {Object} payload - { emotionalAnalysis, contextualAnalysis }
+   * @returns {Promise<Object|null>} Perfil actualizado o null si hay error
+   */
+  async updateLongTermProfileFromConversation(userId, payload) {
+    try {
+      if (!this.isValidUserId(userId) || !payload) return null;
+
+      const emotionalAnalysis = payload.emotionalAnalysis || {};
+      const contextualAnalysis = payload.contextualAnalysis || {};
+      const topicRaw = contextualAnalysis?.tema?.categoria || emotionalAnalysis?.topic || 'general';
+      const topic = (typeof topicRaw === 'string' ? topicRaw : topicRaw?.categoria || 'general').toLowerCase().trim() || 'general';
+      const emotion = (emotionalAnalysis?.mainEmotion || 'neutral').toLowerCase().trim();
+
+      const profile = await UserProfile.findOne({ userId }).lean();
+      if (!profile) return null;
+
+      const now = new Date();
+      const MAX_TOPICS = 15;
+      const MAX_EMOTIONS = 10;
+      const MAX_LAST_INTERACTIONS = 10;
+      const MAX_TOPICS_INTEREST = 20;
+
+      // commonTopics: add or increment topic
+      let commonTopics = Array.isArray(profile.commonTopics) ? [...profile.commonTopics] : [];
+      const topicIdx = commonTopics.findIndex(t => (t.topic || '').toLowerCase() === topic);
+      if (topicIdx >= 0) {
+        commonTopics[topicIdx] = {
+          ...commonTopics[topicIdx],
+          frequency: (commonTopics[topicIdx].frequency || 0) + 1,
+          lastDiscussed: now
+        };
+      } else {
+        commonTopics.push({ topic, frequency: 1, lastDiscussed: now, associatedEmotions: [] });
+      }
+      commonTopics = commonTopics.sort((a, b) => (b.frequency || 0) - (a.frequency || 0)).slice(0, MAX_TOPICS);
+
+      // emotionalPatterns.predominantEmotions
+      const predominantEmotions = Array.isArray(profile.emotionalPatterns?.predominantEmotions) ? [...profile.emotionalPatterns.predominantEmotions] : [];
+      const emotionIdx = predominantEmotions.findIndex(e => (e.emotion || '').toLowerCase() === emotion);
+      if (emotionIdx >= 0) {
+        predominantEmotions[emotionIdx] = {
+          ...predominantEmotions[emotionIdx],
+          frequency: (predominantEmotions[emotionIdx].frequency || 0) + 1
+        };
+      } else {
+        predominantEmotions.push({ emotion, frequency: 1, timePattern: {} });
+      }
+      const emotionalPatterns = {
+        ...(profile.emotionalPatterns || {}),
+        predominantEmotions: predominantEmotions.sort((a, b) => (b.frequency || 0) - (a.frequency || 0)).slice(0, MAX_EMOTIONS)
+      };
+
+      // patrones.temas
+      let patronesTemas = Array.isArray(profile.patrones?.temas) ? [...profile.patrones.temas] : [];
+      const temaIdx = patronesTemas.findIndex(t => (t.tema || '').toLowerCase() === topic);
+      if (temaIdx >= 0) {
+        patronesTemas[temaIdx] = {
+          ...patronesTemas[temaIdx],
+          frecuencia: (patronesTemas[temaIdx].frecuencia || 0) + 1,
+          ultimaVez: now
+        };
+      } else {
+        patronesTemas.push({ tema: topic, frecuencia: 1, ultimaVez: now });
+      }
+      patronesTemas = patronesTemas.sort((a, b) => (b.frecuencia || 0) - (a.frecuencia || 0)).slice(0, MAX_TOPICS);
+      const patrones = { ...(profile.patrones || {}), temas: patronesTemas };
+
+      // lastInteractions: append and keep last N
+      let lastInteractions = Array.isArray(profile.lastInteractions) ? [...profile.lastInteractions] : [];
+      lastInteractions.push({ timestamp: now, emotion, topic });
+      lastInteractions = lastInteractions.slice(-MAX_LAST_INTERACTIONS);
+
+      // preferences.topicsOfInterest: add topic if not generic and not already present
+      let topicsOfInterest = Array.isArray(profile.preferences?.topicsOfInterest) ? [...profile.preferences.topicsOfInterest] : [];
+      if (topic !== 'general' && topic.length > 1 && !topicsOfInterest.some(t => (t || '').toLowerCase() === topic)) {
+        topicsOfInterest.push(topic);
+        topicsOfInterest = topicsOfInterest.slice(-MAX_TOPICS_INTEREST);
+      }
+      const preferences = { ...(profile.preferences || {}), topicsOfInterest };
+
+      const updated = await UserProfile.findOneAndUpdate(
+        { userId },
+        {
+          $set: {
+            commonTopics,
+            emotionalPatterns,
+            patrones,
+            lastInteractions,
+            preferences,
+            'metadata.ultimaInteraccion': now
+          }
+        },
+        { new: true }
+      ).lean();
+
+      const cacheKey = cacheService.generateKey('profile', userId);
+      await cacheService.delete(cacheKey).catch(() => {});
+
+      return updated;
+    } catch (error) {
+      console.error('[UserProfileService] Error en updateLongTermProfileFromConversation:', error, { userId });
+      return null;
+    }
+  }
+
+  /**
    * Actualiza las preferencias del usuario
    * @param {string} userId - ID del usuario
    * @param {Object} newPreferences - Nuevas preferencias a actualizar

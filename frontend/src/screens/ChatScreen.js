@@ -15,7 +15,6 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Animated,
   Dimensions,
@@ -39,6 +38,7 @@ import MarkdownText from '../components/MarkdownText';
 import chatService from '../services/chatService';
 import paymentService from '../services/paymentService';
 import websocketService from '../services/websocketService';
+import { SkeletonBlock } from '../components/Skeleton';
 import * as Notifications from 'expo-notifications';
 import { colors } from '../styles/globalStyles';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
@@ -51,6 +51,7 @@ const TEXTS = {
   PLACEHOLDER: 'Escribe un mensaje...',
   LOADING: 'Cargando conversación...',
   EMPTY: 'No hay mensajes aún',
+  EMPTY_SUBTITLE: 'Escribe abajo para empezar la conversación con Anto',
   ERROR_LOAD: 'Error al cargar el chat',
   ERROR_SEND: 'Error al enviar el mensaje. Por favor, intenta de nuevo.',
   ERROR_COMMUNICATION: 'Error en la comunicación',
@@ -155,6 +156,11 @@ const KEYBOARD_VERTICAL_OFFSET_IOS = 10;
 const KEYBOARD_VERTICAL_OFFSET_ANDROID = 0;
 const MAX_MESSAGE_LENGTH = 500;
 const SCROLL_EVENT_THROTTLE = 16;
+
+// FlatList performance (lazy loading)
+const FLATLIST_INITIAL_NUM_TO_RENDER = 15;
+const FLATLIST_WINDOW_SIZE = 10;
+const FLATLIST_MAX_TO_RENDER_PER_BATCH = 10;
 
 // Constantes de colores
 const COLORS = {
@@ -967,9 +973,24 @@ const ChatScreen = () => {
       {/* Chat Container */}
       <Animated.View style={[styles.chatContainer, { opacity: fadeAnim }]}>
         {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.PRIMARY} />
-            <Text style={styles.loadingText}>{TEXTS.LOADING}</Text>
+          <View style={styles.skeletonContainer}>
+            {Array.from({ length: 6 }, (_, i) => {
+              const isUser = i % 2 === 1;
+              return (
+                <View
+                  key={`chat-skeleton-${i}`}
+                  style={[
+                    styles.skeletonRow,
+                    isUser ? styles.skeletonRowUser : styles.skeletonRowAssistant,
+                  ]}
+                >
+                  <View style={[styles.skeletonBubble, isUser ? styles.skeletonBubbleUser : styles.skeletonBubbleAssistant]}>
+                    <SkeletonBlock width={isUser ? '70%' : '78%'} height={12} radius={8} />
+                    <SkeletonBlock width={isUser ? '45%' : '55%'} height={12} radius={8} style={styles.skeletonLineSpacing} />
+                  </View>
+                </View>
+              );
+            })}
           </View>
         ) : (
           <FlatList
@@ -988,9 +1009,19 @@ const ChatScreen = () => {
             refreshing={refreshing}
             onRefresh={refreshMessages}
             inverted={false}
+            initialNumToRender={FLATLIST_INITIAL_NUM_TO_RENDER}
+            windowSize={FLATLIST_WINDOW_SIZE}
+            maxToRenderPerBatch={FLATLIST_MAX_TO_RENDER_PER_BATCH}
             ListEmptyComponent={() => (
               <View style={styles.emptyContainer}>
+                <Ionicons
+                  name="chatbubble-ellipses-outline"
+                  size={64}
+                  color={COLORS.ACCENT}
+                  style={styles.emptyIcon}
+                />
                 <Text style={styles.emptyText}>{TEXTS.EMPTY}</Text>
+                <Text style={styles.emptySubtext}>{TEXTS.EMPTY_SUBTITLE}</Text>
               </View>
             )}
             ListFooterComponent={TypingIndicator}
@@ -1293,9 +1324,56 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: EMPTY_CONTAINER_PADDING,
   },
+  emptyIcon: {
+    marginBottom: 16,
+  },
   emptyText: {
     color: COLORS.ACCENT,
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    color: COLORS.ACCENT,
+    fontSize: 14,
+    opacity: 0.85,
+    textAlign: 'center',
+    marginTop: 8,
+    paddingHorizontal: 24,
+  },
+  skeletonContainer: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingTop: 16,
+    paddingBottom: 16,
+  },
+  skeletonRow: {
+    width: '100%',
+    marginBottom: 14,
+  },
+  skeletonRowAssistant: {
+    alignItems: 'flex-start',
+  },
+  skeletonRowUser: {
+    alignItems: 'flex-end',
+  },
+  skeletonBubble: {
+    width: '86%',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  skeletonBubbleAssistant: {
+    borderTopLeftRadius: 6,
+  },
+  skeletonBubbleUser: {
+    borderTopRightRadius: 6,
+  },
+  skeletonLineSpacing: {
+    marginTop: 10,
   },
   errorBubble: {
     backgroundColor: COLORS.ERROR_BUBBLE_BACKGROUND,

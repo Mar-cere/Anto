@@ -34,6 +34,12 @@ import paymentService from '../services/paymentService';
 import storeKitService from '../services/storeKitService';
 import { colors } from '../styles/globalStyles';
 
+// URLs legales requeridas por Apple (Guideline 3.1.2 - Subscriptions)
+const LEGAL_URLS = {
+  TERMS_EULA: 'https://www.antoapps.com/terminos',
+  PRIVACY: 'https://www.antoapps.com/privacidad',
+};
+
 // Constantes de textos
 const TEXTS = {
   TITLE: 'Suscripción Premium',
@@ -51,6 +57,14 @@ const TEXTS = {
   CANCEL_SUCCESS: 'Suscripción cancelada exitosamente',
   CANCEL_ERROR: 'Error al cancelar la suscripción',
   NO_PLANS: 'No hay planes disponibles en este momento',
+  LEGAL_TITLE: 'Términos y Política de Privacidad',
+  TERMS_EULA_LABEL: 'Términos de Uso (EULA)',
+  PRIVACY_LABEL: 'Política de Privacidad',
+  SUBSCRIBE_AGREEMENT: 'Al suscribirte aceptas nuestros ',
+  SUBSCRIBE_AGREEMENT_TERMS: 'Términos de Uso (EULA)',
+  SUBSCRIBE_AGREEMENT_AND: ' y ',
+  SUBSCRIBE_AGREEMENT_PRIVACY: 'Política de Privacidad',
+  SUBSCRIBE_AGREEMENT_END: '.',
 };
 
 const SubscriptionScreen = () => {
@@ -678,6 +692,29 @@ const SubscriptionScreen = () => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Enlaces legales obligatorios (Guideline 3.1.2) - visibles sin scroll */}
+        <View style={styles.legalSectionTop}>
+          <Text style={styles.legalSectionTitle}>{TEXTS.LEGAL_TITLE}</Text>
+          <TouchableOpacity
+            style={styles.legalLink}
+            onPress={() => Linking.openURL(LEGAL_URLS.TERMS_EULA).catch(() => Alert.alert('Error', 'No se pudo abrir el enlace'))}
+            activeOpacity={0.7}
+          >
+            <MaterialCommunityIcons name="file-document-outline" size={20} color={colors.primary} />
+            <Text style={styles.legalLinkText}>{TEXTS.TERMS_EULA_LABEL}</Text>
+            <MaterialCommunityIcons name="open-in-new" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.legalLink}
+            onPress={() => Linking.openURL(LEGAL_URLS.PRIVACY).catch(() => Alert.alert('Error', 'No se pudo abrir el enlace'))}
+            activeOpacity={0.7}
+          >
+            <MaterialCommunityIcons name="shield-lock-outline" size={20} color={colors.primary} />
+            <Text style={styles.legalLinkText}>{TEXTS.PRIVACY_LABEL}</Text>
+            <MaterialCommunityIcons name="open-in-new" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
         {/* Estado de suscripción actual */}
         {subscriptionStatus && subscriptionStatus.hasSubscription && subscriptionStatus.status && (
           <View style={styles.section}>
@@ -705,6 +742,13 @@ const SubscriptionScreen = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{TEXTS.AVAILABLE_PLANS}</Text>
           <Text style={styles.subtitle}>{TEXTS.SUBTITLE}</Text>
+          <Text style={styles.agreementText}>
+            {TEXTS.SUBSCRIBE_AGREEMENT}
+            <Text style={styles.agreementLink} onPress={() => Linking.openURL(LEGAL_URLS.TERMS_EULA)}>{TEXTS.SUBSCRIBE_AGREEMENT_TERMS}</Text>
+            {TEXTS.SUBSCRIBE_AGREEMENT_AND}
+            <Text style={styles.agreementLink} onPress={() => Linking.openURL(LEGAL_URLS.PRIVACY)}>{TEXTS.SUBSCRIBE_AGREEMENT_PRIVACY}</Text>
+            {TEXTS.SUBSCRIBE_AGREEMENT_END}
+          </Text>
           {plans.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>{TEXTS.NO_PLANS}</Text>
@@ -783,41 +827,23 @@ const SubscriptionScreen = () => {
           </Text>
         </View>
 
-        {/* Enlaces legales requeridos */}
+        {/* Enlaces legales (también al final para usuarios que hacen scroll) */}
         <View style={styles.legalSection}>
-          <Text style={styles.legalSectionTitle}>Información Legal</Text>
+          <Text style={styles.legalSectionTitle}>{TEXTS.LEGAL_TITLE}</Text>
           <TouchableOpacity
             style={styles.legalLink}
-            onPress={async () => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              const url = 'https://www.antoapps.com/terminos';
-              const canOpen = await Linking.canOpenURL(url);
-              if (canOpen) {
-                await Linking.openURL(url);
-              } else {
-                Alert.alert('Error', 'No se pudo abrir el enlace');
-              }
-            }}
+            onPress={() => Linking.openURL(LEGAL_URLS.TERMS_EULA).catch(() => Alert.alert('Error', 'No se pudo abrir el enlace'))}
           >
-            <MaterialCommunityIcons name="file-document" size={18} color={colors.primary} />
-            <Text style={styles.legalLinkText}>Términos de Servicio</Text>
+            <MaterialCommunityIcons name="file-document-outline" size={18} color={colors.primary} />
+            <Text style={styles.legalLinkText}>{TEXTS.TERMS_EULA_LABEL}</Text>
             <MaterialCommunityIcons name="open-in-new" size={16} color={colors.textSecondary} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.legalLink}
-            onPress={async () => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              const url = 'https://www.antoapps.com/privacidad';
-              const canOpen = await Linking.canOpenURL(url);
-              if (canOpen) {
-                await Linking.openURL(url);
-              } else {
-                Alert.alert('Error', 'No se pudo abrir el enlace');
-              }
-            }}
+            onPress={() => Linking.openURL(LEGAL_URLS.PRIVACY).catch(() => Alert.alert('Error', 'No se pudo abrir el enlace'))}
           >
             <MaterialCommunityIcons name="shield-lock-outline" size={18} color={colors.primary} />
-            <Text style={styles.legalLinkText}>Política de Privacidad</Text>
+            <Text style={styles.legalLinkText}>{TEXTS.PRIVACY_LABEL}</Text>
             <MaterialCommunityIcons name="open-in-new" size={16} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
@@ -1035,6 +1061,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  legalSectionTop: {
+    marginBottom: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 4,
+  },
   legalSection: {
     marginTop: 24,
     paddingTop: 20,
@@ -1064,6 +1095,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.primary,
     fontWeight: '500',
+  },
+  agreementText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  agreementLink: {
+    color: colors.primary,
+    textDecorationLine: 'underline',
+    fontWeight: '600',
   },
 });
 

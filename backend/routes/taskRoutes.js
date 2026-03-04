@@ -272,7 +272,8 @@ router.get('/', async (req, res) => {
         .sort(sortObj)
         .limit(parseInt(limit))
         .skip(skip)
-        .populate('parentTask', 'title status'),
+        .populate('parentTask', 'title status')
+        .lean(),
       Task.countDocuments(query)
     ]);
 
@@ -460,7 +461,8 @@ router.get('/search/:query', async (req, res) => {
       Task.find(searchQuery)
         .sort({ dueDate: 1 })
         .limit(parseInt(limit))
-        .skip(skip),
+        .skip(skip)
+        .lean(),
       Task.countDocuments(searchQuery)
     ]);
     
