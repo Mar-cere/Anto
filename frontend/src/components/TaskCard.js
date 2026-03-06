@@ -8,6 +8,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { commonStyles, cardColors, CardHeader, EmptyState } from './common/CardStyles';
 import * as Haptics from 'expo-haptics';
 import { api, ENDPOINTS } from '../config/api';
+import { getApiErrorMessage, isAuthError } from '../utils/apiErrorHandler';
 
 const TaskItem = memo(({ item, onPress }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -198,9 +199,8 @@ const TaskCard = memo(() => {
       setItems(sortedItems);
     } catch (error) {
       console.error('Error cargando tareas:', error);
-      setError(error.message);
-      
-      if (error.message.includes('401') || error.message.includes('403')) {
+      setError(getApiErrorMessage(error));
+      if (isAuthError(error)) {
         Alert.alert('Sesión expirada', 'Por favor, inicia sesión nuevamente');
         await AsyncStorage.removeItem('userToken');
         navigation.reset({

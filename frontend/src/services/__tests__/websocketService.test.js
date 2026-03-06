@@ -66,11 +66,13 @@ describe('WebSocketService', () => {
     it('debe desconectar conexión existente antes de conectar nueva', async () => {
       await AsyncStorage.setItem('userToken', 'test-token');
       websocketService.socket = { ...mockSocket, connected: true, disconnect: jest.fn() };
+      const originalDisconnect = websocketService.disconnect;
       websocketService.disconnect = jest.fn();
-      
+
       await websocketService.connect('user-id');
-      
+
       expect(websocketService.disconnect).toHaveBeenCalled();
+      websocketService.disconnect = originalDisconnect;
     });
   });
 

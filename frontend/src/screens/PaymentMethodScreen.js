@@ -25,6 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../components/Header';
 import FloatingNavBar from '../components/FloatingNavBar';
 import paymentService from '../services/paymentService';
+import { getApiErrorMessage } from '../utils/apiErrorHandler';
 import { colors } from '../styles/globalStyles';
 
 // Constantes
@@ -115,7 +116,7 @@ const PaymentMethodScreen = () => {
               );
             } catch (err) {
               console.error('Error actualizando método de pago:', err);
-              Alert.alert(TEXTS.UPDATE_ERROR, err.message || 'Ocurrió un error al intentar actualizar el método de pago');
+              Alert.alert(TEXTS.UPDATE_ERROR, getApiErrorMessage(err) || 'Ocurrió un error al intentar actualizar el método de pago');
             } finally {
               setUpdating(false);
             }

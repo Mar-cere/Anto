@@ -43,6 +43,7 @@ describe('Habit Routes', () => {
       ...uniqueUser,
       password: hash,
       salt,
+      emailVerified: true,
       preferences: {
         theme: 'light',
         notifications: true,

@@ -31,6 +31,7 @@ const createUserAndToken = async () => {
     ...uniqueUser,
     password: hash,
     salt,
+    emailVerified: true,
     preferences: {
       theme: 'light',
       notifications: true,

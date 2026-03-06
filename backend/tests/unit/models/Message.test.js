@@ -179,19 +179,10 @@ describe('Message Model', () => {
       const userId = new mongoose.Types.ObjectId();
       const conversationId = new mongoose.Types.ObjectId();
       
-      await Message.create({
-        userId,
-        conversationId,
-        role: 'user',
-        content: 'Message 1'
-      });
-
-      await Message.create({
-        userId,
-        conversationId,
-        role: 'assistant',
-        content: 'Message 2'
-      });
+      await Message.insertMany([
+        { userId, conversationId, role: 'user', content: 'Message 1' },
+        { userId, conversationId, role: 'assistant', content: 'Message 2' }
+      ]);
 
       const messages = await Message.find({ userId });
       

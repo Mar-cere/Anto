@@ -8,6 +8,25 @@ import Message from '../models/Message.js';
 import UserProfile from '../models/UserProfile.js';
 import emotionalAnalyzer from './emotionalAnalyzer.js';
 import cacheService from './cacheService.js';
+import {
+  DEFAULT_COMMUNICATION_STYLE,
+  DEFAULT_RESPONSE_LENGTH,
+  DEFAULT_EMOTION,
+  DEFAULT_INTENSITY,
+  DEFAULT_TENDENCY,
+  HOURS_FOR_INSIGHT,
+  INTENSITY_THRESHOLD,
+  SESSIONS_FOR_INSIGHT,
+  DAYS_FOR_PATTERNS,
+  DAYS_FOR_INSIGHTS,
+  INTENSITY_DIFF_THRESHOLD,
+  HISTORY_LIMIT,
+  INTENSITY_HIGH,
+  INTENSITY_MEDIUM,
+  PERIODOS,
+  DIAS_SEMANA,
+  DIMENSIONES_ANALISIS
+} from './userProfile/index.js';
 
 dotenv.config();
 
@@ -15,58 +34,6 @@ dotenv.config();
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
-
-// Constantes de valores por defecto
-const DEFAULT_COMMUNICATION_STYLE = 'neutral';
-const DEFAULT_RESPONSE_LENGTH = 'MEDIUM';
-const DEFAULT_EMOTION = 'neutral';
-const DEFAULT_INTENSITY = 5;
-const DEFAULT_TENDENCY = 'estable';
-
-// Constantes de umbrales
-const HOURS_FOR_INSIGHT = 24;
-const INTENSITY_THRESHOLD = 8;
-const SESSIONS_FOR_INSIGHT = 5;
-const DAYS_FOR_PATTERNS = 7;
-const DAYS_FOR_INSIGHTS = 30;
-const INTENSITY_DIFF_THRESHOLD = 2;
-const HISTORY_LIMIT = 50;
-
-// Constantes de intensidad
-const INTENSITY_HIGH = 8;
-const INTENSITY_MEDIUM = 4;
-
-// Constantes de periodos del día
-const PERIODOS = {
-  MADRUGADA: { inicio: 0, fin: 5, nombre: 'madrugada' },
-  MAÑANA: { inicio: 6, fin: 11, nombre: 'mañana' },
-  MEDIODIA: { inicio: 12, fin: 14, nombre: 'mediodía' },
-  TARDE: { inicio: 15, fin: 18, nombre: 'tarde' },
-  NOCHE: { inicio: 19, fin: 23, nombre: 'noche' }
-};
-
-// Constantes de días de la semana
-const DIAS_SEMANA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-
-// Constantes de dimensiones de análisis
-const DIMENSIONES_ANALISIS = {
-  EMOCIONAL: {
-    aspectos: ['intensidad', 'variabilidad', 'regulación'],
-    patrones: ['recurrentes', 'situacionales', 'temporales']
-  },
-  COGNITIVO: {
-    aspectos: ['flexibilidad', 'autocrítica', 'creencias'],
-    patrones: ['automáticos', 'adaptativos', 'desadaptativos']
-  },
-  CONDUCTUAL: {
-    aspectos: ['afrontamiento', 'evitación', 'búsqueda_apoyo'],
-    patrones: ['activos', 'pasivos', 'mixtos']
-  },
-  RELACIONAL: {
-    aspectos: ['vínculos', 'comunicación', 'límites'],
-    patrones: ['cercanos', 'sociales', 'profesionales']
-  }
-};
 
 class UserProfileService {
   // Helper: validar userId

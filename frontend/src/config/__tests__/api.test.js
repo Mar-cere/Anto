@@ -4,8 +4,15 @@
  * @author AntoApp Team
  */
 
-import { ENDPOINTS, checkServerConnection, API_URL } from '../api';
+import {
+  ENDPOINTS,
+  checkServerConnection,
+  API_URL,
+  handleApiError,
+  getApiErrorMessage,
+} from '../api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_ERROR_MESSAGES } from '../../utils/apiErrorHandler';
 
 // Mock fetch global
 global.fetch = jest.fn();
@@ -70,6 +77,29 @@ describe('api config', () => {
       const result = await checkServerConnection();
       
       expect(result).toBe(false);
+    });
+  });
+
+  describe('handleApiError / getApiErrorMessage', () => {
+    it('handleApiError debe ser función que devuelve string', () => {
+      expect(typeof handleApiError).toBe('function');
+      const msg = handleApiError(new Error('Network request failed'));
+      expect(typeof msg).toBe('string');
+      expect(msg.length).toBeGreaterThan(0);
+    });
+    it('debe devolver mensaje de red para error sin response', () => {
+      const err = new Error('Network request failed');
+      expect(handleApiError(err)).toBe(API_ERROR_MESSAGES.NETWORK);
+      expect(getApiErrorMessage(err)).toBe(API_ERROR_MESSAGES.NETWORK);
+    });
+    it('debe devolver mensaje del servidor cuando response.data.message existe', () => {
+      const err = new Error('Bad request');
+      err.response = { status: 400, data: { message: 'El email ya está en uso' } };
+      expect(handleApiError(err)).toBe('El email ya está en uso');
+    });
+    it('getApiErrorMessage con isOffline debe devolver mensaje de red', () => {
+      const err = new Error('Any');
+      expect(getApiErrorMessage(err, { isOffline: true })).toBe(API_ERROR_MESSAGES.NETWORK);
     });
   });
 });

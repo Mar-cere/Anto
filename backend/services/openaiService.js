@@ -4,19 +4,12 @@
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
 import {
-    generateCrisisMessage,
-    generateCrisisSystemPrompt
-} from '../constants/crisis.js';
-import {
     ANALYSIS_DIMENSIONS,
-    buildPersonalizedPrompt,
     DEFAULT_VALUES,
     EMOTIONAL_COHERENCE_PATTERNS,
     EMOTIONAL_COHERENCE_PHRASES,
     ERROR_MESSAGES,
-    GENERIC_RESPONSE_PATTERNS,
     GREETING_VARIATIONS,
-    HISTORY_LIMITS,
     MESSAGE_INTENTS,
     OPENAI_MODEL,
     PROMPT_CONFIG,
@@ -26,6 +19,9 @@ import {
     TIME_PERIODS,
     VALIDATION_LIMITS
 } from '../constants/openai.js';
+import { buildContextualizedPrompt } from './openai/openaiPromptBuilder.js';
+import { adaptCachedResponse, generateResponseCacheKey, isCachedResponseValid } from './openai/openaiResponseCache.js';
+import { normalizeEmotionalAnalysis, validateMessage } from './openai/openaiValidation.js';
 import {
     formatTechniqueForResponse,
     selectAppropriateTechnique
@@ -140,20 +136,9 @@ class OpenAIService {
    */
   async generarRespuesta(mensaje, contexto = {}) {
     try {
-      // Validar mensaje
-      if (!mensaje?.content) {
-        throw new Error('Mensaje inválido: falta el contenido');
-      }
-
-      // Normalizar y validar contenido
-      const contenidoNormalizado = mensaje.content.trim();
-      if (!contenidoNormalizado) {
-        throw new Error('Mensaje inválido: el contenido está vacío');
-      }
-
-      if (contenidoNormalizado.length > VALIDATION_LIMITS.MAX_INPUT_CHARACTERS) {
-        throw new Error(`Mensaje inválido: el contenido excede el límite de ${VALIDATION_LIMITS.MAX_INPUT_CHARACTERS} caracteres`);
-      }
+      const validation = validateMessage(mensaje);
+      if (!validation.valid) throw new Error(validation.error);
+      const contenidoNormalizado = validation.content;
 
       // Validar API key antes de continuar
       if (!validateApiKey() || !openai) {
@@ -196,8 +181,9 @@ class OpenAIService {
         }
       );
 
-      // 3. Construir Prompt Contextualizado
-      const prompt = await this.construirPromptContextualizado(
+      // 3. Construir Prompt Contextualizado (módulo openaiPromptBuilder)
+      const sessionTrends = sessionEmotionalMemory.analyzeTrends(mensaje.userId);
+      const prompt = await buildContextualizedPrompt(
         { ...mensaje, content: contenidoNormalizado },
         {
           emotional: analisisEmocional,
@@ -205,24 +191,25 @@ class OpenAIService {
           profile: perfilUsuario,
           therapeutic: registroTerapeutico,
           memory: memoriaContextual,
-          history: contexto.history || [], // Incluir historial de conversación si está disponible
-          currentMessage: contenidoNormalizado, // Para selección inteligente de historial
-          currentConversationId: contexto.currentConversationId // NUEVO: Para referencias a conversaciones anteriores
+          history: contexto.history || [],
+          currentMessage: contenidoNormalizado,
+          currentConversationId: contexto.currentConversationId,
+          sessionTrends,
+          crisis: contexto.crisis
         }
       );
 
       // 4. Generar Respuesta con OpenAI
 
-      // MEJORA: Intentar obtener respuesta del caché si existe
-      const cacheKey = this.generateResponseCacheKey(contenidoNormalizado, analisisEmocional, analisisContextual);
+      // MEJORA: Intentar obtener respuesta del caché si existe (módulo openaiResponseCache)
+      const cacheKey = generateResponseCacheKey(contenidoNormalizado, analisisEmocional, analisisContextual);
       let cachedResponse = null;
       try {
         cachedResponse = await cacheService.get(cacheKey);
-        if (cachedResponse && this.isCachedResponseValid(cachedResponse, analisisContextual)) {
+        if (cachedResponse && isCachedResponseValid(cachedResponse, analisisContextual)) {
           console.log('[OpenAI] ✅ Respuesta obtenida del caché');
-          // Adaptar respuesta cacheada al contexto actual
-          const adaptedResponse = this.adaptCachedResponse(cachedResponse.response, analisisContextual, contenidoNormalizado);
-          return adaptedResponse;
+          const adaptedResponse = adaptCachedResponse(cachedResponse.response, analisisContextual, contenidoNormalizado);
+          return { content: adaptedResponse, context: { emotional: analisisEmocional, contextual: analisisContextual } };
         }
       } catch (cacheError) {
         console.warn('[OpenAI] Error al obtener del caché, continuando sin caché:', cacheError.message);
@@ -522,505 +509,6 @@ class OpenAIService {
   }
 
   /**
-   * Construye un prompt contextualizado para OpenAI basado en el mensaje y contexto del usuario
-   * @param {Object} mensaje - Mensaje del usuario
-   * @param {Object} contexto - Contexto completo (emotional, contextual, profile, therapeutic, memory)
-   * @returns {Promise<Object>} Objeto con systemMessage y contextMessages
-   */
-  async construirPromptContextualizado(mensaje, contexto) {
-    const timeOfDay = this.getTimeOfDay();
-    
-    // Extraer valores del contexto con valores por defecto
-    const emotion = contexto.emotional?.mainEmotion || DEFAULT_VALUES.EMOTION;
-    const intensity = contexto.emotional?.intensity || DEFAULT_VALUES.INTENSITY;
-    const phase = contexto.therapeutic?.currentPhase || DEFAULT_VALUES.PHASE;
-    const intent = contexto.contextual?.intencion?.tipo || MESSAGE_INTENTS.EMOTIONAL_SUPPORT;
-    const communicationStyle = contexto.profile?.communicationPreferences || DEFAULT_VALUES.COMMUNICATION_STYLE;
-    const recurringThemes = contexto.memory?.recurringThemes || [];
-    const lastInteraction = contexto.memory?.lastInteraction || 'ninguna';
-
-    // NUEVO: Obtener tendencias de sesión
-    const sessionTrends = sessionEmotionalMemory.analyzeTrends(mensaje.userId);
-    
-    // NUEVO: Obtener estilo de respuesta del usuario
-    const responseStyle = contexto.profile?.preferences?.responseStyle || 'balanced';
-    
-    // Construir prompt personalizado usando la función helper
-    let systemMessage = buildPersonalizedPrompt({
-      emotion,
-      intensity,
-      phase,
-      intent,
-      communicationStyle,
-      timeOfDay,
-      recurringThemes,
-      lastInteraction,
-      // NUEVOS PARÁMETROS
-      subtype: contexto.emotional?.subtype,
-      topic: contexto.emotional?.topic,
-      sessionTrends: sessionTrends,
-      responseStyle: responseStyle,
-      // NUEVOS: Análisis psicológicos adicionales
-      resistance: contexto.contextual?.resistance || null,
-      relapseSigns: contexto.contextual?.relapseSigns || null,
-      implicitNeeds: contexto.contextual?.implicitNeeds || null,
-      strengths: contexto.contextual?.strengths || null,
-      selfEfficacy: contexto.contextual?.selfEfficacy || null,
-      socialSupport: contexto.contextual?.socialSupport || null,
-      // NUEVO: Distorsiones cognitivas
-      cognitiveDistortions: contexto.contextual?.cognitiveDistortions || null,
-      primaryDistortion: contexto.contextual?.primaryDistortion || null,
-      distortionIntervention: contexto.contextual?.distortionIntervention || null
-    });
-
-    // OPTIMIZACIÓN: Agregar resumen del contexto conversacional (más conciso)
-    const contextMessages = await this.generarMensajesContexto({
-      ...contexto,
-      currentMessage: mensaje.content
-    });
-    
-    if (contextMessages.length > 0) {
-      const conversationSummary = this.generateConversationSummary(contextMessages, contexto);
-      // OPTIMIZACIÓN: Resumen más conciso (máximo 100 caracteres)
-      const conciseSummary = conversationSummary.length > 100 
-        ? conversationSummary.substring(0, 97) + '...'
-        : conversationSummary;
-      systemMessage += `\n\nCONTEXTO: ${conciseSummary}`;
-      
-      // Agregar instrucción solo si hay suficiente contexto
-      if (contextMessages.length >= 2) {
-        systemMessage += `\nRef: Usa referencias naturales cuando sea relevante.`;
-      }
-    }
-
-    // OPTIMIZACIÓN: Agregar contexto de largo plazo solo si es relevante (más conciso)
-    const longTermContext = await this.generateLongTermContext(mensaje.userId, {
-      ...contexto,
-      currentConversationId: contexto.currentConversationId || mensaje.conversationId
-    });
-    if (longTermContext && longTermContext.length > 0) {
-      // Limitar contexto de largo plazo a 200 caracteres (aumentado para incluir referencias)
-      const conciseLongTerm = longTermContext.length > 200
-        ? longTermContext.substring(0, 197) + '...'
-        : longTermContext;
-      systemMessage += `\nMEMORIA: ${conciseLongTerm}`;
-    }
-
-    // Respuestas del onboarding inicial: usarlas para personalizar tono y enfoque del chat
-    const onboarding = contexto.profile?.onboardingAnswers;
-    if (onboarding && (onboarding.whatExpectFromApp || onboarding.whatToImproveOrWorkOn || onboarding.typeOfSpecialist)) {
-      const parts = [];
-      if (onboarding.whatExpectFromApp) parts.push(`Qué espera de la app: ${onboarding.whatExpectFromApp}`);
-      if (onboarding.whatToImproveOrWorkOn) parts.push(`Qué le gustaría mejorar o trabajar: ${onboarding.whatToImproveOrWorkOn}`);
-      if (onboarding.typeOfSpecialist) parts.push(`Tipo de apoyo que busca: ${onboarding.typeOfSpecialist}`);
-      if (parts.length > 0) {
-        systemMessage += `\n\nINFORMACIÓN QUE EL USUARIO COMPARTIÓ AL INICIO (úsala para personalizar tu tono y enfoque):\n${parts.join('\n')}`;
-      }
-    }
-
-    // Si hay una crisis detectada, agregar el prompt de crisis al inicio
-    if (contexto.crisis?.riskLevel) {
-      const crisisPrompt = generateCrisisSystemPrompt(
-        contexto.crisis.riskLevel,
-        contexto.crisis.country || 'GENERAL'
-      );
-      systemMessage = `${crisisPrompt}\n\n---\n\n${systemMessage}`;
-    }
-
-    return {
-      systemMessage,
-      contextMessages
-    };
-  }
-
-  /**
-   * Selecciona mensajes relevantes del historial basándose en el contexto actual
-   * @param {Array} history - Historial completo de mensajes
-   * @param {Object} currentContext - Contexto actual (emotional, contextual)
-   * @returns {Array} Mensajes seleccionados (máximo HISTORY_LIMITS.MESSAGES_IN_PROMPT)
-   */
-  selectRelevantHistory(history, currentContext) {
-    if (!history || history.length === 0) return [];
-    
-    const currentEmotion = currentContext?.emotional?.mainEmotion;
-    const currentTopic = currentContext?.emotional?.topic || currentContext?.contextual?.tema;
-    const currentContent = currentContext?.currentMessage?.toLowerCase() || '';
-    const currentIntensity = currentContext?.emotional?.intensity || 5;
-    
-    // OPTIMIZACIÓN: Extraer palabras clave más inteligentes (sustantivos y verbos importantes)
-    const stopWords = new Set(['que', 'qué', 'como', 'cómo', 'para', 'por', 'con', 'sin', 'sobre', 'entre', 'hasta', 'desde', 'durante', 'mediante', 'según', 'ante', 'bajo', 'contra', 'hacia', 'tras', 'este', 'esta', 'estos', 'estas', 'ese', 'esa', 'esos', 'esas', 'aquel', 'aquella', 'aquellos', 'aquellas', 'tengo', 'tiene', 'tienes', 'tenemos', 'tienen', 'estoy', 'está', 'estás', 'estamos', 'están', 'soy', 'es', 'eres', 'somos', 'son', 'fue', 'fueron', 'ser', 'estar', 'tener', 'hacer', 'decir', 'ir', 'ver', 'dar', 'saber', 'poder', 'querer', 'llegar', 'pasar', 'deber', 'poner', 'parecer', 'quedar', 'hablar', 'llevar', 'seguir', 'encontrar', 'llamar', 'venir', 'pensar', 'salir', 'volver', 'tomar', 'conocer', 'vivir', 'sentir', 'tratar', 'mirar', 'contar', 'empezar', 'esperar', 'buscar', 'existir', 'entrar', 'trabajar', 'escribir', 'perder', 'producir', 'ocurrir', 'entender', 'pedir', 'recibir', 'recordar', 'terminar', 'permitir', 'aparecer', 'conseguir', 'comenzar', 'servir', 'sacar', 'necesitar', 'mantener', 'resultar', 'leer', 'caer', 'cambiar', 'presentar', 'crear', 'abrir', 'considerar', 'oír', 'acabar', 'convertir', 'ganar', 'formar', 'traer', 'partir', 'morir', 'aceptar', 'realizar', 'suponer', 'comprender', 'lograr', 'explicar', 'preguntar', 'tocar', 'reconocer', 'estudiar', 'terminar', 'alcanzar', 'nacer', 'dirigir', 'correr', 'utilizar', 'pagar', 'ayudar', 'gustar', 'jugar', 'escuchar', 'cumplir', 'ofrecer', 'descubrir', 'levantar', 'intentar', 'usar', 'dejar', 'continuar', 'acabar', 'comprobar', 'vender', 'construir', 'elegir', 'actuar', 'lograr', 'ocurrir', 'permitir', 'aparecer', 'conseguir', 'comenzar', 'servir', 'sacar', 'necesitar', 'mantener', 'resultar', 'leer', 'caer', 'cambiar', 'presentar', 'crear', 'abrir', 'considerar', 'oír', 'acabar', 'convertir', 'ganar', 'formar', 'traer', 'partir', 'morir', 'aceptar', 'realizar', 'suponer', 'comprender', 'lograr', 'explicar', 'preguntar', 'tocar', 'reconocer', 'estudiar', 'terminar', 'alcanzar', 'nacer', 'dirigir', 'correr', 'utilizar', 'pagar', 'ayudar', 'gustar', 'jugar', 'escuchar', 'cumplir', 'ofrecer', 'descubrir', 'levantar', 'intentar', 'usar', 'dejar', 'continuar', 'acabar', 'comprobar', 'vender', 'construir', 'elegir', 'actuar']);
-    const keywords = currentContent
-      .split(/\s+/)
-      .filter(word => word.length > 3 && !stopWords.has(word.toLowerCase()))
-      .slice(0, 10); // Limitar a 10 palabras clave más relevantes
-    
-    // OPTIMIZACIÓN: Calcular relevancia mejorada
-    const scoredMessages = history.map((msg, index) => {
-      let score = 0;
-      const msgContent = (msg.content || '').toLowerCase();
-      const recencyWeight = 1 - (index / history.length); // Más reciente = mayor peso
-      
-      // Priorizar mensajes más recientes (peso exponencial)
-      score += recencyWeight * 2;
-      
-      // Priorizar mensajes del usuario (más importantes para contexto)
-      if (msg.role === 'user') {
-        score += 3;
-      }
-      
-      // Priorizar mensajes con misma emoción (muy relevante)
-      if (currentEmotion) {
-        const emotionMatch = msgContent.includes(currentEmotion.toLowerCase());
-        if (emotionMatch) {
-          score += 5;
-          // Bonus si la intensidad también es similar
-          const msgIntensity = msg.metadata?.context?.emotional?.intensity || 5;
-          if (Math.abs(msgIntensity - currentIntensity) <= 2) {
-            score += 2;
-          }
-        }
-      }
-      
-      // Priorizar mensajes con mismo tema (muy relevante)
-      if (currentTopic) {
-        const topicMatch = msgContent.includes(currentTopic.toLowerCase());
-        if (topicMatch) {
-          score += 4;
-        }
-      }
-      
-      // Priorizar mensajes con palabras clave similares (coincidencias exactas)
-      const matchingKeywords = keywords.filter(kw => {
-        const regex = new RegExp(`\\b${kw}\\b`, 'i');
-        return regex.test(msgContent);
-      }).length;
-      score += matchingKeywords * 1.5;
-      
-      // Priorizar mensajes que mencionan temas relacionados (coincidencias contextuales)
-      const relatedTerms = ['trabajo', 'familia', 'relación', 'amigo', 'pareja', 'estudio', 'salud', 'ansiedad', 'tristeza', 'enojo', 'miedo', 'alegría', 'problema', 'situación', 'momento', 'día', 'semana', 'tiempo'];
-      const matchingTerms = relatedTerms.filter(term => {
-        const currentHasTerm = new RegExp(`\\b${term}\\b`, 'i').test(currentContent);
-        const msgHasTerm = new RegExp(`\\b${term}\\b`, 'i').test(msgContent);
-        return currentHasTerm && msgHasTerm;
-      }).length;
-      score += matchingTerms * 2;
-      
-      // Penalizar mensajes muy cortos (menos informativos)
-      if (msgContent.length < 20) {
-        score -= 1;
-      }
-      
-      // Bonus para mensajes que son preguntas/respuestas relacionadas
-      if ((currentContent.includes('?') && msgContent.includes('?')) ||
-          (currentContent.includes('?') && msg.role === 'assistant')) {
-        score += 1.5;
-      }
-      
-      return { ...msg, _relevanceScore: score };
-    });
-    
-    // Ordenar por relevancia y tomar los mejores
-    const selected = scoredMessages
-      .sort((a, b) => b._relevanceScore - a._relevanceScore)
-      .slice(0, HISTORY_LIMITS.MESSAGES_IN_PROMPT)
-      .sort((a, b) => {
-        // Mantener orden cronológico dentro de los seleccionados
-        const indexA = history.findIndex(m => m === a);
-        const indexB = history.findIndex(m => m === b);
-        return indexA - indexB;
-      })
-      .map(({ _relevanceScore, ...msg }) => msg); // Remover score temporal
-    
-    // Asegurar que siempre incluimos el último mensaje del asistente si existe (para coherencia)
-    const lastAssistant = history.filter(m => m.role === 'assistant').pop();
-    if (lastAssistant && !selected.some(m => m === lastAssistant)) {
-      selected.pop(); // Remover el menos relevante
-      selected.push(lastAssistant);
-      selected.sort((a, b) => {
-        const indexA = history.findIndex(m => m === a);
-        const indexB = history.findIndex(m => m === b);
-        return indexA - indexB;
-      });
-    }
-    
-    return selected;
-  }
-
-  /**
-   * Genera contexto de largo plazo basado en el perfil del usuario
-   * @param {string} userId - ID del usuario
-   * @param {Object} contexto - Contexto actual
-   * @returns {Promise<string>} Resumen del contexto a largo plazo
-   */
-  async generateLongTermContext(userId, contexto) {
-    try {
-      if (!userId) return null;
-
-      // Obtener perfil del usuario (usar el que ya está en contexto si está disponible)
-      let userProfile = contexto.profile;
-      if (!userProfile) {
-        userProfile = await personalizationService.getUserProfile(userId).catch(() => null);
-      }
-
-      if (!userProfile) return null;
-
-      const contextParts = [];
-      
-      // NUEVO: Información de género para tratamiento personalizado
-      const gender = userProfile.personalInfo?.gender;
-      const pronouns = userProfile.personalInfo?.preferredPronouns;
-      if (gender && gender !== 'prefer_not_to_say' && gender !== null) {
-        const genderMap = {
-          'male': 'masculino',
-          'female': 'femenino',
-          'other': 'otro'
-        };
-        const pronounMap = {
-          'he/him': 'él',
-          'she/her': 'ella',
-          'they/them': 'elle',
-          'other': 'otro'
-        };
-        const genderText = genderMap[gender] || gender;
-        const pronounText = pronouns ? pronounMap[pronouns] || pronouns : null;
-        if (pronounText) {
-          contextParts.push(`Tratamiento: Usa pronombres ${pronounText} (${genderText}).`);
-        } else {
-          contextParts.push(`Tratamiento: Género ${genderText}.`);
-        }
-      } else {
-        // Si no hay género definido, usar lenguaje neutro
-        contextParts.push(`Tratamiento: Usa lenguaje neutro si no conoces el género. Evita asumir género.`);
-      }
-      
-      // NUEVO: Referencias a conversaciones anteriores (última conversación previa)
-      try {
-        const Message = (await import('../models/Message.js')).default;
-        const Conversation = (await import('../models/Conversation.js')).default;
-        
-        // Obtener la conversación actual
-        const currentConversationId = contexto.currentConversationId;
-        
-        if (currentConversationId) {
-          // Buscar la última conversación previa (diferente a la actual)
-          const previousConversation = await Conversation.findOne({
-            userId,
-            _id: { $ne: currentConversationId }
-          })
-          .sort({ updatedAt: -1 })
-          .lean();
-          
-          if (previousConversation) {
-            // Obtener el último mensaje del usuario de esa conversación anterior
-            const lastUserMessage = await Message.findOne({
-              conversationId: previousConversation._id,
-              role: 'user'
-            })
-            .select('content metadata.context.emotional createdAt')
-            .sort({ createdAt: -1 })
-            .lean();
-            
-            if (lastUserMessage && lastUserMessage.metadata?.context?.emotional) {
-              const prevEmotion = lastUserMessage.metadata.context.emotional.mainEmotion;
-              const prevIntensity = lastUserMessage.metadata.context.emotional.intensity || 5;
-              const daysAgo = Math.floor((Date.now() - new Date(lastUserMessage.createdAt).getTime()) / (1000 * 60 * 60 * 24));
-              
-              // Solo incluir si fue reciente (últimos 7 días) y había estado emocional negativo
-              if (daysAgo <= 7 && prevIntensity >= 5 && ['tristeza', 'ansiedad', 'enojo', 'miedo', 'verguenza', 'culpa'].includes(prevEmotion)) {
-                const emotionMap = {
-                  'tristeza': 'triste',
-                  'ansiedad': 'ansioso',
-                  'enojo': 'enojado',
-                  'miedo': 'asustado',
-                  'verguenza': 'avergonzado',
-                  'culpa': 'culpable'
-                };
-                const emotionText = emotionMap[prevEmotion] || prevEmotion;
-                contextParts.push(`Última conversación (hace ${daysAgo} día${daysAgo !== 1 ? 's' : ''}): estaba ${emotionText} (intensidad ${prevIntensity}/10). Puedes hacer referencia natural si es relevante.`);
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.warn('[OpenAIService] Error obteniendo conversaciones anteriores:', error);
-        // Continuar sin referencias a conversaciones anteriores
-      }
-
-      // Temas recurrentes
-      const recurringTopics = [];
-      if (userProfile.commonTopics && Array.isArray(userProfile.commonTopics)) {
-        const topTopics = userProfile.commonTopics
-          .sort((a, b) => (b.frequency || 0) - (a.frequency || 0))
-          .slice(0, 3)
-          .map(t => t.topic);
-        if (topTopics.length > 0) {
-          recurringTopics.push(...topTopics);
-        }
-      }
-      // También verificar en patrones.temas
-      if (userProfile.patrones?.temas && Array.isArray(userProfile.patrones.temas)) {
-        const patternTopics = userProfile.patrones.temas
-          .sort((a, b) => (b.frecuencia || 0) - (a.frecuencia || 0))
-          .slice(0, 3)
-          .map(t => t.tema);
-        patternTopics.forEach(topic => {
-          if (!recurringTopics.includes(topic)) {
-            recurringTopics.push(topic);
-          }
-        });
-      }
-      if (recurringTopics.length > 0) {
-        contextParts.push(`El usuario frecuentemente menciona: ${recurringTopics.slice(0, 3).join(', ')}.`);
-      }
-
-      // Preferencias de comunicación
-      const commStyle = userProfile.preferences?.communicationStyle || 
-                       userProfile.communicationPreferences || 
-                       'neutral';
-      if (commStyle !== 'neutral') {
-        contextParts.push(`Prefiere un estilo de comunicación: ${commStyle}.`);
-      }
-
-      // Progreso terapéutico
-      if (userProfile.metadata?.progresoGeneral) {
-        const progress = userProfile.metadata.progresoGeneral;
-        if (progress > 0) {
-          contextParts.push(`Ha mostrado progreso general: ${progress}%.`);
-        }
-      }
-
-      // Estrategias de afrontamiento efectivas
-      if (userProfile.copingStrategies && Array.isArray(userProfile.copingStrategies)) {
-        const effectiveStrategies = userProfile.copingStrategies
-          .filter(s => s.effectiveness >= 7 && s.usageCount > 0)
-          .sort((a, b) => b.effectiveness - a.effectiveness)
-          .slice(0, 2)
-          .map(s => s.strategy);
-        if (effectiveStrategies.length > 0) {
-          contextParts.push(`Estrategias que le han funcionado bien: ${effectiveStrategies.join(', ')}.`);
-        }
-      }
-
-      // Emociones predominantes
-      if (userProfile.emotionalPatterns?.predominantEmotions && 
-          Array.isArray(userProfile.emotionalPatterns.predominantEmotions)) {
-        const topEmotions = userProfile.emotionalPatterns.predominantEmotions
-          .sort((a, b) => (b.frequency || 0) - (a.frequency || 0))
-          .slice(0, 2)
-          .map(e => e.emotion);
-        if (topEmotions.length > 0) {
-          contextParts.push(`Emociones que experimenta frecuentemente: ${topEmotions.join(', ')}.`);
-        }
-      }
-
-      return contextParts.length > 0 ? contextParts.join(' ') : null;
-    } catch (error) {
-      console.error('[OpenAIService] Error generando contexto de largo plazo:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Genera un resumen del contexto conversacional actual
-   * @param {Array} history - Historial de mensajes seleccionados
-   * @param {Object} contexto - Contexto completo
-   * @returns {string} Resumen del contexto conversacional
-   */
-  generateConversationSummary(history, contexto) {
-    if (!history || history.length === 0) {
-      return 'Conversación nueva.';
-    }
-    
-    // OPTIMIZACIÓN: Resumen más conciso y eficiente
-    const userMessages = history.filter(m => m.role === 'user');
-    const assistantMessages = history.filter(m => m.role === 'assistant');
-    
-    // Detectar tema principal
-    const currentTopic = contexto.emotional?.topic || contexto.contextual?.tema || 'general';
-    const currentEmotion = contexto.emotional?.mainEmotion || 'neutral';
-    const intensity = contexto.emotional?.intensity || 5;
-    
-    // Determinar progreso de la conversación (más conciso)
-    let progress = history.length >= 8 ? 'profundo' : history.length >= 4 ? 'explorando' : 'inicio';
-    
-    // Detectar si el usuario está repitiendo un tema
-    const topics = userMessages.map(m => m.content?.toLowerCase() || '').join(' ');
-    const topicWords = topics.split(/\s+/).filter(w => w.length > 4);
-    const topicCounts = {};
-    topicWords.forEach(word => {
-      topicCounts[word] = (topicCounts[word] || 0) + 1;
-    });
-    const repeatedTopics = Object.entries(topicCounts)
-      .filter(([_, count]) => count >= 2)
-      .map(([word]) => word)
-      .slice(0, 2);
-    
-    // OPTIMIZACIÓN: Resumen más conciso (máximo 100 caracteres)
-    let summary = `${progress}|${currentTopic}|${currentEmotion}(${intensity})`;
-    
-    if (repeatedTopics.length > 0) {
-      summary += `|${repeatedTopics.join(',')}`;
-    }
-    
-    // Limitar longitud total
-    if (summary.length > 100) {
-      summary = summary.substring(0, 97) + '...';
-    }
-    
-    return summary;
-  }
-
-  /**
-   * Genera mensajes de contexto adicionales para el prompt de OpenAI
-   * @param {Object} contexto - Contexto completo del usuario
-   * @returns {Promise<Array>} Array de mensajes de contexto
-   */
-  async generarMensajesContexto(contexto) {
-    const messages = [];
-
-    // Agregar historial de conversación con selección inteligente
-    if (contexto.history && Array.isArray(contexto.history) && contexto.history.length > 0) {
-      // Seleccionar mensajes relevantes en lugar de solo los últimos
-      const historialRelevante = this.selectRelevantHistory(contexto.history, {
-        emotional: contexto.emotional,
-        contextual: contexto.contextual,
-        currentMessage: contexto.currentMessage
-      });
-      
-      historialRelevante.forEach(msg => {
-        if (msg.role && msg.content) {
-          messages.push({
-            role: msg.role === 'user' ? 'user' : 'assistant',
-            content: msg.content
-          });
-        }
-      });
-    }
-
-    // Agregar última interacción si existe y no está ya en el historial
-    if (contexto.memory?.lastInteraction && !messages.some(m => m.content === contexto.memory.lastInteraction)) {
-      messages.push({
-        role: 'assistant',
-        content: contexto.memory.lastInteraction
-      });
-    }
-
-    // Agregar alerta de crisis si es necesario
-    if (contexto.emotional?.requiresUrgentCare || contexto.contextual?.intencion?.tipo === MESSAGE_INTENTS.CRISIS || contexto.crisis?.riskLevel) {
-      const riskLevel = contexto.crisis?.riskLevel || 'MEDIUM';
-      const country = contexto.crisis?.country || 'GENERAL';
-      const crisisMessage = generateCrisisMessage(riskLevel, country);
-      
-      messages.push({
-        role: 'system',
-        content: `🚨 SITUACIÓN DE CRISIS DETECTADA (Nivel: ${riskLevel})\n\n${crisisMessage}\n\nIMPORTANTE: Prioriza la seguridad del usuario. Proporciona recursos de emergencia de forma clara y directa.`
-      });
-    }
-
-    return messages;
-  }
-
-  /**
    * Determina la temperatura óptima para la generación basada en el contexto
    * @param {Object} contexto - Contexto del mensaje
    * @returns {number} Temperatura (0.1 - 0.8)
@@ -1198,83 +686,6 @@ class OpenAIService {
     }
     
     return respuestaMejorada;
-  }
-
-  /**
-   * Genera una clave de caché para respuestas basada en el mensaje y contexto
-   * @param {string} messageContent - Contenido del mensaje
-   * @param {Object} emotionalAnalysis - Análisis emocional
-   * @param {Object} contextualAnalysis - Análisis contextual
-   * @returns {string} Clave de caché
-   */
-  generateResponseCacheKey(messageContent, emotionalAnalysis, contextualAnalysis) {
-    // Normalizar mensaje (minúsculas, sin espacios extra)
-    const normalizedMessage = messageContent.toLowerCase().trim().replace(/\s+/g, ' ');
-    
-    // Extraer características clave para el caché
-    const emotion = emotionalAnalysis?.mainEmotion || 'neutral';
-    const intent = contextualAnalysis?.intencion?.tipo || 'EMOTIONAL_SUPPORT';
-    const topic = emotionalAnalysis?.topic || contextualAnalysis?.tema || 'general';
-    
-    // Crear hash simple basado en características
-    const cacheData = {
-      message: normalizedMessage.substring(0, 100), // Primeros 100 caracteres
-      emotion,
-      intent,
-      topic
-    };
-    
-    return cacheService.generateKey('response', cacheData);
-  }
-
-  /**
-   * Valida si una respuesta cacheada sigue siendo apropiada
-   * @param {Object} cachedResponse - Respuesta cacheada
-   * @param {Object} currentContext - Contexto actual
-   * @returns {boolean} true si es válida
-   */
-  isCachedResponseValid(cachedResponse, currentContext) {
-    if (!cachedResponse || !cachedResponse.response) return false;
-    
-    // Verificar que no sea muy antigua (máximo 30 minutos)
-    const age = Date.now() - (cachedResponse.timestamp || 0);
-    if (age > 1800000) return false; // 30 minutos
-    
-    // Verificar que el contexto emocional sea similar
-    const cachedEmotion = cachedResponse.emotional?.mainEmotion;
-    const currentEmotion = currentContext?.emotional?.mainEmotion || currentContext?.mainEmotion;
-    if (cachedEmotion && currentEmotion && cachedEmotion !== currentEmotion) {
-      // Si la emoción cambió significativamente, no usar caché
-      return false;
-    }
-    
-    return true;
-  }
-
-  /**
-   * Adapta una respuesta cacheada al contexto actual
-   * @param {string} cachedResponse - Respuesta cacheada
-   * @param {Object} currentContext - Contexto actual
-   * @param {string} currentMessage - Mensaje actual del usuario
-   * @returns {string} Respuesta adaptada
-   */
-  adaptCachedResponse(cachedResponse, currentContext, currentMessage) {
-    // Si la respuesta cacheada es muy genérica, usarla tal cual
-    if (this.esRespuestaGenerica(cachedResponse)) {
-      return cachedResponse;
-    }
-    
-    // Adaptar ligeramente si es necesario
-    let adapted = cachedResponse;
-    
-    // Si el contexto tiene urgencia alta, asegurar que la respuesta refleje eso
-    if (currentContext?.urgencia === 'ALTA') {
-      if (!adapted.toLowerCase().includes('importante') && !adapted.toLowerCase().includes('urgente')) {
-        adapted = `Es importante que sepas: ${adapted}`;
-      }
-    }
-    
-    return adapted;
   }
 
   /**
@@ -1602,53 +1013,7 @@ class OpenAIService {
    * @returns {Object} Objeto emocional normalizado
    */
   normalizarAnalisisEmocional(analisisEmocional) {
-    if (!analisisEmocional || typeof analisisEmocional !== 'object') {
-      return {
-        mainEmotion: DEFAULT_VALUES.EMOTION,
-        intensity: DEFAULT_VALUES.INTENSITY
-      };
-    }
-
-    // Valores válidos del enum según el modelo Message
-    const emocionesValidas = ['tristeza', 'ansiedad', 'enojo', 'alegria', 'miedo', 'verguenza', 'culpa', 'esperanza', 'neutral'];
-    
-    // Normalizar mainEmotion
-    let mainEmotion = analisisEmocional.mainEmotion || DEFAULT_VALUES.EMOTION;
-    if (!emocionesValidas.includes(mainEmotion)) {
-      console.warn(`⚠️ Emoción no válida detectada: "${mainEmotion}". Usando valor por defecto: "${DEFAULT_VALUES.EMOTION}"`);
-      mainEmotion = DEFAULT_VALUES.EMOTION;
-    }
-
-    // Normalizar intensity
-    let intensity = analisisEmocional.intensity;
-    if (typeof intensity !== 'number' || isNaN(intensity)) {
-      intensity = DEFAULT_VALUES.INTENSITY;
-    } else {
-      // Asegurar que esté en el rango válido
-      intensity = Math.max(VALIDATION_LIMITS.INTENSITY_MIN, Math.min(VALIDATION_LIMITS.INTENSITY_MAX, intensity));
-    }
-
-    // Construir objeto normalizado
-    const normalizado = {
-      mainEmotion,
-      intensity
-    };
-
-    // Agregar campos opcionales si existen
-    if (Array.isArray(analisisEmocional.secondary)) {
-      normalizado.secondary = analisisEmocional.secondary;
-    }
-    if (analisisEmocional.category) {
-      normalizado.category = analisisEmocional.category;
-    }
-    if (typeof analisisEmocional.confidence === 'number') {
-      normalizado.confidence = analisisEmocional.confidence;
-    }
-    if (typeof analisisEmocional.requiresAttention === 'boolean') {
-      normalizado.requiresAttention = analisisEmocional.requiresAttention;
-    }
-
-    return normalizado;
+    return normalizeEmotionalAnalysis(analisisEmocional);
   }
 
   /**

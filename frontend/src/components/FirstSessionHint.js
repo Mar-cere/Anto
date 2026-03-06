@@ -5,7 +5,6 @@
  * @author AntoApp Team
  */
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef } from 'react';
@@ -17,37 +16,20 @@ import {
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import {
+  getFirstSessionHintDismissedKey,
+  isFirstSessionHintDismissed,
+  setFirstSessionHintDismissed,
+} from '../utils/firstSessionHintStorage';
 import { colors } from '../styles/globalStyles';
 
-const STORAGE_KEY_PREFIX = 'firstSessionHintDismissed_';
+export { getFirstSessionHintDismissedKey, isFirstSessionHintDismissed, setFirstSessionHintDismissed };
 
 const TEXTS = {
   TITLE: 'Tu objetivo por ahora',
   MESSAGE: 'Empezar el chat con Anto. Ahí podrás contarle cómo estás y recibir apoyo.',
   GO_TO_CHAT: 'Empezar chat',
   GOT_IT: 'Entendido',
-};
-
-export const getFirstSessionHintDismissedKey = (userId) =>
-  `${STORAGE_KEY_PREFIX}${userId || 'anonymous'}`;
-
-export const isFirstSessionHintDismissed = async (userId) => {
-  try {
-    const key = getFirstSessionHintDismissedKey(userId);
-    const value = await AsyncStorage.getItem(key);
-    return value === 'true';
-  } catch (e) {
-    return false;
-  }
-};
-
-export const setFirstSessionHintDismissed = async (userId) => {
-  try {
-    const key = getFirstSessionHintDismissedKey(userId);
-    await AsyncStorage.setItem(key, 'true');
-  } catch (e) {
-    console.warn('FirstSessionHint: error persistiendo estado', e);
-  }
 };
 
 const FirstSessionHint = ({ visible, onDismiss, userId = null }) => {
@@ -82,7 +64,7 @@ const FirstSessionHint = ({ visible, onDismiss, userId = null }) => {
   if (!visible) return null;
 
   return (
-    <Animated.View style={[styles.overlay, { opacity: fadeAnim }] pointerEvents="box-none">
+    <Animated.View style={[styles.overlay, { opacity: fadeAnim }]} pointerEvents="box-none">
       <View style={styles.card}>
         <View style={styles.iconRow}>
           <View style={styles.iconCircle}>

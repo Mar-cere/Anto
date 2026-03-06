@@ -1,0 +1,259 @@
+/**
+ * Construcción del prompt contextualizado para OpenAI (system + context messages).
+ * Extraído de openaiService para reducir su tamaño y separar responsabilidades.
+ */
+import Conversation from '../../models/Conversation.js';
+import Message from '../../models/Message.js';
+import { generateCrisisMessage, generateCrisisSystemPrompt } from '../../constants/crisis.js';
+import {
+  buildPersonalizedPrompt,
+  DEFAULT_VALUES,
+  HISTORY_LIMITS,
+  MESSAGE_INTENTS,
+  TIME_PERIODS
+} from '../../constants/openai.js';
+
+function getTimeOfDay() {
+  const hour = new Date().getHours();
+  if (hour >= TIME_PERIODS.MORNING_START && hour < TIME_PERIODS.MORNING_END) return 'mañana';
+  if (hour >= TIME_PERIODS.AFTERNOON_START && hour < TIME_PERIODS.AFTERNOON_END) return 'tarde';
+  return 'noche';
+}
+
+/**
+ * Selecciona mensajes relevantes del historial según el contexto actual.
+ */
+export function selectRelevantHistory(history, currentContext) {
+  if (!history || history.length === 0) return [];
+  const currentEmotion = currentContext?.emotional?.mainEmotion;
+  const currentTopic = currentContext?.emotional?.topic || currentContext?.contextual?.tema;
+  const currentContent = (currentContext?.currentMessage || '').toLowerCase();
+  const currentIntensity = currentContext?.emotional?.intensity || 5;
+  const stopWords = new Set(['que', 'qué', 'como', 'cómo', 'para', 'por', 'con', 'sin', 'sobre', 'entre', 'hasta', 'desde', 'durante', 'mediante', 'según', 'ante', 'bajo', 'contra', 'hacia', 'tras', 'este', 'esta', 'estos', 'estas', 'ese', 'esa', 'estoy', 'está', 'tengo', 'tiene', 'soy', 'es', 'son', 'fue', 'ser', 'estar', 'tener', 'hacer', 'decir', 'ir', 'ver', 'dar', 'saber', 'poder', 'querer', 'pasar', 'deber', 'poner', 'parecer', 'quedar', 'hablar', 'llevar', 'seguir', 'encontrar', 'llamar', 'venir', 'pensar', 'salir', 'volver', 'tomar', 'conocer', 'vivir', 'sentir', 'tratar', 'mirar', 'contar', 'empezar', 'esperar', 'buscar', 'existir', 'entrar', 'trabajar', 'escribir', 'perder', 'entender', 'pedir', 'recibir', 'recordar', 'terminar', 'permitir', 'aparecer', 'conseguir', 'comenzar', 'servir', 'necesitar', 'mantener', 'resultar', 'leer', 'caer', 'cambiar', 'presentar', 'crear', 'abrir', 'considerar', 'ayudar', 'gustar', 'jugar', 'escuchar', 'cumplir', 'ofrecer', 'descubrir', 'intentar', 'usar', 'dejar', 'continuar', 'comprobar', 'construir', 'elegir', 'actuar', 'lograr']);
+  const keywords = currentContent.split(/\s+/).filter(word => word.length > 3 && !stopWords.has(word.toLowerCase())).slice(0, 10);
+  const relatedTerms = ['trabajo', 'familia', 'relación', 'amigo', 'pareja', 'estudio', 'salud', 'ansiedad', 'tristeza', 'enojo', 'miedo', 'alegría', 'problema', 'situación', 'momento', 'día', 'semana', 'tiempo'];
+  const scoredMessages = history.map((msg, index) => {
+    let score = 0;
+    const msgContent = (msg.content || '').toLowerCase();
+    const recencyWeight = 1 - (index / history.length);
+    score += recencyWeight * 2;
+    if (msg.role === 'user') score += 3;
+    if (currentEmotion && msgContent.includes(currentEmotion.toLowerCase())) {
+      score += 5;
+      const msgIntensity = msg.metadata?.context?.emotional?.intensity || 5;
+      if (Math.abs(msgIntensity - currentIntensity) <= 2) score += 2;
+    }
+    const topicStr = typeof currentTopic === 'object' ? currentTopic?.categoria : currentTopic;
+    if (topicStr && msgContent.includes(String(topicStr).toLowerCase())) score += 4;
+    const matchingKeywords = keywords.filter(kw => new RegExp(`\\b${kw}\\b`, 'i').test(msgContent)).length;
+    score += matchingKeywords * 1.5;
+    const matchingTerms = relatedTerms.filter(term => new RegExp(`\\b${term}\\b`, 'i').test(currentContent) && new RegExp(`\\b${term}\\b`, 'i').test(msgContent)).length;
+    score += matchingTerms * 2;
+    if (msgContent.length < 20) score -= 1;
+    if ((currentContent.includes('?') && msgContent.includes('?')) || (currentContent.includes('?') && msg.role === 'assistant')) score += 1.5;
+    return { ...msg, _relevanceScore: score };
+  });
+  const selected = scoredMessages
+    .sort((a, b) => b._relevanceScore - a._relevanceScore)
+    .slice(0, HISTORY_LIMITS.MESSAGES_IN_PROMPT)
+    .sort((a, b) => history.indexOf(a) - history.indexOf(b))
+    .map(({ _relevanceScore, ...msg }) => msg);
+  const lastAssistant = history.filter(m => m.role === 'assistant').pop();
+  if (lastAssistant && !selected.some(m => m === lastAssistant)) {
+    selected.pop();
+    selected.push(lastAssistant);
+    selected.sort((a, b) => history.indexOf(a) - history.indexOf(b));
+  }
+  return selected;
+}
+
+/**
+ * Genera resumen breve del contexto conversacional.
+ */
+export function generateConversationSummary(history, contexto) {
+  if (!history || history.length === 0) return 'Conversación nueva.';
+  const userMessages = history.filter(m => m.role === 'user');
+  const tema = contexto.contextual?.tema;
+  const currentTopic = contexto.emotional?.topic || (typeof tema === 'object' ? tema?.categoria : tema) || 'general';
+  const currentEmotion = contexto.emotional?.mainEmotion || 'neutral';
+  const intensity = contexto.emotional?.intensity || 5;
+  let progress = history.length >= 8 ? 'profundo' : history.length >= 4 ? 'explorando' : 'inicio';
+  const topics = userMessages.map(m => m.content?.toLowerCase() || '').join(' ');
+  const topicWords = topics.split(/\s+/).filter(w => w.length > 4);
+  const topicCounts = {};
+  topicWords.forEach(word => { topicCounts[word] = (topicCounts[word] || 0) + 1; });
+  const repeatedTopics = Object.entries(topicCounts).filter(([, count]) => count >= 2).map(([word]) => word).slice(0, 2);
+  let summary = `${progress}|${currentTopic}|${currentEmotion}(${intensity})`;
+  if (repeatedTopics.length > 0) summary += `|${repeatedTopics.join(',')}`;
+  if (summary.length > 100) summary = summary.substring(0, 97) + '...';
+  return summary;
+}
+
+/**
+ * Genera contexto de largo plazo a partir del perfil (género, temas recurrentes, emociones, etc.).
+ * Usa contexto.profile; si no viene, retorna null.
+ */
+export async function generateLongTermContext(userId, contexto) {
+  try {
+    if (!userId) return null;
+    const userProfile = contexto.profile;
+    if (!userProfile) return null;
+    const contextParts = [];
+    const gender = userProfile.personalInfo?.gender;
+    const pronouns = userProfile.personalInfo?.preferredPronouns;
+    if (gender && gender !== 'prefer_not_to_say' && gender !== null) {
+      const genderMap = { male: 'masculino', female: 'femenino', other: 'otro' };
+      const pronounMap = { 'he/him': 'él', 'she/her': 'ella', 'they/them': 'elle', other: 'otro' };
+      const genderText = genderMap[gender] || gender;
+      const pronounText = pronouns ? pronounMap[pronouns] || pronouns : null;
+      if (pronounText) contextParts.push(`Tratamiento: Usa pronombres ${pronounText} (${genderText}).`);
+      else contextParts.push(`Tratamiento: Género ${genderText}.`);
+    } else {
+      contextParts.push('Tratamiento: Usa lenguaje neutro si no conoces el género. Evita asumir género.');
+    }
+    try {
+      const currentConversationId = contexto.currentConversationId;
+      if (currentConversationId) {
+        const previousConversation = await Conversation.findOne({ userId, _id: { $ne: currentConversationId } }).sort({ updatedAt: -1 }).lean();
+        if (previousConversation) {
+          const lastUserMessage = await Message.findOne({ conversationId: previousConversation._id, role: 'user' }).select('content metadata.context.emotional createdAt').sort({ createdAt: -1 }).lean();
+          if (lastUserMessage?.metadata?.context?.emotional) {
+            const prevEmotion = lastUserMessage.metadata.context.emotional.mainEmotion;
+            const prevIntensity = lastUserMessage.metadata.context.emotional.intensity || 5;
+            const daysAgo = Math.floor((Date.now() - new Date(lastUserMessage.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+            if (daysAgo <= 7 && prevIntensity >= 5 && ['tristeza', 'ansiedad', 'enojo', 'miedo', 'verguenza', 'culpa'].includes(prevEmotion)) {
+              const emotionMap = { tristeza: 'triste', ansiedad: 'ansioso', enojo: 'enojado', miedo: 'asustado', verguenza: 'avergonzado', culpa: 'culpable' };
+              contextParts.push(`Última conversación (hace ${daysAgo} día${daysAgo !== 1 ? 's' : ''}): estaba ${emotionMap[prevEmotion] || prevEmotion} (intensidad ${prevIntensity}/10). Puedes hacer referencia natural si es relevante.`);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[OpenAIPromptBuilder] Error obteniendo conversaciones anteriores:', e.message);
+    }
+    const recurringTopics = [];
+    if (Array.isArray(userProfile.commonTopics)) {
+      userProfile.commonTopics.sort((a, b) => (b.frequency || 0) - (a.frequency || 0)).slice(0, 3).forEach(t => recurringTopics.push(t.topic));
+    }
+    if (Array.isArray(userProfile.patrones?.temas)) {
+      userProfile.patrones.temas.sort((a, b) => (b.frecuencia || 0) - (a.frecuencia || 0)).slice(0, 3).forEach(t => { if (!recurringTopics.includes(t.tema)) recurringTopics.push(t.tema); });
+    }
+    if (recurringTopics.length > 0) contextParts.push(`El usuario frecuentemente menciona: ${recurringTopics.slice(0, 3).join(', ')}.`);
+    const commStyle = userProfile.preferences?.communicationStyle || userProfile.communicationPreferences || 'neutral';
+    if (commStyle !== 'neutral') contextParts.push(`Prefiere un estilo de comunicación: ${commStyle}.`);
+    if (userProfile.metadata?.progresoGeneral > 0) contextParts.push(`Ha mostrado progreso general: ${userProfile.metadata.progresoGeneral}%.`);
+    if (Array.isArray(userProfile.copingStrategies)) {
+      const effective = userProfile.copingStrategies.filter(s => s.effectiveness >= 7 && s.usageCount > 0).sort((a, b) => b.effectiveness - a.effectiveness).slice(0, 2).map(s => s.strategy);
+      if (effective.length > 0) contextParts.push(`Estrategias que le han funcionado bien: ${effective.join(', ')}.`);
+    }
+    if (Array.isArray(userProfile.emotionalPatterns?.predominantEmotions)) {
+      const topEmotions = userProfile.emotionalPatterns.predominantEmotions.sort((a, b) => (b.frequency || 0) - (a.frequency || 0)).slice(0, 2).map(e => e.emotion);
+      if (topEmotions.length > 0) contextParts.push(`Emociones que experimenta frecuentemente: ${topEmotions.join(', ')}.`);
+    }
+    return contextParts.length > 0 ? contextParts.join(' ') : null;
+  } catch (error) {
+    console.error('[OpenAIPromptBuilder] Error generando contexto de largo plazo:', error);
+    return null;
+  }
+}
+
+/**
+ * Genera el array de mensajes de contexto (historial seleccionado + crisis si aplica).
+ */
+export function generarMensajesContexto(contexto) {
+  const messages = [];
+  if (contexto.history && Array.isArray(contexto.history) && contexto.history.length > 0) {
+    const historialRelevante = selectRelevantHistory(contexto.history, {
+      emotional: contexto.emotional,
+      contextual: contexto.contextual,
+      currentMessage: contexto.currentMessage
+    });
+    historialRelevante.forEach(msg => {
+      if (msg.role && msg.content) messages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content });
+    });
+  }
+  if (contexto.memory?.lastInteraction && !messages.some(m => m.content === contexto.memory.lastInteraction)) {
+    messages.push({ role: 'assistant', content: contexto.memory.lastInteraction });
+  }
+  const isCrisis = contexto.emotional?.requiresUrgentCare || contexto.contextual?.intencion?.tipo === MESSAGE_INTENTS.CRISIS || contexto.crisis?.riskLevel;
+  if (isCrisis) {
+    const riskLevel = contexto.crisis?.riskLevel || 'MEDIUM';
+    const country = contexto.crisis?.country || 'GENERAL';
+    const crisisMessage = generateCrisisMessage(riskLevel, country);
+    messages.push({ role: 'system', content: `🚨 SITUACIÓN DE CRISIS DETECTADA (Nivel: ${riskLevel})\n\n${crisisMessage}\n\nIMPORTANTE: Prioriza la seguridad del usuario. Proporciona recursos de emergencia de forma clara y directa.` });
+  }
+  return messages;
+}
+
+/**
+ * Construye el prompt contextualizado completo (systemMessage + contextMessages).
+ * @param {Object} mensaje - Mensaje del usuario (content, userId, conversationId)
+ * @param {Object} contexto - Contexto (emotional, contextual, profile, therapeutic, memory, history, sessionTrends, currentMessage, currentConversationId, crisis)
+ * @returns {Promise<{ systemMessage: string, contextMessages: Array }>}
+ */
+export async function buildContextualizedPrompt(mensaje, contexto) {
+  const timeOfDay = getTimeOfDay();
+  const emotion = contexto.emotional?.mainEmotion || DEFAULT_VALUES.EMOTION;
+  const intensity = contexto.emotional?.intensity || DEFAULT_VALUES.INTENSITY;
+  const phase = contexto.therapeutic?.currentPhase || DEFAULT_VALUES.PHASE;
+  const intent = contexto.contextual?.intencion?.tipo || MESSAGE_INTENTS.EMOTIONAL_SUPPORT;
+  const communicationStyle = contexto.profile?.communicationPreferences || DEFAULT_VALUES.COMMUNICATION_STYLE;
+  const recurringThemes = contexto.memory?.recurringThemes || [];
+  const lastInteraction = contexto.memory?.lastInteraction || 'ninguna';
+  const sessionTrends = contexto.sessionTrends || null;
+  const responseStyle = contexto.profile?.preferences?.responseStyle || 'balanced';
+
+  let systemMessage = buildPersonalizedPrompt({
+    emotion,
+    intensity,
+    phase,
+    intent,
+    communicationStyle,
+    timeOfDay,
+    recurringThemes,
+    lastInteraction,
+    subtype: contexto.emotional?.subtype,
+    topic: contexto.emotional?.topic,
+    sessionTrends,
+    responseStyle,
+    resistance: contexto.contextual?.resistance || null,
+    relapseSigns: contexto.contextual?.relapseSigns || null,
+    implicitNeeds: contexto.contextual?.implicitNeeds || null,
+    strengths: contexto.contextual?.strengths || null,
+    selfEfficacy: contexto.contextual?.selfEfficacy || null,
+    socialSupport: contexto.contextual?.socialSupport || null,
+    cognitiveDistortions: contexto.contextual?.cognitiveDistortions || null,
+    primaryDistortion: contexto.contextual?.primaryDistortion || null,
+    distortionIntervention: contexto.contextual?.distortionIntervention || null
+  });
+
+  const contextMessages = generarMensajesContexto({ ...contexto, currentMessage: mensaje.content });
+  if (contextMessages.length > 0) {
+    const conversationSummary = generateConversationSummary(contextMessages, contexto);
+    const conciseSummary = conversationSummary.length > 100 ? conversationSummary.substring(0, 97) + '...' : conversationSummary;
+    systemMessage += `\n\nCONTEXTO: ${conciseSummary}`;
+    if (contextMessages.length >= 2) systemMessage += '\nRef: Usa referencias naturales cuando sea relevante.';
+  }
+
+  const longTermContext = await generateLongTermContext(mensaje.userId, { ...contexto, currentConversationId: contexto.currentConversationId || mensaje.conversationId });
+  if (longTermContext && longTermContext.length > 0) {
+    const conciseLongTerm = longTermContext.length > 200 ? longTermContext.substring(0, 197) + '...' : longTermContext;
+    systemMessage += `\nMEMORIA: ${conciseLongTerm}`;
+  }
+
+  const onboarding = contexto.profile?.onboardingAnswers;
+  if (onboarding && (onboarding.whatExpectFromApp || onboarding.whatToImproveOrWorkOn || onboarding.typeOfSpecialist)) {
+    const parts = [];
+    if (onboarding.whatExpectFromApp) parts.push(`Qué espera de la app: ${onboarding.whatExpectFromApp}`);
+    if (onboarding.whatToImproveOrWorkOn) parts.push(`Qué le gustaría mejorar o trabajar: ${onboarding.whatToImproveOrWorkOn}`);
+    if (onboarding.typeOfSpecialist) parts.push(`Tipo de apoyo que busca: ${onboarding.typeOfSpecialist}`);
+    if (parts.length > 0) systemMessage += `\n\nINFORMACIÓN QUE EL USUARIO COMPARTIÓ AL INICIO (úsala para personalizar tu tono y enfoque):\n${parts.join('\n')}`;
+  }
+
+  if (contexto.crisis?.riskLevel) {
+    const crisisPrompt = generateCrisisSystemPrompt(contexto.crisis.riskLevel, contexto.crisis.country || 'GENERAL');
+    systemMessage = `${crisisPrompt}\n\n---\n\n${systemMessage}`;
+  }
+
+  return { systemMessage, contextMessages };
+}

@@ -43,6 +43,8 @@ import { VALIDATION_LENGTHS, VALIDATION_REGEX } from '../constants/validation';
 import { colors, globalStyles } from '../styles/globalStyles';
 import { checkServerStatus } from '../utils/networkUtils';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { getApiErrorMessage } from '../utils/apiErrorHandler';
+import { useAuth } from '../context/AuthContext';
 
 // Constantes de animación (usando constantes compartidas)
 const ANIMATION_INITIAL_DELAY = ANIMATION_DELAYS.LONG;
@@ -137,28 +139,6 @@ const validateField = (field, value, formData = {}) => {
   }
 };
 
-// Helper: obtener mensaje de error según tipo
-const getErrorMessage = (error) => {
-  const errorMessage = error.message || error.toString();
-  
-  if (errorMessage.includes('Network request failed')) {
-    return ERROR_MESSAGES.NETWORK_ERROR;
-  }
-  if (errorMessage.includes('already exists') || errorMessage.includes('ya está en uso')) {
-    return ERROR_MESSAGES.ALREADY_EXISTS;
-  }
-  if (errorMessage.includes('Datos inválidos')) {
-    return ERROR_MESSAGES.INVALID_DATA;
-  }
-  if (errorMessage.includes('Demasiados intentos')) {
-    return ERROR_MESSAGES.TOO_MANY_ATTEMPTS;
-  }
-  if (error.response?.data?.message) {
-    return error.response.data.message;
-  }
-  return ERROR_MESSAGES.GENERIC_ERROR;
-};
-
 // Helper: guardar datos de autenticación
 const saveAuthData = async (tokens, user, email) => {
   const itemsToSave = [
@@ -177,6 +157,7 @@ const saveAuthData = async (tokens, user, email) => {
 };
 
 const RegisterScreen = ({ navigation }) => {
+  const { refreshSession } = useAuth();
   // Estado de red
   const { isConnected, isInternetReachable } = useNetworkStatus();
   const isOffline = !isConnected || isInternetReachable === false;
@@ -369,6 +350,7 @@ const RegisterScreen = ({ navigation }) => {
           response.user,
           formData.email
         );
+        await refreshSession();
 
         navigation.reset({
           index: 0,
@@ -380,8 +362,7 @@ const RegisterScreen = ({ navigation }) => {
 
     } catch (error) {
       console.error('Error en registro:', error);
-      const errorMessage = getErrorMessage(error);
-      
+      const errorMessage = getApiErrorMessage(error, { isOffline });
       Alert.alert(
         TEXTS.ERROR_TITLE,
         errorMessage,

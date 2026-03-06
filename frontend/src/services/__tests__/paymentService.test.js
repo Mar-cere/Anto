@@ -28,24 +28,30 @@ jest.mock('../../config/api', () => {
   };
 });
 
-// Mock Linking antes de importar
-const mockLinking = {
-  canOpenURL: jest.fn(),
-  openURL: jest.fn()
-};
-
-jest.mock('react-native/Libraries/Linking/Linking', () => mockLinking);
+// Mock react-native con Linking (paymentService importa Linking desde 'react-native').
+// Definir Linking dentro del factory para que exista cuando Jest aplica el mock.
+jest.mock('react-native', () => ({
+  Platform: { OS: 'android', select: (d) => d?.android },
+  Linking: {
+    canOpenURL: jest.fn(),
+    openURL: jest.fn(),
+  },
+}));
 
 // Importar después de mocks
 import paymentService from '../paymentService';
+import { Linking } from 'react-native';
 
 // Obtener el mock de api después de importar
 const apiModule = require('../../config/api');
 const apiMock = apiModule.default || apiModule.api;
+const mockLinking = Linking;
 
 describe('PaymentService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockLinking.canOpenURL.mockResolvedValue(true);
+    mockLinking.openURL.mockResolvedValue(undefined);
   });
 
   describe('getPlans', () => {

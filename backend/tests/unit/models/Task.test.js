@@ -559,18 +559,17 @@ describe('Task Model', () => {
     });
 
     it('getPendingItems debe filtrar por tipo', async () => {
+      const dueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       const task = new Task({
         userId,
         title: 'Tarea de prueba',
         status: 'pending',
         itemType: 'task',
-        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        dueDate
       });
       await task.save();
 
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      const tasks = await Task.getPendingItems(userId, 'task');
+      const tasks = await Task.getPendingItems(userId, 'task').exec();
       expect(tasks.length).toBeGreaterThan(0);
       expect(tasks[0].itemType).toBe('task');
     });
@@ -588,7 +587,7 @@ describe('Task Model', () => {
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      const tasks = await Task.getPendingItems(userId, null, { category: 'work' });
+      const tasks = await Task.getPendingItems(userId, null, { category: 'work' }).exec();
       expect(tasks.length).toBeGreaterThan(0);
       expect(tasks[0].category).toBe('work');
     });
@@ -606,7 +605,7 @@ describe('Task Model', () => {
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      const tasks = await Task.getPendingItems(userId, null, { priority: 'high' });
+      const tasks = await Task.getPendingItems(userId, null, { priority: 'high' }).exec();
       expect(tasks.length).toBeGreaterThan(0);
       expect(tasks[0].priority).toBe('high');
     });
@@ -617,13 +616,18 @@ describe('Task Model', () => {
         title: 'Tarea vencida',
         status: 'pending',
         itemType: 'task',
-        dueDate: new Date(Date.now() - 24 * 60 * 60 * 1000) // Ayer
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
       });
       await task.save();
+      await Task.updateOne(
+        { _id: task._id },
+        { $set: { dueDate: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+        { runValidators: false }
+      );
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      const overdueTasks = await Task.getOverdueItems(userId);
+      const overdueTasks = await Task.getOverdueItems(userId).exec();
       expect(overdueTasks.length).toBeGreaterThan(0);
     });
 
@@ -633,13 +637,18 @@ describe('Task Model', () => {
         title: 'Tarea vencida pero completada',
         status: 'completed',
         itemType: 'task',
-        dueDate: new Date(Date.now() - 24 * 60 * 60 * 1000)
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
       });
       await task.save();
+      await Task.updateOne(
+        { _id: task._id },
+        { $set: { dueDate: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+        { runValidators: false }
+      );
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      const overdueTasks = await Task.getOverdueItems(userId);
+      const overdueTasks = await Task.getOverdueItems(userId).exec();
       expect(overdueTasks.length).toBe(0);
     });
 
@@ -674,7 +683,8 @@ describe('Task Model', () => {
       const stats = await Task.getStats(userId);
       
       expect(stats).toBeDefined();
-      expect(stats.total).toBeGreaterThan(0);
+      expect(stats.summary).toBeDefined();
+      expect(stats.summary.total).toBeGreaterThan(0);
     });
 
     it('getPendingItems debe filtrar por categoría', async () => {
@@ -689,7 +699,7 @@ describe('Task Model', () => {
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      const tasks = await Task.getPendingItems(userId, null, { category: 'work' });
+      const tasks = await Task.getPendingItems(userId, null, { category: 'work' }).exec();
       expect(tasks.length).toBeGreaterThan(0);
     });
 
@@ -698,13 +708,19 @@ describe('Task Model', () => {
         userId,
         title: 'Tarea vencida',
         status: 'pending',
-        dueDate: new Date(Date.now() - 24 * 60 * 60 * 1000) // Ayer
+        itemType: 'task',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
       });
       await task.save();
+      await Task.updateOne(
+        { _id: task._id },
+        { $set: { dueDate: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+        { runValidators: false }
+      );
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      const overdue = await Task.getOverdueItems(userId);
+      const overdue = await Task.getOverdueItems(userId).exec();
       expect(overdue.length).toBeGreaterThan(0);
     });
 
@@ -712,7 +728,8 @@ describe('Task Model', () => {
       const stats = await Task.getStats(userId);
       
       expect(stats).toBeDefined();
-      expect(stats.total).toBe(0);
+      expect(stats.summary).toBeDefined();
+      expect(stats.summary.total).toBe(0);
     });
 
     it('getStats debe calcular estadísticas correctamente', async () => {
@@ -738,7 +755,8 @@ describe('Task Model', () => {
 
       const stats = await Task.getStats(userId);
       
-      expect(stats.total).toBeGreaterThan(0);
+      expect(stats.summary).toBeDefined();
+      expect(stats.summary.total).toBeGreaterThan(0);
     });
   });
 });

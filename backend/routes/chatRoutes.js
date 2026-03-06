@@ -2,7 +2,6 @@
  * Rutas de Chat - Gestiona conversaciones, mensajes y análisis emocional/contextual
  */
 import express from 'express';
-import rateLimit from 'express-rate-limit';
 import mongoose from 'mongoose';
 import { evaluateSuicideRisk } from '../constants/crisis.js';
 import { HISTORY_LIMITS } from '../constants/openai.js';
@@ -36,77 +35,28 @@ import pushNotificationService from '../services/pushNotificationService.js';
 import sessionEmotionalMemory from '../services/sessionEmotionalMemory.js';
 import therapeuticProtocolService from '../services/therapeuticProtocolService.js';
 import { cursorPaginate } from '../utils/pagination.js';
+import {
+  LIMITE_MENSAJES,
+  VENTANA_CONTEXTO,
+  HISTORIAL_LIMITE,
+  deleteConversationLimiter,
+  patchMessageLimiter,
+  sendMessageLimiter,
+  isValidObjectId,
+  validarConversationId,
+  validarConversacion,
+  detectEmotionalEscalation,
+  detectHelpRejection,
+  detectAbruptToneChange,
+  analyzeMessageFrequency,
+  detectSilenceAfterNegative,
+  shouldShowActionSuggestions,
+  calculateRiskScore,
+  extractRiskFactors,
+  extractProtectiveFactors
+} from './chat/index.js';
 
 const router = express.Router();
-
-// Constantes de configuración
-const LIMITE_MENSAJES = 100; // Aumentado de 50 a 100 para permitir conversaciones más largas
-const VENTANA_CONTEXTO = 20 * 60 * 1000; // 20 minutos en milisegundos (reducido para mejorar velocidad)
-const HISTORIAL_LIMITE = 6; // Número de mensajes para contexto (reducido para mejorar velocidad)
-
-// Rate limiters
-const deleteConversationLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 10,
-  message: 'Demasiadas eliminaciones de conversaciones. Por favor, intente más tarde.',
-  standardHeaders: true,
-  legacyHeaders: false
-});
-
-const patchMessageLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 30,
-  message: 'Demasiadas actualizaciones de mensajes. Por favor, intente más tarde.',
-  standardHeaders: true,
-  legacyHeaders: false
-});
-
-// Helper: validar formato de ObjectId (reutilizable)
-const isValidObjectId = (id) => {
-  return id && mongoose.Types.ObjectId.isValid(id);
-};
-
-// Middleware: validar formato de conversationId
-const validarConversationId = (req, res, next) => {
-  const { conversationId } = req.params;
-  
-  if (!conversationId) {
-    return res.status(400).json({
-      message: 'ID de conversación requerido'
-    });
-  }
-
-  if (!isValidObjectId(conversationId)) {
-    return res.status(400).json({
-      message: 'ID de conversación inválido'
-    });
-  }
-  next();
-};
-
-// Middleware: validar que la conversación existe y pertenece al usuario
-const validarConversacion = async (req, res, next) => {
-  const { conversationId } = req.params;
-  
-  // Asegurar que los IDs sean ObjectIds válidos
-  if (!mongoose.Types.ObjectId.isValid(conversationId) || !mongoose.Types.ObjectId.isValid(req.user._id)) {
-    return res.status(400).json({ message: 'ID de conversación o usuario inválido' });
-  }
-  
-  const conversation = await Conversation.findOne({
-    _id: new mongoose.Types.ObjectId(conversationId),
-    userId: new mongoose.Types.ObjectId(req.user._id)
-  })
-    .select('_id userId')
-    .lean();
-
-  if (!conversation) {
-    return res.status(404).json({ message: 'Conversación no encontrada' });
-  }
-
-  req.conversation = conversation;
-  next();
-};
 
 // Obtener mensajes de una conversación (paginado)
 router.get('/conversations/:conversationId', protect, validarConversationId, validarConversacion, async (req, res) => {
@@ -218,17 +168,6 @@ router.post('/conversations', protect, requireActiveSubscription(true), async (r
       error: error.message
     });
   }
-});
-
-// Rate limiter para envío de mensajes
-const sendMessageLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minuto
-  max: 20, // Máximo 20 mensajes por minuto
-  message: 'Demasiados mensajes enviados. Por favor, espera un momento antes de intentar de nuevo.',
-  standardHeaders: true,
-  legacyHeaders: false,
-  skipSuccessfulRequests: false,
-  skipFailedRequests: false
 });
 
 // Crear nuevo mensaje
@@ -1291,304 +1230,5 @@ router.get('/messages/search', protect, async (req, res) => {
     });
   }
 });
-
-// ========== FUNCIONES HELPER PARA ANÁLISIS DE CONTEXTO ==========
-
-/**
- * Detecta escalada emocional en la conversación
- * @param {Array} conversationHistory - Historial de la conversación
- * @param {Object} currentEmotionalAnalysis - Análisis emocional actual
- * @returns {boolean} true si hay escalada emocional
- */
-function detectEmotionalEscalation(conversationHistory, currentEmotionalAnalysis) {
-  if (!conversationHistory || conversationHistory.length < 2) return false;
-  
-  const recentMessages = conversationHistory
-    .filter(msg => msg.role === 'user' && msg.metadata?.context?.emotional?.intensity)
-    .slice(0, 3)
-    .map(msg => msg.metadata.context.emotional.intensity);
-  
-  if (recentMessages.length < 2) return false;
-  
-  const currentIntensity = currentEmotionalAnalysis?.intensity || 5;
-  const previousIntensity = recentMessages[0] || 5;
-  
-  // Escalada si la intensidad aumenta significativamente
-  return currentIntensity > previousIntensity + 1.5;
-}
-
-/**
- * Detecta si el usuario rechazó ayuda ofrecida
- * @param {Array} conversationHistory - Historial de la conversación
- * @param {string} currentContent - Contenido del mensaje actual
- * @returns {boolean} true si se detecta rechazo de ayuda
- */
-function detectHelpRejection(conversationHistory, currentContent) {
-  const content = currentContent.toLowerCase();
-  const rejectionPatterns = /(?:no.*quiero.*ayuda|no.*necesito.*ayuda|no.*me.*ayudes|déjame.*solo|no.*me.*importa|no.*sirve.*de.*nada)/i;
-  return rejectionPatterns.test(content);
-}
-
-/**
- * Detecta cambio abrupto en el tono de la conversación
- * @param {Array} conversationHistory - Historial de la conversación
- * @param {Object} currentEmotionalAnalysis - Análisis emocional actual
- * @returns {boolean} true si hay cambio abrupto
- */
-function detectAbruptToneChange(conversationHistory, currentEmotionalAnalysis) {
-  if (!conversationHistory || conversationHistory.length < 2) return false;
-  
-  const recentMessages = conversationHistory
-    .filter(msg => msg.role === 'user' && msg.metadata?.context?.emotional?.mainEmotion)
-    .slice(0, 2);
-  
-  if (recentMessages.length < 1) return false;
-  
-  const previousEmotion = recentMessages[0].metadata.context.emotional.mainEmotion;
-  const currentEmotion = currentEmotionalAnalysis?.mainEmotion;
-  
-  // Cambio abrupto si cambia de positiva/neutral a negativa
-  const positiveEmotions = ['alegria', 'esperanza', 'neutral'];
-  const negativeEmotions = ['tristeza', 'ansiedad', 'enojo', 'miedo', 'verguenza', 'culpa'];
-  
-  return positiveEmotions.includes(previousEmotion) && negativeEmotions.includes(currentEmotion);
-}
-
-/**
- * Analiza la frecuencia de mensajes para detectar patrones de ansiedad o aislamiento
- * @param {Array} conversationHistory - Historial de la conversación
- * @param {string} currentContent - Contenido del mensaje actual
- * @returns {Object} Análisis de frecuencia
- */
-function analyzeMessageFrequency(conversationHistory, currentContent) {
-  if (!conversationHistory || conversationHistory.length < 2) {
-    return { veryFrequent: false, frequencyChange: false };
-  }
-
-  const userMessages = conversationHistory.filter(msg => msg.role === 'user');
-  
-  if (userMessages.length < 3) {
-    return { veryFrequent: false, frequencyChange: false };
-  }
-
-  // Calcular tiempo entre mensajes recientes (últimos 5)
-  const recentMessages = userMessages.slice(0, 5);
-  const timeDiffs = [];
-  
-  for (let i = 0; i < recentMessages.length - 1; i++) {
-    const diff = new Date(recentMessages[i].createdAt) - new Date(recentMessages[i + 1].createdAt);
-    timeDiffs.push(diff / (1000 * 60)); // Diferencia en minutos
-  }
-
-  const averageTimeDiff = timeDiffs.reduce((sum, diff) => sum + diff, 0) / timeDiffs.length;
-  
-  // Mensajes muy frecuentes (menos de 2 minutos entre mensajes) pueden indicar ansiedad
-  const veryFrequent = averageTimeDiff < 2;
-  
-  // Cambio en ritmo (comparar últimos 3 vs anteriores 3)
-  if (userMessages.length >= 6) {
-    const recent3 = userMessages.slice(0, 3);
-    const previous3 = userMessages.slice(3, 6);
-    
-    const recentAvg = calculateAverageTimeDiff(recent3);
-    const previousAvg = calculateAverageTimeDiff(previous3);
-    
-    // Cambio significativo si el ritmo cambió más del 50%
-    const frequencyChange = Math.abs(recentAvg - previousAvg) / previousAvg > 0.5;
-    
-    return { veryFrequent, frequencyChange };
-  }
-
-  return { veryFrequent, frequencyChange: false };
-}
-
-/**
- * Determina si se deben mostrar sugerencias de acciones basado en criterios inteligentes
- * @param {Object} emotionalAnalysis - Análisis emocional actual
- * @param {Object} contextualAnalysis - Análisis contextual actual
- * @param {Array} conversationHistory - Historial de la conversación
- * @param {string} userId - ID del usuario
- * @returns {boolean} true si se deben mostrar sugerencias
- */
-function shouldShowActionSuggestions(emotionalAnalysis, contextualAnalysis, conversationHistory, userId) {
-  // CRITERIOS CRÍTICOS: Siempre mostrar sugerencias si se cumplen estos casos
-  
-  // 1. Mostrar si la intensidad emocional es alta (>= 7)
-  const intensity = emotionalAnalysis?.intensity || 5;
-  if (intensity >= 7) {
-    return true;
-  }
-  
-  // 2. Mostrar si hay intención de crisis o urgencia alta
-  if (contextualAnalysis?.intencion?.tipo === 'CRISIS' || 
-      contextualAnalysis?.urgencia === 'alta' ||
-      emotionalAnalysis?.requiresAttention) {
-    return true;
-  }
-  
-  // 3. Mostrar si hay cambio significativo de emoción (de positiva/neutral a negativa)
-  if (conversationHistory && conversationHistory.length >= 2) {
-    const recentUserMessages = conversationHistory
-      .filter(msg => msg.role === 'user' && msg.metadata?.context?.emotional?.mainEmotion)
-      .slice(0, 2);
-    
-    if (recentUserMessages.length >= 1) {
-      const previousEmotion = recentUserMessages[0].metadata.context.emotional.mainEmotion;
-      const currentEmotion = emotionalAnalysis?.mainEmotion;
-      const positiveEmotions = ['alegria', 'esperanza', 'neutral'];
-      const negativeEmotions = ['tristeza', 'ansiedad', 'enojo', 'miedo', 'verguenza', 'culpa'];
-      
-      // Cambio de positiva/neutral a negativa
-      if (positiveEmotions.includes(previousEmotion) && negativeEmotions.includes(currentEmotion)) {
-        return true;
-      }
-    }
-  }
-  
-  // CRITERIOS DE FILTRADO: No mostrar si se cumplen estos casos
-  
-  // 4. No mostrar si el usuario rechazó ayuda recientemente
-  if (conversationHistory && conversationHistory.length > 0) {
-    const recentContent = conversationHistory
-      .filter(msg => msg.role === 'user')
-      .slice(0, 3)
-      .map(msg => msg.content?.toLowerCase() || '')
-      .join(' ');
-    
-    const rejectionPatterns = /(?:no.*quiero.*ayuda|no.*necesito.*ayuda|no.*me.*ayudes|déjame.*solo|no.*me.*importa|no.*sirve.*de.*nada|no.*gracias)/i;
-    if (rejectionPatterns.test(recentContent)) {
-      return false;
-    }
-  }
-  
-  // 5. Mostrar solo cada 3-4 mensajes aproximadamente (evitar repetición excesiva)
-  // Esto solo aplica si no se cumplieron los criterios críticos arriba
-  if (conversationHistory && conversationHistory.length > 0) {
-    const userMessages = conversationHistory.filter(msg => msg.role === 'user');
-    const totalUserMessages = userMessages.length;
-    
-    // Mostrar sugerencias aproximadamente cada 3-4 mensajes
-    // Usar un rango para evitar ser demasiado predecible
-    const shouldShowByCount = totalUserMessages > 0 && 
-      (totalUserMessages % 3 === 0 || totalUserMessages % 4 === 0);
-    
-    if (!shouldShowByCount) {
-      return false;
-    }
-  }
-  
-  // 6. Por defecto, no mostrar (evitar repetición)
-  return false;
-}
-
-/**
- * Calcula el tiempo promedio entre mensajes
- * @param {Array} messages - Array de mensajes
- * @returns {number} Tiempo promedio en minutos
- */
-function calculateAverageTimeDiff(messages) {
-  if (messages.length < 2) return 0;
-  
-  const diffs = [];
-  for (let i = 0; i < messages.length - 1; i++) {
-    const diff = new Date(messages[i].createdAt) - new Date(messages[i + 1].createdAt);
-    diffs.push(diff / (1000 * 60));
-  }
-  
-  return diffs.reduce((sum, diff) => sum + diff, 0) / diffs.length;
-}
-
-/**
- * Detecta silencio prolongado después de un mensaje negativo
- * @param {Array} conversationHistory - Historial de la conversación
- * @returns {boolean} true si hay silencio después de mensaje negativo
- */
-function detectSilenceAfterNegative(conversationHistory) {
-  if (!conversationHistory || conversationHistory.length < 2) return false;
-  
-  // Buscar el último mensaje del usuario con emoción negativa
-  const lastUserMessage = conversationHistory.find(msg => 
-    msg.role === 'user' && 
-    msg.metadata?.context?.emotional?.mainEmotion &&
-    ['tristeza', 'ansiedad', 'enojo', 'miedo', 'verguenza', 'culpa'].includes(
-      msg.metadata.context.emotional.mainEmotion
-    )
-  );
-  
-  if (!lastUserMessage) return false;
-  
-  // Verificar si hay mensajes después (del asistente o del usuario)
-  const messagesAfter = conversationHistory.filter(msg => 
-    new Date(msg.createdAt) > new Date(lastUserMessage.createdAt)
-  );
-  
-  // Si no hay mensajes después y pasaron más de 24 horas, hay silencio
-  if (messagesAfter.length === 0) {
-    const hoursSince = (Date.now() - new Date(lastUserMessage.createdAt).getTime()) / (1000 * 60 * 60);
-    return hoursSince > 24;
-  }
-  
-  return false;
-}
-
-/**
- * Calcula el score de riesgo (función auxiliar para registro)
- * @param {Object} emotionalAnalysis - Análisis emocional
- * @param {Object} contextualAnalysis - Análisis contextual
- * @param {string} content - Contenido del mensaje
- * @param {Object} options - Opciones adicionales
- * @returns {number} Score de riesgo
- */
-function calculateRiskScore(emotionalAnalysis, contextualAnalysis, content, options) {
-  // Esta función replica la lógica de evaluateSuicideRisk pero retorna el score
-  // Por simplicidad, usamos una versión simplificada
-  let score = 0;
-  
-  if (contextualAnalysis?.intencion?.tipo === 'CRISIS') score += 3;
-  if (/suicid/i.test(content)) score += 4;
-  if (emotionalAnalysis?.intensity >= 9) score += 2;
-  if (options?.trendAnalysis?.riskAdjustment) score += options.trendAnalysis.riskAdjustment;
-  if (options?.crisisHistory?.recentCrises > 0) score += 2;
-  
-  return score;
-}
-
-/**
- * Extrae los factores de riesgo que contribuyeron al score
- * @param {Object} emotionalAnalysis - Análisis emocional
- * @param {Object} contextualAnalysis - Análisis contextual
- * @param {string} content - Contenido del mensaje
- * @param {Object} options - Opciones adicionales
- * @returns {Array<string>} Array de factores
- */
-function extractRiskFactors(emotionalAnalysis, contextualAnalysis, content, options) {
-  const factors = [];
-  
-  if (contextualAnalysis?.intencion?.tipo === 'CRISIS') factors.push('Intención de crisis');
-  if (/suicid/i.test(content)) factors.push('Ideación suicida');
-  if (emotionalAnalysis?.intensity >= 9) factors.push('Intensidad emocional muy alta');
-  if (options?.trendAnalysis?.trends?.rapidDecline) factors.push('Deterioro rápido');
-  if (options?.crisisHistory?.recentCrises > 0) factors.push('Crisis recientes');
-  if (options?.conversationContext?.emotionalEscalation) factors.push('Escalada emocional');
-  
-  return factors;
-}
-
-/**
- * Extrae los factores protectores detectados
- * @param {Object} emotionalAnalysis - Análisis emocional
- * @param {string} content - Contenido del mensaje
- * @returns {Array<string>} Array de factores protectores
- */
-function extractProtectiveFactors(emotionalAnalysis, content) {
-  const factors = [];
-  
-  if (/ayuda|hablar|compartir/i.test(content)) factors.push('Búsqueda de ayuda');
-  if (emotionalAnalysis?.secondary?.includes('esperanza')) factors.push('Esperanza detectada');
-  if (/mejor|mejorando|progreso/i.test(content)) factors.push('Expresiones de mejora');
-  if (/familia|amigos|apoyo/i.test(content)) factors.push('Menciones de apoyo social');
-  
-  return factors;
-}
 
 export default router;

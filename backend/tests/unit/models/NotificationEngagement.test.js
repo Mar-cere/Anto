@@ -122,11 +122,13 @@ describe('NotificationEngagement Model', () => {
 
     it('getOverallStats debe calcular estadísticas con engagements', async () => {
       const userId = new mongoose.Types.ObjectId();
+      const now = new Date();
       const engagement1 = new NotificationEngagement({
         userId,
         notificationType: 'reminder',
         pushToken: 'ExponentPushToken[test1]',
-        status: 'delivered'
+        status: 'delivered',
+        sentAt: now
       });
       await engagement1.save();
 
@@ -134,7 +136,8 @@ describe('NotificationEngagement Model', () => {
         userId,
         notificationType: 'reminder',
         pushToken: 'ExponentPushToken[test2]',
-        status: 'opened'
+        status: 'opened',
+        sentAt: now
       });
       await engagement2.save();
 

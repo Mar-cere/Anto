@@ -240,8 +240,11 @@ export const api = {
         } catch (e) {
           errorData = { message: `Error del servidor: ${response.status} - ${response.statusText}` };
         }
-        console.error(`[API] GET ${endpoint} - Error:`, errorData.message || response.status);
-        throw new Error(errorData.message || `Error del servidor: ${response.status} - ${response.statusText}`);
+        const errorMessage = errorData.error || errorData.message || `Error del servidor: ${response.status}`;
+        const err = new Error(errorMessage);
+        err.response = { status: response.status, data: errorData };
+        console.error(`[API] GET ${endpoint} - Error:`, errorMessage);
+        throw err;
       }
 
       // Para 304, devolver null o un objeto vacío (el cliente debe usar su caché)
@@ -462,5 +465,9 @@ const checkStoredData = async () => {
     return { token: null, userData: null };
   }
 };
+
+// Re-export del manejador centralizado de errores (mensajes por código HTTP / red)
+export { getApiErrorMessage as handleApiError } from '../utils/apiErrorHandler';
+export { getApiErrorMessage, isNetworkError, isAuthError, isRateLimitError, isServerError, API_ERROR_MESSAGES, HTTP_STATUS } from '../utils/apiErrorHandler';
 
 export default api;

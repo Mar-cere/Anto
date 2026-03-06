@@ -129,7 +129,7 @@ describe('chatService', () => {
     });
 
     it('debe fallar sin conversación activa', async () => {
-      await expect(sendMessage('Hello')).rejects.toThrow('No hay conversación activa');
+      await expect(sendMessage('Hello')).rejects.toThrow('No se pudo crear una conversación');
     });
 
     it('debe incluir metadata del dispositivo', async () => {

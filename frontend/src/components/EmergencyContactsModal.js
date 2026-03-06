@@ -24,6 +24,7 @@ import {
   View
 } from 'react-native';
 import { api, ENDPOINTS } from '../config/api';
+import { getApiErrorMessage } from '../utils/apiErrorHandler';
 import { colors } from '../styles/globalStyles';
 
 // Constantes de validación
@@ -228,11 +229,11 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
       ]);
     } catch (error) {
       console.error('Error guardando contactos:', error);
-      const errorMessage = error.message || TEXTS.ADD_ERROR;
-      
-      if (errorMessage.includes('límite')) {
+      const errorMessage = getApiErrorMessage(error) || TEXTS.ADD_ERROR;
+      const msg = (errorMessage || '').toLowerCase();
+      if (msg.includes('límite') || msg.includes('máximo')) {
         Alert.alert('Error', TEXTS.MAX_CONTACTS_REACHED);
-      } else if (errorMessage.includes('email')) {
+      } else if (msg.includes('email') || msg.includes('duplicado')) {
         Alert.alert('Error', TEXTS.DUPLICATE_EMAIL);
       } else {
         Alert.alert('Error', errorMessage);

@@ -28,12 +28,14 @@ import { colors } from '../styles/globalStyles';
 
 const { width, height } = Dimensions.get('window');
 
-// Constantes de AsyncStorage
-const STORAGE_KEYS = {
-  TUTORIAL_COMPLETED: 'tutorialCompleted',
-  // Helper para generar clave específica por usuario
-  getTutorialKey: (userId) => `tutorialCompleted_${userId}`,
-};
+import {
+  getTutorialStorageKey,
+  isTutorialCompleted as isTutorialCompletedStorage,
+  resetTutorial as resetTutorialStorage,
+} from '../utils/tutorialStorage';
+
+export const isTutorialCompleted = isTutorialCompletedStorage;
+export const resetTutorial = resetTutorialStorage;
 
 // Constantes de textos
 const TEXTS = {
@@ -266,7 +268,7 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
 
   const markTutorialAsCompleted = async (userId) => {
     try {
-      const key = userId ? STORAGE_KEYS.getTutorialKey(userId) : STORAGE_KEYS.TUTORIAL_COMPLETED;
+      const key = getTutorialStorageKey(userId);
       await AsyncStorage.setItem(key, 'true');
     } catch (error) {
       console.error('Error guardando estado del tutorial:', error);
@@ -689,28 +691,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
 });
-
-// Función helper para verificar si el tutorial ya fue completado
-export const isTutorialCompleted = async (userId = null) => {
-  try {
-    const key = userId ? STORAGE_KEYS.getTutorialKey(userId) : STORAGE_KEYS.TUTORIAL_COMPLETED;
-    const completed = await AsyncStorage.getItem(key);
-    return completed === 'true';
-  } catch (error) {
-    console.error('Error verificando estado del tutorial:', error);
-    return false;
-  }
-};
-
-// Función helper para resetear el tutorial (útil para testing)
-export const resetTutorial = async (userId = null) => {
-  try {
-    const key = userId ? STORAGE_KEYS.getTutorialKey(userId) : STORAGE_KEYS.TUTORIAL_COMPLETED;
-    await AsyncStorage.removeItem(key);
-  } catch (error) {
-    console.error('Error reseteando tutorial:', error);
-  }
-};
 
 export default OnboardingTutorial;
 

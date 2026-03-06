@@ -1,81 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="37" failures="0" errors="0" time="0.46">
-  <testsuite name="User Routes" errors="0" failures="0" skipped="0" timestamp="2026-02-18T20:25:00" time="0.374" tests="20">
-    <testcase classname="User Routes GET /api/users/me debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me debe rechazar consulta sin autenticación" time="0.009">
+<testsuites name="jest tests" tests="8" failures="3" errors="0" time="0.528">
+  <testsuite name="CrisisFollowUpService" errors="0" failures="3" skipped="0" timestamp="2026-03-06T14:12:06" time="0.508" tests="8">
+    <testcase classname="CrisisFollowUpService Métodos del servicio debe tener método scheduleFollowUps" name="CrisisFollowUpService Métodos del servicio debe tener método scheduleFollowUps" time="0.001">
     </testcase>
-    <testcase classname="User Routes PUT /api/users/me debe rechazar actualización sin autenticación" name="User Routes PUT /api/users/me debe rechazar actualización sin autenticación" time="0.005">
+    <testcase classname="CrisisFollowUpService Métodos del servicio debe tener método processPendingFollowUps" name="CrisisFollowUpService Métodos del servicio debe tener método processPendingFollowUps" time="0">
     </testcase>
-    <testcase classname="User Routes PUT /api/users/me/password debe rechazar cambio de contraseña sin autenticación" name="User Routes PUT /api/users/me/password debe rechazar cambio de contraseña sin autenticación" time="0.002">
+    <testcase classname="CrisisFollowUpService Métodos del servicio debe tener constantes de intervalos" name="CrisisFollowUpService Métodos del servicio debe tener constantes de intervalos" time="0">
     </testcase>
-    <testcase classname="User Routes PUT /api/users/me/password debe rechazar cambio sin contraseña actual" name="User Routes PUT /api/users/me/password debe rechazar cambio sin contraseña actual" time="0.001">
+    <testcase classname="CrisisFollowUpService scheduleFollowUps debe retornar error si el evento no existe" name="CrisisFollowUpService scheduleFollowUps debe retornar error si el evento no existe" time="0.005">
     </testcase>
-    <testcase classname="User Routes GET /api/users/me/subscription debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/subscription debe rechazar consulta sin autenticación" time="0.001">
+    <testcase classname="CrisisFollowUpService scheduleFollowUps debe programar seguimiento para nivel HIGH con intervalo de 12 horas" name="CrisisFollowUpService scheduleFollowUps debe programar seguimiento para nivel HIGH con intervalo de 12 horas" time="0.002">
+      <failure>Error: expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+Expected: 12
+
+Number of calls: 0
+    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/unit/services/crisisFollowUpService.test.js:98:36)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
     </testcase>
-    <testcase classname="User Routes GET /api/users/me/stats debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/stats debe rechazar consulta sin autenticación" time="0.001">
+    <testcase classname="CrisisFollowUpService scheduleFollowUps debe programar seguimiento para nivel MEDIUM con intervalo de 24 horas" name="CrisisFollowUpService scheduleFollowUps debe programar seguimiento para nivel MEDIUM con intervalo de 24 horas" time="0.001">
+      <failure>Error: expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+Expected: 24
+
+Number of calls: 0
+    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/unit/services/crisisFollowUpService.test.js:116:36)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
     </testcase>
-    <testcase classname="User Routes DELETE /api/users/me debe rechazar eliminación sin autenticación" name="User Routes DELETE /api/users/me debe rechazar eliminación sin autenticación" time="0.001">
+    <testcase classname="CrisisFollowUpService scheduleFollowUps debe manejar errores correctamente" name="CrisisFollowUpService scheduleFollowUps debe manejar errores correctamente" time="0.002">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: &quot;Database error&quot;
+Received: &quot;Evento de crisis no encontrado&quot;
+    at Object.&lt;anonymous&gt; (/Users/marceloull/Documents/Anto/backend/tests/unit/services/crisisFollowUpService.test.js:128:29)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
     </testcase>
-    <testcase classname="User Routes GET /api/users/me/emergency-contacts debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/emergency-contacts debe rechazar consulta sin autenticación" time="0.001">
-    </testcase>
-    <testcase classname="User Routes POST /api/users/me/emergency-contacts debe rechazar creación sin autenticación" name="User Routes POST /api/users/me/emergency-contacts debe rechazar creación sin autenticación" time="0.002">
-    </testcase>
-    <testcase classname="User Routes POST /api/users/me/emergency-contacts debe rechazar creación sin datos requeridos" name="User Routes POST /api/users/me/emergency-contacts debe rechazar creación sin datos requeridos" time="0.001">
-    </testcase>
-    <testcase classname="User Routes PUT /api/users/me/emergency-contacts/:contactId debe rechazar actualización sin autenticación" name="User Routes PUT /api/users/me/emergency-contacts/:contactId debe rechazar actualización sin autenticación" time="0">
-    </testcase>
-    <testcase classname="User Routes DELETE /api/users/me/emergency-contacts/:contactId debe rechazar eliminación sin autenticación" name="User Routes DELETE /api/users/me/emergency-contacts/:contactId debe rechazar eliminación sin autenticación" time="0">
-    </testcase>
-    <testcase classname="User Routes PATCH /api/users/me/emergency-contacts/:contactId/toggle debe rechazar toggle sin autenticación" name="User Routes PATCH /api/users/me/emergency-contacts/:contactId/toggle debe rechazar toggle sin autenticación" time="0.001">
-    </testcase>
-    <testcase classname="User Routes POST /api/users/me/emergency-contacts/:contactId/test debe rechazar test sin autenticación" name="User Routes POST /api/users/me/emergency-contacts/:contactId/test debe rechazar test sin autenticación" time="0.001">
-    </testcase>
-    <testcase classname="User Routes POST /api/users/me/emergency-contacts/test-alert debe rechazar test sin autenticación" name="User Routes POST /api/users/me/emergency-contacts/test-alert debe rechazar test sin autenticación" time="0">
-    </testcase>
-    <testcase classname="User Routes POST /api/users/me/emergency-contacts/:contactId/test-whatsapp debe rechazar test sin autenticación" name="User Routes POST /api/users/me/emergency-contacts/:contactId/test-whatsapp debe rechazar test sin autenticación" time="0.001">
-    </testcase>
-    <testcase classname="User Routes GET /api/users/me/emergency-alerts debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/emergency-alerts debe rechazar consulta sin autenticación" time="0.001">
-    </testcase>
-    <testcase classname="User Routes GET /api/users/me/emergency-alerts/stats debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/emergency-alerts/stats debe rechazar consulta sin autenticación" time="0">
-    </testcase>
-    <testcase classname="User Routes GET /api/users/me/emergency-alerts/patterns debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/emergency-alerts/patterns debe rechazar consulta sin autenticación" time="0">
-    </testcase>
-    <testcase classname="User Routes GET /api/users/me/whatsapp-message-status/:messageSid debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/whatsapp-message-status/:messageSid debe rechazar consulta sin autenticación" time="0.001">
-    </testcase>
-  </testsuite>
-  <testsuite name="CacheService" errors="0" failures="0" skipped="0" timestamp="2026-02-18T20:25:00" time="0.072" tests="17">
-    <testcase classname="CacheService generateKey debe generar clave simple con string" name="CacheService generateKey debe generar clave simple con string" time="0.001">
-    </testcase>
-    <testcase classname="CacheService generateKey debe generar clave con objeto usando base64" name="CacheService generateKey debe generar clave con objeto usando base64" time="0">
-    </testcase>
-    <testcase classname="CacheService generateKey debe generar claves diferentes para objetos diferentes" name="CacheService generateKey debe generar claves diferentes para objetos diferentes" time="0.001">
-    </testcase>
-    <testcase classname="CacheService get y set (caché en memoria) debe guardar y recuperar un valor" name="CacheService get y set (caché en memoria) debe guardar y recuperar un valor" time="0">
-    </testcase>
-    <testcase classname="CacheService get y set (caché en memoria) debe retornar null para clave que no existe" name="CacheService get y set (caché en memoria) debe retornar null para clave que no existe" time="0">
-    </testcase>
-    <testcase classname="CacheService get y set (caché en memoria) debe expirar valores después del TTL" name="CacheService get y set (caché en memoria) debe expirar valores después del TTL" time="0.011">
-    </testcase>
-    <testcase classname="CacheService get y set (caché en memoria) debe mantener valores dentro del TTL" name="CacheService get y set (caché en memoria) debe mantener valores dentro del TTL" time="0.001">
-    </testcase>
-    <testcase classname="CacheService delete debe eliminar un valor del caché" name="CacheService delete debe eliminar un valor del caché" time="0">
-    </testcase>
-    <testcase classname="CacheService delete debe manejar eliminación de clave que no existe" name="CacheService delete debe manejar eliminación de clave que no existe" time="0">
-    </testcase>
-    <testcase classname="CacheService clear debe limpiar todo el caché" name="CacheService clear debe limpiar todo el caché" time="0">
-    </testcase>
-    <testcase classname="CacheService deletePattern debe eliminar claves que coincidan con el patrón" name="CacheService deletePattern debe eliminar claves que coincidan con el patrón" time="0.001">
-    </testcase>
-    <testcase classname="CacheService invalidateUserCache debe invalidar todas las claves de caché de un usuario" name="CacheService invalidateUserCache debe invalidar todas las claves de caché de un usuario" time="0">
-    </testcase>
-    <testcase classname="CacheService getStats debe retornar estadísticas del caché en memoria" name="CacheService getStats debe retornar estadísticas del caché en memoria" time="0">
-    </testcase>
-    <testcase classname="CacheService getOrSet debe retornar valor del caché si existe" name="CacheService getOrSet debe retornar valor del caché si existe" time="0">
-    </testcase>
-    <testcase classname="CacheService getOrSet debe ejecutar función y guardar resultado si no existe en caché" name="CacheService getOrSet debe ejecutar función y guardar resultado si no existe en caché" time="0.001">
-    </testcase>
-    <testcase classname="CacheService getOrSet debe ejecutar función nuevamente si el valor expiró" name="CacheService getOrSet debe ejecutar función nuevamente si el valor expiró" time="0.011">
-    </testcase>
-    <testcase classname="CacheService cleanExpired debe limpiar entradas expiradas del caché" name="CacheService cleanExpired debe limpiar entradas expiradas del caché" time="0.011">
+    <testcase classname="CrisisFollowUpService processPendingFollowUps debe procesar seguimientos pendientes" name="CrisisFollowUpService processPendingFollowUps debe procesar seguimientos pendientes" time="0.008">
     </testcase>
   </testsuite>
 </testsuites>

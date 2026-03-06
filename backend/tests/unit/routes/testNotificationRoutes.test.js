@@ -7,6 +7,7 @@
 import { jest } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
+import jwt from 'jsonwebtoken';
 
 // Mock dependencies antes de importar
 const mockUserFindById = jest.fn();
@@ -28,18 +29,18 @@ jest.mock('../../../services/pushNotificationService.js', () => ({
   default: mockPushNotificationService
 }));
 
-jest.mock('../../../middleware/auth.js', () => ({
-  authenticateToken: (req, res, next) => {
-    req.user = { _id: 'test-user-id' };
-    next();
-  }
-}));
-
 import testNotificationRoutes from '../../../routes/testNotificationRoutes.js';
 
 const app = express();
 app.use(express.json());
-app.use('/api/notifications/test', testNotificationRoutes);
+app.use('/api/notifications', testNotificationRoutes);
+
+const JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key-for-jwt-signing-min-32-chars';
+const authToken = jwt.sign(
+  { userId: 'test-user-id' },
+  JWT_SECRET,
+  { expiresIn: '1h' }
+);
 
 describe('TestNotificationRoutes', () => {
   beforeEach(() => {
@@ -61,6 +62,7 @@ describe('TestNotificationRoutes', () => {
 
       const response = await request(app)
         .post('/api/notifications/test/crisis-warning')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({});
 
       expect(response.status).toBe(200);
@@ -79,6 +81,7 @@ describe('TestNotificationRoutes', () => {
 
       const response = await request(app)
         .post('/api/notifications/test/crisis-warning')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({});
 
       expect(response.status).toBe(400);
@@ -91,6 +94,7 @@ describe('TestNotificationRoutes', () => {
 
       const response = await request(app)
         .post('/api/notifications/test/crisis-warning')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({});
 
       expect(response.status).toBe(400);
@@ -111,6 +115,7 @@ describe('TestNotificationRoutes', () => {
 
       const response = await request(app)
         .post('/api/notifications/test/crisis-warning')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({});
 
       expect(response.status).toBe(500);
@@ -133,6 +138,7 @@ describe('TestNotificationRoutes', () => {
 
       const response = await request(app)
         .post('/api/notifications/test/crisis-medium')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({});
 
       expect(response.status).toBe(200);
@@ -151,6 +157,7 @@ describe('TestNotificationRoutes', () => {
 
       const response = await request(app)
         .post('/api/notifications/test/crisis-medium')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({});
 
       expect(response.status).toBe(400);
@@ -173,6 +180,7 @@ describe('TestNotificationRoutes', () => {
 
       const response = await request(app)
         .post('/api/notifications/test/followup')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({});
 
       expect(response.status).toBe(200);
@@ -191,6 +199,7 @@ describe('TestNotificationRoutes', () => {
 
       const response = await request(app)
         .post('/api/notifications/test/followup')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({});
 
       expect(response.status).toBe(400);
@@ -202,6 +211,7 @@ describe('TestNotificationRoutes', () => {
 
       const response = await request(app)
         .post('/api/notifications/test/followup')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({});
 
       expect(response.status).toBe(500);

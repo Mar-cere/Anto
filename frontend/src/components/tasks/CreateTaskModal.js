@@ -16,6 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
+import { getApiErrorMessage } from '../../utils/apiErrorHandler';
 
 const CreateTaskModal = ({
   visible,
@@ -162,7 +163,7 @@ const CreateTaskModal = ({
     } catch (error) {
       console.error('Error en handleSubmit:', error);
       setIsSubmitting(false);
-      Alert.alert('Error', error.message || 'Error al crear la tarea');
+      Alert.alert('Error', getApiErrorMessage(error) || 'Error al crear la tarea');
     }
   }, [validateForm, formData, notificationEnabled, isTask, onSubmit]);
 

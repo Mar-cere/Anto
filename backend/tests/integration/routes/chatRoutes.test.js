@@ -33,6 +33,7 @@ const createUserAndToken = async () => {
     ...uniqueUser,
     password: hash,
     salt,
+    emailVerified: true,
     preferences: {
       theme: 'light',
       notifications: true,
@@ -141,41 +142,31 @@ describe('Chat Routes', () => {
 
   describe('GET /api/chat/conversations/:conversationId', () => {
     it('debe obtener mensajes de una conversación', async () => {
-      // Crear la conversación en el mismo test
       const conversation = await Conversation.create({
         userId: testUser._id,
         title: 'Test Conversation',
         status: 'active',
       });
-      const conversationId = conversation._id.toString();
+      const conversationId = conversation._id;
 
-      // Esperar un momento para que se guarde la conversación
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 200));
 
-      // Verificar que la conversación se guardó correctamente
-      const savedConversation = await Conversation.findById(conversationId);
-      if (!savedConversation) {
-        throw new Error('Conversación no se guardó correctamente');
-      }
-
-      // Crear algunos mensajes
       await Message.create([
         {
-          conversationId: conversationId,
+          conversationId,
           userId: testUser._id,
           role: 'user',
           content: 'Hello',
         },
         {
-          conversationId: conversationId,
+          conversationId,
           userId: testUser._id,
           role: 'assistant',
           content: 'Hi there!',
         },
       ]);
 
-      // Esperar un momento para que se guarden los mensajes
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       const response = await request(app)
         .get(`/api/chat/conversations/${conversationId}`)

@@ -87,9 +87,10 @@ describe('Payment Routes', () => {
 
       expect(response.body).toHaveProperty('success', true);
       expect(response.body).toHaveProperty('plans');
-      expect(response.body.plans).toHaveProperty('weekly');
+      // La API expone planes: monthly, quarterly, semestral, yearly (sin weekly)
       expect(response.body.plans).toHaveProperty('monthly');
       expect(response.body.plans).toHaveProperty('yearly');
+      expect(typeof response.body.plans).toBe('object');
     });
 
     it('no debe requerir autenticación', async () => {

@@ -27,10 +27,12 @@ import TaskItem from '../components/tasks/TaskItem';
 import CreateTaskModal from '../components/tasks/CreateTaskModal';
 import { SkeletonCard } from '../components/Skeleton';
 import { api, ENDPOINTS } from '../config/api';
+import { ROUTES } from '../constants/routes';
 import { scheduleTaskNotification, cancelTaskNotifications } from '../utils/notifications';
 import { useToast } from '../context/ToastContext';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { getApiErrorMessage, isAuthError } from '../utils/apiErrorHandler';
 import { colors } from '../styles/globalStyles';
-import { ROUTES } from '../constants/routes';
 
 // Constantes de prioridad
 const PRIORITY_VALUES = {
@@ -153,6 +155,8 @@ const INITIAL_STATE = {
 };
 
 const TaskScreen = ({ route }) => {
+  const { isConnected, isInternetReachable } = useNetworkStatus();
+  const isOffline = !isConnected || isInternetReachable === false;
   const [state, setState] = useState(INITIAL_STATE);
   const [formData, setFormData] = useState(DEFAULT_FORM_DATA);
   const navigation = useNavigation();
@@ -193,14 +197,13 @@ const TaskScreen = ({ route }) => {
       }));
     } catch (error) {
       console.error('Error cargando tareas:', error);
-      setState(prev => ({ 
-        ...prev, 
-        loading: false, 
+      setState(prev => ({
+        ...prev,
+        loading: false,
         refreshing: false,
-        error: error.message || TEXTS.ERROR_LOAD
+        error: getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_LOAD
       }));
-
-      if (error.message?.includes('401') || error.message?.includes('403')) {
+      if (isAuthError(error)) {
         Alert.alert(TEXTS.SESSION_EXPIRED, TEXTS.SESSION_EXPIRED_MESSAGE);
         await AsyncStorage.removeItem('userToken');
         navigation.reset({
@@ -208,10 +211,10 @@ const TaskScreen = ({ route }) => {
           routes: [{ name: ROUTES.SIGN_IN }],
         });
       } else {
-        Alert.alert(TEXTS.ERROR_CREATE, TEXTS.ERROR_LOAD_ITEMS);
+        Alert.alert(TEXTS.ERROR_CREATE, getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_LOAD_ITEMS);
       }
     }
-  }, [navigation]);
+  }, [navigation, isOffline]);
 
   // Recargar cuando la pantalla se enfoca
   useFocusEffect(
@@ -260,9 +263,9 @@ const TaskScreen = ({ route }) => {
       });
     } catch (error) {
       console.error('Error creando tarea:', error);
-      const errorMessage = error.errors?.length > 0 
+      const errorMessage = error.errors?.length > 0
         ? `${TEXTS.INVALID_DATA} ${error.errors.join(', ')}`
-        : error.message || TEXTS.ERROR_CREATE_TASK;
+        : getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_CREATE_TASK;
       Alert.alert(TEXTS.ERROR_CREATE, errorMessage);
     }
   };
@@ -303,13 +306,13 @@ const TaskScreen = ({ route }) => {
           await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (error) {
           console.error('Error al eliminar item completado:', error);
-          Alert.alert(TEXTS.ERROR_DELETE, TEXTS.ERROR_DELETE_MESSAGE);
+          Alert.alert(TEXTS.ERROR_DELETE, getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_DELETE_MESSAGE);
         }
       }, DELETE_DELAY);
-      
+
     } catch (error) {
       console.error('Error al completar item:', error);
-      Alert.alert(TEXTS.ERROR_UPDATE, error.message || TEXTS.ERROR_UPDATE_MESSAGE);
+      Alert.alert(TEXTS.ERROR_UPDATE, getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_UPDATE_MESSAGE);
     }
   };
 
@@ -336,7 +339,7 @@ const TaskScreen = ({ route }) => {
               await cancelTaskNotifications(id);
             } catch (error) {
               console.error('Error eliminando tarea:', error);
-              Alert.alert(TEXTS.ERROR_DELETE, error.message || TEXTS.ERROR_DELETE_TASK);
+              Alert.alert(TEXTS.ERROR_DELETE, getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_DELETE_TASK);
             }
           }
         }

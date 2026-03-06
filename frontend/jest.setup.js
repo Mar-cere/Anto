@@ -1,5 +1,15 @@
-// Mock Platform primero, antes de cualquier import
+// Mock react-native con componentes mínimos para que módulos que usan View/Text/StyleSheet carguen
+const Mock = (props) => props.children ?? null;
 jest.mock('react-native', () => ({
+  View: Mock,
+  Text: Mock,
+  TouchableOpacity: Mock,
+  ScrollView: Mock,
+  Modal: Mock,
+  ActivityIndicator: Mock,
+  StyleSheet: { create: (s) => s, flatten: (x) => x },
+  Alert: { alert: jest.fn() },
+  Linking: { openURL: jest.fn().mockResolvedValue(undefined), canOpenURL: jest.fn().mockResolvedValue(true) },
   Platform: {
     OS: 'ios',
     select: jest.fn((dict) => dict.ios),

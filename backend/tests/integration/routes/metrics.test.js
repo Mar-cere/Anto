@@ -41,6 +41,8 @@ describe('Metrics Routes', () => {
       ...uniqueUser,
       password: hash,
       salt,
+      role: 'admin', // Requerido para GET /system y GET /health
+      emailVerified: true,
       preferences: {
         theme: 'light',
         notifications: true,
@@ -60,7 +62,7 @@ describe('Metrics Routes', () => {
     });
 
     authToken = jwt.sign(
-      { userId: testUser._id.toString() },
+      { userId: testUser._id.toString(), role: 'admin' },
       process.env.JWT_SECRET || 'test-secret-key-for-jwt-signing-min-32-chars',
       { expiresIn: '1h' }
     );

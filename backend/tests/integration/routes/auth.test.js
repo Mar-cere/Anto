@@ -25,6 +25,7 @@ const createUserWithHashedPassword = async (userData) => {
     ...userData,
     password: hash,
     salt,
+    emailVerified: true, // Para que login funcione en tests
     preferences: {
       theme: 'light',
       notifications: true,
@@ -68,6 +69,8 @@ describe('Auth Routes', () => {
         ...validUser,
         email: `test${timestamp}@example.com`,
         username: `test${timestamp}`, // Máximo 20 caracteres: "test" (4) + 6 dígitos = 10 caracteres
+        termsAccepted: true,
+        privacyAccepted: true,
       };
       
       const response = await request(app)
@@ -75,9 +78,9 @@ describe('Auth Routes', () => {
         .send(uniqueUser)
         .expect(201);
 
-      expect(response.body).toHaveProperty('accessToken');
+      // Tras registro, la API exige verificación de email: no devuelve accessToken hasta verificar
       expect(response.body).toHaveProperty('user');
-      // Usar el username único que creamos, no el de validUser
+      expect(response.body).toHaveProperty('requiresVerification', true);
       expect(response.body.user).toHaveProperty('username', uniqueUser.username.toLowerCase());
       expect(response.body.user).toHaveProperty('email', uniqueUser.email.toLowerCase());
       expect(response.body.user).not.toHaveProperty('password');
@@ -97,7 +100,7 @@ describe('Auth Routes', () => {
       // Crear usuario primero usando el endpoint
       await request(app)
         .post('/api/auth/register')
-        .send(validUser);
+        .send({ ...validUser, termsAccepted: true, privacyAccepted: true });
 
       // Esperar más tiempo para evitar rate limiting (3 registros por hora)
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -108,6 +111,8 @@ describe('Auth Routes', () => {
         .send({
           ...validUser,
           username: 'another' + Date.now().toString().slice(-6), // Username único (máx 20 chars)
+          termsAccepted: true,
+          privacyAccepted: true,
         });
 
       // Puede ser 400 (duplicado) o 429 (rate limit)
@@ -121,7 +126,7 @@ describe('Auth Routes', () => {
       // Crear usuario primero usando el endpoint
       await request(app)
         .post('/api/auth/register')
-        .send(validUser);
+        .send({ ...validUser, termsAccepted: true, privacyAccepted: true });
 
       // Esperar más tiempo para evitar rate limiting
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -132,6 +137,8 @@ describe('Auth Routes', () => {
         .send({
           ...validUser,
           email: 'another' + Date.now() + '@example.com', // Email único
+          termsAccepted: true,
+          privacyAccepted: true,
         });
 
       // Puede ser 400 (duplicado) o 429 (rate limit)

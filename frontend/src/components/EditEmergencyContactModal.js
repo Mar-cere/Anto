@@ -22,7 +22,9 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { useToast } from '../context/ToastContext';
 import { api, ENDPOINTS } from '../config/api';
+import { getApiErrorMessage } from '../utils/apiErrorHandler';
 import { colors } from '../styles/globalStyles';
 
 // Constantes de validación
@@ -59,6 +61,7 @@ const TEXTS = {
 };
 
 const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -142,21 +145,15 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
         relationship: formData.relationship.trim() || null,
       });
 
-      Alert.alert('Éxito', TEXTS.UPDATE_SUCCESS, [
-        { text: 'OK', onPress: () => {
-          onSave?.();
-          onClose?.();
-        }}
-      ]);
+      showToast({ message: TEXTS.UPDATE_SUCCESS, type: 'success' });
+      onSave?.();
+      onClose?.();
     } catch (error) {
       console.error('Error actualizando contacto:', error);
-      const errorMessage = error.response?.data?.message || error.message || TEXTS.UPDATE_ERROR;
-      
-      if (errorMessage.includes('email') || errorMessage.includes('duplicado')) {
-        Alert.alert('Error', TEXTS.DUPLICATE_EMAIL);
-      } else {
-        Alert.alert('Error', errorMessage);
-      }
+      const errorMessage = getApiErrorMessage(error) || TEXTS.UPDATE_ERROR;
+      const isDuplicate = error.response?.status === 409
+        || (errorMessage && (errorMessage.toLowerCase().includes('email') || errorMessage.toLowerCase().includes('duplicado')));
+      Alert.alert('Error', isDuplicate ? TEXTS.DUPLICATE_EMAIL : errorMessage);
     } finally {
       setIsSubmitting(false);
     }

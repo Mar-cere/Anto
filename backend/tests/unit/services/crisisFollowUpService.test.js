@@ -43,7 +43,7 @@ describe('CrisisFollowUpService', () => {
     await connectDatabase();
   });
 
-  beforeEach(async () => {
+  beforeEach(() => {
     jest.clearAllMocks();
   });
 
@@ -101,19 +101,17 @@ describe('CrisisFollowUpService', () => {
     it('debe programar seguimiento para nivel MEDIUM con intervalo de 24 horas', async () => {
       const mongoose = await import('mongoose');
       const validObjectId = new mongoose.default.Types.ObjectId();
+      const scheduleFollowUpMock = jest.fn().mockResolvedValue(undefined);
       const mockEvent = {
         _id: validObjectId,
         followUp: { scheduledAt: new Date() },
-        scheduleFollowUp: jest.fn(function(hours) {
-          this.followUp.scheduledAt = new Date(Date.now() + hours * 60 * 60 * 1000);
-          return Promise.resolve(this);
-        })
+        scheduleFollowUp: scheduleFollowUpMock
       };
       mockCrisisEvent.findById.mockResolvedValue(mockEvent);
 
       const result = await crisisFollowUpService.scheduleFollowUps(validObjectId.toString(), 'MEDIUM');
 
-      expect(mockEvent.scheduleFollowUp).toHaveBeenCalledWith(24);
+      expect(scheduleFollowUpMock).toHaveBeenCalledWith(24);
       expect(result.success).toBe(true);
     });
 

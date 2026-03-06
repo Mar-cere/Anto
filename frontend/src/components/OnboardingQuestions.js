@@ -20,7 +20,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useToast } from '../context/ToastContext';
 import { api, ENDPOINTS } from '../config/api';
+import { getApiErrorMessage } from '../utils/apiErrorHandler';
 import { colors } from '../styles/globalStyles';
 
 const TEXTS = {
@@ -37,6 +39,7 @@ const TEXTS = {
 };
 
 const OnboardingQuestions = ({ visible, onDismiss }) => {
+  const { showToast } = useToast();
   const [whatExpectFromApp, setWhatExpectFromApp] = useState('');
   const [whatToImproveOrWorkOn, setWhatToImproveOrWorkOn] = useState('');
   const [typeOfSpecialist, setTypeOfSpecialist] = useState('');
@@ -63,9 +66,10 @@ const OnboardingQuestions = ({ visible, onDismiss }) => {
         whatToImproveOrWorkOn: whatToImproveOrWorkOn.trim() || null,
         typeOfSpecialist: typeOfSpecialist.trim() || null,
       });
+      showToast({ message: 'Preferencias guardadas', type: 'success' });
       onDismiss?.();
     } catch (err) {
-      setError(err?.message || 'No se pudieron guardar las respuestas. Puedes omitir y seguir.');
+      setError(getApiErrorMessage(err) || 'No se pudieron guardar las respuestas. Puedes omitir y seguir.');
     } finally {
       setLoading(false);
     }

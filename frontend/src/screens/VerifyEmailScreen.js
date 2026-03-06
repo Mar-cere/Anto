@@ -32,6 +32,7 @@ import OfflineBanner from '../components/OfflineBanner';
 import { api, ENDPOINTS } from '../config/api';
 import { ROUTES } from '../constants/routes';
 import { colors, globalStyles } from '../styles/globalStyles';
+import { useAuth } from '../context/AuthContext';
 
 // Constantes
 const CODE_LENGTH = 6;
@@ -40,6 +41,7 @@ const CODE_EXPIRATION_MINUTES = 10;
 const VerifyEmailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
+  const { refreshSession } = useAuth();
   const email = route.params?.email || '';
   
   const [code, setCode] = useState(['', '', '', '', '', '']);
@@ -140,6 +142,7 @@ const VerifyEmailScreen = () => {
         if (response.user) {
           await AsyncStorage.setItem('userData', JSON.stringify(response.user));
         }
+        await refreshSession();
 
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Alert.alert(

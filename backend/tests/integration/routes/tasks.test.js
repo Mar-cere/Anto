@@ -26,6 +26,7 @@ const createUserAndToken = async () => {
     ...validUser,
     password: hash,
     salt,
+    emailVerified: true,
     preferences: {
       theme: 'light',
       notifications: true,
@@ -79,6 +80,7 @@ describe('Task Routes', () => {
         ...uniqueUser,
         password: hash,
         salt,
+        emailVerified: true,
         preferences: {
           theme: 'light',
           notifications: true,
@@ -334,14 +336,7 @@ describe('Task Routes', () => {
       });
       const taskId = task._id.toString();
 
-      // Esperar un momento para que se guarde la tarea
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // Verificar que la tarea se guardó correctamente
-      const savedTask = await Task.findById(taskId);
-      if (!savedTask) {
-        throw new Error('Tarea no se guardó correctamente');
-      }
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       // Usar una nueva fecha para updateData
       const updateTomorrowDate = new Date();
@@ -379,15 +374,7 @@ describe('Task Routes', () => {
         dueDate: tomorrow,
       });
       taskId = task._id.toString();
-      
-      // Esperar un momento para que se guarde la tarea
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // Verificar que la tarea se guardó correctamente
-      const savedTask = await Task.findById(taskId);
-      if (!savedTask) {
-        throw new Error('Tarea no se guardó correctamente');
-      }
+      await new Promise(resolve => setTimeout(resolve, 200));
     });
 
     it('debe eliminar una tarea existente', async () => {

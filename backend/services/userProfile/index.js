@@ -1,0 +1,24 @@
+/**
+ * Módulos extraídos de userProfileService.
+ * - userProfileConstants: valores por defecto, umbrales, períodos y dimensiones de análisis
+ */
+
+export {
+  DEFAULT_COMMUNICATION_STYLE,
+  DEFAULT_RESPONSE_LENGTH,
+  DEFAULT_EMOTION,
+  DEFAULT_INTENSITY,
+  DEFAULT_TENDENCY,
+  HOURS_FOR_INSIGHT,
+  INTENSITY_THRESHOLD,
+  SESSIONS_FOR_INSIGHT,
+  DAYS_FOR_PATTERNS,
+  DAYS_FOR_INSIGHTS,
+  INTENSITY_DIFF_THRESHOLD,
+  HISTORY_LIMIT,
+  INTENSITY_HIGH,
+  INTENSITY_MEDIUM,
+  PERIODOS,
+  DIAS_SEMANA,
+  DIMENSIONES_ANALISIS
+} from './userProfileConstants.js';

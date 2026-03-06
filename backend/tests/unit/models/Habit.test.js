@@ -535,7 +535,8 @@ describe('Habit Model', () => {
           enabled: true
         },
         status: {
-          archived: false
+          archived: false,
+          completedToday: false
         }
       });
 
@@ -553,9 +554,9 @@ describe('Habit Model', () => {
         }
       });
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 150));
 
-      const habits = await Habit.getActiveHabits(userId);
+      const habits = await Habit.getActiveHabits(userId).exec();
       
       expect(habits.length).toBeGreaterThan(0);
       habits.forEach(habit => {

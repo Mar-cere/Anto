@@ -5,21 +5,17 @@
 import CrisisEvent from '../models/CrisisEvent.js';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
-import { APP_NAME } from '../constants/app.js';
-import { getEmergencyLines } from '../constants/crisis.js';
 import pushNotificationService from './pushNotificationService.js';
+import {
+  CHECK_INTERVAL_MS,
+  FOLLOW_UP_INTERVALS,
+  FIRST_FOLLOW_UP_HOURS_BY_RISK,
+  generateFollowUpMessage
+} from './crisisFollowUp/index.js';
 
 class CrisisFollowUpService {
   constructor() {
-    // Intervalos de seguimiento (en horas)
-    this.FOLLOW_UP_INTERVALS = {
-      FIRST: 24, // Primera verificación a las 24 horas
-      SECOND: 48, // Segunda verificación a las 48 horas
-      THIRD: 168 // Tercera verificación a los 7 días (168 horas)
-    };
-    
-    // Intervalo para verificar seguimientos pendientes (cada hora)
-    this.CHECK_INTERVAL_MS = 60 * 60 * 1000;
+    this.FOLLOW_UP_INTERVALS = FOLLOW_UP_INTERVALS;
   }
 
   /**
@@ -35,16 +31,7 @@ class CrisisFollowUpService {
         return { success: false, reason: 'Evento de crisis no encontrado' };
       }
 
-      // Programar primer seguimiento según nivel de riesgo
-      let firstFollowUpHours = this.FOLLOW_UP_INTERVALS.FIRST;
-      
-      if (riskLevel === 'HIGH') {
-        firstFollowUpHours = 12; // Seguimiento más temprano para alto riesgo
-      } else if (riskLevel === 'MEDIUM') {
-        firstFollowUpHours = 24;
-      } else if (riskLevel === 'WARNING') {
-        firstFollowUpHours = 48; // Seguimiento más tardío para advertencias
-      }
+      const firstFollowUpHours = FIRST_FOLLOW_UP_HOURS_BY_RISK[riskLevel] ?? 24;
 
       // Programar primer seguimiento
       await crisisEvent.scheduleFollowUp(firstFollowUpHours);
@@ -194,44 +181,6 @@ class CrisisFollowUpService {
   }
 
   /**
-   * Genera el contenido del mensaje de seguimiento
-   * @param {Object} crisisEvent - Evento de crisis
-   * @param {string} country - País del usuario
-   * @returns {string} Contenido del mensaje
-   */
-  generateFollowUpMessage(crisisEvent, country = 'GENERAL') {
-    const lines = getEmergencyLines(country);
-    const riskLevel = crisisEvent.riskLevel;
-    const daysSinceCrisis = Math.floor(
-      (Date.now() - new Date(crisisEvent.detectedAt).getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    let message = `Hola, soy ${APP_NAME}. `;
-    
-    if (daysSinceCrisis === 1) {
-      message += `Hace un día detectamos que estabas pasando por un momento difícil. `;
-    } else {
-      message += `Hace ${daysSinceCrisis} días detectamos que estabas pasando por un momento difícil. `;
-    }
-
-    message += `Quería saber cómo te sientes ahora. `;
-    message += `¿Hay algo en lo que pueda ayudarte? `;
-
-    if (riskLevel === 'HIGH' || riskLevel === 'MEDIUM') {
-      message += `\n\nRecuerda que si necesitas hablar con alguien, estas líneas están disponibles 24/7:\n`;
-      message += `- Línea de Prevención del Suicidio: ${lines.SUICIDE_PREVENTION}\n`;
-      message += `- Emergencias: ${lines.EMERGENCY}\n`;
-      if (lines.MENTAL_HEALTH) {
-        message += `- Salud Mental: ${lines.MENTAL_HEALTH}\n`;
-      }
-    }
-
-    message += `\nEstoy aquí para escucharte cuando lo necesites.`;
-
-    return message;
-  }
-
-  /**
    * Envía un mensaje de seguimiento al usuario
    * @param {Object} crisisEvent - Evento de crisis
    * @returns {Promise<boolean>} true si se envió exitosamente
@@ -239,7 +188,7 @@ class CrisisFollowUpService {
   async sendFollowUpMessage(crisisEvent) {
     try {
       const userId = crisisEvent.userId._id || crisisEvent.userId;
-      const message = this.generateFollowUpMessage(crisisEvent);
+      const message = generateFollowUpMessage(crisisEvent);
       
       // Obtener usuario con token push
       const user = await User.findById(userId).select('+pushToken');
@@ -285,7 +234,7 @@ class CrisisFollowUpService {
       this.processPendingFollowUps().catch(err => {
         console.error('[CrisisFollowUpService] Error en intervalo de seguimiento:', err);
       });
-    }, this.CHECK_INTERVAL_MS);
+    }, CHECK_INTERVAL_MS);
 
     // Procesar inmediatamente al iniciar
     this.processPendingFollowUps().catch(err => {

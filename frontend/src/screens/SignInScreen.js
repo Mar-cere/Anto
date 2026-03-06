@@ -32,7 +32,9 @@ import OfflineBanner from '../components/OfflineBanner';
 import { api, ENDPOINTS } from '../config/api';
 import { ROUTES } from '../constants/routes';
 import { colors, globalStyles } from '../styles/globalStyles';
+import { useAuth } from '../context/AuthContext';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { getApiErrorMessage } from '../utils/apiErrorHandler';
 
 // Constantes de animación
 const ANIMATION_INITIAL_DELAY = 500; // ms
@@ -73,13 +75,6 @@ const ERROR_MESSAGES = {
   ACCOUNT_DISABLED: 'Tu cuenta ha sido desactivada. Contacta al soporte.',
   TOO_MANY_ATTEMPTS: 'Demasiados intentos. Por favor, espera un momento',
   CONNECTION_ERROR: 'Error de conexión. Verifica tu internet'
-};
-
-// Constantes de códigos de estado HTTP
-const HTTP_STATUS = {
-  UNAUTHORIZED: 401,
-  FORBIDDEN: 403,
-  TOO_MANY_REQUESTS: 429
 };
 
 // Constantes de textos
@@ -131,40 +126,6 @@ const validateField = (field, value) => {
   }
 };
 
-// Helper: obtener mensaje de error según código de estado
-const getErrorMessage = (error, isOffline = false) => {
-  // Si está offline, siempre mostrar mensaje de conexión
-  if (isOffline) {
-    return ERROR_MESSAGES.CONNECTION_ERROR;
-  }
-  
-  // Detectar errores de red específicos
-  const isNetworkError = 
-    error.message?.includes('Network request failed') ||
-    error.message?.includes('network') ||
-    error.message?.includes('ECONNREFUSED') ||
-    error.message?.includes('timeout') ||
-    !error.response;
-  
-  if (isNetworkError) {
-    return ERROR_MESSAGES.CONNECTION_ERROR;
-  }
-  
-  if (error.response?.status === HTTP_STATUS.UNAUTHORIZED) {
-    return ERROR_MESSAGES.INVALID_CREDENTIALS;
-  }
-  if (error.response?.status === HTTP_STATUS.FORBIDDEN) {
-    return ERROR_MESSAGES.ACCOUNT_DISABLED;
-  }
-  if (error.response?.status === HTTP_STATUS.TOO_MANY_REQUESTS) {
-    return ERROR_MESSAGES.TOO_MANY_ATTEMPTS;
-  }
-  if (error.response?.data?.message) {
-    return error.response.data.message;
-  }
-  return ERROR_MESSAGES.GENERIC_ERROR;
-};
-
 // Helper: guardar datos de autenticación
 const saveAuthData = async (tokens, user, email) => {
   const itemsToSave = [
@@ -184,7 +145,8 @@ const saveAuthData = async (tokens, user, email) => {
 
 const SignInScreen = () => {
   const navigation = useNavigation();
-  
+  const { refreshSession } = useAuth();
+
   // Estado de red
   const { isConnected, isInternetReachable } = useNetworkStatus();
   const isOffline = !isConnected || isInternetReachable === false;
@@ -353,6 +315,7 @@ const SignInScreen = () => {
           response.user,
           formData.email
         );
+        await refreshSession();
 
         // Registrar token push para notificaciones (no bloquear si falla)
         try {
@@ -373,7 +336,7 @@ const SignInScreen = () => {
       }
     } catch (error) {
       console.error('Error en login:', error);
-      const errorMessage = getErrorMessage(error, isOffline);
+      const errorMessage = getApiErrorMessage(error, { isOffline });
       Alert.alert('Error', errorMessage);
     } finally {
       setIsSubmitting(false);
