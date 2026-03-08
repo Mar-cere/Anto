@@ -1,42 +1,53 @@
 /**
  * Tests unitarios para servicio de seguimiento de crisis
- * 
+ *
+ * Usa jest.unstable_mockModule para que los mocks se apliquen antes de cargar el servicio (Jest+ESM).
+ *
  * @author AntoApp Team
  */
 
 import { jest } from '@jest/globals';
-import crisisFollowUpService from '../../../services/crisisFollowUpService.js';
-import { connectDatabase, clearDatabase, closeDatabase } from '../../helpers/testHelpers.js';
+import { connectDatabase, closeDatabase } from '../../helpers/testHelpers.js';
 
-// Mock dependencies
 const mockCrisisEvent = {
   findById: jest.fn(),
   findByIdAndUpdate: jest.fn(),
   getPendingFollowUps: jest.fn()
 };
 
-jest.mock('../../../models/CrisisEvent.js', () => ({
+const mockMessageFind = jest.fn(() => ({
+  select: jest.fn().mockReturnThis(),
+  sort: jest.fn().mockReturnThis(),
+  limit: jest.fn().mockReturnThis(),
+  lean: jest.fn().mockResolvedValue([])
+}));
+
+const mockUserFindById = jest.fn();
+const mockPushNotificationService = {
+  sendFollowUp: jest.fn().mockResolvedValue({ success: true })
+};
+
+await jest.unstable_mockModule('../../../models/CrisisEvent.js', () => ({
   __esModule: true,
   default: mockCrisisEvent
 }));
 
-jest.mock('../../../models/Message.js', () => ({
-  find: jest.fn(() => ({
-    sort: jest.fn(() => ({
-      limit: jest.fn(() => ({
-        lean: jest.fn()
-      }))
-    }))
-  }))
+await jest.unstable_mockModule('../../../models/Message.js', () => ({
+  __esModule: true,
+  default: { find: mockMessageFind }
 }));
 
-jest.mock('../../../models/User.js', () => ({
-  findById: jest.fn()
+await jest.unstable_mockModule('../../../models/User.js', () => ({
+  __esModule: true,
+  default: { findById: mockUserFindById }
 }));
 
-jest.mock('../../../services/pushNotificationService.js', () => ({
-  sendNotification: jest.fn()
+await jest.unstable_mockModule('../../../services/pushNotificationService.js', () => ({
+  __esModule: true,
+  default: mockPushNotificationService
 }));
+
+const { default: crisisFollowUpService } = await import('../../../services/crisisFollowUpService.js');
 
 describe('CrisisFollowUpService', () => {
   beforeAll(async () => {

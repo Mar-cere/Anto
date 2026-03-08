@@ -11,13 +11,13 @@ Documento con sugerencias de UX moderno y profesional para la app Anto. Sirve co
 | 1 | Feedback inmediato (Toast/snackbar) | ✅ **Implementado** |
 | 2 | Empty states con CTA | ✅ **Implementado** |
 | 3 | Skeleton en listas | ✅ **Implementado** |
-| 4 | Accesibilidad (VoiceOver / TalkBack) | Pendiente |
-| 5 | Formularios (errores inline, foco, carga) | Pendiente |
-| 6 | Navegación y “dónde estoy” | Pendiente |
-| 7 | Jerarquía visual y tipografía | Pendiente |
-| 8 | Errores y reconexión | Pendiente |
+| 4 | Accesibilidad (VoiceOver / TalkBack) | ✅ **Implementado** |
+| 5 | Formularios (errores inline, foco, carga) | ✅ **Implementado** |
+| 6 | Navegación y “dónde estoy” | ✅ **Implementado** |
+| 7 | Jerarquía visual y tipografía | ✅ **Implementado** |
+| 8 | Errores y reconexión | ✅ **Implementado** |
 | 9 | Primera vez y onboarding | En progreso |
-| 10 | Microinteracciones | Pendiente |
+| 10 | Microinteracciones | Parcial |
 
 ---
 
@@ -281,20 +281,17 @@ showToast({ message: 'Copiado', type: 'success', duration: 2000 });
 | Alta     | Toast/snackbar               | Medio    | Alto    | ✅ Hecho   |
 | Alta     | Empty states con CTA         | Bajo     | Alto    | ✅ Hecho   |
 | Alta     | Skeleton en listas           | Medio    | Alto    | ✅ Hecho   |
-| Media    | Accesibilidad (labels)       | Bajo     | Alto (inclusión) | Pendiente |
-| Media    | Errores inline en formularios| Bajo     | Alto    | Pendiente  |
-| Media    | Indicador de tab activo y títulos | Bajo | Medio   | Pendiente  |
-| Baja     | Escala tipográfica global    | Bajo     | Medio   | Pendiente  |
+| Media    | Accesibilidad (labels)       | Bajo     | Alto (inclusión) | ✅ Hecho   |
+| Media    | Errores inline en formularios| Bajo     | Alto    | ✅ Hecho   |
+| Media    | Indicador de tab activo y títulos | Bajo | Medio   | ✅ Hecho   |
+| Baja     | Escala tipográfica global    | Bajo     | Medio   | ✅ Hecho   |
+| Baja     | Errores y reconexión (toast restaurada) | Bajo | Alto | ✅ Hecho   |
 | Baja     | Onboarding corto             | Medio    | Medio   | Pendiente  |
 
 ---
 
 ## Orden recomendado (siguientes pasos)
 
-**Ya implementado:** Toast (1), Empty states (2), Skeletons (3).
+**Ya implementado:** Toast (1), Empty states (2), Skeletons (3), Accesibilidad (4), Formularios (5), Navegación y tab activo (6), Tipografía (7), Errores y reconexión (8), Microinteracciones parcial (10).
 
-**Siguientes en la cola:**
-4. **Accesibilidad** – Ir añadiendo `accessibilityLabel` / `accessibilityRole` en componentes clave (FloatingNavBar, cards, inputs).
-5. **Formularios** – Errores inline debajo del campo, estado de foco en inputs, botón con estado de carga.
-
-Cuando decidas por cuál seguir, se puede bajar a tareas concretas (componentes, pantallas y textos) en el código.
+**Pendiente opcional:** Onboarding más corto (9.3); estado "enviado" en chat.

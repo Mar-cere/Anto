@@ -123,12 +123,11 @@ describe('UserProfile Model', () => {
       const profile = new UserProfile({
         userId,
         personalInfo: {
-          age: 30,
           gender: 'male'
         },
         preferences: {
-          language: 'es',
-          notifications: true
+          communicationStyle: 'empático',
+          responseLength: 'MEDIUM'
         }
       });
 
@@ -137,12 +136,11 @@ describe('UserProfile Model', () => {
       const found = await UserProfile.findById(profile._id);
       expect(found).toBeDefined();
       expect(found.userId.toString()).toBe(userId.toString());
-      // personalInfo puede no estar definido si no se guarda correctamente
       if (found.personalInfo) {
-        expect(found.personalInfo.age).toBe(30);
+        expect(found.personalInfo.gender).toBe('male');
       }
       if (found.preferences) {
-        expect(found.preferences.language).toBe('es');
+        expect(found.preferences.communicationStyle).toBe('empático');
       }
     });
 

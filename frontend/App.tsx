@@ -15,6 +15,7 @@ import { ToastProvider } from './src/context/ToastContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import Toast from './src/components/Toast';
+import ConnectionRestoredListener from './src/components/ConnectionRestoredListener';
 import { colors } from './src/styles/globalStyles';
 
 // Constantes de configuración
@@ -43,6 +44,7 @@ export default function App() {
               backgroundColor={STATUS_BAR_BACKGROUND}
               translucent={STATUS_BAR_TRANSLUCENT}
             />
+            <ConnectionRestoredListener />
             <AppNavigator />
             <Toast />
           </View>

@@ -3,13 +3,12 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 /**
- * Componente que muestra un banner cuando el dispositivo está offline
- * Se muestra automáticamente cuando no hay conexión a internet
+ * Componente que muestra un banner cuando el dispositivo está offline.
+ * Mensaje en lenguaje claro y accesible para VoiceOver/TalkBack.
  */
 const OfflineBanner = () => {
   const { isConnected, isInternetReachable } = useNetworkStatus();
   
-  // Mostrar banner si no hay conexión o internet no es alcanzable
   const isOffline = !isConnected || isInternetReachable === false;
 
   if (!isOffline) {
@@ -17,9 +16,13 @@ const OfflineBanner = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View 
+      style={styles.container}
+      accessibilityRole="alert"
+      accessibilityLabel="Sin conexión a internet. Algunas funciones pueden no estar disponibles. Revisa tu conexión."
+    >
       <Text style={styles.text}>
-        ⚠️ Sin conexión a internet. Algunas funciones pueden no estar disponibles.
+        No se pudo conectar. Revisa tu internet y vuelve a intentar.
       </Text>
     </View>
   );
@@ -28,7 +31,7 @@ const OfflineBanner = () => {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FF6B6B',
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
@@ -36,7 +39,7 @@ const styles = StyleSheet.create({
   },
   text: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
     textAlign: 'center',
   },

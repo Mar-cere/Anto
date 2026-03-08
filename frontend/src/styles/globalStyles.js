@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+import { TYPOGRAPHY } from '../constants/ui';
 
 export const colors = {
   primary: '#1ADDDB',
@@ -23,7 +24,7 @@ export const globalStyles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   titleText: {
-    fontSize: 36,
+    fontSize: TYPOGRAPHY.TITLE,
     fontWeight: 'bold',
     color: colors.white,
     textAlign: 'center',
@@ -34,17 +35,25 @@ export const globalStyles = StyleSheet.create({
   },
   errorText: {
     color: '#FF6B6B',
-    fontSize: 14,
+    fontSize: TYPOGRAPHY.CAPTION,
     marginTop: 8,
     marginLeft: 5,
     textAlign: 'left',
     fontWeight: '500',
   },
   subTitleText: {
-    fontSize: 18,
+    fontSize: TYPOGRAPHY.SUBTITLE,
     color: colors.white,
     textAlign: 'center',
     opacity: 0.8,
+  },
+  bodyText: {
+    fontSize: TYPOGRAPHY.BODY,
+    color: colors.text,
+  },
+  captionText: {
+    fontSize: TYPOGRAPHY.CAPTION,
+    color: colors.textSecondary,
   },
   buttonContainer: {
     width: '100%',
@@ -70,7 +79,7 @@ export const globalStyles = StyleSheet.create({
   },
   buttonText: {
     color: colors.white,
-    fontSize: 18,
+    fontSize: TYPOGRAPHY.BODY,
     fontWeight: 'bold',
   },
   disabledButton: {
@@ -96,9 +105,13 @@ export const globalStyles = StyleSheet.create({
     borderColor: 'transparent',
     paddingHorizontal: 10,
   },
+  inputContainerFocused: {
+    borderColor: 'rgba(26, 221, 219, 0.6)',
+    borderWidth: 1.5,
+  },
   input: {
     flex: 1,
-    fontSize: 18,
+    fontSize: TYPOGRAPHY.BODY,
     color: '#FFFFFF',
     paddingVertical: 14,
     paddingHorizontal: 10,

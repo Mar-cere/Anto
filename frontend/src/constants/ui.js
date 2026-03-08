@@ -48,3 +48,12 @@ export const BORDERS = {
   ERROR_BUTTON_RADIUS: 5,
 };
 
+// Escala tipográfica (título 24, subtítulo 18, cuerpo 16, caption 14)
+export const TYPOGRAPHY = {
+  TITLE: 24,
+  SUBTITLE: 18,
+  BODY: 16,
+  CAPTION: 14,
+  SMALL: 12,
+};
+

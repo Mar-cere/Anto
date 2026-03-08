@@ -163,6 +163,7 @@ const SignInScreen = () => {
   const [isPasswordVisible, setPasswordVisible] = useState(false);
   const [errors, setErrors] = useState({ email: '', password: '' });
   const [isLoading, setIsLoading] = useState(true);
+  const [focusedField, setFocusedField] = useState(null);
 
   // Efecto de entrada con animación
   useEffect(() => {
@@ -404,7 +405,8 @@ const SignInScreen = () => {
                   <View style={globalStyles.inputWrapper}>
                     <View style={[
                       globalStyles.inputContainer, 
-                      errors.email && globalStyles.inputError
+                      errors.email && globalStyles.inputError,
+                      focusedField === 'email' && globalStyles.inputContainerFocused
                     ]}>
                       <Ionicons 
                         name="mail-outline" 
@@ -419,8 +421,12 @@ const SignInScreen = () => {
                         keyboardType="email-address"
                         autoCapitalize="none"
                         onChangeText={(text) => handleInputChange('email', text)}
+                        onFocus={() => setFocusedField('email')}
+                        onBlur={() => setFocusedField(null)}
                         value={formData.email}
                         accessibilityLabel={TEXTS.EMAIL_PLACEHOLDER}
+                        accessibilityHint={errors.email ? errors.email : 'Campo de correo electrónico'}
+                        accessibilityState={{ invalid: Boolean(errors.email) }}
                       />
                     </View>
                     {errors.email ? <Text style={globalStyles.errorText}>{errors.email}</Text> : null}
@@ -429,7 +435,8 @@ const SignInScreen = () => {
                   <View style={globalStyles.inputWrapper}>
                     <View style={[
                       globalStyles.inputContainer, 
-                      errors.password && globalStyles.inputError
+                      errors.password && globalStyles.inputError,
+                      focusedField === 'password' && globalStyles.inputContainerFocused
                     ]}>
                       <Ionicons 
                         name="lock-closed-outline" 
@@ -443,12 +450,19 @@ const SignInScreen = () => {
                         placeholderTextColor={colors.accent}
                         secureTextEntry={!isPasswordVisible}
                         onChangeText={(text) => handleInputChange('password', text)}
+                        onFocus={() => setFocusedField('password')}
+                        onBlur={() => setFocusedField(null)}
                         value={formData.password}
                         accessibilityLabel={TEXTS.PASSWORD_PLACEHOLDER}
+                        accessibilityHint={errors.password ? errors.password : (isPasswordVisible ? 'Contraseña visible' : 'Contraseña oculta')}
+                        accessibilityState={{ invalid: Boolean(errors.password) }}
                       />
                       <TouchableOpacity 
                         onPress={() => setPasswordVisible(!isPasswordVisible)} 
                         style={globalStyles.inputIcon}
+                        accessibilityRole="button"
+                        accessibilityLabel={isPasswordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                        accessibilityHint="Doble toque para alternar visibilidad"
                       >
                         <Ionicons 
                           name={isPasswordVisible ? "eye-off" : "eye"} 
@@ -476,6 +490,10 @@ const SignInScreen = () => {
                         }
                       ]}
                       activeOpacity={ACTIVE_OPACITY}
+                      accessibilityRole="button"
+                      accessibilityLabel={isSubmitting ? 'Ingresando…' : TEXTS.LOGIN_BUTTON}
+                      accessibilityState={{ disabled: isButtonDisabled, busy: isSubmitting }}
+                      accessibilityHint="Doble toque para iniciar sesión"
                     >
                       {isSubmitting ? (
                         <ActivityIndicator size="small" color={colors.white} />
@@ -492,6 +510,9 @@ const SignInScreen = () => {
                         { transform: [{ scale: buttonScale }], opacity: buttonOpacity }
                       ]}
                       activeOpacity={ACTIVE_OPACITY}
+                      accessibilityRole="button"
+                      accessibilityLabel={TEXTS.REGISTER_BUTTON}
+                      accessibilityHint="Doble toque para crear una cuenta"
                     >
                       <Text style={styles.secondaryButtonText}>{TEXTS.REGISTER_BUTTON}</Text>
                     </TouchableOpacity>
@@ -500,6 +521,9 @@ const SignInScreen = () => {
                   <TouchableOpacity 
                     onPress={() => handlePressOut(ROUTES.RECOVER_PASSWORD)}
                     activeOpacity={TOUCH_OPACITY}
+                    accessibilityRole="button"
+                    accessibilityLabel={TEXTS.FORGOT_PASSWORD}
+                    accessibilityHint="Doble toque para recuperar contraseña"
                   >
                     <Text style={styles.forgotPasswordText}>
                       {TEXTS.FORGOT_PASSWORD}
@@ -510,6 +534,9 @@ const SignInScreen = () => {
                     style={styles.backButton}
                     onPress={() => navigation.navigate('Home')}
                     activeOpacity={TOUCH_OPACITY}
+                    accessibilityRole="button"
+                    accessibilityLabel={TEXTS.BACK_BUTTON}
+                    accessibilityHint="Volver a la pantalla anterior"
                   >
                     <Ionicons name="arrow-back" size={24} color={colors.primary} />
                     <Text style={styles.backButtonText}>{TEXTS.BACK_BUTTON}</Text>

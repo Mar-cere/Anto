@@ -83,6 +83,7 @@ describe('Payment Routes', () => {
     it('debe obtener información de los planes disponibles', async () => {
       const response = await request(app)
         .get('/api/payments/plans')
+        .timeout(10000)
         .expect(200);
 
       expect(response.body).toHaveProperty('success', true);
@@ -96,6 +97,7 @@ describe('Payment Routes', () => {
     it('no debe requerir autenticación', async () => {
       const response = await request(app)
         .get('/api/payments/plans')
+        .timeout(10000)
         .expect(200);
 
       expect(response.body).toHaveProperty('success', true);

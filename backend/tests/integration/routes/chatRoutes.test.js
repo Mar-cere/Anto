@@ -144,22 +144,19 @@ describe('Chat Routes', () => {
     it('debe obtener mensajes de una conversación', async () => {
       const conversation = await Conversation.create({
         userId: testUser._id,
-        title: 'Test Conversation',
         status: 'active',
       });
-      const conversationId = conversation._id;
-
-      await new Promise(resolve => setTimeout(resolve, 200));
+      const conversationId = conversation._id.toString();
 
       await Message.create([
         {
-          conversationId,
+          conversationId: conversation._id,
           userId: testUser._id,
           role: 'user',
           content: 'Hello',
         },
         {
-          conversationId,
+          conversationId: conversation._id,
           userId: testUser._id,
           role: 'assistant',
           content: 'Hi there!',
@@ -173,7 +170,6 @@ describe('Chat Routes', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      // El endpoint retorna messages y pagination directamente
       expect(response.body).toHaveProperty('messages');
       expect(Array.isArray(response.body.messages)).toBe(true);
       expect(response.body).toHaveProperty('pagination');

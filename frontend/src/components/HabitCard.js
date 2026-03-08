@@ -56,6 +56,9 @@ const HabitItem = memo(({ habit, onPress }) => {
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={`Hábito ${habit.title}. Racha ${habit.progress?.streak || 0} días. ${habit.status?.completedToday ? 'Completado hoy.' : 'Pendiente.'}`}
+        accessibilityHint="Doble toque para ver o marcar"
       >
         <View style={styles.habitContent}>
           {/* Icono y título */}
@@ -187,10 +190,12 @@ const HabitCard = memo(() => {
             size={24} 
             color={cardColors.error} 
           />
-          <Text style={styles.errorText}>Error al cargar hábitos</Text>
+          <Text style={styles.errorText}>No se pudo cargar. Revisa tu conexión e intenta de nuevo.</Text>
           <TouchableOpacity 
             style={styles.retryButton}
             onPress={() => loadHabits()}
+            accessibilityRole="button"
+            accessibilityLabel="Reintentar"
           >
             <Text style={styles.retryText}>Reintentar</Text>
           </TouchableOpacity>

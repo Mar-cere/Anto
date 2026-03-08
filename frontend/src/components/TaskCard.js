@@ -63,6 +63,9 @@ const TaskItem = memo(({ item, onPress }) => {
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={`${isTask ? 'Tarea' : 'Recordatorio'}: ${item.title}. ${isOverdue ? 'Caducada.' : ''} ${new Date(item.dueDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}. Prioridad ${priorityData.label}.`}
+        accessibilityHint="Doble toque para ver detalles"
       >
         <View style={styles.taskContent}>
           {/* Icono y tipo */}
@@ -244,8 +247,8 @@ const TaskCard = memo(() => {
       return (
         <View style={styles.errorContainer}>
           <MaterialCommunityIcons name="alert-circle" size={40} color={cardColors.error} />
-          <Text style={styles.errorText}>Error al cargar las tareas</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={() => loadItems()}>
+          <Text style={styles.errorText}>No se pudo cargar. Revisa tu conexión e intenta de nuevo.</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={() => loadItems()} accessibilityRole="button" accessibilityLabel="Reintentar">
             <Text style={styles.retryButtonText}>Reintentar</Text>
           </TouchableOpacity>
         </View>

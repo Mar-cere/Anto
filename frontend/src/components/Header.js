@@ -45,16 +45,19 @@ const Header = memo(({ greeting, userName, title, showBackButton }) => {
   // Si se pasa title y showBackButton, renderizar header simple con botón de retroceso
   if (title && showBackButton) {
     return (
-      <View style={styles.headerContainer}>
+      <View style={styles.headerContainer} accessibilityRole="header">
         <View style={styles.headerLeft}>
           <TouchableOpacity
             onPress={handleBackPress}
             style={styles.backButton}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Volver atrás"
+            accessibilityHint="Doble toque para volver a la pantalla anterior"
           >
             <MaterialCommunityIcons name="arrow-left" size={24} color={colors.white} />
           </TouchableOpacity>
-          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.title} accessibilityRole="header">{title}</Text>
         </View>
       </View>
     );
@@ -62,15 +65,18 @@ const Header = memo(({ greeting, userName, title, showBackButton }) => {
 
   // Header original con greeting
   return (
-    <View style={styles.headerContainer}>
+    <View style={styles.headerContainer} accessibilityRole="header">
       <View style={styles.headerLeft}>
-        <Text style={styles.greeting}>{greeting || 'Bienvenido'}</Text>
+        <Text style={styles.greeting} accessibilityRole="header">{greeting || 'Bienvenido'}</Text>
       </View>
       
       <View style={styles.headerRight}>
         <TouchableOpacity 
           onPress={handleProfilePress}
           style={styles.profileButton}
+          accessibilityRole="button"
+          accessibilityLabel="Ir a perfil"
+          accessibilityHint="Doble toque para abrir tu perfil"
         >
           <MaterialCommunityIcons name="account" size={24} color="#A3B8E8" />
         </TouchableOpacity>

@@ -11,7 +11,8 @@
     "test": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
     "test:watch": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "test:unit": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern=unit",
-    "test:integration": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern=integration"
+    "test:integration": "NODE_ENV=test NODE_OPTIONS=--max-old-space-size=4096 node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern=integration --runInBand",
+    "test:full": "NODE_ENV=test NODE_OPTIONS=--max-old-space-size=4096 node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --runInBand"
   },
   "keywords": [
     "backend",

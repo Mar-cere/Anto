@@ -91,6 +91,10 @@ const FloatingNavBar = ({ activeTab, onTabPress, animValues = {} }) => {
       <TouchableOpacity 
         style={[styles.button, activeTab === 'home' && styles.activeButton]} 
         onPress={() => handleTabPress('Dash', 'home')}
+        accessibilityRole="tab"
+        accessibilityLabel="Inicio"
+        accessibilityState={{ selected: activeTab === 'home' }}
+        accessibilityHint="Doble toque para ir al inicio"
       >
         <View style={styles.iconContainer}>
           {/* Usar un icono de texto como fallback */}
@@ -105,6 +109,10 @@ const FloatingNavBar = ({ activeTab, onTabPress, animValues = {} }) => {
       <TouchableOpacity 
         style={[styles.button, activeTab === 'calendar' && styles.activeButton]} 
         onPress={() => handleTabPress('Tasks', 'tasks')}
+        accessibilityRole="tab"
+        accessibilityLabel="Recordatorios"
+        accessibilityState={{ selected: activeTab === 'calendar' }}
+        accessibilityHint="Doble toque para ver tareas y recordatorios"
       >
         <View style={styles.iconContainer}>
           <Text style={[styles.iconText, activeTab === 'calendar' && styles.activeIconText]}>📋</Text>
@@ -119,6 +127,10 @@ const FloatingNavBar = ({ activeTab, onTabPress, animValues = {} }) => {
         <TouchableOpacity 
           style={styles.centerButton}
           onPress={() => handleTabPress('Chat')}
+          accessibilityRole="tab"
+          accessibilityLabel="Chat con Anto"
+          accessibilityState={{ selected: activeTab === 'chat' }}
+          accessibilityHint="Doble toque para abrir el chat"
         >
           {/* Intentar cargar la imagen de Anto, con fallback a emoji */}
           <Image 
@@ -135,6 +147,10 @@ const FloatingNavBar = ({ activeTab, onTabPress, animValues = {} }) => {
       <TouchableOpacity 
         style={[styles.button, activeTab === 'pomodoro' && styles.activeButton]} 
         onPress={() => handleTabPress('Pomodoro', 'pomodoro')}
+        accessibilityRole="tab"
+        accessibilityLabel="Pomodoro"
+        accessibilityState={{ selected: activeTab === 'pomodoro' }}
+        accessibilityHint="Doble toque para temporizador Pomodoro"
       >
         <View style={styles.iconContainer}>
           <Text style={[styles.iconText, activeTab === 'pomodoro' && styles.activeIconText]}>⏲️</Text>
@@ -148,6 +164,10 @@ const FloatingNavBar = ({ activeTab, onTabPress, animValues = {} }) => {
       <TouchableOpacity 
         style={[styles.button, activeTab === 'settings' && styles.activeButton]} 
         onPress={() => handleTabPress('Settings', 'settings')}
+        accessibilityRole="tab"
+        accessibilityLabel="Ajustes"
+        accessibilityState={{ selected: activeTab === 'settings' }}
+        accessibilityHint="Doble toque para abrir ajustes"
       >
         <View style={styles.iconContainer}>
           <Text style={[styles.iconText, activeTab === 'settings' && styles.activeIconText]}>⚙️</Text>
@@ -191,8 +211,9 @@ const styles = StyleSheet.create({
     paddingTop: 1,
   },
   activeButton: {
-    borderBottomWidth: 1,
+    borderBottomWidth: 2,
     borderBottomColor: '#1ADDDB',
+    backgroundColor: 'rgba(26, 221, 219, 0.08)',
   },
   iconContainer: {
     justifyContent: 'center',

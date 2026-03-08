@@ -47,6 +47,9 @@ const TechniqueCard = ({ technique, onPress }) => {
       style={[styles.card, { borderLeftColor: color }]}
       onPress={onPress}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`Técnica ${technique.name}. Tipo ${type}. ${technique.description || ''}`}
+      accessibilityHint="Doble toque para abrir la técnica"
     >
       <View style={styles.header}>
         <View style={[styles.iconContainer, { backgroundColor: `${color}20` }]}>

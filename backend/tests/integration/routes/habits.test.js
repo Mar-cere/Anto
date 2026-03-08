@@ -238,39 +238,31 @@ describe('Habit Routes', () => {
 
   describe('PUT /api/habits/:id', () => {
     it('debe actualizar un hábito existente', async () => {
-      // Crear el hábito antes de actualizarlo
       const reminderTime = new Date(Date.now() + 60 * 60 * 1000);
-      
-      const habit = await Habit.create({
-        userId: testUser._id,
+      const createPayload = {
         title: 'Original Title',
         description: 'Original description',
         icon: 'exercise',
         frequency: 'daily',
-        reminder: {
-          time: reminderTime,
-          enabled: true
-        }
-      });
-      const habitId = habit._id.toString();
+        reminder: { time: reminderTime.toISOString(), enabled: true },
+      };
 
-      // Esperar un momento para que se guarde el hábito
-      await new Promise(resolve => setTimeout(resolve, 300));
+      const createRes = await request(app)
+        .post('/api/habits')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(createPayload)
+        .expect(201);
 
-      // Verificar que el hábito se guardó correctamente
-      const savedHabit = await Habit.findById(habitId);
-      if (!savedHabit) {
-        throw new Error('Hábito no se guardó correctamente');
-      }
+      const habitId = createRes.body.data._id;
 
       const updateReminderTime = new Date(Date.now() + 60 * 60 * 1000);
       const updateData = {
         title: 'Updated Title',
         description: 'Updated description',
-        icon: 'exercise', // Requerido
-        frequency: 'daily', // Requerido
+        icon: 'exercise',
+        frequency: 'daily',
         reminder: {
-          time: updateReminderTime,
+          time: updateReminderTime.toISOString(),
           enabled: true
         }
       };
@@ -289,29 +281,19 @@ describe('Habit Routes', () => {
 
   describe('DELETE /api/habits/:id', () => {
     it('debe eliminar un hábito existente', async () => {
-      // Crear el hábito antes de eliminarlo
       const reminderTime = new Date(Date.now() + 60 * 60 * 1000);
-      
-      const habit = await Habit.create({
-        userId: testUser._id,
-        title: 'Habit to delete',
-        icon: 'exercise',
-        frequency: 'daily',
-        reminder: {
-          time: reminderTime,
-          enabled: true
-        }
-      });
-      const habitId = habit._id.toString();
+      const createRes = await request(app)
+        .post('/api/habits')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          title: 'Habit to delete',
+          icon: 'exercise',
+          frequency: 'daily',
+          reminder: { time: reminderTime.toISOString(), enabled: true },
+        })
+        .expect(201);
 
-      // Esperar un momento para que se guarde el hábito
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // Verificar que el hábito se guardó correctamente
-      const savedHabit = await Habit.findById(habitId);
-      if (!savedHabit) {
-        throw new Error('Hábito no se guardó correctamente');
-      }
+      const habitId = createRes.body.data._id;
 
       const response = await request(app)
         .delete(`/api/habits/${habitId}`)
@@ -322,15 +304,12 @@ describe('Habit Routes', () => {
       expect(response.body).toHaveProperty('message');
       expect(response.body).toHaveProperty('data');
 
-      // Verificar que el hábito fue marcado como eliminado (soft delete)
-      const deletedHabit = await Habit.findById(habitId).select('+deletedAt');
-      // Puede ser null si el soft delete funciona correctamente y no se encuentra
-      if (deletedHabit) {
-        expect(deletedHabit.deletedAt).toBeDefined();
+      const found = await Habit.findById(habitId).select('+deletedAt');
+      if (found) {
+        expect(found.deletedAt).toBeDefined();
       } else {
-        // Si es null, verificar que no se encuentra en consultas normales
-        const foundHabit = await Habit.findById(habitId);
-        expect(foundHabit).toBeNull();
+        const normalFind = await Habit.findById(habitId);
+        expect(normalFind).toBeNull();
       }
     });
   });

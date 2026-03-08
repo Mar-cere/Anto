@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">6.45% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/155</span>
+                <span class='fraction'>10/155</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">2.58% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/155</span>
+                <span class='fraction'>4/155</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">8.57% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/35</span>
+                <span class='fraction'>3/35</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">6.49% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/154</span>
+                <span class='fraction'>10/154</span>
             </div>
         
             
@@ -629,32 +629,32 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">25x</span>
+<span class="cline-any cline-yes">25x</span>
+<span class="cline-any cline-yes">25x</span>
+<span class="cline-any cline-yes">25x</span>
+<span class="cline-any cline-yes">25x</span>
+<span class="cline-any cline-yes">25x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">25x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">25x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1177,34 +1177,34 @@ import {
 import UserInsight from '../models/UserInsight.js';
 &nbsp;
 class MemoryService {
-<span class="fstat-no" title="function not covered" >  co</span>nstructor() {
+  constructor() {
     // Constantes importadas desde archivo centralizado
-<span class="cstat-no" title="statement not covered" >    this.INTENSITY_DEFAULT = INTENSITY.DEFAULT;</span>
-<span class="cstat-no" title="statement not covered" >    this.INTENSITY_HIGH_THRESHOLD = INTENSITY.HIGH_THRESHOLD;</span>
-<span class="cstat-no" title="statement not covered" >    this.INTENSITY_LOW_THRESHOLD = INTENSITY.LOW_THRESHOLD;</span>
-<span class="cstat-no" title="statement not covered" >    this.EMOTION_NEUTRAL = EMOTION_NEUTRAL;</span>
-<span class="cstat-no" title="statement not covered" >    this.INTERACTIONS_LIMIT = LIMITS.INTERACTIONS;</span>
-<span class="cstat-no" title="statement not covered" >    this.DEFAULT_LIMIT = LIMITS.DEFAULT_QUERY;</span>
+    this.INTENSITY_DEFAULT = INTENSITY.DEFAULT;
+    this.INTENSITY_HIGH_THRESHOLD = INTENSITY.HIGH_THRESHOLD;
+    this.INTENSITY_LOW_THRESHOLD = INTENSITY.LOW_THRESHOLD;
+    this.EMOTION_NEUTRAL = EMOTION_NEUTRAL;
+    this.INTERACTIONS_LIMIT = LIMITS.INTERACTIONS;
+    this.DEFAULT_LIMIT = LIMITS.DEFAULT_QUERY;
     
     // Períodos de interacción (24 horas)
-<span class="cstat-no" title="statement not covered" >    this.interactionPeriods = INTERACTION_PERIODS;</span>
+    this.interactionPeriods = INTERACTION_PERIODS;
     
     // Períodos de horario (en español)
-<span class="cstat-no" title="statement not covered" >    this.horarioPeriods = HORARIO_PERIODS;</span>
+    this.horarioPeriods = HORARIO_PERIODS;
   }
   
   // Helper: validar que el userId es válido
-<span class="fstat-no" title="function not covered" >  is</span>ValidUserId(userId) {
-<span class="cstat-no" title="statement not covered" >    return userId &amp;&amp; (</span>
+  isValidUserId(userId) {
+    return userId &amp;&amp; (
       typeof userId === 'string' || 
-      userId instanceof mongoose.Types.ObjectId ||
-      mongoose.Types.ObjectId.isValid(userId)
+<span class="branch-2 cbranch-no" title="branch not covered" >      userId instanceof mongoose.Types.ObjectId </span>||
+<span class="branch-3 cbranch-no" title="branch not covered" >      mongoose.Types.ObjectId.isValid(userId)</span>
     );
   }
   
   // Helper: validar que el contenido es un string válido
-<span class="fstat-no" title="function not covered" >  is</span>ValidString(value) {
-<span class="cstat-no" title="statement not covered" >    return typeof value === 'string' &amp;&amp; value.trim().length &gt; 0;</span>
+  isValidString(value) {
+    return typeof value === 'string' &amp;&amp; value.trim().length &gt; 0;
   }
   
   // Helper: validar que es un array válido
@@ -1720,7 +1720,7 @@ export default new MemoryService();
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-06T14:06:42.800Z
+                at 2026-03-07T19:51:34.575Z
             </div>
         <script src="../prettify.js"></script>
         <script>

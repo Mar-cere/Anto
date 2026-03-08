@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">15.71% </span>
+                <span class="strong">25.35% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>11/70</span>
+                <span class='fraction'>18/71</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">3.57% </span>
+                <span class="strong">10.71% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>1/28</span>
+                <span class='fraction'>3/28</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">18.18% </span>
+                <span class="strong">25% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>2/11</span>
+                <span class='fraction'>3/12</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">15.71% </span>
+                <span class="strong">25.35% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>11/70</span>
+                <span class='fraction'>18/71</span>
             </div>
         
             
@@ -309,7 +309,12 @@
 <a name='L244'></a><a href='#L244'>244</a>
 <a name='L245'></a><a href='#L245'>245</a>
 <a name='L246'></a><a href='#L246'>246</a>
-<a name='L247'></a><a href='#L247'>247</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L247'></a><a href='#L247'>247</a>
+<a name='L248'></a><a href='#L248'>248</a>
+<a name='L249'></a><a href='#L249'>249</a>
+<a name='L250'></a><a href='#L250'>250</a>
+<a name='L251'></a><a href='#L251'>251</a>
+<a name='L252'></a><a href='#L252'>252</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -322,6 +327,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -333,25 +343,25 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -552,7 +562,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
@@ -565,11 +575,16 @@ import User from '../models/User.js';
 import pushNotificationService from './pushNotificationService.js';
 import {
   CHECK_INTERVAL_MS,
+  FOLLOW_UP_INTERVALS,
   FIRST_FOLLOW_UP_HOURS_BY_RISK,
   generateFollowUpMessage
 } from './crisisFollowUp/index.js';
 &nbsp;
 class CrisisFollowUpService {
+  constructor() {
+    this.FOLLOW_UP_INTERVALS = FOLLOW_UP_INTERVALS;
+  }
+&nbsp;
   /**
    * Programa seguimientos automáticos para un evento de crisis
    * @param {string} crisisEventId - ID del evento de crisis
@@ -579,25 +594,25 @@ class CrisisFollowUpService {
   async scheduleFollowUps(crisisEventId, riskLevel) {
     try {
       const crisisEvent = await CrisisEvent.findById(crisisEventId);
-      <span class="missing-if-branch" title="else path not taken" >E</span>if (!crisisEvent) {
+      if (!crisisEvent) {
         return { success: false, reason: 'Evento de crisis no encontrado' };
       }
 &nbsp;
-      const firstFollowUpHours = <span class="cstat-no" title="statement not covered" >FIRST_FOLLOW_UP_HOURS_BY_RISK[riskLevel] ?? 24;</span>
+      const firstFollowUpHours = FIRST_FOLLOW_UP_HOURS_BY_RISK[riskLevel] ?? <span class="branch-1 cbranch-no" title="branch not covered" >24;</span>
 &nbsp;
       // Programar primer seguimiento
-<span class="cstat-no" title="statement not covered" >      await crisisEvent.scheduleFollowUp(firstFollowUpHours);</span>
+      await crisisEvent.scheduleFollowUp(firstFollowUpHours);
 &nbsp;
-<span class="cstat-no" title="statement not covered" >      console.log(`[CrisisFollowUpService] ✅ Seguimientos programados para crisis ${crisisEventId} (${riskLevel})`);</span>
+      console.log(`[CrisisFollowUpService] ✅ Seguimientos programados para crisis ${crisisEventId} (${riskLevel})`);
       
-<span class="cstat-no" title="statement not covered" >      return {</span>
+      return {
         success: true,
         firstFollowUpAt: crisisEvent.followUp.scheduledAt,
         riskLevel
       };
     } catch (error) {
-<span class="cstat-no" title="statement not covered" >      console.error('[CrisisFollowUpService] Error programando seguimientos:', error);</span>
-<span class="cstat-no" title="statement not covered" >      return { success: false, reason: error.message };</span>
+      console.error('[CrisisFollowUpService] Error programando seguimientos:', error);
+      return { success: false, reason: error.message };
     }
   }
 &nbsp;
@@ -808,7 +823,7 @@ export default crisisFollowUpService;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-06T14:06:42.800Z
+                at 2026-03-07T19:51:34.575Z
             </div>
         <script src="../prettify.js"></script>
         <script>

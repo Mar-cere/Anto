@@ -530,8 +530,9 @@ router.put('/:id', validateObjectId, updateHabitLimiter, async (req, res) => {
       : req.user._id;
     
     // Actualizar hábito (Mongoose timestamps maneja updatedAt automáticamente)
+    const habitId = new mongoose.Types.ObjectId(req.params.id);
     const habit = await Habit.findOneAndUpdate(
-      { _id: req.params.id, userId: userId },
+      { _id: habitId, userId: userId },
       value,
       { new: true, runValidators: true }
     );
