@@ -10,6 +10,7 @@
 
 import React from 'react';
 import { Platform, StatusBar, StyleSheet, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
 import { ToastProvider } from './src/context/ToastContext';
 import AppNavigator from './src/navigation/AppNavigator';
@@ -35,22 +36,24 @@ const BACKGROUND_COLOR = colors.background;
  */
 export default function App() {
   return (
-    <ErrorBoundary>
-      <AuthProvider>
-        <ToastProvider>
-          <View style={styles.container}>
-            <StatusBar 
-              barStyle={STATUS_BAR_STYLE}
-              backgroundColor={STATUS_BAR_BACKGROUND}
-              translucent={STATUS_BAR_TRANSLUCENT}
-            />
-            <ConnectionRestoredListener />
-            <AppNavigator />
-            <Toast />
-          </View>
-        </ToastProvider>
-      </AuthProvider>
-    </ErrorBoundary>
+    <SafeAreaProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <ToastProvider>
+            <View style={styles.container}>
+              <StatusBar
+                barStyle={STATUS_BAR_STYLE}
+                backgroundColor={STATUS_BAR_BACKGROUND}
+                translucent={STATUS_BAR_TRANSLUCENT}
+              />
+              <ConnectionRestoredListener />
+              <AppNavigator />
+              <Toast />
+            </View>
+          </ToastProvider>
+        </AuthProvider>
+      </ErrorBoundary>
+    </SafeAreaProvider>
   );
 }
 
