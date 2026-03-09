@@ -6,15 +6,16 @@
     "allowJs": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
     "src/**/*.js",
-    "src/**/*.jsx",
-    ".expo/types/**/*.ts"
+    "src/**/*.jsx"
   ],
   "exclude": [
     "node_modules",

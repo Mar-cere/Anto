@@ -1,8 +1,7 @@
 import React, { memo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { StatusBar } from 'react-native';
 import { colors } from '../styles/globalStyles';
 
 const Header = memo(({ greeting, userName, title, showBackButton }) => {
