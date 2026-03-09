@@ -64,8 +64,10 @@ const FirstSessionHint = ({ visible, onDismiss, userId = null }) => {
   if (!visible) return null;
 
   return (
-    <Animated.View style={[styles.overlay, { opacity: fadeAnim }]} pointerEvents="box-none">
-      <View style={styles.card}>
+    <Animated.View style={[styles.overlay, { opacity: fadeAnim }]} pointerEvents="auto">
+      <View style={styles.backdrop} />
+      <View style={styles.cardWrapper}>
+        <View style={styles.card}>
         <View style={styles.iconRow}>
           <View style={styles.iconCircle}>
             <MaterialCommunityIcons name="message-text-outline" size={24} color={colors.primary} />
@@ -90,6 +92,7 @@ const FirstSessionHint = ({ visible, onDismiss, userId = null }) => {
           </TouchableOpacity>
         </View>
       </View>
+      </View>
     </Animated.View>
   );
 };
@@ -101,8 +104,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
   },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(3, 10, 36, 0.75)',
+  },
+  cardWrapper: {
+    width: '100%',
+    maxWidth: 340,
+    alignSelf: 'center',
+  },
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.cardBackground || colors.background,
     borderRadius: 16,
     padding: 20,
     width: '100%',

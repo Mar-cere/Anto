@@ -1,16 +1,22 @@
 /**
  * Componente principal de la aplicación
- * 
- * Este archivo configura el punto de entrada de la aplicación React Native,
- * envolviendo la navegación con el contexto de autenticación y configurando
- * el StatusBar.
- * 
+ *
+ * IMPORTANTE: SafeAreaProvider debe ser el wrapper raíz. Toast, FloatingNavBar y
+ * muchas pantallas usan useSafeAreaInsets(). Sin este provider se produce:
+ * "No safe area value available". Ver docs/SAFE_AREA_REQUIREMENTS.md
+ *
  * @author AntoApp Team
  */
 
 import React from 'react';
 import { Platform, StatusBar, StyleSheet, View } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
+
+// Fallback cuando initialWindowMetrics es null (web, SSR, o módulo nativo no listo)
+const DEFAULT_SAFE_AREA_METRICS = {
+  frame: { x: 0, y: 0, width: 0, height: 0 },
+  insets: { top: 0, left: 0, right: 0, bottom: 0 },
+};
 import { AuthProvider } from './src/context/AuthContext';
 import { ToastProvider } from './src/context/ToastContext';
 import AppNavigator from './src/navigation/AppNavigator';
@@ -36,7 +42,7 @@ const BACKGROUND_COLOR = colors.background;
  */
 export default function App() {
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider initialMetrics={initialWindowMetrics ?? DEFAULT_SAFE_AREA_METRICS}>
       <ErrorBoundary>
         <AuthProvider>
           <ToastProvider>

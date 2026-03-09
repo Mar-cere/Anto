@@ -11,6 +11,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "check:imports": "node scripts/check-duplicate-imports.js",
+    "check:safe-area": "node scripts/check-safe-area-provider.js",
+    "check": "npm run check:imports && npm run check:safe-area",
     "postinstall": "node -e \"try { const pkg = require('./node_modules/@react-native/normalize-colors/package.json'); if (!pkg.main) { pkg.main = 'index.js'; require('fs').writeFileSync('./node_modules/@react-native/normalize-colors/package.json', JSON.stringify(pkg, null, 2)); } } catch(e) {}\""
   },
   "dependencies": {

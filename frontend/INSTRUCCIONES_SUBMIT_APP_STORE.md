@@ -66,6 +66,19 @@ Si tienes Xcode instalado:
 
 ---
 
+## Antes del build: verificaciones
+
+Ejecuta estos comandos para evitar errores comunes:
+
+```bash
+npm run check          # Imports duplicados + SafeAreaProvider
+# o por separado:
+npm run check:imports  # Detecta imports duplicados (evita SyntaxError)
+npm run check:safe-area # Verifica SafeAreaProvider (evita "No safe area value available")
+```
+
+---
+
 ## Verificar el Submit
 
 Después de subir, verifica en App Store Connect:

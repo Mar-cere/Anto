@@ -2,6 +2,8 @@
 /**
  * Verifica que no haya imports duplicados en los archivos del proyecto.
  * Ejecutar antes de build: npm run check:imports
+ *
+ * Ver también: npm run check:safe-area (requisitos SafeAreaProvider)
  */
 const fs = require('fs');
 const path = require('path');

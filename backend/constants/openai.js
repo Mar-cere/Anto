@@ -79,7 +79,7 @@ export const THRESHOLDS = {
   // Validación de longitud de respuesta
   MIN_WORDS_RESPONSE: 5,            // Mínimo de palabras en una respuesta válida
   MAX_WORDS_RESPONSE: 50,           // Máximo de palabras en una respuesta (1-2 oraciones para conversación natural)
-  MAX_CHARACTERS_RESPONSE: 250,     // Máximo de caracteres en una respuesta
+  MAX_CHARACTERS_RESPONSE: 400,     // Máximo de caracteres (~50 palabras × ~7 chars en español; antes 250 era demasiado estricto para saludos)
   
   // Análisis de historial
   MIN_HISTORY_LENGTH: 3,            // Mínimo de mensajes en historial para análisis
