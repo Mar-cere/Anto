@@ -280,13 +280,24 @@ Anto/
 
 ## 📚 Documentación
 
-### Documentos Principales
+### Índice principal
+- **[docs/README.md](./docs/README.md)** — Índice de toda la documentación del proyecto.
 
-- **[ACCIONES_PRODUCCION_COMPLETADAS.md](./ACCIONES_PRODUCCION_COMPLETADAS.md)** - Estado de preparación para producción
-- **[CHECKLIST_PRE_LANZAMIENTO.md](./CHECKLIST_PRE_LANZAMIENTO.md)** - Checklist completo pre-lanzamiento
-- **[REVISION_FINAL_PRODUCCION.md](./REVISION_FINAL_PRODUCCION.md)** - Revisión técnica detallada
+### Documentos en `docs/`
+- **[docs/FLUJOS.md](./docs/FLUJOS.md)** — Flujos principales (auth, chat, pagos, crisis).
+- **[docs/CONTRATOS_API.md](./docs/CONTRATOS_API.md)** — Alineación frontend–backend y contratos de la API.
+- **[docs/REVISION_STOREKIT_COMPRAS.md](./docs/REVISION_STOREKIT_COMPRAS.md)** — StoreKit (iOS) y validación de recibos.
 
-### APIs y Endpoints Principales
+### Backend
+- **Flujo del mensaje (chat):** [backend/docs/MENSAJE_FLUJO.md](./backend/docs/MENSAJE_FLUJO.md).
+- **Seguridad:** [backend/docs/SECURITY_REVIEW_V1.1.md](./backend/docs/SECURITY_REVIEW_V1.1.md).
+- **TypeScript:** [backend/TYPESCRIPT.md](./backend/TYPESCRIPT.md).
+
+### Frontend
+- **UX y accesibilidad:** [frontend/MEJORAS_UX.md](./frontend/MEJORAS_UX.md).
+- **App Store:** [frontend/INSTRUCCIONES_SUBMIT_APP_STORE.md](./frontend/INSTRUCCIONES_SUBMIT_APP_STORE.md).
+
+### APIs y endpoints
 
 - **Health Checks**: `/health`, `/api/health`
 - **Autenticación**: `/api/auth/register`, `/api/auth/login`
@@ -306,7 +317,7 @@ Anto/
   - `/api/cognitive-distortions/statistics` - Estadísticas
   - `/api/cognitive-distortions/summary` - Resumen completo
 
-**📝 Nota:** Consulta la documentación Swagger en `/api-docs` cuando el servidor esté corriendo.
+**📝 Nota:** Contratos detallados y alineación frontend–backend en [docs/CONTRATOS_API.md](./docs/CONTRATOS_API.md). Documentación Swagger en `/api-docs` cuando el servidor esté corriendo.
 
 ---
 

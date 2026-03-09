@@ -7,6 +7,8 @@ jest.mock('react-native', () => ({
   ScrollView: Mock,
   Modal: Mock,
   ActivityIndicator: Mock,
+  SafeAreaView: Mock,
+  StatusBar: Mock,
   StyleSheet: { create: (s) => s, flatten: (x) => x },
   Alert: { alert: jest.fn() },
   Linking: { openURL: jest.fn().mockResolvedValue(undefined), canOpenURL: jest.fn().mockResolvedValue(true) },

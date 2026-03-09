@@ -8,6 +8,7 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "init-achievements": "node scripts/initAchievements.js",
+    "typecheck": "tsc --noEmit",
     "test": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
     "test:watch": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "test:unit": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern=unit",
@@ -57,11 +58,14 @@
   },
   "devDependencies": {
     "@sentry/profiling-node": "^10.27.0",
+    "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
+    "@types/node": "^22.10.0",
     "jest": "^29.7.0",
     "jest-junit": "^16.0.0",
     "nodemon": "^3.0.0",
-    "supertest": "^7.0.0"
+    "supertest": "^7.0.0",
+    "typescript": "~5.7.0"
   },
   "engines": {
     "node": "20.x",

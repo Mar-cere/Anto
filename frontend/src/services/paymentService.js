@@ -221,6 +221,7 @@ class PaymentService {
           success: response.success,
           error: response.error || null,
           subscription: response.subscription || null,
+          appleStatus: response.appleStatus ?? response.status ?? null,
         };
       } catch (error) {
         const totalDuration = Date.now() - validationStartTime;
@@ -237,6 +238,7 @@ class PaymentService {
         return {
           success: false,
           error: error?.message || error?.response?.data?.error || 'Error al validar la compra',
+          appleStatus: error?.response?.data?.appleStatus ?? error?.response?.data?.status ?? null,
         };
       }
     };
