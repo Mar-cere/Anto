@@ -118,8 +118,8 @@ Apple exige enlaces **funcionales y visibles** a:
 
 ## Notas Importantes
 
-- **Build Number**: Actualmente es `14` (en `app.json`)
-- **Version**: `1.1.0`
+- **Build Number**: Actualmente es `15` (en `app.json`)
+- **Version**: `1.2.0`
 - **Bundle ID**: `com.anto.app`
 - **ASC App ID**: `6756631911`
 
@@ -127,7 +127,7 @@ Si necesitas incrementar el build number para la próxima versión:
 ```json
 // En app.json
 "ios": {
-  "buildNumber": "14"  // Incrementar para cada envío
+  "buildNumber": "15"  // Incrementar para cada envío
 }
 ```
 
