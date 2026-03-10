@@ -680,6 +680,15 @@ class OpenAIService {
       console.log(`📏 Respuesta aún demasiado larga después de ajustes (${caracteresFinal} caracteres, ${palabrasFinal} palabras). Reduciendo nuevamente...`);
       respuestaMejorada = this.reducirRespuesta(respuestaMejorada);
     }
+
+    // NUNCA reemplazar por mensaje genérico si tenemos contenido válido (evitar pérdida de información)
+    if (!respuestaMejorada || respuestaMejorada.trim().length < 5) {
+      const truncado = (respuesta || '').trim();
+      if (truncado.length > 0) {
+        const maxC = THRESHOLDS.MAX_CHARACTERS_RESPONSE - 3;
+        respuestaMejorada = truncado.length <= maxC ? truncado : truncado.substring(0, maxC).trim() + '…';
+      }
+    }
     
     // Asegurar que la respuesta siempre comience con mayúscula
     if (respuestaMejorada && respuestaMejorada.length > 0) {
@@ -868,45 +877,56 @@ class OpenAIService {
   }
 
   /**
-   * Reduce respuestas muy largas manteniendo las primeras oraciones más importantes
+   * Reduce respuestas muy largas manteniendo las primeras oraciones más importantes.
+   * NUNCA reemplaza con mensaje genérico: siempre devuelve contenido de la respuesta original.
    * @param {string} respuesta - Respuesta original
-   * @returns {string} Respuesta reducida
+   * @returns {string} Respuesta reducida (siempre basada en el contenido original)
    */
   reducirRespuesta(respuesta) {
     if (!respuesta) return ERROR_MESSAGES.DEFAULT_FALLBACK;
-    
+
+    const maxChars = THRESHOLDS.MAX_CHARACTERS_RESPONSE - PROMPT_CONFIG.TRUNCATE_BUFFER;
+
     // Dividir en oraciones
     const oraciones = respuesta.split(/[.!?]+/).filter(s => s.trim());
-    
+
     // Si tiene 2 o menos oraciones y está dentro del límite, retornar tal cual
     if (oraciones.length <= VALIDATION_LIMITS.MAX_SENTENCES_REDUCE && respuesta.length <= THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
       return respuesta;
     }
-    
-    // Tomar solo las primeras N oraciones (más importantes)
+
+    // Tomar las primeras oraciones para conservar información relevante
     const oracionesReducidas = oraciones.slice(0, VALIDATION_LIMITS.MAX_SENTENCES_REDUCE);
     let respuestaReducida = oracionesReducidas.join('. ').trim();
-    
+
+    // Si al unir oraciones quedó vacío (ej. solo puntuación), truncar desde el original
+    if (!respuestaReducida || respuestaReducida.length < 20) {
+      const truncado = respuesta.substring(0, maxChars);
+      const ultimoEspacio = truncado.lastIndexOf(' ');
+      respuestaReducida = ultimoEspacio > 0 ? truncado.substring(0, ultimoEspacio).trim() : truncado.trim();
+      if (!respuestaReducida.endsWith('.') && !respuestaReducida.endsWith('!') && !respuestaReducida.endsWith('?')) {
+        respuestaReducida += PROMPT_CONFIG.TRUNCATE_ELLIPSIS;
+      }
+      return respuestaReducida || respuesta.substring(0, THRESHOLDS.MAX_CHARACTERS_RESPONSE).trim();
+    }
+
     // Si aún es muy larga, truncar por caracteres de forma inteligente
     if (respuestaReducida.length > THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
-      // Truncar en el último espacio antes del límite para no cortar palabras
-      const truncado = respuestaReducida.substring(0, THRESHOLDS.MAX_CHARACTERS_RESPONSE - PROMPT_CONFIG.TRUNCATE_BUFFER);
+      const truncado = respuestaReducida.substring(0, maxChars);
       const ultimoEspacio = truncado.lastIndexOf(' ');
-      respuestaReducida = ultimoEspacio > 0 
+      respuestaReducida = ultimoEspacio > 0
         ? truncado.substring(0, ultimoEspacio).trim()
         : truncado.trim();
-      
-      // Asegurar que termine correctamente
+
       if (!respuestaReducida.endsWith('.') && !respuestaReducida.endsWith('!') && !respuestaReducida.endsWith('?')) {
         respuestaReducida += PROMPT_CONFIG.TRUNCATE_ELLIPSIS;
       }
     } else {
-      // Agregar punto final si no lo tiene
       if (!respuestaReducida.endsWith('.') && !respuestaReducida.endsWith('!') && !respuestaReducida.endsWith('?')) {
         respuestaReducida += '.';
       }
     }
-    
+
     return respuestaReducida;
   }
 
@@ -1133,16 +1153,30 @@ class OpenAIService {
     const emotion = analisisEmocional?.mainEmotion || 'neutral';
     const intensity = analisisEmocional?.intensity || 5;
     const intent = analisisContextual?.intencion?.tipo || MESSAGE_INTENTS.EMOTIONAL_SUPPORT;
-    const content = analisisContextual?.content || '';
-    
+    const content = (analisisContextual?.content || '').toLowerCase().trim();
+
     // Detectar preguntas sobre el sistema
     const isSystemQuestion = /(?:quien.*eres|qué.*haces|qué.*es|qué.*sos|como.*funciona|para.*qué.*sirve|qué.*puedes.*hacer|qué.*ofreces)/i.test(content);
     if (isSystemQuestion) {
       return 'Soy Anto, tu asistente terapéutico. Estoy aquí para brindarte apoyo emocional, escucharte y ayudarte a navegar tus emociones. ¿En qué puedo ayudarte hoy?';
     }
-    
+
+    // Fuera de ámbito solo en casos claros: preguntas puramente informativas o tecnología.
+    // No ser estricto: si mezcla tema externo con cómo se siente, el modelo ya responde con naturalidad.
+    const offTopicPatterns = [
+      /(?:qué|que) es\s+(?:react|react native|un framework)/i,
+      /react\s*native|programación|framework\s+de|tecnología\s+(?:de|para)/i,
+      /^cuál es la capital\s/i
+    ];
+    const wellnessKeywords = /(?:emoción|sentir|ansiedad|tristeza|estrés|bienestar|terapia|apoyo|miedo|enojo|depresión|preocupación|me hace|me siento|estoy)/i;
+    const looksLikeOffTopic = offTopicPatterns.some(p => p.test(content));
+    const hasWellnessContext = wellnessKeywords.test(content);
+    if (looksLikeOffTopic && !hasWellnessContext) {
+      return 'Ese tema no es en lo que mejor te acompaño; mi espacio es cómo te sientes y tu bienestar. ¿Cómo estás hoy o qué te gustaría compartir?';
+    }
+
     // Detectar saludos
-    const isGreeting = /^(hola|hi|hello|buenos.*d[ií]as|buenas.*tardes|buenas.*noches|qué.*tal)$/i.test(content.trim());
+    const isGreeting = /^(hola|hi|hello|buenos.*d[ií]as|buenas.*tardes|buenas.*noches|qué.*tal)$/i.test(content);
     if (isGreeting) {
       return '¡Hola! Soy Anto, tu asistente terapéutico. Estoy aquí para escucharte y apoyarte. ¿Cómo puedo ayudarte hoy?';
     }
