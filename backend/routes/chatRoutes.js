@@ -665,26 +665,133 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           }
         };
         
+        const openaiContext = {
+          history: historialParaPrompt,
+          emotional: emotionalAnalysis,
+          contextual: contextualAnalysis,
+          profile: combinedProfile,
+          therapeutic: therapeuticRecord,
+          currentConversationId: conversationId,
+          conversationContext,
+          depthPreference: depthAnalysis?.depthPreference,
+          inferredWritingStyle: writingStyle?.style,
+          preferredResponseLength: engagement?.preferredResponseLength,
+          crisis: isCrisis ? {
+            riskLevel,
+            country: userProfile?.preferences?.country || 'GENERAL',
+            detectedAt: new Date()
+          } : undefined
+        };
+
+        // Streaming: si se pide stream=true, responder por SSE
+        if (req.query.stream === 'true') {
+          res.setHeader('Content-Type', 'text/event-stream');
+          res.setHeader('Cache-Control', 'no-cache');
+          res.setHeader('Connection', 'keep-alive');
+          res.setHeader('X-Accel-Buffering', 'no');
+          res.flushHeaders();
+
+          try {
+            for await (const event of openaiService.generarRespuestaStream(userMessage, openaiContext)) {
+              if (event.type === 'chunk') {
+                res.write('data: ' + JSON.stringify({ content: event.content }) + '\n\n');
+              } else if (event.type === 'done') {
+                const response = { content: event.content, context: event.context };
+                const emocionalNormalizado = openaiService.normalizarAnalisisEmocional(emotionalAnalysis);
+                const therapeutic = response.context?.therapeutic;
+
+                try {
+                  assistantMessage = new Message({
+                    userId: req.user._id,
+                    content: response.content,
+                    role: 'assistant',
+                    conversationId,
+                    metadata: {
+                      status: 'sent',
+                      context: {
+                        emotional: emocionalNormalizado,
+                        contextual: contextualAnalysis,
+                        response: JSON.stringify(response.context),
+                        ...(therapeutic && { therapeutic: { technique: therapeutic.technique, type: therapeutic.type } })
+                      }
+                    }
+                  });
+                  await assistantMessage.save();
+                } catch (saveError) {
+                  if (saveError.name === 'ValidationError' && saveError.errors?.['metadata.context.emotional.mainEmotion']) {
+                    assistantMessage = new Message({
+                      userId: req.user._id,
+                      content: response.content,
+                      role: 'assistant',
+                      conversationId,
+                      metadata: {
+                        status: 'sent',
+                        context: {
+                          emotional: { mainEmotion: 'neutral', intensity: emocionalNormalizado.intensity || 5 },
+                          contextual: contextualAnalysis,
+                          response: JSON.stringify(response.context),
+                          ...(therapeutic && { therapeutic: { technique: therapeutic.technique, type: therapeutic.type } })
+                        }
+                      }
+                    });
+                    await assistantMessage.save();
+                  } else throw saveError;
+                }
+
+                Promise.all([
+                  Conversation.findByIdAndUpdate(conversationId, { lastMessage: assistantMessage._id }).catch(() => {}),
+                  progressTracker.trackProgress(req.user._id, { userMessage, assistantMessage, analysis: { emotional: emotionalAnalysis, contextual: contextualAnalysis } }).catch(() => {}),
+                  userProfileService.actualizarPerfil(req.user._id, userMessage, { emotional: emotionalAnalysis, contextual: contextualAnalysis }).catch(() => {}),
+                  userProfileService.updateLongTermProfileFromConversation(req.user._id, { emotionalAnalysis, contextualAnalysis }).catch(() => {}),
+                  ...(userMessagesForAnalysis.length >= 5 ? [userProfileService.inferPreferencesFromBehavior(req.user._id, {
+                    communicationStyle: writingStyle?.confidence >= 0.5 ? { formal: 'formal', casual: 'casual', laconic: 'directo', emotive: 'empatico' }[writingStyle.style] : undefined,
+                    responseLength: engagement?.engagementLevel !== 'unknown' ? engagement.preferredResponseLength : undefined,
+                    responseStyle: engagement?.preferredResponseLength === 'SHORT' ? 'brief' : engagement?.preferredResponseLength === 'LONG' ? 'deep' : undefined
+                  }).catch(() => {})] : [])
+                ]).catch(() => {});
+
+                const responseTime = Date.now() - startTime;
+                let scaleSuggestion = null;
+                try {
+                  scaleSuggestion = await clinicalScalesService.shouldAdministerScale(emotionalAnalysis, contextualAnalysis, req.user._id);
+                } catch (_) {}
+                const cognitiveDistortions = contextualAnalysis?.cognitiveDistortions || null;
+                const primaryDistortion = contextualAnalysis?.primaryDistortion || null;
+                const distortionIntervention = contextualAnalysis?.distortionIntervention || null;
+                const shouldShowSuggestions = shouldShowActionSuggestions(emotionalAnalysis, contextualAnalysis, conversationHistory, req.user._id);
+                let formattedSuggestions = [];
+                if (shouldShowSuggestions) {
+                  try {
+                    const actionSuggestions = actionSuggestionService.generateSuggestions(emotionalAnalysis, contextualAnalysis);
+                    formattedSuggestions = actionSuggestionService.formatSuggestions(actionSuggestions);
+                  } catch (_) {}
+                }
+
+                res.write('data: ' + JSON.stringify({
+                  done: true,
+                  messageId: assistantMessage._id?.toString(),
+                  content: response.content,
+                  context: { emotional: emotionalAnalysis, contextual: contextualAnalysis },
+                  suggestions: formattedSuggestions,
+                  clinicalScale: scaleSuggestion ? { ...scaleSuggestion, suggestion: clinicalScalesService.generateScaleSuggestion(scaleSuggestion.scale, scaleSuggestion.reason), automaticResult: null } : null,
+                  cognitiveDistortions: cognitiveDistortions?.length > 0 ? { detected: cognitiveDistortions, primary: primaryDistortion, intervention: distortionIntervention } : null,
+                  processingTime: responseTime
+                }) + '\n\n');
+                res.end();
+                return;
+              }
+            }
+          } catch (streamErr) {
+            console.error('[ChatRoutes] Error en streaming:', streamErr);
+            res.write('data: ' + JSON.stringify({ error: streamErr.message || 'Error en streaming' }) + '\n\n');
+            res.end();
+            return;
+          }
+        }
+
         const response = await openaiService.generarRespuesta(
           userMessage,
-          {
-            history: historialParaPrompt,
-            emotional: emotionalAnalysis,
-            contextual: contextualAnalysis,
-            profile: combinedProfile,
-            therapeutic: therapeuticRecord,
-            currentConversationId: conversationId, // NUEVO: Para referencias a conversaciones anteriores
-            conversationContext, // Escalada, rechazo de ayuda, cambio brusco de tono, etc.
-            depthPreference: depthAnalysis?.depthPreference, // Preferencia de profundidad para ajustar longitud
-            inferredWritingStyle: writingStyle?.style, // formal/casual/laconic/emotive
-            preferredResponseLength: engagement?.preferredResponseLength, // SHORT/MEDIUM/LONG
-            // Agregar información de crisis si se detecta
-            crisis: isCrisis ? {
-              riskLevel,
-              country: userProfile?.preferences?.country || 'GENERAL', // Por ahora GENERAL, se puede mejorar después
-              detectedAt: new Date()
-            } : undefined
-          }
+          openaiContext
         );
 
         // Nota: La validación de coherencia emocional ya se realiza dentro de generarRespuesta()

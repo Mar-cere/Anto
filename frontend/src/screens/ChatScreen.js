@@ -298,7 +298,11 @@ const ChatScreen = () => {
             windowSize={LAYOUT.FLATLIST_WINDOW_SIZE}
             maxToRenderPerBatch={LAYOUT.FLATLIST_MAX_TO_RENDER_PER_BATCH}
             ListEmptyComponent={listEmptyComponent}
-            ListFooterComponent={isTyping ? ChatTypingIndicator : null}
+            ListFooterComponent={
+              isTyping && !messages.some((m) => (m.metadata?.streaming && m.role === 'assistant'))
+                ? ChatTypingIndicator
+                : null
+            }
             ListFooterComponentStyle={styles.typingIndicatorContainer}
           />
         )}

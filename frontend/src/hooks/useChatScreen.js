@@ -129,49 +129,61 @@ export function useChatScreen() {
       metadata: { timestamp: new Date().toISOString(), pending: true },
     };
 
+    const tempAssistantId = `${MESSAGE_ID_PREFIXES.TEMP}-assistant-${Date.now()}`;
+    const tempAssistantMessage = {
+      id: tempAssistantId,
+      content: '',
+      role: MESSAGE_ROLES.ASSISTANT,
+      type: MESSAGE_TYPES.TEXT,
+      metadata: { timestamp: new Date().toISOString(), streaming: true },
+    };
+
     try {
-      setMessages((prev) => [...prev, tempUserMessage]);
+      setMessages((prev) => [...prev, tempUserMessage, tempAssistantMessage]);
       scrollToBottom(true);
 
-      const response = await chatService.sendMessage(messageText);
-
-      if (response?.userMessage && response?.assistantMessage) {
-        setMessages((prev) => {
-          const filtered = prev.filter((msg) => msg.id !== tempUserMessage.id);
-          const messageExists = (message) => {
-            const messageId = message._id || message.id;
-            if (!messageId) return false;
-            return filtered.some((msg) => msg._id === messageId || msg.id === messageId);
-          };
-          const newMessages = [...filtered];
-          if (response.userMessage && !messageExists(response.userMessage)) {
-            newMessages.push(response.userMessage);
-          }
-          if (response.assistantMessage && !messageExists(response.assistantMessage)) {
-            newMessages.push(response.assistantMessage);
-          }
-          if (response.suggestions && response.suggestions.length > 0) {
-            const suggestionsMessage = {
-              id: `suggestions-${Date.now()}`,
-              role: 'suggestions',
-              type: 'suggestions',
-              suggestions: response.suggestions,
+      await chatService.sendMessageStream(messageText, {
+        onChunk(content) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === tempAssistantId
+                ? { ...msg, content: (msg.content || '') + content }
+                : msg
+            )
+          );
+          scrollToBottom(true);
+        },
+        onDone(payload) {
+          setMessages((prev) => {
+            const filtered = prev.filter((msg) => msg.id !== tempAssistantId);
+            const finalAssistant = {
+              id: payload.messageId || tempAssistantId,
+              _id: payload.messageId || tempAssistantId,
+              content: payload.content ?? '',
+              role: MESSAGE_ROLES.ASSISTANT,
+              type: MESSAGE_TYPES.TEXT,
               metadata: { timestamp: new Date().toISOString() },
             };
-            const hasRecentSuggestions = newMessages.some(
-              (msg) =>
-                msg.type === 'suggestions' &&
-                msg.id?.startsWith('suggestions-') &&
-                Date.now() - parseInt(msg.id.split('-')[1], 10) < 5000
-            );
-            if (!hasRecentSuggestions) newMessages.push(suggestionsMessage);
-          }
-          return newMessages;
-        });
-        scrollToBottom(true);
-      }
+            const next = [...filtered, finalAssistant];
+            if (payload.suggestions && payload.suggestions.length > 0) {
+              next.push({
+                id: `suggestions-${Date.now()}`,
+                role: 'suggestions',
+                type: 'suggestions',
+                suggestions: payload.suggestions,
+                metadata: { timestamp: new Date().toISOString() },
+              });
+            }
+            return next;
+          });
+          scrollToBottom(true);
+        },
+      });
     } catch (err) {
       console.error('Error al enviar mensaje:', err);
+
+      // Quitar mensajes temporales en error
+      setMessages((prev) => prev.filter((msg) => msg.id !== tempUserMessage.id && msg.id !== tempAssistantId));
 
       const isNetworkError =
         err.message?.includes('Network request failed') ||
@@ -182,7 +194,6 @@ export function useChatScreen() {
         isOffline;
 
       if (isNetworkError) {
-        setMessages((prev) => prev.filter((msg) => msg.id !== tempUserMessage.id));
         setMessages((prev) => [
           ...prev,
           {
@@ -206,7 +217,6 @@ export function useChatScreen() {
         (err.response?.status === 403 && err.response?.data?.requiresSubscription);
 
       if (isSubscriptionError) {
-        setMessages((prev) => prev.filter((msg) => msg.id !== tempUserMessage.id));
         const errorMessage =
           err.response?.data?.message ||
           getApiErrorMessage(err, { isOffline }) ||
@@ -223,7 +233,6 @@ export function useChatScreen() {
         err.message?.includes('No se pudo crear') ||
         (err.message?.includes('conversación') && !isSubscriptionError)
       ) {
-        setMessages((prev) => prev.filter((msg) => msg.id !== tempUserMessage.id));
         setMessages((prev) => [
           ...prev,
           {

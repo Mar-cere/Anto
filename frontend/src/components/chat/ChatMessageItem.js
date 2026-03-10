@@ -132,7 +132,7 @@ export default function ChatMessageItem({
             isUser ? styles.userMessageTextBold : styles.botMessageTextBold,
           ]}
         >
-          {message.content}
+          {message.content || (message.metadata?.streaming ? '...' : '')}
         </MarkdownText>
       </View>
     </View>

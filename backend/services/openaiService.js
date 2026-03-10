@@ -518,6 +518,215 @@ class OpenAIService {
   }
 
   /**
+   * Genera la respuesta por streaming (chunks). Misma lógica que generarRespuesta hasta la llamada a OpenAI;
+   * con stream: true se envían fragmentos y al final se aplica post-procesado (validación, técnica, etc.).
+   * @param {Object} mensaje - Mensaje del usuario
+   * @param {Object} contexto - Contexto (emotional, contextual, profile, history, etc.)
+   * @returns {AsyncGenerator<{ type: 'chunk', content: string } | { type: 'done', content: string, context: Object }>}
+   */
+  async *generarRespuestaStream(mensaje, contexto = {}) {
+    const validation = validateMessage(mensaje);
+    if (!validation.valid) throw new Error(validation.error);
+    const contenidoNormalizado = validation.content;
+
+    if (!validateApiKey() || !openai) {
+      throw new Error('OPENAI_API_KEY no está configurada.');
+    }
+
+    let analisisEmocional = contexto.emotional;
+    let analisisContextual = contexto.contextual;
+    let perfilUsuario = contexto.profile;
+    let registroTerapeutico = contexto.therapeutic;
+
+    if (!analisisEmocional) {
+      analisisEmocional = await emotionalAnalyzer.analyzeEmotion(contenidoNormalizado);
+    }
+    if (!analisisContextual) {
+      const history = contexto.history || [];
+      analisisContextual = await contextAnalyzer.analizarMensaje(
+        { ...mensaje, content: contenidoNormalizado },
+        history.length > 0 ? history : null
+      );
+    }
+    if (!perfilUsuario) {
+      perfilUsuario = await personalizationService.getUserProfile(mensaje.userId).catch(() => null);
+    }
+    if (!registroTerapeutico) {
+      registroTerapeutico = await TherapeuticRecord.findOne({ userId: mensaje.userId }).catch(() => null);
+    }
+
+    const memoriaContextual = await memoryService.getRelevantContext(
+      mensaje.userId,
+      contenidoNormalizado,
+      { emotional: analisisEmocional, contextual: analisisContextual }
+    );
+
+    const sessionTrends = sessionEmotionalMemory.analyzeTrends(mensaje.userId);
+    const prompt = await buildContextualizedPrompt(
+      { ...mensaje, content: contenidoNormalizado },
+      {
+        emotional: analisisEmocional,
+        contextual: analisisContextual,
+        profile: perfilUsuario,
+        therapeutic: registroTerapeutico,
+        memory: memoriaContextual,
+        history: contexto.history || [],
+        currentMessage: contenidoNormalizado,
+        currentConversationId: contexto.currentConversationId,
+        sessionTrends,
+        conversationContext: contexto.conversationContext,
+        depthPreference: contexto.depthPreference,
+        inferredWritingStyle: contexto.inferredWritingStyle,
+        preferredResponseLength: contexto.preferredResponseLength,
+        crisis: contexto.crisis
+      }
+    );
+
+    const maxTokens = this.determinarLongitudRespuesta(analisisContextual, contenidoNormalizado, perfilUsuario?.preferences?.responseStyle || 'balanced');
+
+    let stream;
+    try {
+      stream = await openai.chat.completions.create({
+        model: OPENAI_MODEL,
+        messages: [
+          { role: 'system', content: prompt.systemMessage },
+          ...prompt.contextMessages,
+          { role: 'user', content: contenidoNormalizado }
+        ],
+        max_completion_tokens: maxTokens,
+        stream: true
+      });
+    } catch (apiError) {
+      if (apiError.status === 401 || apiError.code === 'invalid_api_key') {
+        throw new Error('Error de autenticación con OpenAI. Verifica tu API key.');
+      }
+      throw apiError;
+    }
+
+    let buffer = '';
+    for await (const chunk of stream) {
+      const delta = chunk.choices?.[0]?.delta?.content;
+      if (delta) {
+        buffer += delta;
+        yield { type: 'chunk', content: delta };
+      }
+    }
+
+    const rawContent = buffer.trim();
+    if (!rawContent) {
+      const fallback = this.generarRespuestaFallback(analisisEmocional, analisisContextual);
+      const result = await this._postProcessStreamedContent(fallback || ERROR_MESSAGES.DEFAULT_FALLBACK, {
+        mensaje,
+        contenidoNormalizado,
+        analisisEmocional,
+        analisisContextual,
+        perfilUsuario,
+        registroTerapeutico
+      });
+      yield { type: 'done', content: result.content, context: result.context };
+      return;
+    }
+
+    const result = await this._postProcessStreamedContent(rawContent, {
+      mensaje,
+      contenidoNormalizado,
+      analisisEmocional,
+      analisisContextual,
+      perfilUsuario,
+      registroTerapeutico
+    });
+    yield { type: 'done', content: result.content, context: result.context };
+  }
+
+  /**
+   * Post-procesa el contenido generado por streaming (validación, técnica, seguridad, etc.).
+   * @private
+   */
+  async _postProcessStreamedContent(respuestaGenerada, { mensaje, contenidoNormalizado, analisisEmocional, analisisContextual, perfilUsuario, registroTerapeutico }) {
+    let activeProtocol = therapeuticProtocolService.getActiveProtocol(mensaje.userId);
+    let currentIntervention = null;
+
+    if (!activeProtocol) {
+      const protocolToStart = therapeuticProtocolService.shouldStartProtocol(analisisEmocional, analisisContextual);
+      if (protocolToStart) {
+        activeProtocol = therapeuticProtocolService.startProtocol(mensaje.userId, protocolToStart);
+        currentIntervention = therapeuticProtocolService.getCurrentIntervention(mensaje.userId);
+      }
+    } else {
+      currentIntervention = therapeuticProtocolService.getCurrentIntervention(mensaje.userId);
+    }
+
+    const responseStyle = perfilUsuario?.preferences?.responseStyle || 'balanced';
+    const therapeuticBase = therapeuticTemplateService.buildTherapeuticBase(
+      analisisEmocional?.mainEmotion,
+      analisisEmocional?.subtype,
+      { style: responseStyle }
+    );
+
+    let selectedTechnique = null;
+    if (!activeProtocol) {
+      selectedTechnique = selectAppropriateTechnique(
+        analisisEmocional?.mainEmotion || DEFAULT_VALUES.EMOTION,
+        analisisEmocional?.intensity || DEFAULT_VALUES.INTENSITY,
+        registroTerapeutico?.currentPhase || DEFAULT_VALUES.PHASE,
+        analisisContextual?.intencion?.tipo || null
+      );
+    }
+
+    let respuestaMejorada = respuestaGenerada;
+    if (therapeuticBase && !activeProtocol) {
+      respuestaMejorada = `${therapeuticBase}\n\n${respuestaGenerada}`;
+    }
+    if (activeProtocol && currentIntervention) {
+      respuestaMejorada = this.adaptResponseToProtocol(respuestaMejorada, currentIntervention, analisisEmocional);
+    }
+
+    const respuestaValidada = await this.validarYMejorarRespuesta(respuestaMejorada, {
+      emotional: analisisEmocional,
+      contextual: analisisContextual,
+      profile: perfilUsuario,
+      userMessage: contenidoNormalizado
+    });
+
+    let respuestaConSeguridad = respuestaValidada;
+    if (analisisEmocional?.intensity >= 8 || analisisEmocional?.requiresAttention) {
+      respuestaConSeguridad = this.addSafetyChecks(respuestaValidada, analisisEmocional, analisisContextual);
+    }
+
+    let respuestaConElecciones = respuestaConSeguridad;
+    if (this.shouldAddChoices(analisisEmocional, analisisContextual, activeProtocol)) {
+      respuestaConElecciones = this.addResponseChoices(respuestaConSeguridad, analisisEmocional, analisisContextual, activeProtocol);
+    }
+
+    let respuestaFinal = respuestaConElecciones;
+    if (selectedTechnique && !activeProtocol && this.shouldIncludeTechnique(analisisEmocional, analisisContextual, mensaje)) {
+      const espacioDisponible = THRESHOLDS.MAX_CHARACTERS_RESPONSE - respuestaValidada.length;
+      const techniqueText = formatTechniqueForResponse(selectedTechnique, {
+        compact: espacioDisponible < 300,
+        maxSteps: espacioDisponible < 300 ? 2 : 4
+      });
+      respuestaFinal = `${respuestaValidada}${techniqueText}`;
+      if (respuestaFinal.length > THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
+        const veryCompact = formatTechniqueForResponse(selectedTechnique, { compact: true, maxSteps: 1 });
+        respuestaFinal = `${respuestaValidada}${veryCompact}`;
+      }
+    }
+
+    const context = {
+      emotional: analisisEmocional,
+      contextual: analisisContextual,
+      therapeutic: selectedTechnique ? {
+        technique: selectedTechnique.name,
+        type: selectedTechnique.type,
+        category: selectedTechnique.category
+      } : undefined,
+      timestamp: new Date()
+    };
+
+    return { content: respuestaFinal, context };
+  }
+
+  /**
    * Determina la temperatura óptima para la generación basada en el contexto
    * @param {Object} contexto - Contexto del mensaje
    * @returns {number} Temperatura (0.1 - 0.8)

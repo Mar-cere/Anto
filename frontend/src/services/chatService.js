@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import api from '../config/api';
+import api, { API_URL } from '../config/api';
 import { Platform } from 'react-native';
 
 const API_BASE_URL = 'https://antobackend.onrender.com';
@@ -99,6 +99,147 @@ export const sendMessage = async (text) => {
   }
 };
 
+/**
+ * Envía un mensaje y recibe la respuesta por streaming (SSE).
+ * En React Native sin getReader se usa el endpoint normal para garantizar que el texto aparezca.
+ * @param {string} text - Contenido del mensaje
+ * @param {Object} callbacks - { onChunk(content: string), onDone(payload: object) }
+ * @returns {Promise<void>}
+ */
+export const sendMessageStream = async (text, { onChunk, onDone }) => {
+  let conversationId = await AsyncStorage.getItem('currentConversationId');
+  if (!conversationId) {
+    conversationId = await createConversation();
+  }
+
+  const token = await AsyncStorage.getItem('userToken');
+  if (!token) throw new Error('No hay token de autenticación');
+
+  // En React Native no usamos stream (getReader suele no existir o response.text() no devuelve el cuerpo bien).
+  // Usamos el endpoint normal para que el texto siempre aparezca.
+  const useNonStream = Platform.OS === 'ios' || Platform.OS === 'android';
+  if (useNonStream) {
+    const data = await api.post('/api/chat/messages', {
+      content: text,
+      role: 'user',
+      conversationId,
+    });
+    if (data?.assistantMessage?.content && onChunk) onChunk(data.assistantMessage.content);
+    if (onDone) {
+      onDone({
+        done: true,
+        messageId: data?.assistantMessage?._id?.toString?.() || data?.assistantMessage?._id,
+        content: data?.assistantMessage?.content ?? '',
+        suggestions: data?.suggestions,
+        context: data?.context,
+      });
+    }
+    return;
+  }
+
+  const url = `${API_URL}/api/chat/messages?stream=true`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      content: text,
+      role: 'user',
+      conversationId,
+    }),
+  });
+
+  if (!response.ok) {
+    let errMsg = response.statusText;
+    try {
+      const data = await response.json();
+      errMsg = data.message || data.error || errMsg;
+    } catch (_) {}
+    const err = new Error(errMsg);
+    err.response = { status: response.status };
+    throw err;
+  }
+
+  const reader = response.body?.getReader?.();
+  if (!reader) {
+    // Entornos sin getReader: leer todo el cuerpo y parsear SSE
+    const rawText = await response.text();
+    const lines = rawText.split(/\n\n+/);
+    let accumulatedContent = '';
+    for (const line of lines) {
+      const trimmed = line.trim().replace(/^data:\s*/, '');
+      if (!trimmed) continue;
+      try {
+        const payload = JSON.parse(trimmed);
+        if (payload.error) throw new Error(payload.error);
+        if (payload.done === true) {
+          if (onDone) onDone(payload);
+          return;
+        }
+        if (typeof payload.content === 'string') {
+          accumulatedContent += payload.content;
+          if (onChunk) onChunk(payload.content);
+        }
+      } catch (e) {
+        if (e instanceof SyntaxError) continue;
+        throw e;
+      }
+    }
+    // Si no hubo evento "done", intentar onDone con el contenido acumulado por si el último evento vino sin done
+    if (onDone && accumulatedContent) {
+      onDone({ done: true, content: accumulatedContent, messageId: null, suggestions: [] });
+    }
+    return;
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const payload = JSON.parse(line.slice(6));
+          if (payload.error) throw new Error(payload.error);
+          if (payload.done === true) {
+            if (onDone) onDone(payload);
+          } else if (typeof payload.content === 'string' && onChunk) {
+            onChunk(payload.content);
+          }
+        } catch (e) {
+          if (e instanceof SyntaxError) continue;
+          throw e;
+        }
+      }
+    }
+    if (buffer.trim()) {
+      if (buffer.startsWith('data: ')) {
+        try {
+          const payload = JSON.parse(buffer.slice(6));
+          if (payload.error) throw new Error(payload.error);
+          if (payload.done === true) {
+            if (onDone) onDone(payload);
+          } else if (typeof payload.content === 'string' && onChunk) {
+            onChunk(payload.content);
+          }
+        } catch (e) {
+          if (!(e instanceof SyntaxError)) throw e;
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock?.();
+  }
+};
+
 // Registrar callbacks (mantener para compatibilidad)
 export const onMessage = (callback) => {
   messageCallbacks.push(callback);
@@ -192,6 +333,7 @@ export const getMessages = async (conversationId) => {
 export default {
   initializeSocket,
   sendMessage,
+  sendMessageStream,
   onMessage,
   onError,
   saveMessages,
