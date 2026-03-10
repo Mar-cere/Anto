@@ -78,50 +78,84 @@ class ContextAnalyzer {
   }
 
   /**
+   * Extrae temas recurrentes del historial de conversación
+   * @param {Array} conversationHistory - Historial (mensajes con content, role)
+   * @param {number} maxMessages - Máximo de mensajes de usuario a analizar
+   * @returns {string[]} Lista de categorías de tema detectadas (sin duplicados, orden por aparición)
+   */
+  extraerTemasDelHistorial(conversationHistory, maxMessages = 8) {
+    if (!Array.isArray(conversationHistory) || conversationHistory.length === 0) return [];
+    const userMessages = conversationHistory
+      .filter(m => m.role === 'user' && this.isValidString(m.content))
+      .slice(0, maxMessages);
+    const temas = [];
+    const seen = new Set();
+    for (const msg of userMessages) {
+      const temaResult = this.detectarTema((msg.content || '').toLowerCase());
+      const cat = temaResult?.categoria;
+      if (cat && cat !== 'GENERAL' && !seen.has(cat)) {
+        seen.add(cat);
+        temas.push(cat);
+      }
+    }
+    return temas;
+  }
+
+  /**
    * Analiza el mensaje para detectar intención, tema y urgencia
    * @param {Object} mensaje - El mensaje a analizar (debe tener propiedad 'content')
+   * @param {Array} [conversationHistory] - Historial de conversación (opcional) para enriquecer contexto
    * @returns {Object} Análisis del mensaje con intención, tema, urgencia y contexto
    */
-  async analizarMensaje(mensaje) {
+  async analizarMensaje(mensaje, conversationHistory = null) {
     if (!this.isValidMessage(mensaje)) {
       console.warn('[ContextAnalyzer] Mensaje inválido:', mensaje);
       return this.getAnalisisDefault();
     }
-    
+
     try {
       const contenidoActual = this.analizarContenidoActual(mensaje);
       const content = mensaje.content || '';
-      
+
+      // Enriquecer contexto con historial cuando esté disponible
+      let faseConversacion = this.FASE_CONVERSACION_INICIAL;
+      let temasRecurrentes = [];
+      if (Array.isArray(conversationHistory) && conversationHistory.length > 0) {
+        const userCount = conversationHistory.filter(m => m.role === 'user').length;
+        faseConversacion = userCount >= 4 ? 'EN_CURSO' : this.FASE_CONVERSACION_INICIAL;
+        temasRecurrentes = this.extraerTemasDelHistorial(conversationHistory);
+      }
+
       // NUEVO: Detectar resistencia al cambio
       const resistance = detectResistance(content);
-      
+
       // NUEVO: Detectar señales de recaída
       const relapseSigns = detectRelapseSigns(content);
-      
+
       // NUEVO: Detectar necesidades implícitas
       const implicitNeeds = detectImplicitNeeds(content);
-      
+
       // NUEVO: Identificar fortalezas
       const strengths = identifyStrengths(content);
-      
+
       // NUEVO: Evaluar autoeficacia
       const selfEfficacy = evaluateSelfEfficacy(content);
-      
+
       // NUEVO: Evaluar apoyo social
       const socialSupport = assessSocialSupport(content);
-      
+
       // NUEVO: Detectar distorsiones cognitivas avanzadas
       const cognitiveDistortions = cognitiveDistortionDetector.detectDistortions(content);
       const primaryDistortion = cognitiveDistortionDetector.getPrimaryDistortion(content);
       const distortionIntervention = cognitiveDistortionDetector.generateIntervention(cognitiveDistortions);
-      
+
       return {
         intencion: contenidoActual.intencion,
         tema: contenidoActual.tema,
         urgencia: contenidoActual.urgencia || this.URGENCIA_NORMAL,
         contexto: {
-          faseConversacion: this.FASE_CONVERSACION_INICIAL,
-          temasRecurrentes: [],
+          faseConversacion,
+          temasRecurrentes,
           patronesIdentificados: []
         },
         sugerencias: [],

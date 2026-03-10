@@ -8,6 +8,7 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import TherapeuticTechniqueUsage from '../models/TherapeuticTechniqueUsage.js';
+import userProfileService from '../services/userProfileService.js';
 import {
   CBT_TECHNIQUES,
   DBT_TECHNIQUES,
@@ -290,6 +291,12 @@ router.post('/use', authenticateToken, async (req, res) => {
     });
 
     await usage.save();
+
+    // Registrar en UserProfile.copingStrategies para personalizar futuras respuestas
+    userProfileService.registerCopingStrategy(userId.toString(), {
+      strategy: techniqueName,
+      effectiveness: effectiveness ?? 5
+    }).catch(err => console.warn('[TherapeuticTechniques] Error registrando copingStrategy:', err.message));
 
     console.log(`[TherapeuticTechniques] Usuario ${userId} usó técnica ${techniqueId} (${completed ? 'completado' : 'incompleto'})`);
 

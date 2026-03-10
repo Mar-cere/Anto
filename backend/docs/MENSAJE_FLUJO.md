@@ -415,7 +415,7 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
    - Constante: `backend/constants/openai.js:TIME_PERIODS`
 
 2. **Filtro de estilo comunicativo:**
-   - Obtiene de `contexto.profile?.communicationPreferences`
+   - Obtiene de `contexto.profile?.preferences?.communicationStyle` (ver docs/ESTILOS_COMUNICACION.md)
    - Valor por defecto: `DEFAULT_VALUES.COMMUNICATION_STYLE` (`'neutral'`)
    - Valores posibles: `'neutral'`, `'EMPATICO'`, `'DIRECTO'`, `'EXPLORATORIO'`, `'ESTRUCTURADO'`
    - Constante: `backend/constants/openai.js:DEFAULT_VALUES`

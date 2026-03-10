@@ -98,11 +98,19 @@ const userProfileSchema = new mongoose.Schema({
     lastUsed: Date
   }],
   // Preferencias de comunicación del usuario
+  // Ver docs/ESTILOS_COMUNICACION.md para uso de communicationStyle vs responseStyle
   preferences: {
+    // Tono general: afecta STYLE_GUIDELINES (validación, reflexión, directness)
     communicationStyle: {
       type: String,
-      enum: ['formal', 'casual', 'neutral', 'empático'],
+      enum: ['neutral', 'empatico', 'empático', 'directo', 'exploratorio', 'estructurado', 'formal', 'casual'],
       default: 'neutral'
+    },
+    // Longitud y estructura de respuesta: afecta maxWords y estructura del prompt
+    responseStyle: {
+      type: String,
+      enum: ['brief', 'balanced', 'deep', 'empatico', 'profesional', 'directo', 'calido', 'estructurado'],
+      default: 'balanced'
     },
     responseLength: {
       type: String,

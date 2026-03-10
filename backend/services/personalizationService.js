@@ -152,6 +152,7 @@ class PersonalizationService {
       const profile = await this.getUserProfile(userId);
       return {
         style: profile.preferences?.communicationStyle || COMMUNICATION_STYLE_NEUTRAL,
+        responseStyle: profile.preferences?.responseStyle || 'balanced',
         responseLength: profile.preferences?.responseLength || RESPONSE_LENGTH_MEDIUM,
         topics: profile.preferences?.topicsOfInterest || [],
         triggers: profile.preferences?.triggerTopics || []
@@ -160,6 +161,7 @@ class PersonalizationService {
       console.error('[PersonalizationService] Error obteniendo prompt personalizado:', error, { userId });
       return {
         style: COMMUNICATION_STYLE_NEUTRAL,
+        responseStyle: 'balanced',
         responseLength: RESPONSE_LENGTH_MEDIUM,
         topics: [],
         triggers: []

@@ -157,9 +157,13 @@ class OpenAIService {
         analisisEmocional = await emotionalAnalyzer.analyzeEmotion(contenidoNormalizado);
       }
 
-      // Si no viene el análisis contextual, hacerlo
+      // Si no viene el análisis contextual, hacerlo (pasar historial cuando esté disponible)
       if (!analisisContextual) {
-        analisisContextual = await contextAnalyzer.analizarMensaje({ ...mensaje, content: contenidoNormalizado });
+        const history = contexto.history || [];
+        analisisContextual = await contextAnalyzer.analizarMensaje(
+          { ...mensaje, content: contenidoNormalizado },
+          history.length > 0 ? history : null
+        );
       }
 
       // Si no viene el perfil, obtenerlo
@@ -196,6 +200,10 @@ class OpenAIService {
           currentMessage: contenidoNormalizado,
           currentConversationId: contexto.currentConversationId,
           sessionTrends,
+          conversationContext: contexto.conversationContext,
+          depthPreference: contexto.depthPreference,
+          inferredWritingStyle: contexto.inferredWritingStyle,
+          preferredResponseLength: contexto.preferredResponseLength,
           crisis: contexto.crisis
         }
       );

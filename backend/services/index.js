@@ -12,6 +12,10 @@ import emergencyAlertService from './emergencyAlertService.js';
 import crisisTrendAnalyzer from './crisisTrendAnalyzer.js';
 import crisisFollowUpService from './crisisFollowUpService.js';
 import crisisMetricsService from './crisisMetricsService.js';
+import conversationDepthAnalyzer from './conversationDepthAnalyzer.js';
+import effectivenessFeedbackService from './effectivenessFeedbackService.js';
+import engagementTracker from './engagementTracker.js';
+import writingStyleDetector from './writingStyleDetector.js';
 
 // Verificar que cada servicio exporte una instancia
 const services = {
@@ -27,7 +31,11 @@ const services = {
   emergencyAlertService,
   crisisTrendAnalyzer,
   crisisFollowUpService,
-  crisisMetricsService
+  crisisMetricsService,
+  conversationDepthAnalyzer,
+  effectivenessFeedbackService,
+  engagementTracker,
+  writingStyleDetector
 };
 
 // Validar que cada servicio tenga sus métodos principales
@@ -50,5 +58,9 @@ export {
   emergencyAlertService,
   crisisTrendAnalyzer,
   crisisFollowUpService,
-  crisisMetricsService
+  crisisMetricsService,
+  conversationDepthAnalyzer,
+  effectivenessFeedbackService,
+  engagementTracker,
+  writingStyleDetector
 }; 

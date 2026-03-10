@@ -24,10 +24,13 @@ import crisisTrendAnalyzer from '../services/crisisTrendAnalyzer.js';
 import emergencyAlertService from '../services/emergencyAlertService.js';
 import {
   contextAnalyzer,
+  conversationDepthAnalyzer,
   emotionalAnalyzer,
+  engagementTracker,
   openaiService,
   progressTracker,
-  userProfileService
+  userProfileService,
+  writingStyleDetector
 } from '../services/index.js';
 import metricsService from '../services/metricsService.js';
 import paymentAuditService from '../services/paymentAuditService.js';
@@ -376,6 +379,24 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           silenceAfterNegative: detectSilenceAfterNegative(conversationHistory)
         };
 
+        // Analizar preferencia de profundidad (superficial/moderado/profundo) para ajustar respuestas
+        const depthAnalysis = conversationDepthAnalyzer.analyzeDepth({
+          content,
+          conversationHistory: conversationHistory.map(m => ({ role: m.role, content: m.content || '' })),
+          emotionalAnalysis
+        });
+
+        // Fase 3: Estilo de escritura y engagement para personalización
+        const userMessagesForAnalysis = conversationHistory
+          .filter(m => m.role === 'user')
+          .map(m => ({ content: m.content || '' }))
+          .slice(-8);
+        const writingStyle = writingStyleDetector.detectWritingStyle({
+          content,
+          userMessages: userMessagesForAnalysis.slice(0, -1)
+        });
+        const engagement = engagementTracker.analyzeEngagement(userMessagesForAnalysis);
+
         // Evaluar riesgo de crisis/suicida con análisis mejorado
         const riskLevel = evaluateSuicideRisk(
           emotionalAnalysis, 
@@ -653,6 +674,10 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             profile: combinedProfile,
             therapeutic: therapeuticRecord,
             currentConversationId: conversationId, // NUEVO: Para referencias a conversaciones anteriores
+            conversationContext, // Escalada, rechazo de ayuda, cambio brusco de tono, etc.
+            depthPreference: depthAnalysis?.depthPreference, // Preferencia de profundidad para ajustar longitud
+            inferredWritingStyle: writingStyle?.style, // formal/casual/laconic/emotive
+            preferredResponseLength: engagement?.preferredResponseLength, // SHORT/MEDIUM/LONG
             // Agregar información de crisis si se detecta
             crisis: isCrisis ? {
               riskLevel,
@@ -670,6 +695,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         const emocionalNormalizado = openaiService.normalizarAnalisisEmocional(emotionalAnalysis);
         
         try {
+          const therapeutic = response.context?.therapeutic;
           assistantMessage = new Message({
             userId: req.user._id,
             content: response.content,
@@ -680,7 +706,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               context: {
                 emotional: emocionalNormalizado,
                 contextual: contextualAnalysis,
-                response: JSON.stringify(response.context)
+                response: JSON.stringify(response.context),
+                ...(therapeutic && { therapeutic: { technique: therapeutic.technique, type: therapeutic.type } })
               }
             }
           });
@@ -689,6 +716,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           // Si hay error de validación del enum, intentar guardar con 'neutral' como fallback
           if (saveError.name === 'ValidationError' && saveError.errors?.['metadata.context.emotional.mainEmotion']) {
             console.warn('⚠️ Error de validación de enum emocional. Guardando con neutral como fallback:', saveError.message);
+            const therapeutic = response.context?.therapeutic;
             assistantMessage = new Message({
               userId: req.user._id,
               content: response.content,
@@ -702,7 +730,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                     intensity: emocionalNormalizado.intensity || 5
                   },
                   contextual: contextualAnalysis,
-                  response: JSON.stringify(response.context)
+                  response: JSON.stringify(response.context),
+                  ...(therapeutic && { therapeutic: { technique: therapeutic.technique, type: therapeutic.type } })
                 }
               }
             });
@@ -732,7 +761,13 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           userProfileService.updateLongTermProfileFromConversation(req.user._id, {
             emotionalAnalysis,
             contextualAnalysis
-          }).catch(() => {})
+          }).catch(() => {}),
+          // Fase 3: Inferir preferencias desde comportamiento (solo si hay suficientes mensajes)
+          ...(userMessagesForAnalysis.length >= 5 ? [userProfileService.inferPreferencesFromBehavior(req.user._id, {
+            communicationStyle: writingStyle?.confidence >= 0.5 ? { formal: 'formal', casual: 'casual', laconic: 'directo', emotive: 'empatico' }[writingStyle.style] : undefined,
+            responseLength: engagement?.engagementLevel !== 'unknown' ? engagement.preferredResponseLength : undefined,
+            responseStyle: engagement?.preferredResponseLength === 'SHORT' ? 'brief' : engagement?.preferredResponseLength === 'LONG' ? 'deep' : undefined
+          }).catch(() => {})] : [])
         ]).catch(() => {}); // Ignorar errores en operaciones no críticas
 
         // OPTIMIZACIÓN: Generar sugerencias solo cuando sea apropiado (no en cada mensaje)

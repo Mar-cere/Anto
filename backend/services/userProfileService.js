@@ -47,6 +47,7 @@ class UserProfileService {
       userId,
       preferences: {
         communicationStyle: DEFAULT_COMMUNICATION_STYLE,
+        responseStyle: 'balanced',
         responseLength: DEFAULT_RESPONSE_LENGTH,
         topicsOfInterest: [],
         triggerTopics: []
@@ -70,6 +71,7 @@ class UserProfileService {
       userId,
       preferences: {
         communicationStyle: DEFAULT_COMMUNICATION_STYLE,
+        responseStyle: 'balanced',
         responseLength: DEFAULT_RESPONSE_LENGTH
       },
       patrones: {
@@ -175,6 +177,7 @@ class UserProfileService {
       
       return {
         style: perfil.preferences?.communicationStyle || DEFAULT_COMMUNICATION_STYLE,
+        responseStyle: perfil.preferences?.responseStyle || 'balanced',
         responseLength: perfil.preferences?.responseLength || DEFAULT_RESPONSE_LENGTH,
         topics: perfil.preferences?.topicsOfInterest || [],
         triggers: perfil.preferences?.triggerTopics || []
@@ -183,6 +186,7 @@ class UserProfileService {
       console.error('[UserProfileService] Error obteniendo prompt personalizado:', error);
       return {
         style: DEFAULT_COMMUNICATION_STYLE,
+        responseStyle: 'balanced',
         responseLength: DEFAULT_RESPONSE_LENGTH,
         topics: [],
         triggers: []
@@ -241,9 +245,48 @@ class UserProfileService {
       } else {
         predominantEmotions.push({ emotion, frequency: 1, timePattern: {} });
       }
+      // emotionalTriggers: tema + emoción recurrente -> trigger emocional
+      let emotionalTriggers = Array.isArray(profile.emotionalPatterns?.emotionalTriggers) ? [...profile.emotionalPatterns.emotionalTriggers] : [];
+      if (topic !== 'general' && emotion !== 'neutral') {
+        const triggerIdx = emotionalTriggers.findIndex(
+          t => (t.trigger || '').toLowerCase() === topic && (t.emotion || '').toLowerCase() === emotion
+        );
+        if (triggerIdx >= 0) {
+          emotionalTriggers[triggerIdx] = {
+            ...emotionalTriggers[triggerIdx],
+            frequency: (emotionalTriggers[triggerIdx].frequency || 0) + 1
+          };
+        } else {
+          emotionalTriggers.push({ trigger: topic, emotion, frequency: 1 });
+        }
+        emotionalTriggers = emotionalTriggers.sort((a, b) => (b.frequency || 0) - (a.frequency || 0)).slice(0, 10);
+      }
       const emotionalPatterns = {
         ...(profile.emotionalPatterns || {}),
-        predominantEmotions: predominantEmotions.sort((a, b) => (b.frequency || 0) - (a.frequency || 0)).slice(0, MAX_EMOTIONS)
+        predominantEmotions: predominantEmotions.sort((a, b) => (b.frequency || 0) - (a.frequency || 0)).slice(0, MAX_EMOTIONS),
+        emotionalTriggers
+      };
+
+      // connectionStats: actualizar horario y día de conexión
+      const nowHour = now.getHours();
+      const nowDay = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][now.getDay()];
+      const period = nowHour >= 6 && nowHour < 12 ? 'morning' : nowHour >= 12 && nowHour < 18 ? 'afternoon' : nowHour >= 18 && nowHour < 24 ? 'evening' : 'night';
+      const frequentTimes = { ...(profile.connectionStats?.frequentTimes || {}), [period]: (profile.connectionStats?.frequentTimes?.[period] || 0) + 1 };
+      const weekdayPatterns = { ...(profile.connectionStats?.weekdayPatterns || {}), [nowDay]: (profile.connectionStats?.weekdayPatterns?.[nowDay] || 0) + 1 };
+      const connectionStats = {
+        ...(profile.connectionStats || {}),
+        lastConnection: now,
+        frequentTimes,
+        weekdayPatterns
+      };
+
+      // timePatterns: frecuencia y estado emocional típico por franja horaria
+      const slotKey = period === 'morning' ? 'morningInteractions' : period === 'afternoon' ? 'afternoonInteractions' : period === 'evening' ? 'eveningInteractions' : 'nightInteractions';
+      const timePatterns = { ...(profile.timePatterns || {}) };
+      const currentSlot = timePatterns[slotKey] || { frequency: 0, averageMood: 'neutral' };
+      timePatterns[slotKey] = {
+        frequency: (currentSlot.frequency || 0) + 1,
+        averageMood: emotion !== 'neutral' ? emotion : (currentSlot.averageMood || 'neutral')
       };
 
       // patrones.temas
@@ -280,6 +323,8 @@ class UserProfileService {
           $set: {
             commonTopics,
             emotionalPatterns,
+            connectionStats,
+            timePatterns,
             patrones,
             lastInteractions,
             preferences,
@@ -295,6 +340,110 @@ class UserProfileService {
       return updated;
     } catch (error) {
       console.error('[UserProfileService] Error en updateLongTermProfileFromConversation:', error, { userId });
+      return null;
+    }
+  }
+
+  /**
+   * Registra o actualiza una estrategia de afrontamiento tras el uso de una técnica terapéutica.
+   * @param {string} userId - ID del usuario
+   * @param {Object} params - { strategy, effectiveness }
+   * @param {string} params.strategy - Nombre de la técnica/estrategia
+   * @param {number} [params.effectiveness=5] - Efectividad percibida 1-10
+   * @returns {Promise<Object|null>} Perfil actualizado o null si hay error
+   */
+  async registerCopingStrategy(userId, { strategy, effectiveness = 5 }) {
+    try {
+      if (!this.isValidUserId(userId) || !strategy || typeof strategy !== 'string') return null;
+      const eff = Math.min(10, Math.max(1, Number(effectiveness) || 5));
+      const profile = await UserProfile.findOne({ userId }).lean();
+      if (!profile) return null;
+
+      let copingStrategies = Array.isArray(profile.copingStrategies) ? [...profile.copingStrategies] : [];
+      const strategyNorm = strategy.trim().toLowerCase();
+      const idx = copingStrategies.findIndex(s => (s.strategy || '').toLowerCase() === strategyNorm);
+
+      const now = new Date();
+      if (idx >= 0) {
+        const prev = copingStrategies[idx];
+        const prevCount = prev.usageCount || 0;
+        const prevEff = prev.effectiveness || 5;
+        copingStrategies[idx] = {
+          strategy: prev.strategy || strategy,
+          usageCount: prevCount + 1,
+          effectiveness: prevCount > 0
+            ? Math.round((prevEff * prevCount + eff) / (prevCount + 1) * 10) / 10
+            : eff,
+          lastUsed: now
+        };
+      } else {
+        copingStrategies.push({
+          strategy: strategy.trim(),
+          effectiveness: eff,
+          usageCount: 1,
+          lastUsed: now
+        });
+      }
+      copingStrategies = copingStrategies
+        .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
+        .slice(0, 15);
+
+      const updated = await UserProfile.findOneAndUpdate(
+        { userId },
+        { $set: { copingStrategies } },
+        { new: true }
+      ).lean();
+
+      const cacheKey = cacheService.generateKey('profile', userId);
+      await cacheService.delete(cacheKey).catch(() => {});
+
+      return updated;
+    } catch (error) {
+      console.error('[UserProfileService] Error registrando copingStrategy:', error, { userId, strategy });
+      return null;
+    }
+  }
+
+  /**
+   * Infiere preferencias de personalización a partir del comportamiento (Fase 3).
+   * Solo actualiza cuando el usuario tiene valores por defecto (neutral/default).
+   * @param {string} userId - ID del usuario
+   * @param {Object} inferred - { communicationStyle?, responseLength?, responseStyle? }
+   * @returns {Promise<Object|null>} Perfil actualizado o null
+   */
+  async inferPreferencesFromBehavior(userId, inferred) {
+    try {
+      if (!this.isValidUserId(userId) || !inferred || typeof inferred !== 'object') return null;
+      const profile = await UserProfile.findOne({ userId }).lean();
+      if (!profile) return null;
+
+      const updates = {};
+      const comm = profile.preferences?.communicationStyle;
+      if ((comm === 'neutral' || !comm) && inferred.communicationStyle) {
+        updates['preferences.communicationStyle'] = inferred.communicationStyle;
+      }
+      const respLen = profile.preferences?.responseLength;
+      if ((respLen === 'MEDIUM' || !respLen) && inferred.responseLength) {
+        updates['preferences.responseLength'] = inferred.responseLength;
+      }
+      const respStyle = profile.preferences?.responseStyle;
+      if ((respStyle === 'balanced' || !respStyle) && inferred.responseStyle) {
+        updates['preferences.responseStyle'] = inferred.responseStyle;
+      }
+      if (Object.keys(updates).length === 0) return profile;
+
+      const updated = await UserProfile.findOneAndUpdate(
+        { userId },
+        { $set: updates },
+        { new: true }
+      ).lean();
+
+      const cacheKey = cacheService.generateKey('profile', userId);
+      await cacheService.delete(cacheKey).catch(() => {});
+
+      return updated;
+    } catch (error) {
+      console.warn('[UserProfileService] Error infiriendo preferencias:', error.message);
       return null;
     }
   }

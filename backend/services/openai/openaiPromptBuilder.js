@@ -139,7 +139,7 @@ export async function generateLongTermContext(userId, contexto) {
       userProfile.patrones.temas.sort((a, b) => (b.frecuencia || 0) - (a.frecuencia || 0)).slice(0, 3).forEach(t => { if (!recurringTopics.includes(t.tema)) recurringTopics.push(t.tema); });
     }
     if (recurringTopics.length > 0) contextParts.push(`El usuario frecuentemente menciona: ${recurringTopics.slice(0, 3).join(', ')}.`);
-    const commStyle = userProfile.preferences?.communicationStyle || userProfile.communicationPreferences || 'neutral';
+    const commStyle = userProfile.preferences?.communicationStyle || 'neutral';
     if (commStyle !== 'neutral') contextParts.push(`Prefiere un estilo de comunicación: ${commStyle}.`);
     if (userProfile.metadata?.progresoGeneral > 0) contextParts.push(`Ha mostrado progreso general: ${userProfile.metadata.progresoGeneral}%.`);
     if (Array.isArray(userProfile.copingStrategies)) {
@@ -149,6 +149,49 @@ export async function generateLongTermContext(userId, contexto) {
     if (Array.isArray(userProfile.emotionalPatterns?.predominantEmotions)) {
       const topEmotions = userProfile.emotionalPatterns.predominantEmotions.sort((a, b) => (b.frequency || 0) - (a.frequency || 0)).slice(0, 2).map(e => e.emotion);
       if (topEmotions.length > 0) contextParts.push(`Emociones que experimenta frecuentemente: ${topEmotions.join(', ')}.`);
+    }
+    if (Array.isArray(userProfile.emotionalPatterns?.emotionalTriggers) && userProfile.emotionalPatterns.emotionalTriggers.length > 0) {
+      const triggers = userProfile.emotionalPatterns.emotionalTriggers
+        .sort((a, b) => (b.frequency || 0) - (a.frequency || 0))
+        .slice(0, 3)
+        .map(t => `${t.trigger}→${t.emotion}`)
+        .join('; ');
+      contextParts.push(`Desencadenantes emocionales conocidos: ${triggers}.`);
+    }
+    const conn = userProfile.connectionStats;
+    if (conn?.frequentTimes || conn?.weekdayPatterns) {
+      const parts = [];
+      const ft = conn.frequentTimes;
+      if (ft) {
+        const entries = Object.entries(ft).filter(([, v]) => v > 0);
+        if (entries.length > 0) {
+          const top = entries.sort((a, b) => b[1] - a[1])[0];
+          const periodMap = { morning: 'mañana', afternoon: 'tarde', evening: 'noche', night: 'madrugada' };
+          parts.push(`suele conectarse más por la ${periodMap[top[0]] || top[0]}`);
+        }
+      }
+      const wp = conn.weekdayPatterns;
+      if (wp) {
+        const entries = Object.entries(wp).filter(([, v]) => v > 0);
+        if (entries.length > 0) {
+          const top = entries.sort((a, b) => b[1] - a[1])[0];
+          const dayMap = { monday: 'lunes', tuesday: 'martes', wednesday: 'miércoles', thursday: 'jueves', friday: 'viernes', saturday: 'sábado', sunday: 'domingo' };
+          parts.push(`días más frecuentes: ${dayMap[top[0]] || top[0]}`);
+        }
+      }
+      if (parts.length > 0) contextParts.push(`Patrón de conexión: ${parts.join('; ')}.`);
+    }
+    const tp = userProfile.timePatterns;
+    if (tp) {
+      const slots = ['morningInteractions', 'afternoonInteractions', 'eveningInteractions', 'nightInteractions'];
+      const slotLabels = { morningInteractions: 'mañana', afternoonInteractions: 'tarde', eveningInteractions: 'noche', nightInteractions: 'madrugada' };
+      const active = slots.filter(s => tp[s]?.frequency > 0);
+      if (active.length > 0) {
+        const moods = active
+          .map(s => tp[s].averageMood && tp[s].averageMood !== 'neutral' ? `${slotLabels[s]}: ${tp[s].averageMood}` : null)
+          .filter(Boolean);
+        if (moods.length > 0) contextParts.push(`Estado emocional típico por franja: ${moods.join(', ')}.`);
+      }
     }
     return contextParts.length > 0 ? contextParts.join(' ') : null;
   } catch (error) {
@@ -197,11 +240,25 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   const intensity = contexto.emotional?.intensity || DEFAULT_VALUES.INTENSITY;
   const phase = contexto.therapeutic?.currentPhase || DEFAULT_VALUES.PHASE;
   const intent = contexto.contextual?.intencion?.tipo || MESSAGE_INTENTS.EMOTIONAL_SUPPORT;
-  const communicationStyle = contexto.profile?.communicationPreferences || DEFAULT_VALUES.COMMUNICATION_STYLE;
+  let communicationStyle = contexto.profile?.preferences?.communicationStyle || DEFAULT_VALUES.COMMUNICATION_STYLE;
   const recurringThemes = contexto.memory?.recurringThemes || [];
   const lastInteraction = contexto.memory?.lastInteraction || 'ninguna';
   const sessionTrends = contexto.sessionTrends || null;
-  const responseStyle = contexto.profile?.preferences?.responseStyle || 'balanced';
+  let responseStyle = contexto.profile?.preferences?.responseStyle || 'balanced';
+  // Ajustar por depthPreference (conversationDepthAnalyzer): profundo→deep, superficial→brief
+  const depthPreference = contexto.depthPreference;
+  if (depthPreference === 'profundo') responseStyle = 'deep';
+  else if (depthPreference === 'superficial') responseStyle = 'brief';
+  // Fase 3: Si preferredResponseLength y no hay depth override, ajustar responseStyle
+  const preferredLength = contexto.preferredResponseLength;
+  if (!depthPreference && preferredLength === 'SHORT') responseStyle = 'brief';
+  else if (!depthPreference && preferredLength === 'LONG') responseStyle = 'deep';
+  // Fase 3: Si communicationStyle neutral, usar inferredWritingStyle para adaptar tono
+  const inferredStyle = contexto.inferredWritingStyle;
+  if ((communicationStyle === 'neutral' || !communicationStyle) && inferredStyle) {
+    const styleMap = { formal: 'formal', casual: 'casual', laconic: 'directo', emotive: 'empatico' };
+    communicationStyle = styleMap[inferredStyle] || communicationStyle;
+  }
 
   let systemMessage = buildPersonalizedPrompt({
     emotion,
@@ -215,6 +272,7 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     subtype: contexto.emotional?.subtype,
     topic: contexto.emotional?.topic,
     sessionTrends,
+    conversationContext: contexto.conversationContext,
     responseStyle,
     resistance: contexto.contextual?.resistance || null,
     relapseSigns: contexto.contextual?.relapseSigns || null,

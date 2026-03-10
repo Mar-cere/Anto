@@ -791,13 +791,21 @@ export const getIntentGuidelines = (intent) => {
   return INTENT_SPECIFIC_GUIDELINES[intent] || INTENT_SPECIFIC_GUIDELINES.EMOTIONAL_SUPPORT;
 };
 
+// Mapeo para compatibilidad: valores legacy o alternativos -> claves de COMMUNICATION_STYLE_GUIDELINES
+const COMMUNICATION_STYLE_ALIASES = {
+  'empático': 'empatico',
+  formal: 'estructurado',
+  casual: 'neutral'
+};
+
 /**
  * Obtiene las directrices específicas para un estilo comunicativo
- * @param {string} style - Estilo comunicativo
+ * @param {string} style - Estilo comunicativo (communicationStyle del perfil)
  * @returns {Object} Directrices para el estilo o para 'neutral' si no se encuentra
  */
 export const getCommunicationStyleGuidelines = (style) => {
-  return COMMUNICATION_STYLE_GUIDELINES[style] || COMMUNICATION_STYLE_GUIDELINES.neutral;
+  const key = COMMUNICATION_STYLE_ALIASES[style] || style;
+  return COMMUNICATION_STYLE_GUIDELINES[key] || COMMUNICATION_STYLE_GUIDELINES.neutral;
 };
 
 /**
@@ -820,6 +828,7 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
     subtype = null,
     topic = 'general',
     sessionTrends = null,
+    conversationContext = null,
     responseStyle = 'balanced',
     gender = null, // NUEVO: Género del usuario
     pronouns = null // NUEVO: Pronombres preferidos
@@ -916,6 +925,33 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
   
   if (subtype || context.resistance || context.relapseSigns) {
     prompt += `\n\n`;
+  }
+
+  // SESSION_TRENDS: inyectar directriz cuando la tendencia empeora o hay racha negativa
+  const needsContainment = sessionTrends && (
+    sessionTrends.trend === 'worsening' ||
+    (sessionTrends.streakNegative >= 3)
+  );
+  if (needsContainment) {
+    const streakInfo = sessionTrends.streakNegative >= 3
+      ? `Lleva ${sessionTrends.streakNegative} mensajes consecutivos con emoción negativa.`
+      : 'La intensidad emocional va en aumento en esta sesión.';
+    prompt += `\n⚠️ TENDENCIA DE SESIÓN: ${streakInfo} Prioriza contención, validación y no profundices demasiado de golpe. Sé especialmente empático y presente. Evita preguntas que puedan abrumar.\n\n`;
+  }
+
+  // CONVERSATION_CONTEXT: inyectar directriz cuando hay escalada, rechazo de ayuda o cambio brusco de tono
+  const cc = conversationContext;
+  const hasRelevantContext = cc && (
+    cc.emotionalEscalation ||
+    cc.helpRejected ||
+    cc.abruptToneChange
+  );
+  if (hasRelevantContext) {
+    const parts = [];
+    if (cc.emotionalEscalation) parts.push('La intensidad emocional está subiendo respecto al mensaje anterior.');
+    if (cc.helpRejected) parts.push('El usuario ha mostrado rechazo o resistencia a la ayuda; no insistas, ofrece presencia sin presionar.');
+    if (cc.abruptToneChange) parts.push('Cambio brusco de tono (de positivo/neutral a negativo); valida el cambio sin dramatizar.');
+    prompt += `\n⚠️ CONTEXTO CONVERSACIONAL: ${parts.join(' ')} Adapta tu respuesta en consecuencia.\n\n`;
   }
 
   // Reglas generales - ajustar según responseStyle

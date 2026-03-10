@@ -362,6 +362,17 @@ router.put('/me', authenticateToken, validateUserObjectId, updateProfileLimiter,
     // Guardar (Mongoose timestamps maneja updatedAt automáticamente)
     await user.save();
 
+    // Sincronizar preferencias de chat (responseStyle) a UserProfile para unificar fuentes
+    if (value.preferences?.responseStyle) {
+      const profile = await UserProfile.findOne({ userId }).select('preferences').lean();
+      if (profile) {
+        await userProfileService.updatePreferences(userId, {
+          ...(profile.preferences || {}),
+          responseStyle: value.preferences.responseStyle
+        });
+      }
+    }
+
     // Invalidar caché del usuario (userId ya está declarado arriba)
     await cacheService.invalidateUserCache(userId);
 

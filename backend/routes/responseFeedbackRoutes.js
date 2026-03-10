@@ -7,6 +7,7 @@ import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import ResponseFeedback from '../models/ResponseFeedback.js';
 import Message from '../models/Message.js';
+import effectivenessFeedbackService from '../services/effectivenessFeedbackService.js';
 import Joi from 'joi';
 
 const router = express.Router();
@@ -62,6 +63,14 @@ router.post('/', authenticateToken, async (req, res) => {
       existingFeedback.metadata = { ...existingFeedback.metadata, ...metadata };
       await existingFeedback.save();
 
+      // Si el mensaje contenía técnica, actualizar copingStrategies
+      effectivenessFeedbackService.processFeedback(
+        req.user._id.toString(),
+        messageId,
+        feedbackType,
+        rating
+      ).catch(err => console.warn('[ResponseFeedback] Error actualizando copingStrategy:', err.message));
+
       return res.json({
         message: 'Feedback actualizado',
         feedback: existingFeedback,
@@ -80,6 +89,14 @@ router.post('/', authenticateToken, async (req, res) => {
     });
 
     await feedback.save();
+
+    // Si el mensaje contenía una técnica sugerida, actualizar copingStrategies
+    effectivenessFeedbackService.processFeedback(
+      req.user._id.toString(),
+      messageId,
+      feedbackType,
+      rating
+    ).catch(err => console.warn('[ResponseFeedback] Error actualizando copingStrategy:', err.message));
 
     res.status(201).json({
       message: 'Feedback guardado',

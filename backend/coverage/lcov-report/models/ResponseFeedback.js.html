@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">85.71% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>12/14</span>
+                <span class='fraction'>0/14</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">66.66% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>2/3</span>
+                <span class='fraction'>0/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">50% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/2</span>
+                <span class='fraction'>0/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">85.71% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>12/14</span>
+                <span class='fraction'>0/14</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -180,7 +180,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">24x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -236,17 +236,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">24x</span>
-<span class="cline-any cline-yes">24x</span>
-<span class="cline-any cline-yes">24x</span>
-<span class="cline-any cline-yes">24x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">24x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -262,12 +262,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -279,7 +279,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">24x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -290,7 +290,7 @@
 &nbsp;
 import mongoose from 'mongoose';
 &nbsp;
-const responseFeedbackSchema = new mongoose.Schema({
+const responseFeedbackSchema = <span class="cstat-no" title="statement not covered" >new mongoose.Schema({</span>
   // Usuario que proporciona el feedback
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -346,17 +346,17 @@ const responseFeedbackSchema = new mongoose.Schema({
 });
 &nbsp;
 // Índices compuestos
-responseFeedbackSchema.index({ userId: 1, createdAt: -1 });
-responseFeedbackSchema.index({ messageId: 1 });
-responseFeedbackSchema.index({ conversationId: 1, createdAt: -1 });
-responseFeedbackSchema.index({ feedbackType: 1, createdAt: -1 });
+<span class="cstat-no" title="statement not covered" >responseFeedbackSchema.index({ userId: 1, createdAt: -1 });</span>
+<span class="cstat-no" title="statement not covered" >responseFeedbackSchema.index({ messageId: 1 });</span>
+<span class="cstat-no" title="statement not covered" >responseFeedbackSchema.index({ conversationId: 1, createdAt: -1 });</span>
+<span class="cstat-no" title="statement not covered" >responseFeedbackSchema.index({ feedbackType: 1, createdAt: -1 });</span>
 &nbsp;
 // Métodos estáticos
-responseFeedbackSchema.statics.getFeedbackStats = async function(userId, days = <span class="branch-0 cbranch-no" title="branch not covered" >30)</span> {
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - days);
+<span class="cstat-no" title="statement not covered" >responseFeedbackSchema.statics.getFeedbackStats = <span class="fstat-no" title="function not covered" >as</span>ync function(userId, days = <span class="branch-0 cbranch-no" title="branch not covered" >30)</span> {</span>
+  const startDate = <span class="cstat-no" title="statement not covered" >new Date();</span>
+<span class="cstat-no" title="statement not covered" >  startDate.setDate(startDate.getDate() - days);</span>
 &nbsp;
-  const stats = await this.aggregate([
+  const stats = <span class="cstat-no" title="statement not covered" >await this.aggregate([</span>
     {
       $match: {
         userId: new mongoose.Types.ObjectId(userId),
@@ -372,12 +372,12 @@ responseFeedbackSchema.statics.getFeedbackStats = async function(userId, days = 
     },
   ]);
 &nbsp;
-  const total = await this.countDocuments({
+  const total = <span class="cstat-no" title="statement not covered" >await this.countDocuments({</span>
     userId: new mongoose.Types.ObjectId(userId),
     createdAt: { $gte: startDate },
   });
 &nbsp;
-  return {
+<span class="cstat-no" title="statement not covered" >  return {</span>
     total,
     byType: stats.reduce(<span class="fstat-no" title="function not covered" >(a</span>cc, stat) =&gt; {
 <span class="cstat-no" title="statement not covered" >      acc[stat._id] = {</span>
@@ -389,7 +389,7 @@ responseFeedbackSchema.statics.getFeedbackStats = async function(userId, days = 
   };
 };
 &nbsp;
-const ResponseFeedback = mongoose.models.ResponseFeedback || mongoose.model('ResponseFeedback', responseFeedbackSchema);
+const ResponseFeedback = <span class="cstat-no" title="statement not covered" >mongoose.models.ResponseFeedback || mongoose.model('ResponseFeedback', responseFeedbackSchema);</span>
 &nbsp;
 export default ResponseFeedback;
 &nbsp;
@@ -400,7 +400,7 @@ export default ResponseFeedback;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-07T19:51:34.575Z
+                at 2026-03-10T14:00:47.793Z
             </div>
         <script src="../prettify.js"></script>
         <script>
