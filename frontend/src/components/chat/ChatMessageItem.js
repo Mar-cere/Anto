@@ -2,8 +2,8 @@
  * Renderiza un ítem del chat: burbuja de mensaje (usuario/asistente/error) o bloque de sugerencias.
  */
 
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 import ActionSuggestionCard from '../ActionSuggestionCard';
 import MarkdownText from '../MarkdownText';
 import {
@@ -12,7 +12,55 @@ import {
   MESSAGE_ROLES,
   MESSAGE_TYPES,
   TEXTS,
+  TYPING_ANIMATION_DELAYS,
+  TYPING_ANIMATION_DURATION,
+  TYPING_ANIMATION_TO_VALUE,
+  TYPING_TRANSLATE_Y,
 } from '../../screens/chat/chatScreenConstants';
+
+function AnimatedDot({ delay, dotStyle }) {
+  const anim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, {
+          toValue: TYPING_ANIMATION_TO_VALUE,
+          duration: TYPING_ANIMATION_DURATION,
+          delay,
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim, {
+          toValue: 0,
+          duration: TYPING_ANIMATION_DURATION,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [anim, delay]);
+
+  const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] });
+  const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [0, TYPING_TRANSLATE_Y] });
+
+  return (
+    <Animated.View style={[styles.streamingDot, dotStyle, { opacity, transform: [{ translateY }] }]} />
+  );
+}
+
+function StreamingDots({ isBot }) {
+  return (
+    <View style={styles.streamingDotsContainer}>
+      {TYPING_ANIMATION_DELAYS.map((delay, i) => (
+        <AnimatedDot
+          key={i}
+          delay={delay}
+          dotStyle={isBot ? styles.streamingDotBot : styles.streamingDotUser}
+        />
+      ))}
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
   messageContainer: {
@@ -81,6 +129,22 @@ const styles = StyleSheet.create({
     color: CHAT_COLORS.ACCENT,
     marginBottom: 8,
   },
+  streamingDotsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  streamingDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    marginHorizontal: 2,
+  },
+  streamingDotBot: {
+    backgroundColor: CHAT_COLORS.BOT_TEXT,
+  },
+  streamingDotUser: {
+    backgroundColor: CHAT_COLORS.USER_TEXT,
+  },
 });
 
 export default function ChatMessageItem({
@@ -121,19 +185,23 @@ export default function ChatMessageItem({
           message.type === MESSAGE_TYPES.ERROR && styles.errorBubble,
         ]}
       >
-        <MarkdownText
-          style={[
-            styles.messageText,
-            isUser ? styles.userMessageText : styles.botMessageText,
-            message.type === MESSAGE_TYPES.ERROR && styles.errorText,
-          ]}
-          boldStyle={[
-            styles.messageTextBold,
-            isUser ? styles.userMessageTextBold : styles.botMessageTextBold,
-          ]}
-        >
-          {message.content || (message.metadata?.streaming ? '...' : '')}
-        </MarkdownText>
+        {message.metadata?.streaming && !message.content ? (
+          <StreamingDots isBot={!isUser} />
+        ) : (
+          <MarkdownText
+            style={[
+              styles.messageText,
+              isUser ? styles.userMessageText : styles.botMessageText,
+              message.type === MESSAGE_TYPES.ERROR && styles.errorText,
+            ]}
+            boldStyle={[
+              styles.messageTextBold,
+              isUser ? styles.userMessageTextBold : styles.botMessageTextBold,
+            ]}
+          >
+            {message.content}
+          </MarkdownText>
+        )}
       </View>
     </View>
   );
