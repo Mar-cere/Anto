@@ -198,12 +198,14 @@ class StoreKitService {
           connected: connectResult?.connected,
         });
       } catch (connectError) {
+        const errMsg = connectError?.message || String(connectError);
+        const errCode = connectError?.code ?? connectError?.responseCode ?? '';
+        console.error('[StoreKit] CONNECTION_FAILED:', errMsg, errCode ? `(code: ${errCode})` : '');
         console.error('[StoreKit] ❌ Error en connectAsync', {
-          error: connectError?.message,
+          error: errMsg,
+          code: errCode,
           errorType: connectError?.constructor?.name,
-          stack: connectError?.stack,
           hasModule: !!module,
-          moduleType: typeof module,
         });
         // Si el error es "Already connected", considerar como éxito
         if (connectError.message && connectError.message.includes('Already connected')) {
@@ -238,20 +240,23 @@ class StoreKitService {
       if (!connectResult) {
         this.initializing = false;
         this.module = null;
+        console.error('[StoreKit] CONNECTION_FAILED: connectAsync no devolvió resultado');
         return {
           success: false,
           error: 'No se recibió respuesta de App Store',
         };
       }
-      
-      const { connected } = connectResult;
-      
+
+      const { connected, responseCode } = connectResult;
+
       if (!connected) {
         this.initializing = false;
         this.module = null;
+        const detail = responseCode != null ? ` (código: ${responseCode})` : '';
+        console.error('[StoreKit] CONNECTION_FAILED: connected=false', detail, 'Resultado completo:', JSON.stringify(connectResult));
         return {
           success: false,
-          error: 'No se pudo conectar con App Store',
+          error: `No se pudo conectar con App Store${detail}. Revisa la consola de Metro (busca CONNECTION_FAILED).`,
         };
       }
 
@@ -285,8 +290,11 @@ class StoreKitService {
       return { success: true };
     } catch (error) {
       this.initializing = false;
+      const errMsg = error?.message || String(error);
+      const errCode = error?.code ?? error?.responseCode ?? '';
+      console.error('[StoreKit] CONNECTION_FAILED:', errMsg, errCode ? `(code: ${errCode})` : '');
       console.error('[StoreKit] Error inicializando:', error);
-      
+
       // Si el error es "Already connected", considerar como éxito
       if (error.message && error.message.includes('Already connected')) {
         this.module = module; // Asegurar que el módulo esté guardado
@@ -315,10 +323,10 @@ class StoreKitService {
       this.module = null;
       this.isInitialized = false;
       this.initializing = false;
-      
+
       return {
         success: false,
-        error: error.message || 'Error al inicializar StoreKit',
+        error: error?.message || 'Error al inicializar StoreKit',
       };
     }
   }

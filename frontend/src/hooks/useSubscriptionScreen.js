@@ -91,7 +91,9 @@ export function useSubscriptionScreen() {
             if (!initResult.success) {
               setSubscribing(false);
               setSelectedPlan(null);
-              Alert.alert(TEXTS.SUBSCRIBE_ERROR, initResult.error || 'No se pudo conectar con App Store.');
+              const msg = initResult.error || 'No se pudo conectar con App Store.';
+              const hint = 'Usa un build nativo (no Expo Go) e inicia sesión con una cuenta Sandbox en Ajustes > App Store.';
+              Alert.alert(TEXTS.SUBSCRIBE_ERROR, `${msg}\n\n${hint}`);
               return;
             }
             const products = storeKitService.getProducts();

@@ -13,7 +13,9 @@ import { colors } from '../../styles/globalStyles';
 
 const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscriptionEndDate }) => {
   const getStatusInfo = () => {
-    switch (status) {
+    // Normalizar: estados que el backend puede devolver y el frontend no trataba
+    const normalized = (status || 'free').toLowerCase();
+    switch (normalized) {
       case 'free':
         return {
           icon: 'account-outline',
@@ -26,7 +28,7 @@ const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscri
           icon: 'clock-outline',
           color: colors.warning,
           label: 'Periodo de Prueba',
-          description: `Trial activo - ${daysRemaining || 0} días restantes`,
+          description: `Trial activo - ${daysRemaining ?? 0} días restantes`,
         };
       case 'premium':
       case 'active':
@@ -43,11 +45,16 @@ const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscri
           description: planNames[plan] || 'Plan Premium',
         };
       case 'expired':
+      case 'canceled':
+      case 'past_due':
+      case 'unpaid':
+      case 'incomplete':
+      case 'incomplete_expired':
         return {
           icon: 'alert-circle-outline',
           color: colors.error,
           label: 'Suscripción Expirada',
-          description: 'Tu suscripción ha expirado',
+          description: 'Tu suscripción ha expirado o fue cancelada',
         };
       default:
         return {
