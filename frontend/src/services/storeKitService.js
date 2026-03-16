@@ -236,15 +236,11 @@ class StoreKitService {
         throw connectError;
       }
       
-      // Validar que el resultado sea válido
-      if (!connectResult) {
-        this.initializing = false;
-        this.module = null;
-        console.error('[StoreKit] CONNECTION_FAILED: connectAsync no devolvió resultado');
-        return {
-          success: false,
-          error: 'No se recibió respuesta de App Store',
-        };
+      // Validar que el resultado sea válido (en iOS connectAsync a veces no devuelve objeto)
+      if (connectResult == null || connectResult.connected === undefined) {
+        // Tratar como éxito: conexión puede estar activa aunque no devolvió resultado
+        console.log('[StoreKit] connectAsync sin resultado explícito, asumiendo conectado');
+        connectResult = { connected: true };
       }
 
       const { connected, responseCode } = connectResult;
@@ -341,9 +337,15 @@ class StoreKitService {
     }
     this.module = module;
     // Listener para actualizaciones de compras
+    // API de expo-in-app-purchases: setPurchaseListener (no addPurchaseUpdateListener)
     // IMPORTANTE: Este listener solo notifica, NO procesa compras
     // El procesamiento se hace en purchaseSubscription() para evitar duplicados
-    this.purchaseUpdateListener = module.addPurchaseUpdateListener(
+    const setListener = module.setPurchaseListener || module.addPurchaseUpdateListener;
+    if (typeof setListener !== 'function') {
+      console.error('[StoreKit] setupPurchaseListeners: setPurchaseListener no disponible en el módulo');
+      return;
+    }
+    const subscription = setListener(
       async (update) => {
         console.log('[StoreKit] 📬 Listener: Actualización de compra recibida', {
           hasUpdate: !!update,
@@ -377,9 +379,12 @@ class StoreKitService {
 
             // Solo notificar, NO procesar
             // El procesamiento se hace en purchaseSubscription() para evitar duplicados y errores
-            if (purchase.purchaseState === module.PurchaseState.PURCHASED) {
+            const PurchaseState = module.InAppPurchaseState || module.PurchaseState || {};
+            const PURCHASED = PurchaseState.PURCHASED ?? 1;
+            const RESTORED = PurchaseState.RESTORED ?? 2;
+            if (purchase.purchaseState === PURCHASED) {
               console.log('[StoreKit] 📢 Listener: Compra exitosa detectada (será procesada por purchaseSubscription):', purchase.productId);
-            } else if (purchase.purchaseState === module.PurchaseState.RESTORED) {
+            } else if (purchase.purchaseState === RESTORED) {
               console.log('[StoreKit] 📢 Listener: Compra restaurada detectada (será procesada por restorePurchases):', purchase.productId);
             } else {
               console.log('[StoreKit] ⚠️ Listener: Estado de compra desconocido:', purchase.purchaseState);
@@ -390,6 +395,8 @@ class StoreKitService {
         }
       }
     );
+    // expo-in-app-purchases usa setPurchaseListener que puede no devolver unsubscribe
+    this.purchaseUpdateListener = subscription && typeof subscription.remove === 'function' ? subscription : { remove: () => {} };
   }
 
   /**
@@ -1479,10 +1486,10 @@ class StoreKitService {
    * Limpiar recursos y cerrar conexión
    */
   async cleanup() {
-    if (this.purchaseUpdateListener) {
+    if (this.purchaseUpdateListener && typeof this.purchaseUpdateListener.remove === 'function') {
       this.purchaseUpdateListener.remove();
-      this.purchaseUpdateListener = null;
     }
+    this.purchaseUpdateListener = null;
 
     if (this.isInitialized && this.module) {
       try {
