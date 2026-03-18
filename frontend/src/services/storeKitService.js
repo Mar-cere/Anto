@@ -136,10 +136,8 @@ class StoreKitService {
       hasIAPResponseCode: !!module.IAPResponseCode,
     });
 
-    // Si ya está inicializado y el módulo está disponible, retornar éxito
-    if (this.isInitialized && this.module && typeof this.module.purchaseItemAsync === 'function') {
-      return { success: true };
-    }
+    // Si ya está inicializado, NO asumir conexión viva: iOS puede cortar la conexión.
+    // Dejamos que el flujo continúe para re-validar y (si hace falta) re-conectar.
 
     // Si ya se está inicializando, esperar a que termine
     if (this.initializing) {
@@ -325,6 +323,11 @@ class StoreKitService {
         success: false,
         error: error?.message || 'Error al inicializar StoreKit',
       };
+    } finally {
+      // Evitar que el singleton quede trabado en modo "initializing"
+      if (this.initializing) {
+        this.initializing = false;
+      }
     }
   }
 
@@ -1507,6 +1510,8 @@ class StoreKitService {
       this.purchaseUpdateListener.remove();
     }
     this.purchaseUpdateListener = null;
+    this.purchaseInProgress = false;
+    this.processingPurchases = new Set();
 
     if (this.isInitialized && this.module) {
       try {

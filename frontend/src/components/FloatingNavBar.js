@@ -218,12 +218,12 @@ const styles = StyleSheet.create({
     tintColor: '#1ADDDB',
   },
   iconText: {
-    fontSize: 24,
+    fontSize: 26,
     color: '#A3B8E8',
   },
   activeIconText: {
     color: '#1ADDDB',
-    fontSize: 24,
+    fontSize: 28,
   },
   text: {
     fontSize: 10,
@@ -233,15 +233,15 @@ const styles = StyleSheet.create({
     color: '#1ADDDB',
   },
   centerButtonContainer: {
-    width: 60,
-    height: 60,
+    width: 62,
+    height: 62,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: -20,
   },
   centerButton: {
-    width: 50,
-    height: 50,
+    width: 54,
+    height: 54,
     borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
