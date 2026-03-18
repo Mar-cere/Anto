@@ -202,17 +202,26 @@ router.post(
 
 /**
  * GET /api/payments/trial-info
- * Obtener información del trial del usuario
+ * Obtener información del trial del usuario (cache 60s para reducir llamadas repetidas)
  */
+const TRIAL_INFO_TTL_SECONDS = 60;
 router.get(
   '/trial-info',
   authenticateToken,
   validateUserObjectId,
   async (req, res) => {
     try {
-      const trialNotificationService = (await import('../services/trialNotificationService.js')).default;
-      const trialInfo = await trialNotificationService.getTrialInfo(req.user._id);
-      
+      const userId = req.user._id;
+      const cacheKey = cacheService.generateKey('trial-info', userId);
+      const trialInfo = await cacheService.getOrSet(
+        cacheKey,
+        async () => {
+          const trialNotificationService = (await import('../services/trialNotificationService.js')).default;
+          return trialNotificationService.getTrialInfo(userId);
+        },
+        TRIAL_INFO_TTL_SECONDS
+      );
+
       res.json({
         success: true,
         ...trialInfo,
@@ -643,6 +652,11 @@ router.post(
           subscriptionStatus: result.subscription?.status,
           subscriptionPlan: result.subscription?.plan,
           isActive: result.subscription?.isActive,
+        });
+
+        // Invalidar caché de suscripción para que el próximo GET subscription-status devuelva datos actualizados
+        await cacheService.invalidateUserCache(userId).catch((err) => {
+          logger.warn('POST /validate-receipt: error invalidando caché de usuario', { userId: userId.toString(), error: err?.message });
         });
 
         res.json({

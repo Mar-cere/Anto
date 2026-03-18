@@ -133,31 +133,29 @@ router.get('/conversations/:conversationId', protect, validarConversationId, val
 });
 
 // Crear nueva conversación con mensaje de bienvenida
+// Optimizado: saludo sin cargar perfil en la ruta crítica para reducir latencia (<1s)
 router.post('/conversations', protect, requireActiveSubscription(true), async (req, res) => {
   try {
     const userId = req.user._id;
-    
+
     // Crear conversación
     const conversation = new Conversation({ userId });
     await conversation.save();
 
-    // Generar y guardar mensaje de bienvenida personalizado (siempre se envía primero)
-    const userPreferences = await userProfileService.getPersonalizedPrompt(userId);
+    // Mensaje de bienvenida con saludo por momento del día (sin await de perfil para evitar +1 ronda DB)
+    const welcomeContent = openaiService.generarSaludoPersonalizado({});
     const welcomeMessage = new Message({
       userId,
-      content: await openaiService.generarSaludoPersonalizado(userPreferences),
-      role: 'assistant', // Cambiar a 'assistant' para que se muestre como mensaje del chat
+      content: welcomeContent,
+      role: 'assistant',
       conversationId: conversation._id,
       metadata: {
-        context: {
-          preferences: userPreferences
-        },
+        context: { preferences: {} },
         status: 'sent'
       }
     });
     await welcomeMessage.save();
-    
-    // Actualizar lastMessage de la conversación
+
     await Conversation.findByIdAndUpdate(conversation._id, { lastMessage: welcomeMessage._id });
 
     res.status(201).json({

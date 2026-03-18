@@ -305,6 +305,11 @@ class CacheService {
       totalDeleted += deleted;
     }
 
+    const trialInfoKey = this.generateKey('trial-info', userId);
+    if (await this.delete(trialInfoKey)) {
+      totalDeleted += 1;
+    }
+
     return totalDeleted;
   }
 

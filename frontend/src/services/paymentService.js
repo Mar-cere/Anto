@@ -262,9 +262,17 @@ class PaymentService {
     const result = await storeKitService.restorePurchases();
     
     if (result.success && result.purchases && result.purchases.length > 0) {
+      const withReceipt = result.purchases.filter(p => p && p.transactionReceipt && p.productId);
+      // Si hay compras pero ninguna trae recibo, no podemos verificar con el servidor
+      if (withReceipt.length === 0) {
+        return {
+          success: false,
+          error: 'No se pudo verificar las compras con el servidor. Vuelve a intentar o contacta soporte.',
+          purchases: result.purchases,
+        };
+      }
       // Validar cada compra con el backend
-      const validationPromises = result.purchases
-        .filter(p => p && p.transactionReceipt && p.productId) // Filtrar compras válidas
+      const validationPromises = withReceipt
         .map(async (purchase) => {
           try {
             const response = await api.post(ENDPOINTS.PAYMENT_VALIDATE_RECEIPT, {
