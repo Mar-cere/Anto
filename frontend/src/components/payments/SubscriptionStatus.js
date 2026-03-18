@@ -24,6 +24,7 @@ const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscri
           description: 'Actualiza a Premium para acceder a todas las funciones',
         };
       case 'trialing':
+      case 'trial':
         return {
           icon: 'clock-outline',
           color: colors.warning,

@@ -87,6 +87,7 @@ class StoreKitService {
     this.initializing = false; // Flag para evitar múltiples inicializaciones simultáneas
     this.processingPurchases = new Set(); // Set para rastrear compras en proceso
     this.module = null; // Guardar referencia al módulo después de inicializar
+    this.purchaseInProgress = false; // Mutex para evitar compras concurrentes
   }
 
   /**
@@ -550,6 +551,12 @@ class StoreKitService {
    * @param {Function} onValidateReceipt - Función para validar el recibo con el backend
    */
   async purchaseSubscription(plan, onValidateReceipt) {
+    if (this.purchaseInProgress) {
+      return {
+        success: false,
+        error: 'Ya hay una compra en curso. Espera unos segundos e intenta nuevamente.',
+      };
+    }
     console.log('[StoreKit] 🛒 purchaseSubscription() llamado', {
       plan,
       isInitialized: this.isInitialized,
@@ -672,6 +679,7 @@ class StoreKitService {
     }
 
 
+    this.purchaseInProgress = true;
     try {
       const purchaseStartTime = Date.now();
       console.log('[StoreKit] 🛒 INICIANDO COMPRA', {
@@ -694,9 +702,16 @@ class StoreKitService {
           errorType: purchaseError?.constructor?.name,
           stack: purchaseError?.stack,
         });
+        const msg = purchaseError?.message || 'Error al procesar la compra. Por favor, intenta de nuevo.';
+        if (msg.includes('Must wait for promise to resolve')) {
+          return {
+            success: false,
+            error: 'La compra anterior todavía se está procesando. Espera unos segundos y vuelve a intentar.',
+          };
+        }
         return {
           success: false,
-          error: purchaseError?.message || 'Error al procesar la compra. Por favor, intenta de nuevo.',
+          error: msg,
         };
       }
       const purchaseRequestDuration = Date.now() - purchaseRequestTime;
@@ -1285,6 +1300,8 @@ class StoreKitService {
         success: false,
         error: errorMessage,
       };
+    } finally {
+      this.purchaseInProgress = false;
     }
   }
 

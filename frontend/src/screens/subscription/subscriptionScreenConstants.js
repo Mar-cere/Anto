@@ -37,10 +37,10 @@ export const TEXTS = {
 };
 
 export const HARDCODED_PLANS = [
-  { id: 'monthly', name: 'Premium Mensual', amount: 3990, formattedAmount: '$3.990', interval: 'month', currency: 'CLP', features: ['Servicio completo incluido'] },
-  { id: 'quarterly', name: 'Premium Trimestral', amount: 11990, formattedAmount: '$11.990', interval: 'quarter', currency: 'CLP', features: ['Servicio completo incluido'] },
-  { id: 'semestral', name: 'Premium Semestral', amount: 20990, formattedAmount: '$20.990', interval: 'semester', currency: 'CLP', features: ['Servicio completo incluido'] },
-  { id: 'yearly', name: 'Premium Anual', amount: 39990, formattedAmount: '$39.990', interval: 'year', currency: 'CLP', features: ['Servicio completo incluido'] },
+  { id: 'monthly', name: 'Premium Mensual', amount: 3990, formattedAmount: '$3.990', interval: 'month', currency: 'CLP'},
+  { id: 'quarterly', name: 'Premium Trimestral', amount: 11990, formattedAmount: '$11.990', interval: 'quarter', currency: 'CLP' },
+  { id: 'semestral', name: 'Premium Semestral', amount: 20990, formattedAmount: '$20.990', interval: 'semester', currency: 'CLP'},
+  { id: 'yearly', name: 'Premium Anual', amount: 39990, formattedAmount: '$39.990', interval: 'year', currency: 'CLP'},
 ];
 
 export const PLAN_ORDER = { monthly: 1, quarterly: 2, semestral: 3, yearly: 4 };

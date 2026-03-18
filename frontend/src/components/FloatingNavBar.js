@@ -100,9 +100,6 @@ const FloatingNavBar = ({ activeTab, onTabPress, animValues = {} }) => {
           {/* Usar un icono de texto como fallback */}
           <Text style={[styles.iconText, activeTab === 'home' && styles.activeIconText]}>🏠</Text>
         </View>
-        <Text style={[styles.text, activeTab === 'home' && styles.activeText]}>
-          Inicio
-        </Text>
       </TouchableOpacity>
       
       {/* Botón Recordatorios */}
@@ -117,9 +114,6 @@ const FloatingNavBar = ({ activeTab, onTabPress, animValues = {} }) => {
         <View style={styles.iconContainer}>
           <Text style={[styles.iconText, activeTab === 'calendar' && styles.activeIconText]}>📋</Text>
         </View>
-        <Text style={[styles.text, activeTab === 'calendar' && styles.activeText]}>
-          Recordatorios
-        </Text>
       </TouchableOpacity>
       
       {/* Botón central Chat con imagen de Anto */}
@@ -155,9 +149,6 @@ const FloatingNavBar = ({ activeTab, onTabPress, animValues = {} }) => {
         <View style={styles.iconContainer}>
           <Text style={[styles.iconText, activeTab === 'pomodoro' && styles.activeIconText]}>⏲️</Text>
         </View>
-        <Text style={[styles.text, activeTab === 'pomodoro' && styles.activeText]}>
-          Pomodoro
-        </Text>
       </TouchableOpacity>
       
       {/* Botón Ajustes */}
@@ -172,9 +163,6 @@ const FloatingNavBar = ({ activeTab, onTabPress, animValues = {} }) => {
         <View style={styles.iconContainer}>
           <Text style={[styles.iconText, activeTab === 'settings' && styles.activeIconText]}>⚙️</Text>
         </View>
-        <Text style={[styles.text, activeTab === 'settings' && styles.activeText]}>
-          Ajustes
-        </Text>
       </TouchableOpacity>
     </Animated.View>
   );

@@ -81,14 +81,12 @@ const PlanCard = ({
       </View>
 
       {!isCurrentPlan && (
-        <TouchableOpacity
+        <View
           style={[
             styles.button,
             isSelected && styles.buttonSelected,
             disabled && styles.buttonDisabled,
           ]}
-          onPress={handlePress}
-          disabled={disabled}
         >
           <Text style={[
             styles.buttonText,
@@ -97,7 +95,7 @@ const PlanCard = ({
           ]}>
             {isSelected ? 'Seleccionado' : 'Suscribirse'}
           </Text>
-        </TouchableOpacity>
+        </View>
       )}
     </TouchableOpacity>
   );
