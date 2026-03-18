@@ -560,6 +560,8 @@ class StoreKitService {
         error: 'Ya hay una compra en curso. Espera unos segundos e intenta nuevamente.',
       };
     }
+    // CRÍTICO: tomar el mutex antes de cualquier await para evitar race (doble tap)
+    this.purchaseInProgress = true;
     console.log('[StoreKit] 🛒 purchaseSubscription() llamado', {
       plan,
       isInitialized: this.isInitialized,
@@ -682,7 +684,6 @@ class StoreKitService {
     }
 
 
-    this.purchaseInProgress = true;
     try {
       const purchaseStartTime = Date.now();
       console.log('[StoreKit] 🛒 INICIANDO COMPRA', {
