@@ -127,6 +127,23 @@ export function useSubscriptionScreen() {
                 { text: 'OK', onPress: () => loadData().then(() => navigation.goBack()) },
               ]);
             } else if (!purchaseResult.cancelled) {
+              // Si App Store falla pero el backend ya reporta una suscripción activa,
+              // interpretamos esto como un "no-op" (por ejemplo: "Ya estás suscrito").
+              try {
+                await loadData();
+                const newStatus = await paymentService.getSubscriptionStatus();
+                if (newStatus?.success && newStatus?.hasSubscription) {
+                  Alert.alert(
+                    'Suscripción activa',
+                    'Tu suscripción ya está activa. Se actualizó tu estado.',
+                    [{ text: 'OK', onPress: () => navigation.goBack() }]
+                  );
+                  return;
+                }
+              } catch (_) {
+                // Si falla la consulta de estado, seguimos con el flujo de error normal
+              }
+
               let errorMessage = purchaseResult.error || 'Ocurrió un error al procesar tu suscripción';
               if (purchaseResult.validationError) {
                 if (errorMessage.includes('conectar') || errorMessage.includes('servidor') || errorMessage.includes('Network')) {
