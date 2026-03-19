@@ -88,6 +88,7 @@ class StoreKitService {
     this.processingPurchases = new Set(); // Set para rastrear compras en proceso
     this.module = null; // Guardar referencia al módulo después de inicializar
     this.purchaseInProgress = false; // Mutex para evitar compras concurrentes
+    this.productsLoadingPromise = null; // Mutex para evitar getProductsAsync concurrente
   }
 
   /**
@@ -407,122 +408,133 @@ class StoreKitService {
    * Cargar productos disponibles desde App Store
    */
   async loadProducts() {
-    if (!this.isInitialized && !this.initializing) {
-      const initResult = await this.initialize();
-      if (!initResult.success) {
-        return initResult;
+    if (this.productsLoadingPromise) {
+      return this.productsLoadingPromise;
+    }
+
+    this.productsLoadingPromise = (async () => {
+      if (!this.isInitialized && !this.initializing) {
+        const initResult = await this.initialize();
+        if (!initResult.success) {
+          return initResult;
+        }
+      } else if (this.initializing) {
+        // Esperar a que termine la inicialización
+        let attempts = 0;
+        while (this.initializing && attempts < 50) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+          if (this.isInitialized) break;
+        }
+        if (!this.isInitialized) {
+          return {
+            success: false,
+            error: 'No se pudo inicializar StoreKit',
+            products: [],
+          };
+        }
       }
-    } else if (this.initializing) {
-      // Esperar a que termine la inicialización
-      let attempts = 0;
-      while (this.initializing && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-        if (this.isInitialized) break;
-      }
-      if (!this.isInitialized) {
+
+      let module = this.module || getInAppPurchasesModule();
+      if (!module) {
         return {
           success: false,
-          error: 'No se pudo inicializar StoreKit',
+          error: 'Módulo nativo no disponible',
           products: [],
         };
       }
-    }
+      this.module = module;
 
-    let module = this.module || getInAppPurchasesModule();
-    if (!module) {
-      return {
-        success: false,
-        error: 'Módulo nativo no disponible',
-        products: [],
-      };
-    }
-    this.module = module;
+      try {
+        const productIds = Object.values(PRODUCT_IDS);
+        
+        // Validar que productIds sea un array válido
+        if (!Array.isArray(productIds) || productIds.length === 0) {
+          console.error('[StoreKit] productIds inválido:', productIds);
+          return {
+            success: false,
+            error: 'No se pudieron obtener los IDs de productos',
+            products: [],
+          };
+        }
+
+        console.log('[StoreKit] Solicitando productos:', productIds);
+        const productsResult = await module.getProductsAsync(productIds);
+        
+        if (!productsResult) {
+          console.error('[StoreKit] getProductsAsync retornó undefined');
+          return {
+            success: false,
+            error: 'No se recibió respuesta de App Store',
+            products: [],
+          };
+        }
+
+        // Validar que productsResult tenga la estructura esperada
+        if (typeof productsResult !== 'object') {
+          console.error('[StoreKit] getProductsAsync retornó tipo inválido:', typeof productsResult);
+          return {
+            success: false,
+            error: 'Respuesta inválida de App Store',
+            products: [],
+          };
+        }
+        
+        const responseCode = productsResult.responseCode;
+        const results = productsResult.results;
+
+        // Validar que responseCode exista
+        if (responseCode === undefined || responseCode === null) {
+          console.error('[StoreKit] responseCode no encontrado en productsResult:', productsResult);
+          return {
+            success: false,
+            error: 'Respuesta inválida de App Store: falta responseCode',
+            products: [],
+          };
+        }
+        
+        if (responseCode === module.IAPResponseCode.OK) {
+          // Validar que results sea un array
+          const validResults = Array.isArray(results) ? results : [];
+          this.products = validResults;
+          console.log('[StoreKit] Productos cargados:', validResults.length);
+          
+          return {
+            success: true,
+            products: validResults
+              .filter(p => p && p.productId) // Filtrar productos inválidos
+              .map(p => ({
+                id: p.productId,
+                plan: PRODUCT_ID_TO_PLAN[p.productId] || p.productId,
+                title: p.title || 'Producto sin título',
+                description: p.description || '',
+                price: p.price || '0',
+                currency: p.currency || 'USD',
+                priceValue: parseFloat(p.price) || 0,
+              })),
+          };
+        } else {
+          console.warn('[StoreKit] Error obteniendo productos:', responseCode);
+          return {
+            success: false,
+            error: `Error al obtener productos: ${responseCode}`,
+            products: [],
+          };
+        }
+      } catch (error) {
+        console.error('[StoreKit] Error cargando productos:', error);
+        return {
+          success: false,
+          error: error.message || 'Error al cargar productos',
+          products: [],
+        };
+      }
+    })();
 
     try {
-      const productIds = Object.values(PRODUCT_IDS);
-      
-      // Validar que productIds sea un array válido
-      if (!Array.isArray(productIds) || productIds.length === 0) {
-        console.error('[StoreKit] productIds inválido:', productIds);
-        return {
-          success: false,
-          error: 'No se pudieron obtener los IDs de productos',
-          products: [],
-        };
-      }
-
-      console.log('[StoreKit] Solicitando productos:', productIds);
-      const productsResult = await module.getProductsAsync(productIds);
-      
-      if (!productsResult) {
-        console.error('[StoreKit] getProductsAsync retornó undefined');
-        return {
-          success: false,
-          error: 'No se recibió respuesta de App Store',
-          products: [],
-        };
-      }
-
-      // Validar que productsResult tenga la estructura esperada
-      if (typeof productsResult !== 'object') {
-        console.error('[StoreKit] getProductsAsync retornó tipo inválido:', typeof productsResult);
-        return {
-          success: false,
-          error: 'Respuesta inválida de App Store',
-          products: [],
-        };
-      }
-      
-      const responseCode = productsResult.responseCode;
-      const results = productsResult.results;
-
-      // Validar que responseCode exista
-      if (responseCode === undefined || responseCode === null) {
-        console.error('[StoreKit] responseCode no encontrado en productsResult:', productsResult);
-        return {
-          success: false,
-          error: 'Respuesta inválida de App Store: falta responseCode',
-          products: [],
-        };
-      }
-      
-      if (responseCode === module.IAPResponseCode.OK) {
-        // Validar que results sea un array
-        const validResults = Array.isArray(results) ? results : [];
-        this.products = validResults;
-        console.log('[StoreKit] Productos cargados:', validResults.length);
-        
-        
-        return {
-          success: true,
-          products: validResults
-            .filter(p => p && p.productId) // Filtrar productos inválidos
-            .map(p => ({
-              id: p.productId,
-              plan: PRODUCT_ID_TO_PLAN[p.productId] || p.productId,
-              title: p.title || 'Producto sin título',
-              description: p.description || '',
-              price: p.price || '0',
-              currency: p.currency || 'USD',
-              priceValue: parseFloat(p.price) || 0,
-            })),
-        };
-      } else {
-        console.warn('[StoreKit] Error obteniendo productos:', responseCode);
-        return {
-          success: false,
-          error: `Error al obtener productos: ${responseCode}`,
-          products: [],
-        };
-      }
-    } catch (error) {
-      console.error('[StoreKit] Error cargando productos:', error);
-      return {
-        success: false,
-        error: error.message || 'Error al cargar productos',
-        products: [],
-      };
+      return await this.productsLoadingPromise;
+    } finally {
+      this.productsLoadingPromise = null;
     }
   }
 
@@ -1351,42 +1363,42 @@ class StoreKitService {
 
     try {
       console.log('[StoreKit] Restaurando compras...');
-      
-      const restoreResult = await module.restorePurchasesAsync();
-      
-      if (!restoreResult) {
-        console.error('[StoreKit] restorePurchasesAsync retornó undefined');
+
+      // En expo-in-app-purchases, la "restauración" se implementa consultando el historial
+      // (en vez de restorePurchasesAsync, que puede no existir en tu versión).
+      const historyResult = await module.getPurchaseHistoryAsync();
+
+      if (!historyResult) {
+        console.error('[StoreKit] getPurchaseHistoryAsync retornó undefined');
         return {
           success: false,
           error: 'No se recibió respuesta de App Store',
           purchases: [],
         };
       }
-      
-      // Validar que restoreResult tenga las propiedades esperadas
-      if (typeof restoreResult !== 'object') {
-        console.error('[StoreKit] restorePurchasesAsync retornó tipo inválido:', typeof restoreResult);
+
+      if (typeof historyResult !== 'object') {
+        console.error('[StoreKit] getPurchaseHistoryAsync retornó tipo inválido:', typeof historyResult);
         return {
           success: false,
           error: 'Respuesta inválida de App Store',
           purchases: [],
         };
       }
-      
-      const responseCode = restoreResult.responseCode;
-      const results = restoreResult.results;
-      
-      console.log('[StoreKit] Respuesta de restauración:', {
+
+      const responseCode = historyResult.responseCode;
+      const results = historyResult.results;
+
+      console.log('[StoreKit] Respuesta historial compras:', {
         responseCode,
         hasResults: !!results,
         resultsType: Array.isArray(results) ? 'array' : typeof results,
         resultsLength: Array.isArray(results) ? results.length : 'N/A',
       });
-      
+
       if (responseCode === module.IAPResponseCode.OK) {
-        // Validar que results sea un array
         const validResults = Array.isArray(results) ? results : [];
-        
+
         if (validResults.length === 0) {
           console.log('[StoreKit] No se encontraron compras para restaurar');
           return {
@@ -1396,37 +1408,38 @@ class StoreKitService {
           };
         }
 
-        console.log('[StoreKit] Compras restauradas:', validResults.length);
+        console.log('[StoreKit] Compras restauradas (historial):', validResults.length);
 
-        // Mapear y validar cada compra
         const mappedPurchases = validResults
-          .filter(p => p && p.productId) // Filtrar compras inválidas
+          .filter(p => p && p.productId)
           .map(p => ({
             productId: p.productId,
             plan: PRODUCT_ID_TO_PLAN[p.productId] || p.productId,
-            transactionId: p.transactionId || null,
+            transactionId: p.transactionId || p.orderId || null,
             transactionReceipt: p.transactionReceipt || null,
-            originalTransactionIdentifierIOS: p.originalTransactionIdentifierIOS || null,
+            originalTransactionIdentifierIOS: p.originalTransactionIdentifierIOS || p.originalOrderId || null,
           }));
 
         return {
           success: true,
           purchases: mappedPurchases,
         };
-      } else if (responseCode === module.IAPResponseCode.USER_CANCELED) {
+      }
+
+      if (responseCode === module.IAPResponseCode.USER_CANCELED) {
         return {
           success: false,
           error: 'Restauración cancelada por el usuario',
           purchases: [],
           cancelled: true,
         };
-      } else {
-        return {
-          success: false,
-          error: `Error restaurando compras: ${responseCode}`,
-          purchases: [],
-        };
       }
+
+      return {
+        success: false,
+        error: `Error restaurando compras: ${responseCode}`,
+        purchases: [],
+      };
     } catch (error) {
       console.error('[StoreKit] Error restaurando compras:', error);
       return {
