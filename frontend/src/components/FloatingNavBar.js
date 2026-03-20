@@ -1,262 +1,281 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import React from 'react';
-import { Animated, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import React, { useCallback } from 'react';
+import { Animated, Image, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '../styles/globalStyles';
+
+const RIPPLE = 'rgba(26, 221, 219, 0.18)';
 
 /**
- * Componente de barra de navegación flotante
- * 
- * @param {string} activeTab - Tab activo actualmente
- * @param {function} onTabPress - Función a llamar cuando se presiona un tab
- * @param {object} animValues - Valores de animación (translateY, opacity)
+ * @param {string} activeTab - 'home' | 'calendar' | 'chat' | 'pomodoro' | 'settings'
+ * @param {function} onTabPress - (screen, tab) => void
+ * @param {object} animValues - { translateY, opacity } Animated.Values
+ * @param {string} [accessibilityLabel] - etiqueta del tablist (p. ej. desde Dash)
  */
-const FloatingNavBar = ({ activeTab, onTabPress, animValues = {} }) => {
+const FloatingNavBar = ({
+  activeTab,
+  onTabPress,
+  animValues = {},
+  accessibilityLabel: barAccessibilityLabel,
+}) => {
   const { translateY = new Animated.Value(0), opacity = new Animated.Value(1) } = animValues;
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  
-  // Calcular el padding inferior basado en el safe area
+
   const bottomPadding = Math.max(insets.bottom, 10);
-  
-  // Función actualizada para manejar la navegación
-  const handleTabPress = (screen, tab) => {
-    try {
-      // Si onTabPress existe, úsalo
-      if (onTabPress) {
-        onTabPress(screen, tab);
-        return;
-      }
 
-      // Mapeo de nombres de pantalla a nombres de ruta del TabNavigator
-      const routeMap = {
-        'Dash': 'Inicio',
-        'Inicio': 'Inicio',
-        'Chat': 'Chat',
-        'Profile': 'Perfil',
-        'Perfil': 'Perfil',
-        'Settings': 'Ajustes',
-        'Ajustes': 'Ajustes',
-        'Calendar': 'Tasks',
-        'Tasks': 'Tasks',
-        'Pomodoro': 'Pomodoro'
-      };
-
-      // Obtener el nombre de ruta correcto
-      const routeName = routeMap[screen] || screen;
-
-      // Verificar si la ruta está en el TabNavigator (Inicio, Chat, Perfil, Ajustes, FaQ)
-      const tabNavigatorRoutes = ['Inicio', 'Chat', 'Perfil', 'Ajustes', 'FaQ'];
-      const isTabNavigatorRoute = tabNavigatorRoutes.includes(routeName);
-
-      if (isTabNavigatorRoute) {
-        // Intentar obtener el Tab Navigator padre
-        const tabNavigator = navigation.getParent();
-        
-        // Verificar si estamos dentro de un Tab Navigator
-        if (tabNavigator && tabNavigator.getState) {
-          const state = tabNavigator.getState();
-          // Si el estado tiene type 'tab', estamos en un Tab Navigator
-          if (state?.type === 'tab') {
-            // Navegar usando el Tab Navigator directamente
-            tabNavigator.navigate(routeName);
-            return;
-          }
+  const handleTabPress = useCallback(
+    (screen, tab) => {
+      try {
+        if (onTabPress) {
+          onTabPress(screen, tab);
+          return;
         }
 
-        // Si no estamos en un Tab Navigator, navegar a MainTabs con la pantalla específica
-        navigation.navigate('MainTabs', { screen: routeName });
-        return;
+        const routeMap = {
+          Dash: 'Inicio',
+          Inicio: 'Inicio',
+          Chat: 'Chat',
+          Profile: 'Perfil',
+          Perfil: 'Perfil',
+          Settings: 'Ajustes',
+          Ajustes: 'Ajustes',
+          Calendar: 'Tasks',
+          Tasks: 'Tasks',
+          Pomodoro: 'Pomodoro',
+        };
+
+        const routeName = routeMap[screen] || screen;
+        const tabNavigatorRoutes = ['Inicio', 'Chat', 'Perfil', 'Ajustes', 'FaQ'];
+        const isTabNavigatorRoute = tabNavigatorRoutes.includes(routeName);
+
+        if (isTabNavigatorRoute) {
+          const tabNavigator = navigation.getParent();
+          if (tabNavigator && tabNavigator.getState) {
+            const state = tabNavigator.getState();
+            if (state?.type === 'tab') {
+              tabNavigator.navigate(routeName);
+              return;
+            }
+          }
+          navigation.navigate('MainTabs', { screen: routeName });
+          return;
+        }
+
+        navigation.navigate(routeName);
+      } catch (error) {
+        console.error('Error al navegar:', error);
       }
+    },
+    [navigation, onTabPress]
+  );
 
-      // Para rutas que NO están en el TabNavigator (Tasks, Pomodoro, etc.), navegar directamente
-      navigation.navigate(routeName);
-    } catch (error) {
-      console.error('Error al navegar:', error);
-    }
-  };
-
+  const onNavPress = useCallback(
+    (screen, tabKey) => {
+      if (Platform.OS === 'ios') {
+        Haptics.selectionAsync().catch(() => {});
+      } else {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      }
+      handleTabPress(screen, tabKey);
+    },
+    [handleTabPress]
+  );
 
   return (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.floatingBar,
         {
           transform: [{ translateY }],
           opacity,
-          paddingBottom: bottomPadding
-        }
+          paddingBottom: bottomPadding,
+        },
       ]}
+      accessibilityRole="tablist"
+      accessibilityLabel={barAccessibilityLabel || 'Navegación principal'}
     >
-      {/* Botón Home */}
-      <TouchableOpacity 
-        style={[styles.button, activeTab === 'home' && styles.activeButton]} 
-        onPress={() => handleTabPress('Dash', 'home')}
-        accessibilityRole="tab"
+      <NavTab
+        active={activeTab === 'home'}
+        onPress={() => onNavPress('Dash', 'home')}
         accessibilityLabel="Inicio"
-        accessibilityState={{ selected: activeTab === 'home' }}
-        accessibilityHint="Doble toque para ir al inicio"
-      >
-        <View style={styles.iconContainer}>
-          {/* Usar un icono de texto como fallback */}
-          <Text style={[styles.iconText, activeTab === 'home' && styles.activeIconText]}>🏠</Text>
-        </View>
-      </TouchableOpacity>
-      
-      {/* Botón Recordatorios */}
-      <TouchableOpacity 
-        style={[styles.button, activeTab === 'calendar' && styles.activeButton]} 
-        onPress={() => handleTabPress('Tasks', 'tasks')}
-        accessibilityRole="tab"
+        accessibilityHint="Ir al inicio"
+        iconOutline="home-outline"
+        iconFilled="home"
+      />
+
+      <NavTab
+        active={activeTab === 'calendar'}
+        onPress={() => onNavPress('Tasks', 'tasks')}
         accessibilityLabel="Recordatorios"
-        accessibilityState={{ selected: activeTab === 'calendar' }}
-        accessibilityHint="Doble toque para ver tareas y recordatorios"
-      >
-        <View style={styles.iconContainer}>
-          <Text style={[styles.iconText, activeTab === 'calendar' && styles.activeIconText]}>📋</Text>
-        </View>
-      </TouchableOpacity>
-      
-      {/* Botón central Chat con imagen de Anto */}
+        accessibilityHint="Ver tareas y recordatorios"
+        iconOutline="clipboard-outline"
+        iconFilled="clipboard"
+      />
+
       <View style={styles.centerButtonContainer}>
-        <TouchableOpacity 
-          style={styles.centerButton}
-          onPress={() => handleTabPress('Chat')}
+        <Pressable
+          style={({ pressed }) => [
+            styles.centerButton,
+            activeTab === 'chat' && styles.centerButtonActive,
+            pressed && styles.centerButtonPressed,
+          ]}
+          onPress={() => onNavPress('Chat')}
           accessibilityRole="tab"
           accessibilityLabel="Chat con Anto"
           accessibilityState={{ selected: activeTab === 'chat' }}
-          accessibilityHint="Doble toque para abrir el chat"
+          accessibilityHint="Abrir el chat"
+          android_ripple={{ color: RIPPLE, borderless: false }}
         >
-          {/* Intentar cargar la imagen de Anto, con fallback a emoji */}
-          <Image 
+          <Image
             source={require('../images/Anto.png')}
             style={styles.centerButtonImage}
             onError={(e) => {
               console.warn('Error al cargar la imagen de Anto:', e.nativeEvent.error);
             }}
           />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
-      {/* Botón Pomodoro */}
-      <TouchableOpacity 
-        style={[styles.button, activeTab === 'pomodoro' && styles.activeButton]} 
-        onPress={() => handleTabPress('Pomodoro', 'pomodoro')}
-        accessibilityRole="tab"
+      <NavTab
+        active={activeTab === 'pomodoro'}
+        onPress={() => onNavPress('Pomodoro', 'pomodoro')}
         accessibilityLabel="Pomodoro"
-        accessibilityState={{ selected: activeTab === 'pomodoro' }}
-        accessibilityHint="Doble toque para temporizador Pomodoro"
-      >
-        <View style={styles.iconContainer}>
-          <Text style={[styles.iconText, activeTab === 'pomodoro' && styles.activeIconText]}>⏲️</Text>
-        </View>
-      </TouchableOpacity>
-      
-      {/* Botón Ajustes */}
-      <TouchableOpacity 
-        style={[styles.button, activeTab === 'settings' && styles.activeButton]} 
-        onPress={() => handleTabPress('Settings', 'settings')}
-        accessibilityRole="tab"
+        accessibilityHint="Abrir temporizador Pomodoro"
+        iconOutline="timer-outline"
+        iconFilled="timer"
+      />
+
+      <NavTab
+        active={activeTab === 'settings'}
+        onPress={() => onNavPress('Settings', 'settings')}
         accessibilityLabel="Ajustes"
-        accessibilityState={{ selected: activeTab === 'settings' }}
-        accessibilityHint="Doble toque para abrir ajustes"
-      >
-        <View style={styles.iconContainer}>
-          <Text style={[styles.iconText, activeTab === 'settings' && styles.activeIconText]}>⚙️</Text>
-        </View>
-      </TouchableOpacity>
+        accessibilityHint="Abrir ajustes"
+        iconOutline="settings-outline"
+        iconFilled="settings"
+      />
     </Animated.View>
   );
 };
 
+function NavTab({
+  active,
+  onPress,
+  accessibilityLabel,
+  accessibilityHint,
+  iconOutline,
+  iconFilled,
+}) {
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.button, pressed && styles.sideButtonPressed]}
+      onPress={onPress}
+      accessibilityRole="tab"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ selected: active }}
+      accessibilityHint={accessibilityHint}
+      android_ripple={{ color: RIPPLE, borderless: true }}
+      hitSlop={{ top: 6, bottom: 10, left: 4, right: 4 }}
+    >
+      <View style={[styles.tabInner, active && styles.tabInnerActive]}>
+        <Ionicons
+          name={active ? iconFilled : iconOutline}
+          size={24}
+          color={active ? colors.primary : colors.textSecondary}
+        />
+        {active ? <View style={styles.activeDot} importantForAccessibility="no" /> : null}
+      </View>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   floatingBar: {
     position: 'absolute',
-    bottom: -6,
-    left: 0,
-    right: 0,
+    bottom: -4,
+    left: 8,
+    right: 8,
     flexDirection: 'row',
-    backgroundColor: 'rgba(3, 10, 36, 0.95)',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    height: 80, // Altura base
+    backgroundColor: 'rgba(3, 10, 36, 0.96)',
+    borderRadius: 22,
+    minHeight: 64,
     alignItems: 'center',
-    paddingHorizontal: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 7,
-    borderWidth: 2,
-    borderColor: 'rgba(26, 221, 219, 0.3)',
-    borderBottomWidth: 0,
-    zIndex: 1000, // Asegurar que esté por encima de otros elementos
+    paddingHorizontal: 6,
+    paddingTop: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(26, 221, 219, 0.35)',
+    zIndex: 1000,
   },
   button: {
     flex: 1,
-    height: '96%',
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 1,
-  },
-  activeButton: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#1ADDDB',
-    backgroundColor: 'rgba(26, 221, 219, 0.08)',
-  },
-  iconContainer: {
     justifyContent: 'center',
+    minHeight: 48,
+  },
+  sideButtonPressed: {
+    opacity: 0.85,
+  },
+  tabInner: {
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 14,
   },
-  icon: {
-    width: 26,
-    height: 26,
-    tintColor: '#A3B8E8',
+  tabInnerActive: {
+    backgroundColor: 'rgba(26, 221, 219, 0.14)',
   },
-  activeIcon: {
-    width: 28,
-    height: 28,
-    tintColor: '#1ADDDB',
-  },
-  iconText: {
-    fontSize: 26,
-    color: '#A3B8E8',
-  },
-  activeIconText: {
-    color: '#1ADDDB',
-    fontSize: 28,
-  },
-  text: {
-    fontSize: 10,
-    color: '#A3B8E8',
-  },
-  activeText: {
-    color: '#1ADDDB',
+  activeDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.primary,
+    marginTop: 4,
   },
   centerButtonContainer: {
-    width: 62,
-    height: 62,
+    width: 64,
+    height: 64,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: -20,
+    marginTop: -22,
   },
   centerButton: {
-    width: 54,
-    height: 54,
-    borderRadius: 25,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#1ADDDB',
-    shadowOffset: { width: 1, height: 1 },
-    shadowOpacity: 0.2,
+    backgroundColor: 'rgba(3, 10, 36, 0.95)',
+    borderWidth: 2,
+    borderColor: 'rgba(26, 221, 219, 0.25)',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
     shadowRadius: 10,
-    elevation: 8,
-    overflow: 'hidden', // Para asegurar que la imagen respete el borderRadius
+    elevation: 10,
+    overflow: 'hidden',
+  },
+  centerButtonActive: {
+    borderColor: colors.primary,
+    shadowOpacity: 0.55,
+  },
+  centerButtonPressed: {
+    opacity: 0.92,
+    transform: [{ scale: 0.97 }],
   },
   centerButtonImage: {
-    width: 60,
-    height: 60,
-    resizeMode: 'contain',
+    width: 52,
+    height: 52,
+    resizeMode: 'cover',
+    borderRadius: 26,
   },
 });
 
-export default FloatingNavBar; 
+export default FloatingNavBar;

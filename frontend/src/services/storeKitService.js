@@ -79,6 +79,12 @@ const PRODUCT_ID_TO_PLAN = {
   'com.anto.app.yearly': 'yearly',
 };
 
+/** Expo lanza esto cuando ya hay sesión IAP; no es un error para el usuario */
+function isAlreadyConnectedError(err) {
+  const msg = (err?.message || String(err || '')).toLowerCase();
+  return msg.includes('already connected');
+}
+
 class StoreKitService {
   constructor() {
     this.isInitialized = false;
@@ -200,15 +206,11 @@ class StoreKitService {
       } catch (connectError) {
         const errMsg = connectError?.message || String(connectError);
         const errCode = connectError?.code ?? connectError?.responseCode ?? '';
-        console.error('[StoreKit] CONNECTION_FAILED:', errMsg, errCode ? `(code: ${errCode})` : '');
-        console.error('[StoreKit] ❌ Error en connectAsync', {
-          error: errMsg,
-          code: errCode,
-          errorType: connectError?.constructor?.name,
-          hasModule: !!module,
-        });
-        // Si el error es "Already connected", considerar como éxito
-        if (connectError.message && connectError.message.includes('Already connected')) {
+        // Si el error es "Already connected", considerar como éxito (no spamear como ERROR)
+        if (isAlreadyConnectedError(connectError)) {
+          console.log('[StoreKit] connectAsync: ya conectado a App Store (esperado)', {
+            code: errCode || undefined,
+          });
           this.module = module; // Asegurar que el módulo esté guardado
           
           // Verificar que el módulo tenga los métodos necesarios
@@ -230,6 +232,13 @@ class StoreKitService {
             };
           }
         }
+        console.error('[StoreKit] CONNECTION_FAILED:', errMsg, errCode ? `(code: ${errCode})` : '');
+        console.error('[StoreKit] ❌ Error en connectAsync', {
+          error: errMsg,
+          code: errCode,
+          errorType: connectError?.constructor?.name,
+          hasModule: !!module,
+        });
         // Si no es "Already connected", resetear estado y lanzar error
         this.initializing = false;
         this.module = null;
@@ -288,14 +297,14 @@ class StoreKitService {
       this.initializing = false;
       const errMsg = error?.message || String(error);
       const errCode = error?.code ?? error?.responseCode ?? '';
-      console.error('[StoreKit] CONNECTION_FAILED:', errMsg, errCode ? `(code: ${errCode})` : '');
-      console.error('[StoreKit] Error inicializando:', error);
 
-      // Si el error es "Already connected", considerar como éxito
-      if (error.message && error.message.includes('Already connected')) {
-        this.module = module; // Asegurar que el módulo esté guardado
-        
-        // Verificar que el módulo tenga los métodos necesarios
+      // Si el error es "Already connected", considerar como éxito (sin logs de error)
+      if (isAlreadyConnectedError(error)) {
+        console.log('[StoreKit] initialize: ya conectado a App Store (esperado)', {
+          code: errCode || undefined,
+        });
+        this.module = module;
+
         if (typeof module.purchaseItemAsync === 'function' && module.IAPResponseCode) {
           this.isInitialized = true;
           this.initializing = false;
@@ -303,18 +312,19 @@ class StoreKitService {
             this.setupPurchaseListeners();
           }
           return { success: true };
-        } else {
-          // Si el módulo no tiene los métodos, resetear y fallar
-          this.module = null;
-          this.isInitialized = false;
-          this.initializing = false;
-          return {
-            success: false,
-            error: 'Módulo de compras incompleto. Por favor, reinicia la app.',
-          };
         }
+        this.module = null;
+        this.isInitialized = false;
+        this.initializing = false;
+        return {
+          success: false,
+          error: 'Módulo de compras incompleto. Por favor, reinicia la app.',
+        };
       }
-      
+
+      console.error('[StoreKit] CONNECTION_FAILED:', errMsg, errCode ? `(code: ${errCode})` : '');
+      console.error('[StoreKit] Error inicializando:', error);
+
       // Resetear estado en caso de error
       this.module = null;
       this.isInitialized = false;
@@ -730,6 +740,27 @@ class StoreKitService {
           error: msg,
         };
       }
+      // En Sandbox a veces la primera llamada resuelve sin objeto; un reintento breve suele bastar
+      if (!purchaseResult) {
+        console.warn('[StoreKit] purchaseItemAsync sin resultado; reintento en 500ms...', { productId });
+        await new Promise((r) => setTimeout(r, 500));
+        try {
+          purchaseResult = await module.purchaseItemAsync(productId);
+        } catch (retryPurchaseErr) {
+          console.error('[StoreKit] ❌ ERROR en reintento purchaseItemAsync', {
+            productId,
+            error: retryPurchaseErr?.message,
+          });
+          const msg = retryPurchaseErr?.message || 'Error al procesar la compra.';
+          if (msg.includes('Must wait for promise to resolve')) {
+            return {
+              success: false,
+              error: 'La compra anterior todavía se está procesando. Espera unos segundos y vuelve a intentar.',
+            };
+          }
+          return { success: false, error: msg };
+        }
+      }
       const purchaseRequestDuration = Date.now() - purchaseRequestTime;
       
       // Marcar que estamos procesando esta compra para evitar duplicados en el listener
@@ -743,14 +774,15 @@ class StoreKitService {
       });
       
       if (!purchaseResult) {
-        console.error('[StoreKit] ❌ ERROR: No se recibió respuesta de App Store', {
+        console.warn('[StoreKit] Sin respuesta de purchaseItemAsync tras reintento; prueba Restaurar compras o espera unos segundos.', {
           productId,
           plan,
           totalDuration: Date.now() - purchaseStartTime,
         });
         return {
           success: false,
-          error: 'No se recibió respuesta de App Store',
+          error:
+            'App Store no devolvió confirmación de la compra. Espera unos segundos, usa «Restaurar compras» o revisa si ya tienes la suscripción activa.',
         };
       }
       

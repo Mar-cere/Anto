@@ -108,7 +108,7 @@ export default function PomodoroScreen() {
           onConfirm={handleCustomTimerConfirm}
         />
       </View>
-      <FloatingNavBar activeTab="home" animValues={navBarAnim} />
+      <FloatingNavBar activeTab="pomodoro" animValues={navBarAnim} />
     </SafeAreaView>
   );
 }
