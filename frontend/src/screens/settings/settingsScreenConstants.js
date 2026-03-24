@@ -21,7 +21,8 @@ export const TEXTS = {
   LOGOUT_TITLE: 'Cerrar sesión',
   LOGOUT_MESSAGE: '¿Estás seguro que deseas cerrar sesión?',
   DELETE_TITLE: 'Eliminar cuenta',
-  DELETE_MESSAGE: '¿Estás seguro que deseas eliminar tu cuenta? Esta acción no se puede deshacer.',
+  DELETE_MESSAGE:
+    '¿Estás seguro que deseas eliminar tu cuenta? Esta acción no se puede deshacer. Si tu plan fue contratado por Apple, también debes cancelar la suscripción desde App Store (Configuración > Apple ID > Suscripciones).',
   CANCEL: 'Cancelar',
   CONFIRM: 'Confirmar',
   DELETE: 'Eliminar',

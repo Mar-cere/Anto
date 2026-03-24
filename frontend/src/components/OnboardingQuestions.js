@@ -1,6 +1,6 @@
 /**
  * Preguntas iniciales de onboarding para personalizar el chat.
- * Las respuestas se envían al backend y Anto las usa en la conversación.
+ * Modo sin teclado: selección por opciones para hacerlo más intuitivo.
  *
  * @author AntoApp Team
  */
@@ -8,34 +8,48 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { useToast } from '../context/ToastContext';
+import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { api, ENDPOINTS } from '../config/api';
-import { getApiErrorMessage } from '../utils/apiErrorHandler';
+import { useToast } from '../context/ToastContext';
 import { colors } from '../styles/globalStyles';
+import { getApiErrorMessage } from '../utils/apiErrorHandler';
 
 const TEXTS = {
   TITLE: 'Un momento para conocerte',
-  SUBTITLE: 'Tus respuestas ayudan a Anto a acompañarte mejor. Puedes omitir si prefieres.',
+  SUBTITLE: 'Elige las opciones que mejor te representen. Puedes omitir si prefieres.',
   Q1_LABEL: '¿Qué esperas de la app?',
-  Q1_PLACEHOLDER: 'Ej. apoyo emocional, organizarme, trabajar la ansiedad…',
   Q2_LABEL: '¿Qué te gustaría mejorar o trabajar?',
-  Q2_PLACEHOLDER: 'Ej. sueño, rutinas, autoestima, estrés…',
   Q3_LABEL: '¿Qué tipo de apoyo buscas?',
-  Q3_PLACEHOLDER: 'Ej. más guía, alguien que escuche, más práctico…',
+  NONE: 'Prefiero no responder por ahora',
   SKIP: 'Omitir',
-  SUBMIT: 'Enviar',
+  SUBMIT: 'Guardar',
+};
+
+const OPTIONS = {
+  whatExpectFromApp: [
+    'Apoyo emocional',
+    'Organizarme mejor',
+    'Manejar ansiedad/estrés',
+    'Crear hábitos saludables',
+  ],
+  whatToImproveOrWorkOn: [
+    'Sueño',
+    'Rutinas',
+    'Autoestima',
+    'Enfoque y productividad',
+  ],
+  typeOfSpecialist: [
+    'Más guía paso a paso',
+    'Que me escuche y acompañe',
+    'Consejos prácticos',
+    'Equilibrado',
+  ],
+};
+
+const UI = {
+  CARD_BACKGROUND: '#122052',
+  CARD_BORDER: 'rgba(26, 221, 219, 0.25)',
+  OVERLAY: 'rgba(0,0,0,0.6)',
 };
 
 const OnboardingQuestions = ({ visible, onDismiss }) => {
@@ -54,11 +68,13 @@ const OnboardingQuestions = ({ visible, onDismiss }) => {
   const handleSubmit = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setError(null);
-    const hasAny = whatExpectFromApp.trim() || whatToImproveOrWorkOn.trim() || typeOfSpecialist.trim();
+    const hasAny =
+      whatExpectFromApp.trim() || whatToImproveOrWorkOn.trim() || typeOfSpecialist.trim();
     if (!hasAny) {
       onDismiss?.();
       return;
     }
+
     setLoading(true);
     try {
       await api.patch(ENDPOINTS.ONBOARDING_PREFERENCES, {
@@ -75,6 +91,46 @@ const OnboardingQuestions = ({ visible, onDismiss }) => {
     }
   };
 
+  const renderOptionGroup = (label, value, setValue, options) => (
+    <View style={styles.field}>
+      <Text style={styles.label}>{label}</Text>
+      <View style={styles.optionList}>
+        {options.map((option) => {
+          const isSelected = value === option;
+          return (
+            <TouchableOpacity
+              key={option}
+              style={[styles.optionChip, isSelected && styles.optionChipSelected]}
+              onPress={() => {
+                Haptics.selectionAsync().catch(() => {});
+                setValue(isSelected ? '' : option);
+              }}
+              activeOpacity={0.85}
+              disabled={loading}
+            >
+              <Text style={[styles.optionChipText, isSelected && styles.optionChipTextSelected]}>
+                {option}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+        <TouchableOpacity
+          style={[styles.optionChip, value === TEXTS.NONE && styles.optionChipSelected]}
+          onPress={() => {
+            Haptics.selectionAsync().catch(() => {});
+            setValue(value === TEXTS.NONE ? '' : TEXTS.NONE);
+          }}
+          activeOpacity={0.85}
+          disabled={loading}
+        >
+          <Text style={[styles.optionChipText, value === TEXTS.NONE && styles.optionChipTextSelected]}>
+            {TEXTS.NONE}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
   if (!visible) return null;
 
   return (
@@ -82,97 +138,69 @@ const OnboardingQuestions = ({ visible, onDismiss }) => {
       visible={visible}
       animationType="fade"
       transparent
+      statusBarTranslucent
       onRequestClose={handleSkip}
     >
       <View style={styles.overlay}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.keyboardView}
-        >
-          <View style={styles.card}>
-            <View style={styles.header}>
-              <View style={styles.iconCircle}>
-                <MaterialCommunityIcons name="heart-outline" size={28} color={colors.primary} />
-              </View>
-              <Text style={styles.title}>{TEXTS.TITLE}</Text>
-              <Text style={styles.subtitle}>{TEXTS.SUBTITLE}</Text>
+        <View style={styles.card}>
+          <View style={styles.header}>
+            <View style={styles.iconCircle}>
+              <MaterialCommunityIcons name="heart-outline" size={28} color={colors.primary} />
             </View>
-
-            <ScrollView
-              style={styles.scroll}
-              contentContainerStyle={styles.scrollContent}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
-              <View style={styles.field}>
-                <Text style={styles.label}>{TEXTS.Q1_LABEL}</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder={TEXTS.Q1_PLACEHOLDER}
-                  placeholderTextColor={colors.textSecondary}
-                  value={whatExpectFromApp}
-                  onChangeText={setWhatExpectFromApp}
-                  multiline
-                  maxLength={500}
-                  editable={!loading}
-                />
-              </View>
-              <View style={styles.field}>
-                <Text style={styles.label}>{TEXTS.Q2_LABEL}</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder={TEXTS.Q2_PLACEHOLDER}
-                  placeholderTextColor={colors.textSecondary}
-                  value={whatToImproveOrWorkOn}
-                  onChangeText={setWhatToImproveOrWorkOn}
-                  multiline
-                  maxLength={500}
-                  editable={!loading}
-                />
-              </View>
-              <View style={styles.field}>
-                <Text style={styles.label}>{TEXTS.Q3_LABEL}</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder={TEXTS.Q3_PLACEHOLDER}
-                  placeholderTextColor={colors.textSecondary}
-                  value={typeOfSpecialist}
-                  onChangeText={setTypeOfSpecialist}
-                  multiline
-                  maxLength={500}
-                  editable={!loading}
-                />
-              </View>
-
-              {error ? (
-                <Text style={styles.errorText}>{error}</Text>
-              ) : null}
-
-              <View style={styles.actions}>
-                <TouchableOpacity
-                  style={styles.primaryButton}
-                  onPress={handleSubmit}
-                  disabled={loading}
-                  activeOpacity={0.8}
-                >
-                  {loading ? (
-                    <ActivityIndicator color={colors.white} size="small" />
-                  ) : (
-                    <Text style={styles.primaryButtonText}>{TEXTS.SUBMIT}</Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.skipButton}
-                  onPress={handleSkip}
-                  disabled={loading}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.skipButtonText}>{TEXTS.SKIP}</Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
+            <Text style={styles.title}>{TEXTS.TITLE}</Text>
+            <Text style={styles.subtitle}>{TEXTS.SUBTITLE}</Text>
           </View>
-        </KeyboardAvoidingView>
+
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {renderOptionGroup(
+              TEXTS.Q1_LABEL,
+              whatExpectFromApp,
+              setWhatExpectFromApp,
+              OPTIONS.whatExpectFromApp
+            )}
+            {renderOptionGroup(
+              TEXTS.Q2_LABEL,
+              whatToImproveOrWorkOn,
+              setWhatToImproveOrWorkOn,
+              OPTIONS.whatToImproveOrWorkOn
+            )}
+            {renderOptionGroup(
+              TEXTS.Q3_LABEL,
+              typeOfSpecialist,
+              setTypeOfSpecialist,
+              OPTIONS.typeOfSpecialist
+            )}
+
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+            <View style={styles.actions}>
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={handleSubmit}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                {loading ? (
+                  <ActivityIndicator color={colors.white} size="small" />
+                ) : (
+                  <Text style={styles.primaryButtonText}>{TEXTS.SUBMIT}</Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.skipButton}
+                onPress={handleSkip}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.skipButtonText}>{TEXTS.SKIP}</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
       </View>
     </Modal>
   );
@@ -181,18 +209,17 @@ const OnboardingQuestions = ({ visible, onDismiss }) => {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: UI.OVERLAY,
     justifyContent: 'center',
     padding: 20,
   },
-  keyboardView: {
-    maxHeight: '90%',
-  },
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: UI.CARD_BACKGROUND,
+    borderWidth: 1,
+    borderColor: UI.CARD_BORDER,
     borderRadius: 16,
     padding: 20,
-    maxHeight: '90%',
+    maxHeight: '92%',
   },
   header: {
     alignItems: 'center',
@@ -221,7 +248,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   scroll: {
-    maxHeight: 400,
+    maxHeight: 420,
   },
   scrollContent: {
     paddingBottom: 16,
@@ -233,18 +260,32 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 6,
+    marginBottom: 8,
   },
-  input: {
+  optionList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  optionChip: {
     borderWidth: 1,
     borderColor: colors.textSecondary + '40',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: colors.text,
-    minHeight: 80,
-    textAlignVertical: 'top',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  optionChipSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '22',
+  },
+  optionChipText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  optionChipTextSelected: {
+    color: colors.primary,
   },
   errorText: {
     fontSize: 13,

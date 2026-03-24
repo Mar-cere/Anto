@@ -8,12 +8,16 @@
  */
 
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useCallback } from 'react';
 import {
   Animated,
   FlatList,
   Image,
+  Linking,
+  Modal,
   Platform,
+  Pressable,
   StatusBar,
   StyleSheet,
   Text,
@@ -39,6 +43,7 @@ import {
 } from './chat/chatScreenConstants';
 
 const BACKGROUND_IMAGE = require('../images/back.png');
+const PRIVACY_URL = 'https://www.antoapps.com/privacidad';
 
 const styles = StyleSheet.create({
   container: {
@@ -134,6 +139,59 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: CHAT_COLORS.SCROLL_BUTTON_BORDER,
   },
+  aiModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(3, 10, 36, 0.82)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  aiModalCard: {
+    backgroundColor: '#1D2B5F',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(26, 221, 219, 0.3)',
+    padding: 20,
+  },
+  aiModalTitle: {
+    color: CHAT_COLORS.WHITE,
+    fontSize: 19,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  aiModalText: {
+    color: CHAT_COLORS.ACCENT,
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 18,
+  },
+  aiModalActions: {
+    gap: 10,
+  },
+  aiPolicyButton: {
+    borderWidth: 1,
+    borderColor: 'rgba(163, 184, 232, 0.45)',
+    borderRadius: 10,
+    paddingVertical: 11,
+    alignItems: 'center',
+  },
+  aiPolicyButtonText: {
+    color: CHAT_COLORS.ACCENT,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  aiContinueButton: {
+    backgroundColor: 'rgba(26, 221, 219, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(26, 221, 219, 0.5)',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  aiContinueButtonText: {
+    color: CHAT_COLORS.WHITE,
+    fontSize: 15,
+    fontWeight: '700',
+  },
 });
 
 const ChatScreen = () => {
@@ -162,6 +220,46 @@ const ChatScreen = () => {
     handleBack,
     navigation,
   } = useChatScreen();
+  const [showAIDisclosure, setShowAIDisclosure] = React.useState(false);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    const checkDisclosure = async () => {
+      try {
+        const ack = await AsyncStorage.getItem(STORAGE_KEYS.AI_DISCLOSURE_ACK);
+        if (!ack && isMounted) {
+          setShowAIDisclosure(true);
+        }
+      } catch (error) {
+        console.warn('No se pudo leer estado de disclosure IA:', error);
+      }
+    };
+    checkDisclosure();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleAIDisclosureAcknowledge = useCallback(async () => {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.AI_DISCLOSURE_ACK, 'true');
+    } catch (error) {
+      console.warn('No se pudo guardar aceptación de disclosure IA:', error);
+    } finally {
+      setShowAIDisclosure(false);
+    }
+  }, []);
+
+  const handleOpenPrivacyPolicy = useCallback(async () => {
+    try {
+      const canOpen = await Linking.canOpenURL(PRIVACY_URL);
+      if (canOpen) {
+        await Linking.openURL(PRIVACY_URL);
+      }
+    } catch (error) {
+      console.warn('No se pudo abrir política de privacidad:', error);
+    }
+  }, []);
 
   const handleSuggestionPress = useCallback(
     (suggestion) => {
@@ -329,6 +427,28 @@ const ChatScreen = () => {
         onConfirm={clearConversation}
         onCancel={() => setShowClearModal(false)}
       />
+
+      <Modal
+        visible={showAIDisclosure}
+        animationType="fade"
+        transparent
+        onRequestClose={handleAIDisclosureAcknowledge}
+      >
+        <View style={styles.aiModalOverlay}>
+          <View style={styles.aiModalCard}>
+            <Text style={styles.aiModalTitle}>{TEXTS.AI_MODAL_TITLE}</Text>
+            <Text style={styles.aiModalText}>{TEXTS.AI_MODAL_MESSAGE}</Text>
+            <View style={styles.aiModalActions}>
+              <Pressable style={styles.aiPolicyButton} onPress={handleOpenPrivacyPolicy}>
+                <Text style={styles.aiPolicyButtonText}>{TEXTS.AI_MODAL_POLICY}</Text>
+              </Pressable>
+              <Pressable style={styles.aiContinueButton} onPress={handleAIDisclosureAcknowledge}>
+                <Text style={styles.aiContinueButtonText}>{TEXTS.AI_MODAL_CONTINUE}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };

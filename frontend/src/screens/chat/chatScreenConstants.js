@@ -26,12 +26,18 @@ export const TEXTS = {
   SUGGESTIONS_TITLE: '💡 Sugerencias para ti:',
   NETWORK_ERROR: 'Sin conexión a internet. Por favor, verifica tu conexión e intenta nuevamente.',
   CONVERSATION_ERROR: 'Hubo un problema al iniciar la conversación. Por favor, intenta de nuevo.',
+  AI_MODAL_TITLE: 'Transparencia sobre IA',
+  AI_MODAL_MESSAGE:
+    'Anto usa OpenAI como proveedor de IA para responder en el chat.\n\nDatos procesados:\n• Mensajes que envías en el chat\n• Contexto mínimo de la conversación\n• Preferencias de onboarding que compartes\n\nPuedes revisar más detalles en la Política de Privacidad.',
+  AI_MODAL_POLICY: 'Ver política de privacidad',
+  AI_MODAL_CONTINUE: 'Entendido',
 };
 
 // AsyncStorage
 export const STORAGE_KEYS = {
   CONVERSATION_ID: 'currentConversationId',
   TRIAL_BANNER_DISMISSED: 'trialBannerDismissed',
+  AI_DISCLOSURE_ACK: 'aiDisclosureAcceptedV1',
 };
 
 // Tipos y roles

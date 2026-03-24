@@ -64,6 +64,8 @@ const TEXTS = {
   TECHNOLOGY_TEXT: 'Anto utiliza inteligencia artificial avanzada para brindarte respuestas personalizadas y empáticas. Nuestro sistema está diseñado para comprender el contexto emocional, detectar situaciones de crisis y ofrecer apoyo adaptado a tus necesidades específicas.',
   TEAM_TITLE: 'Nuestro Compromiso',
   TEAM_TEXT: 'Estamos comprometidos con tu bienestar. Trabajamos constantemente para mejorar Anto, agregar nuevas funcionalidades y asegurar que siempre tengas el mejor apoyo posible en tu camino hacia una mejor salud mental.',
+  AI_TITLE: 'Cómo usamos IA',
+  AI_TEXT: 'Para generar respuestas en el chat, Anto utiliza OpenAI como proveedor de IA. Se procesan tus mensajes, contexto mínimo de conversación y preferencias que compartes en onboarding para personalizar la ayuda. Puedes revisar el detalle completo en nuestra Política de Privacidad.',
   CONTACT_TITLE: 'Contáctanos',
   CONTACT_EMAIL: 'marcelo.ull@antoapps.com',
   LEGAL_TITLE: 'Legal',
@@ -170,6 +172,19 @@ const AboutScreen = () => {
             <Text style={styles.sectionTitle}>{TEXTS.TEAM_TITLE}</Text>
           </View>
           <Text style={styles.sectionText}>{TEXTS.TEAM_TEXT}</Text>
+        </View>
+
+        {/* Transparencia IA */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <MaterialCommunityIcons
+              name="brain"
+              size={28}
+              color={COLORS.PRIMARY}
+            />
+            <Text style={styles.sectionTitle}>{TEXTS.AI_TITLE}</Text>
+          </View>
+          <Text style={styles.sectionText}>{TEXTS.AI_TEXT}</Text>
         </View>
 
         {/* Contacto */}

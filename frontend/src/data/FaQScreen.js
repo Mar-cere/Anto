@@ -5,7 +5,7 @@ const faqData = [
     items: [
       {
         question: "¿Qué es Anto?",
-        answer: "Anto es tu asistente personal para la salud mental y el bienestar emocional. Su función principal es ser un psicólogo virtual con inteligencia artificial (GPT-5 Mini), brindándote apoyo a través de un chat interactivo. Además, te ayuda a gestionar tus tareas, hábitos, técnicas terapéuticas y detección de crisis, con el objetivo de mejorar tu bienestar diario."
+        answer: "Anto es un asistente digital de apoyo emocional y bienestar. Usa inteligencia artificial para ofrecerte acompañamiento conversacional, además de herramientas para tareas, hábitos y técnicas terapéuticas. No reemplaza a profesionales de salud mental."
       },
       {
         question: "¿Cómo puedo sacar el máximo provecho de la aplicación?",
@@ -22,7 +22,7 @@ const faqData = [
     items: [
       {
         question: "¿Cómo funciona el chat con Anto?",
-        answer: "El chat con Anto es el corazón de la aplicación. Puedes hablar sobre cómo te sientes, pedir consejos o simplemente desahogarte. Anto usa inteligencia artificial (GPT-5 Mini) para comprender tus respuestas, detectar emociones en tiempo real y brindarte apoyo personalizado. Cuanto más interactúes, mejor se adaptará a tus necesidades. El sistema también detecta automáticamente situaciones de crisis y puede activar protocolos de emergencia si es necesario."
+        answer: "El chat con Anto te permite hablar sobre cómo te sientes, pedir orientación y recibir apoyo personalizado. Anto usa IA para comprender mejor el contexto de tus mensajes y responder de forma útil. Si detecta señales de riesgo, puede sugerir acciones de apoyo y mostrar opciones de seguridad."
       },
       {
         question: "¿Anto puede reemplazar a un psicólogo?",
@@ -30,11 +30,11 @@ const faqData = [
       },
       {
         question: "¿El chat con Anto es privado y seguro?",
-        answer: "Sí. Todas tus conversaciones están protegidas con cifrado de extremo a extremo, lo que significa que ni siquiera nosotros podemos acceder a ellas. Tu privacidad es nuestra prioridad. Los datos se almacenan de forma segura y solo se utilizan para mejorar tu experiencia personalizada."
+        answer: "Sí. Protegemos tus conversaciones con medidas de seguridad y cifrado en tránsito/almacenamiento. Para generar respuestas, parte del contenido del chat y contexto mínimo necesario se procesa con nuestro proveedor de IA de terceros. Puedes revisar más detalles en la Política de Privacidad."
       },
       {
         question: "¿Cómo funciona la detección de crisis?",
-        answer: "Anto analiza tus mensajes en tiempo real para detectar señales de crisis emocional. Cuando identifica una situación de riesgo, puede activar protocolos de emergencia, sugerir técnicas de regulación emocional inmediatas, y si es necesario, enviar alertas a tus contactos de emergencia configurados. También puedes revisar tu historial de crisis en el Dashboard de Crisis para identificar patrones."
+        answer: "Anto analiza tus mensajes para detectar posibles señales de crisis emocional. Cuando identifica riesgo, puede sugerir técnicas de regulación, mostrar recomendaciones de ayuda y, si tienes contactos de emergencia configurados, activar alertas según la configuración disponible."
       }
     ]
   },
@@ -102,7 +102,7 @@ const faqData = [
     items: [
       {
         question: "¿Mis datos están protegidos?",
-        answer: "Sí, usamos cifrado de alto nivel para proteger tu información. Tus datos no son compartidos con terceros, y ni siquiera nosotros tenemos acceso a tus conversaciones con Anto. Todas las comunicaciones están encriptadas y cumplimos con las mejores prácticas de seguridad y privacidad."
+        answer: "Sí, usamos cifrado y controles de seguridad para proteger tu información. Algunos datos necesarios para el funcionamiento del chat se procesan con proveedores externos (por ejemplo, proveedor de IA para generar respuestas). Detallamos qué datos se comparten y con quién en la Política de Privacidad."
       },
       {
         question: "¿Puedo descargar mis datos?",

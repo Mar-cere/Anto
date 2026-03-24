@@ -461,8 +461,7 @@ router.delete('/me', authenticateToken, validateUserObjectId, deleteUserLimiter,
       const activeSubscriptions = await Subscription.find({
         userId: userId,
         status: { $in: ['active', 'trialing'] },
-      })
-        .lean();
+      });
 
       if (activeSubscriptions.length > 0) {
         logger.info(`Cancelando ${activeSubscriptions.length} suscripción(es) activa(s) para usuario ${userId}`);
@@ -501,17 +500,19 @@ router.delete('/me', authenticateToken, validateUserObjectId, deleteUserLimiter,
               logger.info(`Suscripción sin proveedor específico detectada para usuario ${userId}. Cancelación local aplicada.`);
             }
 
+            const cancellationDate = new Date();
+
             // Cancelar suscripción en base de datos (cancelar inmediatamente)
             subscription.status = 'canceled';
-            subscription.canceledAt = new Date();
-            subscription.endedAt = new Date();
+            subscription.canceledAt = cancellationDate;
+            subscription.endedAt = cancellationDate;
             subscription.cancelAtPeriodEnd = false;
             
             // Agregar información de cancelación en metadata
             subscription.metadata = {
               ...subscription.metadata,
               canceledOnAccountDeletion: true,
-              accountDeletedAt: new Date().toISOString(),
+              accountDeletedAt: cancellationDate.toISOString(),
               canceledBy: 'account_deletion',
             };
             
