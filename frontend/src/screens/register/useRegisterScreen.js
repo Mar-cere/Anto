@@ -187,7 +187,7 @@ export function useRegisterScreen(navigation) {
           formData.email
         );
         await refreshSession();
-        navigation.reset({ index: 0, routes: [{ name: ROUTES.DASHBOARD }] });
+        navigation.reset({ index: 0, routes: [{ name: ROUTES.MAIN_TABS }] });
         return;
       }
       throw new Error(ERROR_MESSAGES.NO_TOKEN);

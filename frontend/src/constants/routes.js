@@ -6,6 +6,7 @@ export const ROUTES = {
   VERIFY_EMAIL: 'VerifyEmail',
   NEW_PASSWORD: 'NewPassword',
   DASHBOARD: 'Dash',
+  MAIN_TABS: 'MainTabs',
   CHAT: 'Chat',
   PROFILE: 'Profile',
   SETTINGS: 'Settings'

@@ -373,10 +373,13 @@ async function runAllTests() {
   sessionEmotionalMemory.clearBuffer(userId + '-integration');
 
   console.log('\n');
+  return failedTests > 0 ? 1 : 0;
 }
 
-// Ejecutar todas las pruebas
-runAllTests().catch(error => {
-  console.error('❌ Error ejecutando pruebas:', error);
-  process.exit(1);
-});
+// Ejecutar todas las pruebas (código de salida distinto de 0 si falla alguna aserción — útil en CI)
+runAllTests()
+  .then((exitCode) => process.exit(exitCode ?? 0))
+  .catch((error) => {
+    console.error('❌ Error ejecutando pruebas:', error);
+    process.exit(1);
+  });

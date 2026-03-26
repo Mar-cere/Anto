@@ -327,10 +327,10 @@ const SignInScreen = () => {
           // No bloquear el login si falla
         }
 
-        // Navegamos al Dashboard y limpiamos el stack de navegación
+        // Entramos por tabs (Inicio = Dash dentro de MainTabs) y limpiamos el stack
         navigation.reset({
           index: 0,
-          routes: [{ name: ROUTES.DASHBOARD }],
+          routes: [{ name: ROUTES.MAIN_TABS }],
         });
       } else {
         Alert.alert('Error', ERROR_MESSAGES.LOGIN_FAILED);

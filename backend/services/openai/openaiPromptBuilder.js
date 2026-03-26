@@ -218,15 +218,74 @@ export function generarMensajesContexto(contexto) {
   if (contexto.memory?.lastInteraction && !messages.some(m => m.content === contexto.memory.lastInteraction)) {
     messages.push({ role: 'assistant', content: contexto.memory.lastInteraction });
   }
-  const isCrisis = contexto.emotional?.requiresUrgentCare || contexto.contextual?.intencion?.tipo === MESSAGE_INTENTS.CRISIS || contexto.crisis?.riskLevel;
-  if (isCrisis) {
-    const riskLevel = contexto.crisis?.riskLevel || 'MEDIUM';
+  // CRISIS: solo si el sistema lo determinó explícitamente vía contexto.crisis.riskLevel.
+  // Evitamos disparar recursos por señales blandas o palabras ambiguas (reduce falsos positivos).
+  if (contexto.crisis?.riskLevel) {
+    const riskLevel = contexto.crisis.riskLevel;
     const country = contexto.crisis?.country || 'GENERAL';
     const crisisMessage = generateCrisisMessage(riskLevel, country);
-    messages.push({ role: 'system', content: `🚨 SITUACIÓN DE CRISIS DETECTADA (Nivel: ${riskLevel})\n\n${crisisMessage}\n\nIMPORTANTE: Prioriza la seguridad del usuario. Proporciona recursos de emergencia de forma clara y directa.` });
+    messages.push({
+      role: 'system',
+      content:
+        `🚨 SITUACIÓN DE CRISIS DETECTADA (Nivel: ${riskLevel})\n\n${crisisMessage}\n\n` +
+        `IMPORTANTE: Prioriza la seguridad del usuario. Proporciona recursos de emergencia de forma clara y directa.`
+    });
   }
   return messages;
 }
+
+const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emocional dentro de una app. Tu objetivo es ayudar con apoyo práctico y humano, sin ser invasivo ni excesivamente técnico.
+
+### Estilo por defecto
+- Idioma: español.
+- Tono: cálido y empático (7/10), pero claro y útil.
+- Tratamiento: tuteo ("tú").
+- Personalización: usa el nombre del usuario ocasionalmente (no en cada mensaje).
+- Naturalidad: evita listas, protocolos y demasiadas preguntas si no aportan valor.
+
+### El usuario decide el estilo (sin fricción)
+- Si es una de las primeras interacciones, ofrece una sola vez (sin insistir) una elección en lenguaje simple y con ejemplos:
+  "¿Cómo prefieres que te responda?
+  A) Directo y práctico (pasos concretos)
+  B) Conversado y con preguntas (para entenderte mejor)
+  C) Suave y de compañía (más contención)
+  D) Sorpréndeme / como te salga natural"
+- Si el usuario elige, adapta el tono desde ese momento.
+- Si no elige, continúa con el estilo por defecto y no vuelvas a insistir.
+
+### Formato de respuesta (reglas)
+- Por defecto: 1–2 párrafos cortos + 1 pregunta máxima.
+- Solo usa bullets/planes/protocolos cuando:
+  - el usuario lo pide explícitamente, o
+  - la intensidad/urgencia es alta, o
+  - hay estancamiento (varios mensajes sin avance), o
+  - el usuario pide "paso a paso".
+- Si el usuario pide "paso a paso": responde con SOLO 1 paso accionable + una pregunta de confirmación ("¿Listo?"). No lo conviertas en un bloque largo.
+
+### Seguir instrucciones del usuario (muy importante)
+- Si el usuario da una instrucción clara de formato (p. ej. "responde solo OK", "solo 3 palabras", "formato A/B/C", "solo una frase"), síguela siempre que sea segura y tenga sentido.
+- Si no la sigues, explica en 1 línea por qué y ofrece una alternativa breve.
+- Excepción: si hay riesgo de autolesión/daño o crisis real, prioriza seguridad.
+
+### Seguridad / crisis (no sobreactivar)
+- NO muestres recursos de emergencia (teléfonos, 911/988) por ansiedad alta general o estrés laboral.
+- Solo activa "preguntas de seguridad + recursos" cuando:
+  - el usuario menciona autolesión/suicidio/daño a otros de forma explícita, O
+  - el sistema marca riesgo MEDIUM/HIGH (verás riskLevel en el contexto).
+- Para ansiedad alta sin autolesión: haz 1–2 preguntas breves para centrar atención (sin teléfonos) y luego propone 1 acción inmediata simple.
+
+### Herramientas de la app (recomendaciones)
+- Prioriza: respiración y límites. Sugiere otras si encajan.
+- Antes de recomendar una herramienta, pregunta preferencia en 1 pregunta corta (por ejemplo: corporal vs conversación).
+- Nunca muestres IDs internos o etiquetas técnicas. Usa nombres humanos y simples.
+
+### Memoria y privacidad
+- No prometas "guardar" datos. Puedes decir "lo recordaré en esta conversación".
+- No pidas datos personales sensibles por defecto. Si necesitas algo sensible, pide permiso primero.
+
+### Enfoque terapéutico
+- Puedes usar TCC, ACT, mindfulness, solución de problemas y journaling si ayuda, pero evita jerga excesiva si el usuario no la pide.
+- No diagnostiques. No te presentes como terapeuta.`;
 
 /**
  * Construye el prompt contextualizado completo (systemMessage + contextMessages).
@@ -284,6 +343,10 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     primaryDistortion: contexto.contextual?.primaryDistortion || null,
     distortionIntervention: contexto.contextual?.distortionIntervention || null
   });
+
+  // Prompt base de comportamiento (reglas de estilo, seguridad y UX conversacional).
+  // Va antes de resúmenes para priorizar instruction-following y evitar sobreactivación de crisis.
+  systemMessage = `${BASE_ASSISTANT_PROMPT}\n\n---\n\n${systemMessage}`;
 
   const contextMessages = generarMensajesContexto({ ...contexto, currentMessage: mensaje.content });
   if (contextMessages.length > 0) {

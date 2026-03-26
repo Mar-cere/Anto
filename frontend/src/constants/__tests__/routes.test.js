@@ -24,6 +24,7 @@ describe('routes constants', () => {
 
   it('debe tener rutas de app principal', () => {
     expect(ROUTES.DASHBOARD).toBe('Dash');
+    expect(ROUTES.MAIN_TABS).toBe('MainTabs');
     expect(ROUTES.CHAT).toBe('Chat');
     expect(ROUTES.PROFILE).toBe('Profile');
     expect(ROUTES.SETTINGS).toBe('Settings');

@@ -154,7 +154,7 @@ const VerifyEmailScreen = () => {
               onPress: () => {
                 navigation.reset({
                   index: 0,
-                  routes: [{ name: ROUTES.DASHBOARD }],
+                  routes: [{ name: ROUTES.MAIN_TABS }],
                 });
               },
             },

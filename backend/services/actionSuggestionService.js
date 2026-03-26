@@ -162,6 +162,21 @@ class ActionSuggestionService {
       memory_exercise: { label: 'Ejercicio de Memoria', icon: '💭', screen: 'MemoryExercise' },
       connection_exercise: { label: 'Ejercicio de Conexión', icon: '🤝', screen: 'ConnectionExercise' },
       social_activity: { label: 'Actividad Social', icon: '👥', screen: 'SocialActivity' }
+      ,
+      // Fallbacks "humanizados" para acciones que no tienen pantalla dedicada.
+      // Importante: nunca mostrar IDs internos crudos en UI.
+      performance_anxiety_tool: { label: 'Ansiedad por Rendimiento (guía breve)', icon: '🎤', screen: null },
+      present_moment_exercise: { label: 'Volver al Presente (ejercicio breve)', icon: '🫧', screen: null },
+      social_anxiety_tool: { label: 'Ansiedad Social (guía breve)', icon: '🧑‍🤝‍🧑', screen: null },
+      exposure_guide: { label: 'Exposición Gradual (guía breve)', icon: '🪜', screen: null },
+      reframing_tool: { label: 'Reencuadre (cambiar perspectiva)', icon: '🔁', screen: null },
+      task_organization: { label: 'Organizar Tareas (pasos rápidos)', icon: '🗂️', screen: null },
+      time_management: { label: 'Gestión del Tiempo (tip rápido)', icon: '⏱️', screen: null },
+      anger_management: { label: 'Manejar el Enojo (guía breve)', icon: '🧯', screen: null },
+      physical_activity: { label: 'Movimiento Suave', icon: '🚶', screen: null },
+      forgiveness_work: { label: 'Perdón (ejercicio breve)', icon: '🕊️', screen: null },
+      values_exploration: { label: 'Explorar Valores (guía breve)', icon: '🧭', screen: null },
+      apology_guide: { label: 'Pedir Disculpas (guía breve)', icon: '🙏', screen: null }
     };
 
     return actionIds.map(id => ({

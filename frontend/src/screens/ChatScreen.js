@@ -32,6 +32,7 @@ import ClearConversationModal from '../components/chat/ClearConversationModal';
 import OfflineBanner from '../components/OfflineBanner';
 import ParticleBackground from '../components/ParticleBackground';
 import { SkeletonBlock } from '../components/Skeleton';
+import FloatingNavBar from '../components/FloatingNavBar';
 import TrialBanner from '../components/TrialBanner';
 import { useChatScreen } from '../hooks/useChatScreen';
 import {
@@ -302,7 +303,13 @@ const ChatScreen = () => {
 
   const keyExtractor = useCallback((item) => {
     const message = item.userMessage || item.assistantMessage || item;
-    return message._id || message.id || `${MESSAGE_ID_PREFIXES.MESSAGE}-${Date.now()}-${Math.random()}`;
+    if (message?._id) return String(message._id);
+    if (message?.id) return String(message.id);
+    const ts = message?.createdAt || message?.metadata?.timestamp;
+    const role = message?.role || 'unknown';
+    const content = typeof message?.content === 'string' ? message.content.slice(0, 24) : '';
+    if (ts) return `${MESSAGE_ID_PREFIXES.MESSAGE}-${role}-${String(ts)}-${content}`;
+    return `${MESSAGE_ID_PREFIXES.MESSAGE}-${role}-${content}`;
   }, []);
 
   const listEmptyComponent = useCallback(
@@ -412,6 +419,9 @@ const ChatScreen = () => {
         onSend={handleSend}
         inputRef={inputRef}
       />
+
+      {/* Tab bar está oculto en TabNavigator; este nav evita quedar "atrapado" */}
+      <FloatingNavBar activeTab="chat" />
 
       {showScrollButton && (
         <TouchableOpacity

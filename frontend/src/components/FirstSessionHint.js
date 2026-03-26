@@ -52,7 +52,14 @@ const FirstSessionHint = ({ visible, onDismiss, userId = null }) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await setFirstSessionHintDismissed(userId);
     onDismiss?.();
-    navigation.navigate('Chat');
+
+    // Tras login el stack suele ser solo "Dash" (no MainTabs); Chat vive como tab dentro de MainTabs.
+    const state = navigation.getState?.();
+    if (state?.type === 'tab') {
+      navigation.navigate('Chat');
+    } else {
+      navigation.navigate('MainTabs', { screen: 'Chat' });
+    }
   };
 
   const handleGotIt = async () => {

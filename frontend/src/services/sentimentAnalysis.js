@@ -2,15 +2,22 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OPENAI_API_KEY, OPENAI_API_URL } from './openai';
 
-// Cliente de OpenAI para análisis de sentimientos
-const sentimentClient = axios.create({
-  baseURL: OPENAI_API_URL,
-  timeout: 15000, // 15 segundos de timeout
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${OPENAI_API_KEY}`
-  }
-});
+const hasFrontendOpenAIConfig = () => {
+  return Boolean(OPENAI_API_URL && OPENAI_API_URL.startsWith('http') && OPENAI_API_KEY);
+};
+
+// Cliente de OpenAI para análisis de sentimientos (lazy: solo si hay config)
+const getSentimentClient = () => {
+  if (!hasFrontendOpenAIConfig()) return null;
+  return axios.create({
+    baseURL: OPENAI_API_URL,
+    timeout: 15000, // 15 segundos de timeout
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+  });
+};
 
 /**
  * Analiza el sentimiento de los mensajes del usuario
@@ -19,6 +26,10 @@ const sentimentClient = axios.create({
  */
 export const analyzeSentiment = async (messages) => {
   try {
+    // IA en frontend normalmente está deshabilitada; no romper UX si no hay config.
+    const sentimentClient = getSentimentClient();
+    if (!sentimentClient) return null;
+
     // Obtener solo los últimos 3 mensajes del usuario para el análisis
     const recentUserMessages = messages
       .filter(msg => msg.sender === 'user')
