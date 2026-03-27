@@ -383,10 +383,8 @@ export function useChatScreen() {
     );
   }, []);
 
-  // Efecto inicial: init, animación, listeners de chat
+  // Efecto inicial: animación y listeners (la conversación se carga al enfocar la pantalla)
   useEffect(() => {
-    initializeConversation();
-    loadTrialInfo();
     Animated.timing(fadeAnim, {
       toValue: FADE_ANIMATION_TO_VALUE,
       duration: FADE_ANIMATION_DURATION,
@@ -413,7 +411,7 @@ export function useChatScreen() {
       errorUnsubscribe();
       chatService.closeSocket();
     };
-  }, [initializeConversation, loadTrialInfo, fadeAnim]);
+  }, [fadeAnim]);
 
   // WebSocket: alertas de emergencia
   useEffect(() => {
@@ -469,8 +467,9 @@ export function useChatScreen() {
   useFocusEffect(
     useCallback(() => {
       loadTrialInfo();
+      initializeConversation();
       return () => setMessages([]);
-    }, [loadTrialInfo])
+    }, [loadTrialInfo, initializeConversation])
   );
 
   return {

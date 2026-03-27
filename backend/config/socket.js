@@ -7,6 +7,8 @@ import { Server } from 'socket.io';
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
+import { HISTORY_LIMITS } from '../constants/openai.js';
+import { HISTORIAL_LIMITE } from '../routes/chat/chatConstants.js';
 import {
   openaiService,
   emotionalAnalyzer,
@@ -173,13 +175,12 @@ export const setupSocketIO = (server) => {
           timestamp: new Date()
         });
         
-        // 3. Obtener historial de conversación para contexto (incluir el mensaje recién guardado)
+        // 3. Historial acotado por cantidad (misma conversación), sin ventana temporal
         const conversationHistory = await Message.find({
-          conversationId: conversation._id,
-          createdAt: { $gte: new Date(Date.now() - 20 * 60 * 1000) } // Últimos 20 minutos
+          conversationId: conversation._id
         })
         .sort({ createdAt: -1 })
-        .limit(6)
+        .limit(HISTORIAL_LIMITE)
         .lean();
         
         // 4. Análisis emocional y contextual (en paralelo)
@@ -200,7 +201,7 @@ export const setupSocketIO = (server) => {
         
         // 5. Preparar historial para el prompt
         const historialParaPrompt = conversationHistory
-          .slice(0, 6)
+          .slice(0, HISTORY_LIMITS.MESSAGES_IN_PROMPT)
           .reverse()
           .map(msg => ({
             role: msg.role || 'user',

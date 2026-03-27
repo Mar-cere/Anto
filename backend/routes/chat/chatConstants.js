@@ -6,8 +6,10 @@ import rateLimit from 'express-rate-limit';
 
 // Límites de mensajes y contexto
 export const LIMITE_MENSAJES = 100;
-export const VENTANA_CONTEXTO = 20 * 60 * 1000; // 20 min ms
-export const HISTORIAL_LIMITE = 6;
+/** @deprecated El historial para IA ya no filtra por tiempo; se usa solo HISTORIAL_LIMITE. Mantener por compat. */
+export const VENTANA_CONTEXTO = 20 * 60 * 1000;
+/** Últimos N mensajes de la misma conversación (sin ventana temporal) para contexto acotado. */
+export const HISTORIAL_LIMITE = 24;
 
 export const deleteConversationLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

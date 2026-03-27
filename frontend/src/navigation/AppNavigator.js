@@ -9,8 +9,14 @@
  */
 
 import { NavigationContainer } from '@react-navigation/native';
-import React from 'react';
+import * as Notifications from 'expo-notifications';
+import React, { useEffect } from 'react';
+import {
+  removeNotificationListeners,
+  setupNotificationListeners,
+} from '../services/pushNotificationService';
 import StackNavigator from './StackNavigator';
+import { handleNotificationData, navigationRef } from './navigationRef';
 
 /**
  * Componente App Navigator
@@ -21,8 +27,24 @@ import StackNavigator from './StackNavigator';
  * @returns {JSX.Element} NavigationContainer con StackNavigator
  */
 const AppNavigator = () => {
+  useEffect(() => {
+    const subs = setupNotificationListeners(undefined, (response) => {
+      const data = response?.notification?.request?.content?.data;
+      handleNotificationData(data);
+    });
+
+    Notifications.getLastNotificationResponseAsync()
+      .then((response) => {
+        const data = response?.notification?.request?.content?.data;
+        if (data) handleNotificationData(data);
+      })
+      .catch(() => {});
+
+    return () => removeNotificationListeners(subs);
+  }, []);
+
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <StackNavigator />
     </NavigationContainer>
   );

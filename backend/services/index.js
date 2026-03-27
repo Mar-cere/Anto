@@ -11,6 +11,7 @@ import userProfileService from './userProfileService.js';
 import emergencyAlertService from './emergencyAlertService.js';
 import crisisTrendAnalyzer from './crisisTrendAnalyzer.js';
 import crisisFollowUpService from './crisisFollowUpService.js';
+import intenseChatCheckInService from './intenseChatCheckInService.js';
 import crisisMetricsService from './crisisMetricsService.js';
 import conversationDepthAnalyzer from './conversationDepthAnalyzer.js';
 import effectivenessFeedbackService from './effectivenessFeedbackService.js';
@@ -31,6 +32,7 @@ const services = {
   emergencyAlertService,
   crisisTrendAnalyzer,
   crisisFollowUpService,
+  intenseChatCheckInService,
   crisisMetricsService,
   conversationDepthAnalyzer,
   effectivenessFeedbackService,
@@ -58,6 +60,7 @@ export {
   emergencyAlertService,
   crisisTrendAnalyzer,
   crisisFollowUpService,
+  intenseChatCheckInService,
   crisisMetricsService,
   conversationDepthAnalyzer,
   effectivenessFeedbackService,

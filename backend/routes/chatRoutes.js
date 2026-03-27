@@ -27,6 +27,7 @@ import {
   conversationDepthAnalyzer,
   emotionalAnalyzer,
   engagementTracker,
+  intenseChatCheckInService,
   openaiService,
   progressTracker,
   userProfileService,
@@ -40,7 +41,6 @@ import therapeuticProtocolService from '../services/therapeuticProtocolService.j
 import { cursorPaginate } from '../utils/pagination.js';
 import {
   LIMITE_MENSAJES,
-  VENTANA_CONTEXTO,
   HISTORIAL_LIMITE,
   deleteConversationLimiter,
   patchMessageLimiter,
@@ -353,10 +353,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         logs.push(`[${Date.now() - startTime}ms] Obteniendo contexto e historial`);
         // Optimización: Usar índices compuestos y proyección para reducir datos transferidos
         const [conversationHistory, userProfile, therapeuticRecord, user] = await Promise.all([
-          Message.find({ 
-            conversationId,
-            createdAt: { $gte: new Date(Date.now() - VENTANA_CONTEXTO) }
-          })
+          Message.find({ conversationId })
           .select('content role metadata.context.emotional createdAt') // Solo campos necesarios
           .sort({ createdAt: -1 })
           .limit(HISTORIAL_LIMITE)
@@ -805,6 +802,17 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   } else throw saveError;
                 }
 
+                intenseChatCheckInService
+                  .maybeSchedule({
+                    userId: req.user._id,
+                    conversationId,
+                    assistantMessageId: assistantMessage._id,
+                    emotionalAnalysis,
+                    riskLevel,
+                    isCrisis
+                  })
+                  .catch(() => {});
+
                 Promise.all([
                   Conversation.findByIdAndUpdate(conversationId, { lastMessage: assistantMessage._id }).catch(() => {}),
                   progressTracker.trackProgress(req.user._id, { userMessage, assistantMessage, analysis: { emotional: emotionalAnalysis, contextual: contextualAnalysis } }).catch(() => {}),
@@ -914,6 +922,17 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             throw saveError;
           }
         }
+
+        intenseChatCheckInService
+          .maybeSchedule({
+            userId: req.user._id,
+            conversationId,
+            assistantMessageId: assistantMessage._id,
+            emotionalAnalysis,
+            riskLevel,
+            isCrisis
+          })
+          .catch(() => {});
 
         // 7. Actualizar registros de forma asíncrona (no bloquea la respuesta)
         // Solo actualizar lastMessage de forma síncrona, el resto puede ser asíncrono

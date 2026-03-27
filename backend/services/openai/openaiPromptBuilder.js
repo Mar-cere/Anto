@@ -206,11 +206,15 @@ export async function generateLongTermContext(userId, contexto) {
 export function generarMensajesContexto(contexto) {
   const messages = [];
   if (contexto.history && Array.isArray(contexto.history) && contexto.history.length > 0) {
-    const historialRelevante = selectRelevantHistory(contexto.history, {
-      emotional: contexto.emotional,
-      contextual: contexto.contextual,
-      currentMessage: contexto.currentMessage
-    });
+    const rawHistory = contexto.history;
+    const historialRelevante =
+      rawHistory.length <= HISTORY_LIMITS.MESSAGES_IN_PROMPT
+        ? [...rawHistory]
+        : selectRelevantHistory(rawHistory, {
+            emotional: contexto.emotional,
+            contextual: contexto.contextual,
+            currentMessage: contexto.currentMessage
+          });
     historialRelevante.forEach(msg => {
       if (msg.role && msg.content) messages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content });
     });

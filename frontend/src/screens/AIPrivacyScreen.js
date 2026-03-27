@@ -26,6 +26,7 @@ const TEXTS = {
     'Mensajes escritos en el chat',
     'Contexto mínimo de conversación para continuidad',
     'Preferencias de estilo y onboarding para personalización',
+    'Si tienes notificaciones activas, en momentos muy intensos puede enviarse un recordatorio suave para invitarte a volver al chat (no sustituye ayuda profesional ni emergencias)',
   ],
   PROVIDERS_TITLE: 'Proveedor de terceros',
   PROVIDERS_TEXT: 'OpenAI (proveedor de IA para generación de respuestas del chat).',

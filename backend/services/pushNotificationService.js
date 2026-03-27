@@ -252,6 +252,26 @@ class PushNotificationService {
   }
 
   /**
+   * Check-in breve tras intercambio emocionalmente intenso (no es crisis MEDIUM/HIGH).
+   */
+  async sendWellbeingChatCheckIn(pushToken, options = {}) {
+    const { conversationId } = options;
+    const conv = conversationId != null ? String(conversationId) : undefined;
+
+    return this.sendNotification(
+      pushToken,
+      '¿Cómo sigues?',
+      'Hace un momento estuvimos en un momento muy cargado. Si quieres, Anto sigue aquí para ti.',
+      {
+        action: 'open_chat',
+        wellbeingCheckIn: true,
+        ...(conv ? { conversationId: conv } : {})
+      },
+      this.NOTIFICATION_TYPES.EMOTIONAL_CHECKIN
+    );
+  }
+
+  /**
    * Envía recordatorio de técnica terapéutica
    * @param {string} pushToken - Token push
    * @param {Object} options - Opciones adicionales

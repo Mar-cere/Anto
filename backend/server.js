@@ -451,6 +451,18 @@ if (process.env.NODE_ENV !== 'test') {
     }, 120000); // Esperar 2 minutos después del inicio para que MongoDB esté listo
   }
 
+  if (process.env.ENABLE_INTENSE_CHAT_CHECKIN !== 'false' && process.env.NODE_ENV !== 'test') {
+    setTimeout(async () => {
+      try {
+        const intenseChatCheckInService = (await import('./services/intenseChatCheckInService.js')).default;
+        logger.info('💬 Iniciando check-ins poschat tras momentos intensos...');
+        intenseChatCheckInService.start();
+      } catch (error) {
+        logger.error('❌ Error iniciando check-ins poschat', { error: error.message });
+      }
+    }, 125000);
+  }
+
   // Iniciar servicio de programación de notificaciones (NO en test)
   if (process.env.ENABLE_NOTIFICATION_SCHEDULER !== 'false' && process.env.NODE_ENV !== 'test') {
     setTimeout(async () => {

@@ -16,6 +16,7 @@ import Subscription from './Subscription.js';
 import Journal from './Journal.js';
 import ClinicalScaleResult from './ClinicalScaleResult.js';
 import CognitiveDistortionReport from './CognitiveDistortionReport.js';
+import IntenseChatCheckIn from './IntenseChatCheckIn.js';
 
 // Validar que todos los modelos estén correctamente exportados
 const models = {
@@ -37,6 +38,7 @@ const models = {
   Journal,
   ClinicalScaleResult,
   CognitiveDistortionReport,
+  IntenseChatCheckIn,
 };
 
 // Verificar que cada modelo sea válido
@@ -65,6 +67,7 @@ export {
   Journal,
   ClinicalScaleResult,
   CognitiveDistortionReport,
+  IntenseChatCheckIn,
 };
 
 export default models; 
