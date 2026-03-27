@@ -96,6 +96,75 @@ router.get('/conversations/:conversationId', protect, validarConversationId, val
       Message.countDocuments(query)
     ]);
 
+    // Asegurar que el primer mensaje del historial sea del asistente (y quede persistido).
+    // Idempotente: solo crea un welcome si no existe ya uno para la conversación.
+    // Importante: solo hacerlo en la primera página y sin filtros, para evitar efectos laterales inesperados.
+    const shouldEnsureWelcome =
+      parseInt(page) === 1 &&
+      !status &&
+      !role;
+
+    if (shouldEnsureWelcome) {
+      const existingWelcome = await Message.findOne({
+        conversationId: convId,
+        userId,
+        'metadata.type': 'welcome',
+        role: 'assistant'
+      })
+        .select('_id createdAt')
+        .lean();
+
+      if (!existingWelcome) {
+        // Consultar el mensaje más antiguo para saber si ya inicia con assistant.
+        const earliestMessage = await Message.findOne({
+          conversationId: convId,
+          userId
+        })
+          .sort({ createdAt: 1 })
+          .select('role createdAt')
+          .lean();
+
+        const earliestIsAssistant = earliestMessage?.role === 'assistant';
+
+        if (!earliestMessage || !earliestIsAssistant) {
+          const baseTime = earliestMessage?.createdAt
+            ? new Date(earliestMessage.createdAt).getTime()
+            : Date.now();
+          const welcomeCreatedAt = new Date(baseTime - 1000);
+
+          const welcomeContent = openaiService.generarSaludoPersonalizado({});
+          const welcomeMessage = new Message({
+            userId,
+            content: welcomeContent,
+            role: 'assistant',
+            conversationId: convId,
+            metadata: {
+              context: { preferences: {} },
+              status: 'sent',
+              type: 'welcome'
+            }
+          });
+          await welcomeMessage.save();
+
+          // Backdate: forzar que aparezca primero.
+          await Message.updateOne(
+            { _id: welcomeMessage._id },
+            { $set: { createdAt: welcomeCreatedAt } }
+          ).catch(() => {});
+
+          // Reconsultar solo la primera página para incluir el nuevo welcome.
+          const refreshed = await Message.find(query)
+            .sort({ createdAt: -1 })
+            .skip(0)
+            .limit(parseInt(limit))
+            .lean();
+
+          messages.length = 0;
+          messages.push(...refreshed);
+        }
+      }
+    }
+
     // Eliminar duplicados basándose en _id y contenido para evitar mensajes repetidos
     const uniqueMessages = messages.reduce((acc, message) => {
       const messageId = message._id?.toString();

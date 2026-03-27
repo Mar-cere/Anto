@@ -263,6 +263,14 @@ const ChatScreen = () => {
     }
   }, []);
 
+  const handleOpenAIDetails = useCallback(() => {
+    try {
+      navigation.navigate('AIPrivacy');
+    } catch (error) {
+      console.warn('No se pudo abrir pantalla de Privacidad e IA:', error);
+    }
+  }, [navigation]);
+
   const handleSuggestionPress = useCallback(
     (suggestion) => {
       if (suggestion?.screen) {
@@ -449,6 +457,9 @@ const ChatScreen = () => {
             <View style={styles.aiModalActions}>
               <Pressable style={styles.aiPolicyButton} onPress={handleOpenPrivacyPolicy}>
                 <Text style={styles.aiPolicyButtonText}>{TEXTS.AI_MODAL_POLICY}</Text>
+              </Pressable>
+              <Pressable style={styles.aiPolicyButton} onPress={handleOpenAIDetails}>
+                <Text style={styles.aiPolicyButtonText}>{TEXTS.AI_MODAL_DETAILS}</Text>
               </Pressable>
               <Pressable style={styles.aiContinueButton} onPress={handleAIDisclosureAcknowledge}>
                 <Text style={styles.aiContinueButtonText}>{TEXTS.AI_MODAL_CONTINUE}</Text>

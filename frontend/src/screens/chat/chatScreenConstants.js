@@ -30,6 +30,7 @@ export const TEXTS = {
   AI_MODAL_MESSAGE:
     'Anto usa OpenAI como proveedor de IA para responder en el chat.\n\nDatos procesados:\n• Mensajes que envías en el chat\n• Contexto mínimo de la conversación\n• Preferencias de onboarding que compartes\n\nPuedes revisar más detalles en la Política de Privacidad.',
   AI_MODAL_POLICY: 'Ver política de privacidad',
+  AI_MODAL_DETAILS: 'Ver detalles de Privacidad e IA',
   AI_MODAL_CONTINUE: 'Entendido',
 };
 

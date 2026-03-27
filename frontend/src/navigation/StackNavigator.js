@@ -48,6 +48,7 @@ import MemoryExerciseScreen from '../screens/techniques/MemoryExerciseScreen';
 import ConnectionExerciseScreen from '../screens/techniques/ConnectionExerciseScreen';
 import SocialActivityScreen from '../screens/techniques/SocialActivityScreen';
 import AboutScreen from '../screens/AboutScreen';
+import AIPrivacyScreen from '../screens/AIPrivacyScreen';
 import { colors } from '../styles/globalStyles';
 import TabNavigator from './TabNavigator';
 
@@ -77,6 +78,7 @@ const ROUTE_NAMES = {
   SUBSCRIPTION: 'Subscription',
   TRANSACTION_HISTORY: 'TransactionHistory',
   ABOUT: 'About',
+  AI_PRIVACY: 'AIPrivacy',
 };
 
 /**
@@ -302,6 +304,11 @@ const StackNavigator = () => {
       <Stack.Screen
         name={ROUTE_NAMES.ABOUT}
         component={AboutScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name={ROUTE_NAMES.AI_PRIVACY}
+        component={AIPrivacyScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

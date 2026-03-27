@@ -18,6 +18,8 @@ export const TEXTS = {
   DELETE_ACCOUNT: 'Eliminar cuenta',
   FAQ: 'Preguntas frecuentes',
   APP_INFO: 'Información de la aplicación',
+  AI_PRIVACY: 'Privacidad e IA',
+  AI_PRIVACY_DESC: 'Qué datos se procesan con IA y con qué proveedor',
   LOGOUT_TITLE: 'Cerrar sesión',
   LOGOUT_MESSAGE: '¿Estás seguro que deseas cerrar sesión?',
   DELETE_TITLE: 'Eliminar cuenta',
@@ -54,6 +56,7 @@ export const NAVIGATION_ROUTES = {
   FAQ: 'FAQ',
   FAQ_ALT: 'FaQ',
   ABOUT: 'About',
+  AI_PRIVACY: 'AIPrivacy',
 };
 
 export const SCROLL_PADDING_BOTTOM = 32;

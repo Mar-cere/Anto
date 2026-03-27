@@ -66,6 +66,8 @@ const TEXTS = {
   TEAM_TEXT: 'Estamos comprometidos con tu bienestar. Trabajamos constantemente para mejorar Anto, agregar nuevas funcionalidades y asegurar que siempre tengas el mejor apoyo posible en tu camino hacia una mejor salud mental.',
   AI_TITLE: 'Cómo usamos IA',
   AI_TEXT: 'Para generar respuestas en el chat, Anto utiliza OpenAI como proveedor de IA. Se procesan tus mensajes, contexto mínimo de conversación y preferencias que compartes en onboarding para personalizar la ayuda. Puedes revisar el detalle completo en nuestra Política de Privacidad.',
+  AI_CTA: 'Ver Privacidad e IA en la app',
+  AI_CTA_HINT: 'Datos enviados, proveedor y dónde consultarlo',
   CONTACT_TITLE: 'Contáctanos',
   CONTACT_EMAIL: 'marcelo.ull@antoapps.com',
   LEGAL_TITLE: 'Legal',
@@ -185,6 +187,26 @@ const AboutScreen = () => {
             <Text style={styles.sectionTitle}>{TEXTS.AI_TITLE}</Text>
           </View>
           <Text style={styles.sectionText}>{TEXTS.AI_TEXT}</Text>
+          <TouchableOpacity
+            style={[styles.legalButton, styles.aiCtaButton]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              navigation.navigate('AIPrivacy');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`${TEXTS.AI_CTA}. ${TEXTS.AI_CTA_HINT}`}
+          >
+            <MaterialCommunityIcons
+              name="shield-account-outline"
+              size={20}
+              color={COLORS.PRIMARY}
+            />
+            <View style={styles.aiCtaTextWrap}>
+              <Text style={styles.aiCtaTitle}>{TEXTS.AI_CTA}</Text>
+              <Text style={styles.aiCtaHint}>{TEXTS.AI_CTA_HINT}</Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={22} color={COLORS.TEXT_SECONDARY} />
+          </TouchableOpacity>
         </View>
 
         {/* Contacto */}
@@ -394,6 +416,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.PRIMARY,
     fontWeight: '500',
+  },
+  aiCtaButton: {
+    marginTop: 16,
+  },
+  aiCtaTextWrap: {
+    flex: 1,
+  },
+  aiCtaTitle: {
+    fontSize: 16,
+    color: COLORS.PRIMARY,
+    fontWeight: '600',
+  },
+  aiCtaHint: {
+    fontSize: 13,
+    color: COLORS.TEXT_SECONDARY,
+    marginTop: 4,
   },
   versionContainer: {
     alignItems: 'center',

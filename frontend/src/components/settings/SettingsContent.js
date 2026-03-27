@@ -152,6 +152,19 @@ export default function SettingsContent({
         <MaterialCommunityIcons name="help-circle" size={ICON_SIZE} color={COLORS.PRIMARY} />
         <Text style={styles.itemText}>{TEXTS.FAQ}</Text>
       </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.item}
+        onPress={() => navigation.navigate(NAVIGATION_ROUTES.AI_PRIVACY)}
+        accessibilityLabel={TEXTS.AI_PRIVACY}
+        testID="button-ai-privacy"
+      >
+        <MaterialCommunityIcons name="shield-account" size={ICON_SIZE} color={COLORS.PRIMARY} />
+        <View style={styles.itemContent}>
+          <Text style={styles.itemText}>{TEXTS.AI_PRIVACY}</Text>
+          <Text style={styles.itemSubtext}>{TEXTS.AI_PRIVACY_DESC}</Text>
+        </View>
+        <MaterialCommunityIcons name="chevron-right" size={24} color={COLORS.ACCENT} />
+      </TouchableOpacity>
       <View style={styles.separator} />
       <Text style={styles.sectionTitle}>{TEXTS.ABOUT}</Text>
       <TouchableOpacity
