@@ -34,6 +34,12 @@ const testCases = [
     content: 'Soy un fracaso, no puedo hacer nada bien',
     expectedSubtype: 'fracaso'
   },
+  // Insomnio / "no puedo" físico-functional → no debe clasificarse como subtipo fracaso (evita plantilla incorrecta)
+  {
+    emotion: 'tristeza',
+    content: 'No puedo dormir desde hace semanas, mi mente no para',
+    expectedSubtype: null
+  },
   {
     emotion: 'tristeza',
     content: 'No sirvo para nada, siempre fallo',

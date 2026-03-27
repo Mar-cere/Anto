@@ -367,6 +367,11 @@ class OpenAIService {
         analisisEmocional?.subtype,
         { style: responseStyle }
       );
+      const therapeuticHint = therapeuticTemplateService.buildTherapeuticHint(
+        analisisEmocional?.mainEmotion,
+        analisisEmocional?.subtype,
+        { maxLength: 180 }
+      );
       
       // NUEVO: Registrar métrica de uso de plantilla terapéutica
       if (therapeuticBase && analisisEmocional?.subtype) {
@@ -390,10 +395,16 @@ class OpenAIService {
 
       // 8. NUEVO: Mejorar respuesta con plantilla terapéutica si existe
       let respuestaMejorada = respuestaGenerada;
-      if (therapeuticBase && !activeProtocol) {
-        // Si hay una base terapéutica, usarla para guiar la respuesta
-        // La respuesta de OpenAI se puede usar como complemento
-        respuestaMejorada = `${therapeuticBase}\n\n${respuestaGenerada}`;
+      if ((therapeuticBase || therapeuticHint) && !activeProtocol) {
+        // Integrar la plantilla de forma más sutil para evitar efecto "respuesta de plantilla".
+        respuestaMejorada = this.integrateTherapeuticBase(respuestaGenerada, {
+          base: therapeuticBase,
+          hint: therapeuticHint
+        }, {
+          emotional: analisisEmocional,
+          contextual: analisisContextual,
+          history: contexto.history || []
+        });
       }
 
       // 9. NUEVO: Si hay protocolo activo, adaptar respuesta según la intervención
@@ -662,6 +673,11 @@ class OpenAIService {
       analisisEmocional?.subtype,
       { style: responseStyle }
     );
+    const therapeuticHint = therapeuticTemplateService.buildTherapeuticHint(
+      analisisEmocional?.mainEmotion,
+      analisisEmocional?.subtype,
+      { maxLength: 180 }
+    );
 
     let selectedTechnique = null;
     if (!activeProtocol) {
@@ -674,8 +690,14 @@ class OpenAIService {
     }
 
     let respuestaMejorada = respuestaGenerada;
-    if (therapeuticBase && !activeProtocol) {
-      respuestaMejorada = `${therapeuticBase}\n\n${respuestaGenerada}`;
+    if ((therapeuticBase || therapeuticHint) && !activeProtocol) {
+      respuestaMejorada = this.integrateTherapeuticBase(respuestaGenerada, {
+        base: therapeuticBase,
+        hint: therapeuticHint
+      }, {
+        emotional: analisisEmocional,
+        contextual: analisisContextual
+      });
     }
     if (activeProtocol && currentIntervention) {
       respuestaMejorada = this.adaptResponseToProtocol(respuestaMejorada, currentIntervention, analisisEmocional);
@@ -739,6 +761,110 @@ class OpenAIService {
       return TEMPERATURES.EMPATHETIC;
     }
     return TEMPERATURES.BALANCED;
+  }
+
+  /**
+   * Integra una base terapéutica sin forzar una respuesta "enlatada".
+   * - Si el modelo ya contiene validación empática, evitamos duplicar.
+   * - En contexto no crítico, agregamos solo una línea breve de la base.
+   * - En alta intensidad, permitimos una guía un poco más completa.
+   */
+  integrateTherapeuticBase(modelResponse, templateInput, context = {}) {
+    const therapeuticBase =
+      typeof templateInput === 'string' ? templateInput : templateInput?.base || templateInput?.hint || '';
+    const therapeuticHint = typeof templateInput === 'object' ? templateInput?.hint : '';
+    if (!therapeuticBase && !therapeuticHint) return modelResponse;
+
+    const safeModel = (modelResponse || '').trim();
+    const safeBase = (therapeuticBase || '').trim();
+    const safeHint = (therapeuticHint || '').trim();
+    const preferredSnippet = safeHint || safeBase;
+    if (!preferredSnippet) return safeModel;
+    if (!safeModel) return preferredSnippet;
+
+    const lowerModel = safeModel.toLowerCase();
+    const lowerBase = preferredSnippet.toLowerCase();
+
+    // Si la respuesta ya trae una parte sustancial de la plantilla, no repetir.
+    const baseLead = lowerBase.slice(0, 70).trim();
+    if (baseLead && lowerModel.includes(baseLead)) {
+      return safeModel;
+    }
+
+    // Si la respuesta ya inicia con validación empática, evitamos superponer otra validación fuerte.
+    const hasEmpathicLead = /^(?:entiendo|comprendo|veo|es\s+válido|lamento|siento)\b/i.test(safeModel);
+
+    const intensity = context?.emotional?.intensity || 0;
+    const isHighIntensity = intensity >= 8 || context?.emotional?.requiresAttention;
+    const isHelpIntent =
+      context?.contextual?.intencion?.tipo === MESSAGE_INTENTS.SEEKING_HELP ||
+      context?.contextual?.intencion?.tipo === MESSAGE_INTENTS.CRISIS;
+
+    const recentAssistantTexts = this.extractRecentAssistantTexts(context?.history, 3);
+    const isTemplateRecentlyUsed = recentAssistantTexts.some((txt) =>
+      this.areTextsTooSimilar(txt, preferredSnippet)
+    );
+    if (isTemplateRecentlyUsed && !isHighIntensity && !isHelpIntent) {
+      return safeModel;
+    }
+
+    if (hasEmpathicLead && !isHighIntensity && !isHelpIntent) {
+      return safeModel;
+    }
+
+    // Tomar una pieza corta para no "pisar" la voz del modelo.
+    const shortBase = preferredSnippet.split(/\n+/)[0].trim();
+    const compactBase = shortBase.length > 170 ? `${shortBase.slice(0, 167).trim()}...` : shortBase;
+
+    if (isHighIntensity || isHelpIntent) {
+      return `${compactBase}\n\n${safeModel}`;
+    }
+
+    return `${safeModel}\n\n${compactBase}`;
+  }
+
+  extractRecentAssistantTexts(history, limit = 3) {
+    if (!Array.isArray(history) || history.length === 0) return [];
+
+    const texts = [];
+    for (let i = history.length - 1; i >= 0 && texts.length < limit; i--) {
+      const msg = history[i];
+      const role = msg?.role || msg?.sender || '';
+      const isAssistant = role === 'assistant' || role === 'bot' || role === 'system';
+      if (!isAssistant) continue;
+      const content = msg?.content || msg?.text || '';
+      if (typeof content === 'string' && content.trim().length > 0) {
+        texts.push(content.trim());
+      }
+    }
+    return texts;
+  }
+
+  areTextsTooSimilar(a = '', b = '') {
+    const normalize = (v) =>
+      (v || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const aNorm = normalize(a);
+    const bNorm = normalize(b);
+    if (!aNorm || !bNorm) return false;
+    if (aNorm.includes(bNorm) || bNorm.includes(aNorm)) return true;
+
+    const aSet = new Set(aNorm.split(' ').filter((w) => w.length >= 4));
+    const bSet = new Set(bNorm.split(' ').filter((w) => w.length >= 4));
+    if (aSet.size === 0 || bSet.size === 0) return false;
+
+    let overlap = 0;
+    for (const w of aSet) {
+      if (bSet.has(w)) overlap++;
+    }
+    const ratio = overlap / Math.min(aSet.size, bSet.size);
+    return ratio >= 0.7;
   }
 
   /**

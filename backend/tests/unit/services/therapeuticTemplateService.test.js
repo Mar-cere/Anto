@@ -19,6 +19,10 @@ describe('TherapeuticTemplateService', () => {
     it('debe tener método selectPhrase', () => {
       expect(typeof therapeuticTemplateService.selectPhrase).toBe('function');
     });
+
+    it('debe tener método buildTherapeuticHint', () => {
+      expect(typeof therapeuticTemplateService.buildTherapeuticHint).toBe('function');
+    });
   });
 
   describe('getTemplate', () => {
@@ -117,6 +121,22 @@ describe('TherapeuticTemplateService', () => {
       const phrase = therapeuticTemplateService.selectPhrase([], 'balanced');
       
       expect(phrase).toBe('');
+    });
+  });
+
+  describe('buildTherapeuticHint', () => {
+    it('debe retornar hint breve para emoción/subtipo válidos', () => {
+      const hint = therapeuticTemplateService.buildTherapeuticHint('tristeza', 'soledad');
+
+      expect(hint).toBeDefined();
+      expect(typeof hint).toBe('string');
+      expect(hint.length).toBeGreaterThan(0);
+      expect(hint.length).toBeLessThanOrEqual(180);
+    });
+
+    it('debe retornar null para emoción/subtipo inválidos', () => {
+      const hint = therapeuticTemplateService.buildTherapeuticHint('invalid', 'subtype');
+      expect(hint).toBeNull();
     });
   });
 });

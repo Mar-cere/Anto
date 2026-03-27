@@ -257,6 +257,29 @@ class TherapeuticTemplateService {
   }
 
   /**
+   * Construye una guía breve para mezclar con la respuesta del modelo.
+   * Evita introducir bloques largos que se perciban como plantilla rígida.
+   * @param {string} emotion
+   * @param {string} subtype
+   * @param {Object} options
+   * @returns {string|null}
+   */
+  buildTherapeuticHint(emotion, subtype, options = {}) {
+    const template = this.getTemplate(emotion, subtype);
+    if (!template) return null;
+
+    const { maxLength = 180 } = options;
+    const candidates = [...(template.validation || []), ...(template.psychoeducation || [])]
+      .filter((s) => typeof s === 'string' && s.trim().length > 0);
+
+    if (candidates.length === 0) return null;
+
+    const concise = candidates.filter((s) => s.length <= maxLength);
+    const pool = concise.length > 0 ? concise : candidates;
+    return this.selectPhrase(pool, 'brief');
+  }
+
+  /**
    * Selecciona una frase de un array según el estilo
    * @param {Array} phrases - Array de frases
    * @param {string} style - Estilo de respuesta

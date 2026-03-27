@@ -66,6 +66,15 @@ describe('EmotionalSubtypeDetector Service', () => {
       expect(subtype).toBe('gratitud');
     });
 
+    it('no debe clasificar insomnio como tristeza-fracaso', () => {
+      const subtype = emotionalSubtypeDetector.detectSubtype(
+        'tristeza',
+        'No puedo dormir desde hace semanas, mi mente no para'
+      );
+
+      expect(subtype).toBeNull();
+    });
+
     it('debe retornar null para emoción inválida', () => {
       const subtype = emotionalSubtypeDetector.detectSubtype('invalid', 'Test');
       

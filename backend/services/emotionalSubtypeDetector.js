@@ -4,12 +4,23 @@
  */
 class EmotionalSubtypeDetector {
   constructor() {
+    this.suppressionRules = {
+      tristeza: {
+        fracaso: [
+          /\bno\s+puedo\s+(?:dormir|descansar|conciliar(?:\s+el)?\s+sueño|pegar\s+ojo|comer|respirar|relajarme|calmarme|apagar\s+mi\s+mente|dejar\s+de\s+pensar)\b/i
+        ]
+      }
+    };
+
     // Subtipos para cada emoción principal
     this.subtypes = {
       tristeza: {
         duelo: /(?:duelo|pérdida|extrañ(?:o|ar|o.*mucho)|ech(?:o|ar).*de.*menos|ya.*no.*está|se.*fue|mur(?:ió|ió)|fallec(?:ió|ió)|falleció|despedida|despedir|abuela.*falleció|abuela.*murió)/i,
         soledad: /(?:solo|soledad|aislado|desconectado|nadie.*me.*entiende|me.*siento.*solo|sin.*compañía|abandonad(?:o|a)|me.*siento.*abandonad(?:o|a))/i,
-        fracaso: /(?:fracas(?:o|ado|ar)|fall(?:é|e|ar|ado)|no.*pude|no.*puedo|no.*sirvo|no.*valgo|inútil|incompetente|no.*soy.*capaz|no.*me.*sale)/i,
+        // Cuidado: "no puedo" solo es fracaso cuando va ligado a valía o logro, no a funciones fisiológicas
+        // (p. ej. "no puedo dormir" no debe activar plantillas de autodeprecio).
+        fracaso:
+          /(?:\bsoy\s+(?:un\s+)?fracaso\b|\bme\s+siento\s+(?:como\s+)?(?:un\s+)?fracaso\b|\bfracas(?:o|ado|ada|ados|adas|ar)\b|\bfall(?:é|e|ó|o)(?:\b|\s+(?:en|todo|siempre))|\bno\s+sirvo\b|\bno\s+valgo\b|\b(?:soy\s+|me\s+siento\s+)?inútil\b|incompetente|\bno\s+soy\s+capaz\b|\bno\s+me\s+sale\b|\bno\s+puedo\s+hacer\s+nada(?:\s+bien)?\b|\bno\s+puedo\s+(?:evitarlo|evitar\s+que|hacerlo|seguir|más|evitar\s+fracasar)\b|\bno\s+pude\s+(?:hacerlo|evitarlo|evitar|más|seguir|controlarlo)\b|\bsiempre\s+fallo\b|\bnada\s+me\s+sale\b)/i,
         desesperanza: /(?:sin.*esperanza|sin.*salida|sin.*futuro|no.*tiene.*sentido|para.*qué|no.*vale.*la.*pena|futuro.*negro|sin.*luz)/i,
         vacío: /(?:vacío|vacío.*interior|nada.*me.*llena|sin.*sentido|sin.*propósito|hueco|vacío.*por.*dentro)/i,
         rechazo: /(?:rechazad(?:o|a)|me.*rechazaron|no.*me.*quieren|me.*abandonaron|me.*dejaron|me.*ignoran)/i
@@ -78,6 +89,9 @@ class EmotionalSubtypeDetector {
     // Buscar el subtipo que mejor coincida
     for (const [subtype, pattern] of Object.entries(emotionSubtypes)) {
       if (pattern.test(contentLower)) {
+        if (this.shouldSuppressSubtype(emotion, subtype, contentLower)) {
+          continue;
+        }
         return subtype;
       }
     }
@@ -92,6 +106,21 @@ class EmotionalSubtypeDetector {
    */
   getAvailableSubtypes(emotion) {
     return this.subtypes[emotion] ? Object.keys(this.subtypes[emotion]) : [];
+  }
+
+  /**
+   * Evita falsos positivos para combinaciones emoción/subtipo específicas.
+   * Sirve como "guardrail" adicional cuando una regex amplia puede coincidir
+   * con frases que no representan realmente ese subtipo.
+   */
+  shouldSuppressSubtype(emotion, subtype, content) {
+    if (!emotion || !subtype || !content) return false;
+
+    const rules = this.suppressionRules?.[emotion]?.[subtype];
+    if (!Array.isArray(rules) || rules.length === 0) return false;
+
+    return rules.some((rule) => rule.test(content));
+
   }
 }
 
