@@ -23,6 +23,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: CHAT_COLORS.INPUT_BORDER,
     marginBottom: LAYOUT.INPUT_CONTAINER_MARGIN_BOTTOM,
+    // Asegura que el input reciba toques incluso si hay overlays/botones absolutos arriba.
+    zIndex: 10,
+    elevation: 10,
   },
   input: {
     flex: 1,

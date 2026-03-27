@@ -147,11 +147,7 @@ const styles = StyleSheet.create({
   },
 });
 
-export default function ChatMessageItem({
-  item,
-  onSuggestionPress,
-  onSuggestionDismiss,
-}) {
+function ChatMessageItem({ item, onSuggestionPress, onSuggestionDismiss }) {
   const message = item.userMessage || item.assistantMessage || item;
   const isUser = message.role === MESSAGE_ROLES.USER;
 
@@ -206,3 +202,5 @@ export default function ChatMessageItem({
     </View>
   );
 }
+
+export default React.memo(ChatMessageItem);

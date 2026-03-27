@@ -138,22 +138,55 @@ export function useChatScreen() {
       metadata: { timestamp: new Date().toISOString(), streaming: true },
     };
 
+    // Reducir fricción/perf: muchos "chunks" del streaming generan demasiados setState.
+    // Acumulamos chunks y flusheamos a intervalos.
+    let pendingChunk = '';
+    let flushTimer = null;
+
+    const flushPendingChunk = () => {
+      if (!pendingChunk) return;
+      const chunk = pendingChunk;
+      pendingChunk = '';
+
+      flushTimer = null;
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        // Fast path: durante streaming el assistant temporal debería ser el último item.
+        if (last?.id === tempAssistantId) {
+          const updatedLast = { ...last, content: (last.content || '') + chunk };
+          return [...prev.slice(0, -1), updatedLast];
+        }
+
+        // Fallback: localizar por id si el ordering cambió.
+        const idx = prev.findIndex((m) => m?.id === tempAssistantId);
+        if (idx === -1) return prev;
+        const updated = { ...prev[idx], content: (prev[idx].content || '') + chunk };
+        const next = prev.slice();
+        next[idx] = updated;
+        return next;
+      });
+      scrollToBottom(true);
+    };
+
     try {
       setMessages((prev) => [...prev, tempUserMessage, tempAssistantMessage]);
       scrollToBottom(true);
 
       await chatService.sendMessageStream(messageText, {
         onChunk(content) {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === tempAssistantId
-                ? { ...msg, content: (msg.content || '') + content }
-                : msg
-            )
-          );
-          scrollToBottom(true);
+          pendingChunk += content;
+          if (!flushTimer) {
+            flushTimer = setTimeout(flushPendingChunk, 60); // ~16fps
+          }
         },
         onDone(payload) {
+          // Asegurar que no se pierdan chunks pendientes.
+          if (flushTimer) {
+            clearTimeout(flushTimer);
+            flushTimer = null;
+          }
+          flushPendingChunk();
+
           setMessages((prev) => {
             const filtered = prev.filter((msg) => msg.id !== tempAssistantId);
             const finalAssistant = {
@@ -181,6 +214,12 @@ export function useChatScreen() {
       });
     } catch (err) {
       console.error('Error al enviar mensaje:', err);
+
+      // Limpiar flush pendiente si hubo error.
+      // (pendingChunk no afecta el state porque el message temporal se remueve abajo)
+      if (flushTimer) {
+        clearTimeout(flushTimer);
+      }
 
       // Quitar mensajes temporales en error
       setMessages((prev) => prev.filter((msg) => msg.id !== tempUserMessage.id && msg.id !== tempAssistantId));

@@ -32,7 +32,6 @@ import ClearConversationModal from '../components/chat/ClearConversationModal';
 import OfflineBanner from '../components/OfflineBanner';
 import ParticleBackground from '../components/ParticleBackground';
 import { SkeletonBlock } from '../components/Skeleton';
-import FloatingNavBar from '../components/FloatingNavBar';
 import TrialBanner from '../components/TrialBanner';
 import { useChatScreen } from '../hooks/useChatScreen';
 import {
@@ -133,6 +132,8 @@ const styles = StyleSheet.create({
     bottom: LAYOUT.SCROLL_BUTTON_BOTTOM,
     width: LAYOUT.SCROLL_BUTTON_SIZE,
     height: LAYOUT.SCROLL_BUTTON_SIZE,
+    zIndex: 1,
+    elevation: 1,
     borderRadius: LAYOUT.SCROLL_BUTTON_BORDER_RADIUS,
     backgroundColor: CHAT_COLORS.SCROLL_BUTTON_BACKGROUND,
     justifyContent: 'center',
@@ -419,9 +420,6 @@ const ChatScreen = () => {
         onSend={handleSend}
         inputRef={inputRef}
       />
-
-      {/* Tab bar está oculto en TabNavigator; este nav evita quedar "atrapado" */}
-      <FloatingNavBar activeTab="chat" />
 
       {showScrollButton && (
         <TouchableOpacity
