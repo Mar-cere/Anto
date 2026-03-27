@@ -28,7 +28,7 @@ export const TEXTS = {
   CONVERSATION_ERROR: 'Hubo un problema al iniciar la conversación. Por favor, intenta de nuevo.',
   AI_MODAL_TITLE: 'Transparencia sobre IA',
   AI_MODAL_MESSAGE:
-    'Anto usa OpenAI como proveedor de IA para responder en el chat.\n\nDatos procesados:\n• Mensajes que envías en el chat\n• Contexto mínimo de la conversación\n• Preferencias de onboarding que compartes\n\nPuedes revisar más detalles en la Política de Privacidad.',
+    'Anto usa OpenAI como proveedor de IA para responder en el chat.\n\nDatos procesados:\n• Mensajes que envías en el chat\n• Contexto mínimo de la conversación\n• Preferencias de onboarding que compartes\n• Si tienes notificaciones activas, en momentos muy intensos puede enviarse un recordatorio suave para invitarte a volver al chat (no sustituye ayuda profesional ni emergencias)\n\nPuedes revisar más detalles en la Política de Privacidad.',
   AI_MODAL_POLICY: 'Ver política de privacidad',
   AI_MODAL_DETAILS: 'Ver detalles de Privacidad e IA',
   AI_MODAL_CONTINUE: 'Entendido',
