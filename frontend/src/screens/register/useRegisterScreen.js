@@ -18,6 +18,7 @@ import { checkServerStatus } from '../../utils/networkUtils';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { getApiErrorMessage } from '../../utils/apiErrorHandler';
 import { useAuth } from '../../context/AuthContext';
+import chatService from '../../services/chatService';
 import { STORAGE_KEYS, SERVER_CHECK_TIMEOUT } from './registerScreenConstants';
 
 const ERROR_MESSAGES = TEXTS.ERRORS;
@@ -65,6 +66,12 @@ const saveAuthData = async (tokens, user, email) => {
   ];
   if (tokens.refreshToken) items.push([STORAGE_KEYS.REFRESH_TOKEN, tokens.refreshToken]);
   await Promise.all(items.map(([k, v]) => AsyncStorage.setItem(k, v)));
+  try {
+    await chatService.prepareGuestHandoffBeforeClear();
+  } catch (_) {}
+  try {
+    await chatService.clearGuestChat();
+  } catch (_) {}
 };
 
 export function useRegisterScreen(navigation) {
@@ -201,6 +208,7 @@ export function useRegisterScreen(navigation) {
   }, [formData, isTermsAccepted, isPrivacyAccepted, isOffline, validateForm, navigation, refreshSession]);
 
   const acceptTermsAndClose = useCallback(() => {
+    setHasViewedTerms(true);
     setTermsAccepted(true);
     setTermsModalVisible(false);
   }, []);
@@ -217,6 +225,8 @@ export function useRegisterScreen(navigation) {
     setConfirmPasswordVisible,
     isTermsAccepted,
     setTermsAccepted,
+    isPrivacyAccepted,
+    setPrivacyAccepted,
     hasViewedTerms,
     setHasViewedTerms,
     isNameInfoModalVisible,

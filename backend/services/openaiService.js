@@ -29,6 +29,7 @@ import {
 } from '../constants/therapeuticTechniques.js';
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
+import OpenAITokenUsageDay from '../models/OpenAITokenUsageDay.js';
 import TherapeuticRecord from '../models/TherapeuticRecord.js';
 import cacheService from './cacheService.js';
 import contextAnalyzer from './contextAnalyzer.js';
@@ -100,6 +101,9 @@ class OpenAIService {
       lastReset: new Date()
     };
 
+    /** @type {Record<string, { promptTokens: number, completionTokens: number, totalTokens: number, requests: number }>} Clave: YYYY-MM-DD (UTC) */
+    this.tokenUsageByDay = {};
+
     this.defaultResponse = {
       content: ERROR_MESSAGES.INVALID_MESSAGE,
       context: {
@@ -166,28 +170,45 @@ class OpenAIService {
         );
       }
 
-      // Si no viene el perfil, obtenerlo
-      if (!perfilUsuario) {
+      const isGuest = contexto.isGuest === true;
+
+      // Si no viene el perfil, obtenerlo (invitados: perfil mínimo ya en contexto)
+      if (!perfilUsuario && !isGuest) {
         perfilUsuario = await personalizationService.getUserProfile(mensaje.userId).catch(() => null);
+      }
+      if (isGuest && !perfilUsuario) {
+        perfilUsuario = contexto.profile || { preferences: { responseStyle: 'empatico' } };
       }
 
       // Si no viene el registro terapéutico, obtenerlo
-      if (!registroTerapeutico) {
+      if (!registroTerapeutico && !isGuest) {
         registroTerapeutico = await TherapeuticRecord.findOne({ userId: mensaje.userId }).catch(() => null);
+      }
+      if (isGuest) {
+        registroTerapeutico = null;
       }
 
       // 2. Obtener Memoria y Contexto
-      const memoriaContextual = await memoryService.getRelevantContext(
-        mensaje.userId,
-        contenidoNormalizado,
-        {
-          emotional: analisisEmocional,
-          contextual: analisisContextual
-        }
-      );
+      let memoriaContextual;
+      if (isGuest) {
+        memoriaContextual = {
+          lastInteraction: null,
+          recurringThemes: [],
+          patterns: []
+        };
+      } else {
+        memoriaContextual = await memoryService.getRelevantContext(
+          mensaje.userId,
+          contenidoNormalizado,
+          {
+            emotional: analisisEmocional,
+            contextual: analisisContextual
+          }
+        );
+      }
 
       // 3. Construir Prompt Contextualizado (módulo openaiPromptBuilder)
-      const sessionTrends = sessionEmotionalMemory.analyzeTrends(mensaje.userId);
+      const sessionTrends = isGuest ? null : sessionEmotionalMemory.analyzeTrends(mensaje.userId);
       const prompt = await buildContextualizedPrompt(
         { ...mensaje, content: contenidoNormalizado },
         {
@@ -204,24 +225,27 @@ class OpenAIService {
           depthPreference: contexto.depthPreference,
           inferredWritingStyle: contexto.inferredWritingStyle,
           preferredResponseLength: contexto.preferredResponseLength,
-          crisis: contexto.crisis
+          crisis: contexto.crisis,
+          isGuest
         }
       );
 
       // 4. Generar Respuesta con OpenAI
 
-      // MEJORA: Intentar obtener respuesta del caché si existe (módulo openaiResponseCache)
-      const cacheKey = generateResponseCacheKey(contenidoNormalizado, analisisEmocional, analisisContextual);
+      // MEJORA: Intentar obtener respuesta del caché si existe (módulo openaiResponseCache) — no en modo invitado
       let cachedResponse = null;
-      try {
-        cachedResponse = await cacheService.get(cacheKey);
-        if (cachedResponse && isCachedResponseValid(cachedResponse, analisisContextual)) {
-          console.log('[OpenAI] ✅ Respuesta obtenida del caché');
-          const adaptedResponse = adaptCachedResponse(cachedResponse.response, analisisContextual, contenidoNormalizado);
-          return { content: adaptedResponse, context: { emotional: analisisEmocional, contextual: analisisContextual } };
+      if (!isGuest) {
+        const cacheKey = generateResponseCacheKey(contenidoNormalizado, analisisEmocional, analisisContextual);
+        try {
+          cachedResponse = await cacheService.get(cacheKey);
+          if (cachedResponse && isCachedResponseValid(cachedResponse, analisisContextual)) {
+            console.log('[OpenAI] ✅ Respuesta obtenida del caché');
+            const adaptedResponse = adaptCachedResponse(cachedResponse.response, analisisContextual, contenidoNormalizado);
+            return { content: adaptedResponse, context: { emotional: analisisEmocional, contextual: analisisContextual } };
+          }
+        } catch (cacheError) {
+          console.warn('[OpenAI] Error al obtener del caché, continuando sin caché:', cacheError.message);
         }
-      } catch (cacheError) {
-        console.warn('[OpenAI] Error al obtener del caché, continuando sin caché:', cacheError.message);
       }
 
       // Obtener responseStyle del perfil para ajustar longitud (ya obtenido arriba en línea 366)
@@ -605,7 +629,8 @@ class OpenAIService {
           { role: 'user', content: contenidoNormalizado }
         ],
         max_completion_tokens: maxTokens,
-        stream: true
+        stream: true,
+        stream_options: { include_usage: true }
       });
     } catch (apiError) {
       if (apiError.status === 401 || apiError.code === 'invalid_api_key') {
@@ -620,6 +645,22 @@ class OpenAIService {
       if (delta) {
         buffer += delta;
         yield { type: 'chunk', content: delta };
+      }
+      if (chunk.usage) {
+        const usage = chunk.usage;
+        const reasoningTokens = usage.completion_tokens_details?.reasoning_tokens || 0;
+        const actualContentTokens = (usage.completion_tokens || 0) - reasoningTokens;
+        this.registrarEstadisticasTokens({
+          maxCompletionTokens: maxTokens,
+          totalCompletionTokens: usage.completion_tokens || 0,
+          reasoningTokens,
+          actualContentTokens,
+          promptTokens: usage.prompt_tokens || 0,
+          totalTokens: usage.total_tokens || 0,
+          finishReason: chunk.choices?.[0]?.finish_reason || 'stop',
+          hasContent: buffer.trim().length > 0,
+          contentLength: buffer.length
+        });
       }
     }
 
@@ -1559,6 +1600,8 @@ class OpenAIService {
     this.tokenStats.reasoningTokens.push(stats.reasoningTokens);
     this.tokenStats.actualContentTokens.push(stats.actualContentTokens);
     this.tokenStats.promptTokens.push(stats.promptTokens);
+
+    this._accumulateTokenUsageForDay(stats);
     
     // Contar finish reasons
     const reason = stats.finishReason || 'unknown';
@@ -1568,6 +1611,70 @@ class OpenAIService {
     if (this.tokenStats.totalRequests % 10 === 0 || !stats.hasContent) {
       this.logEstadisticasTokens();
     }
+  }
+
+  /**
+   * Agrega tokens al bucket del día UTC (informe diario por correo).
+   * @private
+   */
+  _accumulateTokenUsageForDay(stats) {
+    const dayKey = new Date().toISOString().slice(0, 10);
+    if (!this.tokenUsageByDay[dayKey]) {
+      this.tokenUsageByDay[dayKey] = {
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+        requests: 0
+      };
+    }
+    const b = this.tokenUsageByDay[dayKey];
+    b.promptTokens += stats.promptTokens || 0;
+    b.completionTokens += stats.totalCompletionTokens || 0;
+    b.totalTokens += stats.totalTokens || 0;
+    b.requests += 1;
+    this._pruneTokenUsageByDay(45);
+
+    void OpenAITokenUsageDay.incrementForDay(dayKey, {
+      promptTokens: stats.promptTokens || 0,
+      completionTokens: stats.totalCompletionTokens || 0,
+      totalTokens: stats.totalTokens || 0
+    }).catch((err) => {
+      console.warn('[OpenAI] Persistencia uso diario (Mongo):', err.message);
+    });
+  }
+
+  /**
+   * @param {number} keepDays
+   * @private
+   */
+  _pruneTokenUsageByDay(keepDays) {
+    const keys = Object.keys(this.tokenUsageByDay).sort();
+    if (keys.length <= keepDays) return;
+    const toDrop = keys.slice(0, keys.length - keepDays);
+    for (const k of toDrop) delete this.tokenUsageByDay[k];
+  }
+
+  /**
+   * Uso agregado para un día UTC (YYYY-MM-DD): primero documento en Mongo; si no existe, bucket en memoria.
+   * @param {string} dayKey
+   * @returns {Promise<{ promptTokens: number, completionTokens: number, totalTokens: number, requests: number } | null>}
+   */
+  async getTokenUsageForUtcDay(dayKey) {
+    try {
+      const doc = await OpenAITokenUsageDay.findOne({ dayKey }).lean();
+      if (doc) {
+        return {
+          promptTokens: doc.promptTokens,
+          completionTokens: doc.completionTokens,
+          totalTokens: doc.totalTokens,
+          requests: doc.requests
+        };
+      }
+    } catch (e) {
+      console.warn('[OpenAI] Lectura uso diario (Mongo):', e.message);
+    }
+    const row = this.tokenUsageByDay[dayKey];
+    return row ? { ...row } : null;
   }
   
   /**

@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>15/15</span>
+                <span class='fraction'>0/15</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">66.66% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>4/6</span>
+                <span class='fraction'>0/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>2/2</span>
+                <span class='fraction'>0/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>15/15</span>
+                <span class='fraction'>0/15</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -242,7 +242,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">29x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -306,16 +306,16 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">29x</span>
-<span class="cline-any cline-yes">29x</span>
-<span class="cline-any cline-yes">29x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">29x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -348,14 +348,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">29x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -388,7 +388,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -400,7 +400,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">29x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -413,7 +413,7 @@
  */
 import mongoose from 'mongoose';
 &nbsp;
-const notificationEngagementSchema = new mongoose.Schema({
+const notificationEngagementSchema = <span class="cstat-no" title="statement not covered" >new mongoose.Schema({</span>
   // Referencia al usuario
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -477,16 +477,16 @@ const notificationEngagementSchema = new mongoose.Schema({
 });
 &nbsp;
 // Índices para optimizar consultas
-notificationEngagementSchema.index({ userId: 1, sentAt: -1 });
-notificationEngagementSchema.index({ notificationType: 1, status: 1 });
-notificationEngagementSchema.index({ sentAt: -1 });
+<span class="cstat-no" title="statement not covered" >notificationEngagementSchema.index({ userId: 1, sentAt: -1 });</span>
+<span class="cstat-no" title="statement not covered" >notificationEngagementSchema.index({ notificationType: 1, status: 1 });</span>
+<span class="cstat-no" title="statement not covered" >notificationEngagementSchema.index({ sentAt: -1 });</span>
 &nbsp;
 // Métodos estáticos para analytics
-notificationEngagementSchema.statics.getEngagementStats = async function(userId, days = <span class="branch-0 cbranch-no" title="branch not covered" >30)</span> {
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - days);
+<span class="cstat-no" title="statement not covered" >notificationEngagementSchema.statics.getEngagementStats = <span class="fstat-no" title="function not covered" >as</span>ync function(userId, days = <span class="branch-0 cbranch-no" title="branch not covered" >30)</span> {</span>
+  const startDate = <span class="cstat-no" title="statement not covered" >new Date();</span>
+<span class="cstat-no" title="statement not covered" >  startDate.setDate(startDate.getDate() - days);</span>
 &nbsp;
-  const stats = await this.aggregate([
+  const stats = <span class="cstat-no" title="statement not covered" >await this.aggregate([</span>
     {
       $match: {
         userId: new mongoose.Types.ObjectId(userId),
@@ -519,14 +519,14 @@ notificationEngagementSchema.statics.getEngagementStats = async function(userId,
     }
   ]);
 &nbsp;
-  return stats;
+<span class="cstat-no" title="statement not covered" >  return stats;</span>
 };
 &nbsp;
-notificationEngagementSchema.statics.getOverallStats = async function(userId, days = <span class="branch-0 cbranch-no" title="branch not covered" >30)</span> {
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - days);
+<span class="cstat-no" title="statement not covered" >notificationEngagementSchema.statics.getOverallStats = <span class="fstat-no" title="function not covered" >as</span>ync function(userId, days = <span class="branch-0 cbranch-no" title="branch not covered" >30)</span> {</span>
+  const startDate = <span class="cstat-no" title="statement not covered" >new Date();</span>
+<span class="cstat-no" title="statement not covered" >  startDate.setDate(startDate.getDate() - days);</span>
 &nbsp;
-  const stats = await this.aggregate([
+  const stats = <span class="cstat-no" title="statement not covered" >await this.aggregate([</span>
     {
       $match: {
         userId: new mongoose.Types.ObjectId(userId),
@@ -559,7 +559,7 @@ notificationEngagementSchema.statics.getOverallStats = async function(userId, da
     }
   ]);
 &nbsp;
-  return stats[0] || {
+<span class="cstat-no" title="statement not covered" >  return stats[0] || {</span>
     total: 0,
     sent: 0,
     delivered: 0,
@@ -571,7 +571,7 @@ notificationEngagementSchema.statics.getOverallStats = async function(userId, da
   };
 };
 &nbsp;
-const NotificationEngagement = mongoose.models.NotificationEngagement || 
+const NotificationEngagement = <span class="cstat-no" title="statement not covered" >mongoose.models.NotificationEngagement || </span>
   mongoose.model('NotificationEngagement', notificationEngagementSchema);
 &nbsp;
 export default NotificationEngagement;
@@ -583,7 +583,7 @@ export default NotificationEngagement;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-25T13:45:56.426Z
+                at 2026-04-03T00:03:24.522Z
             </div>
         <script src="../prettify.js"></script>
         <script>

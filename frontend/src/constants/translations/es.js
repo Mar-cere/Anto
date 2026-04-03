@@ -12,6 +12,9 @@ export const HOME = {
   SUBTITLE: 'Nos alegra verte aquí.',
   SIGN_IN: 'Iniciar Sesión',
   REGISTER: 'Crear cuenta',
+  CONTINUE_WITHOUT_ACCOUNT: 'Continuar sin cuenta',
+  CONTINUE_WITHOUT_ACCOUNT_HINT:
+    'Abre el chat de forma limitada sin iniciar sesión (útil en una emergencia)',
   FAQ: 'Preguntas Frecuentes',
   SIGN_IN_HINT: 'Toca para ir a la pantalla de inicio de sesión',
   REGISTER_HINT: 'Toca para ir a la pantalla de registro',

@@ -27,6 +27,15 @@ export const patchMessageLimiter = rateLimit({
   legacyHeaders: false
 });
 
+/** Valoraciones pulgar arriba/abajo (independiente del PATCH de estado de entrega). */
+export const messageFeedbackLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 120,
+  message: 'Demasiadas valoraciones seguidas. Espera un momento e inténtalo de nuevo.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 export const sendMessageLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 20,

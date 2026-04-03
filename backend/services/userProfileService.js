@@ -50,7 +50,12 @@ class UserProfileService {
         responseStyle: 'balanced',
         responseLength: DEFAULT_RESPONSE_LENGTH,
         topicsOfInterest: [],
-        triggerTopics: []
+        triggerTopics: [],
+        chatPreferences: {
+          reduceStockEmpathy: false,
+          avoidApologyOpenings: false,
+          preferQuestions: false
+        }
       },
       patrones: {
         emocionales: [],
@@ -456,15 +461,18 @@ class UserProfileService {
    */
   async updatePreferences(userId, newPreferences) {
     try {
-      return await UserProfile.findOneAndUpdate(
+      const updated = await UserProfile.findOneAndUpdate(
         { userId },
-        { 
-          $set: { 
-            'preferences': newPreferences
+        {
+          $set: {
+            preferences: newPreferences
           }
         },
         { new: true, upsert: true }
       );
+      const cacheKey = cacheService.generateKey('profile', userId);
+      await cacheService.delete(cacheKey).catch(() => {});
+      return updated;
     } catch (error) {
       console.error('[UserProfileService] Error actualizando preferencias:', error);
       return null;

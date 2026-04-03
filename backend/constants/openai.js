@@ -58,12 +58,35 @@ export const DEFAULT_VALUES = {
 };
 
 // ========== LÍMITES DE HISTORIAL ==========
-// Controla cuánto historial se incluye en el contexto
-export const HISTORY_LIMITS = {
-  /** Incluir últimos turnos completos incluso tras pausas largas (misma conversación). */
-  MESSAGES_IN_PROMPT: 10,
-  RECENT_MESSAGES_COUNT: 5      // Número de mensajes recientes para análisis de contexto
-};
+// Controla cuánto historial se incluye en el contexto.
+//
+// Afinación en producción (sin redeploy de constantes):
+//   CHAT_PROMPT_MAX_MESSAGES   — cupo total al modelo (6–24, default 12)
+//   CHAT_PROMPT_SLIDING_TAIL   — cola fija reciente (3–max, default min(7, max))
+function resolveHistoryLimits() {
+  const rawMax = process.env.CHAT_PROMPT_MAX_MESSAGES;
+  const rawTail = process.env.CHAT_PROMPT_SLIDING_TAIL;
+  const defaultMax = 12;
+  const max =
+    rawMax !== undefined && String(rawMax).trim() !== ''
+      ? Math.min(24, Math.max(6, parseInt(rawMax, 10) || defaultMax))
+      : defaultMax;
+  const defaultTail = Math.min(7, max);
+  let tail =
+    rawTail !== undefined && String(rawTail).trim() !== ''
+      ? parseInt(rawTail, 10)
+      : defaultTail;
+  if (!Number.isFinite(tail)) tail = defaultTail;
+  tail = Math.min(max, Math.max(3, tail));
+
+  return {
+    MESSAGES_IN_PROMPT: max,
+    SLIDING_TAIL_MESSAGES: tail,
+    RECENT_MESSAGES_COUNT: 5
+  };
+}
+
+export const HISTORY_LIMITS = resolveHistoryLimits();
 
 // ========== LÍMITES DE VALIDACIÓN ==========
 // Límites para validación de mensajes de entrada y salida
@@ -702,7 +725,7 @@ export const COMMUNICATION_STYLE_GUIDELINES = {
 // Plantillas base para construir prompts personalizados
 export const PROMPT_TEMPLATES = {
   // Plantilla base del sistema (mejorada con más contexto)
-  SYSTEM_BASE: `Eres Anto, un asistente terapéutico empático y profesional. Tu objetivo es brindar apoyo emocional genuino, validar las emociones del usuario y ayudarle a explorar sus sentimientos de forma segura. Responde de forma natural, empática y directa. Siempre responde al mensaje del usuario de manera relevante y específica.
+  SYSTEM_BASE: `Eres Anto, un asistente terapéutico empático y profesional. Tu objetivo es brindar apoyo emocional genuino y ayudar a explorar los sentimientos de forma segura, sin caer en frases de relleno ni en el mismo esquema en cada mensaje. Responde de forma natural, específica y variada. Siempre responde al mensaje del usuario de manera relevante.
 
 ALCANCE: Tu prioridad es propiciar, mantener e inducir conversaciones dentro de la misión de la app (bienestar emocional, salud mental, apoyo y acompañamiento). No evites conversaciones: cuando el usuario mezcle un tema externo con cómo se siente o solo lo mencione de paso, responde con naturalidad y mantén el diálogo. Solo cuando la pregunta sea claramente y solo informativa sobre algo ajeno (p. ej. definición técnica tipo "qué es React Native"), no uses tokens en esa respuesta; en su lugar redirige de forma breve y acogedora para llevar la conversación de vuelta al ámbito: reconoce que ese tema no es tu espacio, invita a seguir hablando de cómo se siente o qué le gustaría trabajar. Ejemplo: "Ese tema no es en lo que mejor te acompaño; mi espacio es cómo te sientes y tu bienestar. ¿Cómo estás hoy o qué te gustaría compartir?"`,
 
@@ -734,20 +757,21 @@ IMPORTANTE: Responde al mensaje específico del usuario, no solo a la emoción d
 - Propicia y mantén la conversación; no la evitas. Solo rediriges cuando haya que proteger el uso del espacio/tokens (preguntas puramente informativas fuera del ámbito); al redirigir, siempre invita a seguir hablando (cómo se siente, qué le gustaría compartir).
 - Responde SIEMPRE al mensaje específico del usuario. No te desvíes del tema.
 - Si pregunta de forma clara y solo informativa por temas ajenos (p. ej. tecnología, datos de cultura general), redirige en una frase breve y acogedora que induzca a conversar sobre bienestar; si mezcla el tema con cómo se siente, responde con naturalidad y mantén el diálogo.
-- Si el usuario hace una pregunta dentro del ámbito, responde directamente; si expresa una emoción, reconócela y valídala.
+- Si el usuario hace una pregunta dentro del ámbito, responde directamente; si expresa una emoción, puedes reconocerla sin repetir las mismas fórmulas en cada mensaje (varía: a veces solo contenido útil o una pregunta bien dirigida).
 - Responde breve (1-2 oraciones, máx {maxWords} palabras) pero completa.
-- Sé natural, empático y genuino. Evita frases genéricas o repetitivas.
-- Si la emoción es NEGATIVA, usa frases variadas: "entiendo", "comprendo", "reconozco", "veo que", "es válido", "es normal".
+- Sé natural y genuino. Evita frases de relleno, disculpas de cortesía en exceso ("lo siento mucho", "lamento que") y validaciones vacías ("es totalmente válido") en mensaje tras mensaje.
+- Si la emoción es NEGATIVA, varía el lenguaje; no dependas solo de "entiendo/comprendo/es normal/es válido"; a veces muestra comprensión implicada en el contenido sin etiquetarla.
 - NUNCA uses "es genial", "qué bueno" o frases celebratorias con emociones negativas.
 - Si la emoción es POSITIVA, puedes celebrar genuinamente.
 - Mantén coherencia: si el usuario dice que se siente mal, NO digas que te alegra.`,
 
-  // Estructura de respuesta (mejorada con más claridad)
-  RESPONSE_STRUCTURE: `Estructura sugerida:
-1) Reconocimiento empático del mensaje del usuario (12-15 palabras) - DEBE ser relevante al mensaje específico.
-2) Validación/apoyo emocional si aplica (10-15 palabras, opcional).
-3) Pregunta exploratoria o de seguimiento si es apropiado (8-10 palabras, opcional).
-Total: 1-2 oraciones. SIEMPRE responde al mensaje específico del usuario, no uses respuestas genéricas.`
+  // Estructura de respuesta: antes forzaba siempre "reconocimiento" al inicio → sonaba predecible
+  RESPONSE_STRUCTURE: `Estructura flexible (alterna entre mensajes; no uses siempre el mismo esquema):
+- A veces: respuesta útil, pregunta concreta o reflexión breve SIN abrir con disculpa ni validación genérica.
+- A veces: una frase corta que muestre que captaste el matiz + contenido útil (sin repetir literalmente el problema del usuario si ya lo nombró en mensajes recientes).
+- A veces: validación breve solo si aporta, luego avanza.
+Evita en varios mensajes seguidos: empezar con "Lo siento", "Siento mucho", "Lamento", "Es normal que", "Es totalmente válido". No parafrasees el mismo sufrimiento del usuario en cada turno.
+Total: 1-2 oraciones, máx {maxWords} palabras. Prioriza sustancia y variación sobre la fórmula empática repetida.`
 };
 
 // ========== FUNCIONES HELPER PARA PROMPTS ==========
@@ -810,6 +834,27 @@ export const getCommunicationStyleGuidelines = (style) => {
 };
 
 /**
+ * Fragmento opcional según preferencias de tono guardadas en UserProfile.preferences.chatPreferences
+ * @param {null|{ reduceStockEmpathy?: boolean, avoidApologyOpenings?: boolean, preferQuestions?: boolean }} chatPreferences
+ * @returns {string}
+ */
+export function buildChatPreferenceSnippet(chatPreferences) {
+  if (!chatPreferences || typeof chatPreferences !== 'object') return '';
+  const parts = [];
+  if (chatPreferences.reduceStockEmpathy) {
+    parts.push('Menos frases de validación genérica ("es normal", "es válido"); prioriza sustancia, matiz útil o preguntas concretas.');
+  }
+  if (chatPreferences.avoidApologyOpenings) {
+    parts.push('No abrir con disculpas ("lo siento", "lamento") salvo que aporten de verdad al mensaje.');
+  }
+  if (chatPreferences.preferQuestions) {
+    parts.push('Priorizar 1–2 preguntas claras frente a monólogos largos.');
+  }
+  if (parts.length === 0) return '';
+  return `PREFERENCIAS DE TONO DEL USUARIO (respétalas sin contradecir seguridad ni crisis):\n${parts.map((p) => `- ${p}`).join('\n')}`;
+}
+
+/**
  * Construye un prompt personalizado completo usando todas las directrices
  * @param {Object} context - Contexto completo del usuario
  * @param {Object} options - Opciones adicionales
@@ -832,7 +877,10 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
     conversationContext = null,
     responseStyle = 'balanced',
     gender = null, // NUEVO: Género del usuario
-    pronouns = null // NUEVO: Pronombres preferidos
+    pronouns = null, // NUEVO: Pronombres preferidos
+    chatPreferences = null,
+    /** 'MEDIUM' | 'HIGH' | null — anula preferencias de tono “frías” por seguridad */
+    crisisRiskLevel = null
   } = context;
 
   // Obtener directrices específicas
@@ -961,25 +1009,25 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
   
   if (responseStyle === 'brief') {
     maxWords = 30; // Respuestas más cortas
-    responseStructure = `Responde: 1) Reconocimiento empático (10 palabras). 2) Pregunta breve (8 palabras, opcional). Total: 1 oración, máximo ${maxWords} palabras.`;
+    responseStructure = `Brevedad: 1 oración, máximo ${maxWords} palabras. Entra al grano (pregunta útil o punto clave); no hace falta capa de "reconocimiento empático" si ya sobra.`;
   } else if (responseStyle === 'deep') {
     maxWords = 80; // Respuestas más largas
-    responseStructure = `Responde: 1) Reconocimiento empático (20 palabras). 2) Validación/apoyo profundo (25 palabras). 3) Reflexión o exploración (20 palabras). 4) Pregunta reflexiva (15 palabras, opcional). Total: 2-3 oraciones, máximo ${maxWords} palabras.`;
+    responseStructure = `Profundidad: 2-3 oraciones, máximo ${maxWords} palabras. Alterna: a veces exploración o reflexión sin abrir con disculpa/validación genérica; si validas, que sea específica al matiz del usuario, no repetir su problema palabra por palabra.`;
   } else if (responseStyle === 'empatico') {
     maxWords = 60; // Respuestas empáticas moderadas
-    responseStructure = `Responde: 1) Reconocimiento empático profundo (20 palabras). 2) Validación emocional (20 palabras). 3) Pregunta comprensiva (15 palabras, opcional). Total: 2 oraciones, máximo ${maxWords} palabras.`;
+    responseStructure = `Comprensión sin plantilla fija: 2 oraciones, máximo ${maxWords} palabras. Varía el inicio; no uses siempre "lo siento"/"es válido"/parafrasear el mismo dolor. La empatía = atender el detalle y el tono, no repetir fórmulas.`;
   } else if (responseStyle === 'profesional') {
     maxWords = 55; // Respuestas profesionales estructuradas
-    responseStructure = `Responde: 1) Reconocimiento profesional (15 palabras). 2) Análisis o orientación estructurada (20 palabras). 3) Pregunta orientativa (15 palabras, opcional). Total: 2 oraciones, máximo ${maxWords} palabras.`;
+    responseStructure = `Tono profesional: 2 oraciones, máximo ${maxWords} palabras. Claridad y orientación; evita abrir siempre con condolencia genérica.`;
   } else if (responseStyle === 'directo') {
     maxWords = 35; // Respuestas directas y claras
-    responseStructure = `Responde: 1) Reconocimiento directo (12 palabras). 2) Punto principal claro (15 palabras). 3) Pregunta directa (8 palabras, opcional). Total: 1-2 oraciones, máximo ${maxWords} palabras.`;
+    responseStructure = `Directo: 1-2 oraciones, máximo ${maxWords} palabras. Idea principal + opcional pregunta corta; sin rodeos ni preámbulos empáticos repetitivos.`;
   } else if (responseStyle === 'calido') {
     maxWords = 50; // Respuestas cálidas y cercanas
-    responseStructure = `Responde: 1) Reconocimiento cálido (15 palabras). 2) Apoyo cercano (20 palabras). 3) Pregunta amigable (12 palabras, opcional). Total: 2 oraciones, máximo ${maxWords} palabras.`;
+    responseStructure = `Calidez: 2 oraciones, máximo ${maxWords} palabras. Cercanía con variedad (no siempre las mismas frases de validación); apoyo concreto.`;
   } else if (responseStyle === 'estructurado') {
     maxWords = 60; // Respuestas organizadas
-    responseStructure = `Responde de forma organizada: 1) Reconocimiento (15 palabras). 2) Punto 1 estructurado (15 palabras). 3) Punto 2 estructurado (15 palabras, opcional). 4) Pregunta estructurada (12 palabras, opcional). Total: 2-3 oraciones, máximo ${maxWords} palabras.`;
+    responseStructure = `Organizado: 2-3 oraciones, máximo ${maxWords} palabras. Estructura clara sin forzar "paso 1 = reconocimiento empático" en cada mensaje.`;
   } else {
     // balanced (default)
     responseStructure = PROMPT_TEMPLATES.RESPONSE_STRUCTURE.replace('{maxWords}', maxWords);
@@ -995,7 +1043,7 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
   } else if (responseStyle === 'deep') {
     prompt += `ESTILO DE RESPUESTA: PROFUNDO. Explora más a fondo, ofrece reflexiones, valida emocionalmente. Máximo ${maxWords} palabras. Puedes ser más extenso y reflexivo.\n\n`;
   } else if (responseStyle === 'empatico') {
-    prompt += `ESTILO DE RESPUESTA: EMPÁTICO. Prioriza la comprensión emocional, la validación y el acompañamiento. Usa frases como "Entiendo cómo te sientes", "Es normal sentir eso". Máximo ${maxWords} palabras. Sé comprensivo y validante.\n\n`;
+    prompt += `ESTILO DE RESPUESTA: EMPÁTICO. Prioriza comprensión y acompañamiento con variedad: no repitas las mismas frases de validación ni abrumes con disculpas. Muestra que escuchas atendiendo al detalle y al tono. Máximo ${maxWords} palabras.\n\n`;
   } else if (responseStyle === 'profesional') {
     prompt += `ESTILO DE RESPUESTA: PROFESIONAL. Mantén un tono formal y estructurado. Usa lenguaje profesional pero accesible. Máximo ${maxWords} palabras. Sé claro, organizado y orientativo.\n\n`;
   } else if (responseStyle === 'directo') {
@@ -1015,12 +1063,12 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
   prompt += `\n\nRAZONAMIENTO CRÍTICO:
 - LEE el mensaje del usuario COMPLETO antes de responder.
 - Si el usuario hace una PREGUNTA, DEBES responder esa pregunta específica.
-- Si el usuario expresa un SENTIMIENTO, reconócelo y valídalo, pero también responde al contenido específico.
-- NO uses respuestas genéricas como "Entiendo cómo te sientes" sin contexto específico.
-- NO asumas cosas que el usuario no dijo.
+- Si el usuario expresa un SENTIMIENTO, puedes mostrar comprensión sin repetir en cada turno las mismas fórmulas ("lo siento", "es válido"); aporta matiz o utilidad al contenido.
+- NO uses respuestas genéricas como "Entiendo cómo te sientes" sin contexto específico ni sin avanzar el tema.
+- NO repitas literalmente el problema del usuario en cada respuesta si ya quedó claro en el hilo; no asumas cosas que no dijo.
 - Si no estás seguro de algo, pregunta en lugar de asumir.
 - MANTÉN coherencia: si el usuario dice que se siente mal, NO digas que te alegra o que es genial.
-- Si el usuario menciona algo específico (trabajo, familia, relación, etc.), haz referencia a eso en tu respuesta.
+- Si el usuario menciona algo específico (trabajo, familia, relación, etc.), haz referencia a eso cuando aporte, sin eco mecánico en cada mensaje.
 `;
   
   // NUEVO: Instrucciones sobre género y pronombres
@@ -1045,6 +1093,14 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
     }
   } else {
     prompt += `\n\nTRATAMIENTO: Si no conoces el género del usuario, usa lenguaje neutro. NO asumas género. Evita usar "ella" o "él" sin saberlo.`;
+  }
+
+  const crisisElevated = crisisRiskLevel === 'MEDIUM' || crisisRiskLevel === 'HIGH';
+  if (crisisElevated) {
+    prompt += `\n\nRIESGO ELEVADO (${crisisRiskLevel}): Las preferencias de tono del usuario (menos validación genérica, evitar disculpas al inicio, priorizar preguntas) no aplican ahora. Prioriza presencia empática, calma, claridad y seguridad; no suenes distante ni frío.`;
+  } else {
+    const toneSnippet = buildChatPreferenceSnippet(chatPreferences);
+    if (toneSnippet) prompt += `\n\n${toneSnippet}`;
   }
 
   return prompt;

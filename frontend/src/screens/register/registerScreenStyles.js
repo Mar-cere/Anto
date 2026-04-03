@@ -86,6 +86,10 @@ export const styles = StyleSheet.create({
     color: '#A3B8E8',
     fontSize: 16,
   },
+  termsTextFlex: {
+    flex: 1,
+    flexShrink: 1,
+  },
   termsTextDisabled: {
     opacity: 0.5,
     color: colors.textSecondary,

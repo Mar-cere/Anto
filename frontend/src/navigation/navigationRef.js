@@ -4,6 +4,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createNavigationContainerRef } from '@react-navigation/native';
 
+import { getResetToMainTabsWithChatState } from './navigationHelpers';
+
 export const navigationRef = createNavigationContainerRef();
 
 let lastOpenChatDedupeKey = '';
@@ -35,19 +37,19 @@ export async function handleNotificationData(data) {
     }
   }
 
-  const tryNavigate = () => {
+  const tryOpenChat = () => {
     if (!navigationRef.isReady()) return false;
     try {
-      navigationRef.navigate('MainTabs', { screen: 'Chat' });
+      navigationRef.reset(getResetToMainTabsWithChatState());
       return true;
     } catch (e) {
-      console.warn('[navigationRef] navigate MainTabs/Chat:', e?.message || e);
+      console.warn('[navigationRef] reset MainTabs/Chat:', e?.message || e);
       return false;
     }
   };
 
-  if (!tryNavigate()) {
-    setTimeout(tryNavigate, 400);
-    setTimeout(tryNavigate, 1500);
+  if (!tryOpenChat()) {
+    setTimeout(tryOpenChat, 400);
+    setTimeout(tryOpenChat, 1500);
   }
 }

@@ -1,13 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="4" failures="0" errors="0" time="0.332">
-  <testsuite name="intenseChatCheckInService" errors="0" failures="0" skipped="0" timestamp="2026-03-27T17:52:14" time="0.309" tests="4">
-    <testcase classname="intenseChatCheckInService shouldOfferWellbeingCheckIn rechaza si hay crisis formal" name="intenseChatCheckInService shouldOfferWellbeingCheckIn rechaza si hay crisis formal" time="0.001">
+<testsuites name="jest tests" tests="7" failures="0" errors="0" time="0.97">
+  <testsuite name="MetricsService" errors="0" failures="0" skipped="0" timestamp="2026-04-03T00:03:21" time="0.476" tests="1">
+    <testcase classname="MetricsService Métodos del servicio debe tener métodos exportados" name="MetricsService Métodos del servicio debe tener métodos exportados" time="0.002">
     </testcase>
-    <testcase classname="intenseChatCheckInService shouldOfferWellbeingCheckIn acepta intensidad alta sin crisis" name="intenseChatCheckInService shouldOfferWellbeingCheckIn acepta intensidad alta sin crisis" time="0">
+  </testsuite>
+  <testsuite name="CrisisMetricsService" errors="0" failures="0" skipped="0" timestamp="2026-04-03T00:03:21" time="0.845" tests="6">
+    <testcase classname="CrisisMetricsService Métodos del servicio debe tener método getCrisisSummary" name="CrisisMetricsService Métodos del servicio debe tener método getCrisisSummary" time="0.001">
     </testcase>
-    <testcase classname="intenseChatCheckInService shouldOfferWellbeingCheckIn acepta WARNING sin crisis" name="intenseChatCheckInService shouldOfferWellbeingCheckIn acepta WARNING sin crisis" time="0">
+    <testcase classname="CrisisMetricsService Métodos del servicio debe tener método getEmotionalTrends" name="CrisisMetricsService Métodos del servicio debe tener método getEmotionalTrends" time="0">
     </testcase>
-    <testcase classname="intenseChatCheckInService shouldOfferWellbeingCheckIn rechaza LOW normal" name="intenseChatCheckInService shouldOfferWellbeingCheckIn rechaza LOW normal" time="0">
+    <testcase classname="CrisisMetricsService getCrisisSummary debe ser una función" name="CrisisMetricsService getCrisisSummary debe ser una función" time="0">
+    </testcase>
+    <testcase classname="CrisisMetricsService getCrisisSummary debe retornar resumen de crisis" name="CrisisMetricsService getCrisisSummary debe retornar resumen de crisis" time="0.001">
+    </testcase>
+    <testcase classname="CrisisMetricsService getCrisisSummary debe manejar errores correctamente" name="CrisisMetricsService getCrisisSummary debe manejar errores correctamente" time="0.025">
+    </testcase>
+    <testcase classname="CrisisMetricsService getEmotionalTrends debe ser una función" name="CrisisMetricsService getEmotionalTrends debe ser una función" time="0">
     </testcase>
   </testsuite>
 </testsuites>

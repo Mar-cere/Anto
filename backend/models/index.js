@@ -17,6 +17,8 @@ import Journal from './Journal.js';
 import ClinicalScaleResult from './ClinicalScaleResult.js';
 import CognitiveDistortionReport from './CognitiveDistortionReport.js';
 import IntenseChatCheckIn from './IntenseChatCheckIn.js';
+import GuestSession from './GuestSession.js';
+import OpenAITokenUsageDay from './OpenAITokenUsageDay.js';
 
 // Validar que todos los modelos estén correctamente exportados
 const models = {
@@ -39,6 +41,8 @@ const models = {
   ClinicalScaleResult,
   CognitiveDistortionReport,
   IntenseChatCheckIn,
+  GuestSession,
+  OpenAITokenUsageDay,
 };
 
 // Verificar que cada modelo sea válido
@@ -68,6 +72,8 @@ export {
   ClinicalScaleResult,
   CognitiveDistortionReport,
   IntenseChatCheckIn,
+  GuestSession,
+  OpenAITokenUsageDay,
 };
 
 export default models; 

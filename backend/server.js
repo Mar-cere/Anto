@@ -19,6 +19,7 @@ import morgan from 'morgan';
 
 // Importación de configuración y middleware
 import config from './config/config.js';
+import { features } from './config/features.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { sanitizeAll } from './middleware/sanitizeInput.js';
 import { performanceMiddleware } from './middleware/performance.js';
@@ -31,6 +32,7 @@ import { setupSocketIO } from './config/socket.js';
 import { setupSwagger } from './config/swagger.js';
 import authRoutes from './routes/authRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
+import guestChatRoutes from './routes/guestChatRoutes.js';
 import clinicalScalesRoutes from './routes/clinicalScalesRoutes.js';
 import cloudinaryRoutes from './routes/cloudinary.js';
 import cognitiveDistortionsRoutes from './routes/cognitiveDistortionsRoutes.js';
@@ -342,6 +344,7 @@ app.use('/api/habits', habitRoutes);
 app.use('/api/journals', journalRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/chat/guest', guestChatRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/crisis', crisisRoutes);
 app.use('/api/cloudinary', cloudinaryRoutes);
@@ -368,8 +371,8 @@ logger.info('✅ Todas las rutas registradas');
 // Inicializar Sentry si está configurado (después de crear app)
 initializeSentry(app);
 
-// Configurar Swagger (solo en desarrollo o si está habilitado)
-if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true') {
+// Configurar Swagger (solo en desarrollo o si está habilitado en prod)
+if (features.swagger) {
   setupSwagger(app);
   logger.info('✅ Swagger configurado en /api-docs');
 }
@@ -408,7 +411,7 @@ if (process.env.NODE_ENV !== 'test') {
   logger.info(`🔍 Render detectado: ${isRender ? 'Sí' : 'No'}`);
   
   // Iniciar servicio de recordatorios periódicos (solo en producción o si está habilitado, NO en test)
-  if (process.env.ENABLE_REMINDERS !== 'false' && process.env.NODE_ENV !== 'test') {
+  if (features.reminders && process.env.NODE_ENV !== 'test') {
     const REMINDER_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 horas
     
     // Ejecutar inmediatamente al iniciar (solo en producción)
@@ -439,7 +442,7 @@ if (process.env.NODE_ENV !== 'test') {
   }
 
   // Iniciar servicio de seguimiento post-crisis (NO en test)
-  if (process.env.ENABLE_CRISIS_FOLLOWUP !== 'false' && process.env.NODE_ENV !== 'test') {
+  if (features.crisisFollowUp && process.env.NODE_ENV !== 'test') {
     setTimeout(async () => {
       try {
         const crisisFollowUpService = (await import('./services/crisisFollowUpService.js')).default;
@@ -451,7 +454,7 @@ if (process.env.NODE_ENV !== 'test') {
     }, 120000); // Esperar 2 minutos después del inicio para que MongoDB esté listo
   }
 
-  if (process.env.ENABLE_INTENSE_CHAT_CHECKIN !== 'false' && process.env.NODE_ENV !== 'test') {
+  if (features.intenseChatCheckIn && process.env.NODE_ENV !== 'test') {
     setTimeout(async () => {
       try {
         const intenseChatCheckInService = (await import('./services/intenseChatCheckInService.js')).default;
@@ -464,7 +467,7 @@ if (process.env.NODE_ENV !== 'test') {
   }
 
   // Iniciar servicio de programación de notificaciones (NO en test)
-  if (process.env.ENABLE_NOTIFICATION_SCHEDULER !== 'false' && process.env.NODE_ENV !== 'test') {
+  if (features.notificationScheduler && process.env.NODE_ENV !== 'test') {
     setTimeout(async () => {
       try {
         const notificationScheduler = (await import('./services/notificationScheduler.js')).default;
@@ -474,6 +477,19 @@ if (process.env.NODE_ENV !== 'test') {
         logger.error('❌ Error iniciando servicio de programación de notificaciones', { error: error.message });
       }
     }, 180000); // Esperar 3 minutos después del inicio para que MongoDB esté listo
+  }
+
+  // Informe diario de uso OpenAI por correo (NO en test)
+  if (features.openaiDailyCostReport && process.env.NODE_ENV !== 'test') {
+    setTimeout(async () => {
+      try {
+        const { startOpenAIDailyCostReportScheduler } = await import('./services/openaiDailyCostReportService.js');
+        logger.info('📊 Iniciando programación del informe diario OpenAI por correo...');
+        startOpenAIDailyCostReportScheduler();
+      } catch (error) {
+        logger.error('❌ Error iniciando informe diario OpenAI', { error: error.message });
+      }
+    }, 95000);
   }
   });
 }

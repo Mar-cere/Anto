@@ -118,7 +118,13 @@ const userProfileSchema = new mongoose.Schema({
       default: 'MEDIUM'
     },
     topicsOfInterest: [String],
-    triggerTopics: [String]
+    triggerTopics: [String],
+    /** Tono del chat (afecta el system prompt; ver buildChatPreferenceSnippet en openai.js) */
+    chatPreferences: {
+      reduceStockEmpathy: { type: Boolean, default: false },
+      avoidApologyOpenings: { type: Boolean, default: false },
+      preferQuestions: { type: Boolean, default: false }
+    }
   },
   // Métricas de progreso emocional
   progressMetrics: {

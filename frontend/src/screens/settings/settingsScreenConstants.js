@@ -46,6 +46,18 @@ export const TEXTS = {
   SUBSCRIPTION_DESC: 'Gestiona tu suscripción y planes disponibles',
   TRANSACTION_HISTORY: 'Historial de Transacciones',
   TRANSACTION_HISTORY_DESC: 'Ver historial completo de tus pagos y suscripciones',
+  PERSONALIZATION_INTRO:
+    'Ajusta cómo te habla Anto en el chat. Puedes cambiarlo cuando quieras; en situaciones de mucha angustia o riesgo el tono prioriza tu seguridad.',
+  RESPONSE_STYLE_EXPLAINER:
+    'Longitud y forma: breve, equilibrado, profundo, empático, directo, etc. Toca el valor para rotar estilos.',
+  CHAT_TONE_TITLE: 'Tono del chat con Anto',
+  CHAT_TONE_SUB: 'Opcional: menos frases repetidas o más preguntas',
+  CHAT_PREF_LESS_VALIDATION: 'Menos validación genérica',
+  CHAT_PREF_LESS_VALIDATION_DESC: 'Prioriza sustancia y preguntas útiles',
+  CHAT_PREF_NO_APOLOGY: 'Evitar disculpas de apertura',
+  CHAT_PREF_NO_APOLOGY_DESC: 'Menos "lo siento" o "lamento" al empezar',
+  CHAT_PREF_MORE_QUESTIONS: 'Más preguntas, menos monólogo',
+  CHAT_PREF_MORE_QUESTIONS_DESC: 'Respuestas con 1–2 preguntas claras',
 };
 
 export const STORAGE_KEYS = { NOTIFICATIONS: 'notifications' };

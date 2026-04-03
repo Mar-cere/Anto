@@ -58,8 +58,11 @@ export default function ChatInput({
   inputRef,
   placeholder = TEXTS.PLACEHOLDER,
   maxLength = LAYOUT.MAX_MESSAGE_LENGTH,
+  /** p. ej. invitado sin mensajes restantes */
+  sendDisabled = false,
 }) {
   const isEmpty = (value || '').trim() === '';
+  const cannotSend = isEmpty || sendDisabled;
 
   return (
     <KeyboardAvoidingView
@@ -80,14 +83,14 @@ export default function ChatInput({
         maxLength={maxLength}
       />
       <TouchableOpacity
-        style={[styles.sendButton, isEmpty && styles.sendButtonDisabled]}
+        style={[styles.sendButton, cannotSend && styles.sendButtonDisabled]}
         onPress={onSend}
-        disabled={isEmpty}
+        disabled={cannotSend}
       >
         <Ionicons
           name="send"
           size={ICON_SIZES.SEND}
-          color={isEmpty ? CHAT_COLORS.ACCENT : CHAT_COLORS.PRIMARY}
+          color={cannotSend ? CHAT_COLORS.ACCENT : CHAT_COLORS.PRIMARY}
         />
       </TouchableOpacity>
     </KeyboardAvoidingView>

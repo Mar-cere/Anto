@@ -148,6 +148,11 @@ const updateProfileSchema = Joi.object({
     responseStyle: Joi.string().valid('brief', 'balanced', 'deep', 'empatico', 'profesional', 'directo', 'calido', 'estructurado'),
     privacy: Joi.object({
       profileVisibility: Joi.string().valid('public', 'private', 'friends')
+    }),
+    chatPreferences: Joi.object({
+      reduceStockEmpathy: Joi.boolean(),
+      avoidApologyOpenings: Joi.boolean(),
+      preferQuestions: Joi.boolean()
     })
   }).optional(),
   notificationPreferences: Joi.object({
@@ -170,6 +175,27 @@ const updateProfileSchema = Joi.object({
     })
   }).optional(),
 });
+
+const DEFAULT_CHAT_PREFERENCES = {
+  reduceStockEmpathy: false,
+  avoidApologyOpenings: false,
+  preferQuestions: false
+};
+
+/** Inyecta preferencias de tono del chat desde UserProfile (no van en el documento User). */
+async function attachChatPreferencesToUserPayload(userId, payload) {
+  const cp = await UserProfile.findOne({ userId }).select('preferences.chatPreferences').lean();
+  return {
+    ...payload,
+    preferences: {
+      ...(payload.preferences || {}),
+      chatPreferences: {
+        ...DEFAULT_CHAT_PREFERENCES,
+        ...(cp?.preferences?.chatPreferences || {})
+      }
+    }
+  };
+}
 
 const updatePasswordSchema = Joi.object({
   currentPassword: Joi.string().required().messages({
@@ -199,7 +225,8 @@ router.get('/me', authenticateToken, validateUserObjectId, async (req, res) => {
     const cachedUser = await cacheService.get(cacheKey);
     
     if (cachedUser) {
-      return res.json(cachedUser);
+      const merged = await attachChatPreferencesToUserPayload(userId, cachedUser);
+      return res.json(merged);
     }
 
     const user = await findUserById(userId, '-password -salt -__v -resetPasswordCode -resetPasswordExpires', true);
@@ -219,11 +246,11 @@ router.get('/me', authenticateToken, validateUserObjectId, async (req, res) => {
     // Calcular días desde el registro
     const daysSinceRegistration = calculateDaysSince(user.createdAt);
 
-    const userResponse = {
+    const userResponse = await attachChatPreferencesToUserPayload(userId, {
       ...user,
       timeSinceLastLogin,
       daysSinceRegistration
-    };
+    });
 
     // Guardar en caché por 5 minutos (no crítico si falla)
     try {
@@ -340,13 +367,24 @@ router.put('/me', authenticateToken, validateUserObjectId, updateProfileLimiter,
       }
     }
 
+    const chatPrefsPayload = value.preferences?.chatPreferences;
+    const valueForUpdate = { ...value };
+    if (value.preferences) {
+      const { chatPreferences: _chatPref, ...restPrefs } = value.preferences;
+      if (Object.keys(restPrefs).length > 0) {
+        valueForUpdate.preferences = restPrefs;
+      } else {
+        delete valueForUpdate.preferences;
+      }
+    }
+
     // Actualizar campos (merge para objetos anidados)
-    Object.keys(value).forEach(key => {
+    Object.keys(valueForUpdate).forEach(key => {
       if (key === 'preferences') {
         // Asegurar que user.preferences existe antes de hacer el spread
         user.preferences = {
           ...(user.preferences || {}),
-          ...value.preferences
+          ...valueForUpdate.preferences
         };
       } else if (key === 'notificationPreferences') {
         // Asegurar que user.notificationPreferences existe antes de hacer el spread
@@ -355,30 +393,39 @@ router.put('/me', authenticateToken, validateUserObjectId, updateProfileLimiter,
           ...value.notificationPreferences
         };
       } else {
-        user[key] = value[key];
+        user[key] = valueForUpdate[key];
       }
     });
 
     // Guardar (Mongoose timestamps maneja updatedAt automáticamente)
     await user.save();
 
-    // Sincronizar preferencias de chat (responseStyle) a UserProfile para unificar fuentes
-    if (value.preferences?.responseStyle) {
+    // Sincronizar responseStyle y/o chatPreferences a UserProfile (fuente de verdad del tono del chat)
+    if (value.preferences?.responseStyle || chatPrefsPayload !== undefined) {
       const profile = await UserProfile.findOne({ userId }).select('preferences').lean();
-      if (profile) {
-        await userProfileService.updatePreferences(userId, {
-          ...(profile.preferences || {}),
-          responseStyle: value.preferences.responseStyle
-        });
+      const nextPrefs = { ...(profile?.preferences || {}) };
+      if (value.preferences?.responseStyle) {
+        nextPrefs.responseStyle = value.preferences.responseStyle;
       }
+      if (chatPrefsPayload !== undefined) {
+        nextPrefs.chatPreferences = {
+          ...DEFAULT_CHAT_PREFERENCES,
+          ...(profile?.preferences?.chatPreferences || {}),
+          ...chatPrefsPayload
+        };
+      }
+      await userProfileService.updatePreferences(userId, nextPrefs);
     }
 
     // Invalidar caché del usuario (userId ya está declarado arriba)
     await cacheService.invalidateUserCache(userId);
 
+    const userJson = user.toJSON();
+    const userWithChatPrefs = await attachChatPreferencesToUserPayload(userId, userJson);
+
     res.json({
       message: 'Perfil actualizado correctamente',
-      user: user.toJSON()
+      user: userWithChatPrefs
     });
   } catch (error) {
     logger.error('Error al actualizar usuario', { error: error.message, userId: req.user._id });

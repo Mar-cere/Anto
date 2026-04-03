@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api, { API_URL } from '../config/api';
 import { Platform } from 'react-native';
+import { GUEST_CHAT_STORAGE_KEYS as GUEST_KEYS } from '../constants/guestChatStorageKeys';
 
 const API_BASE_URL = 'https://antobackend.onrender.com';
 
@@ -106,7 +107,190 @@ export const sendMessage = async (text) => {
  * @param {Object} callbacks - { onChunk(content: string), onDone(payload: object) }
  * @returns {Promise<void>}
  */
+export const isGuestChatMode = async () => {
+  const mode = await AsyncStorage.getItem(GUEST_KEYS.CHAT_MODE);
+  const t = await AsyncStorage.getItem(GUEST_KEYS.GUEST_TOKEN);
+  return mode === 'guest' && !!t;
+};
+
+/** Crea sesión invitada en el servidor y guarda token + conversación localmente. */
+export const startGuestChatSession = async () => {
+  const response = await fetch(`${API_URL}/api/chat/guest/session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  let data = {};
+  try {
+    data = await response.json();
+  } catch (_) {}
+  if (response.status === 429) {
+    const err = new Error(
+      data.message || 'Demasiados intentos. Espera un poco o crea una cuenta.'
+    );
+    err.code = 'RATE_LIMIT';
+    throw err;
+  }
+  if (!response.ok) {
+    throw new Error(data.message || 'No se pudo iniciar el chat de invitado');
+  }
+  await AsyncStorage.multiSet([
+    [GUEST_KEYS.CHAT_MODE, 'guest'],
+    [GUEST_KEYS.GUEST_TOKEN, data.guestToken],
+    [GUEST_KEYS.GUEST_CONVERSATION_ID, data.conversationId],
+  ]);
+  return data;
+};
+
+export const clearGuestChat = async () => {
+  await AsyncStorage.multiRemove([
+    GUEST_KEYS.CHAT_MODE,
+    GUEST_KEYS.GUEST_TOKEN,
+    GUEST_KEYS.GUEST_CONVERSATION_ID,
+  ]);
+};
+
+const HANDOFF_MAX_LEN = 1500;
+
+function buildGuestHandoffSummary(messages) {
+  if (!messages?.length) return '';
+  const sorted = [...messages].sort((a, b) => {
+    const ta = new Date(a.createdAt || a.metadata?.timestamp || 0).getTime();
+    const tb = new Date(b.createdAt || b.metadata?.timestamp || 0).getTime();
+    return ta - tb;
+  });
+  const slice = sorted.slice(-12);
+  const lines = slice.map((m) => {
+    const role = m.role === 'user' ? 'Yo' : 'Anto';
+    const content = (m.content || '').trim().replace(/\s+/g, ' ');
+    const short = content.length > 220 ? `${content.slice(0, 217)}…` : content;
+    return `${role}: ${short}`;
+  });
+  let text = lines.join('\n');
+  if (text.length > HANDOFF_MAX_LEN) {
+    text = `${text.slice(0, HANDOFF_MAX_LEN - 1)}…`;
+  }
+  return text;
+}
+
+/**
+ * Antes de borrar la sesión invitada al iniciar sesión, guarda un resumen local
+ * para ofrecer continuidad en el chat con cuenta (consentimiento en la UI).
+ */
+export async function prepareGuestHandoffBeforeClear() {
+  try {
+    if (!(await isGuestChatMode())) return;
+    const convId = await AsyncStorage.getItem(GUEST_KEYS.GUEST_CONVERSATION_ID);
+    if (!convId) return;
+    const messages = await getGuestMessages(convId);
+    if (!messages.length) return;
+    const summaryText = buildGuestHandoffSummary(messages);
+    await AsyncStorage.setItem(
+      GUEST_KEYS.GUEST_HANDOFF_PENDING,
+      JSON.stringify({
+        summaryText,
+        messageCount: messages.length,
+        createdAt: new Date().toISOString(),
+      })
+    );
+  } catch (e) {
+    console.warn('[GuestHandoff] No se pudo preparar el resumen:', e?.message || e);
+  }
+}
+
+export async function clearGuestHandoff() {
+  try {
+    await AsyncStorage.removeItem(GUEST_KEYS.GUEST_HANDOFF_PENDING);
+  } catch (_) {}
+}
+
+export const getGuestMessages = async (conversationId) => {
+  const token = await AsyncStorage.getItem(GUEST_KEYS.GUEST_TOKEN);
+  if (!token || !conversationId) return [];
+  const response = await fetch(
+    `${API_URL}/api/chat/guest/conversations/${encodeURIComponent(conversationId)}/messages`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (response.status === 401) {
+    await clearGuestChat();
+    const err = new Error('Sesión de invitado expirada o no válida');
+    err.guestAuthFailed = true;
+    err.code = 'GUEST_AUTH_FAILED';
+    throw err;
+  }
+  if (response.status === 429) {
+    const data = await response.json().catch(() => ({}));
+    const err = new Error(data.message || 'Demasiadas peticiones. Espera un momento.');
+    err.code = 'RATE_LIMIT';
+    throw err;
+  }
+  if (!response.ok) return [];
+  const data = await response.json().catch(() => ({}));
+  return data.messages || [];
+};
+
+async function postGuestMessage(text, conversationId, token) {
+  const response = await fetch(`${API_URL}/api/chat/guest/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ conversationId, content: text }),
+  });
+  let data = {};
+  try {
+    data = await response.json();
+  } catch (_) {}
+  if (response.status === 401) {
+    await clearGuestChat();
+    const err = new Error(data.message || 'Sesión de invitado expirada o no válida');
+    err.guestAuthFailed = true;
+    err.code = data.code || 'GUEST_AUTH_FAILED';
+    throw err;
+  }
+  if (response.status === 429) {
+    const err = new Error(data.message || 'Demasiados mensajes. Espera un momento.');
+    err.code = 'RATE_LIMIT';
+    throw err;
+  }
+  if (response.status === 403 && data.code === 'GUEST_LIMIT_REACHED') {
+    const err = new Error(data.message || 'Límite de mensajes de invitado');
+    err.code = 'GUEST_LIMIT_REACHED';
+    err.maxUserMessages = data.maxUserMessages;
+    err.requiresAccount = true;
+    err.response = { status: 403, data };
+    throw err;
+  }
+  if (!response.ok) {
+    const e = new Error(data.message || 'Error al enviar el mensaje');
+    e.response = { status: response.status, data };
+    throw e;
+  }
+  return data;
+}
+
 export const sendMessageStream = async (text, { onChunk, onDone }) => {
+  if (await isGuestChatMode()) {
+    const conversationId = await AsyncStorage.getItem(GUEST_KEYS.GUEST_CONVERSATION_ID);
+    const token = await AsyncStorage.getItem(GUEST_KEYS.GUEST_TOKEN);
+    if (!conversationId || !token) {
+      throw new Error('Sesión de invitado no válida');
+    }
+    const data = await postGuestMessage(text, conversationId, token);
+    if (data?.assistantMessage?.content && onChunk) onChunk(data.assistantMessage.content);
+    if (onDone) {
+      onDone({
+        done: true,
+        messageId: data?.assistantMessage?._id?.toString?.() || data?.assistantMessage?._id,
+        content: data?.assistantMessage?.content ?? '',
+        suggestions: data?.suggestions,
+        context: data?.context,
+        guest: data?.guest,
+      });
+    }
+    return;
+  }
+
   let conversationId = await AsyncStorage.getItem('currentConversationId');
   if (!conversationId) {
     conversationId = await createConversation();
@@ -319,6 +503,33 @@ export const createConversation = async () => {
   }
 };
 
+/**
+ * Valoración rápida de un mensaje del asistente (solo cuenta con sesión registrada).
+ * @param {string} messageId - _id Mongo del mensaje
+ * @param {'up' | 'down' | null} helpful - null quita la valoración
+ * @throws {Error} code NO_AUTH | INVALID_ID | INVALID_HELPFUL o error de red/API
+ */
+export const submitMessageFeedback = async (messageId, helpful) => {
+  const token = await AsyncStorage.getItem('userToken');
+  if (!token) {
+    const e = new Error('Sesión requerida');
+    e.code = 'NO_AUTH';
+    throw e;
+  }
+  const id = String(messageId ?? '').trim();
+  if (!/^[\da-f]{24}$/i.test(id)) {
+    const e = new Error('ID de mensaje inválido');
+    e.code = 'INVALID_ID';
+    throw e;
+  }
+  if (helpful !== null && helpful !== 'up' && helpful !== 'down') {
+    const e = new Error('Valor de helpful inválido');
+    e.code = 'INVALID_HELPFUL';
+    throw e;
+  }
+  return api.patch(`/api/chat/messages/${id}/feedback`, { helpful });
+};
+
 // Agregar función para obtener mensajes
 export const getMessages = async (conversationId) => {
   try {
@@ -334,11 +545,18 @@ export default {
   initializeSocket,
   sendMessage,
   sendMessageStream,
+  submitMessageFeedback,
   onMessage,
   onError,
   saveMessages,
   loadMessages,
   clearMessages,
   closeSocket,
-  getMessages
+  getMessages,
+  isGuestChatMode,
+  startGuestChatSession,
+  clearGuestChat,
+  getGuestMessages,
+  prepareGuestHandoffBeforeClear,
+  clearGuestHandoff,
 }; 

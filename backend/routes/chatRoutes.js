@@ -4,7 +4,11 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import { evaluateSuicideRisk } from '../constants/crisis.js';
-import { HISTORY_LIMITS } from '../constants/openai.js';
+import {
+  analyzeAssistantResponseTemplateSignals,
+  encodeChatPreferencesKey
+} from '../services/chat/chatTemplateSignals.js';
+import { buildHistoryForPromptFromMessages } from '../services/openai/openaiPromptBuilder.js';
 import { authenticateToken as protect } from '../middleware/auth.js';
 import { requireActiveSubscription } from '../middleware/checkSubscription.js';
 import CrisisEvent from '../models/CrisisEvent.js';
@@ -44,6 +48,7 @@ import {
   HISTORIAL_LIMITE,
   deleteConversationLimiter,
   patchMessageLimiter,
+  messageFeedbackLimiter,
   sendMessageLimiter,
   isValidObjectId,
   validarConversationId,
@@ -709,14 +714,17 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
 
         // 4. Generar respuesta usando el análisis ya realizado (mensaje ya guardado arriba)
         // Preparar historial de conversación en formato para el prompt
-        const historialParaPrompt = conversationHistory
-          .slice(0, HISTORY_LIMITS.MESSAGES_IN_PROMPT) // Últimos N mensajes (ya están ordenados descendente)
-          .reverse() // Invertir para orden cronológico (más antiguo primero)
-          .map(msg => ({
-            role: msg.role || 'user',
-            content: msg.content || ''
-          }))
-          .filter(msg => msg.content.trim().length > 0);
+        const historialParaPrompt = buildHistoryForPromptFromMessages(conversationHistory, {
+          emotional: emotionalAnalysis,
+          contextual: contextualAnalysis,
+          currentMessage: content,
+          _promptTelemetry: {
+            userId: req.user._id,
+            conversationId,
+            source: 'http',
+            callSite: 'buildHistoryForPromptFromMessages'
+          }
+        });
 
         logs.push(`[${Date.now() - startTime}ms] Generando respuesta con análisis previo`);
         
@@ -740,6 +748,12 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           depthPreference: depthAnalysis?.depthPreference,
           inferredWritingStyle: writingStyle?.style,
           preferredResponseLength: engagement?.preferredResponseLength,
+          _promptTelemetry: {
+            userId: req.user._id,
+            conversationId,
+            source: 'http',
+            callSite: 'buildHistoryForPromptFromMessages'
+          },
           crisis: isCrisis ? {
             riskLevel,
             country: userProfile?.preferences?.country || 'GENERAL',
@@ -801,6 +815,24 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                     await assistantMessage.save();
                   } else throw saveError;
                 }
+
+                metricsService
+                  .recordMetric(
+                    'chat_template_signals',
+                    {
+                      ...analyzeAssistantResponseTemplateSignals(response.content, content),
+                      responseStyle: combinedProfile?.preferences?.responseStyle || 'balanced',
+                      chatPrefsKey: encodeChatPreferencesKey(combinedProfile?.preferences?.chatPreferences)
+                    },
+                    req.user._id.toString(),
+                    {
+                      conversationId: String(conversationId),
+                      responseStyle: combinedProfile?.preferences?.responseStyle || 'balanced',
+                      chatPrefsKey: encodeChatPreferencesKey(combinedProfile?.preferences?.chatPreferences),
+                      riskLevel
+                    }
+                  )
+                  .catch(() => {});
 
                 intenseChatCheckInService
                   .maybeSchedule({
@@ -922,6 +954,24 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             throw saveError;
           }
         }
+
+        metricsService
+          .recordMetric(
+            'chat_template_signals',
+            {
+              ...analyzeAssistantResponseTemplateSignals(response.content, content),
+              responseStyle: combinedProfile?.preferences?.responseStyle || 'balanced',
+              chatPrefsKey: encodeChatPreferencesKey(combinedProfile?.preferences?.chatPreferences)
+            },
+            req.user._id.toString(),
+            {
+              conversationId: String(conversationId),
+              responseStyle: combinedProfile?.preferences?.responseStyle || 'balanced',
+              chatPrefsKey: encodeChatPreferencesKey(combinedProfile?.preferences?.chatPreferences),
+              riskLevel
+            }
+          )
+          .catch(() => {});
 
         intenseChatCheckInService
           .maybeSchedule({
@@ -1196,6 +1246,70 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
       message: 'Error crítico al procesar el mensaje',
       error: error.message,
       logs
+    });
+  }
+});
+
+// Feedback rápido (útil / poco útil) en mensajes del asistente — usuarios registrados
+router.patch('/messages/:messageId/feedback', protect, messageFeedbackLimiter, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { helpful } = req.body;
+
+    if (!mongoose.isValidObjectId(messageId)) {
+      return res.status(400).json({ message: 'ID de mensaje inválido' });
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(req.body, 'helpful')) {
+      return res.status(400).json({ message: 'Se requiere el campo helpful' });
+    }
+
+    if (helpful !== null && helpful !== 'up' && helpful !== 'down') {
+      return res.status(400).json({ message: 'helpful debe ser "up", "down" o null' });
+    }
+
+    const oid = new mongoose.Types.ObjectId(messageId);
+    const feedbackPayload =
+      helpful === null
+        ? null
+        : { helpful, at: new Date().toISOString() };
+
+    const update =
+      helpful === null
+        ? { $unset: { 'metadata.userFeedback': '' } }
+        : { $set: { 'metadata.userFeedback': feedbackPayload } };
+
+    const updated = await Message.findOneAndUpdate(
+      { _id: oid, userId: req.user._id, role: 'assistant' },
+      update,
+      { new: true, runValidators: false }
+    )
+      .select('conversationId metadata.userFeedback')
+      .lean();
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Mensaje no encontrado o no es un mensaje del asistente' });
+    }
+
+    metricsService
+      .recordMetric(
+        'message_feedback',
+        { helpful: helpful === null ? 'cleared' : helpful, messageId: String(oid) },
+        req.user._id.toString(),
+        { conversationId: String(updated.conversationId) }
+      )
+      .catch(() => {});
+
+    res.json({
+      success: true,
+      messageId: String(oid),
+      userFeedback: updated.metadata?.userFeedback ?? null
+    });
+  } catch (error) {
+    console.error('[ChatRoutes] Error en PATCH /messages/:messageId/feedback:', error);
+    res.status(500).json({
+      message: 'Error al guardar la valoración',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });

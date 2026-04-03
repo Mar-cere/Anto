@@ -31,6 +31,7 @@ export default function SettingsScreen() {
     handleDeleteAccount,
     handleTogglePushNotifications,
     handleCycleResponseStyle,
+    handleChatPreferenceChange,
     handleTestNotification,
   } = useSettingsScreen({ navigation });
 
@@ -43,6 +44,7 @@ export default function SettingsScreen() {
         pushNotificationsEnabled={pushNotificationsEnabled}
         onTogglePushNotifications={handleTogglePushNotifications}
         onCycleResponseStyle={handleCycleResponseStyle}
+        onChatPreferenceChange={handleChatPreferenceChange}
         onShowLogoutModal={() => setShowLogoutModal(true)}
         onShowDeleteModal={() => setShowDeleteModal(true)}
         onTestNotification={handleTestNotification}

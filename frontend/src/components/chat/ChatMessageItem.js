@@ -2,9 +2,11 @@
  * Renderiza un ítem del chat: burbuja de mensaje (usuario/asistente/error) o bloque de sugerencias.
  */
 
+import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import ActionSuggestionCard from '../ActionSuggestionCard';
+import QuickReplyChips from './QuickReplyChips';
 import MarkdownText from '../MarkdownText';
 import {
   CHAT_COLORS,
@@ -145,11 +147,76 @@ const styles = StyleSheet.create({
   streamingDotUser: {
     backgroundColor: CHAT_COLORS.USER_TEXT,
   },
+  botColumn: {
+    maxWidth: '88%',
+    alignSelf: 'flex-start',
+  },
+  feedbackRow: {
+    marginTop: 6,
+    marginBottom: LAYOUT.MESSAGE_CONTAINER_MARGIN_BOTTOM,
+    paddingLeft: 2,
+  },
+  feedbackHint: {
+    fontSize: 11,
+    color: CHAT_COLORS.ACCENT,
+    opacity: 0.75,
+    marginBottom: 6,
+  },
+  feedbackButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  feedbackButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+  },
 });
 
-function ChatMessageItem({ item, onSuggestionPress, onSuggestionDismiss }) {
+function isValidMongoMessageId(id) {
+  const s = id != null ? String(id) : '';
+  return /^[a-f0-9]{24}$/i.test(s);
+}
+
+function ChatMessageItem({
+  item,
+  onSuggestionPress,
+  onSuggestionDismiss,
+  onQuickReply,
+  onQuickReplyDismiss,
+  feedbackEnabled,
+  onMessageFeedback,
+  feedbackSubmittingId,
+}) {
   const message = item.userMessage || item.assistantMessage || item;
   const isUser = message.role === MESSAGE_ROLES.USER;
+  const rawId = message._id || message.id;
+  const showFeedback =
+    feedbackEnabled &&
+    !isUser &&
+    !message.metadata?.streaming &&
+    (message.content || '').trim().length > 0 &&
+    isValidMongoMessageId(rawId) &&
+    message.type !== MESSAGE_TYPES.ERROR;
+  const currentVote = message.metadata?.userFeedback?.helpful;
+  const feedbackBusy =
+    Boolean(feedbackSubmittingId) && String(feedbackSubmittingId) === String(rawId);
+
+  const handleThumb = (dir) => {
+    if (!onMessageFeedback || !showFeedback || feedbackBusy) return;
+    const next = currentVote === dir ? null : dir;
+    onMessageFeedback(String(rawId), next);
+  };
+
+  if (message.type === MESSAGE_TYPES.QUICK_REPLIES && message.replies?.length) {
+    return (
+      <QuickReplyChips
+        replies={message.replies}
+        compact={Boolean(message.metadata?.compact)}
+        onSelect={onQuickReply}
+        onDismiss={onQuickReplyDismiss ? () => onQuickReplyDismiss(message) : undefined}
+      />
+    );
+  }
 
   if (message.type === 'suggestions' && message.suggestions) {
     return (
@@ -167,6 +234,34 @@ function ChatMessageItem({ item, onSuggestionPress, onSuggestionDismiss }) {
     );
   }
 
+  const bubble = (
+    <View
+      style={[
+        styles.messageBubble,
+        isUser ? styles.userBubble : styles.botBubble,
+        message.type === MESSAGE_TYPES.ERROR && styles.errorBubble,
+      ]}
+    >
+      {message.metadata?.streaming && !message.content ? (
+        <StreamingDots isBot={!isUser} />
+      ) : (
+        <MarkdownText
+          style={[
+            styles.messageText,
+            isUser ? styles.userMessageText : styles.botMessageText,
+            message.type === MESSAGE_TYPES.ERROR && styles.errorText,
+          ]}
+          boldStyle={[
+            styles.messageTextBold,
+            isUser ? styles.userMessageTextBold : styles.botMessageTextBold,
+          ]}
+        >
+          {message.content}
+        </MarkdownText>
+      )}
+    </View>
+  );
+
   return (
     <View
       style={[
@@ -174,31 +269,48 @@ function ChatMessageItem({ item, onSuggestionPress, onSuggestionDismiss }) {
         isUser ? styles.userMessageContainer : styles.botMessageContainer,
       ]}
     >
-      <View
-        style={[
-          styles.messageBubble,
-          isUser ? styles.userBubble : styles.botBubble,
-          message.type === MESSAGE_TYPES.ERROR && styles.errorBubble,
-        ]}
-      >
-        {message.metadata?.streaming && !message.content ? (
-          <StreamingDots isBot={!isUser} />
-        ) : (
-          <MarkdownText
-            style={[
-              styles.messageText,
-              isUser ? styles.userMessageText : styles.botMessageText,
-              message.type === MESSAGE_TYPES.ERROR && styles.errorText,
-            ]}
-            boldStyle={[
-              styles.messageTextBold,
-              isUser ? styles.userMessageTextBold : styles.botMessageTextBold,
-            ]}
-          >
-            {message.content}
-          </MarkdownText>
-        )}
-      </View>
+      {isUser ? (
+        bubble
+      ) : (
+        <View style={styles.botColumn}>
+          {bubble}
+          {showFeedback ? (
+            <View style={styles.feedbackRow}>
+              <Text style={styles.feedbackHint}>{TEXTS.FEEDBACK_HINT}</Text>
+              <View style={styles.feedbackButtons}>
+                <TouchableOpacity
+                  style={[styles.feedbackButton, { marginRight: 14 }]}
+                  onPress={() => handleThumb('up')}
+                  disabled={feedbackBusy}
+                  accessibilityLabel={TEXTS.FEEDBACK_HELPFUL}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: currentVote === 'up', disabled: feedbackBusy }}
+                >
+                  <Ionicons
+                    name={currentVote === 'up' ? 'thumbs-up' : 'thumbs-up-outline'}
+                    size={20}
+                    color={currentVote === 'up' ? CHAT_COLORS.PRIMARY : CHAT_COLORS.ACCENT}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.feedbackButton}
+                  onPress={() => handleThumb('down')}
+                  disabled={feedbackBusy}
+                  accessibilityLabel={TEXTS.FEEDBACK_NOT_HELPFUL}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: currentVote === 'down', disabled: feedbackBusy }}
+                >
+                  <Ionicons
+                    name={currentVote === 'down' ? 'thumbs-down' : 'thumbs-down-outline'}
+                    size={20}
+                    color={currentVote === 'down' ? CHAT_COLORS.PRIMARY : CHAT_COLORS.ACCENT}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : null}
+        </View>
+      )}
     </View>
   );
 }

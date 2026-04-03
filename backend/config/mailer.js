@@ -521,6 +521,68 @@ const emailTemplates = {
         </div>
       `
     };
+  },
+
+  /**
+   * Informe diario de uso de tokens OpenAI (visibilidad de coste operativo).
+   */
+  openaiDailyCostReport: (dateKey, stats, model, environment) => {
+    const requests = stats?.requests ?? 0;
+    const promptTokens = stats?.promptTokens ?? 0;
+    const completionTokens = stats?.completionTokens ?? 0;
+    const totalTokens = stats?.totalTokens ?? 0;
+    const empty = requests === 0 && totalTokens === 0;
+    const modelLine = model ? String(model) : '—';
+    const envLine = environment ? String(environment) : '—';
+
+    return {
+      subject: `Uso OpenAI (${dateKey} UTC) — ${APP_NAME_FULL}`,
+      html: `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: ${EMAIL_COLORS.BACKGROUND};">
+          ${getEmailHeader('Informe diario OpenAI')}
+          
+          <div style="background: rgba(20, 28, 56, 0.92); backdrop-filter: blur(12px); margin: -24px 24px 24px 24px; padding: 32px 24px; border-radius: 18px; box-shadow: 0 8px 32px rgba(31,38,135,0.10); border: 1px solid rgba(255,255,255,0.10);">
+            <p style="color: ${EMAIL_COLORS.TEXT_WHITE}; font-size: 1.05rem; line-height: 1.7; margin-bottom: 20px;">
+              Resumen del día <strong style="color: ${EMAIL_COLORS.ACCENT};">${dateKey}</strong> (zona horaria UTC). Los totales se persisten en la base de datos de la app (agregado por este servidor).
+            </p>
+            <p style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 0.95rem; margin-bottom: 24px;">
+              Modelo: <strong style="color: ${EMAIL_COLORS.TEXT_WHITE};">${modelLine}</strong><br>
+              Entorno: <strong style="color: ${EMAIL_COLORS.TEXT_WHITE};">${envLine}</strong>
+            </p>
+
+            ${
+              empty
+                ? `<p style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 1rem;">No se registró uso de completions en este servicio para ese día (o aún no hay datos).</p>`
+                : `
+            <table style="width: 100%; border-collapse: collapse; color: ${EMAIL_COLORS.TEXT_WHITE}; font-size: 1rem;">
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.15);">
+                <td style="padding: 10px 0;">Completions (requests)</td>
+                <td style="padding: 10px 0; text-align: right; font-weight: 700;">${requests.toLocaleString('es-CL')}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.15);">
+                <td style="padding: 10px 0;">Tokens de prompt</td>
+                <td style="padding: 10px 0; text-align: right; font-weight: 700;">${promptTokens.toLocaleString('es-CL')}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.15);">
+                <td style="padding: 10px 0;">Tokens de completion</td>
+                <td style="padding: 10px 0; text-align: right; font-weight: 700;">${completionTokens.toLocaleString('es-CL')}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0;">Total tokens (API)</td>
+                <td style="padding: 10px 0; text-align: right; font-weight: 700; color: ${EMAIL_COLORS.ACCENT};">${totalTokens.toLocaleString('es-CL')}</td>
+              </tr>
+            </table>
+            <p style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 0.9rem; margin-top: 20px;">
+              Para el coste en dinero exacto, revisa el panel de uso y facturación en la cuenta de OpenAI (los precios por modelo cambian).
+            </p>
+            `
+            }
+          </div>
+
+          ${getEmailFooter()}
+        </div>
+      `
+    };
   }
 };
 
@@ -811,6 +873,21 @@ const mailer = {
     } catch (error) {
       // No lanzamos el error para que no afecte otros procesos
       console.error('[Mailer] ❌ Error al enviar correo de tips semanales (no crítico):', error.message);
+      return false;
+    }
+  },
+
+  /**
+   * Informe diario de uso de tokens OpenAI (misma tubería que el resto de correos).
+   * @param {string} email - Destinatario
+   * @param {{ dateKey: string, stats: object | null, model: string, environment: string }} payload
+   */
+  sendOpenAIDailyCostReport: async (email, { dateKey, stats, model, environment }) => {
+    try {
+      const template = emailTemplates.openaiDailyCostReport(dateKey, stats, model, environment);
+      return await sendEmail(email, template, 'Informe diario OpenAI');
+    } catch (error) {
+      console.error('[Mailer] ❌ Error al enviar informe diario OpenAI:', error.message);
       return false;
     }
   },

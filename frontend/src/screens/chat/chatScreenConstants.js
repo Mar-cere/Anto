@@ -3,6 +3,7 @@
  */
 
 import { Dimensions } from 'react-native';
+import { GUEST_CHAT_STORAGE_KEYS } from '../../constants/guestChatStorageKeys';
 import { colors } from '../../styles/globalStyles';
 
 const { width } = Dimensions.get('window');
@@ -25,6 +26,9 @@ export const TEXTS = {
   TITLE: 'Anto',
   SUGGESTIONS_TITLE: '💡 Sugerencias para ti:',
   NETWORK_ERROR: 'Sin conexión a internet. Por favor, verifica tu conexión e intenta nuevamente.',
+  OFFLINE_PENDING_ONE:
+    'Tienes 1 mensaje pendiente. Se enviará al reconectar o puedes reintentar cuando haya conexión.',
+  OFFLINE_PENDING_RETRY: 'Reintentar envío',
   CONVERSATION_ERROR: 'Hubo un problema al iniciar la conversación. Por favor, intenta de nuevo.',
   AI_MODAL_TITLE: 'Transparencia sobre IA',
   AI_MODAL_MESSAGE:
@@ -32,13 +36,39 @@ export const TEXTS = {
   AI_MODAL_POLICY: 'Ver política de privacidad',
   AI_MODAL_DETAILS: 'Ver detalles de Privacidad e IA',
   AI_MODAL_CONTINUE: 'Entendido',
+  GUEST_LIMIT_TITLE: 'Límite de mensajes',
+  GUEST_LIMIT_MESSAGE:
+    'Has alcanzado el máximo de mensajes sin cuenta. Crea una cuenta o inicia sesión para seguir chateando con Anto.',
+  GUEST_SESSION_EXPIRED_TITLE: 'Sesión de invitado finalizada',
+  GUEST_SESSION_EXPIRED_MESSAGE:
+    'Tu sesión sin cuenta ha caducado o ya no es válida. Puedes crear una cuenta o iniciar sesión para seguir.',
+  GUEST_RATE_LIMIT_TITLE: 'Demasiadas peticiones',
+  GUEST_CONTENT_TOO_LONG_TITLE: 'Mensaje demasiado largo',
+  QUICK_REPLIES_TITLE: 'Respuestas rápidas',
+  /** Cuando ya hay tarjetas de técnicas encima */
+  QUICK_REPLIES_TITLE_COMPACT: 'O con un toque:',
+  QUICK_REPLIES_DISMISS: 'Ocultar',
+  QUICK_REPLIES_HINT: 'Envía esta respuesta en el chat',
+  GUEST_HANDOFF_TITLE: 'Resumen del chat sin cuenta',
+  GUEST_HANDOFF_BODY:
+    'Podés cargar un resumen editable en el mensaje o empezar de cero con tu cuenta.',
+  GUEST_HANDOFF_PRIVACY:
+    'El resumen solo está guardado en este dispositivo hasta que elijas una opción; no se envía solo ni automáticamente.',
+  GUEST_HANDOFF_USE_SUMMARY: 'Usar resumen en el mensaje',
+  GUEST_HANDOFF_START_FRESH: 'Empezar limpio',
+  FEEDBACK_HELPFUL: 'Útil',
+  FEEDBACK_NOT_HELPFUL: 'Poco útil',
+  FEEDBACK_HINT: '¿Te resultó útil esta respuesta?',
+  FEEDBACK_ERROR: 'No se pudo guardar tu valoración. Intenta de nuevo.',
+  FEEDBACK_OFFLINE: 'Necesitas conexión para enviar la valoración.',
 };
 
-// AsyncStorage
+// AsyncStorage (claves invitado: `constants/guestChatStorageKeys.js` — compartidas con chatService)
 export const STORAGE_KEYS = {
   CONVERSATION_ID: 'currentConversationId',
   TRIAL_BANNER_DISMISSED: 'trialBannerDismissed',
   AI_DISCLOSURE_ACK: 'aiDisclosureAcceptedV1',
+  ...GUEST_CHAT_STORAGE_KEYS,
 };
 
 // Tipos y roles
@@ -46,6 +76,7 @@ export const MESSAGE_TYPES = {
   TEXT: 'text',
   ERROR: 'error',
   WELCOME: 'welcome',
+  QUICK_REPLIES: 'quickReplies',
 };
 
 export const MESSAGE_ROLES = {
@@ -125,7 +156,16 @@ export const LAYOUT = {
   FLATLIST_INITIAL_NUM_TO_RENDER: 15,
   FLATLIST_WINDOW_SIZE: 10,
   FLATLIST_MAX_TO_RENDER_PER_BATCH: 10,
+  GUEST_BANNER_PADDING_VERTICAL: 8,
+  GUEST_BANNER_PADDING_HORIZONTAL: 14,
 };
+
+/** Debe coincidir con `GUEST_MAX_USER_MESSAGES` en el backend */
+export const GUEST_MAX_USER_MESSAGES = 5;
+
+export function formatGuestQuotaBanner(remaining, max) {
+  return `Modo sin cuenta · ${remaining} de ${max} mensajes restantes`;
+}
 
 export const CHAT_COLORS = {
   BACKGROUND: colors.background,
@@ -156,6 +196,8 @@ export const CHAT_COLORS = {
   ERROR_BUBBLE_BORDER: '#FF6464',
   TYPING_BUBBLE_BACKGROUND: '#1D2B5F',
   TYPING_DOT: colors.primary,
+  GUEST_BANNER_BACKGROUND: 'rgba(26, 221, 219, 0.12)',
+  GUEST_BANNER_BORDER: 'rgba(26, 221, 219, 0.35)',
 };
 
 export const ICON_SIZES = {

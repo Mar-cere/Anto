@@ -10,11 +10,18 @@
 import mongoose from 'mongoose';
 
 const messageSchema = new mongoose.Schema({
-  // Usuario que envió el mensaje
+  // Usuario (omitir en mensajes de sesión invitada; usar guestSessionId)
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
+    required: false,
+    default: null,
+    index: true,
+  },
+  guestSessionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'GuestSession',
+    default: null,
     index: true,
   },
 
@@ -48,6 +55,13 @@ const messageSchema = new mongoose.Schema({
   },
 }, {
   timestamps: true, // Agrega createdAt y updatedAt automáticamente
+});
+
+messageSchema.pre('validate', function(next) {
+  if (!this.userId && !this.guestSessionId) {
+    return next(new Error('Mensaje requiere userId o guestSessionId'));
+  }
+  next();
 });
 
 // Índices compuestos para consultas frecuentes

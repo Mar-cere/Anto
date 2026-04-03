@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">32.07% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>17/53</span>
+                <span class='fraction'>0/53</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">36% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>9/25</span>
+                <span class='fraction'>0/25</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">55.55% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>5/9</span>
+                <span class='fraction'>0/9</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">30% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>15/50</span>
+                <span class='fraction'>0/50</span>
             </div>
         
             
@@ -363,7 +363,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -373,18 +373,18 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -394,13 +394,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -501,7 +501,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -629,7 +629,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -647,8 +647,8 @@ import mailer from '../config/mailer.js';
 import { APP_NAME } from '../constants/app.js';
 &nbsp;
 class EmergencyReminderService {
-  constructor() {
-    this.REMINDER_INTERVAL_DAYS = 30; // Recordatorio cada 30 días
+<span class="fstat-no" title="function not covered" >  co</span>nstructor() {
+<span class="cstat-no" title="statement not covered" >    this.REMINDER_INTERVAL_DAYS = 30; </span>// Recordatorio cada 30 días
   }
 &nbsp;
   /**
@@ -656,20 +656,20 @@ class EmergencyReminderService {
    * @param {Object} user - Usuario de MongoDB
    * @returns {boolean} true si necesita recordatorio
    */
-  needsReminder(user) {
+<span class="fstat-no" title="function not covered" >  ne</span>edsReminder(user) {
     // Si no tiene contactos, no necesita recordatorio (ya se muestra modal)
-    if (!user.emergencyContacts || user.emergencyContacts.length === 0) {
-      return false;
+<span class="cstat-no" title="statement not covered" >    if (!user.emergencyContacts || user.emergencyContacts.length === 0) {</span>
+<span class="cstat-no" title="statement not covered" >      return false;</span>
     }
 &nbsp;
     // Si todos los contactos tienen lastReminderSent reciente, no necesita recordatorio
-    const allContactsHaveRecentReminder = user.emergencyContacts.every(contact =&gt; {
-      if (!contact.lastReminderSent) return false;
-      const daysSinceReminder = (Date.now() - new Date(contact.lastReminderSent).getTime()) / (1000 * 60 * 60 * 24);
-      return daysSinceReminder &lt; this.REMINDER_INTERVAL_DAYS;
+    const allContactsHaveRecentReminder = <span class="cstat-no" title="statement not covered" >user.emergencyContacts.every(<span class="fstat-no" title="function not covered" >co</span>ntact =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >      if (!contact.lastReminderSent) <span class="cstat-no" title="statement not covered" >return false;</span></span>
+      const daysSinceReminder = <span class="cstat-no" title="statement not covered" >(Date.now() - new Date(contact.lastReminderSent).getTime()) / (1000 * 60 * 60 * 24);</span>
+<span class="cstat-no" title="statement not covered" >      return daysSinceReminder &lt; this.REMINDER_INTERVAL_DAYS;</span>
     });
 &nbsp;
-    return !allContactsHaveRecentReminder;
+<span class="cstat-no" title="statement not covered" >    return !allContactsHaveRecentReminder;</span>
   }
 &nbsp;
   /**
@@ -678,14 +678,14 @@ class EmergencyReminderService {
    * @param {Array} contacts - Contactos de emergencia
    * @returns {Object} Objeto con subject y html
    */
-  generateReminderEmail(userInfo, contacts) {
-    const userName = userInfo.name || <span class="branch-1 cbranch-no" title="branch not covered" >userInfo.username </span>|| <span class="branch-2 cbranch-no" title="branch not covered" >'Usuario';</span>
-    const contactsCount = contacts.length;
-    const contactsList = contacts.map(c =&gt; `• ${c.name} (${c.email})${!c.enabled ? ' - Deshabilitado' : ''}`).join('&lt;br&gt;');
+<span class="fstat-no" title="function not covered" >  ge</span>nerateReminderEmail(userInfo, contacts) {
+    const userName = <span class="cstat-no" title="statement not covered" >userInfo.name || userInfo.username || 'Usuario';</span>
+    const contactsCount = <span class="cstat-no" title="statement not covered" >contacts.length;</span>
+    const contactsList = <span class="cstat-no" title="statement not covered" >contacts.map(<span class="fstat-no" title="function not covered" >c </span>=&gt; <span class="cstat-no" title="statement not covered" >`• ${c.name} (${c.email})${!c.enabled ? ' - Deshabilitado' : ''}`)</span>.join('&lt;br&gt;');</span>
 &nbsp;
-    const subject = `📋 Recordatorio: Verifica tus contactos de emergencia - ${APP_NAME}`;
+    const subject = <span class="cstat-no" title="statement not covered" >`📋 Recordatorio: Verifica tus contactos de emergencia - ${APP_NAME}`;</span>
 &nbsp;
-    const html = `
+    const html = <span class="cstat-no" title="statement not covered" >`</span>
       &lt;!DOCTYPE html&gt;
       &lt;html&gt;
       &lt;head&gt;
@@ -786,7 +786,7 @@ class EmergencyReminderService {
       &lt;/html&gt;
     `;
 &nbsp;
-    return { subject, html };
+<span class="cstat-no" title="statement not covered" >    return { subject, html };</span>
   }
 &nbsp;
   /**
@@ -914,7 +914,7 @@ class EmergencyReminderService {
 }
 &nbsp;
 // Singleton instance
-const emergencyReminderService = new EmergencyReminderService();
+const emergencyReminderService = <span class="cstat-no" title="statement not covered" >new EmergencyReminderService();</span>
 &nbsp;
 export default emergencyReminderService;
 &nbsp;
@@ -925,7 +925,7 @@ export default emergencyReminderService;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-25T13:45:56.426Z
+                at 2026-04-03T00:03:24.522Z
             </div>
         <script src="../prettify.js"></script>
         <script>

@@ -135,31 +135,54 @@ export function RegisterForm({
         {errors.confirmPassword ? <Text style={globalStyles.errorText}>{errors.confirmPassword}</Text> : null}
       </View>
 
-      <TouchableOpacity style={styles.checkboxContainer} onPress={() => { onOpenTerms(); setHasViewedTerms(true); }} activeOpacity={ACTIVE_OPACITY}>
-        <View style={[styles.checkbox, isTermsAccepted && styles.checkboxChecked]}>
-          {isTermsAccepted && <Ionicons name="checkmark" size={CHECKBOX_ICON_SIZE} color={colors.white} />}
-        </View>
-        <Text style={styles.termsText}>
+      <View style={styles.checkboxContainer}>
+        <TouchableOpacity
+          onPress={() => {
+            if (!hasViewedTerms) {
+              onOpenTerms();
+              setHasViewedTerms(true);
+              return;
+            }
+            setTermsAccepted(!isTermsAccepted);
+          }}
+          activeOpacity={ACTIVE_OPACITY}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: isTermsAccepted }}
+        >
+          <View style={[styles.checkbox, isTermsAccepted && styles.checkboxChecked, !hasViewedTerms && styles.checkboxDisabled]}>
+            {isTermsAccepted && <Ionicons name="checkmark" size={CHECKBOX_ICON_SIZE} color={colors.white} />}
+          </View>
+        </TouchableOpacity>
+        <Text style={[styles.termsText, styles.termsTextFlex, !hasViewedTerms && styles.termsTextDisabled]}>
           {TEXTS.TERMS_TEXT}
-          <Text style={styles.termsLink} onPress={() => { onOpenTerms(); setHasViewedTerms(true); }}>{TEXTS.TERMS_LINK}</Text>.
+          <Text
+            style={styles.termsLink}
+            onPress={() => {
+              onOpenTerms();
+              setHasViewedTerms(true);
+            }}
+          >
+            {TEXTS.TERMS_LINK}
+          </Text>
+          .
         </Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.checkboxContainer} onPress={() => setTermsAccepted(!isTermsAccepted)} activeOpacity={ACTIVE_OPACITY} disabled={!hasViewedTerms}>
-        <View style={[styles.checkbox, isTermsAccepted && styles.checkboxChecked, !hasViewedTerms && styles.checkboxDisabled]}>
-          {isTermsAccepted && <Ionicons name="checkmark" size={CHECKBOX_ICON_SIZE} color={colors.white} />}
-        </View>
-        <Text style={[styles.termsText, !hasViewedTerms && styles.termsTextDisabled]}>Acepto los términos y condiciones</Text>
-      </TouchableOpacity>
+      </View>
       {errors.terms && <Text style={globalStyles.errorText}>{errors.terms}</Text>}
 
-      <TouchableOpacity style={styles.checkboxContainer} onPress={() => setPrivacyAccepted(!isPrivacyAccepted)} activeOpacity={ACTIVE_OPACITY}>
-        <View style={[styles.checkbox, isPrivacyAccepted && styles.checkboxChecked]}>
-          {isPrivacyAccepted && <Ionicons name="checkmark" size={CHECKBOX_ICON_SIZE} color={colors.white} />}
-        </View>
-        <Text style={styles.termsText}>
-          Acepto la <Text style={styles.termsLink} onPress={onOpenPrivacy}>{TEXTS.PRIVACY_LINK.toLowerCase()}</Text>.
+      <View style={styles.checkboxContainer}>
+        <TouchableOpacity onPress={() => setPrivacyAccepted(!isPrivacyAccepted)} activeOpacity={ACTIVE_OPACITY} accessibilityRole="checkbox" accessibilityState={{ checked: isPrivacyAccepted }}>
+          <View style={[styles.checkbox, isPrivacyAccepted && styles.checkboxChecked]}>
+            {isPrivacyAccepted && <Ionicons name="checkmark" size={CHECKBOX_ICON_SIZE} color={colors.white} />}
+          </View>
+        </TouchableOpacity>
+        <Text style={[styles.termsText, styles.termsTextFlex]}>
+          Acepto la{' '}
+          <Text style={styles.termsLink} onPress={onOpenPrivacy}>
+            {TEXTS.PRIVACY_LINK}
+          </Text>
+          .
         </Text>
-      </TouchableOpacity>
+      </View>
       {errors.privacy && <Text style={globalStyles.errorText}>{errors.privacy}</Text>}
 
       <TouchableOpacity

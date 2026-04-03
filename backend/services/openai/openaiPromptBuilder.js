@@ -12,6 +12,7 @@ import {
   MESSAGE_INTENTS,
   TIME_PERIODS
 } from '../../constants/openai.js';
+import { countIntensityGe, emitPromptHistoryTelemetry } from './promptHistoryTelemetry.js';
 
 function getTimeOfDay() {
   const hour = new Date().getHours();
@@ -22,22 +23,32 @@ function getTimeOfDay() {
 
 /**
  * Selecciona mensajes relevantes del historial según el contexto actual.
+ * @param {number} [maxMessages] - Cantidad máxima a devolver (por defecto MESSAGES_IN_PROMPT).
  */
-export function selectRelevantHistory(history, currentContext) {
+export function selectRelevantHistory(history, currentContext, maxMessages = HISTORY_LIMITS.MESSAGES_IN_PROMPT) {
   if (!history || history.length === 0) return [];
+  const cap = Math.max(1, Math.min(maxMessages, HISTORY_LIMITS.MESSAGES_IN_PROMPT));
   const currentEmotion = currentContext?.emotional?.mainEmotion;
   const currentTopic = currentContext?.emotional?.topic || currentContext?.contextual?.tema;
   const currentContent = (currentContext?.currentMessage || '').toLowerCase();
   const currentIntensity = currentContext?.emotional?.intensity || 5;
+  const firstUserAnchor = currentContext?._firstUserInSlice;
   const stopWords = new Set(['que', 'qué', 'como', 'cómo', 'para', 'por', 'con', 'sin', 'sobre', 'entre', 'hasta', 'desde', 'durante', 'mediante', 'según', 'ante', 'bajo', 'contra', 'hacia', 'tras', 'este', 'esta', 'estos', 'estas', 'ese', 'esa', 'estoy', 'está', 'tengo', 'tiene', 'soy', 'es', 'son', 'fue', 'ser', 'estar', 'tener', 'hacer', 'decir', 'ir', 'ver', 'dar', 'saber', 'poder', 'querer', 'pasar', 'deber', 'poner', 'parecer', 'quedar', 'hablar', 'llevar', 'seguir', 'encontrar', 'llamar', 'venir', 'pensar', 'salir', 'volver', 'tomar', 'conocer', 'vivir', 'sentir', 'tratar', 'mirar', 'contar', 'empezar', 'esperar', 'buscar', 'existir', 'entrar', 'trabajar', 'escribir', 'perder', 'entender', 'pedir', 'recibir', 'recordar', 'terminar', 'permitir', 'aparecer', 'conseguir', 'comenzar', 'servir', 'necesitar', 'mantener', 'resultar', 'leer', 'caer', 'cambiar', 'presentar', 'crear', 'abrir', 'considerar', 'ayudar', 'gustar', 'jugar', 'escuchar', 'cumplir', 'ofrecer', 'descubrir', 'intentar', 'usar', 'dejar', 'continuar', 'comprobar', 'construir', 'elegir', 'actuar', 'lograr']);
   const keywords = currentContent.split(/\s+/).filter(word => word.length > 3 && !stopWords.has(word.toLowerCase())).slice(0, 10);
   const relatedTerms = ['trabajo', 'familia', 'relación', 'amigo', 'pareja', 'estudio', 'salud', 'ansiedad', 'tristeza', 'enojo', 'miedo', 'alegría', 'problema', 'situación', 'momento', 'día', 'semana', 'tiempo'];
   const scoredMessages = history.map((msg, index) => {
     let score = 0;
     const msgContent = (msg.content || '').toLowerCase();
-    const recencyWeight = 1 - (index / history.length);
+    const recencyWeight = 1 - (index / Math.max(history.length, 1));
     score += recencyWeight * 2;
     if (msg.role === 'user') score += 3;
+    if (firstUserAnchor && msg === firstUserAnchor) score += 5;
+    const emoMeta = msg.metadata?.context?.emotional;
+    if (emoMeta?.intensity != null && emoMeta.intensity >= 8) score += 7;
+    else if (emoMeta?.intensity != null && emoMeta.intensity >= 7) score += 4;
+    if (emoMeta?.mainEmotion && ['miedo', 'tristeza', 'ansiedad', 'enojo'].includes(emoMeta.mainEmotion) && (emoMeta.intensity || 0) >= 7) {
+      score += 3;
+    }
     if (currentEmotion && msgContent.includes(currentEmotion.toLowerCase())) {
       score += 5;
       const msgIntensity = msg.metadata?.context?.emotional?.intensity || 5;
@@ -55,7 +66,7 @@ export function selectRelevantHistory(history, currentContext) {
   });
   const selected = scoredMessages
     .sort((a, b) => b._relevanceScore - a._relevanceScore)
-    .slice(0, HISTORY_LIMITS.MESSAGES_IN_PROMPT)
+    .slice(0, cap)
     .sort((a, b) => history.indexOf(a) - history.indexOf(b))
     .map(({ _relevanceScore, ...msg }) => msg);
   const lastAssistant = history.filter(m => m.role === 'assistant').pop();
@@ -65,6 +76,168 @@ export function selectRelevantHistory(history, currentContext) {
     selected.sort((a, b) => history.indexOf(a) - history.indexOf(b));
   }
   return selected;
+}
+
+const PROMPT_HISTORY_INTENSITY_THRESHOLD = 7;
+
+/**
+ * Historial en orden cronológico (antiguo → reciente). Si supera MESSAGES_IN_PROMPT,
+ * conserva la cola SLIDING_TAIL_MESSAGES y completa el cupo con turnos priorizados (crisis, intensidad, ancla).
+ * Expuesto para tests y análisis sin disparar telemetría.
+ */
+export function computeHistorySelectionForPrompt(historyChronological, currentContext) {
+  const MAX = HISTORY_LIMITS.MESSAGES_IN_PROMPT;
+  const TAIL = HISTORY_LIMITS.SLIDING_TAIL_MESSAGES;
+  const rawMessageCount = historyChronological?.length ?? 0;
+
+  const baseTelemetry = {
+    maxMessages: MAX,
+    slidingTail: TAIL,
+    highIntensityThreshold: PROMPT_HISTORY_INTENSITY_THRESHOLD
+  };
+
+  if (!historyChronological?.length) {
+    return {
+      messages: [],
+      telemetry: {
+        ...baseTelemetry,
+        truncated: false,
+        tailOnly: false,
+        rawMessageCount: 0,
+        emptyStrippedCount: 0,
+        nonemptyCount: 0,
+        headMessageCount: 0,
+        tailMessageCount: 0,
+        budget: null,
+        pickedFromHeadCount: 0,
+        droppedFromHeadCount: 0,
+        finalMessageCount: 0,
+        droppedTotal: 0,
+        highIntensityInHead: 0,
+        highIntensityInPickedHead: 0
+      }
+    };
+  }
+
+  const nonempty = historyChronological.filter((m) => (m.content || '').trim().length > 0);
+  const emptyStrippedCount = rawMessageCount - nonempty.length;
+
+  if (nonempty.length <= MAX) {
+    return {
+      messages: nonempty,
+      telemetry: {
+        ...baseTelemetry,
+        truncated: false,
+        tailOnly: false,
+        rawMessageCount,
+        emptyStrippedCount,
+        nonemptyCount: nonempty.length,
+        headMessageCount: 0,
+        tailMessageCount: 0,
+        budget: null,
+        pickedFromHeadCount: 0,
+        droppedFromHeadCount: 0,
+        finalMessageCount: nonempty.length,
+        droppedTotal: 0,
+        highIntensityInHead: 0,
+        highIntensityInPickedHead: 0
+      }
+    };
+  }
+
+  const tail = nonempty.slice(-TAIL);
+  const head = nonempty.slice(0, -TAIL);
+  const budget = MAX - tail.length;
+
+  if (budget <= 0) {
+    const messages = tail.slice(-MAX);
+    const droppedTotal = nonempty.length - messages.length;
+    return {
+      messages,
+      telemetry: {
+        ...baseTelemetry,
+        truncated: true,
+        tailOnly: true,
+        rawMessageCount,
+        emptyStrippedCount,
+        nonemptyCount: nonempty.length,
+        headMessageCount: head.length,
+        tailMessageCount: tail.length,
+        budget,
+        pickedFromHeadCount: 0,
+        droppedFromHeadCount: head.length,
+        finalMessageCount: messages.length,
+        droppedTotal,
+        highIntensityInHead: countIntensityGe(head, PROMPT_HISTORY_INTENSITY_THRESHOLD),
+        highIntensityInPickedHead: 0
+      }
+    };
+  }
+
+  const firstUser = head.find((m) => m.role === 'user') || null;
+  const pickedHead = selectRelevantHistory(
+    head,
+    {
+      ...currentContext,
+      _firstUserInSlice: firstUser
+    },
+    budget
+  );
+  const merged = [...pickedHead, ...tail];
+  merged.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+  const messages = merged.slice(-MAX);
+  const droppedTotal = nonempty.length - messages.length;
+
+  return {
+    messages,
+    telemetry: {
+      ...baseTelemetry,
+      truncated: true,
+      tailOnly: false,
+      rawMessageCount,
+      emptyStrippedCount,
+      nonemptyCount: nonempty.length,
+      headMessageCount: head.length,
+      tailMessageCount: tail.length,
+      budget,
+      pickedFromHeadCount: pickedHead.length,
+      droppedFromHeadCount: head.length - pickedHead.length,
+      finalMessageCount: messages.length,
+      droppedTotal,
+      highIntensityInHead: countIntensityGe(head, PROMPT_HISTORY_INTENSITY_THRESHOLD),
+      highIntensityInPickedHead: countIntensityGe(pickedHead, PROMPT_HISTORY_INTENSITY_THRESHOLD)
+    }
+  };
+}
+
+/**
+ * Igual que {@link computeHistorySelectionForPrompt} y emite telemetría (métricas, log, Sentry si truncado).
+ */
+export function selectHistoryForPrompt(historyChronological, currentContext) {
+  const { messages, telemetry } = computeHistorySelectionForPrompt(historyChronological, currentContext);
+  emitPromptHistoryTelemetry(telemetry, currentContext);
+  return messages;
+}
+
+/**
+ * @param {Array} conversationHistoryNewestFirst - Resultado típico de Message.find sort desc + limit
+ * @returns {Array<{ role: string, content: string, metadata?: object }>}
+ */
+export function buildHistoryForPromptFromMessages(conversationHistoryNewestFirst, currentContext) {
+  if (!conversationHistoryNewestFirst?.length) return [];
+  const chronological = [...conversationHistoryNewestFirst].reverse();
+  const ctx = {
+    ...currentContext,
+    _promptTelemetry: {
+      ...(currentContext._promptTelemetry || {}),
+      callSite: currentContext._promptTelemetry?.callSite || 'buildHistoryForPromptFromMessages'
+    }
+  };
+  return selectHistoryForPrompt(chronological, ctx).map((msg) => ({
+    role: msg.role || 'user',
+    content: msg.content || '',
+    metadata: msg.metadata
+  }));
 }
 
 /**
@@ -87,6 +260,41 @@ export function generateConversationSummary(history, contexto) {
   if (repeatedTopics.length > 0) summary += `|${repeatedTopics.join(',')}`;
   if (summary.length > 100) summary = summary.substring(0, 97) + '...';
   return summary;
+}
+
+const ANTI_ECHO_STOPWORDS = new Set([
+  'que', 'qué', 'como', 'cómo', 'para', 'por', 'con', 'sin', 'sobre', 'esto', 'esta', 'este',
+  'estos', 'estas', 'todo', 'toda', 'algo', 'muy', 'más', 'menos', 'aqui', 'aquí', 'donde', 'dónde',
+  'hacer', 'estar', 'tener', 'decir', 'puede', 'puedo', 'quiero', 'siento', 'siente', 'cosas', 'cada',
+  'mismo', 'mucho', 'nada', 'bien', 'mal', 'hoy', 'años', 'año', 'vez', 'veces', 'vida'
+]);
+
+/**
+ * Evita que el modelo repita el mismo encuadre cuando el hilo ya acumula los mismos temas en varios mensajes del usuario.
+ * @param {Array<{ role: string, content?: string }>} historyMessages - Historial usado en el prompt (orden cronológico)
+ * @returns {string}
+ */
+export function buildAntiEchoHint(historyMessages) {
+  if (!historyMessages?.length || historyMessages.length < 4) return '';
+  const userTexts = historyMessages
+    .filter((m) => m.role === 'user')
+    .map((m) => (m.content || '').toLowerCase());
+  if (userTexts.length < 2) return '';
+  const wordCounts = {};
+  for (const t of userTexts) {
+    for (const raw of t.split(/\s+/)) {
+      const w = raw.replace(/[^\p{L}\p{N}]/gu, '');
+      if (w.length < 5 || ANTI_ECHO_STOPWORDS.has(w)) continue;
+      wordCounts[w] = (wordCounts[w] || 0) + 1;
+    }
+  }
+  const themes = Object.entries(wordCounts)
+    .filter(([, c]) => c >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([word]) => word);
+  if (themes.length === 0) return '';
+  return `ANTI-ECO (este hilo): El usuario ya trabajó temas relacionados con: ${themes.join(', ')}. No repitas el mismo reconocimiento genérico ni enmarques el problema como si fuera la primera vez; avanza con una pregunta concreta, un matiz o un siguiente paso útil.`;
 }
 
 /**
@@ -206,14 +414,26 @@ export async function generateLongTermContext(userId, contexto) {
 export function generarMensajesContexto(contexto) {
   const messages = [];
   if (contexto.history && Array.isArray(contexto.history) && contexto.history.length > 0) {
-    const rawHistory = contexto.history;
+    let rawHistory = contexto.history;
+    if (
+      rawHistory.length > HISTORY_LIMITS.MESSAGES_IN_PROMPT &&
+      rawHistory.some((m) => m && m.createdAt)
+    ) {
+      rawHistory = [...rawHistory].sort(
+        (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+      );
+    }
     const historialRelevante =
       rawHistory.length <= HISTORY_LIMITS.MESSAGES_IN_PROMPT
         ? [...rawHistory]
-        : selectRelevantHistory(rawHistory, {
+        : selectHistoryForPrompt(rawHistory, {
             emotional: contexto.emotional,
             contextual: contexto.contextual,
-            currentMessage: contexto.currentMessage
+            currentMessage: contexto.currentMessage,
+            _promptTelemetry: {
+              ...(contexto._promptTelemetry || {}),
+              callSite: 'generarMensajesContexto'
+            }
           });
     historialRelevante.forEach(msg => {
       if (msg.role && msg.content) messages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content });
@@ -246,6 +466,12 @@ const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emocional de
 - Tratamiento: tuteo ("tú").
 - Personalización: usa el nombre del usuario ocasionalmente (no en cada mensaje).
 - Naturalidad: evita listas, protocolos y demasiadas preguntas si no aportan valor.
+
+### Variedad y naturalidad (evita sonar repetitivo o vacío)
+- No abrumes con disculpas ni validaciones genéricas: evita abrir muchos mensajes seguidos con "lo siento", "siento mucho", "lamento", "es normal que te sientas así", "es totalmente válido" o variantes; úsalas con moderación y solo cuando aporten algo.
+- No repitas en cada respuesta el mismo tema o las mismas palabras del usuario (p. ej. si habló de bullying u otro asunto, no nombres el problema de forma literal en todos los turnos); el historial ya lo contiene: avanza con una pregunta, matiz o paso útil.
+- Alterna formas de entrar al mensaje: a veces pregunta directa, a veces reflexión breve, a veces algo práctico, sin pasar siempre por la misma "capa" de empatía antes del contenido.
+- La empatía se nota también en escuchar el detalle y responder a eso, no solo en frases de condolencia o validación.
 
 ### El usuario decide el estilo (sin fricción)
 - Si es una de las primeras interacciones, ofrece una sola vez (sin insistir) una elección en lenguaje simple y con ejemplos:
@@ -345,7 +571,9 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     socialSupport: contexto.contextual?.socialSupport || null,
     cognitiveDistortions: contexto.contextual?.cognitiveDistortions || null,
     primaryDistortion: contexto.contextual?.primaryDistortion || null,
-    distortionIntervention: contexto.contextual?.distortionIntervention || null
+    distortionIntervention: contexto.contextual?.distortionIntervention || null,
+    chatPreferences: contexto.profile?.preferences?.chatPreferences || null,
+    crisisRiskLevel: contexto.crisis?.riskLevel || null
   });
 
   // Prompt base de comportamiento (reglas de estilo, seguridad y UX conversacional).
@@ -360,7 +588,16 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     if (contextMessages.length >= 2) systemMessage += '\nRef: Usa referencias naturales cuando sea relevante.';
   }
 
-  const longTermContext = await generateLongTermContext(mensaje.userId, { ...contexto, currentConversationId: contexto.currentConversationId || mensaje.conversationId });
+  const antiEchoHint = buildAntiEchoHint(contexto.history);
+  if (antiEchoHint) systemMessage += `\n\n${antiEchoHint}`;
+
+  const longTermContext =
+    contexto.isGuest
+      ? null
+      : await generateLongTermContext(mensaje.userId, {
+          ...contexto,
+          currentConversationId: contexto.currentConversationId || mensaje.conversationId
+        });
   if (longTermContext && longTermContext.length > 0) {
     const conciseLongTerm = longTermContext.length > 200 ? longTermContext.substring(0, 197) + '...' : longTermContext;
     systemMessage += `\nMEMORIA: ${conciseLongTerm}`;

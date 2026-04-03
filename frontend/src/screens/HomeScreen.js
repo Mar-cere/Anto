@@ -31,6 +31,10 @@ import {
 } from '../constants/animations';
 import { ROUTES } from '../constants/routes';
 import { HOME as TEXTS } from '../constants/translations';
+import {
+  getResetToMainTabsWithChatState,
+  NAV_STORAGE_OPEN_CHAT_AFTER_LOGIN,
+} from '../navigation/navigationHelpers';
 import { OPACITIES, SCALES, STATUS_BAR } from '../constants/ui';
 import emotions from '../data/emotions';
 import { colors, globalStyles } from '../styles/globalStyles';
@@ -110,15 +114,19 @@ const HomeScreen = () => {
               { text: 'Cancelar', style: 'cancel' },
               {
                 text: 'Iniciar sesión',
-                onPress: () => navigation.navigate(ROUTES.SIGN_IN)
-              }
+                onPress: async () => {
+                  try {
+                    await AsyncStorage.setItem(NAV_STORAGE_OPEN_CHAT_AFTER_LOGIN, '1');
+                  } catch (_) {}
+                  navigation.navigate(ROUTES.SIGN_IN);
+                },
+              },
             ]
           );
           return;
         }
-        // Si está autenticado, navegar al TabNavigator y luego al chat
-        // El TabNavigator tiene la pantalla 'Chat' como una de sus tabs
-        navigation.navigate('MainTabs', { screen: 'Chat' });
+        // Reset al stack principal con la pestaña Chat activa (navigate anidado desde Home fallaba)
+        navigation.reset(getResetToMainTabsWithChatState());
       } catch (error) {
         console.error('Error verificando autenticación:', error);
         Alert.alert('Error', 'Hubo un problema al verificar tu sesión. Por favor, intenta iniciar sesión.');
@@ -185,6 +193,16 @@ const HomeScreen = () => {
                   buttonOpacity={buttonOpacity}
                   accessibilityLabel={TEXTS.REGISTER}
                   accessibilityHint={TEXTS.REGISTER_HINT}
+                  isPrimary={false}
+                />
+
+                <AnimatedButton
+                  title={TEXTS.CONTINUE_WITHOUT_ACCOUNT}
+                  onPress={() => navigation.reset(getResetToMainTabsWithChatState({ startGuest: true }))}
+                  buttonScale={buttonScale}
+                  buttonOpacity={buttonOpacity}
+                  accessibilityLabel={TEXTS.CONTINUE_WITHOUT_ACCOUNT}
+                  accessibilityHint={TEXTS.CONTINUE_WITHOUT_ACCOUNT_HINT}
                   isPrimary={false}
                 />
               </Animated.View>

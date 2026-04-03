@@ -129,6 +129,32 @@ export function useSettingsScreen({ navigation }) {
     []
   );
 
+  const DEFAULT_CHAT_PREFS = {
+    reduceStockEmpathy: false,
+    avoidApologyOpenings: false,
+    preferQuestions: false,
+  };
+
+  const handleChatPreferenceChange = useCallback(
+    async (key, nextValue) => {
+      const current = user?.preferences?.chatPreferences || DEFAULT_CHAT_PREFS;
+      const next = { ...current, [key]: nextValue };
+      const currentPreferences = user?.preferences || {};
+      try {
+        await api.put(ENDPOINTS.UPDATE_PROFILE, {
+          preferences: { ...currentPreferences, chatPreferences: next },
+        });
+        updateUserContext({
+          ...user,
+          preferences: { ...currentPreferences, chatPreferences: next },
+        });
+      } catch (error) {
+        Alert.alert(TEXTS.ERROR, getApiErrorMessage(error) || TEXTS.PREFERENCES_ERROR);
+      }
+    },
+    [user, updateUserContext]
+  );
+
   const handleCycleResponseStyle = useCallback(async () => {
     const { RESPONSE_STYLES, RESPONSE_STYLE_LABELS } = require('../screens/settings/settingsScreenConstants');
     const currentStyle = user?.preferences?.responseStyle || 'balanced';
@@ -161,6 +187,7 @@ export function useSettingsScreen({ navigation }) {
     handleDeleteAccount,
     handleTogglePushNotifications,
     handleCycleResponseStyle,
+    handleChatPreferenceChange,
     checkPushNotificationStatus,
     handleTestNotification,
   };

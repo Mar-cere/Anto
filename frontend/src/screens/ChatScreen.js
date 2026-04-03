@@ -18,6 +18,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -30,12 +31,14 @@ import ChatMessageItem from '../components/chat/ChatMessageItem';
 import ChatTypingIndicator from '../components/chat/ChatTypingIndicator';
 import ClearConversationModal from '../components/chat/ClearConversationModal';
 import OfflineBanner from '../components/OfflineBanner';
+import PendingOfflineMessageBanner from '../components/chat/PendingOfflineMessageBanner';
 import ParticleBackground from '../components/ParticleBackground';
 import { SkeletonBlock } from '../components/Skeleton';
 import TrialBanner from '../components/TrialBanner';
 import { useChatScreen } from '../hooks/useChatScreen';
 import {
   CHAT_COLORS,
+  formatGuestQuotaBanner,
   ICON_SIZES,
   LAYOUT,
   MESSAGE_ID_PREFIXES,
@@ -194,6 +197,34 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
+  handoffModalCard: {
+    maxHeight: '82%',
+  },
+  handoffModalScroll: {
+    maxHeight: 280,
+    marginBottom: 14,
+  },
+  handoffPrivacyText: {
+    color: CHAT_COLORS.ACCENT,
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 14,
+    opacity: 0.9,
+    fontStyle: 'italic',
+  },
+  guestBanner: {
+    paddingVertical: LAYOUT.GUEST_BANNER_PADDING_VERTICAL,
+    paddingHorizontal: LAYOUT.GUEST_BANNER_PADDING_HORIZONTAL,
+    backgroundColor: CHAT_COLORS.GUEST_BANNER_BACKGROUND,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: CHAT_COLORS.GUEST_BANNER_BORDER,
+  },
+  guestBannerText: {
+    color: CHAT_COLORS.ACCENT,
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
 });
 
 const ChatScreen = () => {
@@ -221,6 +252,17 @@ const ChatScreen = () => {
     handleScroll,
     handleBack,
     navigation,
+    guestQuota,
+    dismissQuickReplies,
+    guestHandoffModal,
+    guestHandoffStartFresh,
+    guestHandoffUseSummary,
+    isOffline,
+    offlinePendingMessage,
+    retryOfflinePending,
+    chatFeedbackEnabled,
+    handleMessageFeedback,
+    feedbackSubmittingId,
   } = useChatScreen();
   const [showAIDisclosure, setShowAIDisclosure] = React.useState(false);
 
@@ -305,9 +347,22 @@ const ChatScreen = () => {
         item={item}
         onSuggestionPress={handleSuggestionPress}
         onSuggestionDismiss={handleSuggestionDismiss}
+        onQuickReply={handleSend}
+        onQuickReplyDismiss={dismissQuickReplies}
+        feedbackEnabled={chatFeedbackEnabled}
+        onMessageFeedback={handleMessageFeedback}
+        feedbackSubmittingId={feedbackSubmittingId}
       />
     ),
-    [handleSuggestionPress, handleSuggestionDismiss]
+    [
+      handleSuggestionPress,
+      handleSuggestionDismiss,
+      handleSend,
+      dismissQuickReplies,
+      chatFeedbackEnabled,
+      handleMessageFeedback,
+      feedbackSubmittingId,
+    ]
   );
 
   const keyExtractor = useCallback((item) => {
@@ -355,12 +410,28 @@ const ChatScreen = () => {
 
       <OfflineBanner />
 
+      <PendingOfflineMessageBanner
+        visible={!!offlinePendingMessage}
+        isOffline={isOffline}
+        onRetry={retryOfflinePending}
+        hintText={TEXTS.OFFLINE_PENDING_ONE}
+        retryLabel={TEXTS.OFFLINE_PENDING_RETRY}
+      />
+
       {trialInfo?.isInTrial && !trialBannerDismissed && (
         <TrialBanner
           daysRemaining={trialInfo.daysRemaining}
           onDismiss={handleTrialBannerDismiss}
           dismissed={trialBannerDismissed}
         />
+      )}
+
+      {guestQuota !== null && (
+        <View style={styles.guestBanner} accessibilityRole="text">
+          <Text style={styles.guestBannerText}>
+            {formatGuestQuotaBanner(guestQuota.remaining, guestQuota.max)}
+          </Text>
+        </View>
       )}
 
       <Animated.View style={[styles.chatContainer, { opacity: fadeAnim }]}>
@@ -427,6 +498,7 @@ const ChatScreen = () => {
         onChangeText={setInputText}
         onSend={handleSend}
         inputRef={inputRef}
+        sendDisabled={guestQuota !== null && guestQuota.remaining <= 0}
       />
 
       {showScrollButton && (
@@ -463,6 +535,35 @@ const ChatScreen = () => {
               </Pressable>
               <Pressable style={styles.aiContinueButton} onPress={handleAIDisclosureAcknowledge}>
                 <Text style={styles.aiContinueButtonText}>{TEXTS.AI_MODAL_CONTINUE}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={!!guestHandoffModal}
+        animationType="fade"
+        transparent
+        onRequestClose={guestHandoffStartFresh}
+      >
+        <View style={styles.aiModalOverlay}>
+          <View style={[styles.aiModalCard, styles.handoffModalCard]}>
+            <Text style={styles.aiModalTitle}>{TEXTS.GUEST_HANDOFF_TITLE}</Text>
+            <ScrollView
+              style={styles.handoffModalScroll}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator
+            >
+              <Text style={styles.aiModalText}>{TEXTS.GUEST_HANDOFF_BODY}</Text>
+              <Text style={styles.handoffPrivacyText}>{TEXTS.GUEST_HANDOFF_PRIVACY}</Text>
+            </ScrollView>
+            <View style={styles.aiModalActions}>
+              <Pressable style={styles.aiPolicyButton} onPress={guestHandoffStartFresh}>
+                <Text style={styles.aiPolicyButtonText}>{TEXTS.GUEST_HANDOFF_START_FRESH}</Text>
+              </Pressable>
+              <Pressable style={styles.aiContinueButton} onPress={guestHandoffUseSummary}>
+                <Text style={styles.aiContinueButtonText}>{TEXTS.GUEST_HANDOFF_USE_SUMMARY}</Text>
               </Pressable>
             </View>
           </View>

@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0.74% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>2/270</span>
+                <span class='fraction'>0/273</span>
             </div>
         
             
@@ -39,14 +39,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/51</span>
+                <span class='fraction'>0/52</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0.81% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>2/246</span>
+                <span class='fraction'>0/249</span>
             </div>
         
             
@@ -964,7 +964,15 @@
 <a name='L899'></a><a href='#L899'>899</a>
 <a name='L900'></a><a href='#L900'>900</a>
 <a name='L901'></a><a href='#L901'>901</a>
-<a name='L902'></a><a href='#L902'>902</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L902'></a><a href='#L902'>902</a>
+<a name='L903'></a><a href='#L903'>903</a>
+<a name='L904'></a><a href='#L904'>904</a>
+<a name='L905'></a><a href='#L905'>905</a>
+<a name='L906'></a><a href='#L906'>906</a>
+<a name='L907'></a><a href='#L907'>907</a>
+<a name='L908'></a><a href='#L908'>908</a>
+<a name='L909'></a><a href='#L909'>909</a>
+<a name='L910'></a><a href='#L910'>910</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -994,10 +1002,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">27x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">27x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1010,6 +1018,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1033,6 +1044,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1431,6 +1444,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1895,10 +1911,10 @@ import {
   DIMENSIONES_ANALISIS
 } from './userProfile/index.js';
 &nbsp;
-dotenv.config();
+<span class="cstat-no" title="statement not covered" >dotenv.config();</span>
 &nbsp;
 // Cliente de OpenAI para generación de insights
-const openai = new OpenAI({
+const openai = <span class="cstat-no" title="statement not covered" >new OpenAI({</span>
   apiKey: process.env.OPENAI_API_KEY
 });
 &nbsp;
@@ -1917,7 +1933,12 @@ class UserProfileService {
         responseStyle: 'balanced',
         responseLength: DEFAULT_RESPONSE_LENGTH,
         topicsOfInterest: [],
-        triggerTopics: []
+        triggerTopics: [],
+        chatPreferences: {
+          reduceStockEmpathy: false,
+          avoidApologyOpenings: false,
+          preferQuestions: false
+        }
       },
       patrones: {
         emocionales: [],
@@ -2323,15 +2344,18 @@ class UserProfileService {
    */
 <span class="fstat-no" title="function not covered" >  as</span>ync updatePreferences(userId, newPreferences) {
 <span class="cstat-no" title="statement not covered" >    try {</span>
-<span class="cstat-no" title="statement not covered" >      return await UserProfile.findOneAndUpdate(</span>
+      const updated = <span class="cstat-no" title="statement not covered" >await UserProfile.findOneAndUpdate(</span>
         { userId },
-        { 
-          $set: { 
-            'preferences': newPreferences
+        {
+          $set: {
+            preferences: newPreferences
           }
         },
         { new: true, upsert: true }
       );
+      const cacheKey = <span class="cstat-no" title="statement not covered" >cacheService.generateKey('profile', userId);</span>
+<span class="cstat-no" title="statement not covered" >      await cacheService.delete(cacheKey).catch(<span class="fstat-no" title="function not covered" >()</span> =&gt; {});</span>
+<span class="cstat-no" title="statement not covered" >      return updated;</span>
     } catch (error) {
 <span class="cstat-no" title="statement not covered" >      console.error('[UserProfileService] Error actualizando preferencias:', error);</span>
 <span class="cstat-no" title="statement not covered" >      return null;</span>
@@ -2773,7 +2797,7 @@ export default new UserProfileService(); </pre></td></tr></table></pre>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-25T13:45:56.426Z
+                at 2026-04-03T00:03:24.522Z
             </div>
         <script src="../prettify.js"></script>
         <script>

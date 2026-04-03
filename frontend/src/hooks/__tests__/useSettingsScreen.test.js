@@ -72,6 +72,7 @@ describe('useSettingsScreen', () => {
     expect(typeof result.current.handleDeleteAccount).toBe('function');
     expect(typeof result.current.handleTogglePushNotifications).toBe('function');
     expect(typeof result.current.handleCycleResponseStyle).toBe('function');
+    expect(typeof result.current.handleChatPreferenceChange).toBe('function');
     expect(typeof result.current.handleTestNotification).toBe('function');
   });
 

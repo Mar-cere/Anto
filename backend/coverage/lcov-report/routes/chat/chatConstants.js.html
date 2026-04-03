@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>6/6</span>
+                <span class='fraction'>0/6</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>6/6</span>
+                <span class='fraction'>0/6</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -99,26 +99,22 @@
 <a name='L34'></a><a href='#L34'>34</a>
 <a name='L35'></a><a href='#L35'>35</a>
 <a name='L36'></a><a href='#L36'>36</a>
-<a name='L37'></a><a href='#L37'>37</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">23x</span>
-<span class="cline-any cline-yes">23x</span>
-<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -126,7 +122,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -142,11 +146,13 @@
 import rateLimit from 'express-rate-limit';
 &nbsp;
 // Límites de mensajes y contexto
-export const LIMITE_MENSAJES = 100;
-export const VENTANA_CONTEXTO = 20 * 60 * 1000; // 20 min ms
-export const HISTORIAL_LIMITE = 6;
+export const LIMITE_MENSAJES = <span class="cstat-no" title="statement not covered" >100;</span>
+/** @deprecated El historial para IA ya no filtra por tiempo; se usa solo HISTORIAL_LIMITE. Mantener por compat. */
+export const VENTANA_CONTEXTO = <span class="cstat-no" title="statement not covered" >20 * 60 * 1000;</span>
+/** Últimos N mensajes de la misma conversación (sin ventana temporal) para contexto acotado. */
+export const HISTORIAL_LIMITE = <span class="cstat-no" title="statement not covered" >24;</span>
 &nbsp;
-export const deleteConversationLimiter = rateLimit({
+export const deleteConversationLimiter = <span class="cstat-no" title="statement not covered" >rateLimit({</span>
   windowMs: 15 * 60 * 1000,
   max: 10,
   message: 'Demasiadas eliminaciones de conversaciones. Por favor, intente más tarde.',
@@ -154,7 +160,7 @@ export const deleteConversationLimiter = rateLimit({
   legacyHeaders: false
 });
 &nbsp;
-export const patchMessageLimiter = rateLimit({
+export const patchMessageLimiter = <span class="cstat-no" title="statement not covered" >rateLimit({</span>
   windowMs: 15 * 60 * 1000,
   max: 30,
   message: 'Demasiadas actualizaciones de mensajes. Por favor, intente más tarde.',
@@ -162,7 +168,7 @@ export const patchMessageLimiter = rateLimit({
   legacyHeaders: false
 });
 &nbsp;
-export const sendMessageLimiter = rateLimit({
+export const sendMessageLimiter = <span class="cstat-no" title="statement not covered" >rateLimit({</span>
   windowMs: 1 * 60 * 1000,
   max: 20,
   message: 'Demasiados mensajes enviados. Por favor, espera un momento antes de intentar de nuevo.',
@@ -178,7 +184,7 @@ export const sendMessageLimiter = rateLimit({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-25T13:45:56.426Z
+                at 2026-04-03T00:03:24.522Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

@@ -31,6 +31,11 @@ import ParticleBackground from '../components/ParticleBackground';
 import OfflineBanner from '../components/OfflineBanner';
 import { api, ENDPOINTS } from '../config/api';
 import { ROUTES } from '../constants/routes';
+import {
+  getResetToMainTabsWithChatState,
+  NAV_STORAGE_OPEN_CHAT_AFTER_LOGIN,
+} from '../navigation/navigationHelpers';
+import chatService from '../services/chatService';
 import { colors, globalStyles } from '../styles/globalStyles';
 import { useAuth } from '../context/AuthContext';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
@@ -141,6 +146,12 @@ const saveAuthData = async (tokens, user, email) => {
   await Promise.all(
     itemsToSave.map(([key, value]) => AsyncStorage.setItem(key, value))
   );
+  try {
+    await chatService.prepareGuestHandoffBeforeClear();
+  } catch (_) {}
+  try {
+    await chatService.clearGuestChat();
+  } catch (_) {}
 };
 
 const SignInScreen = () => {
@@ -327,11 +338,24 @@ const SignInScreen = () => {
           // No bloquear el login si falla
         }
 
-        // Entramos por tabs (Inicio = Dash dentro de MainTabs) y limpiamos el stack
-        navigation.reset({
-          index: 0,
-          routes: [{ name: ROUTES.MAIN_TABS }],
-        });
+        // Entramos por tabs y limpiamos el stack; si venía del banner de emergencia en Home, abrir Chat
+        try {
+          const openChat = await AsyncStorage.getItem(NAV_STORAGE_OPEN_CHAT_AFTER_LOGIN);
+          if (openChat === '1') {
+            await AsyncStorage.removeItem(NAV_STORAGE_OPEN_CHAT_AFTER_LOGIN);
+            navigation.reset(getResetToMainTabsWithChatState());
+          } else {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: ROUTES.MAIN_TABS }],
+            });
+          }
+        } catch (_) {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: ROUTES.MAIN_TABS }],
+          });
+        }
       } else {
         Alert.alert('Error', ERROR_MESSAGES.LOGIN_FAILED);
       }

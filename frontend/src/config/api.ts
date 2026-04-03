@@ -72,6 +72,7 @@ export const ENDPOINTS = {
   CHAT_CONVERSATIONS: '/api/chat/conversations',
   CHAT_CONVERSATION_BY_ID: (id: string) => `/api/chat/conversations/${id}`,
   CHAT_MESSAGE_STATUS: '/api/chat/messages/status',
+  CHAT_MESSAGE_FEEDBACK: (messageId: string) => `/api/chat/messages/${messageId}/feedback`,
   CHAT_SEARCH: '/api/chat/messages/search',
   EMERGENCY_CONTACTS: '/api/users/me/emergency-contacts',
   EMERGENCY_CONTACT_BY_ID: (id: string) => `/api/users/me/emergency-contacts/${id}`,

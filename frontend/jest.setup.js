@@ -3,6 +3,7 @@ const Mock = (props) => props.children ?? null;
 jest.mock('react-native', () => ({
   View: Mock,
   Text: Mock,
+  TextInput: Mock,
   TouchableOpacity: Mock,
   ScrollView: Mock,
   Modal: Mock,

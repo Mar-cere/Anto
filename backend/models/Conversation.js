@@ -13,11 +13,23 @@ const conversationSchema = new mongoose.Schema({
     unique: true,
     index: true
   },
-  // Usuario propietario de la conversación (chat 1-a-1 con el asistente IA)
+  // Usuario propietario (omitir si isGuest: conversación solo con guestSessionId)
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
+    required: false,
+    default: null,
+    index: true
+  },
+  isGuest: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  guestSessionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'GuestSession',
+    default: null,
     index: true
   },
   // Estado de la conversación
@@ -40,6 +52,13 @@ const conversationSchema = new mongoose.Schema({
 conversationSchema.pre('save', function(next) {
   if (!this.id) {
     this.id = crypto.randomBytes(16).toString('hex');
+  }
+  if (this.isGuest) {
+    if (!this.guestSessionId) {
+      return next(new Error('Conversación invitada requiere guestSessionId'));
+    }
+  } else if (!this.userId) {
+    return next(new Error('Conversación requiere userId o modo invitado'));
   }
   next();
 });

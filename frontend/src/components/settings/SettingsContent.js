@@ -12,6 +12,12 @@ import {
   RESPONSE_STYLE_LABELS,
   TEXTS,
 } from '../../screens/settings/settingsScreenConstants';
+
+const DEFAULT_CHAT_PREFS = {
+  reduceStockEmpathy: false,
+  avoidApologyOpenings: false,
+  preferQuestions: false,
+};
 import { SCROLL_PADDING_BOTTOM } from '../../screens/settings/settingsScreenConstants';
 
 export default function SettingsContent({
@@ -20,12 +26,14 @@ export default function SettingsContent({
   pushNotificationsEnabled,
   onTogglePushNotifications,
   onCycleResponseStyle,
+  onChatPreferenceChange,
   onShowLogoutModal,
   onShowDeleteModal,
   onTestNotification,
 }) {
   const currentResponseStyle = user?.preferences?.responseStyle || 'balanced';
   const responseStyleLabel = RESPONSE_STYLE_LABELS[currentResponseStyle] || 'Equilibrado';
+  const chatPrefs = { ...DEFAULT_CHAT_PREFS, ...(user?.preferences?.chatPreferences || {}) };
 
   return (
     <ScrollView
@@ -33,6 +41,7 @@ export default function SettingsContent({
       contentContainerStyle={{ paddingBottom: SCROLL_PADDING_BOTTOM }}
     >
       <Text style={styles.sectionTitle}>{TEXTS.PREFERENCES}</Text>
+      <Text style={styles.personalizationIntro}>{TEXTS.PERSONALIZATION_INTRO}</Text>
       <View style={styles.item}>
         <MaterialCommunityIcons name="bell-ring" size={ICON_SIZE} color={COLORS.PRIMARY} />
         <View style={styles.itemTextContainer}>
@@ -64,11 +73,52 @@ export default function SettingsContent({
         <MaterialCommunityIcons name="robot" size={ICON_SIZE} color={COLORS.PRIMARY} />
         <View style={styles.itemTextContainer}>
           <Text style={styles.itemText}>Personalización de Respuesta de Anto</Text>
-          <Text style={styles.itemSubtext}>Cómo prefieres que Anto responda</Text>
+          <Text style={styles.itemSubtext}>{TEXTS.RESPONSE_STYLE_EXPLAINER}</Text>
         </View>
         <TouchableOpacity onPress={onCycleResponseStyle} accessibilityLabel="Cambiar estilo de respuesta">
           <Text style={styles.languageText}>{responseStyleLabel}</Text>
         </TouchableOpacity>
+      </View>
+      <Text style={styles.sectionTitle}>{TEXTS.CHAT_TONE_TITLE}</Text>
+      <Text style={styles.chatToneIntro}>{TEXTS.CHAT_TONE_SUB}</Text>
+      <View style={styles.item}>
+        <MaterialCommunityIcons name="text-short" size={ICON_SIZE} color={COLORS.PRIMARY} />
+        <View style={styles.itemTextContainer}>
+          <Text style={styles.itemText}>{TEXTS.CHAT_PREF_LESS_VALIDATION}</Text>
+          <Text style={styles.itemSubtext}>{TEXTS.CHAT_PREF_LESS_VALIDATION_DESC}</Text>
+        </View>
+        <Switch
+          value={chatPrefs.reduceStockEmpathy}
+          onValueChange={(v) => onChatPreferenceChange('reduceStockEmpathy', v)}
+          thumbColor={chatPrefs.reduceStockEmpathy ? COLORS.PRIMARY : COLORS.SWITCH_DISABLED}
+          accessibilityLabel={TEXTS.CHAT_PREF_LESS_VALIDATION}
+        />
+      </View>
+      <View style={styles.item}>
+        <MaterialCommunityIcons name="close-circle-outline" size={ICON_SIZE} color={COLORS.PRIMARY} />
+        <View style={styles.itemTextContainer}>
+          <Text style={styles.itemText}>{TEXTS.CHAT_PREF_NO_APOLOGY}</Text>
+          <Text style={styles.itemSubtext}>{TEXTS.CHAT_PREF_NO_APOLOGY_DESC}</Text>
+        </View>
+        <Switch
+          value={chatPrefs.avoidApologyOpenings}
+          onValueChange={(v) => onChatPreferenceChange('avoidApologyOpenings', v)}
+          thumbColor={chatPrefs.avoidApologyOpenings ? COLORS.PRIMARY : COLORS.SWITCH_DISABLED}
+          accessibilityLabel={TEXTS.CHAT_PREF_NO_APOLOGY}
+        />
+      </View>
+      <View style={styles.item}>
+        <MaterialCommunityIcons name="comment-question" size={ICON_SIZE} color={COLORS.PRIMARY} />
+        <View style={styles.itemTextContainer}>
+          <Text style={styles.itemText}>{TEXTS.CHAT_PREF_MORE_QUESTIONS}</Text>
+          <Text style={styles.itemSubtext}>{TEXTS.CHAT_PREF_MORE_QUESTIONS_DESC}</Text>
+        </View>
+        <Switch
+          value={chatPrefs.preferQuestions}
+          onValueChange={(v) => onChatPreferenceChange('preferQuestions', v)}
+          thumbColor={chatPrefs.preferQuestions ? COLORS.PRIMARY : COLORS.SWITCH_DISABLED}
+          accessibilityLabel={TEXTS.CHAT_PREF_MORE_QUESTIONS}
+        />
       </View>
       <TouchableOpacity
         style={styles.item}
@@ -188,6 +238,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 24,
     marginBottom: 8,
+  },
+  chatToneIntro: {
+    color: COLORS.ACCENT,
+    fontSize: 13,
+    opacity: 0.75,
+    marginBottom: 8,
+    marginTop: -4,
+  },
+  personalizationIntro: {
+    color: COLORS.ACCENT,
+    fontSize: 13,
+    lineHeight: 19,
+    opacity: 0.88,
+    marginBottom: 14,
+    marginTop: -4,
   },
   item: {
     flexDirection: 'row',

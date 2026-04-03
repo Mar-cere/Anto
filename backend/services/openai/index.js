@@ -8,8 +8,12 @@ export { validateMessage, normalizeEmotionalAnalysis } from './openaiValidation.
 export { generateResponseCacheKey, isCachedResponseValid, adaptCachedResponse } from './openaiResponseCache.js';
 export {
   buildContextualizedPrompt,
+  buildHistoryForPromptFromMessages,
+  computeHistorySelectionForPrompt,
+  selectHistoryForPrompt,
   selectRelevantHistory,
   generateConversationSummary,
+  buildAntiEchoHint,
   generateLongTermContext,
   generarMensajesContexto
 } from './openaiPromptBuilder.js';

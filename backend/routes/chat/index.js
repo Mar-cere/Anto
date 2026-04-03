@@ -11,6 +11,7 @@ export {
   HISTORIAL_LIMITE,
   deleteConversationLimiter,
   patchMessageLimiter,
+  messageFeedbackLimiter,
   sendMessageLimiter
 } from './chatConstants.js';
 

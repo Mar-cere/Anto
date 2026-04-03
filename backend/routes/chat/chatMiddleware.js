@@ -6,7 +6,8 @@ import mongoose from 'mongoose';
 import Conversation from '../../models/Conversation.js';
 
 export function isValidObjectId(id) {
-  return id && mongoose.Types.ObjectId.isValid(id);
+  if (id == null || id === '') return false;
+  return mongoose.isValidObjectId(String(id));
 }
 
 export function validarConversationId(req, res, next) {

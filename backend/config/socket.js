@@ -7,7 +7,7 @@ import { Server } from 'socket.io';
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
-import { HISTORY_LIMITS } from '../constants/openai.js';
+import { buildHistoryForPromptFromMessages } from '../services/openai/openaiPromptBuilder.js';
 import { HISTORIAL_LIMITE } from '../routes/chat/chatConstants.js';
 import {
   openaiService,
@@ -179,6 +179,7 @@ export const setupSocketIO = (server) => {
         const conversationHistory = await Message.find({
           conversationId: conversation._id
         })
+        .select('content role metadata.context.emotional createdAt')
         .sort({ createdAt: -1 })
         .limit(HISTORIAL_LIMITE)
         .lean();
@@ -200,14 +201,17 @@ export const setupSocketIO = (server) => {
         ]);
         
         // 5. Preparar historial para el prompt
-        const historialParaPrompt = conversationHistory
-          .slice(0, HISTORY_LIMITS.MESSAGES_IN_PROMPT)
-          .reverse()
-          .map(msg => ({
-            role: msg.role || 'user',
-            content: msg.content || ''
-          }))
-          .filter(msg => msg.content.trim().length > 0);
+        const historialParaPrompt = buildHistoryForPromptFromMessages(conversationHistory, {
+          emotional: emotionalAnalysis,
+          contextual: contextualAnalysis,
+          currentMessage: messageText,
+          _promptTelemetry: {
+            userId,
+            conversationId: conversation._id,
+            source: 'socket',
+            callSite: 'buildHistoryForPromptFromMessages'
+          }
+        });
         
         // 6. Generar respuesta usando OpenAI
         const response = await openaiService.generarRespuesta(
@@ -216,7 +220,14 @@ export const setupSocketIO = (server) => {
             history: historialParaPrompt,
             emotional: emotionalAnalysis,
             contextual: contextualAnalysis,
-            profile: userProfile
+            profile: userProfile,
+            currentConversationId: conversation._id,
+            _promptTelemetry: {
+              userId,
+              conversationId: conversation._id,
+              source: 'socket',
+              callSite: 'buildHistoryForPromptFromMessages'
+            }
           }
         );
         

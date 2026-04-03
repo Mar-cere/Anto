@@ -63,6 +63,38 @@ class MetricsService {
         total: 0,
         averageTime: 0,
         errors: 0
+      },
+      promptHistoryTruncation: {
+        events: 0,
+        truncatedEvents: 0,
+        tailOnlyEvents: 0,
+        sumDroppedTotal: 0,
+        sumNonempty: 0,
+        maxDroppedInEvent: 0,
+        bySource: {},
+        byCallSite: {}
+      },
+      /** Contadores ligeros en memoria: todas las selecciones vs truncadas (sin escribir en Mongo por mensaje). */
+      promptHistorySelectionSamples: {
+        totalSelections: 0,
+        truncatedSelections: 0
+      },
+      /** Respuestas del asistente: frases tipo plantilla y solapamiento con el último mensaje del usuario. */
+      chatTemplateSignals: {
+        total: 0,
+        sumStockScore: 0,
+        sumEchoRatio: 0,
+        sumEchoUsefulRatio: 0,
+        sumEchoEmptyRatio: 0,
+        hitsByPhrase: {},
+        byResponseStyle: {},
+        byChatPrefsKey: {}
+      },
+      /** Pulgar arriba/abajo en mensajes del asistente */
+      messageFeedback: {
+        up: 0,
+        down: 0,
+        cleared: 0
       }
     };
 
@@ -78,6 +110,16 @@ class MetricsService {
    * @param {string} userId - ID del usuario (opcional)
    * @param {Object} metadata - Metadata adicional (opcional)
    */
+  /**
+   * Muestra en memoria cada llamada a selectHistoryForPrompt (barato; no persiste en Mongo).
+   * @param {{ truncated?: boolean }} data
+   */
+  recordPromptHistorySelectionSample(data) {
+    const s = this.inMemoryMetrics.promptHistorySelectionSamples;
+    s.totalSelections++;
+    if (data.truncated) s.truncatedSelections++;
+  }
+
   async recordMetric(type, data, userId = null, metadata = {}) {
     try {
       // Actualizar métricas en memoria
@@ -189,6 +231,49 @@ class MetricsService {
             ((currentAvg * (total - 1)) + data.time) / total;
         }
         break;
+
+      case 'prompt_history_truncation': {
+        const ph = this.inMemoryMetrics.promptHistoryTruncation;
+        ph.events++;
+        if (data.truncated) ph.truncatedEvents++;
+        if (data.tailOnly) ph.tailOnlyEvents++;
+        ph.sumDroppedTotal += data.droppedTotal || 0;
+        ph.sumNonempty += data.nonemptyCount || 0;
+        const dropped = data.droppedTotal || 0;
+        if (dropped > ph.maxDroppedInEvent) ph.maxDroppedInEvent = dropped;
+        const src = data.source || 'unknown';
+        ph.bySource[src] = (ph.bySource[src] || 0) + 1;
+        const cs = data.callSite || 'unknown';
+        ph.byCallSite[cs] = (ph.byCallSite[cs] || 0) + 1;
+        break;
+      }
+
+      case 'chat_template_signals': {
+        const c = this.inMemoryMetrics.chatTemplateSignals;
+        c.total++;
+        c.sumStockScore += data.stockPhraseScore || 0;
+        c.sumEchoRatio += data.echoOverlapRatio || 0;
+        c.sumEchoUsefulRatio += data.echoUsefulRatio || 0;
+        c.sumEchoEmptyRatio += data.echoEmptyRatio || 0;
+        const hits = data.stockPhraseHits || {};
+        for (const k of Object.keys(hits)) {
+          c.hitsByPhrase[k] = (c.hitsByPhrase[k] || 0) + hits[k];
+        }
+        const rs = data.responseStyle || 'unknown';
+        c.byResponseStyle[rs] = (c.byResponseStyle[rs] || 0) + 1;
+        const pk = data.chatPrefsKey || 'r0a0p0';
+        c.byChatPrefsKey[pk] = (c.byChatPrefsKey[pk] || 0) + 1;
+        break;
+      }
+
+      case 'message_feedback': {
+        const mf = this.inMemoryMetrics.messageFeedback;
+        const h = data.helpful;
+        if (h === 'up') mf.up++;
+        else if (h === 'down') mf.down++;
+        else if (h === 'cleared') mf.cleared++;
+        break;
+      }
     }
   }
 
@@ -254,6 +339,48 @@ class MetricsService {
 
     const cacheStats = await this.getCacheStats();
 
+    const ph = this.inMemoryMetrics.promptHistoryTruncation;
+    const samples = this.inMemoryMetrics.promptHistorySelectionSamples;
+    const promptHistory = {
+      samples: {
+        totalSelections: samples.totalSelections,
+        truncatedSelections: samples.truncatedSelections,
+        truncatedRateOfSelections:
+          samples.totalSelections > 0
+            ? ((samples.truncatedSelections / samples.totalSelections) * 100).toFixed(2) + '%'
+            : '0%'
+      },
+      truncatedEventsDetail:
+        ph.events > 0
+          ? {
+              persistedEvents: ph.events,
+              truncatedRate: ((ph.truncatedEvents / ph.events) * 100).toFixed(2) + '%',
+              tailOnlyEvents: ph.tailOnlyEvents,
+              avgDroppedWhenTruncated:
+                ph.truncatedEvents > 0
+                  ? (ph.sumDroppedTotal / ph.truncatedEvents).toFixed(2)
+                  : '0',
+              maxDroppedInEvent: ph.maxDroppedInEvent,
+              bySource: ph.bySource,
+              byCallSite: ph.byCallSite
+            }
+          : null
+    };
+
+    const cts = this.inMemoryMetrics.chatTemplateSignals;
+    const chatTemplateSignals =
+      cts.total > 0
+        ? {
+            samples: cts.total,
+            avgStockScore: (cts.sumStockScore / cts.total).toFixed(3),
+            avgEchoOverlap: (cts.sumEchoRatio / cts.total).toFixed(3),
+            avgEchoUseful: (cts.sumEchoUsefulRatio / cts.total).toFixed(3),
+            avgEchoEmpty: (cts.sumEchoEmptyRatio / cts.total).toFixed(3),
+            byResponseStyle: cts.byResponseStyle,
+            byChatPrefsKey: cts.byChatPrefsKey
+          }
+        : null;
+
     return {
       status: errorRate < 5 ? 'healthy' : errorRate < 10 ? 'degraded' : 'unhealthy',
       errorRate: errorRate.toFixed(2),
@@ -261,7 +388,9 @@ class MetricsService {
       averageResponseTime: this.inMemoryMetrics.responseGeneration.averageTime.toFixed(2),
       recentErrors: recentErrors.length,
       activeSessions: this.inMemoryMetrics.sessionMemory.activeSessions,
-      cacheStats: cacheStats
+      cacheStats: cacheStats,
+      promptHistoryTruncation: promptHistory,
+      chatTemplateSignals
     };
   }
 

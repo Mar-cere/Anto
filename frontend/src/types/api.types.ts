@@ -3,6 +3,13 @@
  * Base para migración gradual a TypeScript.
  */
 
+/** Preferencias de tono del chat (UserProfile; expuestas en GET /me dentro de preferences) */
+export interface ChatPreferences {
+  reduceStockEmpathy?: boolean;
+  avoidApologyOpenings?: boolean;
+  preferQuestions?: boolean;
+}
+
 /** Preferencias de usuario (alineado con backend) */
 export interface UserPreferences {
   theme?: 'light' | 'dark' | 'auto';
@@ -12,6 +19,7 @@ export interface UserPreferences {
     profileVisibility?: 'public' | 'private' | 'friends';
   };
   responseStyle?: string;
+  chatPreferences?: ChatPreferences;
 }
 
 /** Estadísticas del usuario */

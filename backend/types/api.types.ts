@@ -3,6 +3,13 @@
  * Alineados con frontend/src/types/api.types.ts para mantener contratos consistentes.
  */
 
+/** Preferencias de tono del chat (UserProfile) */
+export interface ChatPreferences {
+  reduceStockEmpathy?: boolean;
+  avoidApologyOpenings?: boolean;
+  preferQuestions?: boolean;
+}
+
 /** Preferencias de usuario */
 export interface UserPreferences {
   theme?: 'light' | 'dark' | 'auto';
@@ -12,6 +19,7 @@ export interface UserPreferences {
     profileVisibility?: 'public' | 'private' | 'friends';
   };
   responseStyle?: string;
+  chatPreferences?: ChatPreferences;
 }
 
 /** Estadísticas del usuario */

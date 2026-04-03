@@ -8,8 +8,6 @@ import {
   Animated,
   ImageBackground,
   StatusBar,
-  Alert,
-  Linking,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useNavigation } from '@react-navigation/native';
@@ -22,17 +20,7 @@ import { NameInfoModal } from './register/NameInfoModal';
 import { TermsModal } from './register/TermsModal';
 import { styles } from './register/registerScreenStyles';
 import { STATUS_BAR_STYLE, STATUS_BAR_BACKGROUND } from './register/registerScreenConstants';
-import { URLS } from './register/registerScreenConstants';
-
-const openPrivacyUrl = async () => {
-  try {
-    const canOpen = await Linking.canOpenURL(URLS.PRIVACY);
-    if (canOpen) await Linking.openURL(URLS.PRIVACY);
-    else Alert.alert('Error', 'No se pudo abrir el enlace');
-  } catch {
-    Alert.alert('Error', 'No se pudo abrir el enlace');
-  }
-};
+import { openRegisterPrivacyUrl } from './register/openPrivacyLink';
 
 const RegisterScreen = () => {
   const navigation = useNavigation();
@@ -91,7 +79,7 @@ const RegisterScreen = () => {
             onRegister={handleRegister}
             onOpenNameInfo={() => setNameInfoModalVisible(true)}
             onOpenTerms={() => setTermsModalVisible(true)}
-            onOpenPrivacy={openPrivacyUrl}
+            onOpenPrivacy={openRegisterPrivacyUrl}
             onSignInLink={() => navigation.navigate('SignIn')}
             fadeAnim={fadeAnim}
             translateYAnim={translateYAnim}
