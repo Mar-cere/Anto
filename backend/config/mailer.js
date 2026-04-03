@@ -7,6 +7,7 @@ import nodemailer from 'nodemailer';
 import sgMail from '@sendgrid/mail';
 import { google } from 'googleapis';
 import { APP_NAME, APP_NAME_FULL, EMAIL_FROM_NAME, LOGO_URL } from '../constants/app.js';
+import logger from '../utils/logger.js';
 import {
   CODE_EXPIRATION_MINUTES,
   EMAIL_COLORS,
@@ -924,7 +925,7 @@ const mailer = {
   sendServerStartupPing: async (to) => {
     try {
       if (!to || typeof to !== 'string' || !to.trim()) {
-        console.warn('[Mailer] ⚠️ sendServerStartupPing: destinatario vacío');
+        logger.warn('[Mailer] sendServerStartupPing: destinatario vacío');
         return false;
       }
       const ts = new Date().toISOString();
@@ -946,9 +947,13 @@ const mailer = {
 <p style="color:#444;font-size:14px;">Si lo recibís, la tubería (Gmail API o fallback SMTP/SendGrid) respondió correctamente.</p>
 </body></html>`
       };
-      return await sendEmail(to.trim(), template, 'Ping arranque servidor');
+      const ok = await sendEmail(to.trim(), template, 'Ping arranque servidor');
+      if (!ok) {
+        logger.warn('[Mailer] sendServerStartupPing: sendEmail devolvió false', { to: to.trim() });
+      }
+      return ok;
     } catch (error) {
-      console.error('[Mailer] ❌ Error en sendServerStartupPing:', error.message);
+      logger.warn('[Mailer] Error en sendServerStartupPing', { error: error.message });
       return false;
     }
   },

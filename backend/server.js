@@ -410,8 +410,11 @@ if (process.env.NODE_ENV !== 'test') {
   logger.info(`🌐 Servidor accesible desde: ${HOST === '0.0.0.0' ? 'cualquier IP (Render)' : 'localhost'}`);
   logger.info(`🔍 Render detectado: ${isRender ? 'Sí' : 'No'}`);
 
+  // Ping de correo al arranque: true / 1 / yes / on (sin distinguir mayúsculas). Si no coincide, queda explícito en el log.
+  const rawPing = process.env.MAIL_STARTUP_PING;
   const startupPing =
-    process.env.MAIL_STARTUP_PING === 'true' || process.env.MAIL_STARTUP_PING === '1';
+    typeof rawPing === 'string' &&
+    ['true', '1', 'yes', 'on'].includes(rawPing.trim().toLowerCase());
   if (startupPing) {
     const pingTo = (process.env.MAIL_STARTUP_PING_TO || process.env.EMAIL_USER || '').trim();
     if (!pingTo) {
@@ -419,6 +422,7 @@ if (process.env.NODE_ENV !== 'test') {
         '📧 MAIL_STARTUP_PING activo: falta MAIL_STARTUP_PING_TO o EMAIL_USER; no se envía correo de prueba.'
       );
     } else {
+      logger.info(`📧 MAIL_STARTUP_PING: programado envío de prueba a ${pingTo}`);
       queueMicrotask(() => {
         import('./config/mailer.js')
           .then(({ default: mailer }) => mailer.sendServerStartupPing(pingTo))
@@ -426,7 +430,9 @@ if (process.env.NODE_ENV !== 'test') {
             if (ok) {
               logger.info(`📧 Correo de arranque enviado correctamente a ${pingTo}`);
             } else {
-              logger.warn(`📧 Correo de arranque no se pudo enviar (revisá logs [Mailer])`);
+              logger.warn(
+                `📧 Correo de arranque no se pudo enviar a ${pingTo} (revisá consola [Mailer] y credenciales SMTP/Gmail/SendGrid)`
+              );
             }
           })
           .catch((err) => {
@@ -434,6 +440,14 @@ if (process.env.NODE_ENV !== 'test') {
           });
       });
     }
+  } else {
+    const shown =
+      rawPing === undefined || rawPing === ''
+        ? '(no definido)'
+        : JSON.stringify(rawPing);
+    logger.info(
+      `📧 MAIL_STARTUP_PING: desactivado (env=${shown}). Para activar: MAIL_STARTUP_PING=true y MAIL_STARTUP_PING_TO o EMAIL_USER.`
+    );
   }
 
   // Iniciar servicio de recordatorios periódicos (solo en producción o si está habilitado, NO en test)
