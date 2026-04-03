@@ -917,6 +917,43 @@ const mailer = {
   },
 
   /**
+   * Correo de comprobación al iniciar el servidor (Gmail API / fallback).
+   * @param {string} to - Destinatario
+   * @returns {Promise<boolean>}
+   */
+  sendServerStartupPing: async (to) => {
+    try {
+      if (!to || typeof to !== 'string' || !to.trim()) {
+        console.warn('[Mailer] ⚠️ sendServerStartupPing: destinatario vacío');
+        return false;
+      }
+      const ts = new Date().toISOString();
+      const env = process.env.NODE_ENV || 'development';
+      const host =
+        process.env.RENDER_SERVICE_NAME ||
+        process.env.RENDER_EXTERNAL_URL ||
+        process.env.HOSTNAME ||
+        '—';
+      const template = {
+        subject: `[${APP_NAME}] Servidor iniciado — prueba de correo (${env})`,
+        html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:system-ui,-apple-system,sans-serif;padding:20px;line-height:1.5;color:#111;">
+<p>Este mensaje se envía <strong>automáticamente cuando el backend arranca</strong> para verificar que el mailer funciona.</p>
+<ul>
+  <li><strong>UTC:</strong> ${ts}</li>
+  <li><strong>Entorno:</strong> <code>${env}</code></li>
+  <li><strong>Servicio / URL:</strong> <code>${String(host)}</code></li>
+</ul>
+<p style="color:#444;font-size:14px;">Si lo recibís, la tubería (Gmail API o fallback SMTP/SendGrid) respondió correctamente.</p>
+</body></html>`
+      };
+      return await sendEmail(to.trim(), template, 'Ping arranque servidor');
+    } catch (error) {
+      console.error('[Mailer] ❌ Error en sendServerStartupPing:', error.message);
+      return false;
+    }
+  },
+
+  /**
    * Enviar email de prueba a contacto de emergencia
    * @param {string} email - Email del contacto
    * @param {string} contactName - Nombre del contacto

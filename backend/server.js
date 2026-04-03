@@ -409,7 +409,33 @@ if (process.env.NODE_ENV !== 'test') {
   logger.info(`🔗 URL Frontend: ${config.app.frontendUrl}`);
   logger.info(`🌐 Servidor accesible desde: ${HOST === '0.0.0.0' ? 'cualquier IP (Render)' : 'localhost'}`);
   logger.info(`🔍 Render detectado: ${isRender ? 'Sí' : 'No'}`);
-  
+
+  const startupPing =
+    process.env.MAIL_STARTUP_PING === 'true' || process.env.MAIL_STARTUP_PING === '1';
+  if (startupPing) {
+    const pingTo = (process.env.MAIL_STARTUP_PING_TO || process.env.EMAIL_USER || '').trim();
+    if (!pingTo) {
+      logger.warn(
+        '📧 MAIL_STARTUP_PING activo: falta MAIL_STARTUP_PING_TO o EMAIL_USER; no se envía correo de prueba.'
+      );
+    } else {
+      queueMicrotask(() => {
+        import('./config/mailer.js')
+          .then(({ default: mailer }) => mailer.sendServerStartupPing(pingTo))
+          .then((ok) => {
+            if (ok) {
+              logger.info(`📧 Correo de arranque enviado correctamente a ${pingTo}`);
+            } else {
+              logger.warn(`📧 Correo de arranque no se pudo enviar (revisá logs [Mailer])`);
+            }
+          })
+          .catch((err) => {
+            logger.warn('📧 Error enviando correo de arranque', { error: err?.message });
+          });
+      });
+    }
+  }
+
   // Iniciar servicio de recordatorios periódicos (solo en producción o si está habilitado, NO en test)
   if (features.reminders && process.env.NODE_ENV !== 'test') {
     const REMINDER_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 horas

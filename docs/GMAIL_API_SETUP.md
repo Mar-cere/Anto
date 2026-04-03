@@ -57,13 +57,25 @@ Si no aparece `refresh_token`: revocá la app en https://myaccount.google.com/pe
 MAIL_OPT_OUT_SENDGRID=true
 ```
 
-## 5. Arranque del servidor
+## 5. Correo al reiniciar el servidor (opcional)
+
+Para comprobar el mailer en cada despliegue / reinicio:
+
+```env
+MAIL_STARTUP_PING=true
+# Opcional; si no se define, se usa EMAIL_USER:
+# MAIL_STARTUP_PING_TO=quien@recibe.com
+```
+
+En logs: `Correo de arranque enviado correctamente a ...` o un aviso si falló.
+
+## 6. Arranque del servidor
 
 En los logs deberías ver líneas como:
 
 - `[Mailer] ✅ Gmail API configurado correctamente`
 - `[Mailer] 📌 Correo: Gmail API como prioritario (desde ...)`
 
-## 6. Dominio y deliverability
+## 7. Dominio y deliverability
 
 Para que no caiga en spam: **SPF**, **DKIM** y **DMARC** del dominio que usás en `From` (Google Admin / zona DNS). Workspace suele guiar la verificación del dominio.
