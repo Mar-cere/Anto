@@ -24,12 +24,13 @@ const GMAIL_REFRESH_TOKEN = process.env.GMAIL_REFRESH_TOKEN;
 const GMAIL_USER_EMAIL = process.env.GMAIL_USER_EMAIL || process.env.EMAIL_USER;
 const USE_GMAIL_API = !!(GMAIL_CLIENT_ID && GMAIL_CLIENT_SECRET && GMAIL_REFRESH_TOKEN);
 
-// Configurar SendGrid si está disponible
+// SendGrid solo si no hay Gmail API (evita depender de Twilio/SendGrid cuando Gmail API es el camino principal)
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_USER;
-const USE_SENDGRID = !!SENDGRID_API_KEY && !USE_GMAIL_API; // Solo usar SendGrid si Gmail API no está configurado
+const MAIL_OPT_OUT_SENDGRID = process.env.MAIL_OPT_OUT_SENDGRID === 'true';
+const USE_SENDGRID =
+  !MAIL_OPT_OUT_SENDGRID && !!SENDGRID_API_KEY && !USE_GMAIL_API;
 
-// Configurar Gmail API si está disponible
 let gmailClient = null;
 if (USE_GMAIL_API) {
   try {
@@ -65,6 +66,30 @@ try {
   console.log('[Mailer] ⚠️ Usando Gmail SMTP como fallback');
   }
 }
+
+if (USE_GMAIL_API && !GMAIL_USER_EMAIL) {
+  console.warn(
+    '[Mailer] ⚠️ Gmail API: falta GMAIL_USER_EMAIL (o EMAIL_USER). El envío por API puede fallar.'
+  );
+}
+
+/** Un vistazo rápido al arranque: qué canal usará primero el mailer */
+const logMailerBootstrap = () => {
+  if (USE_GMAIL_API && gmailClient && GMAIL_USER_EMAIL) {
+    console.log(`[Mailer] 📌 Correo: Gmail API como prioridad (desde ${GMAIL_USER_EMAIL})`);
+    console.log('[Mailer]    Si la API falla, el fallback es Gmail SMTP (EMAIL_USER + EMAIL_APP_PASSWORD).');
+  } else if (USE_GMAIL_API && !gmailClient) {
+    console.warn('[Mailer] 📌 Gmail API parcialmente configurada pero el cliente no pudo iniciarse; revisa credenciales.');
+  } else if (USE_SENDGRID) {
+    console.log(`[Mailer] 📌 Correo: SendGrid (${SENDGRID_FROM_EMAIL || 'sin FROM'})`);
+  } else {
+    console.log('[Mailer] 📌 Correo: Gmail SMTP (sin Gmail API ni SendGrid)');
+  }
+  if (MAIL_OPT_OUT_SENDGRID && SENDGRID_API_KEY) {
+    console.log('[Mailer] ℹ️ MAIL_OPT_OUT_SENDGRID=true → no se usará SendGrid aunque exista SENDGRID_API_KEY.');
+  }
+};
+logMailerBootstrap();
 
 // Helper: crear transporter de nodemailer
 const createTransporter = () => {
@@ -715,13 +740,12 @@ const sendEmail = async (email, template, emailType) => {
     }
   }
 
-  // Intentar con SendGrid si está configurado
+  // SendGrid solo si está activo (nunca se usa si Gmail API es el modo principal: USE_SENDGRID ya es false)
   if (USE_SENDGRID) {
     try {
       return await sendEmailWithSendGrid(email, template, emailType);
     } catch (sendGridError) {
       console.error('[Mailer] ⚠️ SendGrid falló, intentando con Gmail SMTP como fallback...');
-      // Continuar con el fallback a Gmail SMTP
     }
   }
 
