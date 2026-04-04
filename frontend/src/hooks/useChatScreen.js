@@ -120,10 +120,19 @@ export function useChatScreen() {
       if (userToken) {
         setGuestQuota(null);
         await chatService.initializeSocket();
-        const conversationId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+        let conversationId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
         if (conversationId) {
           const serverMessages = await chatService.getMessages(conversationId);
           if (dedupeAndSetMessages(serverMessages)) return;
+        }
+        const idAfterFetch = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+        if (!idAfterFetch) {
+          await chatService.initializeSocket();
+          conversationId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+          if (conversationId) {
+            const retryMessages = await chatService.getMessages(conversationId);
+            if (dedupeAndSetMessages(retryMessages)) return;
+          }
         }
         const welcomeMessage = {
           id: `${MESSAGE_ID_PREFIXES.WELCOME}-${Date.now()}`,

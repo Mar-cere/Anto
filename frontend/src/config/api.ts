@@ -3,6 +3,7 @@
  * Contratos con el backend: ver src/types/api.types.ts
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { clearPersistedChatSession } from '../utils/chatSessionStorage';
 import { Platform } from 'react-native';
 import type {
   User,
@@ -289,6 +290,7 @@ export const login = async (credentials: LoginCredentials): Promise<LoginResultT
     );
     const token = data.token ?? data.accessToken;
     if (token && data.user) {
+      await clearPersistedChatSession();
       await AsyncStorage.setItem('userToken', token);
       await AsyncStorage.setItem('userData', JSON.stringify(data.user));
       if (typeof __DEV__ !== 'undefined' && __DEV__) {
@@ -311,6 +313,7 @@ export const login = async (credentials: LoginCredentials): Promise<LoginResultT
 
 export const logout = async (): Promise<{ success: boolean; error?: string }> => {
   try {
+    await clearPersistedChatSession();
     await AsyncStorage.removeItem('userToken');
     await AsyncStorage.removeItem('userData');
     return { success: true };

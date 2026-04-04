@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api, { API_URL } from '../config/api';
+import { clearPersistedChatSession } from '../utils/chatSessionStorage';
 import { Platform } from 'react-native';
 import { GUEST_CHAT_STORAGE_KEYS as GUEST_KEYS } from '../constants/guestChatStorageKeys';
 
@@ -536,6 +537,11 @@ export const getMessages = async (conversationId) => {
     const response = await api.get(`/api/chat/conversations/${conversationId}`);
     return response.messages;
   } catch (error) {
+    const status = error?.response?.status;
+    const msg = String(error?.message || '');
+    if (status === 404 || msg.includes('no encontrada')) {
+      await clearPersistedChatSession();
+    }
     console.error('Error al obtener mensajes:', error);
     return [];
   }

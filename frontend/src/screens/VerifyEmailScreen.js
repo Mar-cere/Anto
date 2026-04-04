@@ -33,6 +33,7 @@ import { api, ENDPOINTS } from '../config/api';
 import { ROUTES } from '../constants/routes';
 import { colors, globalStyles } from '../styles/globalStyles';
 import { useAuth } from '../context/AuthContext';
+import { clearPersistedChatSession } from '../utils/chatSessionStorage';
 
 // Constantes
 const CODE_LENGTH = 6;
@@ -134,6 +135,7 @@ const VerifyEmailScreen = () => {
       });
 
       if (response.accessToken || response.token) {
+        await clearPersistedChatSession();
         // Guardar tokens y datos del usuario
         await AsyncStorage.setItem('userToken', response.accessToken || response.token);
         if (response.refreshToken) {

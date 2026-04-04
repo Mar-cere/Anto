@@ -15,35 +15,19 @@ import { colors } from '../styles/globalStyles';
 import { getApiErrorMessage } from '../utils/apiErrorHandler';
 
 const TEXTS = {
-  TITLE: 'Un momento para conocerte',
-  SUBTITLE: 'Elige las opciones que mejor te representen. Puedes omitir si prefieres.',
-  Q1_LABEL: '¿Qué esperas de la app?',
-  Q2_LABEL: '¿Qué te gustaría mejorar o trabajar?',
-  Q3_LABEL: '¿Qué tipo de apoyo buscas?',
-  NONE: 'Prefiero no responder por ahora',
+  TITLE: 'Para adaptarte mejor',
+  SUBTITLE: 'Tres preguntas cortas. Si no te encaja nada, podés omitir.',
+  Q1_LABEL: '¿Qué buscás acá?',
+  Q2_LABEL: '¿En qué te gustaría avanzar?',
+  Q3_LABEL: '¿Cómo te gustaría que te acompañe?',
   SKIP: 'Omitir',
-  SUBMIT: 'Guardar',
+  SUBMIT: 'Listo',
 };
 
 const OPTIONS = {
-  whatExpectFromApp: [
-    'Apoyo emocional',
-    'Organizarme mejor',
-    'Manejar ansiedad/estrés',
-    'Crear hábitos saludables',
-  ],
-  whatToImproveOrWorkOn: [
-    'Sueño',
-    'Rutinas',
-    'Autoestima',
-    'Enfoque y productividad',
-  ],
-  typeOfSpecialist: [
-    'Más guía paso a paso',
-    'Que me escuche y acompañe',
-    'Consejos prácticos',
-    'Equilibrado',
-  ],
+  whatExpectFromApp: ['Apoyo emocional', 'Ansiedad o estrés', 'Hábitos y rutinas'],
+  whatToImproveOrWorkOn: ['Sueño y descanso', 'Autoestima', 'Enfoque y organización'],
+  typeOfSpecialist: ['Paso a paso', 'Escucha y compañía', 'Ideas prácticas'],
 };
 
 const UI = {
@@ -82,7 +66,7 @@ const OnboardingQuestions = ({ visible, onDismiss }) => {
         whatToImproveOrWorkOn: whatToImproveOrWorkOn.trim() || null,
         typeOfSpecialist: typeOfSpecialist.trim() || null,
       });
-      showToast({ message: 'Preferencias guardadas', type: 'success' });
+      showToast({ message: 'Listo, gracias', type: 'success' });
       onDismiss?.();
     } catch (err) {
       setError(getApiErrorMessage(err) || 'No se pudieron guardar las respuestas. Puedes omitir y seguir.');
@@ -114,19 +98,6 @@ const OnboardingQuestions = ({ visible, onDismiss }) => {
             </TouchableOpacity>
           );
         })}
-        <TouchableOpacity
-          style={[styles.optionChip, value === TEXTS.NONE && styles.optionChipSelected]}
-          onPress={() => {
-            Haptics.selectionAsync().catch(() => {});
-            setValue(value === TEXTS.NONE ? '' : TEXTS.NONE);
-          }}
-          activeOpacity={0.85}
-          disabled={loading}
-        >
-          <Text style={[styles.optionChipText, value === TEXTS.NONE && styles.optionChipTextSelected]}>
-            {TEXTS.NONE}
-          </Text>
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -235,29 +206,29 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   title: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '700',
     color: colors.text,
     textAlign: 'center',
     marginBottom: 6,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 19,
   },
   scroll: {
-    maxHeight: 420,
+    maxHeight: 380,
   },
   scrollContent: {
-    paddingBottom: 16,
+    paddingBottom: 12,
   },
   field: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 8,
