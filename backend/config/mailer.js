@@ -25,12 +25,13 @@ const GMAIL_REFRESH_TOKEN = process.env.GMAIL_REFRESH_TOKEN;
 const GMAIL_USER_EMAIL = process.env.GMAIL_USER_EMAIL || process.env.EMAIL_USER;
 const USE_GMAIL_API = !!(GMAIL_CLIENT_ID && GMAIL_CLIENT_SECRET && GMAIL_REFRESH_TOKEN);
 
-// SendGrid solo si no hay Gmail API (evita depender de Twilio/SendGrid cuando Gmail API es el camino principal)
+// SendGrid: API key disponible (también como fallback si Gmail API falla en Render, etc.)
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_USER;
 const MAIL_OPT_OUT_SENDGRID = process.env.MAIL_OPT_OUT_SENDGRID === 'true';
-const USE_SENDGRID =
-  !MAIL_OPT_OUT_SENDGRID && !!SENDGRID_API_KEY && !USE_GMAIL_API;
+const SENDGRID_CONFIGURED = !MAIL_OPT_OUT_SENDGRID && !!SENDGRID_API_KEY;
+/** SendGrid como canal principal solo cuando no hay credenciales de Gmail API */
+const USE_SENDGRID_PRIMARY = SENDGRID_CONFIGURED && !USE_GMAIL_API;
 
 let gmailClient = null;
 if (USE_GMAIL_API) {
@@ -53,18 +54,18 @@ if (USE_GMAIL_API) {
   }
 }
 
-// Configurar SendGrid solo si está disponible (evitar errores si el módulo no está instalado)
+// Inicializar SendGrid si hay API key (sirve como principal o como fallback tras Gmail API)
 try {
-  if (USE_SENDGRID) {
+  if (SENDGRID_CONFIGURED) {
     sgMail.setApiKey(SENDGRID_API_KEY);
-    console.log('[Mailer] ✅ SendGrid configurado correctamente');
+    console.log('[Mailer] ✅ SendGrid API key cargada (uso principal o fallback si Gmail API falla)');
   } else if (!USE_GMAIL_API) {
     console.log('[Mailer] ⚠️ SendGrid no configurado, usando Gmail SMTP como fallback');
   }
 } catch (error) {
   console.warn('[Mailer] ⚠️ Error configurando SendGrid:', error.message);
   if (!USE_GMAIL_API) {
-  console.log('[Mailer] ⚠️ Usando Gmail SMTP como fallback');
+    console.log('[Mailer] ⚠️ Usando Gmail SMTP como fallback');
   }
 }
 
@@ -78,10 +79,14 @@ if (USE_GMAIL_API && !GMAIL_USER_EMAIL) {
 const logMailerBootstrap = () => {
   if (USE_GMAIL_API && gmailClient && GMAIL_USER_EMAIL) {
     console.log(`[Mailer] 📌 Correo: Gmail API como prioridad (desde ${GMAIL_USER_EMAIL})`);
-    console.log('[Mailer]    Si la API falla, el fallback es Gmail SMTP (EMAIL_USER + EMAIL_APP_PASSWORD).');
+    if (SENDGRID_CONFIGURED) {
+      console.log('[Mailer]    Si la API falla → SendGrid; si SendGrid falla → Gmail SMTP (app password).');
+    } else {
+      console.log('[Mailer]    Si la API falla → Gmail SMTP (EMAIL_USER + EMAIL_APP_PASSWORD). En Render suele fallar SMTP; conviene SENDGRID_API_KEY.');
+    }
   } else if (USE_GMAIL_API && !gmailClient) {
     console.warn('[Mailer] 📌 Gmail API parcialmente configurada pero el cliente no pudo iniciarse; revisa credenciales.');
-  } else if (USE_SENDGRID) {
+  } else if (USE_SENDGRID_PRIMARY) {
     console.log(`[Mailer] 📌 Correo: SendGrid (${SENDGRID_FROM_EMAIL || 'sin FROM'})`);
   } else {
     console.log('[Mailer] 📌 Correo: Gmail SMTP (sin Gmail API ni SendGrid)');
@@ -689,6 +694,12 @@ const sendEmailWithGmailAPI = async (email, template, emailType) => {
     if (error.response?.data) {
       console.error(`[Mailer] 📋 [Gmail API] Error response:`, JSON.stringify(error.response.data, null, 2));
     }
+    const errStr = JSON.stringify(error.response?.data || error.message || '');
+    if (errStr.includes('invalid_grant')) {
+      console.error(
+        '[Mailer] 💡 invalid_grant: regenerá GMAIL_REFRESH_TOKEN con el mismo GMAIL_CLIENT_ID/SECRET y scope gmail.send; revisá OAuth en Google Cloud.'
+      );
+    }
     throw error;
   }
 };
@@ -741,8 +752,7 @@ const sendEmail = async (email, template, emailType) => {
     }
   }
 
-  // SendGrid solo si está activo (nunca se usa si Gmail API es el modo principal: USE_SENDGRID ya es false)
-  if (USE_SENDGRID) {
+  if (SENDGRID_CONFIGURED) {
     try {
       return await sendEmailWithSendGrid(email, template, emailType);
     } catch (sendGridError) {
