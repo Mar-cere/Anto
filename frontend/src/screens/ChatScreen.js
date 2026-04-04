@@ -254,7 +254,6 @@ const ChatScreen = () => {
     handleBack,
     navigation,
     guestQuota,
-    dismissQuickReplies,
     guestHandoffModal,
     guestHandoffStartFresh,
     guestHandoffUseSummary,
@@ -352,8 +351,6 @@ const ChatScreen = () => {
         item={item}
         onSuggestionPress={handleSuggestionPress}
         onSuggestionDismiss={handleSuggestionDismiss}
-        onQuickReply={handleSend}
-        onQuickReplyDismiss={dismissQuickReplies}
         feedbackEnabled={chatFeedbackEnabled}
         feedbackTargetId={feedbackTargetId}
         onMessageFeedback={handleMessageFeedback}
@@ -364,7 +361,6 @@ const ChatScreen = () => {
       handleSuggestionPress,
       handleSuggestionDismiss,
       handleSend,
-      dismissQuickReplies,
       chatFeedbackEnabled,
       feedbackTargetId,
       handleMessageFeedback,

@@ -66,10 +66,6 @@ Revisar `explain()` en consultas de `IntenseChatCheckIn` y `Message`; considerar
 **Área:** frontend + API · **Impacto:** UX percepción de “Anto está respondiendo”  
 Hoy el cliente suele recibir la respuesta completa; valorar SSE/`getReader` donde exista, o animación de texto progresivo + cursor para reducir sensación de bloqueo.
 
-## 15. Ampliar chips de respuesta rápida (contexto emocional, experimentos)
-**Área:** frontend + backend · **Impacto:** relevancia y evolución del producto  
-Acoplar chips al análisis emocional del backend o a flags/experimentos remotos; mantener límites de UI (2–3 chips, compacto si hay tarjetas de técnicas).
-
 ## 16. Regenerar la última respuesta del asistente (límite razonable)
 **Área:** frontend + backend · **Impacto:** control del usuario  
 Una acción por mensaje del bot (“Reintentar” / “Otra versión”) reutilizando el mismo mensaje de usuario; límites diarios para coste y abuso.

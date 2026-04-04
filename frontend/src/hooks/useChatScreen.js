@@ -25,11 +25,6 @@ import {
   STORAGE_KEYS,
   TEXTS,
 } from '../screens/chat/chatScreenConstants';
-import {
-  copyGroupFromSeed,
-  getQuickReplies,
-  hashSeed,
-} from '../screens/chat/quickReplyChipsHelper';
 import { getResetToMainTabsWithInicioState } from '../navigation/navigationHelpers';
 import {
   clearChatEntryBackTarget,
@@ -113,7 +108,7 @@ export function useChatScreen() {
         const timeB = new Date(b.createdAt || b.metadata?.timestamp || 0).getTime();
         return timeA - timeB;
       });
-      setMessages(uniqueMessages);
+      setMessages(uniqueMessages.filter((m) => m.type !== 'quickReplies'));
       return true;
     };
 
@@ -377,7 +372,7 @@ export function useChatScreen() {
 
     try {
       setMessages((prev) => {
-        const cleaned = prev.filter((m) => m.type !== MESSAGE_TYPES.QUICK_REPLIES);
+        const cleaned = prev.filter((m) => m.type !== 'quickReplies');
         return [...cleaned, tempUserMessage, tempAssistantMessage];
       });
       scrollToBottom(true);
@@ -407,7 +402,7 @@ export function useChatScreen() {
           setMessages((prev) => {
             const filtered = prev
               .filter((msg) => msg.id !== tempAssistantId)
-              .filter((msg) => msg.type !== MESSAGE_TYPES.QUICK_REPLIES);
+              .filter((msg) => msg.type !== 'quickReplies');
             const finalAssistant = {
               id: payload.messageId || tempAssistantId,
               _id: payload.messageId || tempAssistantId,
@@ -426,26 +421,6 @@ export function useChatScreen() {
                 type: 'suggestions',
                 suggestions: payload.suggestions,
                 metadata: { timestamp: new Date().toISOString() },
-              });
-            }
-            const rotationSeed =
-              hashSeed(`${messageText}\0${payload.content ?? ''}`) + filtered.length;
-            const quick = getQuickReplies(payload.content ?? '', messageText, {
-              compact: hasServerSuggestions,
-              rotationSeed,
-            });
-            if (quick.length > 0) {
-              next.push({
-                id: `quickReplies-${Date.now()}`,
-                role: MESSAGE_ROLES.ASSISTANT,
-                type: MESSAGE_TYPES.QUICK_REPLIES,
-                replies: quick,
-                metadata: {
-                  timestamp: new Date().toISOString(),
-                  compact: hasServerSuggestions,
-                  quickReplySeed: rotationSeed,
-                  quickReplyCopyGroup: copyGroupFromSeed(rotationSeed),
-                },
               });
             }
             return next;
@@ -755,11 +730,6 @@ export function useChatScreen() {
     );
   }, []);
 
-  const dismissQuickReplies = useCallback((message) => {
-    if (!message?.id) return;
-    setMessages((prev) => prev.filter((m) => m.id !== message.id));
-  }, []);
-
   const guestHandoffStartFresh = useCallback(async () => {
     try {
       await chatService.clearGuestHandoff();
@@ -945,7 +915,6 @@ export function useChatScreen() {
     isOffline,
     navigation,
     guestQuota,
-    dismissQuickReplies,
     guestHandoffModal,
     guestHandoffStartFresh,
     guestHandoffUseSummary,

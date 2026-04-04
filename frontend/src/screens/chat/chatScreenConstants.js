@@ -44,11 +44,6 @@ export const TEXTS = {
     'Tu sesión sin cuenta ha caducado o ya no es válida. Puedes crear una cuenta o iniciar sesión para seguir.',
   GUEST_RATE_LIMIT_TITLE: 'Demasiadas peticiones',
   GUEST_CONTENT_TOO_LONG_TITLE: 'Mensaje demasiado largo',
-  QUICK_REPLIES_TITLE: 'Respuestas rápidas',
-  /** Cuando ya hay tarjetas de técnicas encima */
-  QUICK_REPLIES_TITLE_COMPACT: 'O con un toque:',
-  QUICK_REPLIES_DISMISS: 'Ocultar',
-  QUICK_REPLIES_HINT: 'Envía esta respuesta en el chat',
   GUEST_HANDOFF_TITLE: 'Resumen del chat sin cuenta',
   GUEST_HANDOFF_BODY:
     'Podés cargar un resumen editable en el mensaje o empezar de cero con tu cuenta.',
@@ -76,7 +71,6 @@ export const MESSAGE_TYPES = {
   TEXT: 'text',
   ERROR: 'error',
   WELCOME: 'welcome',
-  QUICK_REPLIES: 'quickReplies',
 };
 
 export const MESSAGE_ROLES = {

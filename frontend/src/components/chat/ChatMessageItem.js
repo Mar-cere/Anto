@@ -6,7 +6,6 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import ActionSuggestionCard from '../ActionSuggestionCard';
-import QuickReplyChips from './QuickReplyChips';
 import MarkdownText from '../MarkdownText';
 import {
   CHAT_COLORS,
@@ -181,8 +180,6 @@ function ChatMessageItem({
   item,
   onSuggestionPress,
   onSuggestionDismiss,
-  onQuickReply,
-  onQuickReplyDismiss,
   feedbackEnabled,
   feedbackTargetId,
   onMessageFeedback,
@@ -210,17 +207,6 @@ function ChatMessageItem({
     const next = currentVote === dir ? null : dir;
     onMessageFeedback(String(rawId), next);
   };
-
-  if (message.type === MESSAGE_TYPES.QUICK_REPLIES && message.replies?.length) {
-    return (
-      <QuickReplyChips
-        replies={message.replies}
-        compact={Boolean(message.metadata?.compact)}
-        onSelect={onQuickReply}
-        onDismiss={onQuickReplyDismiss ? () => onQuickReplyDismiss(message) : undefined}
-      />
-    );
-  }
 
   if (message.type === 'suggestions' && message.suggestions) {
     return (

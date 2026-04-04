@@ -77,7 +77,7 @@ jest.mock('../../screens/chat/chatScreenConstants', () => ({
   GUEST_MAX_USER_MESSAGES: 5,
   MESSAGE_ID_PREFIXES: { WELCOME: 'welcome', TEMP: 'temp', ERROR: 'error' },
   MESSAGE_ROLES: { USER: 'user', ASSISTANT: 'assistant' },
-  MESSAGE_TYPES: { TEXT: 'text', ERROR: 'error', WELCOME: 'welcome', QUICK_REPLIES: 'quickReplies' },
+  MESSAGE_TYPES: { TEXT: 'text', ERROR: 'error', WELCOME: 'welcome' },
   SCROLL_THRESHOLD: 100,
   STORAGE_KEYS: {
     CONVERSATION_ID: 'conversationId',
@@ -100,10 +100,6 @@ jest.mock('../../screens/chat/chatScreenConstants', () => ({
     GUEST_SESSION_EXPIRED_MESSAGE: 'Expiró',
     GUEST_RATE_LIMIT_TITLE: 'Rate',
     GUEST_CONTENT_TOO_LONG_TITLE: 'Largo',
-    QUICK_REPLIES_TITLE: 'Rápidas',
-    QUICK_REPLIES_TITLE_COMPACT: 'Compact',
-    QUICK_REPLIES_DISMISS: 'Ocultar',
-    QUICK_REPLIES_HINT: 'Hint',
     GUEST_HANDOFF_TITLE: 'Handoff',
     GUEST_HANDOFF_BODY: 'Body',
     GUEST_HANDOFF_PRIVACY: 'Privacidad',
@@ -119,14 +115,6 @@ jest.mock('../../services/chatOfflinePending', () => ({
   setOfflinePendingMessage: jest.fn(() => Promise.resolve()),
   clearOfflinePendingMessage: jest.fn(() => Promise.resolve()),
 }));
-
-jest.mock('../../screens/chat/quickReplyChipsHelper', () => {
-  const actual = jest.requireActual('../../screens/chat/quickReplyChipsHelper');
-  return {
-    ...actual,
-    getQuickReplies: jest.fn(() => []),
-  };
-});
 
 const mockAsyncStorage = {
   getItem: jest.fn((key) => {
