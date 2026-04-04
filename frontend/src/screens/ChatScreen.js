@@ -9,7 +9,7 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   Animated,
   FlatList,
@@ -36,6 +36,7 @@ import ParticleBackground from '../components/ParticleBackground';
 import { SkeletonBlock } from '../components/Skeleton';
 import TrialBanner from '../components/TrialBanner';
 import { useChatScreen } from '../hooks/useChatScreen';
+import { getFeedbackTargetMessageId } from './chat/chatFeedbackAnchor';
 import {
   CHAT_COLORS,
   formatGuestQuotaBanner,
@@ -264,6 +265,10 @@ const ChatScreen = () => {
     handleMessageFeedback,
     feedbackSubmittingId,
   } = useChatScreen();
+  const feedbackTargetId = useMemo(
+    () => getFeedbackTargetMessageId(messages, chatFeedbackEnabled),
+    [messages, chatFeedbackEnabled]
+  );
   const [showAIDisclosure, setShowAIDisclosure] = React.useState(false);
 
   React.useEffect(() => {
@@ -350,6 +355,7 @@ const ChatScreen = () => {
         onQuickReply={handleSend}
         onQuickReplyDismiss={dismissQuickReplies}
         feedbackEnabled={chatFeedbackEnabled}
+        feedbackTargetId={feedbackTargetId}
         onMessageFeedback={handleMessageFeedback}
         feedbackSubmittingId={feedbackSubmittingId}
       />
@@ -360,6 +366,7 @@ const ChatScreen = () => {
       handleSend,
       dismissQuickReplies,
       chatFeedbackEnabled,
+      feedbackTargetId,
       handleMessageFeedback,
       feedbackSubmittingId,
     ]

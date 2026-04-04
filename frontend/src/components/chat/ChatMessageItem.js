@@ -184,14 +184,18 @@ function ChatMessageItem({
   onQuickReply,
   onQuickReplyDismiss,
   feedbackEnabled,
+  feedbackTargetId,
   onMessageFeedback,
   feedbackSubmittingId,
 }) {
   const message = item.userMessage || item.assistantMessage || item;
   const isUser = message.role === MESSAGE_ROLES.USER;
   const rawId = message._id || message.id;
+  const isFeedbackAnchor =
+    feedbackTargetId != null && String(rawId) === String(feedbackTargetId);
   const showFeedback =
     feedbackEnabled &&
+    isFeedbackAnchor &&
     !isUser &&
     !message.metadata?.streaming &&
     (message.content || '').trim().length > 0 &&
