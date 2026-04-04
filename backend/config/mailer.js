@@ -23,6 +23,9 @@ const GMAIL_CLIENT_ID = process.env.GMAIL_CLIENT_ID;
 const GMAIL_CLIENT_SECRET = process.env.GMAIL_CLIENT_SECRET;
 const GMAIL_REFRESH_TOKEN = process.env.GMAIL_REFRESH_TOKEN;
 const GMAIL_USER_EMAIL = process.env.GMAIL_USER_EMAIL || process.env.EMAIL_USER;
+/** Debe coincidir con la "URI de redirección" del cliente OAuth usada al obtener el refresh token (p. ej. Playground). */
+const GMAIL_OAUTH_REDIRECT_URI =
+  process.env.GMAIL_OAUTH_REDIRECT_URI || 'https://developers.google.com/oauthplayground';
 const USE_GMAIL_API = !!(GMAIL_CLIENT_ID && GMAIL_CLIENT_SECRET && GMAIL_REFRESH_TOKEN);
 
 // SendGrid: API key disponible (también como fallback si Gmail API falla en Render, etc.)
@@ -39,7 +42,7 @@ if (USE_GMAIL_API) {
     const oauth2Client = new google.auth.OAuth2(
       GMAIL_CLIENT_ID,
       GMAIL_CLIENT_SECRET,
-      'urn:ietf:wg:oauth:2.0:oob' // Para aplicaciones de servidor
+      GMAIL_OAUTH_REDIRECT_URI
     );
     
     oauth2Client.setCredentials({
@@ -48,6 +51,9 @@ if (USE_GMAIL_API) {
     
     gmailClient = google.gmail({ version: 'v1', auth: oauth2Client });
     console.log('[Mailer] ✅ Gmail API configurado correctamente (Google Workspace)');
+    console.log(
+      `[Mailer]    OAuth redirect_uri usado al refrescar token: ${GMAIL_OAUTH_REDIRECT_URI} (debe ser el mismo que al generar el refresh token)`
+    );
   } catch (error) {
     console.warn('[Mailer] ⚠️ Error configurando Gmail API:', error.message);
     console.log('[Mailer] ⚠️ Intentando con otros proveedores...');
