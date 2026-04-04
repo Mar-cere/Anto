@@ -8,8 +8,8 @@
  * @author AntoApp Team
  */
 
-import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -31,12 +31,12 @@ import {
 } from '../constants/animations';
 import { ROUTES } from '../constants/routes';
 import { HOME as TEXTS } from '../constants/translations';
-import {
-  getResetToMainTabsWithChatState,
-  NAV_STORAGE_OPEN_CHAT_AFTER_LOGIN,
-} from '../navigation/navigationHelpers';
 import { OPACITIES, SCALES, STATUS_BAR } from '../constants/ui';
 import emotions from '../data/emotions';
+import {
+  NAV_STORAGE_OPEN_CHAT_AFTER_LOGIN,
+  openEmergencyChatFromHome,
+} from '../navigation/navigationHelpers';
 import { colors, globalStyles } from '../styles/globalStyles';
 
 // Constantes específicas de esta pantalla
@@ -125,8 +125,7 @@ const HomeScreen = () => {
           );
           return;
         }
-        // Reset al stack principal con la pestaña Chat activa (navigate anidado desde Home fallaba)
-        navigation.reset(getResetToMainTabsWithChatState());
+        await openEmergencyChatFromHome(navigation);
       } catch (error) {
         console.error('Error verificando autenticación:', error);
         Alert.alert('Error', 'Hubo un problema al verificar tu sesión. Por favor, intenta iniciar sesión.');
@@ -163,7 +162,9 @@ const HomeScreen = () => {
                   }
                 ]}
               >
-                <Text style={styles.titleText}>{TEXTS.WELCOME}</Text>
+                <Text testID="home-welcome-title" style={styles.titleText}>
+                  {TEXTS.WELCOME}
+                </Text>
                 <Text style={styles.subTitleText}>{TEXTS.SUBTITLE}</Text>
               </Animated.View>
 
@@ -193,16 +194,6 @@ const HomeScreen = () => {
                   buttonOpacity={buttonOpacity}
                   accessibilityLabel={TEXTS.REGISTER}
                   accessibilityHint={TEXTS.REGISTER_HINT}
-                  isPrimary={false}
-                />
-
-                <AnimatedButton
-                  title={TEXTS.CONTINUE_WITHOUT_ACCOUNT}
-                  onPress={() => navigation.reset(getResetToMainTabsWithChatState({ startGuest: true }))}
-                  buttonScale={buttonScale}
-                  buttonOpacity={buttonOpacity}
-                  accessibilityLabel={TEXTS.CONTINUE_WITHOUT_ACCOUNT}
-                  accessibilityHint={TEXTS.CONTINUE_WITHOUT_ACCOUNT_HINT}
                   isPrimary={false}
                 />
               </Animated.View>

@@ -12,11 +12,24 @@ jest.mock('react-native', () => ({
 }));
 jest.mock('../../styles/globalStyles', () => ({ colors: {} }));
 
-const mockNavigation = { navigate: jest.fn(), reset: jest.fn(), goBack: jest.fn(), canGoBack: () => false, getParent: () => null };
+jest.mock('../../utils/chatEntryContext', () => ({
+  resolveChatBackTarget: jest.fn(() => Promise.resolve('dash')),
+  clearChatEntryBackTarget: jest.fn(() => Promise.resolve()),
+}));
+
+const mockNavigation = {
+  navigate: jest.fn(),
+  reset: jest.fn(),
+  dispatch: jest.fn(),
+  goBack: jest.fn(),
+  canGoBack: () => false,
+  getParent: () => null,
+};
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => mockNavigation,
-  useRoute: () => ({ params: {} }),
+  useRoute: () => ({ params: { chatBackTarget: 'dash' } }),
   useFocusEffect: () => {}, // no ejecutar callback para evitar limpieza que borra mensajes
+  CommonActions: { reset: (s) => ({ type: 'RESET', ...s }) },
 }));
 
 jest.mock('../../services/chatService', () => ({

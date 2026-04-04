@@ -90,7 +90,9 @@ const EmotionBanner = ({ emotions, onPress }) => {
   }, [getNextEmotion, emotions]);
 
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
+      testID="emergency-chat-entry"
+      accessibilityLabel="emergency-chat-entry"
       style={styles.emergencyContainer}
       onPress={onPress}
       activeOpacity={0.7}

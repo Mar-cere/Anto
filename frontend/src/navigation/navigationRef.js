@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createNavigationContainerRef } from '@react-navigation/native';
 
 import { getResetToMainTabsWithChatState } from './navigationHelpers';
+import { setChatEntryBackTarget } from '../utils/chatEntryContext';
 
 export const navigationRef = createNavigationContainerRef();
 
@@ -37,9 +38,10 @@ export async function handleNotificationData(data) {
     }
   }
 
-  const tryOpenChat = () => {
+  const tryOpenChat = async () => {
     if (!navigationRef.isReady()) return false;
     try {
+      await setChatEntryBackTarget('dash');
       navigationRef.reset(getResetToMainTabsWithChatState());
       return true;
     } catch (e) {
@@ -48,8 +50,8 @@ export async function handleNotificationData(data) {
     }
   };
 
-  if (!tryOpenChat()) {
-    setTimeout(tryOpenChat, 400);
-    setTimeout(tryOpenChat, 1500);
+  if (!(await tryOpenChat())) {
+    setTimeout(() => void tryOpenChat(), 400);
+    setTimeout(() => void tryOpenChat(), 1500);
   }
 }

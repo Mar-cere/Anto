@@ -16,6 +16,8 @@ import {
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { CHAT_BACK_TARGET } from '../navigation/navigationHelpers';
+import { setChatEntryBackTarget } from '../utils/chatEntryContext';
 import {
   getFirstSessionHintDismissedKey,
   isFirstSessionHintDismissed,
@@ -54,11 +56,15 @@ const FirstSessionHint = ({ visible, onDismiss, userId = null }) => {
     onDismiss?.();
 
     // Tras login el stack suele ser solo "Dash" (no MainTabs); Chat vive como tab dentro de MainTabs.
+    await setChatEntryBackTarget('dash');
     const state = navigation.getState?.();
     if (state?.type === 'tab') {
-      navigation.navigate('Chat');
+      navigation.navigate('Chat', { chatBackTarget: CHAT_BACK_TARGET.DASH });
     } else {
-      navigation.navigate('MainTabs', { screen: 'Chat' });
+      navigation.navigate('MainTabs', {
+        screen: 'Chat',
+        params: { chatBackTarget: CHAT_BACK_TARGET.DASH },
+      });
     }
   };
 

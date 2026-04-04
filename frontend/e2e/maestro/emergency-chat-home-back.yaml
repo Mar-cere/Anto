@@ -1,0 +1,26 @@
+# Flujo opcional: Home (pantalla de bienvenida) → emergencia → Chat → atrás → Home
+#
+# Limitación: con sesión activa la app suele abrir en MainTabs, no en esta Home.
+# Para probar este YAML: cerrar sesión o arrancar en estado sin login / deep link a Home.
+#
+# Ejecutar: maestro test frontend/e2e/maestro/emergency-chat-home-back.yaml
+
+appId: com.anto.app
+
+---
+- launchApp
+
+- assertVisible:
+    id: home-welcome-title
+
+- tapOn:
+    id: emergency-chat-entry
+
+- assertVisible:
+    id: chat-header-back
+
+- tapOn:
+    id: chat-header-back
+
+- assertVisible:
+    id: home-welcome-title

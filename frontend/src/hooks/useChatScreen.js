@@ -4,7 +4,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import { CommonActions, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Animated } from 'react-native';
@@ -30,6 +30,11 @@ import {
   getQuickReplies,
   hashSeed,
 } from '../screens/chat/quickReplyChipsHelper';
+import { getResetToMainTabsWithInicioState } from '../navigation/navigationHelpers';
+import {
+  clearChatEntryBackTarget,
+  resolveChatBackTarget,
+} from '../utils/chatEntryContext';
 import {
   clearOfflinePendingMessage,
   getOfflinePendingMessage,
@@ -706,35 +711,42 @@ export function useChatScreen() {
     }
   }, []);
 
+  const dispatchRootReset = useCallback(
+    (state) => {
+      let nav = navigation;
+      while (nav?.getParent?.()) {
+        nav = nav.getParent();
+      }
+      nav?.dispatch(CommonActions.reset(state));
+    },
+    [navigation]
+  );
+
   const handleBack = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
+      const target = await resolveChatBackTarget(route.params);
+      await clearChatEntryBackTarget();
+
       if (!token) {
-        navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+        dispatchRootReset({ index: 0, routes: [{ name: 'Home' }] });
         return;
       }
-      if (navigation.canGoBack()) {
-        const parent = navigation.getParent();
-        if (parent) {
-          const parentState = parent.getState();
-          const parentRoutes = parentState?.routes || [];
-          if (parentRoutes.length > 1) {
-            const previousRoute = parentRoutes[parentRoutes.length - 2];
-            if (previousRoute?.name === 'Home') {
-              parent.navigate('Home');
-              return;
-            }
-          }
-        }
-        navigation.goBack();
-      } else {
-        navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+      if (target === 'home') {
+        dispatchRootReset({ index: 0, routes: [{ name: 'Home' }] });
+        return;
       }
+      dispatchRootReset(getResetToMainTabsWithInicioState());
     } catch (err) {
       console.error('[ChatScreen] Error en goBack:', err);
-      navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+      try {
+        await clearChatEntryBackTarget();
+        dispatchRootReset({ index: 0, routes: [{ name: 'Home' }] });
+      } catch (e2) {
+        console.error('[ChatScreen] goBack recuperación:', e2);
+      }
     }
-  }, [navigation]);
+  }, [dispatchRootReset, route.params]);
 
   const handleScroll = useCallback((event) => {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;

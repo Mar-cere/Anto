@@ -32,8 +32,8 @@ import OfflineBanner from '../components/OfflineBanner';
 import { api, ENDPOINTS } from '../config/api';
 import { ROUTES } from '../constants/routes';
 import {
-  getResetToMainTabsWithChatState,
   NAV_STORAGE_OPEN_CHAT_AFTER_LOGIN,
+  openEmergencyChatFromHome,
 } from '../navigation/navigationHelpers';
 import chatService from '../services/chatService';
 import { colors, globalStyles } from '../styles/globalStyles';
@@ -343,7 +343,7 @@ const SignInScreen = () => {
           const openChat = await AsyncStorage.getItem(NAV_STORAGE_OPEN_CHAT_AFTER_LOGIN);
           if (openChat === '1') {
             await AsyncStorage.removeItem(NAV_STORAGE_OPEN_CHAT_AFTER_LOGIN);
-            navigation.reset(getResetToMainTabsWithChatState());
+            await openEmergencyChatFromHome(navigation);
           } else {
             navigation.reset({
               index: 0,

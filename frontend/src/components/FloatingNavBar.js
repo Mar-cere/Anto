@@ -4,6 +4,8 @@ import * as Haptics from 'expo-haptics';
 import React, { useCallback } from 'react';
 import { Animated, Image, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CHAT_BACK_TARGET } from '../navigation/navigationHelpers';
+import { setChatEntryBackTarget } from '../utils/chatEntryContext';
 import { colors } from '../styles/globalStyles';
 
 const RIPPLE = 'rgba(26, 221, 219, 0.18)';
@@ -56,11 +58,28 @@ const FloatingNavBar = ({
           if (tabNavigator && tabNavigator.getState) {
             const state = tabNavigator.getState();
             if (state?.type === 'tab') {
-              tabNavigator.navigate(routeName);
+              if (routeName === 'Chat') {
+                void (async () => {
+                  await setChatEntryBackTarget('dash');
+                  tabNavigator.navigate('Chat', { chatBackTarget: CHAT_BACK_TARGET.DASH });
+                })();
+              } else {
+                tabNavigator.navigate(routeName);
+              }
               return;
             }
           }
-          navigation.navigate('MainTabs', { screen: routeName });
+          if (routeName === 'Chat') {
+            void (async () => {
+              await setChatEntryBackTarget('dash');
+              navigation.navigate('MainTabs', {
+                screen: 'Chat',
+                params: { chatBackTarget: CHAT_BACK_TARGET.DASH },
+              });
+            })();
+          } else {
+            navigation.navigate('MainTabs', { screen: routeName });
+          }
           return;
         }
 
@@ -117,6 +136,7 @@ const FloatingNavBar = ({
 
       <View style={styles.centerButtonContainer}>
         <Pressable
+          testID="floating-nav-open-chat"
           style={({ pressed }) => [
             styles.centerButton,
             activeTab === 'chat' && styles.centerButtonActive,
@@ -124,7 +144,7 @@ const FloatingNavBar = ({
           ]}
           onPress={() => onNavPress('Chat')}
           accessibilityRole="tab"
-          accessibilityLabel="Chat con Anto"
+          accessibilityLabel="floating-nav-open-chat"
           accessibilityState={{ selected: activeTab === 'chat' }}
           accessibilityHint="Abrir el chat"
           android_ripple={{ color: RIPPLE, borderless: false }}

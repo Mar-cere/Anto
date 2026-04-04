@@ -9,9 +9,9 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
@@ -97,6 +97,7 @@ const DashScreen = () => {
   const [trialInfo, setTrialInfo] = useState(null);
   const [trialBannerDismissed, setTrialBannerDismissed] = useState(false);
   const [emergencyAlertNotification, setEmergencyAlertNotification] = useState(null);
+  const dashFirstFocusRef = useRef(true);
 
   // Log cuando showTutorial cambia (solo en desarrollo)
   React.useEffect(() => {
@@ -325,6 +326,32 @@ const DashScreen = () => {
       loadData();
     }
   }, [loadData, loading]);
+
+  // Al volver al tab Inicio (p. ej. desde el chat), refrescar usuario para no mostrar datos de otra sesión
+  useFocusEffect(
+    useCallback(() => {
+      if (dashFirstFocusRef.current) {
+        dashFirstFocusRef.current = false;
+        return undefined;
+      }
+      let cancelled = false;
+      (async () => {
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token || cancelled) return;
+        try {
+          const user = await api.get(ENDPOINTS.ME);
+          if (!cancelled && user && typeof user === 'object') {
+            setUserData(user);
+          }
+        } catch (_) {
+          /* loadData / pull manejan errores visibles */
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [])
+  );
 
   // Configurar listeners de WebSocket para alertas de emergencia
   useEffect(() => {

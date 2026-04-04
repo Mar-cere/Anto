@@ -47,7 +47,12 @@ const styles = StyleSheet.create({
 export default function ChatHeader({ onBack, onOpenMenu }) {
   return (
     <View style={styles.header}>
-      <TouchableOpacity style={styles.backButton} onPress={onBack}>
+      <TouchableOpacity
+        testID="chat-header-back"
+        accessibilityLabel="chat-header-back"
+        style={styles.backButton}
+        onPress={onBack}
+      >
         <Ionicons name="arrow-back" size={ICON_SIZES.BACK} color={CHAT_COLORS.PRIMARY} />
       </TouchableOpacity>
       <View style={styles.headerTitleContainer}>

@@ -1,0 +1,24 @@
+# Flujo: MainTabs → Chat → atrás → MainTabs (Home)
+# Requiere: app instalada con bundle com.anto.app, sesión iniciada (usuario en MainTabs).
+# Ejecutar: maestro test frontend/e2e/maestro/chat-roundtrip-from-tabs.yaml
+
+appId: com.anto.app
+
+---
+- launchApp
+
+# Abrir Chat desde la barra inferior (FAB central)
+- tapOn:
+    id: floating-nav-open-chat
+
+# Verificar que el chat cargó (header con botón atrás)
+- assertVisible:
+    id: chat-header-back
+
+# Volver a tabs / Home
+- tapOn:
+    id: chat-header-back
+
+# Confirmar que volvimos a Home (título de bienvenida)
+- assertVisible:
+    id: home-welcome-title

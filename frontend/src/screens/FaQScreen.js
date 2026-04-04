@@ -27,6 +27,8 @@ import {
 } from 'react-native';
 import ParticleBackground from '../components/ParticleBackground';
 import { ROUTES } from '../constants/routes';
+import { CHAT_BACK_TARGET } from '../navigation/navigationHelpers';
+import { setChatEntryBackTarget } from '../utils/chatEntryContext';
 import faqData from '../data/FaQScreen';
 import { colors } from '../styles/globalStyles';
 
@@ -232,7 +234,11 @@ const FaQScreen = () => {
         );
         return;
       }
-      navigation.navigate('MainTabs', { screen: 'Chat' });
+      await setChatEntryBackTarget('dash');
+      navigation.navigate('MainTabs', {
+        screen: 'Chat',
+        params: { chatBackTarget: CHAT_BACK_TARGET.DASH },
+      });
     } catch (error) {
       console.error('[FaQScreen] Error verificando autenticación:', error);
       Alert.alert('Error', 'Hubo un problema al verificar tu sesión. Por favor, intenta iniciar sesión.');
