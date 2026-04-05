@@ -12,10 +12,21 @@ web-build/
 .kotlin/
 *.orig.*
 *.jks
+*.keystore
 *.p8
 *.p12
 *.key
 *.mobileprovision
+
+# App Store / Play — artefactos de build
+*.ipa
+*.apk
+*.aab
+*.xcarchive
+*.dSYM.zip
+
+credentials.json
+eas-credentials.json
 
 # Metro
 .metro-health-check*
@@ -33,9 +44,17 @@ yarn-error.*
 .env
 .env*.local
 .env.local
+.env.*
+!.env.example
+!.env*.example
+!.env.sample
 
 # typescript
 *.tsbuildinfo
+
+coverage/
+**/coverage/
+.nyc_output/
 
 # generated native folders
 /ios

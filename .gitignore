@@ -12,10 +12,22 @@ web-build/
 .kotlin/
 *.orig.*
 *.jks
+*.keystore
 *.p8
 *.p12
 *.key
 *.mobileprovision
+
+# App Store / Play — artefactos de build (EAS/Xcode/Gradle locales; no subir binarios)
+*.ipa
+*.apk
+*.aab
+*.xcarchive
+*.dSYM.zip
+
+# EAS: export local de credenciales (la gestión normal es en expo.dev)
+credentials.json
+eas-credentials.json
 
 # Metro
 .metro-health-check*
@@ -38,9 +50,19 @@ logs/
 .env.local
 backend/.env
 frontend/.env
+# variantes por entorno (mantener solo plantillas versionadas, p. ej. .env.example)
+.env.*
+!.env.example
+!.env*.example
+!.env.sample
 
 # typescript
 *.tsbuildinfo
+
+# tests / CI — salidas generadas (no versionar informes locales)
+coverage/
+**/coverage/
+.nyc_output/
 
 app-example
 

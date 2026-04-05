@@ -26,6 +26,7 @@
 - **`frontend/MEJORAS_UX.md`** — Mejoras de UX y accesibilidad (formularios, a11y, tipografía, errores, reconexión).
 - **`frontend/TYPESCRIPT.md`** — Estado del tipado TypeScript en el frontend.
 - **`frontend/INSTRUCCIONES_SUBMIT_APP_STORE.md`** — Instrucciones para envío a App Store.
+- **`frontend/e2e/README.md`** — Pruebas end-to-end (Maestro).
 
 ### Proyecto
 - **`README.md`** (raíz) — Visión general del producto, tecnologías, estructura, estado y documentación principal.

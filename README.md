@@ -1,10 +1,10 @@
-# 🧠 Anto App - Asistente AI Terapéutico
+# 🧠 Anto App — Asistente de bienestar emocional con IA
 
-**Versión 1.1.0** - Con Evaluación Clínica Profesional
+**Versión de la app (Expo): 1.2.2** · Evaluación con escalas clínicas y protocolos estructurados
 
-**Anto** es una aplicación móvil de salud mental que utiliza inteligencia artificial para proporcionar apoyo terapéutico personalizado, análisis emocional avanzado, detección de crisis y herramientas de bienestar mental. 
+**Anto** es una aplicación móvil de salud mental que utiliza inteligencia artificial para ofrecer **apoyo emocional personalizado**, análisis de estado de ánimo, detección de crisis y herramientas de bienestar. **No sustituye** la atención de un profesional de la salud mental ni proporciona diagnóstico clínico.
 
-**Nuevo en v1.1.0**: Escalas clínicas validadas (PHQ-9, GAD-7), detección avanzada de distorsiones cognitivas y protocolos terapéuticos estructurados basados en evidencia científica.
+**Destacado (v1.1+):** Escalas validadas (PHQ-9, GAD-7), detección de distorsiones cognitivas y protocolos estructurados basados en evidencia. **v1.2.x:** Mejoras de experiencia en chat, preferencias de tono/respuesta del asistente y documentación de privacidad en conversación.
 
 ---
 
@@ -50,15 +50,16 @@
 
 ## 🌟 Características
 
-### 🤖 Asistente AI Terapéutico
+### 🤖 Asistente de IA (bienestar emocional)
 
-- **Chat Conversacional Inteligente**: Conversaciones naturales con IA (OpenAI GPT-5 Mini)
-- **Análisis Emocional en Tiempo Real**: Detección automática de emociones y su intensidad
-- **Respuestas Personalizadas**: Contexto adaptado a tu historial y situación actual
-- **Técnicas Terapéuticas Adaptadas**: CBT, mindfulness, técnicas de respiración y más
-- **Memoria Contextual**: Recuerda conversaciones anteriores para continuidad
-- **Personalización de Género**: Respeta pronombres y género del usuario automáticamente
-- **Referencias Contextuales**: Hace referencias naturales a conversaciones anteriores cuando es relevante
+- **Chat conversacional**: Respuestas con IA (OpenAI GPT-5 Mini), con tono **profesional y práctico** por defecto (orientación, micro-pasos y preguntas concretas; no rol de terapeuta clínico en el texto del asistente).
+- **Preferencias de conversación**: El usuario puede ajustar aspectos del estilo de respuesta cuando la app lo ofrece (p. ej. directo vs. más conversado), alineado con el perfil y la API de usuario.
+- **Análisis emocional en tiempo real**: Detección de emociones e intensidad para contextualizar respuestas
+- **Respuestas personalizadas**: Historial y situación actual
+- **Técnicas basadas en evidencia**: Enfoques tipo CBT, mindfulness, respiración y similares cuando encajan (sin jerga innecesaria)
+- **Memoria contextual**: Continuidad dentro de la conversación y contexto guardado según diseño del producto
+- **Personalización de género**: Pronombres y tratamiento acordes al perfil
+- **Referencias contextuales**: Menciones naturales a mensajes anteriores cuando aportan
 
 ### 🚨 Sistema de Detección de Crisis
 
@@ -283,13 +284,16 @@ Anto/
 ### Índice principal
 - **[docs/README.md](./docs/README.md)** — Índice de toda la documentación del proyecto.
 
+### Tests E2E (Maestro)
+- **[frontend/e2e/README.md](./frontend/e2e/README.md)** — Pruebas end-to-end del frontend.
+
 ### Documentos en `docs/`
 - **[docs/FLUJOS.md](./docs/FLUJOS.md)** — Flujos principales (auth, chat, pagos, crisis).
 - **[docs/CONTRATOS_API.md](./docs/CONTRATOS_API.md)** — Alineación frontend–backend y contratos de la API.
 - **[docs/REVISION_STOREKIT_COMPRAS.md](./docs/REVISION_STOREKIT_COMPRAS.md)** — StoreKit (iOS) y validación de recibos.
 
 ### Backend
-- **Flujo del mensaje (chat):** [backend/docs/MENSAJE_FLUJO.md](./backend/docs/MENSAJE_FLUJO.md).
+- **Flujo del mensaje (chat):** [backend/docs/MENSAJE_FLUJO.md](./backend/docs/MENSAJE_FLUJO.md) (incluye ensamblado del system prompt en `services/openai/openaiPromptBuilder.js` y plantillas en `constants/openai.js`).
 - **Seguridad:** [backend/docs/SECURITY_REVIEW_V1.1.md](./backend/docs/SECURITY_REVIEW_V1.1.md).
 - **TypeScript:** [backend/TYPESCRIPT.md](./backend/TYPESCRIPT.md).
 
@@ -301,7 +305,7 @@ Anto/
 
 - **Health Checks**: `/health`, `/api/health`
 - **Autenticación**: `/api/auth/register`, `/api/auth/login`
-- **Usuario**: `/api/users/me`
+- **Usuario**: `/api/users/me` (perfil y preferencias, p. ej. estilo de comunicación y preferencias de chat cuando apliquen)
 - **Chat**: `/api/chat/conversations`, `/api/chat/messages`
 - **Crisis**: `/api/crisis/summary`, `/api/crisis/history`
 - **Tareas y Hábitos**: `/api/tasks`, `/api/habits`
@@ -325,12 +329,12 @@ Anto/
 
 ### Estado General: **Listo para Producción** ✅
 
-**Última actualización:** 2026-01-08
-**Versión:** 1.1.0
+**Última actualización del README:** 2026-03-27  
+**Versión publicada (app):** 1.2.2 (ver `frontend/app.json`)
 
 ### Completado ✅
 
-- ✅ Asistente AI terapéutico funcional
+- ✅ Asistente de IA para bienestar emocional (chat, personalización, límites de seguridad)
 - ✅ Sistema de detección de crisis implementado
 - ✅ Herramientas de bienestar completas
 - ✅ Sistema de suscripciones integrado
@@ -347,7 +351,7 @@ Anto/
 
 ### Funcionalidades Clave
 
-- ✅ Chat conversacional con IA (GPT-5 Mini)
+- ✅ Chat conversacional con IA (GPT-5 Mini) y tono orientado a utilidad práctica
 - ✅ Análisis emocional en tiempo real
 - ✅ Detección automática de crisis
 - ✅ Alertas de emergencia
