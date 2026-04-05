@@ -44,6 +44,7 @@ import { ANIMATION_DURATIONS, ANIMATION_OPACITIES, ANIMATION_SCALES } from '../c
 import { DASH } from '../constants/translations';
 import { BORDERS, OPACITIES, SPACING, STATUS_BAR } from '../constants/ui';
 import { colors } from '../styles/globalStyles';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getGreetingByHourAndDayAndName } from '../utils/greetings';
 import { registerForPushNotifications } from '../services/pushNotificationService';
 import paymentService from '../services/paymentService';
@@ -76,6 +77,7 @@ const ErrorMessage = ({ message, onRetry, onDismiss }) => (
 
 
 const DashScreen = () => {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -424,7 +426,8 @@ const DashScreen = () => {
   // Componente de carga
   if (loading) {
     return (
-      <View style={[styles.container, styles.skeletonScreen]}>
+      <SafeAreaView style={styles.safeAreaRoot} edges={['top', 'left', 'right']}>
+        <View style={[styles.container, styles.skeletonScreen]}>
         <View style={styles.skeletonHeader}>
           <SkeletonBlock width="70%" height={18} radius={10} />
           <SkeletonBlock width="45%" height={14} radius={10} style={styles.skeletonHeaderLine} />
@@ -432,7 +435,8 @@ const DashScreen = () => {
         <SkeletonCard style={styles.skeletonCard} />
         <SkeletonCard style={styles.skeletonCard} />
         <SkeletonCard style={styles.skeletonCard} />
-      </View>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -445,8 +449,7 @@ const DashScreen = () => {
         imageStyle={styles.imageStyle}
       >
         <ParticleBackground />
-        
-        {/* Offline Banner */}
+        <SafeAreaView style={styles.safeAreaMain} edges={['top', 'left', 'right']}>
         <OfflineBanner />
         <View style={styles.headerFixed}>
           <Header 
@@ -461,7 +464,9 @@ const DashScreen = () => {
             triggerRefreshAnim();
             loadData(true);
           }}
-          contentContainerStyle={{ paddingBottom: SPACING.CONTENT_PADDING_BOTTOM }}
+          contentContainerStyle={{
+            paddingBottom: insets.bottom + 132,
+          }}
         >
           {/* Trial Banner */}
           {trialInfo && trialInfo.isInTrial && !trialBannerDismissed && (
@@ -504,8 +509,9 @@ const DashScreen = () => {
             <JournalCard />
           </Animated.View>
         </DashboardScroll>
-        <FloatingNavBar activeTab="home" accessibilityLabel={DASH.NAVBAR_LABEL} />
+        </SafeAreaView>
       </ImageBackground>
+      <FloatingNavBar activeTab="home" accessibilityLabel={DASH.NAVBAR_LABEL} />
       
       {/* Overlay de resaltado para el tutorial */}
       <TutorialHighlight
@@ -549,6 +555,13 @@ const DashScreen = () => {
 export default memo(DashScreen);
 
 const styles = StyleSheet.create({
+  safeAreaRoot: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  safeAreaMain: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -563,7 +576,6 @@ const styles = StyleSheet.create({
     marginTop: SPACING.LOADING_TEXT_MARGIN_TOP,
   },
   skeletonScreen: {
-    paddingTop: (StatusBar.currentHeight || STATUS_BAR.DEFAULT_HEIGHT) + 16,
     paddingHorizontal: 16,
   },
   skeletonHeader: {
@@ -584,7 +596,6 @@ const styles = StyleSheet.create({
   },
   headerFixed: {
     backgroundColor: colors.background,
-    paddingTop: StatusBar.currentHeight || STATUS_BAR.DEFAULT_HEIGHT,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(163, 184, 232, 0.1)',
     zIndex: 2,

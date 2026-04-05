@@ -31,6 +31,7 @@ import { ROUTES } from '../constants/routes';
 import { scheduleTaskNotification, cancelTaskNotifications } from '../utils/notifications';
 import { useToast } from '../context/ToastContext';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getApiErrorMessage, isAuthError } from '../utils/apiErrorHandler';
 import { colors } from '../styles/globalStyles';
 
@@ -424,12 +425,14 @@ const TaskScreen = ({ route }) => {
 
   return (
     <View style={styles.container}>
+      <SafeAreaView style={styles.safeAreaContent} edges={['top', 'left', 'right']}>
       <TaskHeader 
         filterType={state.filterType}
         onFilterChange={type => setState(prev => ({ ...prev, filterType: type }))}
       />
       <FlatList
         ref={flatListRef}
+        style={styles.listFlex}
         data={showSkeleton ? Array.from({ length: 6 }, (_, i) => ({ _id: `skeleton-${i}` })) : filteredItems}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
@@ -449,6 +452,7 @@ const TaskScreen = ({ route }) => {
         windowSize={FLATLIST_WINDOW_SIZE}
         initialNumToRender={FLATLIST_INITIAL_NUM_TO_RENDER}
       />
+      </SafeAreaView>
       <TouchableOpacity
         style={styles.fab}
         onPress={() => setState(prev => ({ ...prev, modalVisible: true }))}
@@ -476,6 +480,13 @@ const styles = StyleSheet.create({
   container: { 
     flex: 1, 
     backgroundColor: COLORS.BACKGROUND 
+  },
+  safeAreaContent: {
+    flex: 1,
+    backgroundColor: COLORS.BACKGROUND,
+  },
+  listFlex: {
+    flex: 1,
   },
   listContainer: { 
     padding: LIST_PADDING, 

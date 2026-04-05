@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { 
-  View, Text, TouchableOpacity, StyleSheet, Platform, StatusBar, TextInput, Animated 
+  View, Text, TouchableOpacity, StyleSheet, StatusBar, TextInput, Animated 
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -120,7 +120,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(29, 43, 95, 0.95)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(26, 221, 219, 0.1)',
-    paddingTop: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight + 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

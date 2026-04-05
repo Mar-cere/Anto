@@ -76,12 +76,13 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   messageBubble: {
-    maxWidth: '80%',
+    maxWidth: '100%',
     padding: LAYOUT.MESSAGE_BUBBLE_PADDING,
     borderRadius: LAYOUT.MESSAGE_BUBBLE_BORDER_RADIUS,
     marginBottom: LAYOUT.MESSAGE_BUBBLE_MARGIN_BOTTOM,
   },
   userBubble: {
+    maxWidth: '92%',
     backgroundColor: CHAT_COLORS.USER_BUBBLE,
     borderBottomRightRadius: LAYOUT.MESSAGE_BUBBLE_CORNER_RADIUS,
     marginLeft: 'auto',
@@ -147,7 +148,7 @@ const styles = StyleSheet.create({
     backgroundColor: CHAT_COLORS.USER_TEXT,
   },
   botColumn: {
-    maxWidth: '88%',
+    maxWidth: '94%',
     alignSelf: 'flex-start',
   },
   feedbackRow: {

@@ -9,13 +9,14 @@ import {
 const DashboardScroll = ({ 
   children, 
   refreshing, 
-  onRefresh
+  onRefresh,
+  contentContainerStyle,
 }) => {
   return (
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={[styles.contentContainer, contentContainerStyle]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

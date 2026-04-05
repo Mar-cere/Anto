@@ -26,7 +26,7 @@ const FloatingNavBar = ({
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
 
-  const bottomPadding = Math.max(insets.bottom, 10);
+  const bottomPadding = Math.max(insets.bottom, 8);
 
   const handleTabPress = useCallback(
     (screen, tab) => {
@@ -104,6 +104,13 @@ const FloatingNavBar = ({
   );
 
   return (
+    <View
+      style={[
+        styles.floatingBarSlot,
+        { transform: [{ translateY: insets.bottom }] },
+      ]}
+      pointerEvents="box-none"
+    >
     <Animated.View
       style={[
         styles.floatingBar,
@@ -177,6 +184,7 @@ const FloatingNavBar = ({
         iconFilled="settings"
       />
     </Animated.View>
+    </View>
   );
 };
 
@@ -212,11 +220,14 @@ function NavTab({
 }
 
 const styles = StyleSheet.create({
-  floatingBar: {
+  floatingBarSlot: {
     position: 'absolute',
-    bottom: -4,
+    bottom: 0,
     left: 8,
     right: 8,
+    zIndex: 1000,
+  },
+  floatingBar: {
     flexDirection: 'row',
     backgroundColor: 'rgba(3, 10, 36, 0.96)',
     borderRadius: 22,
@@ -231,7 +242,6 @@ const styles = StyleSheet.create({
     elevation: 12,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(26, 221, 219, 0.35)',
-    zIndex: 1000,
   },
   button: {
     flex: 1,
