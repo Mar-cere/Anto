@@ -260,10 +260,12 @@ class OpenAIService {
 
       // MEJORA: Intentar obtener respuesta del caché si existe (módulo openaiResponseCache) — no en modo invitado
       let cachedResponse = null;
+      /** Misma clave para get/set; debe vivir en este ámbito (antes estaba solo dentro del `if` y rompía el `set`). */
+      let responseCacheKey = null;
       if (!isGuest) {
-        const cacheKey = generateResponseCacheKey(contenidoNormalizado, analisisEmocional, analisisContextual);
+        responseCacheKey = generateResponseCacheKey(contenidoNormalizado, analisisEmocional, analisisContextual);
         try {
-          cachedResponse = await cacheService.get(cacheKey);
+          cachedResponse = await cacheService.get(responseCacheKey);
           if (cachedResponse && isCachedResponseValid(cachedResponse, analisisContextual)) {
             console.log('[OpenAI] ✅ Respuesta obtenida del caché');
             const adaptedResponse = adaptCachedResponse(cachedResponse.response, analisisContextual, contenidoNormalizado);
@@ -538,16 +540,18 @@ class OpenAIService {
       }
 
       // MEJORA: Guardar respuesta en caché para futuras consultas similares
-      try {
-        await cacheService.set(cacheKey, {
-          response: respuestaFinal,
-          emotional: analisisEmocional,
-          contextual: analisisContextual,
-          timestamp: Date.now()
-        }, 1800); // Cachear por 30 minutos
-        console.log('[OpenAI] ✅ Respuesta guardada en caché');
-      } catch (cacheError) {
-        console.warn('[OpenAI] Error al guardar en caché, continuando:', cacheError.message);
+      if (responseCacheKey) {
+        try {
+          await cacheService.set(responseCacheKey, {
+            response: respuestaFinal,
+            emotional: analisisEmocional,
+            contextual: analisisContextual,
+            timestamp: Date.now()
+          }, 1800); // Cachear por 30 minutos
+          console.log('[OpenAI] ✅ Respuesta guardada en caché');
+        } catch (cacheError) {
+          console.warn('[OpenAI] Error al guardar en caché, continuando:', cacheError.message);
+        }
       }
 
       // MEJORA: Análisis de sentimiento asíncrono (no bloquea la respuesta)
