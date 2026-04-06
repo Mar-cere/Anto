@@ -30,6 +30,7 @@ const REQUIRED_VARS = {
 // Variables opcionales pero recomendadas
 const RECOMMENDED_VARS = {
   'MERCADOPAGO_ACCESS_TOKEN': 'Token de acceso de Mercado Pago (requerido para pagos)',
+  'MERCADOPAGO_WEBHOOK_SECRET': 'Secreto del panel de webhooks MP (recomendado en producción para HMAC)',
   'SENDGRID_API_KEY': 'API Key de SendGrid (requerido para emails)',
   'TWILIO_ACCOUNT_SID': 'Account SID de Twilio (requerido para WhatsApp)',
   'TWILIO_AUTH_TOKEN': 'Auth Token de Twilio (requerido para WhatsApp)',

@@ -11,6 +11,7 @@
 | [FLUJOS.md](./FLUJOS.md) | Flujos principales: autenticación, chat, pagos, crisis. Resumen y enlaces a detalle. |
 | [CONTRATOS_API.md](./CONTRATOS_API.md) | Alineación frontend–backend: endpoints, rutas y contratos request/response. |
 | [REVISION_STOREKIT_COMPRAS.md](./REVISION_STOREKIT_COMPRAS.md) | Revisión del flujo de compras con StoreKit (iOS) y validación de recibos. |
+| [PAYMENTS_PRODUCTION_CHECKLIST.md](./PAYMENTS_PRODUCTION_CHECKLIST.md) | Invariantes de pagos, trial y webhooks; checklist manual en producción. |
 
 ---
 

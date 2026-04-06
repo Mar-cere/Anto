@@ -159,7 +159,8 @@ Ejemplos:
         trialEndDate: trialEndDate,
         subscriptionStartDate: null,
         subscriptionEndDate: null,
-        plan: null
+        plan: null,
+        trialGrantedAt: now,
       };
 
       // Crear usuario

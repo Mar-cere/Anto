@@ -61,8 +61,16 @@ class PaymentRecoveryService {
         };
       }
 
-      // Activar suscripción
-      await paymentServiceMercadoPago.activateSubscriptionFromPayment(transaction);
+      // Activar suscripción (forzar reintento; no aplicar idempotencia por paymentId)
+      await paymentServiceMercadoPago.activateSubscriptionFromPayment(transaction, {
+        skipIdempotency: true,
+        source: 'recovery',
+        externalId:
+          transaction.metadata?.paymentId ||
+          transaction.metadata?.mercadopagoPaymentId ||
+          transaction.providerTransactionId ||
+          null,
+      });
 
       // Registrar evento
       await paymentAuditService.logEvent('SUBSCRIPTION_RECOVERED', {

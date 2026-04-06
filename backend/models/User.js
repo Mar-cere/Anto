@@ -204,7 +204,12 @@ const userSchema = new mongoose.Schema({
     subscriptionEndDate: Date,
     plan: {
       type: String,
-      enum: ['monthly', 'yearly'],
+      enum: ['monthly', 'quarterly', 'semestral', 'yearly'],
+      default: null
+    },
+    /** Marca de auditoría: se asigna al otorgar trial en registro (una vez por cuenta). */
+    trialGrantedAt: {
+      type: Date,
       default: null
     }
   },

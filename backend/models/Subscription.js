@@ -23,7 +23,7 @@ const subscriptionSchema = new mongoose.Schema({
   // Estado de la suscripción
   status: {
     type: String,
-    enum: ['active', 'canceled', 'past_due', 'unpaid', 'trialing', 'incomplete', 'incomplete_expired'],
+    enum: ['active', 'canceled', 'past_due', 'unpaid', 'trialing', 'incomplete', 'incomplete_expired', 'expired'],
     default: 'trialing',
     index: true,
   },

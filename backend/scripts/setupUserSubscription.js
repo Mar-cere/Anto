@@ -116,7 +116,8 @@ Ejemplos:
         trialEndDate: trialEndDate,
         subscriptionStartDate: null,
         subscriptionEndDate: null,
-        plan: null
+        plan: null,
+        trialGrantedAt: user.subscription?.trialGrantedAt || now,
       };
       await user.save();
 

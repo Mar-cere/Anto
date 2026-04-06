@@ -1,21 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="7" failures="0" errors="0" time="0.97">
-  <testsuite name="MetricsService" errors="0" failures="0" skipped="0" timestamp="2026-04-03T00:03:21" time="0.476" tests="1">
-    <testcase classname="MetricsService Métodos del servicio debe tener métodos exportados" name="MetricsService Métodos del servicio debe tener métodos exportados" time="0.002">
+<testsuites name="jest tests" tests="5" failures="0" errors="0" time="3.981">
+  <testsuite name="Flujo completo: Suscripción y Pago" errors="0" failures="0" skipped="0" timestamp="2026-04-06T17:30:16" time="3.958" tests="5">
+    <testcase classname="Flujo completo: Suscripción y Pago debe obtener los planes disponibles" name="Flujo completo: Suscripción y Pago debe obtener los planes disponibles" time="0.358">
     </testcase>
-  </testsuite>
-  <testsuite name="CrisisMetricsService" errors="0" failures="0" skipped="0" timestamp="2026-04-03T00:03:21" time="0.845" tests="6">
-    <testcase classname="CrisisMetricsService Métodos del servicio debe tener método getCrisisSummary" name="CrisisMetricsService Métodos del servicio debe tener método getCrisisSummary" time="0.001">
+    <testcase classname="Flujo completo: Suscripción y Pago debe obtener información de trial" name="Flujo completo: Suscripción y Pago debe obtener información de trial" time="0.25">
     </testcase>
-    <testcase classname="CrisisMetricsService Métodos del servicio debe tener método getEmotionalTrends" name="CrisisMetricsService Métodos del servicio debe tener método getEmotionalTrends" time="0">
+    <testcase classname="Flujo completo: Suscripción y Pago debe obtener el estado de suscripción del usuario" name="Flujo completo: Suscripción y Pago debe obtener el estado de suscripción del usuario" time="0.243">
     </testcase>
-    <testcase classname="CrisisMetricsService getCrisisSummary debe ser una función" name="CrisisMetricsService getCrisisSummary debe ser una función" time="0">
+    <testcase classname="Flujo completo: Suscripción y Pago debe obtener historial de transacciones" name="Flujo completo: Suscripción y Pago debe obtener historial de transacciones" time="0.24">
     </testcase>
-    <testcase classname="CrisisMetricsService getCrisisSummary debe retornar resumen de crisis" name="CrisisMetricsService getCrisisSummary debe retornar resumen de crisis" time="0.001">
-    </testcase>
-    <testcase classname="CrisisMetricsService getCrisisSummary debe manejar errores correctamente" name="CrisisMetricsService getCrisisSummary debe manejar errores correctamente" time="0.025">
-    </testcase>
-    <testcase classname="CrisisMetricsService getEmotionalTrends debe ser una función" name="CrisisMetricsService getEmotionalTrends debe ser una función" time="0">
+    <testcase classname="Flujo completo: Suscripción y Pago debe validar autenticación para endpoints de pago" name="Flujo completo: Suscripción y Pago debe validar autenticación para endpoints de pago" time="0.229">
     </testcase>
   </testsuite>
 </testsuites>

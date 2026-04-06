@@ -19,6 +19,10 @@ import cacheService from '../services/cacheService.js';
 import paymentAuditService from '../services/paymentAuditService.js';
 import paymentService from '../services/paymentService.js';
 import logger from '../utils/logger.js';
+import {
+  extractMercadoPagoWebhookResourceId,
+  verifyMercadoPagoWebhookSignature
+} from '../utils/mercadopagoWebhookSignature.js';
 
 const router = express.Router();
 
@@ -790,40 +794,66 @@ router.post('/webhook', express.json(), webhookLimiter, async (req, res) => {
       });
     }
 
-    // Validar firma si está configurada (en producción es obligatorio)
-    const signature = req.headers['x-signature'] || 
-                     req.headers['x-mercadopago-signature'] || 
-                     req.headers['x-request-id'] || 
-                     null;
-    
-    if (isProduction && webhookSecret && !signature) {
-      console.warn('[PAYMENT_WEBHOOK] Webhook sin firma en producción:', {
-        ip: clientIP,
-        type: req.body.type || req.body.action
+    const xSignatureRaw = req.headers['x-signature'] || req.headers['x-mercadopago-signature'] || null;
+    const xRequestId = req.headers['x-request-id'] || null;
+    const resourceId = extractMercadoPagoWebhookResourceId(req.body);
+
+    // Con MERCADOPAGO_WEBHOOK_SECRET: validación HMAC real (no usar x-request-id como “firma”).
+    if (webhookSecret) {
+      if (!xSignatureRaw || !xRequestId || !resourceId) {
+        console.warn('[PAYMENT_WEBHOOK] Falta firma, x-request-id o data.id para validar:', {
+          ip: clientIP,
+          hasSignature: !!xSignatureRaw,
+          hasRequestId: !!xRequestId,
+          hasResourceId: !!resourceId
+        });
+        await paymentAuditService.logEvent('WEBHOOK_MISSING_SIGNATURE', {
+          ip: clientIP,
+          userAgent,
+          reason: 'incomplete_headers_or_body',
+          type: req.body?.type || req.body?.action
+        }, null).catch(() => {});
+        return res.status(400).json({
+          error: 'Missing webhook signature or notification id'
+        });
+      }
+
+      const verification = verifyMercadoPagoWebhookSignature({
+        rawXSignature: xSignatureRaw,
+        xRequestId,
+        dataId: resourceId,
+        secret: webhookSecret
       });
-      
-      await paymentAuditService.logEvent('WEBHOOK_MISSING_SIGNATURE', {
-        ip: clientIP,
-        userAgent,
-        type: req.body.type || req.body.action
-      }, null).catch(() => {});
-      
-      // En producción, rechazar webhooks sin firma si está configurado el secret
-      return res.status(400).json({
-        error: 'Missing webhook signature',
-      });
+
+      if (!verification.valid) {
+        console.warn('[PAYMENT_WEBHOOK] Firma inválida:', {
+          ip: clientIP,
+          reason: verification.reason,
+          resourceId
+        });
+        await paymentAuditService.logEvent('WEBHOOK_SIGNATURE_INVALID', {
+          ip: clientIP,
+          userAgent,
+          reason: verification.reason,
+          resourceId
+        }, null).catch(() => {});
+        return res.status(401).json({ error: 'Invalid webhook signature' });
+      }
+    } else if (isProduction) {
+      logger.warn('[PAYMENT_WEBHOOK] MERCADOPAGO_WEBHOOK_SECRET no configurado en producción: se aceptan notificaciones sin HMAC');
     }
 
     // Registrar webhook recibido
     console.log('[PAYMENT_WEBHOOK] Webhook recibido:', {
       type: req.body.type || req.body.action,
       data: req.body.data ? 'present' : 'missing',
-      hasSignature: !!signature,
+      hasSignature: !!xSignatureRaw,
+      resourceId,
       timestamp: new Date().toISOString(),
       ip: clientIP,
     });
 
-    const result = await paymentService.handleWebhook(req.body, signature);
+    const result = await paymentService.handleWebhook(req.body, xSignatureRaw || '');
 
     res.json(result);
   } catch (error) {

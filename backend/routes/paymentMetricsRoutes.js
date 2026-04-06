@@ -402,5 +402,102 @@ router.get('/metrics/health', authenticateToken, isAdmin, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/payments/metrics/integrity
+ * Alertas de integridad: pagos completados vs acceso premium, huérfanos, bloqueos.
+ * Requiere rol admin.
+ */
+router.get('/metrics/integrity', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const now = new Date();
+    const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const completedRecent = await Transaction.find({
+      status: 'completed',
+      type: 'subscription',
+      paymentProvider: 'mercadopago',
+      updatedAt: { $gte: last7d },
+    })
+      .select('userId amount plan metadata status updatedAt')
+      .limit(400)
+      .lean();
+
+    let completedWithoutPremium = 0;
+    const samples = [];
+
+    for (const t of completedRecent) {
+      const uid = t.userId;
+      const user = await User.findById(uid)
+        .select('subscription.status subscription.subscriptionEndDate')
+        .lean();
+      const sub = await Subscription.findOne({ userId: uid })
+        .select('status currentPeriodEnd')
+        .lean();
+
+      const premiumUser =
+        user?.subscription?.status === 'premium' &&
+        user?.subscription?.subscriptionEndDate &&
+        new Date(user.subscription.subscriptionEndDate) >= now;
+
+      const activeSub =
+        sub &&
+        sub.status === 'active' &&
+        sub.currentPeriodEnd &&
+        new Date(sub.currentPeriodEnd) >= now;
+
+      const wasBlocked = !!t.metadata?.activationBlockedReason;
+
+      if (!premiumUser && !activeSub && !wasBlocked) {
+        completedWithoutPremium += 1;
+        if (samples.length < 20) {
+          samples.push({
+            transactionId: t._id,
+            userId: uid,
+            plan: t.plan,
+            updatedAt: t.updatedAt,
+          });
+        }
+      }
+    }
+
+    const orphansPending = await Transaction.countDocuments({
+      status: 'pending',
+      type: 'subscription',
+      paymentProvider: 'mercadopago',
+      createdAt: { $gte: last7d },
+    });
+
+    const duplicateAttempts = await Transaction.countDocuments({
+      'metadata.duplicateTransactionAttempts.0': { $exists: true },
+      updatedAt: { $gte: last7d },
+    });
+
+    const activationsBlocked = await Transaction.countDocuments({
+      'metadata.activationBlockedReason': { $exists: true, $ne: null },
+      updatedAt: { $gte: last7d },
+    });
+
+    res.json({
+      success: true,
+      integrity: {
+        windowDays: 7,
+        completedMercadoPagoRecentScanned: completedRecent.length,
+        completedWithoutPremiumAccess: completedWithoutPremium,
+        pendingOrphansRecent: orphansPending,
+        duplicateActivationAttempts: duplicateAttempts,
+        activationsBlockedByValidation: activationsBlocked,
+        samplesCompletedWithoutPremium: samples,
+      },
+      timestamp: now.toISOString(),
+    });
+  } catch (error) {
+    console.error('Error en métricas de integridad de pagos:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error al obtener integridad de pagos',
+    });
+  }
+});
+
 export default router;
 

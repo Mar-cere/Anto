@@ -321,11 +321,15 @@ class AppleReceiptService {
         provider: user.subscription?.provider,
       };
 
+      const trialGrantedAtPreserve = user.subscription?.trialGrantedAt;
       user.subscription = {
         status: isActive ? 'premium' : 'expired',
         plan: plan,
         subscriptionStartDate: purchaseDate,
         subscriptionEndDate: expiresDate,
+        trialStartDate: null,
+        trialEndDate: null,
+        trialGrantedAt: trialGrantedAtPreserve || user.subscription?.trialGrantedAt || null,
         provider: 'apple',
         appleTransactionId: transactionId,
         appleOriginalTransactionId: transaction.original_transaction_id,
@@ -398,6 +402,8 @@ class AppleReceiptService {
       subscription.appleOriginalTransactionId = transaction.original_transaction_id;
       subscription.startDate = purchaseDate;
       subscription.endDate = expiresDate;
+      subscription.trialStart = null;
+      subscription.trialEnd = null;
 
       const subscriptionSaveStartTime = Date.now();
       logger.payment('[AppleReceipt] 💾 Guardando registro de suscripción', {

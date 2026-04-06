@@ -36,6 +36,7 @@ export interface UserSubscription {
   status?: string;
   trialStartDate?: string | Date;
   trialEndDate?: string | Date;
+  trialGrantedAt?: string | Date;
   plan?: string;
   [key: string]: unknown;
 }

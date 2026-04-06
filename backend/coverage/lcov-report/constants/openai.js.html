@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/212</span>
+                <span class='fraction'>0/215</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/181</span>
+                <span class='fraction'>0/186</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/204</span>
+                <span class='fraction'>0/207</span>
             </div>
         
             
@@ -1173,7 +1173,15 @@
 <a name='L1108'></a><a href='#L1108'>1108</a>
 <a name='L1109'></a><a href='#L1109'>1109</a>
 <a name='L1110'></a><a href='#L1110'>1110</a>
-<a name='L1111'></a><a href='#L1111'>1111</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L1111'></a><a href='#L1111'>1111</a>
+<a name='L1112'></a><a href='#L1112'>1112</a>
+<a name='L1113'></a><a href='#L1113'>1113</a>
+<a name='L1114'></a><a href='#L1114'>1114</a>
+<a name='L1115'></a><a href='#L1115'>1115</a>
+<a name='L1116'></a><a href='#L1116'>1116</a>
+<a name='L1117'></a><a href='#L1117'>1117</a>
+<a name='L1118'></a><a href='#L1118'>1118</a>
+<a name='L1119'></a><a href='#L1119'>1119</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1955,6 +1963,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2036,6 +2045,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2054,6 +2064,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2266,10 +2277,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3010,7 +3026,7 @@ export const COMMUNICATION_STYLE_GUIDELINES = <span class="cstat-no" title="stat
 // Plantillas base para construir prompts personalizados
 export const PROMPT_TEMPLATES = <span class="cstat-no" title="statement not covered" >{</span>
   // Plantilla base del sistema (mejorada con más contexto)
-  SYSTEM_BASE: `Eres Anto, un asistente terapéutico empático y profesional. Tu objetivo es brindar apoyo emocional genuino y ayudar a explorar los sentimientos de forma segura, sin caer en frases de relleno ni en el mismo esquema en cada mensaje. Responde de forma natural, específica y variada. Siempre responde al mensaje del usuario de manera relevante.
+  SYSTEM_BASE: `Eres Anto, un asistente de bienestar emocional: tono profesional y accesible, orientado a utilidad concreta (preguntas precisas, micro-pasos o ideas claras), sin caer en frases de relleno ni en el mismo esquema en cada mensaje. No eres terapeuta clínico; exploras sentimientos con seguridad y claridad. Responde de forma natural, específica y variada; siempre al mensaje del usuario.
 &nbsp;
 ALCANCE: Tu prioridad es propiciar, mantener e inducir conversaciones dentro de la misión de la app (bienestar emocional, salud mental, apoyo y acompañamiento). No evites conversaciones: cuando el usuario mezcle un tema externo con cómo se siente o solo lo mencione de paso, responde con naturalidad y mantén el diálogo. Solo cuando la pregunta sea claramente y solo informativa sobre algo ajeno (p. ej. definición técnica tipo "qué es React Native"), no uses tokens en esa respuesta; en su lugar redirige de forma breve y acogedora para llevar la conversación de vuelta al ámbito: reconoce que ese tema no es tu espacio, invita a seguir hablando de cómo se siente o qué le gustaría trabajar. Ejemplo: "Ese tema no es en lo que mejor te acompaño; mi espacio es cómo te sientes y tu bienestar. ¿Cómo estás hoy o qué te gustaría compartir?"`,
 &nbsp;
@@ -3043,6 +3059,7 @@ IMPORTANTE: Responde al mensaje específico del usuario, no solo a la emoción d
 - Responde SIEMPRE al mensaje específico del usuario. No te desvíes del tema.
 - Si pregunta de forma clara y solo informativa por temas ajenos (p. ej. tecnología, datos de cultura general), redirige en una frase breve y acogedora que induzca a conversar sobre bienestar; si mezcla el tema con cómo se siente, responde con naturalidad y mantén el diálogo.
 - Si el usuario hace una pregunta dentro del ámbito, responde directamente; si expresa una emoción, puedes reconocerla sin repetir las mismas fórmulas en cada mensaje (varía: a veces solo contenido útil o una pregunta bien dirigida).
+- Prioriza resultado práctico: que el usuario se lleve al menos una pista accionable o una pregunta que avance, no solo contención genérica.
 - Responde breve (1-2 oraciones, máx {maxWords} palabras) pero completa.
 - Sé natural y genuino. Evita frases de relleno, disculpas de cortesía en exceso ("lo siento mucho", "lamento que") y validaciones vacías ("es totalmente válido") en mensaje tras mensaje.
 - Si la emoción es NEGATIVA, varía el lenguaje; no dependas solo de "entiendo/comprendo/es normal/es válido"; a veces muestra comprensión implicada en el contenido sin etiquetarla.
@@ -3163,7 +3180,9 @@ export const buildPersonalizedPrompt = <span class="cstat-no" title="statement n
     responseStyle = <span class="branch-0 cbranch-no" title="branch not covered" >'balanced',</span>
     gender = <span class="branch-0 cbranch-no" title="branch not covered" >null,</span> // NUEVO: Género del usuario
     pronouns = <span class="branch-0 cbranch-no" title="branch not covered" >null,</span> // NUEVO: Pronombres preferidos
-    chatPreferences = <span class="branch-0 cbranch-no" title="branch not covered" >null</span>
+    chatPreferences = <span class="branch-0 cbranch-no" title="branch not covered" >null,</span>
+    /** 'MEDIUM' | 'HIGH' | null — anula preferencias de tono “frías” por seguridad */
+    crisisRiskLevel = <span class="branch-0 cbranch-no" title="branch not covered" >null</span>
   } = <span class="cstat-no" title="statement not covered" >context;</span>
 &nbsp;
   // Obtener directrices específicas
@@ -3378,8 +3397,13 @@ export const buildPersonalizedPrompt = <span class="cstat-no" title="statement n
 <span class="cstat-no" title="statement not covered" >    prompt += `\n\nTRATAMIENTO: Si no conoces el género del usuario, usa lenguaje neutro. NO asumas género. Evita usar "ella" o "él" sin saberlo.`;</span>
   }
 &nbsp;
-  const toneSnippet = <span class="cstat-no" title="statement not covered" >buildChatPreferenceSnippet(chatPreferences);</span>
-<span class="cstat-no" title="statement not covered" >  if (toneSnippet) <span class="cstat-no" title="statement not covered" >prompt += `\n\n${toneSnippet}`;</span></span>
+  const crisisElevated = <span class="cstat-no" title="statement not covered" >crisisRiskLevel === 'MEDIUM' || crisisRiskLevel === 'HIGH';</span>
+<span class="cstat-no" title="statement not covered" >  if (crisisElevated) {</span>
+<span class="cstat-no" title="statement not covered" >    prompt += `\n\nRIESGO ELEVADO (${crisisRiskLevel}): Las preferencias de tono del usuario (menos validación genérica, evitar disculpas al inicio, priorizar preguntas) no aplican ahora. Prioriza presencia empática, calma, claridad y seguridad; no suenes distante ni frío.`;</span>
+  } else {
+    const toneSnippet = <span class="cstat-no" title="statement not covered" >buildChatPreferenceSnippet(chatPreferences);</span>
+<span class="cstat-no" title="statement not covered" >    if (toneSnippet) <span class="cstat-no" title="statement not covered" >prompt += `\n\n${toneSnippet}`;</span></span>
+  }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return prompt;</span>
 };
@@ -3400,7 +3424,7 @@ export const buildPersonalizedPrompt = <span class="cstat-no" title="statement n
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-03T00:03:24.522Z
+                at 2026-04-06T17:30:08.619Z
             </div>
         <script src="../prettify.js"></script>
         <script>
