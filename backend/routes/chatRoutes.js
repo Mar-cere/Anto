@@ -32,6 +32,7 @@ import {
   emotionalAnalyzer,
   engagementTracker,
   intenseChatCheckInService,
+  memoryService,
   openaiService,
   progressTracker,
   userProfileService,
@@ -390,6 +391,16 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           emotionalAnalyzer.analyzeEmotion(content, previousEmotionalPatterns),
           contextAnalyzer.analizarMensaje(userMessage, conversationHistory)
         ]);
+
+        const memoryPrefetchPromise = memoryService
+          .getRelevantContext(req.user._id, content.trim(), {
+            emotional: emotionalAnalysis,
+            contextual: contextualAnalysis
+          })
+          .catch((err) => {
+            console.warn('[ChatRoutes] memoria (prefetch):', err?.message);
+            return null;
+          });
         
         // OPTIMIZACIÓN: Análisis de tendencias y crisis solo si hay indicadores de riesgo
         // Evaluar riesgo básico primero (más rápido)
@@ -727,6 +738,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         });
 
         logs.push(`[${Date.now() - startTime}ms] Generando respuesta con análisis previo`);
+
+        const memoriaParaOpenAI = await memoryPrefetchPromise;
         
         // Combinar UserProfile con User para tener acceso a todas las preferencias
         const combinedProfile = {
@@ -758,7 +771,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             riskLevel,
             country: userProfile?.preferences?.country || 'GENERAL',
             detectedAt: new Date()
-          } : undefined
+          } : undefined,
+          ...(memoriaParaOpenAI ? { memory: memoriaParaOpenAI } : {})
         };
 
         // Streaming: si se pide stream=true, responder por SSE

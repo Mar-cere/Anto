@@ -218,6 +218,32 @@ class AppleReceiptService {
         originalTransactionId: transaction.original_transaction_id,
       });
 
+      const appleTransactionId = String(transaction.transaction_id);
+      if (transactionId && String(transactionId) !== appleTransactionId) {
+        logger.warn('[AppleReceipt] transactionId del cliente difiere del recibo; usando transaction_id de Apple', {
+          userId: userId.toString(),
+          clientTransactionId: String(transactionId),
+          receiptTransactionId: appleTransactionId,
+        });
+      }
+
+      const existingAppleTxn = await Transaction.findOne({
+        userId,
+        paymentProvider: 'apple',
+        providerTransactionId: appleTransactionId,
+      })
+        .select('_id')
+        .lean();
+      const skipDuplicateSideEffects = !!existingAppleTxn;
+
+      if (skipDuplicateSideEffects) {
+        logger.payment('[AppleReceipt] Revalidación idempotente: misma transacción Apple ya registrada; omitiendo alta duplicada', {
+          userId: userId.toString(),
+          appleTransactionId,
+          productId,
+        });
+      }
+
       // Obtener información del plan
       const plan = PRODUCT_ID_TO_PLAN[productId];
       if (!plan) {
@@ -331,7 +357,7 @@ class AppleReceiptService {
         trialEndDate: null,
         trialGrantedAt: trialGrantedAtPreserve || user.subscription?.trialGrantedAt || null,
         provider: 'apple',
-        appleTransactionId: transactionId,
+        appleTransactionId,
         appleOriginalTransactionId: transaction.original_transaction_id,
       };
 
@@ -373,11 +399,18 @@ class AppleReceiptService {
         });
         subscription = new Subscription({
           userId,
-          provider: 'apple',
-          plan: plan,
+          plan,
           status: isActive ? 'active' : 'expired',
-          isActive,
-          isInTrial: false,
+          currentPeriodStart: purchaseDate,
+          currentPeriodEnd: expiresDate,
+          trialStart: null,
+          trialEnd: null,
+          metadata: {
+            provider: 'apple',
+            appleTransactionId,
+            appleOriginalTransactionId: transaction.original_transaction_id,
+            productId,
+          },
         });
       } else {
         logger.payment('[AppleReceipt] 🔄 Actualizando registro de suscripción existente', {
@@ -391,19 +424,20 @@ class AppleReceiptService {
           findDuration: `${subscriptionFindDuration}ms`,
           timestamp: new Date().toISOString(),
         });
-        subscription.provider = 'apple';
         subscription.plan = plan;
         subscription.status = isActive ? 'active' : 'expired';
-        subscription.isActive = isActive;
-        subscription.isInTrial = false;
+        subscription.currentPeriodStart = purchaseDate;
+        subscription.currentPeriodEnd = expiresDate;
+        subscription.trialStart = null;
+        subscription.trialEnd = null;
+        subscription.metadata = {
+          ...subscription.metadata,
+          provider: 'apple',
+          appleTransactionId,
+          appleOriginalTransactionId: transaction.original_transaction_id,
+          productId,
+        };
       }
-
-      subscription.appleTransactionId = transactionId;
-      subscription.appleOriginalTransactionId = transaction.original_transaction_id;
-      subscription.startDate = purchaseDate;
-      subscription.endDate = expiresDate;
-      subscription.trialStart = null;
-      subscription.trialEnd = null;
 
       const subscriptionSaveStartTime = Date.now();
       logger.payment('[AppleReceipt] 💾 Guardando registro de suscripción', {
@@ -429,64 +463,69 @@ class AppleReceiptService {
         saveDuration: `${subscriptionSaveDuration}ms`,
       });
 
-      // Crear registro de transacción
-      const transactionCreateStartTime = Date.now();
-      logger.payment('[AppleReceipt] 📝 Creando registro de transacción', {
-        userId: userId.toString(),
-        productId,
-        plan,
-        transactionId,
-        amount: parseFloat(transaction.price || 0),
-        currency: transaction.currency || 'USD',
-        status: isActive ? 'completed' : 'expired',
-        timestamp: new Date().toISOString(),
-      });
-
-      const transactionRecord = new Transaction({
-        userId,
-        type: 'subscription',
-        provider: 'apple',
-        amount: parseFloat(transaction.price || 0),
-        currency: transaction.currency || 'USD',
-        status: isActive ? 'completed' : 'expired',
-        transactionId: transactionId,
-        metadata: {
+      if (!skipDuplicateSideEffects) {
+        const transactionCreateStartTime = Date.now();
+        logger.payment('[AppleReceipt] 📝 Creando registro de transacción', {
+          userId: userId.toString(),
           productId,
           plan,
-          purchaseDate,
-          expiresDate,
-          originalTransactionId: transaction.original_transaction_id,
-        },
-      });
+          appleTransactionId,
+          amount: parseFloat(transaction.price || 0),
+          currency: transaction.currency || 'USD',
+          status: isActive ? 'completed' : 'expired',
+          timestamp: new Date().toISOString(),
+        });
 
-      const transactionSaveStartTime = Date.now();
-      await transactionRecord.save();
-      const transactionSaveDuration = Date.now() - transactionSaveStartTime;
-      
-      logger.payment('[AppleReceipt] ✅ Transacción creada', {
-        userId: userId.toString(),
-        transactionId: transactionRecord._id.toString(),
-        amount: transactionRecord.amount,
-        currency: transactionRecord.currency,
-        status: transactionRecord.status,
-        saveDuration: `${transactionSaveDuration}ms`,
-        createDuration: Date.now() - transactionCreateStartTime,
-      });
+        const transactionRecord = new Transaction({
+          userId,
+          type: 'subscription',
+          paymentProvider: 'apple',
+          paymentMethod: 'other',
+          amount: parseFloat(transaction.price || 0),
+          currency: (transaction.currency || 'USD').toUpperCase(),
+          status: isActive ? 'completed' : 'expired',
+          providerTransactionId: appleTransactionId,
+          metadata: {
+            productId,
+            plan,
+            purchaseDate,
+            expiresDate,
+            originalTransactionId: transaction.original_transaction_id,
+          },
+        });
 
-      // Registrar evento de auditoría
-      await paymentAuditService.logEvent('APPLE_SUBSCRIPTION_ACTIVATED', {
-        userId: userId.toString(),
-        productId,
-        plan,
-        transactionId,
-        originalTransactionId: transaction.original_transaction_id,
-        purchaseDate,
-        expiresDate,
-        isActive,
-      }, userId.toString());
+        const transactionSaveStartTime = Date.now();
+        await transactionRecord.save();
+        const transactionSaveDuration = Date.now() - transactionSaveStartTime;
+
+        logger.payment('[AppleReceipt] ✅ Transacción creada', {
+          userId: userId.toString(),
+          transactionRecordId: transactionRecord._id.toString(),
+          amount: transactionRecord.amount,
+          currency: transactionRecord.currency,
+          status: transactionRecord.status,
+          saveDuration: `${transactionSaveDuration}ms`,
+          createDuration: Date.now() - transactionCreateStartTime,
+        });
+
+        await paymentAuditService.logEvent(
+          'APPLE_SUBSCRIPTION_ACTIVATED',
+          {
+            userId: userId.toString(),
+            productId,
+            plan,
+            transactionId: appleTransactionId,
+            originalTransactionId: transaction.original_transaction_id,
+            purchaseDate,
+            expiresDate,
+            isActive,
+          },
+          userId.toString(),
+        );
+      }
 
       // Enviar correo de agradecimiento por suscripción (solo si está activa)
-      if (isActive) {
+      if (!skipDuplicateSideEffects && isActive) {
         const emailStartTime = Date.now();
         logger.payment('[AppleReceipt] 📧 Enviando correo de agradecimiento', {
           userId: userId.toString(),
@@ -536,7 +575,8 @@ class AppleReceiptService {
         userId: userId.toString(),
         productId,
         plan,
-        transactionId,
+        appleTransactionId,
+        idempotentReplay: skipDuplicateSideEffects,
         isActive,
         totalDuration: `${duration}ms`,
         timestamp: new Date().toISOString(),
@@ -545,13 +585,15 @@ class AppleReceiptService {
         userId: userId.toString(),
         productId,
         plan,
-        transactionId,
+        appleTransactionId,
+        idempotentReplay: skipDuplicateSideEffects,
         isActive,
         duration,
       });
 
       return {
         success: true,
+        idempotentReplay: skipDuplicateSideEffects,
         subscription: {
           status: user.subscription.status,
           plan: plan,

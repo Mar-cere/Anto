@@ -1,15 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="5" failures="0" errors="0" time="3.981">
-  <testsuite name="Flujo completo: Suscripción y Pago" errors="0" failures="0" skipped="0" timestamp="2026-04-06T17:30:16" time="3.958" tests="5">
-    <testcase classname="Flujo completo: Suscripción y Pago debe obtener los planes disponibles" name="Flujo completo: Suscripción y Pago debe obtener los planes disponibles" time="0.358">
+<testsuites name="jest tests" tests="2" failures="0" errors="0" time="0.686">
+  <testsuite name="OpenAIService" errors="0" failures="0" skipped="0" timestamp="2026-04-06T18:22:49" time="0.666" tests="2">
+    <testcase classname="OpenAIService Métodos del servicio debe tener métodos exportados" name="OpenAIService Métodos del servicio debe tener métodos exportados" time="0.001">
     </testcase>
-    <testcase classname="Flujo completo: Suscripción y Pago debe obtener información de trial" name="Flujo completo: Suscripción y Pago debe obtener información de trial" time="0.25">
-    </testcase>
-    <testcase classname="Flujo completo: Suscripción y Pago debe obtener el estado de suscripción del usuario" name="Flujo completo: Suscripción y Pago debe obtener el estado de suscripción del usuario" time="0.243">
-    </testcase>
-    <testcase classname="Flujo completo: Suscripción y Pago debe obtener historial de transacciones" name="Flujo completo: Suscripción y Pago debe obtener historial de transacciones" time="0.24">
-    </testcase>
-    <testcase classname="Flujo completo: Suscripción y Pago debe validar autenticación para endpoints de pago" name="Flujo completo: Suscripción y Pago debe validar autenticación para endpoints de pago" time="0.229">
+    <testcase classname="OpenAIService Métodos del servicio debe tener método generateResponse si existe" name="OpenAIService Métodos del servicio debe tener método generateResponse si existe" time="0">
     </testcase>
   </testsuite>
 </testsuites>

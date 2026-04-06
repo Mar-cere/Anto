@@ -14,6 +14,7 @@ import {
     MESSAGE_INTENTS,
     OPENAI_MODEL,
     PROMPT_CONFIG,
+    getChatReasoningEffortForContext,
     RESPONSE_LENGTHS,
     TEMPERATURES,
     THRESHOLDS,
@@ -134,6 +135,29 @@ class OpenAIService {
   }
 
   /**
+   * Chat completion con reasoning_effort; si la API/SDK rechaza el parámetro, reintenta sin él.
+   * @param {Record<string, unknown>} body - Argumentos de openai.chat.completions.create
+   */
+  async createChatCompletionResilient(body) {
+    try {
+      return await openai.chat.completions.create(body);
+    } catch (err) {
+      const msg = String(err?.message || '');
+      const retriable =
+        body.reasoning_effort != null &&
+        (err?.status === 400 ||
+          err?.code === 'unsupported_parameter' ||
+          /reasoning|unsupported|unknown parameter/i.test(msg));
+      if (retriable) {
+        const { reasoning_effort: _ignored, ...rest } = body;
+        console.warn('[OpenAI] reasoning_effort no aceptado; reintento sin él:', msg);
+        return await openai.chat.completions.create(rest);
+      }
+      throw err;
+    }
+  }
+
+  /**
    * Genera una respuesta contextualizada usando OpenAI GPT-5 Mini
    * @param {Object} mensaje - Mensaje del usuario con content, userId, conversationId
    * @param {Object} contexto - Contexto adicional (opcional)
@@ -190,7 +214,9 @@ class OpenAIService {
 
       // 2. Obtener Memoria y Contexto
       let memoriaContextual;
-      if (isGuest) {
+      if (contexto.memory && !isGuest) {
+        memoriaContextual = contexto.memory;
+      } else if (isGuest) {
         memoriaContextual = {
           lastInteraction: null,
           recurringThemes: [],
@@ -250,17 +276,18 @@ class OpenAIService {
 
       // Obtener responseStyle del perfil para ajustar longitud (ya obtenido arriba en línea 366)
       const userResponseStyle = perfilUsuario?.preferences?.responseStyle || 'balanced';
-      
-      // Logging del prompt para debugging
-      const maxTokens = this.determinarLongitudRespuesta(analisisContextual, contenidoNormalizado, userResponseStyle);
+      const maxCompletionTokens = this.determinarLongitudRespuesta(
+        analisisContextual,
+        contenidoNormalizado,
+        userResponseStyle
+      );
       const promptLength = prompt.systemMessage.length;
       const contextMessagesCount = prompt.contextMessages?.length || 0;
       const userMessageLength = contenidoNormalizado.length;
-      console.log(`[OpenAI] Prompt length: ${promptLength} chars, Context messages: ${contextMessagesCount}, User message: ${userMessageLength} chars, Max completion tokens: ${maxTokens}, Response style: ${userResponseStyle}`);
-
+      console.log(`[OpenAI] Prompt length: ${promptLength} chars, Context messages: ${contextMessagesCount}, User message: ${userMessageLength} chars, Max completion tokens: ${maxCompletionTokens}, Response style: ${userResponseStyle}`);
       let completion;
       try {
-        completion = await openai.chat.completions.create({
+        completion = await this.createChatCompletionResilient({
           model: OPENAI_MODEL,
           messages: [
             {
@@ -273,11 +300,10 @@ class OpenAIService {
               content: contenidoNormalizado
             }
           ],
-          max_completion_tokens: this.determinarLongitudRespuesta(analisisContextual, contenidoNormalizado, userResponseStyle)
-          // Nota: GPT-5 Mini solo soporta:
-          // - temperature: valor por defecto (1) - no se puede especificar otro valor
-          // - max_completion_tokens: sí soportado
-          // - presence_penalty y frequency_penalty: no soportados
+          max_completion_tokens: maxCompletionTokens,
+          reasoning_effort: getChatReasoningEffortForContext(contexto)
+          // GPT-5 mini: menos reasoning_effort suele bajar latencia. OPENAI_CHAT_REASONING_EFFORT para override.
+          // Crisis MEDIUM/HIGH → medium en getChatReasoningEffortForContext.
         });
       } catch (apiError) {
         // Manejar errores específicos de autenticación
@@ -320,7 +346,7 @@ class OpenAIService {
       
       // MONITOREO: Registrar estadísticas de uso de tokens
       this.registrarEstadisticasTokens({
-        maxCompletionTokens: this.determinarLongitudRespuesta(analisisContextual, contenidoNormalizado, userResponseStyle),
+        maxCompletionTokens: maxCompletionTokens,
         totalCompletionTokens: usage.completion_tokens,
         reasoningTokens: reasoningTokens,
         actualContentTokens: actualContentTokens,
@@ -337,7 +363,7 @@ class OpenAIService {
           finishReason: finishReason,
           promptLength: prompt.systemMessage.length,
           contextMessagesCount: prompt.contextMessages?.length || 0,
-          maxCompletionTokens: this.determinarLongitudRespuesta(analisisContextual, contenidoNormalizado, userResponseStyle),
+          maxCompletionTokens: maxCompletionTokens,
           totalCompletionTokens: usage.completion_tokens,
           reasoningTokens: reasoningTokens,
           actualContentTokens: actualContentTokens,
@@ -590,11 +616,12 @@ class OpenAIService {
       registroTerapeutico = await TherapeuticRecord.findOne({ userId: mensaje.userId }).catch(() => null);
     }
 
-    const memoriaContextual = await memoryService.getRelevantContext(
-      mensaje.userId,
-      contenidoNormalizado,
-      { emotional: analisisEmocional, contextual: analisisContextual }
-    );
+    const memoriaContextual = contexto.memory
+      ? contexto.memory
+      : await memoryService.getRelevantContext(mensaje.userId, contenidoNormalizado, {
+          emotional: analisisEmocional,
+          contextual: analisisContextual
+        });
 
     const sessionTrends = sessionEmotionalMemory.analyzeTrends(mensaje.userId);
     const prompt = await buildContextualizedPrompt(
@@ -613,7 +640,8 @@ class OpenAIService {
         depthPreference: contexto.depthPreference,
         inferredWritingStyle: contexto.inferredWritingStyle,
         preferredResponseLength: contexto.preferredResponseLength,
-        crisis: contexto.crisis
+        crisis: contexto.crisis,
+        isGuest: contexto.isGuest === true
       }
     );
 
@@ -621,7 +649,7 @@ class OpenAIService {
 
     let stream;
     try {
-      stream = await openai.chat.completions.create({
+      stream = await this.createChatCompletionResilient({
         model: OPENAI_MODEL,
         messages: [
           { role: 'system', content: prompt.systemMessage },
@@ -629,6 +657,7 @@ class OpenAIService {
           { role: 'user', content: contenidoNormalizado }
         ],
         max_completion_tokens: maxTokens,
+        reasoning_effort: getChatReasoningEffortForContext(contexto),
         stream: true,
         stream_options: { include_usage: true }
       });
@@ -962,7 +991,15 @@ class OpenAIService {
       // Alta intensidad: respuestas más cuidadosas, permitir más tokens para reasoning
       baseLength = Math.max(baseLength, RESPONSE_LENGTHS.MEDIUM);
     }
-    
+
+    const capRaw = process.env.CHAT_MAX_COMPLETION_TOKENS;
+    if (capRaw !== undefined && String(capRaw).trim() !== '') {
+      const cap = parseInt(capRaw, 10);
+      if (Number.isFinite(cap) && cap >= 400) {
+        baseLength = Math.min(baseLength, cap);
+      }
+    }
+
     return baseLength;
   }
 

@@ -88,6 +88,30 @@ function resolveHistoryLimits() {
 
 export const HISTORY_LIMITS = resolveHistoryLimits();
 
+/** Valores admitidos por la API para reasoning_effort (según modelo). */
+const REASONING_EFFORT_SET = new Set(['minimal', 'low', 'medium', 'high', 'xhigh', 'none']);
+
+/**
+ * Esfuerzo de razonamiento en Chat Completions: menos esfuerzo → menos tokens internos y
+ * suele mejorar tiempo hasta la primera palabra y latencia total en modelos tipo GPT-5 mini.
+ * En crisis (MEDIUM/HIGH) se sube a `medium` salvo override explícito vía env en crisis (no aplicado: crisis gana).
+ * @param {{ crisis?: { riskLevel?: string } } | null | undefined} contextLike - p.ej. objeto contexto de chat
+ * @returns {string}
+ */
+export function getChatReasoningEffortForContext(contextLike) {
+  const crisis = contextLike?.crisis?.riskLevel;
+  if (crisis === 'HIGH' || crisis === 'MEDIUM') {
+    return 'medium';
+  }
+
+  const raw = process.env.OPENAI_CHAT_REASONING_EFFORT;
+  if (raw !== undefined && String(raw).trim() !== '') {
+    const v = String(raw).trim().toLowerCase();
+    return REASONING_EFFORT_SET.has(v) ? v : 'low';
+  }
+  return 'low';
+}
+
 // ========== LÍMITES DE VALIDACIÓN ==========
 // Límites para validación de mensajes de entrada y salida
 export const VALIDATION_LIMITS = {
@@ -758,7 +782,7 @@ IMPORTANTE: Responde al mensaje específico del usuario, no solo a la emoción d
 - Responde SIEMPRE al mensaje específico del usuario. No te desvíes del tema.
 - Si pregunta de forma clara y solo informativa por temas ajenos (p. ej. tecnología, datos de cultura general), redirige en una frase breve y acogedora que induzca a conversar sobre bienestar; si mezcla el tema con cómo se siente, responde con naturalidad y mantén el diálogo.
 - Si el usuario hace una pregunta dentro del ámbito, responde directamente; si expresa una emoción, puedes reconocerla sin repetir las mismas fórmulas en cada mensaje (varía: a veces solo contenido útil o una pregunta bien dirigida).
-- Haz avanzar la conversación: a veces basta una pregunta bien dirigida o un matiz que muestre que escuchaste; a veces una pista accionable. No fuerces tarea con tiempo fijo en cada turno.
+- Haz avanzar la conversación y el **desahogo**: con carga emocional, invita a seguir contando antes de cerrar con “solución” o ejercicio; en cualquier caso alterna pregunta útil, matiz que muestre que escuchaste o pista accionable — sin forzar tarea con tiempo fijo en cada turno.
 - Responde breve (1-2 oraciones, máx {maxWords} palabras) pero completa.
 - Sé natural y genuino. Evita frases de relleno, disculpas de cortesía en exceso ("lo siento mucho", "lamento que") y validaciones vacías ("es totalmente válido") en mensaje tras mensaje.
 - Si la emoción es NEGATIVA, varía el lenguaje; no dependas solo de "entiendo/comprendo/es normal/es válido"; a veces muestra comprensión implicada en el contenido sin etiquetarla.

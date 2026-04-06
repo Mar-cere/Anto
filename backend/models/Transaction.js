@@ -59,7 +59,7 @@ const transactionSchema = new mongoose.Schema({
   // Proveedor de pago
   paymentProvider: {
     type: String,
-    enum: ['mercadopago', 'paypal', 'transbank', 'flow', 'other'],
+    enum: ['mercadopago', 'paypal', 'transbank', 'flow', 'apple', 'other'],
     default: 'mercadopago',
     index: true,
   },
