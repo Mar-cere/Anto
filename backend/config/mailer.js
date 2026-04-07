@@ -3,9 +3,12 @@
  * Soporta Gmail API (Google Workspace), SendGrid y Gmail SMTP (fallback)
  */
 import dotenv from 'dotenv';
+import fs from 'fs';
 import nodemailer from 'nodemailer';
 import sgMail from '@sendgrid/mail';
 import { google } from 'googleapis';
+import { fileURLToPath } from 'url';
+import path from 'path';
 import { APP_NAME, APP_NAME_FULL, EMAIL_FROM_NAME, INSTAGRAM_URL, LOGO_URL } from '../constants/app.js';
 import logger from '../utils/logger.js';
 import { withTimeout } from '../utils/withTimeout.js';
@@ -18,6 +21,23 @@ import {
 } from '../constants/email.js';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+function resolveInstagramIconDataUri() {
+  try {
+    const p = path.join(__dirname, '../assets/instagram.png');
+    if (!fs.existsSync(p)) return null;
+    const buf = fs.readFileSync(p);
+    if (!buf || buf.length === 0) return null;
+    return `data:image/png;base64,${buf.toString('base64')}`;
+  } catch (_) {
+    return null;
+  }
+}
+
+const INSTAGRAM_ICON_DATA_URI = resolveInstagramIconDataUri();
 
 const MAIL_PROVIDER_TIMEOUT_MS = parseInt(process.env.MAIL_PROVIDER_TIMEOUT_MS || '20000', 10);
 
@@ -175,6 +195,11 @@ const getEmailFooter = () => {
           rel="noopener noreferrer"
           style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); color: ${EMAIL_COLORS.TEXT_WHITE}; padding: 10px 16px; text-decoration: none; border-radius: 10px; display: inline-block; font-weight: 700; font-size: 0.95rem;"
         >
+          ${
+            INSTAGRAM_ICON_DATA_URI
+              ? `<img src="${INSTAGRAM_ICON_DATA_URI}" alt="Instagram" width="16" height="16" style="vertical-align: -3px; margin-right: 8px; border-radius: 4px;" />`
+              : ''
+          }
           Instagram
         </a>
         <div style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 0.9rem; margin-top: 8px;">
@@ -1155,6 +1180,11 @@ const mailer = {
 </ul>
 <p style="margin:18px 0 8px 0;">
   <a href="${INSTAGRAM_URL}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:linear-gradient(135deg,#1D2B5F 0%,#1ADDDB 100%);color:#fff;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700;">
+    ${
+      INSTAGRAM_ICON_DATA_URI
+        ? `<img src="${INSTAGRAM_ICON_DATA_URI}" alt="Instagram" width="16" height="16" style="vertical-align:-3px;margin-right:8px;border-radius:4px;" />`
+        : ''
+    }
     Instagram
   </a>
 </p>
