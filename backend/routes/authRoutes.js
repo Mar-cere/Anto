@@ -10,6 +10,7 @@ import mailer from '../config/mailer.js';
 import { authenticateToken } from '../middleware/auth.js';
 import User from '../models/User.js';
 import { CURRENT_TERMS_VERSION } from '../constants/app.js';
+import { enqueueEmail } from '../services/emailQueueService.js';
 
 const router = express.Router();
 
@@ -395,15 +396,10 @@ router.post('/verify-email', registerLimiter, async (req, res) => {
     await user.save();
 
     // Enviar correo de bienvenida ahora que el email está verificado
-    mailer.sendWelcomeEmail(email, user.username)
-      .then(success => {
-        if (success) {
-          console.log(`✅ Correo de bienvenida enviado a: ${email}`);
-        }
-      })
-      .catch(err => {
-        console.error('❌ Error enviando correo de bienvenida:', err.message);
-      });
+    enqueueEmail(
+      () => mailer.sendWelcomeEmail(email, user.username),
+      { type: 'welcome_email', to: email }
+    );
 
     // Generar tokens ahora que el email está verificado
     const { accessToken, refreshToken } = await generateTokens(user._id, user.role || 'user');

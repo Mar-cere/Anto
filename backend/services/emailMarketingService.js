@@ -9,6 +9,7 @@
 import User from '../models/User.js';
 import mailer from '../config/mailer.js';
 import logger from '../utils/logger.js';
+import { enqueueEmail } from './emailQueueService.js';
 
 class EmailMarketingService {
   constructor() {
@@ -56,18 +57,16 @@ class EmailMarketingService {
           }
 
           // Enviar correo de re-engagement
-          const sent = await mailer.sendReEngagementEmail(
-            user.email,
-            user.username,
-            daysSinceActive
+          const enq = enqueueEmail(
+            () => mailer.sendReEngagementEmail(user.email, user.username, daysSinceActive),
+            { type: 're_engagement', to: user.email }
           );
-
-          if (sent) {
+          if (enq.accepted) {
             results.sent++;
-            logger.info(`[EmailMarketing] Re-engagement enviado a ${user.email} (${daysSinceActive} días inactivo)`);
+            logger.info(`[EmailMarketing] Re-engagement encolado para ${user.email} (${daysSinceActive} días inactivo)`);
           } else {
             results.failed++;
-            logger.warn(`[EmailMarketing] Error enviando re-engagement a ${user.email}`);
+            logger.warn(`[EmailMarketing] No se pudo encolar re-engagement para ${user.email}`);
           }
         } catch (error) {
           results.failed++;
@@ -114,18 +113,16 @@ class EmailMarketingService {
 
       for (const user of activeUsers) {
         try {
-          const sent = await mailer.sendWeeklyTipsEmail(
-            user.email,
-            user.username,
-            weekNumber
+          const enq = enqueueEmail(
+            () => mailer.sendWeeklyTipsEmail(user.email, user.username, weekNumber),
+            { type: 'weekly_tips', to: user.email }
           );
-
-          if (sent) {
+          if (enq.accepted) {
             results.sent++;
-            logger.info(`[EmailMarketing] Tips semanales enviados a ${user.email} (semana ${weekNumber})`);
+            logger.info(`[EmailMarketing] Tips semanales encolados para ${user.email} (semana ${weekNumber})`);
           } else {
             results.failed++;
-            logger.warn(`[EmailMarketing] Error enviando tips semanales a ${user.email}`);
+            logger.warn(`[EmailMarketing] No se pudo encolar tips semanales para ${user.email}`);
           }
         } catch (error) {
           results.failed++;
@@ -167,13 +164,11 @@ class EmailMarketingService {
             (Date.now() - new Date(lastActive).getTime()) / (1000 * 60 * 60 * 24)
           );
 
-          const sent = await mailer.sendReEngagementEmail(
-            user.email,
-            user.username,
-            daysSinceActive
+          const enq = enqueueEmail(
+            () => mailer.sendReEngagementEmail(user.email, user.username, daysSinceActive),
+            { type: 're_engagement', to: user.email }
           );
-
-          if (sent) {
+          if (enq.accepted) {
             results.sent++;
           } else {
             results.failed++;

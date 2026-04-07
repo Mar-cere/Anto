@@ -26,6 +26,8 @@ import { performanceMiddleware } from './middleware/performance.js';
 import { ensureIndexes } from './middleware/queryOptimizer.js';
 import logger from './utils/logger.js';
 import { initializeSentry } from './utils/sentry.js';
+import { enqueueEmail } from './services/emailQueueService.js';
+import { notifyFatalError } from './services/errorAlertService.js';
 
 // Importación de rutas
 import { setupSocketIO } from './config/socket.js';
@@ -103,6 +105,7 @@ const handleShutdown = (signal) => {
 // Inicialización de la aplicación
 const app = express();
 const PORT = config.app.port;
+let httpServer = null;
 
 logger.info('🔧 Inicializando servidor...');
 logger.info(`📋 Puerto configurado: ${PORT}`);
@@ -231,8 +234,12 @@ app.use(cors(corsOptions));
 app.use(performanceMiddleware);
 
 // Middlewares de parsing
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Límites de payload: protegen contra cuerpos enormes (DoS) y picos de memoria.
+// Ajustables por env para no romper integraciones.
+const JSON_BODY_LIMIT = process.env.JSON_BODY_LIMIT || '256kb';
+const URLENCODED_BODY_LIMIT = process.env.URLENCODED_BODY_LIMIT || '256kb';
+app.use(express.json({ limit: JSON_BODY_LIMIT }));
+app.use(express.urlencoded({ extended: true, limit: URLENCODED_BODY_LIMIT }));
 
 // Sanitización global de inputs (después de body parsing, antes de rutas)
 // Excluir webhooks y rutas que manejan datos binarios
@@ -395,20 +402,32 @@ if (process.env.NODE_ENV !== 'test') {
   const isRender = process.env.RENDER === 'true' || !!process.env.PORT;
 
   // Crear servidor HTTP para Socket.IO
-  const server = http.createServer(app);
+  httpServer = http.createServer(app);
   
   // Configurar Socket.IO
-  const io = setupSocketIO(server);
+  const io = setupSocketIO(httpServer);
   
   // Exportar io para uso en otros módulos
   app.set('io', io);
   
-  server.listen(PORT, HOST, () => {
+  // Timeouts del servidor HTTP (evitan conexiones colgadas/slowloris)
+  // Se pueden ajustar por env sin redeploy.
+  const REQUEST_TIMEOUT_MS = parseInt(process.env.HTTP_REQUEST_TIMEOUT_MS || '65000', 10); // Node default ~0 (sin límite) en algunos casos
+  const HEADERS_TIMEOUT_MS = parseInt(process.env.HTTP_HEADERS_TIMEOUT_MS || '70000', 10); // debe ser > requestTimeout
+  const KEEP_ALIVE_TIMEOUT_MS = parseInt(process.env.HTTP_KEEP_ALIVE_TIMEOUT_MS || '65000', 10);
+
+  // Node.js server timeouts (nombres varían por versión; en Node 20 existen estas props)
+  httpServer.requestTimeout = Number.isFinite(REQUEST_TIMEOUT_MS) ? REQUEST_TIMEOUT_MS : 65000;
+  httpServer.headersTimeout = Number.isFinite(HEADERS_TIMEOUT_MS) ? HEADERS_TIMEOUT_MS : 70000;
+  httpServer.keepAliveTimeout = Number.isFinite(KEEP_ALIVE_TIMEOUT_MS) ? KEEP_ALIVE_TIMEOUT_MS : 65000;
+
+  httpServer.listen(PORT, HOST, () => {
   logger.info(`🚀 Servidor corriendo en ${HOST}:${PORT}`);
   logger.info(`📝 Ambiente: ${config.app.environment}`);
   logger.info(`🔗 URL Frontend: ${config.app.frontendUrl}`);
   logger.info(`🌐 Servidor accesible desde: ${HOST === '0.0.0.0' ? 'cualquier IP (Render)' : 'localhost'}`);
   logger.info(`🔍 Render detectado: ${isRender ? 'Sí' : 'No'}`);
+  logger.info(`⏱️ HTTP timeouts: request=${httpServer.requestTimeout}ms headers=${httpServer.headersTimeout}ms keepAlive=${httpServer.keepAliveTimeout}ms`);
 
   // Ping de correo al arranque: true / 1 / yes / on (sin distinguir mayúsculas). Si no coincide, queda explícito en el log.
   const rawPing = process.env.MAIL_STARTUP_PING;
@@ -423,22 +442,13 @@ if (process.env.NODE_ENV !== 'test') {
       );
     } else {
       logger.info(`📧 MAIL_STARTUP_PING: programado envío de prueba a ${pingTo}`);
-      queueMicrotask(() => {
-        import('./config/mailer.js')
-          .then(({ default: mailer }) => mailer.sendServerStartupPing(pingTo))
-          .then((ok) => {
-            if (ok) {
-              logger.info(`📧 Correo de arranque enviado correctamente a ${pingTo}`);
-            } else {
-              logger.warn(
-                `📧 Correo de arranque no se pudo enviar a ${pingTo} (revisá consola [Mailer] y credenciales SMTP/Gmail/SendGrid)`
-              );
-            }
-          })
-          .catch((err) => {
-            logger.warn('📧 Error enviando correo de arranque', { error: err?.message });
-          });
-      });
+      enqueueEmail(
+        async () => {
+          const { default: mailer } = await import('./config/mailer.js');
+          return await mailer.sendServerStartupPing(pingTo);
+        },
+        { type: 'server_startup_ping', to: pingTo }
+      );
     }
   } else {
     const shown =
@@ -538,6 +548,49 @@ if (process.env.NODE_ENV !== 'test') {
 if (process.env.NODE_ENV !== 'test') {
   process.on('SIGTERM', () => handleShutdown('SIGTERM'));
   process.on('SIGINT', () => handleShutdown('SIGINT'));
+}
+
+// Guardas de proceso: evitar estado “zombie” ante errores fuera de Express
+// Filosofía: en producción, si el proceso entra en estado desconocido, preferimos apagar limpio y dejar que el runtime (Render) reinicie.
+if (process.env.NODE_ENV !== 'test') {
+  const GRACEFUL_EXIT_TIMEOUT_MS = parseInt(process.env.GRACEFUL_EXIT_TIMEOUT_MS || '10000', 10);
+
+  const shutdownFromFatal = async (reason, err) => {
+    try {
+      logger.critical(`FATAL: ${reason}`, { error: err });
+    } catch {}
+    try {
+      notifyFatalError(reason, err);
+    } catch {}
+
+    // Intentar cerrar HTTP server para no aceptar nuevas conexiones.
+    try {
+      if (httpServer) {
+        await new Promise((resolve) => {
+          httpServer.close(() => resolve());
+          // Fuerza salida si close no completa (conexiones colgadas)
+          setTimeout(resolve, GRACEFUL_EXIT_TIMEOUT_MS).unref?.();
+        });
+      }
+    } catch {}
+
+    // Cerrar Mongo si está abierto
+    try {
+      await closeMongoDBConnection();
+    } catch {}
+
+    // Asegurar salida
+    setTimeout(() => process.exit(1), 50).unref?.();
+  };
+
+  process.on('unhandledRejection', (reason) => {
+    const err = reason instanceof Error ? reason : new Error(`UnhandledRejection: ${String(reason)}`);
+    void shutdownFromFatal('unhandledRejection', err);
+  });
+
+  process.on('uncaughtException', (err) => {
+    void shutdownFromFatal('uncaughtException', err);
+  });
 }
 
 export default app;

@@ -18,6 +18,8 @@ import {
   isOperationalError,
   ExternalServiceError,
 } from '../utils/errors.js';
+import { CircuitBreakerOpenError } from '../utils/circuitBreaker.js';
+import { notifyRequestError } from '../services/errorAlertService.js';
 
 // Helper: verificar si estamos en modo desarrollo
 const isDevelopment = () => process.env.NODE_ENV === 'development';
@@ -34,7 +36,24 @@ const isDevelopment = () => process.env.NODE_ENV === 'development';
 export const errorHandler = (err, req, res, next) => {
   // Log del error
   logger.requestError(req, err, 'Error en request');
+  // Alerta por email (no bloqueante, rate-limited)
+  try {
+    notifyRequestError(req, err);
+  } catch {
+    // Nunca romper la respuesta por fallas en alertas
+  }
   
+  // Circuit breaker abierto (servicio externo degradado)
+  if (err instanceof CircuitBreakerOpenError || err?.code === 'CIRCUIT_BREAKER_OPEN') {
+    const appError = new ExternalServiceError(
+      'OpenAI',
+      'Servicio temporalmente degradado. Intenta nuevamente en unos segundos.'
+    );
+    appError.code = 'CIRCUIT_BREAKER_OPEN';
+    appError.statusCode = 503;
+    return sendErrorResponse(res, appError, req);
+  }
+
   // Si el error ya es una instancia de AppError, usarlo directamente
   if (err instanceof AppError) {
     return sendErrorResponse(res, err, req);

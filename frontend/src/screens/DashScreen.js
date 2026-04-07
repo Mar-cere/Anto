@@ -17,6 +17,7 @@ import {
   Animated,
   Easing,
   ImageBackground,
+  Linking,
   StatusBar,
   StyleSheet,
   Text,
@@ -46,14 +47,22 @@ import { BORDERS, OPACITIES, SPACING, STATUS_BAR } from '../constants/ui';
 import { colors } from '../styles/globalStyles';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getGreetingByHourAndDayAndName } from '../utils/greetings';
-import { registerForPushNotifications } from '../services/pushNotificationService';
+import { areNotificationsEnabled, registerForPushNotifications, requestNotificationPermissions } from '../services/pushNotificationService';
 import paymentService from '../services/paymentService';
 import TrialBanner from '../components/TrialBanner';
 import OfflineBanner from '../components/OfflineBanner';
+import NotificationsPromptBanner from '../components/NotificationsPromptBanner';
+import {
+  computeNextPromptAt,
+  getNotificationsPromptNextAtKey,
+  getNotificationsPromptVisitsKey,
+  shouldShowNotificationsPrompt,
+} from '../utils/notificationsPromptPolicy';
 
 // Constantes de AsyncStorage
 const STORAGE_KEYS = {
   EMERGENCY_CONTACTS_SKIPPED: 'emergencyContactsSkipped',
+  NOTIFICATIONS_PROMPT_DISMISSED_PREFIX: 'notificationsPromptDismissed:', // legacy (migración)
 };
 
 // Componente para mostrar errores con opciones de recuperación
@@ -99,7 +108,12 @@ const DashScreen = () => {
   const [trialInfo, setTrialInfo] = useState(null);
   const [trialBannerDismissed, setTrialBannerDismissed] = useState(false);
   const [emergencyAlertNotification, setEmergencyAlertNotification] = useState(null);
+  const [showNotificationsPrompt, setShowNotificationsPrompt] = useState(false);
+  const [notificationsPromptSuppressed, setNotificationsPromptSuppressed] = useState(false);
+  const [enablingNotifications, setEnablingNotifications] = useState(false);
+  const [dashVisitsCount, setDashVisitsCount] = useState(0);
   const dashFirstFocusRef = useRef(true);
+  const hasCountedDashVisitRef = useRef(false);
 
   // Log cuando showTutorial cambia (solo en desarrollo)
   React.useEffect(() => {
@@ -237,6 +251,150 @@ const DashScreen = () => {
       setRefreshing(false);
     }
   }, [navigation, refreshing, hasCheckedEmergencyContacts, hasCheckedTutorial, checkEmergencyContacts]);
+
+  const getNotificationsPromptKey = useCallback(() => {
+    const userId = userData?._id || userData?.id || 'anon';
+    return `${STORAGE_KEYS.NOTIFICATIONS_PROMPT_DISMISSED_PREFIX}${userId}`;
+  }, [userData]);
+  const getUserId = useCallback(() => (userData?._id || userData?.id || 'anon'), [userData]);
+
+  // Contabilizar "visitas" al dashboard para no mostrar el banner demasiado pronto.
+  // Regla: no mostrar hasta la 2ª visita (evita sobrecargar el inicio).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!userData) return;
+      if (hasCountedDashVisitRef.current) return;
+      hasCountedDashVisitRef.current = true;
+
+      try {
+        const key = getNotificationsPromptVisitsKey(getUserId());
+        const raw = await AsyncStorage.getItem(key);
+        const current = Number(raw || '0') || 0;
+        const next = current + 1;
+        await AsyncStorage.setItem(key, String(next));
+        if (!cancelled) setDashVisitsCount(next);
+      } catch (_) {
+        if (!cancelled) setDashVisitsCount(0);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userData, getUserId]);
+
+  // Verificar si hay que invitar a activar notificaciones (sin molestar)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      // Esperar a tener usuario (y evitar overlays durante onboarding)
+      if (!userData) return;
+      if (showTutorial || showOnboardingQuestions || showEmergencyContactsModal) return;
+
+      try {
+        const userId = getUserId();
+        const now = Date.now();
+
+        const nextAtRaw = await AsyncStorage.getItem(getNotificationsPromptNextAtKey(userId));
+        if (cancelled) return;
+        const nextAt = Number(nextAtRaw || '0') || 0;
+
+        const legacyDismissedRaw = await AsyncStorage.getItem(getNotificationsPromptKey());
+        if (cancelled) return;
+        const legacyDismissed = legacyDismissedRaw === 'true';
+
+        const enabled = await areNotificationsEnabled();
+        if (cancelled) return;
+
+        const decision = shouldShowNotificationsPrompt({
+          hasUser: true,
+          isOverlayBlocking: false,
+          dashVisitsCount,
+          notificationsEnabled: enabled,
+          nextAt,
+          legacyDismissed,
+          now,
+        });
+
+        if (decision.reason === 'legacy-dismissed') {
+          const migratedNextAt = now + 3 * 24 * 60 * 60 * 1000;
+          await AsyncStorage.setItem(getNotificationsPromptNextAtKey(userId), String(migratedNextAt));
+          setNotificationsPromptSuppressed(true);
+          setShowNotificationsPrompt(false);
+          return;
+        }
+
+        const suppressed = decision.reason === 'cooldown' || decision.reason === 'too-early';
+        setNotificationsPromptSuppressed(suppressed);
+        setShowNotificationsPrompt(decision.show);
+      } catch (e) {
+        // Si falla, no mostramos nada (mejor no molestar)
+        if (!cancelled) setShowNotificationsPrompt(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    userData,
+    showTutorial,
+    showOnboardingQuestions,
+    showEmergencyContactsModal,
+    dashVisitsCount,
+    getNotificationsPromptKey,
+    getUserId,
+  ]);
+
+  const handleNotificationsPromptDismiss = useCallback(async () => {
+    setShowNotificationsPrompt(false);
+    try {
+      const userId = getUserId();
+      const nextAt = computeNextPromptAt();
+      await AsyncStorage.setItem(getNotificationsPromptNextAtKey(userId), String(nextAt));
+      setNotificationsPromptSuppressed(true);
+    } catch (_) {
+      // noop
+    }
+  }, [getUserId]);
+
+  const handleEnableNotifications = useCallback(async () => {
+    if (enablingNotifications) return;
+    setEnablingNotifications(true);
+    try {
+      const granted = await requestNotificationPermissions();
+      if (granted) {
+        // Intentar registrar token ahora que hay permisos
+        try {
+          await registerForPushNotifications();
+        } catch (_) {
+          // noop
+        }
+        setShowNotificationsPrompt(false);
+        return;
+      }
+
+      Alert.alert(
+        'Notificaciones desactivadas',
+        'Puedes activarlas desde Ajustes para recibir recordatorios y alertas.',
+        [
+          { text: 'Ahora no', style: 'cancel' },
+          {
+            text: 'Ir a Ajustes',
+            onPress: async () => {
+              try {
+                await Linking.openSettings();
+              } catch (_) {
+                // noop
+              }
+            },
+          },
+        ]
+      );
+    } finally {
+      setEnablingNotifications(false);
+    }
+  }, [enablingNotifications]);
 
   // Verificar contactos de emergencia
   const checkEmergencyContacts = useCallback(async (currentUserData = null) => {
@@ -476,6 +634,12 @@ const DashScreen = () => {
               dismissed={trialBannerDismissed}
             />
           )}
+          <NotificationsPromptBanner
+            visible={showNotificationsPrompt && !notificationsPromptSuppressed}
+            onEnable={handleEnableNotifications}
+            onDismiss={handleNotificationsPromptDismiss}
+            enabling={enablingNotifications}
+          />
           <QuoteSection />
           {error && (
             <ErrorMessage 

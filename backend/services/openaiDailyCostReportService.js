@@ -8,6 +8,7 @@ import { OPENAI_MODEL } from '../constants/openai.js';
 import mailer from '../config/mailer.js';
 import logger from '../utils/logger.js';
 import openaiService from './openaiService.js';
+import { enqueueEmail } from './emailQueueService.js';
 
 const DEFAULT_REPORT_EMAILS = ['marcelo0.nicolas@gmail.com', 'marcelo.ull@antoapps.com'];
 
@@ -51,13 +52,18 @@ export async function tickOpenAIDailyCostReport() {
 
   let allOk = true;
   for (const to of recipients) {
-    const ok = await mailer.sendOpenAIDailyCostReport(to, {
-      dateKey: yesterday,
-      stats,
-      model: OPENAI_MODEL,
-      environment
-    });
-    if (!ok) allOk = false;
+    // No bloquear el scheduler por I/O externo. Encolamos con reintentos.
+    const enq = enqueueEmail(
+      () =>
+        mailer.sendOpenAIDailyCostReport(to, {
+          dateKey: yesterday,
+          stats,
+          model: OPENAI_MODEL,
+          environment
+        }),
+      { type: 'openai_daily_cost_report', to }
+    );
+    if (!enq.accepted) allOk = false;
   }
 
   if (allOk) {

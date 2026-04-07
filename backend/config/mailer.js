@@ -8,6 +8,7 @@ import sgMail from '@sendgrid/mail';
 import { google } from 'googleapis';
 import { APP_NAME, APP_NAME_FULL, EMAIL_FROM_NAME, LOGO_URL } from '../constants/app.js';
 import logger from '../utils/logger.js';
+import { withTimeout } from '../utils/withTimeout.js';
 import {
   CODE_EXPIRATION_MINUTES,
   EMAIL_COLORS,
@@ -17,6 +18,8 @@ import {
 } from '../constants/email.js';
 
 dotenv.config();
+
+const MAIL_PROVIDER_TIMEOUT_MS = parseInt(process.env.MAIL_PROVIDER_TIMEOUT_MS || '20000', 10);
 
 // Configurar Gmail API si está disponible (Google Workspace)
 const GMAIL_CLIENT_ID = process.env.GMAIL_CLIENT_ID;
@@ -639,7 +642,11 @@ const sendEmailWithSendGrid = async (email, template, emailType) => {
     console.log(`[Mailer] 📧 [SendGrid] Intentando enviar ${emailType} a: ${email}`);
     console.log(`[Mailer] 📧 [SendGrid] Desde: ${SENDGRID_FROM_EMAIL}`);
     
-    const response = await sgMail.send(msg);
+    const response = await withTimeout(
+      sgMail.send(msg),
+      MAIL_PROVIDER_TIMEOUT_MS,
+      { label: `SendGrid send (${emailType})` }
+    );
     
     console.log(`[Mailer] ✉️ [SendGrid] ${emailType} enviado exitosamente a: ${email}`);
     if (response[0]?.headers?.['x-message-id']) {
@@ -683,12 +690,16 @@ const sendEmailWithGmailAPI = async (email, template, emailType) => {
       .replace(/=+$/, '');
 
     // Enviar el email usando Gmail API
-    const response = await gmailClient.users.messages.send({
+    const response = await withTimeout(
+      gmailClient.users.messages.send({
       userId: 'me',
       requestBody: {
         raw: encodedMessage
       }
-    });
+      }),
+      MAIL_PROVIDER_TIMEOUT_MS,
+      { label: `Gmail API send (${emailType})` }
+    );
 
     console.log(`[Mailer] ✉️ [Gmail API] ${emailType} enviado exitosamente a: ${email}`);
     if (response.data.id) {
@@ -729,7 +740,11 @@ const sendEmailWithGmail = async (email, template, emailType) => {
       ...template
     };
     
-    const info = await transporter.sendMail(mailOptions);
+    const info = await withTimeout(
+      transporter.sendMail(mailOptions),
+      MAIL_PROVIDER_TIMEOUT_MS,
+      { label: `Gmail SMTP send (${emailType})` }
+    );
     
     console.log(`[Mailer] ✉️ [Gmail] ${emailType} enviado exitosamente a: ${email}`);
     console.log(`[Mailer] 📬 [Gmail] Message ID: ${info.messageId}`);

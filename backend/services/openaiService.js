@@ -3,6 +3,8 @@
  */
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
+import { withTimeout } from '../utils/withTimeout.js';
+import { CircuitBreaker, CircuitBreakerOpenError } from '../utils/circuitBreaker.js';
 import {
     ANALYSIS_DIMENSIONS,
     DEFAULT_VALUES,
@@ -64,6 +66,30 @@ validateApiKey();
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 }) : null;
+
+const OPENAI_TIMEOUT_MS = parseInt(process.env.OPENAI_TIMEOUT_MS || '25000', 10);
+const OPENAI_BREAKER_FAILURE_THRESHOLD = parseInt(process.env.OPENAI_BREAKER_FAILURE_THRESHOLD || '5', 10);
+const OPENAI_BREAKER_COOLDOWN_MS = parseInt(process.env.OPENAI_BREAKER_COOLDOWN_MS || '20000', 10);
+const OPENAI_BREAKER_SUCCESS_THRESHOLD = parseInt(process.env.OPENAI_BREAKER_SUCCESS_THRESHOLD || '1', 10);
+
+const openaiBreaker = new CircuitBreaker({
+  name: 'OpenAI',
+  failureThreshold: Number.isFinite(OPENAI_BREAKER_FAILURE_THRESHOLD) ? OPENAI_BREAKER_FAILURE_THRESHOLD : 5,
+  successThreshold: Number.isFinite(OPENAI_BREAKER_SUCCESS_THRESHOLD) ? OPENAI_BREAKER_SUCCESS_THRESHOLD : 1,
+  cooldownMs: Number.isFinite(OPENAI_BREAKER_COOLDOWN_MS) ? OPENAI_BREAKER_COOLDOWN_MS : 20000,
+  shouldCountFailure: (err) => {
+    // No contar como falla “de proveedor” cuando es un error del cliente (bad request).
+    const status = err?.status || err?.response?.status;
+    if (status && status >= 400 && status < 500) {
+      // 429 sí cuenta (rate limiting del proveedor)
+      return status === 429;
+    }
+    // timeouts y 5xx cuentan
+    const code = err?.code;
+    if (code === 'TIMEOUT') return true;
+    return true;
+  }
+});
 
 // Helper: obtener período del día
 const getTimeOfDay = () => {
@@ -140,9 +166,19 @@ class OpenAIService {
    */
   async createChatCompletionResilient(body) {
     try {
-      return await openai.chat.completions.create(body);
+      return await openaiBreaker.exec(() =>
+        withTimeout(
+          openai.chat.completions.create(body),
+          OPENAI_TIMEOUT_MS,
+          { label: 'OpenAI chat.completions.create' }
+        )
+      );
     } catch (err) {
       const msg = String(err?.message || '');
+      // Si el breaker está abierto, fallar rápido con error distinguible
+      if (err instanceof CircuitBreakerOpenError || err?.code === 'CIRCUIT_BREAKER_OPEN') {
+        throw err;
+      }
       const retriable =
         body.reasoning_effort != null &&
         (err?.status === 400 ||
@@ -151,7 +187,13 @@ class OpenAIService {
       if (retriable) {
         const { reasoning_effort: _ignored, ...rest } = body;
         console.warn('[OpenAI] reasoning_effort no aceptado; reintento sin él:', msg);
-        return await openai.chat.completions.create(rest);
+        return await openaiBreaker.exec(() =>
+          withTimeout(
+            openai.chat.completions.create(rest),
+            OPENAI_TIMEOUT_MS,
+            { label: 'OpenAI chat.completions.create (retry w/o reasoning_effort)' }
+          )
+        );
       }
       throw err;
     }
@@ -308,6 +350,12 @@ class OpenAIService {
           // Crisis MEDIUM/HIGH → medium en getChatReasoningEffortForContext.
         });
       } catch (apiError) {
+        // Circuit breaker abierto: fallback inmediato (mejor UX que esperar/reintentar)
+        if (apiError instanceof CircuitBreakerOpenError || apiError?.code === 'CIRCUIT_BREAKER_OPEN') {
+          console.warn('[OpenAI] Circuit breaker OPEN: usando fallback rápido');
+          const fallback = this.generarRespuestaFallback(analisisEmocional, analisisContextual) || ERROR_MESSAGES.DEFAULT_FALLBACK;
+          return { content: fallback, context: { emotional: analisisEmocional, contextual: analisisContextual, degraded: true, degradedReason: 'openai_breaker_open' } };
+        }
         // Manejar errores específicos de autenticación
         if (apiError.status === 401 || apiError.code === 'invalid_api_key') {
           console.error('❌ ERROR DE AUTENTICACIÓN CON OPENAI:');
@@ -666,6 +714,24 @@ class OpenAIService {
         stream_options: { include_usage: true }
       });
     } catch (apiError) {
+      // Circuit breaker abierto: responder rápido con fallback (sin streaming real).
+      if (apiError instanceof CircuitBreakerOpenError || apiError?.code === 'CIRCUIT_BREAKER_OPEN') {
+        const fallback = this.generarRespuestaFallback(analisisEmocional, analisisContextual) || ERROR_MESSAGES.DEFAULT_FALLBACK;
+        const result = await this._postProcessStreamedContent(fallback, {
+          mensaje,
+          contenidoNormalizado,
+          analisisEmocional,
+          analisisContextual,
+          perfilUsuario,
+          registroTerapeutico
+        });
+        yield {
+          type: 'done',
+          content: result.content,
+          context: { ...result.context, degraded: true, degradedReason: 'openai_breaker_open' }
+        };
+        return;
+      }
       if (apiError.status === 401 || apiError.code === 'invalid_api_key') {
         throw new Error('Error de autenticación con OpenAI. Verifica tu API key.');
       }
