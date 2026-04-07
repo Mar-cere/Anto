@@ -10,6 +10,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 import { api, ENDPOINTS } from '../config/api';
 import { useAuth } from '../context/AuthContext';
+
+/** Misma clave que AuthContext: sesión persistida tras PUT /api/users/me */
+const STORAGE_USER_DATA = 'userData';
 import {
   registerForPushNotifications,
   areNotificationsEnabled,
@@ -20,7 +23,7 @@ import { getApiErrorMessage } from '../utils/apiErrorHandler';
 import { NAVIGATION_ROUTES, TEXTS } from '../screens/settings/settingsScreenConstants';
 
 export function useSettingsScreen({ navigation }) {
-  const { user, updateUser: updateUserContext, logout: authLogout } = useAuth();
+  const { user, logout: authLogout, refreshSession } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(false);
@@ -135,24 +138,38 @@ export function useSettingsScreen({ navigation }) {
     preferQuestions: false,
   };
 
+  const persistUserFromMeResponse = useCallback(
+    async (putResult) => {
+      if (putResult?.user) {
+        await AsyncStorage.setItem(STORAGE_USER_DATA, JSON.stringify(putResult.user));
+        await refreshSession();
+        return true;
+      }
+      return false;
+    },
+    [refreshSession]
+  );
+
   const handleChatPreferenceChange = useCallback(
     async (key, nextValue) => {
       const current = user?.preferences?.chatPreferences || DEFAULT_CHAT_PREFS;
       const next = { ...current, [key]: nextValue };
       const currentPreferences = user?.preferences || {};
       try {
-        await api.put(ENDPOINTS.UPDATE_PROFILE, {
+        const result = await api.put(ENDPOINTS.UPDATE_PROFILE, {
           preferences: { ...currentPreferences, chatPreferences: next },
         });
-        updateUserContext({
-          ...user,
-          preferences: { ...currentPreferences, chatPreferences: next },
-        });
+        const ok = await persistUserFromMeResponse(result);
+        if (!ok) {
+          Alert.alert(TEXTS.ERROR, 'No se pudo actualizar la sesión. Intenta cerrar sesión y volver a entrar.');
+        } else {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
       } catch (error) {
         Alert.alert(TEXTS.ERROR, getApiErrorMessage(error) || TEXTS.PREFERENCES_ERROR);
       }
     },
-    [user, updateUserContext]
+    [user, persistUserFromMeResponse]
   );
 
   const handleCycleResponseStyle = useCallback(async () => {
@@ -163,18 +180,19 @@ export function useSettingsScreen({ navigation }) {
     const nextStyle = RESPONSE_STYLES[nextIndex];
     const currentPreferences = user?.preferences || {};
     try {
-      await api.put(ENDPOINTS.UPDATE_PROFILE, {
+      const result = await api.put(ENDPOINTS.UPDATE_PROFILE, {
         preferences: { ...currentPreferences, responseStyle: nextStyle },
       });
-      updateUserContext({
-        ...user,
-        preferences: { ...currentPreferences, responseStyle: nextStyle },
-      });
+      const ok = await persistUserFromMeResponse(result);
+      if (!ok) {
+        Alert.alert(TEXTS.ERROR, 'No se pudo actualizar la sesión tras cambiar el estilo.');
+        return;
+      }
       Alert.alert('Éxito', `Estilo de respuesta cambiado a: ${RESPONSE_STYLE_LABELS[nextStyle]}`);
     } catch (error) {
       Alert.alert(TEXTS.ERROR, getApiErrorMessage(error) || 'No se pudo actualizar el estilo de respuesta');
     }
-  }, [user, updateUserContext]);
+  }, [user, persistUserFromMeResponse]);
 
   return {
     user,

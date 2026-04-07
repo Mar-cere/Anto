@@ -615,12 +615,16 @@ router.post(
           ? appleReceiptService.getStatusErrorMessage(receiptResponse.status)
           : `Recibo rechazado por Apple (código: ${receiptResponse.status})`;
         
-        logger.payment('POST /validate-receipt: recibo rechazado por Apple', {
-          userId: userId.toString(),
-          appleStatus: receiptResponse.status,
-          productId,
-          errorMessage,
-        });
+        // En JSON logging (Render) el "message" es lo visible; meter el código en el texto.
+        logger.payment(
+          `POST /validate-receipt: Apple rechazó el recibo — status=${receiptResponse.status} — ${errorMessage}`,
+          {
+            userId: userId.toString(),
+            appleStatus: receiptResponse.status,
+            productId,
+            errorMessage,
+          }
+        );
         
         return res.status(400).json({
           success: false,

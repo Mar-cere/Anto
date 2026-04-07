@@ -108,12 +108,24 @@ class AppleReceiptService {
         return this.validateReceiptWithApple(receiptData, true);
       }
 
-      if (data.status !== 0) {
-        logger.warn('[AppleReceipt] Recibo rechazado por Apple', {
-          isSandbox,
-          appleStatus: data.status,
-          errorMessage: this.getStatusErrorMessage(data.status),
+      // Recibo de producción enviado al endpoint sandbox (p. ej. NODE_ENV=development en servidor)
+      if (data.status === 21008 && isSandbox) {
+        logger.warn('[AppleReceipt] Recibo de producción detectado en sandbox, revalidando con producción', {
+          originalStatus: data.status,
         });
+        return this.validateReceiptWithApple(receiptData, false);
+      }
+
+      if (data.status !== 0) {
+        const errTxt = this.getStatusErrorMessage(data.status);
+        logger.warn(
+          `[AppleReceipt] Recibo rechazado por Apple — status=${data.status} — ${errTxt}`,
+          {
+            isSandbox,
+            appleStatus: data.status,
+            errorMessage: errTxt,
+          }
+        );
       }
 
       return data;

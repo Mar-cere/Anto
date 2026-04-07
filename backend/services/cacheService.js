@@ -305,6 +305,13 @@ class CacheService {
       totalDeleted += deleted;
     }
 
+    // GET /subscription-status usa clave exacta subscription:userId (sin sufijo);
+    // el patrón subscription:userId:* no la elimina.
+    const subscriptionStatusKey = this.generateKey('subscription', userId);
+    if (await this.delete(subscriptionStatusKey)) {
+      totalDeleted += 1;
+    }
+
     const trialInfoKey = this.generateKey('trial-info', userId);
     if (await this.delete(trialInfoKey)) {
       totalDeleted += 1;

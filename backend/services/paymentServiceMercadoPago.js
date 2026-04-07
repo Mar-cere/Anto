@@ -281,34 +281,83 @@ class PaymentServiceMercadoPago {
    * @returns {Promise<Object>} - Estado de la suscripción
    */
   async getSubscriptionStatus(userId) {
+    const now = new Date();
     const subscription = await Subscription.findOne({ userId }).lean();
     const user = await User.findById(userId)
       .select('subscription')
       .lean();
+    const userSub = user?.subscription;
 
-    if (!subscription && !user?.subscription) {
+    if (!subscription && !userSub) {
       return {
         hasSubscription: false,
         status: 'free',
       };
     }
 
+    // Premium vigente en User (Apple / Mercado Pago): prioridad sobre Subscription desactualizada
+    // (evita mostrar "trial" si el documento Subscription sigue en trialing tras un pago en iOS).
+    if (
+      userSub &&
+      userSub.status === 'premium' &&
+      userSub.subscriptionEndDate &&
+      new Date(userSub.subscriptionEndDate) >= now
+    ) {
+      const end = new Date(userSub.subscriptionEndDate);
+      const daysRemaining = Math.max(0, Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+      return {
+        hasSubscription: true,
+        status: 'premium',
+        plan: userSub.plan,
+        isActive: true,
+        isInTrial: false,
+        currentPeriodStart: userSub.subscriptionStartDate,
+        currentPeriodEnd: userSub.subscriptionEndDate,
+        subscriptionStartDate: userSub.subscriptionStartDate,
+        subscriptionEndDate: userSub.subscriptionEndDate,
+        trialStartDate: null,
+        trialEndDate: null,
+        daysRemaining,
+        cancelAtPeriodEnd: false,
+        canceledAt: null,
+      };
+    }
+
     if (subscription) {
+      const periodEnd = subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd) : null;
+      const daysRemaining = periodEnd
+        ? Math.max(0, Math.ceil((periodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+        : 0;
+      const isInTrial =
+        subscription.status === 'trialing' &&
+        subscription.trialStart &&
+        subscription.trialEnd &&
+        now >= new Date(subscription.trialStart) &&
+        now <= new Date(subscription.trialEnd);
+      const isActive =
+        !!periodEnd &&
+        periodEnd >= now &&
+        (subscription.status === 'active' || subscription.status === 'trialing');
+
       return {
         hasSubscription: true,
         status: subscription.status,
         plan: subscription.plan,
-        isActive: subscription.isActive,
-        isInTrial: subscription.isInTrial,
+        isActive,
+        isInTrial,
         currentPeriodStart: subscription.currentPeriodStart,
         currentPeriodEnd: subscription.currentPeriodEnd,
-        daysRemaining: subscription.daysRemaining,
+        trialStartDate: subscription.trialStart ?? null,
+        trialEndDate: subscription.trialEnd ?? null,
+        subscriptionStartDate: subscription.currentPeriodStart,
+        subscriptionEndDate: subscription.currentPeriodEnd,
+        daysRemaining,
         cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
         canceledAt: subscription.canceledAt,
       };
     }
 
-    const userSubscription = user.subscription;
+    const userSubscription = userSub;
     return {
       hasSubscription: userSubscription.status !== 'free',
       status: userSubscription.status,

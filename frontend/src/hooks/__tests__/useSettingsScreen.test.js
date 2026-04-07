@@ -17,10 +17,10 @@ const mockReplace = jest.fn();
 const mockGoBack = jest.fn();
 const mockNavigation = { replace: mockReplace, goBack: mockGoBack };
 const mockLogout = jest.fn();
-const mockUpdateUser = jest.fn();
+const mockRefreshSession = jest.fn();
 const mockAuth = {
   user: { id: '1', preferences: { responseStyle: 'balanced' } },
-  updateUser: mockUpdateUser,
+  refreshSession: mockRefreshSession,
   logout: mockLogout,
 };
 
@@ -28,7 +28,13 @@ jest.mock('../../context/AuthContext', () => ({
   useAuth: () => mockAuth,
 }));
 jest.mock('../../config/api', () => ({
-  api: { put: jest.fn().mockResolvedValue({}), delete: jest.fn().mockResolvedValue({}) },
+  api: {
+    put: jest.fn().mockResolvedValue({
+      message: 'ok',
+      user: { id: '1', preferences: { responseStyle: 'balanced', chatPreferences: {} } },
+    }),
+    delete: jest.fn().mockResolvedValue({}),
+  },
   ENDPOINTS: {
     UPDATE_PROFILE: '/api/users/me',
     ME: '/api/users/me',

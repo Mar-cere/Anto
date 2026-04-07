@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">32.25% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>10/31</span>
+                <span class='fraction'>0/31</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">20.58% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>7/34</span>
+                <span class='fraction'>0/34</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">42.85% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>3/7</span>
+                <span class='fraction'>0/7</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">37.03% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>10/27</span>
+                <span class='fraction'>0/27</span>
             </div>
         
             
@@ -137,10 +137,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -148,12 +148,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -190,7 +190,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -203,23 +203,23 @@
  * Entrada: Historial de mensajes del usuario
  * Salida: engagementLevel, preferredResponseLength, responseToQuestionRatio
  */
-const UMBRAL_LARGO = 80;       // caracteres para considerar mensaje "largo"
-const UMBRAL_CORTO = 25;      // caracteres para considerar mensaje "corto"
-const MIN_MENSAJES = 5;       // mínimo para análisis fiable
-const RATIO_PREGUNTA = 0.3;  // si &gt;30% de mensajes tienen ?, usuario hace preguntas
+const UMBRAL_LARGO = <span class="cstat-no" title="statement not covered" >80;</span>       // caracteres para considerar mensaje "largo"
+const UMBRAL_CORTO = <span class="cstat-no" title="statement not covered" >25;</span>      // caracteres para considerar mensaje "corto"
+const MIN_MENSAJES = <span class="cstat-no" title="statement not covered" >5;</span>       // mínimo para análisis fiable
+const RATIO_PREGUNTA = <span class="cstat-no" title="statement not covered" >0.3;</span>  // si &gt;30% de mensajes tienen ?, usuario hace preguntas
 &nbsp;
 /**
  * Analiza el engagement del usuario a partir de su historial de mensajes.
  * @param {Array} userMessages - Mensajes del usuario [{ content, ... }]
  * @returns {{ engagementLevel: string, preferredResponseLength: string, responseToQuestionRatio: number }}
  */
-function analyzeEngagement(userMessages = <span class="branch-0 cbranch-no" title="branch not covered" >[])</span> {
-  const messages = (userMessages || <span class="branch-1 cbranch-no" title="branch not covered" >[])</span>
-    .filter(m =&gt; m &amp;&amp; (m.content || <span class="branch-1 cbranch-no" title="branch not covered" >'')</span>.trim().length &gt; 0)
-    .map(m =&gt; ({ content: (m.content || <span class="branch-1 cbranch-no" title="branch not covered" >'')</span>.trim(), length: (m.content || <span class="branch-1 cbranch-no" title="branch not covered" >'')</span>.trim().length }));
+function <span class="fstat-no" title="function not covered" >analyzeEngagement(</span>userMessages = <span class="branch-0 cbranch-no" title="branch not covered" >[])</span> {
+  const messages = <span class="cstat-no" title="statement not covered" >(userMessages || [])</span>
+    .filter(<span class="fstat-no" title="function not covered" >m </span>=&gt; <span class="cstat-no" title="statement not covered" >m &amp;&amp; (m.content || '').trim().length &gt; 0)</span>
+    .map(<span class="fstat-no" title="function not covered" >m </span>=&gt; (<span class="cstat-no" title="statement not covered" >{ content: (m.content || '').trim(), length: (m.content || '').trim().length })</span>);
 &nbsp;
-  <span class="missing-if-branch" title="else path not taken" >E</span>if (messages.length &lt; MIN_MENSAJES) {
-    return {
+<span class="cstat-no" title="statement not covered" >  if (messages.length &lt; MIN_MENSAJES) {</span>
+<span class="cstat-no" title="statement not covered" >    return {</span>
       engagementLevel: 'unknown',
       preferredResponseLength: 'MEDIUM',
       responseToQuestionRatio: 0.5
@@ -256,7 +256,7 @@ function analyzeEngagement(userMessages = <span class="branch-0 cbranch-no" titl
   };
 }
 &nbsp;
-const engagementTracker = {
+const engagementTracker = <span class="cstat-no" title="statement not covered" >{</span>
   analyzeEngagement
 };
 &nbsp;
@@ -268,7 +268,7 @@ export default engagementTracker;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-07T16:33:54.956Z
+                at 2026-04-07T20:28:51.097Z
             </div>
         <script src="../prettify.js"></script>
         <script>

@@ -58,6 +58,8 @@ export const TEXTS = {
   CHAT_PREF_NO_APOLOGY_DESC: 'Menos "lo siento" o "lamento" al empezar',
   CHAT_PREF_MORE_QUESTIONS: 'Más preguntas, menos monólogo',
   CHAT_PREF_MORE_QUESTIONS_DESC: 'Respuestas con 1–2 preguntas claras',
+  CHAT_TONE_APPLIES_HINT:
+    'Se aplican en las próximas respuestas del chat; no modifican mensajes que ya envió Anto.',
 };
 
 export const STORAGE_KEYS = { NOTIFICATIONS: 'notifications' };

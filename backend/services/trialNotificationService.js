@@ -153,6 +153,19 @@ class TrialNotificationService {
       const subscription = await Subscription.findOne({ userId });
       const now = new Date();
 
+      // Suscripción premium vigente en User: no mostrar banner ni trial
+      if (
+        user?.subscription?.status === 'premium' &&
+        user.subscription.subscriptionEndDate &&
+        new Date(user.subscription.subscriptionEndDate) >= now
+      ) {
+        return {
+          isInTrial: false,
+          daysRemaining: 0,
+          trialEndDate: null,
+        };
+      }
+
       // Verificar trial en modelo User
       let trialEndDate = user?.subscription?.trialEndDate;
       let isInTrial = user?.subscription?.status === 'trial' && 

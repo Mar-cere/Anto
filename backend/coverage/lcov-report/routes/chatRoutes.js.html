@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">2.43% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>9/370</span>
+                <span class='fraction'>0/370</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">2.43% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>9/369</span>
+                <span class='fraction'>0/369</span>
             </div>
         
             
@@ -1720,10 +1720,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1864,9 +1864,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1902,7 +1902,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2920,10 +2920,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2984,7 +2984,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3099,9 +3099,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -3165,10 +3165,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3192,7 +3192,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3310,10 +3310,10 @@ import {
   extractProtectiveFactors
 } from './chat/index.js';
 &nbsp;
-const router = express.Router();
+const router = <span class="cstat-no" title="statement not covered" >express.Router();</span>
 &nbsp;
 // Obtener mensajes de una conversación (paginado)
-router.get('/conversations/:conversationId', protect, validarConversationId, validarConversacion, <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {
+<span class="cstat-no" title="statement not covered" >router.get('/conversations/:conversationId', protect, validarConversationId, validarConversacion, <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const { conversationId } = <span class="cstat-no" title="statement not covered" >req.params;</span>
     const { 
@@ -3454,7 +3454,7 @@ router.get('/conversations/:conversationId', protect, validarConversationId, val
 &nbsp;
 // Crear nueva conversación con mensaje de bienvenida
 // Optimizado: saludo sin cargar perfil en la ruta crítica para reducir latencia (&lt;1s)
-router.post('/conversations', protect, requireActiveSubscription(true), <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {
+<span class="cstat-no" title="statement not covered" >router.post('/conversations', protect, requireActiveSubscription(true), <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const userId = <span class="cstat-no" title="statement not covered" >req.user._id;</span>
 &nbsp;
@@ -3492,7 +3492,7 @@ router.post('/conversations', protect, requireActiveSubscription(true), <span cl
 });
 &nbsp;
 // Crear nuevo mensaje
-router.post('/messages', protect, requireActiveSubscription(true), sendMessageLimiter, <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {
+<span class="cstat-no" title="statement not covered" >router.post('/messages', protect, requireActiveSubscription(true), sendMessageLimiter, <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {</span>
   const startTime = <span class="cstat-no" title="statement not covered" >Date.now();</span>
   const logs = <span class="cstat-no" title="statement not covered" >[];</span>
   let userMessage = <span class="cstat-no" title="statement not covered" >null;</span>
@@ -4510,7 +4510,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
 });
 &nbsp;
 // Feedback rápido (útil / poco útil) en mensajes del asistente — usuarios registrados
-router.patch('/messages/:messageId/feedback', protect, messageFeedbackLimiter, <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {
+<span class="cstat-no" title="statement not covered" >router.patch('/messages/:messageId/feedback', protect, messageFeedbackLimiter, <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const { messageId } = <span class="cstat-no" title="statement not covered" >req.params;</span>
     const { helpful } = <span class="cstat-no" title="statement not covered" >req.body;</span>
@@ -4574,7 +4574,7 @@ router.patch('/messages/:messageId/feedback', protect, messageFeedbackLimiter, <
 });
 &nbsp;
 // Obtener todas las conversaciones del usuario con estadísticas
-router.get('/conversations', protect, <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {
+<span class="cstat-no" title="statement not covered" >router.get('/conversations', protect, <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const { page = <span class="branch-0 cbranch-no" title="branch not covered" >1,</span> limit = <span class="branch-0 cbranch-no" title="branch not covered" >10,</span> cursor, paginationType = <span class="branch-0 cbranch-no" title="branch not covered" >'offset' </span>} = <span class="cstat-no" title="statement not covered" >req.query;</span>
     
@@ -4689,7 +4689,7 @@ router.get('/conversations', protect, <span class="fstat-no" title="function not
 });
 &nbsp;
 // Actualizar estado de mensajes (sent, delivered, read, failed)
-router.patch('/messages/status', protect, patchMessageLimiter, <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {
+<span class="cstat-no" title="statement not covered" >router.patch('/messages/status', protect, patchMessageLimiter, <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const { messageIds, status } = <span class="cstat-no" title="statement not covered" >req.body;</span>
 &nbsp;
@@ -4755,7 +4755,7 @@ router.patch('/messages/status', protect, patchMessageLimiter, <span class="fsta
 });
 &nbsp;
 // Eliminar mensajes de una conversación (opcional: filtrar por rol)
-router.delete('/conversations/:conversationId', protect, validarConversationId, validarConversacion, deleteConversationLimiter, <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {
+<span class="cstat-no" title="statement not covered" >router.delete('/conversations/:conversationId', protect, validarConversationId, validarConversacion, deleteConversationLimiter, <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const { conversationId } = <span class="cstat-no" title="statement not covered" >req.params;</span>
     const { role } = <span class="cstat-no" title="statement not covered" >req.query;</span>
@@ -4782,7 +4782,7 @@ router.delete('/conversations/:conversationId', protect, validarConversationId, 
 });
 &nbsp;
 // Búsqueda avanzada de mensajes (por contenido, rol, estado, emociones, fechas)
-router.get('/messages/search', protect, <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {
+<span class="cstat-no" title="statement not covered" >router.get('/messages/search', protect, <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const { 
       query: searchText,
@@ -4840,7 +4840,7 @@ export default router;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-07T16:33:54.956Z
+                at 2026-04-07T20:28:51.097Z
             </div>
         <script src="../prettify.js"></script>
         <script>

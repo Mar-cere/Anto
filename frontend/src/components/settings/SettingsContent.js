@@ -135,6 +135,9 @@ export default function SettingsContent({
           accessibilityLabel={TEXTS.CHAT_PREF_MORE_QUESTIONS}
         />
       </View>
+      <Text style={styles.chatToneApplyHint} accessibilityRole="text">
+        {TEXTS.CHAT_TONE_APPLIES_HINT}
+      </Text>
       <TouchableOpacity
         style={styles.item}
         onPress={() => {
@@ -273,6 +276,15 @@ const styles = StyleSheet.create({
     opacity: 0.75,
     marginBottom: 8,
     marginTop: -4,
+  },
+  chatToneApplyHint: {
+    color: COLORS.ACCENT,
+    fontSize: 12,
+    lineHeight: 17,
+    opacity: 0.65,
+    marginBottom: 4,
+    marginTop: -4,
+    paddingHorizontal: 4,
   },
   personalizationIntro: {
     color: COLORS.ACCENT,

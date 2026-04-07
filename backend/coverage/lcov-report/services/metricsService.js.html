@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">8.33% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>11/132</span>
+                <span class='fraction'>0/132</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">2.27% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>3/132</span>
+                <span class='fraction'>0/132</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">13.33% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>2/15</span>
+                <span class='fraction'>0/15</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">8.8% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>11/125</span>
+                <span class='fraction'>0/125</span>
             </div>
         
             
@@ -505,7 +505,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -516,13 +516,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -530,7 +530,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -598,8 +598,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -614,9 +614,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -939,7 +939,7 @@
 import mongoose from 'mongoose';
 &nbsp;
 // Schema de métricas (opcional, puede usarse en memoria también)
-const metricsSchema = new mongoose.Schema({
+const metricsSchema = <span class="cstat-no" title="statement not covered" >new mongoose.Schema({</span>
   timestamp: { type: Date, default: Date.now, index: true },
   type: { type: String, required: true, index: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
@@ -950,21 +950,21 @@ const metricsSchema = new mongoose.Schema({
 });
 &nbsp;
 // Índices para consultas eficientes
-metricsSchema.index({ timestamp: -1, type: 1 });
-metricsSchema.index({ userId: 1, timestamp: -1 });
+<span class="cstat-no" title="statement not covered" >metricsSchema.index({ timestamp: -1, type: 1 });</span>
+<span class="cstat-no" title="statement not covered" >metricsSchema.index({ userId: 1, timestamp: -1 });</span>
 &nbsp;
 // Solo crear modelo si no existe
 let Metric;
-try {
-  Metric = mongoose.models.Metric || mongoose.model('Metric', metricsSchema);
+<span class="cstat-no" title="statement not covered" >try {</span>
+<span class="cstat-no" title="statement not covered" >  Metric = mongoose.models.Metric || mongoose.model('Metric', metricsSchema);</span>
 } catch (error) {
 <span class="cstat-no" title="statement not covered" >  Metric = mongoose.model('Metric', metricsSchema);</span>
 }
 &nbsp;
 class MetricsService {
-  constructor() {
+<span class="fstat-no" title="function not covered" >  co</span>nstructor() {
     // Métricas en memoria (para acceso rápido)
-    this.inMemoryMetrics = {
+<span class="cstat-no" title="statement not covered" >    this.inMemoryMetrics = {</span>
       emotionalAnalysis: {
         total: 0,
         byEmotion: {},
@@ -1032,8 +1032,8 @@ class MetricsService {
     };
 &nbsp;
     // Historial de métricas (últimas 1000 entradas)
-    this.metricsHistory = [];
-    this.MAX_HISTORY_SIZE = 1000;
+<span class="cstat-no" title="statement not covered" >    this.metricsHistory = [];</span>
+<span class="cstat-no" title="statement not covered" >    this.MAX_HISTORY_SIZE = 1000;</span>
   }
 &nbsp;
   /**
@@ -1047,10 +1047,10 @@ class MetricsService {
    * Muestra en memoria cada llamada a selectHistoryForPrompt (barato; no persiste en Mongo).
    * @param {{ truncated?: boolean }} data
    */
-  recordPromptHistorySelectionSample(data) {
-    const s = this.inMemoryMetrics.promptHistorySelectionSamples;
-    s.totalSelections++;
-    <span class="missing-if-branch" title="if path not taken" >I</span>if (data.truncated) <span class="cstat-no" title="statement not covered" >s.truncatedSelections++;</span>
+<span class="fstat-no" title="function not covered" >  re</span>cordPromptHistorySelectionSample(data) {
+    const s = <span class="cstat-no" title="statement not covered" >this.inMemoryMetrics.promptHistorySelectionSamples;</span>
+<span class="cstat-no" title="statement not covered" >    s.totalSelections++;</span>
+<span class="cstat-no" title="statement not covered" >    if (data.truncated) <span class="cstat-no" title="statement not covered" >s.truncatedSelections++;</span></span>
   }
 &nbsp;
 <span class="fstat-no" title="function not covered" >  as</span>ync recordMetric(type, data, userId = <span class="branch-0 cbranch-no" title="branch not covered" >null,</span> metadata = <span class="branch-0 cbranch-no" title="branch not covered" >{})</span> {
@@ -1372,7 +1372,7 @@ export default new MetricsService();
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-07T16:33:54.956Z
+                at 2026-04-07T20:28:51.097Z
             </div>
         <script src="../prettify.js"></script>
         <script>

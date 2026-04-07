@@ -473,7 +473,7 @@ describe('PaymentService', () => {
       const result = await paymentService.restorePurchases();
 
       expect(result.success).toBe(false);
-      expect(result.error).toMatch(/validar las compras restauradas|No se pudieron validar/i);
+      expect(result.error).toContain('Invalid receipt');
       expect(result.purchases).toEqual([purchase]);
     });
   });

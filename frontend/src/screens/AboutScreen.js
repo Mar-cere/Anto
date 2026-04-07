@@ -8,6 +8,7 @@
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import React from 'react';
 import {
@@ -73,8 +74,9 @@ const TEXTS = {
   LEGAL_TITLE: 'Legal',
   TERMS_LINK: 'Términos de Servicio',
   PRIVACY_LINK: 'Política de Privacidad',
-  VERSION: 'Versión 1.0.0',
 };
+
+const APP_VERSION_LABEL = `Versión ${Constants.expoConfig?.version ?? '—'}`;
 
 const AboutScreen = () => {
   const navigation = useNavigation();
@@ -295,7 +297,7 @@ const AboutScreen = () => {
 
         {/* Versión */}
         <View style={styles.versionContainer}>
-          <Text style={styles.versionText}>{TEXTS.VERSION}</Text>
+          <Text style={styles.versionText}>{APP_VERSION_LABEL}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

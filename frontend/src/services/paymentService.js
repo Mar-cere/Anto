@@ -271,53 +271,52 @@ class PaymentService {
           purchases: result.purchases,
         };
       }
-      // Validar cada compra con el backend
-      const validationPromises = withReceipt
-        .map(async (purchase) => {
-          try {
-            const response = await api.post(ENDPOINTS.PAYMENT_VALIDATE_RECEIPT, {
-              receipt: purchase.transactionReceipt,
-              productId: purchase.productId,
-              transactionId: purchase.transactionId || null,
-              originalTransactionIdentifierIOS: purchase.originalTransactionIdentifierIOS || null,
-              restore: true,
-            });
-            
-            return {
-              success: true,
-              purchase,
-              validation: response,
-            };
-          } catch (error) {
-            console.error('[PaymentService] Error validando compra restaurada:', error);
-            return {
-              success: false,
-              purchase,
-              error: error?.message || error?.response?.data?.error || 'Error al validar compra',
-            };
+      // Validar en serie: basta la primera que el backend acepte (menos carga y mismo resultado).
+      const errors = [];
+      for (const purchase of withReceipt) {
+        try {
+          const response = await api.post(ENDPOINTS.PAYMENT_VALIDATE_RECEIPT, {
+            receipt: purchase.transactionReceipt,
+            productId: purchase.productId,
+            transactionId: purchase.transactionId || null,
+            originalTransactionIdentifierIOS: purchase.originalTransactionIdentifierIOS || null,
+            restore: true,
+          });
+          if (response && typeof response === 'object' && response.success === false) {
+            const msg = response.error || 'El servidor rechazó la validación del recibo';
+            errors.push(msg);
+            console.warn('[PaymentService] validate-receipt respondió sin éxito (restore):', msg);
+            continue;
           }
-        });
-
-      // Esperar a que todas las validaciones terminen
-      const validationResults = await Promise.all(validationPromises);
-      
-      // Contar validaciones exitosas
-      const successfulValidations = validationResults.filter(r => r.success).length;
-      
-      console.log('[PaymentService] Validaciones de compras restauradas:', {
-        total: validationResults.length,
-        successful: successfulValidations,
-        failed: validationResults.length - successfulValidations,
-      });
-
-      // Si todas las validaciones fallaron, retornar error
-      if (successfulValidations === 0 && validationResults.length > 0) {
-        return {
-          success: false,
-          error: 'No se pudieron validar las compras restauradas con el servidor',
-          purchases: result.purchases,
-        };
+          console.log('[PaymentService] Compra restaurada validada:', {
+            productId: purchase.productId,
+          });
+          return {
+            success: true,
+            purchases: result.purchases,
+            validation: response,
+          };
+        } catch (error) {
+          const msg =
+            error?.message ||
+            error?.response?.data?.error ||
+            error?.response?.data?.message ||
+            'Error al validar compra';
+          errors.push(msg);
+          console.error('[PaymentService] Error validando compra restaurada:', error);
+        }
       }
+
+      const distinct = [...new Set(errors.filter(Boolean))];
+      const detail = distinct.length > 0 ? distinct.join('\n\n') : '';
+      return {
+        success: false,
+        error:
+          detail ||
+          'No se pudieron validar las compras restauradas con el servidor. Revisa tu conexión o intenta más tarde.',
+        purchases: result.purchases,
+        validationErrors: distinct,
+      };
     }
 
     return result;

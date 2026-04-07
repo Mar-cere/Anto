@@ -1,9 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="2" failures="0" errors="0" time="0.821">
-  <testsuite name="OpenAIService" errors="0" failures="0" skipped="0" timestamp="2026-04-07T18:53:51" time="0.801" tests="2">
-    <testcase classname="OpenAIService Métodos del servicio debe tener métodos exportados" name="OpenAIService Métodos del servicio debe tener métodos exportados" time="0.001">
+<testsuites name="jest tests" tests="9" failures="0" errors="0" time="0.712">
+  <testsuite name="PaymentService" errors="0" failures="0" skipped="0" timestamp="2026-04-07T20:28:48" time="0.545" tests="7">
+    <testcase classname="PaymentService createCheckoutSession debe lanzar error si Mercado Pago no está configurado" name="PaymentService createCheckoutSession debe lanzar error si Mercado Pago no está configurado" time="0">
     </testcase>
-    <testcase classname="OpenAIService Métodos del servicio debe tener método generateResponse si existe" name="OpenAIService Métodos del servicio debe tener método generateResponse si existe" time="0">
+    <testcase classname="PaymentService handleWebhook debe lanzar error si Mercado Pago no está configurado" name="PaymentService handleWebhook debe lanzar error si Mercado Pago no está configurado" time="0">
+    </testcase>
+    <testcase classname="PaymentService Métodos del servicio debe tener método cancelSubscription" name="PaymentService Métodos del servicio debe tener método cancelSubscription" time="0">
+    </testcase>
+    <testcase classname="PaymentService Métodos del servicio debe tener método updatePaymentMethod" name="PaymentService Métodos del servicio debe tener método updatePaymentMethod" time="0">
+    </testcase>
+    <testcase classname="PaymentService Métodos del servicio debe tener método getSubscriptionStatus" name="PaymentService Métodos del servicio debe tener método getSubscriptionStatus" time="0">
+    </testcase>
+    <testcase classname="PaymentService Métodos del servicio debe tener método createCheckoutSession" name="PaymentService Métodos del servicio debe tener método createCheckoutSession" time="0">
+    </testcase>
+    <testcase classname="PaymentService Métodos del servicio debe tener método handleWebhook" name="PaymentService Métodos del servicio debe tener método handleWebhook" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="PaymentServiceMercadoPago" errors="0" failures="0" skipped="0" timestamp="2026-04-07T20:28:48" time="0.127" tests="2">
+    <testcase classname="PaymentServiceMercadoPago Métodos del servicio debe tener métodos exportados" name="PaymentServiceMercadoPago Métodos del servicio debe tener métodos exportados" time="0.001">
+    </testcase>
+    <testcase classname="PaymentServiceMercadoPago Métodos del servicio debe tener método createCheckoutSession si existe" name="PaymentServiceMercadoPago Métodos del servicio debe tener método createCheckoutSession si existe" time="0">
     </testcase>
   </testsuite>
 </testsuites>
