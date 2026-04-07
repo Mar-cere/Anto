@@ -560,27 +560,34 @@ class AppleReceiptService {
             providerLabel: 'App Store (Apple)',
             reference: appleTransactionId,
           };
-          const emailTemplate = mailer.emailTemplates.subscriptionThankYouEmail(
+
+          const sent = await mailer.sendSubscriptionThankYouEmail(
+            user.email,
             username,
             plan,
             expiresDate,
-            receipt
-          );
-
-          await mailer.sendEmail(
-            user.email,
-            emailTemplate,
+            receipt,
             'Confirmación de compra / suscripción (Apple)'
           );
-          
+
           const emailDuration = Date.now() - emailStartTime;
-          logger.payment('[AppleReceipt] ✅ Correo de agradecimiento enviado', {
-            userId: userId.toString(),
-            userEmail: user.email,
-            plan,
-            productId,
-            emailDuration: `${emailDuration}ms`,
-          });
+          if (sent) {
+            logger.payment('[AppleReceipt] ✅ Correo de agradecimiento enviado', {
+              userId: userId.toString(),
+              userEmail: user.email,
+              plan,
+              productId,
+              emailDuration: `${emailDuration}ms`,
+            });
+          } else {
+            logger.warn('[AppleReceipt] ⚠️ Correo de agradecimiento no enviado (mailer devolvió false)', {
+              userId: userId.toString(),
+              userEmail: user.email,
+              plan,
+              productId,
+              emailDuration: `${emailDuration}ms`,
+            });
+          }
         } catch (emailError) {
           const emailDuration = Date.now() - emailStartTime;
           // No fallar el procesamiento si el correo falla, solo loguear el error

@@ -1152,6 +1152,27 @@ const mailer = {
   },
 
   /**
+   * Agradecimiento y confirmación de compra tras activar suscripción (App Store, Mercado Pago, etc.).
+   * Usa la misma tubería interna que el resto de correos (no exponer sendEmail en el objeto exportado).
+   */
+  sendSubscriptionThankYouEmail: async (
+    email,
+    username,
+    plan,
+    periodEnd,
+    receipt = null,
+    emailType = 'Confirmación suscripción'
+  ) => {
+    try {
+      const template = emailTemplates.subscriptionThankYouEmail(username, plan, periodEnd, receipt);
+      return await sendEmail(email, template, emailType);
+    } catch (error) {
+      logger.error('[Mailer] ❌ Error enviando confirmación de suscripción:', error.message);
+      return false;
+    }
+  },
+
+  /**
    * Correo de comprobación al iniciar el servidor (Gmail API / fallback).
    * @param {string} to - Destinatario
    * @returns {Promise<boolean>}

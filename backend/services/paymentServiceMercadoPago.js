@@ -1226,24 +1226,28 @@ class PaymentServiceMercadoPago {
           providerLabel: 'Mercado Pago',
           reference: txRef,
         };
-        const emailTemplate = mailer.emailTemplates.subscriptionThankYouEmail(
+        const mpMailSent = await mailer.sendSubscriptionThankYouEmail(
+          user.email,
           username,
           plan,
           periodEnd,
-          receipt
-        );
-
-        await mailer.sendEmail(
-          user.email,
-          emailTemplate,
+          receipt,
           'Confirmación de compra / suscripción (Mercado Pago)'
         );
-        
-        logger.payment('Correo de agradecimiento por suscripción enviado', {
-          userId: userIdString,
-          userEmail: user.email,
-          plan,
-        });
+
+        if (mpMailSent) {
+          logger.payment('Correo de agradecimiento por suscripción enviado', {
+            userId: userIdString,
+            userEmail: user.email,
+            plan,
+          });
+        } else {
+          logger.warn('Correo de agradecimiento por suscripción no enviado (mailer devolvió false)', {
+            userId: userIdString,
+            userEmail: user.email,
+            plan,
+          });
+        }
       } catch (emailError) {
         // No fallar la activación si el correo falla, solo loguear el error
         logger.error('Error enviando correo de agradecimiento por suscripción', {
