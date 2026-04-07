@@ -197,7 +197,7 @@ const getEmailFooter = () => {
         >
           ${
             INSTAGRAM_ICON_DATA_URI
-              ? `<img src="${INSTAGRAM_ICON_DATA_URI}" alt="Instagram" width="16" height="16" style="vertical-align: -3px; margin-right: 8px; border-radius: 4px;" />`
+              ? `<img src="${INSTAGRAM_ICON_DATA_URI}" alt="Instagram" width="20" height="20" style="vertical-align: -4px; margin-right: 8px; border-radius: 5px;" />`
               : ''
           }
           Instagram
@@ -1182,7 +1182,7 @@ const mailer = {
   <a href="${INSTAGRAM_URL}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:linear-gradient(135deg,#1D2B5F 0%,#1ADDDB 100%);color:#fff;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700;">
     ${
       INSTAGRAM_ICON_DATA_URI
-        ? `<img src="${INSTAGRAM_ICON_DATA_URI}" alt="Instagram" width="16" height="16" style="vertical-align:-3px;margin-right:8px;border-radius:4px;" />`
+        ? `<img src="${INSTAGRAM_ICON_DATA_URI}" alt="Instagram" width="20" height="20" style="vertical-align:-4px;margin-right:8px;border-radius:5px;" />`
         : ''
     }
     Instagram
