@@ -1589,6 +1589,13 @@ class OpenAIService {
     const intensity = analisisEmocional?.intensity || DEFAULT_VALUES.INTENSITY;
     let safetyText = '';
 
+    // Importante: NO sobreactivar crisis por intensidad alta sola.
+    // Solo agregamos bloque de seguridad/recursos cuando la intención es CRISIS.
+    const intent = analisisContextual?.intencion?.tipo;
+    if (intent !== MESSAGE_INTENTS.CRISIS) {
+      return respuesta;
+    }
+
     // Si la intensidad es >= 8, agregar preguntas de seguridad
     if (intensity >= 8) {
       safetyText += '\n\n💙 **Preguntas de seguridad:**\n';
@@ -1844,14 +1851,32 @@ class OpenAIService {
   }
 
   shouldIncludeTechnique(analisisEmocional, analisisContextual, mensaje) {
-    // Solo incluir técnicas si el usuario las solicita explícitamente
-    const contenido = mensaje?.content?.toLowerCase() || '';
-    
-    // Patrones que indican solicitud explícita de técnicas
-    const solicitudTecnica = /(?:técnica|tecnica|herramienta|estrategia|método|metodo|ejercicio|actividad|qué.*puedo.*hacer|como.*puedo|ayuda.*con|quiero.*aprender|enseñame|muestrame|dame.*una|recomiendame|sugerime|necesito.*una|puedes.*darme|ayudame.*con)/i.test(contenido);
-    
-    // Solo incluir si hay solicitud explícita
-    return solicitudTecnica;
+    const contenido = (mensaje?.content || '').toLowerCase();
+    const intent = analisisContextual?.intencion?.tipo;
+    const topicCategory = analisisContextual?.tema?.categoria;
+
+    // Evitar insertar técnicas en tareas "utilitarias" (p. ej. traducción/estudio) si no hay contexto de bienestar.
+    const looksLikeUtilityTask = /(?:ingl[eé]s|traduc|traducci[oó]n|revisar\s+texto|gram[aá]tica|vocabulario|tarea|homework)/i.test(contenido);
+    const wellnessKeywords = /(?:ansiedad|estr[eé]s|triste|enojo|miedo|culpa|verg[uü]enza|bienestar|calmar|relajar|respira|ataque\s+de\s+p[aá]nico|me\s+siento|me\s+pone|me\s+da)/i;
+    const hasWellnessContext = wellnessKeywords.test(contenido);
+    if ((topicCategory === 'TRABAJO_ESTUDIO' || looksLikeUtilityTask) && !hasWellnessContext) {
+      return false;
+    }
+
+    // Solo incluir técnicas si:
+    // - el usuario las pide explícitamente (técnica/ejercicio/etc.) y el tema es bienestar, o
+    // - la intención del analizador es ayuda emocional (no "conversación general" sin señales).
+    const explicitTechniqueAsk = /(?:técnica|tecnica|herramienta|estrategia|método|metodo|ejercicio|actividad|respiraci[oó]n|mindfulness)/i.test(contenido);
+    const explicitWellnessHelpAsk =
+      /(?:qu[eé]\s+puedo\s+hacer|c[oó]mo\s+puedo|necesito\s+ayuda|ay[úu]dame|dame\s+un\s+consejo|recomiendame|sugerime)/i.test(contenido) &&
+      hasWellnessContext;
+
+    const intentAllowsTechnique =
+      intent === MESSAGE_INTENTS.SEEKING_HELP ||
+      intent === MESSAGE_INTENTS.EMOTIONAL_SUPPORT ||
+      intent === MESSAGE_INTENTS.CRISIS;
+
+    return (explicitTechniqueAsk && (hasWellnessContext || intentAllowsTechnique)) || explicitWellnessHelpAsk || intentAllowsTechnique;
   }
 
   /**
