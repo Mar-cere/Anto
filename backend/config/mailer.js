@@ -672,12 +672,24 @@ const sendEmailWithGmailAPI = async (email, template, emailType) => {
     console.log(`[Mailer] 📧 [Gmail API] Intentando enviar ${emailType} a: ${email}`);
     console.log(`[Mailer] 📧 [Gmail API] Desde: ${GMAIL_USER_EMAIL}`);
 
+    // Helper: encode RFC2047 para headers con caracteres no ASCII (UTF-8)
+    // Evita "mojibake" tipo "Â¢Â€Â”" cuando el cliente interpreta mal el encoding del header.
+    const encodeHeader = (value) => {
+      const s = String(value ?? '');
+      // Si es ASCII puro, no encodar (más legible).
+      if (/^[\x00-\x7F]*$/.test(s)) return s;
+      const b64 = Buffer.from(s, 'utf8').toString('base64');
+      return `=?UTF-8?B?${b64}?=`;
+    };
+
     // Crear el mensaje en formato RFC 2822
     const message = [
-      `From: "${EMAIL_FROM_NAME}" <${GMAIL_USER_EMAIL}>`,
+      `MIME-Version: 1.0`,
+      `From: "${encodeHeader(EMAIL_FROM_NAME)}" <${GMAIL_USER_EMAIL}>`,
       `To: ${email}`,
-      `Subject: ${template.subject}`,
-      `Content-Type: text/html; charset=utf-8`,
+      `Subject: ${encodeHeader(template.subject)}`,
+      `Content-Type: text/html; charset=UTF-8`,
+      `Content-Transfer-Encoding: 7bit`,
       '',
       template.html
     ].join('\n');
