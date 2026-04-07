@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/63</span>
+                <span class='fraction'>0/66</span>
             </div>
         
             
@@ -39,14 +39,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/4</span>
+                <span class='fraction'>0/7</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/63</span>
+                <span class='fraction'>0/66</span>
             </div>
         
             
@@ -254,12 +254,8 @@
 <a name='L189'></a><a href='#L189'>189</a>
 <a name='L190'></a><a href='#L190'>190</a>
 <a name='L191'></a><a href='#L191'>191</a>
-<a name='L192'></a><a href='#L192'>192</a>
-<a name='L193'></a><a href='#L193'>193</a>
-<a name='L194'></a><a href='#L194'>194</a>
-<a name='L195'></a><a href='#L195'>195</a>
-<a name='L196'></a><a href='#L196'>196</a>
-<a name='L197'></a><a href='#L197'>197</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L192'></a><a href='#L192'>192</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -318,9 +314,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -376,9 +370,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -429,9 +421,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -466,6 +456,7 @@
 import User from '../models/User.js';
 import mailer from '../config/mailer.js';
 import logger from '../utils/logger.js';
+import { enqueueEmail } from './emailQueueService.js';
 &nbsp;
 class EmailMarketingService {
 <span class="fstat-no" title="function not covered" >  co</span>nstructor() {
@@ -513,18 +504,16 @@ class EmailMarketingService {
           }
 &nbsp;
           // Enviar correo de re-engagement
-          const sent = <span class="cstat-no" title="statement not covered" >await mailer.sendReEngagementEmail(</span>
-            user.email,
-            user.username,
-            daysSinceActive
+          const enq = <span class="cstat-no" title="statement not covered" >enqueueEmail(</span>
+<span class="fstat-no" title="function not covered" >            ()</span> =&gt; <span class="cstat-no" title="statement not covered" >mailer.sendReEngagementEmail(user.email, user.username, daysSinceActive),</span>
+            { type: 're_engagement', to: user.email }
           );
-&nbsp;
-<span class="cstat-no" title="statement not covered" >          if (sent) {</span>
+<span class="cstat-no" title="statement not covered" >          if (enq.accepted) {</span>
 <span class="cstat-no" title="statement not covered" >            results.sent++;</span>
-<span class="cstat-no" title="statement not covered" >            logger.info(`[EmailMarketing] Re-engagement enviado a ${user.email} (${daysSinceActive} días inactivo)`);</span>
+<span class="cstat-no" title="statement not covered" >            logger.info(`[EmailMarketing] Re-engagement encolado para ${user.email} (${daysSinceActive} días inactivo)`);</span>
           } else {
 <span class="cstat-no" title="statement not covered" >            results.failed++;</span>
-<span class="cstat-no" title="statement not covered" >            logger.warn(`[EmailMarketing] Error enviando re-engagement a ${user.email}`);</span>
+<span class="cstat-no" title="statement not covered" >            logger.warn(`[EmailMarketing] No se pudo encolar re-engagement para ${user.email}`);</span>
           }
         } catch (error) {
 <span class="cstat-no" title="statement not covered" >          results.failed++;</span>
@@ -571,18 +560,16 @@ class EmailMarketingService {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      for (const user of activeUsers) {</span>
 <span class="cstat-no" title="statement not covered" >        try {</span>
-          const sent = <span class="cstat-no" title="statement not covered" >await mailer.sendWeeklyTipsEmail(</span>
-            user.email,
-            user.username,
-            weekNumber
+          const enq = <span class="cstat-no" title="statement not covered" >enqueueEmail(</span>
+<span class="fstat-no" title="function not covered" >            ()</span> =&gt; <span class="cstat-no" title="statement not covered" >mailer.sendWeeklyTipsEmail(user.email, user.username, weekNumber),</span>
+            { type: 'weekly_tips', to: user.email }
           );
-&nbsp;
-<span class="cstat-no" title="statement not covered" >          if (sent) {</span>
+<span class="cstat-no" title="statement not covered" >          if (enq.accepted) {</span>
 <span class="cstat-no" title="statement not covered" >            results.sent++;</span>
-<span class="cstat-no" title="statement not covered" >            logger.info(`[EmailMarketing] Tips semanales enviados a ${user.email} (semana ${weekNumber})`);</span>
+<span class="cstat-no" title="statement not covered" >            logger.info(`[EmailMarketing] Tips semanales encolados para ${user.email} (semana ${weekNumber})`);</span>
           } else {
 <span class="cstat-no" title="statement not covered" >            results.failed++;</span>
-<span class="cstat-no" title="statement not covered" >            logger.warn(`[EmailMarketing] Error enviando tips semanales a ${user.email}`);</span>
+<span class="cstat-no" title="statement not covered" >            logger.warn(`[EmailMarketing] No se pudo encolar tips semanales para ${user.email}`);</span>
           }
         } catch (error) {
 <span class="cstat-no" title="statement not covered" >          results.failed++;</span>
@@ -624,13 +611,11 @@ class EmailMarketingService {
             (Date.now() - new Date(lastActive).getTime()) / (1000 * 60 * 60 * 24)
           );
 &nbsp;
-          const sent = <span class="cstat-no" title="statement not covered" >await mailer.sendReEngagementEmail(</span>
-            user.email,
-            user.username,
-            daysSinceActive
+          const enq = <span class="cstat-no" title="statement not covered" >enqueueEmail(</span>
+<span class="fstat-no" title="function not covered" >            ()</span> =&gt; <span class="cstat-no" title="statement not covered" >mailer.sendReEngagementEmail(user.email, user.username, daysSinceActive),</span>
+            { type: 're_engagement', to: user.email }
           );
-&nbsp;
-<span class="cstat-no" title="statement not covered" >          if (sent) {</span>
+<span class="cstat-no" title="statement not covered" >          if (enq.accepted) {</span>
 <span class="cstat-no" title="statement not covered" >            results.sent++;</span>
           } else {
 <span class="cstat-no" title="statement not covered" >            results.failed++;</span>
@@ -658,7 +643,7 @@ export default new EmailMarketingService();
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-07T14:32:54.654Z
+                at 2026-04-07T16:33:54.956Z
             </div>
         <script src="../prettify.js"></script>
         <script>

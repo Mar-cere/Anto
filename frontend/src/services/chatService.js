@@ -462,15 +462,55 @@ export const loadMessages = async () => {
   }
 };
 
-// Función para limpiar mensajes
+// Función para limpiar mensajes (servidor + caché local)
 export const clearMessages = async () => {
   try {
+    if (await isGuestChatMode()) {
+      const convId = await AsyncStorage.getItem(GUEST_KEYS.GUEST_CONVERSATION_ID);
+      const token = await AsyncStorage.getItem(GUEST_KEYS.GUEST_TOKEN);
+      if (convId && token) {
+        const response = await fetch(
+          `${API_URL}/api/chat/guest/conversations/${encodeURIComponent(convId)}/messages`,
+          {
+            method: 'DELETE',
+            headers: {
+              Accept: 'application/json',
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+        if (response.status === 401) {
+          await clearGuestChat();
+        } else if (!response.ok) {
+          let message = 'No se pudo borrar la conversación';
+          try {
+            const data = await response.json();
+            if (data.message) message = data.message;
+          } catch (_) {}
+          const err = new Error(message);
+          err.response = { status: response.status };
+          throw err;
+        }
+      }
+    } else {
+      const token = await AsyncStorage.getItem('userToken');
+      const convId = await AsyncStorage.getItem('currentConversationId');
+      if (token && convId) {
+        try {
+          await api.delete(`/api/chat/conversations/${encodeURIComponent(convId)}`);
+        } catch (err) {
+          const status = err?.response?.status;
+          if (status !== 404) throw err;
+        }
+      }
+    }
+
     await AsyncStorage.removeItem('chatMessages');
     return true;
   } catch (error) {
     console.error('Error al limpiar mensajes:', error);
     handleError(error);
-    return false;
+    throw error;
   }
 };
 

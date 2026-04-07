@@ -5,6 +5,7 @@ import express from 'express';
 import rateLimit from 'express-rate-limit';
 import mongoose from 'mongoose';
 import { authenticateGuest } from '../middleware/guestAuth.js';
+import Message from '../models/Message.js';
 import guestChatService from '../services/guestChatService.js';
 
 const router = express.Router();
@@ -29,6 +30,14 @@ const guestMessagePostLimiter = rateLimit({
 const guestMessagesGetLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 45,
+  message: 'Demasiadas peticiones. Espera un momento.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const guestConversationDeleteLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 15,
   message: 'Demasiadas peticiones. Espera un momento.',
   standardHeaders: true,
   legacyHeaders: false
@@ -69,6 +78,34 @@ router.get(
     res.status(500).json({ message: 'Error al cargar mensajes', error: error.message });
   }
 });
+
+router.delete(
+  '/conversations/:conversationId/messages',
+  guestConversationDeleteLimiter,
+  authenticateGuest,
+  async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+        return res.status(400).json({ message: 'Identificador de conversación no válido' });
+      }
+      if (req.guestSession.conversationId.toString() !== conversationId) {
+        return res.status(403).json({ message: 'Conversación no permitida para esta sesión' });
+      }
+      const result = await Message.deleteMany({
+        conversationId,
+        guestSessionId: req.guestSession._id
+      });
+      res.json({
+        message: 'Mensajes eliminados exitosamente',
+        deletedCount: result.deletedCount
+      });
+    } catch (error) {
+      console.error('[GuestChat] Error borrando mensajes:', error);
+      res.status(500).json({ message: 'Error al eliminar mensajes', error: error.message });
+    }
+  }
+);
 
 router.post('/messages', guestMessagePostLimiter, authenticateGuest, async (req, res) => {
   try {

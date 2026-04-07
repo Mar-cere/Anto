@@ -1164,16 +1164,30 @@ class PaymentServiceMercadoPago {
         periodEnd: periodEnd.toISOString(),
       }, userIdString, transaction._id.toString());
 
-      // Enviar correo de agradecimiento por suscripción
+      // Enviar correo de confirmación de compra / agradecimiento por suscripción
       try {
         const mailer = (await import('../config/mailer.js')).default;
         const username = user.name || user.username || 'Usuario';
-        const emailTemplate = mailer.emailTemplates.subscriptionThankYouEmail(username, plan, periodEnd);
-        
+        const txRef =
+          transaction.providerTransactionId || transaction._id?.toString() || '—';
+        const receipt = {
+          purchaseDate: now,
+          amount: typeof transaction.amount === 'number' ? transaction.amount : null,
+          currency: transaction.currency || 'CLP',
+          providerLabel: 'Mercado Pago',
+          reference: txRef,
+        };
+        const emailTemplate = mailer.emailTemplates.subscriptionThankYouEmail(
+          username,
+          plan,
+          periodEnd,
+          receipt
+        );
+
         await mailer.sendEmail(
           user.email,
           emailTemplate,
-          'Correo de agradecimiento por suscripción'
+          'Confirmación de compra / suscripción (Mercado Pago)'
         );
         
         logger.payment('Correo de agradecimiento por suscripción enviado', {

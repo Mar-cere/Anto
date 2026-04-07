@@ -4,7 +4,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import {
   COLORS,
   ICON_SIZE,
@@ -31,9 +31,24 @@ export default function SettingsContent({
   onShowDeleteModal,
   onTestNotification,
 }) {
+  const INSTAGRAM_URL = 'https://www.instagram.com/antoapp.cl?igsh=YjU3MDB5bTkycjAz&utm_source=qr';
   const currentResponseStyle = user?.preferences?.responseStyle || 'balanced';
   const responseStyleLabel = RESPONSE_STYLE_LABELS[currentResponseStyle] || 'Equilibrado';
   const chatPrefs = { ...DEFAULT_CHAT_PREFS, ...(user?.preferences?.chatPreferences || {}) };
+
+  const handleOpenInstagram = async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const canOpen = await Linking.canOpenURL(INSTAGRAM_URL);
+      if (!canOpen) {
+        Alert.alert('No se pudo abrir Instagram', 'Intenta nuevamente más tarde.');
+        return;
+      }
+      await Linking.openURL(INSTAGRAM_URL);
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo abrir el enlace.');
+    }
+  };
 
   return (
     <ScrollView
@@ -195,12 +210,25 @@ export default function SettingsContent({
       <Text style={styles.sectionTitle}>{TEXTS.SUPPORT}</Text>
       <TouchableOpacity
         style={styles.item}
-        onPress={() => navigation.navigate(NAVIGATION_ROUTES.FAQ)}
+        onPress={() => navigation.navigate(NAVIGATION_ROUTES.FAQ_ALT)}
         accessibilityLabel="Preguntas frecuentes"
         testID="button-faq"
       >
         <MaterialCommunityIcons name="help-circle" size={ICON_SIZE} color={COLORS.PRIMARY} />
         <Text style={styles.itemText}>{TEXTS.FAQ}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.item}
+        onPress={handleOpenInstagram}
+        accessibilityLabel="Instagram"
+        testID="button-instagram"
+      >
+        <MaterialCommunityIcons name="instagram" size={ICON_SIZE} color={COLORS.PRIMARY} />
+        <View style={styles.itemTextContainer}>
+          <Text style={styles.itemText}>Instagram</Text>
+          <Text style={styles.itemSubtext}>Feedback, novedades y comunidad</Text>
+        </View>
+        <MaterialCommunityIcons name="open-in-new" size={20} color={COLORS.ACCENT} />
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.item}

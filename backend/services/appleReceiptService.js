@@ -538,12 +538,27 @@ class AppleReceiptService {
         try {
           const mailer = (await import('../config/mailer.js')).default;
           const username = user.name || user.username || 'Usuario';
-          const emailTemplate = mailer.emailTemplates.subscriptionThankYouEmail(username, plan, expiresDate);
-          
+          const priceRaw = transaction.price;
+          const parsedPrice =
+            priceRaw != null && priceRaw !== '' ? parseFloat(priceRaw) : NaN;
+          const receipt = {
+            purchaseDate,
+            amount: Number.isFinite(parsedPrice) ? parsedPrice : null,
+            currency: transaction.currency || 'USD',
+            providerLabel: 'App Store (Apple)',
+            reference: appleTransactionId,
+          };
+          const emailTemplate = mailer.emailTemplates.subscriptionThankYouEmail(
+            username,
+            plan,
+            expiresDate,
+            receipt
+          );
+
           await mailer.sendEmail(
             user.email,
             emailTemplate,
-            'Correo de agradecimiento por suscripción'
+            'Confirmación de compra / suscripción (Apple)'
           );
           
           const emailDuration = Date.now() - emailStartTime;

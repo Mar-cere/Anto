@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
 import sgMail from '@sendgrid/mail';
 import { google } from 'googleapis';
-import { APP_NAME, APP_NAME_FULL, EMAIL_FROM_NAME, LOGO_URL } from '../constants/app.js';
+import { APP_NAME, APP_NAME_FULL, EMAIL_FROM_NAME, INSTAGRAM_URL, LOGO_URL } from '../constants/app.js';
 import logger from '../utils/logger.js';
 import { withTimeout } from '../utils/withTimeout.js';
 import {
@@ -106,6 +106,23 @@ const logMailerBootstrap = () => {
 };
 logMailerBootstrap();
 
+/**
+ * Formatea importe para comprobantes por correo (confirmación de compra).
+ * @param {number|null|undefined} amount
+ * @param {string} [currency]
+ * @returns {string|null}
+ */
+function formatPurchaseAmount(amount, currency) {
+  if (amount == null || Number.isNaN(Number(amount))) return null;
+  const n = Number(amount);
+  const code = (currency || 'CLP').toUpperCase();
+  try {
+    return new Intl.NumberFormat('es-CL', { style: 'currency', currency: code }).format(n);
+  } catch {
+    return `${n.toLocaleString('es-CL')} ${code}`;
+  }
+}
+
 // Helper: crear transporter de nodemailer
 const createTransporter = () => {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
@@ -151,6 +168,19 @@ const getEmailFooter = () => {
   const currentYear = new Date().getFullYear();
   return `
     <div style="text-align: center; margin: 0 24px 24px 24px;">
+      <div style="margin: 10px 0 14px 0;">
+        <a
+          href="${INSTAGRAM_URL}"
+          target="_blank"
+          rel="noopener noreferrer"
+          style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); color: ${EMAIL_COLORS.TEXT_WHITE}; padding: 10px 16px; text-decoration: none; border-radius: 10px; display: inline-block; font-weight: 700; font-size: 0.95rem;"
+        >
+          Instagram
+        </a>
+        <div style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 0.9rem; margin-top: 8px;">
+          Feedback rápido, novedades y soporte.
+        </div>
+      </div>
       <p style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 0.95rem; margin: 0;">
         Este es un correo automático, por favor no respondas a este mensaje.<br>
         © ${currentYear} <span style="color: ${EMAIL_COLORS.ACCENT};">${APP_NAME}</span>. Todos los derechos reservados.
@@ -389,6 +419,76 @@ const emailTemplates = {
   },
 
   /**
+   * Retención trial (~2.º día de prueba corta): tono cercano antes del fin del periodo gratuito.
+   * @param {string} username
+   * @param {Date|string} trialEndDate
+   */
+  trialRetentionEmail: (username, trialEndDate) => {
+    const end = new Date(trialEndDate);
+    const now = new Date();
+    const msLeft = end.getTime() - now.getTime();
+    const hoursLeft = Math.max(1, Math.ceil(msLeft / (1000 * 60 * 60)));
+    const endFormatted = end.toLocaleDateString('es-CL', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+    return {
+      subject: `Tu prueba en ${APP_NAME} está por terminar — queremos que sigas 💙`,
+      html: `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: ${EMAIL_COLORS.BACKGROUND};">
+          ${getEmailHeader(`Hola ${username} 💙`)}
+
+          <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); margin: -24px 24px 24px 24px; padding: 32px 24px; border-radius: 18px; box-shadow: 0 8px 32px rgba(31,38,135,0.10); border: 1px solid rgba(255,255,255,0.18);">
+            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.1rem; line-height: 1.7; margin-bottom: 24px; text-align: center;">
+              <strong>No queremos que te vayas.</strong> Sabemos que probar algo nuevo lleva tiempo, y tu bienestar merece ese espacio.
+            </p>
+            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; line-height: 1.7; margin-bottom: 28px; text-align: center;">
+              Tu <strong>prueba gratuita</strong> de ${APP_NAME} está llegando a su último tramo: te quedan aproximadamente <strong style="color: ${EMAIL_COLORS.ACCENT};">${hoursLeft} hora${hoursLeft !== 1 ? 's' : ''}</strong> para seguir disfrutando de todas las funciones premium sin costo.
+            </p>
+
+            <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM}12 0%, ${EMAIL_COLORS.ACCENT}10 100%); padding: 22px 20px; border-radius: 14px; margin: 20px 0; border-left: 4px solid ${EMAIL_COLORS.ACCENT}; border: 1px solid rgba(29, 43, 95, 0.12);">
+              <h3 style="color: ${EMAIL_COLORS.ACCENT}; margin: 0 0 12px 0; font-size: 1.05rem; text-align: center;">Fin de tu prueba</h3>
+              <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.98rem; margin: 0; text-align: center; line-height: 1.6;">
+                <strong>Vence:</strong> ${endFormatted}<br>
+                <span style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem;">(fecha estimada según tu cuenta; la app muestra el detalle exacto)</span>
+              </p>
+            </div>
+
+            <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM}15 0%, ${EMAIL_COLORS.ACCENT}15 100%); padding: 24px; border-radius: 12px; margin: 24px 0; border-left: 4px solid ${EMAIL_COLORS.ACCENT};">
+              <h3 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 0; text-align: center;">¿Por qué quedarte?</h3>
+              <ul style="color: #333; font-size: 16px; line-height: 1.65; margin: 0; padding-left: 20px;">
+                <li>Chat de apoyo cuando lo necesites, sin juicios</li>
+                <li>Hábitos, tareas y herramientas pensadas para tu día a día</li>
+                <li>Una experiencia que crece contigo</li>
+              </ul>
+            </div>
+
+            <div style="text-align: center; margin: 28px 0;">
+              <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; margin-bottom: 12px;">
+                <strong>Abrí la app</strong> y seguí conversando con ${APP_NAME}, o revisá los planes cuando quieras seguir con todo desbloqueado.
+              </p>
+              <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.95rem; line-height: 1.5;">
+                Gracias por confiar en nosotros en estos primeros días. Si algo no te cerró o tenés dudas, respondé a nuestros canales de soporte desde la app o la web: queremos que la experiencia te acompañe de verdad.
+              </p>
+            </div>
+
+            <div style="text-align: center; margin-top: 18px;">
+              <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.95rem; margin: 0;">
+                ¿Querés contarnos algo rápido? Encontranos en Instagram.
+              </p>
+            </div>
+          </div>
+
+          ${getEmailFooter()}
+        </div>
+      `
+    };
+  },
+
+  /**
    * Plantilla para correo de tips semanales
    */
   weeklyTipsEmail: (username, weekNumber) => {
@@ -485,9 +585,19 @@ const emailTemplates = {
   },
 
   /**
-   * Plantilla para correo de agradecimiento por suscripción
+   * Plantilla para correo de agradecimiento por suscripción + bloque opcional de confirmación de compra.
+   * @param {string} username
+   * @param {string} plan
+   * @param {Date|string} periodEnd
+   * @param {null|{
+   *   purchaseDate: Date|string,
+   *   amount?: number|null,
+   *   currency?: string,
+   *   providerLabel: string,
+   *   reference: string
+   * }} [receipt] - Si viene informado, se muestra resumen tipo comprobante.
    */
-  subscriptionThankYouEmail: (username, plan, periodEnd) => {
+  subscriptionThankYouEmail: (username, plan, periodEnd, receipt = null) => {
     const planNames = {
       monthly: 'Mensual',
       quarterly: 'Trimestral',
@@ -502,8 +612,45 @@ const emailTemplates = {
       day: 'numeric',
     });
 
+    const purchaseDateStr = receipt?.purchaseDate
+      ? new Date(receipt.purchaseDate).toLocaleDateString('es-CL', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : null;
+    const amountStr = formatPurchaseAmount(receipt?.amount, receipt?.currency);
+    const receiptBlock = receipt
+      ? `
+            <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM}12 0%, ${EMAIL_COLORS.ACCENT}10 100%); padding: 22px 20px; border-radius: 14px; margin: 24px 0; text-align: left; border: 1px solid rgba(29, 43, 95, 0.12); border-left: 4px solid ${EMAIL_COLORS.ACCENT}; box-shadow: 0 4px 20px rgba(31, 38, 135, 0.08);">
+              <h3 style="color: ${EMAIL_COLORS.ACCENT}; margin: 0 0 16px 0; font-size: 1.15rem; text-align: center; text-shadow: 0 1px 0 rgba(255,255,255,0.4);">
+                Confirmación de compra
+              </h3>
+              <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); padding: 3px; border-radius: 12px;">
+                <div style="background: rgba(255,255,255,0.98); padding: 18px 16px; border-radius: 10px;">
+                  <table style="width: 100%; border-collapse: collapse; color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.95rem;">
+                    ${purchaseDateStr ? `<tr style="border-bottom: 1px solid rgba(29, 43, 95, 0.08);"><td style="padding: 8px 8px 8px 0; vertical-align: top; color: ${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Fecha</strong></td><td style="padding: 8px 0;">${purchaseDateStr}</td></tr>` : ''}
+                    <tr style="border-bottom: 1px solid rgba(29, 43, 95, 0.08);"><td style="padding: 8px 8px 8px 0; vertical-align: top; color: ${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Producto</strong></td><td style="padding: 8px 0;">Suscripción premium — plan ${planName}</td></tr>
+                    ${amountStr ? `<tr style="border-bottom: 1px solid rgba(29, 43, 95, 0.08);"><td style="padding: 8px 8px 8px 0; vertical-align: top; color: ${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Importe</strong></td><td style="padding: 8px 0;"><strong style="color: ${EMAIL_COLORS.PRIMARY_DARK};">${amountStr}</strong></td></tr>` : ''}
+                    <tr style="border-bottom: 1px solid rgba(29, 43, 95, 0.08);"><td style="padding: 8px 8px 8px 0; vertical-align: top; color: ${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Pago procesado por</strong></td><td style="padding: 8px 0;">${receipt.providerLabel}</td></tr>
+                    <tr style="border-bottom: 1px solid rgba(29, 43, 95, 0.08);"><td style="padding: 8px 8px 8px 0; vertical-align: top; color: ${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Referencia</strong></td><td style="padding: 8px 0; word-break: break-all; font-family: 'Segoe UI Mono', 'Menlo', 'Monaco', monospace; font-size: 0.88rem;">${String(receipt.reference || '—')}</td></tr>
+                    <tr><td style="padding: 8px 8px 0 0; vertical-align: top; color: ${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Vigencia hasta</strong></td><td style="padding: 8px 0 0 0;">${periodEndDate}</td></tr>
+                  </table>
+                </div>
+              </div>
+              <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.85rem; margin: 18px 0 0 0; text-align: center; line-height: 1.5;">
+                Podés conservar este correo como comprobante. Para facturación o soporte, indicá la referencia y el correo de tu cuenta.
+              </p>
+            </div>
+          `
+      : '';
+
     return {
-      subject: `¡Gracias por tu suscripción a ${APP_NAME}! 🎉`,
+      subject: receipt
+        ? `Confirmación de compra: suscripción ${planName} — ${APP_NAME}`
+        : `¡Gracias por tu suscripción a ${APP_NAME}! 🎉`,
       html: `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: ${EMAIL_COLORS.BACKGROUND};">
           ${getEmailHeader(`¡Gracias por tu suscripción, ${username}! 🎉`)}
@@ -513,6 +660,8 @@ const emailTemplates = {
               ¡Hola ${username}!<br><br>
               Queremos agradecerte por confiar en ${APP_NAME} y por unirte a nuestra comunidad premium. Tu suscripción ha sido activada exitosamente y ahora tienes acceso completo a todas las funcionalidades de la app.
             </p>
+
+            ${receiptBlock}
             
             <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); padding: 24px; border-radius: 14px; margin: 28px 0; text-align: center;">
               <h2 style="color: white; margin: 0 0 12px 0; font-size: 1.5rem;">
@@ -946,6 +1095,23 @@ const mailer = {
   },
 
   /**
+   * Correo de retención antes del fin del trial corto (p. ej. ~48 h tras inicio).
+   * @param {string} email
+   * @param {string} username
+   * @param {Date|string} trialEndDate
+   * @returns {Promise<boolean>}
+   */
+  sendTrialRetentionEmail: async (email, username, trialEndDate) => {
+    try {
+      const template = emailTemplates.trialRetentionEmail(username, trialEndDate);
+      return await sendEmail(email, template, 'Correo retención trial');
+    } catch (error) {
+      console.error('[Mailer] ❌ Error al enviar correo de retención trial (no crítico):', error.message);
+      return false;
+    }
+  },
+
+  /**
    * Informe diario de uso de tokens OpenAI (misma tubería que el resto de correos).
    * @param {string} email - Destinatario
    * @param {{ dateKey: string, stats: object | null, model: string, environment: string }} payload
@@ -987,6 +1153,11 @@ const mailer = {
   <li><strong>Entorno:</strong> <code>${env}</code></li>
   <li><strong>Servicio / URL:</strong> <code>${String(host)}</code></li>
 </ul>
+<p style="margin:18px 0 8px 0;">
+  <a href="${INSTAGRAM_URL}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:linear-gradient(135deg,#1D2B5F 0%,#1ADDDB 100%);color:#fff;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700;">
+    Instagram
+  </a>
+</p>
 <p style="color:#444;font-size:14px;">Si lo recibís, la tubería (Gmail API o fallback SMTP/SendGrid) respondió correctamente.</p>
 </body></html>`
       };

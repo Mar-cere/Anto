@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">6.81% </span>
+                <span class="strong">8.33% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>9/132</span>
+                <span class='fraction'>11/132</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">1.51% </span>
+                <span class="strong">2.27% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>2/132</span>
+                <span class='fraction'>3/132</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">7.2% </span>
+                <span class="strong">8.8% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>9/125</span>
+                <span class='fraction'>11/125</span>
             </div>
         
             
@@ -505,7 +505,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">30x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -516,13 +516,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">30x</span>
-<span class="cline-any cline-yes">30x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">30x</span>
-<span class="cline-any cline-yes">30x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -530,7 +530,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">30x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -598,8 +598,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">30x</span>
-<span class="cline-any cline-yes">30x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -614,9 +614,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -818,7 +818,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1047,10 +1047,10 @@ class MetricsService {
    * Muestra en memoria cada llamada a selectHistoryForPrompt (barato; no persiste en Mongo).
    * @param {{ truncated?: boolean }} data
    */
-<span class="fstat-no" title="function not covered" >  re</span>cordPromptHistorySelectionSample(data) {
-    const s = <span class="cstat-no" title="statement not covered" >this.inMemoryMetrics.promptHistorySelectionSamples;</span>
-<span class="cstat-no" title="statement not covered" >    s.totalSelections++;</span>
-<span class="cstat-no" title="statement not covered" >    if (data.truncated) <span class="cstat-no" title="statement not covered" >s.truncatedSelections++;</span></span>
+  recordPromptHistorySelectionSample(data) {
+    const s = this.inMemoryMetrics.promptHistorySelectionSamples;
+    s.totalSelections++;
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (data.truncated) <span class="cstat-no" title="statement not covered" >s.truncatedSelections++;</span>
   }
 &nbsp;
 <span class="fstat-no" title="function not covered" >  as</span>ync recordMetric(type, data, userId = <span class="branch-0 cbranch-no" title="branch not covered" >null,</span> metadata = <span class="branch-0 cbranch-no" title="branch not covered" >{})</span> {
@@ -1251,8 +1251,8 @@ class MetricsService {
    * @param {string} userId - ID del usuario
    * @returns {Array} Métricas del usuario
    */
-  getUserMetrics(userId) {
-    return this.metricsHistory
+<span class="fstat-no" title="function not covered" >  ge</span>tUserMetrics(userId) {
+<span class="cstat-no" title="statement not covered" >    return this.metricsHistory</span>
       .filter(<span class="fstat-no" title="function not covered" >m </span>=&gt; <span class="cstat-no" title="statement not covered" >m.userId &amp;&amp; m.userId.toString() === userId.toString())</span>
       .slice(-50); // Últimas 50 del usuario
   }
@@ -1372,7 +1372,7 @@ export default new MetricsService();
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-07T14:32:54.654Z
+                at 2026-04-07T16:33:54.956Z
             </div>
         <script src="../prettify.js"></script>
         <script>

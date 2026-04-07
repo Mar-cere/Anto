@@ -20,7 +20,9 @@
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Necesitamos acceso a tus fotos para que puedas subir imágenes en tu perfil.",
         "NSCameraUsageDescription": "Necesitamos acceso a la cámara para que puedas tomar fotos para tu perfil.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "es",
+        "CFBundleLocalizations": ["es"]
       }
     },
     "android": {
@@ -31,6 +33,11 @@
       "package": "com.anto.app",
       "versionCode": 5,
       "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
@@ -60,6 +67,12 @@
           }
         }
       ]
-    ]
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/37ba58c5-a788-4f5e-a36f-6b6bb5eb7b99"
+    }
   }
 }

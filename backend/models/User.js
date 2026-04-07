@@ -211,6 +211,11 @@ const userSchema = new mongoose.Schema({
     trialGrantedAt: {
       type: Date,
       default: null
+    },
+    /** Se setea al enviar el correo “retención trial” (día ~2 de prueba corta); evita reenvíos. */
+    trialRetentionEmailSentAt: {
+      type: Date,
+      default: null
     }
   },
   // Contactos de emergencia (máximo 2)
@@ -309,6 +314,11 @@ userSchema.index({ 'stats.lastActive': -1 });
 userSchema.index({ createdAt: -1 });
 // Índices compuestos para consultas frecuentes
 userSchema.index({ 'subscription.status': 1, 'subscription.trialEndDate': 1 });
+userSchema.index({
+  'subscription.status': 1,
+  'subscription.trialRetentionEmailSentAt': 1,
+  'subscription.trialStartDate': 1,
+});
 userSchema.index({ 'subscription.status': 1, 'subscription.subscriptionEndDate': 1 });
 userSchema.index({ email: 1, isActive: 1 });
 

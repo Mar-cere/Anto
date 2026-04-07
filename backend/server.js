@@ -491,6 +491,25 @@ if (process.env.NODE_ENV !== 'test') {
     logger.info('✅ Servicio de recordatorios de contactos de emergencia iniciado (cada 24 horas)');
   }
 
+  // Correo retención trial (~48 h tras inicio, trials cortos) — diario, NO en test
+  if (features.trialRetentionEmail && process.env.NODE_ENV !== 'test') {
+    const TRIAL_RETENTION_INTERVAL_MS = 24 * 60 * 60 * 1000;
+    const runTrialRetention = async () => {
+      try {
+        const emailMarketingService = (await import('./services/emailMarketingService.js')).default;
+        logger.info('📧 Ejecutando correos de retención trial...');
+        await emailMarketingService.sendTrialRetentionEmails();
+      } catch (error) {
+        logger.error('❌ Error en correos de retención trial', { error: error.message });
+      }
+    };
+    if (config.app.environment === 'production') {
+      setTimeout(() => void runTrialRetention(), 120000);
+    }
+    setInterval(() => void runTrialRetention(), TRIAL_RETENTION_INTERVAL_MS);
+    logger.info('✅ Retención trial por correo programada (cada 24 horas)');
+  }
+
   // Iniciar servicio de seguimiento post-crisis (NO en test)
   if (features.crisisFollowUp && process.env.NODE_ENV !== 'test') {
     setTimeout(async () => {

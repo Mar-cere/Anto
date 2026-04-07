@@ -85,6 +85,45 @@ describe('Guest chat routes (regresión)', () => {
     });
   });
 
+  describe('DELETE /api/chat/guest/conversations/:conversationId/messages', () => {
+    it('debe responder 401 sin token', async () => {
+      const id = new mongoose.Types.ObjectId().toString();
+      const res = await request(app).delete(`${BASE}/conversations/${id}/messages`);
+      expect(res.status).toBe(401);
+    });
+
+    it('debe borrar mensajes 200 y dejar la lista vacía al volver a leer', async () => {
+      const { guestToken, conversationId } = await createGuestSession(request(app));
+      await request(app)
+        .post(`${BASE}/messages`)
+        .set('Authorization', `Bearer ${guestToken}`)
+        .send({ conversationId, content: 'Hola borrado' })
+        .expect(201);
+
+      const del = await request(app)
+        .delete(`${BASE}/conversations/${conversationId}/messages`)
+        .set('Authorization', `Bearer ${guestToken}`)
+        .expect(200);
+      expect(del.body).toHaveProperty('deletedCount');
+
+      const list = await request(app)
+        .get(`${BASE}/conversations/${conversationId}/messages`)
+        .set('Authorization', `Bearer ${guestToken}`)
+        .expect(200);
+      expect(Array.isArray(list.body.messages)).toBe(true);
+      expect(list.body.messages.length).toBe(0);
+    });
+
+    it('debe responder 403 si conversationId no pertenece a la sesión', async () => {
+      const { guestToken } = await createGuestSession(request(app));
+      const otherId = new mongoose.Types.ObjectId().toString();
+      const res = await request(app)
+        .delete(`${BASE}/conversations/${otherId}/messages`)
+        .set('Authorization', `Bearer ${guestToken}`);
+      expect(res.status).toBe(403);
+    });
+  });
+
   describe('POST /api/chat/guest/messages', () => {
     it('debe responder 401 sin token', async () => {
       const { conversationId } = await createGuestSession(request(app));

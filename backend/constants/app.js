@@ -15,6 +15,8 @@ export const APP_NAME_FULL = 'AntoApp';
 export const CURRENT_TERMS_VERSION = '1.0';
 export const LOGO_URL = 'https://res.cloudinary.com/dfmmn3hqw/image/upload/v1746325071/Anto_nnrwjr.png';
 export const EMAIL_FROM_NAME = 'Anto';
+// Link social opcional (usado en emails/setting)
+export const INSTAGRAM_URL = process.env.INSTAGRAM_URL || 'https://instagram.com/antoapps';
 // URL del icono de notificación (debe ser una URL pública accesible)
 // Si tienes el icono en Cloudinary, reemplaza esta URL con la URL de Cloudinary
 export const NOTIFICATION_ICON_URL = process.env.NOTIFICATION_ICON_URL || LOGO_URL;

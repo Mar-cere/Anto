@@ -11,6 +11,18 @@ import mailer from '../config/mailer.js';
 import logger from '../utils/logger.js';
 import { enqueueEmail } from './emailQueueService.js';
 
+/** Horas tras el inicio del trial para enviar el correo de retención (default: fin ~2.º día en trial de 3 días). */
+function getTrialRetentionAfterHours() {
+  const n = parseInt(process.env.TRIAL_RETENTION_EMAIL_AFTER_HOURS || '48', 10);
+  return Number.isFinite(n) && n > 0 ? n : 48;
+}
+
+/** Solo trials “cortos” (p. ej. 3 días en prod); evita mail a cuentas de prueba con trial largo. */
+function getTrialRetentionMaxTrialHours() {
+  const n = parseInt(process.env.TRIAL_RETENTION_MAX_TRIAL_HOURS || '96', 10);
+  return Number.isFinite(n) && n > 0 ? n : 96;
+}
+
 class EmailMarketingService {
   constructor() {
     this.isRunning = false;
@@ -135,6 +147,95 @@ class EmailMarketingService {
     } catch (error) {
       logger.error('[EmailMarketing] Error en sendWeeklyTipsEmails:', error);
       return { checked: 0, sent: 0, failed: 0 };
+    }
+  }
+
+  /**
+   * Correo “no queremos que te vayas” para trials cortos (~48 h tras inicio, un solo envío por cuenta).
+   * Usa findOneAndUpdate atómico para no duplicar si el job corre en paralelo.
+   * @returns {Promise<{ processed: number, sent: number, failed: number, skippedLongTrial: number }>}
+   */
+  async sendTrialRetentionEmails() {
+    const afterHours = getTrialRetentionAfterHours();
+    const maxTrialMs = getTrialRetentionMaxTrialHours() * 60 * 60 * 1000;
+    const now = new Date();
+    const trialStartDeadline = new Date(now.getTime() - afterHours * 60 * 60 * 1000);
+
+    const results = {
+      processed: 0,
+      sent: 0,
+      failed: 0,
+      skippedLongTrial: 0,
+    };
+
+    const baseFilter = {
+      emailVerified: true,
+      isActive: true,
+      'subscription.status': 'trial',
+      'subscription.trialStartDate': { $lte: trialStartDeadline },
+      'subscription.trialEndDate': { $gt: now },
+      $or: [
+        { 'subscription.trialRetentionEmailSentAt': null },
+        { 'subscription.trialRetentionEmailSentAt': { $exists: false } },
+      ],
+    };
+
+    try {
+      const safetyCap = parseInt(process.env.TRIAL_RETENTION_EMAIL_MAX_PER_RUN || '500', 10);
+      const maxIterations = Number.isFinite(safetyCap) && safetyCap > 0 ? safetyCap : 500;
+
+      for (let i = 0; i < maxIterations; i += 1) {
+        const user = await User.findOneAndUpdate(
+          baseFilter,
+          { $set: { 'subscription.trialRetentionEmailSentAt': new Date() } },
+          { new: true, sort: { 'subscription.trialStartDate': 1 } }
+        );
+
+        if (!user) break;
+
+        results.processed += 1;
+        const sub = user.subscription;
+        const start = sub?.trialStartDate ? new Date(sub.trialStartDate).getTime() : 0;
+        const end = sub?.trialEndDate ? new Date(sub.trialEndDate).getTime() : 0;
+        const span = end - start;
+
+        const releaseClaim = async () => {
+          await User.updateOne({ _id: user._id }, { $unset: { 'subscription.trialRetentionEmailSentAt': '' } });
+        };
+
+        if (span <= 0 || span > maxTrialMs) {
+          await releaseClaim();
+          results.skippedLongTrial += 1;
+          continue;
+        }
+
+        try {
+          const ok = await mailer.sendTrialRetentionEmail(
+            user.email,
+            user.username,
+            sub.trialEndDate
+          );
+          if (!ok) {
+            await releaseClaim();
+            results.failed += 1;
+          } else {
+            results.sent += 1;
+            logger.info(`[EmailMarketing] Retención trial enviada a ${user.email}`);
+          }
+        } catch (error) {
+          await releaseClaim();
+          results.failed += 1;
+          logger.error(`[EmailMarketing] Error retención trial usuario ${user._id}:`, error.message);
+        }
+      }
+
+      logger.info(
+        `[EmailMarketing] Retención trial: enviados ${results.sent} (procesados ${results.processed}, fallos ${results.failed}, trial largo ${results.skippedLongTrial})`
+      );
+      return results;
+    } catch (error) {
+      logger.error('[EmailMarketing] Error en sendTrialRetentionEmails:', error);
+      return { processed: 0, sent: 0, failed: 0, skippedLongTrial: 0 };
     }
   }
 

@@ -12,6 +12,7 @@
  * | intenseChatCheckIn         | ENABLE_INTENSE_CHAT_CHECKIN    | activo  | check-ins poschat |
  * | notificationScheduler      | ENABLE_NOTIFICATION_SCHEDULER  | activo  | cola de notificaciones |
  * | openaiDailyCostReport      | ENABLE_OPENAI_DAILY_COST_REPORT | activo | correo diario uso OpenAI |
+ * | trialRetentionEmail        | ENABLE_TRIAL_RETENTION_EMAIL   | activo | correo fin día ~2 de trial corto |
  * | swagger                    | ENABLE_SWAGGER + NODE_ENV      | ver abajo | en prod solo si `ENABLE_SWAGGER=true` |
  *
  * Para los cuatro primeros, cualquier valor distinto de la cadena `'false'`
@@ -45,6 +46,7 @@ export const features = Object.freeze({
   intenseChatCheckIn: envIsNotFalse(process.env.ENABLE_INTENSE_CHAT_CHECKIN),
   notificationScheduler: envIsNotFalse(process.env.ENABLE_NOTIFICATION_SCHEDULER),
   openaiDailyCostReport: envIsNotFalse(process.env.ENABLE_OPENAI_DAILY_COST_REPORT),
+  trialRetentionEmail: envIsNotFalse(process.env.ENABLE_TRIAL_RETENTION_EMAIL),
   swagger: resolveSwaggerEnabled(),
 });
 
