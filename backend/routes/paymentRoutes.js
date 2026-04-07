@@ -15,6 +15,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import { validateUserObjectId } from '../middleware/validation.js';
 import Transaction from '../models/Transaction.js';
 import appleReceiptService from '../services/appleReceiptService.js';
+import { handleAppleServerNotification } from '../services/appleServerNotificationService.js';
 import cacheService from '../services/cacheService.js';
 import paymentAuditService from '../services/paymentAuditService.js';
 import paymentService from '../services/paymentService.js';
@@ -48,6 +49,16 @@ const paymentLimiter = rateLimit({
   skip: (req) => {
     return process.env.NODE_ENV === 'development';
   }
+});
+
+// Webhooks de terceros (Mercado Pago, Apple ASN); límite permisivo
+const webhookLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 100,
+  message: 'Demasiadas solicitudes de webhook',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => process.env.NODE_ENV === 'development',
 });
 
 // Esquema de validación para crear checkout
@@ -721,23 +732,54 @@ router.post(
 );
 
 /**
+ * GET /api/payments/apple-server-notifications
+ * Solo para comprobar que la URL existe (navegador). Apple siempre usa POST.
+ */
+router.get('/apple-server-notifications', (req, res) => {
+  res.status(200).json({
+    ok: true,
+    hint:
+      'App Store Server Notifications V2: Apple envía POST con JSON { "signedPayload": "..." }. Un GET no procesa notificaciones.',
+  });
+});
+
+/**
+ * POST /api/payments/apple-server-notifications
+ * App Store Server Notifications V2. Apple firma el payload (JWS); no usar JWT de usuario.
+ * Configurar la misma URL en App Store Connect (Producción y Sandbox).
+ */
+router.post(
+  '/apple-server-notifications',
+  express.json({ limit: '512kb' }),
+  webhookLimiter,
+  async (req, res) => {
+    try {
+      const signedPayload = req.body?.signedPayload;
+      const result = await handleAppleServerNotification(signedPayload);
+      return res.status(200).json({ received: true, ...result });
+    } catch (error) {
+      const msg = error?.message || String(error);
+      logger.payment('POST /apple-server-notifications: error', {
+        message: msg,
+        stack: error?.stack,
+      });
+      if (
+        msg === 'signedPayload requerido' ||
+        msg.includes('Fallo verificación JWS') ||
+        msg.includes('Notificación sin notificationUUID')
+      ) {
+        return res.status(400).json({ received: false, error: msg });
+      }
+      return res.status(500).json({ received: false, error: 'Error interno' });
+    }
+  }
+);
+
+/**
  * POST /api/payments/webhook
  * Webhook para eventos de pago de Mercado Pago
  * IMPORTANTE: Esta ruta NO debe usar authenticateToken
  */
-// Rate limiter para webhook (más permisivo pero con límite)
-const webhookLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minuto
-  max: 100, // Mercado Pago puede enviar múltiples notificaciones
-  message: 'Demasiadas solicitudes de webhook',
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req) => {
-    // En desarrollo, no aplicar rate limiting estricto
-    return process.env.NODE_ENV === 'development';
-  }
-});
-
 router.post('/webhook', express.json(), webhookLimiter, async (req, res) => {
   try {
     const clientIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;

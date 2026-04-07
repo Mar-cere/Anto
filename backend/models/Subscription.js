@@ -117,6 +117,10 @@ subscriptionSchema.index({ userId: 1, status: 1 });
 subscriptionSchema.index({ status: 1, trialEnd: 1 }); // Para consultas de trial
 subscriptionSchema.index({ plan: 1, status: 1 }); // Para métricas por plan
 subscriptionSchema.index({ currentPeriodEnd: 1 }); // Para suscripciones que expiran
+subscriptionSchema.index(
+  { 'metadata.appleOriginalTransactionId': 1 },
+  { sparse: true }
+);
 
 // Virtual: verificar si la suscripción está activa
 subscriptionSchema.virtual('isActive').get(function() {

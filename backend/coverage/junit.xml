@@ -1,25 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="9" failures="0" errors="0" time="0.712">
-  <testsuite name="PaymentService" errors="0" failures="0" skipped="0" timestamp="2026-04-07T20:28:48" time="0.545" tests="7">
-    <testcase classname="PaymentService createCheckoutSession debe lanzar error si Mercado Pago no está configurado" name="PaymentService createCheckoutSession debe lanzar error si Mercado Pago no está configurado" time="0">
-    </testcase>
-    <testcase classname="PaymentService handleWebhook debe lanzar error si Mercado Pago no está configurado" name="PaymentService handleWebhook debe lanzar error si Mercado Pago no está configurado" time="0">
-    </testcase>
-    <testcase classname="PaymentService Métodos del servicio debe tener método cancelSubscription" name="PaymentService Métodos del servicio debe tener método cancelSubscription" time="0">
-    </testcase>
-    <testcase classname="PaymentService Métodos del servicio debe tener método updatePaymentMethod" name="PaymentService Métodos del servicio debe tener método updatePaymentMethod" time="0">
-    </testcase>
-    <testcase classname="PaymentService Métodos del servicio debe tener método getSubscriptionStatus" name="PaymentService Métodos del servicio debe tener método getSubscriptionStatus" time="0">
-    </testcase>
-    <testcase classname="PaymentService Métodos del servicio debe tener método createCheckoutSession" name="PaymentService Métodos del servicio debe tener método createCheckoutSession" time="0">
-    </testcase>
-    <testcase classname="PaymentService Métodos del servicio debe tener método handleWebhook" name="PaymentService Métodos del servicio debe tener método handleWebhook" time="0">
-    </testcase>
-  </testsuite>
-  <testsuite name="PaymentServiceMercadoPago" errors="0" failures="0" skipped="0" timestamp="2026-04-07T20:28:48" time="0.127" tests="2">
-    <testcase classname="PaymentServiceMercadoPago Métodos del servicio debe tener métodos exportados" name="PaymentServiceMercadoPago Métodos del servicio debe tener métodos exportados" time="0.001">
-    </testcase>
-    <testcase classname="PaymentServiceMercadoPago Métodos del servicio debe tener método createCheckoutSession si existe" name="PaymentServiceMercadoPago Métodos del servicio debe tener método createCheckoutSession si existe" time="0">
+<testsuites name="jest tests" tests="1" failures="0" errors="0" time="7.227">
+  <testsuite name="AppleReceiptService processSubscription idempotencia" errors="0" failures="0" skipped="0" timestamp="2026-04-07T21:47:13" time="7.214" tests="1">
+    <testcase classname="AppleReceiptService processSubscription idempotencia dos llamadas con el mismo recibo no duplican Transaction" name="AppleReceiptService processSubscription idempotencia dos llamadas con el mismo recibo no duplican Transaction" time="6.769">
     </testcase>
   </testsuite>
 </testsuites>

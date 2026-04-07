@@ -17,7 +17,7 @@ const APPLE_VERIFY_URL_SANDBOX = 'https://sandbox.itunes.apple.com/verifyReceipt
 const APPLE_VERIFY_URL_PRODUCTION = 'https://buy.itunes.apple.com/verifyReceipt';
 
 // Mapeo de Product IDs a planes
-const PRODUCT_ID_TO_PLAN = {
+export const PRODUCT_ID_TO_PLAN = {
   'com.anto.app.monthly': 'monthly',
   'com.anto.app.quarterly': 'quarterly',
   'com.anto.app.semestral': 'semestral',
@@ -25,7 +25,7 @@ const PRODUCT_ID_TO_PLAN = {
 };
 
 // Mapeo de planes a duración en días
-const PLAN_DURATION_DAYS = {
+export const PLAN_DURATION_DAYS = {
   monthly: 30,
   quarterly: 90,
   semestral: 180,
@@ -536,71 +536,99 @@ class AppleReceiptService {
         );
       }
 
-      // Enviar correo de agradecimiento por suscripción (solo si está activa)
-      if (!skipDuplicateSideEffects && isActive) {
-        const emailStartTime = Date.now();
-        logger.payment('[AppleReceipt] 📧 Enviando correo de agradecimiento', {
-          userId: userId.toString(),
-          userEmail: user.email,
-          plan,
-          productId,
-          timestamp: new Date().toISOString(),
-        });
-
-        try {
-          const mailer = (await import('../config/mailer.js')).default;
-          const username = user.name || user.username || 'Usuario';
-          const priceRaw = transaction.price;
-          const parsedPrice =
-            priceRaw != null && priceRaw !== '' ? parseFloat(priceRaw) : NaN;
-          const receipt = {
-            purchaseDate,
-            amount: Number.isFinite(parsedPrice) ? parsedPrice : null,
-            currency: transaction.currency || 'USD',
-            providerLabel: 'App Store (Apple)',
-            reference: appleTransactionId,
-          };
-
-          const sent = await mailer.sendSubscriptionThankYouEmail(
-            user.email,
-            username,
-            plan,
-            expiresDate,
-            receipt,
-            'Confirmación de compra / suscripción (Apple)'
+      // Correo de agradecimiento: primera activación, o reintento en idempotencia si nunca se marcó envío
+      if (isActive && user.email) {
+        const persistThankYouEmailFlag = async () => {
+          await Transaction.updateOne(
+            { userId, paymentProvider: 'apple', providerTransactionId: appleTransactionId },
+            { $set: { 'metadata.thankYouEmailSentAt': new Date() } }
           );
+        };
 
-          const emailDuration = Date.now() - emailStartTime;
-          if (sent) {
-            logger.payment('[AppleReceipt] ✅ Correo de agradecimiento enviado', {
-              userId: userId.toString(),
-              userEmail: user.email,
-              plan,
-              productId,
-              emailDuration: `${emailDuration}ms`,
-            });
-          } else {
-            logger.warn('[AppleReceipt] ⚠️ Correo de agradecimiento no enviado (mailer devolvió false)', {
-              userId: userId.toString(),
-              userEmail: user.email,
-              plan,
-              productId,
-              emailDuration: `${emailDuration}ms`,
-            });
-          }
-        } catch (emailError) {
-          const emailDuration = Date.now() - emailStartTime;
-          // No fallar el procesamiento si el correo falla, solo loguear el error
-          logger.error('[AppleReceipt] ❌ Error enviando correo de agradecimiento', {
+        const sendThankYouEmail = async (reasonLabel) => {
+          const emailStartTime = Date.now();
+          logger.payment(`[AppleReceipt] 📧 ${reasonLabel}`, {
             userId: userId.toString(),
             userEmail: user.email,
             plan,
             productId,
-            error: emailError.message,
-            errorType: emailError.constructor?.name,
-            stack: emailError.stack,
-            emailDuration: `${emailDuration}ms`,
+            idempotentReplay: skipDuplicateSideEffects,
+            timestamp: new Date().toISOString(),
           });
+
+          try {
+            const mailer = (await import('../config/mailer.js')).default;
+            const username = user.name || user.username || 'Usuario';
+            const priceRaw = transaction.price;
+            const parsedPrice =
+              priceRaw != null && priceRaw !== '' ? parseFloat(priceRaw) : NaN;
+            const receipt = {
+              purchaseDate,
+              amount: Number.isFinite(parsedPrice) ? parsedPrice : null,
+              currency: transaction.currency || 'USD',
+              providerLabel: 'App Store (Apple)',
+              reference: appleTransactionId,
+            };
+
+            const sent = await mailer.sendSubscriptionThankYouEmail(
+              user.email,
+              username,
+              plan,
+              expiresDate,
+              receipt,
+              'Confirmación de compra / suscripción (Apple)'
+            );
+
+            const emailDuration = Date.now() - emailStartTime;
+            if (sent) {
+              await persistThankYouEmailFlag();
+              logger.payment('[AppleReceipt] ✅ Correo de agradecimiento enviado', {
+                userId: userId.toString(),
+                userEmail: user.email,
+                plan,
+                productId,
+                emailDuration: `${emailDuration}ms`,
+              });
+            } else {
+              logger.warn('[AppleReceipt] ⚠️ Correo de agradecimiento no enviado (mailer devolvió false)', {
+                userId: userId.toString(),
+                userEmail: user.email,
+                plan,
+                productId,
+                emailDuration: `${emailDuration}ms`,
+              });
+            }
+          } catch (emailError) {
+            const emailDuration = Date.now() - emailStartTime;
+            logger.error('[AppleReceipt] ❌ Error enviando correo de agradecimiento', {
+              userId: userId.toString(),
+              userEmail: user.email,
+              plan,
+              productId,
+              error: emailError.message,
+              errorType: emailError.constructor?.name,
+              stack: emailError.stack,
+              emailDuration: `${emailDuration}ms`,
+            });
+          }
+        };
+
+        if (!skipDuplicateSideEffects) {
+          await sendThankYouEmail('Enviando correo de agradecimiento');
+        } else {
+          const txnForEmail = await Transaction.findOne({
+            userId,
+            paymentProvider: 'apple',
+            providerTransactionId: appleTransactionId,
+          })
+            .select('metadata')
+            .lean();
+          const alreadySent = txnForEmail?.metadata?.thankYouEmailSentAt;
+          if (!alreadySent) {
+            await sendThankYouEmail(
+              'Reintento: correo de agradecimiento (activación previa sin constancia de envío)'
+            );
+          }
         }
       }
 
@@ -665,6 +693,171 @@ class AppleReceiptService {
         error: error.message || 'Error al procesar la suscripción',
       };
     }
+  }
+
+  /**
+   * Sincroniza User, Subscription y opcionalmente Transaction desde un JWS de transacción StoreKit 2
+   * verificado (p. ej. App Store Server Notifications V2).
+   *
+   * @param {import('mongoose').Types.ObjectId|string} userId
+   * @param {Object} tx - Payload decodificado (JWSTransactionDecodedPayload, camelCase)
+   * @param {Object} [options]
+   * @param {boolean} [options.forceExpired]
+   * @param {boolean} [options.createTransactionRecord]
+   * @param {string} [options.source]
+   */
+  async syncSubscriptionFromStoreKit2Transaction(userId, tx, options = {}) {
+    const {
+      forceExpired = false,
+      createTransactionRecord = true,
+      source = 'storekit2',
+    } = options;
+
+    const productId = tx.productId;
+    const appleTransactionId = String(tx.transactionId || '');
+    const originalTransactionId = String(tx.originalTransactionId || '');
+
+    const plan = PRODUCT_ID_TO_PLAN[productId];
+    if (!plan) {
+      logger.warn('[AppleReceipt] StoreKit2 sync: producto no reconocido', {
+        userId: String(userId),
+        productId,
+      });
+      return { success: false, error: `Product ID no reconocido: ${productId}` };
+    }
+
+    const purchaseDate = tx.purchaseDate ? new Date(tx.purchaseDate) : new Date();
+    let expiresDate = tx.expiresDate ? new Date(tx.expiresDate) : null;
+    if (!expiresDate) {
+      const durationMs = PLAN_DURATION_DAYS[plan] * 24 * 60 * 60 * 1000;
+      expiresDate = new Date(purchaseDate.getTime() + durationMs);
+    }
+
+    const now = new Date();
+    let isActive = !forceExpired && expiresDate > now;
+    if (tx.revocationDate) {
+      const rev = new Date(tx.revocationDate);
+      isActive = false;
+      if (!forceExpired && rev.getTime() < expiresDate.getTime()) {
+        expiresDate = rev;
+      }
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return { success: false, error: 'Usuario no encontrado' };
+    }
+
+    const trialGrantedAtPreserve = user.subscription?.trialGrantedAt;
+    user.subscription = {
+      status: isActive ? 'premium' : 'expired',
+      plan,
+      subscriptionStartDate: purchaseDate,
+      subscriptionEndDate: expiresDate,
+      trialStartDate: null,
+      trialEndDate: null,
+      trialGrantedAt: trialGrantedAtPreserve || user.subscription?.trialGrantedAt || null,
+      provider: 'apple',
+      appleTransactionId: appleTransactionId || user.subscription?.appleTransactionId,
+      appleOriginalTransactionId:
+        originalTransactionId || user.subscription?.appleOriginalTransactionId,
+    };
+    await user.save();
+
+    let subscription = await Subscription.findOne({ userId });
+    const isNewSubscription = !subscription;
+    if (!subscription) {
+      subscription = new Subscription({
+        userId,
+        plan,
+        status: isActive ? 'active' : 'expired',
+        currentPeriodStart: purchaseDate,
+        currentPeriodEnd: expiresDate,
+        trialStart: null,
+        trialEnd: null,
+        metadata: {
+          provider: 'apple',
+          appleTransactionId,
+          appleOriginalTransactionId: originalTransactionId,
+          productId,
+          storeKit2SyncSource: source,
+        },
+      });
+    } else {
+      subscription.plan = plan;
+      subscription.status = isActive ? 'active' : 'expired';
+      subscription.currentPeriodStart = purchaseDate;
+      subscription.currentPeriodEnd = expiresDate;
+      subscription.trialStart = null;
+      subscription.trialEnd = null;
+      subscription.metadata = {
+        ...subscription.metadata,
+        provider: 'apple',
+        appleTransactionId,
+        appleOriginalTransactionId: originalTransactionId,
+        productId,
+        storeKit2SyncSource: source,
+        lastStoreKit2SyncAt: new Date(),
+      };
+    }
+    await subscription.save();
+
+    let transactionCreated = false;
+    if (createTransactionRecord && appleTransactionId) {
+      const existing = await Transaction.findOne({
+        userId,
+        paymentProvider: 'apple',
+        providerTransactionId: appleTransactionId,
+      })
+        .select('_id')
+        .lean();
+      if (!existing) {
+        const priceMilli = tx.price;
+        const amount =
+          priceMilli != null && Number.isFinite(Number(priceMilli))
+            ? Number(priceMilli) / 1000
+            : 0;
+        const currency = (tx.currency || 'USD').toUpperCase();
+        const transactionRecord = new Transaction({
+          userId,
+          type: 'subscription',
+          paymentProvider: 'apple',
+          paymentMethod: 'other',
+          amount,
+          currency,
+          status: isActive ? 'completed' : 'expired',
+          providerTransactionId: appleTransactionId,
+          metadata: {
+            productId,
+            plan,
+            purchaseDate,
+            expiresDate,
+            originalTransactionId,
+            source,
+          },
+        });
+        await transactionRecord.save();
+        transactionCreated = true;
+      }
+    }
+
+    logger.payment('[AppleReceipt] StoreKit2 sync aplicado', {
+      userId: String(userId),
+      plan,
+      isActive,
+      newSubscription: isNewSubscription,
+      transactionCreated,
+      source,
+      appleTransactionId,
+    });
+
+    return {
+      success: true,
+      isActive,
+      plan,
+      subscriptionId: subscription._id,
+      transactionCreated,
+    };
   }
 
   /**
