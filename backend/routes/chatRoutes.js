@@ -190,6 +190,10 @@ router.get('/conversations/:conversationId', protect, validarConversationId, val
       return acc;
     }, []);
 
+    metricsService.bumpChatExploration('load_messages', {
+      page: parseInt(page, 10) || 1
+    });
+
     res.json({
       messages: uniqueMessages.reverse(),
       pagination: {
@@ -200,6 +204,10 @@ router.get('/conversations/:conversationId', protect, validarConversationId, val
     });
   } catch (error) {
     console.error('Error obteniendo mensajes:', error);
+    metricsService.bumpChatFriction('load_messages_server_error', {
+      httpStatus: 500,
+      surface: 'registered'
+    });
     res.status(500).json({
       message: 'Error al obtener el historial de mensajes',
       error: error.message
@@ -233,12 +241,25 @@ router.post('/conversations', protect, requireActiveSubscription(true), async (r
 
     await Conversation.findByIdAndUpdate(conversation._id, { lastMessage: welcomeMessage._id });
 
+    metricsService
+      .recordMetric(
+        'chat_usage',
+        { action: 'conversation_created', isGuest: false },
+        req.user._id.toString(),
+        { conversationId: String(conversation._id) }
+      )
+      .catch(() => {});
+
     res.status(201).json({
       conversationId: conversation._id.toString(),
       message: welcomeMessage
     });
   } catch (error) {
     console.error('Error al crear conversación:', error);
+    metricsService.bumpChatFriction('create_conversation_server_error', {
+      httpStatus: 500,
+      surface: 'registered'
+    });
     res.status(500).json({
       message: 'Error al crear la conversación',
       error: error.message
@@ -258,6 +279,10 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
 
     // SEGURIDAD: Validar formato de conversationId
     if (!conversationId) {
+      metricsService.bumpChatFriction('message_missing_conversation_id', {
+        httpStatus: 400,
+        surface: 'registered'
+      });
       return res.status(400).json({
         message: 'ID de conversación requerido'
       });
@@ -272,6 +297,11 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         userAgent: req.get('user-agent'),
         endpoint: req.path,
       }, req.user._id?.toString()).catch(() => {});
+
+      metricsService.bumpChatFriction('message_invalid_conversation_id', {
+        httpStatus: 400,
+        surface: 'registered'
+      });
       
       return res.status(400).json({
         message: 'ID de conversación inválido'
@@ -295,6 +325,11 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         userAgent: req.get('user-agent'),
         endpoint: req.path,
       }, req.user._id?.toString()).catch(() => {});
+
+      metricsService.bumpChatFriction('message_unauthorized_conversation', {
+        httpStatus: 403,
+        surface: 'registered'
+      });
       
       return res.status(403).json({
         message: 'No tienes permiso para acceder a esta conversación'
@@ -312,6 +347,11 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         userAgent: req.get('user-agent'),
         endpoint: req.path,
       }, req.user._id?.toString()).catch(() => {});
+
+      metricsService.bumpChatFriction('subscription_required_for_chat', {
+        httpStatus: 403,
+        surface: 'registered'
+      });
       
       return res.status(403).json({
         success: false,
@@ -321,6 +361,10 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
     }
 
     if (!content?.trim()) {
+      metricsService.bumpChatFriction('message_empty_content', {
+        httpStatus: 400,
+        surface: 'registered'
+      });
       return res.status(400).json({
         message: 'El contenido del mensaje es requerido'
       });
@@ -330,6 +374,10 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
     // El límite se aplica ANTES de crear el nuevo mensaje, así que si hay LIMITE_MENSAJES o más, no permitimos crear más
     const messageCount = await Message.countDocuments({ conversationId });
     if (messageCount >= LIMITE_MENSAJES) {
+      metricsService.bumpChatFriction('message_thread_limit_reached', {
+        httpStatus: 400,
+        surface: 'registered'
+      });
       return res.status(400).json({ 
         message: `Límite de mensajes alcanzado (${LIMITE_MENSAJES} mensajes por conversación). Por favor, crea una nueva conversación para continuar.`,
         limit: LIMITE_MENSAJES,
@@ -352,6 +400,19 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
     // Guardar mensaje del usuario antes de análisis para respuesta más rápida
     await userMessage.save();
     logs.push(`[${Date.now() - startTime}ms] Mensaje del usuario guardado`);
+
+    metricsService
+      .recordMetric(
+        'chat_usage',
+        {
+          action: 'user_message_saved',
+          isGuest: false,
+          chars: content.trim().length
+        },
+        req.user._id.toString(),
+        { conversationId: String(conversationId) }
+      )
+      .catch(() => {});
 
     if (role === 'user') {
       try {
@@ -777,6 +838,15 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
 
         // Streaming: si se pide stream=true, responder por SSE
         if (req.query.stream === 'true') {
+          metricsService
+            .recordMetric(
+              'chat_usage',
+              { action: 'streaming_request', isGuest: false },
+              req.user._id.toString(),
+              { conversationId: String(conversationId) }
+            )
+            .catch(() => {});
+
           res.setHeader('Content-Type', 'text/event-stream');
           res.setHeader('Cache-Control', 'no-cache');
           res.setHeader('Connection', 'keep-alive');
@@ -829,6 +899,19 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                     await assistantMessage.save();
                   } else throw saveError;
                 }
+
+                metricsService
+                  .recordMetric(
+                    'chat_usage',
+                    {
+                      action: 'assistant_message_saved',
+                      isGuest: false,
+                      chars: (response.content || '').length
+                    },
+                    req.user._id.toString(),
+                    { conversationId: String(conversationId), streaming: true }
+                  )
+                  .catch(() => {});
 
                 metricsService
                   .recordMetric(
@@ -898,12 +981,34 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   cognitiveDistortions: cognitiveDistortions?.length > 0 ? { detected: cognitiveDistortions, primary: primaryDistortion, intervention: distortionIntervention } : null,
                   processingTime: responseTime
                 }) + '\n\n');
+
+                metricsService
+                  .recordMetric(
+                    'chat_usage',
+                    { action: 'streaming_done', isGuest: false },
+                    req.user._id.toString(),
+                    { conversationId: String(conversationId) }
+                  )
+                  .catch(() => {});
+
                 res.end();
                 return;
               }
             }
           } catch (streamErr) {
             console.error('[ChatRoutes] Error en streaming:', streamErr);
+            metricsService
+              .recordMetric(
+                'chat_usage',
+                {
+                  action: 'error',
+                  isGuest: false,
+                  code: streamErr?.code || streamErr?.status || 'streaming_error'
+                },
+                req.user._id.toString(),
+                { conversationId: String(conversationId), streaming: true }
+              )
+              .catch(() => {});
             res.write('data: ' + JSON.stringify({ error: streamErr.message || 'Error en streaming' }) + '\n\n');
             res.end();
             return;
@@ -968,6 +1073,19 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             throw saveError;
           }
         }
+
+        metricsService
+          .recordMetric(
+            'chat_usage',
+            {
+              action: 'assistant_message_saved',
+              isGuest: false,
+              chars: (response.content || '').length
+            },
+            req.user._id.toString(),
+            { conversationId: String(conversationId), streaming: false }
+          )
+          .catch(() => {});
 
         metricsService
           .recordMetric(
@@ -1218,6 +1336,24 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           messageContent: content
         });
 
+        metricsService
+          .recordMetric(
+            'chat_usage',
+            {
+              action: 'error',
+              isGuest: false,
+              code: error?.code || error?.status || 'chat_message_error'
+            },
+            req.user._id.toString(),
+            { conversationId: String(conversationId) }
+          )
+          .catch(() => {});
+
+        metricsService.bumpChatFriction('message_processing_failed', {
+          httpStatus: 500,
+          surface: 'registered'
+        });
+
         // Si el mensaje del usuario ya se guardó, crear mensaje de error
         if (userMessage._id) {
           assistantMessage = new Message({
@@ -1256,6 +1392,24 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
       userId: req?.user?._id
     });
 
+    metricsService
+      .recordMetric(
+        'chat_usage',
+        {
+          action: 'error',
+          isGuest: false,
+          code: error?.code || error?.status || 'chat_messages_critical'
+        },
+        req?.user?._id?.toString?.() || null,
+        { endpoint: '/api/chat/messages' }
+      )
+      .catch(() => {});
+
+    metricsService.bumpChatFriction('message_post_critical_error', {
+      httpStatus: 500,
+      surface: 'registered'
+    });
+
     return res.status(500).json({
       message: 'Error crítico al procesar el mensaje',
       error: error.message,
@@ -1271,14 +1425,26 @@ router.patch('/messages/:messageId/feedback', protect, messageFeedbackLimiter, a
     const { helpful } = req.body;
 
     if (!mongoose.isValidObjectId(messageId)) {
+      metricsService.bumpChatFriction('feedback_invalid_message_id', {
+        httpStatus: 400,
+        surface: 'registered'
+      });
       return res.status(400).json({ message: 'ID de mensaje inválido' });
     }
 
     if (!Object.prototype.hasOwnProperty.call(req.body, 'helpful')) {
+      metricsService.bumpChatFriction('feedback_missing_helpful_field', {
+        httpStatus: 400,
+        surface: 'registered'
+      });
       return res.status(400).json({ message: 'Se requiere el campo helpful' });
     }
 
     if (helpful !== null && helpful !== 'up' && helpful !== 'down') {
+      metricsService.bumpChatFriction('feedback_invalid_helpful_value', {
+        httpStatus: 400,
+        surface: 'registered'
+      });
       return res.status(400).json({ message: 'helpful debe ser "up", "down" o null' });
     }
 
@@ -1302,6 +1468,10 @@ router.patch('/messages/:messageId/feedback', protect, messageFeedbackLimiter, a
       .lean();
 
     if (!updated) {
+      metricsService.bumpChatFriction('feedback_message_not_found', {
+        httpStatus: 404,
+        surface: 'registered'
+      });
       return res.status(404).json({ message: 'Mensaje no encontrado o no es un mensaje del asistente' });
     }
 
@@ -1314,6 +1484,15 @@ router.patch('/messages/:messageId/feedback', protect, messageFeedbackLimiter, a
       )
       .catch(() => {});
 
+    metricsService
+      .recordMetric(
+        'chat_usage',
+        { action: 'message_feedback', isGuest: false },
+        req.user._id.toString(),
+        { conversationId: String(updated.conversationId) }
+      )
+      .catch(() => {});
+
     res.json({
       success: true,
       messageId: String(oid),
@@ -1321,6 +1500,10 @@ router.patch('/messages/:messageId/feedback', protect, messageFeedbackLimiter, a
     });
   } catch (error) {
     console.error('[ChatRoutes] Error en PATCH /messages/:messageId/feedback:', error);
+    metricsService.bumpChatFriction('feedback_server_error', {
+      httpStatus: 500,
+      surface: 'registered'
+    });
     res.status(500).json({
       message: 'Error al guardar la valoración',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -1370,6 +1553,10 @@ router.get('/conversations', protect, async (req, res) => {
       });
       
       const conversations = Array.from(conversationMap.values());
+
+      metricsService.bumpChatExploration('list_conversations', {
+        paginationType: 'cursor'
+      });
       
       return res.json({
         conversations,
@@ -1430,12 +1617,20 @@ router.get('/conversations', protect, async (req, res) => {
       archived: conversations.filter(c => c.archived).length
     };
 
+    metricsService.bumpChatExploration('list_conversations', {
+      paginationType: 'offset'
+    });
+
     res.json({ 
       conversations,
       stats
     });
   } catch (error) {
     console.error('Error al obtener conversaciones:', error);
+    metricsService.bumpChatFriction('list_conversations_server_error', {
+      httpStatus: 500,
+      surface: 'registered'
+    });
     res.status(500).json({
       message: 'Error al obtener las conversaciones',
       error: error.message
@@ -1449,6 +1644,10 @@ router.patch('/messages/status', protect, patchMessageLimiter, async (req, res) 
     const { messageIds, status } = req.body;
 
     if (!Array.isArray(messageIds) || !messageIds.length) {
+      metricsService.bumpChatFriction('message_status_missing_ids', {
+        httpStatus: 400,
+        surface: 'registered'
+      });
       return res.status(400).json({
         message: 'Se requiere al menos un ID de mensaje'
       });
@@ -1456,6 +1655,10 @@ router.patch('/messages/status', protect, patchMessageLimiter, async (req, res) 
 
     const validStatuses = ['sent', 'delivered', 'read', 'failed'];
     if (!validStatuses.includes(status)) {
+      metricsService.bumpChatFriction('message_status_invalid_status', {
+        httpStatus: 400,
+        surface: 'registered'
+      });
       return res.status(400).json({
         message: 'Estado de mensaje inválido'
       });
@@ -1464,6 +1667,10 @@ router.patch('/messages/status', protect, patchMessageLimiter, async (req, res) 
     // Validar que todos los IDs son válidos
     const validIds = messageIds.filter(id => mongoose.Types.ObjectId.isValid(id));
     if (validIds.length !== messageIds.length) {
+      metricsService.bumpChatFriction('message_status_invalid_message_ids', {
+        httpStatus: 400,
+        surface: 'registered'
+      });
       return res.status(400).json({ 
         message: 'Algunos IDs de mensaje son inválidos' 
       });
@@ -1476,6 +1683,10 @@ router.patch('/messages/status', protect, patchMessageLimiter, async (req, res) 
     });
     
     if (messageCount !== validIds.length) {
+      metricsService.bumpChatFriction('message_status_not_owned_or_missing', {
+        httpStatus: 400,
+        surface: 'registered'
+      });
       return res.status(400).json({ 
         message: 'Algunos mensajes no existen o no pertenecen al usuario' 
       });

@@ -4,6 +4,7 @@
  */
 import mongoose from 'mongoose';
 import Conversation from '../../models/Conversation.js';
+import metricsService from '../../services/metricsService.js';
 
 export function isValidObjectId(id) {
   if (id == null || id === '') return false;
@@ -14,12 +15,20 @@ export function validarConversationId(req, res, next) {
   const { conversationId } = req.params;
 
   if (!conversationId) {
+    metricsService.bumpChatFriction('missing_conversation_id_param', {
+      httpStatus: 400,
+      surface: 'registered'
+    });
     return res.status(400).json({
       message: 'ID de conversación requerido'
     });
   }
 
   if (!isValidObjectId(conversationId)) {
+    metricsService.bumpChatFriction('invalid_conversation_id_param', {
+      httpStatus: 400,
+      surface: 'registered'
+    });
     return res.status(400).json({
       message: 'ID de conversación inválido'
     });
@@ -31,6 +40,10 @@ export async function validarConversacion(req, res, next) {
   const { conversationId } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(conversationId) || !mongoose.Types.ObjectId.isValid(req.user._id)) {
+    metricsService.bumpChatFriction('invalid_conversation_or_user_id', {
+      httpStatus: 400,
+      surface: 'registered'
+    });
     return res.status(400).json({ message: 'ID de conversación o usuario inválido' });
   }
 
@@ -42,6 +55,10 @@ export async function validarConversacion(req, res, next) {
     .lean();
 
   if (!conversation) {
+    metricsService.bumpChatFriction('conversation_not_found_or_forbidden', {
+      httpStatus: 404,
+      surface: 'registered'
+    });
     return res.status(404).json({ message: 'Conversación no encontrada' });
   }
 

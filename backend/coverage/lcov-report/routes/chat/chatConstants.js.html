@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/7</span>
+                <span class='fraction'>7/7</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/7</span>
+                <span class='fraction'>7/7</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -117,21 +117,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -139,16 +131,24 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -164,13 +164,13 @@
 import rateLimit from 'express-rate-limit';
 &nbsp;
 // Límites de mensajes y contexto
-export const LIMITE_MENSAJES = <span class="cstat-no" title="statement not covered" >100;</span>
+export const LIMITE_MENSAJES = 100;
 /** @deprecated El historial para IA ya no filtra por tiempo; se usa solo HISTORIAL_LIMITE. Mantener por compat. */
-export const VENTANA_CONTEXTO = <span class="cstat-no" title="statement not covered" >20 * 60 * 1000;</span>
+export const VENTANA_CONTEXTO = 20 * 60 * 1000;
 /** Últimos N mensajes de la misma conversación (sin ventana temporal) para contexto acotado. */
-export const HISTORIAL_LIMITE = <span class="cstat-no" title="statement not covered" >24;</span>
+export const HISTORIAL_LIMITE = 24;
 &nbsp;
-export const deleteConversationLimiter = <span class="cstat-no" title="statement not covered" >rateLimit({</span>
+export const deleteConversationLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   message: 'Demasiadas eliminaciones de conversaciones. Por favor, intente más tarde.',
@@ -178,7 +178,7 @@ export const deleteConversationLimiter = <span class="cstat-no" title="statement
   legacyHeaders: false
 });
 &nbsp;
-export const patchMessageLimiter = <span class="cstat-no" title="statement not covered" >rateLimit({</span>
+export const patchMessageLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,
   message: 'Demasiadas actualizaciones de mensajes. Por favor, intente más tarde.',
@@ -187,7 +187,7 @@ export const patchMessageLimiter = <span class="cstat-no" title="statement not c
 });
 &nbsp;
 /** Valoraciones pulgar arriba/abajo (independiente del PATCH de estado de entrega). */
-export const messageFeedbackLimiter = <span class="cstat-no" title="statement not covered" >rateLimit({</span>
+export const messageFeedbackLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 120,
   message: 'Demasiadas valoraciones seguidas. Espera un momento e inténtalo de nuevo.',
@@ -195,7 +195,7 @@ export const messageFeedbackLimiter = <span class="cstat-no" title="statement no
   legacyHeaders: false
 });
 &nbsp;
-export const sendMessageLimiter = <span class="cstat-no" title="statement not covered" >rateLimit({</span>
+export const sendMessageLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 20,
   message: 'Demasiados mensajes enviados. Por favor, espera un momento antes de intentar de nuevo.',
@@ -211,7 +211,7 @@ export const sendMessageLimiter = <span class="cstat-no" title="statement not co
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-07T20:28:51.097Z
+                at 2026-04-08T16:01:14.604Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

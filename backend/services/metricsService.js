@@ -32,6 +32,36 @@ class MetricsService {
   constructor() {
     // Métricas en memoria (para acceso rápido)
     this.inMemoryMetrics = {
+      chatUsage: {
+        conversationsCreated: 0,
+        messagesUserSaved: 0,
+        messagesAssistantSaved: 0,
+        messageFeedbackEvents: 0,
+        streamingRequests: 0,
+        streamingResponsesCompleted: 0,
+        guestSessionsCreated: 0,
+        guestMessagesUserSaved: 0,
+        guestMessagesAssistantSaved: 0,
+        errors: 0,
+        errorsByCode: {},
+        avgUserMessageChars: 0,
+        avgAssistantMessageChars: 0,
+        /** Solo memoria: rechazos 4xx y señales de producto (sin persistir en Mongo por evento). */
+        friction: {
+          total: 0,
+          byReason: {},
+          byHttpStatus: {},
+          bySurface: { registered: 0, guest: 0 }
+        },
+        /** Solo memoria: cómo exploran el chat (GETs). */
+        exploration: {
+          listConversations: 0,
+          listConversationsByPagination: { offset: 0, cursor: 0 },
+          loadConversationMessages: 0,
+          loadMessagesByPage: { first_page: 0, other_page: 0 },
+          guestLoadConversationMessages: 0
+        }
+      },
       emotionalAnalysis: {
         total: 0,
         byEmotion: {},
@@ -118,6 +148,60 @@ class MetricsService {
     const s = this.inMemoryMetrics.promptHistorySelectionSamples;
     s.totalSelections++;
     if (data.truncated) s.truncatedSelections++;
+  }
+
+  /**
+   * Fricción de producto (4xx esperados, validaciones): solo contadores en memoria.
+   * @param {string} reason - Clave estable (snake_case), p. ej. subscription_required_for_chat
+   * @param {{ httpStatus?: number, surface?: 'registered' | 'guest' }} [opts]
+   */
+  bumpChatFriction(reason, opts = {}) {
+    try {
+      if (!reason || typeof reason !== 'string') return;
+      const { httpStatus = null, surface = 'registered' } = opts;
+      const fr = this.inMemoryMetrics.chatUsage.friction;
+      fr.total++;
+      fr.byReason[reason] = (fr.byReason[reason] || 0) + 1;
+      if (httpStatus != null && Number.isFinite(httpStatus)) {
+        const k = String(Math.trunc(httpStatus));
+        fr.byHttpStatus[k] = (fr.byHttpStatus[k] || 0) + 1;
+      }
+      const surf = surface === 'guest' ? 'guest' : 'registered';
+      fr.bySurface[surf] = (fr.bySurface[surf] || 0) + 1;
+    } catch {
+      // no-op
+    }
+  }
+
+  /**
+   * Uso exploratorio del chat (GET list / historial): solo memoria.
+   * @param {'list_conversations' | 'load_messages' | 'guest_load_messages'} explorationType
+   * @param {{ paginationType?: string, page?: number }} [detail]
+   */
+  bumpChatExploration(explorationType, detail = {}) {
+    try {
+      const ex = this.inMemoryMetrics.chatUsage.exploration;
+      if (explorationType === 'list_conversations') {
+        ex.listConversations++;
+        const pt =
+          detail.paginationType === 'cursor' || detail.paginationType === 'offset'
+            ? detail.paginationType
+            : 'offset';
+        ex.listConversationsByPagination[pt] =
+          (ex.listConversationsByPagination[pt] || 0) + 1;
+      } else if (explorationType === 'load_messages') {
+        ex.loadConversationMessages++;
+        const page = parseInt(detail.page, 10);
+        const bucket =
+          Number.isFinite(page) && page === 1 ? 'first_page' : 'other_page';
+        ex.loadMessagesByPage[bucket] = (ex.loadMessagesByPage[bucket] || 0) + 1;
+      } else if (explorationType === 'guest_load_messages') {
+        ex.guestLoadConversationMessages =
+          (ex.guestLoadConversationMessages || 0) + 1;
+      }
+    } catch {
+      // no-op
+    }
   }
 
   async recordMetric(type, data, userId = null, metadata = {}) {
@@ -274,6 +358,58 @@ class MetricsService {
         else if (h === 'cleared') mf.cleared++;
         break;
       }
+
+      case 'chat_usage': {
+        const cu = this.inMemoryMetrics.chatUsage;
+        const action = data?.action;
+        const isGuest = data?.isGuest === true;
+
+        if (action === 'conversation_created') {
+          cu.conversationsCreated++;
+          if (isGuest) cu.guestSessionsCreated++;
+        }
+
+        if (action === 'user_message_saved') {
+          if (isGuest) cu.guestMessagesUserSaved++;
+          else cu.messagesUserSaved++;
+          const n = isGuest ? cu.guestMessagesUserSaved : cu.messagesUserSaved;
+          const chars = typeof data?.chars === 'number' ? data.chars : null;
+          if (chars != null) {
+            const cur = cu.avgUserMessageChars;
+            cu.avgUserMessageChars = ((cur * (n - 1)) + chars) / n;
+          }
+        }
+
+        if (action === 'assistant_message_saved') {
+          if (isGuest) cu.guestMessagesAssistantSaved++;
+          else cu.messagesAssistantSaved++;
+          const n = isGuest ? cu.guestMessagesAssistantSaved : cu.messagesAssistantSaved;
+          const chars = typeof data?.chars === 'number' ? data.chars : null;
+          if (chars != null) {
+            const cur = cu.avgAssistantMessageChars;
+            cu.avgAssistantMessageChars = ((cur * (n - 1)) + chars) / n;
+          }
+        }
+
+        if (action === 'streaming_request') {
+          cu.streamingRequests++;
+        }
+        if (action === 'streaming_done') {
+          cu.streamingResponsesCompleted++;
+        }
+
+        if (action === 'message_feedback') {
+          cu.messageFeedbackEvents++;
+        }
+
+        if (action === 'error') {
+          cu.errors++;
+          const code = data?.code || 'unknown';
+          cu.errorsByCode[code] = (cu.errorsByCode[code] || 0) + 1;
+        }
+
+        break;
+      }
     }
   }
 
@@ -381,6 +517,63 @@ class MetricsService {
           }
         : null;
 
+    const cu = this.inMemoryMetrics.chatUsage;
+    const chatUsage = {
+      conversationsCreated: cu.conversationsCreated,
+      messages: {
+        userSaved: cu.messagesUserSaved,
+        assistantSaved: cu.messagesAssistantSaved,
+        guestUserSaved: cu.guestMessagesUserSaved,
+        guestAssistantSaved: cu.guestMessagesAssistantSaved
+      },
+      streaming: {
+        requests: cu.streamingRequests,
+        completed: cu.streamingResponsesCompleted,
+        completionRate:
+          cu.streamingRequests > 0
+            ? ((cu.streamingResponsesCompleted / cu.streamingRequests) * 100).toFixed(2) + '%'
+            : '0%'
+      },
+      guest: {
+        sessionsCreated: cu.guestSessionsCreated
+      },
+      feedbackEvents: cu.messageFeedbackEvents,
+      errors: {
+        total: cu.errors,
+        byCode: cu.errorsByCode
+      },
+      averages: {
+        userMessageChars: Number.isFinite(cu.avgUserMessageChars)
+          ? cu.avgUserMessageChars.toFixed(1)
+          : '0.0',
+        assistantMessageChars: Number.isFinite(cu.avgAssistantMessageChars)
+          ? cu.avgAssistantMessageChars.toFixed(1)
+          : '0.0'
+      },
+      friction: {
+        total: cu.friction.total,
+        topReasons: Object.entries(cu.friction.byReason)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 15)
+          .reduce((acc, [k, v]) => {
+            acc[k] = v;
+            return acc;
+          }, {}),
+        byHttpStatus: cu.friction.byHttpStatus,
+        bySurface: cu.friction.bySurface
+      },
+      exploration: cu.exploration,
+      /** Pulgar arriba/abajo sobre respuestas guardadas (aprox. adopción de feedback). */
+      feedbackVsAssistantReplies: {
+        feedbackEvents: cu.messageFeedbackEvents,
+        assistantRepliesSaved: cu.messagesAssistantSaved,
+        eventsPerReply:
+          cu.messagesAssistantSaved > 0
+            ? Number((cu.messageFeedbackEvents / cu.messagesAssistantSaved).toFixed(4))
+            : null
+      }
+    };
+
     return {
       status: errorRate < 5 ? 'healthy' : errorRate < 10 ? 'degraded' : 'unhealthy',
       errorRate: errorRate.toFixed(2),
@@ -390,7 +583,8 @@ class MetricsService {
       activeSessions: this.inMemoryMetrics.sessionMemory.activeSessions,
       cacheStats: cacheStats,
       promptHistoryTruncation: promptHistory,
-      chatTemplateSignals
+      chatTemplateSignals,
+      chatUsage
     };
   }
 

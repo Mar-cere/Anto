@@ -18,6 +18,7 @@ import emotionalAnalyzer from './emotionalAnalyzer.js';
 import engagementTracker from './engagementTracker.js';
 import openaiService from './openaiService.js';
 import writingStyleDetector from './writingStyleDetector.js';
+import metricsService from './metricsService.js';
 import {
   detectAbruptToneChange,
   detectEmotionalEscalation,
@@ -74,6 +75,15 @@ export async function createGuestSession(ipHash) {
 
   const token = signGuestToken(guestSession._id);
 
+  metricsService
+    .recordMetric(
+      'chat_usage',
+      { action: 'conversation_created', isGuest: true },
+      null,
+      { guestSessionId: String(guestSession._id), conversationId: String(conversation._id) }
+    )
+    .catch(() => {});
+
   return {
     guestToken: token,
     conversationId: conversation._id.toString(),
@@ -103,6 +113,14 @@ export async function sendGuestMessage(guestSession, contentRaw) {
   if (!content) {
     const e = new Error('Contenido requerido');
     e.status = 400;
+    metricsService
+      .recordMetric(
+        'chat_usage',
+        { action: 'error', isGuest: true, code: e.code || e.status || 'GUEST_CONTENT_REQUIRED' },
+        null,
+        { guestSessionId: String(guestSession?._id || ''), conversationId: String(guestSession?.conversationId || '') }
+      )
+      .catch(() => {});
     throw e;
   }
   if (content.length > GUEST_MAX_CONTENT_LENGTH) {
@@ -111,6 +129,14 @@ export async function sendGuestMessage(guestSession, contentRaw) {
     );
     e.status = 400;
     e.code = 'GUEST_CONTENT_TOO_LONG';
+    metricsService
+      .recordMetric(
+        'chat_usage',
+        { action: 'error', isGuest: true, code: e.code },
+        null,
+        { guestSessionId: String(guestSession?._id || ''), conversationId: String(guestSession?.conversationId || '') }
+      )
+      .catch(() => {});
     throw e;
   }
 
@@ -123,6 +149,14 @@ export async function sendGuestMessage(guestSession, contentRaw) {
   if (!conversation) {
     const e = new Error('Conversación no encontrada');
     e.status = 404;
+    metricsService
+      .recordMetric(
+        'chat_usage',
+        { action: 'error', isGuest: true, code: e.code || e.status || 'GUEST_CONVERSATION_NOT_FOUND' },
+        null,
+        { guestSessionId: String(guestSession?._id || ''), conversationId: String(guestSession?.conversationId || '') }
+      )
+      .catch(() => {});
     throw e;
   }
 
@@ -137,6 +171,14 @@ export async function sendGuestMessage(guestSession, contentRaw) {
     e.status = 403;
     e.code = 'GUEST_LIMIT_REACHED';
     e.maxUserMessages = GUEST_MAX_USER_MESSAGES;
+    metricsService
+      .recordMetric(
+        'chat_usage',
+        { action: 'error', isGuest: true, code: e.code },
+        null,
+        { guestSessionId: String(guestSession?._id || ''), conversationId: String(guestSession?.conversationId || '') }
+      )
+      .catch(() => {});
     throw e;
   }
 
@@ -151,6 +193,15 @@ export async function sendGuestMessage(guestSession, contentRaw) {
     metadata: { status: 'sent', guest: true }
   });
   await userMessage.save();
+
+  metricsService
+    .recordMetric(
+      'chat_usage',
+      { action: 'user_message_saved', isGuest: true, chars: content.length },
+      null,
+      { guestSessionId: String(guestSession._id), conversationId: String(conversationId) }
+    )
+    .catch(() => {});
 
   await GuestSession.findByIdAndUpdate(guestSession._id, {
     $inc: { userMessagesUsed: 1 }
@@ -294,6 +345,15 @@ export async function sendGuestMessage(guestSession, contentRaw) {
   });
   await assistantMessage.save();
   await Conversation.findByIdAndUpdate(conversationId, { lastMessage: assistantMessage._id });
+
+  metricsService
+    .recordMetric(
+      'chat_usage',
+      { action: 'assistant_message_saved', isGuest: true, chars: (response.content || '').length },
+      null,
+      { guestSessionId: String(guestSession._id), conversationId: String(conversationId) }
+    )
+    .catch(() => {});
 
   const newCount = userCount + 1;
   const remaining = Math.max(0, GUEST_MAX_USER_MESSAGES - newCount);
