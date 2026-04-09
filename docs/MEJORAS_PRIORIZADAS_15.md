@@ -66,10 +66,6 @@ Revisar `explain()` en consultas de `IntenseChatCheckIn` y `Message`; considerar
 **Área:** frontend + API · **Impacto:** UX percepción de “Anto está respondiendo”  
 Hoy el cliente suele recibir la respuesta completa; valorar SSE/`getReader` donde exista, o animación de texto progresivo + cursor para reducir sensación de bloqueo.
 
-## 16. Regenerar la última respuesta del asistente (límite razonable)
-**Área:** frontend + backend · **Impacto:** control del usuario  
-Una acción por mensaje del bot (“Reintentar” / “Otra versión”) reutilizando el mismo mensaje de usuario; límites diarios para coste y abuso.
-
 ## 17. Preferencias de tono y longitud de respuesta
 **Área:** frontend + backend (prompt) · **Impacto:** personalización  
 “Breve / Normal / Más detallado” persistido en perfil o ajustes; pasar como señal al `openaiPromptBuilder` sin romper límites de tokens.
@@ -78,9 +74,6 @@ Una acción por mensaje del bot (“Reintentar” / “Otra versión”) reutili
 **Área:** backend · **Impacto:** UX multilingüe  
 Si el usuario escribe en otro idioma, responder en ese idioma o avisar con un mensaje corto; evitar mezclas incómodas en la misma conversación.
 
-## 19. Feedback “útil / no útil” en mensajes del asistente
-**Área:** frontend + backend · **Impacto:** producto y mejora del modelo  
-Botones discretos bajo la burbuja; guardar en metadata o tabla agregada (sin PII innecesaria) para priorizar mejoras de prompt.
 
 ## 20. Panel o bloque de recursos de crisis contextual
 **Área:** frontend (+ copy legal) · **Impacto:** seguridad percibida  
