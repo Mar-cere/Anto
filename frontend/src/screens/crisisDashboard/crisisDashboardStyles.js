@@ -1,8 +1,14 @@
 /**
  * Estilos para CrisisDashboardScreen y subcomponentes
+ * Alineados con globalStyles y patrón de tarjetas / opciones del perfil.
  */
 import { StyleSheet } from 'react-native';
 import { colors } from '../../styles/globalStyles';
+import { TYPOGRAPHY } from '../../constants/ui';
+
+/** Superficie de tarjeta (mismo criterio que ProfileScreen: CARD_BACKGROUND) */
+const CARD_SURFACE = colors.cardBackground;
+const CARD_BORDER = colors.border;
 
 export const styles = StyleSheet.create({
   container: {
@@ -18,9 +24,9 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: colors.white,
+    color: colors.textSecondary,
     marginTop: 16,
-    fontSize: 16,
+    fontSize: TYPOGRAPHY.BODY,
   },
   errorContainer: {
     flex: 1,
@@ -45,13 +51,13 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 20,
+    borderRadius: 12,
     marginTop: 24,
   },
   retryButtonText: {
     color: colors.white,
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: TYPOGRAPHY.BODY,
+    fontWeight: '600',
   },
   header: {
     flexDirection: 'row',
@@ -59,13 +65,15 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: CARD_BORDER,
   },
   backButton: {
     padding: 8,
   },
   title: {
-    fontSize: 24,
+    fontSize: TYPOGRAPHY.TITLE,
     fontWeight: 'bold',
     color: colors.white,
   },
@@ -82,11 +90,31 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  historyHeaderTextColumn: {
+    flex: 1,
+    marginRight: 8,
+  },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: TYPOGRAPHY.SUBTITLE,
+    fontWeight: '600',
     color: colors.white,
     marginBottom: 12,
+  },
+  sectionSubtitle: {
+    fontSize: TYPOGRAPHY.SMALL,
+    color: colors.textSecondary,
+    marginTop: -6,
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  sectionEmptyText: {
+    fontSize: TYPOGRAPHY.CAPTION,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: 28,
+    paddingHorizontal: 12,
+    lineHeight: 20,
   },
   periodSelectorContainer: {
     marginBottom: 16,
@@ -100,11 +128,13 @@ export const styles = StyleSheet.create({
   },
   summaryCard: {
     width: '48%',
-    backgroundColor: '#1D2B5F',
-    borderRadius: 16,
+    backgroundColor: CARD_SURFACE,
+    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
   },
   summaryValue: {
     fontSize: 32,
@@ -113,19 +143,20 @@ export const styles = StyleSheet.create({
     marginTop: 8,
   },
   summaryLabel: {
-    fontSize: 12,
-    color: colors.white,
-    opacity: 0.7,
+    fontSize: TYPOGRAPHY.SMALL,
+    color: colors.textSecondary,
     marginTop: 4,
     textAlign: 'center',
   },
   riskCard: {
-    backgroundColor: '#1D2B5F',
-    borderRadius: 16,
+    backgroundColor: CARD_SURFACE,
+    borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
   },
   riskLabel: {
     fontSize: 16,
@@ -144,16 +175,16 @@ export const styles = StyleSheet.create({
   },
   periodSelector: {
     flexDirection: 'row',
-    backgroundColor: '#1D2B5F',
-    borderRadius: 20,
+    backgroundColor: CARD_SURFACE,
+    borderRadius: 12,
     padding: 4,
     borderWidth: 1,
-    borderColor: 'rgba(26, 221, 219, 0.2)',
+    borderColor: CARD_BORDER,
   },
   periodButton: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 16,
+    borderRadius: 10,
     minWidth: 60,
     alignItems: 'center',
   },
@@ -161,19 +192,20 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   periodButtonText: {
-    color: colors.white,
-    fontSize: 12,
-    opacity: 0.7,
+    color: colors.textSecondary,
+    fontSize: TYPOGRAPHY.SMALL,
   },
   periodButtonTextActive: {
-    opacity: 1,
+    color: colors.white,
     fontWeight: 'bold',
   },
   chartContainer: {
-    backgroundColor: '#1D2B5F',
-    borderRadius: 16,
+    backgroundColor: CARD_SURFACE,
+    borderRadius: 12,
     padding: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
   },
   chart: {
     borderRadius: 16,
@@ -186,14 +218,16 @@ export const styles = StyleSheet.create({
   },
   trendText: {
     color: colors.white,
-    fontSize: 14,
+    fontSize: TYPOGRAPHY.CAPTION,
     marginLeft: 8,
   },
   historyItem: {
-    backgroundColor: '#1D2B5F',
-    borderRadius: 16,
+    backgroundColor: CARD_SURFACE,
+    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
   },
   historyHeader: {
     flexDirection: 'row',
@@ -215,20 +249,18 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
   },
   historyRisk: {
-    color: colors.white,
-    fontSize: 12,
-    opacity: 0.7,
+    color: colors.textSecondary,
+    fontSize: TYPOGRAPHY.SMALL,
     marginTop: 2,
   },
   historyPreview: {
-    color: colors.white,
-    fontSize: 14,
-    opacity: 0.8,
+    color: colors.textSecondary,
+    fontSize: TYPOGRAPHY.CAPTION,
     marginTop: 8,
   },
   viewAllText: {
     color: colors.primary,
-    fontSize: 14,
+    fontSize: TYPOGRAPHY.CAPTION,
     fontWeight: '600',
   },
   emptyContainer: {
@@ -237,19 +269,62 @@ export const styles = StyleSheet.create({
     marginTop: 40,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: TYPOGRAPHY.SUBTITLE,
+    fontWeight: '600',
     color: colors.white,
     marginTop: 16,
   },
   emptyMessage: {
-    fontSize: 14,
-    color: colors.white,
-    opacity: 0.7,
+    fontSize: TYPOGRAPHY.CAPTION,
+    color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
   },
   bottomPadding: {
     height: 40,
+  },
+  /** Bloque apoyo: mismas bases que optionButton del perfil */
+  supportTitle: {
+    fontSize: TYPOGRAPHY.SUBTITLE,
+    fontWeight: '600',
+    color: colors.white,
+    marginBottom: 8,
+  },
+  supportSubtitle: {
+    fontSize: TYPOGRAPHY.SMALL,
+    color: colors.textSecondary,
+    lineHeight: 17,
+    marginBottom: 14,
+  },
+  supportAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: CARD_SURFACE,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
+  },
+  supportActionLast: {
+    marginBottom: 0,
+  },
+  supportActionIcon: {
+    marginRight: 16,
+  },
+  supportActionTextBlock: {
+    flex: 1,
+  },
+  supportActionTitle: {
+    fontSize: TYPOGRAPHY.BODY,
+    color: colors.white,
+  },
+  supportActionHint: {
+    fontSize: TYPOGRAPHY.SMALL,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  supportChevron: {
+    marginLeft: 8,
   },
 });

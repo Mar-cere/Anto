@@ -8,17 +8,24 @@ import { styles } from './crisisDashboardStyles';
 import { TEXTS } from './crisisDashboardConstants';
 
 export function CrisisDashboardHistory({ history, formatDate, getRiskLevelColor, getRiskLevelText, onViewAll }) {
-  if (!history || history.length === 0) return null;
+  const items = Array.isArray(history) ? history : [];
+  const hasItems = items.length > 0;
 
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{TEXTS.HISTORY}</Text>
-        <TouchableOpacity onPress={onViewAll}>
+        <View style={styles.historyHeaderTextColumn}>
+          <Text style={styles.sectionTitle}>{TEXTS.HISTORY}</Text>
+          <Text style={styles.sectionSubtitle}>{TEXTS.HISTORY_RECENT_NOTE}</Text>
+        </View>
+        <TouchableOpacity onPress={onViewAll} accessibilityRole="button">
           <Text style={styles.viewAllText}>{TEXTS.VIEW_ALL}</Text>
         </TouchableOpacity>
       </View>
-      {history.map((crisis, index) => (
+      {!hasItems && (
+        <Text style={[styles.sectionEmptyText, { paddingVertical: 16 }]}>{TEXTS.EMPTY_HISTORY_RECENT}</Text>
+      )}
+      {hasItems && items.map((crisis, index) => (
         <View key={crisis._id || index} style={styles.historyItem}>
           <View style={styles.historyHeader}>
             <View

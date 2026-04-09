@@ -11,28 +11,37 @@ import { colors } from '../../styles/globalStyles';
 export function CrisisDashboardSummary({ summary, getRiskLevelColor, getRiskLevelText }) {
   if (!summary) return null;
 
+  const totalCrises = Number(summary.totalCrises) || 0;
+  const crisesThisMonth = Number(summary.crisesThisMonth) || 0;
+  const recentCrises = Number(summary.recentCrises) || 0;
+  const rate = Number(summary.resolutionRate);
+  const resolutionPct = Number.isFinite(rate)
+    ? Math.round(Math.max(0, Math.min(1, rate)) * 100)
+    : 0;
+
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{TEXTS.SUMMARY}</Text>
+      <Text style={styles.sectionSubtitle}>{TEXTS.SUMMARY_PERIOD_NOTE}</Text>
       <View style={styles.summaryGrid}>
         <View style={styles.summaryCard}>
           <MaterialCommunityIcons name="alert-circle" size={32} color={colors.primary} />
-          <Text style={styles.summaryValue}>{summary.totalCrises}</Text>
+          <Text style={styles.summaryValue}>{totalCrises}</Text>
           <Text style={styles.summaryLabel}>{TEXTS.TOTAL_CRISES}</Text>
         </View>
         <View style={styles.summaryCard}>
           <MaterialCommunityIcons name="calendar-month" size={32} color={colors.primary} />
-          <Text style={styles.summaryValue}>{summary.crisesThisMonth}</Text>
+          <Text style={styles.summaryValue}>{crisesThisMonth}</Text>
           <Text style={styles.summaryLabel}>{TEXTS.THIS_MONTH}</Text>
         </View>
         <View style={styles.summaryCard}>
           <MaterialCommunityIcons name="clock-outline" size={32} color={colors.primary} />
-          <Text style={styles.summaryValue}>{summary.recentCrises}</Text>
+          <Text style={styles.summaryValue}>{recentCrises}</Text>
           <Text style={styles.summaryLabel}>{TEXTS.RECENT}</Text>
         </View>
         <View style={styles.summaryCard}>
           <MaterialCommunityIcons name="check-circle" size={32} color="#4ECDC4" />
-          <Text style={styles.summaryValue}>{Math.round(summary.resolutionRate * 100)}%</Text>
+          <Text style={styles.summaryValue}>{resolutionPct}%</Text>
           <Text style={styles.summaryLabel}>{TEXTS.RESOLUTION_RATE}</Text>
         </View>
       </View>

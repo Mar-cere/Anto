@@ -115,6 +115,17 @@ describe('useCrisisDashboardScreen', () => {
     expect(result.current.trendPeriod).toBe('7d');
   });
 
+  it('setTrendPeriod ignora periodos no permitidos', async () => {
+    const { result } = renderHook(() => useCrisisDashboardScreen());
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    act(() => {
+      result.current.setTrendPeriod('invalid');
+    });
+    expect(result.current.trendPeriod).toBe('30d');
+  });
+
   it('getRiskLevelColor devuelve color para LOW y fallback para desconocido', async () => {
     const { result } = renderHook(() => useCrisisDashboardScreen());
     await act(async () => {
@@ -132,6 +143,8 @@ describe('useCrisisDashboardScreen', () => {
     });
     expect(result.current.getRiskLevelText('LOW')).toBe('Bajo');
     expect(result.current.getRiskLevelText('unknown')).toBe('unknown');
+    expect(result.current.getRiskLevelText(null)).toBe('—');
+    expect(result.current.getRiskLevelText('')).toBe('—');
   });
 
   it('formatDate formatea fecha en es-ES', async () => {
@@ -143,6 +156,16 @@ describe('useCrisisDashboardScreen', () => {
     expect(formatted).toMatch(/\d{2}/);
     expect(formatted).toMatch(/jun|june|06/i);
     expect(formatted).toMatch(/2025/);
+  });
+
+  it('formatDate devuelve em dash para fecha inválida o vacía', async () => {
+    const { result } = renderHook(() => useCrisisDashboardScreen());
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(result.current.formatDate('not-a-date')).toBe('—');
+    expect(result.current.formatDate(null)).toBe('—');
+    expect(result.current.formatDate('')).toBe('—');
   });
 
   it('formatTrendData sin datos retorna Sin datos', async () => {
@@ -181,6 +204,39 @@ describe('useCrisisDashboardScreen', () => {
     });
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBe('Network error');
+  });
+
+  it('si el resumen carga pero otro endpoint falla, no hay error global', async () => {
+    api.get.mockImplementation((path) => {
+      if (path === '/api/crisis/trends') return Promise.reject(new Error('timeout'));
+      if (path === '/api/crisis/summary') {
+        return Promise.resolve({
+          success: true,
+          data: {
+            totalCrises: 2,
+            averageRiskLevel: 'LOW',
+            crisesThisMonth: 1,
+            recentCrises: 1,
+            resolutionRate: 0.5,
+          },
+        });
+      }
+      const base = { success: true, data: null };
+      if (path === '/api/crisis/by-month') return Promise.resolve({ ...base, data: [] });
+      if (path === '/api/crisis/emotion-distribution') {
+        return Promise.resolve({ ...base, data: { distribution: {}, total: 0 } });
+      }
+      if (path === '/api/crisis/history') return Promise.resolve({ ...base, data: { crises: [] } });
+      return Promise.resolve(base);
+    });
+    const { result } = renderHook(() => useCrisisDashboardScreen());
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 120));
+    });
+    expect(result.current.error).toBe(null);
+    expect(result.current.summary).toMatchObject({ totalCrises: 2 });
+    expect(result.current.trends).toBe(null);
+    expect(result.current.loading).toBe(false);
   });
 
   it('getTrendLabel/getTrendIcon/getTrendIconColor con trend improving', async () => {

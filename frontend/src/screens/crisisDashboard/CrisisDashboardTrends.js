@@ -21,15 +21,16 @@ export function CrisisDashboardTrends({
   getTrendIcon,
   getTrendIconColor,
 }) {
-  if (!trends) return null;
-
   const trendLabel = getTrendLabel();
   const trendIcon = getTrendIcon();
   const trendIconColor = getTrendIconColor() || colors.primary;
 
+  const hasTrendPoints = trends?.dataPoints?.length > 0;
+
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{TEXTS.TRENDS}</Text>
+      <Text style={styles.sectionSubtitle}>{TEXTS.TRENDS_PERIOD_HINT}</Text>
       <View style={styles.periodSelectorContainer}>
         <View style={styles.periodSelector}>
           {TREND_PERIODS.map((period) => (
@@ -54,22 +55,26 @@ export function CrisisDashboardTrends({
         </View>
       </View>
       <View style={styles.chartContainer}>
-        <LineChart
-          data={formatTrendData()}
-          width={width - 40}
-          height={CHART_HEIGHT}
-          chartConfig={CHART_CONFIG}
-          bezier
-          style={styles.chart}
-          withInnerLines={false}
-          withOuterLines
-          withVerticalLabels
-          withHorizontalLabels
-          withDots
-          withShadow={false}
-        />
+        {hasTrendPoints ? (
+          <LineChart
+            data={formatTrendData()}
+            width={width - 40}
+            height={CHART_HEIGHT}
+            chartConfig={CHART_CONFIG}
+            bezier
+            style={styles.chart}
+            withInnerLines={false}
+            withOuterLines
+            withVerticalLabels
+            withHorizontalLabels
+            withDots
+            withShadow={false}
+          />
+        ) : (
+          <Text style={styles.sectionEmptyText}>{TEXTS.EMPTY_TRENDS}</Text>
+        )}
       </View>
-      {trendLabel && trendIcon && (
+      {hasTrendPoints && trendLabel && trendIcon && (
         <View style={styles.trendInfo}>
           <MaterialCommunityIcons name={trendIcon} size={20} color={trendIconColor} />
           <Text style={styles.trendText}>{trendLabel}</Text>

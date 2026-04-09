@@ -8,7 +8,41 @@ import {
   EMOTION_COLORS,
   RISK_LEVEL_COLORS,
   RISK_LEVEL_TEXTS,
+  TREND_PERIODS,
 } from './crisisDashboardConstants';
+
+function normalizeSummary(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const rate = Number(raw.resolutionRate);
+  return {
+    ...raw,
+    totalCrises: Number(raw.totalCrises) || 0,
+    crisesThisMonth: Number(raw.crisesThisMonth) || 0,
+    recentCrises: Number(raw.recentCrises) || 0,
+    resolutionRate: Number.isFinite(rate) ? Math.max(0, Math.min(1, rate)) : 0,
+    averageRiskLevel: raw.averageRiskLevel || 'LOW',
+  };
+}
+
+function reasonToMessage(reason) {
+  if (reason instanceof Error) return reason.message || TEXTS.ERROR_UNKNOWN;
+  if (reason && typeof reason === 'object' && reason.message != null) {
+    return String(reason.message);
+  }
+  return TEXTS.ERROR_UNKNOWN;
+}
+
+function pickSummaryFailureMessage(settledSummary) {
+  if (settledSummary.status === 'rejected') {
+    return reasonToMessage(settledSummary.reason);
+  }
+  const v = settledSummary.value;
+  if (v && typeof v === 'object') {
+    if (typeof v.message === 'string' && v.message.length > 0) return v.message;
+    if (typeof v.error === 'string' && v.error.length > 0) return v.error;
+  }
+  return TEXTS.ERROR;
+}
 
 export function useCrisisDashboardScreen() {
   const [loading, setLoading] = useState(true);
@@ -24,7 +58,7 @@ export function useCrisisDashboardScreen() {
   const loadData = useCallback(async () => {
     try {
       setError(null);
-      const [summaryRes, trendsRes, monthlyRes, distributionRes, historyRes] = await Promise.all([
+      const settled = await Promise.allSettled([
         api.get(ENDPOINTS.CRISIS_SUMMARY, { days: '30' }),
         api.get(ENDPOINTS.CRISIS_TRENDS, { period: trendPeriod }),
         api.get(ENDPOINTS.CRISIS_BY_MONTH, { months: '6' }),
@@ -32,14 +66,88 @@ export function useCrisisDashboardScreen() {
         api.get(ENDPOINTS.CRISIS_HISTORY, { limit: '5' }),
       ]);
 
-      if (summaryRes.success) setSummary(summaryRes.data);
-      if (trendsRes.success) setTrends(trendsRes.data);
-      if (monthlyRes.success) setCrisisByMonth(monthlyRes.data);
-      if (distributionRes.success) setEmotionDistribution(distributionRes.data);
-      if (historyRes.success) setHistory(historyRes.data?.crises || []);
+      let summaryOk = false;
+
+      const s0 = settled[0];
+      if (
+        s0.status === 'fulfilled' &&
+        s0.value?.success &&
+        s0.value.data != null &&
+        typeof s0.value.data === 'object' &&
+        !Array.isArray(s0.value.data)
+      ) {
+        const normalized = normalizeSummary(s0.value.data);
+        if (normalized) {
+          setSummary(normalized);
+          summaryOk = true;
+        } else {
+          setSummary(null);
+        }
+      } else {
+        setSummary(null);
+      }
+
+      const s1 = settled[1];
+      if (
+        s1.status === 'fulfilled' &&
+        s1.value?.success &&
+        s1.value.data != null &&
+        typeof s1.value.data === 'object'
+      ) {
+        const v = s1.value.data;
+        const pts = Array.isArray(v.dataPoints) ? v.dataPoints : [];
+        setTrends({ ...v, dataPoints: pts });
+      } else {
+        setTrends(null);
+      }
+
+      const s2 = settled[2];
+      if (s2.status === 'fulfilled' && s2.value?.success && Array.isArray(s2.value.data)) {
+        setCrisisByMonth(s2.value.data);
+      } else {
+        setCrisisByMonth([]);
+      }
+
+      const s3 = settled[3];
+      if (
+        s3.status === 'fulfilled' &&
+        s3.value?.success &&
+        s3.value.data != null &&
+        typeof s3.value.data === 'object'
+      ) {
+        const d = s3.value.data;
+        const dist =
+          d.distribution != null && typeof d.distribution === 'object' && !Array.isArray(d.distribution)
+            ? d.distribution
+            : {};
+        setEmotionDistribution({
+          ...d,
+          distribution: dist,
+          total: Number(d.total) || 0,
+        });
+      } else {
+        setEmotionDistribution(null);
+      }
+
+      const s4 = settled[4];
+      if (
+        s4.status === 'fulfilled' &&
+        s4.value?.success &&
+        s4.value.data != null &&
+        typeof s4.value.data === 'object'
+      ) {
+        const c = s4.value.data.crises;
+        setHistory(Array.isArray(c) ? c : []);
+      } else {
+        setHistory([]);
+      }
+
+      if (!summaryOk) {
+        setError(pickSummaryFailureMessage(s0));
+      }
     } catch (err) {
       console.error('Error cargando métricas:', err);
-      setError(err.message);
+      setError(err?.message != null ? String(err.message) : TEXTS.ERROR_UNKNOWN);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -56,6 +164,9 @@ export function useCrisisDashboardScreen() {
   }, [loadData]);
 
   const setTrendPeriodAndReload = useCallback((period) => {
+    if (!TREND_PERIODS.includes(period)) {
+      return;
+    }
     setTrendPeriod(period);
     setRefreshing(true);
   }, []);
@@ -65,10 +176,14 @@ export function useCrisisDashboardScreen() {
       return { labels: ['Sin datos'], datasets: [{ data: [0] }] };
     }
     const labels = trends.dataPoints.map((point) => {
-      const date = new Date(point.date);
+      const date = new Date(point?.date);
+      if (Number.isNaN(date.getTime())) return TEXTS.DATE_UNAVAILABLE;
       return `${date.getDate()}/${date.getMonth() + 1}`;
     });
-    const data = trends.dataPoints.map((point) => point.intensity);
+    const data = trends.dataPoints.map((point) => {
+      const n = Number(point?.intensity);
+      return Number.isFinite(n) ? n : 0;
+    });
     return {
       labels: labels.length > 10 ? labels.filter((_, i) => i % 2 === 0) : labels,
       datasets: [{ data }],
@@ -79,18 +194,23 @@ export function useCrisisDashboardScreen() {
     if (!crisisByMonth || crisisByMonth.length === 0) {
       return { labels: ['Sin datos'], datasets: [{ data: [0] }] };
     }
-    const labels = crisisByMonth.map((item) => item.month);
-    const data = crisisByMonth.map((item) => item.crises);
+    const labels = crisisByMonth.map((item) =>
+      item != null && item.month != null ? String(item.month) : TEXTS.DATE_UNAVAILABLE
+    );
+    const data = crisisByMonth.map((item) => {
+      const n = Number(item?.crises);
+      return Number.isFinite(n) ? n : 0;
+    });
     return { labels, datasets: [{ data }] };
   }, [crisisByMonth]);
 
   const formatEmotionDistribution = useCallback(() => {
     if (!emotionDistribution?.distribution) return [];
     return Object.entries(emotionDistribution.distribution)
-      .filter(([, value]) => value > 0)
+      .filter(([, value]) => Number(value) > 0)
       .map(([emotion, value]) => ({
         name: emotion.charAt(0).toUpperCase() + emotion.slice(1),
-        value: Math.round(value * 100),
+        value: Math.round(Number(value) * 100),
         color: EMOTION_COLORS[emotion] || '#1ADDDB',
         legendFontColor: '#ffffff',
         legendFontSize: 12,
@@ -102,11 +222,14 @@ export function useCrisisDashboardScreen() {
   }, []);
 
   const getRiskLevelText = useCallback((level) => {
-    return RISK_LEVEL_TEXTS[level] || level;
+    if (level != null && RISK_LEVEL_TEXTS[level]) return RISK_LEVEL_TEXTS[level];
+    return level != null && level !== '' ? String(level) : '—';
   }, []);
 
   const formatDate = useCallback((dateString) => {
+    if (dateString == null || dateString === '') return TEXTS.DATE_UNAVAILABLE;
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return TEXTS.DATE_UNAVAILABLE;
     return date.toLocaleDateString('es-ES', {
       day: '2-digit',
       month: 'short',
@@ -132,7 +255,7 @@ export function useCrisisDashboardScreen() {
     return 'trending-neutral';
   }, [trends]);
 
-  const getTrendIconColor = useCallback(() => {
+  const getTrendInlineColor = useCallback(() => {
     if (!trends?.trend) return null;
     if (trends.trend === 'improving') return '#4ECDC4';
     if (trends.trend === 'declining') return '#FF6B6B';
@@ -160,6 +283,6 @@ export function useCrisisDashboardScreen() {
     formatDate,
     getTrendLabel,
     getTrendIcon,
-    getTrendIconColor,
+    getTrendIconColor: getTrendInlineColor,
   };
 }

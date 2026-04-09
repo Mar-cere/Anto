@@ -8,6 +8,7 @@ import { RefreshControl, SafeAreaView, ScrollView, StatusBar, View } from 'react
 import { colors } from '../styles/globalStyles';
 import { useCrisisDashboardScreen } from './crisisDashboard/useCrisisDashboardScreen';
 import { CrisisDashboardHeader } from './crisisDashboard/CrisisDashboardHeader';
+import { CrisisDashboardSupportSection } from './crisisDashboard/CrisisDashboardSupportSection';
 import { CrisisDashboardLoadingView } from './crisisDashboard/CrisisDashboardLoadingView';
 import { CrisisDashboardErrorView } from './crisisDashboard/CrisisDashboardErrorView';
 import { CrisisDashboardSummary } from './crisisDashboard/CrisisDashboardSummary';
@@ -17,6 +18,7 @@ import { CrisisDashboardEmotionPie } from './crisisDashboard/CrisisDashboardEmot
 import { CrisisDashboardHistory } from './crisisDashboard/CrisisDashboardHistory';
 import { CrisisDashboardEmpty } from './crisisDashboard/CrisisDashboardEmpty';
 import { styles } from './crisisDashboard/crisisDashboardStyles';
+import { crisisSafeGoBack, crisisSafeNavigate } from './crisisDashboard/crisisDashboardNavigate';
 
 export default function CrisisDashboardScreen() {
   const navigation = useNavigation();
@@ -65,7 +67,9 @@ export default function CrisisDashboardScreen() {
           />
         }
       >
-        <CrisisDashboardHeader onBack={() => navigation.goBack()} />
+        <CrisisDashboardHeader onBack={() => crisisSafeGoBack(navigation)} />
+
+        <CrisisDashboardSupportSection navigation={navigation} />
 
         <CrisisDashboardSummary
           summary={summary}
@@ -98,7 +102,7 @@ export default function CrisisDashboardScreen() {
           formatDate={formatDate}
           getRiskLevelColor={getRiskLevelColor}
           getRiskLevelText={getRiskLevelText}
-          onViewAll={() => {}}
+          onViewAll={() => crisisSafeNavigate(navigation, 'EmergencyAlertsHistory')}
         />
 
         {summary && summary.totalCrises === 0 && <CrisisDashboardEmpty />}

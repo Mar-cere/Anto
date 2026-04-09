@@ -14,22 +14,33 @@ import {
   RISK_LEVEL_COLORS,
   RISK_LEVEL_TEXTS,
   TREND_PERIODS,
+  CRISIS_ERROR_DETAIL_MAX_LEN,
 } from '../crisisDashboardConstants';
 
 describe('crisisDashboardConstants', () => {
   describe('TEXTS', () => {
     it('debe tener título y textos de carga/error', () => {
       expect(TEXTS.TITLE).toBe('Dashboard de Crisis');
+      expect(TEXTS.SUPPORT_TITLE).toBeDefined();
+      expect(TEXTS.SUPPORT_CONTACTS_CTA).toBeDefined();
+      expect(TEXTS.SUPPORT_CHAT_CTA).toBeDefined();
       expect(TEXTS.LOADING).toBe('Cargando métricas...');
       expect(TEXTS.ERROR).toBeDefined();
+      expect(TEXTS.ERROR_UNKNOWN).toBeDefined();
+      expect(TEXTS.DATE_UNAVAILABLE).toBe('—');
       expect(TEXTS.RETRY).toBe('Reintentar');
     });
     it('debe tener secciones y etiquetas', () => {
       expect(TEXTS.SUMMARY).toBe('Resumen');
+      expect(TEXTS.SUMMARY_PERIOD_NOTE).toContain('30');
       expect(TEXTS.TRENDS).toBe('Tendencias Emocionales');
+      expect(TEXTS.TRENDS_PERIOD_HINT).toBeDefined();
       expect(TEXTS.CRISIS_BY_MONTH).toBe('Crisis por Mes');
+      expect(TEXTS.CRISIS_BY_MONTH_PERIOD).toContain('6');
       expect(TEXTS.EMOTION_DISTRIBUTION).toBe('Distribución de Emociones');
+      expect(TEXTS.EMOTION_DISTRIBUTION_PERIOD).toBeDefined();
       expect(TEXTS.HISTORY).toBe('Historial de Crisis');
+      expect(TEXTS.HISTORY_RECENT_NOTE).toBeDefined();
       expect(TEXTS.TOTAL_CRISES).toBe('Total de Crisis');
       expect(TEXTS.THIS_MONTH).toBe('Este Mes');
       expect(TEXTS.RECENT).toBe('Recientes (7 días)');
@@ -49,6 +60,10 @@ describe('crisisDashboardConstants', () => {
       expect(TEXTS.VIEW_ALL).toBe('Ver Todo');
       expect(TEXTS.NO_CRISIS).toBeDefined();
       expect(TEXTS.NO_CRISIS_MESSAGE).toBeDefined();
+      expect(TEXTS.EMPTY_TRENDS).toBeDefined();
+      expect(TEXTS.EMPTY_MONTHLY_CHART).toBeDefined();
+      expect(TEXTS.EMPTY_EMOTION_DISTRIBUTION).toBeDefined();
+      expect(TEXTS.EMPTY_HISTORY_RECENT).toBeDefined();
       expect(TEXTS.TREND_IMPROVING).toBe('Mejorando');
       expect(TEXTS.TREND_DECLINING).toBe('Deteriorando');
       expect(TEXTS.TREND_STABLE).toBe('Estable');
@@ -114,6 +129,12 @@ describe('crisisDashboardConstants', () => {
   describe('TREND_PERIODS', () => {
     it('debe ser array 7d, 30d, 90d', () => {
       expect(TREND_PERIODS).toEqual(['7d', '30d', '90d']);
+    });
+  });
+
+  describe('CRISIS_ERROR_DETAIL_MAX_LEN', () => {
+    it('debe ser un entero positivo', () => {
+      expect(CRISIS_ERROR_DETAIL_MAX_LEN).toBeGreaterThan(0);
     });
   });
 });

@@ -10,26 +10,33 @@ import { TEXTS, CHART_HEIGHT, PIE_CHART_CONFIG } from './crisisDashboardConstant
 const { width } = Dimensions.get('window');
 
 export function CrisisDashboardEmotionPie({ emotionDistribution, formatEmotionDistribution }) {
-  if (!emotionDistribution || emotionDistribution.total === 0) return null;
-
   const data = formatEmotionDistribution();
-  if (data.length === 0) return null;
+  const hasPie =
+    emotionDistribution &&
+    emotionDistribution.total > 0 &&
+    Array.isArray(data) &&
+    data.length > 0;
 
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{TEXTS.EMOTION_DISTRIBUTION}</Text>
+      <Text style={styles.sectionSubtitle}>{TEXTS.EMOTION_DISTRIBUTION_PERIOD}</Text>
       <View style={styles.chartContainer}>
-        <PieChart
-          data={data}
-          width={width - 40}
-          height={CHART_HEIGHT}
-          chartConfig={PIE_CHART_CONFIG}
-          accessor="value"
-          backgroundColor="transparent"
-          paddingLeft="15"
-          style={styles.chart}
-          absolute
-        />
+        {hasPie ? (
+          <PieChart
+            data={data}
+            width={width - 40}
+            height={CHART_HEIGHT}
+            chartConfig={PIE_CHART_CONFIG}
+            accessor="value"
+            backgroundColor="transparent"
+            paddingLeft="15"
+            style={styles.chart}
+            absolute
+          />
+        ) : (
+          <Text style={styles.sectionEmptyText}>{TEXTS.EMPTY_EMOTION_DISTRIBUTION}</Text>
+        )}
       </View>
     </View>
   );
