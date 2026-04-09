@@ -4,13 +4,32 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { styles } from './emergencyAlertsHistoryStyles';
 import { TEXTS } from './emergencyAlertsHistoryConstants';
 import { colors } from '../../styles/globalStyles';
+import { countPatternPeriodAlerts } from './emergencyAlertsHistoryUtils';
 
 export function PatternsTab({ patterns }) {
-  if (!patterns) return null;
+  if (patterns == null || typeof patterns !== 'object' || Array.isArray(patterns)) {
+    return null;
+  }
+
+  const totalInPeriod = countPatternPeriodAlerts(patterns);
+  const insufficient = totalInPeriod < 2;
 
   return (
-    <View style={styles.tabContent}>
-      {patterns.frequency && (
+    <>
+      <View style={styles.summaryCard}>
+        <Text style={styles.summaryTitle}>{TEXTS.PATTERNS_TAB_SUMMARY_TITLE}</Text>
+        <Text style={styles.summaryValue}>{totalInPeriod}</Text>
+        <Text style={styles.summaryHint}>{TEXTS.PATTERNS_TAB_SUMMARY_HINT}</Text>
+      </View>
+
+      {insufficient ? (
+        <View style={styles.statsTabEmptyWrap}>
+          <Text style={styles.emptyTitle}>{TEXTS.PATTERNS_TAB_EMPTY_TITLE}</Text>
+          <Text style={styles.emptyMessage}>{TEXTS.PATTERNS_TAB_EMPTY_MESSAGE}</Text>
+        </View>
+      ) : null}
+
+      {!insufficient && patterns.frequency && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{TEXTS.FREQUENCY}</Text>
           <View style={styles.patternCard}>
@@ -44,7 +63,7 @@ export function PatternsTab({ patterns }) {
         </View>
       )}
 
-      {patterns.riskLevelTrend && (
+      {!insufficient && patterns.riskLevelTrend && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{TEXTS.RISK_TREND}</Text>
           <View style={styles.patternCard}>
@@ -78,7 +97,7 @@ export function PatternsTab({ patterns }) {
         </View>
       )}
 
-      {patterns.timePatterns && (
+      {!insufficient && patterns.timePatterns && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{TEXTS.TIME_PATTERNS}</Text>
           {patterns.timePatterns.mostCommonDays?.length > 0 && (
@@ -101,9 +120,11 @@ export function PatternsTab({ patterns }) {
               ))}
             </View>
           )}
-          {patterns.timePatterns.weekendVsWeekday && (
+          {patterns.timePatterns.weekendVsWeekday &&
+            (patterns.timePatterns.weekendVsWeekday.weekend > 0 ||
+              patterns.timePatterns.weekendVsWeekday.weekday > 0) && (
             <View style={styles.patternCard}>
-              <Text style={styles.patternSubtitle}>Fin de Semana vs Día de Semana</Text>
+              <Text style={styles.patternSubtitle}>{TEXTS.PATTERNS_WEEKEND_VS_WEEKDAY}</Text>
               <View style={styles.patternItem}>
                 <Text style={styles.patternItemText}>
                   {TEXTS.WEEKEND}: {patterns.timePatterns.weekendVsWeekday.weekend} alertas
@@ -119,7 +140,7 @@ export function PatternsTab({ patterns }) {
         </View>
       )}
 
-      {patterns.contactReliability && Object.keys(patterns.contactReliability).length > 0 && (
+      {!insufficient && patterns.contactReliability && Object.keys(patterns.contactReliability).length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{TEXTS.CONTACT_RELIABILITY}</Text>
           {Object.entries(patterns.contactReliability).map(([email, reliability]) => (
@@ -149,6 +170,6 @@ export function PatternsTab({ patterns }) {
           ))}
         </View>
       )}
-    </View>
+    </>
   );
 }

@@ -9,6 +9,7 @@ import {
   CHART_CONFIG,
   PIE_CHART_CONFIG,
 } from './emergencyAlertsHistoryConstants';
+import { safeNonNegativeInt } from './emergencyAlertsHistoryUtils';
 
 export function StatsTab({
   stats,
@@ -17,7 +18,10 @@ export function StatsTab({
   formatChannelData,
   formatDayData,
 }) {
-  if (!stats) return null;
+  if (stats == null || typeof stats !== 'object' || Array.isArray(stats)) return null;
+
+  const total = safeNonNegativeInt(stats.total, 0);
+  const isEmpty = total === 0;
 
   const riskData = formatRiskLevelData();
   const statusData = formatStatusData();
@@ -25,13 +29,21 @@ export function StatsTab({
   const dayData = formatDayData();
 
   return (
-    <View style={styles.tabContent}>
+    <>
       <View style={styles.summaryCard}>
         <Text style={styles.summaryTitle}>{TEXTS.TOTAL_ALERTS}</Text>
-        <Text style={styles.summaryValue}>{stats.total}</Text>
+        <Text style={styles.summaryValue}>{total}</Text>
+        <Text style={styles.summaryHint}>{TEXTS.STATS_TAB_SUMMARY_HINT}</Text>
       </View>
 
-      {riskData && (
+      {isEmpty ? (
+        <View style={styles.statsTabEmptyWrap}>
+          <Text style={styles.emptyTitle}>{TEXTS.STATS_TAB_EMPTY_TITLE}</Text>
+          <Text style={styles.emptyMessage}>{TEXTS.STATS_TAB_EMPTY_MESSAGE}</Text>
+        </View>
+      ) : null}
+
+      {!isEmpty && riskData && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{TEXTS.BY_RISK_LEVEL}</Text>
           <View style={styles.chartContainer}>
@@ -48,7 +60,7 @@ export function StatsTab({
         </View>
       )}
 
-      {statusData && statusData.length > 0 && (
+      {!isEmpty && statusData && statusData.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{TEXTS.BY_STATUS}</Text>
           <View style={styles.chartContainer}>
@@ -66,7 +78,7 @@ export function StatsTab({
         </View>
       )}
 
-      {channelData && (
+      {!isEmpty && channelData && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{TEXTS.BY_CHANNEL}</Text>
           <View style={styles.chartContainer}>
@@ -83,7 +95,7 @@ export function StatsTab({
         </View>
       )}
 
-      {dayData && dayData.labels?.length > 0 && (
+      {!isEmpty && dayData && dayData.labels?.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{TEXTS.BY_DAY}</Text>
           <View style={styles.chartContainer}>
@@ -99,34 +111,47 @@ export function StatsTab({
         </View>
       )}
 
-      {stats.byContact && Object.keys(stats.byContact).length > 0 && (
+      {!isEmpty &&
+        stats.byContact &&
+        typeof stats.byContact === 'object' &&
+        !Array.isArray(stats.byContact) &&
+        Object.keys(stats.byContact).length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{TEXTS.BY_CONTACT}</Text>
-          {Object.entries(stats.byContact).map(([email, contactStats]) => (
+          {Object.entries(stats.byContact).map(([email, contactStats]) => {
+            if (contactStats == null || typeof contactStats !== 'object') return null;
+            const name =
+              contactStats.name != null && String(contactStats.name).trim() !== ''
+                ? String(contactStats.name)
+                : email;
+            return (
             <View key={email} style={styles.contactCard}>
-              <Text style={styles.contactName}>{contactStats.name}</Text>
+              <Text style={styles.contactName}>{name}</Text>
               <View style={styles.contactStats}>
                 <View style={styles.contactStat}>
                   <Text style={styles.contactStatLabel}>{TEXTS.TOTAL}:</Text>
-                  <Text style={styles.contactStatValue}>{contactStats.total}</Text>
+                  <Text style={styles.contactStatValue}>
+                    {safeNonNegativeInt(contactStats.total, 0)}
+                  </Text>
                 </View>
                 <View style={styles.contactStat}>
                   <Text style={styles.contactStatLabel}>{TEXTS.EMAIL}:</Text>
                   <Text style={styles.contactStatValue}>
-                    {contactStats.email?.sent} {TEXTS.SUCCESSFUL}
+                    {safeNonNegativeInt(contactStats.email?.sent, 0)} {TEXTS.SUCCESSFUL}
                   </Text>
                 </View>
                 <View style={styles.contactStat}>
                   <Text style={styles.contactStatLabel}>{TEXTS.WHATSAPP}:</Text>
                   <Text style={styles.contactStatValue}>
-                    {contactStats.whatsapp?.sent} {TEXTS.SUCCESSFUL}
+                    {safeNonNegativeInt(contactStats.whatsapp?.sent, 0)} {TEXTS.SUCCESSFUL}
                   </Text>
                 </View>
               </View>
             </View>
-          ))}
+            );
+          })}
         </View>
       )}
-    </View>
+    </>
   );
 }

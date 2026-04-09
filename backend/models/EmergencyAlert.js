@@ -198,42 +198,56 @@ emergencyAlertSchema.statics.getUserAlertStats = async function(userId, days = 3
     hoursDistribution: {}
   };
 
-  // Calcular estadísticas
+  // Calcular estadísticas (canales/contacto opcionales por documentos antiguos o incompletos)
   alerts.forEach(alert => {
+    const ch = alert.channels || {};
+    const emailCh = ch.email || {};
+    const waCh = ch.whatsapp || {};
+
     // Por nivel de riesgo
-    stats.byRiskLevel[alert.riskLevel] = (stats.byRiskLevel[alert.riskLevel] || 0) + 1;
+    if (alert.riskLevel) {
+      stats.byRiskLevel[alert.riskLevel] = (stats.byRiskLevel[alert.riskLevel] || 0) + 1;
+    }
 
     // Por estado
-    stats.byStatus[alert.status] = (stats.byStatus[alert.status] || 0) + 1;
+    if (alert.status) {
+      stats.byStatus[alert.status] = (stats.byStatus[alert.status] || 0) + 1;
+    }
 
     // Por canal
-    if (alert.channels.email.sent) {
+    if (emailCh.sent) {
       stats.byChannel.email.sent++;
-    } else if (alert.channels.email.error) {
+    } else if (emailCh.error) {
       stats.byChannel.email.failed++;
     }
 
-    if (alert.channels.whatsapp.sent) {
+    if (waCh.sent) {
       stats.byChannel.whatsapp.sent++;
-    } else if (alert.channels.whatsapp.error) {
+    } else if (waCh.error) {
       stats.byChannel.whatsapp.failed++;
     }
 
     // Por contacto
-    const contactKey = alert.contact.email;
-    if (!stats.byContact[contactKey]) {
-      stats.byContact[contactKey] = {
-        name: alert.contact.name,
-        total: 0,
-        email: { sent: 0, failed: 0 },
-        whatsapp: { sent: 0, failed: 0 }
-      };
+    const contactKey = alert.contact?.email;
+    if (contactKey) {
+      if (!stats.byContact[contactKey]) {
+        stats.byContact[contactKey] = {
+          name: alert.contact?.name || '—',
+          total: 0,
+          email: { sent: 0, failed: 0 },
+          whatsapp: { sent: 0, failed: 0 }
+        };
+      }
+      stats.byContact[contactKey].total++;
+      if (emailCh.sent) stats.byContact[contactKey].email.sent++;
+      if (emailCh.error) stats.byContact[contactKey].email.failed++;
+      if (waCh.sent) stats.byContact[contactKey].whatsapp.sent++;
+      if (waCh.error) stats.byContact[contactKey].whatsapp.failed++;
     }
-    stats.byContact[contactKey].total++;
-    if (alert.channels.email.sent) stats.byContact[contactKey].email.sent++;
-    if (alert.channels.email.error) stats.byContact[contactKey].email.failed++;
-    if (alert.channels.whatsapp.sent) stats.byContact[contactKey].whatsapp.sent++;
-    if (alert.channels.whatsapp.error) stats.byContact[contactKey].whatsapp.failed++;
+
+    if (!alert.sentAt) {
+      return;
+    }
 
     // Por día
     const day = new Date(alert.sentAt).toISOString().split('T')[0];

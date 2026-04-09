@@ -5,8 +5,14 @@ import { styles } from './emergencyAlertsHistoryStyles';
 import { TEXTS, STATUS_COLORS, RISK_COLORS } from './emergencyAlertsHistoryConstants';
 
 export function HistoryItem({ item, formatDate }) {
-  const statusKey = item.status?.toLowerCase() || 'sent';
-  const riskKey = item.riskLevel || 'MEDIUM';
+  if (item == null || typeof item !== 'object') return null;
+
+  const fmt =
+    typeof formatDate === 'function' ? formatDate : () => TEXTS.DATE_UNAVAILABLE;
+
+  const statusKey =
+    typeof item.status === 'string' && item.status ? item.status.toLowerCase() : 'sent';
+  const riskKey = item.riskLevel === 'HIGH' || item.riskLevel === 'MEDIUM' ? item.riskLevel : 'MEDIUM';
 
   return (
     <View style={styles.historyItem}>
@@ -18,12 +24,27 @@ export function HistoryItem({ item, formatDate }) {
             color={item.isTest ? '#1ADDDB' : RISK_COLORS[riskKey]}
           />
           <View style={styles.historyItemInfo}>
-            <Text style={styles.historyItemContact}>{item.contact?.name}</Text>
-            <Text style={styles.historyItemDate}>{formatDate(item.sentAt)}</Text>
+            <Text style={styles.historyItemContact}>
+              {item.contact?.name != null && String(item.contact.name).trim() !== ''
+                ? String(item.contact.name)
+                : TEXTS.CONTACT}
+            </Text>
+            <Text style={styles.historyItemDate}>{fmt(item.sentAt)}</Text>
           </View>
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[statusKey] }]}>
-          <Text style={styles.statusBadgeText}>{TEXTS[item.status?.toUpperCase()] || item.status}</Text>
+        <View
+          style={[
+            styles.statusBadge,
+            { backgroundColor: STATUS_COLORS[statusKey] || STATUS_COLORS.sent },
+          ]}
+        >
+          <Text style={styles.statusBadgeText}>
+            {typeof item.status === 'string' && TEXTS[item.status.toUpperCase()]
+              ? TEXTS[item.status.toUpperCase()]
+              : typeof item.status === 'string'
+                ? item.status
+                : TEXTS.SENT}
+          </Text>
         </View>
       </View>
       <View style={styles.historyItemDetails}>

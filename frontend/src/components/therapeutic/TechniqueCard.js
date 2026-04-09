@@ -37,31 +37,59 @@ const TYPE_COLORS = {
   immediate: '#FFB800',
 };
 
-const TechniqueCard = ({ technique, onPress }) => {
-  const type = technique.type || technique.category || 'immediate';
+function resolveTechniqueType(technique) {
+  const raw = technique.type ?? technique.category ?? 'immediate';
+  if (typeof raw !== 'string' || raw.trim() === '') return 'immediate';
+  const t = raw.trim();
+  const lower = t.toLowerCase();
+  if (lower === 'immediate') return 'immediate';
+  const map = { cbt: 'CBT', dbt: 'DBT', act: 'ACT' };
+  if (map[lower]) return map[lower];
+  if (t === 'CBT' || t === 'DBT' || t === 'ACT') return t;
+  return 'immediate';
+}
+
+const TechniqueCard = ({ technique, onPress, variant = 'default' }) => {
+  if (technique == null || typeof technique !== 'object') {
+    return null;
+  }
+
+  const compact = variant === 'compact';
+  const type = resolveTechniqueType(technique);
   const icon = TYPE_ICONS[type] || 'book-open-variant';
   const color = TYPE_COLORS[type] || colors.primary;
 
   return (
     <TouchableOpacity
-      style={[styles.card, { borderLeftColor: color }]}
-      onPress={onPress}
+      style={[
+        styles.card,
+        compact && styles.cardCompact,
+        { borderLeftColor: color },
+      ]}
+      onPress={typeof onPress === 'function' ? onPress : undefined}
+      disabled={typeof onPress !== 'function'}
       activeOpacity={0.7}
       accessibilityRole="button"
-      accessibilityLabel={`Técnica ${technique.name}. Tipo ${type}. ${technique.description || ''}`}
+      accessibilityLabel={`Técnica ${technique.name != null ? String(technique.name) : 'sin nombre'}. Tipo ${type}. ${technique.description != null ? String(technique.description) : ''}`}
       accessibilityHint="Doble toque para abrir la técnica"
     >
-      <View style={styles.header}>
+      <View style={[styles.header, compact && styles.headerCompact]}>
         <View style={[styles.iconContainer, { backgroundColor: `${color}20` }]}>
           <MaterialCommunityIcons name={icon} size={ICON_SIZE} color={color} />
         </View>
         <View style={styles.headerText}>
-          <Text style={styles.title}>{technique.name}</Text>
-          <View style={styles.typeContainer}>
-            <View style={[styles.typeBadge, { backgroundColor: `${color}20` }]}>
-              <Text style={[styles.typeText, { color }]}>{type}</Text>
+          <Text style={styles.title}>
+            {technique.name != null && String(technique.name).trim() !== ''
+              ? String(technique.name)
+              : 'Técnica'}
+          </Text>
+          {!compact ? (
+            <View style={styles.typeContainer}>
+              <View style={[styles.typeBadge, { backgroundColor: `${color}20` }]}>
+                <Text style={[styles.typeText, { color }]}>{type}</Text>
+              </View>
             </View>
-          </View>
+          ) : null}
         </View>
         <MaterialCommunityIcons
           name="chevron-right"
@@ -70,13 +98,16 @@ const TechniqueCard = ({ technique, onPress }) => {
         />
       </View>
 
-      {technique.description && (
-        <Text style={styles.description} numberOfLines={2}>
+      {technique.description ? (
+        <Text
+          style={[styles.description, compact && styles.descriptionCompact]}
+          numberOfLines={2}
+        >
           {technique.description}
         </Text>
-      )}
+      ) : null}
 
-      {technique.whenToUse && (
+      {!compact && technique.whenToUse ? (
         <View style={styles.whenToUseContainer}>
           <MaterialCommunityIcons
             name="information"
@@ -87,9 +118,9 @@ const TechniqueCard = ({ technique, onPress }) => {
             {technique.whenToUse}
           </Text>
         </View>
-      )}
+      ) : null}
 
-      {technique.steps && technique.steps.length > 0 && (
+      {technique.steps && technique.steps.length > 0 ? (
         <View style={styles.stepsIndicator}>
           <MaterialCommunityIcons
             name="format-list-numbered"
@@ -100,7 +131,7 @@ const TechniqueCard = ({ technique, onPress }) => {
             {technique.steps.length} {technique.steps.length === 1 ? 'paso' : 'pasos'}
           </Text>
         </View>
-      )}
+      ) : null}
     </TouchableOpacity>
   );
 };
@@ -118,10 +149,22 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
+  cardCompact: {
+    borderLeftWidth: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 10,
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  headerCompact: {
+    marginBottom: 8,
   },
   iconContainer: {
     width: 48,
@@ -158,6 +201,11 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 20,
     marginBottom: 12,
+  },
+  descriptionCompact: {
+    marginBottom: 8,
+    fontSize: 13,
+    lineHeight: 18,
   },
   whenToUseContainer: {
     flexDirection: 'row',

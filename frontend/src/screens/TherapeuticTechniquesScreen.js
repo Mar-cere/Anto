@@ -1,209 +1,202 @@
 /**
- * Pantalla de Técnicas Terapéuticas
- * 
- * Muestra todas las técnicas terapéuticas disponibles organizadas por categoría
- * (CBT, DBT, ACT) y por emoción. Permite navegar a ejercicios interactivos
- * y ver guías paso a paso.
- * 
- * @author AntoApp Team
+ * Pantalla de Técnicas Terapéuticas — lista priorizada, acordeón por categoría y filtro de emoción opcional.
  */
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   RefreshControl,
   SafeAreaView,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FloatingNavBar from '../components/FloatingNavBar';
 import Header from '../components/Header';
 import ParticleBackground from '../components/ParticleBackground';
 import TechniqueCard from '../components/therapeutic/TechniqueCard';
-import { api, ENDPOINTS } from '../config/api';
 import { colors } from '../styles/globalStyles';
+import {
+  CATEGORIES,
+  CATEGORY_ACCENT,
+  CATEGORY_FULL_LABEL,
+  CATEGORY_HINT,
+  CATEGORY_ORDER,
+  CATEGORY_SHORT_LABEL,
+  EMOTIONS,
+  SECTION_KEYS,
+  TEXTS,
+} from './therapeuticTechniques/therapeuticTechniquesConstants';
+import { therapeuticSafeNavigate } from './therapeuticTechniques/therapeuticTechniquesNavigate';
+import { styles } from './therapeuticTechniques/therapeuticTechniquesStyles';
+import { useTherapeuticTechniquesScreen } from './therapeuticTechniques/useTherapeuticTechniquesScreen';
 
-// Constantes de categorías
-const CATEGORIES = {
-  IMMEDIATE: 'immediate',
-  CBT: 'CBT',
-  DBT: 'DBT',
-  ACT: 'ACT',
-};
-
-// Constantes de textos
-const TEXTS = {
-  TITLE: 'Técnicas Terapéuticas',
-  SUBTITLE: 'Herramientas basadas en evidencia para tu bienestar',
-  STATS: 'Estadísticas',
-  CATEGORY_IMMEDIATE: 'Técnicas Inmediatas',
-  CATEGORY_CBT: 'Terapia Cognitivo-Conductual (TCC)',
-  CATEGORY_DBT: 'Terapia Dialéctica Conductual (DBT)',
-  CATEGORY_ACT: 'Terapia de Aceptación y Compromiso (ACT)',
-  LOADING: 'Cargando técnicas...',
-  ERROR: 'Error al cargar las técnicas',
-  RETRY: 'Reintentar',
-  NO_TECHNIQUES: 'No hay técnicas disponibles',
-  FILTER_BY_EMOTION: 'Filtrar por emoción',
-  ALL_EMOTIONS: 'Todas las emociones',
-};
-
-// Emociones disponibles
-const EMOTIONS = [
-  { key: 'all', label: 'Todas', icon: 'emoticon-happy' },
-  { key: 'tristeza', label: 'Tristeza', icon: 'emoticon-sad' },
-  { key: 'ansiedad', label: 'Ansiedad', icon: 'emoticon-worried' },
-  { key: 'enojo', label: 'Enojo', icon: 'emoticon-angry' },
-  { key: 'miedo', label: 'Miedo', icon: 'emoticon-frightened' },
-  { key: 'verguenza', label: 'Vergüenza', icon: 'emoticon-embarrassed' },
-  { key: 'culpa', label: 'Culpa', icon: 'emoticon-cry' },
-  { key: 'alegria', label: 'Alegría', icon: 'emoticon-happy' },
-  { key: 'esperanza', label: 'Esperanza', icon: 'emoticon-excited' },
-];
+const initialExpanded = () => ({
+  [CATEGORIES.IMMEDIATE]: true,
+  [CATEGORIES.CBT]: false,
+  [CATEGORIES.DBT]: false,
+  [CATEGORIES.ACT]: false,
+});
 
 const TherapeuticTechniquesScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const [selectedEmotion, setSelectedEmotion] = useState('all');
-  const [techniques, setTechniques] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(null);
+  const {
+    selectedEmotion,
+    setSelectedEmotion,
+    techniques,
+    filteredTechniques,
+    groupedTechniques,
+    loading,
+    refreshing,
+    error,
+    loadTechniques,
+    handleRefresh,
+  } = useTherapeuticTechniquesScreen();
 
-  // Cargar técnicas desde el backend
-  const loadTechniques = useCallback(async () => {
-    try {
-      setError(null);
-      const response = await api.get(ENDPOINTS.THERAPEUTIC_TECHNIQUES);
-      setTechniques(response.data || []);
-    } catch (err) {
-      console.error('Error cargando técnicas:', err);
-      setError(TEXTS.ERROR);
-      // Si no hay endpoint, usar técnicas locales como fallback
-      setTechniques([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+  const [expandedSections, setExpandedSections] = useState(initialExpanded);
+  const [emotionFilterOpen, setEmotionFilterOpen] = useState(false);
+
+  const selectedEmotionLabel = useMemo(() => {
+    const found = EMOTIONS.find((e) => e.key === selectedEmotion);
+    return found?.label ?? EMOTIONS[0].label;
+  }, [selectedEmotion]);
+
+  const clearEmotionFilter = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    setSelectedEmotion('all');
+  }, [setSelectedEmotion]);
+
+  const handleEmotionSelect = useCallback(
+    (emotion) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      setSelectedEmotion(emotion);
+    },
+    [setSelectedEmotion]
+  );
+
+  const handleTechniquePress = useCallback(
+    (technique) => {
+      if (technique == null || typeof technique !== 'object') return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      therapeuticSafeNavigate(navigation, 'TechniqueDetail', { technique });
+    },
+    [navigation]
+  );
+
+  const toggleSection = useCallback((categoryKey) => {
+    if (!SECTION_KEYS.has(categoryKey)) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    setExpandedSections((prev) => ({
+      ...prev,
+      [categoryKey]: !prev[categoryKey],
+    }));
   }, []);
 
-  React.useEffect(() => {
-    loadTechniques();
-  }, [loadTechniques]);
-
-  // Filtrar técnicas por emoción seleccionada
-  const filteredTechniques = React.useMemo(() => {
-    if (selectedEmotion === 'all') return techniques;
-    return techniques.filter(t => 
-      t.emotions?.includes(selectedEmotion) || 
-      t.emotion === selectedEmotion
-    );
-  }, [techniques, selectedEmotion]);
-
-  // Agrupar técnicas por categoría
-  const groupedTechniques = React.useMemo(() => {
-    const groups = {
-      [CATEGORIES.IMMEDIATE]: [],
-      [CATEGORIES.CBT]: [],
-      [CATEGORIES.DBT]: [],
-      [CATEGORIES.ACT]: [],
-    };
-
-    filteredTechniques.forEach(technique => {
-      const category = technique.category || technique.type || CATEGORIES.IMMEDIATE;
-      if (groups[category]) {
-        groups[category].push(technique);
-      } else {
-        groups[CATEGORIES.IMMEDIATE].push(technique);
-      }
-    });
-
-    return groups;
-  }, [filteredTechniques]);
-
-  // Manejar refresh
-  const handleRefresh = useCallback(() => {
-    setRefreshing(true);
-    loadTechniques();
-  }, [loadTechniques]);
-
-  // Manejar selección de emoción
-  const handleEmotionSelect = useCallback((emotion) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedEmotion(emotion);
-  }, []);
-
-  // Navegar a detalle de técnica
-  const handleTechniquePress = useCallback((technique) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    navigation.navigate('TechniqueDetail', { technique });
-  }, [navigation]);
-
-  // Renderizar filtro de emociones
-  const renderEmotionFilter = () => (
-    <ScrollView 
-      horizontal 
+  const renderEmotionChips = () => (
+    <ScrollView
+      horizontal
       showsHorizontalScrollIndicator={false}
       style={styles.emotionFilter}
       contentContainerStyle={styles.emotionFilterContent}
+      accessibilityRole="scrollbar"
+      accessibilityLabel={TEXTS.EMOTION_FILTER_A11Y}
     >
-      {EMOTIONS.map((emotion) => (
-        <TouchableOpacity
-          key={emotion.key}
-          style={[
-            styles.emotionButton,
-            selectedEmotion === emotion.key && styles.emotionButtonActive
-          ]}
-          onPress={() => handleEmotionSelect(emotion.key)}
-        >
-          <MaterialCommunityIcons
-            name={emotion.icon}
-            size={20}
-            color={selectedEmotion === emotion.key ? colors.white : colors.primary}
-          />
-          <Text
-            style={[
-              styles.emotionButtonText,
-              selectedEmotion === emotion.key && styles.emotionButtonTextActive
-            ]}
+      {EMOTIONS.map((emotion) => {
+        const selected = selectedEmotion === emotion.key;
+        return (
+          <TouchableOpacity
+            key={emotion.key}
+            style={[styles.emotionButton, selected && styles.emotionButtonActive]}
+            onPress={() => handleEmotionSelect(emotion.key)}
+            accessibilityRole="button"
+            accessibilityState={{ selected }}
+            accessibilityLabel={emotion.label}
           >
-            {emotion.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
+            <MaterialCommunityIcons
+              name={emotion.icon}
+              size={18}
+              color={selected ? colors.white : colors.primary}
+            />
+            <Text
+              style={[styles.emotionButtonText, selected && styles.emotionButtonTextActive]}
+            >
+              {emotion.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </ScrollView>
   );
 
-  // Renderizar sección de categoría
-  const renderCategorySection = (category, title, techniques) => {
-    if (!techniques || techniques.length === 0) return null;
+  const renderCategorySection = (categoryKey) => {
+    const list = groupedTechniques[categoryKey];
+    if (!list || list.length === 0) return null;
+
+    const expanded = expandedSections[categoryKey];
+    const short = CATEGORY_SHORT_LABEL[categoryKey];
+    const full = CATEGORY_FULL_LABEL[categoryKey];
+    const hint = CATEGORY_HINT[categoryKey];
+    const accent = CATEGORY_ACCENT[categoryKey] || colors.primary;
 
     return (
-      <View style={styles.categorySection}>
-        <Text style={styles.categoryTitle}>{title}</Text>
-        {techniques.map((technique, index) => (
-          <TechniqueCard
-            key={technique.id || index}
-            technique={technique}
-            onPress={() => handleTechniquePress(technique)}
-          />
-        ))}
+      <View style={styles.categorySection} key={categoryKey}>
+        <TouchableOpacity
+          style={[styles.categoryHeader, { borderLeftColor: accent }]}
+          onPress={() => toggleSection(categoryKey)}
+          accessibilityRole="button"
+          accessibilityLabel={`${full}. ${hint}`}
+          accessibilityHint={expanded ? TEXTS.SECTION_COLLAPSE : TEXTS.SECTION_EXPAND}
+          accessibilityState={{ expanded }}
+        >
+          <View style={styles.categoryHeaderInner}>
+            <View style={styles.categoryHeaderTop}>
+              <View style={styles.categoryHeaderMain}>
+                <Text style={styles.categoryTitleShort}>{short}</Text>
+                <Text
+                  style={styles.categoryCountBadge}
+                  accessibilityLabel={`${list.length} en esta sección`}
+                >
+                  {list.length}
+                </Text>
+              </View>
+              <MaterialCommunityIcons
+                name={expanded ? 'chevron-up' : 'chevron-down'}
+                size={22}
+                color={colors.textSecondary}
+              />
+            </View>
+            {hint ? (
+              <Text style={styles.categoryHint} numberOfLines={2}>
+                {hint}
+              </Text>
+            ) : null}
+          </View>
+        </TouchableOpacity>
+        {expanded ? (
+          <View style={styles.categoryCards}>
+            {list.map((technique, index) => (
+              <TechniqueCard
+                key={technique?.id != null ? String(technique.id) : `technique-${index}`}
+                technique={technique}
+                variant="compact"
+                onPress={() => handleTechniquePress(technique)}
+              />
+            ))}
+          </View>
+        ) : null}
       </View>
     );
   };
 
-  // Renderizar contenido
   const renderContent = () => {
-    if (loading) {
+    if (loading && !refreshing) {
       return (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -212,12 +205,12 @@ const TherapeuticTechniquesScreen = () => {
       );
     }
 
-    if (error) {
+    if (error && !refreshing) {
       return (
         <View style={styles.centerContainer}>
           <MaterialCommunityIcons name="alert-circle" size={48} color={colors.error} />
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadTechniques}>
+          <TouchableOpacity style={styles.retryButton} onPress={() => loadTechniques()}>
             <Text style={styles.retryButtonText}>{TEXTS.RETRY}</Text>
           </TouchableOpacity>
         </View>
@@ -225,10 +218,22 @@ const TherapeuticTechniquesScreen = () => {
     }
 
     if (filteredTechniques.length === 0) {
+      const isFilteredEmpty = techniques.length > 0;
       return (
         <View style={styles.centerContainer}>
-          <MaterialCommunityIcons name="book-open-variant" size={48} color={colors.accent} />
-          <Text style={styles.emptyText}>{TEXTS.NO_TECHNIQUES}</Text>
+          <MaterialCommunityIcons
+            name={isFilteredEmpty ? 'filter-off' : 'book-open-variant'}
+            size={48}
+            color={colors.accent}
+          />
+          <Text style={styles.emptyText}>
+            {isFilteredEmpty ? TEXTS.NO_MATCH_FILTER : TEXTS.NO_TECHNIQUES}
+          </Text>
+          {isFilteredEmpty ? (
+            <TouchableOpacity style={styles.retryButton} onPress={clearEmotionFilter}>
+              <Text style={styles.retryButtonText}>{TEXTS.CLEAR_EMOTION_FILTER}</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       );
     }
@@ -245,54 +250,92 @@ const TherapeuticTechniquesScreen = () => {
           />
         }
       >
-        {renderCategorySection(
-          CATEGORIES.IMMEDIATE,
-          TEXTS.CATEGORY_IMMEDIATE,
-          groupedTechniques[CATEGORIES.IMMEDIATE]
-        )}
-        {renderCategorySection(
-          CATEGORIES.CBT,
-          TEXTS.CATEGORY_CBT,
-          groupedTechniques[CATEGORIES.CBT]
-        )}
-        {renderCategorySection(
-          CATEGORIES.DBT,
-          TEXTS.CATEGORY_DBT,
-          groupedTechniques[CATEGORIES.DBT]
-        )}
-        {renderCategorySection(
-          CATEGORIES.ACT,
-          TEXTS.CATEGORY_ACT,
-          groupedTechniques[CATEGORIES.ACT]
-        )}
+        <View style={styles.listIntro}>
+          <MaterialCommunityIcons name="hand-pointing-right" size={18} color={colors.primary} />
+          <Text style={styles.listIntroText}>{TEXTS.HOW_IT_WORKS}</Text>
+        </View>
+        {CATEGORY_ORDER.map((key) => renderCategorySection(key))}
       </ScrollView>
     );
   };
+
+  const showEmotionTools = !loading && !error && techniques.length > 0;
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
       <ParticleBackground />
       <Header title={TEXTS.TITLE} showBackButton />
-      
-      <View style={styles.headerActions}>
-        <View style={styles.subtitleContainer}>
-          <Text style={styles.subtitle}>{TEXTS.SUBTITLE}</Text>
+
+      <View style={styles.topBar}>
+        <View style={styles.topBarTextBlock}>
+          {loading ? (
+            <Text style={styles.subtitle} numberOfLines={1}>
+              {TEXTS.LOADING}
+            </Text>
+          ) : error ? null : (
+            <Text style={styles.subtitle} numberOfLines={3}>
+              {TEXTS.SUBTITLE}
+            </Text>
+          )}
         </View>
         <TouchableOpacity
-          style={styles.statsButton}
+          style={styles.statsButtonIcon}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            navigation.navigate('TherapeuticTechniquesStats');
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+            therapeuticSafeNavigate(navigation, 'TherapeuticTechniquesStats');
           }}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={TEXTS.STATS}
+          accessibilityHint={TEXTS.STATS_HINT}
         >
-          <MaterialCommunityIcons name="chart-line" size={20} color={colors.primary} />
-          <Text style={styles.statsButtonText}>{TEXTS.STATS}</Text>
+          <MaterialCommunityIcons name="chart-line" size={22} color={colors.primary} />
         </TouchableOpacity>
       </View>
+      <View style={styles.topBarDivider} />
 
-      {renderEmotionFilter()}
+      {showEmotionTools ? (
+        <>
+          <View style={styles.emotionToggleRow}>
+            <TouchableOpacity
+              style={styles.emotionToggleMain}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                setEmotionFilterOpen((o) => !o);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={
+                emotionFilterOpen ? TEXTS.EMOTION_FILTER_TOGGLE_HIDE : TEXTS.EMOTION_FILTER_TOGGLE_SHOW
+              }
+              accessibilityState={{ expanded: emotionFilterOpen }}
+            >
+              <MaterialCommunityIcons name="filter-variant" size={20} color={colors.primary} />
+              <Text style={styles.emotionToggleLabel}>{TEXTS.FILTER_BY_EMOTION}</Text>
+              <Text style={styles.emotionToggleValue} numberOfLines={1}>
+                {selectedEmotionLabel}
+              </Text>
+              <MaterialCommunityIcons
+                name={emotionFilterOpen ? 'chevron-up' : 'chevron-down'}
+                size={22}
+                color={colors.textSecondary}
+              />
+            </TouchableOpacity>
+            {selectedEmotion !== 'all' ? (
+              <TouchableOpacity
+                onPress={clearEmotionFilter}
+                hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+                accessibilityRole="button"
+                accessibilityLabel={TEXTS.CLEAR_EMOTION_FILTER}
+              >
+                <Text style={styles.clearFilterLink}>{TEXTS.CLEAR_EMOTION_FILTER}</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+          {emotionFilterOpen ? renderEmotionChips() : null}
+        </>
+      ) : null}
+
       {renderContent()}
 
       <FloatingNavBar />
@@ -300,131 +343,4 @@ const TherapeuticTechniquesScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 15,
-  },
-  subtitleContainer: {
-    flex: 1,
-  },
-  statsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: `${colors.primary}20`,
-  },
-  statsButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
-  emotionFilter: {
-    maxHeight: 70,
-    marginBottom: 15,
-  },
-  emotionFilterContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    gap: 12,
-  },
-  emotionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: colors.cardBackground,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  emotionButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  emotionButtonText: {
-    fontSize: 13,
-    color: colors.primary,
-    fontWeight: '500',
-  },
-  emotionButtonTextActive: {
-    color: colors.white,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 120,
-  },
-  categorySection: {
-    marginBottom: 32,
-  },
-  categoryTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 16,
-    letterSpacing: 0.5,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  loadingText: {
-    marginTop: 15,
-    fontSize: 16,
-    color: colors.textSecondary,
-  },
-  errorText: {
-    marginTop: 15,
-    fontSize: 16,
-    color: colors.error,
-    textAlign: 'center',
-  },
-  emptyText: {
-    marginTop: 15,
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  retryButton: {
-    marginTop: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: colors.primary,
-  },
-  retryButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
-
 export default TherapeuticTechniquesScreen;
-

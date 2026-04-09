@@ -13,11 +13,17 @@ import { HistoryItem } from './emergencyAlertsHistory/HistoryItem';
 import { EmergencyAlertsEmptyState } from './emergencyAlertsHistory/EmergencyAlertsEmptyState';
 import { EmergencyAlertsLoadingView } from './emergencyAlertsHistory/EmergencyAlertsLoadingView';
 import { EmergencyAlertsErrorView } from './emergencyAlertsHistory/EmergencyAlertsErrorView';
+import { EmergencyAlertsTabError } from './emergencyAlertsHistory/EmergencyAlertsTabError';
 import { StatsTab } from './emergencyAlertsHistory/StatsTab';
 import { PatternsTab } from './emergencyAlertsHistory/PatternsTab';
 import { styles } from './emergencyAlertsHistory/emergencyAlertsHistoryStyles';
-import { TEXTS, TABS } from './emergencyAlertsHistory/emergencyAlertsHistoryConstants';
-import { FLATLIST } from './emergencyAlertsHistory/emergencyAlertsHistoryConstants';
+import { TEXTS, TABS, FLATLIST } from './emergencyAlertsHistory/emergencyAlertsHistoryConstants';
+import { crisisSafeGoBack, crisisSafeNavigate } from './crisisDashboard/crisisDashboardNavigate';
+import {
+  countPatternPeriodAlerts,
+  safeHistoryLength,
+  safeNonNegativeInt,
+} from './emergencyAlertsHistory/emergencyAlertsHistoryUtils';
 
 const EmergencyAlertsHistoryScreen = () => {
   const navigation = useNavigation();
@@ -30,7 +36,11 @@ const EmergencyAlertsHistoryScreen = () => {
     history,
     stats,
     patterns,
+    statsError,
+    patternsError,
     loadData,
+    retryStats,
+    retryPatterns,
     onRefresh,
     formatDate,
     formatRiskLevelData,
@@ -39,40 +49,70 @@ const EmergencyAlertsHistoryScreen = () => {
     formatDayData,
   } = useEmergencyAlertsHistoryScreen();
 
-  const goToProfile = () => navigation.navigate('MainTabs', { screen: 'Perfil' });
+  const goToProfile = () => {
+    crisisSafeNavigate(navigation, 'MainTabs', { screen: 'Perfil' });
+  };
 
   if (loading && !refreshing) return <EmergencyAlertsLoadingView />;
-  if (error && !refreshing) return <EmergencyAlertsErrorView onRetry={loadData} />;
+  if (error && !refreshing) {
+    return (
+      <EmergencyAlertsErrorView onRetry={() => loadData()} detail={error} />
+    );
+  }
 
   const renderHistoryItem = ({ item }) => <HistoryItem item={item} formatDate={formatDate} />;
+
+  const hasStatsForSummary = stats != null && !statsError;
+  const summaryHint = hasStatsForSummary ? TEXTS.SUMMARY_HINT_WITH_STATS : TEXTS.SUMMARY_HINT_LIST_ONLY;
+  const summaryTotal = hasStatsForSummary ? safeNonNegativeInt(stats.total) : safeHistoryLength(history);
 
   const listHeader = (
     <View style={styles.summaryCard}>
       <Text style={styles.summaryTitle}>{TEXTS.TOTAL_ALERTS}</Text>
-      <Text style={styles.summaryValue}>{stats?.total ?? history.length}</Text>
+      <Text style={styles.summaryValue}>{summaryTotal}</Text>
+      <Text style={styles.summaryHint}>{summaryHint}</Text>
     </View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
-      <EmergencyAlertsHeader onBack={() => navigation.goBack()} />
-      <EmergencyAlertsTabs activeTab={activeTab} onTabChange={setActiveTab} />
+      <EmergencyAlertsHeader onBack={() => crisisSafeGoBack(navigation)} />
+      <EmergencyAlertsTabs
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        statsTabError={!!statsError}
+        patternsTabError={!!patternsError}
+        historyCount={safeHistoryLength(history)}
+        statsCount={stats != null && !statsError ? safeNonNegativeInt(stats.total) : undefined}
+        patternsCount={
+          patterns != null && !patternsError ? countPatternPeriodAlerts(patterns) : undefined
+        }
+      />
       <ScrollView
         style={styles.content}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
       >
         {activeTab === TABS.HISTORY && (
           <View style={styles.tabContent}>
-            {history.length === 0 ? (
-              <EmergencyAlertsEmptyState onConfigureContacts={goToProfile} />
+            {safeHistoryLength(history) === 0 ? (
+              <>
+                {listHeader}
+                <EmergencyAlertsEmptyState onConfigureContacts={goToProfile} />
+              </>
             ) : (
               <FlatList
                 data={history}
                 renderItem={renderHistoryItem}
-                keyExtractor={(item, index) => item._id || index.toString()}
+                keyExtractor={(item, index) => {
+                  if (item != null && item._id != null && String(item._id) !== '') {
+                    return String(item._id);
+                  }
+                  return `history-${index}`;
+                }}
                 scrollEnabled={false}
                 initialNumToRender={FLATLIST.INITIAL_NUM_TO_RENDER}
                 windowSize={FLATLIST.WINDOW_SIZE}
@@ -82,16 +122,30 @@ const EmergencyAlertsHistoryScreen = () => {
             )}
           </View>
         )}
-        {activeTab === TABS.STATS && stats && (
-          <StatsTab
-            stats={stats}
-            formatRiskLevelData={formatRiskLevelData}
-            formatStatusData={formatStatusData}
-            formatChannelData={formatChannelData}
-            formatDayData={formatDayData}
-          />
+        {activeTab === TABS.STATS && (
+          <View style={styles.tabContent}>
+            {statsError ? (
+              <EmergencyAlertsTabError message={statsError} onRetry={retryStats} />
+            ) : stats ? (
+              <StatsTab
+                stats={stats}
+                formatRiskLevelData={formatRiskLevelData}
+                formatStatusData={formatStatusData}
+                formatChannelData={formatChannelData}
+                formatDayData={formatDayData}
+              />
+            ) : null}
+          </View>
         )}
-        {activeTab === TABS.PATTERNS && patterns && <PatternsTab patterns={patterns} />}
+        {activeTab === TABS.PATTERNS && (
+          <View style={styles.tabContent}>
+            {patternsError ? (
+              <EmergencyAlertsTabError message={patternsError} onRetry={retryPatterns} />
+            ) : patterns ? (
+              <PatternsTab patterns={patterns} />
+            ) : null}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

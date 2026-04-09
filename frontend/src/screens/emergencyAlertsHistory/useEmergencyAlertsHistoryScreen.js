@@ -1,71 +1,201 @@
 /**
- * Hook para EmergencyAlertsHistoryScreen: estado, carga de datos y formateo para gráficos.
+ * Hook para EmergencyAlertsHistoryScreen: carga resiliente, errores por pestaña y formateo.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, ENDPOINTS } from '../../config/api';
 import { TEXTS, TABS } from './emergencyAlertsHistoryConstants';
+import { safeNonNegativeInt } from './emergencyAlertsHistoryUtils';
+
+function reasonToMessage(reason) {
+  if (reason instanceof Error) return reason.message || TEXTS.ERROR_UNKNOWN;
+  if (reason && typeof reason === 'object' && reason.message != null) return String(reason.message);
+  return TEXTS.ERROR_UNKNOWN;
+}
+
+function parseHistoryResponse(res) {
+  if (!res || typeof res !== 'object' || res.notModified) {
+    return { ok: false, error: TEXTS.ERROR };
+  }
+  if (res.success === false) {
+    return { ok: false, error: typeof res.message === 'string' && res.message ? res.message : TEXTS.ERROR };
+  }
+  if (!res.success || !Array.isArray(res.data)) {
+    return { ok: false, error: TEXTS.ERROR };
+  }
+  return { ok: true, data: res.data };
+}
+
+function parseObjectDataResponse(res) {
+  if (!res || typeof res !== 'object' || res.notModified) {
+    return { ok: false, error: TEXTS.ERROR };
+  }
+  if (res.success === false) {
+    return { ok: false, error: typeof res.message === 'string' && res.message ? res.message : TEXTS.ERROR };
+  }
+  if (!res.success || res.data == null || typeof res.data !== 'object' || Array.isArray(res.data)) {
+    return { ok: false, error: TEXTS.ERROR };
+  }
+  return { ok: true, data: res.data };
+}
 
 export function useEmergencyAlertsHistoryScreen() {
-  const [activeTab, setActiveTab] = useState(TABS.HISTORY);
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const [activeTab, setActiveTabState] = useState(TABS.HISTORY);
+  const setActiveTab = useCallback((tab) => {
+    if (tab === TABS.HISTORY || tab === TABS.STATS || tab === TABS.PATTERNS) {
+      setActiveTabState(tab);
+    }
+  }, []);
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [history, setHistory] = useState([]);
   const [stats, setStats] = useState(null);
   const [patterns, setPatterns] = useState(null);
+  const [statsError, setStatsError] = useState(null);
+  const [patternsError, setPatternsError] = useState(null);
 
-  const loadHistory = useCallback(async () => {
-    try {
-      const response = await api.get(ENDPOINTS.EMERGENCY_ALERTS, { limit: 100, skip: 0 });
-      if (response.success) setHistory(response.data || []);
-    } catch (err) {
-      console.error('Error cargando historial:', err);
-      setError(err.message);
+  const loadData = useCallback(async ({ isRefresh = false } = {}) => {
+    if (!isRefresh) {
+      setLoading(true);
     }
-  }, []);
-
-  const loadStats = useCallback(async () => {
-    try {
-      const response = await api.get(ENDPOINTS.EMERGENCY_ALERTS_STATS, { days: 30 });
-      if (response.success) setStats(response.data);
-    } catch (err) {
-      console.error('Error cargando estadísticas:', err);
-    }
-  }, []);
-
-  const loadPatterns = useCallback(async () => {
-    try {
-      const response = await api.get(ENDPOINTS.EMERGENCY_ALERTS_PATTERNS, { days: 90 });
-      if (response.success) setPatterns(response.data);
-    } catch (err) {
-      console.error('Error cargando patrones:', err);
-    }
-  }, []);
-
-  const loadData = useCallback(async () => {
-    setLoading(true);
     setError(null);
+    setStatsError(null);
+    setPatternsError(null);
+
     try {
-      await Promise.all([loadHistory(), loadStats(), loadPatterns()]);
+      const settled = await Promise.allSettled([
+        api.get(ENDPOINTS.EMERGENCY_ALERTS, { limit: '100', skip: '0' }),
+        api.get(ENDPOINTS.EMERGENCY_ALERTS_STATS, { days: '30' }),
+        api.get(ENDPOINTS.EMERGENCY_ALERTS_PATTERNS, { days: '90' }),
+      ]);
+
+      if (!isMountedRef.current) return;
+
+      const h0 = settled[0];
+      const historyParsed =
+        h0.status === 'fulfilled'
+          ? parseHistoryResponse(h0.value)
+          : { ok: false, error: reasonToMessage(h0.reason) };
+
+      if (!historyParsed.ok) {
+        setHistory([]);
+        setStats(null);
+        setPatterns(null);
+        setError(historyParsed.error);
+        return;
+      }
+
+      const historyRows = historyParsed.data;
+      setHistory(Array.isArray(historyRows) ? historyRows : []);
+      setError(null);
+
+      const s1 = settled[1];
+      const statsParsed =
+        s1.status === 'fulfilled'
+          ? parseObjectDataResponse(s1.value)
+          : { ok: false, error: reasonToMessage(s1.reason) };
+      if (statsParsed.ok) {
+        setStats(statsParsed.data);
+        setStatsError(null);
+      } else {
+        setStats(null);
+        setStatsError(
+          statsParsed.error && statsParsed.error !== TEXTS.ERROR
+            ? statsParsed.error
+            : TEXTS.TAB_STATS_FAILED
+        );
+      }
+
+      const p2 = settled[2];
+      const patternsParsed =
+        p2.status === 'fulfilled'
+          ? parseObjectDataResponse(p2.value)
+          : { ok: false, error: reasonToMessage(p2.reason) };
+      if (patternsParsed.ok) {
+        setPatterns(patternsParsed.data);
+        setPatternsError(null);
+      } else {
+        setPatterns(null);
+        setPatternsError(
+          patternsParsed.error && patternsParsed.error !== TEXTS.ERROR
+            ? patternsParsed.error
+            : TEXTS.TAB_PATTERNS_FAILED
+        );
+      }
     } catch (err) {
-      setError(err.message);
+      if (!isMountedRef.current) return;
+      setHistory([]);
+      setStats(null);
+      setPatterns(null);
+      setError(err?.message != null ? String(err.message) : TEXTS.ERROR_UNKNOWN);
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
-  }, [loadHistory, loadStats, loadPatterns]);
+  }, []);
+
+  const retryStats = useCallback(async () => {
+    setStatsError(null);
+    try {
+      const response = await api.get(ENDPOINTS.EMERGENCY_ALERTS_STATS, { days: '30' });
+      if (!isMountedRef.current) return;
+      const parsed = parseObjectDataResponse(response);
+      if (parsed.ok) {
+        setStats(parsed.data);
+      } else {
+        setStatsError(
+          parsed.error && parsed.error !== TEXTS.ERROR ? parsed.error : TEXTS.TAB_STATS_FAILED
+        );
+      }
+    } catch (e) {
+      if (!isMountedRef.current) return;
+      setStatsError(e?.message != null ? String(e.message) : TEXTS.ERROR_UNKNOWN);
+    }
+  }, []);
+
+  const retryPatterns = useCallback(async () => {
+    setPatternsError(null);
+    try {
+      const response = await api.get(ENDPOINTS.EMERGENCY_ALERTS_PATTERNS, { days: '90' });
+      if (!isMountedRef.current) return;
+      const parsed = parseObjectDataResponse(response);
+      if (parsed.ok) {
+        setPatterns(parsed.data);
+      } else {
+        setPatternsError(
+          parsed.error && parsed.error !== TEXTS.ERROR ? parsed.error : TEXTS.TAB_PATTERNS_FAILED
+        );
+      }
+    } catch (e) {
+      if (!isMountedRef.current) return;
+      setPatternsError(e?.message != null ? String(e.message) : TEXTS.ERROR_UNKNOWN);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData({ isRefresh: false });
+  }, [loadData]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
-  }, [loadData]);
-
-  useEffect(() => {
-    loadData();
+    await loadData({ isRefresh: true });
   }, [loadData]);
 
   const formatDate = useCallback((dateString) => {
+    if (dateString == null || dateString === '') return TEXTS.DATE_UNAVAILABLE;
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return TEXTS.DATE_UNAVAILABLE;
     return date.toLocaleDateString('es-ES', {
       day: '2-digit',
       month: '2-digit',
@@ -76,41 +206,45 @@ export function useEmergencyAlertsHistoryScreen() {
   }, []);
 
   const formatRiskLevelData = useCallback(() => {
-    if (!stats?.byRiskLevel) return null;
+    if (!stats?.byRiskLevel || typeof stats.byRiskLevel !== 'object') return null;
     return {
       labels: ['MEDIO', 'ALTO'],
       datasets: [{
-        data: [stats.byRiskLevel.MEDIUM || 0, stats.byRiskLevel.HIGH || 0],
+        data: [
+          safeNonNegativeInt(stats.byRiskLevel.MEDIUM, 0),
+          safeNonNegativeInt(stats.byRiskLevel.HIGH, 0),
+        ],
       }],
     };
   }, [stats]);
 
   const formatStatusData = useCallback(() => {
-    if (!stats?.byStatus) return null;
-    const data = [
-      { name: TEXTS.SENT, population: stats.byStatus.sent || 0, color: '#4ECDC4', legendFontColor: '#FFFFFF' },
-      { name: TEXTS.PARTIAL, population: stats.byStatus.partial || 0, color: '#FFA500', legendFontColor: '#FFFFFF' },
-      { name: TEXTS.FAILED, population: stats.byStatus.failed || 0, color: '#FF6B6B', legendFontColor: '#FFFFFF' },
+    if (!stats?.byStatus || typeof stats.byStatus !== 'object') return null;
+    return [
+      { name: TEXTS.SENT, population: safeNonNegativeInt(stats.byStatus.sent, 0), color: '#4ECDC4', legendFontColor: '#FFFFFF' },
+      { name: TEXTS.PARTIAL, population: safeNonNegativeInt(stats.byStatus.partial, 0), color: '#FFA500', legendFontColor: '#FFFFFF' },
+      { name: TEXTS.FAILED, population: safeNonNegativeInt(stats.byStatus.failed, 0), color: '#FF6B6B', legendFontColor: '#FFFFFF' },
     ].filter((item) => item.population > 0);
-    return data;
   }, [stats]);
 
   const formatChannelData = useCallback(() => {
-    if (!stats?.byChannel) return null;
+    if (!stats?.byChannel || typeof stats.byChannel !== 'object') return null;
+    const email = stats.byChannel.email;
+    const wa = stats.byChannel.whatsapp;
     return {
       labels: [TEXTS.EMAIL, TEXTS.WHATSAPP],
       datasets: [
         {
           data: [
-            stats.byChannel.email?.sent || 0,
-            stats.byChannel.whatsapp?.sent || 0,
+            safeNonNegativeInt(email?.sent, 0),
+            safeNonNegativeInt(wa?.sent, 0),
           ],
           color: (opacity = 1) => `rgba(26, 221, 219, ${opacity})`,
         },
         {
           data: [
-            stats.byChannel.email?.failed || 0,
-            stats.byChannel.whatsapp?.failed || 0,
+            safeNonNegativeInt(email?.failed, 0),
+            safeNonNegativeInt(wa?.failed, 0),
           ],
           color: (opacity = 1) => `rgba(255, 107, 107, ${opacity})`,
         },
@@ -119,16 +253,17 @@ export function useEmergencyAlertsHistoryScreen() {
   }, [stats]);
 
   const formatDayData = useCallback(() => {
-    if (!stats?.byDay) return null;
+    if (!stats?.byDay || typeof stats.byDay !== 'object' || Array.isArray(stats.byDay)) return null;
     const entries = Object.entries(stats.byDay)
       .sort((a, b) => a[0].localeCompare(b[0]))
       .slice(-7);
     return {
-      labels: entries.map(([date]) => {
-        const d = new Date(date);
+      labels: entries.map(([dateStr]) => {
+        const d = new Date(dateStr);
+        if (Number.isNaN(d.getTime())) return TEXTS.DATE_UNAVAILABLE;
         return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
       }),
-      datasets: [{ data: entries.map(([, count]) => count) }],
+      datasets: [{ data: entries.map(([, count]) => safeNonNegativeInt(count, 0)) }],
     };
   }, [stats]);
 
@@ -141,7 +276,11 @@ export function useEmergencyAlertsHistoryScreen() {
     history,
     stats,
     patterns,
+    statsError,
+    patternsError,
     loadData,
+    retryStats,
+    retryPatterns,
     onRefresh,
     formatDate,
     formatRiskLevelData,

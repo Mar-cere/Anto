@@ -1,13 +1,18 @@
 /**
  * Estilos para EmergencyAlertsHistoryScreen y subcomponentes
+ * Alineados con globalStyles (misma base que dashboard de crisis / perfil).
  */
 import { StyleSheet } from 'react-native';
 import { colors } from '../../styles/globalStyles';
+import { TYPOGRAPHY } from '../../constants/ui';
+
+const CARD_SURFACE = colors.cardBackground;
+const CARD_BORDER = colors.border;
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A1533',
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -29,7 +34,15 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     marginTop: 16,
+    marginBottom: 8,
+  },
+  errorDetailText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    textAlign: 'center',
     marginBottom: 24,
+    paddingHorizontal: 16,
+    lineHeight: 18,
   },
   retryButton: {
     backgroundColor: colors.primary,
@@ -49,14 +62,14 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1D2B5F',
+    borderBottomColor: CARD_BORDER,
   },
   backButton: {
     padding: 8,
   },
   headerTitle: {
-    color: '#FFFFFF',
-    fontSize: 20,
+    color: colors.white,
+    fontSize: TYPOGRAPHY.SUBTITLE,
     fontWeight: '600',
   },
   headerRight: {
@@ -65,22 +78,60 @@ export const styles = StyleSheet.create({
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#1D2B5F',
+    borderBottomColor: CARD_BORDER,
+    backgroundColor: CARD_SURFACE,
   },
   tab: {
     flex: 1,
     paddingVertical: 12,
+    paddingHorizontal: 4,
     alignItems: 'center',
+    justifyContent: 'center',
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
+    minHeight: 48,
   },
   tabActive: {
     borderBottomColor: colors.primary,
   },
+  tabLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  tabErrorDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: colors.error,
+  },
+  tabCountBadge: {
+    backgroundColor: 'rgba(26, 221, 219, 0.18)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    minWidth: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabCountBadgeText: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  tabCountBadgeTextActive: {
+    color: colors.white,
+  },
+  tabCountBadgeActive: {
+    backgroundColor: colors.primary,
+  },
   tabText: {
-    color: '#666',
-    fontSize: 14,
+    color: colors.textSecondary,
+    fontSize: TYPOGRAPHY.SMALL,
     fontWeight: '500',
+    textAlign: 'center',
   },
   tabTextActive: {
     color: colors.primary,
@@ -89,19 +140,24 @@ export const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: 32,
+  },
   tabContent: {
     padding: 20,
   },
   summaryCard: {
-    backgroundColor: '#1D2B5F',
+    backgroundColor: CARD_SURFACE,
     borderRadius: 12,
     padding: 20,
     marginBottom: 20,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
   },
   summaryTitle: {
-    color: '#999',
-    fontSize: 14,
+    color: colors.textSecondary,
+    fontSize: TYPOGRAPHY.SMALL,
     marginBottom: 8,
   },
   summaryValue: {
@@ -109,29 +165,64 @@ export const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: 'bold',
   },
+  summaryHint: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 12,
+    lineHeight: 17,
+    paddingHorizontal: 8,
+  },
+  tabErrorContainer: {
+    paddingVertical: 32,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  tabErrorText: {
+    color: colors.white,
+    fontSize: 15,
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 22,
+  },
+  tabRetryButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  tabRetryButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '600',
+  },
   section: {
     marginBottom: 24,
   },
   sectionTitle: {
-    color: '#FFFFFF',
-    fontSize: 18,
+    color: colors.white,
+    fontSize: TYPOGRAPHY.SUBTITLE,
     fontWeight: '600',
     marginBottom: 16,
   },
   chartContainer: {
-    backgroundColor: '#1D2B5F',
+    backgroundColor: CARD_SURFACE,
     borderRadius: 12,
     padding: 10,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
   },
   chart: {
     borderRadius: 12,
   },
   historyItem: {
-    backgroundColor: '#1D2B5F',
+    backgroundColor: CARD_SURFACE,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
   },
   historyItemHeader: {
     flexDirection: 'row',
@@ -227,10 +318,12 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
   },
   contactCard: {
-    backgroundColor: '#1D2B5F',
+    backgroundColor: CARD_SURFACE,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
   },
   contactName: {
     color: '#FFFFFF',
@@ -258,10 +351,12 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
   },
   patternCard: {
-    backgroundColor: '#1D2B5F',
+    backgroundColor: CARD_SURFACE,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
   },
   patternRow: {
     flexDirection: 'row',
@@ -297,13 +392,15 @@ export const styles = StyleSheet.create({
     marginBottom: 4,
   },
   recommendationCard: {
-    backgroundColor: '#1D2B5F',
+    backgroundColor: CARD_SURFACE,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
   },
   recommendationText: {
     color: '#FFFFFF',
@@ -315,6 +412,12 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 60,
+  },
+  statsTabEmptyWrap: {
+    alignItems: 'center',
+    paddingVertical: 28,
+    paddingHorizontal: 12,
+    marginBottom: 8,
   },
   emptyTitle: {
     color: '#FFFFFF',
