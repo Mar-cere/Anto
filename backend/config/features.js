@@ -7,7 +7,7 @@
  *
  * | Flag (objeto)              | Variable ENV                    | Default | Notas |
  * |----------------------------|--------------------------------|---------|-------|
- * | reminders                  | ENABLE_REMINDERS               | activo  | `false` desactiva |
+ * | reminders                  | ENABLE_REMINDERS               | off     | correos periódicos “revisa contactos de emergencia”; solo si `true` |
  * | crisisFollowUp             | ENABLE_CRISIS_FOLLOWUP         | activo  | seguimiento post-crisis |
  * | intenseChatCheckIn         | ENABLE_INTENSE_CHAT_CHECKIN    | activo  | check-ins poschat |
  * | notificationScheduler      | ENABLE_NOTIFICATION_SCHEDULER  | activo  | cola de notificaciones |
@@ -41,7 +41,8 @@ function resolveSwaggerEnabled() {
 }
 
 export const features = Object.freeze({
-  reminders: envIsNotFalse(process.env.ENABLE_REMINDERS),
+  /** Correos periódicos de recordatorio de contactos de emergencia (desactivado por defecto). */
+  reminders: process.env.ENABLE_REMINDERS === 'true',
   crisisFollowUp: envIsNotFalse(process.env.ENABLE_CRISIS_FOLLOWUP),
   intenseChatCheckIn: envIsNotFalse(process.env.ENABLE_INTENSE_CHAT_CHECKIN),
   notificationScheduler: envIsNotFalse(process.env.ENABLE_NOTIFICATION_SCHEDULER),

@@ -16,26 +16,30 @@ describe('config/features', () => {
     process.env = ORIGINAL_ENV;
   });
 
-  it('por defecto activa flags que usan patrón !== "false"', async () => {
+  it('por defecto activa flags que usan patrón !== "false" (excepto reminders, opt-in)', async () => {
     delete process.env.ENABLE_REMINDERS;
     delete process.env.ENABLE_CRISIS_FOLLOWUP;
     delete process.env.ENABLE_INTENSE_CHAT_CHECKIN;
     delete process.env.ENABLE_NOTIFICATION_SCHEDULER;
     delete process.env.ENABLE_OPENAI_DAILY_COST_REPORT;
     const { features } = await import('../../../config/features.js');
-    expect(features.reminders).toBe(true);
+    expect(features.reminders).toBe(false);
     expect(features.crisisFollowUp).toBe(true);
     expect(features.intenseChatCheckIn).toBe(true);
     expect(features.notificationScheduler).toBe(true);
     expect(features.openaiDailyCostReport).toBe(true);
   });
 
+  it('ENABLE_REMINDERS=true activa recordatorios por correo de contactos de emergencia', async () => {
+    process.env.ENABLE_REMINDERS = 'true';
+    const { features } = await import('../../../config/features.js');
+    expect(features.reminders).toBe(true);
+  });
+
   it('ENABLE_*=false desactiva el flag correspondiente', async () => {
-    process.env.ENABLE_REMINDERS = 'false';
     process.env.ENABLE_CRISIS_FOLLOWUP = 'false';
     process.env.ENABLE_OPENAI_DAILY_COST_REPORT = 'false';
     const { features } = await import('../../../config/features.js');
-    expect(features.reminders).toBe(false);
     expect(features.crisisFollowUp).toBe(false);
     expect(features.openaiDailyCostReport).toBe(false);
   });

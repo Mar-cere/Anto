@@ -460,7 +460,7 @@ if (process.env.NODE_ENV !== 'test') {
     );
   }
 
-  // Iniciar servicio de recordatorios periódicos (solo en producción o si está habilitado, NO en test)
+  // Recordatorios por correo: revisar contactos de emergencia (desactivado salvo ENABLE_REMINDERS=true)
   if (features.reminders && process.env.NODE_ENV !== 'test') {
     const REMINDER_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 horas
     
@@ -489,6 +489,10 @@ if (process.env.NODE_ENV !== 'test') {
     }, REMINDER_INTERVAL_MS);
     
     logger.info('✅ Servicio de recordatorios de contactos de emergencia iniciado (cada 24 horas)');
+  } else if (process.env.NODE_ENV !== 'test') {
+    logger.info(
+      '📧 Recordatorios por correo de contactos de emergencia: desactivados (ENABLE_REMINDERS=true para activar)'
+    );
   }
 
   // Correo retención trial (~48 h tras inicio, trials cortos) — diario, NO en test

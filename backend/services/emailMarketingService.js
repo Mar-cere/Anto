@@ -151,7 +151,7 @@ class EmailMarketingService {
   }
 
   /**
-   * Correo “no queremos que te vayas” para trials cortos (~48 h tras inicio, un solo envío por cuenta).
+   * Correo de retención (prueba por terminar) para trials cortos (~48 h tras inicio, un solo envío por cuenta).
    * Usa findOneAndUpdate atómico para no duplicar si el job corre en paralelo.
    * @returns {Promise<{ processed: number, sent: number, failed: number, skippedLongTrial: number }>}
    */

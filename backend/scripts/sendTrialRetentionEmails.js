@@ -1,5 +1,5 @@
 /**
- * Envía correos de retención trial (“no queremos que te vayas”) manualmente.
+ * Envía correos de retención trial (prueba por finalizar) manualmente.
  *
  * Variables útiles (.env):
  *   TRIAL_RETENTION_EMAIL_AFTER_HOURS   (default 48)

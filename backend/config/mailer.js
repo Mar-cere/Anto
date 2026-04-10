@@ -444,7 +444,7 @@ const emailTemplates = {
   },
 
   /**
-   * Retención trial (~2.º día de prueba corta): tono cercano antes del fin del periodo gratuito.
+   * Retención trial (~2.º día de prueba corta): español neutro (sin voseo) antes del fin del periodo gratuito.
    * @param {string} username
    * @param {Date|string} trialEndDate
    */
@@ -453,7 +453,7 @@ const emailTemplates = {
     const now = new Date();
     const msLeft = end.getTime() - now.getTime();
     const hoursLeft = Math.max(1, Math.ceil(msLeft / (1000 * 60 * 60)));
-    const endFormatted = end.toLocaleDateString('es-CL', {
+    const endFormatted = end.toLocaleDateString('es', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -461,29 +461,29 @@ const emailTemplates = {
     });
 
     return {
-      subject: `Tu prueba en ${APP_NAME} está por terminar — queremos que sigas 💙`,
+      subject: `Tu prueba en ${APP_NAME} está por finalizar — nos gustaría que continúes 💙`,
       html: `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: ${EMAIL_COLORS.BACKGROUND};">
           ${getEmailHeader(`Hola ${username} 💙`)}
 
           <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); margin: -24px 24px 24px 24px; padding: 32px 24px; border-radius: 18px; box-shadow: 0 8px 32px rgba(31,38,135,0.10); border: 1px solid rgba(255,255,255,0.18);">
             <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.1rem; line-height: 1.7; margin-bottom: 24px; text-align: center;">
-              <strong>No queremos que te vayas.</strong> Sabemos que probar algo nuevo lleva tiempo, y tu bienestar merece ese espacio.
+              <strong>Nos gustaría que sigas con nosotros.</strong> Sabemos que probar algo nuevo requiere tiempo, y tu bienestar merece ese espacio.
             </p>
             <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; line-height: 1.7; margin-bottom: 28px; text-align: center;">
-              Tu <strong>prueba gratuita</strong> de ${APP_NAME} está llegando a su último tramo: te quedan aproximadamente <strong style="color: ${EMAIL_COLORS.ACCENT};">${hoursLeft} hora${hoursLeft !== 1 ? 's' : ''}</strong> para seguir disfrutando de todas las funciones premium sin costo.
+              Tu <strong>prueba gratuita</strong> de ${APP_NAME} está en sus últimos días: te quedan aproximadamente <strong style="color: ${EMAIL_COLORS.ACCENT};">${hoursLeft} hora${hoursLeft !== 1 ? 's' : ''}</strong> para seguir usando todas las funciones premium sin costo.
             </p>
 
             <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM}12 0%, ${EMAIL_COLORS.ACCENT}10 100%); padding: 22px 20px; border-radius: 14px; margin: 20px 0; border-left: 4px solid ${EMAIL_COLORS.ACCENT}; border: 1px solid rgba(29, 43, 95, 0.12);">
               <h3 style="color: ${EMAIL_COLORS.ACCENT}; margin: 0 0 12px 0; font-size: 1.05rem; text-align: center;">Fin de tu prueba</h3>
               <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.98rem; margin: 0; text-align: center; line-height: 1.6;">
                 <strong>Vence:</strong> ${endFormatted}<br>
-                <span style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem;">(fecha estimada según tu cuenta; la app muestra el detalle exacto)</span>
+                <span style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem;">(fecha estimada según tu cuenta; la aplicación muestra el detalle exacto)</span>
               </p>
             </div>
 
             <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM}15 0%, ${EMAIL_COLORS.ACCENT}15 100%); padding: 24px; border-radius: 12px; margin: 24px 0; border-left: 4px solid ${EMAIL_COLORS.ACCENT};">
-              <h3 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 0; text-align: center;">¿Por qué quedarte?</h3>
+              <h3 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 0; text-align: center;">¿Por qué continuar?</h3>
               <ul style="color: #333; font-size: 16px; line-height: 1.65; margin: 0; padding-left: 20px;">
                 <li>Chat de apoyo cuando lo necesites, sin juicios</li>
                 <li>Hábitos, tareas y herramientas pensadas para tu día a día</li>
@@ -493,16 +493,16 @@ const emailTemplates = {
 
             <div style="text-align: center; margin: 28px 0;">
               <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; margin-bottom: 12px;">
-                <strong>Abrí la app</strong> y seguí conversando con ${APP_NAME}, o revisá los planes cuando quieras seguir con todo desbloqueado.
+                <strong>Abre la aplicación</strong> y continúa conversando con ${APP_NAME}, o revisa los planes cuando desees seguir con todo desbloqueado.
               </p>
               <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.95rem; line-height: 1.5;">
-                Gracias por confiar en nosotros en estos primeros días. Si algo no te cerró o tenés dudas, respondé a nuestros canales de soporte desde la app o la web: queremos que la experiencia te acompañe de verdad.
+                Gracias por confiar en nosotros en estos primeros días. Si algo no te convenció o tienes dudas, escribe a nuestros canales de soporte desde la aplicación o la web: queremos que la experiencia te acompañe de verdad.
               </p>
             </div>
 
             <div style="text-align: center; margin-top: 18px;">
               <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.95rem; margin: 0;">
-                ¿Querés contarnos algo rápido? Encontranos en Instagram.
+                ¿Quieres contarnos algo breve? Estamos en Instagram.
               </p>
             </div>
           </div>
