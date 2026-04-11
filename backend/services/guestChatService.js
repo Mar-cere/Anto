@@ -8,7 +8,7 @@ import {
   GUEST_MAX_USER_MESSAGES,
   GUEST_SESSION_HOURS
 } from '../constants/guestChat.js';
-import { evaluateSuicideRisk } from '../constants/crisis.js';
+import { evaluateSuicideRisk, shouldAttachCrisisContextToPrompt } from '../constants/crisis.js';
 import { buildHistoryForPromptFromMessages } from './openai/openaiPromptBuilder.js';
 import { Conversation, Message } from '../models/index.js';
 import GuestSession from '../models/GuestSession.js';
@@ -303,13 +303,14 @@ export async function sendGuestMessage(guestSession, contentRaw) {
       callSite: 'buildHistoryForPromptFromMessages'
     },
     isGuest: true,
-    crisis: isCrisis
-      ? {
-          riskLevel,
-          country: 'GENERAL',
-          detectedAt: new Date()
-        }
-      : undefined
+    crisis:
+      isCrisis && shouldAttachCrisisContextToPrompt(riskLevel)
+        ? {
+            riskLevel,
+            country: 'GENERAL',
+            detectedAt: new Date()
+          }
+        : undefined
   };
 
   const syntheticUserId = guestSession._id;

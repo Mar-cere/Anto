@@ -65,6 +65,8 @@ export function useChatScreen() {
   const [feedbackSubmittingId, setFeedbackSubmittingId] = useState(null);
   const feedbackRequestLockRef = useRef(false);
   const handleSendRef = useRef(null);
+  /** Evita doble POST / doble respuesta del asistente si el usuario envía dos veces muy rápido. */
+  const sendRequestInFlightRef = useRef(false);
   const flushingOfflineRef = useRef(false);
   const prevIsOfflineRef = useRef(null);
 
@@ -292,36 +294,41 @@ export function useChatScreen() {
       return;
     }
 
-    setInputText('');
-
-    if (await chatService.isGuestChatMode()) {
-      if (guestQuota !== null && guestQuota.remaining <= 0) {
-        Alert.alert(TEXTS.GUEST_LIMIT_TITLE, TEXTS.GUEST_LIMIT_MESSAGE, [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Crear cuenta',
-            onPress: async () => {
-              try {
-                await chatService.clearGuestChat();
-              } catch (_) {}
-              navigation.navigate(ROUTES.REGISTER);
-            },
-          },
-          {
-            text: 'Iniciar sesión',
-            onPress: async () => {
-              try {
-                await chatService.clearGuestChat();
-              } catch (_) {}
-              navigation.navigate(ROUTES.SIGN_IN);
-            },
-          },
-        ]);
-        return;
-      }
+    if (sendRequestInFlightRef.current) {
+      return;
     }
+    sendRequestInFlightRef.current = true;
+    try {
+      setInputText('');
 
-    setIsTyping(true);
+      if (await chatService.isGuestChatMode()) {
+        if (guestQuota !== null && guestQuota.remaining <= 0) {
+          Alert.alert(TEXTS.GUEST_LIMIT_TITLE, TEXTS.GUEST_LIMIT_MESSAGE, [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+              text: 'Crear cuenta',
+              onPress: async () => {
+                try {
+                  await chatService.clearGuestChat();
+                } catch (_) {}
+                navigation.navigate(ROUTES.REGISTER);
+              },
+            },
+            {
+              text: 'Iniciar sesión',
+              onPress: async () => {
+                try {
+                  await chatService.clearGuestChat();
+                } catch (_) {}
+                navigation.navigate(ROUTES.SIGN_IN);
+              },
+            },
+          ]);
+          return;
+        }
+      }
+
+      setIsTyping(true);
 
     const tempUserMessage = {
       id: `${MESSAGE_ID_PREFIXES.TEMP}-${Date.now()}`,
@@ -559,6 +566,9 @@ export function useChatScreen() {
       scrollToBottom(true);
     } finally {
       setIsTyping(false);
+    }
+    } finally {
+      sendRequestInFlightRef.current = false;
     }
   }, [inputText, scrollToBottom, isConnected, isOffline, navigation, guestQuota]);
 

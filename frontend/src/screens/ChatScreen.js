@@ -501,7 +501,9 @@ const ChatScreen = () => {
         onChangeText={setInputText}
         onSend={handleSend}
         inputRef={inputRef}
-        sendDisabled={guestQuota !== null && guestQuota.remaining <= 0}
+        sendDisabled={
+          (guestQuota !== null && guestQuota.remaining <= 0) || isTyping
+        }
       />
 
       {showScrollButton && (

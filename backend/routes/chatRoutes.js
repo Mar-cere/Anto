@@ -3,7 +3,7 @@
  */
 import express from 'express';
 import mongoose from 'mongoose';
-import { evaluateSuicideRisk } from '../constants/crisis.js';
+import { evaluateSuicideRisk, shouldAttachCrisisContextToPrompt } from '../constants/crisis.js';
 import {
   analyzeAssistantResponseTemplateSignals,
   encodeChatPreferencesKey
@@ -828,11 +828,14 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             source: 'http',
             callSite: 'buildHistoryForPromptFromMessages'
           },
-          crisis: isCrisis ? {
-            riskLevel,
-            country: userProfile?.preferences?.country || 'GENERAL',
-            detectedAt: new Date()
-          } : undefined,
+          crisis:
+            isCrisis && shouldAttachCrisisContextToPrompt(riskLevel)
+              ? {
+                  riskLevel,
+                  country: userProfile?.preferences?.country || 'GENERAL',
+                  detectedAt: new Date()
+                }
+              : undefined,
           ...(memoriaParaOpenAI ? { memory: memoriaParaOpenAI } : {})
         };
 

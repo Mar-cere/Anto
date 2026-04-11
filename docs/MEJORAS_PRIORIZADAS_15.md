@@ -94,7 +94,7 @@ Icono o enlace fijo en cabecera (“Privacidad e IA”, límites del asistente) 
 ---
 
 ## 24–30 · Operación, calidad y producto transversal
-
+    
 ## 24. Log estructurado de feature flags al arranque
 **Área:** backend · **Impacto:** operación y soporte  
 Tras cargar `config/features.js`, un único log (sin secretos) con qué servicios quedaron activos: reminders, crisis follow-up, check-in poschat, scheduler, swagger.

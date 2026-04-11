@@ -258,6 +258,44 @@ export const CRISIS_PROTOCOL = {
 // ========== EVALUACIÓN DE RIESGO SUICIDA ==========
 
 /**
+ * ¿Inyectar protocolo completo de crisis en el prompt del modelo (system + mensaje de contexto)?
+ * WARNING puede usarse para monitoreo/alertas asíncronas, pero no debe mostrar 911/988 vía prompt
+ * solo por un falso positivo del clasificador (p. ej. conflicto de pareja sin ideación).
+ */
+export const shouldAttachCrisisContextToPrompt = (riskLevel) =>
+  riskLevel === 'MEDIUM' || riskLevel === 'HIGH';
+
+/**
+ * Léxico explícito de ideación suicida / autolesión en el mensaje (no depende del clasificador).
+ */
+function hasExplicitSuicidalOrSelfHarmLexicon(content) {
+  if (!content || typeof content !== 'string') return false;
+  const c = content.toLowerCase();
+  if (/suicid/i.test(c)) return true;
+  if (/(?:me.*quiero.*morir|quiero.*morir|prefiero.*morir|me.*voy.*a.*matar)/i.test(c)) return true;
+  if (/(?:acabar.*con.*mi.*vida|terminar.*con.*mi.*vida)/i.test(c)) return true;
+  return false;
+}
+
+/**
+ * Malestar interpersonal (pareja, ex, peleas) sin léxico de autolesión: suele clasificarse como CRISIS
+ * con alta confianza pero no debe puntuar como crisis suicida completa.
+ */
+function isLikelyInterpersonalDistressWithoutSelfHarmLexicon(content) {
+  if (hasExplicitSuicidalOrSelfHarmLexicon(content)) return false;
+  return /(?:\bex\b|ex-|pareja|novi[oa]|relaci[oó]n|pelea|peleas|volv|volviendo|volvamos|mentira|celos|engañ|engañ)/i.test(
+    content
+  );
+}
+
+/**
+ * Para post-procesado de respuesta (addSafetyChecks): no añadir 911/988 genéricos si el mensaje del usuario
+ * describe conflicto de pareja / ex sin ideación explícita (evita el patrón visto en conversaciones reales).
+ */
+export const shouldSkipEmergencyPhoneNumbersInSafetyAppend = (userMessageContent) =>
+  isLikelyInterpersonalDistressWithoutSelfHarmLexicon(userMessageContent || '');
+
+/**
  * Evalúa el nivel de riesgo suicida basado en múltiples factores
  * @param {Object} emotionalAnalysis - Análisis emocional del mensaje
  * @param {Object} contextualAnalysis - Análisis contextual del mensaje
@@ -284,11 +322,14 @@ export const evaluateSuicideRisk = (
 
   // ========== FACTORES DE RIESGO CRÍTICOS (Alto peso) ==========
   
-  // Intención de crisis (solo si la confianza es muy alta)
+  // Intención de crisis (clasificador). Reducir peso si el texto es típico de conflicto de pareja
+  // sin léxico de autolesión/ideación (evita MEDIUM + prompt de emergencia por "peleas con el ex").
   if (contextualAnalysis?.intencion?.tipo === 'CRISIS' && contextualAnalysis?.intencion?.confianza >= 0.9) {
-    riskScore += 3;
+    const boost = isLikelyInterpersonalDistressWithoutSelfHarmLexicon(content) ? 1 : 3;
+    riskScore += boost;
   } else if (contextualAnalysis?.intencion?.tipo === 'CRISIS' && contextualAnalysis?.intencion?.confianza >= 0.8) {
-    riskScore += 2; // Reducir si la confianza es menor
+    const boost = isLikelyInterpersonalDistressWithoutSelfHarmLexicon(content) ? 1 : 2;
+    riskScore += boost;
   }
   
   // Indicadores directos de ideación suicida
@@ -334,10 +375,12 @@ export const evaluateSuicideRisk = (
   
   // Intensidad emocional muy alta (solo si es extrema y hay otros indicadores)
   // No sumar solo por intensidad alta sin otros indicadores de crisis
-  if (emotionalAnalysis?.intensity >= 9 && (
-    /(?:suicid|morir|matar|acabar|terminar|desesperad)/i.test(content) ||
-    contextualAnalysis?.intencion?.tipo === 'CRISIS'
-  )) {
+  if (
+    emotionalAnalysis?.intensity >= 9 &&
+    (/suicid|morir|matar|acabar|terminar|desesperad/i.test(content) ||
+      (contextualAnalysis?.intencion?.tipo === 'CRISIS' &&
+        !isLikelyInterpersonalDistressWithoutSelfHarmLexicon(content)))
+  ) {
     riskScore += 2;
   }
   

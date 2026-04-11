@@ -30,6 +30,7 @@ import {
     formatTechniqueForResponse,
     selectAppropriateTechnique
 } from '../constants/therapeuticTechniques.js';
+import { shouldSkipEmergencyPhoneNumbersInSafetyAppend } from '../constants/crisis.js';
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import OpenAITokenUsageDay from '../models/OpenAITokenUsageDay.js';
@@ -534,7 +535,8 @@ class OpenAIService {
         respuestaConSeguridad = this.addSafetyChecks(
           respuestaValidada,
           analisisEmocional,
-          analisisContextual
+          analisisContextual,
+          contenidoNormalizado
         );
       }
 
@@ -852,7 +854,12 @@ class OpenAIService {
 
     let respuestaConSeguridad = respuestaValidada;
     if (analisisEmocional?.intensity >= 8 || analisisEmocional?.requiresAttention) {
-      respuestaConSeguridad = this.addSafetyChecks(respuestaValidada, analisisEmocional, analisisContextual);
+      respuestaConSeguridad = this.addSafetyChecks(
+        respuestaValidada,
+        analisisEmocional,
+        analisisContextual,
+        contenidoNormalizado
+      );
     }
 
     let respuestaConElecciones = respuestaConSeguridad;
@@ -1585,7 +1592,7 @@ class OpenAIService {
    * @param {Object} analisisContextual - Análisis contextual del mensaje
    * @returns {string} Respuesta con chequeos de seguridad agregados
    */
-  addSafetyChecks(respuesta, analisisEmocional, analisisContextual) {
+  addSafetyChecks(respuesta, analisisEmocional, analisisContextual, userMessageContent = '') {
     const intensity = analisisEmocional?.intensity || DEFAULT_VALUES.INTENSITY;
     let safetyText = '';
 
@@ -1596,6 +1603,8 @@ class OpenAIService {
       return respuesta;
     }
 
+    const skipHeavyPhones = shouldSkipEmergencyPhoneNumbersInSafetyAppend(userMessageContent);
+
     // Si la intensidad es >= 8, agregar preguntas de seguridad
     if (intensity >= 8) {
       safetyText += '\n\n💙 **Preguntas de seguridad:**\n';
@@ -1604,13 +1613,16 @@ class OpenAIService {
       safetyText += '• ¿Has pensado en hacerte daño a ti mismo o a otros?\n';
     }
 
-    // Si la intensidad es >= 9, agregar recursos de emergencia
-    if (intensity >= 9) {
+    // Si la intensidad es >= 9, agregar recursos de emergencia (no números USA genéricos si es conflicto de pareja sin ideación)
+    if (intensity >= 9 && !skipHeavyPhones) {
       safetyText += '\n\n🚨 **Recursos de emergencia disponibles:**\n';
       safetyText += '• **Línea de crisis:** 911 (Emergencias)\n';
       safetyText += '• **Línea de prevención del suicidio:** 988 (24/7)\n';
       safetyText += '• **Contactos de emergencia:** Puedes activar tus contactos de emergencia desde la app\n';
       safetyText += '\nRecuerda que no estás solo/a. Hay personas que pueden ayudarte.';
+    } else if (intensity >= 9 && skipHeavyPhones) {
+      safetyText +=
+        '\n\nSi en algún momento sientes que no puedes seguir solo/a con esto, busca apoyo profesional o una línea de crisis en tu país. También puedes usar los contactos de emergencia de la app si los tienes configurados.';
     }
 
     // Mensaje de apoyo general para intensidades altas

@@ -4,7 +4,11 @@
  */
 import Conversation from '../../models/Conversation.js';
 import Message from '../../models/Message.js';
-import { generateCrisisMessage, generateCrisisSystemPrompt } from '../../constants/crisis.js';
+import {
+  generateCrisisMessage,
+  generateCrisisSystemPrompt,
+  shouldAttachCrisisContextToPrompt
+} from '../../constants/crisis.js';
 import {
   buildPersonalizedPrompt,
   DEFAULT_VALUES,
@@ -444,7 +448,7 @@ export function generarMensajesContexto(contexto) {
   }
   // CRISIS: solo si el sistema lo determinó explícitamente vía contexto.crisis.riskLevel.
   // Evitamos disparar recursos por señales blandas o palabras ambiguas (reduce falsos positivos).
-  if (contexto.crisis?.riskLevel) {
+  if (contexto.crisis?.riskLevel && shouldAttachCrisisContextToPrompt(contexto.crisis.riskLevel)) {
     const riskLevel = contexto.crisis.riskLevel;
     const country = contexto.crisis?.country || 'GENERAL';
     const crisisMessage = generateCrisisMessage(riskLevel, country);
@@ -486,6 +490,14 @@ const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emocional de
 - Tu espacio principal es que la persona **hable y se alivie**: escucha activa en texto — refleja matices, nombra lo que importa, evita cortar con la siguiente tarea si el usuario va soltando algo pesado.
 - Invita a **ampliar** (“¿Qué parte te remueve más?”, “¿Desde cuándo lo llevas así?”, “¿Qué pasó después?”) **antes** de “arreglar” con ejercicios; si ya pidió herramientas o pasos, entonces sí prioriza lo práctico.
 - Normaliza que pueda contar sin prisa; una frase de espacio (“cuando quieras seguimos”, “tómate el tiempo”) ayuda si encaja, sin sonar repetitivo en cada mensaje.
+
+### Cierre de turno y continuidad (sin culpa ni menús repetidos)
+- **Varía los cierres**: no termines siempre con la misma fórmula (“¿prefieres A o B?”, “¿micro-técnica o hablar?”). Alterna: una pregunta abierta que encaje con lo último que dijo, un matiz breve, o —si pidió algo concreto— **una sola vía** sin volver a encuestar.
+- Si el usuario dice que **no necesita ayuda** o quiere parar: respeta al momento; como mucho **una** frase de puerta abierta (“cuando quieras, seguimos por aquí”). No insistas con opciones ni técnicas en ese mismo mensaje.
+- Si pide **consejo**, **algo práctico** o **pasos**: prioriza **una** recomendación concreta y breve (2–5 oraciones o un solo paso si pidió “paso a paso”) y **como mucho una** pregunta de seguimiento sobre cómo le fue o qué parte quiere afinar. **No** vuelvas a desplegar menú A/B en el mensaje siguiente si ya ofreciste dos caminos en el anterior o si ya eligió; **profundiza** o **concreta** en lugar de repetir el mismo esquema.
+- Tras varios turnos seguidos de desahogo intenso, puedes cerrar con **un** próximo paso suave para cuando vuelva (“si mañana quieres, podemos seguir con…”) — sin presión ni culpa por no escribir antes.
+- **Anti-bucle**: si en tu mensaje anterior ya ofreciste “hablar vs técnica” o dos opciones, el siguiente turno debe **avanzar el tema** o **ejecutar** lo que pidió, no reenviar el mismo menú con otras palabras.
+- Retención sana: la razón para volver es **continuidad útil** (“seguimos esto cuando quieras”), no mensajes de obligación ni culpa por inactividad.
 
 ### Práctico (sin automandatos)
 - A menudo deja al usuario con **algo que lo haga avanzar**: pregunta precisa, idea clara o, **si encaja**, un micro-paso — pero no en **todos** los turnos ni con el mismo formato.
@@ -640,7 +652,7 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     if (parts.length > 0) systemMessage += `\n\nINFORMACIÓN QUE EL USUARIO COMPARTIÓ AL INICIO (úsala para personalizar tu tono y enfoque):\n${parts.join('\n')}`;
   }
 
-  if (contexto.crisis?.riskLevel) {
+  if (contexto.crisis?.riskLevel && shouldAttachCrisisContextToPrompt(contexto.crisis.riskLevel)) {
     const crisisPrompt = generateCrisisSystemPrompt(contexto.crisis.riskLevel, contexto.crisis.country || 'GENERAL');
     systemMessage = `${crisisPrompt}\n\n---\n\n${systemMessage}`;
   }
