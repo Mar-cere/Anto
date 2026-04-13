@@ -54,8 +54,20 @@ function paymentReturnHtml(appDeepLink, title, bodyText) {
 /**
  * GET /api/payments/return/success
  * URL HTTPS para Mercado Pago (back_url). Redirige al deep link de la app.
+ * Si viene preapproval_id, activa suscripción e invalida caché antes del HTML (evita trial stale).
  */
-router.get('/return/success', (req, res) => {
+router.get('/return/success', async (req, res) => {
+  const preapprovalId = req.query.preapproval_id || req.query.preapprovalId;
+  if (preapprovalId) {
+    try {
+      await paymentService.syncAfterBrowserReturn(String(preapprovalId));
+    } catch (e) {
+      logger.warn('[PAYMENT_RETURN] syncAfterBrowserReturn falló; se envía redirección igual', {
+        error: e?.message,
+        preapprovalId: String(preapprovalId),
+      });
+    }
+  }
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.type('html').send(
     paymentReturnHtml(

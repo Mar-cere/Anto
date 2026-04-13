@@ -1078,6 +1078,67 @@ class PaymentServiceMercadoPago {
     }
   }
 
+  /**
+   * Tras el checkout en navegador: MP redirige a return/success?preapproval_id=...
+   * Reutiliza la misma lógica que el webhook de preapproval y fuerza invalidación de caché
+   * (evita que subscription-status siga devolviendo trial desde Redis/memoria).
+   */
+  async syncAfterBrowserReturn(preapprovalId) {
+    if (!preapprovalId || !isMercadoPagoConfigured()) {
+      return { ok: false, reason: 'skip' };
+    }
+    const id = String(preapprovalId);
+    logger.payment('[BROWSER_RETURN] Sincronizando preapproval', { preapprovalId: id });
+    try {
+      await this.handlePreapprovalNotification({ id });
+    } catch (e) {
+      logger.error('[BROWSER_RETURN] Error en handlePreapprovalNotification', {
+        preapprovalId: id,
+        error: e.message,
+        stack: e.stack,
+      });
+    }
+
+    let userIdStr = null;
+    try {
+      const tx = await Transaction.findOne({
+        $or: [{ 'metadata.preapprovalId': id }, { providerTransactionId: id }],
+        paymentProvider: 'mercadopago',
+      })
+        .sort({ updatedAt: -1 })
+        .select('userId');
+      const uid = tx?.userId;
+      if (uid) {
+        userIdStr = uid._id ? uid._id.toString() : uid.toString();
+      }
+    } catch (lookupErr) {
+      logger.warn('[BROWSER_RETURN] Error buscando transacción', {
+        preapprovalId: id,
+        error: lookupErr.message,
+      });
+    }
+
+    if (userIdStr) {
+      try {
+        const cacheService = (await import('./cacheService.js')).default;
+        await cacheService.invalidateUserCache(userIdStr);
+        logger.payment('[BROWSER_RETURN] Caché de usuario invalidada', {
+          userId: userIdStr,
+          preapprovalId: id,
+        });
+      } catch (cacheErr) {
+        logger.warn('[BROWSER_RETURN] Error invalidando caché', {
+          userId: userIdStr,
+          error: cacheErr?.message,
+        });
+      }
+    } else {
+      logger.warn('[BROWSER_RETURN] Sin transacción para invalidar caché', { preapprovalId: id });
+    }
+
+    return { ok: true, userId: userIdStr };
+  }
+
   async activateSubscriptionFromPayment(transaction, context = {}) {
     const {
       source = 'unknown',

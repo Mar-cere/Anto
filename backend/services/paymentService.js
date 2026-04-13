@@ -71,6 +71,13 @@ class PaymentService {
 
     return await paymentServiceMercadoPago.handleWebhook(payload, signature);
   }
+
+  /**
+   * Sincronizar suscripción al volver del checkout (GET return/success?preapproval_id=...).
+   */
+  async syncAfterBrowserReturn(preapprovalId) {
+    return await paymentServiceMercadoPago.syncAfterBrowserReturn(preapprovalId);
+  }
 }
 
 export default new PaymentService();
