@@ -50,6 +50,8 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const hasCompletedFlowRef = useRef(false);
+  const lastHandledUrlRef = useRef(null);
 
   // Validar URL antes de cargar
   React.useEffect(() => {
@@ -76,8 +78,20 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
   }, [url, onError]);
 
   // Detectar cuando la navegación cambia
+  const finishFlowOnce = (callback) => {
+    if (hasCompletedFlowRef.current) return false;
+    hasCompletedFlowRef.current = true;
+    callback?.();
+    return true;
+  };
+
   const handleNavigationStateChange = (navState) => {
     const { url: currentUrl } = navState;
+    if (!currentUrl || hasCompletedFlowRef.current) return;
+
+    // Evita re-procesar exactamente la misma URL (redirecciones repetidas).
+    if (lastHandledUrlRef.current === currentUrl) return;
+    lastHandledUrlRef.current = currentUrl;
 
     // Detectar URLs de éxito/cancelación de Mercado Pago
     // Mercado Pago redirige a URLs específicas después del pago
@@ -87,12 +101,12 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       // Pequeño delay para mostrar feedback visual
       setTimeout(() => {
-        onSuccess?.();
+        finishFlowOnce(onSuccess);
       }, 500);
     } else if (currentUrl.includes('cancel') || currentUrl.includes('cancelled') ||
                currentUrl.includes('collection_status=cancelled')) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      onCancel?.();
+      finishFlowOnce(onCancel);
     } else if (currentUrl.includes('pending') || currentUrl.includes('collection_status=pending')) {
       // Pago pendiente
       setIsProcessing(true);
@@ -102,7 +116,7 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
     // Detectar errores en la URL
     if (currentUrl.includes('error') || currentUrl.includes('failure')) {
       setError('Error en el proceso de pago');
-      onError?.('Error en el proceso de pago');
+      finishFlowOnce(() => onError?.('Error en el proceso de pago'));
     }
   };
 
@@ -144,7 +158,7 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
     if (!nativeEvent.url || (!nativeEvent.url.includes('about:') && !(nativeEvent.code === -1003 && nativeEvent.url.includes('mercadopago')))) {
       setError(errorMessage);
       setLoading(false);
-      onError?.(errorMessage);
+      finishFlowOnce(() => onError?.(errorMessage));
     }
   };
 
@@ -273,6 +287,7 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
             if (nativeEvent.statusCode >= 400) {
               setError(`Error al cargar la página (${nativeEvent.statusCode})`);
               setLoading(false);
+              finishFlowOnce(() => onError?.(`Error al cargar la página (${nativeEvent.statusCode})`));
             }
           }}
           onShouldStartLoadWithRequest={(request) => {

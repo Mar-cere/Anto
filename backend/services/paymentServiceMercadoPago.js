@@ -25,6 +25,157 @@ function mercadoPagoStrictPayerEmail() {
 }
 
 class PaymentServiceMercadoPago {
+  async cancelMercadoPagoPreapproval(preapprovalId) {
+    const token = process.env.MERCADOPAGO_ACCESS_TOKEN;
+    if (!token) {
+      throw new Error('MERCADOPAGO_ACCESS_TOKEN no configurado');
+    }
+    if (!preapprovalId) {
+      throw new Error('ID de suscripción de Mercado Pago inválido');
+    }
+
+    const url = `https://api.mercadopago.com/preapproval/${encodeURIComponent(preapprovalId)}`;
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status: 'cancelled' }),
+    });
+
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch (_) {
+      payload = null;
+    }
+
+    if (!response.ok) {
+      const providerError =
+        payload?.message ||
+        payload?.error ||
+        `HTTP ${response.status}`;
+      throw new Error(`Mercado Pago rechazó la cancelación: ${providerError}`);
+    }
+
+    return payload;
+  }
+
+  async resolveTransactionForPaymentWebhook({ paymentId, preferenceId, payerEmail }) {
+    const payIdStr = paymentId != null ? String(paymentId) : null;
+    const prefIdStr = preferenceId != null ? String(preferenceId) : null;
+    const normalizedPayerEmail = payerEmail?.toLowerCase().trim() || null;
+
+    // 1) Coincidencias fuertes por IDs de pago ya persistidos (únicos por pago).
+    if (payIdStr) {
+      const byPaymentId = await Transaction.findOne({
+        $or: [
+          { providerTransactionId: payIdStr },
+          { 'metadata.paymentId': payIdStr },
+          { 'metadata.mercadopagoPaymentId': payIdStr },
+        ],
+      })
+        .sort({ createdAt: -1 })
+        .populate('userId', 'email username name');
+
+      if (byPaymentId) {
+        return byPaymentId;
+      }
+    }
+
+    // 2) Fallback por reference/preapprovalPlanId (no único): acotar por estado y email del payer.
+    if (prefIdStr) {
+      const candidates = await Transaction.find({
+        $or: [
+          { providerTransactionId: prefIdStr },
+          { 'metadata.preapprovalPlanId': prefIdStr },
+          { 'metadata.preapprovalProviderReferenceId': prefIdStr },
+        ],
+        paymentProvider: 'mercadopago',
+        type: 'subscription',
+      })
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .populate('userId', 'email username name');
+
+      if (candidates.length === 1) {
+        return candidates[0];
+      }
+
+      if (candidates.length > 1) {
+        const emailMatches = normalizedPayerEmail
+          ? candidates.filter((tx) => tx.userId?.email?.toLowerCase().trim() === normalizedPayerEmail)
+          : [];
+        if (emailMatches.length > 0) {
+          return emailMatches[0];
+        }
+
+        const pendingMatches = candidates.filter((tx) => tx.status === 'pending' || tx.status === 'processing');
+        if (pendingMatches.length > 0) {
+          return pendingMatches[0];
+        }
+
+        return candidates[0];
+      }
+    }
+
+    return null;
+  }
+
+  async resolveTransactionForPreapprovalWebhook({ planId, preapprovalId, payerEmail }) {
+    const planIdStr = planId != null ? String(planId) : null;
+    const preapprovalIdStr = preapprovalId != null ? String(preapprovalId) : null;
+    const normalizedPayerEmail = payerEmail?.toLowerCase().trim() || null;
+
+    // 1) Coincidencia por preapprovalId guardado en metadata (si ya existe).
+    if (preapprovalIdStr) {
+      const byPreapprovalId = await Transaction.findOne({ 'metadata.preapprovalId': preapprovalIdStr })
+        .sort({ createdAt: -1 })
+        .populate('userId', 'email username name');
+      if (byPreapprovalId) {
+        return byPreapprovalId;
+      }
+    }
+
+    if (!planIdStr) return null;
+
+    // 2) Fallback por planId: acotar por email/status.
+    const candidates = await Transaction.find({
+      $or: [
+        { providerTransactionId: planIdStr },
+        { 'metadata.preapprovalPlanId': planIdStr },
+      ],
+      paymentProvider: 'mercadopago',
+      type: 'subscription',
+    })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .populate('userId', 'email username name');
+
+    if (candidates.length === 1) {
+      return candidates[0];
+    }
+
+    if (candidates.length > 1) {
+      const emailMatches = normalizedPayerEmail
+        ? candidates.filter((tx) => tx.userId?.email?.toLowerCase().trim() === normalizedPayerEmail)
+        : [];
+      if (emailMatches.length > 0) {
+        return emailMatches[0];
+      }
+
+      const pendingMatches = candidates.filter((tx) => tx.status === 'pending' || tx.status === 'processing');
+      if (pendingMatches.length > 0) {
+        return pendingMatches[0];
+      }
+
+      return candidates[0];
+    }
+
+    return null;
+  }
+
   /**
    * Crear sesión de checkout para suscripción recurrente usando Preapproval Plans
    * @param {string} userId - ID del usuario
@@ -214,20 +365,18 @@ class PaymentServiceMercadoPago {
       throw new Error('Suscripción no encontrada');
     }
 
-    // Si tiene ID de suscripción de Mercado Pago, cancelarla
+    // Si tiene ID de suscripción de Mercado Pago, cancelarla en el proveedor
+    // para evitar renovaciones futuras no deseadas.
     if (subscription.mercadopagoSubscriptionId) {
-      try {
-        // Cancelar en Mercado Pago
-        // Nota: Esto requiere el endpoint de cancelación de suscripciones
-        // Por ahora, solo actualizamos en nuestra base de datos
-      } catch (error) {
-        logger.error('Error cancelando suscripción en Mercado Pago', {
-          userId: userId.toString(),
-          subscriptionId: subscription.mercadopagoSubscriptionId,
-          error: error.message,
-          stack: error.stack,
-        });
-      }
+      const providerResult = await this.cancelMercadoPagoPreapproval(subscription.mercadopagoSubscriptionId);
+      subscription.metadata = {
+        ...subscription.metadata,
+        mercadopagoCancellation: {
+          requestedAt: new Date().toISOString(),
+          providerStatus: providerResult?.status || 'cancelled',
+          providerId: providerResult?.id || subscription.mercadopagoSubscriptionId,
+        },
+      };
     }
 
     // Actualizar en base de datos
@@ -248,6 +397,7 @@ class PaymentServiceMercadoPago {
       success: true,
       canceledAt: subscription.canceledAt,
       cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+      mercadopagoSubscriptionId: subscription.mercadopagoSubscriptionId || null,
     };
   }
 
@@ -458,14 +608,12 @@ class PaymentServiceMercadoPago {
         return;
       }
 
-      // Buscar transacción por preference ID o payment ID
-      let transaction = await Transaction.findOne({
-        $or: [
-          { providerTransactionId: preferenceId },
-          { providerTransactionId: paymentId },
-          { 'metadata.paymentId': paymentId },
-        ],
-      }).populate('userId', 'email username name');
+      // Resolver transacción de manera determinística.
+      let transaction = await this.resolveTransactionForPaymentWebhook({
+        paymentId,
+        preferenceId,
+        payerEmail: paymentData?.payer?.email,
+      });
 
       if (!transaction) {
         logger.payment('PAYMENT_WEBHOOK: Transacción no encontrada (orphan)', {
@@ -788,13 +936,12 @@ class PaymentServiceMercadoPago {
         planId,
       });
 
-      // Buscar transacción por plan ID
-      const transaction = await Transaction.findOne({
-        $or: [
-          { providerTransactionId: planId },
-          { 'metadata.preapprovalPlanId': planId },
-        ],
-      }).populate('userId', 'email username name');
+      // Resolver transacción considerando que planId no es único entre usuarios.
+      const transaction = await this.resolveTransactionForPreapprovalWebhook({
+        planId,
+        preapprovalId,
+        payerEmail,
+      });
 
       if (!transaction) {
         logger.warn('[PREAPPROVAL_WEBHOOK] Transacción no encontrada', {

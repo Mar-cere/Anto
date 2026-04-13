@@ -7,7 +7,7 @@
  * @author AntoApp Team
  */
 
-import React from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Alert, SafeAreaView, StatusBar, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../components/Header';
@@ -41,22 +41,36 @@ export default function SubscriptionScreen() {
     handlePaymentCancel,
     handlePaymentError,
   } = useSubscriptionScreen();
+  const invalidUrlHandledRef = useRef(false);
 
-  if (showPaymentWebView && paymentUrl) {
-    let isValidUrl = false;
+  const paymentUrlValidationError = useMemo(() => {
+    if (!showPaymentWebView || !paymentUrl) return null;
     try {
       const urlObj = new URL(paymentUrl);
-      isValidUrl = urlObj.protocol.startsWith('http');
-    } catch (e) {
-      setShowPaymentWebView(false);
-      setPaymentUrl(null);
-      Alert.alert('Error', 'La URL de pago no es válida.');
+      if (!urlObj.protocol.startsWith('http')) {
+        return 'La URL de pago no es válida.';
+      }
       return null;
+    } catch (_) {
+      return 'La URL de pago no es válida.';
     }
-    if (!isValidUrl) {
-      setShowPaymentWebView(false);
-      setPaymentUrl(null);
-      Alert.alert('Error', 'La URL de pago no es válida.');
+  }, [showPaymentWebView, paymentUrl]);
+
+  useEffect(() => {
+    if (!paymentUrlValidationError) {
+      invalidUrlHandledRef.current = false;
+      return;
+    }
+    if (invalidUrlHandledRef.current) return;
+
+    invalidUrlHandledRef.current = true;
+    setShowPaymentWebView(false);
+    setPaymentUrl(null);
+    Alert.alert('Error', paymentUrlValidationError);
+  }, [paymentUrlValidationError, setPaymentUrl, setShowPaymentWebView]);
+
+  if (showPaymentWebView && paymentUrl) {
+    if (paymentUrlValidationError) {
       return null;
     }
     return (

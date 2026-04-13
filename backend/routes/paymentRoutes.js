@@ -412,6 +412,13 @@ router.post(
 
       const result = await paymentService.cancelSubscription(userId, cancelImmediately);
 
+      await cacheService.invalidateUserCache(userId).catch((err) => {
+        logger.warn('POST /cancel-subscription: error invalidando caché de usuario', {
+          userId: userId.toString(),
+          error: err?.message,
+        });
+      });
+
       res.json({
         success: true,
         ...result,
