@@ -28,7 +28,6 @@ export function useSubscriptionScreen() {
   const PAYMENT_CANCEL_DEEP_LINK = 'anto://payments/cancel';
   const apiBase = (API_URL || '').replace(/\/$/, '');
   const PAYMENT_SUCCESS_RETURN_URL = `${apiBase}/api/payments/return/success`;
-  const PAYMENT_CANCEL_RETURN_URL = `${apiBase}/api/payments/return/cancel`;
 
   const loadData = useCallback(async () => {
     try {
@@ -266,11 +265,7 @@ export function useSubscriptionScreen() {
           }
           return;
         }
-        const checkoutResponse = await paymentService.createCheckoutSession(
-          plan.id,
-          PAYMENT_SUCCESS_RETURN_URL,
-          PAYMENT_CANCEL_RETURN_URL
-        );
+        const checkoutResponse = await paymentService.createCheckoutSession(plan.id, PAYMENT_SUCCESS_RETURN_URL, null);
         if (!checkoutResponse?.success) {
           Alert.alert(TEXTS.SUBSCRIBE_ERROR, checkoutResponse?.error || 'No se pudo crear la sesión de pago');
           return;
