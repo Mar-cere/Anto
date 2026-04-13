@@ -828,11 +828,26 @@ router.post('/webhook', express.json(), webhookLimiter, async (req, res) => {
       }
     }
 
-    // Validar que el body tenga la estructura esperada
-    if (!req.body || (!req.body.type && !req.body.action && !req.body.id)) {
+    // Mercado Pago puede enviar webhook en body JSON o vía query params.
+    // Normalizamos ambos formatos para evitar perder notificaciones válidas.
+    const hasBody = req.body && Object.keys(req.body).length > 0;
+    const normalizedPayload = hasBody
+      ? req.body
+      : {
+          type: req.query.type || req.query.topic,
+          action: req.query.action || null,
+          id: req.query.id || null,
+          data: {
+            id: req.query['data.id'] || req.query.id || null,
+          },
+        };
+
+    // Validar que el payload tenga la estructura esperada
+    if (!normalizedPayload || (!normalizedPayload.type && !normalizedPayload.action && !normalizedPayload.id && !normalizedPayload?.data?.id)) {
       console.warn('[PAYMENT_WEBHOOK] Webhook con estructura inválida:', {
         hasBody: !!req.body,
-        keys: req.body ? Object.keys(req.body) : [],
+        bodyKeys: req.body ? Object.keys(req.body) : [],
+        queryKeys: req.query ? Object.keys(req.query) : [],
         ip: clientIP
       });
       
@@ -849,7 +864,7 @@ router.post('/webhook', express.json(), webhookLimiter, async (req, res) => {
 
     const xSignatureRaw = req.headers['x-signature'] || req.headers['x-mercadopago-signature'] || null;
     const xRequestId = req.headers['x-request-id'] || null;
-    const resourceId = extractMercadoPagoWebhookResourceId(req.body);
+    const resourceId = extractMercadoPagoWebhookResourceId(normalizedPayload);
 
     // Con MERCADOPAGO_WEBHOOK_SECRET: validación HMAC real (no usar x-request-id como “firma”).
     if (webhookSecret) {
@@ -864,7 +879,7 @@ router.post('/webhook', express.json(), webhookLimiter, async (req, res) => {
           ip: clientIP,
           userAgent,
           reason: 'incomplete_headers_or_body',
-          type: req.body?.type || req.body?.action
+          type: normalizedPayload?.type || normalizedPayload?.action
         }, null).catch(() => {});
         return res.status(400).json({
           error: 'Missing webhook signature or notification id'
@@ -898,15 +913,16 @@ router.post('/webhook', express.json(), webhookLimiter, async (req, res) => {
 
     // Registrar webhook recibido
     console.log('[PAYMENT_WEBHOOK] Webhook recibido:', {
-      type: req.body.type || req.body.action,
-      data: req.body.data ? 'present' : 'missing',
+      type: normalizedPayload.type || normalizedPayload.action,
+      data: normalizedPayload.data ? 'present' : 'missing',
       hasSignature: !!xSignatureRaw,
       resourceId,
       timestamp: new Date().toISOString(),
       ip: clientIP,
+      source: hasBody ? 'body' : 'query',
     });
 
-    const result = await paymentService.handleWebhook(req.body, xSignatureRaw || '');
+    const result = await paymentService.handleWebhook(normalizedPayload, xSignatureRaw || '');
 
     res.json(result);
   } catch (error) {

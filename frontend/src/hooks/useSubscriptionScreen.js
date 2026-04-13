@@ -22,6 +22,7 @@ export function useSubscriptionScreen() {
   const [error, setError] = useState(null);
   const [showPaymentWebView, setShowPaymentWebView] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState(null);
+  const [pendingPaymentVerification, setPendingPaymentVerification] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -51,8 +52,38 @@ export function useSubscriptionScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadData();
-    }, [loadData])
+      let cancelled = false;
+      const syncAfterFocus = async () => {
+        await loadData();
+        if (!pendingPaymentVerification || cancelled) return;
+
+        // En Android + webhooks puede haber latencia; reintentamos para reflejar el pago.
+        let attempts = 4;
+        while (attempts > 0 && !cancelled) {
+          try {
+            const status = await paymentService.getSubscriptionStatus();
+            const isActive =
+              status?.success &&
+              status?.hasSubscription &&
+              (status?.status === 'premium' || status?.status === 'active' || status?.status === 'trialing');
+            if (isActive) {
+              setPendingPaymentVerification(false);
+              await loadData();
+              return;
+            }
+          } catch (_) {}
+
+          attempts -= 1;
+          if (attempts > 0) {
+            await new Promise((r) => setTimeout(r, 2000));
+          }
+        }
+      };
+      syncAfterFocus();
+      return () => {
+        cancelled = true;
+      };
+    }, [loadData, pendingPaymentVerification])
   );
 
   const handleSubscribe = useCallback(
@@ -186,6 +217,7 @@ export function useSubscriptionScreen() {
               onPress: () => {
                 setPaymentUrl(checkoutResponse.url);
                 setShowPaymentWebView(true);
+                setPendingPaymentVerification(true);
               },
             },
             {
@@ -193,10 +225,12 @@ export function useSubscriptionScreen() {
               onPress: async () => {
                 try {
                   await Linking.openURL(checkoutResponse.url);
+                  setPendingPaymentVerification(true);
                   Alert.alert('Pago en proceso', 'Se abrió Mercado Pago. Cuando termines, vuelve a la app.', [{ text: 'Entendido' }]);
                 } catch (e) {
                   setPaymentUrl(checkoutResponse.url);
                   setShowPaymentWebView(true);
+                  setPendingPaymentVerification(true);
                 }
               },
             },
@@ -316,18 +350,21 @@ export function useSubscriptionScreen() {
   const handlePaymentSuccess = useCallback(() => {
     setShowPaymentWebView(false);
     setPaymentUrl(null);
+    setPendingPaymentVerification(false);
     Alert.alert('¡Pago exitoso!', 'Tu suscripción ha sido activada correctamente.', [{ text: 'Entendido', onPress: loadData }]);
   }, [loadData]);
 
   const handlePaymentCancel = useCallback(() => {
     setShowPaymentWebView(false);
     setPaymentUrl(null);
+    setPendingPaymentVerification(false);
     Alert.alert('Pago cancelado', 'El pago fue cancelado. Puedes intentar nuevamente cuando lo desees.', [{ text: 'Entendido' }]);
   }, []);
 
   const handlePaymentError = useCallback((errorMessage) => {
     setShowPaymentWebView(false);
     setPaymentUrl(null);
+    setPendingPaymentVerification(false);
     Alert.alert(TEXTS.SUBSCRIBE_ERROR, errorMessage || 'Ocurrió un error durante el proceso de pago.');
   }, []);
 

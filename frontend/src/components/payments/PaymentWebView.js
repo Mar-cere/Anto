@@ -50,6 +50,7 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [loadTimedOut, setLoadTimedOut] = useState(false);
   const hasCompletedFlowRef = useRef(false);
   const lastHandledUrlRef = useRef(null);
 
@@ -76,6 +77,19 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
       onError?.('URL inválida');
     }
   }, [url, onError]);
+
+  React.useEffect(() => {
+    if (!loading || isProcessing) {
+      setLoadTimedOut(false);
+      return undefined;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setLoadTimedOut(true);
+    }, 12000);
+
+    return () => clearTimeout(timeoutId);
+  }, [loading, isProcessing]);
 
   // Detectar cuando la navegación cambia
   const finishFlowOnce = (callback) => {
@@ -166,6 +180,7 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
   const handleLoadEnd = () => {
     setLoading(false);
     setProgress(100);
+    setLoadTimedOut(false);
   };
 
   // Manejar progreso de carga
@@ -177,6 +192,7 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
   const handleLoadStart = () => {
     setLoading(true);
     setError(null);
+    setLoadTimedOut(false);
   };
 
   // Reintentar carga
@@ -239,6 +255,11 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
           {isProcessing && (
             <Text style={styles.secureText}>{TEXTS.SECURE_PAYMENT}</Text>
           )}
+          {loadTimedOut && !isProcessing && (
+            <TouchableOpacity style={styles.browserFallbackButton} onPress={handleOpenInBrowser}>
+              <Text style={styles.browserFallbackButtonText}>{TEXTS.OPEN_BROWSER}</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -291,10 +312,11 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
             }
           }}
           onShouldStartLoadWithRequest={(request) => {
-            // Permitir todas las navegaciones excepto about: y data: que pueden causar problemas
-            if (request.url.startsWith('about:') || request.url.startsWith('data:')) {
-              return false;
-            }
+            // No bloquear redirecciones internas de MP; bloquear solo esquemas peligrosos/no web.
+            const requestUrl = request?.url || '';
+            if (!requestUrl) return false;
+            if (requestUrl.startsWith('javascript:')) return false;
+            if (requestUrl.startsWith('file:')) return false;
             return true;
           }}
           startInLoadingState={true}
@@ -438,6 +460,19 @@ const styles = StyleSheet.create({
   },
   processingText: {
     marginLeft: 8,
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  browserFallbackButton: {
+    marginTop: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  browserFallbackButtonText: {
     color: colors.primary,
     fontSize: 14,
     fontWeight: '600',
