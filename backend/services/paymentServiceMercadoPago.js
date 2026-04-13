@@ -14,7 +14,7 @@ import Subscription from '../models/Subscription.js';
 import User from '../models/User.js';
 import paymentAuditService from './paymentAuditService.js';
 import logger from '../utils/logger.js';
-import { fetchMercadoPagoPaymentById } from '../utils/mercadopagoPaymentApi.js';
+import { fetchMercadoPagoPaymentById, fetchMercadoPagoPreapprovalById } from '../utils/mercadopagoPaymentApi.js';
 
 /** En producción, por defecto exige coincidencia de email pagador vs usuario. */
 function mercadoPagoStrictPayerEmail() {
@@ -592,12 +592,24 @@ class PaymentServiceMercadoPago {
     const startTime = Date.now();
     try {
       const paymentId = paymentData.id;
-      const preferenceId = paymentData.preference_id || paymentData.preapproval_plan_id;
+      let effectivePaymentData = paymentData;
+      if (paymentId && (!paymentData.status || !paymentData.preference_id)) {
+        const remotePayment = await fetchMercadoPagoPaymentById(String(paymentId));
+        if (remotePayment) {
+          effectivePaymentData = {
+            ...paymentData,
+            status: paymentData.status || remotePayment.status,
+            transaction_amount: paymentData.transaction_amount || remotePayment.transaction_amount,
+            currency_id: paymentData.currency_id || remotePayment.currency_id,
+          };
+        }
+      }
+      const preferenceId = effectivePaymentData.preference_id || effectivePaymentData.preapproval_plan_id;
 
       logger.payment('PAYMENT_WEBHOOK: Notificación de pago recibida', {
         paymentId,
         preferenceId,
-        status: paymentData.status,
+        status: effectivePaymentData.status,
         paymentDataKeys: Object.keys(paymentData),
       });
 
@@ -634,14 +646,14 @@ class PaymentServiceMercadoPago {
         userId: transaction.userId?._id?.toString() || transaction.userId?.toString(),
         currentStatus: transaction.status,
         plan: transaction.plan,
-        paymentStatus: paymentData.status,
+        paymentStatus: effectivePaymentData.status,
       });
 
       const userId = transaction.userId._id || transaction.userId;
       const userIdString = userId.toString();
       const payIdStr = String(paymentId);
 
-      if (paymentData.status === 'approved' && transaction.metadata?.subscriptionActivatedForPaymentId === payIdStr) {
+      if (effectivePaymentData.status === 'approved' && transaction.metadata?.subscriptionActivatedForPaymentId === payIdStr) {
         logger.payment('PAYMENT_WEBHOOK: idempotente — ya activado para este paymentId', {
           transactionId: transaction._id.toString(),
           userId: userIdString,
@@ -650,7 +662,7 @@ class PaymentServiceMercadoPago {
         transaction.metadata = {
           ...transaction.metadata,
           lastWebhookReceivedAt: new Date().toISOString(),
-          lastWebhookPaymentStatus: paymentData.status,
+          lastWebhookPaymentStatus: effectivePaymentData.status,
         };
         await transaction.save();
         return;
@@ -666,34 +678,34 @@ class PaymentServiceMercadoPago {
       let activationBlocked = false;
       let activationBlockedReason = null;
 
-      if (paymentData.payer?.email && transaction.userId.email) {
-        const payerEmail = paymentData.payer.email.toLowerCase().trim();
+      if (effectivePaymentData.payer?.email && transaction.userId.email) {
+        const payerEmail = effectivePaymentData.payer.email.toLowerCase().trim();
         const userEmail = transaction.userId.email.toLowerCase().trim();
         if (payerEmail !== userEmail) {
           logger.warn('[PAYMENT_WEBHOOK] Email del payer no coincide', {
             transactionId: transaction._id.toString(),
             userId: userIdString,
-            payerEmail: paymentData.payer.email,
+            payerEmail: effectivePaymentData.payer.email,
             userEmail: transaction.userId.email,
             paymentId,
-            status: paymentData.status,
+            status: effectivePaymentData.status,
           });
           await paymentAuditService.logEvent('PAYMENT_EMAIL_MISMATCH', {
             transactionId: transaction._id.toString(),
             userId: userIdString,
-            payerEmail: paymentData.payer.email,
+            payerEmail: effectivePaymentData.payer.email,
             userEmail: transaction.userId.email,
             paymentId,
-            status: paymentData.status,
+            status: effectivePaymentData.status,
           }, userIdString, transaction._id.toString());
-          if (mercadoPagoStrictPayerEmail() && paymentData.status === 'approved') {
+          if (mercadoPagoStrictPayerEmail() && effectivePaymentData.status === 'approved') {
             activationBlocked = true;
             activationBlockedReason = 'email_mismatch';
           }
         }
       }
 
-      if (paymentData.status === 'approved' && !activationBlocked) {
+      if (effectivePaymentData.status === 'approved' && !activationBlocked) {
         const remote = await fetchMercadoPagoPaymentById(payIdStr);
         if (remote && Number.isFinite(remote.transaction_amount) && Number.isFinite(transaction.amount)) {
           const diff = Math.abs(remote.transaction_amount - transaction.amount);
@@ -735,7 +747,7 @@ class PaymentServiceMercadoPago {
       };
 
       const oldStatus = transaction.status;
-      const newStatus = statusMap[paymentData.status] || 'pending';
+      const newStatus = statusMap[effectivePaymentData.status] || 'pending';
       transaction.status = newStatus;
       transaction.providerTransactionId = paymentId;
       transaction.processedAt = new Date();
@@ -746,7 +758,7 @@ class PaymentServiceMercadoPago {
           transaction.metadata.preapprovalProviderReferenceId || originalProviderRef,
         mercadopagoPaymentId: payIdStr,
         paymentId: payIdStr,
-        paymentStatus: paymentData.status,
+        paymentStatus: effectivePaymentData.status,
         notificationReceivedAt: new Date().toISOString(),
         previousStatus: oldStatus,
         ...(activationBlockedReason
@@ -759,7 +771,7 @@ class PaymentServiceMercadoPago {
         userId: userIdString,
         oldStatus,
         newStatus,
-        paymentStatus: paymentData.status,
+        paymentStatus: effectivePaymentData.status,
         plan: transaction.plan,
       });
 
@@ -776,13 +788,13 @@ class PaymentServiceMercadoPago {
         userId: userIdString,
         userEmail: transaction.userId.email,
         paymentId,
-        status: paymentData.status,
+        status: effectivePaymentData.status,
         oldStatus,
         newStatus: transaction.status,
       }, userIdString, transaction._id.toString());
 
       // Si el pago fue aprobado, activar suscripción (salvo bloqueos de validación)
-      if (paymentData.status === 'approved') {
+      if (effectivePaymentData.status === 'approved') {
         if (activationBlocked) {
           logger.warn('[PAYMENT_WEBHOOK] Activación bloqueada por validación', {
             transactionId: transaction._id.toString(),
@@ -891,7 +903,7 @@ class PaymentServiceMercadoPago {
         logger.payment('PAYMENT_WEBHOOK: Pago no aprobado, no se activa suscripción', {
           transactionId: transaction._id.toString(),
           userId: userIdString,
-          paymentStatus: paymentData.status,
+          paymentStatus: effectivePaymentData.status,
           plan: transaction.plan,
         });
       }
@@ -925,9 +937,19 @@ class PaymentServiceMercadoPago {
     try {
       // Las notificaciones de preapproval vienen cuando se crea/actualiza una suscripción
       const preapprovalId = preapprovalData.id;
-      const status = preapprovalData.status;
-      const payerEmail = preapprovalData.payer_email;
-      const planId = preapprovalData.preapproval_plan_id;
+      let effectivePreapprovalData = preapprovalData;
+      if (preapprovalId && (!preapprovalData.status || !preapprovalData.preapproval_plan_id)) {
+        const remotePreapproval = await fetchMercadoPagoPreapprovalById(String(preapprovalId));
+        if (remotePreapproval) {
+          effectivePreapprovalData = {
+            ...preapprovalData,
+            ...remotePreapproval,
+          };
+        }
+      }
+      const status = effectivePreapprovalData.status;
+      const payerEmail = effectivePreapprovalData.payer_email;
+      const planId = effectivePreapprovalData.preapproval_plan_id;
 
       logger.payment('[PREAPPROVAL_WEBHOOK] Notificación recibida', {
         preapprovalId,
@@ -1103,6 +1125,8 @@ class PaymentServiceMercadoPago {
       const userId = transaction.userId._id || transaction.userId;
       const userIdString = userId.toString();
       const plan = transaction.plan;
+      const mercadopagoSubscriptionId =
+        source === 'preapproval' && externalId ? String(externalId) : null;
 
       if (!plan) {
         logger.error('activateSubscriptionFromPayment: Plan no encontrado en transacción', {
@@ -1248,6 +1272,7 @@ class PaymentServiceMercadoPago {
           trialStart: null,
           trialEnd: null,
           mercadopagoTransactionId: transaction.providerTransactionId,
+          mercadopagoSubscriptionId: mercadopagoSubscriptionId || null,
           metadata: {
             activatedFrom: transaction._id.toString(),
             activatedAt: now.toISOString(),
@@ -1274,6 +1299,9 @@ class PaymentServiceMercadoPago {
         subscription.trialStart = null;
         subscription.trialEnd = null;
         subscription.mercadopagoTransactionId = transaction.providerTransactionId;
+        if (mercadopagoSubscriptionId) {
+          subscription.mercadopagoSubscriptionId = mercadopagoSubscriptionId;
+        }
         subscription.metadata = {
           ...subscription.metadata,
           lastActivatedFrom: transaction._id.toString(),

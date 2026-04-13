@@ -45,3 +45,46 @@ export async function fetchMercadoPagoPaymentById(paymentId) {
     return null;
   }
 }
+
+/**
+ * @param {string} preapprovalId
+ * @returns {Promise<{ id: string, status?: string, payer_email?: string, preapproval_plan_id?: string } | null>}
+ */
+export async function fetchMercadoPagoPreapprovalById(preapprovalId) {
+  const token = process.env.MERCADOPAGO_ACCESS_TOKEN;
+  if (!token || !preapprovalId) {
+    return null;
+  }
+
+  try {
+    const url = `https://api.mercadopago.com/preapproval/${encodeURIComponent(preapprovalId)}`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+      logger.warn('[MercadoPagoPaymentApi] Error HTTP obteniendo preapproval', {
+        preapprovalId,
+        status: res.status,
+      });
+      return null;
+    }
+
+    const data = await res.json();
+    return {
+      id: String(data.id),
+      status: data.status,
+      payer_email: data.payer_email || data.payer?.email || null,
+      preapproval_plan_id: data.preapproval_plan_id || null,
+    };
+  } catch (err) {
+    logger.error('[MercadoPagoPaymentApi] Fallo fetch preapproval', {
+      preapprovalId,
+      error: err.message,
+    });
+    return null;
+  }
+}
