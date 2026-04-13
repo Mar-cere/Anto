@@ -97,9 +97,17 @@ export const getPreapprovalPlanId = (plan) => {
 };
 
 // Helper: generar URL de checkout para Preapproval Plan
-export const getPreapprovalCheckoutUrl = (planId) => {
+export const getPreapprovalCheckoutUrl = (planId, successUrl = null, cancelUrl = null) => {
   if (!planId) return null;
-  return `https://www.mercadopago.cl/subscriptions/checkout?preapproval_plan_id=${planId}`;
+  const url = new URL('https://www.mercadopago.cl/subscriptions/checkout');
+  url.searchParams.set('preapproval_plan_id', planId);
+  if (successUrl) {
+    url.searchParams.set('back_url', successUrl);
+  }
+  if (cancelUrl) {
+    url.searchParams.set('cancel_url', cancelUrl);
+  }
+  return url.toString();
 };
 
 // Helper: formatear monto para mostrar

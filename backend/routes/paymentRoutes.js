@@ -27,6 +27,60 @@ import {
 
 const router = express.Router();
 
+/** Deep links de la app (Android/iOS) tras pago Mercado Pago vía navegador. */
+const PAYMENT_RETURN_APP_SUCCESS = 'anto://payments/success';
+const PAYMENT_RETURN_APP_CANCEL = 'anto://payments/cancel';
+
+/**
+ * HTML mínimo sin JS inline (compatible con CSP estricto): meta refresh + enlace manual.
+ */
+function paymentReturnHtml(appDeepLink, title, bodyText) {
+  const safeLink = appDeepLink.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="0;url=${safeLink}" />
+  <title>${title}</title>
+</head>
+<body>
+  <p>${bodyText}</p>
+  <p><a href="${safeLink}">Abrir la app Anto</a></p>
+</body>
+</html>`;
+}
+
+/**
+ * GET /api/payments/return/success
+ * URL HTTPS para Mercado Pago (back_url). Redirige al deep link de la app.
+ */
+router.get('/return/success', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.type('html').send(
+    paymentReturnHtml(
+      PAYMENT_RETURN_APP_SUCCESS,
+      'Pago — Anto',
+      'Volviendo a la app Anto…'
+    )
+  );
+});
+
+/**
+ * GET /api/payments/return/cancel
+ * URL HTTPS para cancel_url en checkout.
+ */
+router.get('/return/cancel', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.type('html').send(
+    paymentReturnHtml(
+      PAYMENT_RETURN_APP_CANCEL,
+      'Pago cancelado — Anto',
+      'Pago cancelado. Puedes volver a la app Anto.'
+    )
+  );
+});
+
 // Rate limiters para pagos
 const checkoutLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos

@@ -234,7 +234,9 @@ class PaymentServiceMercadoPago {
       }
       
       // Generar URL de checkout para Preapproval Plan
-      const checkoutUrl = getPreapprovalCheckoutUrl(preapprovalPlanId);
+      const finalSuccessUrl = successUrl || MERCADOPAGO_CONFIG.successUrl;
+      const finalCancelUrl = cancelUrl || MERCADOPAGO_CONFIG.cancelUrl;
+      const checkoutUrl = getPreapprovalCheckoutUrl(preapprovalPlanId, finalSuccessUrl, finalCancelUrl);
       if (!checkoutUrl) {
         throw new Error(`No se pudo generar la URL de checkout para el plan ${plan}`);
       }
@@ -256,8 +258,8 @@ class PaymentServiceMercadoPago {
             preapprovalPlanId: preapprovalPlanId,
             plan: plan,
             checkoutUrl: checkoutUrl,
-            successUrl: successUrl || MERCADOPAGO_CONFIG.successUrl,
-            cancelUrl: cancelUrl || MERCADOPAGO_CONFIG.cancelUrl,
+            successUrl: finalSuccessUrl,
+            cancelUrl: finalCancelUrl,
             // Información del usuario para auditoría
             userEmail: user.email,
             userName: user.name || user.username,

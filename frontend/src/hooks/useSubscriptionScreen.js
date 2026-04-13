@@ -11,6 +11,7 @@ import paymentService from '../services/paymentService';
 import storeKitService from '../services/storeKitService';
 import { getApiErrorMessage } from '../utils/apiErrorHandler';
 import { HARDCODED_PLANS, TEXTS } from '../screens/subscription/subscriptionScreenConstants';
+import { API_URL } from '../config/api';
 
 export function useSubscriptionScreen() {
   const navigation = useNavigation();
@@ -23,6 +24,11 @@ export function useSubscriptionScreen() {
   const [showPaymentWebView, setShowPaymentWebView] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState(null);
   const [pendingPaymentVerification, setPendingPaymentVerification] = useState(false);
+  const PAYMENT_SUCCESS_DEEP_LINK = 'anto://payments/success';
+  const PAYMENT_CANCEL_DEEP_LINK = 'anto://payments/cancel';
+  const apiBase = (API_URL || '').replace(/\/$/, '');
+  const PAYMENT_SUCCESS_RETURN_URL = `${apiBase}/api/payments/return/success`;
+  const PAYMENT_CANCEL_RETURN_URL = `${apiBase}/api/payments/return/cancel`;
 
   const loadData = useCallback(async () => {
     try {
@@ -53,12 +59,8 @@ export function useSubscriptionScreen() {
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      const syncAfterFocus = async () => {
-        await loadData();
-        if (!pendingPaymentVerification || cancelled) return;
-
-        // En Android + webhooks puede haber latencia; reintentamos para reflejar el pago.
-        let attempts = 4;
+      const verifySubscriptionWithRetries = async () => {
+        let attempts = 5;
         while (attempts > 0 && !cancelled) {
           try {
             const status = await paymentService.getSubscriptionStatus();
@@ -69,15 +71,21 @@ export function useSubscriptionScreen() {
             if (isActive) {
               setPendingPaymentVerification(false);
               await loadData();
-              return;
+              return true;
             }
           } catch (_) {}
-
           attempts -= 1;
           if (attempts > 0) {
             await new Promise((r) => setTimeout(r, 2000));
           }
         }
+        return false;
+      };
+
+      const syncAfterFocus = async () => {
+        await loadData();
+        if (!pendingPaymentVerification || cancelled) return;
+        await verifySubscriptionWithRetries();
       };
       syncAfterFocus();
       return () => {
@@ -85,6 +93,64 @@ export function useSubscriptionScreen() {
       };
     }, [loadData, pendingPaymentVerification])
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const verifyAfterDeepLink = async () => {
+      let attempts = 5;
+      while (attempts > 0 && !cancelled) {
+        try {
+          const status = await paymentService.getSubscriptionStatus();
+          const isActive =
+            status?.success &&
+            status?.hasSubscription &&
+            (status?.status === 'premium' || status?.status === 'active' || status?.status === 'trialing');
+          if (isActive) {
+            setPendingPaymentVerification(false);
+            await loadData();
+            Alert.alert('Pago confirmado', 'Tu suscripción fue validada y activada.');
+            return;
+          }
+        } catch (_) {}
+        attempts -= 1;
+        if (attempts > 0) {
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+      }
+      Alert.alert('Pago en validación', 'Detectamos el retorno de pago. Estamos validando tu suscripción, vuelve a revisar en unos segundos.');
+    };
+
+    const handleUrl = (incomingUrl) => {
+      if (!incomingUrl || typeof incomingUrl !== 'string') return;
+      if (incomingUrl.startsWith(PAYMENT_SUCCESS_DEEP_LINK)) {
+        setPendingPaymentVerification(true);
+        setShowPaymentWebView(false);
+        setPaymentUrl(null);
+        verifyAfterDeepLink();
+      } else if (incomingUrl.startsWith(PAYMENT_CANCEL_DEEP_LINK)) {
+        setPendingPaymentVerification(false);
+        setShowPaymentWebView(false);
+        setPaymentUrl(null);
+        Alert.alert('Pago cancelado', 'Cancelaste el pago. Puedes intentarlo nuevamente cuando quieras.');
+      }
+    };
+
+    Linking.getInitialURL()
+      .then((initialUrl) => {
+        if (!cancelled) handleUrl(initialUrl);
+      })
+      .catch(() => {});
+
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      handleUrl(url);
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.remove();
+    };
+  }, [loadData]);
 
   const handleSubscribe = useCallback(
     async (planIdOrPlan) => {
@@ -200,7 +266,11 @@ export function useSubscriptionScreen() {
           }
           return;
         }
-        const checkoutResponse = await paymentService.createCheckoutSession(plan.id);
+        const checkoutResponse = await paymentService.createCheckoutSession(
+          plan.id,
+          PAYMENT_SUCCESS_RETURN_URL,
+          PAYMENT_CANCEL_RETURN_URL
+        );
         if (!checkoutResponse?.success) {
           Alert.alert(TEXTS.SUBSCRIBE_ERROR, checkoutResponse?.error || 'No se pudo crear la sesión de pago');
           return;
