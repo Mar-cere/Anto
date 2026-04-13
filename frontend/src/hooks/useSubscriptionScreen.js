@@ -211,34 +211,19 @@ export function useSubscriptionScreen() {
         }
         const canOpen = await Linking.canOpenURL(checkoutResponse.url);
         if (canOpen) {
-          Alert.alert('Método de pago', '¿Cómo prefieres realizar el pago?', [
-            {
-              text: 'En la app',
-              onPress: () => {
-                setPaymentUrl(checkoutResponse.url);
-                setShowPaymentWebView(true);
-                setPendingPaymentVerification(true);
-              },
-            },
-            {
-              text: 'En navegador',
-              onPress: async () => {
-                try {
-                  await Linking.openURL(checkoutResponse.url);
-                  setPendingPaymentVerification(true);
-                  Alert.alert('Pago en proceso', 'Se abrió Mercado Pago. Cuando termines, vuelve a la app.', [{ text: 'Entendido' }]);
-                } catch (e) {
-                  setPaymentUrl(checkoutResponse.url);
-                  setShowPaymentWebView(true);
-                  setPendingPaymentVerification(true);
-                }
-              },
-            },
-            { text: 'Cancelar', style: 'cancel' },
-          ]);
+          try {
+            await Linking.openURL(checkoutResponse.url);
+            setPendingPaymentVerification(true);
+            Alert.alert('Pago en proceso', 'Se abrió Mercado Pago en tu navegador. Cuando termines, vuelve a la app.', [{ text: 'Entendido' }]);
+          } catch (e) {
+            setPaymentUrl(checkoutResponse.url);
+            setShowPaymentWebView(true);
+            setPendingPaymentVerification(true);
+          }
         } else {
           setPaymentUrl(checkoutResponse.url);
           setShowPaymentWebView(true);
+          setPendingPaymentVerification(true);
         }
       } catch (err) {
         Alert.alert(TEXTS.SUBSCRIBE_ERROR, err.message || 'Ocurrió un error al procesar tu suscripción');
