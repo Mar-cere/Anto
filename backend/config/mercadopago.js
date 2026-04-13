@@ -97,15 +97,21 @@ export const getPreapprovalPlanId = (plan) => {
 };
 
 // Helper: generar URL de checkout para Preapproval Plan
-// Nota: el checkout público de suscripciones acepta `back_url`; `cancel_url` en query
-// puede hacer que Mercado Pago responda 403. La cancelación se gestiona en el flujo de MP.
-export const getPreapprovalCheckoutUrl = (planId, successUrl = null) => {
+//
+// Importante: si agregas `back_url` en la query y NO coincide con lo registrado en tu
+// aplicación de Mercado Pago (panel Developers → tu app → URLs / suscripciones), MP suele
+// responder 403 al abrir el checkout en el navegador.
+//
+// Por defecto solo enviamos `preapproval_plan_id`. El retorno del pagador configúralo en
+// el panel de MP o define UNA sola URL aquí, idéntica en panel y en env:
+//   MERCADOPAGO_SUBSCRIPTIONS_CHECKOUT_BACK_URL=https://tu-dominio/api/payments/return/success
+export const getPreapprovalCheckoutUrl = (planId) => {
   if (!planId) return null;
   const url = new URL('https://www.mercadopago.cl/subscriptions/checkout');
   url.searchParams.set('preapproval_plan_id', planId);
-  const skipBackUrl = process.env.MERCADOPAGO_SUBSCRIPTIONS_CHECKOUT_SKIP_BACK_URL === 'true';
-  if (successUrl && !skipBackUrl) {
-    url.searchParams.set('back_url', successUrl);
+  const backUrl = process.env.MERCADOPAGO_SUBSCRIPTIONS_CHECKOUT_BACK_URL?.trim() || null;
+  if (backUrl) {
+    url.searchParams.set('back_url', backUrl);
   }
   return url.toString();
 };
