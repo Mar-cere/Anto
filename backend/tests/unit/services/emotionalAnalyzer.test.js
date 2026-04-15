@@ -120,6 +120,13 @@ describe('EmotionalAnalyzer Service', () => {
       expect(result).toBeDefined();
       expect(result).toHaveProperty('mainEmotion');
     });
+
+    it('mantiene continuidad emocional en seguimiento breve tipo "las pastillas"', async () => {
+      const prev = [{ mainEmotion: 'miedo', intensity: 9 }];
+      const result = await emotionalAnalyzer.analyzeEmotion('Las pastillas', prev);
+      expect(['miedo', 'ansiedad']).toContain(result.mainEmotion);
+      expect(result.intensity).toBeGreaterThanOrEqual(7);
+    });
   });
 });
 

@@ -1,25 +1,105 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="15" failures="0" errors="0" time="1.135">
-  <testsuite name="openaiPromptBuilder — historial para prompt" errors="0" failures="0" skipped="0" timestamp="2026-04-15T02:36:35" time="0.969" tests="6">
-    <testcase classname="openaiPromptBuilder — historial para prompt defaults: MESSAGES_IN_PROMPT 12 y SLIDING_TAIL 7 (sin env)" name="openaiPromptBuilder — historial para prompt defaults: MESSAGES_IN_PROMPT 12 y SLIDING_TAIL 7 (sin env)" time="0.002">
+<testsuites name="jest tests" tests="53" failures="0" errors="0" time="0.859">
+  <testsuite name="ContextAnalyzer Service" errors="0" failures="0" skipped="0" timestamp="2026-04-15T15:01:24" time="0.125" tests="20">
+    <testcase classname="ContextAnalyzer Service Métodos del servicio debe tener método analizarMensaje" name="ContextAnalyzer Service Métodos del servicio debe tener método analizarMensaje" time="0.001">
     </testcase>
-    <testcase classname="openaiPromptBuilder — historial para prompt buildHistoryForPromptFromMessages respeta orden antiguo→reciente" name="openaiPromptBuilder — historial para prompt buildHistoryForPromptFromMessages respeta orden antiguo→reciente" time="0.001">
+    <testcase classname="ContextAnalyzer Service Métodos del servicio debe tener método analizarContenidoActual" name="ContextAnalyzer Service Métodos del servicio debe tener método analizarContenidoActual" time="0">
     </testcase>
-    <testcase classname="openaiPromptBuilder — historial para prompt selectHistoryForPrompt conserva cola y respeta MESSAGES_IN_PROMPT" name="openaiPromptBuilder — historial para prompt selectHistoryForPrompt conserva cola y respeta MESSAGES_IN_PROMPT" time="0.003">
+    <testcase classname="ContextAnalyzer Service Métodos del servicio debe tener método detectarIntencion" name="ContextAnalyzer Service Métodos del servicio debe tener método detectarIntencion" time="0">
+    </testcase>
+    <testcase classname="ContextAnalyzer Service Métodos del servicio debe tener método detectarTema" name="ContextAnalyzer Service Métodos del servicio debe tener método detectarTema" time="0.001">
+    </testcase>
+    <testcase classname="ContextAnalyzer Service analizarMensaje debe retornar análisis de contexto" name="ContextAnalyzer Service analizarMensaje debe retornar análisis de contexto" time="0.019">
+    </testcase>
+    <testcase classname="ContextAnalyzer Service analizarMensaje debe manejar mensaje inválido" name="ContextAnalyzer Service analizarMensaje debe manejar mensaje inválido" time="0.006">
+    </testcase>
+    <testcase classname="ContextAnalyzer Service analizarMensaje debe manejar mensaje null" name="ContextAnalyzer Service analizarMensaje debe manejar mensaje null" time="0.001">
+    </testcase>
+    <testcase classname="ContextAnalyzer Service analizarMensaje debe detectar urgencia en mensajes" name="ContextAnalyzer Service analizarMensaje debe detectar urgencia en mensajes" time="0.008">
+    </testcase>
+    <testcase classname="ContextAnalyzer Service analizarMensaje filtra distorsiones de baja confianza en fase inicial" name="ContextAnalyzer Service analizarMensaje filtra distorsiones de baja confianza en fase inicial" time="0.01">
+    </testcase>
+    <testcase classname="ContextAnalyzer Service Validaciones básicas debe validar strings correctamente" name="ContextAnalyzer Service Validaciones básicas debe validar strings correctamente" time="0.001">
+    </testcase>
+    <testcase classname="ContextAnalyzer Service Validaciones básicas debe validar mensajes correctamente" name="ContextAnalyzer Service Validaciones básicas debe validar mensajes correctamente" time="0">
+    </testcase>
+    <testcase classname="ContextAnalyzer Service Validaciones básicas debe buscar patrones en contenido" name="ContextAnalyzer Service Validaciones básicas debe buscar patrones en contenido" time="0">
+    </testcase>
+    <testcase classname="ContextAnalyzer Service Validaciones básicas debe detectar patrón en diccionario" name="ContextAnalyzer Service Validaciones básicas debe detectar patrón en diccionario" time="0">
+    </testcase>
+    <testcase classname="ContextAnalyzer Service Validaciones básicas debe retornar null para contenido inválido en detectarPatron" name="ContextAnalyzer Service Validaciones básicas debe retornar null para contenido inválido en detectarPatron" time="0">
+    </testcase>
+    <testcase classname="ContextAnalyzer Service detectarIntencion debe detectar intención en mensaje" name="ContextAnalyzer Service detectarIntencion debe detectar intención en mensaje" time="0.001">
+    </testcase>
+    <testcase classname="ContextAnalyzer Service detectarIntencion debe retornar valores por defecto para mensaje sin patrón" name="ContextAnalyzer Service detectarIntencion debe retornar valores por defecto para mensaje sin patrón" time="0">
+    </testcase>
+    <testcase classname="ContextAnalyzer Service detectarTema debe detectar tema en mensaje" name="ContextAnalyzer Service detectarTema debe detectar tema en mensaje" time="0">
+    </testcase>
+    <testcase classname="ContextAnalyzer Service detectarTema debe retornar valores por defecto para mensaje sin tema específico" name="ContextAnalyzer Service detectarTema debe retornar valores por defecto para mensaje sin tema específico" time="0">
+    </testcase>
+    <testcase classname="ContextAnalyzer Service analizarContenidoActual debe analizar contenido del mensaje" name="ContextAnalyzer Service analizarContenidoActual debe analizar contenido del mensaje" time="0">
+    </testcase>
+    <testcase classname="ContextAnalyzer Service analizarContenidoActual debe manejar mensaje sin contenido" name="ContextAnalyzer Service analizarContenidoActual debe manejar mensaje sin contenido" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="EmotionalAnalyzer Service" errors="0" failures="0" skipped="0" timestamp="2026-04-15T15:01:24" time="0.055" tests="16">
+    <testcase classname="EmotionalAnalyzer Service Métodos del servicio debe tener método analyzeEmotion" name="EmotionalAnalyzer Service Métodos del servicio debe tener método analyzeEmotion" time="0">
+    </testcase>
+    <testcase classname="EmotionalAnalyzer Service Métodos del servicio debe tener método detectPrimaryEmotion" name="EmotionalAnalyzer Service Métodos del servicio debe tener método detectPrimaryEmotion" time="0">
+    </testcase>
+    <testcase classname="EmotionalAnalyzer Service Métodos del servicio debe tener método calculateIntensity" name="EmotionalAnalyzer Service Métodos del servicio debe tener método calculateIntensity" time="0">
+    </testcase>
+    <testcase classname="EmotionalAnalyzer Service Métodos del servicio debe tener método isValidString" name="EmotionalAnalyzer Service Métodos del servicio debe tener método isValidString" time="0">
+    </testcase>
+    <testcase classname="EmotionalAnalyzer Service analyzeEmotion debe retornar un objeto con análisis emocional" name="EmotionalAnalyzer Service analyzeEmotion debe retornar un objeto con análisis emocional" time="0.013">
+    </testcase>
+    <testcase classname="EmotionalAnalyzer Service analyzeEmotion debe manejar texto vacío" name="EmotionalAnalyzer Service analyzeEmotion debe manejar texto vacío" time="0.001">
+    </testcase>
+    <testcase classname="EmotionalAnalyzer Service analyzeEmotion debe manejar texto con emociones positivas" name="EmotionalAnalyzer Service analyzeEmotion debe manejar texto con emociones positivas" time="0.004">
+    </testcase>
+    <testcase classname="EmotionalAnalyzer Service Validaciones básicas debe validar strings correctamente" name="EmotionalAnalyzer Service Validaciones básicas debe validar strings correctamente" time="0.001">
+    </testcase>
+    <testcase classname="EmotionalAnalyzer Service Validaciones básicas debe detectar emoción primaria" name="EmotionalAnalyzer Service Validaciones básicas debe detectar emoción primaria" time="0">
+    </testcase>
+    <testcase classname="EmotionalAnalyzer Service Validaciones básicas debe detectar diferentes emociones" name="EmotionalAnalyzer Service Validaciones básicas debe detectar diferentes emociones" time="0.001">
+    </testcase>
+    <testcase classname="EmotionalAnalyzer Service Validaciones básicas debe calcular intensidad" name="EmotionalAnalyzer Service Validaciones básicas debe calcular intensidad" time="0">
+    </testcase>
+    <testcase classname="EmotionalAnalyzer Service analyzeEmotion con diferentes casos debe detectar tristeza con alta intensidad" name="EmotionalAnalyzer Service analyzeEmotion con diferentes casos debe detectar tristeza con alta intensidad" time="0.001">
+    </testcase>
+    <testcase classname="EmotionalAnalyzer Service analyzeEmotion con diferentes casos debe detectar ansiedad" name="EmotionalAnalyzer Service analyzeEmotion con diferentes casos debe detectar ansiedad" time="0">
+    </testcase>
+    <testcase classname="EmotionalAnalyzer Service analyzeEmotion con diferentes casos debe detectar alegría" name="EmotionalAnalyzer Service analyzeEmotion con diferentes casos debe detectar alegría" time="0.001">
+    </testcase>
+    <testcase classname="EmotionalAnalyzer Service analyzeEmotion con diferentes casos debe manejar texto neutral" name="EmotionalAnalyzer Service analyzeEmotion con diferentes casos debe manejar texto neutral" time="0">
+    </testcase>
+    <testcase classname="EmotionalAnalyzer Service analyzeEmotion con diferentes casos mantiene continuidad emocional en seguimiento breve tipo &quot;las pastillas&quot;" name="EmotionalAnalyzer Service analyzeEmotion con diferentes casos mantiene continuidad emocional en seguimiento breve tipo &quot;las pastillas&quot;" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="openaiPromptBuilder — historial para prompt" errors="0" failures="0" skipped="0" timestamp="2026-04-15T15:01:24" time="0.617" tests="8">
+    <testcase classname="openaiPromptBuilder — historial para prompt defaults: MESSAGES_IN_PROMPT 12 y SLIDING_TAIL 7 (sin env)" name="openaiPromptBuilder — historial para prompt defaults: MESSAGES_IN_PROMPT 12 y SLIDING_TAIL 7 (sin env)" time="0.001">
+    </testcase>
+    <testcase classname="openaiPromptBuilder — historial para prompt buildHistoryForPromptFromMessages respeta orden antiguo→reciente" name="openaiPromptBuilder — historial para prompt buildHistoryForPromptFromMessages respeta orden antiguo→reciente" time="0">
+    </testcase>
+    <testcase classname="openaiPromptBuilder — historial para prompt selectHistoryForPrompt conserva cola y respeta MESSAGES_IN_PROMPT" name="openaiPromptBuilder — historial para prompt selectHistoryForPrompt conserva cola y respeta MESSAGES_IN_PROMPT" time="0.001">
     </testcase>
     <testcase classname="openaiPromptBuilder — historial para prompt computeHistorySelectionForPrompt expone telemetría al truncar" name="openaiPromptBuilder — historial para prompt computeHistorySelectionForPrompt expone telemetría al truncar" time="0.001">
     </testcase>
-    <testcase classname="openaiPromptBuilder — historial para prompt prioriza mensaje con alta intensidad en el tramo viejo" name="openaiPromptBuilder — historial para prompt prioriza mensaje con alta intensidad en el tramo viejo" time="0.001">
+    <testcase classname="openaiPromptBuilder — historial para prompt prioriza mensaje con alta intensidad en el tramo viejo" name="openaiPromptBuilder — historial para prompt prioriza mensaje con alta intensidad en el tramo viejo" time="0">
     </testcase>
     <testcase classname="previewMessageForContext colapsa espacios y recorta" name="previewMessageForContext colapsa espacios y recorta" time="0.001">
     </testcase>
+    <testcase classname="buildMedicationSafetySnippet inyecta guardarraíl si hay medicación + carga alta" name="buildMedicationSafetySnippet inyecta guardarraíl si hay medicación + carga alta" time="0">
+    </testcase>
+    <testcase classname="buildMedicationSafetySnippet no inyecta snippet si no hay contexto de medicación" name="buildMedicationSafetySnippet no inyecta snippet si no hay contexto de medicación" time="0">
+    </testcase>
   </testsuite>
-  <testsuite name="sessionRetentionHints" errors="0" failures="0" skipped="0" timestamp="2026-04-15T02:36:36" time="0.11" tests="9">
-    <testcase classname="sessionRetentionHints detectLikelyFarewell detecta despedidas comunes" name="sessionRetentionHints detectLikelyFarewell detecta despedidas comunes" time="0.003">
+  <testsuite name="sessionRetentionHints" errors="0" failures="0" skipped="0" timestamp="2026-04-15T15:01:25" time="0.033" tests="9">
+    <testcase classname="sessionRetentionHints detectLikelyFarewell detecta despedidas comunes" name="sessionRetentionHints detectLikelyFarewell detecta despedidas comunes" time="0.001">
     </testcase>
     <testcase classname="sessionRetentionHints detectLikelyFarewell no marca conversación normal" name="sessionRetentionHints detectLikelyFarewell no marca conversación normal" time="0">
     </testcase>
-    <testcase classname="sessionRetentionHints buildSessionRetentionPayload primera conversación en la app: solo tras varios turnos y hilo sustantivo" name="sessionRetentionHints buildSessionRetentionPayload primera conversación en la app: solo tras varios turnos y hilo sustantivo" time="0">
+    <testcase classname="sessionRetentionHints buildSessionRetentionPayload primera conversación en la app: solo tras varios turnos y hilo sustantivo" name="sessionRetentionHints buildSessionRetentionPayload primera conversación en la app: solo tras varios turnos y hilo sustantivo" time="0.001">
     </testcase>
     <testcase classname="sessionRetentionHints buildSessionRetentionPayload primera conversación: no dispara en los primeros turnos" name="sessionRetentionHints buildSessionRetentionPayload primera conversación: no dispara en los primeros turnos" time="0">
     </testcase>
@@ -29,9 +109,9 @@
     </testcase>
     <testcase classname="sessionRetentionHints buildSessionRetentionPayload usuario que vuelve: no dispara apertura tras varios turnos" name="sessionRetentionHints buildSessionRetentionPayload usuario que vuelve: no dispara apertura tras varios turnos" time="0">
     </testcase>
-    <testcase classname="sessionRetentionHints buildSessionRetentionSystemSnippet vacío si no hay banderas" name="sessionRetentionHints buildSessionRetentionSystemSnippet vacío si no hay banderas" time="0.001">
+    <testcase classname="sessionRetentionHints buildSessionRetentionSystemSnippet vacío si no hay banderas" name="sessionRetentionHints buildSessionRetentionSystemSnippet vacío si no hay banderas" time="0">
     </testcase>
-    <testcase classname="sessionRetentionHints buildSessionRetentionSystemSnippet incluye bloque si hay despedida" name="sessionRetentionHints buildSessionRetentionSystemSnippet incluye bloque si hay despedida" time="0">
+    <testcase classname="sessionRetentionHints buildSessionRetentionSystemSnippet incluye bloque si hay despedida" name="sessionRetentionHints buildSessionRetentionSystemSnippet incluye bloque si hay despedida" time="0.001">
     </testcase>
   </testsuite>
 </testsuites>

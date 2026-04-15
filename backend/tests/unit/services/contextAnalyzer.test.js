@@ -59,6 +59,19 @@ describe('ContextAnalyzer Service', () => {
       expect(result).toBeDefined();
       expect(result).toHaveProperty('urgencia');
     });
+
+    it('filtra distorsiones de baja confianza en fase inicial', async () => {
+      const result = await contextAnalyzer.analizarMensaje(
+        { content: 'Todo mal, tengo que poder con todo' },
+        [{ role: 'user', content: 'hola' }]
+      );
+      if (Array.isArray(result.cognitiveDistortions) && result.cognitiveDistortions.length > 0) {
+        const minConf = Math.min(...result.cognitiveDistortions.map(d => d.confidence || 0));
+        expect(minConf).toBeGreaterThanOrEqual(0.6);
+      } else {
+        expect(result.cognitiveDistortions).toBeNull();
+      }
+    });
   });
 
   describe('Validaciones básicas', () => {

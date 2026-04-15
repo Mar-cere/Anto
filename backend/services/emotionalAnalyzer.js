@@ -36,6 +36,8 @@ class EmotionalAnalyzer {
     this.CONFIDENCE_MAX = 1;
     this.WORD_COUNT_THRESHOLD = 20;
     this.HISTORY_WINDOW_SIZE = 3;
+    this.BRIEF_FOLLOWUP_MAX_WORDS = 7;
+    this.BRIEF_FOLLOWUP_MAX_CHARS = 48;
     this.EMOTION_NEUTRAL = 'neutral';
     this.CATEGORY_NEUTRAL = 'neutral';
     this.CATEGORY_NEGATIVE = 'negative';
@@ -188,6 +190,7 @@ class EmotionalAnalyzer {
       // Ajustar basado en patrones previos si existen
       if (previousPatterns && Array.isArray(previousPatterns) && previousPatterns.length > 0) {
         const adjustedAnalysis = this.adjustBasedOnHistory(
+          contentLower,
           detectedEmotion,
           intensity,
           previousPatterns
@@ -884,23 +887,72 @@ class EmotionalAnalyzer {
 
   /**
    * Ajusta el análisis emocional basado en el historial previo
+   * @param {string} content - Contenido actual en minúsculas
    * @param {Object} currentEmotion - Emoción actual
    * @param {number} currentIntensity - Intensidad actual
    * @param {Array} previousPatterns - Historial previo
    * @returns {Object} Análisis ajustado con emoción e intensidad
    */
-  adjustBasedOnHistory(currentEmotion, currentIntensity, previousPatterns) {
+  adjustBasedOnHistory(content, currentEmotion, currentIntensity, previousPatterns) {
     if (!Array.isArray(previousPatterns) || !previousPatterns.length) {
       return { emotion: currentEmotion, intensity: currentIntensity };
     }
     
     const recentPatterns = previousPatterns.slice(-this.HISTORY_WINDOW_SIZE);
+    const carryover = this.applyBriefFollowUpCarryover(
+      content,
+      currentEmotion,
+      currentIntensity,
+      recentPatterns
+    );
+    if (carryover) {
+      return carryover;
+    }
     const emotionalTrend = this.analyzeEmotionalTrend(recentPatterns);
     
     return {
       emotion: currentEmotion,
       intensity: this.adjustIntensityBasedOnTrend(currentIntensity, emotionalTrend)
     };
+  }
+
+  /**
+   * Mantiene continuidad emocional en respuestas muy breves de seguimiento
+   * (ej: "las pastillas"), evitando caer a neutral si el estado previo era alto.
+   * @param {string} content
+   * @param {Object} currentEmotion
+   * @param {number} currentIntensity
+   * @param {Array} recentPatterns
+   * @returns {{emotion: Object, intensity: number}|null}
+   */
+  applyBriefFollowUpCarryover(content, currentEmotion, currentIntensity, recentPatterns) {
+    if (!this.isValidString(content) || !Array.isArray(recentPatterns) || recentPatterns.length === 0) {
+      return null;
+    }
+    const words = content.trim().split(/\s+/).filter(Boolean);
+    const isBrief = words.length <= this.BRIEF_FOLLOWUP_MAX_WORDS && content.length <= this.BRIEF_FOLLOWUP_MAX_CHARS;
+    if (!isBrief) return null;
+
+    const hasFollowUpCue = /(?:pastillas?|medicaci[oó]n|medicinas?|dosis|lorazepam|citalopram|escitalopram|ansiol[ií]tico|benzodiazep|eso|esto)/i.test(content);
+    const last = recentPatterns[recentPatterns.length - 1];
+    if (!last || !last.mainEmotion) return null;
+
+    const wasHighNegative = ['miedo', 'ansiedad', 'tristeza', 'enojo'].includes(last.mainEmotion) && (last.intensity || 0) >= 8;
+    const collapsedNow = currentEmotion?.name === this.EMOTION_NEUTRAL || currentIntensity <= 5;
+
+    if (wasHighNegative && collapsedNow && hasFollowUpCue) {
+      const carriedEmotionData = this.emotionPatterns[last.mainEmotion];
+      if (!carriedEmotionData) return null;
+      return {
+        emotion: {
+          name: last.mainEmotion,
+          category: carriedEmotionData.category,
+          baseIntensity: carriedEmotionData.intensity
+        },
+        intensity: this.clampIntensity(Math.max((last.intensity || 8) - 1, 7))
+      };
+    }
+    return null;
   }
 
   /**

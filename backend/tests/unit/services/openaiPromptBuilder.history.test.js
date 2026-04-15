@@ -2,6 +2,7 @@
  * Ventana deslizante del historial para prompts (regresión).
  */
 import {
+  buildMedicationSafetySnippet,
   buildHistoryForPromptFromMessages,
   computeHistorySelectionForPrompt,
   previewMessageForContext,
@@ -91,5 +92,23 @@ describe('previewMessageForContext', () => {
     const out = previewMessageForContext('x'.repeat(40), 10);
     expect(out.endsWith('…')).toBe(true);
     expect(out.length).toBe(10);
+  });
+});
+
+describe('buildMedicationSafetySnippet', () => {
+  it('inyecta guardarraíl si hay medicación + carga alta', () => {
+    const s = buildMedicationSafetySnippet({
+      currentMessage: 'Me da miedo depender de las pastillas y del lorazepam',
+      emotional: { mainEmotion: 'miedo', intensity: 8 }
+    });
+    expect(s).toContain('Guardarraíl medicación + ansiedad');
+  });
+
+  it('no inyecta snippet si no hay contexto de medicación', () => {
+    const s = buildMedicationSafetySnippet({
+      currentMessage: 'Estoy cansada hoy',
+      emotional: { mainEmotion: 'tristeza', intensity: 8 }
+    });
+    expect(s).toBe('');
   });
 });

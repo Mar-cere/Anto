@@ -303,6 +303,27 @@ export function buildAntiEchoHint(historyMessages) {
 }
 
 /**
+ * Guardarraíl para conversaciones de ansiedad + medicación.
+ * @param {Object} contexto
+ * @returns {string}
+ */
+export function buildMedicationSafetySnippet(contexto) {
+  const currentMessage = (contexto?.currentMessage || '').toLowerCase();
+  if (!currentMessage) return '';
+  const mentionsMedication = /(?:citalopram|escitalopram|lorazepam|ansiol[ií]tico|benzodiazep|pastillas?|medicaci[oó]n|medicamentos?|dosis|retirada|dependencia)/i.test(currentMessage);
+  if (!mentionsMedication) return '';
+  const intensity = contexto?.emotional?.intensity || 5;
+  const emotion = contexto?.emotional?.mainEmotion || 'neutral';
+  const highLoad = intensity >= 7 || ['miedo', 'ansiedad', 'tristeza'].includes(emotion);
+  if (!highLoad) return '';
+  return `\n\n### Guardarraíl medicación + ansiedad
+- Si el usuario expresa miedo a depender de medicación o dudas sobre pastillas, valida primero ese miedo en 1 frase específica.
+- Seguridad: no recomendar suspender, iniciar, reducir ni cambiar dosis por cuenta propia. Indicar revisar con profesional prescriptor.
+- Después de la recomendación de seguridad, continúa con una sola pregunta concreta para avanzar (p. ej. qué le preocupa más: dependencia, efectos, retirada o control de síntomas).
+- Evita tono de regaño o bloqueo; mantén apertura para seguir conversando.`;
+}
+
+/**
  * Recorta texto de usuario para inyectarlo en MEMORIA del prompt (sin saltos ni comillas problemáticas).
  * @param {string} raw
  * @param {number} maxLen
@@ -699,6 +720,10 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   const retentionSnippet = buildSessionRetentionSystemSnippet(contexto.sessionRetention);
   if (retentionSnippet) {
     systemMessage += retentionSnippet;
+  }
+  const medicationSnippet = buildMedicationSafetySnippet(contexto);
+  if (medicationSnippet) {
+    systemMessage += medicationSnippet;
   }
 
   if (contexto.crisis?.riskLevel && shouldAttachCrisisContextToPrompt(contexto.crisis.riskLevel)) {

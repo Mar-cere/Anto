@@ -38,6 +38,7 @@ class ContextAnalyzer {
     this.FASE_CONVERSACION_INICIAL = 'INICIAL';
     this.INTENCIONES_SEGUIMIENTO = ['CRISIS', 'AYUDA_EMOCIONAL'];
     this.PATRONES_URGENCIA = ['urgente', 'emergencia', 'crisis', 'ayuda.*ahora', 'grave'];
+    this.DISTORTION_CONFIDENCE_MIN_EARLY = 0.6;
   }
   
   // Helper: validar que el contenido es un string válido
@@ -120,8 +121,9 @@ class ContextAnalyzer {
       // Enriquecer contexto con historial cuando esté disponible
       let faseConversacion = this.FASE_CONVERSACION_INICIAL;
       let temasRecurrentes = [];
+      let userCount = 0;
       if (Array.isArray(conversationHistory) && conversationHistory.length > 0) {
-        const userCount = conversationHistory.filter(m => m.role === 'user').length;
+        userCount = conversationHistory.filter(m => m.role === 'user').length;
         faseConversacion = userCount >= 4 ? 'EN_CURSO' : this.FASE_CONVERSACION_INICIAL;
         temasRecurrentes = this.extraerTemasDelHistorial(conversationHistory);
       }
@@ -148,6 +150,18 @@ class ContextAnalyzer {
       const cognitiveDistortions = cognitiveDistortionDetector.detectDistortions(content);
       const primaryDistortion = cognitiveDistortionDetector.getPrimaryDistortion(content);
       const distortionIntervention = cognitiveDistortionDetector.generateIntervention(cognitiveDistortions);
+      const isEarlyPhase = faseConversacion === this.FASE_CONVERSACION_INICIAL && userCount <= 3;
+      const isBriefUserMessage = content.trim().length <= 45;
+      const gateDistortions = isEarlyPhase || isBriefUserMessage;
+      const filteredDistortions = gateDistortions
+        ? cognitiveDistortions.filter(d => (d?.confidence || 0) >= this.DISTORTION_CONFIDENCE_MIN_EARLY)
+        : cognitiveDistortions;
+      const filteredPrimary = filteredDistortions.find(
+        (d) => d?.type && d.type === primaryDistortion?.type
+      ) || null;
+      const filteredIntervention = filteredDistortions.length > 0
+        ? cognitiveDistortionDetector.generateIntervention(filteredDistortions)
+        : null;
 
       return {
         intencion: contenidoActual.intencion,
@@ -167,9 +181,9 @@ class ContextAnalyzer {
         selfEfficacy: selfEfficacy || null,
         socialSupport: socialSupport || null,
         // NUEVO: Distorsiones cognitivas
-        cognitiveDistortions: cognitiveDistortions.length > 0 ? cognitiveDistortions : null,
-        primaryDistortion: primaryDistortion || null,
-        distortionIntervention: distortionIntervention || null
+        cognitiveDistortions: filteredDistortions.length > 0 ? filteredDistortions : null,
+        primaryDistortion: filteredPrimary || null,
+        distortionIntervention: filteredIntervention || null
       };
     } catch (error) {
       console.error('[ContextAnalyzer] Error en análisis de mensaje:', error, mensaje);
