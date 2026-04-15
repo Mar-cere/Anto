@@ -27,6 +27,7 @@ import {
   detectSilenceAfterNegative
 } from '../routes/chat/chatContextAnalysis.js';
 import { HISTORIAL_LIMITE } from '../routes/chat/chatConstants.js';
+import { buildSessionRetentionPayload } from './sessionRetentionHints.js';
 
 function signGuestToken(guestSessionId) {
   return jwt.sign(
@@ -285,6 +286,13 @@ export async function sendGuestMessage(guestSession, contentRaw) {
     }
   });
 
+  const sessionRetention = buildSessionRetentionPayload({
+    conversationHistoryNewestFirst: conversationHistory,
+    userContent: content,
+    priorConversationCount: null,
+    threadMessageLimit: GUEST_MAX_USER_MESSAGES * 2
+  });
+
   const openaiContext = {
     history: historialParaPrompt,
     emotional: emotionalAnalysis,
@@ -303,6 +311,7 @@ export async function sendGuestMessage(guestSession, contentRaw) {
       callSite: 'buildHistoryForPromptFromMessages'
     },
     isGuest: true,
+    sessionRetention,
     crisis:
       isCrisis && shouldAttachCrisisContextToPrompt(riskLevel)
         ? {

@@ -295,7 +295,8 @@ class OpenAIService {
           inferredWritingStyle: contexto.inferredWritingStyle,
           preferredResponseLength: contexto.preferredResponseLength,
           crisis: contexto.crisis,
-          isGuest
+          isGuest,
+          sessionRetention: contexto.sessionRetention
         }
       );
 
@@ -695,7 +696,8 @@ class OpenAIService {
         inferredWritingStyle: contexto.inferredWritingStyle,
         preferredResponseLength: contexto.preferredResponseLength,
         crisis: contexto.crisis,
-        isGuest: contexto.isGuest === true
+        isGuest: contexto.isGuest === true,
+        sessionRetention: contexto.sessionRetention
       }
     );
 

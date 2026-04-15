@@ -17,6 +17,7 @@ import {
   TIME_PERIODS
 } from '../../constants/openai.js';
 import { countIntensityGe, emitPromptHistoryTelemetry } from './promptHistoryTelemetry.js';
+import { buildSessionRetentionSystemSnippet } from '../sessionRetentionHints.js';
 
 function getTimeOfDay() {
   const hour = new Date().getHours();
@@ -302,6 +303,20 @@ export function buildAntiEchoHint(historyMessages) {
 }
 
 /**
+ * Recorta texto de usuario para inyectarlo en MEMORIA del prompt (sin saltos ni comillas problemáticas).
+ * @param {string} raw
+ * @param {number} maxLen
+ * @returns {string}
+ */
+export function previewMessageForContext(raw, maxLen = 72) {
+  if (!raw || typeof raw !== 'string') return '';
+  let s = raw.replace(/\s+/g, ' ').trim().replace(/[\u0000-\u001F]/g, '');
+  s = s.replace(/["'«»]/g, '');
+  if (s.length > maxLen) s = `${s.slice(0, Math.max(1, maxLen - 1))}…`;
+  return s;
+}
+
+/**
  * Genera contexto de largo plazo a partir del perfil (género, temas recurrentes, emociones, etc.).
  * Usa contexto.profile; si no viene, retorna null.
  */
@@ -329,13 +344,41 @@ export async function generateLongTermContext(userId, contexto) {
         const previousConversation = await Conversation.findOne({ userId, _id: { $ne: currentConversationId } }).sort({ updatedAt: -1 }).lean();
         if (previousConversation) {
           const lastUserMessage = await Message.findOne({ conversationId: previousConversation._id, role: 'user' }).select('content metadata.context.emotional createdAt').sort({ createdAt: -1 }).lean();
-          if (lastUserMessage?.metadata?.context?.emotional) {
-            const prevEmotion = lastUserMessage.metadata.context.emotional.mainEmotion;
-            const prevIntensity = lastUserMessage.metadata.context.emotional.intensity || 5;
-            const daysAgo = Math.floor((Date.now() - new Date(lastUserMessage.createdAt).getTime()) / (1000 * 60 * 60 * 24));
-            if (daysAgo <= 7 && prevIntensity >= 5 && ['tristeza', 'ansiedad', 'enojo', 'miedo', 'verguenza', 'culpa'].includes(prevEmotion)) {
-              const emotionMap = { tristeza: 'triste', ansiedad: 'ansioso', enojo: 'enojado', miedo: 'asustado', verguenza: 'avergonzado', culpa: 'culpable' };
-              contextParts.push(`Última conversación (hace ${daysAgo} día${daysAgo !== 1 ? 's' : ''}): estaba ${emotionMap[prevEmotion] || prevEmotion} (intensidad ${prevIntensity}/10). Puedes hacer referencia natural si es relevante.`);
+          if (lastUserMessage) {
+            const daysAgo = Math.floor(
+              (Date.now() - new Date(lastUserMessage.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+            );
+            let addedPrevConvHint = false;
+            const em = lastUserMessage.metadata?.context?.emotional;
+            if (em) {
+              const prevEmotion = em.mainEmotion;
+              const prevIntensity = em.intensity || 5;
+              if (
+                daysAgo <= 7 &&
+                prevIntensity >= 5 &&
+                ['tristeza', 'ansiedad', 'enojo', 'miedo', 'verguenza', 'culpa'].includes(prevEmotion)
+              ) {
+                const emotionMap = {
+                  tristeza: 'triste',
+                  ansiedad: 'ansioso',
+                  enojo: 'enojado',
+                  miedo: 'asustado',
+                  verguenza: 'avergonzado',
+                  culpa: 'culpable'
+                };
+                contextParts.push(
+                  `Última conversación (hace ${daysAgo} día${daysAgo !== 1 ? 's' : ''}): estaba ${emotionMap[prevEmotion] || prevEmotion} (intensidad ${prevIntensity}/10). Puedes hacer referencia natural si es relevante.`
+                );
+                addedPrevConvHint = true;
+              }
+            }
+            if (!addedPrevConvHint && daysAgo <= 10 && lastUserMessage.content) {
+              const preview = previewMessageForContext(lastUserMessage.content, 72);
+              if (preview.length >= 12) {
+                contextParts.push(
+                  `Hubo una conversación previa (hace ${daysAgo} día${daysAgo !== 1 ? 's' : ''}); el último mensaje del usuario fue algo como: ${preview}. Ofrece continuidad con naturalidad si encaja; si trae tema nuevo, priorízalo.`
+                );
+              }
             }
           }
         }
@@ -498,6 +541,7 @@ const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emocional de
 - Tras varios turnos seguidos de desahogo intenso, puedes cerrar con **un** próximo paso suave para cuando vuelva (“si mañana quieres, podemos seguir con…”) — sin presión ni culpa por no escribir antes.
 - **Anti-bucle**: si en tu mensaje anterior ya ofreciste “hablar vs técnica” o dos opciones, el siguiente turno debe **avanzar el tema** o **ejecutar** lo que pidió, no reenviar el mismo menú con otras palabras.
 - Retención sana: la razón para volver es **continuidad útil** (“seguimos esto cuando quieras”), no mensajes de obligación ni culpa por inactividad.
+- Si el sistema añade la sección **«Sesión y retorno»** más abajo en el prompt, **prioriza esas instrucciones** para cierres, puentes a la próxima conversación y límites del hilo.
 
 ### Práctico (sin automandatos)
 - A menudo deja al usuario con **algo que lo haga avanzar**: pregunta precisa, idea clara o, **si encaja**, un micro-paso — pero no en **todos** los turnos ni con el mismo formato.
@@ -560,7 +604,7 @@ const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emocional de
 /**
  * Construye el prompt contextualizado completo (systemMessage + contextMessages).
  * @param {Object} mensaje - Mensaje del usuario (content, userId, conversationId)
- * @param {Object} contexto - Contexto (emotional, contextual, profile, therapeutic, memory, history, sessionTrends, currentMessage, currentConversationId, crisis)
+ * @param {Object} contexto - Contexto (emotional, contextual, profile, therapeutic, memory, history, sessionTrends, sessionRetention, currentMessage, currentConversationId, crisis)
  * @returns {Promise<{ systemMessage: string, contextMessages: Array }>}
  */
 export async function buildContextualizedPrompt(mensaje, contexto) {
@@ -650,6 +694,11 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     if (onboarding.whatToImproveOrWorkOn) parts.push(`Qué le gustaría mejorar o trabajar: ${onboarding.whatToImproveOrWorkOn}`);
     if (onboarding.typeOfSpecialist) parts.push(`Tipo de apoyo que busca: ${onboarding.typeOfSpecialist}`);
     if (parts.length > 0) systemMessage += `\n\nINFORMACIÓN QUE EL USUARIO COMPARTIÓ AL INICIO (úsala para personalizar tu tono y enfoque):\n${parts.join('\n')}`;
+  }
+
+  const retentionSnippet = buildSessionRetentionSystemSnippet(contexto.sessionRetention);
+  if (retentionSnippet) {
+    systemMessage += retentionSnippet;
   }
 
   if (contexto.crisis?.riskLevel && shouldAttachCrisisContextToPrompt(contexto.crisis.riskLevel)) {

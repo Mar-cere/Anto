@@ -1,3 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="0" failures="0" errors="0" time="0.081">
+<testsuites name="jest tests" tests="15" failures="0" errors="0" time="1.135">
+  <testsuite name="openaiPromptBuilder — historial para prompt" errors="0" failures="0" skipped="0" timestamp="2026-04-15T02:36:35" time="0.969" tests="6">
+    <testcase classname="openaiPromptBuilder — historial para prompt defaults: MESSAGES_IN_PROMPT 12 y SLIDING_TAIL 7 (sin env)" name="openaiPromptBuilder — historial para prompt defaults: MESSAGES_IN_PROMPT 12 y SLIDING_TAIL 7 (sin env)" time="0.002">
+    </testcase>
+    <testcase classname="openaiPromptBuilder — historial para prompt buildHistoryForPromptFromMessages respeta orden antiguo→reciente" name="openaiPromptBuilder — historial para prompt buildHistoryForPromptFromMessages respeta orden antiguo→reciente" time="0.001">
+    </testcase>
+    <testcase classname="openaiPromptBuilder — historial para prompt selectHistoryForPrompt conserva cola y respeta MESSAGES_IN_PROMPT" name="openaiPromptBuilder — historial para prompt selectHistoryForPrompt conserva cola y respeta MESSAGES_IN_PROMPT" time="0.003">
+    </testcase>
+    <testcase classname="openaiPromptBuilder — historial para prompt computeHistorySelectionForPrompt expone telemetría al truncar" name="openaiPromptBuilder — historial para prompt computeHistorySelectionForPrompt expone telemetría al truncar" time="0.001">
+    </testcase>
+    <testcase classname="openaiPromptBuilder — historial para prompt prioriza mensaje con alta intensidad en el tramo viejo" name="openaiPromptBuilder — historial para prompt prioriza mensaje con alta intensidad en el tramo viejo" time="0.001">
+    </testcase>
+    <testcase classname="previewMessageForContext colapsa espacios y recorta" name="previewMessageForContext colapsa espacios y recorta" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="sessionRetentionHints" errors="0" failures="0" skipped="0" timestamp="2026-04-15T02:36:36" time="0.11" tests="9">
+    <testcase classname="sessionRetentionHints detectLikelyFarewell detecta despedidas comunes" name="sessionRetentionHints detectLikelyFarewell detecta despedidas comunes" time="0.003">
+    </testcase>
+    <testcase classname="sessionRetentionHints detectLikelyFarewell no marca conversación normal" name="sessionRetentionHints detectLikelyFarewell no marca conversación normal" time="0">
+    </testcase>
+    <testcase classname="sessionRetentionHints buildSessionRetentionPayload primera conversación en la app: solo tras varios turnos y hilo sustantivo" name="sessionRetentionHints buildSessionRetentionPayload primera conversación en la app: solo tras varios turnos y hilo sustantivo" time="0">
+    </testcase>
+    <testcase classname="sessionRetentionHints buildSessionRetentionPayload primera conversación: no dispara en los primeros turnos" name="sessionRetentionHints buildSessionRetentionPayload primera conversación: no dispara en los primeros turnos" time="0">
+    </testcase>
+    <testcase classname="sessionRetentionHints buildSessionRetentionPayload despedida activa prioridad de cierre" name="sessionRetentionHints buildSessionRetentionPayload despedida activa prioridad de cierre" time="0">
+    </testcase>
+    <testcase classname="sessionRetentionHints buildSessionRetentionPayload usuario que vuelve: sugiere apertura cálida solo al inicio del hilo" name="sessionRetentionHints buildSessionRetentionPayload usuario que vuelve: sugiere apertura cálida solo al inicio del hilo" time="0">
+    </testcase>
+    <testcase classname="sessionRetentionHints buildSessionRetentionPayload usuario que vuelve: no dispara apertura tras varios turnos" name="sessionRetentionHints buildSessionRetentionPayload usuario que vuelve: no dispara apertura tras varios turnos" time="0">
+    </testcase>
+    <testcase classname="sessionRetentionHints buildSessionRetentionSystemSnippet vacío si no hay banderas" name="sessionRetentionHints buildSessionRetentionSystemSnippet vacío si no hay banderas" time="0.001">
+    </testcase>
+    <testcase classname="sessionRetentionHints buildSessionRetentionSystemSnippet incluye bloque si hay despedida" name="sessionRetentionHints buildSessionRetentionSystemSnippet incluye bloque si hay despedida" time="0">
+    </testcase>
+  </testsuite>
 </testsuites>

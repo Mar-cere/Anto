@@ -42,6 +42,7 @@ import metricsService from '../services/metricsService.js';
 import paymentAuditService from '../services/paymentAuditService.js';
 import pushNotificationService from '../services/pushNotificationService.js';
 import sessionEmotionalMemory from '../services/sessionEmotionalMemory.js';
+import { buildSessionRetentionPayload } from '../services/sessionRetentionHints.js';
 import therapeuticProtocolService from '../services/therapeuticProtocolService.js';
 import { cursorPaginate } from '../utils/pagination.js';
 import {
@@ -419,7 +420,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         // 2. Obtener contexto e historial (en paralelo)
         logs.push(`[${Date.now() - startTime}ms] Obteniendo contexto e historial`);
         // Optimización: Usar índices compuestos y proyección para reducir datos transferidos
-        const [conversationHistory, userProfile, therapeuticRecord, user] = await Promise.all([
+        const [conversationHistory, userProfile, therapeuticRecord, user, priorConversationCount] = await Promise.all([
           Message.find({ conversationId })
           .select('content role metadata.context.emotional createdAt') // Solo campos necesarios
           .sort({ createdAt: -1 })
@@ -427,8 +428,19 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           .lean(),
           userProfileService.getOrCreateProfile(req.user._id),
           TherapeuticRecord.findOne({ userId: req.user._id }).lean(), // Usar lean() para mejor rendimiento
-          User.findById(req.user._id).select('preferences').lean() // Obtener User para acceder a preferences.responseStyle
+          User.findById(req.user._id).select('preferences').lean(), // Obtener User para acceder a preferences.responseStyle
+          Conversation.countDocuments({
+            userId: req.user._id,
+            _id: { $ne: conversationId }
+          }).catch(() => null)
         ]);
+
+        const sessionRetention = buildSessionRetentionPayload({
+          conversationHistoryNewestFirst: conversationHistory,
+          userContent: content.trim(),
+          priorConversationCount,
+          threadMessageLimit: LIMITE_MENSAJES
+        });
         
         // NUEVO: Pasar conversationId al contexto para referencias a conversaciones anteriores
         const currentConversationId = conversationId;
@@ -836,7 +848,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   detectedAt: new Date()
                 }
               : undefined,
-          ...(memoriaParaOpenAI ? { memory: memoriaParaOpenAI } : {})
+          ...(memoriaParaOpenAI ? { memory: memoriaParaOpenAI } : {}),
+          sessionRetention
         };
 
         // Streaming: si se pide stream=true, responder por SSE

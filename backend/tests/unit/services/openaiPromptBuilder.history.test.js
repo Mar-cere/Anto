@@ -4,6 +4,7 @@
 import {
   buildHistoryForPromptFromMessages,
   computeHistorySelectionForPrompt,
+  previewMessageForContext,
   selectHistoryForPrompt,
 } from '../../../services/openai/openaiPromptBuilder.js';
 import { HISTORY_LIMITS } from '../../../constants/openai.js';
@@ -81,5 +82,14 @@ describe('openaiPromptBuilder — historial para prompt', () => {
     const contents = out.map((m) => m.content);
     expect(contents).toContain('crisis-old');
     expect(contents).toContain('m19');
+  });
+});
+
+describe('previewMessageForContext', () => {
+  it('colapsa espacios y recorta', () => {
+    expect(previewMessageForContext('  hola\nmundo  ', 20)).toBe('hola mundo');
+    const out = previewMessageForContext('x'.repeat(40), 10);
+    expect(out.endsWith('…')).toBe(true);
+    expect(out.length).toBe(10);
   });
 });

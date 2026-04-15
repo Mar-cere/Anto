@@ -8,7 +8,8 @@ import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
 import { buildHistoryForPromptFromMessages } from '../services/openai/openaiPromptBuilder.js';
-import { HISTORIAL_LIMITE } from '../routes/chat/chatConstants.js';
+import { buildSessionRetentionPayload } from '../services/sessionRetentionHints.js';
+import { HISTORIAL_LIMITE, LIMITE_MENSAJES } from '../routes/chat/chatConstants.js';
 import {
   openaiService,
   emotionalAnalyzer,
@@ -176,13 +177,26 @@ export const setupSocketIO = (server) => {
         });
         
         // 3. Historial acotado por cantidad (misma conversación), sin ventana temporal
-        const conversationHistory = await Message.find({
-          conversationId: conversation._id
-        })
-        .select('content role metadata.context.emotional createdAt')
-        .sort({ createdAt: -1 })
-        .limit(HISTORIAL_LIMITE)
-        .lean();
+        const [conversationHistory, priorConversationCount] = await Promise.all([
+          Message.find({
+            conversationId: conversation._id
+          })
+            .select('content role metadata.context.emotional createdAt')
+            .sort({ createdAt: -1 })
+            .limit(HISTORIAL_LIMITE)
+            .lean(),
+          Conversation.countDocuments({
+            userId: userId,
+            _id: { $ne: conversation._id }
+          }).catch(() => null)
+        ]);
+
+        const sessionRetention = buildSessionRetentionPayload({
+          conversationHistoryNewestFirst: conversationHistory,
+          userContent: messageText,
+          priorConversationCount,
+          threadMessageLimit: LIMITE_MENSAJES
+        });
         
         // 4. Análisis emocional y contextual (en paralelo)
         const [emotionalAnalysis, contextualAnalysis, userProfile] = await Promise.all([
@@ -222,6 +236,7 @@ export const setupSocketIO = (server) => {
             contextual: contextualAnalysis,
             profile: userProfile,
             currentConversationId: conversation._id,
+            sessionRetention,
             _promptTelemetry: {
               userId,
               conversationId: conversation._id,
