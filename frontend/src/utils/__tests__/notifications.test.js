@@ -7,7 +7,6 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import {
-  registerForPushNotificationsAsync,
   scheduleLocalNotification,
   sendImmediateNotification,
   scheduleDailyNotification,
@@ -23,8 +22,6 @@ import {
 
 // Mock expo-notifications
 jest.mock('expo-notifications', () => ({
-  setNotificationHandler: jest.fn(),
-  setNotificationChannelAsync: jest.fn(),
   getPermissionsAsync: jest.fn(),
   requestPermissionsAsync: jest.fn(),
   scheduleNotificationAsync: jest.fn(),
@@ -60,47 +57,6 @@ jest.mock('../../data/notifications', () => {
 describe('notifications', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-  });
-
-  describe('registerForPushNotificationsAsync', () => {
-    it('debe retornar false si no es un dispositivo físico', async () => {
-      Device.isDevice = false;
-      
-      const result = await registerForPushNotificationsAsync();
-      
-      expect(result).toBe(false);
-    });
-
-    it('debe registrar permisos si ya están otorgados', async () => {
-      Device.isDevice = true;
-      Notifications.getPermissionsAsync.mockResolvedValue({ status: 'granted' });
-      
-      const result = await registerForPushNotificationsAsync();
-      
-      expect(result).toBe(true);
-      expect(Notifications.getPermissionsAsync).toHaveBeenCalled();
-    });
-
-    it('debe solicitar permisos si no están otorgados', async () => {
-      Device.isDevice = true;
-      Notifications.getPermissionsAsync.mockResolvedValue({ status: 'undetermined' });
-      Notifications.requestPermissionsAsync.mockResolvedValue({ status: 'granted' });
-      
-      const result = await registerForPushNotificationsAsync();
-      
-      expect(result).toBe(true);
-      expect(Notifications.requestPermissionsAsync).toHaveBeenCalled();
-    });
-
-    it('debe retornar false si los permisos son denegados', async () => {
-      Device.isDevice = true;
-      Notifications.getPermissionsAsync.mockResolvedValue({ status: 'undetermined' });
-      Notifications.requestPermissionsAsync.mockResolvedValue({ status: 'denied' });
-      
-      const result = await registerForPushNotificationsAsync();
-      
-      expect(result).toBe(false);
-    });
   });
 
   describe('scheduleLocalNotification', () => {

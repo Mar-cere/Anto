@@ -212,10 +212,13 @@ const TaskScreen = ({ route }) => {
           routes: [{ name: ROUTES.SIGN_IN }],
         });
       } else {
-        Alert.alert(TEXTS.ERROR_CREATE, getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_LOAD_ITEMS);
+        showToast({
+          message: getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_LOAD_ITEMS,
+          type: 'error',
+        });
       }
     }
-  }, [navigation, isOffline]);
+  }, [navigation, isOffline, showToast]);
 
   // Recargar cuando la pantalla se enfoca
   useFocusEffect(
@@ -267,7 +270,10 @@ const TaskScreen = ({ route }) => {
       const errorMessage = error.errors?.length > 0
         ? `${TEXTS.INVALID_DATA} ${error.errors.join(', ')}`
         : getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_CREATE_TASK;
-      Alert.alert(TEXTS.ERROR_CREATE, errorMessage);
+      showToast({
+        message: errorMessage,
+        type: 'error',
+      });
     }
   };
 
@@ -307,13 +313,19 @@ const TaskScreen = ({ route }) => {
           await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (error) {
           console.error('Error al eliminar item completado:', error);
-          Alert.alert(TEXTS.ERROR_DELETE, getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_DELETE_MESSAGE);
+          showToast({
+            message: getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_DELETE_MESSAGE,
+            type: 'error',
+          });
         }
       }, DELETE_DELAY);
 
     } catch (error) {
       console.error('Error al completar item:', error);
-      Alert.alert(TEXTS.ERROR_UPDATE, getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_UPDATE_MESSAGE);
+      showToast({
+        message: getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_UPDATE_MESSAGE,
+        type: 'error',
+      });
     }
   };
 
@@ -340,7 +352,10 @@ const TaskScreen = ({ route }) => {
               await cancelTaskNotifications(id);
             } catch (error) {
               console.error('Error eliminando tarea:', error);
-              Alert.alert(TEXTS.ERROR_DELETE, getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_DELETE_TASK);
+              showToast({
+                message: getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_DELETE_TASK,
+                type: 'error',
+              });
             }
           }
         }

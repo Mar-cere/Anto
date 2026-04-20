@@ -1,90 +1,6 @@
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
 import notifications from '../data/notifications';
-
-// Configuración de las notificaciones
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
-
-// Configurar canales de notificación para Android
-const setupNotificationChannels = async () => {
-  if (Platform.OS === 'android') {
-    // Canal para hábitos
-    await Notifications.setNotificationChannelAsync('anto-habits', {
-      name: 'Hábitos',
-      importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#1ADDDB',
-    });
-    
-    // Canal para notificaciones generales
-    await Notifications.setNotificationChannelAsync('anto-notifications', {
-      name: 'Notificaciones',
-      importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#1ADDDB',
-    });
-  }
-};
-
-/**
- * Función para registrar permisos de notificaciones locales
- * 
- * Solo solicita permisos para notificaciones locales (no push remotas)
- * para evitar advertencias en Expo Go. Las notificaciones push remotas
- * requieren un development build o build de producción.
- * 
- * @returns {Promise<boolean>} true si los permisos fueron otorgados, false en caso contrario
- */
-export const registerForPushNotificationsAsync = async () => {
-  if (!Device.isDevice) {
-    console.log('Las notificaciones requieren un dispositivo físico');
-    return false;
-  }
-
-  try {
-    // Configurar canales de notificación
-    await setupNotificationChannels();
-    
-    // Solicitar permisos para notificaciones locales
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-
-    if (finalStatus !== 'granted') {
-      console.log('¡Se requieren permisos para las notificaciones!');
-      return false;
-    }
-
-    // Nota: No obtenemos el token push aquí para evitar advertencias en Expo Go
-    // Si necesitas notificaciones push remotas, usa un development build
-    // y descomenta las siguientes líneas:
-    // try {
-    //   const tokenData = await Notifications.getExpoPushTokenAsync();
-    //   const token = tokenData.data;
-    //   await AsyncStorage.setItem('pushToken', token);
-    //   return token;
-    // } catch (error) {
-    //   console.log('Error obteniendo token push (requiere development build):', error);
-    // }
-
-    return true;
-  } catch (error) {
-    console.error('Error registrando notificaciones:', error);
-    return false;
-  }
-};
 
 // Función para programar una notificación local
 export const scheduleLocalNotification = async (title, body, trigger) => {
@@ -112,10 +28,22 @@ export const sendImmediateNotification = async (title, body) => {
   });
 };
 
-// Función para obtener una notificación aleatoria
+// Aplana mañana / tarde / noche / genéricas para mayor batería de textos sin repetir siempre el mismo pool
+const getAllLocalNotificationVariants = () => {
+  if (Array.isArray(notifications)) return notifications;
+  const n = notifications || {};
+  return [
+    ...(n.morning || []),
+    ...(n.afternoon || []),
+    ...(n.evening || []),
+    ...(n.any || []),
+  ];
+};
+
 const getRandomNotification = () => {
-  const randomIndex = Math.floor(Math.random() * notifications.length);
-  return notifications[randomIndex];
+  const pool = getAllLocalNotificationVariants();
+  if (!pool.length) return { title: 'Anto', body: 'Tienes un recordatorio.' };
+  return pool[Math.floor(Math.random() * pool.length)];
 };
 
 // Función para programar notificaciones diarias
@@ -297,9 +225,6 @@ export const scheduleHabitNotification = async (habit) => {
       triggerDate.setDate(triggerDate.getDate() + 1);
       triggerDate.setHours(9, 0, 0, 0);
     }
-
-    // Configurar canales de notificación si no están configurados
-    await setupNotificationChannels();
 
     // Calcular segundos hasta la hora objetivo
     const now = new Date();

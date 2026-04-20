@@ -10,6 +10,7 @@ import express from 'express';
 import rateLimit from 'express-rate-limit';
 import { authenticateToken } from '../middleware/auth.js';
 import User from '../models/User.js';
+import pushNotificationService from '../services/pushNotificationService.js';
 
 const router = express.Router();
 
@@ -45,6 +46,24 @@ router.post('/push-token', authenticateToken, async (req, res) => {
       });
     }
 
+    const prevUser = await User.findById(userId).select(
+      '+pushToken subscription notificationPreferences preferences'
+    );
+
+    if (!prevUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    const hadToken = !!(prevUser?.pushToken);
+    const now = new Date();
+    const inTrial =
+      prevUser?.subscription?.status === 'trial' &&
+      prevUser?.subscription?.trialEndDate &&
+      new Date(prevUser.subscription.trialEndDate) > now;
+
     // Actualizar token en el usuario
     await User.findByIdAndUpdate(userId, {
       pushToken,
@@ -52,6 +71,19 @@ router.post('/push-token', authenticateToken, async (req, res) => {
     }, { select: '+pushToken' }); // Forzar incluir el campo
 
     console.log(`[NotificationRoutes] ✅ Token push actualizado para usuario ${userId}`);
+
+    if (
+      !hadToken &&
+      inTrial &&
+      prevUser?.notificationPreferences?.enabled !== false &&
+      prevUser?.preferences?.notifications !== false
+    ) {
+      try {
+        await pushNotificationService.sendTrialWelcome(pushToken);
+      } catch (welcomeErr) {
+        console.warn('[NotificationRoutes] No se pudo enviar trial welcome push:', welcomeErr?.message);
+      }
+    }
 
     res.json({
       success: true,

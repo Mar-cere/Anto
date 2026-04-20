@@ -5,7 +5,9 @@
  * basadas en preferencias del usuario y comportamiento
  */
 
+import mongoose from 'mongoose';
 import User from '../models/User.js';
+import Task from '../models/Task.js';
 import pushNotificationService from './pushNotificationService.js';
 import NotificationEngagement from '../models/NotificationEngagement.js';
 
@@ -18,6 +20,85 @@ class NotificationScheduler {
     this.INACTIVITY_CHECK_INTERVAL_MS = 60 * 60 * 1000;
     
     this.isRunning = false;
+  }
+
+  /** Preferencias tipo: undefined = tratar como true (compatibilidad con usuarios antiguos). */
+  _wellnessTypesEnabled(user) {
+    return user?.notificationPreferences?.types?.motivationalMessages !== false;
+  }
+
+  _taskRemindersEnabled(user) {
+    return user?.notificationPreferences?.types?.taskReminders !== false;
+  }
+
+  /**
+   * Tareas con vencimiento mañana: un aviso por tarea (máx. 5 por usuario), deduplicado por engagement reciente.
+   */
+  async notifyTasksDueTomorrow() {
+    const types = pushNotificationService.NOTIFICATION_TYPES;
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    const tomorrowEnd = new Date(tomorrow);
+    tomorrowEnd.setHours(23, 59, 59, 999);
+
+    const tasks = await Task.find({
+      dueDate: { $gte: tomorrow, $lte: tomorrowEnd },
+      status: { $in: ['pending', 'in_progress'] },
+      $or: [{ 'notifications.enabled': true }, { 'notifications.enabled': { $exists: false } }],
+    })
+      .select('title userId _id')
+      .limit(800)
+      .lean();
+
+    const perUser = new Map();
+    for (const t of tasks) {
+      const uid = String(t.userId);
+      if (!perUser.has(uid)) perUser.set(uid, []);
+      const arr = perUser.get(uid);
+      if (arr.length < 5) arr.push(t);
+    }
+
+    const since = new Date(Date.now() - 28 * 60 * 60 * 1000);
+
+    for (const [userIdStr, list] of perUser) {
+      if (!mongoose.Types.ObjectId.isValid(userIdStr)) continue;
+      try {
+        const user = await User.findById(userIdStr)
+          .select('pushToken notificationPreferences')
+          .lean();
+        if (!user?.pushToken || user.notificationPreferences?.enabled === false) continue;
+        if (!this._taskRemindersEnabled(user)) continue;
+
+        for (const task of list) {
+          try {
+            const idStr = String(task._id);
+            const dup = await NotificationEngagement.findOne({
+              userId: task.userId,
+              notificationType: types.TASK_DUE_SOON,
+              sentAt: { $gte: since },
+              'notificationData.data.taskId': idStr,
+            })
+              .select('_id')
+              .lean();
+            if (dup) continue;
+
+            const rawTitle = String(task.title ?? '').trim();
+            const taskTitle = rawTitle.slice(0, 200) || 'Tarea';
+
+            await this.sendScheduledNotification(task.userId, user.pushToken, types.TASK_DUE_SOON, {
+              taskTitle,
+              taskId: idStr,
+              dueIn: 'mañana',
+            });
+          } catch (taskErr) {
+            console.error('[NotificationScheduler] Error aviso tarea para mañana:', taskErr);
+          }
+        }
+      } catch (userErr) {
+        console.error('[NotificationScheduler] Error usuario en tareas para mañana:', userErr);
+      }
+    }
   }
 
   /**
@@ -100,6 +181,7 @@ class NotificationScheduler {
   async processScheduledNotifications() {
     try {
       const now = new Date();
+      const T = pushNotificationService.NOTIFICATION_TYPES;
       const users = await User.find({
         'notificationPreferences.enabled': true,
         pushToken: { $exists: true, $ne: null }
@@ -114,16 +196,19 @@ class NotificationScheduler {
 
       for (const user of users) {
         try {
+          const h = now.getHours();
+          const m = now.getMinutes();
+
           // Verificar notificación matutina
           if (user.notificationPreferences?.morning?.enabled) {
             const morningHour = user.notificationPreferences.morning.hour || 8;
             const morningMinute = user.notificationPreferences.morning.minute || 0;
             
-            if (now.getHours() === morningHour && now.getMinutes() === morningMinute) {
+            if (h === morningHour && m === morningMinute) {
               await this.sendScheduledNotification(
                 user._id,
                 user.pushToken,
-                pushNotificationService.NOTIFICATION_TYPES.MORNING_MOTIVATION,
+                T.MORNING_MOTIVATION,
                 { timeOfDay: 'morning' }
               );
               results.sent++;
@@ -135,20 +220,49 @@ class NotificationScheduler {
             const eveningHour = user.notificationPreferences.evening.hour || 19;
             const eveningMinute = user.notificationPreferences.evening.minute || 0;
             
-            if (now.getHours() === eveningHour && now.getMinutes() === eveningMinute) {
+            if (h === eveningHour && m === eveningMinute) {
               await this.sendScheduledNotification(
                 user._id,
                 user.pushToken,
-                pushNotificationService.NOTIFICATION_TYPES.EVENING_REFLECTION,
+                T.EVENING_REFLECTION,
                 { timeOfDay: 'evening' }
               );
               results.sent++;
             }
           }
 
+          // Hasta 4 franjas fijas diarias (motivationalMessages), además de mañana/tarde configurables
+          if (this._wellnessTypesEnabled(user) && h === 12 && m === 0) {
+            await this.sendScheduledNotification(user._id, user.pushToken, T.HYDRATION_REMINDER, { timeOfDay: 'noon' });
+            results.sent++;
+          }
+          if (this._wellnessTypesEnabled(user) && h === 13 && m === 0) {
+            await this.sendScheduledNotification(user._id, user.pushToken, T.MIDDAY_MOTIVATION, { timeOfDay: 'midday' });
+            results.sent++;
+          }
+          if (this._wellnessTypesEnabled(user) && h === 15 && m === 0) {
+            await this.sendScheduledNotification(user._id, user.pushToken, T.MOVEMENT_BREAK, { timeOfDay: 'afternoon' });
+            results.sent++;
+          }
+          if (this._wellnessTypesEnabled(user) && h === 21 && m === 30) {
+            await this.sendScheduledNotification(user._id, user.pushToken, T.SLEEP_ROUTINE_REMINDER, { timeOfDay: 'night' });
+            results.sent++;
+          }
+
           results.skipped++;
         } catch (error) {
           console.error(`[NotificationScheduler] Error procesando usuario ${user._id}:`, error);
+          results.errors++;
+        }
+      }
+
+      const hh = now.getHours();
+      const mm = now.getMinutes();
+      if (hh === 10 && mm === 5) {
+        try {
+          await this.notifyTasksDueTomorrow();
+        } catch (e) {
+          console.error('[NotificationScheduler] notifyTasksDueTomorrow:', e);
           results.errors++;
         }
       }
@@ -189,26 +303,63 @@ class NotificationScheduler {
         case pushNotificationService.NOTIFICATION_TYPES.DAILY_CHECKIN:
           result = await pushNotificationService.sendDailyCheckIn(pushToken, options);
           break;
+        case pushNotificationService.NOTIFICATION_TYPES.HYDRATION_REMINDER:
+          result = await pushNotificationService.sendHydrationReminder(pushToken, options);
+          break;
+        case pushNotificationService.NOTIFICATION_TYPES.MIDDAY_MOTIVATION:
+          result = await pushNotificationService.sendMiddayMotivation(pushToken, options);
+          break;
+        case pushNotificationService.NOTIFICATION_TYPES.GROUNDING_REMINDER:
+          result = await pushNotificationService.sendGroundingReminder(pushToken, options);
+          break;
+        case pushNotificationService.NOTIFICATION_TYPES.MOVEMENT_BREAK:
+          result = await pushNotificationService.sendMovementBreak(pushToken, options);
+          break;
+        case pushNotificationService.NOTIFICATION_TYPES.WELLNESS_TIP:
+          result = await pushNotificationService.sendWellnessTip(pushToken, options);
+          break;
+        case pushNotificationService.NOTIFICATION_TYPES.JOURNALING_PROMPT:
+          result = await pushNotificationService.sendJournalingPrompt(pushToken, options);
+          break;
+        case pushNotificationService.NOTIFICATION_TYPES.SLEEP_ROUTINE_REMINDER:
+          result = await pushNotificationService.sendSleepRoutineReminder(pushToken, options);
+          break;
+        case pushNotificationService.NOTIFICATION_TYPES.GRATITUDE_REMINDER:
+          result = await pushNotificationService.sendGratitudeReminder(pushToken, options);
+          break;
+        case pushNotificationService.NOTIFICATION_TYPES.WEEKLY_REFLECTION:
+          result = await pushNotificationService.sendWeeklyReflection(pushToken, options);
+          break;
+        case pushNotificationService.NOTIFICATION_TYPES.TASK_DUE_SOON:
+          result = await pushNotificationService.sendTaskDueSoon(pushToken, options);
+          break;
         default:
           result = { success: false, error: 'Tipo de notificación no soportado' };
       }
 
-      // Registrar engagement
-      await NotificationEngagement.create({
-        userId,
-        notificationType,
-        pushToken,
-        status: result.success ? 'sent' : 'error',
-        notificationData: {
-          title: result.title || '',
-          body: result.body || '',
-          data: options
-        },
-        error: result.error || null,
-        metadata: {
-          timeOfDay: options.timeOfDay || 'unknown'
-        }
-      });
+      // Registrar engagement (no debe tumbar el envío si falla la DB)
+      try {
+        await NotificationEngagement.create({
+          userId,
+          notificationType,
+          pushToken,
+          status: result.success ? 'sent' : 'error',
+          notificationData: {
+            title: result.title || '',
+            body: result.body || '',
+            data: options
+          },
+          error: result.error || null,
+          metadata: {
+            timeOfDay: options.timeOfDay || 'unknown'
+          }
+        });
+      } catch (engagementErr) {
+        console.warn(
+          '[NotificationScheduler] Engagement no registrado:',
+          engagementErr?.message || engagementErr
+        );
+      }
 
       return result.success;
     } catch (error) {

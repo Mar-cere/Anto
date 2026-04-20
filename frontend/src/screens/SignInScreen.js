@@ -40,6 +40,7 @@ import { colors, globalStyles } from '../styles/globalStyles';
 import { useAuth } from '../context/AuthContext';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { getApiErrorMessage } from '../utils/apiErrorHandler';
+import { useToast } from '../context/ToastContext';
 
 // Constantes de animación
 const ANIMATION_INITIAL_DELAY = 500; // ms
@@ -157,6 +158,7 @@ const saveAuthData = async (tokens, user, email) => {
 const SignInScreen = () => {
   const navigation = useNavigation();
   const { refreshSession } = useAuth();
+  const { showToast } = useToast();
 
   // Estado de red
   const { isConnected, isInternetReachable } = useNetworkStatus();
@@ -283,11 +285,10 @@ const SignInScreen = () => {
 
       // Verificar si está offline antes de intentar login
       if (isOffline) {
-        Alert.alert(
-          'Sin conexión',
-          'No hay conexión a internet. Por favor, verifica tu conexión e intenta nuevamente.',
-          [{ text: 'Entendido' }]
-        );
+        showToast({
+          message: 'No hay conexión a internet. Por favor, verifica tu conexión e intenta nuevamente.',
+          type: 'warning',
+        });
         setIsSubmitting(false);
         return;
       }
@@ -357,12 +358,18 @@ const SignInScreen = () => {
           });
         }
       } else {
-        Alert.alert('Error', ERROR_MESSAGES.LOGIN_FAILED);
+        showToast({
+          message: ERROR_MESSAGES.LOGIN_FAILED,
+          type: 'error',
+        });
       }
     } catch (error) {
       console.error('Error en login:', error);
       const errorMessage = getApiErrorMessage(error, { isOffline });
-      Alert.alert('Error', errorMessage);
+      showToast({
+        message: errorMessage,
+        type: 'error',
+      });
     } finally {
       setIsSubmitting(false);
     }

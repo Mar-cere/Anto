@@ -33,4 +33,15 @@ describe('openRegisterPrivacyUrl', () => {
     await openRegisterPrivacyUrl();
     expect(Alert.alert).toHaveBeenCalledWith('No disponible', expect.any(String));
   });
+
+  it('si no puede abrir y hay showToast, usa toast en lugar de alerta', async () => {
+    const showToast = jest.fn();
+    Linking.openURL.mockRejectedValue(new Error('fail'));
+    Linking.canOpenURL.mockResolvedValue(false);
+    await openRegisterPrivacyUrl(showToast);
+    expect(showToast).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.any(String), type: 'default' })
+    );
+    expect(Alert.alert).not.toHaveBeenCalled();
+  });
 });

@@ -58,9 +58,15 @@ jest.mock('../../services/pushNotificationService', () => ({
 jest.mock('../../utils/apiErrorHandler', () => ({ getApiErrorMessage: (e) => e?.message || 'Error' }));
 jest.mock('react-native', () => ({ Alert: { alert: jest.fn() } }));
 
+const mockShowToast = jest.fn();
+jest.mock('../../context/ToastContext', () => ({
+  useToast: () => ({ showToast: mockShowToast }),
+}));
+
 describe('useSettingsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockShowToast.mockClear();
     mockAuth.user = { id: '1', preferences: { responseStyle: 'balanced' } };
   });
 

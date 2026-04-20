@@ -12,9 +12,11 @@ import storeKitService from '../services/storeKitService';
 import { getApiErrorMessage } from '../utils/apiErrorHandler';
 import { HARDCODED_PLANS, TEXTS } from '../screens/subscription/subscriptionScreenConstants';
 import { API_URL } from '../config/api';
+import { useToast } from '../context/ToastContext';
 
 export function useSubscriptionScreen() {
   const navigation = useNavigation();
+  const { showToast } = useToast();
   const [plans, setPlans] = useState([]);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -108,7 +110,10 @@ export function useSubscriptionScreen() {
           if (isActive) {
             setPendingPaymentVerification(false);
             await loadData();
-            Alert.alert('Pago confirmado', 'Tu suscripción fue validada y activada.');
+            showToast({
+              message: 'Tu suscripción fue validada y activada.',
+              type: 'success',
+            });
             return;
           }
         } catch (_) {}
@@ -117,7 +122,11 @@ export function useSubscriptionScreen() {
           await new Promise((r) => setTimeout(r, 2000));
         }
       }
-      Alert.alert('Pago en validación', 'Detectamos el retorno de pago. Estamos validando tu suscripción, vuelve a revisar en unos segundos.');
+      showToast({
+        message: 'Detectamos el retorno de pago. Estamos validando tu suscripción; revisa de nuevo en unos segundos.',
+        type: 'default',
+        duration: 4500,
+      });
     };
 
     const handleUrl = (incomingUrl) => {
@@ -131,7 +140,10 @@ export function useSubscriptionScreen() {
         setPendingPaymentVerification(false);
         setShowPaymentWebView(false);
         setPaymentUrl(null);
-        Alert.alert('Pago cancelado', 'Cancelaste el pago. Puedes intentarlo nuevamente cuando quieras.');
+        showToast({
+          message: 'Cancelaste el pago. Puedes intentarlo nuevamente cuando quieras.',
+          type: 'info',
+        });
       }
     };
 
@@ -149,7 +161,7 @@ export function useSubscriptionScreen() {
       cancelled = true;
       subscription.remove();
     };
-  }, [loadData]);
+  }, [loadData, showToast]);
 
   const handleSubscribe = useCallback(
     async (planIdOrPlan) => {
@@ -159,7 +171,7 @@ export function useSubscriptionScreen() {
           : planIdOrPlan;
       if (subscribing) return;
       if (!plan || !plan.id) {
-        Alert.alert('Error', 'Plan no válido');
+        showToast({ message: 'Plan no válido. Vuelve a elegir un plan.', type: 'warning' });
         return;
       }
       if (subscriptionStatus?.hasSubscription) {
@@ -169,12 +181,9 @@ export function useSubscriptionScreen() {
           const currentPlan = subscriptionStatus.plan || 'desconocido';
           const daysRemaining = subscriptionStatus.daysRemaining;
           const message = daysRemaining
-            ? `Ya tienes una suscripción ${currentPlan} activa con ${daysRemaining} día(s) restante(s). ¿Deseas cambiar de plan?`
-            : `Ya tienes una suscripción ${currentPlan} activa. ¿Deseas cambiar de plan?`;
-          Alert.alert('Suscripción activa', message, [
-            { text: 'Cancelar', style: 'cancel' },
-            { text: 'Continuar', onPress: () => {} },
-          ]);
+            ? `Ya tienes ${currentPlan} activa (${daysRemaining} día(s)). Puedes elegir otro plan o volver atrás.`
+            : `Ya tienes ${currentPlan} activa. Puedes elegir otro plan si lo necesitas.`;
+          showToast({ message, type: 'info', duration: 4500 });
         }
       }
       try {
@@ -189,7 +198,7 @@ export function useSubscriptionScreen() {
               setSelectedPlan(null);
               const msg = initResult.error || 'No se pudo conectar con App Store.';
               const hint = 'Usa un build nativo (no Expo Go) e inicia sesión con una cuenta Sandbox en Ajustes > App Store.';
-              Alert.alert(TEXTS.SUBSCRIBE_ERROR, `${msg}\n\n${hint}`);
+              showToast({ message: `${msg} ${hint}`, type: 'error', duration: 6000 });
               return;
             }
             const products = storeKitService.getProducts();
@@ -198,7 +207,10 @@ export function useSubscriptionScreen() {
               if (!loadResult.success || !loadResult.products?.length) {
                 setSubscribing(false);
                 setSelectedPlan(null);
-                Alert.alert(TEXTS.SUBSCRIBE_ERROR, loadResult.error || 'No se pudieron cargar los productos.');
+                showToast({
+                  message: loadResult.error || 'No se pudieron cargar los productos de la tienda.',
+                  type: 'error',
+                });
                 return;
               }
             }
@@ -219,9 +231,9 @@ export function useSubscriptionScreen() {
                 } catch (_) {}
                 retries--;
               }
-              Alert.alert('¡Suscripción exitosa!', 'Tu suscripción se ha activado correctamente.', [
-                { text: 'OK', onPress: () => loadData().then(() => navigation.goBack()) },
-              ]);
+              showToast({ message: '¡Suscripción activada correctamente!', type: 'success' });
+              await loadData();
+              navigation.goBack();
             } else if (!purchaseResult.cancelled) {
               // Si App Store falla pero el backend ya reporta una suscripción activa,
               // interpretamos esto como un "no-op" (por ejemplo: "Ya estás suscrito").
@@ -229,11 +241,13 @@ export function useSubscriptionScreen() {
                 await loadData();
                 const newStatus = await paymentService.getSubscriptionStatus();
                 if (newStatus?.success && newStatus?.hasSubscription) {
-                  Alert.alert(
-                    'Suscripción activa',
-                    'Tu suscripción ya está activa. Se actualizó tu estado.',
-                    [{ text: 'OK', onPress: () => navigation.goBack() }]
-                  );
+                  showToast({
+                    message: 'Tu suscripción ya estaba activa. Estado actualizado.',
+                    type: 'default',
+                    duration: 4000,
+                  });
+                  await loadData();
+                  navigation.goBack();
                   return;
                 }
               } catch (_) {
@@ -255,10 +269,13 @@ export function useSubscriptionScreen() {
                 errorMessage = 'Error técnico. Reinicia la app e intenta de nuevo.';
               }
               if (purchaseResult.purchase) setTimeout(() => loadData(), 2000);
-              Alert.alert(TEXTS.SUBSCRIBE_ERROR, errorMessage);
+              showToast({ message: errorMessage, type: 'error', duration: 5000 });
             }
           } catch (error) {
-            Alert.alert(TEXTS.SUBSCRIBE_ERROR, error?.message || 'Ocurrió un error inesperado.');
+            showToast({
+              message: error?.message || 'Ocurrió un error inesperado al suscribirte.',
+              type: 'error',
+            });
           } finally {
             setSubscribing(false);
             setSelectedPlan(null);
@@ -267,11 +284,14 @@ export function useSubscriptionScreen() {
         }
         const checkoutResponse = await paymentService.createCheckoutSession(plan.id, PAYMENT_SUCCESS_RETURN_URL, null);
         if (!checkoutResponse?.success) {
-          Alert.alert(TEXTS.SUBSCRIBE_ERROR, checkoutResponse?.error || 'No se pudo crear la sesión de pago');
+          showToast({
+            message: checkoutResponse?.error || 'No se pudo crear la sesión de pago.',
+            type: 'error',
+          });
           return;
         }
         if (!checkoutResponse.url) {
-          Alert.alert(TEXTS.SUBSCRIBE_ERROR, 'No se recibió una URL válida para el pago');
+          showToast({ message: 'No se recibió una URL válida para el pago.', type: 'error' });
           return;
         }
         const canOpen = await Linking.canOpenURL(checkoutResponse.url);
@@ -279,7 +299,10 @@ export function useSubscriptionScreen() {
           try {
             await Linking.openURL(checkoutResponse.url);
             setPendingPaymentVerification(true);
-            Alert.alert('Pago en proceso', 'Se abrió Mercado Pago en tu navegador. Cuando termines, vuelve a la app.', [{ text: 'Entendido' }]);
+            showToast({
+              message: 'Se abrió Mercado Pago en tu navegador. Cuando termines, vuelve a la app.',
+              type: 'info',
+            });
           } catch (e) {
             setPaymentUrl(checkoutResponse.url);
             setShowPaymentWebView(true);
@@ -291,13 +314,16 @@ export function useSubscriptionScreen() {
           setPendingPaymentVerification(true);
         }
       } catch (err) {
-        Alert.alert(TEXTS.SUBSCRIBE_ERROR, err.message || 'Ocurrió un error al procesar tu suscripción');
+        showToast({
+          message: err.message || 'Ocurrió un error al procesar tu suscripción.',
+          type: 'error',
+        });
       } finally {
         setSubscribing(false);
         setSelectedPlan(null);
       }
     },
-    [subscribing, loadData, plans, subscriptionStatus, navigation]
+    [subscribing, loadData, plans, subscriptionStatus, navigation, showToast]
   );
 
   const getCheaperPlans = useCallback((currentPlanId) => {
@@ -323,14 +349,16 @@ export function useSubscriptionScreen() {
               setSubscribing(true);
               const response = await paymentService.cancelSubscription(false);
               if (response.success) {
-                Alert.alert('Suscripción cancelada', 'Seguirás teniendo acceso hasta el final del período actual.', [
-                  { text: 'OK', onPress: () => loadData() },
-                ]);
+                showToast({
+                  message: 'Suscripción cancelada. Seguirás teniendo acceso hasta el final del período actual.',
+                  type: 'success',
+                });
+                await loadData();
               } else {
-                Alert.alert('Error', response.error || TEXTS.CANCEL_ERROR);
+                showToast({ message: response.error || TEXTS.CANCEL_ERROR, type: 'error' });
               }
             } catch (err) {
-              Alert.alert('Error', getApiErrorMessage(err) || TEXTS.CANCEL_ERROR);
+              showToast({ message: getApiErrorMessage(err) || TEXTS.CANCEL_ERROR, type: 'error' });
             } finally {
               setSubscribing(false);
             }
@@ -338,7 +366,7 @@ export function useSubscriptionScreen() {
         },
       ]
     );
-  }, [loadData]);
+  }, [loadData, showToast]);
 
   const handleCancelSubscription = useCallback(() => {
     const currentPlanId = subscriptionStatus?.plan;
@@ -374,7 +402,11 @@ export function useSubscriptionScreen() {
 
   const handleRestorePurchases = useCallback(async () => {
     if (Platform.OS !== 'ios' || !storeKitService.isAvailable()) {
-      Alert.alert('Información', 'La restauración de compras solo está disponible en iOS.');
+      showToast({
+        message: 'La restauración de compras solo está disponible en iOS con la app instalada desde la tienda.',
+        type: 'info',
+        duration: 4500,
+      });
       return;
     }
     try {
@@ -383,40 +415,58 @@ export function useSubscriptionScreen() {
       const result = await paymentService.restorePurchases();
       if (result.success) {
         if (result.purchases?.length > 0) {
-          Alert.alert('Compras restauradas', `Se restauraron ${result.purchases.length} compra(s).`, [{ text: 'OK', onPress: loadData }]);
+          showToast({
+            message: `Se restauraron ${result.purchases.length} compra(s).`,
+            type: 'success',
+          });
+          await loadData();
         } else {
-          Alert.alert('Sin compras', 'No se encontraron compras para restaurar.');
+          showToast({
+            message: 'No se encontraron compras de esta cuenta para restaurar.',
+            type: 'default',
+            duration: 4000,
+          });
         }
       } else {
-        Alert.alert('Error', result.error || 'No se pudieron restaurar las compras');
+        showToast({ message: result.error || 'No se pudieron restaurar las compras.', type: 'error' });
       }
     } catch (err) {
-      Alert.alert('Error', 'Ocurrió un error al restaurar las compras');
+      showToast({ message: 'Ocurrió un error al restaurar las compras.', type: 'error' });
     } finally {
       setSubscribing(false);
     }
-  }, [loadData]);
+  }, [loadData, showToast]);
 
   const handlePaymentSuccess = useCallback(() => {
     setShowPaymentWebView(false);
     setPaymentUrl(null);
     setPendingPaymentVerification(false);
-    Alert.alert('¡Pago exitoso!', 'Tu suscripción ha sido activada correctamente.', [{ text: 'Entendido', onPress: loadData }]);
-  }, [loadData]);
+    showToast({
+      message: 'Tu suscripción ha sido activada correctamente.',
+      type: 'success',
+    });
+    loadData();
+  }, [loadData, showToast]);
 
   const handlePaymentCancel = useCallback(() => {
     setShowPaymentWebView(false);
     setPaymentUrl(null);
     setPendingPaymentVerification(false);
-    Alert.alert('Pago cancelado', 'El pago fue cancelado. Puedes intentar nuevamente cuando lo desees.', [{ text: 'Entendido' }]);
-  }, []);
+    showToast({
+      message: 'El pago fue cancelado. Puedes intentar nuevamente cuando lo desees.',
+      type: 'info',
+    });
+  }, [showToast]);
 
   const handlePaymentError = useCallback((errorMessage) => {
     setShowPaymentWebView(false);
     setPaymentUrl(null);
     setPendingPaymentVerification(false);
-    Alert.alert(TEXTS.SUBSCRIBE_ERROR, errorMessage || 'Ocurrió un error durante el proceso de pago.');
-  }, []);
+    showToast({
+      message: errorMessage || 'Ocurrió un error durante el proceso de pago.',
+      type: 'error',
+    });
+  }, [showToast]);
 
   return {
     plans,

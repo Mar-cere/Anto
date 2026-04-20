@@ -5,11 +5,10 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
-import * as Notifications from 'expo-notifications';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
 import { api, ENDPOINTS } from '../config/api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 /** Misma clave que AuthContext: sesión persistida tras PUT /api/users/me */
 const STORAGE_USER_DATA = 'userData';
@@ -24,6 +23,7 @@ import { NAVIGATION_ROUTES, TEXTS } from '../screens/settings/settingsScreenCons
 
 export function useSettingsScreen({ navigation }) {
   const { user, logout: authLogout, refreshSession } = useAuth();
+  const { showToast } = useToast();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(false);
@@ -42,9 +42,9 @@ export function useSettingsScreen({ navigation }) {
       await authLogout();
       navigation.replace(NAVIGATION_ROUTES.SIGN_IN);
     } catch (e) {
-      Alert.alert(TEXTS.ERROR, TEXTS.LOGOUT_ERROR);
+      showToast({ message: TEXTS.LOGOUT_ERROR, type: 'error' });
     }
-  }, [navigation, authLogout]);
+  }, [navigation, authLogout, showToast]);
 
   const handleDeleteAccount = useCallback(async () => {
     setShowDeleteModal(false);
@@ -53,16 +53,17 @@ export function useSettingsScreen({ navigation }) {
       await AsyncStorage.clear();
       await authLogout();
       navigation.replace(NAVIGATION_ROUTES.SIGN_IN);
-      Alert.alert(
-        'Cuenta eliminada',
-        'Tu cuenta ha sido eliminada correctamente. Todas tus suscripciones activas han sido canceladas.',
-        [{ text: 'OK' }]
-      );
+      showToast({
+        message:
+          'Tu cuenta ha sido eliminada. Las suscripciones activas quedaron canceladas.',
+        type: 'success',
+        duration: 5000,
+      });
     } catch (e) {
       console.error('Error eliminando cuenta:', e);
-      Alert.alert(TEXTS.ERROR, e.message || TEXTS.DELETE_ERROR);
+      showToast({ message: e.message || TEXTS.DELETE_ERROR, type: 'error' });
     }
-  }, [navigation, authLogout]);
+  }, [navigation, authLogout, showToast]);
 
   const checkPushNotificationStatus = useCallback(async () => {
     try {
@@ -82,54 +83,75 @@ export function useSettingsScreen({ navigation }) {
           const token = await registerForPushNotifications();
           if (token) {
             setPushNotificationsEnabled(true);
-            Alert.alert(TEXTS.SUCCESS, 'Notificaciones push habilitadas. Recibirás alertas sobre crisis y seguimientos.', [{ text: TEXTS.OK }]);
+            showToast({
+              message: 'Notificaciones push habilitadas. Recibirás alertas sobre crisis y seguimientos.',
+              type: 'success',
+            });
           } else {
             setPushNotificationsEnabled(false);
-            Alert.alert(TEXTS.ERROR, 'No se pudo registrar el dispositivo para notificaciones push.');
+            showToast({
+              message: 'No se pudo registrar el dispositivo para notificaciones push.',
+              type: 'error',
+            });
           }
         } else {
           setPushNotificationsEnabled(false);
-          Alert.alert(TEXTS.PERMISSIONS_NEEDED, TEXTS.PERMISSIONS_MESSAGE, [{ text: TEXTS.OK }]);
+          showToast({
+            message: `${TEXTS.PERMISSIONS_NEEDED}: ${TEXTS.PERMISSIONS_MESSAGE}`,
+            type: 'info',
+            duration: 5000,
+          });
         }
       } else {
         setPushNotificationsEnabled(false);
-        Alert.alert('Notificaciones deshabilitadas', 'No recibirás alertas sobre crisis.', [{ text: TEXTS.OK }]);
+        showToast({
+          message: 'Notificaciones deshabilitadas. No recibirás alertas sobre crisis.',
+          type: 'warning',
+        });
       }
     } catch (error) {
-      Alert.alert(TEXTS.ERROR, getApiErrorMessage(error) || 'Error configurando notificaciones push');
+      showToast({
+        message: getApiErrorMessage(error) || 'Error configurando notificaciones push.',
+        type: 'error',
+      });
     }
-  }, []);
-
-  const configureNotifications = useCallback(async () => {
-    await Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-      }),
-    });
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
-    configureNotifications();
     checkPushNotificationStatus();
-  }, [configureNotifications, checkPushNotificationStatus]);
+  }, [checkPushNotificationStatus]);
 
   const handleTestNotification = useCallback(
     async (endpointKey) => {
       try {
         await api.post(ENDPOINTS[endpointKey]);
-        const messages = {
-          TEST_NOTIFICATION_WARNING: 'Notificación WARNING de prueba enviada',
-          TEST_NOTIFICATION_MEDIUM: 'Notificación MEDIUM de prueba enviada',
-          TEST_NOTIFICATION_FOLLOWUP: 'Notificación de seguimiento de prueba enviada',
+        const byKey = {
+          TEST_NOTIFICATION_WARNING: {
+            message: 'Notificación WARNING de prueba enviada al dispositivo.',
+            type: 'success',
+          },
+          TEST_NOTIFICATION_MEDIUM: {
+            message: 'Notificación MEDIUM de prueba enviada al dispositivo.',
+            type: 'info',
+          },
+          TEST_NOTIFICATION_FOLLOWUP: {
+            message: 'Notificación de seguimiento de prueba enviada al dispositivo.',
+            type: 'default',
+          },
         };
-        Alert.alert('Éxito', messages[endpointKey] || 'Notificación de prueba enviada');
+        const payload = byKey[endpointKey] || {
+          message: 'Notificación de prueba enviada.',
+          type: 'success',
+        };
+        showToast(payload);
       } catch (error) {
-        Alert.alert('Error', getApiErrorMessage(error) || 'Error enviando notificación de prueba');
+        showToast({
+          message: getApiErrorMessage(error) || 'Error enviando notificación de prueba.',
+          type: 'error',
+        });
       }
     },
-    []
+    [showToast]
   );
 
   const DEFAULT_CHAT_PREFS = {
@@ -161,15 +183,21 @@ export function useSettingsScreen({ navigation }) {
         });
         const ok = await persistUserFromMeResponse(result);
         if (!ok) {
-          Alert.alert(TEXTS.ERROR, 'No se pudo actualizar la sesión. Intenta cerrar sesión y volver a entrar.');
+          showToast({
+            message: 'No se pudo actualizar la sesión. Intenta cerrar sesión y volver a entrar.',
+            type: 'warning',
+          });
         } else {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
       } catch (error) {
-        Alert.alert(TEXTS.ERROR, getApiErrorMessage(error) || TEXTS.PREFERENCES_ERROR);
+        showToast({
+          message: getApiErrorMessage(error) || TEXTS.PREFERENCES_ERROR,
+          type: 'error',
+        });
       }
     },
-    [user, persistUserFromMeResponse]
+    [user, persistUserFromMeResponse, showToast]
   );
 
   const handleCycleResponseStyle = useCallback(async () => {
@@ -185,14 +213,23 @@ export function useSettingsScreen({ navigation }) {
       });
       const ok = await persistUserFromMeResponse(result);
       if (!ok) {
-        Alert.alert(TEXTS.ERROR, 'No se pudo actualizar la sesión tras cambiar el estilo.');
+        showToast({
+          message: 'No se pudo actualizar la sesión tras cambiar el estilo.',
+          type: 'warning',
+        });
         return;
       }
-      Alert.alert('Éxito', `Estilo de respuesta cambiado a: ${RESPONSE_STYLE_LABELS[nextStyle]}`);
+      showToast({
+        message: `Estilo de respuesta cambiado a: ${RESPONSE_STYLE_LABELS[nextStyle]}`,
+        type: 'success',
+      });
     } catch (error) {
-      Alert.alert(TEXTS.ERROR, getApiErrorMessage(error) || 'No se pudo actualizar el estilo de respuesta');
+      showToast({
+        message: getApiErrorMessage(error) || 'No se pudo actualizar el estilo de respuesta.',
+        type: 'error',
+      });
     }
-  }, [user, persistUserFromMeResponse]);
+  }, [user, persistUserFromMeResponse, showToast]);
 
   return {
     user,

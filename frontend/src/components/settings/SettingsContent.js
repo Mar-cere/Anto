@@ -4,7 +4,8 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { useToast } from '../../context/ToastContext';
 import {
   COLORS,
   ICON_SIZE,
@@ -31,6 +32,7 @@ export default function SettingsContent({
   onShowDeleteModal,
   onTestNotification,
 }) {
+  const { showToast } = useToast();
   const INSTAGRAM_URL = 'https://www.instagram.com/antoapp.cl?igsh=YjU3MDB5bTkycjAz&utm_source=qr';
   const currentResponseStyle = user?.preferences?.responseStyle || 'balanced';
   const responseStyleLabel = RESPONSE_STYLE_LABELS[currentResponseStyle] || 'Equilibrado';
@@ -41,12 +43,12 @@ export default function SettingsContent({
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       const canOpen = await Linking.canOpenURL(INSTAGRAM_URL);
       if (!canOpen) {
-        Alert.alert('No se pudo abrir Instagram', 'Intenta nuevamente más tarde.');
+        showToast({ message: 'No se pudo abrir Instagram. Intenta más tarde.', type: 'warning' });
         return;
       }
       await Linking.openURL(INSTAGRAM_URL);
     } catch (error) {
-      Alert.alert('Error', 'No se pudo abrir el enlace.');
+      showToast({ message: 'No se pudo abrir el enlace.', type: 'default' });
     }
   };
 

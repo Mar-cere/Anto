@@ -10,6 +10,7 @@
 import { Expo } from 'expo-server-sdk';
 import { NOTIFICATION_ICON_URL } from '../constants/app.js';
 import NotificationEngagement from '../models/NotificationEngagement.js';
+import { pickRandom, PUSH_NOTIFICATION_COPY as C, buildWeeklyProgressBody } from './pushNotificationCopyPools.js';
 
 class PushNotificationService {
   constructor() {
@@ -23,45 +24,63 @@ class PushNotificationService {
       CRISIS_MEDIUM: 'crisis_medium',
       CRISIS_HIGH: 'crisis_high',
       FOLLOW_UP: 'crisis_followup',
+      CRISIS_RESOURCES: 'crisis_resources',
       
       // Técnicas y bienestar
       TECHNIQUE_REMINDER: 'technique_reminder',
       BREATHING_REMINDER: 'breathing_reminder',
       MINDFULNESS_REMINDER: 'mindfulness_reminder',
+      GROUNDING_REMINDER: 'grounding_reminder',
+      PROGRESSIVE_RELAXATION: 'progressive_relaxation',
       
       // Progreso y logros
       PROGRESS_POSITIVE: 'progress_positive',
       ACHIEVEMENT_UNLOCKED: 'achievement_unlocked',
       STREAK_MILESTONE: 'streak_milestone',
       WEEKLY_PROGRESS: 'weekly_progress',
+      PERSONAL_BEST: 'personal_best',
       
       // Hábitos y tareas
       HABIT_REMINDER: 'habit_reminder',
       HABIT_MISSED: 'habit_missed',
       TASK_REMINDER: 'task_reminder',
       TASK_OVERDUE: 'task_overdue',
+      TASK_DUE_SOON: 'task_due_soon',
       
       // Check-ins y reflexión
       DAILY_CHECKIN: 'daily_checkin',
       EMOTIONAL_CHECKIN: 'emotional_checkin',
       GRATITUDE_REMINDER: 'gratitude_reminder',
+      JOURNALING_PROMPT: 'journaling_prompt',
+      WEEKLY_REFLECTION: 'weekly_reflection',
       
       // Motivación y apoyo
       MOTIVATIONAL_MESSAGE: 'motivational_message',
       MORNING_MOTIVATION: 'morning_motivation',
       EVENING_REFLECTION: 'evening_reflection',
+      MIDDAY_MOTIVATION: 'midday_motivation',
+      WEEKEND_REFLECTION: 'weekend_reflection',
       
       // Recordatorios preventivos
       WELLNESS_TIP: 'wellness_tip',
       SELF_CARE_REMINDER: 'self_care_reminder',
+      HYDRATION_REMINDER: 'hydration_reminder',
+      MOVEMENT_BREAK: 'movement_break',
+      SLEEP_ROUTINE_REMINDER: 'sleep_routine_reminder',
       
       // Trial y suscripciones
       TRIAL_EXPIRING: 'trial_expiring',
       TRIAL_EXPIRED: 'trial_expired',
       SUBSCRIPTION_REMINDER: 'subscription_reminder',
+      TRIAL_WELCOME: 'trial_welcome',
+      SUBSCRIPTION_RENEWAL_HINT: 'subscription_renewal_hint',
       
       // Alertas de emergencia
       EMERGENCY_ALERT_SENT: 'emergency_alert_sent',
+      EMERGENCY_CONTACT_UPDATED: 'emergency_contact_updated',
+      EMERGENCY_TEST_REMINDER: 'emergency_test_reminder',
+      EMERGENCY_SAFETY_REVIEW: 'emergency_safety_review',
+      EMERGENCY_INFO_DIGEST: 'emergency_info_digest',
     };
   }
 
@@ -72,6 +91,22 @@ class PushNotificationService {
    */
   isValidToken(token) {
     return Expo.isExpoPushToken(token);
+  }
+
+  /**
+   * Normaliza título/cuerpo antes de Expo (trim, fallback, longitud).
+   */
+  _sanitizePushText(text, fallback, maxLen) {
+    const fb =
+      String(fallback ?? '').trim() ||
+      (maxLen <= 200 ? 'Anto' : 'Tienes una notificación en Anto.');
+    if (text === undefined || text === null) {
+      return fb.slice(0, maxLen);
+    }
+    const raw = typeof text === 'string' ? text : String(text);
+    const trimmed = raw.trim();
+    const out = (trimmed || fb).slice(0, maxLen);
+    return out || fb;
   }
 
   /**
@@ -92,6 +127,13 @@ class PushNotificationService {
         return { success: false, error: 'Token inválido' };
       }
 
+      const safeTitle = this._sanitizePushText(title, 'Anto', 180);
+      const safeBody = this._sanitizePushText(
+        body,
+        'Tienes una notificación en Anto.',
+        500
+      );
+
       // Determinar canal y prioridad según tipo
       const channelId = this.getChannelId(type);
       const priority = this.getPriority(type);
@@ -101,8 +143,8 @@ class PushNotificationService {
       const message = {
         to: pushToken,
         sound,
-        title,
-        body,
+        title: safeTitle,
+        body: safeBody,
         data: {
           ...data,
           type,
@@ -130,10 +172,18 @@ class PushNotificationService {
       }
 
       // Verificar resultados
+      if (!tickets.length) {
+        return { success: false, error: 'Sin respuesta del servicio de push' };
+      }
       const ticket = tickets[0];
       const result = ticket.status === 'ok'
-        ? { success: true, ticketId: ticket.id, title, body }
-        : { success: false, error: ticket.message || 'Error desconocido', title, body };
+        ? { success: true, ticketId: ticket.id, title: safeTitle, body: safeBody }
+        : {
+            success: false,
+            error: ticket.message || 'Error desconocido',
+            title: safeTitle,
+            body: safeBody,
+          };
 
       // Registrar engagement si se proporciona userId
       if (userId) {
@@ -144,8 +194,8 @@ class PushNotificationService {
             pushToken,
             status: result.success ? 'sent' : 'error',
             notificationData: {
-              title,
-              body,
+              title: safeTitle,
+              body: safeBody,
               data
             },
             error: result.error || null
@@ -177,11 +227,10 @@ class PushNotificationService {
    */
   async sendCrisisWarning(pushToken, options = {}) {
     const { emotion, intensity } = options;
-    
     return this.sendNotification(
       pushToken,
-      '⚠️ Cuidado con tu bienestar',
-      `Detectamos que estás pasando por un momento difícil. ¿Quieres que te ayudemos con algunas técnicas de regulación?`,
+      pickRandom(C.crisisWarning.titles),
+      pickRandom(C.crisisWarning.bodies),
       {
         emotion,
         intensity,
@@ -200,8 +249,8 @@ class PushNotificationService {
   async sendCrisisMedium(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      '🔔 Apoyo disponible',
-      `Estamos aquí para ti. Hemos notificado a tus contactos de emergencia. ¿Quieres conversar?`,
+      pickRandom(C.crisisMedium.titles),
+      pickRandom(C.crisisMedium.bodies),
       {
         action: 'open_chat',
         riskLevel: 'MEDIUM',
@@ -219,8 +268,8 @@ class PushNotificationService {
   async sendCrisisHigh(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      '🚨 Apoyo inmediato',
-      `Tu seguridad es importante. Hemos notificado a tus contactos de emergencia. Estamos aquí para ayudarte.`,
+      pickRandom(C.crisisHigh.titles),
+      pickRandom(C.crisisHigh.bodies),
       {
         action: 'open_chat',
         riskLevel: 'HIGH',
@@ -238,11 +287,18 @@ class PushNotificationService {
    */
   async sendFollowUp(pushToken, options = {}) {
     const { hoursSinceCrisis, message } = options;
-    
+    let body = message;
+    if (!body) {
+      if (hoursSinceCrisis != null && hoursSinceCrisis !== '') {
+        body = pickRandom(C.followUpWithHours(hoursSinceCrisis));
+      } else {
+        body = pickRandom(C.followUpNoHours);
+      }
+    }
     return this.sendNotification(
       pushToken,
-      '💙 ¿Cómo te sientes ahora?',
-      message || `Han pasado ${hoursSinceCrisis} horas desde tu último momento difícil. ¿Quieres compartir cómo te sientes?`,
+      pickRandom(C.followUpTitles, '💙 ¿Cómo te sientes ahora?'),
+      body,
       {
         action: 'open_chat',
         followUp: true,
@@ -260,8 +316,8 @@ class PushNotificationService {
 
     return this.sendNotification(
       pushToken,
-      '¿Cómo sigues?',
-      'Hace un momento estuvimos en un momento muy cargado. Si quieres, Anto sigue aquí para ti.',
+      pickRandom(C.wellbeingCheckIn.titles),
+      pickRandom(C.wellbeingCheckIn.bodies),
       {
         action: 'open_chat',
         wellbeingCheckIn: true,
@@ -279,15 +335,23 @@ class PushNotificationService {
    */
   async sendTechniqueReminder(pushToken, options = {}) {
     const { technique, emotion } = options;
-    
+    const safeTechnique =
+      technique != null && String(technique).trim() !== ''
+        ? String(technique).trim().slice(0, 120)
+        : 'regulación emocional';
+    const safeEmotion =
+      emotion != null && String(emotion).trim() !== '' ? String(emotion).trim().slice(0, 80) : '';
     return this.sendNotification(
       pushToken,
-      '🧘 Técnica de regulación',
-      `Te recordamos la técnica "${technique}" que puede ayudarte con ${emotion || 'tu bienestar'}.`,
+      pickRandom(C.techniqueTitles, '🧘 Técnica de regulación'),
+      pickRandom(
+        C.techniqueBodies(safeTechnique, safeEmotion),
+        `Te proponemos un ejercicio breve de ${safeTechnique} para acompañarte hoy.`
+      ),
       {
         action: 'open_technique',
-        technique,
-        emotion,
+        technique: safeTechnique,
+        emotion: safeEmotion || emotion,
       },
       this.NOTIFICATION_TYPES.TECHNIQUE_REMINDER
     );
@@ -301,11 +365,11 @@ class PushNotificationService {
    */
   async sendProgressPositive(pushToken, options = {}) {
     const { achievement, message } = options;
-    
+    const ach = achievement || 'un avance importante';
     return this.sendNotification(
       pushToken,
-      '🎉 ¡Buen progreso!',
-      message || `Has logrado ${achievement || 'un avance importante'}. ¡Sigue así!`,
+      pickRandom(C.progressPositive.titles),
+      message || pickRandom(C.progressPositive.bodies(ach)),
       {
         action: 'open_dashboard',
         achievement,
@@ -322,11 +386,11 @@ class PushNotificationService {
    */
   async sendHabitReminder(pushToken, options = {}) {
     const { habitName, habitId } = options;
-    
+    const name = habitName || 'tu hábito';
     return this.sendNotification(
       pushToken,
-      '📋 Recordatorio de hábito',
-      `Es hora de completar tu hábito: "${habitName}". ¡Tú puedes hacerlo!`,
+      pickRandom(C.habitReminder.titles),
+      pickRandom(C.habitReminder.bodies(name)),
       {
         action: 'open_habits',
         habitId,
@@ -344,11 +408,11 @@ class PushNotificationService {
    */
   async sendHabitMissed(pushToken, options = {}) {
     const { habitName, streak } = options;
-    
+    const name = habitName || 'tu hábito';
     return this.sendNotification(
       pushToken,
-      '⏰ Te perdiste un hábito',
-      `No te preocupes, todos tenemos días difíciles. Tu racha de ${streak || 0} días sigue siendo impresionante. ¡Mañana es una nueva oportunidad!`,
+      pickRandom(C.habitMissed.titles),
+      pickRandom(C.habitMissed.bodies(name, streak)),
       {
         action: 'open_habits',
         habitName,
@@ -366,11 +430,11 @@ class PushNotificationService {
    */
   async sendTaskReminder(pushToken, options = {}) {
     const { taskTitle, taskId, dueDate } = options;
-    
+    const title = taskTitle || 'Tarea';
     return this.sendNotification(
       pushToken,
-      '✅ Recordatorio de tarea',
-      `Tienes una tarea pendiente: "${taskTitle}". ${dueDate ? `Vence ${dueDate}` : 'No olvides completarla'}.`,
+      pickRandom(C.taskReminder.titles),
+      pickRandom(C.taskReminder.bodies(title, dueDate)),
       {
         action: 'open_tasks',
         taskId,
@@ -388,11 +452,10 @@ class PushNotificationService {
    */
   async sendTaskOverdue(pushToken, options = {}) {
     const { taskTitle, taskId, daysOverdue } = options;
-    
     return this.sendNotification(
       pushToken,
-      '⚠️ Tarea vencida',
-      `La tarea "${taskTitle}" está vencida ${daysOverdue > 1 ? `hace ${daysOverdue} días` : 'hoy'}. ¿Quieres completarla ahora?`,
+      pickRandom(C.taskOverdue.titles),
+      pickRandom(C.taskOverdue.bodies(taskTitle || 'Tarea', daysOverdue)),
       {
         action: 'open_tasks',
         taskId,
@@ -417,11 +480,11 @@ class PushNotificationService {
       evening: 'Buenas noches',
     };
     const greeting = greetings[timeOfDay] || 'Hola';
-    
+    const titlePool = C.dailyCheckIn.titles(greeting);
     return this.sendNotification(
       pushToken,
-      `💭 ${greeting}, ¿cómo te sientes?`,
-      `Tómate un momento para reflexionar sobre cómo te sientes hoy. Un pequeño check-in puede hacer una gran diferencia.`,
+      pickRandom(titlePool),
+      pickRandom(C.dailyCheckIn.bodies),
       {
         action: 'open_chat',
         checkIn: true,
@@ -440,8 +503,8 @@ class PushNotificationService {
   async sendBreathingReminder(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      '🌬️ Momento de respirar',
-      `Tómate 2 minutos para una pausa de respiración. Puede ayudarte a sentirte más centrado y tranquilo.`,
+      pickRandom(C.breathing.titles),
+      pickRandom(C.breathing.bodies),
       {
         action: 'open_technique',
         technique: 'breathing',
@@ -459,8 +522,8 @@ class PushNotificationService {
   async sendMindfulnessReminder(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      '🧘 Momento de mindfulness',
-      `Practica estar presente en este momento. La atención plena puede ayudarte a manejar mejor el estrés y las emociones.`,
+      pickRandom(C.mindfulness.titles),
+      pickRandom(C.mindfulness.bodies),
       {
         action: 'open_technique',
         technique: 'mindfulness',
@@ -477,11 +540,11 @@ class PushNotificationService {
    */
   async sendAchievementUnlocked(pushToken, options = {}) {
     const { achievementName, description } = options;
-    
+    const name = achievementName || 'Logro';
     return this.sendNotification(
       pushToken,
-      '🏆 ¡Logro desbloqueado!',
-      `¡Felicitaciones! Has desbloqueado: "${achievementName}". ${description || 'Sigue así, estás haciendo un gran trabajo.'}`,
+      pickRandom(C.achievement.titles),
+      pickRandom(C.achievement.bodies(name, description)),
       {
         action: 'open_dashboard',
         achievement: achievementName,
@@ -499,14 +562,20 @@ class PushNotificationService {
   async sendStreakMilestone(pushToken, options = {}) {
     const { streak, type } = options;
     const typeText = type === 'habits' ? 'hábitos' : 'días';
-    
+    const raw = Number(streak);
+    const streakSafe = Number.isFinite(raw)
+      ? Math.max(0, Math.min(10000, Math.floor(raw)))
+      : 0;
     return this.sendNotification(
       pushToken,
-      '🔥 ¡Racha impresionante!',
-      `¡Increíble! Llevas ${streak} ${typeText} consecutivos. Tu consistencia está dando frutos. ¡Sigue así!`,
+      pickRandom(C.streak.titles, '🔥 ¡Racha impresionante!'),
+      pickRandom(
+        C.streak.bodies(streakSafe, typeText),
+        `¡Llevas ${streakSafe} ${typeText} seguidos! Tu constancia cuenta.`
+      ),
       {
         action: 'open_dashboard',
-        streak,
+        streak: streakSafe,
         type,
       },
       this.NOTIFICATION_TYPES.STREAK_MILESTONE
@@ -521,15 +590,10 @@ class PushNotificationService {
    */
   async sendWeeklyProgress(pushToken, options = {}) {
     const { completedHabits, completedTasks, emotionalTrend } = options;
-    
-    let body = `Esta semana completaste ${completedHabits || 0} hábitos y ${completedTasks || 0} tareas.`;
-    if (emotionalTrend) {
-      body += ` Tu bienestar emocional ${emotionalTrend === 'improving' ? 'está mejorando' : emotionalTrend === 'stable' ? 'se mantiene estable' : 'necesita atención'}.`;
-    }
-    
+    const body = buildWeeklyProgressBody(completedHabits, completedTasks, emotionalTrend);
     return this.sendNotification(
       pushToken,
-      '📊 Tu semana en resumen',
+      pickRandom(C.weeklyProgress.titles),
       body,
       {
         action: 'open_dashboard',
@@ -547,30 +611,11 @@ class PushNotificationService {
    */
   async sendMotivationalMessage(pushToken, options = {}) {
     const { message, timeOfDay } = options;
-    const messages = {
-      morning: [
-        'Cada nuevo día es una oportunidad para crecer. ¡Tú puedes con lo que venga hoy!',
-        'Hoy es un día perfecto para dar pequeños pasos hacia tu bienestar.',
-        'Recuerda: eres más fuerte de lo que crees. ¡Buen día!',
-      ],
-      afternoon: [
-        'Estás haciendo un gran trabajo. Tómate un momento para reconocer tu esfuerzo.',
-        'Cada pequeño paso cuenta. Sigue adelante, estás en el camino correcto.',
-        'Tu bienestar es importante. ¿Cómo te sientes en este momento?',
-      ],
-      evening: [
-        'Reflexiona sobre el día. ¿Qué cosas positivas puedes reconocer?',
-        'Has llegado hasta aquí. Eso ya es un logro. Descansa bien.',
-        'Cada día que pasas cuidando de ti mismo es un día ganado.',
-      ],
-    };
-    
-    const messagePool = messages[timeOfDay] || messages.morning;
-    const selectedMessage = message || messagePool[Math.floor(Math.random() * messagePool.length)];
-    
+    const messagePool = C.motivational[timeOfDay] || C.motivational.morning;
+    const selectedMessage = message || pickRandom(messagePool);
     return this.sendNotification(
       pushToken,
-      '💙 Un mensaje para ti',
+      pickRandom(C.motivationalTitles),
       selectedMessage,
       {
         action: 'open_dashboard',
@@ -589,8 +634,8 @@ class PushNotificationService {
   async sendGratitudeReminder(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      '🙏 Momento de gratitud',
-      `Tómate un momento para pensar en algo por lo que estés agradecido hoy. La gratitud puede cambiar tu perspectiva.`,
+      pickRandom(C.gratitude.titles),
+      pickRandom(C.gratitude.bodies),
       {
         action: 'open_chat',
         gratitude: true,
@@ -607,16 +652,7 @@ class PushNotificationService {
    */
   async sendWellnessTip(pushToken, options = {}) {
     const { tip } = options;
-    const tips = [
-      'El autocuidado no es egoísta, es necesario. Tómate tiempo para ti.',
-      'Pequeños momentos de pausa durante el día pueden hacer una gran diferencia.',
-      'Recuerda hidratarte y mover tu cuerpo. Tu cuerpo y mente están conectados.',
-      'La respiración profunda puede ayudarte a manejar el estrés en cualquier momento.',
-      'Conectar con la naturaleza, aunque sea por unos minutos, puede mejorar tu estado de ánimo.',
-    ];
-    
-    const selectedTip = tip || tips[Math.floor(Math.random() * tips.length)];
-    
+    const selectedTip = tip || pickRandom(C.wellnessTips);
     return this.sendNotification(
       pushToken,
       '💡 Consejo de bienestar',
@@ -638,8 +674,8 @@ class PushNotificationService {
   async sendSelfCareReminder(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      '💆 Tiempo de autocuidado',
-      `¿Has dedicado tiempo a cuidarte hoy? El autocuidado es esencial para tu bienestar. ¿Qué puedes hacer por ti ahora mismo?`,
+      pickRandom(C.selfCare.titles),
+      pickRandom(C.selfCare.bodies),
       {
         action: 'open_dashboard',
         selfCare: true,
@@ -656,22 +692,21 @@ class PushNotificationService {
    */
   async sendTrialExpiring(pushToken, options = {}) {
     const { daysRemaining } = options;
-    
-    const title = daysRemaining === 1 
-      ? '⏰ Tu trial expira mañana'
-      : `⏰ Tu trial expira en ${daysRemaining} días`;
-    
-    const body = daysRemaining === 1
-      ? 'Tu período de prueba expira mañana. Suscríbete para continuar usando todas las funciones premium.'
-      : `Tu período de prueba expira en ${daysRemaining} días. No te pierdas todas las funciones premium.`;
-    
+    const raw = Number(daysRemaining);
+    const dr =
+      Number.isFinite(raw) && raw > 0 ? Math.min(365, Math.floor(raw)) : 1;
+    const title = pickRandom(C.trialExpiringTitles(dr), '⏰ Tu trial');
+    const body = pickRandom(
+      C.trialExpiringBodies(dr),
+      'Tu período de prueba está por terminar. Revisa los planes cuando puedas.'
+    );
     return this.sendNotification(
       pushToken,
       title,
       body,
       {
         action: 'open_subscription',
-        daysRemaining,
+        daysRemaining: dr,
       },
       this.NOTIFICATION_TYPES.TRIAL_EXPIRING
     );
@@ -686,8 +721,8 @@ class PushNotificationService {
   async sendTrialExpired(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      '⏰ Tu trial ha expirado',
-      'Tu período de prueba ha terminado. Suscríbete ahora para continuar disfrutando de todas las funciones premium.',
+      pickRandom(C.trialExpired.titles),
+      pickRandom(C.trialExpired.bodies),
       {
         action: 'open_subscription',
       },
@@ -703,11 +738,10 @@ class PushNotificationService {
    */
   async sendSubscriptionReminder(pushToken, options = {}) {
     const { message } = options;
-    
     return this.sendNotification(
       pushToken,
-      '💎 Recordatorio de suscripción',
-      message || 'No te pierdas todas las funciones premium. Suscríbete ahora y continúa tu viaje de bienestar.',
+      pickRandom(C.subscriptionReminder.titles),
+      message || pickRandom(C.subscriptionReminder.bodies),
       {
         action: 'open_subscription',
       },
@@ -723,15 +757,14 @@ class PushNotificationService {
    */
   async sendEmergencyAlertSent(pushToken, options = {}) {
     const { successfulSends, totalContacts, riskLevel, isTest } = options;
-    
-    const title = isTest 
-      ? '🧪 Alerta de Prueba Enviada'
-      : '🚨 Alerta de Emergencia Enviada';
-    
+    const ok = successfulSends ?? 0;
+    const total = totalContacts ?? 0;
+    const title = isTest
+      ? pickRandom(C.emergencySent.testTitles)
+      : pickRandom(C.emergencySent.liveTitles);
     const body = isTest
-      ? `Se envió una alerta de prueba a ${successfulSends} de ${totalContacts} contacto(s) de emergencia.`
-      : `Hemos detectado una situación de riesgo y hemos notificado a ${successfulSends} de ${totalContacts} contacto(s) de emergencia.`;
-    
+      ? pickRandom(C.emergencySent.testBodies(ok, total))
+      : pickRandom(C.emergencySent.liveBodies(ok, total));
     return this.sendNotification(
       pushToken,
       title,
@@ -744,6 +777,206 @@ class PushNotificationService {
         isTest: isTest || false,
       },
       this.NOTIFICATION_TYPES.EMERGENCY_ALERT_SENT
+    );
+  }
+
+  /**
+   * Recursos y contención tras momento de alerta (sin escalamiento automático).
+   */
+  async sendCrisisResources(pushToken, options = {}) {
+    const { message } = options;
+    return this.sendNotification(
+      pushToken,
+      pickRandom(C.crisisResources.titles),
+      message || pickRandom(C.crisisResources.bodies),
+      { action: 'open_chat', resources: true },
+      this.NOTIFICATION_TYPES.CRISIS_RESOURCES
+    );
+  }
+
+  async sendGroundingReminder(pushToken, options = {}) {
+    return this.sendNotification(
+      pushToken,
+      pickRandom(C.grounding.titles),
+      pickRandom(C.grounding.bodies),
+      { action: 'open_technique', technique: 'grounding' },
+      this.NOTIFICATION_TYPES.GROUNDING_REMINDER
+    );
+  }
+
+  async sendProgressiveRelaxation(pushToken, options = {}) {
+    return this.sendNotification(
+      pushToken,
+      pickRandom(C.progressiveRelaxation.titles),
+      pickRandom(C.progressiveRelaxation.bodies),
+      { action: 'open_technique', technique: 'progressive_relaxation' },
+      this.NOTIFICATION_TYPES.PROGRESSIVE_RELAXATION
+    );
+  }
+
+  async sendPersonalBest(pushToken, options = {}) {
+    const { metric, value } = options;
+    const m = metric || 'tu seguimiento';
+    const v = value ?? '¡sigue así!';
+    return this.sendNotification(
+      pushToken,
+      pickRandom(C.personalBest.titles, '⭐ Nuevo récord personal'),
+      pickRandom(C.personalBest.bodies(m, v), `Superaste tu mejor marca en ${m}: ${v}`.trim()),
+      { action: 'open_dashboard', personalBest: true },
+      this.NOTIFICATION_TYPES.PERSONAL_BEST
+    );
+  }
+
+  async sendTaskDueSoon(pushToken, options = {}) {
+    const { taskTitle, taskId, dueIn } = options;
+    const t = taskTitle || 'Tu tarea';
+    const d = dueIn || 'pronto';
+    return this.sendNotification(
+      pushToken,
+      pickRandom(C.taskDueSoon.titles),
+      pickRandom(C.taskDueSoon.bodies(t, d)),
+      { action: 'open_tasks', taskId, taskTitle, dueSoon: true },
+      this.NOTIFICATION_TYPES.TASK_DUE_SOON
+    );
+  }
+
+  async sendJournalingPrompt(pushToken, options = {}) {
+    const { prompt } = options;
+    return this.sendNotification(
+      pushToken,
+      pickRandom(C.journaling.titles),
+      prompt || pickRandom(C.journaling.bodies),
+      { action: 'open_chat', journaling: true },
+      this.NOTIFICATION_TYPES.JOURNALING_PROMPT
+    );
+  }
+
+  async sendWeeklyReflection(pushToken, options = {}) {
+    const { summary } = options;
+    return this.sendNotification(
+      pushToken,
+      pickRandom(C.weeklyReflection.titles),
+      summary || pickRandom(C.weeklyReflection.bodies),
+      { action: 'open_dashboard', weeklyReflection: true },
+      this.NOTIFICATION_TYPES.WEEKLY_REFLECTION
+    );
+  }
+
+  async sendMiddayMotivation(pushToken, options = {}) {
+    const { message } = options;
+    return this.sendNotification(
+      pushToken,
+      pickRandom(C.midday.titles),
+      message || pickRandom(C.midday.bodies),
+      { action: 'open_dashboard', midday: true },
+      this.NOTIFICATION_TYPES.MIDDAY_MOTIVATION
+    );
+  }
+
+  async sendWeekendReflection(pushToken, options = {}) {
+    const { message } = options;
+    return this.sendNotification(
+      pushToken,
+      pickRandom(C.weekend.titles),
+      message || pickRandom(C.weekend.bodies),
+      { action: 'open_dashboard', weekend: true },
+      this.NOTIFICATION_TYPES.WEEKEND_REFLECTION
+    );
+  }
+
+  async sendHydrationReminder(pushToken, options = {}) {
+    return this.sendNotification(
+      pushToken,
+      pickRandom(C.hydration.titles),
+      pickRandom(C.hydration.bodies),
+      { action: 'open_dashboard', hydration: true },
+      this.NOTIFICATION_TYPES.HYDRATION_REMINDER
+    );
+  }
+
+  async sendMovementBreak(pushToken, options = {}) {
+    return this.sendNotification(
+      pushToken,
+      pickRandom(C.movementBreak.titles),
+      pickRandom(C.movementBreak.bodies),
+      { action: 'open_dashboard', movementBreak: true },
+      this.NOTIFICATION_TYPES.MOVEMENT_BREAK
+    );
+  }
+
+  async sendSleepRoutineReminder(pushToken, options = {}) {
+    return this.sendNotification(
+      pushToken,
+      pickRandom(C.sleepRoutine.titles),
+      pickRandom(C.sleepRoutine.bodies),
+      { action: 'open_dashboard', sleepRoutine: true },
+      this.NOTIFICATION_TYPES.SLEEP_ROUTINE_REMINDER
+    );
+  }
+
+  async sendTrialWelcome(pushToken, options = {}) {
+    return this.sendNotification(
+      pushToken,
+      pickRandom(C.trialWelcome.titles),
+      pickRandom(C.trialWelcome.bodies),
+      { action: 'open_dashboard', trialWelcome: true },
+      this.NOTIFICATION_TYPES.TRIAL_WELCOME
+    );
+  }
+
+  async sendSubscriptionRenewalHint(pushToken, options = {}) {
+    const { message } = options;
+    return this.sendNotification(
+      pushToken,
+      pickRandom(C.renewalHint.titles),
+      message || pickRandom(C.renewalHint.bodies),
+      { action: 'open_subscription', renewalHint: true },
+      this.NOTIFICATION_TYPES.SUBSCRIPTION_RENEWAL_HINT
+    );
+  }
+
+  async sendEmergencyContactUpdated(pushToken, options = {}) {
+    const { contactName } = options;
+    const body = contactName
+      ? pickRandom(C.emergencyContactUpdated.bodiesWithName(contactName))
+      : pickRandom(C.emergencyContactUpdated.bodiesGeneric);
+    return this.sendNotification(
+      pushToken,
+      pickRandom(C.emergencyContactUpdated.titles),
+      body,
+      { action: 'open_emergency_alerts', contactUpdated: true },
+      this.NOTIFICATION_TYPES.EMERGENCY_CONTACT_UPDATED
+    );
+  }
+
+  async sendEmergencyTestReminder(pushToken, options = {}) {
+    return this.sendNotification(
+      pushToken,
+      pickRandom(C.emergencyTestReminder.titles),
+      pickRandom(C.emergencyTestReminder.bodies),
+      { action: 'open_emergency_alerts', testReminder: true },
+      this.NOTIFICATION_TYPES.EMERGENCY_TEST_REMINDER
+    );
+  }
+
+  async sendEmergencySafetyReview(pushToken, options = {}) {
+    return this.sendNotification(
+      pushToken,
+      pickRandom(C.emergencySafetyReview.titles),
+      pickRandom(C.emergencySafetyReview.bodies),
+      { action: 'open_emergency_alerts', safetyReview: true },
+      this.NOTIFICATION_TYPES.EMERGENCY_SAFETY_REVIEW
+    );
+  }
+
+  async sendEmergencyInfoDigest(pushToken, options = {}) {
+    const { snippet } = options;
+    return this.sendNotification(
+      pushToken,
+      pickRandom(C.emergencyInfoDigest.titles),
+      snippet || pickRandom(C.emergencyInfoDigest.bodies),
+      { action: 'open_emergency_alerts', infoDigest: true },
+      this.NOTIFICATION_TYPES.EMERGENCY_INFO_DIGEST
     );
   }
 
@@ -829,11 +1062,14 @@ class PushNotificationService {
       [this.NOTIFICATION_TYPES.CRISIS_MEDIUM]: 'anto-crisis',
       [this.NOTIFICATION_TYPES.CRISIS_HIGH]: 'anto-crisis',
       [this.NOTIFICATION_TYPES.FOLLOW_UP]: 'anto-followup',
+      [this.NOTIFICATION_TYPES.CRISIS_RESOURCES]: 'anto-crisis',
       
       // Técnicas y bienestar - canal de alta prioridad
       [this.NOTIFICATION_TYPES.TECHNIQUE_REMINDER]: 'anto-reminders',
       [this.NOTIFICATION_TYPES.BREATHING_REMINDER]: 'anto-reminders',
       [this.NOTIFICATION_TYPES.MINDFULNESS_REMINDER]: 'anto-reminders',
+      [this.NOTIFICATION_TYPES.GROUNDING_REMINDER]: 'anto-reminders',
+      [this.NOTIFICATION_TYPES.PROGRESSIVE_RELAXATION]: 'anto-reminders',
       [this.NOTIFICATION_TYPES.WELLNESS_TIP]: 'anto-reminders',
       [this.NOTIFICATION_TYPES.SELF_CARE_REMINDER]: 'anto-reminders',
       
@@ -842,30 +1078,47 @@ class PushNotificationService {
       [this.NOTIFICATION_TYPES.ACHIEVEMENT_UNLOCKED]: 'anto-reminders',
       [this.NOTIFICATION_TYPES.STREAK_MILESTONE]: 'anto-reminders',
       [this.NOTIFICATION_TYPES.WEEKLY_PROGRESS]: 'anto-reminders',
+      [this.NOTIFICATION_TYPES.PERSONAL_BEST]: 'anto-reminders',
       
       // Hábitos y tareas - canal de recordatorios
       [this.NOTIFICATION_TYPES.HABIT_REMINDER]: 'anto-reminders',
       [this.NOTIFICATION_TYPES.HABIT_MISSED]: 'anto-reminders',
       [this.NOTIFICATION_TYPES.TASK_REMINDER]: 'anto-reminders',
       [this.NOTIFICATION_TYPES.TASK_OVERDUE]: 'anto-reminders',
+      [this.NOTIFICATION_TYPES.TASK_DUE_SOON]: 'anto-reminders',
       
       // Check-ins y reflexión - canal de recordatorios
       [this.NOTIFICATION_TYPES.DAILY_CHECKIN]: 'anto-reminders',
       [this.NOTIFICATION_TYPES.EMOTIONAL_CHECKIN]: 'anto-reminders',
       [this.NOTIFICATION_TYPES.GRATITUDE_REMINDER]: 'anto-reminders',
+      [this.NOTIFICATION_TYPES.JOURNALING_PROMPT]: 'anto-reminders',
+      [this.NOTIFICATION_TYPES.WEEKLY_REFLECTION]: 'anto-reminders',
       
       // Motivación - canal de recordatorios
       [this.NOTIFICATION_TYPES.MOTIVATIONAL_MESSAGE]: 'anto-reminders',
       [this.NOTIFICATION_TYPES.MORNING_MOTIVATION]: 'anto-reminders',
       [this.NOTIFICATION_TYPES.EVENING_REFLECTION]: 'anto-reminders',
+      [this.NOTIFICATION_TYPES.MIDDAY_MOTIVATION]: 'anto-reminders',
+      [this.NOTIFICATION_TYPES.WEEKEND_REFLECTION]: 'anto-reminders',
       
-      // Trial y suscripciones - canal de recordatorios
-      [this.NOTIFICATION_TYPES.TRIAL_EXPIRING]: 'anto-reminders',
-      [this.NOTIFICATION_TYPES.TRIAL_EXPIRED]: 'anto-reminders',
-      [this.NOTIFICATION_TYPES.SUBSCRIPTION_REMINDER]: 'anto-reminders',
+      // Recordatorios preventivos
+      [this.NOTIFICATION_TYPES.HYDRATION_REMINDER]: 'anto-reminders',
+      [this.NOTIFICATION_TYPES.MOVEMENT_BREAK]: 'anto-reminders',
+      [this.NOTIFICATION_TYPES.SLEEP_ROUTINE_REMINDER]: 'anto-reminders',
+      
+      // Trial y suscripciones - canal dedicado
+      [this.NOTIFICATION_TYPES.TRIAL_EXPIRING]: 'anto-trial',
+      [this.NOTIFICATION_TYPES.TRIAL_EXPIRED]: 'anto-trial',
+      [this.NOTIFICATION_TYPES.SUBSCRIPTION_REMINDER]: 'anto-trial',
+      [this.NOTIFICATION_TYPES.TRIAL_WELCOME]: 'anto-trial',
+      [this.NOTIFICATION_TYPES.SUBSCRIPTION_RENEWAL_HINT]: 'anto-trial',
       
       // Alertas de emergencia - canal de crisis
       [this.NOTIFICATION_TYPES.EMERGENCY_ALERT_SENT]: 'anto-crisis',
+      [this.NOTIFICATION_TYPES.EMERGENCY_CONTACT_UPDATED]: 'anto-crisis',
+      [this.NOTIFICATION_TYPES.EMERGENCY_TEST_REMINDER]: 'anto-crisis',
+      [this.NOTIFICATION_TYPES.EMERGENCY_SAFETY_REVIEW]: 'anto-crisis',
+      [this.NOTIFICATION_TYPES.EMERGENCY_INFO_DIGEST]: 'anto-crisis',
     };
     return channelMap[type] || 'anto-notifications';
   }
@@ -882,6 +1135,7 @@ class PushNotificationService {
       [this.NOTIFICATION_TYPES.CRISIS_MEDIUM]: 'high',
       [this.NOTIFICATION_TYPES.CRISIS_HIGH]: 'high',
       [this.NOTIFICATION_TYPES.FOLLOW_UP]: 'high',
+      [this.NOTIFICATION_TYPES.CRISIS_RESOURCES]: 'high',
       
       // Tareas vencidas - alta prioridad
       [this.NOTIFICATION_TYPES.TASK_OVERDUE]: 'high',
@@ -890,6 +1144,7 @@ class PushNotificationService {
       // Recordatorios importantes - alta prioridad
       [this.NOTIFICATION_TYPES.HABIT_REMINDER]: 'high',
       [this.NOTIFICATION_TYPES.TASK_REMINDER]: 'high',
+      [this.NOTIFICATION_TYPES.TASK_DUE_SOON]: 'high',
       [this.NOTIFICATION_TYPES.DAILY_CHECKIN]: 'high',
       [this.NOTIFICATION_TYPES.EMOTIONAL_CHECKIN]: 'high',
       
@@ -897,28 +1152,44 @@ class PushNotificationService {
       [this.NOTIFICATION_TYPES.TECHNIQUE_REMINDER]: 'default',
       [this.NOTIFICATION_TYPES.BREATHING_REMINDER]: 'default',
       [this.NOTIFICATION_TYPES.MINDFULNESS_REMINDER]: 'default',
+      [this.NOTIFICATION_TYPES.GROUNDING_REMINDER]: 'default',
+      [this.NOTIFICATION_TYPES.PROGRESSIVE_RELAXATION]: 'default',
       [this.NOTIFICATION_TYPES.WELLNESS_TIP]: 'default',
       [this.NOTIFICATION_TYPES.SELF_CARE_REMINDER]: 'default',
+      [this.NOTIFICATION_TYPES.HYDRATION_REMINDER]: 'default',
+      [this.NOTIFICATION_TYPES.MOVEMENT_BREAK]: 'default',
+      [this.NOTIFICATION_TYPES.SLEEP_ROUTINE_REMINDER]: 'default',
       
       // Progreso y logros - prioridad normal
       [this.NOTIFICATION_TYPES.PROGRESS_POSITIVE]: 'default',
       [this.NOTIFICATION_TYPES.ACHIEVEMENT_UNLOCKED]: 'default',
       [this.NOTIFICATION_TYPES.STREAK_MILESTONE]: 'default',
       [this.NOTIFICATION_TYPES.WEEKLY_PROGRESS]: 'default',
+      [this.NOTIFICATION_TYPES.PERSONAL_BEST]: 'default',
       
       // Motivación y reflexión - prioridad normal
       [this.NOTIFICATION_TYPES.MOTIVATIONAL_MESSAGE]: 'default',
       [this.NOTIFICATION_TYPES.MORNING_MOTIVATION]: 'default',
       [this.NOTIFICATION_TYPES.EVENING_REFLECTION]: 'default',
+      [this.NOTIFICATION_TYPES.MIDDAY_MOTIVATION]: 'default',
+      [this.NOTIFICATION_TYPES.WEEKEND_REFLECTION]: 'default',
       [this.NOTIFICATION_TYPES.GRATITUDE_REMINDER]: 'default',
+      [this.NOTIFICATION_TYPES.JOURNALING_PROMPT]: 'default',
+      [this.NOTIFICATION_TYPES.WEEKLY_REFLECTION]: 'default',
       
       // Trial y suscripciones - alta prioridad
       [this.NOTIFICATION_TYPES.TRIAL_EXPIRING]: 'high',
       [this.NOTIFICATION_TYPES.TRIAL_EXPIRED]: 'high',
       [this.NOTIFICATION_TYPES.SUBSCRIPTION_REMINDER]: 'high',
+      [this.NOTIFICATION_TYPES.TRIAL_WELCOME]: 'high',
+      [this.NOTIFICATION_TYPES.SUBSCRIPTION_RENEWAL_HINT]: 'high',
       
       // Alertas de emergencia - alta prioridad
       [this.NOTIFICATION_TYPES.EMERGENCY_ALERT_SENT]: 'high',
+      [this.NOTIFICATION_TYPES.EMERGENCY_CONTACT_UPDATED]: 'high',
+      [this.NOTIFICATION_TYPES.EMERGENCY_TEST_REMINDER]: 'high',
+      [this.NOTIFICATION_TYPES.EMERGENCY_SAFETY_REVIEW]: 'high',
+      [this.NOTIFICATION_TYPES.EMERGENCY_INFO_DIGEST]: 'high',
     };
     return priorityMap[type] || 'default';
   }

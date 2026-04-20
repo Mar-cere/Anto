@@ -3,7 +3,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert, Animated } from 'react-native';
+import { Animated } from 'react-native';
 import { api, ENDPOINTS } from '../../config/api';
 import { ROUTES } from '../../constants/routes';
 import { REGISTER as TEXTS } from '../../constants/translations';
@@ -18,6 +18,8 @@ import { checkServerStatus } from '../../utils/networkUtils';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { getApiErrorMessage } from '../../utils/apiErrorHandler';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
+import { openRegisterPrivacyUrl } from './openPrivacyLink';
 import chatService from '../../services/chatService';
 import { STORAGE_KEYS, SERVER_CHECK_TIMEOUT } from './registerScreenConstants';
 
@@ -76,6 +78,7 @@ const saveAuthData = async (tokens, user, email) => {
 
 export function useRegisterScreen(navigation) {
   const { refreshSession } = useAuth();
+  const { showToast } = useToast();
   const { isConnected, isInternetReachable } = useNetworkStatus();
   const isOffline = !isConnected || isInternetReachable === false;
 
@@ -163,12 +166,16 @@ export function useRegisterScreen(navigation) {
     setIsLoading(true);
     try {
       if (isOffline) {
-        Alert.alert('Sin conexión', 'No hay conexión a internet. Por favor, verifica tu conexión e intenta nuevamente.', [{ text: 'Entendido' }]);
+        showToast({
+          message: 'Sin conexión. Verifica tu internet e intenta de nuevo.',
+          type: 'warning',
+          duration: 4500,
+        });
         return;
       }
       const isServerAvailable = await checkServerStatus(SERVER_CHECK_TIMEOUT);
       if (!isServerAvailable) {
-        Alert.alert('Error de conexión', ERROR_MESSAGES.SERVER_ERROR, [{ text: 'Entendido' }]);
+        showToast({ message: ERROR_MESSAGES.SERVER_ERROR, type: 'error', duration: 5000 });
         return;
       }
       const userData = {
@@ -200,12 +207,18 @@ export function useRegisterScreen(navigation) {
       throw new Error(ERROR_MESSAGES.NO_TOKEN);
     } catch (error) {
       console.error('Error en registro:', error);
-      Alert.alert(TEXTS.ERROR_TITLE, getApiErrorMessage(error, { isOffline }), [{ text: 'Entendido' }]);
+      showToast({
+        message: getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_TITLE,
+        type: 'error',
+        duration: 5000,
+      });
     } finally {
       setIsSubmitting(false);
       setIsLoading(false);
     }
-  }, [formData, isTermsAccepted, isPrivacyAccepted, isOffline, validateForm, navigation, refreshSession]);
+  }, [formData, isTermsAccepted, isPrivacyAccepted, isOffline, validateForm, navigation, refreshSession, showToast]);
+
+  const openPrivacyUrl = useCallback(() => openRegisterPrivacyUrl(showToast), [showToast]);
 
   const acceptTermsAndClose = useCallback(() => {
     setHasViewedTerms(true);
@@ -238,5 +251,6 @@ export function useRegisterScreen(navigation) {
     acceptTermsAndClose,
     fadeAnim,
     translateYAnim,
+    openPrivacyUrl,
   };
 }

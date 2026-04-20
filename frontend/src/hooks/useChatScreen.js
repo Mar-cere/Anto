@@ -35,10 +35,12 @@ import {
   getOfflinePendingMessage,
   setOfflinePendingMessage,
 } from '../services/chatOfflinePending';
+import { useToast } from '../context/ToastContext';
 
 export function useChatScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const { showToast } = useToast();
   const { isConnected, isInternetReachable } = useNetworkStatus();
   const isOffline = !isConnected || isInternetReachable === false;
 
@@ -245,7 +247,10 @@ export function useChatScreen() {
       const id = String(messageId ?? '').trim();
       if (!/^[\da-f]{24}$/i.test(id)) return;
       if (isOffline) {
-        Alert.alert(TEXTS.ERROR, TEXTS.FEEDBACK_OFFLINE);
+        showToast({
+          message: TEXTS.FEEDBACK_OFFLINE,
+          type: 'warning',
+        });
         return;
       }
       if (feedbackRequestLockRef.current) return;
@@ -269,13 +274,16 @@ export function useChatScreen() {
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       } catch (e) {
         console.warn('[useChatScreen] Error enviando feedback:', e?.message || e);
-        Alert.alert(TEXTS.ERROR, TEXTS.FEEDBACK_ERROR);
+        showToast({
+          message: TEXTS.FEEDBACK_ERROR,
+          type: 'error',
+        });
       } finally {
         feedbackRequestLockRef.current = false;
         setFeedbackSubmittingId(null);
       }
     },
-    [isOffline]
+    [isOffline, showToast]
   );
 
   const handleSend = useCallback(async (presetText) => {
@@ -477,13 +485,19 @@ export function useChatScreen() {
       }
 
       if (err.code === 'RATE_LIMIT') {
-        Alert.alert(TEXTS.GUEST_RATE_LIMIT_TITLE, err.message || '');
+        showToast({
+          message: err.message || TEXTS.GUEST_RATE_LIMIT_TITLE,
+          type: 'warning',
+        });
         setIsTyping(false);
         return;
       }
 
       if (err.response?.status === 400 && err.response?.data?.code === 'GUEST_CONTENT_TOO_LONG') {
-        Alert.alert(TEXTS.GUEST_CONTENT_TOO_LONG_TITLE, err.message || TEXTS.ERROR_SEND);
+        showToast({
+          message: err.message || TEXTS.ERROR_SEND,
+          type: 'warning',
+        });
         setIsTyping(false);
         return;
       }

@@ -6,7 +6,12 @@
 jest.mock('react-native', () => ({
   Alert: { alert: jest.fn() },
   Platform: { OS: 'android' },
-  Linking: { canOpenURL: jest.fn().mockResolvedValue(true), openURL: jest.fn() },
+  Linking: {
+    canOpenURL: jest.fn().mockResolvedValue(true),
+    openURL: jest.fn(),
+    getInitialURL: jest.fn().mockResolvedValue(null),
+    addEventListener: jest.fn(() => ({ remove: jest.fn() })),
+  },
   StyleSheet: { create: (s) => s },
 }));
 jest.mock('../../styles/globalStyles', () => ({ colors: {} }));
@@ -35,6 +40,10 @@ jest.mock('../../services/storeKitService', () => ({
   default: { isAvailable: () => false },
 }));
 jest.mock('../../utils/apiErrorHandler', () => ({ getApiErrorMessage: (e) => e?.message || 'Error' }));
+
+jest.mock('../../context/ToastContext', () => ({
+  useToast: () => ({ showToast: jest.fn() }),
+}));
 
 describe('useSubscriptionScreen', () => {
   beforeEach(() => {

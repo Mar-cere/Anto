@@ -26,6 +26,7 @@ import {
 import { api, ENDPOINTS } from '../config/api';
 import { getApiErrorMessage } from '../utils/apiErrorHandler';
 import { colors } from '../styles/globalStyles';
+import { useToast } from '../context/ToastContext';
 
 // Constantes de validación
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -69,6 +70,7 @@ const TEXTS = {
 };
 
 const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [], isFirstTime = false }) => {
+  const { showToast } = useToast();
   const [contacts, setContacts] = useState([
     { name: '', email: '', phone: '', relationship: '' }
   ]);
@@ -124,19 +126,25 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
     const duplicateEmails = emails.filter((email, index) => emails.indexOf(email) !== index);
     
     if (duplicateEmails.length > 0) {
-      Alert.alert('Error', TEXTS.DUPLICATE_EMAIL);
+      showToast({
+        message: TEXTS.DUPLICATE_EMAIL,
+        type: 'warning',
+      });
       return false;
     }
     
     // Verificar límite de contactos
     const totalContacts = existingContacts.length + contacts.filter(c => c.name.trim() && c.email.trim()).length;
     if (totalContacts > 2) {
-      Alert.alert('Error', TEXTS.MAX_CONTACTS_REACHED);
+      showToast({
+        message: TEXTS.MAX_CONTACTS_REACHED,
+        type: 'warning',
+      });
       return false;
     }
     
     return !hasErrors;
-  }, [contacts, existingContacts, validateContact]);
+  }, [contacts, existingContacts, validateContact, showToast]);
 
   // Manejar cambio en un campo
   const handleFieldChange = useCallback((contactIndex, field, value) => {
@@ -160,13 +168,16 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
   const handleAddContact = useCallback(() => {
     const totalContacts = existingContacts.length + contacts.filter(c => c.name.trim() && c.email.trim()).length;
     if (totalContacts >= 2) {
-      Alert.alert('Límite alcanzado', TEXTS.MAX_CONTACTS_REACHED);
+      showToast({
+        message: TEXTS.MAX_CONTACTS_REACHED,
+        type: 'warning',
+      });
       return;
     }
     
     setContacts(prev => [...prev, { name: '', email: '', phone: '', relationship: '' }]);
     setErrors(prev => [...prev, {}]);
-  }, [contacts, existingContacts]);
+  }, [contacts, existingContacts, showToast]);
 
   // Eliminar un contacto del formulario
   const handleRemoveContact = useCallback((index) => {
@@ -187,7 +198,10 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
       const contactsToSave = contacts.filter(c => c.name.trim() && c.email.trim());
       
       if (contactsToSave.length === 0) {
-        Alert.alert('Atención', 'Debes agregar al menos un contacto de emergencia');
+        showToast({
+          message: 'Debes agregar al menos un contacto de emergencia',
+          type: 'warning',
+        });
         setIsSubmitting(false);
         return;
       }
@@ -232,16 +246,25 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
       const errorMessage = getApiErrorMessage(error) || TEXTS.ADD_ERROR;
       const msg = (errorMessage || '').toLowerCase();
       if (msg.includes('límite') || msg.includes('máximo')) {
-        Alert.alert('Error', TEXTS.MAX_CONTACTS_REACHED);
+        showToast({
+          message: TEXTS.MAX_CONTACTS_REACHED,
+          type: 'error',
+        });
       } else if (msg.includes('email') || msg.includes('duplicado')) {
-        Alert.alert('Error', TEXTS.DUPLICATE_EMAIL);
+        showToast({
+          message: TEXTS.DUPLICATE_EMAIL,
+          type: 'error',
+        });
       } else {
-        Alert.alert('Error', errorMessage);
+        showToast({
+          message: errorMessage,
+          type: 'error',
+        });
       }
     } finally {
       setIsSubmitting(false);
     }
-  }, [contacts, validateAllContacts, onSave, onClose, sendTestEmails]);
+  }, [contacts, validateAllContacts, onSave, onClose, sendTestEmails, showToast]);
 
   // Omitir (cerrar sin guardar)
   const handleSkip = useCallback(async () => {

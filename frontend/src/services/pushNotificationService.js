@@ -19,25 +19,7 @@ const STORAGE_KEYS = {
   PUSH_TOKEN_SENT: 'pushTokenSentToBackend',
 };
 
-// Configurar handler de notificaciones
-Notifications.setNotificationHandler({
-  handleNotification: async (notification) => {
-    const { data } = notification.request.content;
-    
-    // Configuración diferente según tipo de notificación
-    const isCrisis = data?.type === 'crisis' || data?.type === 'crisis_warning';
-    const isFollowUp = data?.type === 'crisis_followup';
-    
-    return {
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-      priority: isCrisis || isFollowUp 
-        ? Notifications.AndroidNotificationPriority.MAX 
-        : Notifications.AndroidNotificationPriority.HIGH,
-    };
-  },
-});
+let notificationsInitialized = false;
 
 /**
  * Configura canales de notificación para Android
@@ -94,19 +76,48 @@ const setupNotificationChannels = async () => {
 };
 
 /**
+ * Inicializa notificaciones globales una sola vez.
+ * Configura handler y canales para evitar redefiniciones en distintos módulos.
+ */
+export const initializeNotifications = async () => {
+  if (notificationsInitialized) return;
+
+  Notifications.setNotificationHandler({
+    handleNotification: async (notification) => {
+      const { data } = notification.request.content;
+
+      // Configuración diferente según tipo de notificación
+      const isCrisis = data?.type === 'crisis' || data?.type === 'crisis_warning';
+      const isFollowUp = data?.type === 'crisis_followup';
+
+      return {
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+        priority: isCrisis || isFollowUp
+          ? Notifications.AndroidNotificationPriority.MAX
+          : Notifications.AndroidNotificationPriority.HIGH,
+      };
+    },
+  });
+
+  await setupNotificationChannels();
+  notificationsInitialized = true;
+};
+
+/**
  * Registra el dispositivo para recibir notificaciones push
  * @returns {Promise<string|null>} Token push o null si no se pudo obtener
  */
 export const registerForPushNotifications = async () => {
   try {
+    await initializeNotifications();
+
     // Verificar que sea un dispositivo físico
     if (!Device.isDevice) {
       console.log('[PushNotifications] ⚠️ Las notificaciones push requieren un dispositivo físico');
       return null;
     }
-
-    // Configurar canales
-    await setupNotificationChannels();
 
     // Verificar permisos
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -294,6 +305,7 @@ export const areNotificationsEnabled = async () => {
  */
 export const requestNotificationPermissions = async () => {
   try {
+    await initializeNotifications();
     const { status } = await Notifications.requestPermissionsAsync();
     return status === 'granted';
   } catch (error) {

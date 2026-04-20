@@ -15,7 +15,7 @@ const ConnectionRestoredListener = () => {
 
   useEffect(() => {
     if (prevOffline.current && !isOffline) {
-      showToast({ message: 'Conexión restaurada', type: 'success', duration: 2500 });
+      showToast({ message: 'Conexión restaurada', type: 'default', duration: 2800 });
     }
     prevOffline.current = isOffline;
   }, [isOffline, showToast]);

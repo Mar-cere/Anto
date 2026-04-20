@@ -50,8 +50,8 @@ class TrialNotificationService {
       // Calcular días restantes
       const daysRemaining = Math.ceil((trialEndDate - now) / (1000 * 60 * 60 * 24));
 
-      // Enviar notificación si quedan 1 o 2 días
-      if (daysRemaining === 1 || daysRemaining === 2) {
+      // Enviar recordatorio de trial con más frecuencia (5 → 1 días restantes)
+      if (daysRemaining >= 1 && daysRemaining <= 5) {
         await this.sendTrialExpirationNotification(userId, daysRemaining);
         return { 
           success: true, 
@@ -88,7 +88,13 @@ class TrialNotificationService {
       // Enviar notificación push si el usuario tiene token
       if (user.pushToken) {
         try {
-          await pushNotificationService.sendTrialExpiring(user.pushToken, { daysRemaining });
+          if (daysRemaining >= 3) {
+            await pushNotificationService.sendSubscriptionReminder(user.pushToken, {
+              message: `Te quedan ${daysRemaining} días de prueba premium. Aprovecha el chat y las herramientas.`,
+            });
+          } else {
+            await pushNotificationService.sendTrialExpiring(user.pushToken, { daysRemaining });
+          }
           console.log(`[TrialNotificationService] Notificación push enviada a usuario ${userId}`);
         } catch (pushError) {
           console.error('[TrialNotificationService] Error enviando notificación push:', pushError);
@@ -194,7 +200,7 @@ class TrialNotificationService {
         isInTrial: true,
         daysRemaining: Math.max(0, daysRemaining),
         trialEndDate,
-        shouldNotify: daysRemaining <= 2, // Notificar si quedan 2 días o menos
+        shouldNotify: daysRemaining <= 5,
       };
     } catch (error) {
       console.error('[TrialNotificationService] Error obteniendo info de trial:', error);

@@ -12,6 +12,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import React, { useEffect } from 'react';
 import {
+  initializeNotifications,
   removeNotificationListeners,
   setupNotificationListeners,
 } from '../services/pushNotificationService';
@@ -28,6 +29,8 @@ import { handleNotificationData, navigationRef } from './navigationRef';
  */
 const AppNavigator = () => {
   useEffect(() => {
+    initializeNotifications().catch(() => {});
+
     const subs = setupNotificationListeners(undefined, (response) => {
       const data = response?.notification?.request?.content?.data;
       handleNotificationData(data);

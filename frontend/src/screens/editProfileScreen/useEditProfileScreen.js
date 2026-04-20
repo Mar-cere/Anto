@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { Alert, Animated } from 'react-native';
 import { api, ENDPOINTS } from '../../config/api';
 import { ROUTES } from '../../constants/routes';
+import { useToast } from '../../context/ToastContext';
 import {
   TEXTS,
   MIN_NAME_LENGTH,
@@ -19,6 +20,7 @@ import {
 } from './editProfileScreenConstants';
 
 export function useEditProfileScreen(navigation) {
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -96,15 +98,14 @@ export function useEditProfileScreen(navigation) {
       newErrors.email = TEXTS.EMAIL_INVALID;
     }
     if (Object.keys(newErrors).length > 0) {
-      Alert.alert(
-        TEXTS.VALIDATION_ERRORS,
-        Object.values(newErrors).join('\n'),
-        [{ text: TEXTS.OK }]
-      );
+      showToast({
+        message: Object.values(newErrors).join(' | '),
+        type: 'warning',
+      });
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formData.name, formData.email]);
+  }, [formData.name, formData.email, showToast]);
 
   const handleSave = useCallback(async () => {
     if (!validateForm()) return;
@@ -117,9 +118,11 @@ export function useEditProfileScreen(navigation) {
       const response = await api.put(ENDPOINTS.UPDATE_PROFILE, requestData);
       const updatedUser = response.data || response;
       await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUser));
-      Alert.alert(TEXTS.SUCCESS, TEXTS.PROFILE_UPDATED, [
-        { text: TEXTS.OK, onPress: () => setEditing(false) },
-      ]);
+      showToast({
+        message: TEXTS.PROFILE_UPDATED,
+        type: 'success',
+      });
+      setEditing(false);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), SAVE_SUCCESS_DELAY);
       setHasChanges(false);
@@ -130,7 +133,7 @@ export function useEditProfileScreen(navigation) {
     } finally {
       setSaving(false);
     }
-  }, [validateForm, formData.name, formData.email, handleError]);
+  }, [validateForm, formData.name, formData.email, handleError, showToast]);
 
   const handleFormChange = useCallback((field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

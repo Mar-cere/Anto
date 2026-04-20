@@ -34,6 +34,7 @@ import { ROUTES } from '../constants/routes';
 import { colors, globalStyles } from '../styles/globalStyles';
 import { useAuth } from '../context/AuthContext';
 import { clearPersistedChatSession } from '../utils/chatSessionStorage';
+import { useToast } from '../context/ToastContext';
 
 // Constantes
 const CODE_LENGTH = 6;
@@ -43,6 +44,7 @@ const VerifyEmailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { refreshSession } = useAuth();
+  const { showToast } = useToast();
   const email = route.params?.email || '';
   
   const [code, setCode] = useState(['', '', '', '', '', '']);
@@ -115,12 +117,18 @@ const VerifyEmailScreen = () => {
     const codeToVerify = verificationCode || code.join('');
     
     if (codeToVerify.length !== CODE_LENGTH) {
-      Alert.alert('Error', 'Por favor ingresa el código completo de 6 dígitos');
+      showToast({
+        message: 'Por favor ingresa el código completo de 6 dígitos',
+        type: 'warning',
+      });
       return;
     }
 
     if (!email) {
-      Alert.alert('Error', 'No se encontró el email. Por favor, regístrate nuevamente.');
+      showToast({
+        message: 'No se encontró el email. Por favor, regístrate nuevamente.',
+        type: 'error',
+      });
       navigation.navigate(ROUTES.REGISTER);
       return;
     }
@@ -173,7 +181,10 @@ const VerifyEmailScreen = () => {
                           error.message || 
                           'Error al verificar el código. Por favor, intenta nuevamente.';
       
-      Alert.alert('Error', errorMessage);
+      showToast({
+        message: errorMessage,
+        type: 'error',
+      });
       
       // Limpiar código en caso de error
       setCode(['', '', '', '', '', '']);
@@ -185,7 +196,10 @@ const VerifyEmailScreen = () => {
 
   const handleResendCode = async () => {
     if (!email) {
-      Alert.alert('Error', 'No se encontró el email. Por favor, regístrate nuevamente.');
+      showToast({
+        message: 'No se encontró el email. Por favor, regístrate nuevamente.',
+        type: 'error',
+      });
       navigation.navigate(ROUTES.REGISTER);
       return;
     }
@@ -204,7 +218,10 @@ const VerifyEmailScreen = () => {
       inputRefs.current[0]?.focus();
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Código reenviado', 'Se ha enviado un nuevo código de verificación a tu correo.');
+      showToast({
+        message: 'Se ha enviado un nuevo código de verificación a tu correo.',
+        type: 'success',
+      });
     } catch (error) {
       console.error('Error reenviando código:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -213,7 +230,10 @@ const VerifyEmailScreen = () => {
                           error.message || 
                           'Error al reenviar el código. Por favor, intenta nuevamente.';
       
-      Alert.alert('Error', errorMessage);
+      showToast({
+        message: errorMessage,
+        type: 'error',
+      });
     } finally {
       setIsResending(false);
     }

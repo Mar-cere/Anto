@@ -8,7 +8,9 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
+  initializeNotifications,
   registerForPushNotifications,
+  requestNotificationPermissions,
   sendTokenToBackend,
   getStoredPushToken
 } from '../pushNotificationService';
@@ -49,25 +51,39 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 
-// Mock api (referencia compartida para que el servicio use el mismo mock)
-const mockApi = {
-  post: jest.fn(),
-  get: jest.fn(),
-  delete: jest.fn(),
-};
-
 jest.mock('../../config/api', () => ({
   __esModule: true,
-  api: mockApi,
+  api: {
+    post: jest.fn(),
+    get: jest.fn(),
+    delete: jest.fn(),
+  },
   ENDPOINTS: {
     PUSH_TOKEN: '/api/notifications/push-token',
   },
 }));
 
 describe('pushNotificationService', () => {
+  const mockApi = api;
+
   beforeEach(() => {
     jest.clearAllMocks();
     AsyncStorage.clear();
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  describe('initializeNotifications', () => {
+    it('debe inicializar el handler una sola vez (idempotente)', async () => {
+      await initializeNotifications();
+      await initializeNotifications();
+
+      expect(Notifications.setNotificationHandler).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('registerForPushNotifications', () => {
@@ -127,8 +143,7 @@ describe('pushNotificationService', () => {
   });
 
   describe('sendTokenToBackend', () => {
-    // Skip: el servicio puede estar usando api cacheado antes del mock; revisar con jest.resetModules si se necesita
-    it.skip('debe enviar token al backend', async () => {
+    it('debe enviar token al backend', async () => {
       mockApi.post.mockResolvedValue({ success: true });
       await AsyncStorage.clear();
       await AsyncStorage.removeItem('pushTokenSentToBackend');
@@ -164,6 +179,17 @@ describe('pushNotificationService', () => {
       const token = await getStoredPushToken();
       
       expect(token).toBeNull();
+    });
+  });
+
+  describe('requestNotificationPermissions', () => {
+    it('debe solicitar permisos y devolver true cuando son otorgados', async () => {
+      Notifications.requestPermissionsAsync.mockResolvedValue({ status: 'granted' });
+
+      const granted = await requestNotificationPermissions();
+
+      expect(granted).toBe(true);
+      expect(Notifications.requestPermissionsAsync).toHaveBeenCalledTimes(1);
     });
   });
 

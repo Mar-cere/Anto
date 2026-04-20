@@ -20,8 +20,6 @@ import { NameInfoModal } from './register/NameInfoModal';
 import { TermsModal } from './register/TermsModal';
 import { styles } from './register/registerScreenStyles';
 import { STATUS_BAR_STYLE, STATUS_BAR_BACKGROUND } from './register/registerScreenConstants';
-import { openRegisterPrivacyUrl } from './register/openPrivacyLink';
-
 const RegisterScreen = () => {
   const navigation = useNavigation();
   const {
@@ -49,6 +47,7 @@ const RegisterScreen = () => {
     acceptTermsAndClose,
     fadeAnim,
     translateYAnim,
+    openPrivacyUrl,
   } = useRegisterScreen(navigation);
 
   return (
@@ -79,7 +78,7 @@ const RegisterScreen = () => {
             onRegister={handleRegister}
             onOpenNameInfo={() => setNameInfoModalVisible(true)}
             onOpenTerms={() => setTermsModalVisible(true)}
-            onOpenPrivacy={openRegisterPrivacyUrl}
+            onOpenPrivacy={openPrivacyUrl}
             onSignInLink={() => navigation.navigate('SignIn')}
             fadeAnim={fadeAnim}
             translateYAnim={translateYAnim}

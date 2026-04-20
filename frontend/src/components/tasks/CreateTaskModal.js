@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
-  Alert,
   Switch,
   ScrollView,
   Animated
@@ -17,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { getApiErrorMessage } from '../../utils/apiErrorHandler';
+import { useToast } from '../../context/ToastContext';
 
 const CreateTaskModal = ({
   visible,
@@ -25,6 +25,7 @@ const CreateTaskModal = ({
   formData,
   setFormData
 }) => {
+  const { showToast } = useToast();
   const [pickerMode, setPickerMode] = useState(null);
   const [notificationEnabled, setNotificationEnabled] = useState(true);
   const [errors, setErrors] = useState({});
@@ -163,9 +164,12 @@ const CreateTaskModal = ({
     } catch (error) {
       console.error('Error en handleSubmit:', error);
       setIsSubmitting(false);
-      Alert.alert('Error', getApiErrorMessage(error) || 'Error al crear la tarea');
+      showToast({
+        message: getApiErrorMessage(error) || 'Error al crear la tarea.',
+        type: 'error',
+      });
     }
-  }, [validateForm, formData, notificationEnabled, isTask, onSubmit]);
+  }, [validateForm, formData, notificationEnabled, isTask, onSubmit, showToast]);
 
   const handleTypeChange = useCallback((type) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert, Animated, Easing } from 'react-native';
 import { api, ENDPOINTS } from '../../config/api';
 import { ROUTES } from '../../constants/routes';
+import { useToast } from '../../context/ToastContext';
 import paymentService from '../../services/paymentService';
 import {
   DEFAULT_USER_DATA,
@@ -16,6 +17,7 @@ import {
 } from './profileScreenConstants';
 
 export function useProfileScreen(navigation) {
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [userData, setUserData] = useState(DEFAULT_USER_DATA);
@@ -53,12 +55,15 @@ export function useProfileScreen(navigation) {
       }
     } catch (error) {
       console.error('Error al cargar datos del perfil:', error);
-      Alert.alert(TEXTS.ERROR_LOAD, TEXTS.ERROR_LOAD_MESSAGE);
+      showToast({
+        message: TEXTS.ERROR_LOAD_MESSAGE,
+        type: 'error',
+      });
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [showToast]);
 
   const loadEmergencyContacts = useCallback(async () => {
     try {
@@ -123,17 +128,23 @@ export function useProfileScreen(navigation) {
           onPress: async () => {
             try {
               await api.delete(ENDPOINTS.EMERGENCY_CONTACT_BY_ID(contactId));
-              Alert.alert(TEXTS.SUCCESS, TEXTS.CONTACT_DELETED);
+              showToast({
+                message: TEXTS.CONTACT_DELETED,
+                type: 'success',
+              });
               await loadEmergencyContacts();
             } catch (error) {
               console.error('Error eliminando contacto:', error);
-              Alert.alert(TEXTS.ERROR, TEXTS.CONTACT_DELETE_ERROR);
+              showToast({
+                message: TEXTS.CONTACT_DELETE_ERROR,
+                type: 'error',
+              });
             }
           },
         },
       ]);
     },
-    [loadEmergencyContacts]
+    [loadEmergencyContacts, showToast]
   );
 
   const handleEmergencyContactsSaved = useCallback(() => {
@@ -159,14 +170,17 @@ export function useProfileScreen(navigation) {
             navigation.reset({ index: 0, routes: [{ name: ROUTES.SIGN_IN }] });
           } catch (error) {
             console.error('Error al cerrar sesión:', error);
-            Alert.alert(TEXTS.ERROR_LOGOUT, TEXTS.ERROR_LOGOUT_MESSAGE);
+            showToast({
+              message: TEXTS.ERROR_LOGOUT_MESSAGE,
+              type: 'error',
+            });
           } finally {
             setLoading(false);
           }
         },
       },
     ]);
-  }, [navigation]);
+  }, [navigation, showToast]);
 
   const openEditContact = useCallback((contact) => {
     setSelectedContact(contact);
