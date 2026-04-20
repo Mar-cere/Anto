@@ -10,6 +10,8 @@ describe('config/features', () => {
   beforeEach(() => {
     jest.resetModules();
     process.env = { ...ORIGINAL_ENV };
+    delete process.env.ENABLE_WEEKLY_TIPS_EMAIL;
+    delete process.env.ENABLE_WEEKLY_SUMMARY_EMAIL;
   });
 
   afterAll(() => {
@@ -28,6 +30,19 @@ describe('config/features', () => {
     expect(features.intenseChatCheckIn).toBe(true);
     expect(features.notificationScheduler).toBe(true);
     expect(features.openaiDailyCostReport).toBe(true);
+    expect(features.weeklySummaryEmail).toBe(false);
+  });
+
+  it('ENABLE_WEEKLY_SUMMARY_EMAIL=true activa correo de resumen semanal', async () => {
+    process.env.ENABLE_WEEKLY_SUMMARY_EMAIL = 'true';
+    const { features } = await import('../../../config/features.js');
+    expect(features.weeklySummaryEmail).toBe(true);
+  });
+
+  it('ENABLE_WEEKLY_TIPS_EMAIL=true sigue activando el correo semanal (compatibilidad)', async () => {
+    process.env.ENABLE_WEEKLY_TIPS_EMAIL = 'true';
+    const { features } = await import('../../../config/features.js');
+    expect(features.weeklySummaryEmail).toBe(true);
   });
 
   it('ENABLE_REMINDERS=true activa recordatorios por correo de contactos de emergencia', async () => {

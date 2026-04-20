@@ -137,6 +137,16 @@ const userSchema = new mongoose.Schema({
     lastActive: {
       type: Date,
       default: Date.now
+    },
+    /** Clave ISO semanal UTC (p. ej. `2026-W15`) del último aviso de resumen semanal por correo; evita duplicados. */
+    lastWeeklyTipsEmailYearWeek: {
+      type: String,
+      default: null,
+      trim: true
+    },
+    lastWeeklyTipsEmailAt: {
+      type: Date,
+      default: null
     }
   },
   // Recuperación de contraseña (no se incluye en consultas por defecto)
@@ -318,6 +328,13 @@ userSchema.index({
   'subscription.status': 1,
   'subscription.trialRetentionEmailSentAt': 1,
   'subscription.trialStartDate': 1,
+});
+userSchema.index({
+  emailVerified: 1,
+  isActive: 1,
+  'stats.totalSessions': 1,
+  'stats.lastWeeklyTipsEmailYearWeek': 1,
+  _id: 1
 });
 userSchema.index({ 'subscription.status': 1, 'subscription.subscriptionEndDate': 1 });
 userSchema.index({ email: 1, isActive: 1 });

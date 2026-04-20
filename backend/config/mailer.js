@@ -215,6 +215,49 @@ const getEmailFooter = () => {
 };
 
 // Helper: generar header común para emails
+/**
+ * URL del CTA del resumen semanal (sin datos sensibles en el mail).
+ *
+ * Prioridad:
+ * 1. `WEEKLY_SUMMARY_EMAIL_APP_LINK` — URL completa (p. ej. universal link o `anto://…`).
+ * 2. Si `WEEKLY_SUMMARY_EMAIL_OPEN_APP_ONLY=true` — esquema custom (`WEEKLY_SUMMARY_APP_SCHEME`, default `anto`) + path opcional (`WEEKLY_SUMMARY_APP_PATH`). Útil en pruebas para no usar web.
+ * 3. `FRONTEND_URL` + `WEEKLY_SUMMARY_EMAIL_LINK_PATH`.
+ *
+ * @param {NodeJS.ProcessEnv} [env]
+ * @returns {string}
+ */
+export function buildWeeklySummaryAppHref(env = process.env) {
+  const direct = env.WEEKLY_SUMMARY_EMAIL_APP_LINK;
+  if (direct && typeof direct === 'string' && direct.trim()) {
+    return direct.trim();
+  }
+
+  if (env.WEEKLY_SUMMARY_EMAIL_OPEN_APP_ONLY === 'true') {
+    const rawScheme = String(env.WEEKLY_SUMMARY_APP_SCHEME || 'anto').trim().toLowerCase();
+    const scheme = (rawScheme.replace(/:$/, '').split(':')[0] || 'anto').replace(/[^a-z0-9._-]/gi, '') || 'anto';
+    const rawPath = String(env.WEEKLY_SUMMARY_APP_PATH || '').trim().replace(/^\/+/, '');
+    return rawPath ? `${scheme}://${rawPath}` : `${scheme}://`;
+  }
+
+  const baseSource =
+    env.FRONTEND_URL && String(env.FRONTEND_URL).trim()
+      ? String(env.FRONTEND_URL).trim()
+      : FRONTEND_URL;
+  const base = (baseSource || '').replace(/\/$/, '');
+  let path = (env.WEEKLY_SUMMARY_EMAIL_LINK_PATH || '/').trim();
+  if (!path.startsWith('/')) {
+    path = `/${path}`;
+  }
+  if (!base) {
+    return path;
+  }
+  return `${base}${path}`;
+}
+
+function getWeeklySummaryAppHref() {
+  return buildWeeklySummaryAppHref(process.env);
+}
+
 const getEmailHeader = (title, logoAlt = `${APP_NAME} Logo`) => {
   return `
     <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_DARK} 0%, ${EMAIL_COLORS.PRIMARY_MEDIUM} 60%, ${EMAIL_COLORS.ACCENT} 100%); padding: 36px 0 24px 0; border-radius: 0 0 32px 32px; box-shadow: 0 4px 24px rgba(0,0,0,0.10); text-align: center;">
@@ -603,6 +646,47 @@ const emailTemplates = {
             </div>
           </div>
 
+          ${getEmailFooter()}
+        </div>
+      `
+    };
+  },
+
+  /**
+   * Correo neutro: avisa que el resumen semanal está en la app (sin temas ni emociones en el cuerpo).
+   * @param {string} username
+   */
+  weeklySummaryEmail: (username) => {
+    const appHref = getWeeklySummaryAppHref();
+    const safeName = String(username || '').replace(/[<>&]/g, '').trim();
+    const greeting = safeName
+      ? `Hola, <strong>${safeName}</strong>.`
+      : `Hola.`;
+    return {
+      subject: `Tu resumen semanal en ${APP_NAME}`,
+      html: `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: ${EMAIL_COLORS.BACKGROUND};">
+          ${getEmailHeader('Resumen semanal')}
+          <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); margin: -24px 24px 24px 24px; padding: 32px 24px; border-radius: 18px; box-shadow: 0 8px 32px rgba(31,38,135,0.10); border: 1px solid rgba(255,255,255,0.18);">
+            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.1rem; line-height: 1.75; margin-bottom: 22px; text-align: center;">
+              ${greeting}
+            </p>
+            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; line-height: 1.75; margin-bottom: 20px; text-align: center;">
+              Ya puedes ver en la app tu <strong>resumen semanal</strong>: está pensado para que lo revises con calma en tu teléfono.
+            </p>
+            <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.98rem; line-height: 1.65; margin-bottom: 28px; text-align: center;">
+              Por privacidad, este correo no incluye temas ni detalles personales; solo te avisamos de que hay novedades listas para ti.
+            </p>
+            <div style="text-align: center; margin: 28px 0 8px 0;">
+              <a href="${appHref}"
+                 style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); color: ${EMAIL_COLORS.TEXT_WHITE}; padding: 14px 28px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: 700; font-size: 1.05rem;">
+                Abrir en la app
+              </a>
+            </div>
+            <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem; line-height: 1.55; margin-top: 20px; text-align: center;">
+              Si el enlace no abre ${APP_NAME}, inicia sesión en la app con tu cuenta y busca el resumen en el inicio o en la sección correspondiente.
+            </p>
+          </div>
           ${getEmailFooter()}
         </div>
       `
@@ -1115,6 +1199,22 @@ const mailer = {
     } catch (error) {
       // No lanzamos el error para que no afecte otros procesos
       console.error('[Mailer] ❌ Error al enviar correo de tips semanales (no crítico):', error.message);
+      return false;
+    }
+  },
+
+  /**
+   * Resumen semanal (aviso neutro + enlace a la app).
+   * @param {string} email
+   * @param {string} username
+   * @returns {Promise<boolean>}
+   */
+  sendWeeklySummaryEmail: async (email, username) => {
+    try {
+      const template = emailTemplates.weeklySummaryEmail(username);
+      return await sendEmail(email, template, 'Correo resumen semanal');
+    } catch (error) {
+      console.error('[Mailer] ❌ Error al enviar resumen semanal (no crítico):', error.message);
       return false;
     }
   },

@@ -514,6 +514,20 @@ if (process.env.NODE_ENV !== 'test') {
     logger.info('✅ Retención trial por correo programada (cada 24 horas)');
   }
 
+  // Tips semanales por correo (ventana UTC; solo producción salvo WEEKLY_TIPS_EMAIL_ALLOW_NON_PRODUCTION=true)
+  if (features.weeklySummaryEmail && process.env.NODE_ENV !== 'test') {
+    setTimeout(async () => {
+      try {
+        const { startWeeklyTipsEmailScheduler } = await import(
+          './services/weeklyTipsEmailScheduler.js'
+        );
+        startWeeklyTipsEmailScheduler();
+      } catch (error) {
+        logger.error('❌ Error iniciando scheduler de tips semanales', { error: error.message });
+      }
+    }, 150000);
+  }
+
   // Iniciar servicio de seguimiento post-crisis (NO en test)
   if (features.crisisFollowUp && process.env.NODE_ENV !== 'test') {
     setTimeout(async () => {

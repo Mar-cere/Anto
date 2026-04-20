@@ -1,17 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="6" failures="0" errors="0" time="0.079">
-  <testsuite name="pushNotificationCopyPools" errors="0" failures="0" skipped="0" timestamp="2026-04-19T03:35:32" time="0.062" tests="6">
-    <testcase classname="pushNotificationCopyPools pickRandom devuelve fallback si el arreglo está vacío o no es arreglo" name="pushNotificationCopyPools pickRandom devuelve fallback si el arreglo está vacío o no es arreglo" time="0">
+<testsuites name="jest tests" tests="4" failures="0" errors="0" time="0.693">
+  <testsuite name="buildWeeklySummaryAppHref" errors="0" failures="0" skipped="0" timestamp="2026-04-20T21:43:59" time="0.673" tests="4">
+    <testcase classname="buildWeeklySummaryAppHref prioriza WEEKLY_SUMMARY_EMAIL_APP_LINK" name="buildWeeklySummaryAppHref prioriza WEEKLY_SUMMARY_EMAIL_APP_LINK" time="0.001">
     </testcase>
-    <testcase classname="pushNotificationCopyPools pickRandom devuelve un elemento del arreglo" name="pushNotificationCopyPools pickRandom devuelve un elemento del arreglo" time="0.001">
+    <testcase classname="buildWeeklySummaryAppHref con OPEN_APP_ONLY usa esquema anto por defecto" name="buildWeeklySummaryAppHref con OPEN_APP_ONLY usa esquema anto por defecto" time="0">
     </testcase>
-    <testcase classname="pushNotificationCopyPools trialExpiringTitles / trialExpiringBodies normaliza días inválidos a 1 sin &quot;undefined&quot; en el texto" name="pushNotificationCopyPools trialExpiringTitles / trialExpiringBodies normaliza días inválidos a 1 sin &quot;undefined&quot; en el texto" time="0">
+    <testcase classname="buildWeeklySummaryAppHref con OPEN_APP_ONLY y path opcional" name="buildWeeklySummaryAppHref con OPEN_APP_ONLY y path opcional" time="0.001">
     </testcase>
-    <testcase classname="pushNotificationCopyPools buildWeeklyProgressBody coacciona hábitos/tareas no numéricos a 0" name="pushNotificationCopyPools buildWeeklyProgressBody coacciona hábitos/tareas no numéricos a 0" time="0">
-    </testcase>
-    <testcase classname="pushNotificationCopyPools buildWeeklyProgressBody añade texto de tendencia emocional variado" name="pushNotificationCopyPools buildWeeklyProgressBody añade texto de tendencia emocional variado" time="0.001">
-    </testcase>
-    <testcase classname="pushNotificationCopyPools motivational.midday tiene mensajes propios para mediodía" name="pushNotificationCopyPools motivational.midday tiene mensajes propios para mediodía" time="0">
+    <testcase classname="buildWeeklySummaryAppHref sin flags usa FRONTEND_URL + path" name="buildWeeklySummaryAppHref sin flags usa FRONTEND_URL + path" time="0">
     </testcase>
   </testsuite>
 </testsuites>

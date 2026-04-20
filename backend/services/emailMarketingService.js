@@ -10,6 +10,7 @@ import User from '../models/User.js';
 import mailer from '../config/mailer.js';
 import logger from '../utils/logger.js';
 import { enqueueEmail } from './emailQueueService.js';
+import { getUtcIsoWeekParts } from '../utils/isoWeek.js';
 
 /** Horas tras el inicio del trial para enviar el correo de retención (default: fin ~2.º día en trial de 3 días). */
 function getTrialRetentionAfterHours() {
@@ -95,59 +96,91 @@ class EmailMarketingService {
   }
 
   /**
-   * Enviar correos de tips semanales a usuarios activos
-   * @param {number} weekNumber - Número de semana (para rotar tips)
+   * Correo de aviso de resumen semanal (plantilla neutra; como mucho una vez por semana ISO UTC por usuario).
+   * Usa reclamo atómico en Mongo (similar a retención trial) para evitar duplicados con varios procesos o reintentos.
+   *
    * @returns {Promise<Object>} Resumen de envíos
    */
-  async sendWeeklyTipsEmails(weekNumber = null) {
+  async sendWeeklySummaryEmails() {
     try {
-      // Calcular número de semana si no se proporciona (desde inicio del año)
-      if (!weekNumber) {
-        const now = new Date();
-        const startOfYear = new Date(now.getFullYear(), 0, 1);
-        const daysSinceStart = Math.floor((now - startOfYear) / (1000 * 60 * 60 * 24));
-        weekNumber = Math.floor(daysSinceStart / 7) + 1;
-      }
+      const { yearWeekKey } = getUtcIsoWeekParts();
 
-      // Buscar usuarios activos con email verificado
-      // Opcional: Solo usuarios que han usado la app al menos una vez
-      const activeUsers = await User.find({
-        emailVerified: true,
-        isActive: true,
-        'stats.totalSessions': { $gte: 1 } // Al menos una sesión
-      }).select('email username');
+      const maxIterations = parseInt(process.env.WEEKLY_TIPS_EMAIL_MAX_PER_RUN || '5000', 10);
+      const cap = Number.isFinite(maxIterations) && maxIterations > 0 ? maxIterations : 5000;
 
       const results = {
-        checked: activeUsers.length,
+        yearWeekKey,
+        processed: 0,
         sent: 0,
         failed: 0
       };
 
-      for (const user of activeUsers) {
-        try {
-          const enq = enqueueEmail(
-            () => mailer.sendWeeklyTipsEmail(user.email, user.username, weekNumber),
-            { type: 'weekly_tips', to: user.email }
+      for (let i = 0; i < cap; i += 1) {
+        const user = await User.findOneAndUpdate(
+          {
+            emailVerified: true,
+            isActive: true,
+            'stats.totalSessions': { $gte: 1 },
+            $or: [
+              { 'stats.lastWeeklyTipsEmailYearWeek': { $exists: false } },
+              { 'stats.lastWeeklyTipsEmailYearWeek': null },
+              { 'stats.lastWeeklyTipsEmailYearWeek': { $ne: yearWeekKey } }
+            ]
+          },
+          {
+            $set: {
+              'stats.lastWeeklyTipsEmailYearWeek': yearWeekKey,
+              'stats.lastWeeklyTipsEmailAt': new Date()
+            }
+          },
+          { new: true, sort: { _id: 1 }, select: 'email username' }
+        );
+
+        if (!user) {
+          break;
+        }
+
+        results.processed += 1;
+
+        const releaseClaim = async () => {
+          await User.updateOne(
+            { _id: user._id },
+            { $unset: { 'stats.lastWeeklyTipsEmailYearWeek': '', 'stats.lastWeeklyTipsEmailAt': '' } }
           );
-          if (enq.accepted) {
-            results.sent++;
-            logger.info(`[EmailMarketing] Tips semanales encolados para ${user.email} (semana ${weekNumber})`);
+        };
+
+        try {
+          const ok = await mailer.sendWeeklySummaryEmail(user.email, user.username);
+          if (!ok) {
+            await releaseClaim();
+            results.failed += 1;
+            logger.warn(`[EmailMarketing] Resumen semanal no enviado (mailer false) a ${user.email}`);
           } else {
-            results.failed++;
-            logger.warn(`[EmailMarketing] No se pudo encolar tips semanales para ${user.email}`);
+            results.sent += 1;
+            logger.info(`[EmailMarketing] Resumen semanal enviado a ${user.email} (${yearWeekKey})`);
           }
         } catch (error) {
-          results.failed++;
-          logger.error(`[EmailMarketing] Error procesando usuario ${user._id}:`, error.message);
+          await releaseClaim();
+          results.failed += 1;
+          logger.error(`[EmailMarketing] Error resumen semanal usuario ${user._id}:`, error.message);
         }
       }
 
-      logger.info(`[EmailMarketing] Tips semanales completados: ${results.sent}/${results.checked} enviados`);
+      logger.info(
+        `[EmailMarketing] Resumen semanal ${yearWeekKey}: enviados ${results.sent} (procesados ${results.processed}, fallos ${results.failed})`
+      );
       return results;
     } catch (error) {
-      logger.error('[EmailMarketing] Error en sendWeeklyTipsEmails:', error);
-      return { checked: 0, sent: 0, failed: 0 };
+      logger.error('[EmailMarketing] Error en sendWeeklySummaryEmails:', error);
+      return { yearWeekKey: null, processed: 0, sent: 0, failed: 0 };
     }
+  }
+
+  /**
+   * @deprecated Usar `sendWeeklySummaryEmails`. Se mantiene por compatibilidad con scripts antiguos.
+   */
+  async sendWeeklyTipsEmails() {
+    return this.sendWeeklySummaryEmails();
   }
 
   /**

@@ -1,13 +1,10 @@
 /**
- * Script para enviar correos de tips semanales
- * 
+ * Script para enviar el correo de aviso de resumen semanal (plantilla neutra).
+ *
  * Uso:
- * node scripts/sendWeeklyTipsEmails.js [número_semana]
- * 
- * Ejemplo:
- * node scripts/sendWeeklyTipsEmails.js 5  (semana 5)
- * 
- * Si no se especifica número de semana, se calcula automáticamente
+ *   node scripts/sendWeeklyTipsEmails.js
+ *
+ * (El nombre del archivo se mantiene por compatibilidad con cron existente.)
  */
 
 import dotenv from 'dotenv';
@@ -23,29 +20,27 @@ const __dirname = dirname(__filename);
 // Cargar variables de entorno
 dotenv.config({ path: join(__dirname, '../.env') });
 
-const weekNumber = process.argv[2] ? parseInt(process.argv[2]) : null;
-
 async function main() {
   try {
     // Conectar a MongoDB
-    const mongoUri = process.env.MONGODB_URI;
+    const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
     if (!mongoUri) {
-      console.error('❌ Error: MONGODB_URI no está configurado en .env');
+      console.error('❌ Error: MONGO_URI o MONGODB_URI debe estar en .env');
       process.exit(1);
     }
 
     await mongoose.connect(mongoUri);
     console.log('✅ Conectado a MongoDB');
 
-    const week = weekNumber || 'automático';
-    console.log(`\n📧 Enviando correos de tips semanales (semana ${week})...\n`);
+    console.log('\n📧 Enviando correos de aviso de resumen semanal...\n');
 
-    const results = await emailMarketingService.sendWeeklyTipsEmails(weekNumber);
+    const results = await emailMarketingService.sendWeeklySummaryEmails();
 
     console.log('\n📊 Resumen:');
+    console.log(`   📅 Semana ISO (dedupe): ${results.yearWeekKey ?? '—'}`);
     console.log(`   ✅ Enviados: ${results.sent}`);
     console.log(`   ❌ Fallidos: ${results.failed}`);
-    console.log(`   📋 Total revisados: ${results.checked}`);
+    console.log(`   🔄 Usuarios reclamados/enviados en este run: ${results.processed}`);
 
     await mongoose.disconnect();
     console.log('\n✅ Proceso completado');
