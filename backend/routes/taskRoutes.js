@@ -8,8 +8,26 @@ import mongoose from 'mongoose';
 import { authenticateToken } from '../middleware/auth.js';
 import { validateObjectId } from '../middleware/validation.js';
 import Task from '../models/Task.js';
+import User from '../models/User.js';
 
 const router = express.Router();
+
+/** Tareas y metas cuentan para el perfil; los recordatorios no. */
+function isCountableTaskItem(itemType) {
+  return itemType === 'task' || itemType === 'goal';
+}
+
+/**
+ * Incrementa `User.stats.tasksCompleted` solo en la transición a `completed`.
+ * @param {import('mongoose').Types.ObjectId} userId
+ * @param {string} previousStatus
+ * @param {{ status: string, itemType: string }} doc
+ */
+async function bumpUserTasksCompletedIfNewlyCompleted(userId, previousStatus, doc) {
+  if (previousStatus === 'completed' || doc.status !== 'completed') return;
+  if (!isCountableTaskItem(doc.itemType)) return;
+  await User.updateOne({ _id: userId }, { $inc: { 'stats.tasksCompleted': 1 } });
+}
 
 // Constantes de configuración
 const MAX_ESTIMATED_TIME = 1440; // 24 horas en minutos
@@ -526,6 +544,8 @@ router.put('/:id', validateObjectId, updateTaskLimiter, async (req, res) => {
       return res.status(404).json({ message: 'Tarea no encontrada' });
     }
 
+    const previousStatus = task.status;
+
     // Actualizar campos (merge para objetos anidados)
     Object.keys(value).forEach(key => {
       if (key === 'notifications') {
@@ -544,6 +564,7 @@ router.put('/:id', validateObjectId, updateTaskLimiter, async (req, res) => {
     });
 
     await task.save();
+    await bumpUserTasksCompletedIfNewlyCompleted(req.user._id, previousStatus, task);
 
     res.json({ 
       success: true, 
@@ -591,9 +612,12 @@ router.patch('/:id/complete', validateObjectId, patchTaskLimiter, async (req, re
     if (!task) {
       return res.status(404).json({ message: 'Tarea no encontrada' });
     }
-    
+
+    const previousStatus = task.status;
+
     await task.markAsCompleted();
-    
+    await bumpUserTasksCompletedIfNewlyCompleted(req.user._id, previousStatus, task);
+
     res.json({ 
       success: true, 
       message: 'Tarea marcada como completada',

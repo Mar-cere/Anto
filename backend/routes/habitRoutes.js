@@ -8,6 +8,7 @@ import mongoose from 'mongoose';
 import { authenticateToken } from '../middleware/auth.js';
 import { validateObjectId } from '../middleware/validation.js';
 import Habit from '../models/Habit.js';
+import User from '../models/User.js';
 
 const router = express.Router();
 
@@ -634,7 +635,25 @@ router.patch('/:id/toggle', validateObjectId, patchHabitLimiter, async (req, res
       });
     }
 
+    const streakBefore = habit.progress?.streak ?? 0;
     await habit.toggleComplete();
+    const streakAfter = habit.progress?.streak ?? 0;
+
+    if (streakAfter > streakBefore) {
+      await User.updateOne(
+        { _id: req.user._id },
+        [
+          {
+            $set: {
+              'stats.habitsStreak': {
+                $max: [{ $ifNull: ['$stats.habitsStreak', 0] }, streakAfter],
+              },
+            },
+          },
+        ]
+      );
+    }
+
     res.json({ 
       success: true, 
       data: habit,

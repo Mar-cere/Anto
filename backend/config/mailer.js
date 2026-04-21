@@ -708,8 +708,11 @@ const emailTemplates = {
             <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.1rem; line-height: 1.75; margin-bottom: 18px; text-align: center;">
               ${greeting}
             </p>
-            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; line-height: 1.75; margin-bottom: 22px; text-align: center;">
-              Ya puedes ver en la app tu <strong>resumen semanal</strong> de esta semana: tendencias y momentos para revisar con calma.
+            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; line-height: 1.75; margin-bottom: 14px; text-align: center;">
+              El resumen detallado de la semana indicada arriba ya está en la app. Ahí podrás revisar con calma tendencias y momentos destacados de tu actividad.
+            </p>
+            <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.96rem; line-height: 1.65; margin-bottom: 22px; text-align: center;">
+              Este correo no incluye el contenido de tus conversaciones; solo un panorama en cifras y el enlace para abrir ${APP_NAME}.
             </p>
             <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM}08 0%, ${EMAIL_COLORS.ACCENT}08 100%); padding: 20px 18px; border-radius: 14px; margin: 0 0 22px 0; border: 1px solid rgba(29, 43, 95, 0.1); text-align: left;">
               <p style="color: ${EMAIL_COLORS.PRIMARY_MEDIUM}; font-size: 0.92rem; font-weight: 600; margin: 0 0 12px 0;">
@@ -726,7 +729,7 @@ const emailTemplates = {
               </a>
             </div>
             <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem; line-height: 1.55; margin-top: 20px; text-align: center;">
-              Si el enlace no abre ${APP_NAME}, inicia sesión en la app con tu cuenta y busca el resumen en el inicio o en la sección correspondiente.
+              Si el enlace no abre la aplicación, inicia sesión con tu cuenta y busca el resumen en el inicio o en la sección correspondiente.
             </p>
           </div>
           ${getEmailFooter()}

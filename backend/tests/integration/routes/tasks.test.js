@@ -358,6 +358,9 @@ describe('Task Routes', () => {
       expect(response.body).toHaveProperty('data');
       expect(response.body.data).toHaveProperty('title', 'Updated Title');
       expect(response.body.data).toHaveProperty('status', 'completed');
+
+      const refreshed = await User.findById(testUser._id).lean();
+      expect(refreshed.stats.tasksCompleted).toBe(1);
     });
   });
 

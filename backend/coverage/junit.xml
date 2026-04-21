@@ -1,35 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="14" failures="0" errors="0" time="0.849">
-  <testsuite name="escapeHtmlText" errors="0" failures="0" skipped="0" timestamp="2026-04-21T00:34:22" time="0.132" tests="7">
-    <testcase classname="escapeHtmlText escapa caracteres HTML" name="escapeHtmlText escapa caracteres HTML" time="0.004">
+<testsuites name="jest tests" tests="7" failures="0" errors="0" time="0.088">
+  <testsuite name="escapeHtmlText" errors="0" failures="0" skipped="0" timestamp="2026-04-21T01:49:44" time="0.067" tests="7">
+    <testcase classname="escapeHtmlText escapa caracteres HTML" name="escapeHtmlText escapa caracteres HTML" time="0.001">
     </testcase>
-    <testcase classname="formatLastActiveEs devuelve null si no hay fecha" name="formatLastActiveEs devuelve null si no hay fecha" time="0">
+    <testcase classname="formatLastActiveEs devuelve null si no hay fecha" name="formatLastActiveEs devuelve null si no hay fecha" time="0.001">
     </testcase>
     <testcase classname="formatLastActiveEs describe hace N días" name="formatLastActiveEs describe hace N días" time="0">
     </testcase>
     <testcase classname="formatTenureEs describe recién registrado" name="formatTenureEs describe recién registrado" time="0">
     </testcase>
-    <testcase classname="formatSubscriptionLabelEs mapea estados" name="formatSubscriptionLabelEs mapea estados" time="0.001">
+    <testcase classname="formatSubscriptionLabelEs mapea estados" name="formatSubscriptionLabelEs mapea estados" time="0">
     </testcase>
-    <testcase classname="buildWeeklySummaryEmailContext arma contexto con nombre y stats" name="buildWeeklySummaryEmailContext arma contexto con nombre y stats" time="0">
+    <testcase classname="buildWeeklySummaryEmailContext arma contexto con nombre y stats" name="buildWeeklySummaryEmailContext arma contexto con nombre y stats" time="0.001">
     </testcase>
     <testcase classname="buildWeeklySummaryEmailContext usa username si no hay nombre" name="buildWeeklySummaryEmailContext usa username si no hay nombre" time="0">
-    </testcase>
-  </testsuite>
-  <testsuite name="buildEmailAppOpenHref" errors="0" failures="0" skipped="0" timestamp="2026-04-21T00:34:22" time="0.738" tests="7">
-    <testcase classname="buildEmailAppOpenHref prioriza EMAIL_APP_OPEN_LINK sobre WEEKLY_SUMMARY_EMAIL_APP_LINK" name="buildEmailAppOpenHref prioriza EMAIL_APP_OPEN_LINK sobre WEEKLY_SUMMARY_EMAIL_APP_LINK" time="0.001">
-    </testcase>
-    <testcase classname="buildEmailAppOpenHref prioriza WEEKLY_SUMMARY_EMAIL_APP_LINK cuando no hay EMAIL_APP_OPEN_LINK" name="buildEmailAppOpenHref prioriza WEEKLY_SUMMARY_EMAIL_APP_LINK cuando no hay EMAIL_APP_OPEN_LINK" time="0">
-    </testcase>
-    <testcase classname="buildEmailAppOpenHref con OPEN_APP_ONLY usa esquema anto por defecto" name="buildEmailAppOpenHref con OPEN_APP_ONLY usa esquema anto por defecto" time="0">
-    </testcase>
-    <testcase classname="buildEmailAppOpenHref con OPEN_APP_ONLY y path opcional" name="buildEmailAppOpenHref con OPEN_APP_ONLY y path opcional" time="0">
-    </testcase>
-    <testcase classname="buildEmailAppOpenHref sin flags usa FRONTEND_URL + path" name="buildEmailAppOpenHref sin flags usa FRONTEND_URL + path" time="0">
-    </testcase>
-    <testcase classname="buildEmailAppOpenHref subscriptionThankYou prioriza SUBSCRIPTION_THANKYOU_EMAIL_APP_LINK" name="buildEmailAppOpenHref subscriptionThankYou prioriza SUBSCRIPTION_THANKYOU_EMAIL_APP_LINK" time="0">
-    </testcase>
-    <testcase classname="buildEmailAppOpenHref buildWeeklySummaryAppHref sigue siendo alias de buildEmailAppOpenHref" name="buildEmailAppOpenHref buildWeeklySummaryAppHref sigue siendo alias de buildEmailAppOpenHref" time="0.001">
     </testcase>
   </testsuite>
 </testsuites>

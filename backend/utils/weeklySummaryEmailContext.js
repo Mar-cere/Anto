@@ -27,9 +27,13 @@ export function formatLastActiveEs(date) {
   const days = Math.floor(diffMs / 86400000);
   if (days <= 0) return 'actividad reciente: hoy';
   if (days === 1) return 'última actividad: ayer';
-  if (days < 7) return `última actividad: hace ${days} días`;
-  if (days < 30) return `última actividad: hace ${Math.floor(days / 7)} semanas`;
-  return `última actividad: hace ${Math.floor(days / 30)} meses`;
+  if (days < 7) return `última actividad: hace ${days} día${days === 1 ? '' : 's'}`;
+  if (days < 30) {
+    const w = Math.floor(days / 7);
+    return `última actividad: hace ${w} semana${w === 1 ? '' : 's'}`;
+  }
+  const m = Math.floor(days / 30);
+  return `última actividad: hace ${m} mes${m === 1 ? '' : 'es'}`;
 }
 
 /**
@@ -43,9 +47,15 @@ export function formatTenureEs(createdAt) {
   const days = Math.floor((Date.now() - d.getTime()) / 86400000);
   if (days < 1) return `Empezaste con ${APP_NAME} recientemente.`;
   if (days === 1) return 'Llevas 1 día usando la app.';
-  if (days < 7) return `Llevas ${days} días con nosotros.`;
-  if (days < 30) return `Llevas ${Math.floor(days / 7)} semanas usando ${APP_NAME}.`;
-  if (days < 365) return `Llevas ${Math.floor(days / 30)} meses con nosotros.`;
+  if (days < 7) return `Llevas ${days} día${days === 1 ? '' : 's'} con nosotros.`;
+  if (days < 30) {
+    const w = Math.floor(days / 7);
+    return `Llevas ${w} semana${w === 1 ? '' : 's'} usando ${APP_NAME}.`;
+  }
+  if (days < 365) {
+    const mo = Math.floor(days / 30);
+    return `Llevas ${mo} mes${mo === 1 ? '' : 'es'} con nosotros.`;
+  }
   return `Llevas más de un año acompañándonos.`;
 }
 
@@ -95,14 +105,16 @@ export function buildWeeklySummaryEmailContext(user, isoParts) {
 
   const { isoWeekYear, isoWeek } = isoParts;
   const weekLabel = `Semana ${isoWeek} · ${isoWeekYear}`;
-  const subjectLine = `${weekLabel} — Tu resumen en ${APP_NAME}`;
+  const subjectLine = `${weekLabel} — Resumen disponible en ${APP_NAME}`;
 
   const snapshotLines = [];
-  snapshotLines.push(`Tareas completadas (en total): ${tasks}.`);
+  snapshotLines.push(`Tareas completadas en total: ${tasks}.`);
   if (streak > 0) {
-    snapshotLines.push(`Racha actual de hábitos: ${streak} día${streak === 1 ? '' : 's'}.`);
+    snapshotLines.push(
+      `Mejor racha de hábitos registrada: ${streak} día${streak === 1 ? '' : 's'}.`
+    );
   }
-  snapshotLines.push(`Inicios de sesión registrados en tu cuenta: ${logins}.`);
+  snapshotLines.push(`Inicios de sesión registrados: ${logins}.`);
 
   const tenureLine = formatTenureEs(user?.createdAt);
   const lastActiveLine = formatLastActiveEs(stats.lastActive);
@@ -111,9 +123,9 @@ export function buildWeeklySummaryEmailContext(user, isoParts) {
     displayName,
     weekLabel,
     subjectLine,
-    snapshotIntro: `Así va tu camino con ${APP_NAME} (solo números; el detalle emocional está en la app):`,
+    snapshotIntro: `Panorama de tu actividad con ${APP_NAME} (cifras generales; el detalle del resumen está solo en la app):`,
     snapshotLines,
-    planLine: planLine ? `Tu situación de cuenta: ${planLine}.` : null,
+    planLine: planLine ? `Estado de suscripción: ${planLine}.` : null,
     tenureLine,
     lastActiveLine: lastActiveLine ? `${lastActiveLine.charAt(0).toUpperCase()}${lastActiveLine.slice(1)}.` : null,
   };
