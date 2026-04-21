@@ -96,7 +96,7 @@ class EmailMarketingService {
   }
 
   /**
-   * Correo de aviso de resumen semanal (plantilla neutra; como mucho una vez por semana ISO UTC por usuario).
+   * Correo de aviso de resumen semanal (cifras agregadas + CTA a la app; como mucho una vez por semana ISO UTC por usuario).
    * Usa reclamo atómico en Mongo (similar a retención trial) para evitar duplicados con varios procesos o reintentos.
    *
    * @returns {Promise<Object>} Resumen de envíos
@@ -133,7 +133,12 @@ class EmailMarketingService {
               'stats.lastWeeklyTipsEmailAt': new Date()
             }
           },
-          { new: true, sort: { _id: 1 }, select: 'email username' }
+          {
+            new: true,
+            sort: { _id: 1 },
+            select:
+              'email username name createdAt stats.tasksCompleted stats.habitsStreak stats.totalSessions stats.lastActive subscription.status'
+          }
         );
 
         if (!user) {
@@ -150,7 +155,7 @@ class EmailMarketingService {
         };
 
         try {
-          const ok = await mailer.sendWeeklySummaryEmail(user.email, user.username);
+          const ok = await mailer.sendWeeklySummaryEmail(user.email, user);
           if (!ok) {
             await releaseClaim();
             results.failed += 1;

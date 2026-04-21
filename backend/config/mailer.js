@@ -19,6 +19,11 @@ import {
   RESET_PASSWORD_PATH,
   RESET_TOKEN_EXPIRATION_HOURS
 } from '../constants/email.js';
+import { getUtcIsoWeekParts } from '../utils/isoWeek.js';
+import {
+  buildWeeklySummaryEmailContext,
+  escapeHtmlText
+} from '../utils/weeklySummaryEmailContext.js';
 
 dotenv.config();
 
@@ -216,20 +221,38 @@ const getEmailFooter = () => {
 
 // Helper: generar header común para emails
 /**
- * URL del CTA del resumen semanal (sin datos sensibles en el mail).
+ * URL del botón “Abrir en la app” en correos (resumen semanal, confirmación Mercado Pago, etc.).
  *
- * Prioridad:
- * 1. `WEEKLY_SUMMARY_EMAIL_APP_LINK` — URL completa (p. ej. universal link o `anto://…`).
- * 2. Si `WEEKLY_SUMMARY_EMAIL_OPEN_APP_ONLY=true` — esquema custom (`WEEKLY_SUMMARY_APP_SCHEME`, default `anto`) + path opcional (`WEEKLY_SUMMARY_APP_PATH`). Útil en pruebas para no usar web.
- * 3. `FRONTEND_URL` + `WEEKLY_SUMMARY_EMAIL_LINK_PATH`.
+ * Prioridad (modo normal):
+ * 1. `EMAIL_APP_OPEN_LINK` — URL única para todos los CTAs (HTTPS recomendado en producción).
+ * 2. `WEEKLY_SUMMARY_EMAIL_APP_LINK` — compat / override histórico.
+ * 3. Si `WEEKLY_SUMMARY_EMAIL_OPEN_APP_ONLY=true` — esquema (`WEEKLY_SUMMARY_APP_SCHEME`, default `anto`) + `WEEKLY_SUMMARY_APP_PATH`.
+ * 4. `FRONTEND_URL` + `WEEKLY_SUMMARY_EMAIL_LINK_PATH`.
+ *
+ * Modo `subscriptionThankYou: true` (solo correo post-pago MP / agradecimiento):
+ * - Antes de (1): `SUBSCRIPTION_THANKYOU_EMAIL_APP_LINK` si está definida (CTA específico post-compra).
  *
  * @param {NodeJS.ProcessEnv} [env]
+ * @param {{ subscriptionThankYou?: boolean }} [options]
  * @returns {string}
  */
-export function buildWeeklySummaryAppHref(env = process.env) {
-  const direct = env.WEEKLY_SUMMARY_EMAIL_APP_LINK;
-  if (direct && typeof direct === 'string' && direct.trim()) {
-    return direct.trim();
+export function buildEmailAppOpenHref(env = process.env, options = {}) {
+  const subscriptionThankYou = options.subscriptionThankYou === true;
+  if (subscriptionThankYou) {
+    const subDirect = env.SUBSCRIPTION_THANKYOU_EMAIL_APP_LINK;
+    if (subDirect && typeof subDirect === 'string' && subDirect.trim()) {
+      return subDirect.trim();
+    }
+  }
+
+  const emailAppOpen = env.EMAIL_APP_OPEN_LINK;
+  if (emailAppOpen && typeof emailAppOpen === 'string' && emailAppOpen.trim()) {
+    return emailAppOpen.trim();
+  }
+
+  const weeklyDirect = env.WEEKLY_SUMMARY_EMAIL_APP_LINK;
+  if (weeklyDirect && typeof weeklyDirect === 'string' && weeklyDirect.trim()) {
+    return weeklyDirect.trim();
   }
 
   if (env.WEEKLY_SUMMARY_EMAIL_OPEN_APP_ONLY === 'true') {
@@ -254,8 +277,11 @@ export function buildWeeklySummaryAppHref(env = process.env) {
   return `${base}${path}`;
 }
 
+/** @deprecated Usar `buildEmailAppOpenHref` */
+export const buildWeeklySummaryAppHref = buildEmailAppOpenHref;
+
 function getWeeklySummaryAppHref() {
-  return buildWeeklySummaryAppHref(process.env);
+  return buildEmailAppOpenHref(process.env);
 }
 
 const getEmailHeader = (title, logoAlt = `${APP_NAME} Logo`) => {
@@ -653,29 +679,48 @@ const emailTemplates = {
   },
 
   /**
-   * Correo neutro: avisa que el resumen semanal está en la app (sin temas ni emociones en el cuerpo).
-   * @param {string} username
+   * Aviso de resumen semanal: CTA a la app + panorama con cifras agregadas (sin contenido de conversaciones).
+   * @param {object} context — resultado de `buildWeeklySummaryEmailContext`
    */
-  weeklySummaryEmail: (username) => {
+  weeklySummaryEmail: (context) => {
     const appHref = getWeeklySummaryAppHref();
-    const safeName = String(username || '').replace(/[<>&]/g, '').trim();
-    const greeting = safeName
-      ? `Hola, <strong>${safeName}</strong>.`
+    const greeting = context.displayName
+      ? `Hola, <strong>${context.displayName}</strong>.`
       : `Hola.`;
+    const allLines = [
+      context.tenureLine,
+      ...context.snapshotLines,
+      context.planLine,
+      context.lastActiveLine
+    ].filter(Boolean);
+    const snapshotListHtml = allLines
+      .map((line) => `<li style="margin: 0 0 10px 0;">${escapeHtmlText(line)}</li>`)
+      .join('');
     return {
-      subject: `Tu resumen semanal en ${APP_NAME}`,
+      subject: context.subjectLine,
       html: `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: ${EMAIL_COLORS.BACKGROUND};">
           ${getEmailHeader('Resumen semanal')}
           <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); margin: -24px 24px 24px 24px; padding: 32px 24px; border-radius: 18px; box-shadow: 0 8px 32px rgba(31,38,135,0.10); border: 1px solid rgba(255,255,255,0.18);">
-            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.1rem; line-height: 1.75; margin-bottom: 22px; text-align: center;">
+            <p style="color: ${EMAIL_COLORS.ACCENT}; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.03em; text-align: center; margin: 0 0 8px 0;">
+              ${escapeHtmlText(context.weekLabel)}
+            </p>
+            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.1rem; line-height: 1.75; margin-bottom: 18px; text-align: center;">
               ${greeting}
             </p>
-            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; line-height: 1.75; margin-bottom: 20px; text-align: center;">
-              Ya puedes ver en la app tu <strong>resumen semanal</strong>: está pensado para que lo revises con calma en tu teléfono.
+            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; line-height: 1.75; margin-bottom: 22px; text-align: center;">
+              Ya puedes ver en la app tu <strong>resumen semanal</strong> de esta semana: tendencias y momentos para revisar con calma.
             </p>
-            <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.98rem; line-height: 1.65; margin-bottom: 28px; text-align: center;">
-              Por privacidad, este correo no incluye temas ni detalles personales; solo te avisamos de que hay novedades listas para ti.
+            <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM}08 0%, ${EMAIL_COLORS.ACCENT}08 100%); padding: 20px 18px; border-radius: 14px; margin: 0 0 22px 0; border: 1px solid rgba(29, 43, 95, 0.1); text-align: left;">
+              <p style="color: ${EMAIL_COLORS.PRIMARY_MEDIUM}; font-size: 0.92rem; font-weight: 600; margin: 0 0 12px 0;">
+                ${escapeHtmlText(context.snapshotIntro)}
+              </p>
+              <ul style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.98rem; line-height: 1.55; margin: 0; padding-left: 20px;">
+                ${snapshotListHtml}
+              </ul>
+            </div>
+            <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.96rem; line-height: 1.65; margin-bottom: 26px; text-align: center;">
+              Los temas de tus conversaciones y el detalle emocional solo están en la app; este correo no incluye el texto de tus mensajes.
             </p>
             <div style="text-align: center; margin: 28px 0 8px 0;">
               <a href="${appHref}"
@@ -707,6 +752,7 @@ const emailTemplates = {
    * }} [receipt] - Si viene informado, se muestra resumen tipo comprobante.
    */
   subscriptionThankYouEmail: (username, plan, periodEnd, receipt = null) => {
+    const appOpenHref = buildEmailAppOpenHref(process.env, { subscriptionThankYou: true });
     const planNames = {
       monthly: 'Mensual',
       quarterly: 'Trimestral',
@@ -796,8 +842,17 @@ const emailTemplates = {
 
             <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM}15 0%, ${EMAIL_COLORS.ACCENT}15 100%); padding: 24px; border-radius: 12px; margin: 24px 0; border-left: 4px solid ${EMAIL_COLORS.ACCENT};">
               <h3 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 0; text-align: center;">💬 Comienza ahora</h3>
-              <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; text-align: center; margin-bottom: 0;">
+              <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; text-align: center; margin-bottom: 16px;">
                 Abre la app y comienza a conversar con ${APP_NAME}. Estamos aquí para acompañarte en tu camino hacia el bienestar emocional.
+              </p>
+              <div style="text-align: center; margin: 8px 0 12px 0;">
+                <a href="${appOpenHref}"
+                   style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); color: ${EMAIL_COLORS.TEXT_WHITE}; padding: 14px 28px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: 700; font-size: 1.05rem;">
+                  Abrir en la app
+                </a>
+              </div>
+              <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem; line-height: 1.55; margin: 0; text-align: center;">
+                Si el enlace no abre ${APP_NAME} desde el correo, abre la app manualmente e inicia sesión con tu cuenta.
               </p>
             </div>
 
@@ -1204,14 +1259,22 @@ const mailer = {
   },
 
   /**
-   * Resumen semanal (aviso neutro + enlace a la app).
+   * Resumen semanal (personalización con cifras agregadas + enlace a la app).
    * @param {string} email
-   * @param {string} username
+   * @param {string|object} userOrUsername — `username` (string) para pruebas mínimas, o documento/lean user con `username`, `name`, `stats`, `subscription`, `createdAt`
    * @returns {Promise<boolean>}
    */
-  sendWeeklySummaryEmail: async (email, username) => {
+  sendWeeklySummaryEmail: async (email, userOrUsername) => {
     try {
-      const template = emailTemplates.weeklySummaryEmail(username);
+      const isoParts = getUtcIsoWeekParts();
+      const lean =
+        typeof userOrUsername === 'string'
+          ? { username: userOrUsername }
+          : userOrUsername && typeof userOrUsername === 'object'
+            ? userOrUsername
+            : { username: '' };
+      const context = buildWeeklySummaryEmailContext(lean, isoParts);
+      const template = emailTemplates.weeklySummaryEmail(context);
       return await sendEmail(email, template, 'Correo resumen semanal');
     } catch (error) {
       console.error('[Mailer] ❌ Error al enviar resumen semanal (no crítico):', error.message);
