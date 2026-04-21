@@ -1,9 +1,10 @@
 /**
- * Números de Emergencia por País
- * 
- * Este archivo contiene los números de emergencia y líneas de ayuda
- * organizados por código de país telefónico.
- * 
+ * Números de emergencia y líneas de ayuda (código telefónico internacional).
+ *
+ * Contexto del producto: la app solo está en **español** y, por ahora, la
+ * audiencia principal es **Latinoamérica y España**. Los textos de respaldo
+ * y los ejemplos están pensados para ese ámbito (no asumimos EE. UU. como defecto).
+ *
  * @author AntoApp Team
  */
 
@@ -207,6 +208,56 @@ export const getEmergencyNumbers = (countryCode) => {
   return EMERGENCY_NUMBERS_BY_COUNTRY[countryCode] || null;
 };
 
+/** ISO 3166-1 alpha-2 → prefijo telefónico internacional (sin +) según EMERGENCY_NUMBERS_BY_COUNTRY */
+export const ISO_COUNTRY_TO_DIAL_PREFIX = {
+  CL: '56',
+  AR: '54',
+  MX: '52',
+  CO: '57',
+  PE: '51',
+  ES: '34',
+  US: '1',
+  EC: '593',
+  UY: '598',
+  PY: '595',
+  BR: '55',
+  GT: '502',
+  BO: '591',
+  CR: '506',
+  PA: '507',
+  NI: '505',
+  HN: '504',
+  SV: '503',
+  VE: '58',
+  DO: '1'
+};
+
+/**
+ * Resuelve el bloque de emergencia a partir de preferencias (country) o teléfono del usuario.
+ * Pensado para usuarios en **España y Latinoamérica**; si no hay datos,
+ * `formatEmergencyNumbers(null)` devuelve el texto regional en español.
+ *
+ * @param {Object|null} prefs - preferences del perfil o del usuario
+ * @param {string|null} [phone] - teléfono opcional (User.phone, etc.)
+ * @returns {Object|null} Misma forma que getEmergencyNumbers
+ */
+export const resolveEmergencyInfoFromPreferences = (prefs, phone = null) => {
+  const p = prefs || {};
+  const raw = p.country != null ? String(p.country).trim() : '';
+  if (raw) {
+    if (/^\d{1,3}$/.test(raw)) {
+      const info = getEmergencyNumbers(raw);
+      if (info) return info;
+    }
+    const iso = raw.toUpperCase();
+    if (ISO_COUNTRY_TO_DIAL_PREFIX[iso]) {
+      return getEmergencyNumbers(ISO_COUNTRY_TO_DIAL_PREFIX[iso]);
+    }
+  }
+  if (phone) return getEmergencyNumbersFromPhone(phone);
+  return null;
+};
+
 /**
  * Obtiene los números de emergencia desde un número de teléfono
  * @param {string} phone - Número de teléfono
@@ -219,16 +270,28 @@ export const getEmergencyNumbersFromPhone = (phone) => {
 };
 
 /**
+ * Texto de respaldo cuando no conocemos el país del usuario (app en español, foco España + LATAM).
+ * Incluye ejemplos reales sin sustituir al número oficial de cada país.
+ */
+export const formatRegionalEmergencyFallbackEs = () =>
+  [
+    'Anto está en español y orienta el apoyo a **España y Latinoamérica**. Si no tenemos tu país guardado:',
+    '• **España:** emergencias **112**; apoyo emocional / crisis **024**.',
+    '• **Latinoamérica:** el número depende del país (p. ej. **911** en Argentina o México, **133** en Chile, **123** en Colombia). Comprueba el número oficial en tu región.',
+    '• **Apoyo emocional:** busca «línea de crisis», «línea de la vida» o salud mental en tu país; también puedes acudir a urgencias o un centro de salud cercano.'
+  ].join('\n');
+
+/**
  * Formatea los números de emergencia para mostrar en un mensaje
  * @param {Object} emergencyInfo - Información de emergencia del país
  * @returns {string} Texto formateado con los números de emergencia
  */
 export const formatEmergencyNumbers = (emergencyInfo) => {
   if (!emergencyInfo) {
-    return '• Emergencias: 911\n• Línea de Prevención del Suicidio: 988 (Internacional)';
+    return formatRegionalEmergencyFallbackEs();
   }
-  
-  let text = `*Recursos de Emergencia (${emergencyInfo.country}):*\n`;
+
+  let text = `*Recursos de emergencia (${emergencyInfo.country}):*\n`;
   
   if (emergencyInfo.emergency) {
     text += `• Emergencias: ${emergencyInfo.emergency}\n`;
@@ -250,9 +313,10 @@ export const formatEmergencyNumbers = (emergencyInfo) => {
     text += `• Texto de Crisis: ${emergencyInfo.crisisText}\n`;
   }
   
-  // Si no hay línea de prevención del suicidio específica, agregar recursos internacionales
+  // Si no hay línea de prevención del suicidio específica, no inventar números de otro país
   if (!emergencyInfo.suicidePrevention) {
-    text += `• Línea Internacional de Prevención del Suicidio: 988 (Estados Unidos)\n`;
+    text +=
+      '• Apoyo emocional: busca una línea de crisis o salud mental local (tu hospital o centro de salud puede orientarte).\n';
   }
   
   return text.trim();

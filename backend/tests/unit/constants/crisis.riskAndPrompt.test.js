@@ -1,8 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 import {
   evaluateSuicideRisk,
+  hasExplicitSuicidalOrSelfHarmLexicon,
   shouldAttachCrisisContextToPrompt,
-  shouldSkipEmergencyPhoneNumbersInSafetyAppend
+  shouldSkipEmergencyPhoneNumbersInSafetyAppend,
+  shouldUseCompactCrisisSafetyAppend
 } from '../../../constants/crisis.js';
 
 describe('shouldAttachCrisisContextToPrompt', () => {
@@ -25,6 +27,30 @@ describe('shouldSkipEmergencyPhoneNumbersInSafetyAppend', () => {
     expect(shouldSkipEmergencyPhoneNumbersInSafetyAppend('quiero morir, peleas con mi ex')).toBe(
       false
     );
+  });
+});
+
+describe('hasExplicitSuicidalOrSelfHarmLexicon', () => {
+  it('detecta autolesión en español', () => {
+    expect(hasExplicitSuicidalOrSelfHarmLexicon('A veces me autolesiono cuando tengo ansiedad')).toBe(true);
+  });
+});
+
+describe('shouldUseCompactCrisisSafetyAppend', () => {
+  const historyNewestFirst = [
+    { role: 'user', content: 'Estoy bien solo tengo un poco de ansiedad', createdAt: new Date() },
+    { role: 'assistant', content: 'Ok', createdAt: new Date() }
+  ];
+
+  it('activa modo compacto tras calma y mensaje de patrón histórico con autolesión', () => {
+    const cur =
+      'Mira, a veces desde hace mucho tiempo me autolesiono cuando siento mucha ansiedad; ahora no tan mal';
+    expect(shouldUseCompactCrisisSafetyAppend(cur, historyNewestFirst)).toBe(true);
+  });
+
+  it('no activa si el usuario expresa inmediatez', () => {
+    const cur = 'A veces me autolesiono pero ahora mismo voy a hacerlo';
+    expect(shouldUseCompactCrisisSafetyAppend(cur, historyNewestFirst)).toBe(false);
   });
 });
 

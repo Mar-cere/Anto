@@ -472,6 +472,34 @@ export function useChatScreen() {
         return;
       }
 
+      if (err.response?.status === 429 && err.response?.data?.code === 'MESSAGE_IN_FLIGHT') {
+        showToast({
+          message: err.response?.data?.message || 'Este mensaje ya se está enviando.',
+          type: 'warning',
+        });
+        setInputText(messageText);
+        setIsTyping(false);
+        return;
+      }
+
+      if (err.code === 'STREAM_INCOMPLETE') {
+        showToast({
+          message: err.message || 'La respuesta se cortó antes de terminar. Intenta de nuevo.',
+          type: 'warning',
+        });
+        setIsTyping(false);
+        return;
+      }
+
+      if (err.code === 'ETIMEDOUT') {
+        showToast({
+          message: err.message || 'La respuesta tardó demasiado. Intenta de nuevo.',
+          type: 'warning',
+        });
+        setIsTyping(false);
+        return;
+      }
+
       if (err.guestAuthFailed) {
         setGuestQuota(null);
         Alert.alert(TEXTS.GUEST_SESSION_EXPIRED_TITLE, TEXTS.GUEST_SESSION_EXPIRED_MESSAGE, [

@@ -28,6 +28,8 @@ import {
 } from '../routes/chat/chatContextAnalysis.js';
 import { HISTORIAL_LIMITE } from '../routes/chat/chatConstants.js';
 import { buildSessionRetentionPayload } from './sessionRetentionHints.js';
+import { inferChatSessionPhase } from './chat/sessionPhaseHints.js';
+import { scheduleRollingSummaryRefresh } from './conversationRollingSummaryService.js';
 
 function signGuestToken(guestSessionId) {
   return jwt.sign(
@@ -185,6 +187,56 @@ export async function sendGuestMessage(guestSession, contentRaw) {
 
   const conversationId = guestSession.conversationId;
 
+  const recentDupUser = await Message.findOne({
+    conversationId,
+    guestSessionId: guestSession._id,
+    role: 'user',
+    content,
+    createdAt: { $gte: new Date(Date.now() - 8000) }
+  })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  if (recentDupUser) {
+    const assistantAfter = await Message.findOne({
+      conversationId,
+      guestSessionId: guestSession._id,
+      role: 'assistant',
+      createdAt: { $gt: recentDupUser.createdAt }
+    })
+      .sort({ createdAt: 1 })
+      .lean();
+
+    if (assistantAfter) {
+      const used = await Message.countDocuments({
+        conversationId,
+        guestSessionId: guestSession._id,
+        role: 'user'
+      });
+      const remaining = Math.max(0, GUEST_MAX_USER_MESSAGES - used);
+      return {
+        userMessage: recentDupUser,
+        assistantMessage: assistantAfter,
+        context: {
+          emotional: assistantAfter?.metadata?.context?.emotional || null,
+          contextual: assistantAfter?.metadata?.context?.contextual || null
+        },
+        guest: {
+          userMessagesUsed: used,
+          maxUserMessages: GUEST_MAX_USER_MESSAGES,
+          remainingAfterThis: remaining,
+          limitReached: remaining === 0
+        },
+        idempotentReplay: true
+      };
+    }
+
+    const busy = new Error('Este mensaje ya se está procesando. Espera un momento.');
+    busy.status = 429;
+    busy.code = 'MESSAGE_IN_FLIGHT';
+    throw busy;
+  }
+
   const userMessage = new Message({
     userId: null,
     guestSessionId: guestSession._id,
@@ -293,7 +345,22 @@ export async function sendGuestMessage(guestSession, contentRaw) {
     threadMessageLimit: GUEST_MAX_USER_MESSAGES * 2
   });
 
+  const conversationRoll = await Conversation.findById(conversationId).select('rollingSummary').lean();
+
+  const sessionPhase = inferChatSessionPhase({
+    riskLevel,
+    contextualAnalysis,
+    userContent: content.trim(),
+    conversationHistoryNewestFirst: conversationHistory
+  });
+
   const openaiContext = {
+    rollingSummary: conversationRoll?.rollingSummary || null,
+    sessionPhase,
+    safetyHistory: conversationHistory.map((m) => ({
+      role: m.role,
+      content: m.content || ''
+    })),
     history: historialParaPrompt,
     emotional: emotionalAnalysis,
     contextual: contextualAnalysis,
@@ -355,6 +422,12 @@ export async function sendGuestMessage(guestSession, contentRaw) {
   });
   await assistantMessage.save();
   await Conversation.findByIdAndUpdate(conversationId, { lastMessage: assistantMessage._id });
+
+  scheduleRollingSummaryRefresh({
+    conversationId,
+    guestSessionId: guestSession._id,
+    isGuest: true
+  });
 
   metricsService
     .recordMetric(

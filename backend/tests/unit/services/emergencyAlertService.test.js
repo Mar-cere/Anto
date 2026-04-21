@@ -118,12 +118,14 @@ describe('EmergencyAlertService', () => {
       expect(result).toContain('<ul>');
     });
 
-    it('debe retornar números por defecto si no se puede detectar país', () => {
+    it('debe retornar orientación España + LATAM si no se puede detectar país', () => {
       const result = emergencyAlertService.formatEmergencyNumbersForEmail('invalid');
       
       expect(result).toBeDefined();
-      expect(result).toContain('911');
-      expect(result).toContain('988');
+      expect(result).toContain('112');
+      expect(result).toContain('024');
+      expect(result).toMatch(/Latinoamérica|España/);
+      expect(result).not.toContain('988');
     });
   });
 });

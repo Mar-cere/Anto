@@ -9,47 +9,51 @@
  */
 
 // ========== LÍNEAS DE EMERGENCIA POR PAÍS ==========
+// La app es solo en español; audiencia principal: Latinoamérica y España (no usar 988/741741 como defecto).
 export const EMERGENCY_LINES = {
   ARGENTINA: {
     SUICIDE_PREVENTION: '135',
     MENTAL_HEALTH: '0800-222-5462',
     EMERGENCY: '911',
-    CRISIS_TEXT: '741741'
+    CRISIS_TEXT: null
   },
   MEXICO: {
-    SUICIDE_PREVENTION: '800-273-8255',
+    SUICIDE_PREVENTION: '800-911-2000',
     MENTAL_HEALTH: '800-911-2000',
     EMERGENCY: '911',
-    CRISIS_TEXT: '741741'
+    CRISIS_TEXT: null
   },
   ESPANA: {
     SUICIDE_PREVENTION: '024',
     MENTAL_HEALTH: '024',
     EMERGENCY: '112',
-    CRISIS_TEXT: '741741'
+    CRISIS_TEXT: null
   },
   COLOMBIA: {
     SUICIDE_PREVENTION: '106',
     MENTAL_HEALTH: '106',
     EMERGENCY: '123',
-    CRISIS_TEXT: '741741'
+    CRISIS_TEXT: null
   },
   CHILE: {
     SUICIDE_PREVENTION: '600-360-7777',
     MENTAL_HEALTH: '600-360-7777',
     EMERGENCY: '133',
-    CRISIS_TEXT: '741741'
+    CRISIS_TEXT: null
   },
   PERU: {
     SUICIDE_PREVENTION: '113',
     MENTAL_HEALTH: '113',
     EMERGENCY: '105',
-    CRISIS_TEXT: '741741'
+    CRISIS_TEXT: null
   },
+  /** País desconocido: orientación España + LATAM sin asumir EE. UU. */
   GENERAL: {
-    SUICIDE_PREVENTION: '988', // Línea internacional
-    CRISIS_TEXT: '741741', // Texto de crisis
-    EMERGENCY: '911'
+    EMERGENCY: 'el número oficial de tu país (112 en España; 911 en varios países de América Latina; 133 en Chile; 123 en Colombia)',
+    SUICIDE_PREVENTION:
+      'la línea pública de tu país (024 en España; 135 en Argentina; 800 911 2000 en México; 106 en Colombia; 600 360 7777 en Chile)',
+    MENTAL_HEALTH: 'urgencias o salud mental del país donde te encuentres',
+    CRISIS_TEXT: null
   }
 };
 
@@ -268,13 +272,55 @@ export const shouldAttachCrisisContextToPrompt = (riskLevel) =>
 /**
  * Léxico explícito de ideación suicida / autolesión en el mensaje (no depende del clasificador).
  */
-function hasExplicitSuicidalOrSelfHarmLexicon(content) {
+export function hasExplicitSuicidalOrSelfHarmLexicon(content) {
   if (!content || typeof content !== 'string') return false;
   const c = content.toLowerCase();
   if (/suicid/i.test(c)) return true;
   if (/(?:me.*quiero.*morir|quiero.*morir|prefiero.*morir|me.*voy.*a.*matar)/i.test(c)) return true;
   if (/(?:acabar.*con.*mi.*vida|terminar.*con.*mi.*vida)/i.test(c)) return true;
+  if (/autoles|auto\s*les|me\s+corto|cortarme|lastimar|hacerme\s+daño|hacerse\s+daño/i.test(c)) return true;
   return false;
+}
+
+/**
+ * Historial Mongo típico: sort { createdAt: -1 } → el índice 0 es el más reciente.
+ * Devuelve textos de mensajes user en orden cronológico (últimos hasta `max`).
+ */
+function extractRecentUserContentsChronological(historyNewestFirst, max = 8) {
+  if (!Array.isArray(historyNewestFirst)) return [];
+  return [...historyNewestFirst]
+    .reverse()
+    .filter((m) => m.role === 'user')
+    .map((m) => (typeof m.content === 'string' ? m.content : ''))
+    .slice(-max);
+}
+
+/**
+ * Tras una desescalada explícita del usuario, si el siguiente mensaje es reflexivo
+ * (patrón histórico) sin señales de inmediatez, evita repetir el bloque largo 911/988.
+ */
+export function shouldUseCompactCrisisSafetyAppend(userMessageContent, historyNewestFirst) {
+  const cur = (userMessageContent || '').trim();
+  if (!cur) return false;
+  const curLower = cur.toLowerCase();
+  const recentUser = extractRecentUserContentsChronological(historyNewestFirst, 10);
+  const joined = recentUser.join(' ').toLowerCase();
+  const calmRecently =
+    /\b(estoy bien|ahora estoy bien|mejor ahora|solo (un )?poco de ansiedad|no (es|está) tan mal)\b/i.test(
+      joined
+    );
+  const historicalTone =
+    /\b(a veces|desde hace|hace mucho tiempo|hace tiempo|patr[oó]n|cuando (me )?siento|historia de)\b/i.test(
+      curLower
+    );
+  const imminent =
+    /\b(ahora mismo|en este momento voy|esta noche voy|ya no aguanto|voy a hacerlo|tal vez ahora|en un rato)\b/i.test(
+      curLower
+    );
+  const selfHarmReflection =
+    hasExplicitSuicidalOrSelfHarmLexicon(cur) || /\b(autoles|me\s+corto|cortes|lastim)\b/i.test(curLower);
+  if (!calmRecently || !historicalTone || imminent || !selfHarmReflection) return false;
+  return true;
 }
 
 /**
@@ -600,7 +646,9 @@ export const generateCrisisMessage = (riskLevel, country = 'GENERAL') => {
     if (lines.MENTAL_HEALTH) {
       messages.push(CRISIS_MESSAGES.MENTAL_HEALTH_SUPPORT.replace('{MENTAL_HEALTH_LINE}', lines.MENTAL_HEALTH));
     }
-    messages.push(CRISIS_MESSAGES.CRISIS_TEXT_LINE.replace('{CRISIS_TEXT}', lines.CRISIS_TEXT || '741741'));
+    if (lines.CRISIS_TEXT) {
+      messages.push(CRISIS_MESSAGES.CRISIS_TEXT_LINE.replace('{CRISIS_TEXT}', lines.CRISIS_TEXT));
+    }
   } else if (riskLevel === 'MEDIUM') {
     messages.push(CRISIS_MESSAGES.SUICIDE_PREVENTION.replace('{SUICIDE_LINE}', lines.SUICIDE_PREVENTION));
     if (lines.MENTAL_HEALTH) {
@@ -644,7 +692,10 @@ export const generateCrisisSystemPrompt = (riskLevel, country = 'GENERAL') => {
   if (lines.MENTAL_HEALTH) {
     prompt += `- Salud mental: ${lines.MENTAL_HEALTH}\n`;
   }
-  prompt += `- Texto de crisis: ${lines.CRISIS_TEXT || '741741'}\n\n`;
+  if (lines.CRISIS_TEXT) {
+    prompt += `- Texto de crisis: ${lines.CRISIS_TEXT}\n`;
+  }
+  prompt += '\n';
   prompt += `INSTRUCCIONES CRÍTICAS:\n`;
   prompt += `1. Prioriza la seguridad del usuario sobre todo\n`;
   prompt += `2. Valida sus emociones sin minimizar\n`;

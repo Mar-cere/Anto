@@ -18,6 +18,10 @@ import {
 } from '../../constants/openai.js';
 import { countIntensityGe, emitPromptHistoryTelemetry } from './promptHistoryTelemetry.js';
 import { buildSessionRetentionSystemSnippet } from '../sessionRetentionHints.js';
+import {
+  buildRecentThreadSummarySnippet,
+  getSessionPhaseSystemSnippet
+} from '../chat/sessionPhaseHints.js';
 
 function getTimeOfDay() {
   const hour = new Date().getHours();
@@ -602,7 +606,7 @@ const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emocional de
 - Excepción: si hay riesgo de autolesión/daño o crisis real, prioriza seguridad.
 
 ### Seguridad / crisis (no sobreactivar)
-- NO muestres recursos de emergencia (teléfonos, 911/988) por ansiedad alta general o estrés laboral.
+- NO muestres recursos de emergencia (teléfonos locales) por ansiedad alta general o estrés laboral; la app es en español y los usuarios son sobre todo de España y Latinoamérica (no asumas números de EE. UU.).
 - Solo activa "preguntas de seguridad + recursos" cuando:
   - el usuario menciona autolesión/suicidio/daño a otros de forma explícita, O
   - el sistema marca riesgo MEDIUM/HIGH (verás riskLevel en el contexto).
@@ -625,7 +629,7 @@ const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emocional de
 /**
  * Construye el prompt contextualizado completo (systemMessage + contextMessages).
  * @param {Object} mensaje - Mensaje del usuario (content, userId, conversationId)
- * @param {Object} contexto - Contexto (emotional, contextual, profile, therapeutic, memory, history, sessionTrends, sessionRetention, currentMessage, currentConversationId, crisis)
+ * @param {Object} contexto - Contexto (emotional, contextual, profile, therapeutic, memory, history, sessionTrends, sessionRetention, currentMessage, currentConversationId, crisis, safetyHistory, sessionPhase, rollingSummary)
  * @returns {Promise<{ systemMessage: string, contextMessages: Array }>}
  */
 export async function buildContextualizedPrompt(mensaje, contexto) {
@@ -684,6 +688,19 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   // Prompt base de comportamiento (reglas de estilo, seguridad y UX conversacional).
   // Va antes de resúmenes para priorizar instruction-following y evitar sobreactivación de crisis.
   systemMessage = `${BASE_ASSISTANT_PROMPT}\n\n---\n\n${systemMessage}`;
+
+  const threadSnippet = buildRecentThreadSummarySnippet(contexto.safetyHistory || []);
+  if (threadSnippet) systemMessage += threadSnippet;
+  systemMessage += getSessionPhaseSystemSnippet(contexto.sessionPhase || 'default');
+
+  const roll = contexto.rollingSummary && String(contexto.rollingSummary).trim();
+  if (roll) {
+    const clipped = roll.length > 1200 ? `${roll.slice(0, 1197)}...` : roll;
+    systemMessage +=
+      '\n\n### Resumen acumulado del hilo (interno)\n' +
+      `${clipped}\n` +
+      '(Puede estar unos mensajes desactualizado; prioriza el último mensaje del usuario.)';
+  }
 
   const contextMessages = generarMensajesContexto({ ...contexto, currentMessage: mensaje.content });
   if (contextMessages.length > 0) {

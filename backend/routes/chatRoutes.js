@@ -45,6 +45,8 @@ import sessionEmotionalMemory from '../services/sessionEmotionalMemory.js';
 import { buildSessionRetentionPayload } from '../services/sessionRetentionHints.js';
 import therapeuticProtocolService from '../services/therapeuticProtocolService.js';
 import { cursorPaginate } from '../utils/pagination.js';
+import { inferChatSessionPhase } from '../services/chat/sessionPhaseHints.js';
+import { scheduleRollingSummaryRefresh } from '../services/conversationRollingSummaryService.js';
 import {
   LIMITE_MENSAJES,
   HISTORIAL_LIMITE,
@@ -314,7 +316,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
       _id: new mongoose.Types.ObjectId(conversationId),
       userId: new mongoose.Types.ObjectId(req.user._id)
     })
-      .select('_id userId')
+      .select('_id userId rollingSummary rollingSummaryAtMessageCount')
       .lean();
 
     if (!conversation) {
@@ -388,10 +390,70 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
 
     logs.push(`[${Date.now() - startTime}ms] Iniciando procesamiento de mensaje`);
 
+    const trimmedContent = content.trim();
+
+    // Idempotencia: evita doble POST (doble tap / reintentos) duplicando user+assistant en BD
+    if (role === 'user') {
+      const recentDupUser = await Message.findOne({
+        conversationId,
+        userId: req.user._id,
+        role: 'user',
+        content: trimmedContent,
+        createdAt: { $gte: new Date(Date.now() - 8000) }
+      })
+        .sort({ createdAt: -1 })
+        .lean();
+
+      if (recentDupUser) {
+        const assistantAfter = await Message.findOne({
+          conversationId,
+          userId: req.user._id,
+          role: 'assistant',
+          createdAt: { $gt: recentDupUser.createdAt }
+        })
+          .sort({ createdAt: 1 })
+          .lean();
+
+        if (assistantAfter) {
+          metricsService
+            .recordMetric(
+              'chat_usage',
+              { action: 'message_idempotent_replay', isGuest: false },
+              req.user._id.toString(),
+              { conversationId: String(conversationId) }
+            )
+            .catch(() => {});
+
+          return res.status(201).json({
+            userMessage: recentDupUser,
+            assistantMessage: assistantAfter,
+            idempotentReplay: true,
+            context: {
+              emotional: assistantAfter?.metadata?.context?.emotional || null,
+              contextual: assistantAfter?.metadata?.context?.contextual || null
+            },
+            suggestions: [],
+            clinicalScale: null,
+            cognitiveDistortions: null,
+            processingTime: Date.now() - startTime
+          });
+        }
+
+        metricsService.bumpChatFriction('message_duplicate_in_flight', {
+          httpStatus: 429,
+          surface: 'registered'
+        });
+        return res.status(429).json({
+          message: 'Este mensaje ya se está procesando. Espera un momento.',
+          code: 'MESSAGE_IN_FLIGHT'
+        });
+      }
+    }
+
     // 1. Crear y guardar mensaje del usuario INMEDIATAMENTE (optimización: no esperar análisis)
     userMessage = new Message({
       userId: req.user._id,
-      content: content.trim(),
+      content: trimmedContent,
       role,
       conversationId,
       metadata: {
@@ -428,7 +490,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           .lean(),
           userProfileService.getOrCreateProfile(req.user._id),
           TherapeuticRecord.findOne({ userId: req.user._id }).lean(), // Usar lean() para mejor rendimiento
-          User.findById(req.user._id).select('preferences').lean(), // Obtener User para acceder a preferences.responseStyle
+          User.findById(req.user._id).select('preferences phone').lean(), // preferences + teléfono para recursos de emergencia
           Conversation.countDocuments({
             userId: req.user._id,
             _id: { $ne: conversationId }
@@ -817,13 +879,27 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         // Combinar UserProfile con User para tener acceso a todas las preferencias
         const combinedProfile = {
           ...userProfile,
+          phone: user?.phone,
           preferences: {
             ...userProfile?.preferences,
             ...user?.preferences // Incluir responseStyle de User
           }
         };
+
+        const sessionPhase = inferChatSessionPhase({
+          riskLevel,
+          contextualAnalysis,
+          userContent: content.trim(),
+          conversationHistoryNewestFirst: conversationHistory
+        });
         
         const openaiContext = {
+          rollingSummary: conversation?.rollingSummary || null,
+          sessionPhase,
+          safetyHistory: conversationHistory.map((m) => ({
+            role: m.role,
+            content: m.content || ''
+          })),
           history: historialParaPrompt,
           emotional: emotionalAnalysis,
           contextual: contextualAnalysis,
@@ -969,6 +1045,12 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                     responseStyle: engagement?.preferredResponseLength === 'SHORT' ? 'brief' : engagement?.preferredResponseLength === 'LONG' ? 'deep' : undefined
                   }).catch(() => {})] : [])
                 ]).catch(() => {});
+
+                scheduleRollingSummaryRefresh({
+                  conversationId,
+                  userId: req.user._id,
+                  isGuest: false
+                });
 
                 const responseTime = Date.now() - startTime;
                 let scaleSuggestion = null;
@@ -1160,6 +1242,12 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             responseStyle: engagement?.preferredResponseLength === 'SHORT' ? 'brief' : engagement?.preferredResponseLength === 'LONG' ? 'deep' : undefined
           }).catch(() => {})] : [])
         ]).catch(() => {}); // Ignorar errores en operaciones no críticas
+
+        scheduleRollingSummaryRefresh({
+          conversationId,
+          userId: req.user._id,
+          isGuest: false
+        });
 
         // OPTIMIZACIÓN: Generar sugerencias solo cuando sea apropiado (no en cada mensaje)
         const responseTime = Date.now() - startTime;

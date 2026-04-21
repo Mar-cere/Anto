@@ -47,12 +47,13 @@ class EmergencyAlertService {
     const emergencyInfo = getEmergencyNumbersFromPhone(phone);
     
     if (!emergencyInfo) {
-      // Números por defecto si no se puede detectar el país
+      // App en español, audiencia principal España + LATAM (sin asumir EE. UU. / 988)
       return `
+        <p><strong>Recursos de emergencia (España y Latinoamérica)</strong></p>
         <ul>
-          <li><strong>Emergencias:</strong> 911</li>
-          <li><strong>Línea de Prevención del Suicidio:</strong> 988 (Internacional)</li>
-          <li><strong>Texto de Crisis:</strong> 741741</li>
+          <li><strong>España:</strong> emergencias <strong>112</strong>; apoyo emocional / crisis <strong>024</strong>.</li>
+          <li><strong>Latinoamérica:</strong> el número depende del país (p. ej. <strong>911</strong> en Argentina o México, <strong>133</strong> en Chile, <strong>123</strong> en Colombia). Comprueba el número oficial en tu región.</li>
+          <li>Busca «línea de crisis» o salud mental en tu país, o acude a urgencias.</li>
         </ul>
       `;
     }
@@ -79,9 +80,9 @@ class EmergencyAlertService {
       html += `<li><strong>Texto de Crisis:</strong> ${emergencyInfo.crisisText}</li>`;
     }
     
-    // Si no hay línea de prevención del suicidio específica, agregar recursos internacionales
     if (!emergencyInfo.suicidePrevention) {
-      html += `<li><strong>Línea Internacional de Prevención del Suicidio:</strong> 988 (Estados Unidos)</li>`;
+      html +=
+        '<li><strong>Apoyo emocional:</strong> busca la línea pública de crisis o salud mental en tu país.</li>';
     }
     
     html += `</ul>`;

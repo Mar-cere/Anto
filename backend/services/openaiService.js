@@ -30,7 +30,14 @@ import {
     formatTechniqueForResponse,
     selectAppropriateTechnique
 } from '../constants/therapeuticTechniques.js';
-import { shouldSkipEmergencyPhoneNumbersInSafetyAppend } from '../constants/crisis.js';
+import {
+  shouldSkipEmergencyPhoneNumbersInSafetyAppend,
+  shouldUseCompactCrisisSafetyAppend
+} from '../constants/crisis.js';
+import {
+  formatEmergencyNumbers,
+  resolveEmergencyInfoFromPreferences
+} from '../constants/emergencyNumbers.js';
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import OpenAITokenUsageDay from '../models/OpenAITokenUsageDay.js';
@@ -537,7 +544,11 @@ class OpenAIService {
           respuestaValidada,
           analisisEmocional,
           analisisContextual,
-          contenidoNormalizado
+          contenidoNormalizado,
+          {
+            profile: perfilUsuario,
+            conversationHistory: contexto.safetyHistory || []
+          }
         );
       }
 
@@ -727,7 +738,8 @@ class OpenAIService {
           analisisEmocional,
           analisisContextual,
           perfilUsuario,
-          registroTerapeutico
+          registroTerapeutico,
+          conversationHistory: contexto.safetyHistory || []
         });
         yield {
           type: 'done',
@@ -776,7 +788,8 @@ class OpenAIService {
         analisisEmocional,
         analisisContextual,
         perfilUsuario,
-        registroTerapeutico
+        registroTerapeutico,
+        conversationHistory: contexto.safetyHistory || []
       });
       yield { type: 'done', content: result.content, context: result.context };
       return;
@@ -788,7 +801,8 @@ class OpenAIService {
       analisisEmocional,
       analisisContextual,
       perfilUsuario,
-      registroTerapeutico
+      registroTerapeutico,
+      conversationHistory: contexto.safetyHistory || []
     });
     yield { type: 'done', content: result.content, context: result.context };
   }
@@ -797,7 +811,15 @@ class OpenAIService {
    * Post-procesa el contenido generado por streaming (validación, técnica, seguridad, etc.).
    * @private
    */
-  async _postProcessStreamedContent(respuestaGenerada, { mensaje, contenidoNormalizado, analisisEmocional, analisisContextual, perfilUsuario, registroTerapeutico }) {
+  async _postProcessStreamedContent(respuestaGenerada, {
+    mensaje,
+    contenidoNormalizado,
+    analisisEmocional,
+    analisisContextual,
+    perfilUsuario,
+    registroTerapeutico,
+    conversationHistory = []
+  }) {
     let activeProtocol = therapeuticProtocolService.getActiveProtocol(mensaje.userId);
     let currentIntervention = null;
 
@@ -860,7 +882,11 @@ class OpenAIService {
         respuestaValidada,
         analisisEmocional,
         analisisContextual,
-        contenidoNormalizado
+        contenidoNormalizado,
+        {
+          profile: perfilUsuario,
+          conversationHistory
+        }
       );
     }
 
@@ -1594,9 +1620,17 @@ class OpenAIService {
    * @param {Object} analisisContextual - Análisis contextual del mensaje
    * @returns {string} Respuesta con chequeos de seguridad agregados
    */
-  addSafetyChecks(respuesta, analisisEmocional, analisisContextual, userMessageContent = '') {
+  addSafetyChecks(
+    respuesta,
+    analisisEmocional,
+    analisisContextual,
+    userMessageContent = '',
+    options = {}
+  ) {
     const intensity = analisisEmocional?.intensity || DEFAULT_VALUES.INTENSITY;
     let safetyText = '';
+    const profile = options.profile || null;
+    const conversationHistory = options.conversationHistory || [];
 
     // Importante: NO sobreactivar crisis por intensidad alta sola.
     // Solo agregamos bloque de seguridad/recursos cuando la intención es CRISIS.
@@ -1606,28 +1640,40 @@ class OpenAIService {
     }
 
     const skipHeavyPhones = shouldSkipEmergencyPhoneNumbersInSafetyAppend(userMessageContent);
+    const compact = shouldUseCompactCrisisSafetyAppend(userMessageContent, conversationHistory);
+    const emergencyInfo = resolveEmergencyInfoFromPreferences(profile?.preferences, profile?.phone || null);
+    const emergencyLines = formatEmergencyNumbers(emergencyInfo);
 
-    // Si la intensidad es >= 8, agregar preguntas de seguridad
+    // Si la intensidad es >= 8, aclarar límites del asistente (reduce miedo a "¿llamaste a mis contactos?")
     if (intensity >= 8) {
-      safetyText += '\n\n💙 **Preguntas de seguridad:**\n';
-      safetyText += '• ¿Estás a salvo en este momento?\n';
-      safetyText += '• ¿Hay alguien contigo o puedes contactar a alguien de confianza?\n';
-      safetyText += '• ¿Has pensado en hacerte daño a ti mismo o a otros?\n';
+      safetyText +=
+        '\n\n📱 **Sobre este chat:** No puedo hacer llamadas ni enviar mensajes por ti. Si tienes contactos de emergencia en la app, solo reciben avisos cuando esa función se activa desde la aplicación.';
     }
 
-    // Si la intensidad es >= 9, agregar recursos de emergencia (no números USA genéricos si es conflicto de pareja sin ideación)
+    // Preguntas de seguridad (versión breve si el usuario ya se calmó y habla de un patrón histórico)
+    if (intensity >= 8) {
+      if (compact) {
+        safetyText += '\n\n💙 **Comprobemos cómo estás ahora:**\n';
+        safetyText += '• ¿Te sientes a salvo en este momento?\n';
+        safetyText += '• ¿Hay algo cerca con lo que te podrías hacer daño ahora mismo?\n';
+      } else {
+        safetyText += '\n\n💙 **Preguntas de seguridad:**\n';
+        safetyText += '• ¿Estás a salvo en este momento?\n';
+        safetyText += '• ¿Hay alguien contigo o puedes contactar a alguien de confianza?\n';
+        safetyText += '• ¿Has pensado en hacerte daño a ti mismo o a otros?\n';
+      }
+    }
+
     if (intensity >= 9 && !skipHeavyPhones) {
-      safetyText += '\n\n🚨 **Recursos de emergencia disponibles:**\n';
-      safetyText += '• **Línea de crisis:** 911 (Emergencias)\n';
-      safetyText += '• **Línea de prevención del suicidio:** 988 (24/7)\n';
-      safetyText += '• **Contactos de emergencia:** Puedes activar tus contactos de emergencia desde la app\n';
-      safetyText += '\nRecuerda que no estás solo/a. Hay personas que pueden ayudarte.';
+      safetyText += compact
+        ? `\n\n🚨 **Recursos si necesitas ayuda humana:**\n${emergencyLines}\n• **Contactos en la app:** solo si tú los activas desde la configuración.`
+        : `\n\n🚨 **Recursos de emergencia disponibles:**\n${emergencyLines}\n• **Contactos de emergencia:** puedes activarlos desde la app si los configuraste.`;
+      safetyText += '\n\nRecuerda que no estás solo/a. Hay personas que pueden ayudarte.';
     } else if (intensity >= 9 && skipHeavyPhones) {
       safetyText +=
         '\n\nSi en algún momento sientes que no puedes seguir solo/a con esto, busca apoyo profesional o una línea de crisis en tu país. También puedes usar los contactos de emergencia de la app si los tienes configurados.';
     }
 
-    // Mensaje de apoyo general para intensidades altas
     if (intensity >= 8) {
       safetyText += '\n\n💚 **Recuerda:** Es importante que busques apoyo profesional si estos sentimientos persisten o empeoran.';
     }

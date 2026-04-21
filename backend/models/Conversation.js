@@ -43,6 +43,17 @@ const conversationSchema = new mongoose.Schema({
   lastMessage: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Message'
+  },
+  /** Resumen acumulado del hilo (generado en background; puede ir unos mensajes retrasado) */
+  rollingSummary: {
+    type: String,
+    default: null,
+    maxlength: 4000
+  },
+  /** Total de mensajes en el hilo cuando se generó rollingSummary (para saber cuándo refrescar) */
+  rollingSummaryAtMessageCount: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true // Crea createdAt y updatedAt automáticamente
