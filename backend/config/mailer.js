@@ -732,7 +732,7 @@ const emailTemplates = {
               </a>
             </div>
             <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem; line-height: 1.55; margin-top: 18px; text-align: center;">
-              Si el enlace no abre la aplicación, inicia sesión con tu cuenta y sigue la ruta: Perfil → Resumen semanal y mensual.
+              Si el enlace no abre ${APP_NAME}, abre la aplicación manualmente, inicia sesión y ve a Perfil → Resumen semanal y mensual.
             </p>
             <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem; line-height: 1.5; margin-top: 22px; text-align: center; font-style: italic;">
               ${escapeHtmlText(context.closingLine)}

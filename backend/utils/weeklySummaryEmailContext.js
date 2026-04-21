@@ -1,6 +1,6 @@
 /**
  * Contexto del correo de aviso de resumen semanal: impulso a abrir la app.
- * Sin cifras de uso, chat, emociones ni conversaciones (eso queda solo en la app, con la sesión iniciada).
+ * No se envían datos de actividad ni contenido de conversaciones; eso queda solo en la app, tras iniciar sesión.
  */
 import { APP_NAME } from '../constants/app.js';
 
@@ -16,13 +16,16 @@ export function escapeHtmlText(value) {
     .replace(/"/g, '&quot;');
 }
 
-/** Asuntos rotativos (solo etiqueta de semana + marca; nada de métricas ni nombres). */
+/**
+ * Asuntos rotativos (etiqueta de semana ISO + marca; sin métricas ni datos personales).
+ * Todos cierran con "en ${APP_NAME}" para mantener el mismo ritmo.
+ */
 const SUBJECT_BUILDERS = [
   (weekLabel) => `${weekLabel} — Tu resumen te espera en ${APP_NAME}`,
-  (weekLabel) => `${weekLabel} — Un momento para tu semana en ${APP_NAME}`,
-  (weekLabel) => `${weekLabel} — Abre el resumen cuando quieras en ${APP_NAME}`,
-  (weekLabel) => `${weekLabel} — Tu espacio de cierre de semana en ${APP_NAME}`,
-  (weekLabel) => `${weekLabel} — Revisa tu semana con calma en ${APP_NAME}`
+  (weekLabel) => `${weekLabel} — Un momento para revisar tu semana en ${APP_NAME}`,
+  (weekLabel) => `${weekLabel} — Tu resumen semanal, en un clic, en ${APP_NAME}`,
+  (weekLabel) => `${weekLabel} — Cierra la semana con calma en ${APP_NAME}`,
+  (weekLabel) => `${weekLabel} — Mira tu semana cuando quieras en ${APP_NAME}`
 ];
 
 /**
@@ -64,20 +67,22 @@ export function buildWeeklySummaryEmailContext(user, isoParts) {
   const weekLabel = `Semana ${isoWeek} · ${isoWeekYear}`;
   const subjectLine = buildWeeklySummarySubjectLine(weekLabel, isoWeekYear, isoWeek);
 
-  const preheaderText = `Sin datos en este mensaje: el detalle está en ${APP_NAME}, con tu sesión iniciada.`;
+  const preheaderText = `Este correo no contiene tus datos. El resumen completo está en ${APP_NAME}, después de iniciar sesión.`;
 
-  const leadParagraph = `Cada semana puedes hacer una pausa y ver cómo estuvo tu ritmo en la app: en un solo lugar, con claridad y sin prisa.`;
-  const privacyParagraph = `Este correo no incluye cifras ni contenido de conversaciones. Lo relacionado con tu cuenta (hábitos, chat, emociones, técnicas, gratitud…) solo se muestra dentro de ${APP_NAME}, cuando inicias sesión.`;
-  const whereParagraph = `Abre ${APP_NAME}, ve a Perfil y toca «Resumen semanal y mensual». Ahí eliges semana o mes; solo tú lo ves con tu sesión en la app.`;
+  const leadParagraph = `Puedes dedicar un momento a revisar tu actividad en la app: la semana o el mes en un solo lugar, con claridad y sin prisa.`;
 
-  const benefitSectionTitle = 'Qué incluye el resumen (en la app)';
+  const privacyParagraph = `Por privacidad, aquí no enviamos cifras ni mensajes. Hábitos, conversaciones, emociones que registres, técnicas y diario de gratitud solo se muestran en ${APP_NAME} cuando has iniciado sesión.`;
+
+  const whereParagraph = `Abre ${APP_NAME}, entra en Perfil y elige «Resumen semanal y mensual». Allí seleccionas la semana o el mes; esa información solo está disponible para ti dentro de la aplicación.`;
+
+  const benefitSectionTitle = 'Qué encontrarás al abrir el resumen';
   const benefitLines = [
-    'Una vista de tu semana o mes: tu actividad en la app en un solo lugar.',
-    'Puedes alternar entre resumen semanal y mensual cuando lo necesites.',
-    'Pensado para acompañarte, no para juzgar: puedes revisarlo con el ritmo que te convenga.'
+    `Una vista de la semana o del mes: tu actividad en ${APP_NAME}, reunida en una pantalla.`,
+    'Puedes cambiar entre resumen semanal y mensual cuando lo necesites.',
+    'Es una herramienta para acompañarte, no para juzgarte: úsala al ritmo que te resulte cómodo.'
   ];
 
-  const closingLine = `Gracias por acompañarnos. — El equipo de ${APP_NAME}`;
+  const closingLine = `Gracias por confiar en nosotros. El equipo de ${APP_NAME}`;
 
   return {
     displayName,
