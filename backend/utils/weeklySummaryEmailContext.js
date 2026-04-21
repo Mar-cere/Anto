@@ -1,6 +1,7 @@
 /**
  * Contexto del correo de aviso de resumen semanal: impulso a abrir la app.
- * No se envían datos de actividad ni contenido de conversaciones; eso queda solo en la app, tras iniciar sesión.
+ * Puede incluir saludo con nombre; no se envían cifras ni métricas sensibles (crisis reportadas, etc.)
+ * ni contenido de conversaciones: eso queda solo en la app, tras iniciar sesión.
  */
 import { APP_NAME } from '../constants/app.js';
 
@@ -17,7 +18,7 @@ export function escapeHtmlText(value) {
 }
 
 /**
- * Asuntos rotativos (etiqueta de semana ISO + marca; sin métricas ni datos personales).
+ * Asuntos rotativos (etiqueta de semana ISO + marca; sin cifras ni métricas de uso).
  * Todos cierran con "en ${APP_NAME}" para mantener el mismo ritmo.
  */
 const SUBJECT_BUILDERS = [
@@ -67,11 +68,11 @@ export function buildWeeklySummaryEmailContext(user, isoParts) {
   const weekLabel = `Semana ${isoWeek} · ${isoWeekYear}`;
   const subjectLine = buildWeeklySummarySubjectLine(weekLabel, isoWeekYear, isoWeek);
 
-  const preheaderText = `Este correo no contiene tus datos. El resumen completo está en ${APP_NAME}, después de iniciar sesión.`;
+  const preheaderText = `Solo un aviso con tu nombre: sin cifras ni métricas. El detalle del resumen (incluidas métricas sensibles) está en ${APP_NAME}, con la sesión iniciada.`;
 
   const leadParagraph = `Puedes dedicar un momento a revisar tu actividad en la app: la semana o el mes en un solo lugar, con claridad y sin prisa.`;
 
-  const privacyParagraph = `Por privacidad, aquí no enviamos cifras ni mensajes. Hábitos, conversaciones, emociones que registres, técnicas y diario de gratitud solo se muestran en ${APP_NAME} cuando has iniciado sesión.`;
+  const privacyParagraph = `Por discretión, en este correo no enviamos números ni el texto del chat. Métricas como la cantidad de crisis reportadas, hábitos, conversaciones, emociones, técnicas o diario de gratitud solo se muestran en ${APP_NAME} cuando has iniciado sesión.`;
 
   const whereParagraph = `Abre ${APP_NAME}, entra en Perfil y elige «Resumen semanal y mensual». Allí seleccionas la semana o el mes; esa información solo está disponible para ti dentro de la aplicación.`;
 

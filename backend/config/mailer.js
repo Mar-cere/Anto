@@ -679,7 +679,8 @@ const emailTemplates = {
   },
 
   /**
-   * Aviso de resumen semanal: impulso a abrir la app (sin cifras ni datos de uso en el correo).
+   * Aviso de resumen semanal: impulso a abrir la app. Puede llevar saludo con nombre;
+   * no incluye cifras ni métricas sensibles (crisis, etc.) ni contenido del chat.
    * @param {object} context — resultado de `buildWeeklySummaryEmailContext`
    */
   weeklySummaryEmail: (context) => {
