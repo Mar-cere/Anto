@@ -1,10 +1,9 @@
 import { describe, it, expect } from '@jest/globals';
 import {
   buildWeeklySummaryEmailContext,
+  buildWeeklySummarySubjectLine,
   escapeHtmlText,
-  formatLastActiveEs,
-  formatSubscriptionLabelEs,
-  formatTenureEs
+  weeklyEmailSubjectIndex
 } from '../../../utils/weeklySummaryEmailContext.js';
 
 describe('escapeHtmlText', () => {
@@ -14,43 +13,26 @@ describe('escapeHtmlText', () => {
   });
 });
 
-describe('formatLastActiveEs', () => {
-  it('devuelve null si no hay fecha', () => {
-    expect(formatLastActiveEs(null)).toBe(null);
-  });
-
-  it('describe hace N días', () => {
-    const d = new Date(Date.now() - 3 * 86400000);
-    expect(formatLastActiveEs(d)).toMatch(/hace 3 días/);
-  });
-});
-
-describe('formatTenureEs', () => {
-  it('describe recién registrado', () => {
-    const d = new Date(Date.now() - 2 * 3600000);
-    expect(formatTenureEs(d)).toMatch(/recientemente|Empezaste/);
-  });
-});
-
-describe('formatSubscriptionLabelEs', () => {
-  it('mapea estados', () => {
-    expect(formatSubscriptionLabelEs('premium')).toBe('Plan premium');
-    expect(formatSubscriptionLabelEs('unknown')).toBe(null);
+describe('weeklyEmailSubjectIndex / buildWeeklySummarySubjectLine', () => {
+  it('rota asunto según semana ISO sin datos personales', () => {
+    const w = 'Semana 16 · 2026';
+    const i = weeklyEmailSubjectIndex(2026, 16);
+    expect(i).toBeGreaterThanOrEqual(0);
+    expect(i).toBeLessThan(5);
+    const s = buildWeeklySummarySubjectLine(w, 2026, 16);
+    expect(s.startsWith(w)).toBe(true);
+    expect(s).toContain('Anto');
+    expect(s).not.toMatch(/\d+ mensajes|\d+ tareas/i);
   });
 });
 
 describe('buildWeeklySummaryEmailContext', () => {
-  it('arma contexto con nombre y stats', () => {
+  it('incluye preheader, beneficios y cierre sin filtrar stats del usuario', () => {
     const ctx = buildWeeklySummaryEmailContext(
       {
         name: 'María',
         username: 'maria',
-        stats: {
-          tasksCompleted: 4,
-          habitsStreak: 2,
-          totalSessions: 10,
-          lastActive: new Date()
-        },
+        stats: { tasksCompleted: 99, habitsStreak: 9, totalSessions: 50, lastActive: new Date() },
         createdAt: new Date(Date.now() - 20 * 86400000),
         subscription: { status: 'premium' }
       },
@@ -58,9 +40,11 @@ describe('buildWeeklySummaryEmailContext', () => {
     );
     expect(ctx.displayName).toBe('María');
     expect(ctx.weekLabel).toBe('Semana 16 · 2026');
-    expect(ctx.subjectLine).toContain('2026');
-    expect(ctx.snapshotLines.some((l) => l.includes('4'))).toBe(true);
-    expect(ctx.planLine).toContain('premium');
+    expect(ctx.preheaderText.length).toBeGreaterThan(10);
+    expect(ctx.benefitLines).toHaveLength(3);
+    expect(ctx.closingLine).toMatch(/equipo/i);
+    expect(ctx.subjectLine).not.toContain('99');
+    expect(ctx.leadParagraph).toMatch(/ritmo|semana/i);
   });
 
   it('usa username si no hay nombre', () => {

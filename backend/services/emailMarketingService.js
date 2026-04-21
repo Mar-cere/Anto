@@ -96,7 +96,7 @@ class EmailMarketingService {
   }
 
   /**
-   * Correo de aviso de resumen semanal (cifras agregadas + CTA a la app; como mucho una vez por semana ISO UTC por usuario).
+   * Correo de aviso de resumen semanal (solo CTA a la app, sin datos de uso en el cuerpo; como mucho una vez por semana ISO UTC por usuario).
    * Usa reclamo atómico en Mongo (similar a retención trial) para evitar duplicados con varios procesos o reintentos.
    *
    * @returns {Promise<Object>} Resumen de envíos

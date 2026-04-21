@@ -679,7 +679,7 @@ const emailTemplates = {
   },
 
   /**
-   * Aviso de resumen semanal: CTA a la app + panorama con cifras agregadas (sin contenido de conversaciones).
+   * Aviso de resumen semanal: impulso a abrir la app (sin cifras ni datos de uso en el correo).
    * @param {object} context — resultado de `buildWeeklySummaryEmailContext`
    */
   weeklySummaryEmail: (context) => {
@@ -687,19 +687,19 @@ const emailTemplates = {
     const greeting = context.displayName
       ? `Hola, <strong>${context.displayName}</strong>.`
       : `Hola.`;
-    const allLines = [
-      context.tenureLine,
-      ...context.snapshotLines,
-      context.planLine,
-      context.lastActiveLine
-    ].filter(Boolean);
-    const snapshotListHtml = allLines
-      .map((line) => `<li style="margin: 0 0 10px 0;">${escapeHtmlText(line)}</li>`)
+    const benefitListHtml = (context.benefitLines || [])
+      .map(
+        (line) =>
+          `<li style="margin: 0 0 10px 0; padding-left: 4px;">${escapeHtmlText(line)}</li>`
+      )
       .join('');
     return {
       subject: context.subjectLine,
       html: `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: ${EMAIL_COLORS.BACKGROUND};">
+          <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:transparent;width:0;height:0;opacity:0;">
+            ${escapeHtmlText(context.preheaderText)}
+          </div>
           ${getEmailHeader('Resumen semanal')}
           <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); margin: -24px 24px 24px 24px; padding: 32px 24px; border-radius: 18px; box-shadow: 0 8px 32px rgba(31,38,135,0.10); border: 1px solid rgba(255,255,255,0.18);">
             <p style="color: ${EMAIL_COLORS.ACCENT}; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.03em; text-align: center; margin: 0 0 8px 0;">
@@ -708,28 +708,34 @@ const emailTemplates = {
             <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.1rem; line-height: 1.75; margin-bottom: 18px; text-align: center;">
               ${greeting}
             </p>
-            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; line-height: 1.75; margin-bottom: 14px; text-align: center;">
-              El resumen detallado de la semana indicada arriba ya está en la app. Ahí podrás revisar con calma tendencias y momentos destacados de tu actividad.
+            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; line-height: 1.75; margin-bottom: 16px; text-align: center;">
+              ${escapeHtmlText(context.leadParagraph)}
             </p>
-            <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.96rem; line-height: 1.65; margin-bottom: 22px; text-align: center;">
-              Este correo no incluye el contenido de tus conversaciones; solo un panorama en cifras y el enlace para abrir ${APP_NAME}.
-            </p>
-            <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM}08 0%, ${EMAIL_COLORS.ACCENT}08 100%); padding: 20px 18px; border-radius: 14px; margin: 0 0 22px 0; border: 1px solid rgba(29, 43, 95, 0.1); text-align: left;">
-              <p style="color: ${EMAIL_COLORS.PRIMARY_MEDIUM}; font-size: 0.92rem; font-weight: 600; margin: 0 0 12px 0;">
-                ${escapeHtmlText(context.snapshotIntro)}
+            <div style="background: rgba(29, 43, 95, 0.06); padding: 18px 20px; border-radius: 14px; margin: 0 0 20px 0; border: 1px solid rgba(29, 43, 95, 0.08);">
+              <p style="color: ${EMAIL_COLORS.PRIMARY_MEDIUM}; font-size: 0.88rem; font-weight: 700; margin: 0 0 12px 0; letter-spacing: 0.04em; text-transform: uppercase; text-align: center;">
+                ${escapeHtmlText(context.benefitSectionTitle)}
               </p>
-              <ul style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.98rem; line-height: 1.55; margin: 0; padding-left: 20px;">
-                ${snapshotListHtml}
+              <ul style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.97rem; line-height: 1.55; margin: 0; padding-left: 20px; text-align: left;">
+                ${benefitListHtml}
               </ul>
             </div>
+            <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.98rem; line-height: 1.65; margin-bottom: 18px; text-align: center;">
+              ${escapeHtmlText(context.privacyParagraph)}
+            </p>
+            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.98rem; line-height: 1.65; margin-bottom: 24px; text-align: center;">
+              ${escapeHtmlText(context.whereParagraph)}
+            </p>
             <div style="text-align: center; margin: 28px 0 8px 0;">
               <a href="${appHref}"
                  style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); color: ${EMAIL_COLORS.TEXT_WHITE}; padding: 14px 28px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: 700; font-size: 1.05rem;">
-                Abrir en la app
+                Ver mi resumen en la app
               </a>
             </div>
-            <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem; line-height: 1.55; margin-top: 20px; text-align: center;">
-              Si el enlace no abre la aplicación, inicia sesión con tu cuenta y busca el resumen en el inicio o en la sección correspondiente.
+            <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem; line-height: 1.55; margin-top: 18px; text-align: center;">
+              Si el enlace no abre la aplicación, inicia sesión con tu cuenta y sigue la ruta: Perfil → Resumen semanal y mensual.
+            </p>
+            <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem; line-height: 1.5; margin-top: 22px; text-align: center; font-style: italic;">
+              ${escapeHtmlText(context.closingLine)}
             </p>
           </div>
           ${getEmailFooter()}

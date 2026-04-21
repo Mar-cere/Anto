@@ -205,7 +205,11 @@ export const api = {
     }
   },
 
-  get: async <T = unknown>(endpoint: string, params: Record<string, string> = {}): Promise<ApiGetResponse<T>> => {
+  get: async <T = unknown>(
+    endpoint: string,
+    params: Record<string, string> = {},
+    options?: { signal?: AbortSignal }
+  ): Promise<ApiGetResponse<T>> => {
     try {
       const headers = await getAuthHeaders();
       const queryString = new URLSearchParams(params).toString();
@@ -213,14 +217,18 @@ export const api = {
       if (typeof __DEV__ !== 'undefined' && __DEV__) {
         console.log(`[API] GET ${endpoint}`);
       }
-      const response = await fetch(url, { method: 'GET', headers });
+      const response = await fetch(url, { method: 'GET', headers, signal: options?.signal });
       const data = await handleResponse<ApiGetResponse<T>>(response, endpoint);
       if (typeof __DEV__ !== 'undefined' && __DEV__) {
         console.log(`[API] GET ${endpoint} - Success`);
       }
       return data;
     } catch (error) {
-      console.error(`[API] GET ${endpoint} - Error:`, (error as Error).message);
+      const err = error as Error;
+      if (err?.name === 'AbortError') {
+        throw err;
+      }
+      console.error(`[API] GET ${endpoint} - Error:`, err.message);
       throw error;
     }
   },
