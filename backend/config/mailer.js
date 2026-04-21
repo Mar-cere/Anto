@@ -2,16 +2,14 @@
  * Configuración de Mailer - Gestiona el envío de correos electrónicos
  * Soporta Gmail API (Google Workspace), SendGrid y Gmail SMTP (fallback)
  */
+import sgMail from '@sendgrid/mail';
 import dotenv from 'dotenv';
 import fs from 'fs';
-import nodemailer from 'nodemailer';
-import sgMail from '@sendgrid/mail';
 import { google } from 'googleapis';
-import { fileURLToPath } from 'url';
+import nodemailer from 'nodemailer';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { APP_NAME, APP_NAME_FULL, EMAIL_FROM_NAME, INSTAGRAM_URL, LOGO_URL } from '../constants/app.js';
-import logger from '../utils/logger.js';
-import { withTimeout } from '../utils/withTimeout.js';
 import {
   CODE_EXPIRATION_MINUTES,
   EMAIL_COLORS,
@@ -20,10 +18,12 @@ import {
   RESET_TOKEN_EXPIRATION_HOURS
 } from '../constants/email.js';
 import { getUtcIsoWeekParts } from '../utils/isoWeek.js';
+import logger from '../utils/logger.js';
 import {
   buildWeeklySummaryEmailContext,
   escapeHtmlText
 } from '../utils/weeklySummaryEmailContext.js';
+import { withTimeout } from '../utils/withTimeout.js';
 
 dotenv.config();
 
@@ -719,9 +719,6 @@ const emailTemplates = {
                 ${snapshotListHtml}
               </ul>
             </div>
-            <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.96rem; line-height: 1.65; margin-bottom: 26px; text-align: center;">
-              Los temas de tus conversaciones y el detalle emocional solo están en la app; este correo no incluye el texto de tus mensajes.
-            </p>
             <div style="text-align: center; margin: 28px 0 8px 0;">
               <a href="${appHref}"
                  style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); color: ${EMAIL_COLORS.TEXT_WHITE}; padding: 14px 28px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: 700; font-size: 1.05rem;">
