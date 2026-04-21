@@ -1,31 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="12" failures="0" errors="0" time="1.416">
-  <testsuite name="inferChatSessionPhase" errors="0" failures="0" skipped="0" timestamp="2026-04-21T04:13:36" time="0.134" tests="8">
-    <testcase classname="inferChatSessionPhase acute por riesgo MEDIUM" name="inferChatSessionPhase acute por riesgo MEDIUM" time="0.003">
+<testsuites name="jest tests" tests="2" failures="0" errors="0" time="0.271">
+  <testsuite name="userSummaryService period helpers" errors="0" failures="0" skipped="0" timestamp="2026-04-21T20:59:10" time="0.259" tests="2">
+    <testcase classname="userSummaryService period helpers calendarWeekRangeFromAnchor: semana lunes–domingo que contiene un martes" name="userSummaryService period helpers calendarWeekRangeFromAnchor: semana lunes–domingo que contiene un martes" time="0.002">
     </testcase>
-    <testcase classname="inferChatSessionPhase acute por léxico de autolesión en el mensaje actual" name="inferChatSessionPhase acute por léxico de autolesión en el mensaje actual" time="0.001">
-    </testcase>
-    <testcase classname="inferChatSessionPhase settled tras mensajes de calma y riesgo bajo" name="inferChatSessionPhase settled tras mensajes de calma y riesgo bajo" time="0">
-    </testcase>
-    <testcase classname="inferChatSessionPhase default si no hay señales" name="inferChatSessionPhase default si no hay señales" time="0">
-    </testcase>
-    <testcase classname="getSessionPhaseSystemSnippet default devuelve vacío" name="getSessionPhaseSystemSnippet default devuelve vacío" time="0">
-    </testcase>
-    <testcase classname="getSessionPhaseSystemSnippet acute y settled tienen texto" name="getSessionPhaseSystemSnippet acute y settled tienen texto" time="0.001">
-    </testcase>
-    <testcase classname="buildRecentThreadSummarySnippet no genera si hay pocos mensajes" name="buildRecentThreadSummarySnippet no genera si hay pocos mensajes" time="0">
-    </testcase>
-    <testcase classname="buildRecentThreadSummarySnippet genera lista con suficiente historial" name="buildRecentThreadSummarySnippet genera lista con suficiente historial" time="0">
-    </testcase>
-  </testsuite>
-  <testsuite name="shouldAttemptRollingSummary" errors="0" failures="0" skipped="0" timestamp="2026-04-21T04:13:36" time="0.81" tests="4">
-    <testcase classname="shouldAttemptRollingSummary no intenta si hay pocos mensajes" name="shouldAttemptRollingSummary no intenta si hay pocos mensajes" time="0.002">
-    </testcase>
-    <testcase classname="shouldAttemptRollingSummary primera vez con suficientes mensajes" name="shouldAttemptRollingSummary primera vez con suficientes mensajes" time="0">
-    </testcase>
-    <testcase classname="shouldAttemptRollingSummary no refresca si no pasó el intervalo" name="shouldAttemptRollingSummary no refresca si no pasó el intervalo" time="0">
-    </testcase>
-    <testcase classname="shouldAttemptRollingSummary refresca tras intervalo de mensajes nuevos" name="shouldAttemptRollingSummary refresca tras intervalo de mensajes nuevos" time="0.001">
+    <testcase classname="userSummaryService period helpers calendarMonthRange: abril 2026" name="userSummaryService period helpers calendarMonthRange: abril 2026" time="0.001">
     </testcase>
   </testsuite>
 </testsuites>

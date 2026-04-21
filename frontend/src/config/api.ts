@@ -68,6 +68,8 @@ export const ENDPOINTS = {
   JOURNAL_BY_ID: (id: string) => `/api/journals/${id}`,
   JOURNALS_STATS: '/api/journals/stats',
   JOURNAL_ARCHIVE: (id: string) => `/api/journals/${id}/archive`,
+  /** Resumen semanal o mensual: query period=week|month, opcional date, year, month */
+  SUMMARY: '/api/summary',
   CHAT: '/api/chat',
   CHAT_MESSAGES: '/api/chat/messages',
   CHAT_CONVERSATIONS: '/api/chat/conversations',

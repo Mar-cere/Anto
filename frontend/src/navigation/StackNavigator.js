@@ -49,6 +49,7 @@ import ConnectionExerciseScreen from '../screens/techniques/ConnectionExerciseSc
 import SocialActivityScreen from '../screens/techniques/SocialActivityScreen';
 import AboutScreen from '../screens/AboutScreen';
 import AIPrivacyScreen from '../screens/AIPrivacyScreen';
+import SummaryScreen from '../screens/SummaryScreen';
 import { colors } from '../styles/globalStyles';
 import TabNavigator from './TabNavigator';
 
@@ -79,6 +80,7 @@ const ROUTE_NAMES = {
   TRANSACTION_HISTORY: 'TransactionHistory',
   ABOUT: 'About',
   AI_PRIVACY: 'AIPrivacy',
+  ACTIVITY_SUMMARY: 'ActivitySummary',
 };
 
 /**
@@ -181,6 +183,11 @@ const StackNavigator = () => {
       <Stack.Screen 
         name={ROUTE_NAMES.FAQ} 
         component={FaQScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name={ROUTE_NAMES.ACTIVITY_SUMMARY}
+        component={SummaryScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen 

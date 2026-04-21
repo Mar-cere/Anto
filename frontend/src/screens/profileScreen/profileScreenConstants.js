@@ -28,6 +28,8 @@ export const TEXTS = {
   SETTINGS: 'Ir a configuración',
   EDIT_PROFILE_LABEL: 'Editar perfil',
   HELP_LABEL: 'Ayuda',
+  SUMMARY_NAV: 'Resumen semanal y mensual',
+  SUMMARY_NAV_LABEL: 'Abrir resumen de actividad',
   LOGOUT_LABEL: 'Cerrar sesión',
   EMERGENCY_CONTACTS: 'Contactos de Emergencia',
   NO_CONTACTS: 'No hay contactos configurados',

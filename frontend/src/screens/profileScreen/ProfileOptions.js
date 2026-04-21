@@ -1,5 +1,5 @@
 /**
- * Opciones principales del perfil: Editar perfil, Ayuda
+ * Opciones principales del perfil: resumen, editar perfil, ayuda
  */
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
@@ -10,6 +10,15 @@ import { COLORS, TEXTS, ICON_SIZE } from './profileScreenConstants';
 export function ProfileOptions({ navigation }) {
   return (
     <View style={styles.optionsContainer}>
+      <TouchableOpacity
+        style={styles.optionButton}
+        onPress={() => navigation.navigate('ActivitySummary')}
+        accessibilityLabel={TEXTS.SUMMARY_NAV_LABEL}
+      >
+        <MaterialCommunityIcons name="chart-timeline-variant" size={ICON_SIZE} color={COLORS.PRIMARY} />
+        <Text style={styles.optionText}>{TEXTS.SUMMARY_NAV}</Text>
+        <MaterialCommunityIcons name="chevron-right" size={ICON_SIZE} color={COLORS.ACCENT} />
+      </TouchableOpacity>
       <TouchableOpacity
         style={styles.optionButton}
         onPress={() => navigation.navigate('EditProfile')}
