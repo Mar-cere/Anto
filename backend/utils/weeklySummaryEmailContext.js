@@ -70,17 +70,17 @@ export function buildWeeklySummaryEmailContext(user, isoParts) {
 
   const preheaderText = `Solo un aviso con tu nombre: sin cifras ni métricas. El detalle del resumen (incluidas métricas sensibles) está en ${APP_NAME}, con la sesión iniciada.`;
 
-  const leadParagraph = `Puedes dedicar un momento a revisar tu actividad en la app: la semana o el mes en un solo lugar, con claridad y sin prisa.`;
+  const leadParagraph = `Puedes dedicar un momento a revisar tu actividad: la semana o el mes en un solo lugar, con claridad y sin prisa.`;
 
   const privacyParagraph = `Por discreción, en este correo no enviamos números ni el texto del chat. Métricas como la cantidad de crisis reportadas, hábitos, conversaciones, emociones, técnicas o el diario de gratitud solo se muestran en ${APP_NAME} cuando has iniciado sesión.`;
 
-  const whereParagraph = `Abre ${APP_NAME}, entra en Perfil y elige «Resumen semanal y mensual». Allí seleccionas la semana o el mes; esa información solo está disponible para ti dentro de la aplicación.`;
+  const whereParagraph = `Toca el botón para abrir ${APP_NAME}; si el enlace falla, debajo tienes la ruta dentro de la app.`;
 
-  const benefitSectionTitle = 'Qué encontrarás al abrir el resumen';
+  const benefitSectionTitle = 'Qué incluye el resumen';
   const benefitLines = [
-    `Una vista de la semana o del mes: tu actividad en ${APP_NAME}, reunida en una pantalla.`,
-    'Puedes cambiar entre resumen semanal y mensual cuando lo necesites.',
-    'Es una herramienta para acompañarte, no para juzgarte: úsala al ritmo que te resulte cómodo.'
+    `Tu actividad de la semana o del mes en una sola vista dentro de ${APP_NAME}.`,
+    'Alterna entre vista semanal y mensual cuando lo necesites.',
+    'Pensado para acompañarte, no para juzgarte: al ritmo que te resulte cómodo.'
   ];
 
   const closingLine = `Gracias por confiar en nosotros. El equipo de ${APP_NAME}`;

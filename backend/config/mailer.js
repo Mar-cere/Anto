@@ -736,11 +736,11 @@ const emailTemplates = {
             <div style="text-align: center; margin: 28px 0 8px 0;">
               <a href="${appHref}"
                  style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); color: ${EMAIL_COLORS.TEXT_WHITE}; padding: 14px 28px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: 700; font-size: 1.05rem;">
-                Ver mi resumen en la app
+                Abrir ${APP_NAME}
               </a>
             </div>
             <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem; line-height: 1.55; margin-top: 18px; text-align: center;">
-              Si el enlace no abre ${APP_NAME}, abre la aplicación manualmente, inicia sesión y ve a Perfil → Resumen semanal y mensual.
+              ¿El enlace no abre la app? Ábrela tú, inicia sesión y ve a Perfil → «Resumen semanal y mensual».
             </p>
             <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem; line-height: 1.5; margin-top: 22px; text-align: center; font-style: italic;">
               ${escapeHtmlText(context.closingLine)}
