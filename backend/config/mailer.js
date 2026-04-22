@@ -226,7 +226,7 @@ const getEmailFooter = () => {
  * Prioridad (modo normal):
  * 1. `EMAIL_APP_OPEN_LINK` — URL única para todos los CTAs (HTTPS recomendado en producción).
  * 2. `WEEKLY_SUMMARY_EMAIL_APP_LINK` — compat / override histórico.
- * 3. Si `WEEKLY_SUMMARY_EMAIL_OPEN_APP_ONLY=true` — esquema (`WEEKLY_SUMMARY_APP_SCHEME`, default `anto`) + `WEEKLY_SUMMARY_APP_PATH`.
+ * 3. Si `WEEKLY_SUMMARY_EMAIL_OPEN_APP_ONLY=true` — esquema (`WEEKLY_SUMMARY_APP_SCHEME`, default `anto`) + `WEEKLY_SUMMARY_APP_PATH` (por defecto `weekly-summary`). Se emite `anto:///ruta` (triple barra) para que el path sea reconocible por la app, no solo el host.
  * 4. `FRONTEND_URL` + `WEEKLY_SUMMARY_EMAIL_LINK_PATH`.
  *
  * Modo `subscriptionThankYou: true` (solo correo post-pago MP / agradecimiento):
@@ -258,8 +258,15 @@ export function buildEmailAppOpenHref(env = process.env, options = {}) {
   if (env.WEEKLY_SUMMARY_EMAIL_OPEN_APP_ONLY === 'true') {
     const rawScheme = String(env.WEEKLY_SUMMARY_APP_SCHEME || 'anto').trim().toLowerCase();
     const scheme = (rawScheme.replace(/:$/, '').split(':')[0] || 'anto').replace(/[^a-z0-9._-]/gi, '') || 'anto';
-    const rawPath = String(env.WEEKLY_SUMMARY_APP_PATH || '').trim().replace(/^\/+/, '');
-    return rawPath ? `${scheme}://${rawPath}` : `${scheme}://`;
+    const pathEnv = env.WEEKLY_SUMMARY_APP_PATH;
+    const rawPath = String(pathEnv !== undefined && pathEnv !== null ? pathEnv : 'weekly-summary')
+      .trim()
+      .replace(/^\/+/, '');
+    if (!rawPath) {
+      return `${scheme}://`;
+    }
+    // anto:///weekly-summary → pathname /weekly-summary (Linking + deep link en app). anto://weekly-summary deja todo en el host y muchos clientes no exponen path.
+    return `${scheme}:///${rawPath}`;
   }
 
   const baseSource =

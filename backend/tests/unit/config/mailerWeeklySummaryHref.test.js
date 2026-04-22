@@ -19,21 +19,30 @@ describe('buildEmailAppOpenHref', () => {
     expect(href).toBe('anto://weekly-summary');
   });
 
-  it('con OPEN_APP_ONLY usa esquema anto por defecto', () => {
+  it('con OPEN_APP_ONLY usa esquema anto y path por defecto (triple barra para deep link)', () => {
     expect(
       buildEmailAppOpenHref({
         WEEKLY_SUMMARY_EMAIL_OPEN_APP_ONLY: 'true',
       })
-    ).toBe('anto://');
+    ).toBe('anto:///weekly-summary');
   });
 
-  it('con OPEN_APP_ONLY y path opcional', () => {
+  it('con OPEN_APP_ONLY y path explícito', () => {
     expect(
       buildEmailAppOpenHref({
         WEEKLY_SUMMARY_EMAIL_OPEN_APP_ONLY: 'true',
         WEEKLY_SUMMARY_APP_PATH: '/weekly-summary',
       })
-    ).toBe('anto://weekly-summary');
+    ).toBe('anto:///weekly-summary');
+  });
+
+  it('con OPEN_APP_ONLY y WEEKLY_SUMMARY_APP_PATH vacío solo abre la app', () => {
+    expect(
+      buildEmailAppOpenHref({
+        WEEKLY_SUMMARY_EMAIL_OPEN_APP_ONLY: 'true',
+        WEEKLY_SUMMARY_APP_PATH: '',
+      })
+    ).toBe('anto://');
   });
 
   it('sin flags usa FRONTEND_URL + path', () => {

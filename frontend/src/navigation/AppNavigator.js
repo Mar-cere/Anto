@@ -11,13 +11,14 @@
 import { NavigationContainer } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import React, { useEffect } from 'react';
+import { Linking } from 'react-native';
 import {
   initializeNotifications,
   removeNotificationListeners,
   setupNotificationListeners,
 } from '../services/pushNotificationService';
 import StackNavigator from './StackNavigator';
-import { handleNotificationData, navigationRef } from './navigationRef';
+import { handleActivitySummaryDeepLink, handleNotificationData } from './navigationRef';
 
 /**
  * Componente App Navigator
@@ -44,6 +45,19 @@ const AppNavigator = () => {
       .catch(() => {});
 
     return () => removeNotificationListeners(subs);
+  }, []);
+
+  useEffect(() => {
+    const openFromUrl = (url) => {
+      if (url) handleActivitySummaryDeepLink(url);
+    };
+
+    Linking.getInitialURL()
+      .then(openFromUrl)
+      .catch(() => {});
+
+    const sub = Linking.addEventListener('url', ({ url }) => openFromUrl(url));
+    return () => sub.remove();
   }, []);
 
   return (

@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createNavigationContainerRef } from '@react-navigation/native';
 
 import { getResetToMainTabsWithChatState } from './navigationHelpers';
+import { shouldOpenActivitySummaryFromUrl } from './deepLinkUtils';
 import { setChatEntryBackTarget } from '../utils/chatEntryContext';
 
 export const navigationRef = createNavigationContainerRef();
@@ -53,5 +54,28 @@ export async function handleNotificationData(data) {
   if (!(await tryOpenChat())) {
     setTimeout(() => void tryOpenChat(), 400);
     setTimeout(() => void tryOpenChat(), 1500);
+  }
+}
+
+const ACTIVITY_SUMMARY_ROUTE = 'ActivitySummary';
+
+/** Navega al resumen semanal/mensual cuando el enlace es anto://… (correo, CTA). */
+export function handleActivitySummaryDeepLink(url) {
+  if (!shouldOpenActivitySummaryFromUrl(url)) return;
+
+  const tryNav = () => {
+    if (!navigationRef.isReady()) return false;
+    try {
+      navigationRef.navigate(ACTIVITY_SUMMARY_ROUTE);
+      return true;
+    } catch (e) {
+      console.warn('[navigationRef] navigate ActivitySummary:', e?.message || e);
+      return false;
+    }
+  };
+
+  if (!tryNav()) {
+    setTimeout(() => void tryNav(), 400);
+    setTimeout(() => void tryNav(), 1500);
   }
 }

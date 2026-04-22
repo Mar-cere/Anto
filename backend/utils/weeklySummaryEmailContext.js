@@ -72,7 +72,7 @@ export function buildWeeklySummaryEmailContext(user, isoParts) {
 
   const leadParagraph = `Puedes dedicar un momento a revisar tu actividad en la app: la semana o el mes en un solo lugar, con claridad y sin prisa.`;
 
-  const privacyParagraph = `Por discretión, en este correo no enviamos números ni el texto del chat. Métricas como la cantidad de crisis reportadas, hábitos, conversaciones, emociones, técnicas o diario de gratitud solo se muestran en ${APP_NAME} cuando has iniciado sesión.`;
+  const privacyParagraph = `Por discreción, en este correo no enviamos números ni el texto del chat. Métricas como la cantidad de crisis reportadas, hábitos, conversaciones, emociones, técnicas o el diario de gratitud solo se muestran en ${APP_NAME} cuando has iniciado sesión.`;
 
   const whereParagraph = `Abre ${APP_NAME}, entra en Perfil y elige «Resumen semanal y mensual». Allí seleccionas la semana o el mes; esa información solo está disponible para ti dentro de la aplicación.`;
 
