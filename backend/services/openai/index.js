@@ -14,6 +14,7 @@ export {
   selectRelevantHistory,
   generateConversationSummary,
   buildAntiEchoHint,
+  buildMetaRestartHint,
   generateLongTermContext,
   generarMensajesContexto
 } from './openaiPromptBuilder.js';

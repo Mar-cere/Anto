@@ -306,6 +306,38 @@ export function buildAntiEchoHint(historyMessages) {
   return `ANTI-ECO (este hilo): El usuario ya trabajó temas relacionados con: ${themes.join(', ')}. No repitas el mismo reconocimiento genérico ni enmarques el problema como si fuera la primera vez; avanza con una pregunta concreta, un matiz o un siguiente paso útil.`;
 }
 
+/** Frases que suelen indicar reinicio pedido, saludo repetido o mensaje meta (probar la app). */
+const META_RESTART_HINT_PATTERNS = [
+  /\b(podemos\s+)?empez(ar|emos)\s+(de\s+)?nuevo\b/i,
+  /\bdesde\s+cero\b/i,
+  /\breinici(ar|amos|emos)\b/i,
+  /\b(otra\s+vez|de\s+nuevo)\b[\s\S]{0,48}\b(hola|salud)\b/i,
+  /\b(hola|salud)\b[\s\S]{0,48}\b(otra\s+vez|de\s+nuevo)\b/i,
+  /\b(pregúntame|preguntame)\b/i,
+  /\b(dime|di)\s+hola\b/i
+];
+
+/**
+ * Cuando el último mensaje pide saludar otra vez, reiniciar o “actuar como al inicio”, refuerza continuidad y tono no defensivo.
+ * @param {string} currentContent - Texto del mensaje actual del usuario (no incluido en history).
+ * @param {Array<{ role: string, content?: string }>} historyMessages - Historial previo al mensaje actual.
+ * @returns {string}
+ */
+export function buildMetaRestartHint(currentContent, historyMessages) {
+  const t = (currentContent || '').trim().toLowerCase();
+  if (!t || t.length > 400) return '';
+  const priorUserTurns = (historyMessages || []).filter((m) => m.role === 'user').length;
+  const matches = META_RESTART_HINT_PATTERNS.some((re) => re.test(t));
+  if (!matches) return '';
+  const explicitSessionRestart = /\b(podemos\s+)?empez(ar|emos)\s+(de\s+)?nuevo\b|\bdesde\s+cero\b|\breinici/i.test(t);
+  if (priorUserTurns < 1 && !explicitSessionRestart) return '';
+
+  return `### Mensaje tipo reinicio, saludo pedido o prueba de la app (prioridad breve)
+- A veces la persona repite saludos, pide que hables “como al inicio” o prueba cómo respondes: no lo interpretes como burla ni uses tono defensivo o regañón.
+- Si piden un saludo o guion concreto, cumple algo breve y natural en **una frase**; evita sonar a manual de producto.
+- En la **misma** respuesta, ancla continuidad: una frase que deje claro que siguen en este chat y, si el historial o el resumen del hilo lo muestran, conecta con lo último que importaba (malestar, motivación, relación con la conversación, etc.). Si no hay detalle claro, ofrece suavemente seguir con lo anterior o cambiar de tema, **sin** menú largo ni reexplicar qué es la app.`;
+}
+
 /**
  * Guardarraíl para conversaciones de ansiedad + medicación.
  * @param {Object} contexto
@@ -568,6 +600,10 @@ const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emocional de
 - Retención sana: la razón para volver es **continuidad útil** (“seguimos esto cuando quieras”), no mensajes de obligación ni culpa por inactividad.
 - Si el sistema añade la sección **«Sesión y retorno»** más abajo en el prompt, **prioriza esas instrucciones** para cierres, puentes a la próxima conversación y límites del hilo.
 
+### Saludos repetidos, reinicio o “prueba” de la app
+- Si piden **volver a empezar**, **otra vez hola**, o dictan cómo debes saludar: respeta el pedido con naturalidad (sin sermón), reconoce que siguen en la **misma** conversación y **conecta** con lo último que importaba si el historial lo muestra.
+- No asumas mala intención: suele ser ansiedad, necesidad de control frente al malestar o curiosidad por el tono del asistente. Evita sonar a “usuario incorrecto” o a tutorial de onboarding si el hilo ya lleva varios mensajes.
+
 ### Práctico (sin automandatos)
 - A menudo deja al usuario con **algo que lo haga avanzar**: pregunta precisa, idea clara o, **si encaja**, un micro-paso — pero no en **todos** los turnos ni con el mismo formato.
 - Si ofreces opciones (hablar vs algo práctico), sé breve y **sin numerar** salvo que el usuario pida orden; como máximo **dos** alternativas.
@@ -712,6 +748,9 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
 
   const antiEchoHint = buildAntiEchoHint(contexto.history);
   if (antiEchoHint) systemMessage += `\n\n${antiEchoHint}`;
+
+  const metaRestartHint = buildMetaRestartHint(mensaje.content, contexto.history);
+  if (metaRestartHint) systemMessage += `\n\n${metaRestartHint}`;
 
   const longTermContext =
     contexto.isGuest
