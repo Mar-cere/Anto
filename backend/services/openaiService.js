@@ -17,6 +17,7 @@ import {
     OPENAI_MODEL,
     PROMPT_CONFIG,
     getChatReasoningEffortForContext,
+    resolveChatModelForContext,
     RESPONSE_LENGTHS,
     TEMPERATURES,
     THRESHOLDS,
@@ -203,6 +204,27 @@ class OpenAIService {
           )
         );
       }
+
+      // Fallback de modelo: si el modelo seleccionado no está disponible, reintentar con el modelo base.
+      const selectedModel = String(body?.model || '').trim();
+      const shouldFallbackModel =
+        selectedModel &&
+        selectedModel !== OPENAI_MODEL &&
+        (err?.status === 404 ||
+          err?.code === 'model_not_found' ||
+          /model.*not.*found|unknown model|does not exist/i.test(msg));
+      if (shouldFallbackModel) {
+        const fallbackBody = { ...body, model: OPENAI_MODEL };
+        console.warn(`[OpenAI] Modelo "${selectedModel}" no disponible; reintento con modelo base "${OPENAI_MODEL}"`);
+        return await openaiBreaker.exec(() =>
+          withTimeout(
+            openai.chat.completions.create(fallbackBody),
+            OPENAI_TIMEOUT_MS,
+            { label: 'OpenAI chat.completions.create (fallback model)' }
+          )
+        );
+      }
+
       throw err;
     }
   }
@@ -337,11 +359,17 @@ class OpenAIService {
       const promptLength = prompt.systemMessage.length;
       const contextMessagesCount = prompt.contextMessages?.length || 0;
       const userMessageLength = contenidoNormalizado.length;
-      console.log(`[OpenAI] Prompt length: ${promptLength} chars, Context messages: ${contextMessagesCount}, User message: ${userMessageLength} chars, Max completion tokens: ${maxCompletionTokens}, Response style: ${userResponseStyle}`);
+      const selectedModel = resolveChatModelForContext({
+        content: contenidoNormalizado,
+        emotional: analisisEmocional,
+        contextual: analisisContextual,
+        crisis: contexto?.crisis
+      });
+      console.log(`[OpenAI] Prompt length: ${promptLength} chars, Context messages: ${contextMessagesCount}, User message: ${userMessageLength} chars, Max completion tokens: ${maxCompletionTokens}, Response style: ${userResponseStyle}, Model: ${selectedModel}`);
       let completion;
       try {
         completion = await this.createChatCompletionResilient({
-          model: OPENAI_MODEL,
+          model: selectedModel,
           messages: [
             {
               role: 'system',
@@ -713,11 +741,17 @@ class OpenAIService {
     );
 
     const maxTokens = this.determinarLongitudRespuesta(analisisContextual, contenidoNormalizado, perfilUsuario?.preferences?.responseStyle || 'balanced');
+    const selectedModel = resolveChatModelForContext({
+      content: contenidoNormalizado,
+      emotional: analisisEmocional,
+      contextual: analisisContextual,
+      crisis: contexto?.crisis
+    });
 
     let stream;
     try {
       stream = await this.createChatCompletionResilient({
-        model: OPENAI_MODEL,
+        model: selectedModel,
         messages: [
           { role: 'system', content: prompt.systemMessage },
           ...prompt.contextMessages,

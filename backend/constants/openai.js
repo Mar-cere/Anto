@@ -12,8 +12,51 @@
 
 // ========== CONFIGURACIÓN DEL MODELO ==========
 
-// Modelo de OpenAI a utilizar
-export const OPENAI_MODEL = 'gpt-5-mini';
+// Modelo de OpenAI por defecto (modo costo/latencia eficiente)
+// Recomendado actual: GPT-5.4 Mini
+export const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.4-mini';
+
+// Modelo para casos complejos (crisis, ambigüedad, alta carga emocional)
+export const OPENAI_COMPLEX_MODEL = process.env.OPENAI_COMPLEX_MODEL || 'gpt-5.5';
+const COMPLEX_MODEL_ROUTING_ENABLED = process.env.OPENAI_ENABLE_COMPLEX_MODEL_ROUTING !== 'false';
+
+/**
+ * Resuelve el modelo de chat según el contexto del mensaje.
+ * Reglas:
+ * - Crisis MEDIUM/HIGH => modelo complejo
+ * - Mensaje largo + baja confianza contextual => modelo complejo
+ * - Caso contrario => modelo por defecto
+ * @param {{
+ *   content?: string,
+ *   crisis?: { riskLevel?: string },
+ *   contextual?: { intencion?: { confianza?: number } },
+ *   emotional?: { intensity?: number }
+ * } | null | undefined} contextLike
+ * @returns {string}
+ */
+export function resolveChatModelForContext(contextLike) {
+  if (!COMPLEX_MODEL_ROUTING_ENABLED) {
+    return OPENAI_MODEL;
+  }
+
+  const riskLevel = contextLike?.crisis?.riskLevel;
+  if (riskLevel === 'HIGH' || riskLevel === 'MEDIUM') {
+    return OPENAI_COMPLEX_MODEL;
+  }
+
+  const contentLength = String(contextLike?.content || '').trim().length;
+  const confidence = Number(contextLike?.contextual?.intencion?.confianza ?? 1);
+  const intensity = Number(contextLike?.emotional?.intensity ?? 5);
+  const isLowConfidence = Number.isFinite(confidence) ? confidence < 0.6 : false;
+  const isLongMessage = contentLength >= 280;
+  const isHighEmotionalLoad = intensity >= 8;
+
+  if ((isLongMessage && isLowConfidence) || (isLongMessage && isHighEmotionalLoad)) {
+    return OPENAI_COMPLEX_MODEL;
+  }
+
+  return OPENAI_MODEL;
+}
 
 // ========== LONGITUDES DE RESPUESTA (tokens) ==========
 // Límites optimizados basados en monitoreo: GPT-5 Mini usa ~800 tokens de reasoning

@@ -615,6 +615,140 @@ export const evaluateSuicideRisk = (
   }
 };
 
+const ACTION_LEVELS = {
+  MONITOR: 'MONITOR',
+  SUPPORT_USER: 'SUPPORT_USER',
+  VERIFY: 'VERIFY',
+  ALERT_CONTACTS: 'ALERT_CONTACTS'
+};
+
+const clampConfidence = (value) => {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(1, value));
+};
+
+const detectAdvancedPlanning = (content) =>
+  /(?:tengo.*plan|ya.*sé.*c[oó]mo|m[eé]todo|medios.*para|he.*preparado|carta.*despedida|fecha.*para)/i.test(
+    content || ''
+  );
+
+const detectFarewellSignals = (content) =>
+  /(?:ad[ií]os|esta.*ser[aá].*la.*[uú]ltima|[uú]ltimo.*mensaje|ya.*no.*estar[eé]|despedirme|gracias.*por.*todo)/i.test(
+    content || ''
+  );
+
+const detectObsessiveDistress = (content) =>
+  /(?:no.*puedo.*dejar.*de.*pensar|todo.*el.*tiempo.*pienso|obsesi[oó]n|rumio|rumiaci[oó]n|me.*persigue.*la.*idea)/i.test(
+    content || ''
+  );
+
+const detectIsolationSignals = (content, trendAnalysis) => {
+  const lexicalIsolation =
+    /(?:estoy.*solo|no.*tengo.*a.*nadie|nadie.*me.*entiende|aislad[oa]|desconectad[oa]|sin.*apoyo)/i.test(
+      content || ''
+    );
+  const trendIsolation = Boolean(trendAnalysis?.trends?.isolation || trendAnalysis?.trends?.sustainedLow);
+  return lexicalIsolation || trendIsolation;
+};
+
+const detectCommunicationDisengagement = (conversationContext = {}) =>
+  Boolean(
+    conversationContext.helpRejected ||
+      conversationContext.abruptToneChange ||
+      conversationContext.silenceAfterNegative
+  );
+
+/**
+ * Decide nivel operativo con puertas conservadoras para alertar a contactos.
+ * Objetivo: reducir falsos positivos sociales, manteniendo sensibilidad en casos críticos.
+ */
+export const buildCrisisActionDecision = ({
+  riskLevel,
+  messageContent,
+  contextualAnalysis,
+  trendAnalysis,
+  crisisHistory,
+  conversationContext
+}) => {
+  const content = messageContent || '';
+  const classifierConfidence = Number(contextualAnalysis?.intencion?.confianza || 0);
+
+  const signals = {
+    advancedPlanning: detectAdvancedPlanning(content),
+    farewellSignals: detectFarewellSignals(content),
+    obsessiveDistress: detectObsessiveDistress(content),
+    isolation: detectIsolationSignals(content, trendAnalysis),
+    communicationDisengagement: detectCommunicationDisengagement(conversationContext),
+    trendDeterioration: Boolean(
+      trendAnalysis?.trends?.rapidDecline || trendAnalysis?.trends?.escalation || trendAnalysis?.trends?.sustainedLow
+    ),
+    recentCrisisHistory: Number(crisisHistory?.recentCrises || 0) > 0
+  };
+
+  const criticalSignals = Number(signals.advancedPlanning) + Number(signals.farewellSignals);
+  const moderateSignals =
+    Number(signals.obsessiveDistress) +
+    Number(signals.isolation) +
+    Number(signals.communicationDisengagement) +
+    Number(signals.trendDeterioration);
+
+  const baseConfidenceByRisk = {
+    LOW: 0.55,
+    WARNING: 0.68,
+    MEDIUM: 0.78,
+    HIGH: 0.88
+  };
+  let confidence = baseConfidenceByRisk[riskLevel] ?? 0.5;
+  confidence += classifierConfidence >= 0.9 ? 0.08 : classifierConfidence >= 0.8 ? 0.04 : 0;
+  confidence += criticalSignals > 0 ? 0.06 : 0;
+  confidence += moderateSignals >= 3 ? 0.05 : moderateSignals >= 2 ? 0.03 : 0;
+  confidence += signals.recentCrisisHistory ? 0.03 : 0;
+  confidence = clampConfidence(confidence);
+
+  let actionLevel = ACTION_LEVELS.MONITOR;
+  if (riskLevel === 'WARNING') actionLevel = ACTION_LEVELS.SUPPORT_USER;
+  if (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') actionLevel = ACTION_LEVELS.VERIFY;
+
+  const hasStrongEvidence =
+    criticalSignals >= 1 &&
+    (signals.trendDeterioration || signals.recentCrisisHistory || moderateSignals >= 2);
+  const hasAccumulatedEvidence =
+    criticalSignals >= 1 &&
+    moderateSignals >= 3 &&
+    (signals.trendDeterioration || signals.recentCrisisHistory);
+
+  const shouldAlertContacts =
+    (riskLevel === 'HIGH' && confidence >= 0.9 && (hasStrongEvidence || hasAccumulatedEvidence)) ||
+    (riskLevel === 'MEDIUM' && confidence >= 0.95 && hasAccumulatedEvidence);
+
+  if (shouldAlertContacts) {
+    actionLevel = ACTION_LEVELS.ALERT_CONTACTS;
+  }
+
+  const reasons = [];
+  if (signals.advancedPlanning) reasons.push('advanced_planning');
+  if (signals.farewellSignals) reasons.push('farewell_signals');
+  if (signals.obsessiveDistress) reasons.push('obsessive_distress');
+  if (signals.isolation) reasons.push('isolation');
+  if (signals.communicationDisengagement) reasons.push('communication_disengagement');
+  if (signals.trendDeterioration) reasons.push('trend_deterioration');
+  if (signals.recentCrisisHistory) reasons.push('recent_crisis_history');
+
+  return {
+    riskLevel,
+    actionLevel,
+    shouldAlertContacts,
+    confidence,
+    evidence: {
+      criticalSignals,
+      moderateSignals,
+      hasStrongEvidence,
+      hasAccumulatedEvidence
+    },
+    reasons
+  };
+};
+
 // ========== FUNCIONES HELPER ==========
 
 /**

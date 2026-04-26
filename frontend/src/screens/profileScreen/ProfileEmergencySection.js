@@ -71,6 +71,27 @@ export function ProfileEmergencySection({
                     </View>
                   </View>
                   <View style={styles.contactDetails}>
+                    {contact.phone ? (
+                      <View style={styles.contactDetailRow}>
+                        <MaterialCommunityIcons
+                          name="whatsapp"
+                          size={16}
+                          color={COLORS.ACCENT}
+                        />
+                        <Text style={styles.contactDetailText}>{contact.phone}</Text>
+                      </View>
+                    ) : (
+                      <View style={styles.contactDetailRow}>
+                        <MaterialCommunityIcons
+                          name="alert-outline"
+                          size={16}
+                          color={COLORS.ERROR}
+                        />
+                        <Text style={styles.contactDetailText}>
+                          Falta teléfono para alertas por WhatsApp
+                        </Text>
+                      </View>
+                    )}
                     <View style={styles.contactDetailRow}>
                       <MaterialCommunityIcons
                         name="email-outline"
@@ -79,16 +100,6 @@ export function ProfileEmergencySection({
                       />
                       <Text style={styles.contactDetailText}>{contact.email}</Text>
                     </View>
-                    {contact.phone && (
-                      <View style={styles.contactDetailRow}>
-                        <MaterialCommunityIcons
-                          name="phone-outline"
-                          size={16}
-                          color={COLORS.ACCENT}
-                        />
-                        <Text style={styles.contactDetailText}>{contact.phone}</Text>
-                      </View>
-                    )}
                   </View>
                 </View>
               </View>

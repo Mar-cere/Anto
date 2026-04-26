@@ -291,6 +291,19 @@ function getWeeklySummaryAppHref() {
   return buildEmailAppOpenHref(process.env);
 }
 
+function getWeeklySummaryAppStoreHref() {
+  const direct =
+    process.env.WEEKLY_SUMMARY_APPSTORE_LINK ||
+    process.env.EMAIL_APPSTORE_LINK ||
+    process.env.WEEKLY_SUMMARY_DOWNLOAD_APP_LINK ||
+    process.env.EMAIL_DOWNLOAD_APP_LINK;
+  if (direct && typeof direct === 'string' && direct.trim()) {
+    return direct.trim();
+  }
+
+  return 'https://apps.apple.com/cl/app/anto/id6756631911';
+}
+
 const getEmailHeader = (title, logoAlt = `${APP_NAME} Logo`) => {
   return `
     <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_DARK} 0%, ${EMAIL_COLORS.PRIMARY_MEDIUM} 60%, ${EMAIL_COLORS.ACCENT} 100%); padding: 36px 0 24px 0; border-radius: 0 0 32px 32px; box-shadow: 0 4px 24px rgba(0,0,0,0.10); text-align: center;">
@@ -529,6 +542,8 @@ const emailTemplates = {
     const now = new Date();
     const msLeft = end.getTime() - now.getTime();
     const hoursLeft = Math.max(1, Math.ceil(msLeft / (1000 * 60 * 60)));
+    const premiumHref = buildEmailAppOpenHref(process.env, { subscriptionThankYou: true });
+    const summaryHref = getWeeklySummaryAppHref();
     const endFormatted = end.toLocaleDateString('es', {
       weekday: 'long',
       year: 'numeric',
@@ -544,10 +559,10 @@ const emailTemplates = {
 
           <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); margin: -24px 24px 24px 24px; padding: 32px 24px; border-radius: 18px; box-shadow: 0 8px 32px rgba(31,38,135,0.10); border: 1px solid rgba(255,255,255,0.18);">
             <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.1rem; line-height: 1.7; margin-bottom: 24px; text-align: center;">
-              <strong>Nos gustaría que sigas con nosotros.</strong> Sabemos que probar algo nuevo requiere tiempo, y tu bienestar merece ese espacio.
+              <strong>Continúa donde quedaste.</strong> Tu prueba termina pronto y este es un buen momento para mantener el impulso que ya empezaste.
             </p>
             <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; line-height: 1.7; margin-bottom: 28px; text-align: center;">
-              Tu <strong>prueba gratuita</strong> de ${APP_NAME} está en sus últimos días: te quedan aproximadamente <strong style="color: ${EMAIL_COLORS.ACCENT};">${hoursLeft} hora${hoursLeft !== 1 ? 's' : ''}</strong> para seguir usando todas las funciones premium sin costo.
+              Te quedan aproximadamente <strong style="color: ${EMAIL_COLORS.ACCENT};">${hoursLeft} hora${hoursLeft !== 1 ? 's' : ''}</strong> de prueba gratuita. Si decides continuar con Premium ahora, mantienes el acceso completo sin interrupciones.
             </p>
 
             <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM}12 0%, ${EMAIL_COLORS.ACCENT}10 100%); padding: 22px 20px; border-radius: 14px; margin: 20px 0; border-left: 4px solid ${EMAIL_COLORS.ACCENT}; border: 1px solid rgba(29, 43, 95, 0.12);">
@@ -559,26 +574,30 @@ const emailTemplates = {
             </div>
 
             <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM}15 0%, ${EMAIL_COLORS.ACCENT}15 100%); padding: 24px; border-radius: 12px; margin: 24px 0; border-left: 4px solid ${EMAIL_COLORS.ACCENT};">
-              <h3 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 0; text-align: center;">¿Por qué continuar?</h3>
+              <h3 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 0; text-align: center;">Si no renuevas, perderás</h3>
               <ul style="color: #333; font-size: 16px; line-height: 1.65; margin: 0; padding-left: 20px;">
-                <li>Chat de apoyo cuando lo necesites, sin juicios</li>
-                <li>Hábitos, tareas y herramientas pensadas para tu día a día</li>
-                <li>Una experiencia que crece contigo</li>
+                <li>Acceso ilimitado al chat y a las herramientas premium.</li>
+                <li>Seguimiento continuo de tu progreso sin cortes.</li>
+                <li>Historial guiado para retomar fácilmente donde quedaste.</li>
               </ul>
             </div>
 
-            <div style="text-align: center; margin: 28px 0;">
-              <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; margin-bottom: 12px;">
-                <strong>Abre la aplicación</strong> y continúa conversando con ${APP_NAME}, o revisa los planes cuando desees seguir con todo desbloqueado.
-              </p>
-              <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.95rem; line-height: 1.5;">
-                Gracias por confiar en nosotros en estos primeros días. Si algo no te convenció o tienes dudas, escribe a nuestros canales de soporte desde la aplicación o la web: queremos que la experiencia te acompañe de verdad.
+            <div style="text-align: center; margin: 28px 0 10px 0;">
+              <a href="${premiumHref}"
+                 style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); color: ${EMAIL_COLORS.TEXT_WHITE}; padding: 14px 28px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: 700; font-size: 1.05rem;">
+                Continuar con Premium
+              </a>
+              <p style="margin: 12px 0 0 0;">
+                <a href="${summaryHref}"
+                   style="color: ${EMAIL_COLORS.PRIMARY_MEDIUM}; font-size: 0.95rem; text-decoration: underline;">
+                  Abrir mi resumen
+                </a>
               </p>
             </div>
 
-            <div style="text-align: center; margin-top: 18px;">
-              <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.95rem; margin: 0;">
-                ¿Quieres contarnos algo breve? Estamos en Instagram.
+            <div style="text-align: center; margin-top: 14px;">
+              <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.95rem; line-height: 1.5; margin: 0;">
+                Gracias por probar ${APP_NAME}. Si tienes dudas, estamos para ayudarte desde la app y nuestros canales de soporte.
               </p>
             </div>
           </div>
@@ -692,10 +711,17 @@ const emailTemplates = {
    */
   weeklySummaryEmail: (context) => {
     const appHref = getWeeklySummaryAppHref();
+    const appStoreHref = getWeeklySummaryAppStoreHref();
     const greeting = context.displayName
       ? `Hola, <strong>${context.displayName}</strong>.`
       : `Hola.`;
     const benefitListHtml = (context.benefitLines || [])
+      .map(
+        (line) =>
+          `<li style="margin: 0 0 10px 0; padding-left: 4px;">${escapeHtmlText(line)}</li>`
+      )
+      .join('');
+    const updatesListHtml = (context.updatesLines || [])
       .map(
         (line) =>
           `<li style="margin: 0 0 10px 0; padding-left: 4px;">${escapeHtmlText(line)}</li>`
@@ -719,12 +745,23 @@ const emailTemplates = {
             <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; line-height: 1.75; margin-bottom: 16px; text-align: center;">
               ${escapeHtmlText(context.leadParagraph)}
             </p>
+            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.02rem; line-height: 1.75; margin-bottom: 20px; text-align: center;">
+              ${escapeHtmlText(context.reflectionParagraph || '')}
+            </p>
             <div style="background: rgba(29, 43, 95, 0.06); padding: 18px 20px; border-radius: 14px; margin: 0 0 20px 0; border: 1px solid rgba(29, 43, 95, 0.08);">
               <p style="color: ${EMAIL_COLORS.PRIMARY_MEDIUM}; font-size: 0.88rem; font-weight: 700; margin: 0 0 12px 0; letter-spacing: 0.04em; text-transform: uppercase; text-align: center;">
                 ${escapeHtmlText(context.benefitSectionTitle)}
               </p>
               <ul style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.97rem; line-height: 1.55; margin: 0; padding-left: 20px; text-align: left;">
                 ${benefitListHtml}
+              </ul>
+            </div>
+            <div style="background: rgba(26, 221, 219, 0.10); padding: 18px 20px; border-radius: 14px; margin: 0 0 20px 0; border: 1px solid rgba(26, 221, 219, 0.25);">
+              <p style="color: ${EMAIL_COLORS.PRIMARY_MEDIUM}; font-size: 0.88rem; font-weight: 700; margin: 0 0 12px 0; letter-spacing: 0.04em; text-transform: uppercase; text-align: center;">
+                ${escapeHtmlText(context.updatesSectionTitle)}
+              </p>
+              <ul style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.97rem; line-height: 1.55; margin: 0; padding-left: 20px; text-align: left;">
+                ${updatesListHtml}
               </ul>
             </div>
             <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.98rem; line-height: 1.65; margin-bottom: 18px; text-align: center;">
@@ -742,6 +779,15 @@ const emailTemplates = {
             <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem; line-height: 1.55; margin-top: 18px; text-align: center;">
               ¿El enlace no abre la app? Ábrela tú, inicia sesión y ve a Perfil → «Resumen semanal y mensual».
             </p>
+            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.95rem; line-height: 1.55; margin-top: 14px; text-align: center;">
+              ${escapeHtmlText(context.downloadPrompt)}
+            </p>
+            <div style="text-align: center; margin: 14px 0 8px 0;">
+              <a href="${appStoreHref}"
+                 style="background: ${EMAIL_COLORS.PRIMARY_DARK}; color: ${EMAIL_COLORS.TEXT_WHITE}; padding: 12px 24px; text-decoration: none; border-radius: 10px; display: inline-block; font-weight: 700; font-size: 1rem;">
+                Descargar en App Store
+              </a>
+            </div>
             <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem; line-height: 1.5; margin-top: 22px; text-align: center; font-style: italic;">
               ${escapeHtmlText(context.closingLine)}
             </p>
@@ -893,11 +939,28 @@ const emailTemplates = {
   /**
    * Informe diario de uso de tokens OpenAI (visibilidad de coste operativo).
    */
-  openaiDailyCostReport: (dateKey, stats, model, environment) => {
+  openaiDailyCostReport: (
+    dateKey,
+    stats,
+    model,
+    environment,
+    registrations = 0,
+    verifiedRegistrations = 0,
+    dau = 0,
+    estimatedCostUsd = 0,
+    tokensPerActiveUser = 0
+  ) => {
     const requests = stats?.requests ?? 0;
     const promptTokens = stats?.promptTokens ?? 0;
     const completionTokens = stats?.completionTokens ?? 0;
     const totalTokens = stats?.totalTokens ?? 0;
+    const registrationsCount = Number.isFinite(Number(registrations)) ? Number(registrations) : 0;
+    const verifiedRegistrationsCount =
+      Number.isFinite(Number(verifiedRegistrations)) ? Number(verifiedRegistrations) : 0;
+    const dauCount = Number.isFinite(Number(dau)) ? Number(dau) : 0;
+    const costUsd = Number.isFinite(Number(estimatedCostUsd)) ? Number(estimatedCostUsd) : 0;
+    const tokensPerActive =
+      Number.isFinite(Number(tokensPerActiveUser)) ? Number(tokensPerActiveUser) : 0;
     const empty = requests === 0 && totalTokens === 0;
     const modelLine = model ? String(model) : '—';
     const envLine = environment ? String(environment) : '—';
@@ -914,7 +977,12 @@ const emailTemplates = {
             </p>
             <p style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 0.95rem; margin-bottom: 24px;">
               Modelo: <strong style="color: ${EMAIL_COLORS.TEXT_WHITE};">${modelLine}</strong><br>
-              Entorno: <strong style="color: ${EMAIL_COLORS.TEXT_WHITE};">${envLine}</strong>
+              Entorno: <strong style="color: ${EMAIL_COLORS.TEXT_WHITE};">${envLine}</strong><br>
+              Registros de usuarios: <strong style="color: ${EMAIL_COLORS.TEXT_WHITE};">${registrationsCount.toLocaleString('es-CL')}</strong><br>
+              Registros verificados: <strong style="color: ${EMAIL_COLORS.TEXT_WHITE};">${verifiedRegistrationsCount.toLocaleString('es-CL')}</strong><br>
+              DAU (usuarios activos): <strong style="color: ${EMAIL_COLORS.TEXT_WHITE};">${dauCount.toLocaleString('es-CL')}</strong><br>
+              Tokens por usuario activo: <strong style="color: ${EMAIL_COLORS.TEXT_WHITE};">${tokensPerActive.toLocaleString('es-CL', { maximumFractionDigits: 2 })}</strong><br>
+              Coste estimado OpenAI (USD): <strong style="color: ${EMAIL_COLORS.TEXT_WHITE};">$${costUsd.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</strong>
             </p>
 
             ${
@@ -1316,11 +1384,34 @@ const mailer = {
   /**
    * Informe diario de uso de tokens OpenAI (misma tubería que el resto de correos).
    * @param {string} email - Destinatario
-   * @param {{ dateKey: string, stats: object | null, model: string, environment: string }} payload
+   * @param {{ dateKey: string, stats: object | null, model: string, environment: string, registrations?: number, verifiedRegistrations?: number, dau?: number, estimatedCostUsd?: number, tokensPerActiveUser?: number }} payload
    */
-  sendOpenAIDailyCostReport: async (email, { dateKey, stats, model, environment }) => {
+  sendOpenAIDailyCostReport: async (
+    email,
+    {
+      dateKey,
+      stats,
+      model,
+      environment,
+      registrations = 0,
+      verifiedRegistrations = 0,
+      dau = 0,
+      estimatedCostUsd = 0,
+      tokensPerActiveUser = 0
+    }
+  ) => {
     try {
-      const template = emailTemplates.openaiDailyCostReport(dateKey, stats, model, environment);
+      const template = emailTemplates.openaiDailyCostReport(
+        dateKey,
+        stats,
+        model,
+        environment,
+        registrations,
+        verifiedRegistrations,
+        dau,
+        estimatedCostUsd,
+        tokensPerActiveUser
+      );
       return await sendEmail(email, template, 'Informe diario OpenAI');
     } catch (error) {
       console.error('[Mailer] ❌ Error al enviar informe diario OpenAI:', error.message);

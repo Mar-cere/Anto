@@ -2,10 +2,6 @@
  * Servicio de Alertas de Emergencia - Envía notificaciones a contactos de emergencia
  * cuando se detectan tendencias suicidas o situaciones de crisis
  */
-import mailer from '../config/mailer.js';
-import { APP_NAME } from '../constants/app.js';
-import { getEmergencyNumbersFromPhone } from '../constants/emergencyNumbers.js';
-import { getAlertMessages } from '../constants/crisis.js';
 import EmergencyAlert from '../models/EmergencyAlert.js';
 import User from '../models/User.js';
 import whatsappService from './whatsappService.js';
@@ -39,58 +35,6 @@ class EmergencyAlertService {
   }
 
   /**
-   * Formatea los números de emergencia para HTML de email
-   * @param {string} phone - Número de teléfono del contacto (para detectar país)
-   * @returns {string} HTML con los números de emergencia
-   */
-  formatEmergencyNumbersForEmail(phone) {
-    const emergencyInfo = getEmergencyNumbersFromPhone(phone);
-    
-    if (!emergencyInfo) {
-      // App en español, audiencia principal España + LATAM (sin asumir EE. UU. / 988)
-      return `
-        <p><strong>Recursos de emergencia (España y Latinoamérica)</strong></p>
-        <ul>
-          <li><strong>España:</strong> emergencias <strong>112</strong>; apoyo emocional / crisis <strong>024</strong>.</li>
-          <li><strong>Latinoamérica:</strong> el número depende del país (p. ej. <strong>911</strong> en Argentina o México, <strong>133</strong> en Chile, <strong>123</strong> en Colombia). Comprueba el número oficial en tu región.</li>
-          <li>Busca «línea de crisis» o salud mental en tu país, o acude a urgencias.</li>
-        </ul>
-      `;
-    }
-    
-    let html = `<p><strong>Recursos de Emergencia (${emergencyInfo.country}):</strong></p><ul>`;
-    
-    if (emergencyInfo.emergency) {
-      html += `<li><strong>Emergencias:</strong> ${emergencyInfo.emergency}</li>`;
-    }
-    
-    if (emergencyInfo.medical && emergencyInfo.medical !== emergencyInfo.emergency) {
-      html += `<li><strong>Emergencias Médicas:</strong> ${emergencyInfo.medical}</li>`;
-    }
-    
-    if (emergencyInfo.fire && emergencyInfo.fire !== emergencyInfo.emergency) {
-      html += `<li><strong>Bomberos:</strong> ${emergencyInfo.fire}</li>`;
-    }
-    
-    if (emergencyInfo.suicidePrevention) {
-      html += `<li><strong>Línea de Prevención del Suicidio:</strong> ${emergencyInfo.suicidePrevention}</li>`;
-    }
-    
-    if (emergencyInfo.crisisText) {
-      html += `<li><strong>Texto de Crisis:</strong> ${emergencyInfo.crisisText}</li>`;
-    }
-    
-    if (!emergencyInfo.suicidePrevention) {
-      html +=
-        '<li><strong>Apoyo emocional:</strong> busca la línea pública de crisis o salud mental en tu país.</li>';
-    }
-    
-    html += `</ul>`;
-    
-    return html;
-  }
-
-  /**
    * Obtiene los contactos de emergencia activos de un usuario
    * @param {string} userId - ID del usuario
    * @returns {Promise<Array>} Array de contactos de emergencia activos
@@ -108,163 +52,6 @@ class EmergencyAlertService {
       console.error('[EmergencyAlertService] Error obteniendo contactos de emergencia:', error);
       return [];
     }
-  }
-
-  /**
-   * Genera el contenido del email de alerta
-   * @param {Object} userInfo - Información del usuario
-   * @param {string} riskLevel - Nivel de riesgo (LOW, MEDIUM, HIGH)
-   * @param {string} messageContent - Contenido del mensaje que activó la alerta (opcional, puede estar censurado)
-   * @param {boolean} isTest - Si es true, marca el email como prueba
-   * @param {string} contactPhone - Teléfono del contacto (para detectar país)
-   * @param {string} language - Idioma del usuario ('es' o 'en', default: 'es')
-   * @returns {Object} Objeto con subject y html
-   */
-  generateAlertEmail(userInfo, riskLevel, messageContent = null, isTest = false, contactPhone = null, language = 'es') {
-    const messages = getAlertMessages(language);
-    const userName = userInfo.name || userInfo.email || (language === 'en' ? 'a user' : 'un usuario');
-    const riskLevelText = messages.RISK_LEVEL[riskLevel] || messages.RISK_LEVEL.UNKNOWN;
-
-    const subject = isTest 
-      ? messages.TEST_SUBJECT.replace('{APP_NAME}', APP_NAME).replace('{USER_NAME}', userName)
-      : messages.ALERT_SUBJECT.replace('{APP_NAME}', APP_NAME).replace('{USER_NAME}', userName);
-
-    // No incluir el contenido exacto del mensaje por privacidad, solo indicar que se detectó riesgo
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-          }
-          .header {
-            background-color: #0A1533;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            border-radius: 8px 8px 0 0;
-          }
-          .content {
-            background-color: #f9f9f9;
-            padding: 30px;
-            border: 1px solid #ddd;
-            border-top: none;
-            border-radius: 0 0 8px 8px;
-          }
-          .alert-box {
-            background-color: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 4px;
-          }
-          .high-risk {
-            background-color: #f8d7da;
-            border-left-color: #dc3545;
-          }
-          .medium-risk {
-            background-color: #fff3cd;
-            border-left-color: #ffc107;
-          }
-          .resources {
-            background-color: #d1ecf1;
-            border-left: 4px solid #0c5460;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 4px;
-          }
-          .button {
-            display: inline-block;
-            padding: 12px 24px;
-            background-color: #1ADDDB;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            margin: 10px 0;
-          }
-          .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-            font-size: 12px;
-            color: #666;
-            text-align: center;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>${messages.ALERT_HEADER.replace('{APP_NAME}', APP_NAME)}</h1>
-        </div>
-        <div class="content">
-          <p>${messages.ALERT_GREETING}</p>
-          
-          <p>${messages.ALERT_INTRO.replace('{USER_NAME}', userName).replace('{APP_NAME}', APP_NAME)}</p>
-          
-          ${isTest ? `
-          <div class="test-box" style="background-color: #e3f2fd; border-left: 4px solid #2196F3; padding: 15px; margin: 20px 0; border-radius: 4px;">
-            <h2 style="margin-top: 0;">${messages.TEST_HEADER}</h2>
-            <p><strong>${messages.TEST_DESCRIPTION}</strong></p>
-            <p>${messages.TEST_EXPLANATION.replace('{USER_NAME}', userName)}</p>
-          </div>
-          ` : `
-          <div class="alert-box ${riskLevel.toLowerCase()}-risk">
-            <h2 style="margin-top: 0;">${messages.SITUATION_DETECTED}</h2>
-            <p><strong>${messages.RISK_LEVEL_LABEL}</strong> ${riskLevelText}</p>
-            <p>${messages.SITUATION_DESCRIPTION.replace('{USER_NAME}', userName)}</p>
-            ${riskLevel === 'HIGH' ? `<p><strong>${messages.HIGH_RISK_WARNING}</strong></p>` : ''}
-          </div>
-          `}
-
-          ${!isTest ? `
-          <h3>${messages.WHAT_CAN_YOU_DO}</h3>
-          <ul>
-            <li>${messages.ACTION_CONTACT.replace('{USER_NAME}', userName)}</li>
-            <li>${messages.ACTION_LISTEN}</li>
-            <li>${messages.ACTION_SUPPORT}</li>
-            <li>${messages.ACTION_PROFESSIONAL}</li>
-          </ul>
-          ` : `
-          <h3>${messages.TEST_SUCCESS}</h3>
-          <ul>
-            <li>${messages.TEST_SUCCESS_ITEM_1}</li>
-            <li>${messages.TEST_SUCCESS_ITEM_2}</li>
-            <li>${messages.TEST_SUCCESS_ITEM_3}</li>
-          </ul>
-          `}
-
-          <div class="resources">
-            <h3>${messages.EMERGENCY_RESOURCES}</h3>
-            <p>${messages.EMERGENCY_RESOURCES_DESC}</p>
-            ${this.formatEmergencyNumbersForEmail(contactPhone, language)}
-          </div>
-
-          ${!isTest ? `
-          <p><strong>${messages.IMPORTANT_NOTE.replace('{USER_NAME}', userName)}</strong></p>
-
-          <p>${messages.ERROR_NOTE.replace('{USER_NAME}', userName)}</p>
-          ` : `
-          <p>${messages.TEST_FOOTER}</p>
-          `}
-
-          <div class="footer">
-            <p>${messages.FOOTER_AUTO.replace('{APP_NAME}', APP_NAME)}</p>
-            <p>${messages.FOOTER_NO_REPLY.replace('{USER_NAME}', userName)}</p>
-            <p>${messages.FOOTER_PRIVACY}</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    return { subject, html };
   }
 
   /**
@@ -339,45 +126,10 @@ class EmergencyAlertService {
             phone: contact.phone || null,
             relationship: contact.relationship
           },
-          email: { sent: false, error: null },
           whatsapp: { sent: false, error: null }
         };
 
-        // Generar contenido del email personalizado para este contacto (según su país e idioma)
-        const emailContent = this.generateAlertEmail(
-          { name: user.name, email: user.email },
-          riskLevel,
-          messageContent,
-          isTest,
-          contact.phone || null, // Pasar el teléfono del contacto para detectar país
-          userLanguage // Pasar el idioma del usuario
-        );
-
-        // Enviar email
-        try {
-          const emailSent = await mailer.sendCustomEmail({
-            to: contact.email,
-            subject: emailContent.subject,
-            html: emailContent.html
-          });
-
-          contactResult.email.sent = emailSent;
-          if (!emailSent) {
-            contactResult.email.error = 'Error al enviar email';
-          }
-
-          if (emailSent) {
-            console.log(`[EmergencyAlertService] ✅ Email enviado a ${contact.name} (${contact.email}) para usuario ${userId}`);
-          } else {
-            console.error(`[EmergencyAlertService] ❌ Error enviando email a ${contact.name} (${contact.email})`);
-          }
-        } catch (error) {
-          console.error(`[EmergencyAlertService] ❌ Error enviando email a ${contact.email}:`, error);
-          contactResult.email.error = error.message;
-        }
-
-        // Enviar WhatsApp si el contacto tiene teléfono y WhatsApp está configurado
-        // WhatsApp es OPCIONAL - si falla, el email ya fue enviado
+        // Enviar solo por WhatsApp.
         if (contact.phone && whatsappService.isConfigured()) {
           try {
             const whatsappResult = isTest
@@ -390,28 +142,24 @@ class EmergencyAlertService {
             if (whatsappResult.success) {
               console.log(`[EmergencyAlertService] ✅ WhatsApp enviado a ${contact.name} (${contact.phone})`);
             } else {
-              // No es crítico - el email ya fue enviado
               console.warn(`[EmergencyAlertService] ⚠️ WhatsApp no enviado a ${contact.name}: ${contactResult.whatsapp.error}`);
             }
           } catch (error) {
-            // WhatsApp falló, pero email ya fue enviado - no es crítico
             contactResult.whatsapp.error = error.message;
             console.warn(`[EmergencyAlertService] ⚠️ Error enviando WhatsApp a ${contact.phone}: ${error.message}`);
           }
         } else if (contact.phone && !whatsappService.isConfigured()) {
-          // WhatsApp no configurado - solo informar, no es error
-          console.log(`[EmergencyAlertService] ℹ️ WhatsApp no configurado, solo email enviado a ${contact.name}`);
+          contactResult.whatsapp.error = 'WhatsApp no configurado';
+          console.warn(`[EmergencyAlertService] ⚠️ WhatsApp no configurado para enviar alerta a ${contact.name}`);
+        } else {
+          contactResult.whatsapp.error = 'Contacto sin número de teléfono';
+          console.warn(`[EmergencyAlertService] ⚠️ Contacto ${contact.name} no tiene teléfono; alerta no enviada`);
         }
 
         results.push(contactResult);
 
         // Determinar estado de la alerta
-        let alertStatus = 'failed';
-        if (contactResult.email.sent && contactResult.whatsapp.sent) {
-          alertStatus = 'sent';
-        } else if (contactResult.email.sent || contactResult.whatsapp.sent) {
-          alertStatus = 'partial';
-        }
+        const alertStatus = contactResult.whatsapp.sent ? 'sent' : 'failed';
 
         // Crear registro de alerta para guardar en BD
         const alertRecord = {
@@ -427,10 +175,10 @@ class EmergencyAlertService {
           },
           channels: {
             email: {
-              sent: contactResult.email.sent,
-              sentAt: contactResult.email.sent ? new Date() : null,
-              error: contactResult.email.error || null,
-              messageId: null // Se puede agregar si el servicio de email lo proporciona
+              sent: false,
+              sentAt: null,
+              error: 'Canal email deshabilitado para alertas de emergencia',
+              messageId: null
             },
             whatsapp: {
               sent: contactResult.whatsapp.sent,
@@ -469,16 +217,15 @@ class EmergencyAlertService {
         });
       }
 
-      // Registrar que se envió una alerta si al menos un canal (email o WhatsApp) fue exitoso
-      const anySent = results.some(r => r.email.sent || r.whatsapp.sent);
+      // Registrar que se envió una alerta si WhatsApp fue exitoso en al menos un contacto.
+      const anySent = results.some(r => r.whatsapp.sent);
       if (anySent) {
         this.recordAlertSent(userId);
       }
 
       // Contar envíos exitosos
-      const successfulEmails = results.filter(r => r.email.sent).length;
       const successfulWhatsApp = results.filter(r => r.whatsapp.sent).length;
-      const successfulSends = results.filter(r => r.email.sent || r.whatsapp.sent).length;
+      const successfulSends = successfulWhatsApp;
 
       // Enviar notificación push al usuario si se enviaron alertas
       if (anySent) {
@@ -528,7 +275,7 @@ class EmergencyAlertService {
               contacts: results.map(r => ({
                 name: r.contact.name,
                 email: r.contact.email,
-                emailSent: r.email.sent,
+                emailSent: false,
                 whatsappSent: r.whatsapp.sent
               }))
             });
@@ -548,7 +295,7 @@ class EmergencyAlertService {
         contacts: results,
         totalContacts: contacts.length,
         successfulSends,
-        successfulEmails,
+        successfulEmails: 0,
         successfulWhatsApp,
         alertRecordsCount: alertRecords.length
       };

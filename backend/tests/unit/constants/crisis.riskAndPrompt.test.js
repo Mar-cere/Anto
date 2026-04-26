@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import {
+  buildCrisisActionDecision,
   evaluateSuicideRisk,
   hasExplicitSuicidalOrSelfHarmLexicon,
   shouldAttachCrisisContextToPrompt,
@@ -81,5 +82,65 @@ describe('evaluateSuicideRisk — peso de intención CRISIS en conflicto interpe
 
     const order = { LOW: 0, WARNING: 1, MEDIUM: 2, HIGH: 3 };
     expect(order[scoreExplicit]).toBeGreaterThanOrEqual(order[scoreInterpersonal]);
+  });
+});
+
+describe('buildCrisisActionDecision', () => {
+  it('mantiene VERIFY en HIGH cuando no hay evidencia suficiente para alertar contactos', () => {
+    const decision = buildCrisisActionDecision({
+      riskLevel: 'HIGH',
+      messageContent: 'me siento mal y triste, no se que hacer',
+      contextualAnalysis: { intencion: { tipo: 'CRISIS', confianza: 0.82 } },
+      trendAnalysis: { trends: { rapidDecline: false, escalation: false, sustainedLow: false } },
+      crisisHistory: { recentCrises: 0 },
+      conversationContext: { helpRejected: false, silenceAfterNegative: false, abruptToneChange: false }
+    });
+
+    expect(decision.actionLevel).toBe('VERIFY');
+    expect(decision.shouldAlertContacts).toBe(false);
+  });
+
+  it('escala a ALERT_CONTACTS en HIGH con planificacion y deterioro', () => {
+    const decision = buildCrisisActionDecision({
+      riskLevel: 'HIGH',
+      messageContent:
+        'ya se como hacerlo, tengo un plan y me quiero despedir, esta sera la ultima vez',
+      contextualAnalysis: { intencion: { tipo: 'CRISIS', confianza: 0.96 } },
+      trendAnalysis: { trends: { rapidDecline: true, escalation: true, sustainedLow: true } },
+      crisisHistory: { recentCrises: 1 },
+      conversationContext: { helpRejected: true, silenceAfterNegative: true, abruptToneChange: false }
+    });
+
+    expect(decision.actionLevel).toBe('ALERT_CONTACTS');
+    expect(decision.shouldAlertContacts).toBe(true);
+    expect(decision.confidence).toBeGreaterThanOrEqual(0.9);
+  });
+
+  it('en MEDIUM ambiguo mantiene VERIFY sin alertar contactos', () => {
+    const decision = buildCrisisActionDecision({
+      riskLevel: 'MEDIUM',
+      messageContent: 'estoy solo y preocupado desde hace dias',
+      contextualAnalysis: { intencion: { tipo: 'CRISIS', confianza: 0.84 } },
+      trendAnalysis: { trends: { rapidDecline: false, escalation: false, sustainedLow: true } },
+      crisisHistory: { recentCrises: 0 },
+      conversationContext: { helpRejected: false, silenceAfterNegative: false, abruptToneChange: false }
+    });
+
+    expect(decision.actionLevel).toBe('VERIFY');
+    expect(decision.shouldAlertContacts).toBe(false);
+  });
+
+  it('para WARNING usa SUPPORT_USER', () => {
+    const decision = buildCrisisActionDecision({
+      riskLevel: 'WARNING',
+      messageContent: 'me siento algo aislado, pero quiero hablar',
+      contextualAnalysis: { intencion: { tipo: 'CRISIS', confianza: 0.8 } },
+      trendAnalysis: { trends: { rapidDecline: false, escalation: false, sustainedLow: false } },
+      crisisHistory: { recentCrises: 0 },
+      conversationContext: { helpRejected: false, silenceAfterNegative: false, abruptToneChange: false }
+    });
+
+    expect(decision.actionLevel).toBe('SUPPORT_USER');
+    expect(decision.shouldAlertContacts).toBe(false);
   });
 });

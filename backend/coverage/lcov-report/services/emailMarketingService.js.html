@@ -32,14 +32,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/58</span>
+                <span class='fraction'>0/53</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/11</span>
+                <span class='fraction'>0/12</span>
             </div>
         
             
@@ -497,19 +497,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -537,14 +531,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -554,11 +540,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -567,6 +548,18 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -581,6 +574,13 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -821,26 +821,20 @@ class EmailMarketingService {
   }
 &nbsp;
   /**
-   * Enviar correos de tips semanales a usuarios activos (como mucho una vez por semana ISO UTC por usuario).
+   * Correo de aviso de resumen semanal (solo CTA a la app, sin datos de uso en el cuerpo; como mucho una vez por semana ISO UTC por usuario).
    * Usa reclamo atómico en Mongo (similar a retención trial) para evitar duplicados con varios procesos o reintentos.
    *
-   * @param {number|null} weekNumberOverride - Si viene informado, rota la plantilla con ese número; si no, usa la semana ISO UTC actual (1–53).
    * @returns {Promise&lt;Object&gt;} Resumen de envíos
    */
-<span class="fstat-no" title="function not covered" >  as</span>ync sendWeeklyTipsEmails(weekNumberOverride = <span class="branch-0 cbranch-no" title="branch not covered" >null)</span> {
+<span class="fstat-no" title="function not covered" >  as</span>ync sendWeeklySummaryEmails() {
 <span class="cstat-no" title="statement not covered" >    try {</span>
-      const { yearWeekKey, isoWeek } = <span class="cstat-no" title="statement not covered" >getUtcIsoWeekParts();</span>
-      const weekNumForTemplate =
-<span class="cstat-no" title="statement not covered" >        weekNumberOverride != null &amp;&amp; Number.isFinite(Number(weekNumberOverride))</span>
-          ? Math.max(1, Math.floor(Number(weekNumberOverride)))
-          : isoWeek;
+      const { yearWeekKey } = <span class="cstat-no" title="statement not covered" >getUtcIsoWeekParts();</span>
 &nbsp;
       const maxIterations = <span class="cstat-no" title="statement not covered" >parseInt(process.env.WEEKLY_TIPS_EMAIL_MAX_PER_RUN || '5000', 10);</span>
       const cap = <span class="cstat-no" title="statement not covered" >Number.isFinite(maxIterations) &amp;&amp; maxIterations &gt; 0 ? maxIterations : 5000;</span>
 &nbsp;
       const results = <span class="cstat-no" title="statement not covered" >{</span>
         yearWeekKey,
-        weekNumForTemplate,
         processed: 0,
         sent: 0,
         failed: 0
@@ -864,7 +858,12 @@ class EmailMarketingService {
               'stats.lastWeeklyTipsEmailAt': new Date()
             }
           },
-          { new: true, sort: { _id: 1 }, select: 'email username' }
+          {
+            new: true,
+            sort: { _id: 1 },
+            select:
+              'email username name createdAt stats.tasksCompleted stats.habitsStreak stats.totalSessions stats.lastActive subscription.status'
+          }
         );
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        if (!user) {</span>
@@ -881,36 +880,37 @@ class EmailMarketingService {
         };
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        try {</span>
-          const ok = <span class="cstat-no" title="statement not covered" >await mailer.sendWeeklyTipsEmail(</span>
-            user.email,
-            user.username,
-            weekNumForTemplate
-          );
+          const ok = <span class="cstat-no" title="statement not covered" >await mailer.sendWeeklySummaryEmail(user.email, user);</span>
 <span class="cstat-no" title="statement not covered" >          if (!ok) {</span>
 <span class="cstat-no" title="statement not covered" >            await releaseClaim();</span>
 <span class="cstat-no" title="statement not covered" >            results.failed += 1;</span>
-<span class="cstat-no" title="statement not covered" >            logger.warn(`[EmailMarketing] Tips semanales no enviados (mailer false) a ${user.email}`);</span>
+<span class="cstat-no" title="statement not covered" >            logger.warn(`[EmailMarketing] Resumen semanal no enviado (mailer false) a ${user.email}`);</span>
           } else {
 <span class="cstat-no" title="statement not covered" >            results.sent += 1;</span>
-<span class="cstat-no" title="statement not covered" >            logger.info(</span>
-              `[EmailMarketing] Tips semanales enviados a ${user.email} (${yearWeekKey}, plantilla semana ${weekNumForTemplate})`
-            );
+<span class="cstat-no" title="statement not covered" >            logger.info(`[EmailMarketing] Resumen semanal enviado a ${user.email} (${yearWeekKey})`);</span>
           }
         } catch (error) {
 <span class="cstat-no" title="statement not covered" >          await releaseClaim();</span>
 <span class="cstat-no" title="statement not covered" >          results.failed += 1;</span>
-<span class="cstat-no" title="statement not covered" >          logger.error(`[EmailMarketing] Error tips semanales usuario ${user._id}:`, error.message);</span>
+<span class="cstat-no" title="statement not covered" >          logger.error(`[EmailMarketing] Error resumen semanal usuario ${user._id}:`, error.message);</span>
         }
       }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      logger.info(</span>
-        `[EmailMarketing] Tips semanales ${yearWeekKey}: enviados ${results.sent} (procesados ${results.processed}, fallos ${results.failed})`
+        `[EmailMarketing] Resumen semanal ${yearWeekKey}: enviados ${results.sent} (procesados ${results.processed}, fallos ${results.failed})`
       );
 <span class="cstat-no" title="statement not covered" >      return results;</span>
     } catch (error) {
-<span class="cstat-no" title="statement not covered" >      logger.error('[EmailMarketing] Error en sendWeeklyTipsEmails:', error);</span>
-<span class="cstat-no" title="statement not covered" >      return { yearWeekKey: null, weekNumForTemplate: null, processed: 0, sent: 0, failed: 0 };</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('[EmailMarketing] Error en sendWeeklySummaryEmails:', error);</span>
+<span class="cstat-no" title="statement not covered" >      return { yearWeekKey: null, processed: 0, sent: 0, failed: 0 };</span>
     }
+  }
+&nbsp;
+  /**
+   * @deprecated Usar `sendWeeklySummaryEmails`. Se mantiene por compatibilidad con scripts antiguos.
+   */
+<span class="fstat-no" title="function not covered" >  as</span>ync sendWeeklyTipsEmails() {
+<span class="cstat-no" title="statement not covered" >    return this.sendWeeklySummaryEmails();</span>
   }
 &nbsp;
   /**
@@ -1060,7 +1060,7 @@ export default new EmailMarketingService();
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-20T20:38:51.350Z
+                at 2026-04-23T15:43:30.436Z
             </div>
         <script src="../prettify.js"></script>
         <script>

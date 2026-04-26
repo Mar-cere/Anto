@@ -1,6 +1,6 @@
 # Inventario de Notificaciones
 
-Fecha de actualización: 2026-04-16 (pools backend con **≥25** variantes por lista donde aplica; conteos de código revisados)
+Fecha de actualización: 2026-04-23 (incluye puerta conservadora de decisión operativa y canal único WhatsApp para alertas de crisis)
 
 ## Resumen rápido
 
@@ -221,3 +221,28 @@ Fuente: `frontend/src/components/NotificationsPromptBanner.js`
 - `Alert.alert` concentra mucho volumen UX y no equivale a sistema de notificaciones push; conviene separarlo en reportes.
 - Para recalcular conteos de líneas (`Alert`, `showToast`, `scheduleNotificationAsync`, literales `type:`), usar búsqueda en el repo sobre `frontend/src`.
 - Al ampliar copy en `pushNotificationCopyPools.js`, mantener **≥25** variantes por lista coherente y comprobar que `buildWeeklyProgressBody` siga generando siempre subcadenas `N hábitos` y `N tareas` en cada apertura (véase test unitario).
+
+## Crisis: puerta operativa conservadora (v1)
+
+Fuente: `backend/constants/crisis.js` (`buildCrisisActionDecision`) + uso en `backend/routes/chatRoutes.js`.
+
+- Se separa `riskLevel` (clínico) de `actionLevel` (operativo).
+- `actionLevel` posibles:
+  - `MONITOR` (`LOW`)
+  - `SUPPORT_USER` (`WARNING`)
+  - `VERIFY` (`MEDIUM`/`HIGH` por defecto)
+  - `ALERT_CONTACTS` (solo si pasa puerta de evidencia)
+- Señales consideradas en la puerta:
+  - críticas: `advancedPlanning`, `farewellSignals`
+  - moderadas: `obsessiveDistress`, `isolation`, `communicationDisengagement`, `trendDeterioration`
+  - contexto: `recentCrisisHistory`
+- Umbrales conservadores actuales:
+  - `HIGH`: alerta contactos si `confidence >= 0.90` y evidencia fuerte/acumulada.
+  - `MEDIUM`: alerta contactos si `confidence >= 0.95` y evidencia acumulada.
+- Si no pasa la puerta:
+  - se mantiene `VERIFY`,
+  - se envían señales de soporte al usuario (push de crisis según nivel),
+  - no se notifica a contactos de emergencia.
+- Canal de alertas a contactos (v1 actual):
+  - **solo WhatsApp** desde `backend/services/emergencyAlertService.js`.
+  - el canal email para alertas de emergencia fue deshabilitado para evitar ambigüedad operativa.

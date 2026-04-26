@@ -39,13 +39,13 @@ const MAX_RELATIONSHIP_LENGTH = 50;
 // Constantes de textos
 const TEXTS = {
   TITLE: 'Contactos de Emergencia',
-  SUBTITLE: 'Agrega hasta 2 contactos que recibirán alertas si detectamos situaciones de riesgo',
-  SUBTITLE_FIRST_TIME: '¡Bienvenido! Para tu seguridad, te recomendamos agregar contactos de emergencia que recibirán alertas si detectamos situaciones de riesgo',
+  SUBTITLE: 'Agrega hasta 2 contactos que recibirán alertas por WhatsApp si detectamos situaciones de riesgo',
+  SUBTITLE_FIRST_TIME: '¡Bienvenido! Para tu seguridad, te recomendamos agregar contactos de emergencia con teléfono para alertas por WhatsApp',
   NAME_LABEL: 'Nombre completo',
   NAME_PLACEHOLDER: 'Ej: María García',
-  EMAIL_LABEL: 'Correo electrónico',
+  EMAIL_LABEL: 'Correo electrónico (solo identificación)',
   EMAIL_PLACEHOLDER: 'Ej: maria@ejemplo.com',
-  PHONE_LABEL: 'Teléfono (opcional)',
+  PHONE_LABEL: 'Teléfono con WhatsApp',
   PHONE_PLACEHOLDER: 'Ej: +54 11 1234-5678',
   RELATIONSHIP_LABEL: 'Relación (opcional)',
   RELATIONSHIP_PLACEHOLDER: 'Ej: Hermana, Amigo, etc.',
@@ -58,15 +58,15 @@ const TEXTS = {
   NAME_TOO_SHORT: `El nombre debe tener al menos ${MIN_NAME_LENGTH} caracteres`,
   NAME_TOO_LONG: `El nombre no puede exceder ${MAX_NAME_LENGTH} caracteres`,
   EMAIL_TOO_LONG: `El correo no puede exceder ${MAX_EMAIL_LENGTH} caracteres`,
+  INVALID_PHONE: 'Ingresa un teléfono válido',
+  PHONE_REQUIRED: 'El teléfono es obligatorio para alertas por WhatsApp',
   PHONE_TOO_LONG: `El teléfono no puede exceder ${MAX_PHONE_LENGTH} caracteres`,
   RELATIONSHIP_TOO_LONG: `La relación no puede exceder ${MAX_RELATIONSHIP_LENGTH} caracteres`,
   ADD_SUCCESS: 'Contacto agregado exitosamente',
   ADD_ERROR: 'Error al agregar contacto',
   MAX_CONTACTS_REACHED: 'Ya has alcanzado el límite de 2 contactos',
   DUPLICATE_EMAIL: 'Ya existe un contacto con ese correo',
-  SEND_TEST_EMAIL: 'Enviar email de prueba',
-  TEST_EMAIL_SENT: 'Email de prueba enviado exitosamente',
-  TEST_EMAIL_ERROR: 'Error al enviar email de prueba'
+  ALERT_CHANNEL_NOTE: 'Canal de alerta: WhatsApp al número indicado'
 };
 
 const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [], isFirstTime = false }) => {
@@ -76,7 +76,6 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
   ]);
   const [errors, setErrors] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [sendTestEmails, setSendTestEmails] = useState({}); // { index: boolean }
 
   // Validar un contacto individual
   const validateContact = useCallback((contact, index) => {
@@ -101,8 +100,15 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
     }
     
     // Validar teléfono (opcional)
-    if (contact.phone && contact.phone.length > MAX_PHONE_LENGTH) {
+    if (!contact.phone?.trim()) {
+      contactErrors.phone = TEXTS.PHONE_REQUIRED;
+    } else if (contact.phone.length > MAX_PHONE_LENGTH) {
       contactErrors.phone = TEXTS.PHONE_TOO_LONG;
+    } else {
+      const digits = contact.phone.replace(/\D/g, '');
+      if (digits.length < 8) {
+        contactErrors.phone = TEXTS.INVALID_PHONE;
+      }
     }
     
     // Validar relación (opcional)
@@ -134,7 +140,7 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
     }
     
     // Verificar límite de contactos
-    const totalContacts = existingContacts.length + contacts.filter(c => c.name.trim() && c.email.trim()).length;
+    const totalContacts = existingContacts.length + contacts.filter(c => c.name.trim() && c.email.trim() && c.phone.trim()).length;
     if (totalContacts > 2) {
       showToast({
         message: TEXTS.MAX_CONTACTS_REACHED,
@@ -195,7 +201,7 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
     
     try {
       // Filtrar contactos vacíos y guardar solo los que tienen datos
-      const contactsToSave = contacts.filter(c => c.name.trim() && c.email.trim());
+      const contactsToSave = contacts.filter(c => c.name.trim() && c.email.trim() && c.phone.trim());
       
       if (contactsToSave.length === 0) {
         showToast({
@@ -207,33 +213,19 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
       }
 
       // Guardar cada contacto
-      const savePromises = contactsToSave.map((contact, saveIndex) => {
-        // Encontrar el índice original en el array de contacts
-        const originalIndex = contacts.findIndex(c => 
-          c.name.trim() === contact.name.trim() && 
-          c.email.trim().toLowerCase() === contact.email.trim().toLowerCase()
-        );
-        const shouldSendTest = sendTestEmails[originalIndex] === true;
-        
+      const savePromises = contactsToSave.map((contact) => {
         return api.post(ENDPOINTS.EMERGENCY_CONTACTS, {
           name: contact.name.trim(),
           email: contact.email.trim().toLowerCase(),
           phone: contact.phone.trim() || null,
           relationship: contact.relationship.trim() || null,
-          sendTestEmail: shouldSendTest
         });
       });
 
-      const results = await Promise.all(savePromises);
-      
-      // Verificar si algún email de prueba falló
-      const failedTestEmails = results.filter(r => r.testEmailSent === false);
-      const hasTestEmailErrors = results.some(r => r.testEmailError);
+      await Promise.all(savePromises);
       
       let message = `${contactsToSave.length} contacto(s) agregado(s) exitosamente`;
-      if (failedTestEmails.length > 0 || hasTestEmailErrors) {
-        message += '\n\n⚠️ Nota: No se pudieron enviar algunos emails de prueba. El contacto se guardó correctamente, pero verifica la configuración del servidor de email.';
-      }
+      message += '\n\nLas alertas se enviarán por WhatsApp a los números configurados.';
       
       Alert.alert('Éxito', message, [
         { text: 'OK', onPress: () => {
@@ -264,7 +256,7 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
     } finally {
       setIsSubmitting(false);
     }
-  }, [contacts, validateAllContacts, onSave, onClose, sendTestEmails, showToast]);
+  }, [contacts, validateAllContacts, onSave, onClose, showToast]);
 
   // Omitir (cerrar sin guardar)
   const handleSkip = useCallback(async () => {
@@ -352,7 +344,7 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
 
         {/* Teléfono */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>{TEXTS.PHONE_LABEL}</Text>
+          <Text style={styles.label}>{TEXTS.PHONE_LABEL} *</Text>
           <View style={[styles.inputContainer, contactErrors.phone && styles.inputError]}>
             <Ionicons name="call-outline" size={20} color={colors.primary} style={styles.inputIcon} />
             <TextInput
@@ -366,6 +358,9 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
             />
           </View>
           {contactErrors.phone ? <Text style={styles.errorText}>{contactErrors.phone}</Text> : null}
+          {!contactErrors.phone && contact.phone.trim() ? (
+            <Text style={styles.helperText}>{TEXTS.ALERT_CHANNEL_NOTE}</Text>
+          ) : null}
         </View>
 
         {/* Relación */}
@@ -385,26 +380,9 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
           {contactErrors.relationship ? <Text style={styles.errorText}>{contactErrors.relationship}</Text> : null}
         </View>
 
-        {/* Checkbox para enviar email de prueba */}
-        {contact.name.trim() && contact.email.trim() && !contactErrors.name && !contactErrors.email && (
-          <View style={styles.checkboxContainer}>
-            <TouchableOpacity
-              style={styles.checkbox}
-              onPress={() => setSendTestEmails(prev => ({ ...prev, [index]: !prev[index] }))}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name={sendTestEmails[index] ? "checkbox" : "checkbox-outline"}
-                size={24}
-                color={sendTestEmails[index] ? colors.primary : colors.accent}
-              />
-              <Text style={styles.checkboxLabel}>{TEXTS.SEND_TEST_EMAIL}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
     );
-  }, [contacts, errors, handleFieldChange, handleRemoveContact, sendTestEmails]);
+  }, [contacts, errors, handleFieldChange, handleRemoveContact]);
 
   return (
     <Modal
@@ -448,7 +426,7 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
               {contacts.map((contact, index) => renderContactForm(contact, index))}
               
               {/* Botón para agregar otro contacto */}
-              {existingContacts.length + contacts.filter(c => c.name.trim() && c.email.trim()).length < 2 && (
+              {existingContacts.length + contacts.filter(c => c.name.trim() && c.email.trim() && c.phone.trim()).length < 2 && (
                 <TouchableOpacity
                   onPress={handleAddContact}
                   style={styles.addButton}
@@ -602,6 +580,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginLeft: 4,
   },
+  helperText: {
+    color: colors.accent,
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
+  },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -651,19 +635,6 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  checkboxContainer: {
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  checkbox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  checkboxLabel: {
-    color: colors.white,
-    fontSize: 14,
-    marginLeft: 8,
   },
 });
 

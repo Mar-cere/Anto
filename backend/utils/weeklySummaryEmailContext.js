@@ -52,10 +52,14 @@ export function buildWeeklySummarySubjectLine(weekLabel, isoWeekYear, isoWeek) {
  *   subjectLine: string,
  *   preheaderText: string,
  *   leadParagraph: string,
+ *   reflectionParagraph: string,
  *   privacyParagraph: string,
  *   whereParagraph: string,
  *   benefitSectionTitle: string,
  *   benefitLines: string[],
+ *   updatesSectionTitle: string,
+ *   updatesLines: string[],
+ *   downloadPrompt: string,
  *   closingLine: string,
  * }}
  */
@@ -68,22 +72,32 @@ export function buildWeeklySummaryEmailContext(user, isoParts) {
   const weekLabel = `Semana ${isoWeek} · ${isoWeekYear}`;
   const subjectLine = buildWeeklySummarySubjectLine(weekLabel, isoWeekYear, isoWeek);
 
-  const preheaderText = `Solo un aviso con tu nombre: sin cifras ni métricas. El detalle del resumen (incluidas métricas sensibles) está en ${APP_NAME}, con la sesión iniciada.`;
+  const preheaderText = `Te compartimos un recordatorio breve y privado para revisar tu semana en ${APP_NAME}. El detalle completo lo ves dentro de la app, con tu sesión iniciada.`;
 
-  const leadParagraph = `Puedes dedicar un momento a revisar tu actividad: la semana o el mes en un solo lugar, con claridad y sin prisa.`;
+  const leadParagraph = `Esta semana queremos invitarte a detenerte un momento y mirar tu proceso con más perspectiva. A veces, ver el recorrido completo ayuda a reconocer mejor lo que estás sosteniendo y los pequeños avances que, en el día a día, pueden pasar desapercibidos.`;
 
-  const privacyParagraph = `Por discreción, en este correo no enviamos números ni el texto del chat. Métricas como la cantidad de crisis reportadas, hábitos, conversaciones, emociones, técnicas o el diario de gratitud solo se muestran en ${APP_NAME} cuando has iniciado sesión.`;
+  const reflectionParagraph = `Dentro de ${APP_NAME} encontrarás tu resumen semanal y mensual en una vista simple, pensada para ayudarte a ordenar lo importante sin sobrecarga. La idea es que puedas volver a tu propio ritmo, revisar lo esencial y seguir avanzando con más claridad.`;
 
-  const whereParagraph = `Toca el botón para abrir ${APP_NAME}; si el enlace falla, debajo tienes la ruta dentro de la app.`;
+  const privacyParagraph = `Para cuidar tu privacidad, este correo no incluye números sensibles ni contenido de tus conversaciones. La información detallada de tu resumen (hábitos, conversaciones, emociones, técnicas y otros registros) se muestra únicamente dentro de ${APP_NAME} cuando inicias sesión.`;
 
-  const benefitSectionTitle = 'Qué incluye el resumen';
+  const whereParagraph = `Desde aquí puedes abrir ${APP_NAME} directamente. Si el enlace no funciona en tu dispositivo, también encontrarás debajo la ruta para llegar al resumen manualmente.`;
+
+  const benefitSectionTitle = 'Qué encontrarás en tu resumen';
   const benefitLines = [
-    `Tu actividad de la semana o del mes en una sola vista dentro de ${APP_NAME}.`,
-    'Alterna entre vista semanal y mensual cuando lo necesites.',
-    'Pensado para acompañarte, no para juzgarte: al ritmo que te resulte cómodo.'
+    `Una lectura clara de tu actividad semanal y mensual dentro de ${APP_NAME}, para entender mejor cómo vienes.`,
+    'Un espacio de acompañamiento para revisar tu proceso con calma, sin presión y con foco en lo que te hace bien.'
   ];
 
-  const closingLine = `Gracias por confiar en nosotros. El equipo de ${APP_NAME}`;
+  const updatesSectionTitle = 'Novedades de la app';
+  const updatesLines = [
+    'Mejoramos estabilidad y rendimiento para una experiencia más fluida en el día a día.',
+    'Ajustamos el acceso al resumen semanal y mensual para que sea más simple y rápido.',
+    `Seguimos optimizando ${APP_NAME} para ofrecerte interacciones más claras y consistentes.`
+  ];
+
+  const downloadPrompt = `Si todavía no tienes la app instalada, puedes descargarla y empezar a usar ${APP_NAME} hoy mismo.`;
+
+  const closingLine = `Gracias por confiar en ${APP_NAME}. Estamos aquí para acompañarte.`;
 
   return {
     displayName,
@@ -91,10 +105,14 @@ export function buildWeeklySummaryEmailContext(user, isoParts) {
     subjectLine,
     preheaderText,
     leadParagraph,
+    reflectionParagraph,
     privacyParagraph,
     whereParagraph,
     benefitSectionTitle,
     benefitLines,
+    updatesSectionTitle,
+    updatesLines,
+    downloadPrompt,
     closingLine
   };
 }

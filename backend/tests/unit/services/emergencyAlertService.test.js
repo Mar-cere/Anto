@@ -6,12 +6,7 @@
 
 import { jest } from '@jest/globals';
 import emergencyAlertService from '../../../services/emergencyAlertService.js';
-import { connectDatabase, clearDatabase, closeDatabase } from '../../helpers/testHelpers.js';
-
-// Mock dependencies
-jest.mock('../../../config/mailer.js', () => ({
-  sendEmail: jest.fn()
-}));
+import { connectDatabase, closeDatabase } from '../../helpers/testHelpers.js';
 
 jest.mock('../../../services/whatsappService.js', () => ({
   sendEmergencyAlert: jest.fn()
@@ -56,10 +51,6 @@ describe('EmergencyAlertService', () => {
 
     it('debe tener método getEmergencyContacts', () => {
       expect(typeof emergencyAlertService.getEmergencyContacts).toBe('function');
-    });
-
-    it('debe tener método formatEmergencyNumbersForEmail', () => {
-      expect(typeof emergencyAlertService.formatEmergencyNumbersForEmail).toBe('function');
     });
   });
 
@@ -109,23 +100,4 @@ describe('EmergencyAlertService', () => {
     });
   });
 
-  describe('formatEmergencyNumbersForEmail', () => {
-    it('debe formatear números de emergencia', () => {
-      const result = emergencyAlertService.formatEmergencyNumbersForEmail('+1234567890');
-      
-      expect(result).toBeDefined();
-      expect(typeof result).toBe('string');
-      expect(result).toContain('<ul>');
-    });
-
-    it('debe retornar orientación España + LATAM si no se puede detectar país', () => {
-      const result = emergencyAlertService.formatEmergencyNumbersForEmail('invalid');
-      
-      expect(result).toBeDefined();
-      expect(result).toContain('112');
-      expect(result).toContain('024');
-      expect(result).toMatch(/Latinoamérica|España/);
-      expect(result).not.toContain('988');
-    });
-  });
 });

@@ -3,7 +3,11 @@
  */
 import express from 'express';
 import mongoose from 'mongoose';
-import { evaluateSuicideRisk, shouldAttachCrisisContextToPrompt } from '../constants/crisis.js';
+import {
+  buildCrisisActionDecision,
+  evaluateSuicideRisk,
+  shouldAttachCrisisContextToPrompt
+} from '../constants/crisis.js';
 import {
   analyzeAssistantResponseTemplateSignals,
   encodeChatPreferencesKey
@@ -623,6 +627,14 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             conversationContext
           }
         );
+        const crisisDecision = buildCrisisActionDecision({
+          riskLevel,
+          messageContent: content,
+          contextualAnalysis,
+          trendAnalysis,
+          crisisHistory,
+          conversationContext
+        });
         // Solo crear evento de crisis si el nivel es MEDIUM o HIGH
         // WARNING no crea evento de crisis ni envía alertas, solo se registra para monitoreo
         // Solo considerar intención CRISIS si la confianza es muy alta (>= 0.9) Y el score es alto
@@ -645,31 +657,42 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           if (riskLevel === 'HIGH') {
             // HIGH es crítico, debe manejarse antes de responder
             try {
-              const alertOptions = {
-                trendAnalysis,
-                metadata: {
-                  riskScore: calculateRiskScore(emotionalAnalysis, contextualAnalysis, content, {
-                    trendAnalysis,
-                    crisisHistory,
-                    conversationContext
-                  }),
-                  factors: extractRiskFactors(emotionalAnalysis, contextualAnalysis, content, {
-                    trendAnalysis,
-                    crisisHistory,
-                    conversationContext
-                  })
+              if (crisisDecision.shouldAlertContacts) {
+                const alertOptions = {
+                  trendAnalysis,
+                  metadata: {
+                    riskScore: calculateRiskScore(emotionalAnalysis, contextualAnalysis, content, {
+                      trendAnalysis,
+                      crisisHistory,
+                      conversationContext
+                    }),
+                    factors: extractRiskFactors(emotionalAnalysis, contextualAnalysis, content, {
+                      trendAnalysis,
+                      crisisHistory,
+                      conversationContext
+                    }),
+                    decision: {
+                      actionLevel: crisisDecision.actionLevel,
+                      confidence: crisisDecision.confidence,
+                      reasons: crisisDecision.reasons
+                    }
+                  }
+                };
+
+                alertResult = await emergencyAlertService.sendEmergencyAlerts(
+                  req.user._id,
+                  riskLevel,
+                  content,
+                  alertOptions
+                );
+
+                if (alertResult.sent) {
+                  logs.push(`[${Date.now() - startTime}ms] 📧 Alertas HIGH enviadas a ${alertResult.successfulSends}/${alertResult.totalContacts} contactos`);
                 }
-              };
-              
-              alertResult = await emergencyAlertService.sendEmergencyAlerts(
-                req.user._id,
-                riskLevel,
-                content,
-                alertOptions
-              );
-              
-              if (alertResult.sent) {
-                logs.push(`[${Date.now() - startTime}ms] 📧 Alertas HIGH enviadas a ${alertResult.successfulSends}/${alertResult.totalContacts} contactos`);
+              } else {
+                logs.push(
+                  `[${Date.now() - startTime}ms] 🧭 HIGH sin alerta a contactos (evidencia insuficiente, confidence=${crisisDecision.confidence.toFixed(2)})`
+                );
               }
               
               // Notificación push para HIGH
@@ -693,28 +716,36 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           const handleNonCriticalCrisis = async () => {
             if (riskLevel === 'MEDIUM') {
               try {
-                const alertOptions = {
-                  trendAnalysis,
-                  metadata: {
-                    riskScore: calculateRiskScore(emotionalAnalysis, contextualAnalysis, content, {
-                      trendAnalysis,
-                      crisisHistory,
-                      conversationContext
-                    }),
-                    factors: extractRiskFactors(emotionalAnalysis, contextualAnalysis, content, {
-                      trendAnalysis,
-                      crisisHistory,
-                      conversationContext
-                    })
-                  }
-                };
-                
-                const mediumAlertResult = await emergencyAlertService.sendEmergencyAlerts(
-                  req.user._id,
-                  riskLevel,
-                  content,
-                  alertOptions
-                );
+                let mediumAlertResult = null;
+                if (crisisDecision.shouldAlertContacts) {
+                  const alertOptions = {
+                    trendAnalysis,
+                    metadata: {
+                      riskScore: calculateRiskScore(emotionalAnalysis, contextualAnalysis, content, {
+                        trendAnalysis,
+                        crisisHistory,
+                        conversationContext
+                      }),
+                      factors: extractRiskFactors(emotionalAnalysis, contextualAnalysis, content, {
+                        trendAnalysis,
+                        crisisHistory,
+                        conversationContext
+                      }),
+                      decision: {
+                        actionLevel: crisisDecision.actionLevel,
+                        confidence: crisisDecision.confidence,
+                        reasons: crisisDecision.reasons
+                      }
+                    }
+                  };
+
+                  mediumAlertResult = await emergencyAlertService.sendEmergencyAlerts(
+                    req.user._id,
+                    riskLevel,
+                    content,
+                    alertOptions
+                  );
+                }
                 
                 const user = await User.findById(req.user._id).select('+pushToken');
                 if (user && user.pushToken) {
@@ -764,7 +795,13 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                       crisisHistory,
                       conversationContext
                     }),
-                    protectiveFactors: extractProtectiveFactors(emotionalAnalysis, content)
+                    protectiveFactors: extractProtectiveFactors(emotionalAnalysis, content),
+                    decision: {
+                      actionLevel: crisisDecision.actionLevel,
+                      confidence: crisisDecision.confidence,
+                      shouldAlertContacts: crisisDecision.shouldAlertContacts,
+                      reasons: crisisDecision.reasons
+                    }
                   }
                 });
                 
@@ -838,7 +875,13 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                     crisisHistory,
                     conversationContext
                   }),
-                  protectiveFactors: extractProtectiveFactors(emotionalAnalysis, content)
+                  protectiveFactors: extractProtectiveFactors(emotionalAnalysis, content),
+                  decision: {
+                    actionLevel: crisisDecision.actionLevel,
+                    confidence: crisisDecision.confidence,
+                    shouldAlertContacts: crisisDecision.shouldAlertContacts,
+                    reasons: crisisDecision.reasons
+                  }
                 }
               });
               

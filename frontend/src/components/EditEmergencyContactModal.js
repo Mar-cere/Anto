@@ -40,9 +40,9 @@ const TEXTS = {
   TITLE: 'Editar Contacto de Emergencia',
   NAME_LABEL: 'Nombre completo',
   NAME_PLACEHOLDER: 'Ej: María García',
-  EMAIL_LABEL: 'Correo electrónico',
+  EMAIL_LABEL: 'Correo electrónico (solo identificación)',
   EMAIL_PLACEHOLDER: 'Ej: maria@ejemplo.com',
-  PHONE_LABEL: 'Teléfono (opcional)',
+  PHONE_LABEL: 'Teléfono con WhatsApp',
   PHONE_PLACEHOLDER: 'Ej: +54 11 1234-5678',
   RELATIONSHIP_LABEL: 'Relación (opcional)',
   RELATIONSHIP_PLACEHOLDER: 'Ej: Hermana, Amigo, etc.',
@@ -50,6 +50,8 @@ const TEXTS = {
   CANCEL: 'Cancelar',
   REQUIRED_FIELD: 'Este campo es obligatorio',
   INVALID_EMAIL: 'Ingresa un correo válido',
+  PHONE_REQUIRED: 'El teléfono es obligatorio para alertas por WhatsApp',
+  INVALID_PHONE: 'Ingresa un teléfono válido',
   NAME_TOO_SHORT: `El nombre debe tener al menos ${MIN_NAME_LENGTH} caracteres`,
   NAME_TOO_LONG: `El nombre no puede exceder ${MAX_NAME_LENGTH} caracteres`,
   EMAIL_TOO_LONG: `El correo no puede exceder ${MAX_EMAIL_LENGTH} caracteres`,
@@ -58,6 +60,7 @@ const TEXTS = {
   UPDATE_SUCCESS: 'Contacto actualizado exitosamente',
   UPDATE_ERROR: 'Error al actualizar contacto',
   DUPLICATE_EMAIL: 'Ya existe un contacto con ese correo',
+  ALERT_CHANNEL_NOTE: 'Canal de alerta: WhatsApp al número indicado',
 };
 
 const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
@@ -110,9 +113,16 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
       newErrors.email = TEXTS.EMAIL_TOO_LONG;
     }
 
-    // Validar teléfono (opcional)
-    if (formData.phone && formData.phone.length > MAX_PHONE_LENGTH) {
+    // Validar teléfono (obligatorio para alertas por WhatsApp)
+    if (!formData.phone.trim()) {
+      newErrors.phone = TEXTS.PHONE_REQUIRED;
+    } else if (formData.phone.length > MAX_PHONE_LENGTH) {
       newErrors.phone = TEXTS.PHONE_TOO_LONG;
+    } else {
+      const digits = formData.phone.replace(/\D/g, '');
+      if (digits.length < 8) {
+        newErrors.phone = TEXTS.INVALID_PHONE;
+      }
     }
 
     // Validar relación (opcional)
@@ -235,7 +245,7 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
 
               {/* Teléfono */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>{TEXTS.PHONE_LABEL}</Text>
+                <Text style={styles.label}>{TEXTS.PHONE_LABEL} *</Text>
                 <View style={[styles.inputContainer, errors.phone && styles.inputError]}>
                   <Ionicons name="call-outline" size={20} color={colors.primary} style={styles.inputIcon} />
                   <TextInput
@@ -250,6 +260,9 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
                   />
                 </View>
                 {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+                {!errors.phone && formData.phone.trim() ? (
+                  <Text style={styles.helperText}>{TEXTS.ALERT_CHANNEL_NOTE}</Text>
+                ) : null}
               </View>
 
               {/* Relación */}
@@ -370,6 +383,12 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 12,
     color: colors.error || '#FF6B6B',
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  helperText: {
+    fontSize: 12,
+    color: colors.textSecondary,
     marginTop: 4,
     marginLeft: 4,
   },

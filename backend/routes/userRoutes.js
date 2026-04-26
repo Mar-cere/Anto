@@ -775,7 +775,12 @@ const emergencyContactSchema = Joi.object({
     'string.empty': 'El email del contacto es requerido',
     'string.email': 'Por favor ingresa un email válido'
   }),
-  phone: Joi.string().allow(null, '').trim().max(20).optional(),
+  phone: Joi.string().required().trim().min(8).max(20).messages({
+    'string.empty': 'El teléfono del contacto es requerido para alertas por WhatsApp',
+    'string.min': 'El teléfono debe tener al menos 8 caracteres',
+    'string.max': 'El teléfono no puede exceder 20 caracteres',
+    'any.required': 'El teléfono del contacto es requerido para alertas por WhatsApp'
+  }),
   relationship: Joi.string().allow(null, '').trim().max(50).optional()
 });
 
@@ -817,10 +822,7 @@ router.get('/me/emergency-contacts', authenticateToken, validateUserObjectId, as
 // Agregar un contacto de emergencia
 router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, async (req, res) => {
   try {
-    // Extraer sendTestEmail antes de validar (no es parte del esquema de contacto)
-    const { sendTestEmail, ...contactData } = req.body;
-    
-    const { error, value } = emergencyContactSchema.validate(contactData, { 
+    const { error, value } = emergencyContactSchema.validate(req.body, { 
       allowUnknown: false // No permitir campos desconocidos
     });
     
@@ -870,7 +872,7 @@ router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, a
     const newContact = {
       name: value.name,
       email: value.email.toLowerCase(),
-      phone: value.phone || null,
+      phone: value.phone.trim(),
       relationship: value.relationship || null,
       enabled: true
     };
@@ -885,39 +887,10 @@ router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, a
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    // Enviar email de prueba si se solicita
-    let testEmailSent = false;
-    let testEmailError = null;
-    if (sendTestEmail === true) {
-      try {
-        const mailer = (await import('../config/mailer.js')).default;
-        testEmailSent = await mailer.sendEmergencyContactTestEmail(
-          newContact.email,
-          newContact.name,
-          updatedUser.name || updatedUser.username || 'Usuario'
-        );
-        if (!testEmailSent) {
-          testEmailError = 'No se pudo enviar el email de prueba. Verifica la configuración del servidor de email.';
-        }
-      } catch (emailError) {
-        logger.error('Error enviando email de prueba', { error: emailError.message, userId: req.user._id });
-        testEmailError = emailError.message || 'Error al enviar email de prueba';
-        // No fallar la creación del contacto si falla el email de prueba
-      }
-    }
-
     const response = {
       message: 'Contacto de emergencia agregado exitosamente',
       contact: updatedUser.emergencyContacts[updatedUser.emergencyContacts.length - 1]
     };
-
-    // Incluir información del email de prueba solo si se solicitó
-    if (sendTestEmail === true) {
-      response.testEmailSent = testEmailSent;
-      if (testEmailError) {
-        response.testEmailError = testEmailError;
-      }
-    }
 
     res.status(201).json(response);
   } catch (error) {
@@ -981,7 +954,7 @@ router.put('/me/emergency-contacts/:contactId', authenticateToken, validateUserO
       ...user.emergencyContacts[contactIndex].toObject(),
       name: value.name,
       email: value.email.toLowerCase(),
-      phone: value.phone || null,
+      phone: value.phone.trim(),
       relationship: value.relationship || null
     };
 
@@ -1092,81 +1065,12 @@ router.patch('/me/emergency-contacts/:contactId/toggle', authenticateToken, vali
   }
 });
 
-// Enviar email de prueba a un contacto de emergencia
+// Endpoint legado de email de prueba (deshabilitado para evitar confusión de canales)
 router.post('/me/emergency-contacts/:contactId/test', authenticateToken, validateUserObjectId, async (req, res) => {
-  try {
-    const { contactId } = req.params;
-
-    if (!isValidObjectId(contactId)) {
-      return res.status(400).json({ message: 'ID de contacto inválido' });
-    }
-
-    // Asegurar que req.user._id sea un ObjectId válido
-    const userId = mongoose.Types.ObjectId.isValid(req.user._id) 
-      ? new mongoose.Types.ObjectId(req.user._id) 
-      : req.user._id;
-    
-    const user = await User.findById(userId)
-      .select('emergencyContacts name username')
-      .lean();
-    if (!user || !user.emergencyContacts) {
-      return res.status(404).json({ message: 'Usuario o contacto no encontrado' });
-    }
-    const contact = user.emergencyContacts.find(
-      c => c._id.toString() === contactId
-    );
-    if (!contact) {
-      return res.status(404).json({ message: 'Contacto de emergencia no encontrado' });
-    }
-
-    const mailer = (await import('../config/mailer.js')).default;
-    let emailSent = false;
-    let emailError = null;
-    
-    try {
-      emailSent = await mailer.sendEmergencyContactTestEmail(
-        contact.email,
-        contact.name,
-        user.name || user.username || 'Usuario'
-      );
-      if (!emailSent) {
-        emailError = 'No se pudo enviar el email de prueba. Verifica la configuración del servidor de email.';
-      }
-    } catch (error) {
-      logger.error('Error enviando email de prueba', { error: error.message, userId: req.user._id });
-      emailError = error.message || 'Error al enviar email de prueba';
-    }
-
-    if (emailSent) {
-      res.json({
-        message: 'Email de prueba enviado exitosamente',
-        contact: {
-          _id: contact._id,
-          name: contact.name,
-          email: contact.email
-        },
-        testEmailSent: true
-      });
-    } else {
-      // Retornar 200 en lugar de 500, ya que el contacto existe y el error es solo del email
-      res.status(200).json({
-        message: 'El contacto existe, pero no se pudo enviar el email de prueba. Verifica la configuración del servidor de email.',
-        contact: {
-          _id: contact._id,
-          name: contact.name,
-          email: contact.email
-        },
-        testEmailSent: false,
-        error: emailError || 'Error de conexión con el servidor de email'
-      });
-    }
-  } catch (error) {
-    logger.error('Error al enviar email de prueba', { error: error.message, userId: req.user._id });
-    res.status(500).json({ 
-      message: 'Error al enviar email de prueba',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
+  return res.status(410).json({
+    message:
+      'Las alertas por email fueron deshabilitadas. Usa /api/users/me/emergency-contacts/:contactId/test-whatsapp para pruebas.'
+  });
 });
 
 // Probar alertas de emergencia (envía alerta de prueba a todos los contactos)
@@ -1184,9 +1088,6 @@ router.post('/me/emergency-contacts/test-alert', authenticateToken, validateUser
 
     if (result.sent) {
       let message = `Alerta de prueba enviada a ${result.successfulSends}/${result.totalContacts} contacto(s)`;
-      if (result.successfulEmails > 0) {
-        message += ` (${result.successfulEmails} email(s))`;
-      }
       if (result.successfulWhatsApp > 0) {
         message += ` (${result.successfulWhatsApp} WhatsApp(s))`;
       }
@@ -1196,7 +1097,6 @@ router.post('/me/emergency-contacts/test-alert', authenticateToken, validateUser
         result: {
           totalContacts: result.totalContacts,
           successfulSends: result.successfulSends,
-          successfulEmails: result.successfulEmails,
           successfulWhatsApp: result.successfulWhatsApp,
           contacts: result.contacts
         }
