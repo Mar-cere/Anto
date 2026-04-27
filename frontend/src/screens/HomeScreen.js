@@ -19,11 +19,10 @@ import {
   StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View
 } from 'react-native';
 import AnimatedButton from '../components/AnimatedButton';
-import EmotionBanner from '../components/EmotionBanner';
-import ParticleBackground from '../components/ParticleBackground';
 import {
   ANIMATION_DELAYS,
   ANIMATION_DURATIONS,
@@ -32,7 +31,6 @@ import {
 import { ROUTES } from '../constants/routes';
 import { HOME as TEXTS } from '../constants/translations';
 import { OPACITIES, SCALES, STATUS_BAR } from '../constants/ui';
-import emotions from '../data/emotions';
 import {
   NAV_STORAGE_OPEN_CHAT_AFTER_LOGIN,
   openEmergencyChatFromHome,
@@ -143,7 +141,6 @@ const HomeScreen = () => {
         style={styles.background} 
         imageStyle={styles.imageStyle}
       >
-        <ParticleBackground />
         <View style={styles.contentContainer}>
           {isLoading ? (
             <ActivityIndicator 
@@ -199,10 +196,15 @@ const HomeScreen = () => {
               </Animated.View>
 
               <View style={styles.footerContainer}>
-                <EmotionBanner 
-                  emotions={emotions} 
+                <TouchableOpacity
+                  testID="emergency-chat-entry"
+                  accessibilityLabel="emergency-chat-entry"
+                  style={styles.emergencyContainer}
                   onPress={() => handleNavigation(ROUTES.CHAT)}
-                />
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.emergencyText}>Ingresa al chat de emergencia</Text>
+                </TouchableOpacity>
                 <Text 
                   style={styles.FQText} 
                   onPress={() => handleNavigation('FaQ')}
@@ -248,6 +250,19 @@ const styles = StyleSheet.create({
     bottom: FOOTER_BOTTOM,
     width: '100%',
     alignItems: 'center',
+  },
+  emergencyContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    marginBottom: 10,
+  },
+  emergencyText: {
+    fontSize: 15,
+    color: '#1ADDDB',
+    fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
 });
 
