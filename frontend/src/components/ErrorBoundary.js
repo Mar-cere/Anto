@@ -128,7 +128,7 @@ class ErrorBoundary extends React.Component {
               </TouchableOpacity>
             </View>
 
-            {__DEV__ && this.state.error && (
+            {this.state.error && (
               <View style={styles.detailsContainer}>
                 <TouchableOpacity
                   style={styles.detailsToggle}

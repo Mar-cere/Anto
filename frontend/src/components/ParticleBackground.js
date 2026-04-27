@@ -1,68 +1,71 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Animated, Dimensions, View } from 'react-native';
 
+const PARTICLE_COUNT = 10;
+
 const ParticleBackground = () => {
-  // Crea 10 partículas con posiciones y animaciones aleatorias
-  const particles = Array(10).fill(0).map((_, i) => {
-    // Posiciones iniciales
-    const initialPosX = Math.random() * Dimensions.get('window').width;
-    const initialPosY = Math.random() * Dimensions.get('window').height;
-    
-    // Valores para animación de transform
-    const translateX = useRef(new Animated.Value(0)).current;
-    const translateY = useRef(new Animated.Value(0)).current;
-    const opacity = useRef(new Animated.Value(Math.random() * 0.5 + 0.1)).current;
-    const size = Math.random() * 4 + 2;
-    
-    useEffect(() => {
-      // Animación de opacidad
+  const particlesRef = useRef(
+    Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
+      key: i,
+      initialPosX: Math.random() * Dimensions.get('window').width,
+      initialPosY: Math.random() * Dimensions.get('window').height,
+      translateX: new Animated.Value(0),
+      translateY: new Animated.Value(0),
+      opacity: new Animated.Value(Math.random() * 0.5 + 0.1),
+      size: Math.random() * 4 + 2,
+    }))
+  );
+
+  useEffect(() => {
+    particlesRef.current.forEach((particle) => {
       Animated.loop(
         Animated.sequence([
-          Animated.timing(opacity, {
+          Animated.timing(particle.opacity, {
             toValue: Math.random() * 0.5 + 0.1,
             duration: 2000 + Math.random() * 3000,
             useNativeDriver: true,
           }),
-          Animated.timing(opacity, {
+          Animated.timing(particle.opacity, {
             toValue: Math.random() * 0.3 + 0.05,
             duration: 2000 + Math.random() * 3000,
             useNativeDriver: true,
           }),
         ])
       ).start();
-      
-      // Animación de movimiento con transform
+
       Animated.loop(
         Animated.sequence([
-          Animated.timing(translateX, {
-            toValue: Math.random() * 50 - 25, // Movimiento de -25 a +25
+          Animated.timing(particle.translateX, {
+            toValue: Math.random() * 50 - 25,
             duration: 8000 + Math.random() * 7000,
             useNativeDriver: true,
           }),
-          Animated.timing(translateY, {
-            toValue: Math.random() * 50 - 25, // Movimiento de -25 a +25
+          Animated.timing(particle.translateY, {
+            toValue: Math.random() * 50 - 25,
             duration: 8000 + Math.random() * 7000,
             useNativeDriver: true,
           }),
         ])
       ).start();
-    }, []);
-    
+    });
+  }, []);
+
+  const particles = particlesRef.current.map((particle) => {
     return (
       <Animated.View
-        key={i}
+        key={particle.key}
         style={{
           position: 'absolute',
-          left: initialPosX,
-          top: initialPosY,
-          width: size,
-          height: size,
-          borderRadius: size / 2,
+          left: particle.initialPosX,
+          top: particle.initialPosY,
+          width: particle.size,
+          height: particle.size,
+          borderRadius: particle.size / 2,
           backgroundColor: '#1ADDDB',
-          opacity: opacity,
+          opacity: particle.opacity,
           transform: [
-            { translateX: translateX },
-            { translateY: translateY }
+            { translateX: particle.translateX },
+            { translateY: particle.translateY },
           ]
         }}
       />
