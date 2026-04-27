@@ -18,7 +18,11 @@ import {
   setupNotificationListeners,
 } from '../services/pushNotificationService';
 import StackNavigator from './StackNavigator';
-import { handleActivitySummaryDeepLink, handleNotificationData } from './navigationRef';
+import {
+  handleActivitySummaryDeepLink,
+  handleNotificationData,
+  navigationRef,
+} from './navigationRef';
 
 /**
  * Componente App Navigator
