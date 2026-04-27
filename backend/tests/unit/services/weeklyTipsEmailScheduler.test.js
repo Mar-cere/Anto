@@ -9,7 +9,14 @@ describe('resolveWeeklyTipsMailEnv', () => {
     const r = resolveWeeklyTipsMailEnv({ WEEKLY_TIPS_EMAIL_SLOT: 'sunday_morning' });
     expect(r.WEEKLY_TIPS_EMAIL_UTC_WEEKDAY).toBe('0');
     expect(r.WEEKLY_TIPS_EMAIL_UTC_HOUR).toBe('10');
-    expect(r.WEEKLY_TIPS_EMAIL_UTC_WINDOW_END_MINUTE).toBe('45');
+    expect(r.WEEKLY_TIPS_EMAIL_UTC_WINDOW_END_MINUTE).toBe('59');
+  });
+
+  it('monday_morning usa lunes 10h UTC y ventana hasta :59', () => {
+    const r = resolveWeeklyTipsMailEnv({ WEEKLY_TIPS_EMAIL_SLOT: 'monday_morning' });
+    expect(r.WEEKLY_TIPS_EMAIL_UTC_WEEKDAY).toBe('1');
+    expect(r.WEEKLY_TIPS_EMAIL_UTC_HOUR).toBe('10');
+    expect(r.WEEKLY_TIPS_EMAIL_UTC_WINDOW_END_MINUTE).toBe('59');
   });
 
   it('saturday_night usa sábado 23h UTC por defecto', () => {
@@ -42,10 +49,16 @@ describe('matchesWeeklyTipsUtcWindow', () => {
     expect(matchesWeeklyTipsUtcWindow(d, env)).toBe(true);
   });
 
-  it('false fuera de minutos de ventana (domingo)', () => {
+  it('false fuera de hora de ventana (domingo 11h UTC, slot 10h)', () => {
     const env = resolveWeeklyTipsMailEnv({ WEEKLY_TIPS_EMAIL_SLOT: 'sunday_morning' });
-    const d = new Date('2025-01-05T10:50:00.000Z');
+    const d = new Date('2025-01-05T11:00:00.000Z');
     expect(matchesWeeklyTipsUtcWindow(d, env)).toBe(false);
+  });
+
+  it('domingo 10:55 UTC sigue dentro de ventana sunday_morning (:59)', () => {
+    const env = resolveWeeklyTipsMailEnv({ WEEKLY_TIPS_EMAIL_SLOT: 'sunday_morning' });
+    const d = new Date('2025-01-05T10:55:00.000Z');
+    expect(matchesWeeklyTipsUtcWindow(d, env)).toBe(true);
   });
 
   it('false otro día con slot sunday_morning', () => {

@@ -1,21 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="8" failures="0" errors="0" time="0.764">
-  <testsuite name="buildEmailAppOpenHref" errors="0" failures="0" skipped="0" timestamp="2026-04-26T04:33:54" time="0.711" tests="8">
-    <testcase classname="buildEmailAppOpenHref prioriza EMAIL_APP_OPEN_LINK sobre WEEKLY_SUMMARY_EMAIL_APP_LINK" name="buildEmailAppOpenHref prioriza EMAIL_APP_OPEN_LINK sobre WEEKLY_SUMMARY_EMAIL_APP_LINK" time="0.001">
+<testsuites name="jest tests" tests="9" failures="0" errors="0" time="0.126">
+  <testsuite name="resolveWeeklyTipsMailEnv" errors="0" failures="0" skipped="0" timestamp="2026-04-27T20:55:56" time="0.107" tests="9">
+    <testcase classname="resolveWeeklyTipsMailEnv sunday_morning usa domingo 10h UTC por defecto" name="resolveWeeklyTipsMailEnv sunday_morning usa domingo 10h UTC por defecto" time="0.001">
     </testcase>
-    <testcase classname="buildEmailAppOpenHref prioriza WEEKLY_SUMMARY_EMAIL_APP_LINK cuando no hay EMAIL_APP_OPEN_LINK" name="buildEmailAppOpenHref prioriza WEEKLY_SUMMARY_EMAIL_APP_LINK cuando no hay EMAIL_APP_OPEN_LINK" time="0">
+    <testcase classname="resolveWeeklyTipsMailEnv monday_morning usa lunes 10h UTC y ventana hasta :59" name="resolveWeeklyTipsMailEnv monday_morning usa lunes 10h UTC y ventana hasta :59" time="0.001">
     </testcase>
-    <testcase classname="buildEmailAppOpenHref con OPEN_APP_ONLY usa esquema anto y path por defecto (triple barra para deep link)" name="buildEmailAppOpenHref con OPEN_APP_ONLY usa esquema anto y path por defecto (triple barra para deep link)" time="0.001">
+    <testcase classname="resolveWeeklyTipsMailEnv saturday_night usa sábado 23h UTC por defecto" name="resolveWeeklyTipsMailEnv saturday_night usa sábado 23h UTC por defecto" time="0">
     </testcase>
-    <testcase classname="buildEmailAppOpenHref con OPEN_APP_ONLY y path explícito" name="buildEmailAppOpenHref con OPEN_APP_ONLY y path explícito" time="0">
+    <testcase classname="resolveWeeklyTipsMailEnv permite sobrescribir la hora del slot" name="resolveWeeklyTipsMailEnv permite sobrescribir la hora del slot" time="0">
     </testcase>
-    <testcase classname="buildEmailAppOpenHref con OPEN_APP_ONLY y WEEKLY_SUMMARY_APP_PATH vacío solo abre la app" name="buildEmailAppOpenHref con OPEN_APP_ONLY y WEEKLY_SUMMARY_APP_PATH vacío solo abre la app" time="0">
+    <testcase classname="matchesWeeklyTipsUtcWindow domingo 10:05 UTC con slot sunday_morning" name="matchesWeeklyTipsUtcWindow domingo 10:05 UTC con slot sunday_morning" time="0">
     </testcase>
-    <testcase classname="buildEmailAppOpenHref sin flags usa FRONTEND_URL + path" name="buildEmailAppOpenHref sin flags usa FRONTEND_URL + path" time="0">
+    <testcase classname="matchesWeeklyTipsUtcWindow sábado 23:05 UTC con slot saturday_night" name="matchesWeeklyTipsUtcWindow sábado 23:05 UTC con slot saturday_night" time="0">
     </testcase>
-    <testcase classname="buildEmailAppOpenHref subscriptionThankYou prioriza SUBSCRIPTION_THANKYOU_EMAIL_APP_LINK" name="buildEmailAppOpenHref subscriptionThankYou prioriza SUBSCRIPTION_THANKYOU_EMAIL_APP_LINK" time="0">
+    <testcase classname="matchesWeeklyTipsUtcWindow false fuera de hora de ventana (domingo 11h UTC, slot 10h)" name="matchesWeeklyTipsUtcWindow false fuera de hora de ventana (domingo 11h UTC, slot 10h)" time="0">
     </testcase>
-    <testcase classname="buildEmailAppOpenHref buildWeeklySummaryAppHref sigue siendo alias de buildEmailAppOpenHref" name="buildEmailAppOpenHref buildWeeklySummaryAppHref sigue siendo alias de buildEmailAppOpenHref" time="0">
+    <testcase classname="matchesWeeklyTipsUtcWindow domingo 10:55 UTC sigue dentro de ventana sunday_morning (:59)" name="matchesWeeklyTipsUtcWindow domingo 10:55 UTC sigue dentro de ventana sunday_morning (:59)" time="0">
+    </testcase>
+    <testcase classname="matchesWeeklyTipsUtcWindow false otro día con slot sunday_morning" name="matchesWeeklyTipsUtcWindow false otro día con slot sunday_morning" time="0">
     </testcase>
   </testsuite>
 </testsuites>

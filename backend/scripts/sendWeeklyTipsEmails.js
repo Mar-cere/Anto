@@ -5,6 +5,9 @@
  *   node scripts/sendWeeklyTipsEmails.js
  *
  * (El nombre del archivo se mantiene por compatibilidad con cron existente.)
+ *
+ * Catch-up manual con confirmación explícita (mismo efecto, más seguro):
+ *   node scripts/sendWeeklySummaryCatchup.js --confirm
  */
 
 import dotenv from 'dotenv';

@@ -3,15 +3,21 @@
  * La deduplicación real es por usuario en BD (`stats.lastWeeklyTipsEmailYearWeek`).
  *
  * Horario por defecto (elige uno con `WEEKLY_TIPS_EMAIL_SLOT`):
- * - `monday_morning`: lunes ~mañana UTC (10:00, ventana 0–45 min).
- * - `sunday_morning`: domingo ~mañana UTC (10:00, ventana 0–45 min).
+ * - `monday_morning`: lunes ~mañana UTC (10:00, ventana 0–59 min).
+ * - `sunday_morning`: domingo ~mañana UTC (10:00, ventana 0–59 min).
  * - `saturday_night`: sábado ~noche UTC (23:00, ventana 0–59 min).
  *
  * Cualquier `WEEKLY_TIPS_EMAIL_UTC_*` definida en el entorno **pisa** el preset del slot.
+ *
+ * Anti-ráfaga (proceso, no por usuario; cada usuario sigue recibiendo como máximo 1 correo/semana ISO vía Mongo):
+ * - `WEEKLY_TIPS_EMAIL_TICK_MS` — intervalo del tick (default 5 min).
+ * - `WEEKLY_SUMMARY_MIN_MS_BETWEEN_BATCHES` — tiempo mínimo entre dos ejecuciones del lote (default 4 min).
+ * - `WEEKLY_SUMMARY_MAX_BATCH_RUNS_PER_ISO_WEEK` — máximo de ejecuciones del lote por semana ISO UTC (default 10).
  */
 import { features } from '../config/features.js';
 import config from '../config/config.js';
 import logger from '../utils/logger.js';
+import { getUtcIsoWeekParts } from '../utils/isoWeek.js';
 
 /** @type {Record<string, Record<string, string>>} */
 const WEEKLY_TIPS_SLOT_PRESETS = {
@@ -19,13 +25,13 @@ const WEEKLY_TIPS_SLOT_PRESETS = {
     WEEKLY_TIPS_EMAIL_UTC_WEEKDAY: '1',
     WEEKLY_TIPS_EMAIL_UTC_HOUR: '10',
     WEEKLY_TIPS_EMAIL_UTC_WINDOW_START_MINUTE: '0',
-    WEEKLY_TIPS_EMAIL_UTC_WINDOW_END_MINUTE: '45',
+    WEEKLY_TIPS_EMAIL_UTC_WINDOW_END_MINUTE: '59',
   },
   sunday_morning: {
     WEEKLY_TIPS_EMAIL_UTC_WEEKDAY: '0',
     WEEKLY_TIPS_EMAIL_UTC_HOUR: '10',
     WEEKLY_TIPS_EMAIL_UTC_WINDOW_START_MINUTE: '0',
-    WEEKLY_TIPS_EMAIL_UTC_WINDOW_END_MINUTE: '45',
+    WEEKLY_TIPS_EMAIL_UTC_WINDOW_END_MINUTE: '59',
   },
   saturday_night: {
     WEEKLY_TIPS_EMAIL_UTC_WEEKDAY: '6',
@@ -109,29 +115,77 @@ export function shouldRunWeeklyTipsJob(now = new Date()) {
   return matchesWeeklyTipsUtcWindow(now, process.env);
 }
 
+/** @type {{ yearWeekKey: string | null; runs: number }} */
+let batchRunState = { yearWeekKey: null, runs: 0 };
+let lastWeeklyBatchAtMs = 0;
+
+function getMaxBatchRunsPerIsoWeek() {
+  const n = parseInt(process.env.WEEKLY_SUMMARY_MAX_BATCH_RUNS_PER_ISO_WEEK || '10', 10);
+  return Number.isFinite(n) && n > 0 ? n : 10;
+}
+
+function getMinMsBetweenWeeklyBatches() {
+  const n = parseInt(process.env.WEEKLY_SUMMARY_MIN_MS_BETWEEN_BATCHES || String(4 * 60 * 1000), 10);
+  return Number.isFinite(n) && n >= 0 ? n : 4 * 60 * 1000;
+}
+
+/**
+ * Una pasada del lote semanal (reintento controlado si el mailer falla).
+ * Los usuarios no reciben duplicados en la misma semana ISO: el claim en Mongo lo evita.
+ */
+export async function runWeeklySummaryEmailBatchOnce() {
+  if (!shouldRunWeeklyTipsJob()) {
+    return;
+  }
+
+  const now = Date.now();
+  const minGap = getMinMsBetweenWeeklyBatches();
+  if (lastWeeklyBatchAtMs > 0 && now - lastWeeklyBatchAtMs < minGap) {
+    return;
+  }
+
+  const { yearWeekKey } = getUtcIsoWeekParts();
+  if (batchRunState.yearWeekKey !== yearWeekKey) {
+    batchRunState = { yearWeekKey, runs: 0 };
+  }
+
+  const maxRuns = getMaxBatchRunsPerIsoWeek();
+  if (batchRunState.runs >= maxRuns) {
+    logger.warn('[WeeklyEmail] Límite de ejecuciones del lote semanal alcanzado (anti-ráfaga)', {
+      yearWeekKey,
+      runs: batchRunState.runs,
+      maxRuns
+    });
+    return;
+  }
+
+  batchRunState.runs += 1;
+  lastWeeklyBatchAtMs = Date.now();
+
+  const emailMarketingService = (await import('./emailMarketingService.js')).default;
+  const slot = String(process.env.WEEKLY_TIPS_EMAIL_SLOT || 'monday_morning').trim();
+  logger.info(`📧 Ejecutando correo de resumen semanal (slot=${slot}, ventana UTC; lote ${batchRunState.runs}/${maxRuns}, ${yearWeekKey})...`);
+  await emailMarketingService.sendWeeklySummaryEmails();
+}
+
 /**
  * Inicia comprobación periódica (ligera) y ejecuta el lote cuando toca la ventana UTC.
  */
 export function startWeeklyTipsEmailScheduler() {
-  const tickMs = parseIntEnv('WEEKLY_TIPS_EMAIL_TICK_MS', 10 * 60 * 1000);
+  const tickMs = parseIntEnv('WEEKLY_TIPS_EMAIL_TICK_MS', 5 * 60 * 1000);
 
-  setInterval(() => {
-    void (async () => {
-      try {
-        if (!shouldRunWeeklyTipsJob()) {
-          return;
-        }
-        const emailMarketingService = (await import('./emailMarketingService.js')).default;
-        const slot = String(process.env.WEEKLY_TIPS_EMAIL_SLOT || 'monday_morning').trim();
-        logger.info(`📧 Ejecutando correo de resumen semanal (slot=${slot}, ventana UTC resuelta)...`);
-        await emailMarketingService.sendWeeklySummaryEmails();
-      } catch (error) {
-        logger.error('❌ Error en job de tips semanales', { error: error.message });
-      }
-    })();
-  }, tickMs);
+  const tick = () => {
+    void runWeeklySummaryEmailBatchOnce().catch((error) => {
+      logger.error('❌ Error en job de tips semanales', { error: error.message });
+    });
+  };
+
+  // Si el servidor entra en servicio dentro de la ventana, no depender solo del primer tick.
+  tick();
+
+  setInterval(tick, tickMs);
 
   logger.info(
-    `✅ Resumen semanal por correo: scheduler cada ${tickMs / 60000} min (UTC; ENABLE_WEEKLY_SUMMARY_EMAIL=true; WEEKLY_TIPS_EMAIL_SLOT=monday_morning|sunday_morning|saturday_night)`
+    `✅ Resumen semanal por correo: scheduler cada ${tickMs / 60000} min (UTC; tick inicial inmediato; ventana fin de hora ampliada a :59 por defecto; ENABLE_WEEKLY_SUMMARY_EMAIL=true; WEEKLY_TIPS_EMAIL_SLOT=monday_morning|sunday_morning|saturday_night)`
   );
 }
