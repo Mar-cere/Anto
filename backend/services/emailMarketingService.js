@@ -12,6 +12,31 @@ import logger from '../utils/logger.js';
 import { enqueueEmail } from './emailQueueService.js';
 import { getUtcIsoWeekParts } from '../utils/isoWeek.js';
 
+/**
+ * Filtro Mongo para candidatos al correo de resumen semanal (misma semántica que `findOneAndUpdate` del lote).
+ * `requireMinSessions: false` omite `stats.totalSessions >= 1` (catch-up para usuarios que usan la app pero no suman sesión en ese campo).
+ *
+ * @param {string} yearWeekKey
+ * @param {boolean} [requireMinSessions=true]
+ * @returns {Record<string, unknown>}
+ */
+export function buildWeeklySummaryCandidateFilter(yearWeekKey, requireMinSessions = true) {
+  /** @type {Record<string, unknown>} */
+  const filter = {
+    emailVerified: true,
+    isActive: true,
+    $or: [
+      { 'stats.lastWeeklyTipsEmailYearWeek': { $exists: false } },
+      { 'stats.lastWeeklyTipsEmailYearWeek': null },
+      { 'stats.lastWeeklyTipsEmailYearWeek': { $ne: yearWeekKey } }
+    ]
+  };
+  if (requireMinSessions) {
+    filter['stats.totalSessions'] = { $gte: 1 };
+  }
+  return filter;
+}
+
 /** Horas tras el inicio del trial para enviar el correo de retención (default: fin ~2.º día en trial de 3 días). */
 function getTrialRetentionAfterHours() {
   const n = parseInt(process.env.TRIAL_RETENTION_EMAIL_AFTER_HOURS || '48', 10);
@@ -99,11 +124,13 @@ class EmailMarketingService {
    * Correo de aviso de resumen semanal (solo CTA a la app, sin datos de uso en el cuerpo; como mucho una vez por semana ISO UTC por usuario).
    * Usa reclamo atómico en Mongo (similar a retención trial) para evitar duplicados con varios procesos o reintentos.
    *
+   * @param {{ requireMinSessions?: boolean }} [options] — `requireMinSessions` default `true` (comportamiento histórico del job).
    * @returns {Promise<Object>} Resumen de envíos
    */
-  async sendWeeklySummaryEmails() {
+  async sendWeeklySummaryEmails(options = {}) {
     try {
       const { yearWeekKey } = getUtcIsoWeekParts();
+      const requireMinSessions = options.requireMinSessions !== false;
 
       const maxIterations = parseInt(process.env.WEEKLY_TIPS_EMAIL_MAX_PER_RUN || '5000', 10);
       const cap = Number.isFinite(maxIterations) && maxIterations > 0 ? maxIterations : 5000;
@@ -112,21 +139,15 @@ class EmailMarketingService {
         yearWeekKey,
         processed: 0,
         sent: 0,
-        failed: 0
+        failed: 0,
+        requireMinSessions
       };
+
+      const candidateFilter = buildWeeklySummaryCandidateFilter(yearWeekKey, requireMinSessions);
 
       for (let i = 0; i < cap; i += 1) {
         const user = await User.findOneAndUpdate(
-          {
-            emailVerified: true,
-            isActive: true,
-            'stats.totalSessions': { $gte: 1 },
-            $or: [
-              { 'stats.lastWeeklyTipsEmailYearWeek': { $exists: false } },
-              { 'stats.lastWeeklyTipsEmailYearWeek': null },
-              { 'stats.lastWeeklyTipsEmailYearWeek': { $ne: yearWeekKey } }
-            ]
-          },
+          candidateFilter,
           {
             $set: {
               'stats.lastWeeklyTipsEmailYearWeek': yearWeekKey,
