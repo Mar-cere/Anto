@@ -90,7 +90,7 @@ function NarrativeCard({ narrative }) {
   if (!narrative) return null;
   return (
     <View style={styles.narrativeCard}>
-      <Text style={styles.narrativeTitle}>Resumen narrativo</Text>
+      <Text style={styles.narrativeTitle}>Resumen</Text>
       <Text style={styles.narrativeLine}>
         <Text style={styles.narrativeLabel}>Temas: </Text>
         {narrative.themes}
