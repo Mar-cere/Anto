@@ -43,7 +43,8 @@
       "channel": "production",
       "android": {
         "buildType": "app-bundle",
-        "gradleCommand": ":app:bundleRelease"
+        "gradleCommand": ":app:bundleRelease",
+        "credentialsSource": "local"
       },
       "ios": {
         "cocoapods": "1.15.2",
