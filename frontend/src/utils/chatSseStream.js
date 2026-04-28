@@ -6,6 +6,21 @@
 const DEFAULT_STREAM_TIMEOUT_MS = 120_000;
 
 /**
+ * Heurística defensiva para aceptar cierres sin evento `done` solo si el texto
+ * parece completo (evita guardar respuestas truncadas por corte de stream).
+ * @param {string} text
+ * @returns {boolean}
+ */
+function looksLikeCompleteAssistantText(text) {
+  const v = String(text || '').trim();
+  if (!v) return false;
+  // Permitir respuestas cortas completas sin puntuación final.
+  if (v.length <= 24) return true;
+  // Cierre típico: punto, interrogación/exclamación, comillas/paréntesis o elipsis.
+  return /(?:[.!?…]|[)"'»])$/.test(v);
+}
+
+/**
  * @param {string} prevBuffer
  * @param {string} chunk
  * @returns {{ buffer: string, payloads: object[] }}
@@ -187,16 +202,18 @@ export function postChatSseWithXHR({
       flushTail();
       if (finished) return;
       if (!sawDone) {
-        if (accumulated && onDone) {
+        if (accumulated && onDone && looksLikeCompleteAssistantText(accumulated)) {
           onDone({
             done: true,
             content: accumulated,
             messageId: null,
             suggestions: [],
+            inferredDone: true,
           });
         } else {
           const err = new Error('Respuesta del servidor incompleta (stream)');
           err.code = 'STREAM_INCOMPLETE';
+          err.partialContent = accumulated || '';
           err.response = { status: xhr.status };
           fail(err);
           return;
@@ -292,11 +309,12 @@ export async function streamChatSseWithFetch({
       flushPartialSseTail(sseBuf, { onChunk: wrapChunk, onDone: wrapDone });
     }
     if (!sawDone) {
-      if (accumulated && onDone) {
-        onDone({ done: true, content: accumulated, messageId: null, suggestions: [] });
-      } else if (!accumulated) {
+      if (accumulated && onDone && looksLikeCompleteAssistantText(accumulated)) {
+        onDone({ done: true, content: accumulated, messageId: null, suggestions: [], inferredDone: true });
+      } else {
         const err = new Error('Respuesta del servidor incompleta (stream)');
         err.code = 'STREAM_INCOMPLETE';
+        err.partialContent = accumulated || '';
         err.response = { status: response.status };
         throw err;
       }
@@ -326,11 +344,12 @@ export async function streamChatSseWithFetch({
       }
     }
     if (!sawDone) {
-      if (accumulated && onDone) {
-        onDone({ done: true, content: accumulated, messageId: null, suggestions: [] });
+      if (accumulated && onDone && looksLikeCompleteAssistantText(accumulated)) {
+        onDone({ done: true, content: accumulated, messageId: null, suggestions: [], inferredDone: true });
       } else {
         const err = new Error('Respuesta del servidor incompleta (stream)');
         err.code = 'STREAM_INCOMPLETE';
+        err.partialContent = accumulated || '';
         err.response = { status: response.status };
         throw err;
       }

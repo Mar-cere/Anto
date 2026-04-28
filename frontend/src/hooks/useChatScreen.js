@@ -75,6 +75,12 @@ export function useChatScreen() {
   const sendRequestInFlightRef = useRef(false);
   const flushingOfflineRef = useRef(false);
   const prevIsOfflineRef = useRef(null);
+  /** Evita bucles de reintento silencioso ante STREAM_INCOMPLETE. */
+  const streamIncompleteRetryStateRef = useRef({
+    key: null,
+    count: 0,
+    windowStart: 0,
+  });
 
   const flatListRef = useRef(null);
   const inputRef = useRef(null);
@@ -560,10 +566,91 @@ export function useChatScreen() {
       }
 
       if (err.code === 'STREAM_INCOMPLETE') {
-        showToast({
-          message: err.message || 'La respuesta se cortó antes de terminar. Intenta de nuevo.',
-          type: 'warning',
-        });
+        let recoveredFromServer = false;
+        // Recuperación silenciosa: evitar avisos de stream incompleto.
+        // Intentamos reconciliar estado con el servidor para obtener la respuesta final persistida.
+        try {
+          if (await chatService.isGuestChatMode()) {
+            const convId = await AsyncStorage.getItem(STORAGE_KEYS.GUEST_CONVERSATION_ID);
+            if (convId) {
+              const serverMessages = await chatService.getGuestMessages(convId);
+              if (serverMessages?.length > 0) {
+                const uniqueMessages = serverMessages.reduce((acc, message) => {
+                  const messageId = message._id || message.id;
+                  if (!messageId) return acc;
+                  const exists = acc.some((msg) => msg._id === messageId || msg.id === messageId);
+                  if (!exists) acc.push(message);
+                  return acc;
+                }, []);
+                uniqueMessages.sort((a, b) => {
+                  const timeA = new Date(a.createdAt || a.metadata?.timestamp || 0).getTime();
+                  const timeB = new Date(b.createdAt || b.metadata?.timestamp || 0).getTime();
+                  return timeA - timeB;
+                });
+                const sentAt = new Date(tempUserMessage.metadata?.timestamp || Date.now()).getTime();
+                recoveredFromServer = uniqueMessages.some((m) => {
+                  if (m.role !== MESSAGE_ROLES.ASSISTANT) return false;
+                  const content = String(m.content || '').trim();
+                  if (!content) return false;
+                  const createdAt = new Date(m.createdAt || m.metadata?.timestamp || 0).getTime();
+                  return Number.isFinite(createdAt) ? createdAt >= sentAt - 1000 : true;
+                });
+                setMessages(uniqueMessages.filter((m) => m.type !== 'quickReplies'));
+              }
+            }
+          } else {
+            const convId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+            if (convId) {
+              const pack = await chatService.getMessages(convId);
+              const serverMessages = pack.messages || [];
+              if (serverMessages.length > 0) {
+                const uniqueMessages = serverMessages.reduce((acc, message) => {
+                  const messageId = message._id || message.id;
+                  if (!messageId) return acc;
+                  const exists = acc.some((msg) => msg._id === messageId || msg.id === messageId);
+                  if (!exists) acc.push(message);
+                  return acc;
+                }, []);
+                uniqueMessages.sort((a, b) => {
+                  const timeA = new Date(a.createdAt || a.metadata?.timestamp || 0).getTime();
+                  const timeB = new Date(b.createdAt || b.metadata?.timestamp || 0).getTime();
+                  return timeA - timeB;
+                });
+                const sentAt = new Date(tempUserMessage.metadata?.timestamp || Date.now()).getTime();
+                recoveredFromServer = uniqueMessages.some((m) => {
+                  if (m.role !== MESSAGE_ROLES.ASSISTANT) return false;
+                  const content = String(m.content || '').trim();
+                  if (!content) return false;
+                  const createdAt = new Date(m.createdAt || m.metadata?.timestamp || 0).getTime();
+                  return Number.isFinite(createdAt) ? createdAt >= sentAt - 1000 : true;
+                });
+                setMessages(uniqueMessages.filter((m) => m.type !== 'quickReplies'));
+              }
+            }
+          }
+          scrollToBottom(true);
+        } catch (reconcileErr) {
+          console.warn('[ChatScreen] Reconciliación tras STREAM_INCOMPLETE falló:', reconcileErr?.message || reconcileErr);
+        }
+
+        // Si no se pudo recuperar respuesta final desde servidor, reintento silencioso 1 vez.
+        if (!recoveredFromServer) {
+          const now = Date.now();
+          const key = String(messageText || '').trim().toLowerCase();
+          const state = streamIncompleteRetryStateRef.current;
+          const sameWindow = state.key === key && now - state.windowStart < 60_000;
+          const canRetry = !sameWindow || state.count < 1;
+          if (canRetry) {
+            streamIncompleteRetryStateRef.current = {
+              key,
+              count: sameWindow ? state.count + 1 : 1,
+              windowStart: sameWindow ? state.windowStart : now,
+            };
+            setTimeout(() => {
+              handleSendRef.current?.(messageText);
+            }, 250);
+          }
+        }
         setIsTyping(false);
         return;
       }

@@ -84,5 +84,58 @@ describe('chatSseStream', () => {
         response: { status: 429, data: { code: 'MESSAGE_IN_FLIGHT' } },
       });
     });
+
+    it('rechaza stream incompleto cuando no llega done y el texto parece truncado', async () => {
+      global.fetch = jest.fn(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          body: null,
+          text: () => Promise.resolve('data: {"content":"Me alegra que hoy esté todo bien. Si quieres, cuént"}\n\n'),
+        })
+      );
+
+      await expect(
+        streamChatSseWithFetch({
+          url: 'http://localhost/api/chat/messages?stream=true',
+          headers: {},
+          body: '{}',
+          onChunk: jest.fn(),
+          onDone: jest.fn(),
+          timeoutMs: 5000,
+        })
+      ).rejects.toMatchObject({
+        code: 'STREAM_INCOMPLETE',
+      });
+    });
+
+    it('acepta cierre inferido cuando no llega done pero el texto parece completo', async () => {
+      global.fetch = jest.fn(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          body: null,
+          text: () => Promise.resolve('data: {"content":"Me alegra que hoy esté todo bien."}\n\n'),
+        })
+      );
+
+      const onDone = jest.fn();
+      await streamChatSseWithFetch({
+        url: 'http://localhost/api/chat/messages?stream=true',
+        headers: {},
+        body: '{}',
+        onChunk: jest.fn(),
+        onDone,
+        timeoutMs: 5000,
+      });
+
+      expect(onDone).toHaveBeenCalledWith(
+        expect.objectContaining({
+          done: true,
+          inferredDone: true,
+          content: 'Me alegra que hoy esté todo bien.',
+        })
+      );
+    });
   });
 });
