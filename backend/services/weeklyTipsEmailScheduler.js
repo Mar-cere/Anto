@@ -3,8 +3,8 @@
  * La deduplicación real es por usuario en BD (`stats.lastWeeklyTipsEmailYearWeek`).
  *
  * Horario por defecto (elige uno con `WEEKLY_TIPS_EMAIL_SLOT`):
+ * - `sunday_morning` (default): domingo ~mañana UTC (10:00, ventana 0–59 min).
  * - `monday_morning`: lunes ~mañana UTC (10:00, ventana 0–59 min).
- * - `sunday_morning`: domingo ~mañana UTC (10:00, ventana 0–59 min).
  * - `saturday_night`: sábado ~noche UTC (23:00, ventana 0–59 min).
  *
  * Cualquier `WEEKLY_TIPS_EMAIL_UTC_*` definida en el entorno **pisa** el preset del slot.
@@ -47,11 +47,11 @@ const WEEKLY_TIPS_SLOT_PRESETS = {
  * @returns {NodeJS.ProcessEnv}
  */
 export function resolveWeeklyTipsMailEnv(env = process.env) {
-  const raw = String(env.WEEKLY_TIPS_EMAIL_SLOT || 'monday_morning')
+  const raw = String(env.WEEKLY_TIPS_EMAIL_SLOT || 'sunday_morning')
     .toLowerCase()
     .trim()
     .replace(/-/g, '_');
-  const preset = WEEKLY_TIPS_SLOT_PRESETS[raw] || WEEKLY_TIPS_SLOT_PRESETS.monday_morning;
+  const preset = WEEKLY_TIPS_SLOT_PRESETS[raw] || WEEKLY_TIPS_SLOT_PRESETS.sunday_morning;
   const merged = { ...env };
   for (const [key, presetVal] of Object.entries(preset)) {
     const override = env[key];
@@ -163,7 +163,7 @@ export async function runWeeklySummaryEmailBatchOnce() {
   lastWeeklyBatchAtMs = Date.now();
 
   const emailMarketingService = (await import('./emailMarketingService.js')).default;
-  const slot = String(process.env.WEEKLY_TIPS_EMAIL_SLOT || 'monday_morning').trim();
+  const slot = String(process.env.WEEKLY_TIPS_EMAIL_SLOT || 'sunday_morning').trim();
   logger.info(`📧 Ejecutando correo de resumen semanal (slot=${slot}, ventana UTC; lote ${batchRunState.runs}/${maxRuns}, ${yearWeekKey})...`);
   await emailMarketingService.sendWeeklySummaryEmails();
 }
@@ -186,6 +186,6 @@ export function startWeeklyTipsEmailScheduler() {
   setInterval(tick, tickMs);
 
   logger.info(
-    `✅ Resumen semanal por correo: scheduler cada ${tickMs / 60000} min (UTC; tick inicial inmediato; ventana fin de hora ampliada a :59 por defecto; ENABLE_WEEKLY_SUMMARY_EMAIL=true; WEEKLY_TIPS_EMAIL_SLOT=monday_morning|sunday_morning|saturday_night)`
+    `✅ Resumen semanal por correo: scheduler cada ${tickMs / 60000} min (UTC; tick inicial inmediato; ventana fin de hora ampliada a :59 por defecto; ENABLE_WEEKLY_SUMMARY_EMAIL=true; WEEKLY_TIPS_EMAIL_SLOT=sunday_morning|monday_morning|saturday_night)`
   );
 }

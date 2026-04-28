@@ -5,6 +5,12 @@ import {
 } from '../../../services/weeklyTipsEmailScheduler.js';
 
 describe('resolveWeeklyTipsMailEnv', () => {
+  it('usa sunday_morning por defecto cuando no viene slot', () => {
+    const r = resolveWeeklyTipsMailEnv({});
+    expect(r.WEEKLY_TIPS_EMAIL_UTC_WEEKDAY).toBe('0');
+    expect(r.WEEKLY_TIPS_EMAIL_UTC_HOUR).toBe('10');
+  });
+
   it('sunday_morning usa domingo 10h UTC por defecto', () => {
     const r = resolveWeeklyTipsMailEnv({ WEEKLY_TIPS_EMAIL_SLOT: 'sunday_morning' });
     expect(r.WEEKLY_TIPS_EMAIL_UTC_WEEKDAY).toBe('0');

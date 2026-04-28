@@ -6,9 +6,12 @@ import Message from '../models/Message.js';
 import Journal from '../models/Journal.js';
 import Task from '../models/Task.js';
 import Habit from '../models/Habit.js';
+import User from '../models/User.js';
 import UserInsight from '../models/UserInsight.js';
 import UserProgress from '../models/UserProgress.js';
 import TherapeuticTechniqueUsage from '../models/TherapeuticTechniqueUsage.js';
+import cacheService from './cacheService.js';
+import openaiService from './openaiService.js';
 
 /** Ventana de un bloque "semana" del modelo Hábito (desde 1 ene, + week * 7 días). */
 function habitWeekWindow(week, year) {
@@ -88,6 +91,151 @@ function topTopicCounts(rows, limit = 8) {
     .map(([topic, count]) => ({ topic, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, limit);
+}
+
+function toPosIntOr(value, fallback) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
+}
+
+export function isWithinWeeklyNarrativeLlmWindow(lastWeeklyTipsEmailAt, now = new Date()) {
+  if (!lastWeeklyTipsEmailAt) return false;
+  const sentAt = new Date(lastWeeklyTipsEmailAt);
+  if (Number.isNaN(sentAt.getTime())) return false;
+  const diffMs = now.getTime() - sentAt.getTime();
+  if (diffMs < 0) return false;
+  const windowHours = toPosIntOr(process.env.WEEKLY_SUMMARY_LLM_WINDOW_HOURS, 36);
+  return diffMs <= windowHours * 60 * 60 * 1000;
+}
+
+function buildDeterministicNarrative(summary) {
+  const topTopic = summary?.emotions?.progressTopicsTop?.[0]?.topic || 'tu proceso personal';
+  const topEmotion = summary?.emotions?.insightsEmotionsTop?.[0]?.emotion || null;
+  const tasksDone = summary?.tasks?.completedInPeriod ?? 0;
+  const habitCompletions = summary?.habits?.completionsInPeriod ?? 0;
+  const activeDays = summary?.chat?.distinctActiveDays ?? 0;
+  const userMessages = summary?.chat?.userMessages ?? 0;
+
+  const themes = topEmotion
+    ? `Se repitieron temas ligados a ${topTopic} y aparecieron señales emocionales de tipo ${topEmotion}.`
+    : `Se repitieron temas ligados a ${topTopic}, con foco en sostener tu proceso paso a paso.`;
+
+  let microWins = 'Sostuviste presencia en la app, aunque fuera en micro-momentos.';
+  if (tasksDone > 0 || habitCompletions > 0) {
+    microWins = `Completaste ${tasksDone} tarea${tasksDone === 1 ? '' : 's'} y registraste ${habitCompletions} avance${habitCompletions === 1 ? '' : 's'} en hábitos.`;
+  } else if (activeDays > 0 || userMessages > 0) {
+    microWins = `Tuviste actividad ${activeDays} día${activeDays === 1 ? '' : 's'} y abriste ${userMessages} mensaje${userMessages === 1 ? '' : 's'} en el chat.`;
+  }
+
+  let nextQuestion = '¿Qué pequeño paso realista te gustaría priorizar esta semana para cuidarte mejor?';
+  if (tasksDone >= 3 || habitCompletions >= 4) {
+    nextQuestion = '¿Qué condición te ayudó a sostener estos avances y cómo la puedes repetir esta semana?';
+  } else if (activeDays <= 1) {
+    nextQuestion = '¿Qué micro-hábito de 2 minutos podrías retomar primero para volver a tomar ritmo?';
+  }
+
+  return { themes, microWins, nextQuestion };
+}
+
+function parseLlmNarrative(rawText) {
+  const raw = String(rawText || '').trim();
+  if (!raw) return null;
+
+  const lines = raw
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const take = (prefix) =>
+    lines.find((l) => l.toUpperCase().startsWith(prefix))?.replace(/^[^:]+:\s*/i, '').trim();
+
+  const themes = take('TEMAS:');
+  const microWins = take('LOGROS:');
+  const nextQuestion = take('PREGUNTA:');
+  if (!themes || !microWins || !nextQuestion) return null;
+  return { themes, microWins, nextQuestion };
+}
+
+async function buildNarrative(summary, user) {
+  const fallback = buildDeterministicNarrative(summary);
+  const llmEnabled = process.env.WEEKLY_SUMMARY_LLM_ENABLED === 'true';
+  const isWeek = summary?.period?.type === 'week';
+  const insideWindow = isWithinWeeklyNarrativeLlmWindow(user?.stats?.lastWeeklyTipsEmailAt);
+
+  if (!llmEnabled || !isWeek || !insideWindow || !process.env.OPENAI_API_KEY) {
+    return {
+      mode: 'deterministic',
+      ...fallback
+    };
+  }
+
+  try {
+    const windowHours = toPosIntOr(process.env.WEEKLY_SUMMARY_LLM_WINDOW_HOURS, 36);
+    const windowMs = windowHours * 60 * 60 * 1000;
+    const sentAt = new Date(user?.stats?.lastWeeklyTipsEmailAt);
+    const elapsedMs = Math.max(0, Date.now() - sentAt.getTime());
+    const ttlSeconds = Math.max(60, Math.floor((windowMs - elapsedMs) / 1000));
+    const cacheKey = cacheService.generateKey('weekly_summary_narrative_v1', {
+      userId: String(user?._id || ''),
+      periodStart: summary?.period?.start || '',
+      periodEnd: summary?.period?.end || '',
+      mode: 'week'
+    });
+
+    const cached = await cacheService.get(cacheKey);
+    if (cached && cached.themes && cached.microWins && cached.nextQuestion) {
+      return {
+        mode: 'llm_cached',
+        themes: String(cached.themes),
+        microWins: String(cached.microWins),
+        nextQuestion: String(cached.nextQuestion)
+      };
+    }
+
+    const model = process.env.WEEKLY_SUMMARY_LLM_MODEL || 'gpt-4o-mini';
+    const completion = await openaiService.createChatCompletionResilient({
+      model,
+      messages: [
+        {
+          role: 'system',
+          content:
+            'Eres redactor de resúmenes semanales en español para bienestar emocional. Tono cálido, concreto, no clínico. Sin diagnóstico. Responde EXACTAMENTE en 3 líneas con este formato: TEMAS: ...\\nLOGROS: ...\\nPREGUNTA: ...'
+        },
+        {
+          role: 'user',
+          content: `Periodo: ${summary?.period?.label || 'semana actual'}\nTemasTop: ${JSON.stringify(
+            summary?.emotions?.progressTopicsTop || []
+          )}\nEmocionesTop: ${JSON.stringify(summary?.emotions?.insightsEmotionsTop || [])}\nMétricas: ${JSON.stringify(
+            {
+              userMessages: summary?.chat?.userMessages ?? 0,
+              activeDays: summary?.chat?.distinctActiveDays ?? 0,
+              tasksCompleted: summary?.tasks?.completedInPeriod ?? 0,
+              habitsCompletions: summary?.habits?.completionsInPeriod ?? 0,
+              journalEntries: summary?.journal?.entriesCount ?? 0,
+              techniquesUses: summary?.techniques?.totalUses ?? 0
+            }
+          )}`
+        }
+      ],
+      max_completion_tokens: 220,
+      temperature: 0.4
+    });
+
+    const raw = completion?.choices?.[0]?.message?.content || '';
+    const parsed = parseLlmNarrative(raw);
+    if (!parsed) throw new Error('LLM_NARRATIVE_PARSE_FAILED');
+
+    await cacheService.set(cacheKey, parsed, ttlSeconds);
+
+    return {
+      mode: 'llm',
+      ...parsed
+    };
+  } catch {
+    return {
+      mode: 'deterministic_fallback',
+      ...fallback
+    };
+  }
 }
 
 async function aggregateChat(userId, start, end) {
@@ -212,7 +360,8 @@ export async function buildUserSummary(userId, opts) {
     habitsLean,
     insightDoc,
     progressDoc,
-    techniques
+    techniques,
+    userDoc
   ] = await Promise.all([
     aggregateChat(userId, start, end),
     Task.countDocuments({
@@ -239,7 +388,8 @@ export async function buildUserSummary(userId, opts) {
       .lean(),
     UserInsight.findOne({ userId: uid }).lean(),
     UserProgress.findOne({ userId: uid }).lean(),
-    TherapeuticTechniqueUsage.getUserStats(userId, { startDate: start, endDate: end })
+    TherapeuticTechniqueUsage.getUserStats(userId, { startDate: start, endDate: end }),
+    User.findById(uid).select('name username stats.lastWeeklyTipsEmailAt').lean()
   ]);
 
   const interactions = (insightDoc?.interactions || []).filter(
@@ -284,7 +434,7 @@ export async function buildUserSummary(userId, opts) {
     habitsBlock = habitCompletionsForCalendarMonth(habitsLean, month0, year);
   }
 
-  return {
+  const summaryPayload = {
     period: {
       type: period,
       start: start.toISOString(),
@@ -321,5 +471,12 @@ export async function buildUserSummary(userId, opts) {
     journal: {
       entriesCount: journalCount
     }
+  };
+
+  const narrative = await buildNarrative(summaryPayload, userDoc);
+
+  return {
+    ...summaryPayload,
+    narrative
   };
 }

@@ -86,6 +86,24 @@ function MetricTile({ icon, value, label }) {
   );
 }
 
+function NarrativeCard({ narrative }) {
+  if (!narrative) return null;
+  return (
+    <View style={styles.narrativeCard}>
+      <Text style={styles.narrativeTitle}>Resumen narrativo</Text>
+      <Text style={styles.narrativeLine}>
+        <Text style={styles.narrativeLabel}>Temas: </Text>
+        {narrative.themes}
+      </Text>
+      <Text style={styles.narrativeLine}>
+        <Text style={styles.narrativeLabel}>Micro-logros: </Text>
+        {narrative.microWins}
+      </Text>
+      <Text style={styles.narrativeQuestion}>{narrative.nextQuestion}</Text>
+    </View>
+  );
+}
+
 function SkeletonTile() {
   return <View style={styles.skeletonTile} />;
 }
@@ -348,37 +366,40 @@ export default function SummaryScreen() {
               {periodEmpty ? (
                 <EmptyState navigation={navigation} />
               ) : (
-                <View style={styles.grid}>
-                  <MetricTile
-                    icon="message-text-outline"
-                    value={String(payload?.chat?.userMessages ?? 0)}
-                    label={TEXTS.TILE_CHAT}
-                  />
-                  <MetricTile
-                    icon="calendar-blank-outline"
-                    value={String(payload?.chat?.distinctActiveDays ?? 0)}
-                    label={TEXTS.TILE_DAYS}
-                  />
-                  <MetricTile
-                    icon="head-heart-outline"
-                    value={String(payload?.techniques?.totalUses ?? 0)}
-                    label={TEXTS.TILE_TECHNIQUES}
-                  />
-                  <MetricTile
-                    icon="checkbox-marked-circle-outline"
-                    value={String(payload?.tasks?.completedInPeriod ?? 0)}
-                    label={TEXTS.TILE_TASKS}
-                  />
-                  <MetricTile
-                    icon="repeat"
-                    value={String(payload?.habits?.completionsInPeriod ?? 0)}
-                    label={TEXTS.TILE_HABITS}
-                  />
-                  <MetricTile
-                    icon="notebook-outline"
-                    value={String(payload?.journal?.entriesCount ?? 0)}
-                    label={TEXTS.TILE_JOURNAL}
-                  />
+                <View>
+                  <NarrativeCard narrative={payload?.narrative} />
+                  <View style={styles.grid}>
+                    <MetricTile
+                      icon="message-text-outline"
+                      value={String(payload?.chat?.userMessages ?? 0)}
+                      label={TEXTS.TILE_CHAT}
+                    />
+                    <MetricTile
+                      icon="calendar-blank-outline"
+                      value={String(payload?.chat?.distinctActiveDays ?? 0)}
+                      label={TEXTS.TILE_DAYS}
+                    />
+                    <MetricTile
+                      icon="head-heart-outline"
+                      value={String(payload?.techniques?.totalUses ?? 0)}
+                      label={TEXTS.TILE_TECHNIQUES}
+                    />
+                    <MetricTile
+                      icon="checkbox-marked-circle-outline"
+                      value={String(payload?.tasks?.completedInPeriod ?? 0)}
+                      label={TEXTS.TILE_TASKS}
+                    />
+                    <MetricTile
+                      icon="repeat"
+                      value={String(payload?.habits?.completionsInPeriod ?? 0)}
+                      label={TEXTS.TILE_HABITS}
+                    />
+                    <MetricTile
+                      icon="notebook-outline"
+                      value={String(payload?.journal?.entriesCount ?? 0)}
+                      label={TEXTS.TILE_JOURNAL}
+                    />
+                  </View>
                 </View>
               )}
 
@@ -522,6 +543,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingTop: 10,
     paddingBottom: 4,
+  },
+  narrativeCard: {
+    marginHorizontal: 12,
+    marginTop: 12,
+    marginBottom: 8,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: 'rgba(26, 221, 219, 0.08)',
+  },
+  narrativeTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.white,
+    marginBottom: 8,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  narrativeLine: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: colors.textSecondary,
+    marginBottom: 6,
+  },
+  narrativeLabel: {
+    color: colors.white,
+    fontWeight: '600',
+  },
+  narrativeQuestion: {
+    marginTop: 4,
+    fontSize: 14,
+    lineHeight: 21,
+    color: colors.white,
+    fontWeight: '500',
   },
   tile: {
     width: '48%',

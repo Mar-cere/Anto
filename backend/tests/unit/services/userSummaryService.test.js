@@ -1,7 +1,8 @@
 import { describe, it, expect } from '@jest/globals';
 import {
   calendarWeekRangeFromAnchor,
-  calendarMonthRange
+  calendarMonthRange,
+  isWithinWeeklyNarrativeLlmWindow
 } from '../../../services/userSummaryService.js';
 
 describe('userSummaryService period helpers', () => {
@@ -21,5 +22,17 @@ describe('userSummaryService period helpers', () => {
     expect(start.getDate()).toBe(1);
     expect(end.getMonth()).toBe(3);
     expect(end.getDate()).toBe(30);
+  });
+
+  it('isWithinWeeklyNarrativeLlmWindow: true dentro de 36h por defecto', () => {
+    const now = new Date('2026-04-28T12:00:00.000Z');
+    const sentAt = new Date('2026-04-27T06:30:00.000Z');
+    expect(isWithinWeeklyNarrativeLlmWindow(sentAt, now)).toBe(true);
+  });
+
+  it('isWithinWeeklyNarrativeLlmWindow: false fuera de ventana', () => {
+    const now = new Date('2026-04-28T12:00:00.000Z');
+    const sentAt = new Date('2026-04-26T23:00:00.000Z');
+    expect(isWithinWeeklyNarrativeLlmWindow(sentAt, now)).toBe(false);
   });
 });

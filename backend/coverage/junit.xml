@@ -1,25 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="9" failures="0" errors="0" time="1.052">
-  <testsuite name="Chat Routes" errors="0" failures="0" skipped="0" timestamp="2026-04-28T03:10:52" time="0.922" tests="5">
-    <testcase classname="Chat Routes POST /api/chat/messages debe rechazar mensaje sin autenticación" name="Chat Routes POST /api/chat/messages debe rechazar mensaje sin autenticación" time="0.018">
+<testsuites name="jest tests" tests="14" failures="0" errors="0" time="0.842">
+  <testsuite name="userSummaryService period helpers" errors="0" failures="0" skipped="0" timestamp="2026-04-28T13:18:19" time="0.761" tests="4">
+    <testcase classname="userSummaryService period helpers calendarWeekRangeFromAnchor: semana lunes–domingo que contiene un martes" name="userSummaryService period helpers calendarWeekRangeFromAnchor: semana lunes–domingo que contiene un martes" time="0.002">
     </testcase>
-    <testcase classname="Chat Routes POST /api/chat/messages debe rechazar mensaje sin contenido" name="Chat Routes POST /api/chat/messages debe rechazar mensaje sin contenido" time="0.002">
+    <testcase classname="userSummaryService period helpers calendarMonthRange: abril 2026" name="userSummaryService period helpers calendarMonthRange: abril 2026" time="0">
     </testcase>
-    <testcase classname="Chat Routes GET /api/chat/conversations debe rechazar consulta sin autenticación" name="Chat Routes GET /api/chat/conversations debe rechazar consulta sin autenticación" time="0.001">
+    <testcase classname="userSummaryService period helpers isWithinWeeklyNarrativeLlmWindow: true dentro de 36h por defecto" name="userSummaryService period helpers isWithinWeeklyNarrativeLlmWindow: true dentro de 36h por defecto" time="0">
     </testcase>
-    <testcase classname="Chat Routes GET /api/chat/conversations/:id debe rechazar consulta sin autenticación" name="Chat Routes GET /api/chat/conversations/:id debe rechazar consulta sin autenticación" time="0">
-    </testcase>
-    <testcase classname="Chat Routes GET /api/chat/messages/search debe rechazar búsqueda sin autenticación" name="Chat Routes GET /api/chat/messages/search debe rechazar búsqueda sin autenticación" time="0.001">
+    <testcase classname="userSummaryService period helpers isWithinWeeklyNarrativeLlmWindow: false fuera de ventana" name="userSummaryService period helpers isWithinWeeklyNarrativeLlmWindow: false fuera de ventana" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="CheckSubscription Middleware" errors="0" failures="0" skipped="0" timestamp="2026-04-28T03:10:53" time="0.11" tests="4">
-    <testcase classname="CheckSubscription Middleware requireActiveSubscription debe permitir acceso cuando el usuario tiene premium activo (modelo User)" name="CheckSubscription Middleware requireActiveSubscription debe permitir acceso cuando el usuario tiene premium activo (modelo User)" time="0.003">
+  <testsuite name="resolveWeeklyTipsMailEnv" errors="0" failures="0" skipped="0" timestamp="2026-04-28T13:18:20" time="0.055" tests="10">
+    <testcase classname="resolveWeeklyTipsMailEnv usa sunday_morning por defecto cuando no viene slot" name="resolveWeeklyTipsMailEnv usa sunday_morning por defecto cuando no viene slot" time="0.001">
     </testcase>
-    <testcase classname="CheckSubscription Middleware requireActiveSubscription debe permitir primera sesión por gracia cuando no hay suscripción y no hay mensajes previos" name="CheckSubscription Middleware requireActiveSubscription debe permitir primera sesión por gracia cuando no hay suscripción y no hay mensajes previos" time="0.001">
+    <testcase classname="resolveWeeklyTipsMailEnv sunday_morning usa domingo 10h UTC por defecto" name="resolveWeeklyTipsMailEnv sunday_morning usa domingo 10h UTC por defecto" time="0">
     </testcase>
-    <testcase classname="CheckSubscription Middleware requireActiveSubscription debe bloquear cuando no hay suscripción y ya existe historial del usuario" name="CheckSubscription Middleware requireActiveSubscription debe bloquear cuando no hay suscripción y ya existe historial del usuario" time="0">
+    <testcase classname="resolveWeeklyTipsMailEnv monday_morning usa lunes 10h UTC y ventana hasta :59" name="resolveWeeklyTipsMailEnv monday_morning usa lunes 10h UTC y ventana hasta :59" time="0">
     </testcase>
-    <testcase classname="CheckSubscription Middleware requireActiveSubscription no debe aplicar gracia fuera de rutas iniciales del chat" name="CheckSubscription Middleware requireActiveSubscription no debe aplicar gracia fuera de rutas iniciales del chat" time="0.001">
+    <testcase classname="resolveWeeklyTipsMailEnv saturday_night usa sábado 23h UTC por defecto" name="resolveWeeklyTipsMailEnv saturday_night usa sábado 23h UTC por defecto" time="0.001">
+    </testcase>
+    <testcase classname="resolveWeeklyTipsMailEnv permite sobrescribir la hora del slot" name="resolveWeeklyTipsMailEnv permite sobrescribir la hora del slot" time="0">
+    </testcase>
+    <testcase classname="matchesWeeklyTipsUtcWindow domingo 10:05 UTC con slot sunday_morning" name="matchesWeeklyTipsUtcWindow domingo 10:05 UTC con slot sunday_morning" time="0">
+    </testcase>
+    <testcase classname="matchesWeeklyTipsUtcWindow sábado 23:05 UTC con slot saturday_night" name="matchesWeeklyTipsUtcWindow sábado 23:05 UTC con slot saturday_night" time="0">
+    </testcase>
+    <testcase classname="matchesWeeklyTipsUtcWindow false fuera de hora de ventana (domingo 11h UTC, slot 10h)" name="matchesWeeklyTipsUtcWindow false fuera de hora de ventana (domingo 11h UTC, slot 10h)" time="0">
+    </testcase>
+    <testcase classname="matchesWeeklyTipsUtcWindow domingo 10:55 UTC sigue dentro de ventana sunday_morning (:59)" name="matchesWeeklyTipsUtcWindow domingo 10:55 UTC sigue dentro de ventana sunday_morning (:59)" time="0.001">
+    </testcase>
+    <testcase classname="matchesWeeklyTipsUtcWindow false otro día con slot sunday_morning" name="matchesWeeklyTipsUtcWindow false otro día con slot sunday_morning" time="0">
     </testcase>
   </testsuite>
 </testsuites>

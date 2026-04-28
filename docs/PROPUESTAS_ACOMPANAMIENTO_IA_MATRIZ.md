@@ -363,7 +363,7 @@ Cada **descripción breve** incluye, al final, la misma frase de **contexto de r
 | 128 | Streaming Socket paridad SSE | 3 | 4 | 4 | 4 | M | M | Q2 |
 | 129 | Red team prompts automático | 3 | 5 | 3 | 4 | M | M | Q2 |
 | 130 | Canary prompt/modelo % | 3 | 4 | 4 | 4 | B | M | Q2 |
-| 131 | Cost governance + degradación | 4 | 4 | 4 | 4 | M | M | **Q1** |
+| 131 | Cost governance + degradación | 3 | 4 | 4 | 4 | M | M | Q2 |
 | 132 | B2B + panel agregado | 2 | 4 | 3 | 4 | M | L | Q2 |
 | 133 | i18n + WCAG chat | 3 | 4 | 3 | 4 | M | L | Q2 |
 | 134 | Modo dislexia visual | 2 | 4 | 3 | 4 | B | M | Q2 |
@@ -479,12 +479,12 @@ Eje vertical: **Importancia** (abajo = baja, arriba = alta).
    (importante,          │   (urgente +
     no tan urgente)       │    importante)
                            │
-  1–7, 11–15, 17, 18,     │   8, 10, 16, 19, 50,
+  1–7, 11–15, 17, 18,     │   8, 10, 19, 50,
   20, 23–29, 31, 32,      │   59, 63, 81, 93,
   34–36, 38–42, 44,       │   120, 131, 143, 155,
   46–49, 51–54,          │   171, 176, 182, 194, 199
   55–57, 60–62, 64–67,    │
-  69–72, 73–80, 82, 84,   │
+  69–71, 73–80, 82, 84,   │
   85–92, 94–99,          │
   100–109, 111,         │
   112–119, 121,         │
@@ -512,8 +512,8 @@ Eje vertical: **Importancia** (abajo = baja, arriba = alta).
 
 **Notas de lectura**
 
-- **Q1:** confianza inmediata, seguridad de respuesta y percepción de velocidad — panel IA (#8), transparencia crisis (#10), onboarding (#16), crisis suave (#19), atajo regulación (#50), **streaming / TTFT (#59)**, **grounding hechos del usuario (#63)**, **cola cifrada + envío optimista (#81)**, **protocolo ideación / seguridad (#93)**, **anti-inyección RAG (#120)**, **cost governance (#131)**, **auditoría inmutable de accesos (#143)**, **compartir informe con psicólogo tratante (#155)**; del bloque **#156–#200**: **SAST CodeQL (#171)**, **RAG con citas ancladas (#176)**, **backoff unificado (#182)**, **biblioteca límites competencia (#194)**, **checklist release prompt+modelo (#199)**.  
-- **Q2:** núcleo del acompañamiento e IA terapéutica — focos (#2), puente protocolos (#6), resumen narrativo (#11), dashboard foco (#34), reformulación in-chat (#40), cierre de sesión (#47), escala al foco (#49), modo inmersivo (#36), anclas (#38), alianza lite (#39), TTS (#42), roleplay (#48), curación clínica (#46), **#51–#54**, **#55–#72 salvo #58/#68** *(#72 intención de sesión: **completada**)*, **#73–#80, #82, #84**, **#85–#92, #94–#99**, **#100–#109, #111**, **#112–#119, #121, #123–#130**, **#132–#136, #138, #140–#142, #144, #148–#149, #151–#154** (B2B, i18n, dislexia, on-device, PWA, staging, residencia, SSO, rotación secretos, OpenAPI, a11y E2E, playbook, **inglés, portugués, chat multilingüe**, **informe ampliado entre consultas**); además **#156–#164, #166–#181, #183–#193, #195, #197–#198, #200** (retención, ingeniería, chat, app, clínica tratante, analytics).  
+- **Q1:** confianza inmediata, seguridad de respuesta y percepción de velocidad — panel IA (#8), transparencia crisis (#10), onboarding (#16), crisis suave (#19), atajo regulación (#50), **streaming / TTFT (#59)**, **grounding hechos del usuario (#63)**, **cola cifrada + envío optimista (#81)**, **protocolo ideación / seguridad (#93)**, **anti-inyección RAG (#120)**, **auditoría inmutable de accesos (#143)**, **compartir informe con psicólogo tratante (#155)**; del bloque **#156–#200**: **SAST CodeQL (#171)**, **RAG con citas ancladas (#176)**, **backoff unificado (#182)**, **biblioteca límites competencia (#194)**, **checklist release prompt+modelo (#199)**.  
+- **Q2:** núcleo del acompañamiento e IA terapéutica — focos (#2), puente protocolos (#6), resumen narrativo (#11), dashboard foco (#34), reformulación in-chat (#40), cierre de sesión (#47), escala al foco (#49), modo inmersivo (#36), anclas (#38), alianza lite (#39), TTS (#42), roleplay (#48), curación clínica (#46), **#51–#54**, **#55–#72 salvo #58/#68** *(#72 intención de sesión: **completada**)*, **#73–#80, #82, #84**, **#85–#92, #94–#99**, **#100–#109, #111**, **#112–#119, #121, #123–#131**, **#132–#136, #138, #140–#142, #144, #148–#149, #151–#154** (B2B, i18n, dislexia, on-device, PWA, staging, residencia, SSO, rotación secretos, OpenAPI, a11y E2E, playbook, **inglés, portugués, chat multilingüe**, **informe ampliado entre consultas**); además **#156–#164, #166–#181, #183–#193, #195, #197–#198, #200** (retención, ingeniería, chat, app, clínica tratante, analytics).  
 - **Q3:** urgencia operativa o legal con importancia compuesta moderada — derivación (#9), consentimientos granulares (#33), **gate npm audit (#172)**; revisar si el negocio las trata como Q1 “manual”.  
 - **Q4:** baja urgencia e importancia compuesta ≤ 3 — compartir resumen (#14), ramas por tema (#21), export para profesional (#22), logros desalineados (#27), seguridad UX mínima (#30), síntesis colapsable (#37), sync calendario (#43), perfil copy nocturno (#45), **indicador de calibración opt-in (#58)**, **micro-etiquetas de fase (#68)**, **timeline/minimapa sesión (#83)** si no hay evidencia de uso, **cohortes idioma/región (#110)** hasta validar ROI de localización profunda, **caché semántica solo estática (#122)** si el riesgo PII no está cerrado, **API partner (#137)**, **chaos opcional (#139)**, **SLA documentado sin enforcement (#146)**, **bug bounty (#147)**, **métrica CO₂ (#150)**, **game day backup (#145)** si no sube prioridad operativa; del bloque **#156–#200**: **densidad chat (#165)**, **knip (#173)**, **copy remoto (#188)** si no hay operación de strings, **mutación tests (#196)** si no hay checkout crítico.
 
