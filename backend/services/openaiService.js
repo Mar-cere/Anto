@@ -325,7 +325,8 @@ class OpenAIService {
           preferredResponseLength: contexto.preferredResponseLength,
           crisis: contexto.crisis,
           isGuest,
-          sessionRetention: contexto.sessionRetention
+          sessionRetention: contexto.sessionRetention,
+          sessionIntention: contexto.sessionIntention
         }
       );
 
@@ -736,7 +737,8 @@ class OpenAIService {
         preferredResponseLength: contexto.preferredResponseLength,
         crisis: contexto.crisis,
         isGuest: contexto.isGuest === true,
-        sessionRetention: contexto.sessionRetention
+        sessionRetention: contexto.sessionRetention,
+        sessionIntention: contexto.sessionIntention
       }
     );
 

@@ -36,6 +36,7 @@ import {
   setOfflinePendingMessage,
 } from '../services/chatOfflinePending';
 import { useToast } from '../context/ToastContext';
+import { isValidSessionIntentionId } from '../constants/sessionIntention';
 
 export function useChatScreen() {
   const navigation = useNavigation();
@@ -61,6 +62,9 @@ export function useChatScreen() {
   const guestHandoffUiShownRef = useRef(false);
   /** Un solo mensaje pendiente por falta de red o error de red */
   const [offlinePendingMessage, setOfflinePendingMessage] = useState(null);
+  /** #72: intención de sesión antes del primer mensaje del usuario (solo cuenta registrada) */
+  const [showSessionIntentionPrompt, setShowSessionIntentionPrompt] = useState(false);
+  const [sessionIntentionSubmitting, setSessionIntentionSubmitting] = useState(false);
   /** Pulgar en mensajes del asistente (solo usuarios con cuenta) */
   const [chatFeedbackEnabled, setChatFeedbackEnabled] = useState(false);
   /** Evita doble envío y permite deshabilitar botones mientras viaja la petición */
@@ -95,7 +99,8 @@ export function useChatScreen() {
   }, []);
 
   const initializeConversation = useCallback(async () => {
-    const dedupeAndSetMessages = (serverMessages) => {
+    const dedupeAndSetMessages = (serverMessages, sessionIntentionMeta, flags) => {
+      const isRegistered = flags?.isRegistered === true;
       if (!serverMessages || serverMessages.length === 0) return false;
       const uniqueMessages = serverMessages.reduce((acc, message) => {
         const messageId = message._id || message.id;
@@ -112,7 +117,14 @@ export function useChatScreen() {
         const timeB = new Date(b.createdAt || b.metadata?.timestamp || 0).getTime();
         return timeA - timeB;
       });
-      setMessages(uniqueMessages.filter((m) => m.type !== 'quickReplies'));
+      const filtered = uniqueMessages.filter((m) => m.type !== 'quickReplies');
+      setMessages(filtered);
+      if (isRegistered) {
+        const userCount = filtered.filter((m) => m.role === MESSAGE_ROLES.USER).length;
+        setShowSessionIntentionPrompt(userCount === 0 && !sessionIntentionMeta);
+      } else {
+        setShowSessionIntentionPrompt(false);
+      }
       return true;
     };
 
@@ -126,16 +138,18 @@ export function useChatScreen() {
         await chatService.initializeSocket();
         let conversationId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
         if (conversationId) {
-          const serverMessages = await chatService.getMessages(conversationId);
-          if (dedupeAndSetMessages(serverMessages)) return;
+          const pack = await chatService.getMessages(conversationId);
+          if (dedupeAndSetMessages(pack.messages, pack.sessionIntention, { isRegistered: true }))
+            return;
         }
         const idAfterFetch = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
         if (!idAfterFetch) {
           await chatService.initializeSocket();
           conversationId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
           if (conversationId) {
-            const retryMessages = await chatService.getMessages(conversationId);
-            if (dedupeAndSetMessages(retryMessages)) return;
+            const retryPack = await chatService.getMessages(conversationId);
+            if (dedupeAndSetMessages(retryPack.messages, retryPack.sessionIntention, { isRegistered: true }))
+              return;
           }
         }
         const welcomeMessage = {
@@ -146,6 +160,7 @@ export function useChatScreen() {
           metadata: { timestamp: new Date().toISOString(), type: MESSAGE_TYPES.WELCOME },
         };
         setMessages([welcomeMessage]);
+        setShowSessionIntentionPrompt(true);
         await chatService.saveMessages([welcomeMessage]);
         return;
       }
@@ -172,6 +187,7 @@ export function useChatScreen() {
             ]);
             setGuestQuota(null);
             setMessages([]);
+            setShowSessionIntentionPrompt(false);
             return;
           }
           throw e;
@@ -189,7 +205,7 @@ export function useChatScreen() {
             max: GUEST_MAX_USER_MESSAGES,
             remaining: Math.max(0, GUEST_MAX_USER_MESSAGES - used),
           });
-          if (dedupeAndSetMessages(serverMessages)) return;
+          if (dedupeAndSetMessages(serverMessages, null, { isRegistered: false })) return;
         }
         setGuestQuota({ max: GUEST_MAX_USER_MESSAGES, remaining: GUEST_MAX_USER_MESSAGES });
         const welcomeMessage = {
@@ -200,11 +216,13 @@ export function useChatScreen() {
           metadata: { timestamp: new Date().toISOString(), type: MESSAGE_TYPES.WELCOME },
         };
         setMessages([welcomeMessage]);
+        setShowSessionIntentionPrompt(false);
         return;
       }
 
       setGuestQuota(null);
       setMessages([]);
+      setShowSessionIntentionPrompt(false);
     } catch (err) {
       if (err.guestAuthFailed) {
         setError(null);
@@ -216,6 +234,7 @@ export function useChatScreen() {
           },
         ]);
         setMessages([]);
+        setShowSessionIntentionPrompt(false);
         return;
       }
       if (err.code === 'RATE_LIMIT') {
@@ -227,6 +246,7 @@ export function useChatScreen() {
           },
         ]);
         setMessages([]);
+        setShowSessionIntentionPrompt(false);
         return;
       }
       console.error('[ChatScreen] Error al inicializar chat:', err.message);
@@ -235,6 +255,62 @@ export function useChatScreen() {
       setIsLoading(false);
     }
   }, [navigation, route.params?.startGuest]);
+
+  const skipSessionIntention = useCallback(() => {
+    setShowSessionIntentionPrompt(false);
+  }, []);
+
+  const selectSessionIntention = useCallback(
+    async (intentionId) => {
+      if (!isValidSessionIntentionId(intentionId)) return;
+      if (sessionIntentionSubmitting) return;
+      if (await chatService.isGuestChatMode()) return;
+      if (isOffline) {
+        showToast({ message: TEXTS.NETWORK_ERROR, type: 'warning' });
+        return;
+      }
+      setSessionIntentionSubmitting(true);
+      try {
+        let cid = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+        if (!cid) {
+          await chatService.createConversation({ sessionIntention: intentionId });
+          cid = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+        } else {
+          await chatService.setSessionIntention(cid, intentionId);
+        }
+        if (cid) {
+          const pack = await chatService.getMessages(cid);
+          const list = pack.messages || [];
+          const uniqueMessages = list.reduce((acc, message) => {
+            const messageId = message._id || message.id;
+            if (!messageId) return acc;
+            const exists = acc.some((msg) => msg._id === messageId || msg.id === messageId);
+            if (!exists) acc.push(message);
+            return acc;
+          }, []);
+          uniqueMessages.sort((a, b) => {
+            const timeA = new Date(a.createdAt || a.metadata?.timestamp || 0).getTime();
+            const timeB = new Date(b.createdAt || b.metadata?.timestamp || 0).getTime();
+            return timeA - timeB;
+          });
+          setMessages(uniqueMessages.filter((m) => m.type !== 'quickReplies'));
+        }
+        setShowSessionIntentionPrompt(false);
+        try {
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        } catch (_) {}
+      } catch (e) {
+        console.warn('[useChatScreen] sessionIntention:', e?.message || e);
+        showToast({
+          message: TEXTS.CONVERSATION_ERROR,
+          type: 'error',
+        });
+      } finally {
+        setSessionIntentionSubmitting(false);
+      }
+    },
+    [isOffline, sessionIntentionSubmitting, showToast]
+  );
 
   const scrollToBottom = useCallback((animated = true) => {
     if (flatListRef.current) {
@@ -292,6 +368,7 @@ export function useChatScreen() {
         ? presetText.trim()
         : inputText.trim();
     if (messageText === '') return;
+    setShowSessionIntentionPrompt(false);
 
     if (isOffline) {
       try {
@@ -714,8 +791,9 @@ export function useChatScreen() {
       }
       const conversationId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
       if (conversationId) {
-        const serverMessages = await chatService.getMessages(conversationId);
-        if (serverMessages && serverMessages.length > 0) {
+        const pack = await chatService.getMessages(conversationId);
+        const serverMessages = pack.messages || [];
+        if (serverMessages.length > 0) {
           const uniqueMessages = serverMessages.reduce((acc, message) => {
             const messageId = message._id || message.id;
             if (!messageId) return acc;
@@ -729,6 +807,8 @@ export function useChatScreen() {
             return timeA - timeB;
           });
           setMessages(uniqueMessages);
+          const uc = uniqueMessages.filter((m) => m.role === 'user').length;
+          setShowSessionIntentionPrompt(uc === 0 && !pack.sessionIntention);
         }
       }
     } catch (err) {
@@ -934,6 +1014,7 @@ export function useChatScreen() {
       return () => {
         clearTimeout(handoffTimer);
         setMessages([]);
+        setShowSessionIntentionPrompt(false);
       };
     }, [loadTrialInfo, initializeConversation, offerGuestHandoffIfPending])
   );
@@ -975,5 +1056,9 @@ export function useChatScreen() {
     chatFeedbackEnabled,
     handleMessageFeedback,
     feedbackSubmittingId,
+    showSessionIntentionPrompt,
+    sessionIntentionSubmitting,
+    selectSessionIntention,
+    skipSessionIntention,
   };
 }

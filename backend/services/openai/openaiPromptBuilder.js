@@ -22,6 +22,8 @@ import {
   buildRecentThreadSummarySnippet,
   getSessionPhaseSystemSnippet
 } from '../chat/sessionPhaseHints.js';
+import { getSessionIntentionSystemSnippet } from '../chat/sessionIntentionHints.js';
+import { normalizeSessionIntention } from '../../constants/sessionIntention.js';
 
 function getTimeOfDay() {
   const hour = new Date().getHours();
@@ -665,7 +667,7 @@ const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emocional de
 /**
  * Construye el prompt contextualizado completo (systemMessage + contextMessages).
  * @param {Object} mensaje - Mensaje del usuario (content, userId, conversationId)
- * @param {Object} contexto - Contexto (emotional, contextual, profile, therapeutic, memory, history, sessionTrends, sessionRetention, currentMessage, currentConversationId, crisis, safetyHistory, sessionPhase, rollingSummary)
+ * @param {Object} contexto - Contexto (emotional, contextual, profile, therapeutic, memory, history, sessionTrends, sessionRetention, currentMessage, currentConversationId, crisis, safetyHistory, sessionPhase, rollingSummary, sessionIntention)
  * @returns {Promise<{ systemMessage: string, contextMessages: Array }>}
  */
 export async function buildContextualizedPrompt(mensaje, contexto) {
@@ -692,6 +694,14 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   if ((communicationStyle === 'neutral' || !communicationStyle) && inferredStyle) {
     const styleMap = { formal: 'formal', casual: 'casual', laconic: 'directo', emotive: 'empatico' };
     communicationStyle = styleMap[inferredStyle] || communicationStyle;
+  }
+
+  const sessionIntention = normalizeSessionIntention(contexto.sessionIntention);
+  if (sessionIntention === 'vent' && !depthPreference && preferredLength !== 'LONG') {
+    responseStyle = 'brief';
+  }
+  if (sessionIntention === 'plan' && !depthPreference && preferredLength !== 'SHORT') {
+    responseStyle = 'deep';
   }
 
   let systemMessage = buildPersonalizedPrompt({
@@ -728,6 +738,9 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   const threadSnippet = buildRecentThreadSummarySnippet(contexto.safetyHistory || []);
   if (threadSnippet) systemMessage += threadSnippet;
   systemMessage += getSessionPhaseSystemSnippet(contexto.sessionPhase || 'default');
+
+  const intentionSnippet = getSessionIntentionSystemSnippet(sessionIntention);
+  if (intentionSnippet) systemMessage += intentionSnippet;
 
   const roll = contexto.rollingSummary && String(contexto.rollingSummary).trim();
   if (roll) {

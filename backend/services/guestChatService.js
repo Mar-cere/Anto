@@ -9,6 +9,7 @@ import {
   GUEST_SESSION_HOURS
 } from '../constants/guestChat.js';
 import { evaluateSuicideRisk, shouldAttachCrisisContextToPrompt } from '../constants/crisis.js';
+import { sanitizeSessionIntentionForClient } from '../constants/sessionIntention.js';
 import { buildHistoryForPromptFromMessages } from './openai/openaiPromptBuilder.js';
 import { Conversation, Message } from '../models/index.js';
 import GuestSession from '../models/GuestSession.js';
@@ -345,7 +346,9 @@ export async function sendGuestMessage(guestSession, contentRaw) {
     threadMessageLimit: GUEST_MAX_USER_MESSAGES * 2
   });
 
-  const conversationRoll = await Conversation.findById(conversationId).select('rollingSummary').lean();
+  const conversationRoll = await Conversation.findById(conversationId)
+    .select('rollingSummary sessionIntention')
+    .lean();
 
   const sessionPhase = inferChatSessionPhase({
     riskLevel,
@@ -356,6 +359,7 @@ export async function sendGuestMessage(guestSession, contentRaw) {
 
   const openaiContext = {
     rollingSummary: conversationRoll?.rollingSummary || null,
+    sessionIntention: sanitizeSessionIntentionForClient(conversationRoll?.sessionIntention),
     sessionPhase,
     safetyHistory: conversationHistory.map((m) => ({
       role: m.role,

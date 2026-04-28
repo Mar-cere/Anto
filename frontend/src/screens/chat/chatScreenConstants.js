@@ -4,6 +4,7 @@
 
 import { Dimensions } from 'react-native';
 import { GUEST_CHAT_STORAGE_KEYS } from '../../constants/guestChatStorageKeys';
+import { SESSION_INTENTION_VALUES } from '../../constants/sessionIntention';
 import { colors } from '../../styles/globalStyles';
 
 const { width } = Dimensions.get('window');
@@ -46,7 +47,7 @@ export const TEXTS = {
   GUEST_CONTENT_TOO_LONG_TITLE: 'Mensaje demasiado largo',
   GUEST_HANDOFF_TITLE: 'Resumen del chat sin cuenta',
   GUEST_HANDOFF_BODY:
-    'Podés cargar un resumen editable en el mensaje o empezar de cero con tu cuenta.',
+    'Puedes cargar un resumen editable en el mensaje o empezar de cero con tu cuenta.',
   GUEST_HANDOFF_PRIVACY:
     'El resumen solo está guardado en este dispositivo hasta que elijas una opción; no se envía solo ni automáticamente.',
   GUEST_HANDOFF_USE_SUMMARY: 'Usar resumen en el mensaje',
@@ -56,7 +57,23 @@ export const TEXTS = {
   FEEDBACK_HINT: '¿Te resultó útil esta respuesta?',
   FEEDBACK_ERROR: 'No se pudo guardar tu valoración. Intenta de nuevo.',
   FEEDBACK_OFFLINE: 'Necesitas conexión para enviar la valoración.',
+  /** Intención de sesión (#72) */
+  SESSION_INTENTION_TITLE: '¿Qué necesitas de esta sesión?',
+  SESSION_INTENTION_SKIP: 'Omitir',
 };
+
+const SESSION_INTENTION_UI = {
+  vent: { label: 'Desahogar', hint: 'Más escucha, menos consejos' },
+  organize: { label: 'Ordenar pensamiento', hint: 'Aclarar y nombrar lo que pasa' },
+  technique: { label: 'Técnica o regulación', hint: 'Pasos breves para calmarte' },
+  plan: { label: 'Planificar', hint: 'Pasos concretos para avanzar' },
+};
+
+/** Opciones de intención de sesión (ids alineados a `SESSION_INTENTION_VALUES` en API) */
+export const SESSION_INTENTION_OPTIONS = SESSION_INTENTION_VALUES.map((id) => ({
+  id,
+  ...SESSION_INTENTION_UI[id],
+}));
 
 // AsyncStorage (claves invitado: `constants/guestChatStorageKeys.js` — compartidas con chatService)
 export const STORAGE_KEYS = {

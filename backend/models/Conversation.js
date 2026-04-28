@@ -3,6 +3,7 @@
  */
 import crypto from 'crypto';
 import mongoose from 'mongoose';
+import { SESSION_INTENTION_VALUES } from '../constants/sessionIntention.js';
 
 const conversationSchema = new mongoose.Schema({
   // ID único generado automáticamente
@@ -54,6 +55,15 @@ const conversationSchema = new mongoose.Schema({
   rollingSummaryAtMessageCount: {
     type: Number,
     default: 0
+  },
+  /**
+   * Intención declarada al inicio (#72): ajusta tono y ratio escucha/consejo en el prompt.
+   * @type {'vent'|'organize'|'technique'|'plan'|undefined}
+   */
+  sessionIntention: {
+    type: String,
+    enum: SESSION_INTENTION_VALUES,
+    default: undefined
   }
 }, {
   timestamps: true // Crea createdAt y updatedAt automáticamente

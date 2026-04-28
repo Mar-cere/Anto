@@ -14,7 +14,8 @@ import {
   saveMessages,
   loadMessages,
   getMessages,
-  createConversation
+  createConversation,
+  setSessionIntention
 } from '../chatService';
 
 // Mock AsyncStorage
@@ -251,38 +252,41 @@ describe('chatService', () => {
       
       const result = await getMessages('conv-123');
       
-      expect(result).toEqual(messages);
+      expect(result).toEqual({ messages, sessionIntention: null });
       if (apiMock) {
         expect(apiMock.get).toHaveBeenCalledWith('/api/chat/conversations/conv-123');
       }
     });
 
-    it('debe retornar array vacío si la respuesta no tiene messages', async () => {
+    it('debe anular sessionIntention corrupto en la respuesta', async () => {
+      if (apiMock) {
+        apiMock.get.mockResolvedValue({
+          messages: [{ id: '1', role: 'assistant', content: 'Hola' }],
+          sessionIntention: 'tampered',
+        });
+      }
+      const result = await getMessages('conv-123');
+      expect(result.sessionIntention).toBeNull();
+    });
+
+    it('debe retornar mensajes vacíos si la respuesta no tiene messages', async () => {
       if (apiMock) {
         apiMock.get.mockResolvedValue({});
       }
       
       const result = await getMessages('conv-123');
       
-      expect(result).toBeUndefined(); // O el valor que retorne cuando no hay messages
+      expect(result).toEqual({ messages: [], sessionIntention: null });
     });
 
-    it('debe retornar array vacío en caso de error', async () => {
+    it('debe retornar mensajes vacíos en caso de error', async () => {
       if (apiMock) {
         apiMock.get.mockRejectedValue(new Error('Network error'));
+      } else {
+        mockApi.get.mockRejectedValue(new Error('Network error'));
       }
-      
       const result = await getMessages('conv-123');
-      
-      expect(result).toEqual([]);
-    });
-
-    it('debe retornar array vacío en caso de error', async () => {
-      mockApi.get.mockRejectedValue(new Error('Network error'));
-      
-      const result = await getMessages('conv-123');
-      
-      expect(result).toEqual([]);
+      expect(result).toEqual({ messages: [], sessionIntention: null });
     });
   });
 
@@ -302,14 +306,40 @@ describe('chatService', () => {
       expect(result).toBe('new-conv-123');
       if (apiMock) {
         expect(apiMock.post).toHaveBeenCalledWith(
-        '/api/chat/conversations',
-        expect.objectContaining({
-          metadata: expect.objectContaining({
-            type: 'general',
-            platform: 'ios'
+          '/api/chat/conversations',
+          expect.objectContaining({
+            metadata: expect.objectContaining({
+              type: 'general',
+              platform: 'ios'
+            })
           })
-        })
-      );
+        );
+      }
+    });
+
+    it('debe enviar sessionIntention cuando se pasa en opciones', async () => {
+      const mockResponse = { conversationId: 'new-conv-456' };
+      if (apiMock) {
+        apiMock.post.mockResolvedValue(mockResponse);
+      }
+      await createConversation({ sessionIntention: 'vent' });
+      if (apiMock) {
+        expect(apiMock.post).toHaveBeenCalledWith(
+          '/api/chat/conversations',
+          expect.objectContaining({
+            sessionIntention: 'vent',
+            metadata: expect.any(Object)
+          })
+        );
+      }
+    });
+
+    it('debe rechazar sessionIntention inválido antes de llamar a la API', async () => {
+      await expect(createConversation({ sessionIntention: 'invalid' })).rejects.toMatchObject({
+        code: 'INVALID_SESSION_INTENTION',
+      });
+      if (apiMock) {
+        expect(apiMock.post).not.toHaveBeenCalled();
       }
     });
 
@@ -338,6 +368,24 @@ describe('chatService', () => {
       mockApi.post.mockRejectedValue(new Error('Network error'));
       
       await expect(createConversation()).rejects.toThrow();
+    });
+  });
+
+  describe('setSessionIntention', () => {
+    beforeEach(async () => {
+      await AsyncStorage.setItem('userToken', 'tok');
+    });
+
+    it('rechaza id de conversación inválido', async () => {
+      await expect(setSessionIntention('bad', 'vent')).rejects.toMatchObject({
+        code: 'INVALID_CONVERSATION_ID',
+      });
+    });
+
+    it('rechaza intención inválida', async () => {
+      await expect(
+        setSessionIntention('507f1f77bcf86cd799439011', 'nope')
+      ).rejects.toMatchObject({ code: 'INVALID_SESSION_INTENTION' });
     });
   });
 });

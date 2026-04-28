@@ -28,6 +28,7 @@ import {
   ICON_SIZES,
   MODAL_WIDTH_REF,
   SCROLL_THRESHOLD,
+  SESSION_INTENTION_OPTIONS,
 } from '../chatScreenConstants';
 
 describe('chatScreenConstants', () => {
@@ -46,6 +47,28 @@ describe('chatScreenConstants', () => {
     });
     it('debe tener texto de sugerencias', () => {
       expect(TEXTS.SUGGESTIONS_TITLE).toContain('Sugerencias');
+    });
+    it('debe tener textos de intención de sesión (#72)', () => {
+      expect(TEXTS.SESSION_INTENTION_TITLE).toBe('¿Qué necesitas de esta sesión?');
+      expect(TEXTS.SESSION_INTENTION_SKIP).toBe('Omitir');
+    });
+  });
+
+  describe('SESSION_INTENTION_OPTIONS', () => {
+    it('debe tener cuatro opciones con ids de API', () => {
+      expect(SESSION_INTENTION_OPTIONS).toHaveLength(4);
+      expect(SESSION_INTENTION_OPTIONS.map((o) => o.id)).toEqual([
+        'vent',
+        'organize',
+        'technique',
+        'plan',
+      ]);
+    });
+    it('cada opción debe tener label e hint (UI completa)', () => {
+      SESSION_INTENTION_OPTIONS.forEach((o) => {
+        expect(o.label && String(o.label).trim()).toBeTruthy();
+        expect(o.hint && String(o.hint).trim()).toBeTruthy();
+      });
     });
   });
 

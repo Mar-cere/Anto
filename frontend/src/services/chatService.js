@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api, { API_URL } from '../config/api';
+import { isValidSessionIntentionId } from '../constants/sessionIntention';
 import { clearPersistedChatSession } from '../utils/chatSessionStorage';
 import { postChatSseWithXHR, streamChatSseWithFetch } from '../utils/chatSseStream';
 import { Platform } from 'react-native';
@@ -420,16 +421,32 @@ export const closeSocket = () => {
   errorCallbacks = [];
 };
 
-// Agregar función para crear una nueva conversación
-export const createConversation = async () => {
+/**
+ * Crea conversación en el servidor.
+ * @param {{ sessionIntention?: 'vent'|'organize'|'technique'|'plan' }} [options]
+ */
+export const createConversation = async (options = {}) => {
   try {
-    const response = await api.post('/api/chat/conversations', {
+    const sessionIntention =
+      typeof options === 'string' ? options : options?.sessionIntention;
+    if (sessionIntention != null && String(sessionIntention).trim() !== '') {
+      if (!isValidSessionIntentionId(sessionIntention)) {
+        const e = new Error('sessionIntention inválido');
+        e.code = 'INVALID_SESSION_INTENTION';
+        throw e;
+      }
+    }
+    const body = {
       metadata: {
         type: 'general',
         startedAt: new Date().toISOString(),
         platform: Platform.OS
-      }
-    });
+      },
+      ...(sessionIntention && isValidSessionIntentionId(sessionIntention)
+        ? { sessionIntention: String(sessionIntention).trim() }
+        : {})
+    };
+    const response = await api.post('/api/chat/conversations', body);
 
     if (response && response.conversationId) {
       await AsyncStorage.setItem('currentConversationId', response.conversationId);
@@ -441,6 +458,30 @@ export const createConversation = async () => {
     console.error('Error al crear conversación:', error);
     throw error;
   }
+};
+
+/**
+ * Fija la intención de sesión (#72) antes del primer mensaje del usuario.
+ * @param {string} conversationId
+ * @param {'vent'|'organize'|'technique'|'plan'} sessionIntention
+ */
+export const setSessionIntention = async (conversationId, sessionIntention) => {
+  const token = await AsyncStorage.getItem('userToken');
+  if (!token) throw new Error('Sesión requerida');
+  const cid = String(conversationId ?? '').trim();
+  if (!/^[\da-f]{24}$/i.test(cid)) {
+    const e = new Error('ID de conversación inválido');
+    e.code = 'INVALID_CONVERSATION_ID';
+    throw e;
+  }
+  if (!isValidSessionIntentionId(sessionIntention)) {
+    const e = new Error('sessionIntention inválido');
+    e.code = 'INVALID_SESSION_INTENTION';
+    throw e;
+  }
+  return api.patch(`/api/chat/conversations/${cid}/session-intention`, {
+    sessionIntention: String(sessionIntention).trim()
+  });
 };
 
 /**
@@ -470,11 +511,15 @@ export const submitMessageFeedback = async (messageId, helpful) => {
   return api.patch(`/api/chat/messages/${id}/feedback`, { helpful });
 };
 
-// Agregar función para obtener mensajes
+// Agregar función para obtener mensajes (+ meta de conversación)
 export const getMessages = async (conversationId) => {
   try {
     const response = await api.get(`/api/chat/conversations/${conversationId}`);
-    return response.messages;
+    const rawIntention = response.sessionIntention ?? null;
+    return {
+      messages: response.messages ?? [],
+      sessionIntention: isValidSessionIntentionId(rawIntention) ? String(rawIntention).trim() : null
+    };
   } catch (error) {
     const status = error?.response?.status;
     const msg = String(error?.message || '');
@@ -482,7 +527,7 @@ export const getMessages = async (conversationId) => {
       await clearPersistedChatSession();
     }
     console.error('Error al obtener mensajes:', error);
-    return [];
+    return { messages: [], sessionIntention: null };
   }
 };
 
@@ -498,6 +543,8 @@ export default {
   clearMessages,
   closeSocket,
   getMessages,
+  createConversation,
+  setSessionIntention,
   isGuestChatMode,
   startGuestChatSession,
   clearGuestChat,

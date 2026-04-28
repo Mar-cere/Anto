@@ -28,6 +28,7 @@ import {
 import ChatHeader from '../components/chat/ChatHeader';
 import ChatInput from '../components/chat/ChatInput';
 import ChatMessageItem from '../components/chat/ChatMessageItem';
+import SessionIntentionBanner from '../components/chat/SessionIntentionBanner';
 import ChatTypingIndicator from '../components/chat/ChatTypingIndicator';
 import ClearConversationModal from '../components/chat/ClearConversationModal';
 import OfflineBanner from '../components/OfflineBanner';
@@ -263,6 +264,10 @@ const ChatScreen = () => {
     chatFeedbackEnabled,
     handleMessageFeedback,
     feedbackSubmittingId,
+    showSessionIntentionPrompt,
+    sessionIntentionSubmitting,
+    selectSessionIntention,
+    skipSessionIntention,
   } = useChatScreen();
   const feedbackTargetId = useMemo(
     () => getFeedbackTargetMessageId(messages, chatFeedbackEnabled),
@@ -495,6 +500,13 @@ const ChatScreen = () => {
           />
         )}
       </Animated.View>
+
+      <SessionIntentionBanner
+        visible={showSessionIntentionPrompt && guestQuota === null}
+        submitting={sessionIntentionSubmitting}
+        onSelect={selectSessionIntention}
+        onSkip={skipSessionIntention}
+      />
 
       <ChatInput
         value={inputText}

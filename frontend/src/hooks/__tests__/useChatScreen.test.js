@@ -12,6 +12,10 @@ jest.mock('react-native', () => ({
 }));
 jest.mock('../../styles/globalStyles', () => ({ colors: {} }));
 
+jest.mock('../../context/ToastContext', () => ({
+  useToast: () => ({ showToast: jest.fn() }),
+}));
+
 jest.mock('../../utils/chatEntryContext', () => ({
   resolveChatBackTarget: jest.fn(() => Promise.resolve('dash')),
   clearChatEntryBackTarget: jest.fn(() => Promise.resolve()),
@@ -36,7 +40,9 @@ jest.mock('../../services/chatService', () => ({
   __esModule: true,
   default: {
     initializeSocket: jest.fn(() => Promise.resolve()),
-    getMessages: jest.fn(() => Promise.resolve([])),
+    getMessages: jest.fn(() => Promise.resolve({ messages: [], sessionIntention: null })),
+    createConversation: jest.fn(() => Promise.resolve('new-conv')),
+    setSessionIntention: jest.fn(() => Promise.resolve({})),
     getGuestMessages: jest.fn(() => Promise.resolve([])),
     saveMessages: jest.fn(() => Promise.resolve()),
     sendMessage: jest.fn(() => Promise.resolve({ userMessage: {}, assistantMessage: {} })),
@@ -100,6 +106,7 @@ jest.mock('../../screens/chat/chatScreenConstants', () => ({
     GUEST_SESSION_EXPIRED_MESSAGE: 'Expiró',
     GUEST_RATE_LIMIT_TITLE: 'Rate',
     GUEST_CONTENT_TOO_LONG_TITLE: 'Largo',
+    NETWORK_ERROR: 'Sin red',
     GUEST_HANDOFF_TITLE: 'Handoff',
     GUEST_HANDOFF_BODY: 'Body',
     GUEST_HANDOFF_PRIVACY: 'Privacidad',
@@ -146,7 +153,7 @@ describe('useChatScreen', () => {
     });
     const chatService = require('../../services/chatService').default;
     chatService.initializeSocket.mockResolvedValue(undefined);
-    chatService.getMessages.mockResolvedValue([]);
+    chatService.getMessages.mockResolvedValue({ messages: [], sessionIntention: null });
   });
 
   it('debe retornar las claves esperadas', async () => {

@@ -31,12 +31,10 @@ describe('Conversation Model', () => {
       expect(error).toBeUndefined();
     });
 
-    it('debe requerir userId', () => {
+    it('debe requerir userId al persistir si no es invitado', async () => {
       const conversation = new Conversation({});
-
-      const error = conversation.validateSync();
-      expect(error).toBeDefined();
-      expect(error.errors.userId).toBeDefined();
+      expect(conversation.validateSync()).toBeUndefined();
+      await expect(conversation.save()).rejects.toThrow(/userId/);
     });
 
     it('debe validar status enum', () => {
@@ -55,6 +53,24 @@ describe('Conversation Model', () => {
       });
 
       expect(conversation.status).toBe('active');
+    });
+
+    it('debe aceptar sessionIntention válido (#72)', () => {
+      const conversation = new Conversation({
+        userId: new mongoose.Types.ObjectId(),
+        sessionIntention: 'vent'
+      });
+      expect(conversation.validateSync()).toBeUndefined();
+      expect(conversation.sessionIntention).toBe('vent');
+    });
+
+    it('debe rechazar sessionIntention inválido', () => {
+      const conversation = new Conversation({
+        userId: new mongoose.Types.ObjectId(),
+        sessionIntention: 'invalid'
+      });
+      const error = conversation.validateSync();
+      expect(error).toBeDefined();
     });
 
     it('debe generar id automáticamente', () => {

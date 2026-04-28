@@ -16,6 +16,7 @@ import {
   contextAnalyzer,
   userProfileService
 } from '../services/index.js';
+import { sanitizeSessionIntentionForClient } from '../constants/sessionIntention.js';
 
 // Constantes de configuración
 const DEFAULT_FRONTEND_URLS = ['http://localhost:3000', 'http://localhost:19006'];
@@ -145,7 +146,7 @@ export const setupSocketIO = (server) => {
           userId: userId,
           status: 'active'
         })
-          .select('_id')
+          .select('_id sessionIntention')
           .sort({ updatedAt: -1 })
           .lean();
 
@@ -237,6 +238,7 @@ export const setupSocketIO = (server) => {
             profile: userProfile,
             currentConversationId: conversation._id,
             sessionRetention,
+            sessionIntention: sanitizeSessionIntentionForClient(conversation.sessionIntention),
             _promptTelemetry: {
               userId,
               conversationId: conversation._id,

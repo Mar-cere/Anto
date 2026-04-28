@@ -50,6 +50,11 @@ import { buildSessionRetentionPayload } from '../services/sessionRetentionHints.
 import therapeuticProtocolService from '../services/therapeuticProtocolService.js';
 import { cursorPaginate } from '../utils/pagination.js';
 import { inferChatSessionPhase } from '../services/chat/sessionPhaseHints.js';
+import {
+  normalizeSessionIntention,
+  sanitizeSessionIntentionForClient,
+  wasSessionIntentionProvided
+} from '../constants/sessionIntention.js';
 import { scheduleRollingSummaryRefresh } from '../services/conversationRollingSummaryService.js';
 import {
   LIMITE_MENSAJES,
@@ -100,13 +105,14 @@ router.get('/conversations/:conversationId', protect, validarConversationId, val
       ...(role && { role })
     };
 
-    const [messages, total] = await Promise.all([
+    const [messages, total, convMeta] = await Promise.all([
       Message.find(query)
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(parseInt(limit))
         .lean(),
-      Message.countDocuments(query)
+      Message.countDocuments(query),
+      Conversation.findById(convId).select('sessionIntention').lean()
     ]);
 
     // Asegurar que el primer mensaje del historial sea del asistente (y quede persistido).
@@ -203,6 +209,7 @@ router.get('/conversations/:conversationId', protect, validarConversationId, val
 
     res.json({
       messages: uniqueMessages.reverse(),
+      sessionIntention: sanitizeSessionIntentionForClient(convMeta?.sessionIntention),
       pagination: {
         total,
         page: parseInt(page),
@@ -222,14 +229,83 @@ router.get('/conversations/:conversationId', protect, validarConversationId, val
   }
 });
 
+// Fijar intención de sesión (#72) antes del primer mensaje del usuario
+router.patch(
+  '/conversations/:conversationId/session-intention',
+  protect,
+  requireActiveSubscription(true),
+  validarConversationId,
+  validarConversacion,
+  async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const intention = normalizeSessionIntention(req.body?.sessionIntention);
+      if (!intention) {
+        metricsService.bumpChatFriction('session_intention_invalid_on_patch', {
+          httpStatus: 400,
+          surface: 'registered'
+        });
+        return res.status(400).json({
+          message: 'sessionIntention inválido o vacío. Valores: vent, organize, technique, plan'
+        });
+      }
+      const userMsgCount = await Message.countDocuments({
+        conversationId: new mongoose.Types.ObjectId(conversationId),
+        userId: req.user._id,
+        role: 'user'
+      });
+      if (userMsgCount > 0) {
+        metricsService.bumpChatFriction('session_intention_patch_too_late', {
+          httpStatus: 409,
+          surface: 'registered'
+        });
+        return res.status(409).json({
+          message:
+            'La intención de sesión solo puede fijarse antes del primer mensaje tuyo en esta conversación.'
+        });
+      }
+      const updated = await Conversation.findOneAndUpdate(
+        { _id: new mongoose.Types.ObjectId(conversationId), userId: req.user._id },
+        { $set: { sessionIntention: intention } },
+        { new: true, runValidators: true }
+      )
+        .select('sessionIntention')
+        .lean();
+      if (!updated) {
+        return res.status(404).json({ message: 'Conversación no encontrada' });
+      }
+      res.json({ sessionIntention: sanitizeSessionIntentionForClient(updated.sessionIntention) });
+    } catch (error) {
+      console.error('Error al actualizar intención de sesión:', error);
+      res.status(500).json({
+        message: 'Error al guardar la intención de sesión',
+        error: error.message
+      });
+    }
+  }
+);
+
 // Crear nueva conversación con mensaje de bienvenida
 // Optimizado: saludo sin cargar perfil en la ruta crítica para reducir latencia (<1s)
 router.post('/conversations', protect, requireActiveSubscription(true), async (req, res) => {
   try {
     const userId = req.user._id;
+    const intention = normalizeSessionIntention(req.body?.sessionIntention);
+    if (wasSessionIntentionProvided(req.body?.sessionIntention) && !intention) {
+      metricsService.bumpChatFriction('session_intention_invalid_on_create', {
+        httpStatus: 400,
+        surface: 'registered'
+      });
+      return res.status(400).json({
+        message: 'sessionIntention inválido. Valores: vent, organize, technique, plan'
+      });
+    }
 
     // Crear conversación
-    const conversation = new Conversation({ userId });
+    const conversation = new Conversation({
+      userId,
+      ...(intention ? { sessionIntention: intention } : {})
+    });
     await conversation.save();
 
     // Mensaje de bienvenida con saludo por momento del día (sin await de perfil para evitar +1 ronda DB)
@@ -259,6 +335,7 @@ router.post('/conversations', protect, requireActiveSubscription(true), async (r
 
     res.status(201).json({
       conversationId: conversation._id.toString(),
+      sessionIntention: sanitizeSessionIntentionForClient(conversation.sessionIntention),
       message: welcomeMessage
     });
   } catch (error) {
@@ -320,7 +397,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
       _id: new mongoose.Types.ObjectId(conversationId),
       userId: new mongoose.Types.ObjectId(req.user._id)
     })
-      .select('_id userId rollingSummary rollingSummaryAtMessageCount')
+      .select('_id userId rollingSummary rollingSummaryAtMessageCount sessionIntention')
       .lean();
 
     if (!conversation) {
@@ -968,7 +1045,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                 }
               : undefined,
           ...(memoriaParaOpenAI ? { memory: memoriaParaOpenAI } : {}),
-          sessionRetention
+          sessionRetention,
+          sessionIntention: sanitizeSessionIntentionForClient(conversation?.sessionIntention)
         };
 
         // Streaming: si se pide stream=true, responder por SSE

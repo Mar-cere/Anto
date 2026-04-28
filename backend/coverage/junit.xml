@@ -1,23 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="9" failures="0" errors="0" time="0.126">
-  <testsuite name="resolveWeeklyTipsMailEnv" errors="0" failures="0" skipped="0" timestamp="2026-04-27T20:55:56" time="0.107" tests="9">
-    <testcase classname="resolveWeeklyTipsMailEnv sunday_morning usa domingo 10h UTC por defecto" name="resolveWeeklyTipsMailEnv sunday_morning usa domingo 10h UTC por defecto" time="0.001">
+<testsuites name="jest tests" tests="6" failures="0" errors="0" time="0.18">
+  <testsuite name="sessionIntention constants" errors="0" failures="0" skipped="0" timestamp="2026-04-28T01:13:43" time="0.159" tests="6">
+    <testcase classname="sessionIntention constants normalizeSessionIntention acepta los cuatro valores API" name="sessionIntention constants normalizeSessionIntention acepta los cuatro valores API" time="0.001">
     </testcase>
-    <testcase classname="resolveWeeklyTipsMailEnv monday_morning usa lunes 10h UTC y ventana hasta :59" name="resolveWeeklyTipsMailEnv monday_morning usa lunes 10h UTC y ventana hasta :59" time="0.001">
+    <testcase classname="sessionIntention constants normalizeSessionIntention recorta espacios" name="sessionIntention constants normalizeSessionIntention recorta espacios" time="0">
     </testcase>
-    <testcase classname="resolveWeeklyTipsMailEnv saturday_night usa sábado 23h UTC por defecto" name="resolveWeeklyTipsMailEnv saturday_night usa sábado 23h UTC por defecto" time="0">
+    <testcase classname="sessionIntention constants normalizeSessionIntention rechaza valores desconocidos" name="sessionIntention constants normalizeSessionIntention rechaza valores desconocidos" time="0">
     </testcase>
-    <testcase classname="resolveWeeklyTipsMailEnv permite sobrescribir la hora del slot" name="resolveWeeklyTipsMailEnv permite sobrescribir la hora del slot" time="0">
+    <testcase classname="sessionIntention constants normalizeSessionIntention trata vacío como null" name="sessionIntention constants normalizeSessionIntention trata vacío como null" time="0">
     </testcase>
-    <testcase classname="matchesWeeklyTipsUtcWindow domingo 10:05 UTC con slot sunday_morning" name="matchesWeeklyTipsUtcWindow domingo 10:05 UTC con slot sunday_morning" time="0">
+    <testcase classname="sessionIntention constants wasSessionIntentionProvided detecta omisión vs presencia" name="sessionIntention constants wasSessionIntentionProvided detecta omisión vs presencia" time="0.002">
     </testcase>
-    <testcase classname="matchesWeeklyTipsUtcWindow sábado 23:05 UTC con slot saturday_night" name="matchesWeeklyTipsUtcWindow sábado 23:05 UTC con slot saturday_night" time="0">
-    </testcase>
-    <testcase classname="matchesWeeklyTipsUtcWindow false fuera de hora de ventana (domingo 11h UTC, slot 10h)" name="matchesWeeklyTipsUtcWindow false fuera de hora de ventana (domingo 11h UTC, slot 10h)" time="0">
-    </testcase>
-    <testcase classname="matchesWeeklyTipsUtcWindow domingo 10:55 UTC sigue dentro de ventana sunday_morning (:59)" name="matchesWeeklyTipsUtcWindow domingo 10:55 UTC sigue dentro de ventana sunday_morning (:59)" time="0">
-    </testcase>
-    <testcase classname="matchesWeeklyTipsUtcWindow false otro día con slot sunday_morning" name="matchesWeeklyTipsUtcWindow false otro día con slot sunday_morning" time="0">
+    <testcase classname="sessionIntention constants sanitizeSessionIntentionForClient equivale a normalizar para respuestas API" name="sessionIntention constants sanitizeSessionIntentionForClient equivale a normalizar para respuestas API" time="0">
     </testcase>
   </testsuite>
 </testsuites>
