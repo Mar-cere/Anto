@@ -422,7 +422,12 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
 
     // SEGURIDAD: Validación adicional de suscripción (defense in depth)
     // Verificar que la suscripción sigue activa después del middleware
-    if (!req.subscription || (!req.subscription.isActive && !req.subscription.isInTrial)) {
+    if (
+      !req.subscription ||
+      (!req.subscription.isActive &&
+        !req.subscription.isInTrial &&
+        !req.subscription.firstSessionGrace)
+    ) {
       await paymentAuditService.logEvent('SECURITY_SUBSCRIPTION_BYPASS_ATTEMPT', {
         userId: req.user._id?.toString(),
         conversationId,

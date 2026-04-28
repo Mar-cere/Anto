@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">5.51% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/145</span>
+                <span class='fraction'>8/145</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">4.34% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/23</span>
+                <span class='fraction'>1/23</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">5.88% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/136</span>
+                <span class='fraction'>8/136</span>
             </div>
         
             
@@ -473,17 +473,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -862,7 +862,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
@@ -872,19 +872,19 @@
 import Message from '../models/Message.js';
 &nbsp;
 class CrisisTrendAnalyzer {
-<span class="fstat-no" title="function not covered" >  co</span>nstructor() {
+  constructor() {
     // Ventanas de tiempo para análisis
-<span class="cstat-no" title="statement not covered" >    this.SHORT_TERM_DAYS = 7; </span>// Últimos 7 días
-<span class="cstat-no" title="statement not covered" >    this.MEDIUM_TERM_DAYS = 30; </span>// Últimos 30 días
-<span class="cstat-no" title="statement not covered" >    this.LONG_TERM_DAYS = 90; </span>// Últimos 90 días
+    this.SHORT_TERM_DAYS = 7; // Últimos 7 días
+    this.MEDIUM_TERM_DAYS = 30; // Últimos 30 días
+    this.LONG_TERM_DAYS = 90; // Últimos 90 días
     
     // Umbrales para detectar cambios significativos
-<span class="cstat-no" title="statement not covered" >    this.INTENSITY_CHANGE_THRESHOLD = 2; </span>// Cambio de 2 puntos en intensidad
-<span class="cstat-no" title="statement not covered" >    this.EMOTION_CHANGE_THRESHOLD = 0.3; </span>// 30% de cambio en distribución emocional
-<span class="cstat-no" title="statement not covered" >    this.FREQUENCY_CHANGE_THRESHOLD = 0.5; </span>// 50% de cambio en frecuencia
+    this.INTENSITY_CHANGE_THRESHOLD = 2; // Cambio de 2 puntos en intensidad
+    this.EMOTION_CHANGE_THRESHOLD = 0.3; // 30% de cambio en distribución emocional
+    this.FREQUENCY_CHANGE_THRESHOLD = 0.5; // 50% de cambio en frecuencia
     
     // Factores de riesgo por tendencia
-<span class="cstat-no" title="statement not covered" >    this.TREND_RISK_FACTORS = {</span>
+    this.TREND_RISK_FACTORS = {
       RAPID_DECLINE: 2, // Deterioro rápido
       SUSTAINED_LOW: 1.5, // Estado bajo sostenido
       VOLATILITY: 1, // Alta volatilidad emocional
@@ -1263,7 +1263,7 @@ class CrisisTrendAnalyzer {
 }
 &nbsp;
 // Singleton instance
-const crisisTrendAnalyzer = <span class="cstat-no" title="statement not covered" >new CrisisTrendAnalyzer();</span>
+const crisisTrendAnalyzer = new CrisisTrendAnalyzer();
 export default crisisTrendAnalyzer;
 &nbsp;
 &nbsp;</pre></td></tr></table></pre>
@@ -1273,7 +1273,7 @@ export default crisisTrendAnalyzer;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-28T01:13:45.561Z
+                at 2026-04-28T03:06:20.404Z
             </div>
         <script src="../prettify.js"></script>
         <script>

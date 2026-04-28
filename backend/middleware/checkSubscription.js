@@ -10,7 +10,15 @@
 import mongoose from 'mongoose';
 import Subscription from '../models/Subscription.js';
 import User from '../models/User.js';
+import Message from '../models/Message.js';
 import paymentAuditService from '../services/paymentAuditService.js';
+
+const FIRST_SESSION_GRACE_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+const canApplyFirstSessionGrace = (req) => {
+  if (!req?.path) return false;
+  return req.path === '/conversations' || req.path === '/messages';
+};
 
 /**
  * Middleware para verificar si el usuario tiene suscripción activa
@@ -89,7 +97,7 @@ export const requireActiveSubscription = (allowTrial = true) => {
 
       // Si no existe, verificar en modelo User
       if (!subscription) {
-        const user = await User.findById(userIdObjectId).select('subscription email username name');
+        const user = await User.findById(userIdObjectId).select('subscription email username name createdAt');
         if (!user) {
           // Registrar intento de acceso con usuario inexistente
           await paymentAuditService.logEvent('SUBSCRIPTION_CHECK_FAILED', {
@@ -119,6 +127,33 @@ export const requireActiveSubscription = (allowTrial = true) => {
                          now <= userSub.trialEndDate;
 
         if (!hasActiveSub && (!allowTrial || !isInTrial)) {
+          const accountAgeMs = user?.createdAt ? Date.now() - new Date(user.createdAt).getTime() : Number.POSITIVE_INFINITY;
+          const isNewAccountForGrace = Number.isFinite(accountAgeMs) && accountAgeMs >= 0 && accountAgeMs <= FIRST_SESSION_GRACE_WINDOW_MS;
+          if (allowTrial && canApplyFirstSessionGrace(req) && isNewAccountForGrace) {
+            const hasAnyUserMessages = await Message.exists({
+              userId: userIdObjectId,
+              role: 'user'
+            });
+            if (!hasAnyUserMessages) {
+              req.subscription = {
+                isActive: false,
+                isInTrial: false,
+                status: userSub.status,
+                plan: userSub.plan,
+                firstSessionGrace: true
+              };
+              await paymentAuditService.logEvent('SUBSCRIPTION_FIRST_SESSION_GRACE_GRANTED', {
+                userId: userIdString,
+                userEmail: user.email,
+                currentStatus: userSub.status,
+                endpoint: req.path,
+                method: req.method,
+                accountAgeMs
+              }, userIdString);
+              return next();
+            }
+          }
+
           // Si el trial expiró, actualizar el status a 'expired'
           if (userSub.status === 'trial' && userSub.trialEndDate && now > userSub.trialEndDate) {
             user.subscription.status = 'expired';
@@ -194,6 +229,36 @@ export const requireActiveSubscription = (allowTrial = true) => {
       }
 
       if (!isActive && (!allowTrial || !isInTrial)) {
+        const userForGrace = await User.findById(userIdObjectId).select('email createdAt').lean();
+        const accountAgeMs = userForGrace?.createdAt
+          ? Date.now() - new Date(userForGrace.createdAt).getTime()
+          : Number.POSITIVE_INFINITY;
+        const isNewAccountForGrace = Number.isFinite(accountAgeMs) && accountAgeMs >= 0 && accountAgeMs <= FIRST_SESSION_GRACE_WINDOW_MS;
+        if (allowTrial && canApplyFirstSessionGrace(req) && isNewAccountForGrace) {
+          const hasAnyUserMessages = await Message.exists({
+            userId: userIdObjectId,
+            role: 'user'
+          });
+          if (!hasAnyUserMessages) {
+            req.subscription = {
+              isActive: false,
+              isInTrial: false,
+              status: subscription.status,
+              plan: subscription.plan,
+              firstSessionGrace: true
+            };
+            await paymentAuditService.logEvent('SUBSCRIPTION_FIRST_SESSION_GRACE_GRANTED', {
+              userId: userIdString,
+              userEmail: userForGrace?.email || 'unknown',
+              currentStatus: subscription.status,
+              endpoint: req.path,
+              method: req.method,
+              accountAgeMs
+            }, userIdString);
+            return next();
+          }
+        }
+
         // Obtener información del usuario para logging
         const user = await User.findById(userIdString)
           .select('email username name')

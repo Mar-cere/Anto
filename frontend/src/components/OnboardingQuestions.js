@@ -22,6 +22,7 @@ const TEXTS = {
   Q3_LABEL: '¿Cómo te gustaría que te acompañe?',
   SKIP: 'Omitir',
   SUBMIT: 'Listo',
+  EXPLORE_APP: 'Ver recorrido de la app',
 };
 
 const OPTIONS = {
@@ -36,7 +37,7 @@ const UI = {
   OVERLAY: 'rgba(0,0,0,0.6)',
 };
 
-const OnboardingQuestions = ({ visible, onDismiss }) => {
+const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) => {
   const { showToast } = useToast();
   const [whatExpectFromApp, setWhatExpectFromApp] = useState('');
   const [whatToImproveOrWorkOn, setWhatToImproveOrWorkOn] = useState('');
@@ -46,7 +47,13 @@ const OnboardingQuestions = ({ visible, onDismiss }) => {
 
   const handleSkip = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onDismiss?.();
+    Promise.resolve(onCompleted?.())
+      .catch((err) => {
+        console.warn('[OnboardingQuestions] No se pudo marcar onboarding completado:', err);
+      })
+      .finally(() => {
+        onDismiss?.();
+      });
   };
 
   const handleSubmit = async () => {
@@ -55,7 +62,13 @@ const OnboardingQuestions = ({ visible, onDismiss }) => {
     const hasAny =
       whatExpectFromApp.trim() || whatToImproveOrWorkOn.trim() || typeOfSpecialist.trim();
     if (!hasAny) {
-      onDismiss?.();
+      try {
+        await onCompleted?.();
+      } catch (err) {
+        console.warn('[OnboardingQuestions] No se pudo marcar onboarding completado:', err);
+      } finally {
+        onDismiss?.();
+      }
       return;
     }
 
@@ -67,11 +80,28 @@ const OnboardingQuestions = ({ visible, onDismiss }) => {
         typeOfSpecialist: typeOfSpecialist.trim() || null,
       });
       showToast({ message: 'Listo, gracias', type: 'success' });
-      onDismiss?.();
+      try {
+        await onCompleted?.();
+      } catch (err) {
+        console.warn('[OnboardingQuestions] No se pudo marcar onboarding completado:', err);
+      } finally {
+        onDismiss?.();
+      }
     } catch (err) {
       setError(getApiErrorMessage(err) || 'No se pudieron guardar las respuestas. Puedes omitir y seguir.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExploreApp = async () => {
+    Haptics.selectionAsync().catch(() => {});
+    try {
+      await onCompleted?.();
+    } catch (err) {
+      console.warn('[OnboardingQuestions] No se pudo marcar onboarding completado:', err);
+    } finally {
+      onExploreApp?.();
     }
   };
 
@@ -168,6 +198,14 @@ const OnboardingQuestions = ({ visible, onDismiss }) => {
                 activeOpacity={0.8}
               >
                 <Text style={styles.skipButtonText}>{TEXTS.SKIP}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.skipButton}
+                onPress={handleExploreApp}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.skipButtonText}>{TEXTS.EXPLORE_APP}</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>

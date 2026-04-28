@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   getTutorialStorageKey,
   isTutorialCompleted,
+  markTutorialCompleted,
   resetTutorial,
 } from '../tutorialStorage';
 
@@ -81,6 +82,23 @@ describe('tutorialStorage', () => {
     it('no debe lanzar cuando AsyncStorage falla', async () => {
       jest.spyOn(AsyncStorage, 'removeItem').mockRejectedValueOnce(new Error('storage error'));
       await expect(resetTutorial('user-1')).resolves.not.toThrow();
+    });
+  });
+
+  describe('markTutorialCompleted', () => {
+    it('debe guardar "true" para la key del userId', async () => {
+      await markTutorialCompleted('user-77');
+      expect(AsyncStorage.setItem).toHaveBeenCalledWith('tutorialCompleted_user-77', 'true');
+    });
+
+    it('debe guardar en key global cuando userId es null', async () => {
+      await markTutorialCompleted(null);
+      expect(AsyncStorage.setItem).toHaveBeenCalledWith('tutorialCompleted', 'true');
+    });
+
+    it('no debe lanzar cuando AsyncStorage falla', async () => {
+      jest.spyOn(AsyncStorage, 'setItem').mockRejectedValueOnce(new Error('storage error'));
+      await expect(markTutorialCompleted('user-1')).resolves.not.toThrow();
     });
   });
 });

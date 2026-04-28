@@ -58,6 +58,9 @@ import {
   getNotificationsPromptVisitsKey,
   shouldShowNotificationsPrompt,
 } from '../utils/notificationsPromptPolicy';
+import { setChatEntryBackTarget } from '../utils/chatEntryContext';
+import { setFirstSessionHintDismissed } from '../utils/firstSessionHintStorage';
+import { markTutorialCompleted } from '../utils/tutorialStorage';
 
 // Constantes de AsyncStorage
 const STORAGE_KEYS = {
@@ -114,6 +117,12 @@ const DashScreen = () => {
   const [dashVisitsCount, setDashVisitsCount] = useState(0);
   const dashFirstFocusRef = useRef(true);
   const hasCountedDashVisitRef = useRef(false);
+  const tutorialShouldOpenChatRef = useRef(false);
+  const onboardingOverlayStateRef = useRef({
+    showTutorial: false,
+    showOnboardingQuestions: false,
+    showFirstSessionHint: false,
+  });
 
   // Log cuando showTutorial cambia (solo en desarrollo)
   React.useEffect(() => {
@@ -121,6 +130,14 @@ const DashScreen = () => {
       console.log('🎬 showTutorial cambió a:', showTutorial);
     }
   }, [showTutorial]);
+
+  useEffect(() => {
+    onboardingOverlayStateRef.current = {
+      showTutorial,
+      showOnboardingQuestions,
+      showFirstSessionHint,
+    };
+  }, [showTutorial, showOnboardingQuestions, showFirstSessionHint]);
 
   // Función para cargar datos
   const loadData = useCallback(async (forceRefresh = false) => {
@@ -195,17 +212,17 @@ const DashScreen = () => {
           console.log('👤 Tiempo desde creación (horas):', hoursSinceCreation);
         }
         
-        // Solo mostrar tutorial si NO está completado (independientemente de si es usuario nuevo o no)
-        // Una vez completado, nunca se vuelve a mostrar para este usuario
+        // Flujo principal (#16): primero onboarding conversacional.
+        // Si no está completado, mostramos preguntas de acompañamiento y luego llevamos al chat.
         if (!tutorialCompleted) {
           if (isNewUser) {
             setIsFirstTimeUser(true);
           }
           setTimeout(() => {
             if (__DEV__) {
-              console.log('🎬 Activando tutorial...');
+              console.log('🧭 Activando onboarding de acompañamiento...');
             }
-            setShowTutorial(true);
+            setShowOnboardingQuestions(true);
           }, 1000);
         } else {
           // Tutorial ya completado: mostrar hint de primera sesión si no lo cerró
@@ -424,6 +441,10 @@ const DashScreen = () => {
         
         // Delay de 1.5 segundos para que el Dashboard se renderice completamente
         setTimeout(() => {
+          const blocker = onboardingOverlayStateRef.current;
+          if (blocker.showTutorial || blocker.showOnboardingQuestions || blocker.showFirstSessionHint) {
+            return;
+          }
           setShowEmergencyContactsModal(true);
         }, 1500);
       }
@@ -436,6 +457,10 @@ const DashScreen = () => {
         setHasCheckedEmergencyContacts(true);
         // Delay también en caso de error
         setTimeout(() => {
+          const blocker = onboardingOverlayStateRef.current;
+          if (blocker.showTutorial || blocker.showOnboardingQuestions || blocker.showFirstSessionHint) {
+            return;
+          }
           setShowEmergencyContactsModal(true);
         }, 1500);
       } else {
@@ -457,22 +482,44 @@ const DashScreen = () => {
     await checkEmergencyContacts();
   }, [checkEmergencyContacts]);
 
+  const goToChatFromOnboarding = useCallback(async () => {
+    await setChatEntryBackTarget('dash');
+    const state = navigation.getState?.();
+    if (state?.type === 'tab') {
+      navigation.navigate('Chat');
+      return;
+    }
+    navigation.navigate('MainTabs', { screen: 'Chat' });
+  }, [navigation]);
+
   // Manejar finalización del tutorial
   const handleTutorialComplete = useCallback(() => {
     setShowTutorial(false);
-    // Primero preguntas de onboarding (opcionales), luego hint "Empezar chat"
-    setTimeout(() => setShowOnboardingQuestions(true), 800);
-    if (!hasCheckedEmergencyContacts) {
+    if (tutorialShouldOpenChatRef.current) {
+      tutorialShouldOpenChatRef.current = false;
       setTimeout(() => {
-        checkEmergencyContacts(userData);
-      }, 500);
+        goToChatFromOnboarding();
+      }, 250);
     }
-  }, [hasCheckedEmergencyContacts, checkEmergencyContacts, userData]);
+  }, [goToChatFromOnboarding]);
 
   // Al cerrar las preguntas de onboarding (omitir o enviar), mostrar hint "Empezar chat"
-  const handleOnboardingQuestionsDismiss = useCallback(() => {
+  const handleOnboardingQuestionsDismiss = useCallback(async () => {
     setShowOnboardingQuestions(false);
-    setTimeout(() => setShowFirstSessionHint(true), 1500);
+    await goToChatFromOnboarding();
+  }, [goToChatFromOnboarding]);
+
+  const handleOnboardingQuestionsCompleted = useCallback(async () => {
+    const userId = userData?._id || userData?.id || null;
+    if (!userId) return;
+    await markTutorialCompleted(userId);
+    await setFirstSessionHintDismissed(userId);
+  }, [userData]);
+
+  const handleExploreAppTutorial = useCallback(() => {
+    setShowOnboardingQuestions(false);
+    tutorialShouldOpenChatRef.current = true;
+    setShowTutorial(true);
   }, []);
 
   // Manejar el dismiss del banner de trial
@@ -695,6 +742,8 @@ const DashScreen = () => {
       <OnboardingQuestions
         visible={showOnboardingQuestions}
         onDismiss={handleOnboardingQuestionsDismiss}
+        onCompleted={handleOnboardingQuestionsCompleted}
+        onExploreApp={handleExploreAppTutorial}
       />
 
       {/* Hint de objetivo de primera sesión (tras onboarding) */}

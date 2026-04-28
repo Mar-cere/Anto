@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">4.04% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/198</span>
+                <span class='fraction'>8/198</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">0.92% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/217</span>
+                <span class='fraction'>2/217</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">5.26% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/19</span>
+                <span class='fraction'>1/19</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">4.27% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/187</span>
+                <span class='fraction'>8/187</span>
             </div>
         
             
@@ -699,7 +699,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -710,19 +710,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -730,6 +724,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -822,8 +817,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1327,7 +1327,7 @@
 import mongoose from 'mongoose';
 &nbsp;
 // Schema de métricas (opcional, puede usarse en memoria también)
-const metricsSchema = <span class="cstat-no" title="statement not covered" >new mongoose.Schema({</span>
+const metricsSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now, index: true },
   type: { type: String, required: true, index: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
@@ -1338,21 +1338,21 @@ const metricsSchema = <span class="cstat-no" title="statement not covered" >new 
 });
 &nbsp;
 // Índices para consultas eficientes
-<span class="cstat-no" title="statement not covered" >metricsSchema.index({ timestamp: -1, type: 1 });</span>
-<span class="cstat-no" title="statement not covered" >metricsSchema.index({ userId: 1, timestamp: -1 });</span>
+metricsSchema.index({ timestamp: -1, type: 1 });
+metricsSchema.index({ userId: 1, timestamp: -1 });
 &nbsp;
 // Solo crear modelo si no existe
 let Metric;
-<span class="cstat-no" title="statement not covered" >try {</span>
-<span class="cstat-no" title="statement not covered" >  Metric = mongoose.models.Metric || mongoose.model('Metric', metricsSchema);</span>
+try {
+  Metric = mongoose.models.Metric || mongoose.model('Metric', metricsSchema);
 } catch (error) {
 <span class="cstat-no" title="statement not covered" >  Metric = mongoose.model('Metric', metricsSchema);</span>
 }
 &nbsp;
 class MetricsService {
-<span class="fstat-no" title="function not covered" >  co</span>nstructor() {
+  constructor() {
     // Métricas en memoria (para acceso rápido)
-<span class="cstat-no" title="statement not covered" >    this.inMemoryMetrics = {</span>
+    this.inMemoryMetrics = {
       chatUsage: {
         conversationsCreated: 0,
         messagesUserSaved: 0,
@@ -1450,8 +1450,8 @@ class MetricsService {
     };
 &nbsp;
     // Historial de métricas (últimas 1000 entradas)
-<span class="cstat-no" title="statement not covered" >    this.metricsHistory = [];</span>
-<span class="cstat-no" title="statement not covered" >    this.MAX_HISTORY_SIZE = 1000;</span>
+    this.metricsHistory = [];
+    this.MAX_HISTORY_SIZE = 1000;
   }
 &nbsp;
   /**
@@ -1954,7 +1954,7 @@ export default new MetricsService();
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-28T01:13:45.561Z
+                at 2026-04-28T03:06:20.404Z
             </div>
         <script src="../prettify.js"></script>
         <script>

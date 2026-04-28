@@ -26,6 +26,15 @@ export const isTutorialCompleted = async (userId = null) => {
   }
 };
 
+export const markTutorialCompleted = async (userId = null) => {
+  try {
+    const key = getTutorialStorageKey(userId);
+    await AsyncStorage.setItem(key, 'true');
+  } catch (error) {
+    console.error('Error guardando estado del tutorial:', error);
+  }
+};
+
 export const resetTutorial = async (userId = null) => {
   try {
     const key = getTutorialStorageKey(userId);
