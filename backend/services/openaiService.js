@@ -332,6 +332,13 @@ class OpenAIService {
 
       // 4. Generar Respuesta con OpenAI
 
+      const modelRouting = resolveModelRoutingForContext({
+        content: contenidoNormalizado,
+        emotional: analisisEmocional,
+        contextual: analisisContextual,
+        crisis: contexto?.crisis
+      });
+
       // MEJORA: Intentar obtener respuesta del caché si existe (módulo openaiResponseCache) — no en modo invitado
       let cachedResponse = null;
       /** Misma clave para get/set; debe vivir en este ámbito (antes estaba solo dentro del `if` y rompía el `set`). */
@@ -367,12 +374,6 @@ class OpenAIService {
       const promptLength = prompt.systemMessage.length;
       const contextMessagesCount = prompt.contextMessages?.length || 0;
       const userMessageLength = contenidoNormalizado.length;
-      const modelRouting = resolveModelRoutingForContext({
-        content: contenidoNormalizado,
-        emotional: analisisEmocional,
-        contextual: analisisContextual,
-        crisis: contexto?.crisis
-      });
       const selectedModel = modelRouting.model;
       console.log(`[OpenAI] Prompt length: ${promptLength} chars, Context messages: ${contextMessagesCount}, User message: ${userMessageLength} chars, Max completion tokens: ${maxCompletionTokens}, Response style: ${userResponseStyle}, Model: ${selectedModel}`);
       let completion;

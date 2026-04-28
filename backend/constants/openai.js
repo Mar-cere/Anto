@@ -19,9 +19,22 @@ export const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.4-mini';
 // Modelo para casos complejos (crisis, ambigüedad, alta carga emocional)
 export const OPENAI_COMPLEX_MODEL = process.env.OPENAI_COMPLEX_MODEL || 'gpt-5.5';
 const COMPLEX_MODEL_ROUTING_ENABLED = process.env.OPENAI_ENABLE_COMPLEX_MODEL_ROUTING !== 'false';
-const MODEL_ROUTING_CONFIDENCE_THRESHOLD = Number(process.env.OPENAI_MODEL_ROUTING_CONFIDENCE_THRESHOLD || '0.6');
-const MODEL_ROUTING_LONG_MESSAGE_THRESHOLD = Number(process.env.OPENAI_MODEL_ROUTING_LONG_MESSAGE_THRESHOLD || '280');
-const MODEL_ROUTING_HIGH_INTENSITY_THRESHOLD = Number(process.env.OPENAI_MODEL_ROUTING_HIGH_INTENSITY_THRESHOLD || '8');
+const parseRoutingNumber = (rawValue, fallback) => {
+  const parsed = Number(rawValue);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+const MODEL_ROUTING_CONFIDENCE_THRESHOLD = parseRoutingNumber(
+  process.env.OPENAI_MODEL_ROUTING_CONFIDENCE_THRESHOLD ?? '0.6',
+  0.6
+);
+const MODEL_ROUTING_LONG_MESSAGE_THRESHOLD = parseRoutingNumber(
+  process.env.OPENAI_MODEL_ROUTING_LONG_MESSAGE_THRESHOLD ?? '280',
+  280
+);
+const MODEL_ROUTING_HIGH_INTENSITY_THRESHOLD = parseRoutingNumber(
+  process.env.OPENAI_MODEL_ROUTING_HIGH_INTENSITY_THRESHOLD ?? '8',
+  8
+);
 
 /**
  * Evalúa reglas de triage para decidir modelo y exponer trazabilidad de ruteo.
