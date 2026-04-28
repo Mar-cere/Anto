@@ -1072,13 +1072,30 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           res.flushHeaders();
 
           try {
+            let firstChunkAt = null;
             for await (const event of openaiService.generarRespuestaStream(userMessage, openaiContext)) {
               if (event.type === 'chunk') {
+                if (!firstChunkAt) {
+                  firstChunkAt = Date.now();
+                  metricsService
+                    .recordMetric(
+                      'chat_usage',
+                      {
+                        action: 'streaming_first_chunk',
+                        isGuest: false,
+                        ttftMs: firstChunkAt - startTime
+                      },
+                      req.user._id.toString(),
+                      { conversationId: String(conversationId), streaming: true }
+                    )
+                    .catch(() => {});
+                }
                 res.write('data: ' + JSON.stringify({ content: event.content }) + '\n\n');
               } else if (event.type === 'done') {
                 const response = { content: event.content, context: event.context };
                 const emocionalNormalizado = openaiService.normalizarAnalisisEmocional(emotionalAnalysis);
                 const therapeutic = response.context?.therapeutic;
+                const modelRouting = response.context?.modelRouting || null;
 
                 try {
                   assistantMessage = new Message({
@@ -1209,9 +1226,18 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                 metricsService
                   .recordMetric(
                     'chat_usage',
-                    { action: 'streaming_done', isGuest: false },
+                    {
+                      action: 'streaming_done',
+                      isGuest: false,
+                      timeToDoneMs: Date.now() - startTime
+                    },
                     req.user._id.toString(),
-                    { conversationId: String(conversationId) }
+                    {
+                      conversationId: String(conversationId),
+                      model: modelRouting?.model,
+                      route: modelRouting?.route,
+                      routeReason: modelRouting?.reason
+                    }
                   )
                   .catch(() => {});
 
@@ -1243,6 +1269,26 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           userMessage,
           openaiContext
         );
+        const modelRouting = response.context?.modelRouting || null;
+
+        metricsService
+          .recordMetric(
+            'chat_usage',
+            {
+              action: 'non_stream_response_ready',
+              isGuest: false,
+              latencyMs: Date.now() - startTime
+            },
+            req.user._id.toString(),
+            {
+              conversationId: String(conversationId),
+              streaming: false,
+              model: modelRouting?.model,
+              route: modelRouting?.route,
+              routeReason: modelRouting?.reason
+            }
+          )
+          .catch(() => {});
 
         // Nota: La validación de coherencia emocional ya se realiza dentro de generarRespuesta()
         // en el método validarYMejorarRespuesta(), por lo que no es necesario hacerla aquí

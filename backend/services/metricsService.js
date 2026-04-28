@@ -39,6 +39,9 @@ class MetricsService {
         messageFeedbackEvents: 0,
         streamingRequests: 0,
         streamingResponsesCompleted: 0,
+        streamingFirstChunks: 0,
+        ttftMsSamples: [],
+        nonStreamLatencyMsSamples: [],
         guestSessionsCreated: 0,
         guestMessagesUserSaved: 0,
         guestMessagesAssistantSaved: 0,
@@ -397,6 +400,21 @@ class MetricsService {
         if (action === 'streaming_done') {
           cu.streamingResponsesCompleted++;
         }
+        if (action === 'streaming_first_chunk') {
+          cu.streamingFirstChunks++;
+          const ttftMs = Number(data?.ttftMs);
+          if (Number.isFinite(ttftMs) && ttftMs >= 0) {
+            cu.ttftMsSamples.push(ttftMs);
+            if (cu.ttftMsSamples.length > 1000) cu.ttftMsSamples.shift();
+          }
+        }
+        if (action === 'non_stream_response_ready') {
+          const latencyMs = Number(data?.latencyMs);
+          if (Number.isFinite(latencyMs) && latencyMs >= 0) {
+            cu.nonStreamLatencyMsSamples.push(latencyMs);
+            if (cu.nonStreamLatencyMsSamples.length > 1000) cu.nonStreamLatencyMsSamples.shift();
+          }
+        }
 
         if (action === 'message_feedback') {
           cu.messageFeedbackEvents++;
@@ -518,6 +536,12 @@ class MetricsService {
         : null;
 
     const cu = this.inMemoryMetrics.chatUsage;
+    const calcPercentile = (samples, p) => {
+      if (!Array.isArray(samples) || samples.length === 0) return null;
+      const sorted = [...samples].sort((a, b) => a - b);
+      const idx = Math.min(sorted.length - 1, Math.max(0, Math.ceil((p / 100) * sorted.length) - 1));
+      return sorted[idx];
+    };
     const chatUsage = {
       conversationsCreated: cu.conversationsCreated,
       messages: {
@@ -529,10 +553,21 @@ class MetricsService {
       streaming: {
         requests: cu.streamingRequests,
         completed: cu.streamingResponsesCompleted,
+        firstChunks: cu.streamingFirstChunks,
         completionRate:
           cu.streamingRequests > 0
             ? ((cu.streamingResponsesCompleted / cu.streamingRequests) * 100).toFixed(2) + '%'
-            : '0%'
+            : '0%',
+        ttft: {
+          samples: cu.ttftMsSamples.length,
+          p50Ms: calcPercentile(cu.ttftMsSamples, 50),
+          p95Ms: calcPercentile(cu.ttftMsSamples, 95)
+        }
+      },
+      nonStreaming: {
+        samples: cu.nonStreamLatencyMsSamples.length,
+        p50Ms: calcPercentile(cu.nonStreamLatencyMsSamples, 50),
+        p95Ms: calcPercentile(cu.nonStreamLatencyMsSamples, 95)
       },
       guest: {
         sessionsCreated: cu.guestSessionsCreated

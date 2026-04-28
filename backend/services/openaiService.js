@@ -17,7 +17,7 @@ import {
     OPENAI_MODEL,
     PROMPT_CONFIG,
     getChatReasoningEffortForContext,
-    resolveChatModelForContext,
+    resolveModelRoutingForContext,
     RESPONSE_LENGTHS,
     TEMPERATURES,
     THRESHOLDS,
@@ -343,7 +343,14 @@ class OpenAIService {
           if (cachedResponse && isCachedResponseValid(cachedResponse, analisisContextual)) {
             console.log('[OpenAI] ✅ Respuesta obtenida del caché');
             const adaptedResponse = adaptCachedResponse(cachedResponse.response, analisisContextual, contenidoNormalizado);
-            return { content: adaptedResponse, context: { emotional: analisisEmocional, contextual: analisisContextual } };
+            return {
+              content: adaptedResponse,
+              context: {
+                emotional: analisisEmocional,
+                contextual: analisisContextual,
+                modelRouting: { ...modelRouting, reason: 'cache_hit' }
+              }
+            };
           }
         } catch (cacheError) {
           console.warn('[OpenAI] Error al obtener del caché, continuando sin caché:', cacheError.message);
@@ -360,12 +367,13 @@ class OpenAIService {
       const promptLength = prompt.systemMessage.length;
       const contextMessagesCount = prompt.contextMessages?.length || 0;
       const userMessageLength = contenidoNormalizado.length;
-      const selectedModel = resolveChatModelForContext({
+      const modelRouting = resolveModelRoutingForContext({
         content: contenidoNormalizado,
         emotional: analisisEmocional,
         contextual: analisisContextual,
         crisis: contexto?.crisis
       });
+      const selectedModel = modelRouting.model;
       console.log(`[OpenAI] Prompt length: ${promptLength} chars, Context messages: ${contextMessagesCount}, User message: ${userMessageLength} chars, Max completion tokens: ${maxCompletionTokens}, Response style: ${userResponseStyle}, Model: ${selectedModel}`);
       let completion;
       try {
@@ -392,7 +400,16 @@ class OpenAIService {
         if (apiError instanceof CircuitBreakerOpenError || apiError?.code === 'CIRCUIT_BREAKER_OPEN') {
           console.warn('[OpenAI] Circuit breaker OPEN: usando fallback rápido');
           const fallback = this.generarRespuestaFallback(analisisEmocional, analisisContextual) || ERROR_MESSAGES.DEFAULT_FALLBACK;
-          return { content: fallback, context: { emotional: analisisEmocional, contextual: analisisContextual, degraded: true, degradedReason: 'openai_breaker_open' } };
+          return {
+            content: fallback,
+            context: {
+              emotional: analisisEmocional,
+              contextual: analisisContextual,
+              modelRouting,
+              degraded: true,
+              degradedReason: 'openai_breaker_open'
+            }
+          };
         }
         // Manejar errores específicos de autenticación
         if (apiError.status === 401 || apiError.code === 'invalid_api_key') {
@@ -743,12 +760,13 @@ class OpenAIService {
     );
 
     const maxTokens = this.determinarLongitudRespuesta(analisisContextual, contenidoNormalizado, perfilUsuario?.preferences?.responseStyle || 'balanced');
-    const selectedModel = resolveChatModelForContext({
+    const modelRouting = resolveModelRoutingForContext({
       content: contenidoNormalizado,
       emotional: analisisEmocional,
       contextual: analisisContextual,
       crisis: contexto?.crisis
     });
+    const selectedModel = modelRouting.model;
 
     let stream;
     try {
@@ -780,7 +798,7 @@ class OpenAIService {
         yield {
           type: 'done',
           content: result.content,
-          context: { ...result.context, degraded: true, degradedReason: 'openai_breaker_open' }
+          context: { ...result.context, modelRouting, degraded: true, degradedReason: 'openai_breaker_open' }
         };
         return;
       }
@@ -827,7 +845,7 @@ class OpenAIService {
         registroTerapeutico,
         conversationHistory: contexto.safetyHistory || []
       });
-      yield { type: 'done', content: result.content, context: result.context };
+      yield { type: 'done', content: result.content, context: { ...result.context, modelRouting } };
       return;
     }
 
@@ -840,7 +858,7 @@ class OpenAIService {
       registroTerapeutico,
       conversationHistory: contexto.safetyHistory || []
     });
-    yield { type: 'done', content: result.content, context: result.context };
+    yield { type: 'done', content: result.content, context: { ...result.context, modelRouting } };
   }
 
   /**
@@ -948,6 +966,7 @@ class OpenAIService {
     const context = {
       emotional: analisisEmocional,
       contextual: analisisContextual,
+      modelRouting,
       therapeutic: selectedTechnique ? {
         technique: selectedTechnique.name,
         type: selectedTechnique.type,

@@ -19,6 +19,137 @@ export const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.4-mini';
 // Modelo para casos complejos (crisis, ambigüedad, alta carga emocional)
 export const OPENAI_COMPLEX_MODEL = process.env.OPENAI_COMPLEX_MODEL || 'gpt-5.5';
 const COMPLEX_MODEL_ROUTING_ENABLED = process.env.OPENAI_ENABLE_COMPLEX_MODEL_ROUTING !== 'false';
+const MODEL_ROUTING_CONFIDENCE_THRESHOLD = Number(process.env.OPENAI_MODEL_ROUTING_CONFIDENCE_THRESHOLD || '0.6');
+const MODEL_ROUTING_LONG_MESSAGE_THRESHOLD = Number(process.env.OPENAI_MODEL_ROUTING_LONG_MESSAGE_THRESHOLD || '280');
+const MODEL_ROUTING_HIGH_INTENSITY_THRESHOLD = Number(process.env.OPENAI_MODEL_ROUTING_HIGH_INTENSITY_THRESHOLD || '8');
+
+/**
+ * Evalúa reglas de triage para decidir modelo y exponer trazabilidad de ruteo.
+ * @param {{
+ *   content?: string,
+ *   crisis?: { riskLevel?: string },
+ *   contextual?: { intencion?: { confianza?: number } },
+ *   emotional?: { intensity?: number }
+ * } | null | undefined} contextLike
+ * @returns {{
+ *   model: string,
+ *   route: 'base' | 'complex',
+ *   reason: string,
+ *   score: number,
+ *   signals: {
+ *     riskLevel?: string | null,
+ *     contentLength: number,
+ *     confidence: number,
+ *     intensity: number,
+ *     isLowConfidence: boolean,
+ *     isLongMessage: boolean,
+ *     isHighEmotionalLoad: boolean
+ *   }
+ * }}
+ */
+export function resolveModelRoutingForContext(contextLike) {
+  if (!COMPLEX_MODEL_ROUTING_ENABLED) {
+    return {
+      model: OPENAI_MODEL,
+      route: 'base',
+      reason: 'complex_routing_disabled',
+      score: 0,
+      signals: {
+        riskLevel: contextLike?.crisis?.riskLevel || null,
+        contentLength: String(contextLike?.content || '').trim().length,
+        confidence: Number(contextLike?.contextual?.intencion?.confianza ?? 1),
+        intensity: Number(contextLike?.emotional?.intensity ?? 5),
+        isLowConfidence: false,
+        isLongMessage: false,
+        isHighEmotionalLoad: false
+      }
+    };
+  }
+
+  const riskLevel = contextLike?.crisis?.riskLevel || null;
+  const contentLength = String(contextLike?.content || '').trim().length;
+  const confidence = Number(contextLike?.contextual?.intencion?.confianza ?? 1);
+  const intensity = Number(contextLike?.emotional?.intensity ?? 5);
+  const isLowConfidence = Number.isFinite(confidence) ? confidence < MODEL_ROUTING_CONFIDENCE_THRESHOLD : false;
+  const isLongMessage = contentLength >= MODEL_ROUTING_LONG_MESSAGE_THRESHOLD;
+  const isHighEmotionalLoad = intensity >= MODEL_ROUTING_HIGH_INTENSITY_THRESHOLD;
+
+  let score = 0;
+  if (isLowConfidence) score += 1;
+  if (isLongMessage) score += 1;
+  if (isHighEmotionalLoad) score += 1;
+
+  if (riskLevel === 'HIGH' || riskLevel === 'MEDIUM') {
+    score = Math.max(score, 3);
+    return {
+      model: OPENAI_COMPLEX_MODEL,
+      route: 'complex',
+      reason: `crisis_${String(riskLevel).toLowerCase()}`,
+      score,
+      signals: {
+        riskLevel,
+        contentLength,
+        confidence,
+        intensity,
+        isLowConfidence,
+        isLongMessage,
+        isHighEmotionalLoad
+      }
+    };
+  }
+
+  if (isLongMessage && isLowConfidence) {
+    return {
+      model: OPENAI_COMPLEX_MODEL,
+      route: 'complex',
+      reason: 'long_message_low_confidence',
+      score,
+      signals: {
+        riskLevel,
+        contentLength,
+        confidence,
+        intensity,
+        isLowConfidence,
+        isLongMessage,
+        isHighEmotionalLoad
+      }
+    };
+  }
+
+  if (isLongMessage && isHighEmotionalLoad) {
+    return {
+      model: OPENAI_COMPLEX_MODEL,
+      route: 'complex',
+      reason: 'long_message_high_intensity',
+      score,
+      signals: {
+        riskLevel,
+        contentLength,
+        confidence,
+        intensity,
+        isLowConfidence,
+        isLongMessage,
+        isHighEmotionalLoad
+      }
+    };
+  }
+
+  return {
+    model: OPENAI_MODEL,
+    route: 'base',
+    reason: 'default_base',
+    score,
+    signals: {
+      riskLevel,
+      contentLength,
+      confidence,
+      intensity,
+      isLowConfidence,
+      isLongMessage,
+      isHighEmotionalLoad
+    }
+  };
+}
 
 /**
  * Resuelve el modelo de chat según el contexto del mensaje.
@@ -35,27 +166,7 @@ const COMPLEX_MODEL_ROUTING_ENABLED = process.env.OPENAI_ENABLE_COMPLEX_MODEL_RO
  * @returns {string}
  */
 export function resolveChatModelForContext(contextLike) {
-  if (!COMPLEX_MODEL_ROUTING_ENABLED) {
-    return OPENAI_MODEL;
-  }
-
-  const riskLevel = contextLike?.crisis?.riskLevel;
-  if (riskLevel === 'HIGH' || riskLevel === 'MEDIUM') {
-    return OPENAI_COMPLEX_MODEL;
-  }
-
-  const contentLength = String(contextLike?.content || '').trim().length;
-  const confidence = Number(contextLike?.contextual?.intencion?.confianza ?? 1);
-  const intensity = Number(contextLike?.emotional?.intensity ?? 5);
-  const isLowConfidence = Number.isFinite(confidence) ? confidence < 0.6 : false;
-  const isLongMessage = contentLength >= 280;
-  const isHighEmotionalLoad = intensity >= 8;
-
-  if ((isLongMessage && isLowConfidence) || (isLongMessage && isHighEmotionalLoad)) {
-    return OPENAI_COMPLEX_MODEL;
-  }
-
-  return OPENAI_MODEL;
+  return resolveModelRoutingForContext(contextLike).model;
 }
 
 // ========== LONGITUDES DE RESPUESTA (tokens) ==========
