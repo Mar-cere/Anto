@@ -967,7 +967,6 @@ class OpenAIService {
     const context = {
       emotional: analisisEmocional,
       contextual: analisisContextual,
-      modelRouting,
       therapeutic: selectedTechnique ? {
         technique: selectedTechnique.name,
         type: selectedTechnique.type,

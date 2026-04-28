@@ -1,35 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="14" failures="0" errors="0" time="0.842">
-  <testsuite name="userSummaryService period helpers" errors="0" failures="0" skipped="0" timestamp="2026-04-28T13:18:19" time="0.761" tests="4">
-    <testcase classname="userSummaryService period helpers calendarWeekRangeFromAnchor: semana lunes–domingo que contiene un martes" name="userSummaryService period helpers calendarWeekRangeFromAnchor: semana lunes–domingo que contiene un martes" time="0.002">
+<testsuites name="jest tests" tests="6" failures="0" errors="0" time="0.091">
+  <testsuite name="resolveChatModelForContext" errors="0" failures="0" skipped="0" timestamp="2026-04-28T14:04:10" time="0.069" tests="6">
+    <testcase classname="resolveChatModelForContext usa modelo base en contexto normal" name="resolveChatModelForContext usa modelo base en contexto normal" time="0.001">
     </testcase>
-    <testcase classname="userSummaryService period helpers calendarMonthRange: abril 2026" name="userSummaryService period helpers calendarMonthRange: abril 2026" time="0">
+    <testcase classname="resolveChatModelForContext escala a modelo complejo en crisis HIGH" name="resolveChatModelForContext escala a modelo complejo en crisis HIGH" time="0">
     </testcase>
-    <testcase classname="userSummaryService period helpers isWithinWeeklyNarrativeLlmWindow: true dentro de 36h por defecto" name="userSummaryService period helpers isWithinWeeklyNarrativeLlmWindow: true dentro de 36h por defecto" time="0">
+    <testcase classname="resolveChatModelForContext escala a modelo complejo cuando el mensaje es largo y ambiguo" name="resolveChatModelForContext escala a modelo complejo cuando el mensaje es largo y ambiguo" time="0">
     </testcase>
-    <testcase classname="userSummaryService period helpers isWithinWeeklyNarrativeLlmWindow: false fuera de ventana" name="userSummaryService period helpers isWithinWeeklyNarrativeLlmWindow: false fuera de ventana" time="0">
+    <testcase classname="resolveModelRoutingForContext retorna trazabilidad con reason y score" name="resolveModelRoutingForContext retorna trazabilidad con reason y score" time="0.001">
     </testcase>
-  </testsuite>
-  <testsuite name="resolveWeeklyTipsMailEnv" errors="0" failures="0" skipped="0" timestamp="2026-04-28T13:18:20" time="0.055" tests="10">
-    <testcase classname="resolveWeeklyTipsMailEnv usa sunday_morning por defecto cuando no viene slot" name="resolveWeeklyTipsMailEnv usa sunday_morning por defecto cuando no viene slot" time="0.001">
+    <testcase classname="resolveModelRoutingForContext prioriza crisis por sobre otras reglas" name="resolveModelRoutingForContext prioriza crisis por sobre otras reglas" time="0">
     </testcase>
-    <testcase classname="resolveWeeklyTipsMailEnv sunday_morning usa domingo 10h UTC por defecto" name="resolveWeeklyTipsMailEnv sunday_morning usa domingo 10h UTC por defecto" time="0">
-    </testcase>
-    <testcase classname="resolveWeeklyTipsMailEnv monday_morning usa lunes 10h UTC y ventana hasta :59" name="resolveWeeklyTipsMailEnv monday_morning usa lunes 10h UTC y ventana hasta :59" time="0">
-    </testcase>
-    <testcase classname="resolveWeeklyTipsMailEnv saturday_night usa sábado 23h UTC por defecto" name="resolveWeeklyTipsMailEnv saturday_night usa sábado 23h UTC por defecto" time="0.001">
-    </testcase>
-    <testcase classname="resolveWeeklyTipsMailEnv permite sobrescribir la hora del slot" name="resolveWeeklyTipsMailEnv permite sobrescribir la hora del slot" time="0">
-    </testcase>
-    <testcase classname="matchesWeeklyTipsUtcWindow domingo 10:05 UTC con slot sunday_morning" name="matchesWeeklyTipsUtcWindow domingo 10:05 UTC con slot sunday_morning" time="0">
-    </testcase>
-    <testcase classname="matchesWeeklyTipsUtcWindow sábado 23:05 UTC con slot saturday_night" name="matchesWeeklyTipsUtcWindow sábado 23:05 UTC con slot saturday_night" time="0">
-    </testcase>
-    <testcase classname="matchesWeeklyTipsUtcWindow false fuera de hora de ventana (domingo 11h UTC, slot 10h)" name="matchesWeeklyTipsUtcWindow false fuera de hora de ventana (domingo 11h UTC, slot 10h)" time="0">
-    </testcase>
-    <testcase classname="matchesWeeklyTipsUtcWindow domingo 10:55 UTC sigue dentro de ventana sunday_morning (:59)" name="matchesWeeklyTipsUtcWindow domingo 10:55 UTC sigue dentro de ventana sunday_morning (:59)" time="0.001">
-    </testcase>
-    <testcase classname="matchesWeeklyTipsUtcWindow false otro día con slot sunday_morning" name="matchesWeeklyTipsUtcWindow false otro día con slot sunday_morning" time="0">
+    <testcase classname="resolveModelRoutingForContext usa modelo base con razón default cuando no hay señales" name="resolveModelRoutingForContext usa modelo base con razón default cuando no hay señales" time="0">
     </testcase>
   </testsuite>
 </testsuites>
