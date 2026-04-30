@@ -19,6 +19,21 @@ Documento de referencia con **200 propuestas** para reforzar el mensaje principa
 
 ---
 
+## Estado de implementación (actualización Abril 2026)
+
+Resumen de avances aplicados en el sistema conversacional durante esta iteración.  
+**Criterio:** `Hecha` = implementada de punta a punta; `Parcial` = MVP funcional; `Pendiente` = no iniciada en esta ronda.
+
+| # | Propuesta | Estado | Nota de implementación |
+|---|-----------|--------|------------------------|
+| 56 | Pipeline “entender → responder” | Parcial | Refuerzo del pipeline con políticas de turno y contexto conversacional antes de generación de respuesta. |
+| 57 | Pregunta aclaratoria ante baja certeza | Parcial | Se incorporó lógica de carga cognitiva y formato guiado para evitar asumir cuando hay baja señal del usuario. |
+| 62 | Plantilla validación–normalización–pregunta | Parcial | Se añadieron reglas de cierre con avance y control anti-interrogatorio para mantener estructura útil por turno. |
+| 67 | SLO latencia + alertas por degradación | Parcial | Se agregó telemetría nueva (`chat_turn_policy`) para medir degradación conversacional y ajustar umbrales. |
+| 103 | Detección de cierre natural de sesión | Parcial | Nuevo detector `closureRisk` y pauta de “puente de retorno” para reducir abandono tras desahogo. |
+| 109 | Versionado prompts rollback | Pendiente | No se implementó versionado operativo ni rollback one-click en esta ronda. |
+| 119 | Dataset eval + CI regresión | Parcial | Se añadieron tests unitarios específicos para reglas de turnos, resistencia y defaults configurables por `env`. |
+
 ## 1. Catálogo de propuestas (200)
 
 Cada **descripción breve** incluye, al final, la misma frase de **contexto de roadmap** (hipótesis de valor, owners, métricas mínimas y dependencias cruzadas en la matriz). Sirve como checklist de planificación; se puede sustituir por texto específico por fila cuando el equipo priorice una fila concreta.
