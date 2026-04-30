@@ -128,6 +128,14 @@ class MetricsService {
         up: 0,
         down: 0,
         cleared: 0
+      },
+      /** Telemetría de política de turno y carga conversacional. */
+      chatTurnPolicy: {
+        total: 0,
+        questionStreakOver2: 0,
+        shortReplyStreakOver2: 0,
+        closureRiskSignals: 0,
+        cognitiveLoadByType: {}
       }
     };
 
@@ -359,6 +367,19 @@ class MetricsService {
         if (h === 'up') mf.up++;
         else if (h === 'down') mf.down++;
         else if (h === 'cleared') mf.cleared++;
+        break;
+      }
+
+      case 'chat_turn_policy': {
+        const cp = this.inMemoryMetrics.chatTurnPolicy;
+        cp.total++;
+        const q = Number(data?.questionStreakCount || 0);
+        const s = Number(data?.shortReplyStreak || 0);
+        if (q >= 2) cp.questionStreakOver2++;
+        if (s >= 2) cp.shortReplyStreakOver2++;
+        if (data?.closureRisk === true) cp.closureRiskSignals++;
+        const load = data?.cognitiveLoadSignal || 'none';
+        cp.cognitiveLoadByType[load] = (cp.cognitiveLoadByType[load] || 0) + 1;
         break;
       }
 
@@ -608,6 +629,7 @@ class MetricsService {
             : null
       }
     };
+    const turnPolicy = this.inMemoryMetrics.chatTurnPolicy;
 
     return {
       status: errorRate < 5 ? 'healthy' : errorRate < 10 ? 'degraded' : 'unhealthy',
@@ -619,7 +641,8 @@ class MetricsService {
       cacheStats: cacheStats,
       promptHistoryTruncation: promptHistory,
       chatTemplateSignals,
-      chatUsage
+      chatUsage,
+      chatTurnPolicy: turnPolicy
     };
   }
 

@@ -2,6 +2,7 @@
  * Analizador de Contexto - Detecta intención, tema y urgencia en mensajes del usuario
  */
 import { PATRONES_INTENCION, PATRONES_TEMA } from '../config/patrones.js';
+import { CONTEXT_INFERENCE_THRESHOLDS } from '../constants/openai.js';
 import { detectResistance } from '../constants/resistancePatterns.js';
 import { detectRelapseSigns } from '../constants/relapsePrevention.js';
 import { detectImplicitNeeds } from '../constants/implicitNeeds.js';
@@ -38,7 +39,8 @@ class ContextAnalyzer {
     this.FASE_CONVERSACION_INICIAL = 'INICIAL';
     this.INTENCIONES_SEGUIMIENTO = ['CRISIS', 'AYUDA_EMOCIONAL'];
     this.PATRONES_URGENCIA = ['urgente', 'emergencia', 'crisis', 'ayuda.*ahora', 'grave'];
-    this.DISTORTION_CONFIDENCE_MIN_EARLY = 0.6;
+    this.DISTORTION_CONFIDENCE_MIN_EARLY = CONTEXT_INFERENCE_THRESHOLDS.DISTORTION_CONFIDENCE_MIN_EARLY;
+    this.DISTORTION_CONFIDENCE_MIN = CONTEXT_INFERENCE_THRESHOLDS.DISTORTION_CONFIDENCE_MIN;
   }
   
   // Helper: validar que el contenido es un string válido
@@ -153,15 +155,20 @@ class ContextAnalyzer {
       const isEarlyPhase = faseConversacion === this.FASE_CONVERSACION_INICIAL && userCount <= 3;
       const isBriefUserMessage = content.trim().length <= 45;
       const gateDistortions = isEarlyPhase || isBriefUserMessage;
-      const filteredDistortions = gateDistortions
+      const filteredDistortions = (gateDistortions
         ? cognitiveDistortions.filter(d => (d?.confidence || 0) >= this.DISTORTION_CONFIDENCE_MIN_EARLY)
-        : cognitiveDistortions;
+        : cognitiveDistortions.filter(d => (d?.confidence || 0) >= this.DISTORTION_CONFIDENCE_MIN)
+      );
       const filteredPrimary = filteredDistortions.find(
         (d) => d?.type && d.type === primaryDistortion?.type
       ) || null;
       const filteredIntervention = filteredDistortions.length > 0
         ? cognitiveDistortionDetector.generateIntervention(filteredDistortions)
         : null;
+
+      const disclosureStyle =
+        resistance?.disclosureStyle ||
+        (isBriefUserMessage ? 'low_bandwidth' : 'open');
 
       return {
         intencion: contenidoActual.intencion,
@@ -175,6 +182,7 @@ class ContextAnalyzer {
         sugerencias: [],
         // NUEVOS: Análisis psicológicos adicionales
         resistance: resistance || null,
+        disclosureStyle,
         relapseSigns: relapseSigns || null,
         implicitNeeds: implicitNeeds.length > 0 ? implicitNeeds : null,
         strengths: strengths.length > 0 ? strengths : null,

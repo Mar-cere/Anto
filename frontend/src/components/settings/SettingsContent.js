@@ -33,7 +33,7 @@ export default function SettingsContent({
   onTestNotification,
 }) {
   const { showToast } = useToast();
-  const INSTAGRAM_URL = 'https://www.instagram.com/antoapp.cl?igsh=YjU3MDB5bTkycjAz&utm_source=qr';
+  const INSTAGRAM_URL = 'https://www.instagram.com/antoapp.es?igsh=YjU3MDB5bTkycjAz&utm_source=qr';
   const currentResponseStyle = user?.preferences?.responseStyle || 'balanced';
   const responseStyleLabel = RESPONSE_STYLE_LABELS[currentResponseStyle] || 'Equilibrado';
   const chatPrefs = { ...DEFAULT_CHAT_PREFS, ...(user?.preferences?.chatPreferences || {}) };

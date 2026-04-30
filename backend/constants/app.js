@@ -18,7 +18,7 @@ export const EMAIL_FROM_NAME = 'Anto';
 // Link social opcional (usado en emails/setting)
 export const INSTAGRAM_URL =
   process.env.INSTAGRAM_URL ||
-  'https://www.instagram.com/antoapp.cl?igsh=YjU3MDB5bTkycjAz&utm_source=qr';
+  'https://www.instagram.com/antoapp.es?igsh=YjU3MDB5bTkycjAz&utm_source=qr';
 // URL del icono de notificación (debe ser una URL pública accesible)
 // Si tienes el icono en Cloudinary, reemplaza esta URL con la URL de Cloudinary
 export const NOTIFICATION_ICON_URL = process.env.NOTIFICATION_ICON_URL || LOGO_URL;

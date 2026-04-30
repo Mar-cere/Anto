@@ -11,6 +11,7 @@ import {
 } from '../../constants/crisis.js';
 import {
   buildPersonalizedPrompt,
+  CHAT_TURN_POLICY,
   DEFAULT_VALUES,
   HISTORY_LIMITS,
   MESSAGE_INTENTS,
@@ -361,6 +362,49 @@ export function buildMedicationSafetySnippet(contexto) {
 - Evita tono de regaño o bloqueo; mantén apertura para seguir conversando.`;
 }
 
+function buildTurnPolicySnippet(conversationPattern = {}, contextual = {}) {
+  const questionStreak = Number(conversationPattern?.questionStreakCount || 0);
+  const shortReplyStreak = Number(conversationPattern?.shortReplyStreak || 0);
+  const load = conversationPattern?.cognitiveLoadSignal || 'none';
+  const disclosureStyle = contextual?.disclosureStyle || contextual?.resistance?.disclosureStyle || 'open';
+  const maxConsecutiveQuestions = CHAT_TURN_POLICY.MAX_CONSECUTIVE_QUESTIONS;
+
+  return `\n\n### Política de turno (core, prioridad alta)
+- No hagas interrogatorio: máximo ${maxConsecutiveQuestions} preguntas seguidas. Si ya llegaste a ese máximo, el próximo turno debe incluir avance concreto (resumen útil, propuesta simple o siguiente paso).
+- Si el usuario viene en respuestas cortas (racha actual: ${shortReplyStreak}) o hay señal de carga cognitiva (${load}), usa formato de baja carga: una opción guiada (A/B), escala 0-10 o “una frase”.
+- Estilo de apertura detectado: ${disclosureStyle}. Si es límite saludable, no presiones por detalles; acompaña con foco breve.
+- Prohíbe microtécnicas corporales automáticas: no indiques respiraciones ni ejercicios somáticos salvo pedido explícito del usuario.
+- Señal de preguntas previas del asistente: ${questionStreak}. Ajusta para no seguir acumulando preguntas.`;
+}
+
+function buildProgressiveClosureSnippet(conversationPattern = {}, sessionIntention = 'vent') {
+  const closureRisk = conversationPattern?.closureRisk === true;
+  return `\n\n### Cierre con avance (anti-abandono)
+- Cada turno debe cerrar con avance: elige exactamente uno -> (a) pregunta focal, (b) micro-acción concreta no corporal, o (c) mini-resumen + confirmación.
+- Evita cierres vacíos/descriptivos sin siguiente paso.
+- Si detectas señal de salida (${closureRisk ? 'sí' : 'no'}), deja una continuidad útil para retorno ("si vuelves, retomamos desde X"), sin culpa ni presión.
+- Prioriza continuidad breve para próximos ingresos: una frase de puente contextual, no menú largo.
+- Intención de sesión actual: ${sessionIntention}. Ajusta el cierre a esa intención.`;
+}
+
+function buildPhaseRouterSnippet(contexto = {}) {
+  const phase = contexto.sessionPhase || 'default';
+  return `\n\n### Enrutador por fase
+- Fase actual: ${phase}.
+- INICIAL: contención breve + foco.
+- EN_CURSO: menos diagnóstico, más avance concreto.
+- BLOQUEO (si aparece evasión/carga alta): bajar carga cognitiva, opciones cortas.
+- CIERRE: consolidar en 1 frase qué se lleva y puerta de regreso clara.`;
+}
+
+function buildAntiRobotRewriteSnippet() {
+  return `\n\n### Reescritura anti-robot (post-estilo)
+- Frases cortas y lenguaje natural; evita plantillas repetidas.
+- Evita duplicar validaciones genéricas ("entiendo", "es válido") en cadena.
+- Mantén 1-2 párrafos y una sola pregunta cuando corresponda.
+- Cambia de estructura entre turnos para no sonar mecánico.`;
+}
+
 /**
  * Recorta texto de usuario para inyectarlo en MEMORIA del prompt (sin saltos ni comillas problemáticas).
  * @param {string} raw
@@ -697,6 +741,7 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   }
 
   const sessionIntention = normalizeSessionIntention(contexto.sessionIntention);
+  const conversationPattern = contexto.conversationPattern || {};
   if (sessionIntention === 'vent' && !depthPreference && preferredLength !== 'LONG') {
     responseStyle = 'brief';
   }
@@ -741,6 +786,10 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
 
   const intentionSnippet = getSessionIntentionSystemSnippet(sessionIntention);
   if (intentionSnippet) systemMessage += intentionSnippet;
+  systemMessage += buildTurnPolicySnippet(conversationPattern, contexto.contextual || {});
+  systemMessage += buildProgressiveClosureSnippet(conversationPattern, sessionIntention);
+  systemMessage += buildPhaseRouterSnippet(contexto);
+  systemMessage += buildAntiRobotRewriteSnippet();
 
   const roll = contexto.rollingSummary && String(contexto.rollingSummary).trim();
   if (roll) {

@@ -12,6 +12,7 @@ import {
   analyzeAssistantResponseTemplateSignals,
   encodeChatPreferencesKey
 } from '../services/chat/chatTemplateSignals.js';
+import { analyzeConversationPattern } from '../services/chat/conversationPatternAnalyzer.js';
 import { buildHistoryForPromptFromMessages } from '../services/openai/openaiPromptBuilder.js';
 import { authenticateToken as protect } from '../middleware/auth.js';
 import { requireActiveSubscription } from '../middleware/checkSubscription.js';
@@ -589,6 +590,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           priorConversationCount,
           threadMessageLimit: LIMITE_MENSAJES
         });
+        const conversationPattern = analyzeConversationPattern(conversationHistory, content.trim());
         
         // NUEVO: Pasar conversationId al contexto para referencias a conversaciones anteriores
         const currentConversationId = conversationId;
@@ -1051,8 +1053,23 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               : undefined,
           ...(memoriaParaOpenAI ? { memory: memoriaParaOpenAI } : {}),
           sessionRetention,
-          sessionIntention: sanitizeSessionIntentionForClient(conversation?.sessionIntention)
+          sessionIntention: sanitizeSessionIntentionForClient(conversation?.sessionIntention),
+          conversationPattern
         };
+
+        metricsService
+          .recordMetric(
+            'chat_turn_policy',
+            {
+              questionStreakCount: conversationPattern.questionStreakCount,
+              shortReplyStreak: conversationPattern.shortReplyStreak,
+              cognitiveLoadSignal: conversationPattern.cognitiveLoadSignal || 'none',
+              closureRisk: conversationPattern.closureRisk === true
+            },
+            req.user._id.toString(),
+            { conversationId: String(conversationId) }
+          )
+          .catch(() => {});
 
         // Streaming: si se pide stream=true, responder por SSE
         if (req.query.stream === 'true') {

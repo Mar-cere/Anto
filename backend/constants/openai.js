@@ -255,6 +255,39 @@ function resolveHistoryLimits() {
 
 export const HISTORY_LIMITS = resolveHistoryLimits();
 
+function parseEnvInt(name, defaultValue, min, max) {
+  const raw = process.env[name];
+  if (raw === undefined || String(raw).trim() === '') return defaultValue;
+  const parsed = parseInt(String(raw), 10);
+  if (!Number.isFinite(parsed)) return defaultValue;
+  return Math.min(max, Math.max(min, parsed));
+}
+
+function parseEnvFloat(name, defaultValue, min, max) {
+  const raw = process.env[name];
+  if (raw === undefined || String(raw).trim() === '') return defaultValue;
+  const parsed = parseFloat(String(raw));
+  if (!Number.isFinite(parsed)) return defaultValue;
+  return Math.min(max, Math.max(min, parsed));
+}
+
+/**
+ * Ajustes operativos de conversación (tuneables por ENV sin cambios de código).
+ */
+export const CHAT_TURN_POLICY = {
+  MAX_CONSECUTIVE_QUESTIONS: parseEnvInt('CHAT_MAX_CONSECUTIVE_QUESTIONS', 2, 1, 4),
+  SHORT_REPLY_STREAK_THRESHOLD: parseEnvInt('CHAT_SHORT_REPLY_STREAK_THRESHOLD', 2, 1, 5),
+  SHORT_REPLY_MAX_WORDS: parseEnvInt('CHAT_SHORT_REPLY_MAX_WORDS', 4, 1, 8)
+};
+
+/**
+ * Calibración de inferencia contextual/emocional.
+ */
+export const CONTEXT_INFERENCE_THRESHOLDS = {
+  DISTORTION_CONFIDENCE_MIN_EARLY: parseEnvFloat('CHAT_DISTORTION_CONFIDENCE_MIN_EARLY', 0.7, 0, 1),
+  DISTORTION_CONFIDENCE_MIN: parseEnvFloat('CHAT_DISTORTION_CONFIDENCE_MIN', 0.65, 0, 1)
+};
+
 /** Valores admitidos por la API para reasoning_effort (según modelo). */
 const REASONING_EFFORT_SET = new Set(['minimal', 'low', 'medium', 'high', 'xhigh', 'none']);
 

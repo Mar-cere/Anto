@@ -105,6 +105,28 @@ export const detectResistance = (messageContent) => {
   }
 
   const content = messageContent.toLowerCase();
+
+  // Diferenciar límites saludables de cierre defensivo.
+  // "No quiero ser específica" o "son demasiadas cosas" suele ser sobrecarga,
+  // no necesariamente resistencia terapéutica.
+  const healthyBoundaryPattern =
+    /(?:no\s+quiero\s+ser\s+espec[ií]fic[oa]|son\s+demasiadas?\s+cosas|prefiero\s+no\s+entrar\s+en\s+detalle|me\s+cuesta\s+explicarlo)/i;
+  if (healthyBoundaryPattern.test(content)) {
+    return {
+      type: 'healthy_boundary',
+      intervention: {
+        approach: 'Reducir carga cognitiva y ofrecer formatos breves',
+        techniques: ['Opciones A/B', 'Escala breve', 'Una frase'],
+        prompts: [
+          'Está bien no entrar en detalle. Si te ayuda, elige una opción: ¿te pesa más discutir seguido, sentirte poco escuchada o la distancia?',
+          'Podemos ir en corto: en una frase, ¿qué te dolió más hoy?',
+          'Sin detalles: del 0 al 10, ¿qué tan cargada te sientes ahora?'
+        ]
+      },
+      confidence: 0.8,
+      disclosureStyle: 'healthy_boundary'
+    };
+  }
   
   for (const [type, patterns] of Object.entries(RESISTANCE_PATTERNS)) {
     for (const pattern of patterns) {
@@ -112,7 +134,8 @@ export const detectResistance = (messageContent) => {
         return {
           type,
           intervention: RESISTANCE_INTERVENTIONS[type],
-          confidence: 0.7
+          confidence: 0.7,
+          disclosureStyle: type === 'avoidance' ? 'defensive_closure' : 'exploratory_resistance'
         };
       }
     }

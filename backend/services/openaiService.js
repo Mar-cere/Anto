@@ -326,7 +326,8 @@ class OpenAIService {
           crisis: contexto.crisis,
           isGuest,
           sessionRetention: contexto.sessionRetention,
-          sessionIntention: contexto.sessionIntention
+          sessionIntention: contexto.sessionIntention,
+          conversationPattern: contexto.conversationPattern
         }
       );
 
@@ -756,7 +757,8 @@ class OpenAIService {
         crisis: contexto.crisis,
         isGuest: contexto.isGuest === true,
         sessionRetention: contexto.sessionRetention,
-        sessionIntention: contexto.sessionIntention
+        sessionIntention: contexto.sessionIntention,
+        conversationPattern: contexto.conversationPattern
       }
     );
 
