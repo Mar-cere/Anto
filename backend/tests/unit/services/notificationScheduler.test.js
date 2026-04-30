@@ -4,10 +4,11 @@
  * @author AntoApp Team
  */
 
-import notificationScheduler from '../../../services/notificationScheduler.js';
-import NotificationEngagement from '../../../models/NotificationEngagement.js';
-import pushNotificationService from '../../../services/pushNotificationService.js';
 import { jest } from '@jest/globals';
+import NotificationEngagement from '../../../models/NotificationEngagement.js';
+import User from '../../../models/User.js';
+import notificationScheduler from '../../../services/notificationScheduler.js';
+import pushNotificationService from '../../../services/pushNotificationService.js';
 
 describe('NotificationScheduler Service', () => {
   afterEach(() => {
@@ -67,6 +68,67 @@ describe('NotificationScheduler Service', () => {
       expect(result).toBe(true);
       expect(sendSpy).toHaveBeenCalledTimes(1);
       expect(createSpy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Mensajes entre sesiones (#31)', () => {
+    it('usa between_sessions_nudge para inactividad > 48h', async () => {
+      jest
+        .spyOn(User, 'findById')
+        .mockReturnValue({
+          select: jest.fn().mockResolvedValue({
+            pushToken: 'ExponentPushToken[test]',
+            notificationPreferences: { enabled: true, types: { betweenSessionsMessages: true } },
+          }),
+        });
+      jest
+        .spyOn(notificationScheduler, '_hasRecentNotificationOfType')
+        .mockResolvedValue(false);
+      const sendSpy = jest
+        .spyOn(notificationScheduler, 'sendScheduledNotification')
+        .mockResolvedValue(true);
+
+      const result = await notificationScheduler.sendBehaviorBasedNotification(
+        '507f1f77bcf86cd799439011',
+        { inactivity: { hours: 72 } }
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.notificationType).toBe(
+        pushNotificationService.NOTIFICATION_TYPES.BETWEEN_SESSIONS_NUDGE
+      );
+      expect(sendSpy).toHaveBeenCalledWith(
+        '507f1f77bcf86cd799439011',
+        'ExponentPushToken[test]',
+        pushNotificationService.NOTIFICATION_TYPES.BETWEEN_SESSIONS_NUDGE,
+        expect.any(Object)
+      );
+    });
+
+    it('no envía between_sessions_nudge si ya hubo uno en las últimas 24h', async () => {
+      jest
+        .spyOn(User, 'findById')
+        .mockReturnValue({
+          select: jest.fn().mockResolvedValue({
+            pushToken: 'ExponentPushToken[test]',
+            notificationPreferences: { enabled: true, types: { betweenSessionsMessages: true } },
+          }),
+        });
+      jest
+        .spyOn(notificationScheduler, '_hasRecentNotificationOfType')
+        .mockResolvedValue(true);
+      const sendSpy = jest
+        .spyOn(notificationScheduler, 'sendScheduledNotification')
+        .mockResolvedValue(true);
+
+      const result = await notificationScheduler.sendBehaviorBasedNotification(
+        '507f1f77bcf86cd799439011',
+        { inactivity: { hours: 72 } }
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.reason).toMatch(/24h/);
+      expect(sendSpy).not.toHaveBeenCalled();
     });
   });
 });

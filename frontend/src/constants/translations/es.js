@@ -81,6 +81,21 @@ export const DASH = {
   HABITS_LABEL: 'Lista de hábitos',
   POMODORO_LABEL: 'Pomodoro',
   NAVBAR_LABEL: 'Barra de navegación',
+  FOCUS_TITLE: 'Tu foco hoy',
+  FOCUS_CHAT_CTA: 'Abrir chat',
+  FOCUS_SUMMARY: 'Resumen de la semana',
+  FOCUS_COMMITMENTS: 'Compromisos y foco',
+  FOCUS_UPCOMING_TASKS: 'Próximas tareas',
+  FOCUS_RECENT_CHATS: 'Últimas conversaciones',
+  FOCUS_PROGRESS: 'Avances esta semana',
+  FOCUS_SCALES: 'Último autoinforme (escalas)',
+  FOCUS_NO_TASKS: 'No hay tareas con fecha próxima.',
+  FOCUS_NO_CHATS: 'Aún no hay conversaciones.',
+  FOCUS_NO_COMMITMENTS: 'Sin compromisos guardados todavía.',
+  FOCUS_REMINDER_SECTION: 'Lo principal ahora',
+  FOCUS_REMINDER_TAP_CHAT: 'Tocá para ir al chat',
+  FOCUS_PROTOCOL: 'Próximo paso (seguimiento)',
+  FOCUS_START_CHAT: 'Empezar en el chat',
 };
 
 // Exportar todas las traducciones agrupadas

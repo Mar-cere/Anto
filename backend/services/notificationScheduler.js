@@ -6,10 +6,10 @@
  */
 
 import mongoose from 'mongoose';
-import User from '../models/User.js';
-import Task from '../models/Task.js';
-import pushNotificationService from './pushNotificationService.js';
 import NotificationEngagement from '../models/NotificationEngagement.js';
+import Task from '../models/Task.js';
+import User from '../models/User.js';
+import pushNotificationService from './pushNotificationService.js';
 
 class NotificationScheduler {
   constructor() {
@@ -53,6 +53,23 @@ class NotificationScheduler {
 
   _taskRemindersEnabled(user) {
     return user?.notificationPreferences?.types?.taskReminders !== false;
+  }
+
+  _betweenSessionsEnabled(user) {
+    return user?.notificationPreferences?.types?.betweenSessionsMessages !== false;
+  }
+
+  async _hasRecentNotificationOfType(userId, notificationType, windowHours = 24) {
+    const since = new Date(Date.now() - windowHours * 60 * 60 * 1000);
+    const existing = await NotificationEngagement.findOne({
+      userId,
+      notificationType,
+      status: 'sent',
+      sentAt: { $gte: since }
+    })
+      .select('_id')
+      .lean();
+    return !!existing;
   }
 
   /**
@@ -332,6 +349,9 @@ class NotificationScheduler {
         case pushNotificationService.NOTIFICATION_TYPES.DAILY_CHECKIN:
           result = await pushNotificationService.sendDailyCheckIn(pushToken, options);
           break;
+        case pushNotificationService.NOTIFICATION_TYPES.BETWEEN_SESSIONS_NUDGE:
+          result = await pushNotificationService.sendBetweenSessionsNudge(pushToken, options);
+          break;
         case pushNotificationService.NOTIFICATION_TYPES.HYDRATION_REMINDER:
           result = await pushNotificationService.sendHydrationReminder(pushToken, options);
           break;
@@ -421,9 +441,9 @@ class NotificationScheduler {
 
       // Notificación por inactividad
       if (inactivity && inactivity.hours > 48) {
-        notificationType = pushNotificationService.NOTIFICATION_TYPES.DAILY_CHECKIN;
+        notificationType = pushNotificationService.NOTIFICATION_TYPES.BETWEEN_SESSIONS_NUDGE;
         options = {
-          message: 'Hace tiempo que no hablamos. ¿Cómo has estado?'
+          message: 'Hace días que no pasas por acá. Si te ayuda, vuelve con una frase breve y seguimos desde ahí.'
         };
       }
       // Notificación por progreso positivo
@@ -451,6 +471,24 @@ class NotificationScheduler {
       if (user.notificationPreferences.types && 
           user.notificationPreferences.types[typeKey] === false) {
         return { success: false, reason: 'Tipo de notificación deshabilitado por el usuario' };
+      }
+
+      if (
+        notificationType === pushNotificationService.NOTIFICATION_TYPES.BETWEEN_SESSIONS_NUDGE
+        && !this._betweenSessionsEnabled(user)
+      ) {
+        return { success: false, reason: 'Mensajes entre sesiones deshabilitados por el usuario' };
+      }
+
+      if (notificationType === pushNotificationService.NOTIFICATION_TYPES.BETWEEN_SESSIONS_NUDGE) {
+        const alreadySentRecently = await this._hasRecentNotificationOfType(
+          userId,
+          notificationType,
+          24
+        );
+        if (alreadySentRecently) {
+          return { success: false, reason: 'Ya se envió un mensaje entre sesiones en las últimas 24h' };
+        }
       }
 
       const result = await this.sendScheduledNotification(
@@ -482,6 +520,7 @@ class NotificationScheduler {
       [pushNotificationService.NOTIFICATION_TYPES.EMOTIONAL_CHECKIN]: 'dailyReminders',
       [pushNotificationService.NOTIFICATION_TYPES.MORNING_MOTIVATION]: 'motivationalMessages',
       [pushNotificationService.NOTIFICATION_TYPES.EVENING_REFLECTION]: 'motivationalMessages',
+      [pushNotificationService.NOTIFICATION_TYPES.BETWEEN_SESSIONS_NUDGE]: 'betweenSessionsMessages',
       [pushNotificationService.NOTIFICATION_TYPES.PROGRESS_POSITIVE]: 'motivationalMessages'
     };
     return mapping[notificationType] || 'dailyReminders';
@@ -606,6 +645,49 @@ class NotificationScheduler {
     this.isRunning = false;
     console.log('[NotificationScheduler] ⏹️ Servicio de programación de notificaciones detenido');
   }
+}
+
+/**
+ * Siguiente envío programado por preferencias rutinarias (mañana / tarde-noche).
+ * No contempla notificaciones comportamentales ni tareas.
+ * @param {object} notificationPreferences - prefs del usuario
+ * @param {Date} [now]
+ * @returns {{ kind: 'morning'|'evening', at: Date, label: string }|null}
+ */
+export function computeNextRoutinePushSlot(notificationPreferences, now = new Date()) {
+  if (!notificationPreferences?.enabled) return null;
+  const slots = [];
+  if (notificationPreferences.morning?.enabled) {
+    const morningHour = notificationPreferences.morning.hour ?? 8;
+    const morningMinute = notificationPreferences.morning.minute ?? 0;
+    const morningTime = new Date(now);
+    morningTime.setHours(morningHour, morningMinute, 0, 0);
+    if (morningTime <= now) {
+      morningTime.setDate(morningTime.getDate() + 1);
+    }
+    slots.push({
+      kind: 'morning',
+      at: morningTime,
+      label: 'Recordatorio programado (mañana)'
+    });
+  }
+  if (notificationPreferences.evening?.enabled) {
+    const eveningHour = notificationPreferences.evening.hour ?? 19;
+    const eveningMinute = notificationPreferences.evening.minute ?? 0;
+    const eveningTime = new Date(now);
+    eveningTime.setHours(eveningHour, eveningMinute, 0, 0);
+    if (eveningTime <= now) {
+      eveningTime.setDate(eveningTime.getDate() + 1);
+    }
+    slots.push({
+      kind: 'evening',
+      at: eveningTime,
+      label: 'Recordatorio programado (tarde-noche)'
+    });
+  }
+  if (!slots.length) return null;
+  slots.sort((a, b) => a.at.getTime() - b.at.getTime());
+  return slots[0];
 }
 
 const notificationScheduler = new NotificationScheduler();

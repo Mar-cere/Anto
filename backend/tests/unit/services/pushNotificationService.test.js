@@ -35,6 +35,12 @@ describe('PushNotificationService', () => {
       expect(pushNotificationService.getPriority(types.SUBSCRIPTION_RENEWAL_HINT)).toBe('high');
     });
 
+    it('debe enrutar between_sessions_nudge como recordatorio estándar', () => {
+      const types = pushNotificationService.NOTIFICATION_TYPES;
+      expect(pushNotificationService.getChannelId(types.BETWEEN_SESSIONS_NUDGE)).toBe('anto-reminders');
+      expect(pushNotificationService.getPriority(types.BETWEEN_SESSIONS_NUDGE)).toBe('default');
+    });
+
     it('debe tener al menos 5 tipos por grupo funcional en NOTIFICATION_TYPES', () => {
       const t = pushNotificationService.NOTIFICATION_TYPES;
       const groups = [

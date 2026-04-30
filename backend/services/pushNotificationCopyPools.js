@@ -767,6 +767,32 @@ export const PUSH_NOTIFICATION_COPY = {
       'Un check-in puede ser “hoy me sostuvo…” y una sola cosa: mensaje, mascota, canción.',
     ],
   },
+  betweenSessionsNudge: {
+    titles: [
+      '🫶 Espacio entre sesiones',
+      '🫶 Un check-in suave',
+      '🫶 Seguimos cuando quieras',
+      '🫶 Una pausa contigo',
+      '🫶 Aquí sin prisa',
+      '🫶 Volver en corto',
+      '🫶 Un minuto honesto',
+      '🫶 Pequeño puente',
+      '🫶 A tu ritmo',
+      '🫶 Seguimos cerca',
+    ],
+    bodies: [
+      'Si te ayuda, vuelve con una frase: "hoy me pesó...". No hace falta explicar todo.',
+      'Entre sesiones, una línea basta: ¿más cansancio, ansiedad o calma hoy?',
+      'Si no quieres entrar en detalle, puedes mandar solo un número del 0 al 10.',
+      'Un check-in breve también cuenta: "estoy en modo supervivencia" ya es información.',
+      'Si hoy no da para conversar largo, podemos ir por A/B: ¿más cabeza o más cuerpo?',
+      'Seguimos cuando quieras: una palabra suelta también mantiene el hilo vivo.',
+      'No necesitas resolver todo ahora; puedes volver solo para ordenar una idea.',
+      'Si te sirve, escribe "necesito descarga" o "necesito foco" y partimos desde ahí.',
+      'Entre sesiones, un micro-paso: nombra qué te drenó más hoy en una frase.',
+      'Si hoy estás sin energía, también vale volver solo a decir "aquí estoy".',
+    ],
+  },
   breathing: {
     titles: [
       '🌬️ Momento de respirar',

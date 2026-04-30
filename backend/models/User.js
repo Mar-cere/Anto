@@ -198,7 +198,8 @@ const userSchema = new mongoose.Schema({
       dailyReminders: { type: Boolean, default: true },
       habitReminders: { type: Boolean, default: true },
       taskReminders: { type: Boolean, default: true },
-      motivationalMessages: { type: Boolean, default: true }
+      motivationalMessages: { type: Boolean, default: true },
+      betweenSessionsMessages: { type: Boolean, default: true }
     }
   },
   // Información de suscripción

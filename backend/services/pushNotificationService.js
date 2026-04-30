@@ -10,7 +10,7 @@
 import { Expo } from 'expo-server-sdk';
 import { NOTIFICATION_ICON_URL } from '../constants/app.js';
 import NotificationEngagement from '../models/NotificationEngagement.js';
-import { pickRandom, PUSH_NOTIFICATION_COPY as C, buildWeeklyProgressBody } from './pushNotificationCopyPools.js';
+import { PUSH_NOTIFICATION_COPY as C, buildWeeklyProgressBody, pickRandom } from './pushNotificationCopyPools.js';
 
 class PushNotificationService {
   constructor() {
@@ -53,6 +53,7 @@ class PushNotificationService {
       GRATITUDE_REMINDER: 'gratitude_reminder',
       JOURNALING_PROMPT: 'journaling_prompt',
       WEEKLY_REFLECTION: 'weekly_reflection',
+      BETWEEN_SESSIONS_NUDGE: 'between_sessions_nudge',
       
       // Motivación y apoyo
       MOTIVATIONAL_MESSAGE: 'motivational_message',
@@ -491,6 +492,20 @@ class PushNotificationService {
         timeOfDay,
       },
       this.NOTIFICATION_TYPES.DAILY_CHECKIN
+    );
+  }
+
+  async sendBetweenSessionsNudge(pushToken, options = {}) {
+    const { message } = options;
+    return this.sendNotification(
+      pushToken,
+      pickRandom(C.betweenSessionsNudge.titles),
+      message || pickRandom(C.betweenSessionsNudge.bodies),
+      {
+        action: 'open_chat',
+        betweenSessions: true,
+      },
+      this.NOTIFICATION_TYPES.BETWEEN_SESSIONS_NUDGE
     );
   }
 
@@ -1093,6 +1108,7 @@ class PushNotificationService {
       [this.NOTIFICATION_TYPES.GRATITUDE_REMINDER]: 'anto-reminders',
       [this.NOTIFICATION_TYPES.JOURNALING_PROMPT]: 'anto-reminders',
       [this.NOTIFICATION_TYPES.WEEKLY_REFLECTION]: 'anto-reminders',
+      [this.NOTIFICATION_TYPES.BETWEEN_SESSIONS_NUDGE]: 'anto-reminders',
       
       // Motivación - canal de recordatorios
       [this.NOTIFICATION_TYPES.MOTIVATIONAL_MESSAGE]: 'anto-reminders',
@@ -1176,6 +1192,7 @@ class PushNotificationService {
       [this.NOTIFICATION_TYPES.GRATITUDE_REMINDER]: 'default',
       [this.NOTIFICATION_TYPES.JOURNALING_PROMPT]: 'default',
       [this.NOTIFICATION_TYPES.WEEKLY_REFLECTION]: 'default',
+      [this.NOTIFICATION_TYPES.BETWEEN_SESSIONS_NUDGE]: 'default',
       
       // Trial y suscripciones - alta prioridad
       [this.NOTIFICATION_TYPES.TRIAL_EXPIRING]: 'high',

@@ -3,6 +3,7 @@
  */
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
+import { buildDashboardFocus } from '../services/dashboardFocusService.js';
 import { buildUserSummary } from '../services/userSummaryService.js';
 
 const router = express.Router();
@@ -12,6 +13,23 @@ const router = express.Router();
  * Semana: opcional date=YYYY-MM-DD (cualquier día de esa semana; por defecto hoy).
  * Mes: opcional year=2026&month=1-12 (por defecto mes actual).
  */
+/**
+ * GET /api/summary/focus
+ * Panel “foco actual”: resumen de semana, prioridad (reglas + LLM opcional), tareas, chats, escalas (último autoinforme).
+ */
+router.get('/focus', authenticateToken, async (req, res) => {
+  try {
+    const data = await buildDashboardFocus(req.user._id);
+    return res.json({ success: true, data });
+  } catch (err) {
+    console.error('[summaryRoutes] Error /focus:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al generar el foco del panel'
+    });
+  }
+});
+
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const period = String(req.query.period || '').toLowerCase();

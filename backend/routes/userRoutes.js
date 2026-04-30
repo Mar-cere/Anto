@@ -7,14 +7,14 @@ import express from 'express';
 import rateLimit from 'express-rate-limit';
 import Joi from 'joi';
 import mongoose from 'mongoose';
+import { CURRENT_TERMS_VERSION } from '../constants/app.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validateUserObjectId } from '../middleware/validation.js';
 import User from '../models/User.js';
 import UserProfile from '../models/UserProfile.js';
+import cacheService from '../services/cacheService.js';
 import userProfileService from '../services/userProfileService.js';
 import logger from '../utils/logger.js';
-import cacheService from '../services/cacheService.js';
-import { CURRENT_TERMS_VERSION } from '../constants/app.js';
 
 // Helper para validar ObjectId
 const isValidObjectId = (id) => {
@@ -171,7 +171,8 @@ const updateProfileSchema = Joi.object({
       dailyReminders: Joi.boolean(),
       habitReminders: Joi.boolean(),
       taskReminders: Joi.boolean(),
-      motivationalMessages: Joi.boolean()
+      motivationalMessages: Joi.boolean(),
+      betweenSessionsMessages: Joi.boolean()
     })
   }).optional(),
 });

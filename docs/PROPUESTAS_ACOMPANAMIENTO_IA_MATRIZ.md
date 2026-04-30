@@ -30,6 +30,7 @@ Resumen de avances aplicados en el sistema conversacional durante esta iteració
 | 57 | Pregunta aclaratoria ante baja certeza | Parcial | Se incorporó lógica de carga cognitiva y formato guiado para evitar asumir cuando hay baja señal del usuario. |
 | 62 | Plantilla validación–normalización–pregunta | Parcial | Se añadieron reglas de cierre con avance y control anti-interrogatorio para mantener estructura útil por turno. |
 | 67 | SLO latencia + alertas por degradación | Parcial | Se agregó telemetría nueva (`chat_turn_policy`) para medir degradación conversacional y ajustar umbrales. |
+| 31 | Espacio entre sesiones | Parcial | Implementado `between_sessions_nudge` por inactividad (>48h), con copy breve no intrusivo, opt-in (`betweenSessionsMessages`), anti-duplicado (1 cada 24h) y cap global de 5 notificaciones/día por usuario. |
 | 103 | Detección de cierre natural de sesión | Parcial | Nuevo detector `closureRisk` y pauta de “puente de retorno” para reducir abandono tras desahogo. |
 | 109 | Versionado prompts rollback | Pendiente | No se implementó versionado operativo ni rollback one-click en esta ronda. |
 | 119 | Dataset eval + CI regresión | Parcial | Se añadieron tests unitarios específicos para reglas de turnos, resistencia y defaults configurables por `env`. |

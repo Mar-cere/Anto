@@ -38,6 +38,7 @@ import ParticleBackground from '../components/ParticleBackground';
 import PomodoroCard from '../components/PomodoroCard';
 import JournalCard from '../components/JournalCard';
 import QuoteSection from '../components/QuoteSection';
+import DashboardFocusCard from '../components/DashboardFocusCard';
 import TaskCard from '../components/TaskCard';
 import { SkeletonBlock, SkeletonCard } from '../components/Skeleton';
 import { api, ENDPOINTS } from '../config/api';
@@ -59,6 +60,7 @@ import {
   shouldShowNotificationsPrompt,
 } from '../utils/notificationsPromptPolicy';
 import { setChatEntryBackTarget } from '../utils/chatEntryContext';
+import { STORAGE_KEYS as CHAT_STORAGE_KEYS } from './chat/chatScreenConstants';
 import { setFirstSessionHintDismissed } from '../utils/firstSessionHintStorage';
 import { markTutorialCompleted } from '../utils/tutorialStorage';
 
@@ -115,6 +117,7 @@ const DashScreen = () => {
   const [notificationsPromptSuppressed, setNotificationsPromptSuppressed] = useState(false);
   const [enablingNotifications, setEnablingNotifications] = useState(false);
   const [dashVisitsCount, setDashVisitsCount] = useState(0);
+  const [focusPayload, setFocusPayload] = useState(null);
   const dashFirstFocusRef = useRef(true);
   const hasCountedDashVisitRef = useRef(false);
   const tutorialShouldOpenChatRef = useRef(false);
@@ -151,7 +154,7 @@ const DashScreen = () => {
       }
 
       // Cargar datos en paralelo usando api helper
-      const [userData, tasks, habits] = await Promise.all([
+      const [userData, tasks, habits, focusRes] = await Promise.all([
         api.get(ENDPOINTS.ME).catch(() => {
           setError(DASH.ERROR_USER);
           return {};
@@ -163,8 +166,22 @@ const DashScreen = () => {
         api.get(ENDPOINTS.HABITS).catch(() => {
           setError(DASH.ERROR_HABITS);
           return [];
-        })
+        }),
+        api.get(ENDPOINTS.SUMMARY_FOCUS).catch(() => null)
       ]);
+
+      if (focusRes && typeof focusRes === 'object' && focusRes.notModified === true) {
+        /* mantener foco anterior */
+      } else if (
+        focusRes &&
+        typeof focusRes === 'object' &&
+        focusRes.success &&
+        focusRes.data
+      ) {
+        setFocusPayload(focusRes.data);
+      } else {
+        setFocusPayload(null);
+      }
 
       // Actualizar estados
       setUserData(userData || {});
@@ -492,6 +509,19 @@ const DashScreen = () => {
     navigation.navigate('MainTabs', { screen: 'Chat' });
   }, [navigation]);
 
+  const openConversationFromFocus = useCallback(
+    async (conversationId) => {
+      if (!conversationId) return;
+      try {
+        await AsyncStorage.setItem(CHAT_STORAGE_KEYS.CONVERSATION_ID, String(conversationId));
+      } catch (_) {
+        /* noop */
+      }
+      await goToChatFromOnboarding();
+    },
+    [goToChatFromOnboarding]
+  );
+
   // Manejar finalización del tutorial
   const handleTutorialComplete = useCallback(() => {
     setShowTutorial(false);
@@ -686,6 +716,11 @@ const DashScreen = () => {
             onEnable={handleEnableNotifications}
             onDismiss={handleNotificationsPromptDismiss}
             enabling={enablingNotifications}
+          />
+          <DashboardFocusCard
+            data={focusPayload}
+            onOpenChat={goToChatFromOnboarding}
+            onOpenConversation={openConversationFromFocus}
           />
           <QuoteSection />
           {error && (

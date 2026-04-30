@@ -70,6 +70,8 @@ export const ENDPOINTS = {
   JOURNAL_ARCHIVE: (id: string) => `/api/journals/${id}/archive`,
   /** Resumen semanal o mensual: query period=week|month, opcional date, year, month */
   SUMMARY: '/api/summary',
+  /** Foco del panel (dashboard #34): agrega semana, tareas, chats, compromisos, línea de prioridad */
+  SUMMARY_FOCUS: '/api/summary/focus',
   CHAT: '/api/chat',
   CHAT_MESSAGES: '/api/chat/messages',
   CHAT_CONVERSATIONS: '/api/chat/conversations',
