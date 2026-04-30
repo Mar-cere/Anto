@@ -18,8 +18,32 @@ class NotificationScheduler {
     
     // Intervalo para verificar usuarios inactivos (cada hora)
     this.INACTIVITY_CHECK_INTERVAL_MS = 60 * 60 * 1000;
+
+    // Tope diario duro por usuario para evitar saturación
+    const rawDailyMax = parseInt(process.env.NOTIFICATION_DAILY_MAX_PER_USER || '5', 10);
+    this.DAILY_MAX_PER_USER = Number.isFinite(rawDailyMax)
+      ? Math.min(20, Math.max(1, rawDailyMax))
+      : 5;
     
     this.isRunning = false;
+  }
+
+  async _countUserSentToday(userId) {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+
+    return NotificationEngagement.countDocuments({
+      userId,
+      status: 'sent',
+      sentAt: { $gte: start, $lte: end }
+    });
+  }
+
+  async _canSendMoreToday(userId) {
+    const sentToday = await this._countUserSentToday(userId);
+    return sentToday < this.DAILY_MAX_PER_USER;
   }
 
   /** Preferencias tipo: undefined = tratar como true (compatibilidad con usuarios antiguos). */
@@ -205,13 +229,13 @@ class NotificationScheduler {
             const morningMinute = user.notificationPreferences.morning.minute || 0;
             
             if (h === morningHour && m === morningMinute) {
-              await this.sendScheduledNotification(
+              const sentOk = await this.sendScheduledNotification(
                 user._id,
                 user.pushToken,
                 T.MORNING_MOTIVATION,
                 { timeOfDay: 'morning' }
               );
-              results.sent++;
+              if (sentOk) results.sent++;
             }
           }
 
@@ -221,32 +245,32 @@ class NotificationScheduler {
             const eveningMinute = user.notificationPreferences.evening.minute || 0;
             
             if (h === eveningHour && m === eveningMinute) {
-              await this.sendScheduledNotification(
+              const sentOk = await this.sendScheduledNotification(
                 user._id,
                 user.pushToken,
                 T.EVENING_REFLECTION,
                 { timeOfDay: 'evening' }
               );
-              results.sent++;
+              if (sentOk) results.sent++;
             }
           }
 
           // Hasta 4 franjas fijas diarias (motivationalMessages), además de mañana/tarde configurables
           if (this._wellnessTypesEnabled(user) && h === 12 && m === 0) {
-            await this.sendScheduledNotification(user._id, user.pushToken, T.HYDRATION_REMINDER, { timeOfDay: 'noon' });
-            results.sent++;
+            const sentOk = await this.sendScheduledNotification(user._id, user.pushToken, T.HYDRATION_REMINDER, { timeOfDay: 'noon' });
+            if (sentOk) results.sent++;
           }
           if (this._wellnessTypesEnabled(user) && h === 13 && m === 0) {
-            await this.sendScheduledNotification(user._id, user.pushToken, T.MIDDAY_MOTIVATION, { timeOfDay: 'midday' });
-            results.sent++;
+            const sentOk = await this.sendScheduledNotification(user._id, user.pushToken, T.MIDDAY_MOTIVATION, { timeOfDay: 'midday' });
+            if (sentOk) results.sent++;
           }
           if (this._wellnessTypesEnabled(user) && h === 15 && m === 0) {
-            await this.sendScheduledNotification(user._id, user.pushToken, T.MOVEMENT_BREAK, { timeOfDay: 'afternoon' });
-            results.sent++;
+            const sentOk = await this.sendScheduledNotification(user._id, user.pushToken, T.MOVEMENT_BREAK, { timeOfDay: 'afternoon' });
+            if (sentOk) results.sent++;
           }
           if (this._wellnessTypesEnabled(user) && h === 21 && m === 30) {
-            await this.sendScheduledNotification(user._id, user.pushToken, T.SLEEP_ROUTINE_REMINDER, { timeOfDay: 'night' });
-            results.sent++;
+            const sentOk = await this.sendScheduledNotification(user._id, user.pushToken, T.SLEEP_ROUTINE_REMINDER, { timeOfDay: 'night' });
+            if (sentOk) results.sent++;
           }
 
           results.skipped++;
@@ -284,6 +308,11 @@ class NotificationScheduler {
    */
   async sendScheduledNotification(userId, pushToken, notificationType, options = {}) {
     try {
+      const canSend = await this._canSendMoreToday(userId);
+      if (!canSend) {
+        return false;
+      }
+
       let result;
       
       // Enviar según el tipo

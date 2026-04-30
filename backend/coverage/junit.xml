@@ -1,17 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="6" failures="0" errors="0" time="0.091">
-  <testsuite name="resolveChatModelForContext" errors="0" failures="0" skipped="0" timestamp="2026-04-28T14:04:10" time="0.069" tests="6">
-    <testcase classname="resolveChatModelForContext usa modelo base en contexto normal" name="resolveChatModelForContext usa modelo base en contexto normal" time="0.001">
+<testsuites name="jest tests" tests="3" failures="0" errors="0" time="2.679">
+  <testsuite name="NotificationScheduler Service" errors="0" failures="0" skipped="0" timestamp="2026-04-30T17:34:47" time="2.541" tests="3">
+    <testcase classname="NotificationScheduler Service Métodos del servicio debe tener métodos exportados" name="NotificationScheduler Service Métodos del servicio debe tener métodos exportados" time="0.004">
     </testcase>
-    <testcase classname="resolveChatModelForContext escala a modelo complejo en crisis HIGH" name="resolveChatModelForContext escala a modelo complejo en crisis HIGH" time="0">
+    <testcase classname="NotificationScheduler Service Límite diario por usuario bloquea envío cuando el usuario ya alcanzó el tope diario" name="NotificationScheduler Service Límite diario por usuario bloquea envío cuando el usuario ya alcanzó el tope diario" time="0.01">
     </testcase>
-    <testcase classname="resolveChatModelForContext escala a modelo complejo cuando el mensaje es largo y ambiguo" name="resolveChatModelForContext escala a modelo complejo cuando el mensaje es largo y ambiguo" time="0">
-    </testcase>
-    <testcase classname="resolveModelRoutingForContext retorna trazabilidad con reason y score" name="resolveModelRoutingForContext retorna trazabilidad con reason y score" time="0.001">
-    </testcase>
-    <testcase classname="resolveModelRoutingForContext prioriza crisis por sobre otras reglas" name="resolveModelRoutingForContext prioriza crisis por sobre otras reglas" time="0">
-    </testcase>
-    <testcase classname="resolveModelRoutingForContext usa modelo base con razón default cuando no hay señales" name="resolveModelRoutingForContext usa modelo base con razón default cuando no hay señales" time="0">
+    <testcase classname="NotificationScheduler Service Límite diario por usuario permite envío cuando el usuario está bajo el tope diario" name="NotificationScheduler Service Límite diario por usuario permite envío cuando el usuario está bajo el tope diario" time="0.004">
     </testcase>
   </testsuite>
 </testsuites>
