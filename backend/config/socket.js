@@ -8,6 +8,7 @@ import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
 import { buildHistoryForPromptFromMessages } from '../services/openai/openaiPromptBuilder.js';
+import { analyzeConversationPattern } from '../services/chat/conversationPatternAnalyzer.js';
 import { buildSessionRetentionPayload } from '../services/sessionRetentionHints.js';
 import { HISTORIAL_LIMITE, LIMITE_MENSAJES } from '../routes/chat/chatConstants.js';
 import {
@@ -192,11 +193,13 @@ export const setupSocketIO = (server) => {
           }).catch(() => null)
         ]);
 
+        const conversationPattern = analyzeConversationPattern(conversationHistory, messageText);
         const sessionRetention = buildSessionRetentionPayload({
           conversationHistoryNewestFirst: conversationHistory,
           userContent: messageText,
           priorConversationCount,
-          threadMessageLimit: LIMITE_MENSAJES
+          threadMessageLimit: LIMITE_MENSAJES,
+          conversationPattern
         });
         
         // 4. Análisis emocional y contextual (en paralelo)
@@ -238,6 +241,7 @@ export const setupSocketIO = (server) => {
             profile: userProfile,
             currentConversationId: conversation._id,
             sessionRetention,
+            conversationPattern,
             sessionIntention: sanitizeSessionIntentionForClient(conversation.sessionIntention),
             _promptTelemetry: {
               userId,

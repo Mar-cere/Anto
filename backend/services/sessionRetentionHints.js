@@ -33,7 +33,8 @@ export function buildSessionRetentionPayload({
   conversationHistoryNewestFirst = [],
   userContent = '',
   priorConversationCount = null,
-  threadMessageLimit = 100
+  threadMessageLimit = 100,
+  conversationPattern = null
 }) {
   const msgs = Array.isArray(conversationHistoryNewestFirst) ? conversationHistoryNewestFirst : [];
   const userTurnCount = msgs.filter((m) => m.role === 'user').length;
@@ -53,15 +54,24 @@ export function buildSessionRetentionPayload({
     userTurnCount <= 6 &&
     totalMessages >= 10;
 
+  const questionStreak = Number(conversationPattern?.questionStreakCount ?? 0);
+
   const suggestBridgeClosing =
     longSession &&
     !likelyFarewell &&
     !suggestFirstTimeExpectation &&
-    userTurnCount >= 5 &&
-    userTurnCount < 10;
+    userTurnCount >= 4 &&
+    userTurnCount <= 8;
 
   const suggestFatigueClosing =
-    userTurnCount >= 10 && !likelyFarewell && !suggestFirstTimeExpectation;
+    userTurnCount >= 9 && !likelyFarewell && !suggestFirstTimeExpectation;
+
+  const suggestCheckpointPause =
+    !likelyFarewell &&
+    !suggestFirstTimeExpectation &&
+    userTurnCount >= 4 &&
+    totalMessages >= 8 &&
+    questionStreak >= 2;
 
   const isReturningUser =
     priorConversationCount !== null &&
@@ -87,6 +97,7 @@ export function buildSessionRetentionPayload({
     suggestFirstTimeExpectation,
     suggestBridgeClosing,
     suggestFatigueClosing,
+    suggestCheckpointPause,
     suggestReturningUserWarmOpen
   };
 }
@@ -124,23 +135,29 @@ export function buildSessionRetentionSystemSnippet(payload) {
     );
   }
 
-  if (payload.suggestBridgeClosing) {
+  if (payload.suggestCheckpointPause) {
     lines.push(
-      '- Lleva varios turnos: puedes cerrar con **un micro-compromiso opcional** (una sola cosa pequeña para los próximos días), **un tema pendiente** para la próxima vez ("si vuelves, podemos retomar…") y, si encaja, **una frase de unión** que recoja lo esencial de lo vivido en el hilo (sin parafrasear en exceso). Solo si encaja; no en todas las respuestas.'
+      '- **Varias preguntas seguidas tuyas (asistente):** este turno puede **sintetizar en 1–2 frases** lo esencial de lo que contó, validar, y **no añadir otra pregunta larga** (como mucho una muy corta, o ninguna). Si encaja, ofrece **pausa opcional** (“si quieres lo dejamos aquí un rato”) sin despedirte en nombre del usuario ni cerrar el chat.'
     );
   }
 
-  if (payload.suggestFatigueClosing && !payload.suggestBridgeClosing) {
+  if (payload.suggestBridgeClosing) {
     lines.push(
-      '- Sesión muy larga: si encaja, puedes **anticipar cierre** con validación y ofrecer pausa ("si quieres lo dejamos aquí por hoy") sin forzar.'
+      '- **Varios turnos ya compartidos:** si encaja, puedes proponer **cierre suave con continuidad**: validación breve, **una frase que una lo central**, **tema o gesto pequeño** para retomar después (“cuando quieras seguimos con…”), o micro-compromiso opcional **una sola** cosa. No menú de opciones ni lista de tareas.'
+    );
+  }
+
+  if (payload.suggestFatigueClosing) {
+    lines.push(
+      '- **Hilo ya largo:** alterna este turno: o **una pregunta muy acotada** o **cierre suave opcional** (mini-resumen + “aquí seguimos cuando quieras”), sin abrir temas nuevos ni sumar carga.'
     );
   }
 
   if (lines.length === 0) return '';
 
   const header =
-    '\n\n### Sesión y retorno (prioriza si entra en conflicto con un cierre genérico)\n' +
-    '- **No es una orden de terminar la charla ni de invitar a irse:** el chat sigue abierto; por defecto **sigue conversando** con normalidad. Las viñetas de abajo solo afinan el tono **cuando encajan** (p. ej. el usuario se despide, va muy largo el hilo técnico, o opcionalmente un cierre suave si él muestra saturación).';
+    '\n\n### Sesión y retorno\n' +
+    '- El chat **sigue abierto**. Las viñetas siguientes **no** ordenan cortar la charla: solo indican cuándo puede **encajar** ofrecer síntesis, pausa opcional o puente de retorno, **sin** empujar a irse.';
 
   const out = header + '\n' + lines.join('\n');
   // Blindaje: evitar inflar el system prompt por error.

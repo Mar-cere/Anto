@@ -45,7 +45,18 @@ function detectCognitiveLoad(text) {
 function detectClosureRisk(text) {
   const content = (text || '').toLowerCase();
   if (!content) return false;
-  return /(?:me\s+voy|luego\s+vuelvo|ya\s+me\s+desahogu[eé]|gracias\s+ya\s+est[aá]|solo\s+quer[ií]a\s+desahogarme)/i.test(content);
+  return (
+    /(?:me\s+voy|luego\s+vuelvo|ya\s+me\s+desahogu[eé]|gracias\s+ya\s+est[aá]|solo\s+quer[ií]a\s+desahogarme)/i.test(
+      content
+    ) ||
+    /(?:por\s+hoy\s+(?:está|suficiente|listo|basta)|ya\s+está\s+bien|eso\s+es\s+todo|no\s+más\s+por\s+hoy)/i.test(
+      content
+    ) ||
+    /(?:me\s+voy\s+a\s+dormir|tengo\s+que\s+(?:ir|dejarlo|irme)|nos\s+vemos|hasta\s+(?:mañana|luego|pronto))/i.test(
+      content
+    ) ||
+    /(?:ya\s+no\s+tengo\s+más|creo\s+que\s+ya\s+está|listo\s+con\s+eso)/i.test(content)
+  );
 }
 
 export function analyzeConversationPattern(historyNewestFirst = [], currentUserContent = '') {

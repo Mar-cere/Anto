@@ -252,6 +252,8 @@ const ChatScreen = () => {
     clearConversation,
     refreshMessages,
     scrollToBottom,
+    handleMessagesContentSizeChange,
+    handleMessagesListLayout,
     handleScroll,
     handleBack,
     navigation,
@@ -481,8 +483,9 @@ const ChatScreen = () => {
             renderItem={renderMessage}
             keyExtractor={keyExtractor}
             contentContainerStyle={styles.messagesList}
-            onContentSizeChange={() => scrollToBottom(false)}
-            onLayout={() => scrollToBottom(false)}
+            onContentSizeChange={handleMessagesContentSizeChange}
+            onLayout={handleMessagesListLayout}
+            extraData={messages}
             onScroll={handleScroll}
             scrollEventThrottle={LAYOUT.SCROLL_EVENT_THROTTLE}
             refreshing={refreshing}
@@ -522,7 +525,7 @@ const ChatScreen = () => {
       {showScrollButton && (
         <TouchableOpacity
           style={styles.scrollToBottomButton}
-          onPress={() => scrollToBottom()}
+          onPress={() => scrollToBottom(true, { force: true })}
         >
           <Ionicons name="chevron-down" size={ICON_SIZES.SCROLL} color={CHAT_COLORS.WHITE} />
         </TouchableOpacity>

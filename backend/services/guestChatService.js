@@ -28,6 +28,7 @@ import {
   detectSilenceAfterNegative
 } from '../routes/chat/chatContextAnalysis.js';
 import { HISTORIAL_LIMITE } from '../routes/chat/chatConstants.js';
+import { analyzeConversationPattern } from './chat/conversationPatternAnalyzer.js';
 import { buildSessionRetentionPayload } from './sessionRetentionHints.js';
 import { inferChatSessionPhase } from './chat/sessionPhaseHints.js';
 import { scheduleRollingSummaryRefresh } from './conversationRollingSummaryService.js';
@@ -339,11 +340,13 @@ export async function sendGuestMessage(guestSession, contentRaw) {
     }
   });
 
+  const conversationPattern = analyzeConversationPattern(conversationHistory, content);
   const sessionRetention = buildSessionRetentionPayload({
     conversationHistoryNewestFirst: conversationHistory,
     userContent: content,
     priorConversationCount: null,
-    threadMessageLimit: GUEST_MAX_USER_MESSAGES * 2
+    threadMessageLimit: GUEST_MAX_USER_MESSAGES * 2,
+    conversationPattern
   });
 
   const conversationRoll = await Conversation.findById(conversationId)
@@ -383,6 +386,7 @@ export async function sendGuestMessage(guestSession, contentRaw) {
     },
     isGuest: true,
     sessionRetention,
+    conversationPattern,
     crisis:
       isCrisis && shouldAttachCrisisContextToPrompt(riskLevel)
         ? {

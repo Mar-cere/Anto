@@ -21,5 +21,10 @@ describe('conversationPatternAnalyzer', () => {
     const result = analyzeConversationPattern([], 'gracias, ya me desahogué');
     expect(result.closureRisk).toBe(true);
   });
+
+  it('detecta cierre por hoy o pausa explícita', () => {
+    expect(analyzeConversationPattern([], 'por hoy ya está bien').closureRisk).toBe(true);
+    expect(analyzeConversationPattern([], 'me voy a dormir').closureRisk).toBe(true);
+  });
 });
 

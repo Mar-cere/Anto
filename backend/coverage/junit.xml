@@ -1,21 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="8" failures="0" errors="0" time="0.775">
-  <testsuite name="dashboardFocusService" errors="0" failures="0" skipped="0" timestamp="2026-04-30T22:16:26" time="0.754" tests="8">
-    <testcase classname="dashboardFocusService buildDeterministicFocusCaption prioriza retorno al chat si no hay mensajes en la semana" name="dashboardFocusService buildDeterministicFocusCaption prioriza retorno al chat si no hay mensajes en la semana" time="0.001">
+<testsuites name="jest tests" tests="25" failures="0" errors="0" time="3.125">
+  <testsuite name="sessionRetentionHints" errors="0" failures="0" skipped="0" timestamp="2026-04-30T22:41:23" time="0.61" tests="11">
+    <testcase classname="sessionRetentionHints detectLikelyFarewell detecta despedidas comunes" name="sessionRetentionHints detectLikelyFarewell detecta despedidas comunes" time="0.005">
     </testcase>
-    <testcase classname="dashboardFocusService buildDeterministicFocusCaption menciona la próxima tarea si existe" name="dashboardFocusService buildDeterministicFocusCaption menciona la próxima tarea si existe" time="0">
+    <testcase classname="sessionRetentionHints detectLikelyFarewell no marca conversación normal" name="sessionRetentionHints detectLikelyFarewell no marca conversación normal" time="0">
     </testcase>
-    <testcase classname="dashboardFocusService buildDeterministicFocusCaption usa compromisos si no hay tareas próximas" name="dashboardFocusService buildDeterministicFocusCaption usa compromisos si no hay tareas próximas" time="0">
+    <testcase classname="sessionRetentionHints buildSessionRetentionPayload primera conversación en la app: solo tras varios turnos y hilo sustantivo" name="sessionRetentionHints buildSessionRetentionPayload primera conversación en la app: solo tras varios turnos y hilo sustantivo" time="0.001">
     </testcase>
-    <testcase classname="dashboardFocusService buildDeterministicFocusCaption prioriza pista de protocolo terapéutico si viene de registro" name="dashboardFocusService buildDeterministicFocusCaption prioriza pista de protocolo terapéutico si viene de registro" time="0.001">
+    <testcase classname="sessionRetentionHints buildSessionRetentionPayload primera conversación: no dispara en los primeros turnos" name="sessionRetentionHints buildSessionRetentionPayload primera conversación: no dispara en los primeros turnos" time="0">
     </testcase>
-    <testcase classname="dashboardFocusService buildReminderCandidates ordena chat antes que tarea cuando ambos aplican" name="dashboardFocusService buildReminderCandidates ordena chat antes que tarea cuando ambos aplican" time="0.028">
+    <testcase classname="sessionRetentionHints buildSessionRetentionPayload despedida activa prioridad de cierre" name="sessionRetentionHints buildSessionRetentionPayload despedida activa prioridad de cierre" time="0">
     </testcase>
-    <testcase classname="dashboardFocusService buildReminderCandidates incluye hábito y push al final si existen" name="dashboardFocusService buildReminderCandidates incluye hábito y push al final si existen" time="0">
+    <testcase classname="sessionRetentionHints buildSessionRetentionPayload usuario que vuelve: sugiere apertura cálida solo al inicio del hilo" name="sessionRetentionHints buildSessionRetentionPayload usuario que vuelve: sugiere apertura cálida solo al inicio del hilo" time="0">
     </testcase>
-    <testcase classname="dashboardFocusService pickDisplayedReminder en compact omite hábito si hay otra opción" name="dashboardFocusService pickDisplayedReminder en compact omite hábito si hay otra opción" time="0">
+    <testcase classname="sessionRetentionHints buildSessionRetentionPayload usuario que vuelve: no dispara apertura tras varios turnos" name="sessionRetentionHints buildSessionRetentionPayload usuario que vuelve: no dispara apertura tras varios turnos" time="0">
     </testcase>
-    <testcase classname="dashboardFocusService pickDisplayedReminder en compact mantiene hábito si es la única" name="dashboardFocusService pickDisplayedReminder en compact mantiene hábito si es la única" time="0">
+    <testcase classname="sessionRetentionHints buildSessionRetentionPayload checkpoint de pausa cuando hay racha de preguntas del asistente" name="sessionRetentionHints buildSessionRetentionPayload checkpoint de pausa cuando hay racha de preguntas del asistente" time="0">
+    </testcase>
+    <testcase classname="sessionRetentionHints buildSessionRetentionSystemSnippet vacío si no hay banderas" name="sessionRetentionHints buildSessionRetentionSystemSnippet vacío si no hay banderas" time="0">
+    </testcase>
+    <testcase classname="sessionRetentionHints buildSessionRetentionSystemSnippet incluye bloque si hay despedida" name="sessionRetentionHints buildSessionRetentionSystemSnippet incluye bloque si hay despedida" time="0">
+    </testcase>
+    <testcase classname="sessionRetentionHints buildSessionRetentionSystemSnippet incluye checkpoint si aplica patrón de preguntas" name="sessionRetentionHints buildSessionRetentionSystemSnippet incluye checkpoint si aplica patrón de preguntas" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="conversationPatternAnalyzer" errors="0" failures="0" skipped="0" timestamp="2026-04-30T22:41:23" time="0.621" tests="3">
+    <testcase classname="conversationPatternAnalyzer detecta racha de preguntas del asistente y respuestas cortas del usuario" name="conversationPatternAnalyzer detecta racha de preguntas del asistente y respuestas cortas del usuario" time="0.002">
+    </testcase>
+    <testcase classname="conversationPatternAnalyzer detecta señal de cierre por desahogo" name="conversationPatternAnalyzer detecta señal de cierre por desahogo" time="0">
+    </testcase>
+    <testcase classname="conversationPatternAnalyzer detecta cierre por hoy o pausa explícita" name="conversationPatternAnalyzer detecta cierre por hoy o pausa explícita" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="openaiPromptBuilder — historial para prompt" errors="0" failures="0" skipped="0" timestamp="2026-04-30T22:41:23" time="2.154" tests="8">
+    <testcase classname="openaiPromptBuilder — historial para prompt defaults: MESSAGES_IN_PROMPT 12 y SLIDING_TAIL 7 (sin env)" name="openaiPromptBuilder — historial para prompt defaults: MESSAGES_IN_PROMPT 12 y SLIDING_TAIL 7 (sin env)" time="0.003">
+    </testcase>
+    <testcase classname="openaiPromptBuilder — historial para prompt buildHistoryForPromptFromMessages respeta orden antiguo→reciente" name="openaiPromptBuilder — historial para prompt buildHistoryForPromptFromMessages respeta orden antiguo→reciente" time="0.001">
+    </testcase>
+    <testcase classname="openaiPromptBuilder — historial para prompt selectHistoryForPrompt conserva cola y respeta MESSAGES_IN_PROMPT" name="openaiPromptBuilder — historial para prompt selectHistoryForPrompt conserva cola y respeta MESSAGES_IN_PROMPT" time="0.002">
+    </testcase>
+    <testcase classname="openaiPromptBuilder — historial para prompt computeHistorySelectionForPrompt expone telemetría al truncar" name="openaiPromptBuilder — historial para prompt computeHistorySelectionForPrompt expone telemetría al truncar" time="0.001">
+    </testcase>
+    <testcase classname="openaiPromptBuilder — historial para prompt prioriza mensaje con alta intensidad en el tramo viejo" name="openaiPromptBuilder — historial para prompt prioriza mensaje con alta intensidad en el tramo viejo" time="0">
+    </testcase>
+    <testcase classname="previewMessageForContext colapsa espacios y recorta" name="previewMessageForContext colapsa espacios y recorta" time="0">
+    </testcase>
+    <testcase classname="buildMedicationSafetySnippet inyecta guardarraíl si hay medicación + carga alta" name="buildMedicationSafetySnippet inyecta guardarraíl si hay medicación + carga alta" time="0">
+    </testcase>
+    <testcase classname="buildMedicationSafetySnippet no inyecta snippet si no hay contexto de medicación" name="buildMedicationSafetySnippet no inyecta snippet si no hay contexto de medicación" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="openaiPromptBuilder — budget borde (env CHAT_PROMPT_*)" errors="0" failures="0" skipped="0" timestamp="2026-04-30T22:41:23" time="2.888" tests="3">
+    <testcase classname="openaiPromptBuilder — budget borde (env CHAT_PROMPT_*) budget 1: un hueco en cabeza + cola (9+1=10)" name="openaiPromptBuilder — budget borde (env CHAT_PROMPT_*) budget 1: un hueco en cabeza + cola (9+1=10)" time="1.87">
+    </testcase>
+    <testcase classname="openaiPromptBuilder — budget borde (env CHAT_PROMPT_*) budget 0: solo ventana final (cola = MAX)" name="openaiPromptBuilder — budget borde (env CHAT_PROMPT_*) budget 0: solo ventana final (cola = MAX)" time="0.735">
+    </testcase>
+    <testcase classname="openaiPromptBuilder — budget borde (env CHAT_PROMPT_*) tail mayor que max se recorta al max" name="openaiPromptBuilder — budget borde (env CHAT_PROMPT_*) tail mayor que max se recorta al max" time="0.006">
     </testcase>
   </testsuite>
 </testsuites>

@@ -87,6 +87,23 @@ describe('sessionRetentionHints', () => {
       expect(p.userTurnCount).toBe(3);
       expect(p.suggestReturningUserWarmOpen).toBe(false);
     });
+
+    it('checkpoint de pausa cuando hay racha de preguntas del asistente', () => {
+      const history = [];
+      for (let i = 0; i < 4; i++) {
+        history.push({ role: 'user', content: `u${i}` });
+        history.push({ role: 'assistant', content: `a${i} ¿sigue?` });
+      }
+      const p = buildSessionRetentionPayload({
+        conversationHistoryNewestFirst: history,
+        userContent: 'sigo',
+        priorConversationCount: 1,
+        threadMessageLimit: 100,
+        conversationPattern: { questionStreakCount: 2 }
+      });
+      expect(p.userTurnCount).toBe(4);
+      expect(p.suggestCheckpointPause).toBe(true);
+    });
   });
 
   describe('buildSessionRetentionSystemSnippet', () => {
@@ -110,6 +127,23 @@ describe('sessionRetentionHints', () => {
       const s = buildSessionRetentionSystemSnippet(p);
       expect(s).toContain('Sesión y retorno');
       expect(s).toContain('despedida');
+    });
+
+    it('incluye checkpoint si aplica patrón de preguntas', () => {
+      const history = [];
+      for (let i = 0; i < 4; i++) {
+        history.push({ role: 'user', content: `u${i}` });
+        history.push({ role: 'assistant', content: `a${i}?` });
+      }
+      const p = buildSessionRetentionPayload({
+        conversationHistoryNewestFirst: history,
+        userContent: 'x',
+        priorConversationCount: 1,
+        threadMessageLimit: 100,
+        conversationPattern: { questionStreakCount: 2 }
+      });
+      const s = buildSessionRetentionSystemSnippet(p);
+      expect(s).toContain('preguntas seguidas');
     });
   });
 });

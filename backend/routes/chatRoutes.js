@@ -584,13 +584,14 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           }).catch(() => null)
         ]);
 
+        const conversationPattern = analyzeConversationPattern(conversationHistory, content.trim());
         const sessionRetention = buildSessionRetentionPayload({
           conversationHistoryNewestFirst: conversationHistory,
           userContent: content.trim(),
           priorConversationCount,
-          threadMessageLimit: LIMITE_MENSAJES
+          threadMessageLimit: LIMITE_MENSAJES,
+          conversationPattern
         });
-        const conversationPattern = analyzeConversationPattern(conversationHistory, content.trim());
         
         // NUEVO: Pasar conversationId al contexto para referencias a conversaciones anteriores
         const currentConversationId = conversationId;

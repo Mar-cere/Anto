@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CommonActions, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated } from 'react-native';
+import { Alert, Animated, InteractionManager } from 'react-native';
 import chatService from '../services/chatService';
 import paymentService from '../services/paymentService';
 import websocketService from '../services/websocketService';
@@ -85,6 +85,55 @@ export function useChatScreen() {
   const flatListRef = useRef(null);
   const inputRef = useRef(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  /** Si el usuario está cerca del final; solo auto-scroll cuando es true (evita saltar si leyó arriba). */
+  const stickToBottomRef = useRef(true);
+  /** Ref estable para callbacks (socket / init) que no deben depender del cierre sobre `scrollToBottom`. */
+  const scrollToBottomStableRef = useRef(null);
+  const contentSizeScrollTimerRef = useRef(null);
+
+  const scrollToBottom = useCallback((animated = true, options = {}) => {
+    const force = options.force === true;
+    const attempt = () => {
+      if (!force && !stickToBottomRef.current) return;
+      try {
+        flatListRef.current?.scrollToEnd?.({ animated });
+      } catch (_) {}
+    };
+    attempt();
+    requestAnimationFrame(attempt);
+    requestAnimationFrame(() => requestAnimationFrame(attempt));
+    if (force) {
+      InteractionManager.runAfterInteractions(() => {
+        attempt();
+        setTimeout(attempt, 120);
+        setTimeout(attempt, 300);
+      });
+    } else {
+      setTimeout(attempt, 72);
+    }
+  }, []);
+  scrollToBottomStableRef.current = scrollToBottom;
+
+  const handleMessagesContentSizeChange = useCallback(() => {
+    if (!stickToBottomRef.current) return;
+    if (contentSizeScrollTimerRef.current) clearTimeout(contentSizeScrollTimerRef.current);
+    contentSizeScrollTimerRef.current = setTimeout(() => {
+      contentSizeScrollTimerRef.current = null;
+      scrollToBottom(false, { force: false });
+    }, 20);
+  }, [scrollToBottom]);
+
+  const handleMessagesListLayout = useCallback(() => {
+    if (!stickToBottomRef.current) return;
+    scrollToBottom(false, { force: false });
+  }, [scrollToBottom]);
+
+  const handleScroll = useCallback((event) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const fromEnd = contentSize.height - contentOffset.y - layoutMeasurement.height;
+    stickToBottomRef.current = fromEnd <= SCROLL_THRESHOLD;
+    setShowScrollButton(fromEnd > SCROLL_THRESHOLD);
+  }, []);
 
   const loadTrialInfo = useCallback(async () => {
     try {
@@ -259,6 +308,10 @@ export function useChatScreen() {
       setError(TEXTS.ERROR_LOAD);
     } finally {
       setIsLoading(false);
+      stickToBottomRef.current = true;
+      InteractionManager.runAfterInteractions(() => {
+        scrollToBottomStableRef.current?.(false, { force: true });
+      });
     }
   }, [navigation, route.params?.startGuest]);
 
@@ -300,6 +353,10 @@ export function useChatScreen() {
             return timeA - timeB;
           });
           setMessages(uniqueMessages.filter((m) => m.type !== 'quickReplies'));
+          stickToBottomRef.current = true;
+          requestAnimationFrame(() => {
+            scrollToBottomStableRef.current?.(false, { force: true });
+          });
         }
         setShowSessionIntentionPrompt(false);
         try {
@@ -317,12 +374,6 @@ export function useChatScreen() {
     },
     [isOffline, sessionIntentionSubmitting, showToast]
   );
-
-  const scrollToBottom = useCallback((animated = true) => {
-    if (flatListRef.current) {
-      flatListRef.current.scrollToEnd({ animated });
-    }
-  }, []);
 
   const handleMessageFeedback = useCallback(
     async (messageId, helpful) => {
@@ -465,15 +516,16 @@ export function useChatScreen() {
         next[idx] = updated;
         return next;
       });
-      scrollToBottom(true);
+      scrollToBottom(true, { force: false });
     };
 
     try {
+      stickToBottomRef.current = true;
       setMessages((prev) => {
         const cleaned = prev.filter((m) => m.type !== 'quickReplies');
         return [...cleaned, tempUserMessage, tempAssistantMessage];
       });
-      scrollToBottom(true);
+      scrollToBottom(true, { force: true });
 
       await chatService.sendMessageStream(messageText, {
         onChunk(content) {
@@ -523,7 +575,7 @@ export function useChatScreen() {
             }
             return next;
           });
-          scrollToBottom(true);
+          scrollToBottom(true, { force: false });
         },
       });
     } catch (err) {
@@ -628,7 +680,7 @@ export function useChatScreen() {
               }
             }
           }
-          scrollToBottom(true);
+          scrollToBottom(true, { force: true });
         } catch (reconcileErr) {
           console.warn('[ChatScreen] Reconciliación tras STREAM_INCOMPLETE falló:', reconcileErr?.message || reconcileErr);
         }
@@ -754,7 +806,7 @@ export function useChatScreen() {
             metadata: { timestamp: new Date().toISOString(), error: true },
           },
         ]);
-        scrollToBottom(true);
+        scrollToBottom(true, { force: true });
         setIsTyping(false);
         return;
       }
@@ -769,7 +821,7 @@ export function useChatScreen() {
           metadata: { timestamp: new Date().toISOString(), error: true },
         },
       ]);
-      scrollToBottom(true);
+      scrollToBottom(true, { force: true });
     } finally {
       setIsTyping(false);
     }
@@ -942,13 +994,6 @@ export function useChatScreen() {
     }
   }, [dispatchRootReset, route.params]);
 
-  const handleScroll = useCallback((event) => {
-    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-    setShowScrollButton(
-      contentSize.height - contentOffset.y - layoutMeasurement.height > SCROLL_THRESHOLD
-    );
-  }, []);
-
   const guestHandoffStartFresh = useCallback(async () => {
     try {
       await chatService.clearGuestHandoff();
@@ -1020,6 +1065,12 @@ export function useChatScreen() {
         chatService.saveMessages(newMessages);
         return newMessages;
       });
+      requestAnimationFrame(() => {
+        scrollToBottomStableRef.current?.(true, { force: false });
+      });
+      setTimeout(() => {
+        scrollToBottomStableRef.current?.(true, { force: false });
+      }, 100);
     });
     const errorUnsubscribe = chatService.onError((err) => {
       console.error('[ChatScreen] Error en el chat:', err.message || err);
@@ -1100,6 +1151,10 @@ export function useChatScreen() {
       }, 650);
       return () => {
         clearTimeout(handoffTimer);
+        if (contentSizeScrollTimerRef.current) {
+          clearTimeout(contentSizeScrollTimerRef.current);
+          contentSizeScrollTimerRef.current = null;
+        }
         setMessages([]);
         setShowSessionIntentionPrompt(false);
       };
@@ -1130,6 +1185,8 @@ export function useChatScreen() {
     clearConversation,
     refreshMessages,
     scrollToBottom,
+    handleMessagesContentSizeChange,
+    handleMessagesListLayout,
     handleScroll,
     handleBack,
     isOffline,

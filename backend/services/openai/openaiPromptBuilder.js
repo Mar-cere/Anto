@@ -379,12 +379,17 @@ function buildTurnPolicySnippet(conversationPattern = {}, contextual = {}) {
 
 function buildProgressiveClosureSnippet(conversationPattern = {}, sessionIntention = 'vent') {
   const closureRisk = conversationPattern?.closureRisk === true;
+  const qStreak = Number(conversationPattern?.questionStreakCount || 0);
+  const questionFatigueLine =
+    qStreak >= 2
+      ? '\n- **Racha de preguntas:** este turno puede priorizar **síntesis breve** o **pausa opcional** en lugar de otra pregunta amplia.'
+      : '';
   return `\n\n### Cierre con avance (anti-abandono)
 - Cada turno debe cerrar con avance: elige exactamente uno -> (a) pregunta focal, (b) micro-acción concreta no corporal, o (c) mini-resumen + confirmación.
 - Evita cierres vacíos/descriptivos sin siguiente paso.
 - Si detectas señal de salida (${closureRisk ? 'sí' : 'no'}), deja una continuidad útil para retorno ("si vuelves, retomamos desde X"), sin culpa ni presión.
 - Prioriza continuidad breve para próximos ingresos: una frase de puente contextual, no menú largo.
-- Intención de sesión actual: ${sessionIntention}. Ajusta el cierre a esa intención.`;
+- Intención de sesión actual: ${sessionIntention}. Ajusta el cierre a esa intención.${questionFatigueLine}`;
 }
 
 function buildPhaseRouterSnippet(contexto = {}) {
