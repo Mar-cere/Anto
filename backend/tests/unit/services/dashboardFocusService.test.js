@@ -76,6 +76,8 @@ describe('dashboardFocusService', () => {
       });
       expect(list[0].kind).toBe('chat');
       expect(list.some((c) => c.kind === 'task')).toBe(true);
+      expect(list[0].subtitle).not.toContain('Hola');
+      expect(String(list[0].subtitle)).toMatch(/chat|actividad/i);
     });
 
     it('incluye hábito y push al final si existen', () => {

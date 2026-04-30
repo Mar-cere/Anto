@@ -14,10 +14,11 @@ const TEXTS = {
   INTRO:
     'Aquí puedes revisar de forma clara qué proveedores de IA usamos, qué datos se comparten y dónde consultar esta información en la app.',
   Q1: '1) ¿Anto usa IA de terceros?',
-  A1: 'Sí. Anto utiliza OpenAI para generar respuestas en el chat terapéutico.',
+  A1:
+    'Sí. Las respuestas del asistente las genera OpenAI a partir del contexto que Anto arma en sus sistemas (historial permitido, preferencias y reglas del producto). Tareas, hábitos y el resto de la app funcionan integrados en Anto.',
   Q2: '2) ¿Se envían datos de usuarios a IA de terceros?',
   A2:
-    'Sí. Para poder responder, se envían los mensajes del chat, contexto mínimo de conversación y preferencias compartidas en onboarding.',
+    'Sí, en la medida necesaria para generar cada respuesta: mensajes del chat, contexto mínimo de conversación y preferencias compartidas en onboarding, según lo que Anto incluya en la petición al proveedor.',
   Q3: '3) ¿Dónde puedes revisar esta información dentro de la app?',
   A3:
     'En esta pantalla (Ajustes > Privacidad e IA), en el modal de transparencia del chat y en la Política de Privacidad.',
@@ -29,7 +30,8 @@ const TEXTS = {
     'Si tienes notificaciones activas, en momentos muy intensos puede enviarse un recordatorio suave para invitarte a volver al chat (no sustituye ayuda profesional ni emergencias)',
   ],
   PROVIDERS_TITLE: 'Proveedor de terceros',
-  PROVIDERS_TEXT: 'OpenAI (proveedor de IA para generación de respuestas del chat).',
+  PROVIDERS_TEXT:
+    'OpenAI aporta los modelos de lenguaje con los que se redactan las respuestas del asistente. Anto define qué contexto y datos se envían en cada caso y mantiene la lógica del producto en sus servidores.',
   POLICY_BUTTON: 'Abrir Política de Privacidad',
 };
 

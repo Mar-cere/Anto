@@ -66,7 +66,8 @@ const TEXTS = {
   TEAM_TITLE: 'Nuestro Compromiso',
   TEAM_TEXT: 'Estamos comprometidos con tu bienestar. Trabajamos constantemente para mejorar Anto, agregar nuevas funcionalidades y asegurar que siempre tengas el mejor apoyo posible en tu camino hacia una mejor salud mental.',
   AI_TITLE: 'Cómo usamos IA',
-  AI_TEXT: 'Para generar respuestas en el chat, Anto utiliza OpenAI como proveedor de IA. Se procesan tus mensajes, contexto mínimo de conversación y preferencias que compartes en onboarding para personalizar la ayuda. Puedes revisar el detalle completo en nuestra Política de Privacidad.',
+  AI_TEXT:
+    'Anto combina modelos de lenguaje de OpenAI para redactar las respuestas del asistente con el contexto y la lógica que prepara en sus servidores, junto a tareas, hábitos y el resto de funciones de la app. Más detalle en Privacidad e IA y en la Política de Privacidad.',
   AI_CTA: 'Ver Privacidad e IA en la app',
   AI_CTA_HINT: 'Datos enviados, proveedor y dónde consultarlo',
   CONTACT_TITLE: 'Contáctanos',

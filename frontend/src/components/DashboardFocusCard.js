@@ -1,6 +1,6 @@
 /**
- * Bloque "foco actual" (#34): recordatorio priorizado, protocolo (BD), línea de foco,
- * resumen, compromisos, chats y próximas tareas. En pantallas angostas se omite hábito en el recordatorio.
+ * Bloque "foco actual" (#34): vista minimal — sin contenido de chat fuera del chat;
+ * recordatorio priorizado (metadatos), línea de foco, opcional siguiente tarea y CTA al chat.
  */
 import { Ionicons } from '@expo/vector-icons';
 import React, { memo, useCallback, useMemo } from 'react';
@@ -30,11 +30,11 @@ function formatDue(d) {
 function reminderIcon(kind) {
   switch (kind) {
     case 'chat':
-      return 'chatbubble-ellipses-outline';
+      return 'chatbubble-outline';
     case 'task':
-      return 'checkbox-outline';
+      return 'calendar-outline';
     case 'habit':
-      return 'fitness-outline';
+      return 'leaf-outline';
     case 'push':
       return 'notifications-outline';
     default:
@@ -55,17 +55,7 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation }) => {
 
   if (!data) return null;
 
-  const {
-    focus,
-    narrative,
-    commitments,
-    upcomingTasks,
-    recentConversations,
-    progress,
-    scales,
-    reminder,
-    protocolNext
-  } = data;
+  const { focus, reminder, protocolNext, nextTask } = data;
 
   const displayedReminder = useMemo(
     () => pickDisplayedReminder(reminder?.candidates, isCompact),
@@ -81,176 +71,93 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation }) => {
     }
   }, [displayedReminder, handleConv, onOpenChat]);
 
-  const commitmentItems = [
-    ...(commitments?.goals || []),
-    ...(commitments?.patterns || [])
-  ].slice(0, 5);
-
   const showTherapeuticProtocol =
     protocolNext?.line && protocolNext?.source === 'therapeutic_record';
 
   const reminderIsPressable = displayedReminder?.kind === 'chat';
 
+  const showNextTaskRow =
+    nextTask?.title && displayedReminder?.kind !== 'task';
+
   return (
     <View style={styles.card} accessibilityRole="summary">
-      <View style={styles.headerRow}>
-        <Ionicons name="compass-outline" size={22} color={colors.white} style={styles.headerIcon} />
-        <Text style={styles.title}>{DASH.FOCUS_TITLE}</Text>
-      </View>
+      <Text style={styles.kicker}>{DASH.FOCUS_CARD_LABEL}</Text>
 
       {displayedReminder ? (
         <TouchableOpacity
-          style={[styles.reminderStrip, !reminderIsPressable && styles.reminderStripStatic]}
+          style={[styles.reminderRow, reminderIsPressable && styles.reminderRowPressable]}
           onPress={reminderIsPressable ? onReminderPress : undefined}
           disabled={!reminderIsPressable}
+          activeOpacity={reminderIsPressable ? 0.7 : 1}
           accessibilityRole={reminderIsPressable ? 'button' : 'text'}
-          accessibilityLabel={`${DASH.FOCUS_REMINDER_SECTION}. ${displayedReminder.title}`}
+          accessibilityLabel={`${displayedReminder.title}. ${displayedReminder.subtitle || ''}`}
         >
-          <Ionicons
-            name={reminderIcon(displayedReminder.kind)}
-            size={22}
-            color="#A3B8E8"
-            style={styles.reminderIcon}
-          />
-          <View style={styles.reminderTextWrap}>
-            <Text style={styles.reminderSection}>{DASH.FOCUS_REMINDER_SECTION}</Text>
-            <Text style={styles.reminderTitle}>{displayedReminder.title}</Text>
+          <View style={styles.reminderIconWrap}>
+            <Ionicons name={reminderIcon(displayedReminder.kind)} size={20} color={colors.primary} />
+          </View>
+          <View style={styles.reminderCopy}>
+            <Text style={styles.reminderTitle} numberOfLines={2}>
+              {displayedReminder.title}
+            </Text>
             {displayedReminder.subtitle ? (
-              <Text style={styles.reminderSubtitle} numberOfLines={2}>
+              <Text style={styles.reminderMeta} numberOfLines={2}>
                 {displayedReminder.subtitle}
               </Text>
             ) : null}
-            {reminderIsPressable ? (
-              <Text style={styles.reminderTapHint}>{DASH.FOCUS_REMINDER_TAP_CHAT}</Text>
-            ) : null}
           </View>
+          {reminderIsPressable ? (
+            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.35)" style={styles.reminderChevron} />
+          ) : null}
         </TouchableOpacity>
       ) : null}
 
       {showTherapeuticProtocol ? (
-        <View style={styles.protocolBox}>
-          <Text style={styles.sectionTitle}>{DASH.FOCUS_PROTOCOL}</Text>
-          <Text style={styles.protocolText}>{protocolNext.line}</Text>
+        <View style={styles.protocolRow}>
+          <View style={styles.protocolDot} />
+          <Text style={styles.protocolText} numberOfLines={3}>
+            {protocolNext.line}
+          </Text>
         </View>
       ) : null}
 
-      {focus?.line ? <Text style={styles.focusLine}>{focus.line}</Text> : null}
+      {focus?.line ? (
+        <Text style={styles.focusHero} accessibilityRole="text">
+          {focus.line}
+        </Text>
+      ) : null}
 
       {focus?.isSparseActivity ? (
         <TouchableOpacity
-          style={styles.sparseCta}
+          style={styles.sparseLink}
           onPress={onOpenChat}
           accessibilityRole="button"
           accessibilityLabel={DASH.FOCUS_START_CHAT}
         >
-          <Text style={styles.sparseCtaText}>{DASH.FOCUS_START_CHAT}</Text>
+          <Text style={styles.sparseLinkText}>{DASH.FOCUS_START_CHAT}</Text>
         </TouchableOpacity>
       ) : null}
 
+      {showNextTaskRow ? (
+        <View style={styles.nextTask}>
+          <Text style={styles.nextTaskLabel}>{DASH.FOCUS_NEXT_TASK}</Text>
+          <Text style={styles.nextTaskTitle} numberOfLines={1}>
+            {nextTask.title}
+          </Text>
+          {nextTask.dueDate ? (
+            <Text style={styles.nextTaskDue}>{formatDue(nextTask.dueDate)}</Text>
+          ) : null}
+        </View>
+      ) : null}
+
       <TouchableOpacity
-        style={styles.chatCta}
+        style={styles.cta}
         onPress={onOpenChat}
         accessibilityRole="button"
         accessibilityLabel={DASH.FOCUS_CHAT_CTA}
       >
-        <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.primary} style={styles.chatCtaIcon} />
-        <Text style={styles.chatCtaText}>{DASH.FOCUS_CHAT_CTA}</Text>
+        <Text style={styles.ctaText}>{DASH.FOCUS_CHAT_CTA}</Text>
+        <Ionicons name="arrow-forward" size={18} color={colors.background} style={styles.ctaArrow} />
       </TouchableOpacity>
-
-      {narrative?.themes || narrative?.microWins ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{DASH.FOCUS_SUMMARY}</Text>
-          {narrative.themes ? <Text style={styles.body}>{narrative.themes}</Text> : null}
-          {narrative.microWins ? (
-            <Text style={[styles.body, styles.microWins]}>{narrative.microWins}</Text>
-          ) : null}
-        </View>
-      ) : null}
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{DASH.FOCUS_COMMITMENTS}</Text>
-        {commitmentItems.length === 0 ? (
-          <Text style={styles.muted}>{DASH.FOCUS_NO_COMMITMENTS}</Text>
-        ) : (
-          commitmentItems.map((c, i) => (
-            <Text key={`c-${i}`} style={styles.bullet}>
-              • {c}
-            </Text>
-          ))
-        )}
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{DASH.FOCUS_UPCOMING_TASKS}</Text>
-        {!upcomingTasks || upcomingTasks.length === 0 ? (
-          <Text style={styles.muted}>{DASH.FOCUS_NO_TASKS}</Text>
-        ) : (
-          upcomingTasks.slice(0, 5).map((t) => (
-            <View key={t._id} style={styles.taskRow}>
-              <Text style={styles.taskTitle} numberOfLines={1}>
-                {t.title}
-              </Text>
-              <Text style={styles.taskDue}>{formatDue(t.dueDate)}</Text>
-            </View>
-          ))
-        )}
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{DASH.FOCUS_RECENT_CHATS}</Text>
-        {!recentConversations || recentConversations.length === 0 ? (
-          <Text style={styles.muted}>{DASH.FOCUS_NO_CHATS}</Text>
-        ) : (
-          recentConversations.map((c) => (
-            <TouchableOpacity
-              key={c.conversationId}
-              style={styles.convRow}
-              onPress={() => handleConv(c.conversationId)}
-              accessibilityRole="button"
-            >
-              <Text style={styles.convPreview} numberOfLines={2}>
-                {c.lastMessagePreview || '…'}
-              </Text>
-              <Text style={styles.convMeta}>
-                {c.messageCount} msg · {formatDue(c.updatedAt)}
-              </Text>
-            </TouchableOpacity>
-          ))
-        )}
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{DASH.FOCUS_PROGRESS}</Text>
-        <Text style={styles.body}>
-          Chat: {progress?.chatUserMessagesWeek ?? 0} mensajes · {progress?.chatActiveDaysWeek ?? 0} días activos ·
-          Tareas completadas: {progress?.tasksCompletedInWeek ?? 0}
-          {!isCompact ? (
-            <>
-              {' '}
-              · Avances hábitos: {progress?.habitsCompletionsInWeek ?? 0}
-            </>
-          ) : null}
-        </Text>
-      </View>
-
-      {(scales?.phq9 || scales?.gad7) && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{DASH.FOCUS_SCALES}</Text>
-          <Text style={styles.disclaimer}>{scales.disclaimer}</Text>
-          {scales.phq9 ? (
-            <Text style={styles.body}>
-              PHQ-9: puntuación {scales.phq9.totalScore} ({scales.phq9.severityLabel || '—'}) ·{' '}
-              {formatDue(scales.phq9.completedAt)}
-            </Text>
-          ) : null}
-          {scales.gad7 ? (
-            <Text style={styles.body}>
-              GAD-7: puntuación {scales.gad7.totalScore} ({scales.gad7.severityLabel || '—'}) ·{' '}
-              {formatDue(scales.gad7.completedAt)}
-            </Text>
-          ) : null}
-        </View>
-      )}
     </View>
   );
 };
@@ -259,182 +166,146 @@ export default memo(DashboardFocusCard);
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: 'rgba(29, 27, 112, 0.55)',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(163, 184, 232, 0.25)'
+    alignSelf: 'stretch',
+    marginBottom: 20,
+    paddingVertical: 22,
+    paddingHorizontal: 20,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.1)'
   },
-  headerRow: {
+  kicker: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: 'rgba(163, 184, 232, 0.85)',
+    marginBottom: 14
+  },
+  reminderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10
+    marginBottom: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.03)'
   },
-  headerIcon: {
-    marginRight: 8
+  reminderRowPressable: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(26, 221, 219, 0.22)'
   },
-  title: {
-    color: colors.white,
-    fontSize: 18,
-    fontWeight: '700'
-  },
-  reminderStrip: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.08)',
+  reminderIconWrap: {
+    width: 40,
+    height: 40,
     borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(163, 184, 232, 0.2)'
+    backgroundColor: 'rgba(26, 221, 219, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12
   },
-  reminderStripStatic: {
-    opacity: 1
-  },
-  reminderIcon: {
-    marginRight: 10,
-    marginTop: 2
-  },
-  reminderTextWrap: {
-    flex: 1
-  },
-  reminderSection: {
-    color: '#A3B8E8',
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: 4
+  reminderCopy: {
+    flex: 1,
+    minWidth: 0
   },
   reminderTitle: {
     color: colors.white,
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '500',
     lineHeight: 20
   },
-  reminderSubtitle: {
-    color: '#C8D4F5',
-    fontSize: 13,
+  reminderMeta: {
     marginTop: 4,
-    lineHeight: 18
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '400'
   },
-  reminderTapHint: {
-    color: '#8FA4D6',
-    fontSize: 12,
-    marginTop: 6,
-    fontStyle: 'italic'
+  reminderChevron: {
+    marginLeft: 6
   },
-  protocolBox: {
-    marginBottom: 12,
-    paddingBottom: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(163, 184, 232, 0.25)'
+  protocolRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    paddingRight: 4
+  },
+  protocolDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.primary,
+    marginTop: 7,
+    marginRight: 10,
+    opacity: 0.85
   },
   protocolText: {
-    color: '#E8ECFF',
+    flex: 1,
+    color: 'rgba(255,255,255,0.72)',
     fontSize: 14,
-    lineHeight: 20
+    lineHeight: 21,
+    fontWeight: '400'
   },
-  focusLine: {
-    color: '#E8ECFF',
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 12
+  focusHero: {
+    color: 'rgba(255,255,255,0.94)',
+    fontSize: 17,
+    lineHeight: 26,
+    fontWeight: '300',
+    letterSpacing: -0.2,
+    marginBottom: 18
   },
-  sparseCta: {
+  sparseLink: {
     alignSelf: 'flex-start',
-    marginBottom: 10,
-    paddingVertical: 6,
-    paddingHorizontal: 4
-  },
-  sparseCtaText: {
-    color: '#B8C8F5',
-    fontSize: 14,
-    fontWeight: '600',
-    textDecorationLine: 'underline'
-  },
-  chatCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: colors.white,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 999,
+    marginTop: -10,
     marginBottom: 14
   },
-  chatCtaIcon: {
-    marginRight: 8
-  },
-  chatCtaText: {
+  sparseLinkText: {
     color: colors.primary,
-    fontWeight: '600',
-    fontSize: 14
+    fontSize: 14,
+    fontWeight: '500'
   },
-  section: {
-    marginBottom: 14
+  nextTask: {
+    marginBottom: 18,
+    paddingTop: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.08)'
   },
-  sectionTitle: {
-    color: '#A3B8E8',
-    fontSize: 13,
+  nextTaskLabel: {
+    fontSize: 11,
     fontWeight: '600',
-    marginBottom: 6,
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
-    letterSpacing: 0.5
+    color: 'rgba(163, 184, 232, 0.75)',
+    marginBottom: 6
   },
-  body: {
+  nextTaskTitle: {
     color: colors.white,
-    fontSize: 14,
-    lineHeight: 20
+    fontSize: 15,
+    fontWeight: '400'
   },
-  microWins: {
-    marginTop: 6,
-    opacity: 0.95
+  nextTaskDue: {
+    marginTop: 4,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.45)'
   },
-  muted: {
-    color: '#8FA4D6',
-    fontSize: 14,
-    fontStyle: 'italic'
-  },
-  bullet: {
-    color: colors.white,
-    fontSize: 14,
-    lineHeight: 22
-  },
-  taskRow: {
+  cta: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6
+    justifyContent: 'center',
+    alignSelf: 'stretch',
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 999
   },
-  taskTitle: {
-    color: colors.white,
-    fontSize: 14,
-    flex: 1
+  ctaText: {
+    color: colors.background,
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.2
   },
-  taskDue: {
-    color: '#A3B8E8',
-    fontSize: 12
-  },
-  convRow: {
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(163, 184, 232, 0.2)'
-  },
-  convPreview: {
-    color: colors.white,
-    fontSize: 14
-  },
-  convMeta: {
-    color: '#8FA4D6',
-    fontSize: 12,
-    marginTop: 4
-  },
-  disclaimer: {
-    color: '#8FA4D6',
-    fontSize: 12,
-    lineHeight: 17,
-    marginBottom: 6
+  ctaArrow: {
+    marginLeft: 8
   }
 });

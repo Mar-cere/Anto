@@ -1,29 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="13" failures="0" errors="0" time="1.99">
-  <testsuite name="NotificationScheduler Service" errors="0" failures="0" skipped="0" timestamp="2026-04-30T21:57:08" time="0.598" tests="5">
-    <testcase classname="NotificationScheduler Service Métodos del servicio debe tener métodos exportados" name="NotificationScheduler Service Métodos del servicio debe tener métodos exportados" time="0.021">
+<testsuites name="jest tests" tests="8" failures="0" errors="0" time="0.775">
+  <testsuite name="dashboardFocusService" errors="0" failures="0" skipped="0" timestamp="2026-04-30T22:16:26" time="0.754" tests="8">
+    <testcase classname="dashboardFocusService buildDeterministicFocusCaption prioriza retorno al chat si no hay mensajes en la semana" name="dashboardFocusService buildDeterministicFocusCaption prioriza retorno al chat si no hay mensajes en la semana" time="0.001">
     </testcase>
-    <testcase classname="NotificationScheduler Service Límite diario por usuario bloquea envío cuando el usuario ya alcanzó el tope diario" name="NotificationScheduler Service Límite diario por usuario bloquea envío cuando el usuario ya alcanzó el tope diario" time="0.012">
-    </testcase>
-    <testcase classname="NotificationScheduler Service Límite diario por usuario permite envío cuando el usuario está bajo el tope diario" name="NotificationScheduler Service Límite diario por usuario permite envío cuando el usuario está bajo el tope diario" time="0">
-    </testcase>
-    <testcase classname="NotificationScheduler Service Mensajes entre sesiones (#31) usa between_sessions_nudge para inactividad &gt; 48h" name="NotificationScheduler Service Mensajes entre sesiones (#31) usa between_sessions_nudge para inactividad &gt; 48h" time="0.001">
-    </testcase>
-    <testcase classname="NotificationScheduler Service Mensajes entre sesiones (#31) no envía between_sessions_nudge si ya hubo uno en las últimas 24h" name="NotificationScheduler Service Mensajes entre sesiones (#31) no envía between_sessions_nudge si ya hubo uno en las últimas 24h" time="0.001">
-    </testcase>
-  </testsuite>
-  <testsuite name="dashboardFocusService" errors="0" failures="0" skipped="0" timestamp="2026-04-30T21:57:08" time="1.31" tests="8">
-    <testcase classname="dashboardFocusService buildDeterministicFocusCaption prioriza retorno al chat si no hay mensajes en la semana" name="dashboardFocusService buildDeterministicFocusCaption prioriza retorno al chat si no hay mensajes en la semana" time="0.003">
-    </testcase>
-    <testcase classname="dashboardFocusService buildDeterministicFocusCaption menciona la próxima tarea si existe" name="dashboardFocusService buildDeterministicFocusCaption menciona la próxima tarea si existe" time="0.001">
+    <testcase classname="dashboardFocusService buildDeterministicFocusCaption menciona la próxima tarea si existe" name="dashboardFocusService buildDeterministicFocusCaption menciona la próxima tarea si existe" time="0">
     </testcase>
     <testcase classname="dashboardFocusService buildDeterministicFocusCaption usa compromisos si no hay tareas próximas" name="dashboardFocusService buildDeterministicFocusCaption usa compromisos si no hay tareas próximas" time="0">
     </testcase>
-    <testcase classname="dashboardFocusService buildDeterministicFocusCaption prioriza pista de protocolo terapéutico si viene de registro" name="dashboardFocusService buildDeterministicFocusCaption prioriza pista de protocolo terapéutico si viene de registro" time="0">
+    <testcase classname="dashboardFocusService buildDeterministicFocusCaption prioriza pista de protocolo terapéutico si viene de registro" name="dashboardFocusService buildDeterministicFocusCaption prioriza pista de protocolo terapéutico si viene de registro" time="0.001">
     </testcase>
-    <testcase classname="dashboardFocusService buildReminderCandidates ordena chat antes que tarea cuando ambos aplican" name="dashboardFocusService buildReminderCandidates ordena chat antes que tarea cuando ambos aplican" time="0.039">
+    <testcase classname="dashboardFocusService buildReminderCandidates ordena chat antes que tarea cuando ambos aplican" name="dashboardFocusService buildReminderCandidates ordena chat antes que tarea cuando ambos aplican" time="0.028">
     </testcase>
-    <testcase classname="dashboardFocusService buildReminderCandidates incluye hábito y push al final si existen" name="dashboardFocusService buildReminderCandidates incluye hábito y push al final si existen" time="0.001">
+    <testcase classname="dashboardFocusService buildReminderCandidates incluye hábito y push al final si existen" name="dashboardFocusService buildReminderCandidates incluye hábito y push al final si existen" time="0">
     </testcase>
     <testcase classname="dashboardFocusService pickDisplayedReminder en compact omite hábito si hay otra opción" name="dashboardFocusService pickDisplayedReminder en compact omite hábito si hay otra opción" time="0">
     </testcase>

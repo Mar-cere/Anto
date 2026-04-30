@@ -168,6 +168,18 @@ async function loadUserNotificationPrefs(userId) {
   return u?.notificationPreferences || null;
 }
 
+/** Subtítulo genérico para “retomar chat” sin mostrar contenido del hilo. */
+function chatResumeSubtitle(lastConv, now = new Date()) {
+  if (!lastConv?.updatedAt) {
+    return 'Tu conversación sigue en el chat, en privado.';
+  }
+  const hours = (now.getTime() - new Date(lastConv.updatedAt).getTime()) / 3600000;
+  if (hours < 24) return 'Hubo actividad reciente en el chat.';
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'Última actividad en el chat: hace un día.';
+  return `Última actividad en el chat: hace ${days} días.`;
+}
+
 /**
  * Candidatos de recordatorio en orden: chat → tarea → hábito → push.
  * Exportada para tests.
@@ -196,7 +208,7 @@ export function buildReminderCandidates({
     candidates.push({
       kind: 'chat',
       title: 'Retomá tu última conversación',
-      subtitle: (lastConv.lastMessagePreview || '').slice(0, 90),
+      subtitle: chatResumeSubtitle(lastConv, now),
       conversationId: lastConv.conversationId
     });
   } else if (!lastConv && userMsgs === 0) {
@@ -332,7 +344,10 @@ function buildLlmUserPayload({
     commitments: commitments.list.slice(0, 5),
     recentChats: recentConversations.map((c) => ({
       messageCount: c.messageCount,
-      preview: c.lastMessagePreview
+      daysSinceUpdate: Math.max(
+        0,
+        Math.floor((Date.now() - new Date(c.updatedAt).getTime()) / 86400000)
+      )
     })),
     scales: {
       phq9: scales.phq9?.severityLabel || null,
@@ -351,7 +366,7 @@ async function maybeLlmFocusLine(userId, bundle) {
   }
 
   const dayKey = new Date().toISOString().slice(0, 10);
-  const cacheKey = cacheService.generateKey('dashboard_focus_llm_v1', {
+  const cacheKey = cacheService.generateKey('dashboard_focus_llm_v2', {
     userId: String(userId),
     day: dayKey
   });
@@ -365,12 +380,15 @@ async function maybeLlmFocusLine(userId, bundle) {
   const userContent = buildLlmUserPayload(bundle);
 
   const sparseHint = bundle.isSparseActivity
-    ? ' Actividad muy baja: en una o dos frases cortas invita sin culpa; puede mencionar empezar o retomar el chat y una razón humana y no comercial de por qué escribir puede ayudar (ordenar ideas, sentirse acompañado/a), sin prometer curación ni diagnosticar.'
+    ? ' Actividad muy baja: una o dos frases cortas, invitación sin culpa; puede mencionar empezar o retomar el chat y una razón humana y no comercial (ordenar ideas, sentirse acompañado o acompañada), sin prometer curación ni diagnosticar.'
     : '';
 
   const protocolHint = bundle.protocolHintFromRecord
-    ? ' Si hay protocolHintFromRecord, intégralo como micro-paso coherente; si no hay, sugiere un siguiente paso suave sin inventar historial clínico.'
+    ? ' Si hay protocolHintFromRecord, intégralo como micro-paso en lenguaje natural y neutro; si no hay, sugiere un siguiente paso suave sin inventar historial clínico.'
     : '';
+
+  const styleBlock =
+    'Redacta en español neutro y natural: tono cotidiano y amable, comprensible en cualquier país hispanohablante; sin voseo ni localismos marcados, sin jerga clínica ni tono publicitario, sin imperativos duros ni listas. Suena a persona, no a anuncio ni informe.';
 
   try {
     const completion = await openaiService.createChatCompletionResilient({
@@ -378,11 +396,11 @@ async function maybeLlmFocusLine(userId, bundle) {
       messages: [
         {
           role: 'system',
-          content: `Eres guía de producto para bienestar. Devuelve UNA sola línea (máx. 260 caracteres) en español neutro, cálida, sin diagnosticar, sin mencionar PHQ/GAD como enfermedad. Prioriza retorno al chat si hay baja actividad; si hay tarea próxima, menciónala sin presión. No hagas preguntas al final. No uses emojis.${sparseHint}${protocolHint}`
+          content: `Eres guía de producto para bienestar. ${styleBlock} Devuelve UNA sola línea (máx. 260 caracteres), cálida, sin diagnosticar, sin mencionar PHQ/GAD como enfermedad. Prioriza retorno al chat si hay baja actividad; si hay tarea próxima, menciónala sin presión. No cites texto del usuario ni extractos del chat. No cierres con pregunta. No uses emojis.${sparseHint}${protocolHint}`
         },
         {
           role: 'user',
-          content: `Datos JSON del usuario hoy:\n${userContent}\n\nResponde solo la línea final, sin prefijos.`
+          content: `Datos JSON del usuario hoy:\n${userContent}\n\nEscribe solo la línea final, sin prefijos ni comillas: debe sonar humana, breve y con registro neutro.`
         }
       ],
       max_completion_tokens: 140,
@@ -460,6 +478,7 @@ export async function buildDashboardFocus(userId) {
     isSparseActivity
   });
 
+  const firstTask = upcomingTasks[0];
   return {
     generatedAt: new Date().toISOString(),
     focus: {
@@ -480,33 +499,13 @@ export async function buildDashboardFocus(userId) {
       start: summary?.period?.start,
       end: summary?.period?.end
     },
-    narrative: summary?.narrative || null,
-    commitments: {
-      goals: commitments.goals,
-      patterns: commitments.patterns
-    },
-    upcomingTasks: upcomingTasks.map((t) => ({
-      _id: String(t._id),
-      title: t.title,
-      dueDate: t.dueDate,
-      status: t.status,
-      priority: t.priority,
-      itemType: t.itemType
-    })),
-    recentConversations,
-    progress: {
-      tasksCompletedInWeek: summary?.tasks?.completedInPeriod ?? 0,
-      habitsCompletionsInWeek: summary?.habits?.completionsInPeriod ?? 0,
-      activeHabitsCount: summary?.habits?.activeHabitsCount ?? 0,
-      bestHabitStreak: summary?.habits?.bestCurrentStreakAmongActive ?? 0,
-      chatUserMessagesWeek: summary?.chat?.userMessages ?? 0,
-      chatActiveDaysWeek: summary?.chat?.distinctActiveDays ?? 0
-    },
-    scales: {
-      disclaimer:
-        'Las escalas son autoinforme de apoyo; no sustituyen evaluación clínica ni constituyen un diagnóstico.',
-      phq9: scales.phq9,
-      gad7: scales.gad7
-    }
+    /** Solo la próxima tarea con fecha (UI minimal); el resto queda en el resumen / tareas. */
+    nextTask: firstTask
+      ? {
+          _id: String(firstTask._id),
+          title: firstTask.title,
+          dueDate: firstTask.dueDate
+        }
+      : null
   };
 }
