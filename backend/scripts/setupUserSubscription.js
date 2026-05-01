@@ -2,10 +2,12 @@
  * Script para configurar suscripción de usuario (Trial o Premium)
  * 
  * Uso:
- *   node scripts/setupUserSubscription.js <email|username> <trial|premium> [días]
- * 
+ *   node scripts/setupUserSubscription.js <email|username> <trial|premium|extend-trial> [opción]
+ *
  * Ejemplos:
  *   node scripts/setupUserSubscription.js usuario@ejemplo.com trial 21
+ *   # Sumar 7 días al fin del trial actual (mantiene trialStart; si ya venció, parte desde hoy)
+ *   node scripts/setupUserSubscription.js usuario@ejemplo.com extend-trial 7
  *   node scripts/setupUserSubscription.js usuario@ejemplo.com premium monthly
  *   node scripts/setupUserSubscription.js usuario@ejemplo.com premium yearly
  */
@@ -63,6 +65,9 @@ Ejemplos:
 
   # Configurar trial por defecto (21 días)
   node scripts/setupUserSubscription.js usuario@ejemplo.com trial
+
+  # Aumentar trial: sumar N días al vencimiento actual (correo o username)
+  node scripts/setupUserSubscription.js usuario@ejemplo.com extend-trial 10
     `);
     process.exit(1);
   }
@@ -70,8 +75,8 @@ Ejemplos:
   const [identifier, type, option] = args;
   const subscriptionType = type.toLowerCase();
 
-  if (!['trial', 'premium'].includes(subscriptionType)) {
-    console.error('❌ Tipo de suscripción inválido. Debe ser "trial" o "premium"');
+  if (!['trial', 'premium', 'extend-trial'].includes(subscriptionType)) {
+    console.error('❌ Tipo inválido. Usá "trial", "extend-trial" o "premium"');
     process.exit(1);
   }
 
@@ -99,7 +104,63 @@ Ejemplos:
 
     const now = new Date();
 
-    if (subscriptionType === 'trial') {
+    if (subscriptionType === 'extend-trial') {
+      const addDays = option ? parseInt(option, 10) : NaN;
+      if (isNaN(addDays) || addDays < 1) {
+        console.error('❌ Indicá cuántos días sumar, p. ej.: extend-trial 7');
+        process.exit(1);
+      }
+
+      if (user.subscription?.status === 'premium') {
+        console.error('❌ El usuario tiene plan premium; no aplica extender trial.');
+        process.exit(1);
+      }
+
+      const prevSub = user.subscription || {};
+      const prevEnd = prevSub.trialEndDate ? new Date(prevSub.trialEndDate).getTime() : null;
+      const baseMs = prevEnd != null ? Math.max(Date.now(), prevEnd) : Date.now();
+      const trialEndDate = new Date(baseMs + addDays * 24 * 60 * 60 * 1000);
+      const trialStartDate = prevSub.trialStartDate ? new Date(prevSub.trialStartDate) : now;
+
+      user.subscription = {
+        status: 'trial',
+        trialStartDate,
+        trialEndDate,
+        subscriptionStartDate: prevSub.subscriptionStartDate ?? null,
+        subscriptionEndDate: prevSub.subscriptionEndDate ?? null,
+        plan: null,
+        trialGrantedAt: prevSub.trialGrantedAt || now,
+        trialRetentionEmailSentAt: prevSub.trialRetentionEmailSentAt ?? null
+      };
+      await user.save();
+
+      let subscription = await Subscription.findOne({ userId: user._id });
+      if (!subscription) {
+        subscription = new Subscription({
+          userId: user._id,
+          status: 'trialing',
+          plan: 'monthly',
+          currentPeriodStart: trialStartDate,
+          currentPeriodEnd: trialEndDate,
+          trialStart: trialStartDate,
+          trialEnd: trialEndDate
+        });
+      } else {
+        subscription.status = 'trialing';
+        subscription.plan = subscription.plan || 'monthly';
+        subscription.trialStart = subscription.trialStart || trialStartDate;
+        subscription.trialEnd = trialEndDate;
+        subscription.currentPeriodEnd = trialEndDate;
+        subscription.cancelAtPeriodEnd = false;
+        subscription.canceledAt = null;
+        subscription.endedAt = null;
+      }
+      await subscription.save();
+
+      console.log(`✅ Trial extendido (+${addDays} días):`);
+      console.log(`   Nuevo fin: ${trialEndDate.toLocaleString('es-CL')}`);
+      console.log(`   Inicio trial (sin cambiar si ya existía): ${trialStartDate.toLocaleString('es-CL')}`);
+    } else if (subscriptionType === 'trial') {
       // Configurar trial
       const days = option ? parseInt(option, 10) : 21;
       if (isNaN(days) || days < 1) {
