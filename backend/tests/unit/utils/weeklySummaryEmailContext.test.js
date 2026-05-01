@@ -41,8 +41,10 @@ describe('buildWeeklySummaryEmailContext', () => {
     expect(ctx.displayName).toBe('María');
     expect(ctx.weekLabel).toBe('Semana 16 · 2026');
     expect(ctx.preheaderText.length).toBeGreaterThan(10);
-    expect(ctx.benefitLines).toHaveLength(3);
-    expect(ctx.closingLine).toMatch(/equipo/i);
+    expect(ctx.benefitLines).toHaveLength(2);
+    expect(ctx.updatesLines?.length ?? 0).toBeGreaterThanOrEqual(3);
+    expect(ctx.updatesLines.join(' ')).toMatch(/resumen|chat|dashboard|notificaciones/i);
+    expect(ctx.closingLine).toMatch(/Anto|acompañarte/i);
     expect(ctx.subjectLine).not.toContain('99');
     expect(ctx.leadParagraph).toMatch(/ritmo|semana/i);
   });

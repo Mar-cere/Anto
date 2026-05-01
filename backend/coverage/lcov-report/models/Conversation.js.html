@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">35.71% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>5/14</span>
+                <span class='fraction'>0/14</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">20% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>2/10</span>
+                <span class='fraction'>0/10</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">35.71% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>5/14</span>
+                <span class='fraction'>0/14</span>
             </div>
         
             
@@ -163,7 +163,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -228,25 +228,25 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
@@ -256,7 +256,7 @@ import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { SESSION_INTENTION_VALUES } from '../constants/sessionIntention.js';
 &nbsp;
-const conversationSchema = new mongoose.Schema({
+const conversationSchema = <span class="cstat-no" title="statement not covered" >new mongoose.Schema({</span>
   // ID único generado automáticamente
   id: {
     type: String,
@@ -321,7 +321,7 @@ const conversationSchema = new mongoose.Schema({
 });
 &nbsp;
 // Middleware pre-save: ejecuta antes de guardar
-conversationSchema.pre('save', <span class="fstat-no" title="function not covered" >fu</span>nction(next) {
+<span class="cstat-no" title="statement not covered" >conversationSchema.pre('save', <span class="fstat-no" title="function not covered" >fu</span>nction(next) {</span>
 <span class="cstat-no" title="statement not covered" >  if (!this.id) {</span>
 <span class="cstat-no" title="statement not covered" >    this.id = crypto.randomBytes(16).toString('hex');</span>
   }
@@ -336,10 +336,10 @@ conversationSchema.pre('save', <span class="fstat-no" title="function not covere
 });
 &nbsp;
 // Índices para optimizar consultas
-conversationSchema.index({ userId: 1, status: 1 });
-conversationSchema.index({ updatedAt: -1 });
+<span class="cstat-no" title="statement not covered" >conversationSchema.index({ userId: 1, status: 1 });</span>
+<span class="cstat-no" title="statement not covered" >conversationSchema.index({ updatedAt: -1 });</span>
 &nbsp;
-const Conversation = mongoose.models.Conversation || mongoose.model('Conversation', conversationSchema);
+const Conversation = <span class="cstat-no" title="statement not covered" >mongoose.models.Conversation || mongoose.model('Conversation', conversationSchema);</span>
 &nbsp;
 export default Conversation;
 &nbsp;</pre></td></tr></table></pre>
@@ -349,7 +349,7 @@ export default Conversation;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-30T22:41:30.274Z
+                at 2026-04-30T22:50:05.813Z
             </div>
         <script src="../prettify.js"></script>
         <script>

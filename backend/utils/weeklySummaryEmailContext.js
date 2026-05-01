@@ -72,32 +72,33 @@ export function buildWeeklySummaryEmailContext(user, isoParts) {
   const weekLabel = `Semana ${isoWeek} · ${isoWeekYear}`;
   const subjectLine = buildWeeklySummarySubjectLine(weekLabel, isoWeekYear, isoWeek);
 
-  const preheaderText = `Te compartimos un recordatorio breve y privado para revisar tu semana en ${APP_NAME}. El detalle completo lo ves dentro de la app, con tu sesión iniciada.`;
+  const preheaderText = `Un recordatorio breve y privado para regalarte un minuto con ${APP_NAME} y mirar tu semana con calma. Si hace un tiempo que no entrás, también es una buena excusa para retomar: todo el detalle te espera dentro de la app, con tu sesión iniciada.`;
 
-  const leadParagraph = `Esta semana queremos invitarte a detenerte un momento y mirar tu proceso con más perspectiva. A veces, ver el recorrido completo ayuda a reconocer mejor lo que estás sosteniendo y los pequeños avances que, en el día a día, pueden pasar desapercibidos.`;
+  const leadParagraph = `Esta semana te invitamos a frenar un instante y mirar tu proceso con más perspectiva: a veces, ver el recorrido completo ayuda a reconocer lo que estás sosteniendo y los pequeños avances que en el día a día pasan desapercibidos. Si hace días que no abrís ${APP_NAME}, también es un lindo momento para reencontrarte, sin prisa ni culpas.`;
 
-  const reflectionParagraph = `Dentro de ${APP_NAME} encontrarás tu resumen semanal y mensual en una vista simple, pensada para ayudarte a ordenar lo importante sin sobrecarga. La idea es que puedas volver a tu propio ritmo, revisar lo esencial y seguir avanzando con más claridad.`;
+  const reflectionParagraph = `Dentro de ${APP_NAME} encontrarás tu resumen semanal y mensual en una vista sencilla, pensada para que retomar sea fácil: ordenar lo importante sin sobrecarga, a tu ritmo, y seguir adelante con más claridad.`;
 
   const privacyParagraph = `Para cuidar tu privacidad, este correo no incluye números sensibles ni contenido de tus conversaciones. La información detallada de tu resumen (hábitos, conversaciones, emociones, técnicas y otros registros) se muestra únicamente dentro de ${APP_NAME} cuando inicias sesión.`;
 
   const whereParagraph = `Desde aquí puedes abrir ${APP_NAME} directamente. Si el enlace no funciona en tu dispositivo, también encontrarás debajo la ruta para llegar al resumen manualmente.`;
 
-  const benefitSectionTitle = 'Qué encontrarás en tu resumen';
+  const benefitSectionTitle = 'Qué te espera al abrir tu resumen';
   const benefitLines = [
     `Una lectura clara de tu actividad semanal y mensual dentro de ${APP_NAME}, para entender mejor cómo vienes.`,
     'Un espacio de acompañamiento para revisar tu proceso con calma, sin presión y con foco en lo que te hace bien.'
   ];
 
-  const updatesSectionTitle = 'Novedades de la app';
+  const updatesSectionTitle = 'Novedades de la semana';
   const updatesLines = [
-    'Mejoramos estabilidad y rendimiento para una experiencia más fluida en el día a día.',
-    'Ajustamos el acceso al resumen semanal y mensual para que sea más simple y rápido.',
-    `Seguimos optimizando ${APP_NAME} para ofrecerte interacciones más claras y consistentes.`
+    `Renovamos cómo ves tu resumen semanal y mensual: más claro y humano, para que volver a mirar tu semana sea natural, aunque haya pasado unos días sin abrir la app. Este mismo correo solo te recuerda que estamos acá; lo importante siempre lo ves adentro, con tu privacidad cuidada.`,
+    'En el chat la conversación se siente más fluida y cercana: menos interrupciones que te saquen del momento y más continuidad para acompañarte cuando lo necesitás.',
+    'La app se siente más liviana en el día a día: menos ruido en los avisos y, cuando hace falta, más contención y claridad en los mensajes que te importan.',
+    'Pequeños detalles en la pantalla para que retomar sea más fácil y agradable: porque volver a conectar con vos también es un gesto de autocuidado.'
   ];
 
   const downloadPrompt = `Si todavía no tienes la app instalada, puedes descargarla y empezar a usar ${APP_NAME} hoy mismo.`;
 
-  const closingLine = `Gracias por confiar en ${APP_NAME}. Estamos aquí para acompañarte.`;
+  const closingLine = `Gracias por ser parte de ${APP_NAME}. Te esperamos cuando quieras retomar: acá seguimos, con ganas de verte de nuevo.`;
 
   return {
     displayName,
