@@ -95,7 +95,7 @@ export const DASH = {
   FOCUS_NO_CHATS: 'Aún no hay conversaciones.',
   FOCUS_NO_COMMITMENTS: 'Sin compromisos guardados todavía.',
   FOCUS_REMINDER_SECTION: 'Lo principal ahora',
-  FOCUS_REMINDER_TAP_CHAT: 'Tocá para ir al chat',
+  FOCUS_REMINDER_TAP_CHAT: 'Toca para ir al chat',
   FOCUS_PROTOCOL: 'Próximo paso (seguimiento)',
   FOCUS_START_CHAT: 'Empezar en el chat',
 };

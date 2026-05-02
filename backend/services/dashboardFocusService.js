@@ -207,14 +207,14 @@ export function buildReminderCandidates({
   if (lastConv && chatRelevantWithConv) {
     candidates.push({
       kind: 'chat',
-      title: 'Retomá tu última conversación',
+      title: 'Retoma tu última conversación',
       subtitle: chatResumeSubtitle(lastConv, now),
       conversationId: lastConv.conversationId
     });
   } else if (!lastConv && userMsgs === 0) {
     candidates.push({
       kind: 'chat',
-      title: 'Empezá una conversación',
+      title: 'Empieza una conversación',
       subtitle: 'Un mensaje corto ya es un buen primer paso.',
       conversationId: null
     });
@@ -288,7 +288,7 @@ export function buildDeterministicFocusCaption({
 }) {
   if (protocolLine) {
     const p = String(protocolLine).slice(0, 140);
-    return `Con lo que venís trabajando: ${p} ¿Qué micro-paso encaja hoy?`;
+    return `Con lo que has estado trabajando: ${p} ¿Qué micro-paso encaja hoy?`;
   }
   const userMsgs = summary?.chat?.userMessages ?? 0;
   const activeDays = summary?.chat?.distinctActiveDays ?? 0;
@@ -303,16 +303,16 @@ export function buildDeterministicFocusCaption({
   }
   if (nextTask?.title) {
     const t = String(nextTask.title).slice(0, 80);
-    return `Próximo foco práctico: “${t}”. Podés avanzar un poco hoy o ajustar la fecha si hace falta.`;
+    return `Próximo foco práctico: “${t}”. Puedes avanzar un poco hoy o ajustar la fecha si hace falta.`;
   }
   if (firstCommitment) {
     const c = String(firstCommitment).slice(0, 120);
     return `Recordatorio suave de tu foco: “${c}”. ¿Qué micro-paso encaja hoy?`;
   }
   if (recentConversations.length > 0) {
-    return 'Podés retomar tu última conversación o contar en una frase cómo llegás hoy.';
+    return 'Puedes retomar tu última conversación o contar en una frase cómo llegas hoy.';
   }
-  return 'Hoy podés elegir: una línea en el chat, un avance pequeño en tareas o registrar un hábito.';
+  return 'Hoy puedes elegir: una línea en el chat, un avance pequeño en tareas o registrar un hábito.';
 }
 
 function buildLlmUserPayload({
