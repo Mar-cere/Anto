@@ -48,6 +48,9 @@ describe('chatScreenConstants', () => {
     it('debe tener texto de sugerencias', () => {
       expect(TEXTS.SUGGESTIONS_TITLE).toContain('Sugerencias');
     });
+    it('debe tener título de acciones productivas desde chat', () => {
+      expect(TEXTS.PRODUCT_ACTIONS_TITLE).toContain('app');
+    });
     it('debe tener textos de intención de sesión (#72)', () => {
       expect(TEXTS.SESSION_INTENTION_TITLE).toBe('¿Qué necesitas de esta sesión?');
       expect(TEXTS.SESSION_INTENTION_SKIP).toBe('Omitir');

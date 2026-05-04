@@ -18,6 +18,10 @@ import {
   userProfileService
 } from '../services/index.js';
 import { sanitizeSessionIntentionForClient } from '../constants/sessionIntention.js';
+import { evaluateSuicideRisk } from '../constants/crisis.js';
+import chatProductActionProposalService from '../services/chatProductActionProposalService.js';
+import chatProductActionLlmService from '../services/chatProductActionLlmService.js';
+import metricsService from '../services/metricsService.js';
 
 // Constantes de configuración
 const DEFAULT_FRONTEND_URLS = ['http://localhost:3000', 'http://localhost:19006'];
@@ -152,9 +156,12 @@ export const setupSocketIO = (server) => {
           .lean();
 
         if (!conversation) {
-          // Crear nueva conversación si no existe
-          conversation = new Conversation({ userId });
-          await conversation.save();
+          const created = new Conversation({ userId });
+          await created.save();
+          conversation = {
+            _id: created._id,
+            sessionIntention: created.sessionIntention ?? null
+          };
           console.log(`[SocketIO] Nueva conversación creada: ${conversation._id}`);
         }
         
@@ -217,6 +224,23 @@ export const setupSocketIO = (server) => {
             return null;
           })
         ]);
+
+        const riskLevel = evaluateSuicideRisk(
+          emotionalAnalysis || {},
+          contextualAnalysis || {},
+          messageText,
+          {
+            trendAnalysis: null,
+            crisisHistory: null,
+            conversationContext: {}
+          }
+        );
+        const isCrisis =
+          riskLevel === 'MEDIUM' ||
+          riskLevel === 'HIGH' ||
+          (contextualAnalysis?.intencion?.tipo === 'CRISIS' &&
+            contextualAnalysis?.intencion?.confianza >= 0.9 &&
+            riskLevel !== 'LOW');
         
         // 5. Preparar historial para el prompt
         const historialParaPrompt = buildHistoryForPromptFromMessages(conversationHistory, {
@@ -273,6 +297,43 @@ export const setupSocketIO = (server) => {
         await Conversation.findByIdAndUpdate(conversation._id, { 
           lastMessage: assistantMessage._id 
         });
+
+        let proposedProductActions = [];
+        try {
+          proposedProductActions = chatProductActionProposalService.buildProposedProductActions({
+            riskLevel,
+            isCrisis,
+            userContent: messageText,
+            sessionIntention: conversation?.sessionIntention,
+            conversationId: conversation._id,
+            assistantMessageId: assistantMessage._id
+          });
+        } catch (propErr) {
+          console.error('[SocketIO] proposedProductActions:', propErr);
+        }
+        if (proposedProductActions.length > 0) {
+          try {
+            proposedProductActions =
+              await chatProductActionLlmService.enrichProposedProductActionsWithLlm(
+                proposedProductActions,
+                { userContent: messageText, assistantContent: response.content }
+              );
+          } catch (llmPropErr) {
+            console.warn('[SocketIO] proposedProductActions LLM:', llmPropErr?.message || llmPropErr);
+          }
+          metricsService
+            .recordMetric(
+              'product_action_proposed',
+              {
+                count: proposedProductActions.length,
+                types: proposedProductActions.map((a) => a.type),
+                transport: 'socket'
+              },
+              currentUserId,
+              { conversationId: String(conversation._id) }
+            )
+            .catch(() => {});
+        }
         
         // 9. Emitir respuesta al cliente
         socket.emit(SOCKET_EVENTS.AI_TYPING, false);
@@ -280,7 +341,8 @@ export const setupSocketIO = (server) => {
           id: assistantMessage._id.toString(),
           text: response.content,
           userId: currentUserId,
-          timestamp: new Date()
+          timestamp: new Date(),
+          proposedProductActions
         });
         
         console.log(`[SocketIO] Mensaje procesado para usuario ${currentUserId}`);

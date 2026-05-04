@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Modal,
   View,
@@ -29,10 +29,20 @@ const CreateHabitModal = ({
   onClose,
   onSubmit,
   formData,
-  setFormData
+  setFormData,
+  initialReminderIso = null,
 }) => {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [reminderTime, setReminderTime] = useState(new Date());
+  useEffect(() => {
+    if (visible && initialReminderIso) {
+      const d = new Date(initialReminderIso);
+      if (!Number.isNaN(d.getTime())) {
+        setReminderTime(d);
+      }
+    }
+  }, [visible, initialReminderIso]);
+
   const handleSubmit = () => {
     if (!formData.title.trim()) {
       Alert.alert('Error', 'Por favor ingresa un título');

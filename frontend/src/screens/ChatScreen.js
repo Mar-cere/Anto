@@ -266,6 +266,7 @@ const ChatScreen = () => {
     retryOfflinePending,
     chatFeedbackEnabled,
     handleMessageFeedback,
+    handleProductProposalPress,
     feedbackSubmittingId,
     showSessionIntentionPrompt,
     sessionIntentionSubmitting,
@@ -359,6 +360,7 @@ const ChatScreen = () => {
         item={item}
         onSuggestionPress={handleSuggestionPress}
         onSuggestionDismiss={handleSuggestionDismiss}
+        onProductProposalPress={handleProductProposalPress}
         feedbackEnabled={chatFeedbackEnabled}
         feedbackTargetId={feedbackTargetId}
         onMessageFeedback={handleMessageFeedback}
@@ -368,6 +370,7 @@ const ChatScreen = () => {
     [
       handleSuggestionPress,
       handleSuggestionDismiss,
+      handleProductProposalPress,
       handleSend,
       chatFeedbackEnabled,
       feedbackTargetId,

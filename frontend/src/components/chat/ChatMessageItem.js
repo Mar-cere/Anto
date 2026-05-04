@@ -131,6 +131,32 @@ const styles = StyleSheet.create({
     color: CHAT_COLORS.ACCENT,
     marginBottom: 8,
   },
+  productProposalCard: {
+    marginBottom: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(26, 221, 219, 0.35)',
+    backgroundColor: 'rgba(26, 221, 219, 0.08)',
+  },
+  productProposalLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: CHAT_COLORS.PRIMARY,
+    marginBottom: 4,
+  },
+  productProposalSub: {
+    fontSize: 12,
+    color: CHAT_COLORS.ACCENT,
+    opacity: 0.9,
+    marginBottom: 6,
+  },
+  productProposalTitle: {
+    fontSize: 13,
+    color: CHAT_COLORS.BOT_TEXT,
+    fontStyle: 'italic',
+  },
   streamingDotsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -181,6 +207,7 @@ function ChatMessageItem({
   item,
   onSuggestionPress,
   onSuggestionDismiss,
+  onProductProposalPress,
   feedbackEnabled,
   feedbackTargetId,
   onMessageFeedback,
@@ -208,6 +235,34 @@ function ChatMessageItem({
     const next = currentVote === dir ? null : dir;
     onMessageFeedback(String(rawId), next);
   };
+
+  if (message.type === 'product_proposals' && message.proposedProductActions?.length) {
+    return (
+      <View style={styles.suggestionsContainer}>
+        <Text style={styles.suggestionsTitle}>{TEXTS.PRODUCT_ACTIONS_TITLE}</Text>
+        {message.proposedProductActions.map((action) => (
+          <TouchableOpacity
+            key={action.id}
+            style={styles.productProposalCard}
+            onPress={() => onProductProposalPress?.(action, message)}
+            accessibilityRole="button"
+          >
+            <Text style={styles.productProposalLabel}>
+              {action.type === 'propose_habit' ? 'Crear hábito' : 'Crear tarea'}
+            </Text>
+            {action.rationaleShort ? (
+              <Text style={styles.productProposalSub}>{action.rationaleShort}</Text>
+            ) : null}
+            {action.draft?.title ? (
+              <Text style={styles.productProposalTitle} numberOfLines={2}>
+                “{action.draft.title}”
+              </Text>
+            ) : null}
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  }
 
   if (message.type === 'suggestions' && message.suggestions) {
     return (

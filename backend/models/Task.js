@@ -184,6 +184,31 @@ const taskSchema = new mongoose.Schema({
       message: 'Una tarea no puede ser padre de sí misma'
     }
   },
+  /** Origen en chat (CONTRATO_CHAT_ACCIONES_V1); opcional. */
+  chatOrigin: {
+    conversationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Conversation',
+      default: undefined
+    },
+    sourceMessageId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Message',
+      default: undefined
+    },
+    source: {
+      type: String,
+      enum: ['chat_v1'],
+      default: undefined
+    }
+  },
+  /** Idempotencia de creación (mismo usuario + misma clave → una sola tarea activa). */
+  clientRequestId: {
+    type: String,
+    trim: true,
+    maxlength: 80,
+    default: undefined
+  },
   // Soft delete (no se incluye en consultas por defecto)
   deletedAt: {
     type: Date,
@@ -203,6 +228,16 @@ taskSchema.index({ userId: 1, priority: 1 });
 taskSchema.index({ userId: 1, category: 1 });
 taskSchema.index({ 'notifications.reminderTime': 1 });
 taskSchema.index({ status: 1, dueDate: 1 });
+taskSchema.index(
+  { userId: 1, clientRequestId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      clientRequestId: { $type: 'string', $gt: '' },
+      deletedAt: { $exists: false }
+    }
+  }
+);
 
 // Virtuals: propiedades calculadas al acceder
 taskSchema.virtual('isOverdue').get(function() {

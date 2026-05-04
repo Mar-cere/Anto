@@ -6,9 +6,12 @@
 
 import request from 'supertest';
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 import app from '../../../server.js';
 import User from '../../../models/User.js';
 import Habit from '../../../models/Habit.js';
+import Conversation from '../../../models/Conversation.js';
+import Message from '../../../models/Message.js';
 import {
   connectDatabase,
   clearDatabase,
@@ -100,6 +103,105 @@ describe('Habit Routes', () => {
       expect(response.body).toHaveProperty('data');
       expect(response.body.data).toHaveProperty('title', habitData.title);
       expect(response.body.data).toHaveProperty('userId', testUser._id.toString());
+    });
+
+    it('debe devolver el mismo hábito en segundo POST con el mismo clientRequestId', async () => {
+      const idem = `idem-habit-${Date.now()}`;
+      const habitData = {
+        title: 'Hábito idempotente',
+        description: 'Reintento',
+        icon: 'exercise',
+        frequency: 'daily',
+        reminder: {
+          time: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+          enabled: true,
+        },
+        clientRequestId: idem,
+      };
+
+      const first = await request(app)
+        .post('/api/habits')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(habitData)
+        .expect(201);
+      expect(first.body.data).toHaveProperty('_id');
+      expect(first.body.idempotentReplay).toBeUndefined();
+
+      const second = await request(app)
+        .post('/api/habits')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ ...habitData, title: 'Otro título' })
+        .expect(200);
+
+      expect(second.body).toHaveProperty('idempotentReplay', true);
+      expect(second.body.data._id).toBe(first.body.data._id);
+      expect(second.body.data.title).toBe(habitData.title);
+    });
+
+    it('debe rechazar hábito con chatOrigin de conversación inexistente', async () => {
+      const fakeConv = new mongoose.Types.ObjectId().toString();
+      const fakeMsg = new mongoose.Types.ObjectId().toString();
+      const habitData = {
+        title: 'Hábito origen inválido',
+        description: '',
+        icon: 'exercise',
+        frequency: 'daily',
+        reminder: {
+          time: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+          enabled: true,
+        },
+        chatOrigin: {
+          conversationId: fakeConv,
+          sourceMessageId: fakeMsg,
+          source: 'chat_v1',
+        },
+      };
+
+      await request(app)
+        .post('/api/habits')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(habitData)
+        .expect(400);
+    });
+
+    it('debe crear hábito con chatOrigin cuando conversación y mensaje existen y son del usuario', async () => {
+      const conversation = await Conversation.create({
+        userId: testUser._id,
+        status: 'active'
+      });
+      const assistantMessage = await Message.create({
+        userId: testUser._id,
+        conversationId: conversation._id,
+        role: 'assistant',
+        content: 'Sugerencia de hábito desde el chat'
+      });
+
+      const habitData = {
+        title: 'Hábito con origen de chat válido',
+        description: '',
+        icon: 'meditation',
+        frequency: 'daily',
+        reminder: {
+          time: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+          enabled: true
+        },
+        chatOrigin: {
+          conversationId: conversation._id.toString(),
+          sourceMessageId: assistantMessage._id.toString(),
+          source: 'chat_v1'
+        }
+      };
+
+      const response = await request(app)
+        .post('/api/habits')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(habitData)
+        .expect(201);
+
+      expect(response.body.data).toHaveProperty('chatOrigin');
+      expect(String(response.body.data.chatOrigin.conversationId)).toBe(String(conversation._id));
+      expect(String(response.body.data.chatOrigin.sourceMessageId)).toBe(String(assistantMessage._id));
+      expect(response.body.data.chatOrigin.source).toBe('chat_v1');
     });
 
     it('debe rechazar crear hábito sin autenticación', async () => {

@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { sanitizeProposedProductActions } from '../utils/sanitizeProposedProductActions';
 import api, { API_URL } from '../config/api';
 import { isValidSessionIntentionId } from '../constants/sessionIntention';
 import { clearPersistedChatSession } from '../utils/chatSessionStorage';
@@ -287,6 +288,7 @@ export const sendMessageStream = async (text, { onChunk, onDone }) => {
         messageId: data?.assistantMessage?._id?.toString?.() || data?.assistantMessage?._id,
         content: data?.assistantMessage?.content ?? '',
         suggestions: data?.suggestions,
+        proposedProductActions: sanitizeProposedProductActions(data?.proposedProductActions),
         context: data?.context,
         guest: data?.guest,
       });

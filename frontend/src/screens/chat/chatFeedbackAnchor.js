@@ -14,7 +14,7 @@ function isValidMongoMessageId(id) {
 function itemBlocksFeedbackRow(item) {
   const m = item?.userMessage || item?.assistantMessage || item;
   const t = m?.type ?? item?.type;
-  return t === 'suggestions';
+  return t === 'suggestions' || t === 'product_proposals';
 }
 
 /**
@@ -30,7 +30,7 @@ export function getFeedbackTargetMessageId(messages, feedbackEnabled) {
     const item = messages[i];
     const message = item.userMessage || item.assistantMessage || item;
     if (!message || message.role === MESSAGE_ROLES.USER) continue;
-    if (message.type === 'suggestions') continue;
+    if (message.type === 'suggestions' || message.type === 'product_proposals') continue;
     if (message.metadata?.streaming) continue;
     if (!(message.content || '').trim().length) continue;
     const rawId = message._id || message.id;

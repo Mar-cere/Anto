@@ -60,6 +60,7 @@ export default function HabitsScreen({ route, navigation }) {
     handleDeleteHabit,
     resetForm,
     openModal,
+    habitModalReminderIso,
   } = useHabitsScreen({ route, navigation });
 
   const showSkeleton = loading && !error && habits.length === 0;
@@ -127,6 +128,7 @@ export default function HabitsScreen({ route, navigation }) {
         onSubmit={handleAddHabit}
         formData={formData}
         setFormData={setFormData}
+        initialReminderIso={habitModalReminderIso}
       />
       <FloatingNavBar />
     </View>

@@ -1,15 +1,74 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="5" failures="0" errors="0" time="0.256">
-  <testsuite name="NotificationScheduler Service" errors="0" failures="0" skipped="0" timestamp="2026-05-04T04:59:57" time="0.237" tests="5">
-    <testcase classname="NotificationScheduler Service Métodos del servicio debe tener métodos exportados" name="NotificationScheduler Service Métodos del servicio debe tener métodos exportados" time="0.001">
+<testsuites name="jest tests" tests="24" failures="0" errors="0" time="6.045">
+  <testsuite name="Task Routes" errors="0" failures="0" skipped="10" timestamp="2026-05-04T23:54:50" time="3.467" tests="13">
+    <testcase classname="Task Routes POST /api/tasks debe crear una nueva tarea con datos válidos" name="Task Routes POST /api/tasks debe crear una nueva tarea con datos válidos" time="0">
+      <skipped/>
     </testcase>
-    <testcase classname="NotificationScheduler Service Límite diario por usuario bloquea envío cuando el usuario ya alcanzó el tope diario" name="NotificationScheduler Service Límite diario por usuario bloquea envío cuando el usuario ya alcanzó el tope diario" time="0.002">
+    <testcase classname="Task Routes POST /api/tasks debe devolver la misma tarea en segundo POST con el mismo clientRequestId" name="Task Routes POST /api/tasks debe devolver la misma tarea en segundo POST con el mismo clientRequestId" time="0">
+      <skipped/>
     </testcase>
-    <testcase classname="NotificationScheduler Service Límite diario por usuario permite envío cuando el usuario está bajo el tope diario" name="NotificationScheduler Service Límite diario por usuario permite envío cuando el usuario está bajo el tope diario" time="0.002">
+    <testcase classname="Task Routes POST /api/tasks debe rechazar crear tarea con chatOrigin de conversación inexistente" name="Task Routes POST /api/tasks debe rechazar crear tarea con chatOrigin de conversación inexistente" time="0.356">
     </testcase>
-    <testcase classname="NotificationScheduler Service Mensajes entre sesiones (#31) usa between_sessions_nudge para inactividad &gt; 48h" name="NotificationScheduler Service Mensajes entre sesiones (#31) usa between_sessions_nudge para inactividad &gt; 48h" time="0.004">
+    <testcase classname="Task Routes POST /api/tasks debe crear tarea con chatOrigin cuando conversación y mensaje existen y son del usuario" name="Task Routes POST /api/tasks debe crear tarea con chatOrigin cuando conversación y mensaje existen y son del usuario" time="0.255">
     </testcase>
-    <testcase classname="NotificationScheduler Service Mensajes entre sesiones (#31) no envía between_sessions_nudge si ya hubo uno en la ventana de cooldown" name="NotificationScheduler Service Mensajes entre sesiones (#31) no envía between_sessions_nudge si ya hubo uno en la ventana de cooldown" time="0">
+    <testcase classname="Task Routes POST /api/tasks debe rechazar chatOrigin si el mensaje no pertenece a esa conversación" name="Task Routes POST /api/tasks debe rechazar chatOrigin si el mensaje no pertenece a esa conversación" time="0.252">
+    </testcase>
+    <testcase classname="Task Routes POST /api/tasks debe rechazar crear tarea sin autenticación" name="Task Routes POST /api/tasks debe rechazar crear tarea sin autenticación" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Routes POST /api/tasks debe rechazar crear tarea sin título" name="Task Routes POST /api/tasks debe rechazar crear tarea sin título" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Routes GET /api/tasks debe obtener todas las tareas del usuario" name="Task Routes GET /api/tasks debe obtener todas las tareas del usuario" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Routes GET /api/tasks debe filtrar tareas por status" name="Task Routes GET /api/tasks debe filtrar tareas por status" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Routes GET /api/tasks/:id debe obtener una tarea específica" name="Task Routes GET /api/tasks/:id debe obtener una tarea específica" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Routes GET /api/tasks/:id debe rechazar obtener tarea de otro usuario" name="Task Routes GET /api/tasks/:id debe rechazar obtener tarea de otro usuario" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Routes PUT /api/tasks/:id debe actualizar una tarea existente" name="Task Routes PUT /api/tasks/:id debe actualizar una tarea existente" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Routes DELETE /api/tasks/:id debe eliminar una tarea existente" name="Task Routes DELETE /api/tasks/:id debe eliminar una tarea existente" time="0">
+      <skipped/>
+    </testcase>
+  </testsuite>
+  <testsuite name="Habit Routes" errors="0" failures="0" skipped="9" timestamp="2026-05-04T23:54:53" time="2.524" tests="11">
+    <testcase classname="Habit Routes POST /api/habits debe crear un nuevo hábito con datos válidos" name="Habit Routes POST /api/habits debe crear un nuevo hábito con datos válidos" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Habit Routes POST /api/habits debe devolver el mismo hábito en segundo POST con el mismo clientRequestId" name="Habit Routes POST /api/habits debe devolver el mismo hábito en segundo POST con el mismo clientRequestId" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Habit Routes POST /api/habits debe rechazar hábito con chatOrigin de conversación inexistente" name="Habit Routes POST /api/habits debe rechazar hábito con chatOrigin de conversación inexistente" time="0.314">
+    </testcase>
+    <testcase classname="Habit Routes POST /api/habits debe crear hábito con chatOrigin cuando conversación y mensaje existen y son del usuario" name="Habit Routes POST /api/habits debe crear hábito con chatOrigin cuando conversación y mensaje existen y son del usuario" time="0.235">
+    </testcase>
+    <testcase classname="Habit Routes POST /api/habits debe rechazar crear hábito sin autenticación" name="Habit Routes POST /api/habits debe rechazar crear hábito sin autenticación" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Habit Routes POST /api/habits debe rechazar crear hábito con datos inválidos" name="Habit Routes POST /api/habits debe rechazar crear hábito con datos inválidos" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Habit Routes GET /api/habits debe obtener todos los hábitos del usuario" name="Habit Routes GET /api/habits debe obtener todos los hábitos del usuario" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Habit Routes GET /api/habits debe filtrar hábitos por status" name="Habit Routes GET /api/habits debe filtrar hábitos por status" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Habit Routes GET /api/habits/active debe obtener hábitos activos" name="Habit Routes GET /api/habits/active debe obtener hábitos activos" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Habit Routes PUT /api/habits/:id debe actualizar un hábito existente" name="Habit Routes PUT /api/habits/:id debe actualizar un hábito existente" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Habit Routes DELETE /api/habits/:id debe eliminar un hábito existente" name="Habit Routes DELETE /api/habits/:id debe eliminar un hábito existente" time="0">
+      <skipped/>
     </testcase>
   </testsuite>
 </testsuites>

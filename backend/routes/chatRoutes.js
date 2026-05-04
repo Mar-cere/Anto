@@ -25,6 +25,8 @@ import {
 } from '../models/index.js';
 import User from '../models/User.js';
 import actionSuggestionService from '../services/actionSuggestionService.js';
+import chatProductActionProposalService from '../services/chatProductActionProposalService.js';
+import chatProductActionLlmService from '../services/chatProductActionLlmService.js';
 import clinicalScalesService from '../services/clinicalScalesService.js';
 import CognitiveDistortionReport from '../models/CognitiveDistortionReport.js';
 import ClinicalScaleResult from '../models/ClinicalScaleResult.js';
@@ -1230,12 +1232,51 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   } catch (_) {}
                 }
 
+                let proposedProductActions = [];
+                try {
+                  proposedProductActions = chatProductActionProposalService.buildProposedProductActions({
+                    riskLevel,
+                    isCrisis,
+                    userContent: content,
+                    sessionIntention: conversation?.sessionIntention,
+                    conversationId,
+                    assistantMessageId: assistantMessage._id
+                  });
+                } catch (propErr) {
+                  console.error('[ChatRoutes] proposedProductActions (stream):', propErr);
+                }
+
+                if (proposedProductActions.length > 0) {
+                  try {
+                    proposedProductActions =
+                      await chatProductActionLlmService.enrichProposedProductActionsWithLlm(
+                        proposedProductActions,
+                        { userContent: content, assistantContent: response.content }
+                      );
+                  } catch (llmPropErr) {
+                    console.warn('[ChatRoutes] proposedProductActions LLM (stream):', llmPropErr?.message || llmPropErr);
+                  }
+                  metricsService
+                    .recordMetric(
+                      'product_action_proposed',
+                      {
+                        count: proposedProductActions.length,
+                        types: proposedProductActions.map((a) => a.type),
+                        transport: 'sse'
+                      },
+                      req.user._id.toString(),
+                      { conversationId: String(conversationId) }
+                    )
+                    .catch(() => {});
+                }
+
                 res.write('data: ' + JSON.stringify({
                   done: true,
                   messageId: assistantMessage._id?.toString(),
                   content: response.content,
                   context: { emotional: emotionalAnalysis, contextual: contextualAnalysis },
                   suggestions: formattedSuggestions,
+                  proposedProductActions,
                   clinicalScale: scaleSuggestion ? { ...scaleSuggestion, suggestion: clinicalScalesService.generateScaleSuggestion(scaleSuggestion.scale, scaleSuggestion.reason), automaticResult: null } : null,
                   cognitiveDistortions: cognitiveDistortions?.length > 0 ? { detected: cognitiveDistortions, primary: primaryDistortion, intervention: distortionIntervention } : null,
                   processingTime: responseTime
@@ -1590,6 +1631,44 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             console.error('[ChatRoutes] Error generando sugerencias:', error);
           }
         }
+
+        let proposedProductActions = [];
+        try {
+          proposedProductActions = chatProductActionProposalService.buildProposedProductActions({
+            riskLevel,
+            isCrisis,
+            userContent: content,
+            sessionIntention: conversation?.sessionIntention,
+            conversationId,
+            assistantMessageId: assistantMessage._id
+          });
+        } catch (propErr) {
+          console.error('[ChatRoutes] proposedProductActions (non-stream):', propErr);
+        }
+
+        if (proposedProductActions.length > 0) {
+          try {
+            proposedProductActions =
+              await chatProductActionLlmService.enrichProposedProductActionsWithLlm(
+                proposedProductActions,
+                { userContent: content, assistantContent: response.content }
+              );
+          } catch (llmPropErr) {
+            console.warn('[ChatRoutes] proposedProductActions LLM (non-stream):', llmPropErr?.message || llmPropErr);
+          }
+          metricsService
+            .recordMetric(
+              'product_action_proposed',
+              {
+                count: proposedProductActions.length,
+                types: proposedProductActions.map((a) => a.type),
+                transport: 'http_json'
+              },
+              req.user._id.toString(),
+              { conversationId: String(conversationId) }
+            )
+            .catch(() => {});
+        }
         
         // Registrar métrica de tiempo de respuesta de forma asíncrona
         metricsService.recordMetric('response_generation', {
@@ -1607,6 +1686,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             contextual: contextualAnalysis
           },
           suggestions: formattedSuggestions, // Solo se incluyen si es apropiado
+          proposedProductActions,
           // NUEVO: Información de escalas clínicas y distorsiones cognitivas
           clinicalScale: scaleSuggestion ? {
             ...scaleSuggestion,

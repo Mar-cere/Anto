@@ -6,9 +6,12 @@
 
 import request from 'supertest';
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 import app from '../../../server.js';
 import User from '../../../models/User.js';
 import Task from '../../../models/Task.js';
+import Conversation from '../../../models/Conversation.js';
+import Message from '../../../models/Message.js';
 import {
   connectDatabase,
   clearDatabase,
@@ -134,6 +137,124 @@ describe('Task Routes', () => {
       expect(response.body).toHaveProperty('data');
       expect(response.body.data).toHaveProperty('title', taskData.title);
       expect(response.body.data).toHaveProperty('userId', testUser._id.toString());
+    });
+
+    it('debe devolver la misma tarea en segundo POST con el mismo clientRequestId', async () => {
+      const idem = `idem-task-${Date.now()}`;
+      const taskData = {
+        title: 'Tarea idempotente',
+        description: 'Reintento',
+        priority: 'medium',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        clientRequestId: idem,
+      };
+
+      const first = await request(app)
+        .post('/api/tasks')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(taskData)
+        .expect(201);
+      expect(first.body.data).toHaveProperty('_id');
+      expect(first.body.idempotentReplay).toBeUndefined();
+
+      const second = await request(app)
+        .post('/api/tasks')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ ...taskData, title: 'Otro título' })
+        .expect(200);
+
+      expect(second.body).toHaveProperty('idempotentReplay', true);
+      expect(second.body.data._id).toBe(first.body.data._id);
+      expect(second.body.data.title).toBe(taskData.title);
+    });
+
+    it('debe rechazar crear tarea con chatOrigin de conversación inexistente', async () => {
+      const fakeConv = new mongoose.Types.ObjectId().toString();
+      const fakeMsg = new mongoose.Types.ObjectId().toString();
+      const taskData = {
+        title: 'Tarea con origen inválido',
+        description: 'x',
+        priority: 'medium',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        chatOrigin: {
+          conversationId: fakeConv,
+          sourceMessageId: fakeMsg,
+          source: 'chat_v1'
+        }
+      };
+
+      const response = await request(app)
+        .post('/api/tasks')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(taskData)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('debe crear tarea con chatOrigin cuando conversación y mensaje existen y son del usuario', async () => {
+      const conversation = await Conversation.create({
+        userId: testUser._id,
+        status: 'active'
+      });
+      const assistantMessage = await Message.create({
+        userId: testUser._id,
+        conversationId: conversation._id,
+        role: 'assistant',
+        content: 'Respuesta del asistente para trazabilidad'
+      });
+
+      const taskData = {
+        title: 'Tarea con origen de chat válido',
+        description: 'Trazabilidad',
+        priority: 'medium',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        chatOrigin: {
+          conversationId: conversation._id.toString(),
+          sourceMessageId: assistantMessage._id.toString(),
+          source: 'chat_v1'
+        }
+      };
+
+      const response = await request(app)
+        .post('/api/tasks')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(taskData)
+        .expect(201);
+
+      expect(response.body.data).toHaveProperty('chatOrigin');
+      expect(String(response.body.data.chatOrigin.conversationId)).toBe(String(conversation._id));
+      expect(String(response.body.data.chatOrigin.sourceMessageId)).toBe(String(assistantMessage._id));
+      expect(response.body.data.chatOrigin.source).toBe('chat_v1');
+    });
+
+    it('debe rechazar chatOrigin si el mensaje no pertenece a esa conversación', async () => {
+      const convA = await Conversation.create({ userId: testUser._id, status: 'active' });
+      const convB = await Conversation.create({ userId: testUser._id, status: 'active' });
+      const msgInA = await Message.create({
+        userId: testUser._id,
+        conversationId: convA._id,
+        role: 'assistant',
+        content: 'Solo en conv A'
+      });
+
+      const taskData = {
+        title: 'Origen inconsistente',
+        description: 'x',
+        priority: 'medium',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        chatOrigin: {
+          conversationId: convB._id.toString(),
+          sourceMessageId: msgInA._id.toString(),
+          source: 'chat_v1'
+        }
+      };
+
+      await request(app)
+        .post('/api/tasks')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(taskData)
+        .expect(400);
     });
 
     it('debe rechazar crear tarea sin autenticación', async () => {

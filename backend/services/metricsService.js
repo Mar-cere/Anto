@@ -92,6 +92,12 @@ class MetricsService {
         clicked: 0,
         byType: {}
       },
+      /** Propuestas tarea/hábito desde chat (CONTRATO_CHAT_ACCIONES_V1). */
+      productActionProposals: {
+        events: 0,
+        proposalsEmitted: 0,
+        byTransport: {}
+      },
       responseGeneration: {
         total: 0,
         averageTime: 0,
@@ -313,6 +319,15 @@ class MetricsService {
           this.inMemoryMetrics.actionSuggestions.clicked++;
         }
         break;
+
+      case 'product_action_proposed': {
+        const pa = this.inMemoryMetrics.productActionProposals;
+        pa.events++;
+        pa.proposalsEmitted += Number(data.count) || 0;
+        const tr = data.transport || 'unknown';
+        pa.byTransport[tr] = (pa.byTransport[tr] || 0) + 1;
+        break;
+      }
 
       case 'response_generation':
         this.inMemoryMetrics.responseGeneration.total++;

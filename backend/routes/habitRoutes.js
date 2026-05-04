@@ -9,6 +9,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import { validateObjectId } from '../middleware/validation.js';
 import Habit from '../models/Habit.js';
 import User from '../models/User.js';
+import { validateChatOriginForUser } from '../utils/validateChatOriginForUser.js';
 
 const router = express.Router();
 
@@ -109,6 +110,33 @@ const notificationSchema = Joi.object({
     })
 });
 
+const chatOriginSchema = Joi.object({
+  conversationId: Joi.string()
+    .custom((value, helpers) => {
+      if (!value || !mongoose.Types.ObjectId.isValid(value)) {
+        return helpers.error('any.invalid');
+      }
+      return value;
+    }, 'conversationId ObjectId')
+    .required(),
+  sourceMessageId: Joi.string()
+    .custom((value, helpers) => {
+      if (!value || !mongoose.Types.ObjectId.isValid(value)) {
+        return helpers.error('any.invalid');
+      }
+      return value;
+    }, 'sourceMessageId ObjectId')
+    .required(),
+  source: Joi.string().valid('chat_v1').required()
+}).optional();
+
+const clientRequestIdSchema = Joi.string()
+  .trim()
+  .max(80)
+  .pattern(/^[a-zA-Z0-9_-]+$/)
+  .optional()
+  .allow(null, '');
+
 const habitSchema = Joi.object({
   title: Joi.string()
     .required()
@@ -184,7 +212,9 @@ const habitSchema = Joi.object({
       .messages({
         'any.only': 'Período no válido'
       })
-  }).optional()
+  }).optional(),
+  chatOrigin: chatOriginSchema.optional().allow(null),
+  clientRequestId: clientRequestIdSchema
 });
 
 // Obtener todos los hábitos del usuario con filtros
@@ -459,6 +489,10 @@ router.get('/monthly-progress', async (req, res) => {
   }
 });
 
+function isDuplicateKeyError(err) {
+  return Boolean(err && (err.code === 11000 || err.code === 11001));
+}
+
 // Crear nuevo hábito
 router.post('/', createHabitLimiter, async (req, res) => {
   try {
@@ -472,12 +506,42 @@ router.post('/', createHabitLimiter, async (req, res) => {
       });
     }
 
+    if (!value.clientRequestId) {
+      delete value.clientRequestId;
+    }
+
     // Asegurar que req.user._id sea un ObjectId válido
     const userId = mongoose.Types.ObjectId.isValid(req.user._id) 
       ? new mongoose.Types.ObjectId(req.user._id) 
       : req.user._id;
 
-    const habit = new Habit({
+    if (value.chatOrigin) {
+      const originOk = await validateChatOriginForUser(value.chatOrigin, req.user._id);
+      if (!originOk) {
+        return res.status(400).json({
+          success: false,
+          message: 'Origen de chat inválido: la conversación o el mensaje no existe o no pertenece al usuario'
+        });
+      }
+    }
+
+    if (value.clientRequestId) {
+      const existingHabit = await Habit.findOne({
+        userId,
+        clientRequestId: value.clientRequestId,
+        deletedAt: { $exists: false }
+      });
+      if (existingHabit) {
+        return res.status(200).json({
+          success: true,
+          message: 'Hábito ya registrado (reintento idempotente)',
+          data: existingHabit,
+          idempotentReplay: true
+        });
+      }
+    }
+
+    const habitPayload = {
       ...value,
       userId: userId,
       status: {
@@ -494,9 +558,36 @@ router.post('/', createHabitLimiter, async (req, res) => {
         ...value.reminder,
         lastNotified: null
       }
-    });
+    };
+    if (value.chatOrigin) {
+      habitPayload.chatOrigin = {
+        conversationId: new mongoose.Types.ObjectId(value.chatOrigin.conversationId),
+        sourceMessageId: new mongoose.Types.ObjectId(value.chatOrigin.sourceMessageId),
+        source: value.chatOrigin.source
+      };
+    }
+    const habit = new Habit(habitPayload);
 
-    await habit.save();
+    try {
+      await habit.save();
+    } catch (saveErr) {
+      if (isDuplicateKeyError(saveErr) && value.clientRequestId) {
+        const replay = await Habit.findOne({
+          userId,
+          clientRequestId: value.clientRequestId,
+          deletedAt: { $exists: false }
+        });
+        if (replay) {
+          return res.status(200).json({
+            success: true,
+            message: 'Hábito ya registrado (reintento idempotente)',
+            data: replay,
+            idempotentReplay: true
+          });
+        }
+      }
+      throw saveErr;
+    }
     res.status(201).json({ 
       success: true, 
       data: habit,
@@ -523,6 +614,21 @@ router.put('/:id', validateObjectId, updateHabitLimiter, async (req, res) => {
         message: 'Datos inválidos', 
         errors: error.details.map(detail => detail.message)
       });
+    }
+
+    if (value.chatOrigin) {
+      const originOk = await validateChatOriginForUser(value.chatOrigin, req.user._id);
+      if (!originOk) {
+        return res.status(400).json({
+          success: false,
+          message: 'Origen de chat inválido: la conversación o el mensaje no existe o no pertenece al usuario'
+        });
+      }
+      value.chatOrigin = {
+        conversationId: new mongoose.Types.ObjectId(value.chatOrigin.conversationId),
+        sourceMessageId: new mongoose.Types.ObjectId(value.chatOrigin.sourceMessageId),
+        source: value.chatOrigin.source
+      };
     }
 
     // Asegurar que req.user._id sea un ObjectId válido

@@ -5,7 +5,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 import { api, ENDPOINTS } from '../config/api';
 import { ROUTES } from '../constants/routes';
@@ -18,10 +18,14 @@ import {
   SESSION_EXPIRED_DELAY,
   TEXTS,
 } from '../screens/habits/habitsScreenConstants';
+import { isValidClientRequestId } from '../utils/clientRequestId';
 
 export function useHabitsScreen({ route, navigation }) {
   const { isConnected, isInternetReachable } = useNetworkStatus();
   const isOffline = !isConnected || isInternetReachable === false;
+  const habitChatOriginRef = useRef(null);
+  const habitClientRequestIdRef = useRef(null);
+  const [habitModalReminderIso, setHabitModalReminderIso] = useState(null);
 
   const [habits, setHabits] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -75,6 +79,37 @@ export function useHabitsScreen({ route, navigation }) {
     }
   }, [route.params?.openModal, navigation]);
 
+  useEffect(() => {
+    const d = route.params?.chatHabitDraft;
+    const origin = route.params?.habitChatOrigin;
+    const idem = route.params?.habitClientRequestId;
+    if (d && typeof d === 'object') {
+      habitChatOriginRef.current = origin || null;
+      habitClientRequestIdRef.current =
+        typeof idem === 'string' && isValidClientRequestId(idem.trim()) ? idem.trim() : null;
+      setFormData((prev) => ({
+        ...prev,
+        title: d.title || '',
+        description: d.description || '',
+        icon: d.icon || 'meditation',
+        frequency: d.frequency || 'daily',
+        reminder: d.reminder?.time || prev.reminder,
+      }));
+      setHabitModalReminderIso(d.reminder?.time || null);
+      setModalVisible(true);
+      navigation.setParams({
+        chatHabitDraft: undefined,
+        habitChatOrigin: undefined,
+        habitClientRequestId: undefined,
+      });
+    }
+  }, [
+    route.params?.chatHabitDraft,
+    route.params?.habitChatOrigin,
+    route.params?.habitClientRequestId,
+    navigation,
+  ]);
+
   const onRefresh = useCallback(() => loadHabits(true), [loadHabits]);
 
   const handleHabitPress = useCallback(
@@ -97,13 +132,29 @@ export function useHabitsScreen({ route, navigation }) {
           frequency: data.frequency,
           reminder: data.reminder,
         };
+        if (habitChatOriginRef.current) {
+          newHabit.chatOrigin = habitChatOriginRef.current;
+        }
+        if (habitClientRequestIdRef.current) {
+          newHabit.clientRequestId = habitClientRequestIdRef.current;
+        }
         const result = await api.post(ENDPOINTS.HABITS, newHabit);
         const createdHabit = result.data;
-        setHabits((prev) => [createdHabit, ...prev]);
+        setHabits((prev) => {
+          if (result.idempotentReplay && prev.some((h) => h._id === createdHabit._id)) {
+            return prev;
+          }
+          return [createdHabit, ...prev];
+        });
         setModalVisible(false);
         setFormData(getDefaultFormData());
+        habitChatOriginRef.current = null;
+        habitClientRequestIdRef.current = null;
+        setHabitModalReminderIso(null);
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        await scheduleHabitNotification(createdHabit);
+        if (!result.idempotentReplay) {
+          await scheduleHabitNotification(createdHabit);
+        }
       } catch (err) {
         console.error('Error al crear hábito:', err);
         Alert.alert(
@@ -180,6 +231,9 @@ export function useHabitsScreen({ route, navigation }) {
   );
 
   const resetForm = useCallback(() => {
+    habitChatOriginRef.current = null;
+    habitClientRequestIdRef.current = null;
+    setHabitModalReminderIso(null);
     setFormData(getDefaultFormData());
   }, []);
 
@@ -208,5 +262,6 @@ export function useHabitsScreen({ route, navigation }) {
     handleDeleteHabit,
     resetForm,
     openModal,
+    habitModalReminderIso,
   };
 }

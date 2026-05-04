@@ -26,6 +26,7 @@ export const TEXTS = {
   DELETE: 'Borrar',
   TITLE: 'Anto',
   SUGGESTIONS_TITLE: '💡 Sugerencias para ti:',
+  PRODUCT_ACTIONS_TITLE: '✅ Podés llevarlo a la app:',
   NETWORK_ERROR: 'Sin conexión a internet. Por favor, verifica tu conexión e intenta nuevamente.',
   OFFLINE_PENDING_ONE:
     'Tienes 1 mensaje pendiente. Se enviará al reconectar o puedes reintentar cuando haya conexión.',

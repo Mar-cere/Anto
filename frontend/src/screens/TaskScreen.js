@@ -33,6 +33,7 @@ import { useToast } from '../context/ToastContext';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getApiErrorMessage, isAuthError } from '../utils/apiErrorHandler';
+import { isValidClientRequestId } from '../utils/clientRequestId';
 import { colors } from '../styles/globalStyles';
 
 // Constantes de prioridad
@@ -162,6 +163,8 @@ const TaskScreen = ({ route }) => {
   const [formData, setFormData] = useState(DEFAULT_FORM_DATA);
   const navigation = useNavigation();
   const flatListRef = useRef(null);
+  const pendingChatOriginRef = useRef(null);
+  const pendingClientRequestIdRef = useRef(null);
   const { showToast } = useToast();
 
   // Cargar items desde la API
@@ -228,13 +231,34 @@ const TaskScreen = ({ route }) => {
   );
 
   useEffect(() => {
-    const { mode, task, taskId } = route.params || {};
+    const { mode, task, taskId, initialTaskDraft, taskChatOrigin, taskClientRequestId } =
+      route.params || {};
     if (mode === 'view' && taskId) {
       setState(prev => ({ ...prev, selectedItem: task, detailModalVisible: true }));
+    } else if (mode === 'create' && initialTaskDraft) {
+      const due = initialTaskDraft.dueDate ? new Date(initialTaskDraft.dueDate) : new Date();
+      pendingChatOriginRef.current = taskChatOrigin || null;
+      pendingClientRequestIdRef.current =
+        taskClientRequestId && isValidClientRequestId(taskClientRequestId) ? taskClientRequestId : null;
+      setFormData((prev) => ({
+        ...prev,
+        title: initialTaskDraft.title || '',
+        description: initialTaskDraft.description || '',
+        dueDate: due,
+        priority: initialTaskDraft.priority || PRIORITY_VALUES.MEDIUM,
+        itemType: initialTaskDraft.itemType || ITEM_TYPES.TASK,
+      }));
+      setState((prev) => ({ ...prev, modalVisible: true }));
+      navigation.setParams({
+        mode: undefined,
+        initialTaskDraft: undefined,
+        taskChatOrigin: undefined,
+        taskClientRequestId: undefined,
+      });
     } else if (mode === 'create') {
       setState(prev => ({ ...prev, modalVisible: true }));
     }
-  }, [route.params]);
+  }, [route.params, navigation]);
 
   // Crear tarea o recordatorio
   const handleSubmit = async (data) => {
@@ -248,12 +272,22 @@ const TaskScreen = ({ route }) => {
         repeat: data.repeat,
         notifications: data.notifications
       };
+      if (pendingChatOriginRef.current) {
+        requestData.chatOrigin = pendingChatOriginRef.current;
+      }
+      if (pendingClientRequestIdRef.current) {
+        requestData.clientRequestId = pendingClientRequestIdRef.current;
+      }
 
       const response = await api.post(ENDPOINTS.TASKS, requestData);
       setState(prev => ({ ...prev, modalVisible: false }));
-      
-      // Programar notificación
-      await scheduleTaskNotification(response.data);
+      pendingChatOriginRef.current = null;
+      pendingClientRequestIdRef.current = null;
+
+      // Programar notificación (omitir en replay idempotente: ya programada en el primer 201)
+      if (!response.idempotentReplay) {
+        await scheduleTaskNotification(response.data);
+      }
       
       // Recargar lista
       await loadItems();

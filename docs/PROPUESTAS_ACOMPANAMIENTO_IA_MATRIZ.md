@@ -36,6 +36,25 @@ Resumen de avances aplicados en el sistema conversacional durante esta iteració
 | 109 | Versionado prompts rollback | Pendiente | No se implementó versionado operativo ni rollback one-click en esta ronda. |
 | 119 | Dataset eval + CI regresión | Parcial | Se añadieron tests unitarios específicos para reglas de turnos, resistencia y defaults configurables por `env`. |
 
+### Inventario: sugerencias tras el mensaje (Mayo 2026)
+
+Constatación técnica: las **sugerencias post-mensaje** actuales **no** crean tareas ni hábitos ni abren Pomodoro; conectan el análisis emocional/contextual con **atajos a técnicas** (y, si no hay pantalla, texto en el input). Sirve de baseline frente a **#51–#54** (chat ↔ tareas, hábitos, Pomodoro) y **#73** (mensajes enriquecidos / acciones tipadas).
+
+| Pieza | Ubicación | Comportamiento |
+|-------|-----------|----------------|
+| Generación | `backend/services/actionSuggestionService.js` | Mapea emoción + intensidad + tema → IDs de acción (`breathing_exercise`, `task_break`, `task_organization`, etc.). |
+| Formato UI | `formatSuggestions` (mismo servicio) | Cada ítem: `id`, `label`, `icon`, `screen` (nombre de pantalla React Navigation) o `screen: null`. |
+| Pantallas enlazadas | Mismo archivo | Mayormente técnicas (p. ej. `BreathingExercise`, `GroundingTechnique`, `ActivitySuggestion`, …). `task_organization` y `time_management` tienen `screen: null`. No hay entradas que apunten a listas CRUD de tareas/hábitos ni a Pomodoro. |
+| Cuándo se muestran | `backend/routes/chatRoutes.js` + `shouldShowActionSuggestions` | Condicionado a reglas de análisis emocional/contextual/historial. En el flujo **SSE** (`stream=true`), las sugerencias van en el evento final `done`. |
+| Invitado | `backend/services/guestChatService.js` | El payload de respuesta **no** incluye `suggestions` (diferencia respecto al chat autenticado por HTTP). |
+| Socket.IO (chat) | `backend/config/socket.js` | Emite respuesta de texto y, desde mayo 2026, **`proposedProductActions`** alineados a `chatRoutes` (misma heurística + mismo enriquecimiento LLM opcional). Las **sugerencias de técnicas** (`suggestions`) siguen siendo principalmente camino HTTP/SSE; revisar unificación si hay clientes solo-socket. |
+| Métricas | `backend/services/metricsService.js` | Eventos tipo `action_suggestion` con `suggestionType`. |
+| UI | `frontend/src/components/ActionSuggestionCard.js`, `frontend/src/screens/ChatScreen.js` | `handleSuggestionPress`: si hay `suggestion.screen` → `navigation.navigate`; si no → rellena el input con texto tipo “Quiero probar: …”. |
+
+**Contrato aparte (propuestas productivas tarea/hábito):** [CONTRATO_CHAT_ACCIONES_V1.md](./CONTRATO_CHAT_ACCIONES_V1.md) (v1.1: transporte `proposedProductActions`, `chatOrigin`, **`clientRequestId` / `idempotentReplay`** en confirmación, **refinamiento opcional de `draft` con LLM** en servidor y variables `CHAT_PRODUCT_ACTION_LLM` / `OPENAI_PRODUCT_ACTION_MODEL`).
+
+**Estado técnico #52–#53 (Mayo 2026):** flujo A→B→C implementado en app autenticada; invitado sin `proposedProductActions`; crisis / riesgo MEDIUM–HIGH sin oferta; tests de idempotencia en `POST` tareas/hábitos y tests unitarios de heurística, merge LLM y servicio LLM (mock).
+
 ## 1. Catálogo de propuestas (200)
 
 Cada **descripción breve** incluye, al final, la misma frase de **contexto de roadmap** (hipótesis de valor, owners, métricas mínimas y dependencias cruzadas en la matriz). Sirve como checklist de planificación; se puede sustituir por texto específico por fila cuando el equipo priorice una fila concreta.

@@ -9,6 +9,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import { validateObjectId } from '../middleware/validation.js';
 import Task from '../models/Task.js';
 import User from '../models/User.js';
+import { validateChatOriginForUser } from '../utils/validateChatOriginForUser.js';
 
 const router = express.Router();
 
@@ -147,6 +148,34 @@ const repeatSchema = Joi.object({
   ).optional()
 });
 
+const chatOriginSchema = Joi.object({
+  conversationId: Joi.string()
+    .custom((value, helpers) => {
+      if (!value || !mongoose.Types.ObjectId.isValid(value)) {
+        return helpers.error('any.invalid');
+      }
+      return value;
+    }, 'conversationId ObjectId')
+    .required(),
+  sourceMessageId: Joi.string()
+    .custom((value, helpers) => {
+      if (!value || !mongoose.Types.ObjectId.isValid(value)) {
+        return helpers.error('any.invalid');
+      }
+      return value;
+    }, 'sourceMessageId ObjectId')
+    .required(),
+  source: Joi.string().valid('chat_v1').required()
+}).optional();
+
+/** Clave opcional de idempotencia (creación desde chat, reintentos de red). */
+const clientRequestIdSchema = Joi.string()
+  .trim()
+  .max(80)
+  .pattern(/^[a-zA-Z0-9_-]+$/)
+  .optional()
+  .allow(null, '');
+
 const taskSchema = Joi.object({
   title: Joi.string()
     .min(1)
@@ -226,7 +255,9 @@ const taskSchema = Joi.object({
     }, 'ID de tarea padre inválido')
     .optional(),
   notifications: notificationSchema.default({}),
-  repeat: repeatSchema.default({})
+  repeat: repeatSchema.default({}),
+  chatOrigin: chatOriginSchema.optional().allow(null),
+  clientRequestId: clientRequestIdSchema
 });
 
 const updateTaskSchema = taskSchema.fork(
@@ -331,6 +362,10 @@ router.get('/', async (req, res) => {
   }
 });
 
+function isDuplicateKeyError(err) {
+  return Boolean(err && (err.code === 11000 || err.code === 11001));
+}
+
 // Crear una nueva tarea o recordatorio
 router.post('/', createTaskLimiter, async (req, res) => {
   try {
@@ -343,11 +378,45 @@ router.post('/', createTaskLimiter, async (req, res) => {
       });
     }
 
+    if (value.chatOrigin) {
+      const originOk = await validateChatOriginForUser(value.chatOrigin, req.user._id);
+      if (!originOk) {
+        return res.status(400).json({
+          message: 'Origen de chat inválido: la conversación o el mensaje no existe o no pertenece al usuario'
+        });
+      }
+    }
+
+    if (!value.clientRequestId) {
+      delete value.clientRequestId;
+    } else {
+      const existingTask = await Task.findOne({
+        userId: req.user._id,
+        clientRequestId: value.clientRequestId,
+        deletedAt: { $exists: false }
+      });
+      if (existingTask) {
+        return res.status(200).json({
+          success: true,
+          message: 'Tarea ya registrada (reintento idempotente)',
+          data: existingTask,
+          idempotentReplay: true
+        });
+      }
+    }
+
     // Preparar datos para el modelo
     const itemData = {
       ...value,
       userId: req.user._id
     };
+    if (value.chatOrigin) {
+      itemData.chatOrigin = {
+        conversationId: new mongoose.Types.ObjectId(value.chatOrigin.conversationId),
+        sourceMessageId: new mongoose.Types.ObjectId(value.chatOrigin.sourceMessageId),
+        source: value.chatOrigin.source
+      };
+    }
 
     // Validaciones específicas por tipo
     if (itemData.itemType === 'reminder') {
@@ -364,7 +433,26 @@ router.post('/', createTaskLimiter, async (req, res) => {
     }
 
     const task = new Task(itemData);
-    await task.save();
+    try {
+      await task.save();
+    } catch (saveErr) {
+      if (isDuplicateKeyError(saveErr) && value.clientRequestId) {
+        const replay = await Task.findOne({
+          userId: req.user._id,
+          clientRequestId: value.clientRequestId,
+          deletedAt: { $exists: false }
+        });
+        if (replay) {
+          return res.status(200).json({
+            success: true,
+            message: 'Tarea ya registrada (reintento idempotente)',
+            data: replay,
+            idempotentReplay: true
+          });
+        }
+      }
+      throw saveErr;
+    }
 
     res.status(201).json({ 
       success: true, 
@@ -532,6 +620,20 @@ router.put('/:id', validateObjectId, updateTaskLimiter, async (req, res) => {
         message: 'Datos inválidos',
         errors: error.details.map(detail => detail.message)
       });
+    }
+
+    if (value.chatOrigin) {
+      const originOk = await validateChatOriginForUser(value.chatOrigin, req.user._id);
+      if (!originOk) {
+        return res.status(400).json({
+          message: 'Origen de chat inválido: la conversación o el mensaje no existe o no pertenece al usuario'
+        });
+      }
+      value.chatOrigin = {
+        conversationId: new mongoose.Types.ObjectId(value.chatOrigin.conversationId),
+        sourceMessageId: new mongoose.Types.ObjectId(value.chatOrigin.sourceMessageId),
+        source: value.chatOrigin.source
+      };
     }
 
     // No permitir cambiar tipo ni usuario

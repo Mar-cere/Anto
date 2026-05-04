@@ -37,6 +37,9 @@ import {
 } from '../services/chatOfflinePending';
 import { useToast } from '../context/ToastContext';
 import { isValidSessionIntentionId } from '../constants/sessionIntention';
+import { newClientRequestId } from '../utils/clientRequestId';
+import { isValidMongoObjectId24 } from '../utils/mongoId';
+import { sanitizeProposedProductActions } from '../utils/sanitizeProposedProductActions';
 
 export function useChatScreen() {
   const navigation = useNavigation();
@@ -419,6 +422,54 @@ export function useChatScreen() {
     [isOffline, showToast]
   );
 
+  const handleProductProposalPress = useCallback(
+    async (action, proposalsMessage) => {
+      try {
+        const convId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+        const assistantMessageId = proposalsMessage?.metadata?.assistantMessageId;
+        if (
+          !convId ||
+          !assistantMessageId ||
+          !isValidMongoObjectId24(convId) ||
+          !isValidMongoObjectId24(assistantMessageId)
+        ) {
+          return;
+        }
+        if (
+          !action ||
+          typeof action !== 'object' ||
+          !action.draft ||
+          typeof action.draft !== 'object' ||
+          Array.isArray(action.draft)
+        ) {
+          return;
+        }
+        const origin = {
+          conversationId: String(convId),
+          sourceMessageId: String(assistantMessageId),
+          source: 'chat_v1',
+        };
+        if (action?.type === 'propose_task' && action.draft) {
+          navigation.navigate('Tasks', {
+            mode: 'create',
+            initialTaskDraft: action.draft,
+            taskChatOrigin: origin,
+            taskClientRequestId: newClientRequestId(),
+          });
+        } else if (action?.type === 'propose_habit' && action.draft) {
+          navigation.navigate('Habits', {
+            chatHabitDraft: action.draft,
+            habitChatOrigin: origin,
+            habitClientRequestId: newClientRequestId(),
+          });
+        }
+      } catch (e) {
+        console.warn('[useChatScreen] product proposal:', e?.message || e);
+      }
+    },
+    [navigation]
+  );
+
   const handleSend = useCallback(async (presetText) => {
     const messageText =
       typeof presetText === 'string' && presetText.trim() !== ''
@@ -571,6 +622,19 @@ export function useChatScreen() {
                 type: 'suggestions',
                 suggestions: payload.suggestions,
                 metadata: { timestamp: new Date().toISOString() },
+              });
+            }
+            const ppa = sanitizeProposedProductActions(payload.proposedProductActions);
+            if (ppa.length > 0) {
+              next.push({
+                id: `product-proposals-${Date.now()}`,
+                role: 'suggestions',
+                type: 'product_proposals',
+                proposedProductActions: ppa,
+                metadata: {
+                  timestamp: new Date().toISOString(),
+                  assistantMessageId: payload.messageId,
+                },
               });
             }
             return next;
@@ -1199,6 +1263,7 @@ export function useChatScreen() {
     retryOfflinePending,
     chatFeedbackEnabled,
     handleMessageFeedback,
+    handleProductProposalPress,
     feedbackSubmittingId,
     showSessionIntentionPrompt,
     sessionIntentionSubmitting,

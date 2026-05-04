@@ -126,6 +126,31 @@ const habitSchema = new mongoose.Schema({
     required: [true, 'El usuario es requerido'],
     index: true
   },
+  /** Origen en chat (CONTRATO_CHAT_ACCIONES_V1); opcional. */
+  chatOrigin: {
+    conversationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Conversation',
+      default: undefined
+    },
+    sourceMessageId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Message',
+      default: undefined
+    },
+    source: {
+      type: String,
+      enum: ['chat_v1'],
+      default: undefined
+    }
+  },
+  /** Idempotencia de creación (mismo usuario + misma clave → un solo hábito activo). */
+  clientRequestId: {
+    type: String,
+    trim: true,
+    maxlength: 80,
+    default: undefined
+  },
   // Soft delete (no se incluye en consultas por defecto)
   deletedAt: {
     type: Date,
@@ -143,6 +168,16 @@ habitSchema.index({ userId: 1, frequency: 1 });
 habitSchema.index({ 'reminder.time': 1 });
 habitSchema.index({ 'status.completedToday': 1 });
 habitSchema.index({ 'progress.streak': -1 });
+habitSchema.index(
+  { userId: 1, clientRequestId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      clientRequestId: { $type: 'string', $gt: '' },
+      deletedAt: { $exists: false }
+    }
+  }
+);
 
 // Virtuals: propiedades calculadas al acceder
 habitSchema.virtual('isActive').get(function() {
