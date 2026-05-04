@@ -1,8 +1,16 @@
 /**
  * Servicio de Programación de Notificaciones
- * 
+ *
  * Gestiona la programación automática de notificaciones recurrentes
- * basadas en preferencias del usuario y comportamiento
+ * basadas en preferencias del usuario y comportamiento.
+ *
+ * Espaciado (variables de entorno, valores por defecto más conservadores):
+ * - `NOTIFICATION_DAILY_MAX_PER_USER` — tope diario (default 3, máx. 20).
+ * - `NOTIFICATION_MIN_HOURS_BETWEEN_ROUTINE` — horas mínimas entre avisos de rutina/bienestar (default 5; 0 = desactiva).
+ * - `NOTIFICATION_INACTIVITY_POLL_HOURS` — cada cuántas horas se revisa inactividad (default 2).
+ * - `NOTIFICATION_INACTIVITY_THRESHOLD_HOURS` — horas sin actividad para considerar inactivo (default 72).
+ * - `NOTIFICATION_TASKS_DUE_TOMORROW_MAX` — máx. tareas avisadas por usuario al día (default 2).
+ * - `NOTIFICATION_BETWEEN_SESSIONS_COOLDOWN_HOURS` — no repetir nudge entre sesiones (default 48).
  */
 
 import mongoose from 'mongoose';
@@ -15,16 +23,46 @@ class NotificationScheduler {
   constructor() {
     // Intervalo para verificar notificaciones programadas (cada minuto)
     this.CHECK_INTERVAL_MS = 60 * 1000;
-    
-    // Intervalo para verificar usuarios inactivos (cada hora)
-    this.INACTIVITY_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
-    // Tope diario duro por usuario para evitar saturación
-    const rawDailyMax = parseInt(process.env.NOTIFICATION_DAILY_MAX_PER_USER || '5', 10);
+    const pollHoursRaw = parseInt(process.env.NOTIFICATION_INACTIVITY_POLL_HOURS || '2', 10);
+    const pollHours = Number.isFinite(pollHoursRaw) && pollHoursRaw >= 1 ? Math.min(24, pollHoursRaw) : 2;
+    this.INACTIVITY_CHECK_INTERVAL_MS = pollHours * 60 * 60 * 1000;
+
+    const rawDailyMax = parseInt(process.env.NOTIFICATION_DAILY_MAX_PER_USER || '3', 10);
     this.DAILY_MAX_PER_USER = Number.isFinite(rawDailyMax)
       ? Math.min(20, Math.max(1, rawDailyMax))
-      : 5;
-    
+      : 3;
+
+    const minGapRaw = parseInt(process.env.NOTIFICATION_MIN_HOURS_BETWEEN_ROUTINE || '5', 10);
+    this.MIN_HOURS_BETWEEN_ROUTINE =
+      Number.isFinite(minGapRaw) && minGapRaw >= 0 ? Math.min(24, minGapRaw) : 5;
+
+    const inactThRaw = parseInt(process.env.NOTIFICATION_INACTIVITY_THRESHOLD_HOURS || '72', 10);
+    this.INACTIVITY_THRESHOLD_HOURS =
+      Number.isFinite(inactThRaw) && inactThRaw >= 24 ? Math.min(336, inactThRaw) : 72;
+
+    const taskCapRaw = parseInt(process.env.NOTIFICATION_TASKS_DUE_TOMORROW_MAX || '2', 10);
+    this.TASKS_DUE_TOMORROW_MAX =
+      Number.isFinite(taskCapRaw) && taskCapRaw >= 1 ? Math.min(10, taskCapRaw) : 2;
+
+    const bsCoolRaw = parseInt(process.env.NOTIFICATION_BETWEEN_SESSIONS_COOLDOWN_HOURS || '48', 10);
+    this.BETWEEN_SESSIONS_COOLDOWN_HOURS =
+      Number.isFinite(bsCoolRaw) && bsCoolRaw >= 6 ? Math.min(168, bsCoolRaw) : 48;
+
+    const T = pushNotificationService.NOTIFICATION_TYPES;
+    /** Tipos de rutina/bienestar que comparten el espaciado mínimo entre sí (no incluye tareas). */
+    this.ROUTINE_SPACING_TYPES = [
+      T.MORNING_MOTIVATION,
+      T.EVENING_REFLECTION,
+      T.HYDRATION_REMINDER,
+      T.MIDDAY_MOTIVATION,
+      T.MOVEMENT_BREAK,
+      T.SLEEP_ROUTINE_REMINDER,
+      T.DAILY_CHECKIN,
+      T.GRATITUDE_REMINDER,
+      T.WEEKLY_REFLECTION
+    ];
+
     this.isRunning = false;
   }
 
@@ -73,7 +111,40 @@ class NotificationScheduler {
   }
 
   /**
-   * Tareas con vencimiento mañana: un aviso por tarea (máx. 5 por usuario), deduplicado por engagement reciente.
+   * Evita ráfagas: no enviar otro aviso de rutina/bienestar si hace poco hubo uno del mismo grupo.
+   * Las tareas (`TASK_DUE_SOON`) no aplican esta regla.
+   * @param {import('mongoose').Types.ObjectId|string} userId
+   * @param {string} notificationType
+   */
+  async _routineSpacingAllows(userId, notificationType) {
+    const T = pushNotificationService.NOTIFICATION_TYPES;
+    if (notificationType === T.TASK_DUE_SOON) {
+      return true;
+    }
+    if (!this.MIN_HOURS_BETWEEN_ROUTINE || this.MIN_HOURS_BETWEEN_ROUTINE <= 0) {
+      return true;
+    }
+    if (!this.ROUTINE_SPACING_TYPES.includes(notificationType)) {
+      return true;
+    }
+    const minMs = this.MIN_HOURS_BETWEEN_ROUTINE * 60 * 60 * 1000;
+    const last = await NotificationEngagement.findOne({
+      userId,
+      status: 'sent',
+      notificationType: { $in: this.ROUTINE_SPACING_TYPES }
+    })
+      .sort({ sentAt: -1 })
+      .select('sentAt')
+      .lean();
+    if (!last?.sentAt) {
+      return true;
+    }
+    const elapsed = Date.now() - new Date(last.sentAt).getTime();
+    return elapsed >= minMs;
+  }
+
+  /**
+   * Tareas con vencimiento mañana: un aviso por tarea (tope configurable por usuario), deduplicado por engagement reciente.
    */
   async notifyTasksDueTomorrow() {
     const types = pushNotificationService.NOTIFICATION_TYPES;
@@ -97,7 +168,7 @@ class NotificationScheduler {
       const uid = String(t.userId);
       if (!perUser.has(uid)) perUser.set(uid, []);
       const arr = perUser.get(uid);
-      if (arr.length < 5) arr.push(t);
+      if (arr.length < this.TASKS_DUE_TOMORROW_MAX) arr.push(t);
     }
 
     const since = new Date(Date.now() - 28 * 60 * 60 * 1000);
@@ -272,21 +343,17 @@ class NotificationScheduler {
             }
           }
 
-          // Hasta 4 franjas fijas diarias (motivationalMessages), además de mañana/tarde configurables
-          if (this._wellnessTypesEnabled(user) && h === 12 && m === 0) {
-            const sentOk = await this.sendScheduledNotification(user._id, user.pushToken, T.HYDRATION_REMINDER, { timeOfDay: 'noon' });
+          // Hasta 2 franjas fijas diarias de bienestar (antes 4 en ventana corta), además de mañana/tarde configurables
+          if (this._wellnessTypesEnabled(user) && h === 14 && m === 0) {
+            const sentOk = await this.sendScheduledNotification(user._id, user.pushToken, T.MIDDAY_MOTIVATION, {
+              timeOfDay: 'midday'
+            });
             if (sentOk) results.sent++;
           }
-          if (this._wellnessTypesEnabled(user) && h === 13 && m === 0) {
-            const sentOk = await this.sendScheduledNotification(user._id, user.pushToken, T.MIDDAY_MOTIVATION, { timeOfDay: 'midday' });
-            if (sentOk) results.sent++;
-          }
-          if (this._wellnessTypesEnabled(user) && h === 15 && m === 0) {
-            const sentOk = await this.sendScheduledNotification(user._id, user.pushToken, T.MOVEMENT_BREAK, { timeOfDay: 'afternoon' });
-            if (sentOk) results.sent++;
-          }
-          if (this._wellnessTypesEnabled(user) && h === 21 && m === 30) {
-            const sentOk = await this.sendScheduledNotification(user._id, user.pushToken, T.SLEEP_ROUTINE_REMINDER, { timeOfDay: 'night' });
+          if (this._wellnessTypesEnabled(user) && h === 21 && m === 0) {
+            const sentOk = await this.sendScheduledNotification(user._id, user.pushToken, T.SLEEP_ROUTINE_REMINDER, {
+              timeOfDay: 'night'
+            });
             if (sentOk) results.sent++;
           }
 
@@ -327,6 +394,11 @@ class NotificationScheduler {
     try {
       const canSend = await this._canSendMoreToday(userId);
       if (!canSend) {
+        return false;
+      }
+
+      const spacingOk = await this._routineSpacingAllows(userId, notificationType);
+      if (!spacingOk) {
         return false;
       }
 
@@ -484,10 +556,13 @@ class NotificationScheduler {
         const alreadySentRecently = await this._hasRecentNotificationOfType(
           userId,
           notificationType,
-          24
+          this.BETWEEN_SESSIONS_COOLDOWN_HOURS
         );
         if (alreadySentRecently) {
-          return { success: false, reason: 'Ya se envió un mensaje entre sesiones en las últimas 24h' };
+          return {
+            success: false,
+            reason: `Ya se envió un mensaje entre sesiones en las últimas ${this.BETWEEN_SESSIONS_COOLDOWN_HOURS}h`
+          };
         }
       }
 
@@ -550,7 +625,7 @@ class NotificationScheduler {
    */
   async checkInactiveUsers() {
     try {
-      const hoursThreshold = 48; // 48 horas de inactividad
+      const hoursThreshold = this.INACTIVITY_THRESHOLD_HOURS;
       const thresholdDate = new Date();
       thresholdDate.setHours(thresholdDate.getHours() - hoursThreshold);
 

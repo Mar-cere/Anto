@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="4" failures="0" errors="0" time="0.091">
-  <testsuite name="escapeHtmlText" errors="0" failures="0" skipped="0" timestamp="2026-05-04T04:50:11" time="0.07" tests="4">
-    <testcase classname="escapeHtmlText escapa caracteres HTML" name="escapeHtmlText escapa caracteres HTML" time="0">
+<testsuites name="jest tests" tests="5" failures="0" errors="0" time="0.256">
+  <testsuite name="NotificationScheduler Service" errors="0" failures="0" skipped="0" timestamp="2026-05-04T04:59:57" time="0.237" tests="5">
+    <testcase classname="NotificationScheduler Service Métodos del servicio debe tener métodos exportados" name="NotificationScheduler Service Métodos del servicio debe tener métodos exportados" time="0.001">
     </testcase>
-    <testcase classname="weeklyEmailSubjectIndex / buildWeeklySummarySubjectLine rota asunto según semana ISO sin datos personales" name="weeklyEmailSubjectIndex / buildWeeklySummarySubjectLine rota asunto según semana ISO sin datos personales" time="0">
+    <testcase classname="NotificationScheduler Service Límite diario por usuario bloquea envío cuando el usuario ya alcanzó el tope diario" name="NotificationScheduler Service Límite diario por usuario bloquea envío cuando el usuario ya alcanzó el tope diario" time="0.002">
     </testcase>
-    <testcase classname="buildWeeklySummaryEmailContext incluye preheader, beneficios y cierre sin filtrar stats del usuario" name="buildWeeklySummaryEmailContext incluye preheader, beneficios y cierre sin filtrar stats del usuario" time="0.001">
+    <testcase classname="NotificationScheduler Service Límite diario por usuario permite envío cuando el usuario está bajo el tope diario" name="NotificationScheduler Service Límite diario por usuario permite envío cuando el usuario está bajo el tope diario" time="0.002">
     </testcase>
-    <testcase classname="buildWeeklySummaryEmailContext usa username si no hay nombre" name="buildWeeklySummaryEmailContext usa username si no hay nombre" time="0">
+    <testcase classname="NotificationScheduler Service Mensajes entre sesiones (#31) usa between_sessions_nudge para inactividad &gt; 48h" name="NotificationScheduler Service Mensajes entre sesiones (#31) usa between_sessions_nudge para inactividad &gt; 48h" time="0.004">
+    </testcase>
+    <testcase classname="NotificationScheduler Service Mensajes entre sesiones (#31) no envía between_sessions_nudge si ya hubo uno en la ventana de cooldown" name="NotificationScheduler Service Mensajes entre sesiones (#31) no envía between_sessions_nudge si ya hubo uno en la ventana de cooldown" time="0">
     </testcase>
   </testsuite>
 </testsuites>

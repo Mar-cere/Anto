@@ -10,8 +10,10 @@ import pushNotificationService from './pushNotificationService.js';
 export const DELAY_MIN_MS = 2 * 60 * 1000;
 export const DELAY_MAX_MS = 5 * 60 * 1000;
 export const PROCESS_INTERVAL_MS = 60 * 1000;
-/** Evita saturar si hubo varios picos seguidos */
-export const SENT_COOLDOWN_MS = 45 * 60 * 1000;
+/** Evita saturar si hubo varios picos seguidos (minutos; default 90). */
+const _cooldownMin = parseInt(process.env.INTENSE_CHAT_CHECKIN_COOLDOWN_MINUTES || '90', 10);
+export const SENT_COOLDOWN_MS =
+  (Number.isFinite(_cooldownMin) && _cooldownMin >= 30 ? _cooldownMin : 90) * 60 * 1000;
 export const INTENSITY_THRESHOLD = 8;
 
 export function shouldOfferWellbeingCheckIn({ isCrisis, emotionalIntensity, riskLevel }) {

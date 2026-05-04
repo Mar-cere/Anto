@@ -10,7 +10,7 @@
  * | reminders                  | ENABLE_REMINDERS               | off     | correos periódicos “revisa contactos de emergencia”; solo si `true` |
  * | crisisFollowUp             | ENABLE_CRISIS_FOLLOWUP         | activo  | seguimiento post-crisis |
  * | intenseChatCheckIn         | ENABLE_INTENSE_CHAT_CHECKIN    | activo  | check-ins poschat |
- * | notificationScheduler      | ENABLE_NOTIFICATION_SCHEDULER  | activo  | cola de notificaciones |
+ * | notificationScheduler      | ENABLE_NOTIFICATION_SCHEDULER  | activo  | cola de notificaciones; tunear espaciado con `NOTIFICATION_*` en `notificationScheduler.js` |
  * | openaiDailyCostReport      | ENABLE_OPENAI_DAILY_COST_REPORT | activo | correo diario uso OpenAI |
  * | trialRetentionEmail        | ENABLE_TRIAL_RETENTION_EMAIL   | activo | correo fin día ~2 de trial corto |
  * | weeklySummaryEmail         | ENABLE_WEEKLY_SUMMARY_EMAIL o ENABLE_WEEKLY_TIPS_EMAIL | off | aviso resumen semanal (neutro); slot `WEEKLY_TIPS_EMAIL_SLOT` |

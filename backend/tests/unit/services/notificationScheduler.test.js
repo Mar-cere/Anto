@@ -26,7 +26,8 @@ describe('NotificationScheduler Service', () => {
     it('bloquea envío cuando el usuario ya alcanzó el tope diario', async () => {
       const countSpy = jest
         .spyOn(NotificationEngagement, 'countDocuments')
-        .mockResolvedValue(5);
+        .mockResolvedValue(3);
+      const findOneSpy = jest.spyOn(NotificationEngagement, 'findOne');
       const sendSpy = jest
         .spyOn(pushNotificationService, 'sendDailyCheckIn')
         .mockResolvedValue({ success: true });
@@ -43,6 +44,7 @@ describe('NotificationScheduler Service', () => {
 
       expect(result).toBe(false);
       expect(countSpy).toHaveBeenCalled();
+      expect(findOneSpy).not.toHaveBeenCalled();
       expect(sendSpy).not.toHaveBeenCalled();
       expect(createSpy).not.toHaveBeenCalled();
     });
@@ -50,7 +52,12 @@ describe('NotificationScheduler Service', () => {
     it('permite envío cuando el usuario está bajo el tope diario', async () => {
       jest
         .spyOn(NotificationEngagement, 'countDocuments')
-        .mockResolvedValue(3);
+        .mockResolvedValue(2);
+      jest.spyOn(NotificationEngagement, 'findOne').mockReturnValue({
+        sort: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockResolvedValue(null)
+      });
       const sendSpy = jest
         .spyOn(pushNotificationService, 'sendDailyCheckIn')
         .mockResolvedValue({ success: true, title: 't', body: 'b' });
@@ -105,7 +112,7 @@ describe('NotificationScheduler Service', () => {
       );
     });
 
-    it('no envía between_sessions_nudge si ya hubo uno en las últimas 24h', async () => {
+    it('no envía between_sessions_nudge si ya hubo uno en la ventana de cooldown', async () => {
       jest
         .spyOn(User, 'findById')
         .mockReturnValue({
@@ -127,7 +134,7 @@ describe('NotificationScheduler Service', () => {
       );
 
       expect(result.success).toBe(false);
-      expect(result.reason).toMatch(/24h/);
+      expect(result.reason).toMatch(/\d+h/);
       expect(sendSpy).not.toHaveBeenCalled();
     });
   });
