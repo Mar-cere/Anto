@@ -1,6 +1,8 @@
 /**
  * Configuración de Mailer - Gestiona el envío de correos electrónicos
  * Soporta Gmail API (Google Workspace), SendGrid y Gmail SMTP (fallback)
+ *
+ * Textos visibles al usuario: español neutro y natural (tú estándar: puedes, recibes, indica; sin voseo).
  */
 import sgMail from '@sendgrid/mail';
 import dotenv from 'dotenv';
@@ -856,7 +858,7 @@ const emailTemplates = {
                 </div>
               </div>
               <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.85rem; margin: 18px 0 0 0; text-align: center; line-height: 1.5;">
-                Podés conservar este correo como comprobante. Para facturación o soporte, indicá la referencia y el correo de tu cuenta.
+                Puedes conservar este correo como comprobante. Para facturación o soporte, indica la referencia y el correo de tu cuenta.
               </p>
             </div>
           `
@@ -1477,7 +1479,7 @@ const mailer = {
     Instagram
   </a>
 </p>
-<p style="color:#444;font-size:14px;">Si lo recibís, la tubería (Gmail API o fallback SMTP/SendGrid) respondió correctamente.</p>
+<p style="color:#444;font-size:14px;">Si lo recibes, la tubería (Gmail API o fallback SMTP/SendGrid) respondió correctamente.</p>
 </body></html>`
       };
       const ok = await sendEmail(to.trim(), template, 'Ping arranque servidor');
