@@ -98,6 +98,9 @@ export const DASH = {
   FOCUS_REMINDER_TAP_CHAT: 'Toca para ir al chat',
   FOCUS_PROTOCOL: 'Próximo paso (seguimiento)',
   FOCUS_START_CHAT: 'Empezar en el chat',
+  QUOTE_KICKER: 'Momento para ti',
+  QUOTE_A11Y_LABEL: 'Frase inspiradora',
+  QUOTE_A11Y_HINT: 'Doble toque para mostrar otra frase al azar',
 };
 
 // Exportar todas las traducciones agrupadas

@@ -48,7 +48,10 @@ import { renderHook, act } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import { api } from '../../../config/api';
 import paymentService from '../../../services/paymentService';
+import { toastHookWrapper } from '../../../test-utils/toastHookWrapper';
 import { useProfileScreen } from '../useProfileScreen';
+
+const hookOptions = { wrapper: toastHookWrapper };
 
 const mockAlert = Alert.alert;
 const mockReset = jest.fn();
@@ -67,7 +70,7 @@ describe('useProfileScreen', () => {
   });
 
   it('debe retornar las claves esperadas', async () => {
-    const { result } = renderHook(() => useProfileScreen(mockNavigation));
+    const { result } = renderHook(() => useProfileScreen(mockNavigation), hookOptions);
     await act(async () => {
       await new Promise((r) => setTimeout(r, 50));
     });
@@ -96,7 +99,7 @@ describe('useProfileScreen', () => {
 
   it('al montar debe cargar contactos y estado de suscripción', async () => {
     api.get.mockResolvedValue({ contacts: [{ id: '1', name: 'Contact' }] });
-    const { result } = renderHook(() => useProfileScreen(mockNavigation));
+    const { result } = renderHook(() => useProfileScreen(mockNavigation), hookOptions);
     await act(async () => {
       await new Promise((r) => setTimeout(r, 100));
     });
@@ -123,7 +126,7 @@ describe('useProfileScreen', () => {
       },
     };
     await AsyncStorage.setItem('userData', JSON.stringify(stored));
-    const { result } = renderHook(() => useProfileScreen(mockNavigation));
+    const { result } = renderHook(() => useProfileScreen(mockNavigation), hookOptions);
     await act(async () => {
       await new Promise((r) => setTimeout(r, 100));
     });
@@ -134,7 +137,7 @@ describe('useProfileScreen', () => {
   });
 
   it('handleRefresh pone refreshing y vuelve a cargar datos', async () => {
-    const { result } = renderHook(() => useProfileScreen(mockNavigation));
+    const { result } = renderHook(() => useProfileScreen(mockNavigation), hookOptions);
     await act(async () => {
       await new Promise((r) => setTimeout(r, 100));
     });
@@ -160,7 +163,7 @@ describe('useProfileScreen', () => {
     });
     api.delete.mockResolvedValue({});
     api.get.mockResolvedValue({ contacts: [] });
-    const { result } = renderHook(() => useProfileScreen(mockNavigation));
+    const { result } = renderHook(() => useProfileScreen(mockNavigation), hookOptions);
     await act(async () => {
       await new Promise((r) => setTimeout(r, 100));
     });
@@ -178,7 +181,6 @@ describe('useProfileScreen', () => {
     });
     expect(api.delete).toHaveBeenCalledWith('/api/users/me/emergency-contacts/contact-123');
     expect(api.get).toHaveBeenCalledWith('/api/users/me/emergency-contacts');
-    expect(mockAlert).toHaveBeenCalledWith(expect.any(String), expect.any(String));
   });
 
   it('handleLogout muestra Alert y al confirmar limpia storage y navega a SignIn', async () => {
@@ -189,7 +191,7 @@ describe('useProfileScreen', () => {
     });
     await AsyncStorage.setItem('userToken', 'token');
     await AsyncStorage.setItem('userData', '{}');
-    const { result } = renderHook(() => useProfileScreen(mockNavigation));
+    const { result } = renderHook(() => useProfileScreen(mockNavigation), hookOptions);
     await act(async () => {
       await new Promise((r) => setTimeout(r, 100));
     });
@@ -216,7 +218,7 @@ describe('useProfileScreen', () => {
 
   it('openEditContact y closeEditContact actualizan selectedContact y modal', async () => {
     const contact = { id: 'c1', name: 'Test' };
-    const { result } = renderHook(() => useProfileScreen(mockNavigation));
+    const { result } = renderHook(() => useProfileScreen(mockNavigation), hookOptions);
     await act(async () => {
       await new Promise((r) => setTimeout(r, 50));
     });
@@ -236,7 +238,7 @@ describe('useProfileScreen', () => {
 
   it('handleEmergencyContactsSaved recarga contactos', async () => {
     api.get.mockResolvedValue({ contacts: [{ id: '2' }] });
-    const { result } = renderHook(() => useProfileScreen(mockNavigation));
+    const { result } = renderHook(() => useProfileScreen(mockNavigation), hookOptions);
     await act(async () => {
       await new Promise((r) => setTimeout(r, 100));
     });

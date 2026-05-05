@@ -12,10 +12,11 @@ import {
   View
 } from 'react-native';
 import { colors } from '../../styles/globalStyles';
+import { FOCUS_BORDER_SUBTLE, FOCUS_CHEVRON_MUTED } from '../../styles/focusCardTheme';
 
 // Constantes de estilos
 const CARD_PADDING = 16;
-const CARD_BORDER_RADIUS = 12;
+const CARD_BORDER_RADIUS = 22;
 const CARD_MARGIN_BOTTOM = 12;
 const ICON_SIZE = 24;
 const TITLE_FONT_SIZE = 16;
@@ -91,11 +92,7 @@ const TechniqueCard = ({ technique, onPress, variant = 'default' }) => {
             </View>
           ) : null}
         </View>
-        <MaterialCommunityIcons
-          name="chevron-right"
-          size={24}
-          color={colors.textSecondary}
-        />
+        <MaterialCommunityIcons name="chevron-right" size={22} color={FOCUS_CHEVRON_MUTED} />
       </View>
 
       {technique.description ? (
@@ -142,20 +139,22 @@ const styles = StyleSheet.create({
     borderRadius: CARD_BORDER_RADIUS,
     padding: CARD_PADDING,
     marginBottom: CARD_MARGIN_BOTTOM,
-    borderLeftWidth: 5,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
+    borderLeftWidth: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   cardCompact: {
-    borderLeftWidth: 4,
+    borderLeftWidth: 3,
     paddingVertical: 12,
     paddingHorizontal: 14,
     marginBottom: 10,
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     elevation: 2,
   },
   header: {
@@ -169,7 +168,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,

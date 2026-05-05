@@ -248,35 +248,37 @@ export default function SwipeableHabitItem({
             { transform: [{ translateX }] },
           ]}
         >
-          <TouchableOpacity
-            style={styles.habitContent}
-            onPress={onPress}
-            activeOpacity={ACTIVE_OPACITY}
-            delayPressIn={DELAY_PRESS_IN}
-          >
+          <View style={styles.habitContent}>
             <View style={styles.habitHeader}>
-              <View style={styles.habitTitleContainer}>
-                <View
-                  style={[
-                    styles.iconContainer,
-                    item.status?.archived && styles.archivedIconContainer,
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    name={HABIT_ICONS[item.icon] || 'circle'}
-                    size={ICON_SIZE}
-                    color={item.status?.archived ? COLORS.ACCENT : COLORS.PRIMARY}
-                  />
+              <TouchableOpacity
+                style={styles.habitTitlePressable}
+                onPress={onPress}
+                activeOpacity={ACTIVE_OPACITY}
+                delayPressIn={DELAY_PRESS_IN}
+              >
+                <View style={styles.habitTitleContainer}>
+                  <View
+                    style={[
+                      styles.iconContainer,
+                      item.status?.archived && styles.archivedIconContainer,
+                    ]}
+                  >
+                    <MaterialCommunityIcons
+                      name={HABIT_ICONS[item.icon] || 'circle'}
+                      size={ICON_SIZE}
+                      color={item.status?.archived ? COLORS.ACCENT : COLORS.PRIMARY}
+                    />
+                  </View>
+                  <View style={styles.habitInfo}>
+                    <Text style={styles.habitTitle}>{item.title}</Text>
+                    {item.description ? (
+                      <Text style={styles.habitDescription} numberOfLines={2}>
+                        {item.description}
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
-                <View style={styles.habitInfo}>
-                  <Text style={styles.habitTitle}>{item.title}</Text>
-                  {item.description ? (
-                    <Text style={styles.habitDescription} numberOfLines={2}>
-                      {item.description}
-                    </Text>
-                  ) : null}
-                </View>
-              </View>
+              </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => onComplete(item._id)}
                 style={[
@@ -299,41 +301,48 @@ export default function SwipeableHabitItem({
                 />
               </TouchableOpacity>
             </View>
-            <View style={styles.habitFooter}>
-              <View style={styles.habitStats}>
-                <View style={styles.statItem}>
-                  <MaterialCommunityIcons name="fire" size={STAT_ICON_SIZE} color={COLORS.WARNING} />
-                  <Text style={styles.statText}>
-                    {TEXTS.STREAK} {item.progress?.streak || 0}
-                    {item.progress?.bestStreak > 0 &&
-                      ` (${TEXTS.BEST_STREAK} ${item.progress.bestStreak})`}
-                  </Text>
-                </View>
-                <View style={styles.statItem}>
-                  <MaterialCommunityIcons
-                    name="calendar-check"
-                    size={STAT_ICON_SIZE}
-                    color={COLORS.INFO}
-                  />
-                  <Text style={styles.statText}>
-                    {item.progress?.completedDays || 0}/{item.progress?.totalDays || 0} {TEXTS.DAYS}
-                  </Text>
-                </View>
-                <View style={styles.statItem}>
-                  <MaterialCommunityIcons
-                    name={
-                      item.frequency === FREQUENCY_TYPES.DAILY ? 'repeat' : 'calendar-week'
-                    }
-                    size={STAT_ICON_SIZE}
-                    color={COLORS.PRIMARY}
-                  />
-                  <Text style={styles.statText}>
-                    {item.frequency === FREQUENCY_TYPES.DAILY ? TEXTS.DAILY : TEXTS.WEEKLY}
-                  </Text>
+            <TouchableOpacity
+              style={styles.habitFooterTouchable}
+              onPress={onPress}
+              activeOpacity={ACTIVE_OPACITY}
+              delayPressIn={DELAY_PRESS_IN}
+            >
+              <View style={styles.habitFooter}>
+                <View style={styles.habitStats}>
+                  <View style={styles.statItem}>
+                    <MaterialCommunityIcons name="fire" size={STAT_ICON_SIZE} color={COLORS.WARNING} />
+                    <Text style={styles.statText}>
+                      {TEXTS.STREAK} {item.progress?.streak || 0}
+                      {item.progress?.bestStreak > 0 &&
+                        ` (${TEXTS.BEST_STREAK} ${item.progress.bestStreak})`}
+                    </Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <MaterialCommunityIcons
+                      name="calendar-check"
+                      size={STAT_ICON_SIZE}
+                      color={COLORS.INFO}
+                    />
+                    <Text style={styles.statText}>
+                      {item.progress?.completedDays || 0}/{item.progress?.totalDays || 0} {TEXTS.DAYS}
+                    </Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <MaterialCommunityIcons
+                      name={
+                        item.frequency === FREQUENCY_TYPES.DAILY ? 'repeat' : 'calendar-week'
+                      }
+                      size={STAT_ICON_SIZE}
+                      color={COLORS.PRIMARY}
+                    />
+                    <Text style={styles.statText}>
+                      {item.frequency === FREQUENCY_TYPES.DAILY ? TEXTS.DAILY : TEXTS.WEEKLY}
+                    </Text>
+                  </View>
                 </View>
               </View>
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
         </Animated.View>
       </PanGestureHandler>
     </View>
@@ -439,6 +448,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  habitTitlePressable: {
+    flex: 1,
+    minWidth: 0,
+  },
+  habitFooterTouchable: {
+    alignSelf: 'stretch',
   },
   habitTitleContainer: {
     flexDirection: 'row',

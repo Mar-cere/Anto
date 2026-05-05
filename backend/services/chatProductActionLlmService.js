@@ -101,11 +101,11 @@ async function extractDraftWithLlm(action, userContent, assistantContent) {
   const model = (process.env.OPENAI_PRODUCT_ACTION_MODEL || '').trim() || OPENAI_MODEL;
   const proposalType = action.type;
 
-  const system = `Sos un extractor de datos para una app de bienestar (Anto). No emitís diagnósticos ni consejo médico.
-Debés responder con un único objeto JSON (sin markdown, sin texto antes ni después).
+  const system = `Eres un asistente que extrae datos estructurados para una app de bienestar (Anto). No debes emitir diagnósticos ni consejo médico.
+Debes responder con un único objeto JSON (sin markdown, sin texto antes ni después).
 
-Si proposalType es "propose_task", usá estas claves en el JSON raíz:
-- title (string, español, acción concreta del usuario)
+Si proposalType es "propose_task", usa estas claves en el JSON raíz:
+- title (string, español neutro, acción concreta del usuario)
 - description (string, opcional, breve)
 - dueDate (string ISO 8601; no anterior al inicio del día de hoy en la zona horaria local implícita)
 - priority: "low" | "medium" | "high" | "urgent"
@@ -113,14 +113,14 @@ Si proposalType es "propose_task", usá estas claves en el JSON raíz:
 - category (string opcional, máximo 50 caracteres)
 - tags (array opcional de strings cortos)
 
-Si proposalType es "propose_habit", usá:
+Si proposalType es "propose_habit", usa:
 - title, description (opcional)
 - icon: uno de exercise, meditation, reading, water, sleep, study, diet, coding, workout, yoga, journal, music, art, language
 - frequency: "daily" | "weekly" | "monthly"
 - reminderTime (string ISO 8601; no anterior al inicio de hoy)
 - priority: "low" | "medium" | "high"
 
-Reglas: priorizá el mensaje del usuario; el mensaje del asistente es solo contexto. Si falta detalle, reutilizá valores razonables del baselineDraft. No anidés otro objeto "draft".`;
+Reglas: prioriza el mensaje del usuario; el mensaje del asistente es solo contexto. Si falta detalle, reutiliza valores razonables del baselineDraft. No anides otro objeto "draft".`;
 
   const userPayload = {
     proposalType,
@@ -161,7 +161,7 @@ Reglas: priorizá el mensaje del usuario; el mensaje del asistente es solo conte
         messages: [
           {
             role: 'system',
-            content: `${system}\n\nImportante: respondé solo JSON válido, una sola línea o bloque, sin comentarios.`
+            content: `${system}\n\nImportante: responde solo con JSON válido, en una sola línea o bloque, sin comentarios.`
           },
           bodyBase.messages[1]
         ]

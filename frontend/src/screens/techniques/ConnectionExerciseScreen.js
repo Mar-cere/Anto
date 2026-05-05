@@ -18,7 +18,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
+import ParticleBackground from '../../components/ParticleBackground';
 import { colors } from '../../styles/globalStyles';
+import { techniqueScreenStyles } from './techniqueScreenStyles';
 
 const CONNECTION_EXERCISES = [
   {
@@ -80,14 +82,17 @@ const ConnectionExerciseScreen = () => {
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" />
+      <ParticleBackground />
       <Header
         title="Ejercicio de Conexión"
-        onBack={() => navigation.goBack()}
+        showBackButton
+        onBackPress={() => navigation.goBack()}
       />
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.introContainer}>
-          <Text style={styles.introTitle}>🤝 Fortalece tus conexiones</Text>
-          <Text style={styles.introText}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={techniqueScreenStyles.scrollContent}>
+        <View style={techniqueScreenStyles.introPanel}>
+          <Text style={techniqueScreenStyles.introKicker}>Relaciones</Text>
+          <Text style={techniqueScreenStyles.introTitle}>Fortalece tus conexiones</Text>
+          <Text style={techniqueScreenStyles.introText}>
             Las conexiones sociales son fundamentales para el bienestar. Estos ejercicios pueden ayudarte a fortalecer tus relaciones.
           </Text>
         </View>
@@ -98,20 +103,20 @@ const ConnectionExerciseScreen = () => {
             <View
               key={exercise.id}
               style={[
-                styles.exerciseCard,
-                isCompleted && styles.exerciseCardCompleted
+                techniqueScreenStyles.card,
+                isCompleted && techniqueScreenStyles.cardCompleted,
               ]}
             >
-              <View style={styles.exerciseHeader}>
-                <View style={styles.iconContainer}>
+              <View style={techniqueScreenStyles.rowHeader}>
+                <View style={techniqueScreenStyles.iconTile}>
                   <MaterialCommunityIcons
                     name={exercise.icon}
-                    size={32}
+                    size={28}
                     color={colors.primary}
                   />
                 </View>
-                <View style={styles.exerciseInfo}>
-                  <Text style={styles.exerciseTitle}>{exercise.title}</Text>
+                <View style={techniqueScreenStyles.infoColumn}>
+                  <Text style={techniqueScreenStyles.cardTitle}>{exercise.title}</Text>
                 </View>
                 {isCompleted && (
                   <MaterialCommunityIcons
@@ -121,15 +126,20 @@ const ConnectionExerciseScreen = () => {
                   />
                 )}
               </View>
-              <Text style={styles.exerciseDescription}>{exercise.description}</Text>
+              <Text style={techniqueScreenStyles.cardBody}>{exercise.description}</Text>
               <TouchableOpacity
                 style={[
-                  styles.actionButton,
-                  isCompleted && styles.actionButtonCompleted
+                  techniqueScreenStyles.actionButton,
+                  isCompleted && techniqueScreenStyles.actionButtonCompleted,
                 ]}
                 onPress={() => handleCompleteExercise(exercise.id)}
               >
-                <Text style={styles.actionButtonText}>
+                <Text
+                  style={[
+                    techniqueScreenStyles.actionButtonText,
+                    isCompleted && techniqueScreenStyles.actionButtonTextCompleted,
+                  ]}
+                >
                   {isCompleted ? 'Completado' : exercise.action}
                 </Text>
               </TouchableOpacity>
@@ -149,78 +159,6 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    padding: 20,
-  },
-  introContainer: {
-    marginBottom: 30,
-  },
-  introTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 10,
-  },
-  introText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    lineHeight: 24,
-  },
-  exerciseCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  exerciseCardCompleted: {
-    borderColor: colors.success,
-    opacity: 0.8,
-  },
-  exerciseHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(26, 221, 219, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  exerciseInfo: {
-    flex: 1,
-  },
-  exerciseTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.white,
-  },
-  exerciseDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 15,
-  },
-  actionButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-  },
-  actionButtonCompleted: {
-    backgroundColor: colors.success,
-  },
-  actionButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
 });
 
 export default ConnectionExerciseScreen;
-

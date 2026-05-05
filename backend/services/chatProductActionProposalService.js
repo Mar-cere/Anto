@@ -15,7 +15,7 @@ function isValidObjectIdParam(v) {
 const HABIT_HINTS = /h[áa]bito|rutina\s+diaria|todos\s+los\s+días|cada\s+día|constancia\s+diaria/i;
 
 /**
- * Señales de que el mensaje puede traducirse en tarea u hábito sin pedido explícito (“ponelo en mis tareas”).
+ * Señales de que el mensaje puede traducirse en tarea u hábito sin pedido explícito (“ponlo en mis tareas”).
  * Incluye planificación, orden en la vida cotidiana, micro-pasos, rutinas y sobrecarga + intención de ordenar.
  * No cubre solo malestar sin ancla accionable (p. ej. “estoy triste” sin más).
  */
@@ -23,7 +23,7 @@ const NATURAL_PRODUCT_LEXICON =
   /planific|organiz|orden(?:ar|o)?|limpi(?:ar)?|lavar|recoger|tarea|tareas|pendiente|to-?do|checklist|lista\s+de|prioridad|agendar|recordatorio|esta\s+semana|próxim[oa]s?\s+días|mañana|pasado\s+mañana|bloque\s+de\s+tiempo|empezar\s+por|primer(?:o)?\s+paso|paso\s+(?:chico|pequeño|concreto)|micro(?:\s|-)?paso|algo\s+concreto|rutina|constancia|h[aá]bito|todos\s+los\s+días|cada\s+día|diari[oa]s?|levantarme|acostarme|dormir\s+mejor|despertar|ejercicio|meditar|\b(?:beber|tomar)\s+m[aá]s\s+agua\b|estiramientos|generar\s+tareas|crear\s+tareas|tengo\s+que\s+(?:hacer|terminar|ordenar|limpiar|preparar|llamar|mandar|escribir|empezar|entregar|pagar)|deber[ií]a\s+(?:hacer|ordenar|empezar|terminar)|necesito\s+(?:ordenar|hacer|terminar|preparar|empezar)|quiero\s+(?:organizar|ordenar|empezar|dejar|lograr)|me\s+agobia|abruma|no\s+doy\s+abasto|mucho\s+encima|muchas\s+cosas\s+(?:a\s+la\s+vez|encima)|no\s+sé\s+por\s+dónde\s+empezar|sin\s+saber\s+por\s+dónde|(?:la\s+)?cocina|encimera|escritorio|desorden/i;
 
 /**
- * Pide guardar en la app aunque la sesión sea "desahogar" (vent). Ej.: "generala en mis tareas".
+ * Pide guardar en la app aunque la sesión sea "desahogar" (vent). Ej.: "genera esto en mis tareas".
  * El título concreto suele venir del turno anterior del asistente (refinar con LLM si está activo).
  */
 const EXPLICIT_TASK_TO_APP =
@@ -103,7 +103,7 @@ function sessionAllowsProductDraft(intention, content) {
   return false;
 }
 
-/** Comando corto tipo "generala en mis tareas" sin descripción en el mismo mensaje. */
+/** Comando corto tipo "genera esto en mis tareas" sin descripción en el mismo mensaje. */
 function isShortExplicitTaskCommand(content) {
   const line = String(content || '')
     .trim()
@@ -154,13 +154,13 @@ function deriveRationaleShort(content, type, needLevel) {
     return 'Mencionaste estudio/examen y carga cercana.';
   }
   if (/\b(?:la\s+)?cocina|encimera|escritorio|desorden\b/i.test(content)) {
-    return 'Detecté una zona concreta para empezar por algo pequeño.';
+    return 'Hay una zona concreta; conviene empezar con algo pequeño.';
   }
   if (OVERLOAD_CUES.test(content) && TIME_COMMITMENT_CUES.test(content)) {
     return 'Nombraste sobrecarga y horizonte temporal.';
   }
   if (type === 'propose_habit') {
-    return 'Suena a repetición diaria, encaja mejor como hábito.';
+    return 'Suena a algo que se repite; encaja mejor como hábito.';
   }
   if (needLevel === 'high') {
     return 'Hay señales claras para bajar esto a un paso accionable.';

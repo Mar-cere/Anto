@@ -1,7 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CHAT_COLORS } from '../../screens/chat/chatScreenConstants';
-
 /**
  * Aviso de un único mensaje guardado para envío (sin red o fallo de red).
  */
@@ -37,33 +36,35 @@ const PendingOfflineMessageBanner = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'rgba(255, 193, 7, 0.92)',
-    paddingVertical: 10,
+    backgroundColor: 'rgba(255, 217, 61, 0.12)',
+    paddingVertical: 12,
     paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 999,
-    gap: 8,
+    gap: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255, 217, 61, 0.35)',
   },
   text: {
-    color: '#1a1a1a',
+    color: 'rgba(255, 255, 255, 0.92)',
     fontSize: 13,
     fontWeight: '600',
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 19,
   },
   button: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    backgroundColor: CHAT_COLORS.INPUT_FIELD_BACKGROUND,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.12)',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    backgroundColor: CHAT_COLORS.SEND_BUTTON_BACKGROUND,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CHAT_COLORS.SEND_BUTTON_BORDER,
   },
   buttonText: {
-    color: '#fff',
+    color: CHAT_COLORS.WHITE,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });
 

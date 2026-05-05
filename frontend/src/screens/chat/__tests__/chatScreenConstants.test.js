@@ -7,6 +7,11 @@
 jest.mock('react-native', () => ({
   Platform: { OS: 'ios', select: (d) => d.ios, isPad: false, isTVOS: false },
   Dimensions: { get: () => ({ width: 390, height: 844 }) },
+  StyleSheet: {
+    hairlineWidth: 0.5,
+    create: (styles) => styles,
+    absoluteFillObject: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
+  },
 }));
 
 jest.mock('../../../styles/globalStyles', () => ({
@@ -48,11 +53,15 @@ describe('chatScreenConstants', () => {
     it('debe tener texto de sugerencias', () => {
       expect(TEXTS.SUGGESTIONS_TITLE).toContain('Sugerencias');
     });
+    it('debe tener kicker del estado vacío del chat', () => {
+      expect(TEXTS.EMPTY_KICKER).toBe('Conversación');
+    });
     it('debe tener título de acciones productivas desde chat', () => {
       expect(TEXTS.PRODUCT_ACTIONS_TITLE).toContain('app');
     });
     it('debe tener textos de intención de sesión (#72)', () => {
       expect(TEXTS.SESSION_INTENTION_TITLE).toBe('¿Qué necesitas de esta sesión?');
+      expect(TEXTS.SESSION_INTENTION_KICKER).toBe('Tu sesión');
       expect(TEXTS.SESSION_INTENTION_SKIP).toBe('Omitir');
     });
   });
@@ -126,8 +135,10 @@ describe('chatScreenConstants', () => {
   describe('CHAT_COLORS', () => {
     it('debe tener colores para burbujas y UI', () => {
       expect(CHAT_COLORS.USER_BUBBLE).toBeDefined();
-      expect(CHAT_COLORS.BOT_BUBBLE).toBe('#1D2B5F');
-      expect(CHAT_COLORS.ACCENT).toBe('#A3B8E8');
+      expect(CHAT_COLORS.BOT_BUBBLE).toBe('rgba(29, 43, 95, 0.88)');
+      expect(CHAT_COLORS.ACCENT).toBe('rgba(163, 184, 232, 0.85)');
+      expect(CHAT_COLORS.BOT_BUBBLE_BORDER).toBeDefined();
+      expect(CHAT_COLORS.INPUT_PLACEHOLDER).toBeDefined();
       expect(CHAT_COLORS.ERROR).toBe('#FF6464');
     });
   });

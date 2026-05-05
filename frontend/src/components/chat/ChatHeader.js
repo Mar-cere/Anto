@@ -18,11 +18,13 @@ const styles = StyleSheet.create({
     paddingBottom: LAYOUT.HEADER_PADDING_BOTTOM,
     paddingHorizontal: LAYOUT.HEADER_PADDING_HORIZONTAL,
     backgroundColor: CHAT_COLORS.HEADER_BACKGROUND,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: CHAT_COLORS.HEADER_BORDER,
   },
   backButton: {
     padding: 8,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   headerTitleContainer: {
     flexDirection: 'row',
@@ -31,16 +33,19 @@ const styles = StyleSheet.create({
   headerTitle: {
     color: CHAT_COLORS.WHITE,
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    letterSpacing: 0.2,
   },
   headerAvatar: {
     width: LAYOUT.HEADER_AVATAR_SIZE,
     height: LAYOUT.HEADER_AVATAR_SIZE,
-    borderRadius: 15,
+    borderRadius: 12,
     marginRight: 8,
   },
   menuButton: {
     padding: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
 });
 
@@ -49,7 +54,9 @@ export default function ChatHeader({ onBack, onOpenMenu }) {
     <View style={styles.header}>
       <TouchableOpacity
         testID="chat-header-back"
-        accessibilityLabel="chat-header-back"
+        accessibilityRole="button"
+        accessibilityLabel="Volver"
+        accessibilityHint="Doble toque para salir del chat"
         style={styles.backButton}
         onPress={onBack}
       >
@@ -59,8 +66,14 @@ export default function ChatHeader({ onBack, onOpenMenu }) {
         <Image source={ANTO_AVATAR} style={styles.headerAvatar} />
         <Text style={styles.headerTitle}>{TEXTS.TITLE}</Text>
       </View>
-      <TouchableOpacity style={styles.menuButton} onPress={onOpenMenu}>
-        <Ionicons name="ellipsis-vertical" size={ICON_SIZES.MENU} color={CHAT_COLORS.WHITE} />
+      <TouchableOpacity
+        style={styles.menuButton}
+        onPress={onOpenMenu}
+        accessibilityRole="button"
+        accessibilityLabel="Opciones del chat"
+        accessibilityHint="Doble toque para borrar la conversación u otras acciones"
+      >
+        <Ionicons name="ellipsis-vertical" size={ICON_SIZES.MENU} color={CHAT_COLORS.ACCENT} />
       </TouchableOpacity>
     </View>
   );

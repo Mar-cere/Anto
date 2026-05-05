@@ -76,23 +76,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: LAYOUT.EMPTY_CONTAINER_PADDING,
+    paddingHorizontal: 28,
+  },
+  emptyKicker: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: CHAT_COLORS.ACCENT,
+    marginBottom: 14,
+    textAlign: 'center',
   },
   emptyIcon: {
-    marginBottom: 16,
+    marginBottom: 14,
+    opacity: 0.92,
   },
   emptyText: {
-    color: CHAT_COLORS.ACCENT,
-    fontSize: 18,
+    color: CHAT_COLORS.WHITE,
+    fontSize: 17,
     fontWeight: '600',
+    lineHeight: 24,
     textAlign: 'center',
   },
   emptySubtext: {
-    color: CHAT_COLORS.ACCENT,
+    color: CHAT_COLORS.INPUT_PLACEHOLDER,
     fontSize: 14,
-    opacity: 0.85,
+    lineHeight: 20,
     textAlign: 'center',
-    marginTop: 8,
-    paddingHorizontal: 24,
+    marginTop: 10,
+    paddingHorizontal: 12,
   },
   skeletonContainer: {
     flex: 1,
@@ -144,7 +156,7 @@ const styles = StyleSheet.create({
     backgroundColor: CHAT_COLORS.SCROLL_BUTTON_BACKGROUND,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: CHAT_COLORS.SCROLL_BUTTON_BORDER,
   },
   aiModalOverlay: {
@@ -154,11 +166,11 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   aiModalCard: {
-    backgroundColor: '#1D2B5F',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(26, 221, 219, 0.3)',
-    padding: 20,
+    backgroundColor: CHAT_COLORS.MODAL_BACKGROUND,
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CHAT_COLORS.MODAL_BORDER,
+    padding: 22,
   },
   aiModalTitle: {
     color: CHAT_COLORS.WHITE,
@@ -167,19 +179,19 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   aiModalText: {
-    color: CHAT_COLORS.ACCENT,
+    color: CHAT_COLORS.INPUT_PLACEHOLDER,
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 21,
     marginBottom: 18,
   },
   aiModalActions: {
     gap: 10,
   },
   aiPolicyButton: {
-    borderWidth: 1,
-    borderColor: 'rgba(163, 184, 232, 0.45)',
-    borderRadius: 10,
-    paddingVertical: 11,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(163, 184, 232, 0.4)',
+    borderRadius: 14,
+    paddingVertical: 12,
     alignItems: 'center',
   },
   aiPolicyButtonText: {
@@ -188,11 +200,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   aiContinueButton: {
-    backgroundColor: 'rgba(26, 221, 219, 0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(26, 221, 219, 0.5)',
-    borderRadius: 10,
-    paddingVertical: 12,
+    backgroundColor: CHAT_COLORS.SEND_BUTTON_BACKGROUND,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CHAT_COLORS.SEND_BUTTON_BORDER,
+    borderRadius: 14,
+    paddingVertical: 13,
     alignItems: 'center',
   },
   aiContinueButtonText: {
@@ -374,7 +386,6 @@ const ChatScreen = () => {
       handleSuggestionDismiss,
       handleProductProposalPress,
       handleProductProposalReject,
-      handleSend,
       chatFeedbackEnabled,
       feedbackTargetId,
       handleMessageFeedback,
@@ -395,11 +406,16 @@ const ChatScreen = () => {
 
   const listEmptyComponent = useCallback(
     () => (
-      <View style={styles.emptyContainer}>
+      <View
+        style={styles.emptyContainer}
+        accessibilityRole="text"
+        accessibilityLabel={`${TEXTS.EMPTY_KICKER}. ${TEXTS.EMPTY}. ${TEXTS.EMPTY_SUBTITLE}`}
+      >
+        <Text style={styles.emptyKicker}>{TEXTS.EMPTY_KICKER}</Text>
         <Ionicons
           name="chatbubble-ellipses-outline"
-          size={64}
-          color={CHAT_COLORS.ACCENT}
+          size={56}
+          color={CHAT_COLORS.PRIMARY}
           style={styles.emptyIcon}
         />
         <Text style={styles.emptyText}>{TEXTS.EMPTY}</Text>
@@ -532,6 +548,8 @@ const ChatScreen = () => {
         <TouchableOpacity
           style={styles.scrollToBottomButton}
           onPress={() => scrollToBottom(true, { force: true })}
+          accessibilityRole="button"
+          accessibilityLabel="Ir al final de la conversación"
         >
           <Ionicons name="chevron-down" size={ICON_SIZES.SCROLL} color={CHAT_COLORS.WHITE} />
         </TouchableOpacity>

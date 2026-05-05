@@ -1,0 +1,36 @@
+# Regresión de prompts sensibles (#119): golden tests sin OpenAI ni Mongo.
+name: Backend prompt golden tests
+
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-test.yml'
+  push:
+    branches: [main, master, dev]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-test.yml'
+
+jobs:
+  prompt-golden:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Golden prompt regression (#119)
+        env:
+          NODE_ENV: test
+          ENABLE_PROMPT_HISTORY_TELEMETRY: 'false'
+        run: npm run test:prompt-golden

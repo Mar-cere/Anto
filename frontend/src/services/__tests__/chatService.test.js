@@ -237,6 +237,22 @@ describe('chatService', () => {
       
       expect(result).toEqual([]);
     });
+
+    it('debe retornar [] si el JSON está corrupto o no es un array', async () => {
+      await AsyncStorage.setItem('chatMessages', '{');
+      await expect(loadMessages()).resolves.toEqual([]);
+      await AsyncStorage.setItem('chatMessages', JSON.stringify({ not: 'array' }));
+      await expect(loadMessages()).resolves.toEqual([]);
+    });
+
+    it('debe omitir entradas que no son objetos', async () => {
+      await AsyncStorage.setItem(
+        'chatMessages',
+        JSON.stringify([{ id: '1', role: 'user' }, null, 3, 'x'])
+      );
+      const result = await loadMessages();
+      expect(result).toEqual([{ id: '1', role: 'user' }]);
+    });
   });
 
   describe('getMessages', () => {

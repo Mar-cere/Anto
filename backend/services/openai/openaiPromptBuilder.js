@@ -24,6 +24,9 @@ import {
   getSessionPhaseSystemSnippet
 } from '../chat/sessionPhaseHints.js';
 import { getSessionIntentionSystemSnippet } from '../chat/sessionIntentionHints.js';
+import { buildSensitiveVnpSystemSnippet } from '../chat/sensitiveResponseTemplate.js';
+import { buildUnderstandingPipelineSnippet } from '../chat/understandingPipeline.js';
+import { buildLowConfidenceClarifySnippet } from '../chat/lowConfidenceClarifyTemplate.js';
 import { normalizeSessionIntention } from '../../constants/sessionIntention.js';
 
 function getTimeOfDay() {
@@ -613,7 +616,7 @@ export function generarMensajesContexto(contexto) {
   return messages;
 }
 
-const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emocional dentro de una app. Tu objetivo es combinar **claridad útil** con un tono **profesional y accesible**: como un buen orientador en salud mental, no como un chat informal ni como un terapeuta clínico.
+export const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emocional dentro de una app. Tu objetivo es combinar **claridad útil** con un tono **profesional y accesible**: como un buen orientador en salud mental, no como un chat informal ni como un terapeuta clínico.
 
 ### Estilo por defecto
 - Idioma: español.
@@ -784,6 +787,8 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   // Prompt base de comportamiento (reglas de estilo, seguridad y UX conversacional).
   // Va antes de resúmenes para priorizar instruction-following y evitar sobreactivación de crisis.
   systemMessage = `${BASE_ASSISTANT_PROMPT}\n\n---\n\n${systemMessage}`;
+  systemMessage += buildUnderstandingPipelineSnippet(contexto);
+  systemMessage += buildLowConfidenceClarifySnippet(contexto);
 
   const threadSnippet = buildRecentThreadSummarySnippet(contexto.safetyHistory || []);
   if (threadSnippet) systemMessage += threadSnippet;
@@ -795,6 +800,7 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   systemMessage += buildProgressiveClosureSnippet(conversationPattern, sessionIntention);
   systemMessage += buildPhaseRouterSnippet(contexto);
   systemMessage += buildAntiRobotRewriteSnippet();
+  systemMessage += buildSensitiveVnpSystemSnippet(contexto);
 
   const roll = contexto.rollingSummary && String(contexto.rollingSummary).trim();
   if (roll) {

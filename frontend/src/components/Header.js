@@ -3,11 +3,16 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../styles/globalStyles';
+import { FOCUS_KICKER_COLOR } from '../styles/focusCardTheme';
 
-const Header = memo(({ greeting, userName, title, showBackButton }) => {
+const Header = memo(({ greeting, userName, title, showBackButton, onBackPress }) => {
   const navigation = useNavigation();
-  
+
   const handleBackPress = () => {
+    if (typeof onBackPress === 'function') {
+      onBackPress();
+      return;
+    }
     if (navigation.canGoBack()) {
       navigation.goBack();
     }
@@ -77,7 +82,7 @@ const Header = memo(({ greeting, userName, title, showBackButton }) => {
           accessibilityLabel="Ir a perfil"
           accessibilityHint="Doble toque para abrir tu perfil"
         >
-          <MaterialCommunityIcons name="account" size={24} color="#A3B8E8" />
+            <MaterialCommunityIcons name="account" size={24} color={FOCUS_KICKER_COLOR} />
         </TouchableOpacity>
       </View>
     </View>
@@ -116,7 +121,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 20,
-    color: '#A3B8E8',
+    color: FOCUS_KICKER_COLOR,
     marginBottom: 4,
   },
   profileButton: {
@@ -128,5 +133,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(163, 184, 232, 0.1)',
   },
 });
+
+Header.displayName = 'Header';
 
 export default Header;

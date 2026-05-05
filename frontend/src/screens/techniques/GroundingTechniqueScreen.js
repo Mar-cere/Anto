@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GroundingExercise from '../../components/therapeutic/GroundingExercise';
 import Header from '../../components/Header';
+import ParticleBackground from '../../components/ParticleBackground';
 import { colors } from '../../styles/globalStyles';
 
 const GroundingTechniqueScreen = () => {
@@ -32,9 +33,11 @@ const GroundingTechniqueScreen = () => {
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" />
+      <ParticleBackground />
       <Header
         title="Técnica de Grounding"
-        onBack={() => navigation.goBack()}
+        showBackButton
+        onBackPress={() => navigation.goBack()}
       />
       <View style={styles.content}>
         <GroundingExercise onComplete={handleComplete} />

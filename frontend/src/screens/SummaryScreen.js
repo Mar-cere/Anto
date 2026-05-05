@@ -46,7 +46,7 @@ const TEXTS = {
   PULSE_EMPTY: 'Sin registros emocionales este período.',
   EMPTY_TITLE: 'Semana tranquila en la app',
   EMPTY_SUB:
-    'No pasa nada. Cuando quieras retomar, acá tenés un par de pasos sin presión.',
+    'No pasa nada. Cuando quieras retomar, aquí tienes un par de pasos sin presión.',
   CTA_CHAT: 'Hablar con Anto',
   CTA_GRATITUDE: 'Escribir gratitud',
   CTA_TECHNIQUES: 'Ver técnicas',

@@ -29,6 +29,12 @@ jest.mock('expo-haptics', () => ({
   NotificationFeedbackType: { Success: 'Success' },
 }));
 
+const mockShowToast = jest.fn();
+jest.mock('../../../context/ToastContext', () => ({
+  ...jest.requireActual('../../../context/ToastContext'),
+  useToast: () => ({ showToast: mockShowToast }),
+}));
+
 jest.mock('../../../styles/globalStyles', () => ({ colors: {} }));
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -51,6 +57,7 @@ const mockNavigation = {
 describe('useEditProfileScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockShowToast.mockClear();
     mockAlert.mockClear();
     AsyncStorage.clear();
     AsyncStorage.setItem('userToken', 'fake-token');
@@ -138,10 +145,11 @@ describe('useEditProfileScreen', () => {
       name: 'Valid Name',
       email: 'valid@email.com',
     });
-    expect(mockAlert).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.any(String),
-      expect.any(Array)
+    expect(mockShowToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'success',
+        message: expect.any(String),
+      })
     );
     expect(result.current.saveSuccess).toBe(true);
   });

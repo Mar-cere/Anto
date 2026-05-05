@@ -18,7 +18,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
+import ParticleBackground from '../../components/ParticleBackground';
 import { colors } from '../../styles/globalStyles';
+import { techniqueScreenStyles } from './techniqueScreenStyles';
 
 const TIMEOUT_STEPS = [
   {
@@ -58,7 +60,7 @@ const TimeoutTechniqueScreen = () => {
   const insets = useSafeAreaInsets();
   const [currentStep, setCurrentStep] = useState(0);
   const [isActive, setIsActive] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(300); // 5 minutos
+  const [timeRemaining, setTimeRemaining] = useState(300);
 
   useEffect(() => {
     let interval = null;
@@ -105,66 +107,80 @@ const TimeoutTechniqueScreen = () => {
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" />
+      <ParticleBackground />
       <Header
         title="Técnica de Tiempo Fuera"
-        onBack={() => navigation.goBack()}
+        showBackButton
+        onBackPress={() => navigation.goBack()}
       />
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.introContainer}>
-          <Text style={styles.introTitle}>⏸️ Técnica de Tiempo Fuera</Text>
-          <Text style={styles.introText}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={techniqueScreenStyles.scrollContent}>
+        <View style={techniqueScreenStyles.introPanel}>
+          <Text style={techniqueScreenStyles.introKicker}>Autorregulación</Text>
+          <Text style={techniqueScreenStyles.introTitle}>Técnica de tiempo fuera</Text>
+          <Text style={techniqueScreenStyles.introText}>
             Cuando sientes enojo o frustración, tomar un tiempo fuera puede ayudarte a calmarte y responder de manera más constructiva.
           </Text>
         </View>
 
         {isActive ? (
-          <View style={styles.activeContainer}>
-            <View style={styles.timerContainer}>
-              <Text style={styles.timerText}>{formatTime(timeRemaining)}</Text>
-              <Text style={styles.timerLabel}>Tiempo restante</Text>
+          <View style={styles.activeBlock}>
+            <View style={techniqueScreenStyles.activePanel}>
+              <Text style={techniqueScreenStyles.timerText}>{formatTime(timeRemaining)}</Text>
+              <Text style={techniqueScreenStyles.timerLabel}>Tiempo restante</Text>
             </View>
 
-            <View style={styles.stepContainer}>
-              <View style={styles.stepHeader}>
-                <View style={styles.iconContainer}>
+            <View style={techniqueScreenStyles.card}>
+              <View style={techniqueScreenStyles.rowHeader}>
+                <View style={techniqueScreenStyles.stepIconLarge}>
                   <MaterialCommunityIcons
                     name={step.icon}
-                    size={40}
+                    size={36}
                     color={colors.primary}
                   />
                 </View>
-                <Text style={styles.stepNumber}>Paso {currentStep + 1} de {TIMEOUT_STEPS.length}</Text>
+                <View style={techniqueScreenStyles.infoColumn}>
+                  <Text style={techniqueScreenStyles.stepMeta}>
+                    Paso {currentStep + 1} de {TIMEOUT_STEPS.length}
+                  </Text>
+                  <Text style={techniqueScreenStyles.stepTitle}>{step.title}</Text>
+                </View>
               </View>
-              <Text style={styles.stepTitle}>{step.title}</Text>
-              <Text style={styles.stepDescription}>{step.description}</Text>
+              <Text style={techniqueScreenStyles.stepDescription}>{step.description}</Text>
             </View>
 
-            <View style={styles.navigationButtons}>
+            <View style={techniqueScreenStyles.navRow}>
               <TouchableOpacity
-                style={[styles.navButton, currentStep === 0 && styles.navButtonDisabled]}
+                style={[
+                  techniqueScreenStyles.navButton,
+                  currentStep === 0 && techniqueScreenStyles.navButtonDisabled,
+                ]}
                 onPress={handlePrevious}
                 disabled={currentStep === 0}
               >
-                <Text style={styles.navButtonText}>Anterior</Text>
+                <Text style={techniqueScreenStyles.navButtonTextMuted}>Anterior</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.navButton, styles.navButtonPrimary]}
+                style={[
+                  techniqueScreenStyles.navButton,
+                  techniqueScreenStyles.navButtonPrimary,
+                  currentStep === TIMEOUT_STEPS.length - 1 && techniqueScreenStyles.navButtonDisabled,
+                ]}
                 onPress={handleNext}
                 disabled={currentStep === TIMEOUT_STEPS.length - 1}
               >
-                <Text style={styles.navButtonText}>Siguiente</Text>
+                <Text style={techniqueScreenStyles.navButtonText}>Siguiente</Text>
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.stopButton} onPress={() => setIsActive(false)}>
-              <Text style={styles.stopButtonText}>Finalizar</Text>
+            <TouchableOpacity style={techniqueScreenStyles.stopButton} onPress={() => setIsActive(false)}>
+              <Text style={techniqueScreenStyles.stopButtonText}>Finalizar</Text>
             </TouchableOpacity>
           </View>
         ) : (
-          <TouchableOpacity style={styles.startButton} onPress={handleStart}>
-            <MaterialCommunityIcons name="play-circle" size={48} color={colors.white} />
-            <Text style={styles.startButtonText}>Comenzar Tiempo Fuera</Text>
-            <Text style={styles.startButtonSubtext}>5 minutos guiados</Text>
+          <TouchableOpacity style={techniqueScreenStyles.ctaHero} onPress={handleStart}>
+            <MaterialCommunityIcons name="play-circle" size={48} color={colors.primary} />
+            <Text style={techniqueScreenStyles.ctaHeroTitle}>Comenzar tiempo fuera</Text>
+            <Text style={techniqueScreenStyles.ctaHeroSub}>5 minutos guiados</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -180,141 +196,10 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    padding: 20,
-  },
-  introContainer: {
-    marginBottom: 30,
-  },
-  introTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 10,
-  },
-  introText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    lineHeight: 24,
-  },
-  startButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    padding: 32,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  startButtonText: {
-    color: colors.white,
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 16,
-  },
-  startButtonSubtext: {
-    color: colors.white,
-    fontSize: 14,
-    marginTop: 8,
-    opacity: 0.8,
-  },
-  activeContainer: {
-    marginTop: 20,
-  },
-  timerContainer: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 24,
-    alignItems: 'center',
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  timerText: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: colors.primary,
-    marginBottom: 8,
-  },
-  timerLabel: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  stepContainer: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 24,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  stepHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(26, 221, 219, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  stepNumber: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  stepTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 12,
-  },
-  stepDescription: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    lineHeight: 24,
-  },
-  navigationButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  navButton: {
-    flex: 1,
-    backgroundColor: colors.cardBackground,
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    marginHorizontal: 5,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  navButtonDisabled: {
-    opacity: 0.5,
-  },
-  navButtonPrimary: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  navButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  stopButton: {
-    backgroundColor: colors.error,
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-  },
-  stopButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: 'bold',
+  activeBlock: {
+    marginTop: 4,
+    gap: 14,
   },
 });
 
 export default TimeoutTechniqueScreen;
-

@@ -190,9 +190,14 @@ export function useHabitsScreen({ route, navigation }) {
   const toggleHabitComplete = useCallback(
     async (habitId) => {
       try {
-        const result = await api.patch(`${ENDPOINTS.HABIT_BY_ID(habitId)}/toggle`);
-        if (!result.success) throw new Error(result.message || TEXTS.ERROR_UPDATE_MESSAGE);
-        const updatedHabit = result.data;
+        const result = await api.patch(`${ENDPOINTS.HABIT_BY_ID(habitId)}/toggle`, {});
+        if (result && typeof result === 'object' && result.success === false) {
+          throw new Error(result.message || TEXTS.ERROR_UPDATE_MESSAGE);
+        }
+        const updatedHabit = result?.data ?? result;
+        if (!updatedHabit?._id) {
+          throw new Error(TEXTS.ERROR_UPDATE_MESSAGE);
+        }
         setHabits((prev) =>
           prev.map((h) => (h._id === habitId ? updatedHabit : h))
         );
@@ -205,8 +210,11 @@ export function useHabitsScreen({ route, navigation }) {
             label: 'Deshacer',
             onPress: async () => {
               try {
-                const undo = await api.patch(`${ENDPOINTS.HABIT_BY_ID(habitId)}/toggle`);
-                const undoHabit = undo.data;
+                const undo = await api.patch(`${ENDPOINTS.HABIT_BY_ID(habitId)}/toggle`, {});
+                const undoHabit = undo?.data ?? undo;
+                if (!undoHabit?._id) {
+                  throw new Error(TEXTS.ERROR_UPDATE_MESSAGE);
+                }
                 setHabits((prev) => prev.map((h) => (h._id === habitId ? undoHabit : h)));
                 await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               } catch (undoErr) {
@@ -232,7 +240,7 @@ export function useHabitsScreen({ route, navigation }) {
   const toggleArchiveHabit = useCallback(
     async (habitId) => {
       try {
-        const result = await api.patch(`${ENDPOINTS.HABIT_BY_ID(habitId)}/archive`);
+        const result = await api.patch(`${ENDPOINTS.HABIT_BY_ID(habitId)}/archive`, {});
         const updatedHabit = result.data || result;
         if (filterType === FILTER_TYPES.ACTIVE && updatedHabit.status?.archived) {
           setHabits((prev) => prev.filter((h) => h._id !== habitId));
@@ -251,7 +259,7 @@ export function useHabitsScreen({ route, navigation }) {
             label: 'Deshacer',
             onPress: async () => {
               try {
-                const undo = await api.patch(`${ENDPOINTS.HABIT_BY_ID(habitId)}/archive`);
+                const undo = await api.patch(`${ENDPOINTS.HABIT_BY_ID(habitId)}/archive`, {});
                 const undoHabit = undo.data || undo;
                 if (filterType === FILTER_TYPES.ACTIVE && undoHabit.status?.archived) {
                   setHabits((prev) => prev.filter((h) => h._id !== habitId));

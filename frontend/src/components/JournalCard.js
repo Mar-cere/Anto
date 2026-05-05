@@ -13,7 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { commonStyles, cardColors, CardHeader } from './common/CardStyles';
+import { commonStyles, CardHeader } from './common/CardStyles';
 import {
   FOCUS_INNER_ROW,
   FOCUS_CHEVRON_MUTED,
@@ -21,6 +21,10 @@ import {
   FOCUS_META,
   FOCUS_BORDER_SUBTLE,
 } from '../styles/focusCardTheme';
+import {
+  getGratitudeEntryPreviewLine,
+  sanitizeGratitudeEntriesFromStorage,
+} from '../utils/gratitudeJournalEntry';
 
 const GRATITUDE_ENTRIES_KEY = 'gratitudeJournalEntries';
 
@@ -47,11 +51,12 @@ const JournalCard = () => {
         if (!saved) return;
         const parsed = JSON.parse(saved);
         if (!Array.isArray(parsed)) return;
-        setEntriesCount(parsed.length);
-        const latest = parsed[0];
-        if (latest?.text) setLastEntryText(String(latest.text));
+        const sanitized = sanitizeGratitudeEntriesFromStorage(parsed);
+        setEntriesCount(sanitized.length);
+        const latest = sanitized[0];
+        if (latest) setLastEntryText(getGratitudeEntryPreviewLine(latest, 140));
         if (latest?.date) setLastEntryDate(latest.date);
-      } catch (e) {
+      } catch (_e) {
         // si falla, el card funciona igual en modo estático
       }
     };

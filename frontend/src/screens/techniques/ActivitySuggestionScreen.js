@@ -18,7 +18,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
+import ParticleBackground from '../../components/ParticleBackground';
 import { colors } from '../../styles/globalStyles';
+import { techniqueScreenStyles } from './techniqueScreenStyles';
 
 const ACTIVITIES = [
   {
@@ -92,14 +94,17 @@ const ActivitySuggestionScreen = () => {
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" />
+      <ParticleBackground />
       <Header
         title="Actividades Sugeridas"
-        onBack={() => navigation.goBack()}
+        showBackButton
+        onBackPress={() => navigation.goBack()}
       />
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.introContainer}>
-          <Text style={styles.introTitle}>🎯 Elige una actividad</Text>
-          <Text style={styles.introText}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={techniqueScreenStyles.scrollContent}>
+        <View style={techniqueScreenStyles.introPanel}>
+          <Text style={techniqueScreenStyles.introKicker}>Actividades</Text>
+          <Text style={techniqueScreenStyles.introTitle}>Elige una actividad</Text>
+          <Text style={techniqueScreenStyles.introText}>
             Estas actividades pueden ayudarte a mejorar tu estado de ánimo y bienestar.
           </Text>
         </View>
@@ -108,33 +113,33 @@ const ActivitySuggestionScreen = () => {
           <TouchableOpacity
             key={activity.id}
             style={[
-              styles.activityCard,
-              selectedActivity?.id === activity.id && styles.activityCardSelected
+              techniqueScreenStyles.card,
+              selectedActivity?.id === activity.id && techniqueScreenStyles.cardSelected,
             ]}
             onPress={() => handleSelectActivity(activity)}
           >
-            <View style={styles.activityHeader}>
-              <View style={styles.iconContainer}>
+            <View style={techniqueScreenStyles.rowHeader}>
+              <View style={techniqueScreenStyles.iconTile}>
                 <MaterialCommunityIcons
                   name={activity.icon}
-                  size={32}
+                  size={28}
                   color={colors.primary}
                 />
               </View>
-              <View style={styles.activityInfo}>
-                <Text style={styles.activityTitle}>{activity.title}</Text>
-                <Text style={styles.activityCategory}>{activity.category}</Text>
+              <View style={techniqueScreenStyles.infoColumn}>
+                <Text style={techniqueScreenStyles.cardTitle}>{activity.title}</Text>
+                <Text style={techniqueScreenStyles.cardCategory}>{activity.category}</Text>
               </View>
             </View>
-            <Text style={styles.activityDescription}>{activity.description}</Text>
+            <Text style={techniqueScreenStyles.cardBody}>{activity.description}</Text>
             {selectedActivity?.id === activity.id && (
-              <View style={styles.selectedIndicator}>
+              <View style={techniqueScreenStyles.selectedRow}>
                 <MaterialCommunityIcons
                   name="check-circle"
-                  size={24}
+                  size={22}
                   color={colors.success}
                 />
-                <Text style={styles.selectedText}>Actividad seleccionada</Text>
+                <Text style={techniqueScreenStyles.selectedRowText}>Actividad seleccionada</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -152,83 +157,6 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    padding: 20,
-  },
-  introContainer: {
-    marginBottom: 30,
-  },
-  introTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 10,
-  },
-  introText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    lineHeight: 24,
-  },
-  activityCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  activityCardSelected: {
-    borderColor: colors.primary,
-    borderWidth: 2,
-  },
-  activityHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(26, 221, 219, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  activityInfo: {
-    flex: 1,
-  },
-  activityTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 4,
-  },
-  activityCategory: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
-  },
-  activityDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
-  selectedIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  selectedText: {
-    fontSize: 14,
-    color: colors.success,
-    marginLeft: 8,
-    fontWeight: '600',
-  },
 });
 
 export default ActivitySuggestionScreen;
-

@@ -21,7 +21,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
+import ParticleBackground from '../../components/ParticleBackground';
 import { colors } from '../../styles/globalStyles';
+import { FOCUS_META } from '../../styles/focusCardTheme';
+import { techniqueScreenStyles } from './techniqueScreenStyles';
 
 const TECHNIQUES = [
   {
@@ -68,16 +71,17 @@ const CommunicationToolScreen = () => {
 
   const handleSave = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    // Aquí se podría guardar la práctica
     navigation.goBack();
   };
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" />
+      <ParticleBackground />
       <Header
         title="Herramienta de Comunicación"
-        onBack={() => navigation.goBack()}
+        showBackButton
+        onBackPress={() => navigation.goBack()}
       />
       <KeyboardAvoidingView
         style={styles.content}
@@ -85,94 +89,98 @@ const CommunicationToolScreen = () => {
       >
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={techniqueScreenStyles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.introText}>
-            Estas técnicas te ayudarán a comunicarte de manera más efectiva y empática.
-          </Text>
+          <View style={techniqueScreenStyles.introPanel}>
+            <Text style={techniqueScreenStyles.introKicker}>Comunicación</Text>
+            <Text style={techniqueScreenStyles.introTitle}>Herramientas empáticas</Text>
+            <Text style={[techniqueScreenStyles.introText, styles.introCenter]}>
+              Estas técnicas te ayudarán a comunicarte de manera más efectiva y empática.
+            </Text>
+          </View>
 
-          {/* Lista de técnicas */}
           {!selectedTechnique && (
-            <View style={styles.techniquesList}>
+            <View style={techniqueScreenStyles.listGap}>
               {TECHNIQUES.map((technique) => (
                 <TouchableOpacity
                   key={technique.id}
-                  style={styles.techniqueCard}
+                  style={techniqueScreenStyles.card}
                   onPress={() => handleSelectTechnique(technique)}
                 >
-                  <View style={styles.techniqueHeader}>
-                    <MaterialCommunityIcons
-                      name={technique.icon}
-                      size={32}
-                      color={colors.primary}
-                    />
-                    <Text style={styles.techniqueTitle}>{technique.title}</Text>
+                  <View style={techniqueScreenStyles.rowHeader}>
+                    <View style={techniqueScreenStyles.iconTile}>
+                      <MaterialCommunityIcons
+                        name={technique.icon}
+                        size={28}
+                        color={colors.primary}
+                      />
+                    </View>
+                    <View style={techniqueScreenStyles.infoColumn}>
+                      <Text style={techniqueScreenStyles.cardTitle}>{technique.title}</Text>
+                    </View>
                   </View>
-                  <Text style={styles.techniqueDescription}>
-                    {technique.description}
-                  </Text>
-                  <Text style={styles.techniqueExample}>{technique.example}</Text>
+                  <Text style={techniqueScreenStyles.cardBody}>{technique.description}</Text>
+                  <Text style={techniqueScreenStyles.practiceExample}>{technique.example}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           )}
 
-          {/* Vista de práctica */}
           {selectedTechnique && (
-            <View style={styles.practiceContainer}>
+            <View style={techniqueScreenStyles.practiceBlock}>
               <TouchableOpacity
-                style={styles.backButton}
+                style={techniqueScreenStyles.inlineBackRow}
                 onPress={() => setSelectedTechnique(null)}
               >
                 <MaterialCommunityIcons
                   name="arrow-left"
-                  size={24}
+                  size={22}
                   color={colors.primary}
                 />
-                <Text style={styles.backButtonText}>Volver</Text>
+                <Text style={techniqueScreenStyles.inlineBackLabel}>Volver</Text>
               </TouchableOpacity>
 
-              <View style={styles.practiceCard}>
-                <MaterialCommunityIcons
-                  name={selectedTechnique.icon}
-                  size={48}
-                  color={colors.primary}
-                  style={styles.practiceIcon}
-                />
-                <Text style={styles.practiceTitle}>{selectedTechnique.title}</Text>
-                <Text style={styles.practiceDescription}>
-                  {selectedTechnique.description}
-                </Text>
-                <Text style={styles.practiceExample}>
-                  {selectedTechnique.example}
-                </Text>
+              <MaterialCommunityIcons
+                name={selectedTechnique.icon}
+                size={44}
+                color={colors.primary}
+                style={styles.practiceIcon}
+              />
+              <Text style={techniqueScreenStyles.formSectionHeading}>
+                {selectedTechnique.title}
+              </Text>
+              <Text style={[techniqueScreenStyles.cardBody, styles.practiceCenter]}>
+                {selectedTechnique.description}
+              </Text>
+              <Text style={techniqueScreenStyles.practiceExample}>
+                {selectedTechnique.example}
+              </Text>
 
-                <Text style={styles.practiceLabel}>
-                  Practica escribiendo un mensaje usando esta técnica:
-                </Text>
-                <TextInput
-                  style={styles.practiceInput}
-                  placeholder="Escribe tu mensaje aquí..."
-                  placeholderTextColor={colors.textSecondary}
-                  value={practiceText}
-                  onChangeText={setPracticeText}
-                  multiline
-                  numberOfLines={6}
-                  textAlignVertical="top"
-                />
+              <Text style={techniqueScreenStyles.formHint}>
+                Practica escribiendo un mensaje usando esta técnica:
+              </Text>
+              <TextInput
+                style={[techniqueScreenStyles.textInput, techniqueScreenStyles.textInputTall]}
+                placeholder="Escribe tu mensaje aquí..."
+                placeholderTextColor={FOCUS_META}
+                value={practiceText}
+                onChangeText={setPracticeText}
+                multiline
+                numberOfLines={6}
+                textAlignVertical="top"
+              />
 
-                <TouchableOpacity
-                  style={[
-                    styles.saveButton,
-                    !practiceText.trim() && styles.saveButtonDisabled,
-                  ]}
-                  onPress={handleSave}
-                  disabled={!practiceText.trim()}
-                >
-                  <Text style={styles.saveButtonText}>Guardar Práctica</Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                style={[
+                  techniqueScreenStyles.saveButton,
+                  !practiceText.trim() && techniqueScreenStyles.saveButtonDisabled,
+                ]}
+                onPress={handleSave}
+                disabled={!practiceText.trim()}
+              >
+                <Text style={techniqueScreenStyles.saveButtonText}>Guardar práctica</Text>
+              </TouchableOpacity>
             </View>
           )}
         </ScrollView>
@@ -192,139 +200,17 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  introText: {
-    fontSize: 16,
-    color: colors.textSecondary,
+  introCenter: {
     textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 24,
-  },
-  techniquesList: {
-    gap: 16,
-  },
-  techniqueCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  techniqueHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    gap: 12,
-  },
-  techniqueTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.text,
-    flex: 1,
-  },
-  techniqueDescription: {
-    fontSize: 15,
-    color: colors.text,
-    marginBottom: 8,
-    lineHeight: 22,
-  },
-  techniqueExample: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontStyle: 'italic',
-    marginTop: 8,
-    paddingLeft: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.primary,
-  },
-  practiceContainer: {
-    flex: 1,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    gap: 8,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  practiceCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   practiceIcon: {
     alignSelf: 'center',
-    marginBottom: 16,
-  },
-  practiceTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
-    textAlign: 'center',
     marginBottom: 12,
   },
-  practiceDescription: {
-    fontSize: 16,
-    color: colors.text,
+  practiceCenter: {
     textAlign: 'center',
-    marginBottom: 12,
-    lineHeight: 24,
-  },
-  practiceExample: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    marginBottom: 24,
-    padding: 12,
-    backgroundColor: colors.background,
-    borderRadius: 8,
-  },
-  practiceLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 12,
-  },
-  practiceInput: {
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: colors.text,
-    minHeight: 150,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 20,
-  },
-  saveButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  saveButtonDisabled: {
-    backgroundColor: colors.border,
-    opacity: 0.5,
-  },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.white,
+    marginBottom: 8,
   },
 });
 
 export default CommunicationToolScreen;
-

@@ -40,6 +40,10 @@ import { isValidSessionIntentionId } from '../constants/sessionIntention';
 import { newClientRequestId } from '../utils/clientRequestId';
 import { isValidMongoObjectId24 } from '../utils/mongoId';
 import { sanitizeProposedProductActions } from '../utils/sanitizeProposedProductActions';
+import {
+  parseGuestHandoffPendingFromStorage,
+  parseUserIdFromUserDataStorage,
+} from '../utils/safeStorageJson';
 
 export function useChatScreen() {
   const navigation = useNavigation();
@@ -1106,7 +1110,7 @@ export function useChatScreen() {
   const guestHandoffUseSummary = useCallback(async () => {
     const summaryText = guestHandoffModal?.summaryText;
     if (!summaryText) return;
-    const prefill = `Continuando desde el chat sin cuenta (podés editar esto antes de enviar):\n\n${summaryText}`;
+    const prefill = `Continuando desde el chat sin cuenta (puedes editar esto antes de enviar):\n\n${summaryText}`;
     setInputText(prefill);
     try {
       await chatService.clearGuestHandoff();
@@ -1128,21 +1132,15 @@ export function useChatScreen() {
       if (await chatService.isGuestChatMode()) return;
       const raw = await AsyncStorage.getItem(STORAGE_KEYS.GUEST_HANDOFF_PENDING);
       if (!raw) return;
-      let data;
-      try {
-        data = JSON.parse(raw);
-      } catch {
-        await chatService.clearGuestHandoff();
-        return;
-      }
-      if (!data?.summaryText) {
+      const payload = parseGuestHandoffPendingFromStorage(raw);
+      if (!payload) {
         await chatService.clearGuestHandoff();
         return;
       }
       guestHandoffUiShownRef.current = true;
       setGuestHandoffModal({
-        summaryText: data.summaryText,
-        messageCount: data.messageCount ?? 0,
+        summaryText: payload.summaryText,
+        messageCount: payload.messageCount,
       });
     } catch (e) {
       console.warn('[GuestHandoff]', e);
@@ -1190,11 +1188,8 @@ export function useChatScreen() {
     const connectWebSocket = async () => {
       try {
         const userData = await AsyncStorage.getItem('userData');
-        if (userData) {
-          const parsed = JSON.parse(userData);
-          const userId = parsed._id || parsed.id;
-          if (userId) await websocketService.connect(userId);
-        }
+        const userId = parseUserIdFromUserDataStorage(userData);
+        if (userId) await websocketService.connect(userId);
       } catch (err) {
         console.error('[ChatScreen] Error conectando WebSocket:', err);
       }

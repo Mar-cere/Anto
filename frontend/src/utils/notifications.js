@@ -2,6 +2,40 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import notifications from '../data/notifications';
 
+const TriggerType = Notifications.SchedulableTriggerInputTypes;
+
+/**
+ * Convierte triggers legados ({ seconds }) o Date al formato exigido por expo-notifications.
+ * @see https://docs.expo.dev/versions/latest/sdk/notifications/#notificationtriggerinput
+ */
+function normalizeSchedulableTrigger(trigger) {
+  if (trigger == null) return trigger;
+  if (typeof trigger === 'number' || trigger instanceof Date) {
+    return trigger;
+  }
+  if (typeof trigger !== 'object') return trigger;
+  if (trigger.type) return trigger;
+  if (typeof trigger.seconds === 'number') {
+    return {
+      type: TriggerType.TIME_INTERVAL,
+      seconds: Math.max(1, Math.floor(trigger.seconds)),
+      repeats: Boolean(trigger.repeats),
+    };
+  }
+  if (
+    typeof trigger.hour === 'number' &&
+    typeof trigger.minute === 'number' &&
+    trigger.repeats === true
+  ) {
+    return {
+      type: TriggerType.DAILY,
+      hour: trigger.hour,
+      minute: trigger.minute,
+    };
+  }
+  return trigger;
+}
+
 // Función para programar una notificación local
 export const scheduleLocalNotification = async (title, body, trigger) => {
   await Notifications.scheduleNotificationAsync({
@@ -11,7 +45,7 @@ export const scheduleLocalNotification = async (title, body, trigger) => {
       sound: true,
       priority: Notifications.AndroidNotificationPriority.HIGH,
     },
-    trigger,
+    trigger: normalizeSchedulableTrigger(trigger),
   });
 };
 
@@ -67,9 +101,9 @@ export const scheduleDailyNotification = async (hour, minute) => {
       },
     },
     trigger: {
+      type: TriggerType.DAILY,
       hour,
       minute,
-      repeats: true,
     },
   });
   // Programar una notificación inmediata para que el usuario reciba una notificación al activar
@@ -96,10 +130,13 @@ export const scheduleDailyNotification = async (hour, minute) => {
 // Función para programar notificaciones alternadas
 export const scheduleAlternateNotifications = async () => {
   await Notifications.cancelAllScheduledNotificationsAsync();
-  
+
   const notification = getRandomNotification();
-  
-  // Programar notificación para mañana
+
+  const tomorrowAt10 = new Date();
+  tomorrowAt10.setDate(tomorrowAt10.getDate() + 1);
+  tomorrowAt10.setHours(10, 0, 0, 0);
+
   await Notifications.scheduleNotificationAsync({
     content: {
       title: notification.title,
@@ -108,14 +145,16 @@ export const scheduleAlternateNotifications = async () => {
       priority: Notifications.AndroidNotificationPriority.HIGH,
     },
     trigger: {
-      hour: 10, // 10:00 AM
-      minute: 0,
-      repeats: false,
+      type: TriggerType.DATE,
+      date: tomorrowAt10,
     },
   });
 
-  // Programar la siguiente notificación para pasado mañana
   const nextNotification = getRandomNotification();
+  const dayAfterAt10 = new Date();
+  dayAfterAt10.setDate(dayAfterAt10.getDate() + 2);
+  dayAfterAt10.setHours(10, 0, 0, 0);
+
   await Notifications.scheduleNotificationAsync({
     content: {
       title: nextNotification.title,
@@ -124,11 +163,8 @@ export const scheduleAlternateNotifications = async () => {
       priority: Notifications.AndroidNotificationPriority.HIGH,
     },
     trigger: {
-      hour: 10, // 10:00 AM
-      minute: 0,
-      repeats: false,
-      // Se enviará en 48 horas
-      seconds: 48 * 60 * 60,
+      type: TriggerType.DATE,
+      date: dayAfterAt10,
     },
   });
 };
@@ -136,10 +172,10 @@ export const scheduleAlternateNotifications = async () => {
 // Función para programar múltiples notificaciones al día
 export const scheduleMultipleDailyNotifications = async (times) => {
   await Notifications.cancelAllScheduledNotificationsAsync();
-  
+
   for (const time of times) {
     const notification = getRandomNotification();
-    
+
     await Notifications.scheduleNotificationAsync({
       content: {
         title: notification.title,
@@ -148,9 +184,9 @@ export const scheduleMultipleDailyNotifications = async (times) => {
         priority: Notifications.AndroidNotificationPriority.HIGH,
       },
       trigger: {
+        type: TriggerType.DAILY,
         hour: time.hour,
         minute: time.minute,
-        repeats: true,
       },
     });
   }
@@ -174,14 +210,19 @@ export const scheduleTaskNotification = async (task) => {
   if (Array.isArray(task.notifications)) {
     for (const notif of task.notifications) {
       if (notif.enabled && notif.time) {
+        const when = new Date(notif.time);
+        if (Number.isNaN(when.getTime())) continue;
         await Notifications.scheduleNotificationAsync({
           content: {
             title: task.title,
             body: task.description || 'Tienes una tarea pendiente en Anto',
             sound: true,
-            data: { taskId: task._id }
+            data: { taskId: task._id },
           },
-          trigger: new Date(notif.time)
+          trigger: {
+            type: TriggerType.DATE,
+            date: when,
+          },
         });
       }
     }
@@ -213,7 +254,6 @@ export const scheduleHabitNotification = async (habit) => {
     } else if (typeof reminderTime === 'string') {
       triggerDate = new Date(reminderTime);
     } else {
-      // Si no es una fecha válida, programar para mañana a las 9 AM
       triggerDate = new Date();
       triggerDate.setDate(triggerDate.getDate() + 1);
       triggerDate.setHours(9, 0, 0, 0);
@@ -230,7 +270,7 @@ export const scheduleHabitNotification = async (habit) => {
     const now = new Date();
     const targetTime = new Date(triggerDate);
     let secondsUntilTarget = Math.max(1, Math.floor((targetTime - now) / 1000));
-    
+
     // Si la hora ya pasó, programar para mañana
     if (secondsUntilTarget <= 0) {
       const tomorrow = new Date();
@@ -239,7 +279,6 @@ export const scheduleHabitNotification = async (habit) => {
       secondsUntilTarget = Math.max(1, Math.floor((tomorrow - now) / 1000));
     }
 
-    // Usar un trigger basado en segundos para mayor compatibilidad
     await Notifications.scheduleNotificationAsync({
       content: {
         title: `¡No olvides tu hábito!`,
@@ -253,18 +292,18 @@ export const scheduleHabitNotification = async (habit) => {
         },
         ios: {
           sound: true,
-        }
+        },
       },
       trigger: {
+        type: TriggerType.TIME_INTERVAL,
         seconds: secondsUntilTarget,
-        repeats: false
-      }
+        repeats: false,
+      },
     });
 
-    console.log(`Notificación programada para hábito: ${habit.title} en ${secondsUntilTarget} segundos (${Math.floor(secondsUntilTarget/60)} minutos)`);
+    console.log(`Notificación programada para hábito: ${habit.title} en ${secondsUntilTarget} segundos (${Math.floor(secondsUntilTarget / 60)} minutos)`);
   } catch (error) {
     console.error('Error scheduling habit notification:', error);
-    // Si falla, intentar con una notificación más simple
     try {
       await Notifications.scheduleNotificationAsync({
         content: {
@@ -274,8 +313,10 @@ export const scheduleHabitNotification = async (habit) => {
           data: { habitId: habit._id },
         },
         trigger: {
-          seconds: 60, // Notificar en 1 minuto como fallback
-        }
+          type: TriggerType.TIME_INTERVAL,
+          seconds: 60,
+          repeats: false,
+        },
       });
       console.log(`Notificación de fallback programada para hábito: ${habit.title}`);
     } catch (fallbackError) {

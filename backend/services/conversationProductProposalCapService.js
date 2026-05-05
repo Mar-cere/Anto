@@ -25,12 +25,12 @@ export const COOLDOWN_MS_BY_NEED_LEVEL = {
 
 function buildAskFirstPrompt(userContent) {
   if (/estudiar|examen|materia|temario|apunte/i.test(userContent)) {
-    return '¿Quieres que lo baje a una tarea concreta de estudio?';
+    return '¿Quieres que lo convirtamos en una tarea de estudio concreta?';
   }
   if (/cocina|encimera|escritorio|desorden/i.test(userContent)) {
-    return '¿Quieres que lo convierta en una tarea concreta para empezar ahora?';
+    return '¿Quieres que lo convirtamos en una tarea concreta para empezar ahora?';
   }
-  return '¿Quieres que lo baje a una tarea concreta?';
+  return '¿Quieres que lo pasemos a una tarea concreta?';
 }
 
 /**

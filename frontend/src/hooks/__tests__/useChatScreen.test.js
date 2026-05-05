@@ -3,11 +3,19 @@
  * @author AntoApp Team
  */
 
+/* global beforeAll, beforeEach, describe, expect, it, jest */
+
 jest.mock('react-native', () => ({
   Alert: { alert: jest.fn() },
   Animated: {
     Value: jest.fn(() => ({ setValue: jest.fn() })),
     timing: jest.fn(() => ({ start: jest.fn() })),
+  },
+  InteractionManager: {
+    runAfterInteractions: jest.fn((cb) => {
+      if (typeof cb === 'function') cb();
+      return { cancel: jest.fn() };
+    }),
   },
 }));
 jest.mock('../../styles/globalStyles', () => ({ colors: {} }));
@@ -106,7 +114,6 @@ jest.mock('../../screens/chat/chatScreenConstants', () => ({
     GUEST_SESSION_EXPIRED_MESSAGE: 'Expiró',
     GUEST_RATE_LIMIT_TITLE: 'Rate',
     GUEST_CONTENT_TOO_LONG_TITLE: 'Largo',
-    NETWORK_ERROR: 'Sin red',
     GUEST_HANDOFF_TITLE: 'Handoff',
     GUEST_HANDOFF_BODY: 'Body',
     GUEST_HANDOFF_PRIVACY: 'Privacidad',
@@ -123,30 +130,38 @@ jest.mock('../../services/chatOfflinePending', () => ({
   clearOfflinePendingMessage: jest.fn(() => Promise.resolve()),
 }));
 
-const mockAsyncStorage = {
-  getItem: jest.fn((key) => {
-    if (key === 'userToken') return Promise.resolve('token');
-    if (key === 'userData') return Promise.resolve(JSON.stringify({ _id: 'user1' }));
-    if (key === 'conversationId') return Promise.resolve(null);
-    return Promise.resolve(null);
-  }),
-  setItem: jest.fn().mockResolvedValue(undefined),
-  removeItem: jest.fn().mockResolvedValue(undefined),
-};
-jest.mock('@react-native-async-storage/async-storage', () => ({ __esModule: true, default: mockAsyncStorage }));
+jest.mock('@react-native-async-storage/async-storage', () => {
+  const mock = {
+    getItem: jest.fn(),
+    setItem: jest.fn().mockResolvedValue(undefined),
+    removeItem: jest.fn().mockResolvedValue(undefined),
+  };
+  return { __esModule: true, default: mock };
+});
 
 jest.mock('expo-haptics', () => ({
   notificationAsync: jest.fn().mockResolvedValue(undefined),
   NotificationFeedbackType: { Success: 1 },
 }));
 
+/* eslint-disable import/first -- mocks Jest antes de imports del SUT */
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { renderHook, act } from '@testing-library/react-native';
 import { useChatScreen } from '../useChatScreen';
+/* eslint-enable import/first */
 
 describe('useChatScreen', () => {
+  beforeAll(() => {
+    global.requestAnimationFrame = jest.fn((cb) => {
+      if (typeof cb === 'function') cb();
+      return 0;
+    });
+    global.cancelAnimationFrame = jest.fn();
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
-    mockAsyncStorage.getItem.mockImplementation((key) => {
+    AsyncStorage.getItem.mockImplementation((key) => {
       if (key === 'userToken') return Promise.resolve('token');
       if (key === 'userData') return Promise.resolve(JSON.stringify({ _id: 'user1' }));
       return Promise.resolve(null);

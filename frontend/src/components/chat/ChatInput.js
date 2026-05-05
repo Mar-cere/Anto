@@ -31,23 +31,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: CHAT_COLORS.INPUT_FIELD_BACKGROUND,
     borderRadius: LAYOUT.INPUT_BORDER_RADIUS,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CHAT_COLORS.INPUT_FIELD_BORDER,
     paddingHorizontal: LAYOUT.INPUT_PADDING_HORIZONTAL,
     paddingVertical: LAYOUT.INPUT_PADDING_VERTICAL,
     color: CHAT_COLORS.WHITE,
     maxHeight: LAYOUT.INPUT_MAX_HEIGHT,
     fontSize: 16,
+    lineHeight: 22,
   },
   sendButton: {
     width: LAYOUT.SEND_BUTTON_SIZE,
     height: LAYOUT.SEND_BUTTON_SIZE,
     borderRadius: LAYOUT.SEND_BUTTON_BORDER_RADIUS,
     backgroundColor: CHAT_COLORS.SEND_BUTTON_BACKGROUND,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CHAT_COLORS.SEND_BUTTON_BORDER,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: LAYOUT.SEND_BUTTON_MARGIN_LEFT,
   },
   sendButtonDisabled: {
     backgroundColor: CHAT_COLORS.SEND_BUTTON_DISABLED_BACKGROUND,
+    borderColor: CHAT_COLORS.INPUT_FIELD_BORDER,
   },
 });
 
@@ -76,16 +82,21 @@ export default function ChatInput({
         ref={inputRef}
         style={styles.input}
         placeholder={placeholder}
-        placeholderTextColor={CHAT_COLORS.ACCENT}
+        placeholderTextColor={CHAT_COLORS.INPUT_PLACEHOLDER}
         value={value}
         onChangeText={onChangeText}
         multiline
         maxLength={maxLength}
+        accessibilityLabel="Mensaje para Anto"
+        accessibilityHint="Escribe tu mensaje y usa el botón enviar"
       />
       <TouchableOpacity
         style={[styles.sendButton, cannotSend && styles.sendButtonDisabled]}
         onPress={onSend}
         disabled={cannotSend}
+        accessibilityRole="button"
+        accessibilityLabel="Enviar mensaje"
+        accessibilityState={{ disabled: cannotSend }}
       >
         <Ionicons
           name="send"

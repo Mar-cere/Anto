@@ -16,8 +16,8 @@ import { getApiErrorMessage } from '../utils/apiErrorHandler';
 
 const TEXTS = {
   TITLE: 'Para adaptarte mejor',
-  SUBTITLE: 'Tres preguntas cortas. Si no te encaja nada, podés omitir.',
-  Q1_LABEL: '¿Qué buscás acá?',
+  SUBTITLE: 'Tres preguntas cortas. Si no te encaja ninguna opción, puedes omitir.',
+  Q1_LABEL: '¿Qué buscas aquí?',
   Q2_LABEL: '¿En qué te gustaría avanzar?',
   Q3_LABEL: '¿Cómo te gustaría que te acompañe?',
   SKIP: 'Omitir',

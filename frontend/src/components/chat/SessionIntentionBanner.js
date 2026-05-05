@@ -3,22 +3,38 @@
  */
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { colors } from '../../styles/globalStyles';
+import {
+  FOCUS_ACCENT_BORDER,
+  FOCUS_BORDER_SUBTLE,
+  FOCUS_KICKER_COLOR,
+} from '../../styles/focusCardTheme';
 import { CHAT_COLORS, SESSION_INTENTION_OPTIONS, TEXTS } from '../../screens/chat/chatScreenConstants';
 
 const styles = StyleSheet.create({
   wrap: {
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 6,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: 'rgba(8, 14, 40, 0.92)',
+    borderTopColor: FOCUS_BORDER_SUBTLE,
+    backgroundColor: colors.cardBackground,
+  },
+  kicker: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: FOCUS_KICKER_COLOR,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   title: {
-    color: CHAT_COLORS.ACCENT,
-    fontSize: 13,
+    color: CHAT_COLORS.WHITE,
+    fontSize: 15,
     fontWeight: '600',
-    marginBottom: 8,
+    lineHeight: 21,
+    marginBottom: 12,
     textAlign: 'center',
   },
   row: {
@@ -28,17 +44,17 @@ const styles = StyleSheet.create({
   },
   chip: {
     width: '48%',
-    marginBottom: 8,
-    paddingVertical: 10,
+    marginBottom: 10,
+    paddingVertical: 12,
     paddingHorizontal: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(163, 184, 232, 0.35)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
+    backgroundColor: 'rgba(255,255,255,0.03)',
   },
   chipPressed: {
-    opacity: 0.85,
-    borderColor: 'rgba(26, 221, 219, 0.55)',
+    borderColor: FOCUS_ACCENT_BORDER,
+    backgroundColor: 'rgba(26, 221, 219, 0.08)',
   },
   chipDisabled: {
     opacity: 0.45,
@@ -46,32 +62,31 @@ const styles = StyleSheet.create({
   chipLabel: {
     color: CHAT_COLORS.WHITE,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     textAlign: 'center',
   },
   chipHint: {
-    color: CHAT_COLORS.ACCENT,
+    color: CHAT_COLORS.INPUT_PLACEHOLDER,
     fontSize: 11,
-    marginTop: 4,
+    marginTop: 6,
     textAlign: 'center',
-    opacity: 0.9,
-    lineHeight: 14,
+    lineHeight: 15,
   },
   skip: {
     alignSelf: 'center',
-    marginTop: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
   },
   skipText: {
     color: CHAT_COLORS.ACCENT,
-    fontSize: 12,
-    opacity: 0.85,
+    fontSize: 13,
+    fontWeight: '500',
     textDecorationLine: 'underline',
   },
   loading: {
     alignSelf: 'center',
-    marginVertical: 8,
+    marginVertical: 10,
   },
 });
 
@@ -85,9 +100,10 @@ export default function SessionIntentionBanner({
 
   return (
     <View style={styles.wrap} accessibilityRole="summary">
+      <Text style={styles.kicker}>{TEXTS.SESSION_INTENTION_KICKER}</Text>
       <Text style={styles.title}>{TEXTS.SESSION_INTENTION_TITLE}</Text>
       {submitting ? (
-        <ActivityIndicator style={styles.loading} color={CHAT_COLORS.ACCENT} />
+        <ActivityIndicator style={styles.loading} color={CHAT_COLORS.PRIMARY} />
       ) : (
         <View style={styles.row}>
           {SESSION_INTENTION_OPTIONS.map((opt) => (
@@ -110,7 +126,13 @@ export default function SessionIntentionBanner({
         </View>
       )}
       {!submitting && (
-        <Pressable style={styles.skip} onPress={onSkip} accessibilityRole="button">
+        <Pressable
+          style={styles.skip}
+          onPress={onSkip}
+          accessibilityRole="button"
+          accessibilityLabel={TEXTS.SESSION_INTENTION_SKIP}
+          accessibilityHint="Continúa el chat sin elegir un enfoque"
+        >
           <Text style={styles.skipText}>{TEXTS.SESSION_INTENTION_SKIP}</Text>
         </Pressable>
       )}

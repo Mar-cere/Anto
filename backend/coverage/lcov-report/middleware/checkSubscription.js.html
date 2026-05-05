@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">5.12% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>6/117</span>
+                <span class='fraction'>0/117</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">16.66% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/6</span>
+                <span class='fraction'>0/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">5.17% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>6/116</span>
+                <span class='fraction'>0/116</span>
             </div>
         
             
@@ -528,11 +528,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -540,12 +540,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -842,12 +842,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -918,7 +918,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -978,9 +978,9 @@ import User from '../models/User.js';
 import Message from '../models/Message.js';
 import paymentAuditService from '../services/paymentAuditService.js';
 &nbsp;
-const FIRST_SESSION_GRACE_WINDOW_MS = 24 * 60 * 60 * 1000;
+const FIRST_SESSION_GRACE_WINDOW_MS = <span class="cstat-no" title="statement not covered" >24 * 60 * 60 * 1000;</span>
 &nbsp;
-const canApplyFirstSessionGrace = <span class="fstat-no" title="function not covered" >(r</span>eq) =&gt; {
+const canApplyFirstSessionGrace = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(r</span>eq) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  if (!req?.path) <span class="cstat-no" title="statement not covered" >return false;</span></span>
 <span class="cstat-no" title="statement not covered" >  return req.path === '/conversations' || req.path === '/messages';</span>
 };
@@ -990,8 +990,8 @@ const canApplyFirstSessionGrace = <span class="fstat-no" title="function not cov
  * @param {boolean} allowTrial - Si permitir usuarios en trial
  * @returns {Function} - Middleware de Express
  */
-export const requireActiveSubscription = (allowTrial = <span class="branch-0 cbranch-no" title="branch not covered" >true)</span> =&gt; {
-  return <span class="fstat-no" title="function not covered" >as</span>ync (req, res, next) =&gt; {
+export const requireActiveSubscription = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(a</span>llowTrial = <span class="branch-0 cbranch-no" title="branch not covered" >true)</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  return <span class="fstat-no" title="function not covered" >as</span>ync (req, res, next) =&gt; {</span>
     const startTime = <span class="cstat-no" title="statement not covered" >Date.now();</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const userId = <span class="cstat-no" title="statement not covered" >req.user?._id;</span>
@@ -1292,7 +1292,7 @@ export const requireActiveSubscription = (allowTrial = <span class="branch-0 cbr
  * Middleware para verificar si el usuario tiene acceso premium (no solo trial)
  * @returns {Function} - Middleware de Express
  */
-export const requirePremium = <span class="fstat-no" title="function not covered" >()</span> =&gt; {
+export const requirePremium = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  return <span class="fstat-no" title="function not covered" >as</span>ync (req, res, next) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const userId = <span class="cstat-no" title="statement not covered" >req.user?._id;</span>
@@ -1368,7 +1368,7 @@ export const requirePremium = <span class="fstat-no" title="function not covered
  * Middleware opcional: agrega información de suscripción sin bloquear
  * Útil para mostrar diferentes UI según el estado de suscripción
  */
-export const attachSubscriptionInfo = <span class="fstat-no" title="function not covered" >as</span>ync (req, res, next) =&gt; {
+export const attachSubscriptionInfo = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync (req, res, next) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const userId = <span class="cstat-no" title="statement not covered" >req.user?._id;</span>
 <span class="cstat-no" title="statement not covered" >    if (!userId) {</span>
@@ -1420,7 +1420,7 @@ export const attachSubscriptionInfo = <span class="fstat-no" title="function not
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-05T00:02:30.813Z
+                at 2026-05-05T19:16:29.846Z
             </div>
         <script src="../prettify.js"></script>
         <script>

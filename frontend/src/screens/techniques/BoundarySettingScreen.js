@@ -21,7 +21,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
+import ParticleBackground from '../../components/ParticleBackground';
 import { colors } from '../../styles/globalStyles';
+import { FOCUS_META } from '../../styles/focusCardTheme';
+import { techniqueScreenStyles } from './techniqueScreenStyles';
 
 const BOUNDARY_GUIDES = [
   {
@@ -58,7 +61,6 @@ const BoundarySettingScreen = () => {
   const handleSave = () => {
     if (boundaryText.trim()) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      // Aquí podrías guardar el límite establecido
       setBoundaryText('');
     }
   };
@@ -66,46 +68,51 @@ const BoundarySettingScreen = () => {
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" />
+      <ParticleBackground />
       <Header
         title="Establecer Límites"
-        onBack={() => navigation.goBack()}
+        showBackButton
+        onBackPress={() => navigation.goBack()}
       />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          <View style={styles.introContainer}>
-            <Text style={styles.introTitle}>🛡️ Establece límites saludables</Text>
-            <Text style={styles.introText}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={techniqueScreenStyles.scrollContent}>
+          <View style={techniqueScreenStyles.introPanel}>
+            <Text style={techniqueScreenStyles.introKicker}>Límites</Text>
+            <Text style={techniqueScreenStyles.introTitle}>Establece límites saludables</Text>
+            <Text style={techniqueScreenStyles.introText}>
               Los límites son importantes para tu bienestar. Te ayudan a proteger tu tiempo, energía y salud mental.
             </Text>
           </View>
 
           {BOUNDARY_GUIDES.map(guide => (
-            <View key={guide.id} style={styles.guideCard}>
-              <View style={styles.guideHeader}>
-                <View style={styles.iconContainer}>
+            <View key={guide.id} style={techniqueScreenStyles.card}>
+              <View style={techniqueScreenStyles.rowHeader}>
+                <View style={techniqueScreenStyles.iconTile}>
                   <MaterialCommunityIcons
                     name={guide.icon}
-                    size={32}
+                    size={28}
                     color={colors.primary}
                   />
                 </View>
-                <View style={styles.guideInfo}>
-                  <Text style={styles.guideTitle}>{guide.title}</Text>
+                <View style={techniqueScreenStyles.infoColumn}>
+                  <Text style={techniqueScreenStyles.cardTitle}>{guide.title}</Text>
                 </View>
               </View>
-              <Text style={styles.guideDescription}>{guide.description}</Text>
+              <Text style={techniqueScreenStyles.cardBody}>{guide.description}</Text>
             </View>
           ))}
 
-          <View style={styles.practiceContainer}>
-            <Text style={styles.practiceTitle}>Práctica: Escribe un límite que quieras establecer</Text>
+          <View style={techniqueScreenStyles.formBlock}>
+            <Text style={techniqueScreenStyles.formSectionHeading}>
+              Práctica: escribe un límite que quieras establecer
+            </Text>
             <TextInput
-              style={styles.input}
-              placeholder="Ejemplo: No responderé mensajes de trabajo después de las 8 PM"
-              placeholderTextColor={colors.textSecondary}
+              style={techniqueScreenStyles.textInput}
+              placeholder='Ejemplo: No responderé mensajes de trabajo después de las 8 PM'
+              placeholderTextColor={FOCUS_META}
               value={boundaryText}
               onChangeText={setBoundaryText}
               multiline
@@ -113,11 +120,14 @@ const BoundarySettingScreen = () => {
               textAlignVertical="top"
             />
             <TouchableOpacity
-              style={[styles.saveButton, !boundaryText.trim() && styles.saveButtonDisabled]}
+              style={[
+                techniqueScreenStyles.saveButton,
+                !boundaryText.trim() && techniqueScreenStyles.saveButtonDisabled,
+              ]}
               onPress={handleSave}
               disabled={!boundaryText.trim()}
             >
-              <Text style={styles.saveButtonText}>Guardar</Text>
+              <Text style={techniqueScreenStyles.saveButtonText}>Guardar</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -137,93 +147,6 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    padding: 20,
-  },
-  introContainer: {
-    marginBottom: 30,
-  },
-  introTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 10,
-  },
-  introText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    lineHeight: 24,
-  },
-  guideCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  guideHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(26, 221, 219, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  guideInfo: {
-    flex: 1,
-  },
-  guideTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.white,
-  },
-  guideDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
-  practiceContainer: {
-    marginTop: 20,
-  },
-  practiceTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 15,
-  },
-  input: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    color: colors.white,
-    fontSize: 16,
-    minHeight: 100,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 15,
-  },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
-  saveButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
 });
 
 export default BoundarySettingScreen;
-

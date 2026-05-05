@@ -24,6 +24,13 @@ import BreathingExercise from '../components/therapeutic/BreathingExercise';
 import GroundingExercise from '../components/therapeutic/GroundingExercise';
 import { api, ENDPOINTS } from '../config/api';
 import { colors } from '../styles/globalStyles';
+import {
+  FOCUS_ACCENT_BORDER,
+  FOCUS_BORDER_SUBTLE,
+  FOCUS_KICKER_COLOR,
+  FOCUS_META,
+  FOCUS_PANEL,
+} from '../styles/focusCardTheme';
 
 // Constantes de textos
 const TEXTS = {
@@ -56,7 +63,7 @@ const TechniqueDetailScreen = () => {
   if (!technique) {
     return (
       <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-        <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+        <StatusBar barStyle="light-content" backgroundColor={colors.background} />
         <ParticleBackground />
         <Header title="Técnica" showBackButton />
         <View style={styles.errorContainer}>
@@ -253,7 +260,7 @@ const TechniqueDetailScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
       <ParticleBackground />
       <Header title={technique.name} showBackButton />
       {renderContent()}
@@ -275,29 +282,32 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   header: {
-    marginBottom: 28,
+    marginBottom: 22,
+    ...FOCUS_PANEL,
   },
   typeBadge: {
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 14,
     marginBottom: 12,
   },
   typeText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
   title: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    color: colors.text,
-    lineHeight: 38,
-    letterSpacing: 0.3,
+    fontSize: 22,
+    fontWeight: '600',
+    color: colors.white,
+    lineHeight: 30,
+    letterSpacing: 0.2,
   },
   section: {
-    marginBottom: 28,
+    marginBottom: 20,
+    ...FOCUS_PANEL,
   },
   sectionTitleRow: {
     flexDirection: 'row',
@@ -306,16 +316,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 19,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 14,
-    letterSpacing: 0.3,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: FOCUS_KICKER_COLOR,
+    marginBottom: 12,
   },
   sectionContent: {
     fontSize: 16,
-    color: colors.textSecondary,
-    lineHeight: 26,
+    color: FOCUS_META,
+    lineHeight: 24,
     letterSpacing: 0.2,
   },
   stepItem: {
@@ -327,29 +338,33 @@ const styles = StyleSheet.create({
   stepNumber: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
+    borderRadius: 12,
+    backgroundColor: 'rgba(26, 221, 219, 0.22)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_ACCENT_BORDER,
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
   },
   stepNumberText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.white,
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.primary,
   },
   stepText: {
     flex: 1,
     fontSize: 16,
-    color: colors.text,
-    lineHeight: 26,
+    color: colors.white,
+    lineHeight: 24,
     letterSpacing: 0.2,
   },
   subTechnique: {
-    marginBottom: 20,
+    marginBottom: 16,
     padding: 16,
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
   },
   subTechniqueTitle: {
     fontSize: 16,
@@ -361,20 +376,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
-    paddingVertical: 18,
-    paddingHorizontal: 28,
-    borderRadius: 14,
+    backgroundColor: 'rgba(26, 221, 219, 0.2)',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 16,
     gap: 12,
-    marginTop: 24,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    marginTop: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_ACCENT_BORDER,
   },
   exerciseButtonText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.white,
   },
@@ -397,8 +409,10 @@ const styles = StyleSheet.create({
   retryButton: {
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: colors.primary,
+    borderRadius: 14,
+    backgroundColor: 'rgba(26, 221, 219, 0.18)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_ACCENT_BORDER,
   },
   retryButtonText: {
     fontSize: 16,

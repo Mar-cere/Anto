@@ -77,7 +77,7 @@ describe('chatProductActionLlmService', () => {
 
     const out = await chatProductActionLlmService.enrichProposedProductActionsWithLlm(actions, {
       userContent: 'Necesito llamar al contador',
-      assistantContent: 'Podés anotarlo como tarea.'
+      assistantContent: 'Puedes anotarlo como tarea.'
     });
 
     expect(createResilient).toHaveBeenCalled();

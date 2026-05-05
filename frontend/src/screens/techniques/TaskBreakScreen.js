@@ -18,7 +18,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
+import ParticleBackground from '../../components/ParticleBackground';
 import { colors } from '../../styles/globalStyles';
+import { techniqueScreenStyles } from './techniqueScreenStyles';
 
 const BREAK_ACTIVITIES = [
   {
@@ -81,7 +83,7 @@ const TaskBreakScreen = () => {
   const handleStartBreak = (activity) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedActivity(activity);
-    const minutes = parseInt(activity.duration);
+    const minutes = parseInt(activity.duration, 10);
     setTimeRemaining(minutes * 60);
     setIsActive(true);
   };
@@ -101,61 +103,66 @@ const TaskBreakScreen = () => {
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" />
+      <ParticleBackground />
       <Header
         title="Tomar un Descanso"
-        onBack={() => navigation.goBack()}
+        showBackButton
+        onBackPress={() => navigation.goBack()}
       />
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.introContainer}>
-          <Text style={styles.introTitle}>☕ Tómate un descanso</Text>
-          <Text style={styles.introText}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={techniqueScreenStyles.scrollContent}>
+        <View style={techniqueScreenStyles.introPanel}>
+          <Text style={techniqueScreenStyles.introKicker}>Pausa</Text>
+          <Text style={techniqueScreenStyles.introTitle}>Tómate un descanso</Text>
+          <Text style={techniqueScreenStyles.introText}>
             Los descansos regulares son importantes para mantener la productividad y el bienestar.
           </Text>
         </View>
 
         {isActive && selectedActivity ? (
-          <View style={styles.activeContainer}>
-            <View style={styles.timerContainer}>
-              <Text style={styles.timerText}>{formatTime(timeRemaining)}</Text>
-              <Text style={styles.timerLabel}>Tiempo restante</Text>
+          <View style={[techniqueScreenStyles.card, styles.activeWrap]}>
+            <View style={styles.timerBlock}>
+              <Text style={techniqueScreenStyles.timerText}>{formatTime(timeRemaining)}</Text>
+              <Text style={techniqueScreenStyles.timerLabel}>Tiempo restante</Text>
             </View>
-            <View style={styles.activityInfo}>
+            <View style={styles.activeIconBlock}>
               <MaterialCommunityIcons
                 name={selectedActivity.icon}
-                size={64}
+                size={56}
                 color={colors.primary}
               />
-              <Text style={styles.activityTitle}>{selectedActivity.title}</Text>
-              <Text style={styles.activityDescription}>{selectedActivity.description}</Text>
+              <Text style={techniqueScreenStyles.cardTitle}>{selectedActivity.title}</Text>
+              <Text style={[techniqueScreenStyles.cardBody, styles.activeDescription]}>
+                {selectedActivity.description}
+              </Text>
             </View>
-            <TouchableOpacity style={styles.stopButton} onPress={handleStop}>
-              <Text style={styles.stopButtonText}>Finalizar Descanso</Text>
+            <TouchableOpacity style={techniqueScreenStyles.stopButton} onPress={handleStop}>
+              <Text style={techniqueScreenStyles.stopButtonText}>Finalizar descanso</Text>
             </TouchableOpacity>
           </View>
         ) : (
           BREAK_ACTIVITIES.map(activity => (
             <TouchableOpacity
               key={activity.id}
-              style={styles.activityCard}
+              style={techniqueScreenStyles.card}
               onPress={() => handleStartBreak(activity)}
             >
-              <View style={styles.activityHeader}>
-                <View style={styles.iconContainer}>
+              <View style={techniqueScreenStyles.rowHeader}>
+                <View style={techniqueScreenStyles.iconTile}>
                   <MaterialCommunityIcons
                     name={activity.icon}
-                    size={32}
+                    size={28}
                     color={colors.primary}
                   />
                 </View>
-                <View style={styles.activityInfo}>
-                  <Text style={styles.activityTitle}>{activity.title}</Text>
-                  <Text style={styles.activityDuration}>{activity.duration}</Text>
+                <View style={techniqueScreenStyles.infoColumn}>
+                  <Text style={techniqueScreenStyles.cardTitle}>{activity.title}</Text>
+                  <Text style={techniqueScreenStyles.cardMeta}>{activity.duration}</Text>
                 </View>
               </View>
-              <Text style={styles.activityDescription}>{activity.description}</Text>
-              <TouchableOpacity style={styles.startButton}>
-                <Text style={styles.startButtonText}>Comenzar</Text>
-              </TouchableOpacity>
+              <Text style={techniqueScreenStyles.cardBody}>{activity.description}</Text>
+              <View style={techniqueScreenStyles.primaryButton}>
+                <Text style={techniqueScreenStyles.primaryButtonText}>Comenzar</Text>
+              </View>
             </TouchableOpacity>
           ))
         )}
@@ -172,112 +179,24 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    padding: 20,
-  },
-  introContainer: {
-    marginBottom: 30,
-  },
-  introTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 10,
-  },
-  introText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    lineHeight: 24,
-  },
-  activityCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  activityHeader: {
-    flexDirection: 'row',
+  activeWrap: {
     alignItems: 'center',
-    marginBottom: 12,
-  },
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(26, 221, 219, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  activityInfo: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  activityTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 4,
-  },
-  activityDuration: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  activityDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 15,
-  },
-  startButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-  },
-  startButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  activeContainer: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 24,
-    alignItems: 'center',
-    borderWidth: 1,
     borderColor: colors.primary,
+    borderWidth: StyleSheet.hairlineWidth,
   },
-  timerContainer: {
+  timerBlock: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 24,
+    alignSelf: 'stretch',
   },
-  timerText: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: colors.primary,
+  activeIconBlock: {
+    alignItems: 'center',
     marginBottom: 8,
+    alignSelf: 'stretch',
   },
-  timerLabel: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  stopButton: {
-    backgroundColor: colors.error,
-    borderRadius: 8,
-    padding: 16,
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  stopButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: 'bold',
+  activeDescription: {
+    textAlign: 'center',
   },
 });
 
 export default TaskBreakScreen;
-

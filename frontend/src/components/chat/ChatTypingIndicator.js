@@ -24,7 +24,7 @@ const styles = StyleSheet.create({
   typingAvatar: {
     width: LAYOUT.HEADER_AVATAR_SIZE,
     height: LAYOUT.HEADER_AVATAR_SIZE,
-    borderRadius: 15,
+    borderRadius: 12,
     marginRight: 8,
   },
   typingBubble: {
@@ -33,6 +33,8 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: LAYOUT.MESSAGE_BUBBLE_CORNER_RADIUS,
     padding: LAYOUT.MESSAGE_BUBBLE_PADDING,
     maxWidth: LAYOUT.TYPING_BUBBLE_MAX_WIDTH,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CHAT_COLORS.BOT_BUBBLE_BORDER,
   },
   typingDotsContainer: {
     flexDirection: 'row',

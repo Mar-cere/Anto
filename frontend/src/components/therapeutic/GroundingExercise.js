@@ -16,6 +16,11 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import {
+  FOCUS_ACCENT_BORDER,
+  FOCUS_BORDER_SUBTLE,
+  FOCUS_META,
+} from '../../styles/focusCardTheme';
 import { colors } from '../../styles/globalStyles';
 
 // Constantes de categorías
@@ -158,7 +163,7 @@ const GroundingExercise = ({ onComplete }) => {
     >
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.title}>{TEXTS.TITLE}</Text>
@@ -173,7 +178,10 @@ const GroundingExercise = ({ onComplete }) => {
               styles.progressDot,
               index === currentCategory && styles.progressDotActive,
               index < currentCategory && styles.progressDotCompleted,
-              { backgroundColor: index <= currentCategory ? cat.color : colors.border },
+              {
+                backgroundColor:
+                  index <= currentCategory ? cat.color : 'rgba(255,255,255,0.12)',
+              },
             ]}
           />
         ))}
@@ -217,7 +225,7 @@ const GroundingExercise = ({ onComplete }) => {
             <TextInput
               style={styles.input}
               placeholder={TEXTS.PLACEHOLDER}
-              placeholderTextColor={colors.textSecondary}
+              placeholderTextColor={FOCUS_META}
               value={currentInput}
               onChangeText={setCurrentInput}
               onSubmitEditing={handleAddResponse}
@@ -252,27 +260,28 @@ const GroundingExercise = ({ onComplete }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
   },
   scrollView: {
     flex: 1,
   },
-  content: {
-    padding: 20,
-    paddingBottom: 40,
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 48,
   },
   title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 12,
-    letterSpacing: 0.5,
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.white,
+    marginBottom: 10,
+    letterSpacing: 0.3,
   },
   description: {
     fontSize: 15,
-    color: colors.textSecondary,
+    color: FOCUS_META,
     lineHeight: 22,
-    marginBottom: 24,
+    marginBottom: 22,
     letterSpacing: 0.2,
   },
   progressContainer: {
@@ -296,8 +305,8 @@ const styles = StyleSheet.create({
   },
   categoryCard: {
     backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    borderWidth: 2,
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth * 2,
     overflow: 'hidden',
   },
   categoryHeader: {
@@ -305,6 +314,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     gap: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: FOCUS_BORDER_SUBTLE,
   },
   categoryTitle: {
     fontSize: 18,
@@ -319,12 +330,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 12,
-    backgroundColor: colors.background,
-    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
   },
   responseText: {
     fontSize: 14,
-    color: colors.text,
+    color: colors.white,
     flex: 1,
   },
   removeButton: {
@@ -337,26 +350,23 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: colors.cardBackground,
-    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 14,
     padding: 14,
     fontSize: 15,
-    color: colors.text,
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    color: colors.white,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
     minHeight: 48,
   },
   addButton: {
     width: 48,
     height: 48,
-    borderRadius: 10,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_ACCENT_BORDER,
   },
   nextButton: {
     flexDirection: 'row',
@@ -364,11 +374,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 18,
     gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 4,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   nextButtonText: {
     fontSize: 16,
@@ -382,23 +389,26 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   completedTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.white,
     marginTop: 20,
     marginBottom: 10,
   },
   completedText: {
-    fontSize: 16,
-    color: colors.textSecondary,
+    fontSize: 15,
+    color: FOCUS_META,
     textAlign: 'center',
     marginBottom: 30,
+    lineHeight: 22,
   },
   resetButton: {
-    paddingHorizontal: 30,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 14,
     backgroundColor: colors.primary,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_ACCENT_BORDER,
   },
   resetButtonText: {
     fontSize: 16,

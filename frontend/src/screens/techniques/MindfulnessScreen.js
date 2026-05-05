@@ -18,7 +18,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
+import ParticleBackground from '../../components/ParticleBackground';
 import { colors } from '../../styles/globalStyles';
+import { techniqueScreenStyles } from './techniqueScreenStyles';
 
 const MINDFULNESS_EXERCISES = [
   {
@@ -74,7 +76,7 @@ const MindfulnessScreen = () => {
   const handleStartExercise = (exercise) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedExercise(exercise);
-    const minutes = parseInt(exercise.duration);
+    const minutes = parseInt(exercise.duration, 10);
     setTimeRemaining(minutes * 60);
     setIsActive(true);
   };
@@ -94,56 +96,63 @@ const MindfulnessScreen = () => {
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" />
+      <ParticleBackground />
       <Header
         title="Mindfulness"
-        onBack={() => navigation.goBack()}
+        showBackButton
+        onBackPress={() => navigation.goBack()}
       />
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.introContainer}>
-          <Text style={styles.introTitle}>🧘 Practica la atención plena</Text>
-          <Text style={styles.introText}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={techniqueScreenStyles.scrollContent}>
+        <View style={techniqueScreenStyles.introPanel}>
+          <Text style={techniqueScreenStyles.introKicker}>Mindfulness</Text>
+          <Text style={techniqueScreenStyles.introTitle}>Practica la atención plena</Text>
+          <Text style={techniqueScreenStyles.introText}>
             El mindfulness puede ayudarte a reducir el estrés y mejorar tu bienestar mental.
           </Text>
         </View>
 
         {isActive && selectedExercise ? (
-          <View style={styles.activeExerciseContainer}>
-            <View style={styles.timerContainer}>
-              <Text style={styles.timerText}>{formatTime(timeRemaining)}</Text>
-              <Text style={styles.timerLabel}>Tiempo restante</Text>
+          <View style={[techniqueScreenStyles.card, styles.activeCard]}>
+            <View style={styles.timerBlock}>
+              <Text style={techniqueScreenStyles.timerText}>{formatTime(timeRemaining)}</Text>
+              <Text style={techniqueScreenStyles.timerLabel}>Tiempo restante</Text>
             </View>
-            <View style={styles.exerciseInfo}>
-              <Text style={styles.exerciseTitle}>{selectedExercise.title}</Text>
-              <Text style={styles.exerciseDescription}>{selectedExercise.description}</Text>
+            <View style={styles.activeCopy}>
+              <Text style={[techniqueScreenStyles.cardTitle, styles.activeTitle]}>
+                {selectedExercise.title}
+              </Text>
+              <Text style={[techniqueScreenStyles.cardBody, styles.activeBody]}>
+                {selectedExercise.description}
+              </Text>
             </View>
-            <TouchableOpacity style={styles.stopButton} onPress={handleStop}>
-              <Text style={styles.stopButtonText}>Detener</Text>
+            <TouchableOpacity style={techniqueScreenStyles.stopButton} onPress={handleStop}>
+              <Text style={techniqueScreenStyles.stopButtonText}>Detener</Text>
             </TouchableOpacity>
           </View>
         ) : (
           MINDFULNESS_EXERCISES.map(exercise => (
             <TouchableOpacity
               key={exercise.id}
-              style={styles.exerciseCard}
+              style={techniqueScreenStyles.card}
               onPress={() => handleStartExercise(exercise)}
             >
-              <View style={styles.exerciseHeader}>
-                <View style={styles.iconContainer}>
+              <View style={techniqueScreenStyles.rowHeader}>
+                <View style={techniqueScreenStyles.iconTile}>
                   <MaterialCommunityIcons
                     name={exercise.icon}
-                    size={32}
+                    size={28}
                     color={colors.primary}
                   />
                 </View>
-                <View style={styles.exerciseInfo}>
-                  <Text style={styles.exerciseTitle}>{exercise.title}</Text>
-                  <Text style={styles.exerciseDuration}>{exercise.duration}</Text>
+                <View style={techniqueScreenStyles.infoColumn}>
+                  <Text style={techniqueScreenStyles.cardTitle}>{exercise.title}</Text>
+                  <Text style={techniqueScreenStyles.cardMeta}>{exercise.duration}</Text>
                 </View>
               </View>
-              <Text style={styles.exerciseDescription}>{exercise.description}</Text>
-              <TouchableOpacity style={styles.startButton}>
-                <Text style={styles.startButtonText}>Comenzar</Text>
-              </TouchableOpacity>
+              <Text style={techniqueScreenStyles.cardBody}>{exercise.description}</Text>
+              <View style={techniqueScreenStyles.primaryButton}>
+                <Text style={techniqueScreenStyles.primaryButtonText}>Comenzar</Text>
+              </View>
             </TouchableOpacity>
           ))
         )}
@@ -160,109 +169,28 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    padding: 20,
-  },
-  introContainer: {
-    marginBottom: 30,
-  },
-  introTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 10,
-  },
-  introText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    lineHeight: 24,
-  },
-  exerciseCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  exerciseHeader: {
-    flexDirection: 'row',
+  activeCard: {
     alignItems: 'center',
-    marginBottom: 12,
-  },
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(26, 221, 219, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  exerciseInfo: {
-    flex: 1,
-  },
-  exerciseTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 4,
-  },
-  exerciseDuration: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  exerciseDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 15,
-  },
-  startButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-  },
-  startButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  activeExerciseContainer: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 24,
-    alignItems: 'center',
-    borderWidth: 1,
+    alignSelf: 'stretch',
     borderColor: colors.primary,
+    borderWidth: StyleSheet.hairlineWidth,
   },
-  timerContainer: {
+  timerBlock: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 20,
+    alignSelf: 'stretch',
   },
-  timerText: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: colors.primary,
+  activeCopy: {
+    alignSelf: 'stretch',
     marginBottom: 8,
   },
-  timerLabel: {
-    fontSize: 14,
-    color: colors.textSecondary,
+  activeTitle: {
+    textAlign: 'center',
+    marginBottom: 8,
   },
-  stopButton: {
-    backgroundColor: colors.error,
-    borderRadius: 8,
-    padding: 16,
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  stopButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: 'bold',
+  activeBody: {
+    textAlign: 'center',
+    marginBottom: 0,
   },
 });
 

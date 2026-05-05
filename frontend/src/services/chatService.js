@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { sanitizeProposedProductActions } from '../utils/sanitizeProposedProductActions';
+import { parseChatMessagesArrayFromStorage } from '../utils/safeStorageJson';
 import api, { API_URL } from '../config/api';
 import { isValidSessionIntentionId } from '../constants/sessionIntention';
 import { clearPersistedChatSession } from '../utils/chatSessionStorage';
@@ -357,7 +358,8 @@ export const saveMessages = async (messages) => {
 export const loadMessages = async () => {
   try {
     const savedMessages = await AsyncStorage.getItem('chatMessages');
-    return savedMessages ? JSON.parse(savedMessages) : [];
+    if (!savedMessages) return [];
+    return parseChatMessagesArrayFromStorage(savedMessages);
   } catch (error) {
     console.error('Error al cargar mensajes:', error);
     handleError(error);

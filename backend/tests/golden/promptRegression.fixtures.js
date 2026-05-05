@@ -1,0 +1,95 @@
+/**
+ * Casos golden de regresión del system prompt (#119).
+ * No llaman a OpenAI: validan que el ensamblado del prompt conserve reglas sensibles.
+ */
+
+import { CLARIFY_MIN_USER_MESSAGE_CHARS } from '../../services/chat/lowConfidenceClarifyTemplate.js';
+import { SENSITIVE_VNP_INTENSITY_MIN } from '../../services/chat/sensitiveResponseTemplate.js';
+
+const longLowConfUser =
+  'Llevo días mal y no sé si quiero solo desahogarme o que me orientes con algo concreto.';
+
+export const PROMPT_GOLDEN_CASES = [
+  {
+    id: 'vnp_high_intensity',
+    message: { content: 'no aguanto más este dolor' },
+    context: {
+      emotional: { mainEmotion: 'tristeza', intensity: SENSITIVE_VNP_INTENSITY_MIN },
+      contextual: {
+        intencion: { tipo: 'AYUDA_EMOCIONAL', confianza: 0.8 },
+        urgencia: 'NORMAL',
+        tema: { categoria: 'EMOCIONAL' }
+      },
+      currentMessage: 'no aguanto más este dolor',
+      history: [],
+      memory: {}
+    },
+    expect: {
+      allOf: ['### Turno sensible', 'Normalizar sin minimizar', 'Una sola pregunta'],
+      noneOf: []
+    }
+  },
+  {
+    id: 'low_confidence_clarify',
+    message: { content: longLowConfUser },
+    context: {
+      emotional: { mainEmotion: 'neutral', intensity: 5 },
+      contextual: {
+        intencion: { tipo: 'CONVERSACION_GENERAL', confianza: 0.5 },
+        urgencia: 'NORMAL',
+        tema: { categoria: 'GENERAL' }
+      },
+      currentMessage: longLowConfUser,
+      history: [],
+      memory: {}
+    },
+    expect: {
+      allOf: ['### Baja certeza interpretativa', 'una sola pregunta concreta'],
+      noneOf: []
+    }
+  },
+  {
+    id: 'understanding_non_baseline',
+    message: { content: 'necesito hablar con alguien' },
+    context: {
+      emotional: { mainEmotion: 'ansiedad', intensity: 6 },
+      contextual: {
+        intencion: { tipo: 'AYUDA_EMOCIONAL', confianza: 0.8 },
+        urgencia: 'NORMAL',
+        tema: { categoria: 'EMOCIONAL' }
+      },
+      currentMessage: 'necesito hablar con alguien',
+      history: [],
+      memory: {}
+    },
+    expect: {
+      allOf: ['### Entendimiento previo a responder', 'AYUDA_EMOCIONAL'],
+      noneOf: []
+    }
+  },
+  {
+    id: 'crisis_medium_prepended',
+    message: { content: 'tengo un plan para no seguir viviendo' },
+    context: {
+      emotional: { mainEmotion: 'tristeza', intensity: 9 },
+      contextual: {
+        intencion: { tipo: 'CRISIS', confianza: 0.9 },
+        urgencia: 'ALTA',
+        tema: { categoria: 'SALUD' }
+      },
+      crisis: { riskLevel: 'MEDIUM', country: 'GENERAL' },
+      currentMessage: 'tengo un plan para no seguir viviendo',
+      history: [],
+      memory: {}
+    },
+    expect: {
+      allOf: ['SITUACIÓN DE CRISIS', 'NIVEL DE RIESGO: MEDIUM', '### Turno sensible'],
+      noneOf: []
+    }
+  }
+];
+
+/** Asegura que el caso de baja certeza cumple longitud mínima del módulo #57. */
+if (longLowConfUser.length < CLARIFY_MIN_USER_MESSAGE_CHARS) {
+  throw new Error('promptRegression.fixtures: longLowConfUser demasiado corto para #57');
+}

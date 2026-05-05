@@ -14,9 +14,10 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { FOCUS_ACCENT_BORDER, FOCUS_META } from '../../styles/focusCardTheme';
+import { colors } from '../../styles/globalStyles';
 
 const { width } = Dimensions.get('window');
-import { colors } from '../../styles/globalStyles';
 
 // Constantes de animación
 const BREATH_CYCLE_DURATION = 8000; // 8 segundos por ciclo completo
@@ -281,15 +282,15 @@ const styles = StyleSheet.create({
   countdownText: {
     fontSize: 52,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.white,
     letterSpacing: 2,
   },
   infoContainer: {
     marginBottom: 30,
   },
   cyclesText: {
-    fontSize: 18,
-    color: colors.textSecondary,
+    fontSize: 16,
+    color: FOCUS_META,
     fontWeight: '500',
   },
   controlsContainer: {
@@ -304,19 +305,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     borderRadius: 14,
     gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 4,
   },
   primaryButton: {
     backgroundColor: colors.primary,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_ACCENT_BORDER,
   },
   secondaryButton: {
-    backgroundColor: colors.cardBackground,
-    borderWidth: 2,
-    borderColor: colors.primary,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_ACCENT_BORDER,
   },
   buttonText: {
     fontSize: 16,

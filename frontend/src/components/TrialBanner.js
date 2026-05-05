@@ -1,9 +1,9 @@
 /**
  * Componente Banner de Trial
- * 
+ *
  * Muestra un banner informativo cuando el usuario está en trial,
  * indicando los días restantes y ofreciendo suscribirse.
- * 
+ *
  * @author AntoApp Team
  */
 
@@ -18,12 +18,12 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../styles/globalStyles';
+import { FOCUS_ACCENT_BORDER, FOCUS_META } from '../styles/focusCardTheme';
 import * as Haptics from 'expo-haptics';
 
-// Constantes
 const TEXTS = {
   TRIAL_ACTIVE: 'Trial activo',
-  DAYS_REMAINING: (days) => days === 1 ? '1 día restante' : `${days} días restantes`,
+  DAYS_REMAINING: (days) => (days === 1 ? '1 día restante' : `${days} días restantes`),
   SUBSCRIBE: 'Suscribirse',
   TRIAL_EXPIRING_SOON: 'Tu trial expira pronto',
 };
@@ -40,7 +40,7 @@ const TrialBanner = ({ daysRemaining, onDismiss, dismissed = false }) => {
         useNativeDriver: true,
       }).start();
     }
-  }, [dismissed]);
+  }, [dismissed, fadeAnim]);
 
   if (dismissed || !daysRemaining || daysRemaining <= 0) {
     return null;
@@ -59,6 +59,13 @@ const TrialBanner = ({ daysRemaining, onDismiss, dismissed = false }) => {
   };
 
   const isExpiringSoon = daysRemaining <= 2;
+  const accentColor = isExpiringSoon ? colors.warning : colors.primary;
+  const surfaceBg = isExpiringSoon
+    ? 'rgba(255, 217, 61, 0.12)'
+    : 'rgba(26, 221, 219, 0.1)';
+  const borderColor = isExpiringSoon
+    ? 'rgba(255, 217, 61, 0.4)'
+    : FOCUS_ACCENT_BORDER;
 
   return (
     <Animated.View
@@ -66,38 +73,43 @@ const TrialBanner = ({ daysRemaining, onDismiss, dismissed = false }) => {
         styles.container,
         {
           opacity: fadeAnim,
-          backgroundColor: isExpiringSoon ? colors.warning + '20' : colors.primary + '20',
-          borderLeftColor: isExpiringSoon ? colors.warning : colors.primary,
+          backgroundColor: surfaceBg,
+          borderColor,
         },
       ]}
+      accessibilityRole="summary"
     >
       <View style={styles.content}>
-        <MaterialCommunityIcons
-          name={isExpiringSoon ? 'alert-circle' : 'clock-outline'}
-          size={20}
-          color={isExpiringSoon ? colors.warning : colors.primary}
-        />
+        <View style={[styles.iconWrap, { borderColor: accentColor + '55' }]}>
+          <MaterialCommunityIcons
+            name={isExpiringSoon ? 'alert-circle-outline' : 'clock-outline'}
+            size={22}
+            color={accentColor}
+          />
+        </View>
         <View style={styles.textContainer}>
-          <Text style={[styles.title, { color: isExpiringSoon ? colors.warning : colors.primary }]}>
+          <Text style={[styles.title, { color: accentColor }]}>
             {isExpiringSoon ? TEXTS.TRIAL_EXPIRING_SOON : TEXTS.TRIAL_ACTIVE}
           </Text>
-          <Text style={styles.subtitle}>
-            {TEXTS.DAYS_REMAINING(daysRemaining)}
-          </Text>
+          <Text style={styles.subtitle}>{TEXTS.DAYS_REMAINING(daysRemaining)}</Text>
         </View>
       </View>
       <View style={styles.actions}>
         <TouchableOpacity
-          style={[styles.subscribeButton, { backgroundColor: colors.primary }]}
+          style={[styles.subscribeButton, { borderColor: accentColor }]}
           onPress={handleSubscribe}
+          accessibilityRole="button"
+          accessibilityLabel={TEXTS.SUBSCRIBE}
         >
-          <Text style={styles.subscribeButtonText}>{TEXTS.SUBSCRIBE}</Text>
+          <Text style={[styles.subscribeButtonText, { color: accentColor }]}>{TEXTS.SUBSCRIBE}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.dismissButton}
           onPress={handleDismiss}
+          accessibilityRole="button"
+          accessibilityLabel="Cerrar aviso de trial"
         >
-          <MaterialCommunityIcons name="close" size={18} color={colors.textSecondary} />
+          <MaterialCommunityIcons name="close" size={20} color={FOCUS_META} />
         </TouchableOpacity>
       </View>
     </Animated.View>
@@ -109,51 +121,68 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     marginHorizontal: 16,
     marginTop: 8,
     marginBottom: 8,
-    borderRadius: 12,
-    borderLeftWidth: 4,
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    minWidth: 0,
+  },
+  iconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   textContainer: {
     marginLeft: 12,
     flex: 1,
+    minWidth: 0,
   },
   title: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '600',
     marginBottom: 2,
+    lineHeight: 19,
   },
   subtitle: {
     fontSize: 12,
-    color: colors.textSecondary,
+    color: FOCUS_META,
+    lineHeight: 17,
   },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
     marginLeft: 8,
+    flexShrink: 0,
   },
   subscribeButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    marginRight: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 14,
+    marginRight: 6,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: StyleSheet.hairlineWidth,
   },
   subscribeButtonText: {
-    color: colors.white,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
   },
   dismissButton: {
-    padding: 4,
+    padding: 8,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.04)',
   },
 });
 
 export default TrialBanner;
-

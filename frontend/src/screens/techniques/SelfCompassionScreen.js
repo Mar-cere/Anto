@@ -24,7 +24,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
+import {
+  FOCUS_ACCENT_BORDER,
+  FOCUS_BORDER_SUBTLE,
+  FOCUS_META,
+} from '../../styles/focusCardTheme';
 import { colors } from '../../styles/globalStyles';
+import { techniqueScreenStyles } from './techniqueScreenStyles';
 
 const BACKGROUND_IMAGE = require('../../images/back.png');
 const BACKGROUND_OPACITY = 0.1;
@@ -152,7 +158,7 @@ const SelfCompassionScreen = () => {
               size={80}
               color={colors.primary}
             />
-            <Text style={styles.completedTitle}>¡Ejercicio Completado!</Text>
+            <Text style={styles.completedTitle}>Ejercicio completado</Text>
             <Text style={styles.completedText}>
               Has practicado la autocompasión. Recuerda ser amable contigo mismo.
             </Text>
@@ -173,7 +179,8 @@ const SelfCompassionScreen = () => {
         <ParticleBackground />
         <Header
           title="Ejercicio de Autocompasión"
-          onBack={() => navigation.goBack()}
+          showBackButton
+          onBackPress={() => navigation.goBack()}
         />
         <KeyboardAvoidingView
           style={styles.content}
@@ -181,7 +188,7 @@ const SelfCompassionScreen = () => {
         >
           <ScrollView
             style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={techniqueScreenStyles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
             {/* Indicador de progreso */}
@@ -217,31 +224,35 @@ const SelfCompassionScreen = () => {
                 },
               ]}
             >
-              <View style={[styles.iconContainer, { backgroundColor: `${step.color}20` }]}>
+              <View style={[styles.iconContainer, { borderColor: `${step.color}55` }]}>
                 <MaterialCommunityIcons
                   name={step.icon}
-                  size={56}
+                  size={48}
                   color={step.color}
                 />
               </View>
               <Text style={styles.stepTitle}>{step.title}</Text>
               <Text style={styles.stepDescription}>{step.description}</Text>
-              
+
               {step.tips && (
                 <View style={styles.tipsContainer}>
                   <MaterialCommunityIcons
                     name="lightbulb-on-outline"
                     size={20}
-                    color={colors.textSecondary}
+                    color={FOCUS_META}
                   />
                   <Text style={styles.tipsText}>{step.tips}</Text>
                 </View>
               )}
 
               <TextInput
-                style={styles.input}
+                style={[
+                  techniqueScreenStyles.textInput,
+                  techniqueScreenStyles.textInputTall,
+                  styles.textInputSpacing,
+                ]}
                 placeholder={step.placeholder}
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={FOCUS_META}
                 value={currentResponse}
                 onChangeText={setCurrentResponse}
                 multiline
@@ -249,32 +260,31 @@ const SelfCompassionScreen = () => {
                 textAlignVertical="top"
               />
 
-              {/* Botones de navegación */}
-              <View style={styles.buttonContainer}>
+              <View style={techniqueScreenStyles.buttonRow}>
                 {currentStep > 0 && (
                   <TouchableOpacity
-                    style={[styles.button, styles.backButton]}
+                    style={[techniqueScreenStyles.secondaryButton, styles.navButtonRow]}
                     onPress={handleBack}
                   >
                     <MaterialCommunityIcons
                       name="arrow-left"
                       size={20}
-                      color={colors.text}
-                      style={styles.buttonIcon}
+                      color={colors.primary}
                     />
-                    <Text style={styles.backButtonText}>Atrás</Text>
+                    <Text style={techniqueScreenStyles.secondaryButtonText}>Atrás</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
                   style={[
-                    styles.button,
-                    styles.nextButton,
-                    !currentResponse.trim() && styles.nextButtonDisabled,
+                    techniqueScreenStyles.navButton,
+                    techniqueScreenStyles.navButtonPrimary,
+                    styles.nextRow,
+                    !currentResponse.trim() && techniqueScreenStyles.navButtonDisabled,
                   ]}
                   onPress={handleNext}
                   disabled={!currentResponse.trim()}
                 >
-                  <Text style={styles.nextButtonText}>
+                  <Text style={techniqueScreenStyles.navButtonText}>
                     {isLastStep ? 'Completar' : 'Siguiente'}
                   </Text>
                   {!isLastStep && (
@@ -282,7 +292,7 @@ const SelfCompassionScreen = () => {
                       name="arrow-right"
                       size={20}
                       color={colors.white}
-                      style={styles.buttonIcon}
+                      style={styles.nextIcon}
                     />
                   )}
                 </TouchableOpacity>
@@ -312,10 +322,6 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
   progressContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -332,9 +338,9 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: colors.border,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
   },
   progressDotActive: {
     backgroundColor: colors.primary,
@@ -355,121 +361,79 @@ const styles = StyleSheet.create({
   progressLine: {
     flex: 1,
     height: 2,
-    backgroundColor: colors.border,
+    backgroundColor: FOCUS_BORDER_SUBTLE,
     marginHorizontal: 4,
   },
   progressLineActive: {
     backgroundColor: colors.primary,
   },
   stepContainer: {
+    alignSelf: 'stretch',
     backgroundColor: colors.cardBackground,
-    borderRadius: 20,
+    borderRadius: 22,
     padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(26, 221, 219, 0.1)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_ACCENT_BORDER,
   },
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginBottom: 20,
+    width: 72,
+    height: 72,
+    borderRadius: 22,
+    marginBottom: 18,
     alignSelf: 'center',
+    backgroundColor: 'rgba(26, 221, 219, 0.12)',
+    borderWidth: StyleSheet.hairlineWidth,
   },
   stepTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.white,
     textAlign: 'center',
     marginBottom: 12,
   },
   stepDescription: {
-    fontSize: 16,
-    color: colors.textSecondary,
+    fontSize: 15,
+    color: FOCUS_META,
     textAlign: 'center',
     marginBottom: 16,
-    lineHeight: 24,
+    lineHeight: 22,
   },
   tipsContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: 'rgba(26, 221, 219, 0.1)',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 24,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.primary,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_ACCENT_BORDER,
   },
   tipsText: {
     flex: 1,
     fontSize: 14,
-    color: colors.textSecondary,
+    color: FOCUS_META,
     marginLeft: 8,
     lineHeight: 20,
     fontStyle: 'italic',
   },
-  input: {
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: colors.text,
-    minHeight: 150,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 24,
-  },
-  buttonContainer: {
+  navButtonRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
     gap: 8,
   },
-  buttonIcon: {
-    marginHorizontal: 4,
+  nextIcon: {
+    marginLeft: 6,
   },
-  backButton: {
-    backgroundColor: colors.cardBackground,
-    borderWidth: 1,
-    borderColor: colors.border,
+  nextRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  backButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  nextButton: {
-    backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  nextButtonDisabled: {
-    backgroundColor: colors.border,
-    opacity: 0.5,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  nextButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.white,
+  textInputSpacing: {
+    marginBottom: 18,
   },
   completedContainer: {
     flex: 1,
@@ -478,18 +442,18 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   completedTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.text,
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.white,
     marginTop: 20,
     marginBottom: 12,
     textAlign: 'center',
   },
   completedText: {
-    fontSize: 16,
-    color: colors.textSecondary,
+    fontSize: 15,
+    color: FOCUS_META,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 22,
     paddingHorizontal: 20,
   },
 });

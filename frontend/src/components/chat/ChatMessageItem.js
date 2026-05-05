@@ -91,6 +91,8 @@ const styles = StyleSheet.create({
     backgroundColor: CHAT_COLORS.BOT_BUBBLE,
     borderBottomLeftRadius: LAYOUT.MESSAGE_BUBBLE_CORNER_RADIUS,
     marginRight: 'auto',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CHAT_COLORS.BOT_BUBBLE_BORDER,
   },
   errorBubble: {
     backgroundColor: CHAT_COLORS.ERROR_BUBBLE_BACKGROUND,
@@ -126,11 +128,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   suggestionsTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
     color: CHAT_COLORS.ACCENT,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   productProposalCard: {
     marginBottom: 12,
@@ -355,15 +358,15 @@ function ChatMessageItem({
       const sec = Number(status.cooldownSecondsRemaining || 0);
       if (sec > 0) {
         const min = Math.max(1, Math.ceil(sec / 60));
-        return `Sugerencias pausadas por unos minutos (${min}m) para no saturarte.`;
+        return `Sugerencias en pausa unos minutos (${min} min) para no saturar la conversación.`;
       }
-      return 'Sugerencias pausadas temporalmente para no saturarte.';
+      return 'Sugerencias en pausa un momento para no saturar la conversación.';
     }
     if (status.reason === 'cap') {
-      return 'Ya te ofrecí suficiente por ahora en esta conversación.';
+      return 'En esta conversación ya alcanzamos el límite de sugerencias por ahora.';
     }
     if (status.reason === 'user_reject_streak') {
-      return 'Bajo la intensidad de sugerencias porque no te estaban ayudando.';
+      return 'Reducimos la intensidad de las sugerencias porque no parecían útiles.';
     }
     return null;
   };
@@ -404,15 +407,12 @@ function ChatMessageItem({
               {action.type === 'propose_habit' ? 'Sugerencia de hábito' : 'Sugerencia de tarea'}
             </Text>
             {action.rationaleShort ? (
-              <Text style={styles.productProposalSub}>{action.rationaleShort}</Text>
+              <Text style={styles.productProposalWhy}>Contexto: {action.rationaleShort}</Text>
             ) : null}
             {action.draft?.title ? (
               <Text style={styles.productProposalTitle} numberOfLines={2}>
                 “{action.draft.title}”
               </Text>
-            ) : null}
-            {action.rationaleShort ? (
-              <Text style={styles.productProposalWhy}>Por qué: {action.rationaleShort}</Text>
             ) : null}
             <View style={styles.proposalDivider} />
             <TextInput

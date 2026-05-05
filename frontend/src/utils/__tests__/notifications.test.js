@@ -29,11 +29,16 @@ jest.mock('expo-notifications', () => ({
   getAllScheduledNotificationsAsync: jest.fn(),
   cancelScheduledNotificationAsync: jest.fn(),
   AndroidImportance: {
-    HIGH: 'HIGH'
+    HIGH: 'HIGH',
   },
   AndroidNotificationPriority: {
-    HIGH: 'HIGH'
-  }
+    HIGH: 'HIGH',
+  },
+  SchedulableTriggerInputTypes: {
+    TIME_INTERVAL: 'timeInterval',
+    DAILY: 'daily',
+    DATE: 'date',
+  },
 }));
 
 // Mock expo-device
@@ -70,9 +75,13 @@ describe('notifications', () => {
           title: 'Test Title',
           body: 'Test Body',
           sound: true,
-          priority: Notifications.AndroidNotificationPriority.HIGH
+          priority: Notifications.AndroidNotificationPriority.HIGH,
         },
-        trigger
+        trigger: {
+          type: 'timeInterval',
+          seconds: 60,
+          repeats: false,
+        },
       });
     });
   });

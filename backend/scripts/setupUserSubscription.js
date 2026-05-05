@@ -76,7 +76,7 @@ Ejemplos:
   const subscriptionType = type.toLowerCase();
 
   if (!['trial', 'premium', 'extend-trial'].includes(subscriptionType)) {
-    console.error('❌ Tipo inválido. Usá "trial", "extend-trial" o "premium"');
+    console.error('❌ Tipo inválido. Usa "trial", "extend-trial" o "premium"');
     process.exit(1);
   }
 

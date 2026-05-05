@@ -45,7 +45,7 @@ describe('pushNotificationCopyPools', () => {
       const b1 = buildWeeklyProgressBody(1, 1, 'improving');
       const b2 = buildWeeklyProgressBody(1, 1, 'declining');
       expect(b1).toMatch(
-        /mejorando|favorable|alza|aflojó|mejor|sube|celebrar|acompañado|tendencia|mejora|curva|hostil|límite|vergüenza|laboratorio/i
+        /mejorando|favorable|alza|aflojó|mejor|sube|celebrar|acompañado|tendencia|mejora|curva|hostil|límite|vergüenza|laboratorio|dormiste|sueño|termómetro|insulté|risas|pediste ayuda/i
       );
       expect(b2).toMatch(
         /cuidado|contención|ánimo|pesó|ajustar|malestar|apoyo|descanso|baj|ruidos|exigencia|peso|profesional|fiebre|ola|vara|plan|concreto|dolió|herramientas|terapia|aislamiento|compasión|culpa|peor|crisis/i

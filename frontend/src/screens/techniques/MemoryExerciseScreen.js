@@ -21,7 +21,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
+import ParticleBackground from '../../components/ParticleBackground';
 import { colors } from '../../styles/globalStyles';
+import { FOCUS_META } from '../../styles/focusCardTheme';
+import { techniqueScreenStyles } from './techniqueScreenStyles';
 
 const MEMORY_EXERCISES = [
   {
@@ -62,7 +65,6 @@ const MemoryExerciseScreen = () => {
   const handleSave = () => {
     if (response.trim()) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      // Aquí podrías guardar la respuesta
       setResponse('');
       setSelectedExercise(null);
     }
@@ -71,18 +73,21 @@ const MemoryExerciseScreen = () => {
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" />
+      <ParticleBackground />
       <Header
         title="Ejercicio de Memoria"
-        onBack={() => navigation.goBack()}
+        showBackButton
+        onBackPress={() => navigation.goBack()}
       />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          <View style={styles.introContainer}>
-            <Text style={styles.introTitle}>💭 Trabaja con tus recuerdos</Text>
-            <Text style={styles.introText}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={techniqueScreenStyles.scrollContent}>
+          <View style={techniqueScreenStyles.introPanel}>
+            <Text style={techniqueScreenStyles.introKicker}>Memoria</Text>
+            <Text style={techniqueScreenStyles.introTitle}>Trabaja con tus recuerdos</Text>
+            <Text style={techniqueScreenStyles.introText}>
               Los ejercicios de memoria pueden ayudarte a procesar emociones y encontrar significado en tus experiencias.
             </Text>
           </View>
@@ -91,69 +96,73 @@ const MemoryExerciseScreen = () => {
             MEMORY_EXERCISES.map(exercise => (
               <TouchableOpacity
                 key={exercise.id}
-                style={styles.exerciseCard}
+                style={techniqueScreenStyles.card}
                 onPress={() => handleSelectExercise(exercise)}
               >
-                <View style={styles.exerciseHeader}>
-                  <View style={styles.iconContainer}>
+                <View style={techniqueScreenStyles.rowHeader}>
+                  <View style={techniqueScreenStyles.iconTile}>
                     <MaterialCommunityIcons
                       name={exercise.icon}
-                      size={32}
+                      size={28}
                       color={colors.primary}
                     />
                   </View>
-                  <View style={styles.exerciseInfo}>
-                    <Text style={styles.exerciseTitle}>{exercise.title}</Text>
+                  <View style={techniqueScreenStyles.infoColumn}>
+                    <Text style={techniqueScreenStyles.cardTitle}>{exercise.title}</Text>
                   </View>
                 </View>
-                <Text style={styles.exerciseDescription}>{exercise.description}</Text>
-                <TouchableOpacity style={styles.startButton}>
-                  <Text style={styles.startButtonText}>Comenzar</Text>
-                </TouchableOpacity>
+                <Text style={techniqueScreenStyles.cardBody}>{exercise.description}</Text>
+                <View style={techniqueScreenStyles.primaryButton}>
+                  <Text style={techniqueScreenStyles.primaryButtonText}>Comenzar</Text>
+                </View>
               </TouchableOpacity>
             ))
           ) : (
-            <View style={styles.exerciseContainer}>
-              <View style={styles.exerciseHeader}>
-                <View style={styles.iconContainer}>
+            <View style={techniqueScreenStyles.card}>
+              <View style={techniqueScreenStyles.rowHeader}>
+                <View style={techniqueScreenStyles.iconTile}>
                   <MaterialCommunityIcons
                     name={selectedExercise.icon}
-                    size={32}
+                    size={28}
                     color={colors.primary}
                   />
                 </View>
-                <View style={styles.exerciseInfo}>
-                  <Text style={styles.exerciseTitle}>{selectedExercise.title}</Text>
+                <View style={techniqueScreenStyles.infoColumn}>
+                  <Text style={techniqueScreenStyles.cardTitle}>{selectedExercise.title}</Text>
                 </View>
               </View>
-              <Text style={styles.exerciseDescription}>{selectedExercise.description}</Text>
-              <Text style={styles.prompt}>{selectedExercise.prompt}</Text>
+              <Text style={techniqueScreenStyles.cardBody}>{selectedExercise.description}</Text>
+              <Text style={techniqueScreenStyles.promptText}>{selectedExercise.prompt}</Text>
               <TextInput
-                style={styles.input}
+                style={[techniqueScreenStyles.textInput, techniqueScreenStyles.textInputTall]}
                 placeholder={selectedExercise.prompt}
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={FOCUS_META}
                 value={response}
                 onChangeText={setResponse}
                 multiline
                 numberOfLines={8}
                 textAlignVertical="top"
               />
-              <View style={styles.buttonRow}>
+              <View style={techniqueScreenStyles.buttonRow}>
                 <TouchableOpacity
-                  style={styles.backButton}
+                  style={techniqueScreenStyles.secondaryButton}
                   onPress={() => {
                     setSelectedExercise(null);
                     setResponse('');
                   }}
                 >
-                  <Text style={styles.backButtonText}>Volver</Text>
+                  <Text style={techniqueScreenStyles.secondaryButtonText}>Volver</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.saveButton, !response.trim() && styles.saveButtonDisabled]}
+                  style={[
+                    techniqueScreenStyles.saveButton,
+                    styles.saveGrow,
+                    !response.trim() && techniqueScreenStyles.saveButtonDisabled,
+                  ]}
                   onPress={handleSave}
                   disabled={!response.trim()}
                 >
-                  <Text style={styles.saveButtonText}>Guardar</Text>
+                  <Text style={techniqueScreenStyles.saveButtonText}>Guardar</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -175,131 +184,9 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    padding: 20,
-  },
-  introContainer: {
-    marginBottom: 30,
-  },
-  introTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 10,
-  },
-  introText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    lineHeight: 24,
-  },
-  exerciseCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  exerciseHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(26, 221, 219, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  exerciseInfo: {
+  saveGrow: {
     flex: 1,
-  },
-  exerciseTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.white,
-  },
-  exerciseDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 15,
-  },
-  startButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-  },
-  startButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  exerciseContainer: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  prompt: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.white,
-    marginTop: 20,
-    marginBottom: 15,
-  },
-  input: {
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    padding: 16,
-    color: colors.white,
-    fontSize: 16,
-    minHeight: 200,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 20,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  backButton: {
-    flex: 1,
-    backgroundColor: colors.cardBackground,
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  backButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  saveButton: {
-    flex: 1,
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    marginLeft: 10,
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
-  saveButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: 'bold',
   },
 });
 
 export default MemoryExerciseScreen;
-

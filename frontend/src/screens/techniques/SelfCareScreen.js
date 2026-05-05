@@ -18,7 +18,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
+import ParticleBackground from '../../components/ParticleBackground';
 import { colors } from '../../styles/globalStyles';
+import { techniqueScreenStyles } from './techniqueScreenStyles';
 
 const SELF_CARE_ACTIVITIES = [
   {
@@ -69,22 +71,24 @@ const SelfCareScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
-  const handleSelectActivity = (activity) => {
+  const handleSelectActivity = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Aquí podrías agregar lógica para marcar como completada o guardar en historial
   };
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" />
+      <ParticleBackground />
       <Header
         title="Autocuidado"
-        onBack={() => navigation.goBack()}
+        showBackButton
+        onBackPress={() => navigation.goBack()}
       />
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.introContainer}>
-          <Text style={styles.introTitle}>💆 Cuídate a ti mismo</Text>
-          <Text style={styles.introText}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={techniqueScreenStyles.scrollContent}>
+        <View style={techniqueScreenStyles.introPanel}>
+          <Text style={techniqueScreenStyles.introKicker}>Autocuidado</Text>
+          <Text style={techniqueScreenStyles.introTitle}>Cuídate a ti mismo</Text>
+          <Text style={techniqueScreenStyles.introText}>
             El autocuidado no es egoísta, es necesario. Aquí tienes algunas ideas para cuidar de ti mismo.
           </Text>
         </View>
@@ -92,23 +96,23 @@ const SelfCareScreen = () => {
         {SELF_CARE_ACTIVITIES.map(activity => (
           <TouchableOpacity
             key={activity.id}
-            style={styles.activityCard}
-            onPress={() => handleSelectActivity(activity)}
+            style={techniqueScreenStyles.card}
+            onPress={handleSelectActivity}
           >
-            <View style={styles.activityHeader}>
-              <View style={styles.iconContainer}>
+            <View style={techniqueScreenStyles.rowHeader}>
+              <View style={techniqueScreenStyles.iconTile}>
                 <MaterialCommunityIcons
                   name={activity.icon}
-                  size={32}
+                  size={28}
                   color={colors.primary}
                 />
               </View>
-              <View style={styles.activityInfo}>
-                <Text style={styles.activityTitle}>{activity.title}</Text>
-                <Text style={styles.activityCategory}>{activity.category}</Text>
+              <View style={techniqueScreenStyles.infoColumn}>
+                <Text style={techniqueScreenStyles.cardTitle}>{activity.title}</Text>
+                <Text style={techniqueScreenStyles.cardCategory}>{activity.category}</Text>
               </View>
             </View>
-            <Text style={styles.activityDescription}>{activity.description}</Text>
+            <Text style={techniqueScreenStyles.cardBody}>{activity.description}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -124,65 +128,6 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    padding: 20,
-  },
-  introContainer: {
-    marginBottom: 30,
-  },
-  introTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 10,
-  },
-  introText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    lineHeight: 24,
-  },
-  activityCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  activityHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(26, 221, 219, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  activityInfo: {
-    flex: 1,
-  },
-  activityTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 4,
-  },
-  activityCategory: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
-  },
-  activityDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
 });
 
 export default SelfCareScreen;
-

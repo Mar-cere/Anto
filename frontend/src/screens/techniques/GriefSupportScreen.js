@@ -21,7 +21,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
+import ParticleBackground from '../../components/ParticleBackground';
 import { colors } from '../../styles/globalStyles';
+import { FOCUS_META } from '../../styles/focusCardTheme';
+import { techniqueScreenStyles } from './techniqueScreenStyles';
 
 const GRIEF_RESOURCES = [
   {
@@ -58,7 +61,6 @@ const GriefSupportScreen = () => {
   const handleSaveMemory = () => {
     if (memoryText.trim()) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      // Aquí podrías guardar el recuerdo
       setMemoryText('');
     }
   };
@@ -66,50 +68,53 @@ const GriefSupportScreen = () => {
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" />
+      <ParticleBackground />
       <Header
         title="Apoyo en Duelo"
-        onBack={() => navigation.goBack()}
+        showBackButton
+        onBackPress={() => navigation.goBack()}
       />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          <View style={styles.introContainer}>
-            <Text style={styles.introTitle}>🕯️ Apoyo en el duelo</Text>
-            <Text style={styles.introText}>
-              El duelo es un proceso único para cada persona. No hay una forma "correcta" de sentirlo.
+        <ScrollView style={styles.scrollView} contentContainerStyle={techniqueScreenStyles.scrollContent}>
+          <View style={techniqueScreenStyles.introPanel}>
+            <Text style={techniqueScreenStyles.introKicker}>Duelo</Text>
+            <Text style={techniqueScreenStyles.introTitle}>Apoyo en el proceso</Text>
+            <Text style={techniqueScreenStyles.introText}>
+              El duelo es único para cada persona. No hay una forma correcta de sentirlo.
               Tómate el tiempo que necesites.
             </Text>
           </View>
 
           {GRIEF_RESOURCES.map(resource => (
-            <View key={resource.id} style={styles.resourceCard}>
-              <View style={styles.resourceHeader}>
-                <View style={styles.iconContainer}>
+            <View key={resource.id} style={techniqueScreenStyles.card}>
+              <View style={techniqueScreenStyles.rowHeader}>
+                <View style={techniqueScreenStyles.iconTile}>
                   <MaterialCommunityIcons
                     name={resource.icon}
-                    size={32}
+                    size={28}
                     color={colors.primary}
                   />
                 </View>
-                <View style={styles.resourceInfo}>
-                  <Text style={styles.resourceTitle}>{resource.title}</Text>
+                <View style={techniqueScreenStyles.infoColumn}>
+                  <Text style={techniqueScreenStyles.cardTitle}>{resource.title}</Text>
                 </View>
               </View>
-              <Text style={styles.resourceDescription}>{resource.description}</Text>
+              <Text style={techniqueScreenStyles.cardBody}>{resource.description}</Text>
             </View>
           ))}
 
-          <View style={styles.memoryContainer}>
-            <Text style={styles.memoryTitle}>Ejercicio: Escribe un recuerdo</Text>
-            <Text style={styles.memorySubtitle}>
+          <View style={techniqueScreenStyles.formBlock}>
+            <Text style={techniqueScreenStyles.formSectionHeading}>Ejercicio: escribe un recuerdo</Text>
+            <Text style={techniqueScreenStyles.formHint}>
               Escribir sobre los recuerdos que tienes puede ayudarte a procesar el duelo.
             </Text>
             <TextInput
-              style={styles.input}
+              style={[techniqueScreenStyles.textInput, techniqueScreenStyles.textInputTall]}
               placeholder="Escribe un recuerdo especial que quieras preservar..."
-              placeholderTextColor={colors.textSecondary}
+              placeholderTextColor={FOCUS_META}
               value={memoryText}
               onChangeText={setMemoryText}
               multiline
@@ -117,11 +122,14 @@ const GriefSupportScreen = () => {
               textAlignVertical="top"
             />
             <TouchableOpacity
-              style={[styles.saveButton, !memoryText.trim() && styles.saveButtonDisabled]}
+              style={[
+                techniqueScreenStyles.saveButton,
+                !memoryText.trim() && techniqueScreenStyles.saveButtonDisabled,
+              ]}
               onPress={handleSaveMemory}
               disabled={!memoryText.trim()}
             >
-              <Text style={styles.saveButtonText}>Guardar Recuerdo</Text>
+              <Text style={techniqueScreenStyles.saveButtonText}>Guardar recuerdo</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -141,99 +149,6 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    padding: 20,
-  },
-  introContainer: {
-    marginBottom: 30,
-  },
-  introTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 10,
-  },
-  introText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    lineHeight: 24,
-  },
-  resourceCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  resourceHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(26, 221, 219, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  resourceInfo: {
-    flex: 1,
-  },
-  resourceTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.white,
-  },
-  resourceDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
-  memoryContainer: {
-    marginTop: 20,
-  },
-  memoryTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 8,
-  },
-  memorySubtitle: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 15,
-    lineHeight: 20,
-  },
-  input: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    color: colors.white,
-    fontSize: 16,
-    minHeight: 150,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 15,
-  },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
-  saveButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
 });
 
 export default GriefSupportScreen;
-

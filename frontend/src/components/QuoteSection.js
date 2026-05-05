@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import quotes from '../data/quotes';
+import { DASH } from '../constants/translations';
 import { colors } from '../styles/globalStyles';
-import { FOCUS_PANEL, FOCUS_BODY_SOFT } from '../styles/focusCardTheme';
+import { FOCUS_PANEL, FOCUS_BODY_SOFT, FOCUS_KICKER_COLOR } from '../styles/focusCardTheme';
 
 const QuoteSection = () => {
   const [currentQuote, setCurrentQuote] = useState('');
@@ -45,11 +46,16 @@ const QuoteSection = () => {
   }, [changeQuote]);
 
   return (
-    <TouchableOpacity 
-      style={styles.container} 
-      onPress={changeQuote}
-      activeOpacity={0.7}
-    >
+    <View style={styles.wrapper}>
+      <Text style={styles.kicker}>{DASH.QUOTE_KICKER}</Text>
+      <TouchableOpacity
+        style={styles.container}
+        onPress={changeQuote}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={DASH.QUOTE_A11Y_LABEL}
+        accessibilityHint={DASH.QUOTE_A11Y_HINT}
+      >
       <View style={styles.quoteContainer}>
         <MaterialCommunityIcons 
           name="format-quote-open" 
@@ -70,12 +76,27 @@ const QuoteSection = () => {
         />
       </View>
     </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  wrapper: {
+    alignSelf: 'stretch',
+    marginBottom: 20,
+  },
+  kicker: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: FOCUS_KICKER_COLOR,
+    marginBottom: 10,
+    marginHorizontal: 4,
+  },
   container: {
     ...FOCUS_PANEL,
+    marginBottom: 0,
     paddingVertical: 18,
     paddingHorizontal: 16,
   },

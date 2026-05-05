@@ -3,7 +3,6 @@
  * Ejercicio interactivo guiado de respiración consciente
  */
 
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import React from 'react';
@@ -11,12 +10,12 @@ import {
   SafeAreaView,
   StatusBar,
   StyleSheet,
-  Text,
   View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BreathingExercise from '../../components/therapeutic/BreathingExercise';
 import Header from '../../components/Header';
+import ParticleBackground from '../../components/ParticleBackground';
 import { colors } from '../../styles/globalStyles';
 
 const BreathingExerciseScreen = () => {
@@ -34,9 +33,11 @@ const BreathingExerciseScreen = () => {
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" />
+      <ParticleBackground />
       <Header
         title="Ejercicio de Respiración"
-        onBack={() => navigation.goBack()}
+        showBackButton
+        onBackPress={() => navigation.goBack()}
       />
       <View style={styles.content}>
         <BreathingExercise

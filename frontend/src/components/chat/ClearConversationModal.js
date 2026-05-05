@@ -19,7 +19,7 @@ const styles = StyleSheet.create({
     backgroundColor: CHAT_COLORS.MODAL_BACKGROUND,
     borderRadius: LAYOUT.MODAL_BORDER_RADIUS,
     padding: LAYOUT.MODAL_PADDING,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: CHAT_COLORS.MODAL_BORDER,
   },
   modalTitle: {
@@ -29,8 +29,8 @@ const styles = StyleSheet.create({
     marginBottom: LAYOUT.MODAL_TITLE_MARGIN_BOTTOM,
   },
   modalText: {
-    color: CHAT_COLORS.ACCENT,
-    fontSize: 16,
+    color: CHAT_COLORS.INPUT_PLACEHOLDER,
+    fontSize: 15,
     marginBottom: LAYOUT.MODAL_TEXT_MARGIN_BOTTOM,
     lineHeight: 22,
   },

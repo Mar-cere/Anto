@@ -112,7 +112,7 @@ const DashScreen = () => {
   const [highlightElement, setHighlightElement] = useState(null);
   const [trialInfo, setTrialInfo] = useState(null);
   const [trialBannerDismissed, setTrialBannerDismissed] = useState(false);
-  const [emergencyAlertNotification, setEmergencyAlertNotification] = useState(null);
+  const [, setEmergencyAlertNotification] = useState(null);
   const [showNotificationsPrompt, setShowNotificationsPrompt] = useState(false);
   const [notificationsPromptSuppressed, setNotificationsPromptSuppressed] = useState(false);
   const [enablingNotifications, setEnablingNotifications] = useState(false);
@@ -362,7 +362,7 @@ const DashScreen = () => {
         const suppressed = decision.reason === 'cooldown' || decision.reason === 'too-early';
         setNotificationsPromptSuppressed(suppressed);
         setShowNotificationsPrompt(decision.show);
-      } catch (e) {
+      } catch (_e) {
         // Si falla, no mostramos nada (mejor no molestar)
         if (!cancelled) setShowNotificationsPrompt(false);
       }
@@ -849,16 +849,18 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   errorContainer: {
-    backgroundColor: 'rgba(255, 99, 71, 0.2)',
-    borderRadius: 10,
+    alignSelf: 'stretch',
+    backgroundColor: 'rgba(255, 107, 107, 0.12)',
+    borderRadius: 22,
     padding: SPACING.ERROR_PADDING,
     marginBottom: SPACING.ERROR_MARGIN_BOTTOM,
-    borderLeftWidth: BORDERS.ERROR_LEFT_WIDTH,
-    borderLeftColor: '#FF6347',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255, 107, 107, 0.35)',
   },
   errorText: {
-    color: colors.white,
-    fontSize: 16,
+    color: 'rgba(255,255,255,0.92)',
+    fontSize: 15,
+    lineHeight: 22,
     marginBottom: SPACING.ERROR_TEXT_MARGIN_BOTTOM,
   },
   errorButtonsContainer: {
