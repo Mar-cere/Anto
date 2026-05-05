@@ -137,6 +137,19 @@ const getAuthHeaders = async (): Promise<Record<string, string>> => {
   };
 };
 
+/** Respuestas sin cuerpo (p. ej. 204 No Content): no se debe llamar a response.json(). */
+async function parseOkBodyAsJson<T>(response: Response): Promise<T> {
+  if (response.status === 204 || response.status === 205) {
+    return undefined as T;
+  }
+  const text = await response.text();
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return undefined as T;
+  }
+  return JSON.parse(trimmed) as T;
+}
+
 async function handleResponse<T>(response: Response, endpoint: string): Promise<T> {
   if (!response.ok && response.status !== 304) {
     let errorData: { message?: string; error?: string };
@@ -161,7 +174,18 @@ async function handleResponse<T>(response: Response, endpoint: string): Promise<
   if (response.status === 304) {
     return { notModified: true } as T;
   }
-  return response.json() as Promise<T>;
+  try {
+    return await parseOkBodyAsJson<T>(response);
+  } catch (e) {
+    const err = new Error(
+      e instanceof Error ? e.message : 'Error al interpretar la respuesta JSON'
+    ) as ApiError;
+    err.response = { status: response.status, data: {} };
+    if (typeof console !== 'undefined') {
+      console.error(`[API] ${endpoint} - Error:`, err.message);
+    }
+    throw err;
+  }
 }
 
 async function parseJsonResponse<T>(response: Response, endpoint: string): Promise<T> {
@@ -183,7 +207,16 @@ async function parseJsonResponse<T>(response: Response, endpoint: string): Promi
     console.error(`[API] ${endpoint} - Error:`, errorMessage);
     throw err;
   }
-  return response.json() as Promise<T>;
+  try {
+    return await parseOkBodyAsJson<T>(response);
+  } catch (e) {
+    const err = new Error(
+      e instanceof Error ? e.message : 'Error al interpretar la respuesta JSON'
+    ) as ApiError;
+    err.response = { status: response.status, data: {} };
+    console.error(`[API] ${endpoint} - Error:`, err.message);
+    throw err;
+  }
 }
 
 export const api = {
