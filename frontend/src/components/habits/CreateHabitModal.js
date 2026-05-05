@@ -17,7 +17,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { colors } from '../../styles/globalStyles';
-import { FOCUS_ACCENT_BORDER, FOCUS_BORDER_SUBTLE, FOCUS_CHEVRON_MUTED, FOCUS_META } from '../../styles/focusCardTheme';
+import { FOCUS_ACCENT_BORDER, FOCUS_BORDER_SUBTLE, FOCUS_CHEVRON_MUTED } from '../../styles/focusCardTheme';
 
 const HABIT_ICONS = [
   { key: 'exercise', icon: 'run' },

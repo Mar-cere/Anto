@@ -289,6 +289,40 @@ router.patch(
   }
 );
 
+// Feedback de propuestas productivas en la conversación (aceptada/rechazada)
+router.post(
+  '/conversations/:conversationId/product-proposal-feedback',
+  protect,
+  requireActiveSubscription(true),
+  validarConversationId,
+  validarConversacion,
+  async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const action = String(req.body?.action || '').trim();
+      if (action !== 'accepted' && action !== 'rejected') {
+        return res.status(400).json({ message: 'action inválida. Valores: accepted|rejected' });
+      }
+      await conversationProductProposalCapService.registerProductProposalFeedback(
+        conversationId,
+        action
+      );
+      metricsService
+        .recordMetric(
+          'product_action_feedback',
+          { action },
+          req.user._id.toString(),
+          { conversationId: String(conversationId) }
+        )
+        .catch(() => {});
+      return res.status(204).end();
+    } catch (error) {
+      console.error('Error guardando feedback de propuesta productiva:', error);
+      return res.status(500).json({ message: 'No se pudo guardar feedback de propuesta' });
+    }
+  }
+);
+
 // Crear nueva conversación con mensaje de bienvenida
 // Optimizado: saludo sin cargar perfil en la ruta crítica para reducir latencia (<1s)
 router.post('/conversations', protect, requireActiveSubscription(true), async (req, res) => {
@@ -1023,6 +1057,13 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           userContent: content.trim(),
           conversationHistoryNewestFirst: conversationHistory
         });
+        const sessionIntentionSafe = sanitizeSessionIntentionForClient(conversation?.sessionIntention);
+        const responseStrategyHint =
+          sessionIntentionSafe === 'vent'
+            ? 'validate_first_then_action'
+            : sessionIntentionSafe === 'plan'
+              ? 'action_first_then_validation'
+              : 'balanced';
         
         const openaiContext = {
           rollingSummary: conversation?.rollingSummary || null,
@@ -1057,7 +1098,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               : undefined,
           ...(memoriaParaOpenAI ? { memory: memoriaParaOpenAI } : {}),
           sessionRetention,
-          sessionIntention: sanitizeSessionIntentionForClient(conversation?.sessionIntention),
+          sessionIntention: sessionIntentionSafe,
+          responseStrategyHint,
           conversationPattern
         };
 
@@ -1234,6 +1276,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                 }
 
                 let proposedProductActions = [];
+                let productActionStatus = { paused: false, reason: null, askFirst: false };
                 try {
                   proposedProductActions = chatProductActionProposalService.buildProposedProductActions({
                     riskLevel,
@@ -1249,12 +1292,14 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
 
                 if (proposedProductActions.length > 0) {
                   try {
-                    proposedProductActions =
-                      await conversationProductProposalCapService.filterProposedProductActionsByConversationCap(
+                    const proposalEval =
+                      await conversationProductProposalCapService.evaluateProposedProductActionsState(
                         content,
                         conversationId,
                         proposedProductActions
                       );
+                    proposedProductActions = proposalEval.actions;
+                    productActionStatus = proposalEval.status || productActionStatus;
                   } catch (capErr) {
                     console.warn('[ChatRoutes] product proposal cap (stream):', capErr?.message || capErr);
                   }
@@ -1300,6 +1345,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   context: { emotional: emotionalAnalysis, contextual: contextualAnalysis },
                   suggestions: formattedSuggestions,
                   proposedProductActions,
+                  productActionStatus,
                   clinicalScale: scaleSuggestion ? { ...scaleSuggestion, suggestion: clinicalScalesService.generateScaleSuggestion(scaleSuggestion.scale, scaleSuggestion.reason), automaticResult: null } : null,
                   cognitiveDistortions: cognitiveDistortions?.length > 0 ? { detected: cognitiveDistortions, primary: primaryDistortion, intervention: distortionIntervention } : null,
                   processingTime: responseTime
@@ -1656,6 +1702,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         }
 
         let proposedProductActions = [];
+        let productActionStatus = { paused: false, reason: null, askFirst: false };
         try {
           proposedProductActions = chatProductActionProposalService.buildProposedProductActions({
             riskLevel,
@@ -1671,12 +1718,14 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
 
         if (proposedProductActions.length > 0) {
           try {
-            proposedProductActions =
-              await conversationProductProposalCapService.filterProposedProductActionsByConversationCap(
+            const proposalEval =
+              await conversationProductProposalCapService.evaluateProposedProductActionsState(
                 content,
                 conversationId,
                 proposedProductActions
               );
+            proposedProductActions = proposalEval.actions;
+            productActionStatus = proposalEval.status || productActionStatus;
           } catch (capErr) {
             console.warn('[ChatRoutes] product proposal cap (non-stream):', capErr?.message || capErr);
           }
@@ -1732,6 +1781,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           },
           suggestions: formattedSuggestions, // Solo se incluyen si es apropiado
           proposedProductActions,
+          productActionStatus,
           // NUEVO: Información de escalas clínicas y distorsiones cognitivas
           clinicalScale: scaleSuggestion ? {
             ...scaleSuggestion,

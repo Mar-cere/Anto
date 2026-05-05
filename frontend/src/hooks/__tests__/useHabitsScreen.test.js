@@ -49,6 +49,9 @@ jest.mock('../../utils/notifications', () => ({
   scheduleHabitNotification: jest.fn().mockResolvedValue(undefined),
   cancelHabitNotifications: jest.fn().mockResolvedValue(undefined),
 }));
+jest.mock('../../context/ToastContext', () => ({
+  useToast: () => ({ showToast: jest.fn(), hideToast: jest.fn(), toast: null }),
+}));
 jest.mock('../../screens/habits/habitsScreenConstants', () => ({
   FILTER_TYPES: { ACTIVE: 'active', ARCHIVED: 'archived' },
   getDefaultFormData: () => ({ title: '', description: '', icon: 'exercise', frequency: 'daily', reminder: '' }),

@@ -38,10 +38,9 @@ import {
   TITLE_MARGIN_BOTTOM,
   TEXTS,
 } from '../../screens/pomodoro/pomodoroScreenConstants';
+import { FOCUS_BORDER_SUBTLE, FOCUS_META } from '../../styles/focusCardTheme';
 
 const BUTTON_SIZE = 48;
-const EMPTY_STATE_PADDING = 24;
-const EMPTY_STATE_TEXT_MARGIN_TOP = 8;
 
 export default function PomodoroTasksSection({
   tasks,
@@ -52,6 +51,7 @@ export default function PomodoroTasksSection({
   deleteTask,
   clearCompletedTasks,
   completedTasksCount,
+  density = 'comfortable',
 }) {
   const sortedTasks = [...tasks].sort((a, b) => {
     if (a.completed === b.completed) return 0;
@@ -59,16 +59,16 @@ export default function PomodoroTasksSection({
   });
 
   return (
-    <View style={styles.tasksSection}>
+    <View style={[styles.tasksSection, density === 'compact' && styles.tasksSectionCompact]}>
       <View style={styles.taskHeader}>
         <Text style={styles.title}>{TEXTS.TASKS_TITLE}</Text>
         <Text style={styles.taskCount}>
           {completedTasksCount}/{tasks.length}
         </Text>
       </View>
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, density === 'compact' && styles.inputContainerCompact]}>
         <TextInput
-          style={styles.input}
+          style={[styles.input, density === 'compact' && styles.inputCompact]}
           value={inputText}
           onChangeText={setInputText}
           placeholder={TEXTS.NEW_TASK_PLACEHOLDER}
@@ -76,13 +76,13 @@ export default function PomodoroTasksSection({
           autoCapitalize="sentences"
           onSubmitEditing={handleAddTask}
         />
-        <TouchableOpacity style={styles.addButton} onPress={handleAddTask}>
+        <TouchableOpacity style={[styles.addButton, density === 'compact' && styles.addButtonCompact]} onPress={handleAddTask}>
           <MaterialCommunityIcons name="plus" size={24} color={COLORS.WHITE} />
         </TouchableOpacity>
       </View>
       <View style={styles.taskList}>
         {sortedTasks.map((task) => (
-          <View key={task.id} style={styles.taskItem}>
+          <View key={task.id} style={[styles.taskItem, density === 'compact' && styles.taskItemCompact]}>
             <TouchableOpacity
               style={styles.checkbox}
               onPress={() => toggleTask(task.id)}
@@ -128,6 +128,12 @@ export default function PomodoroTasksSection({
             color={COLORS.ACCENT}
           />
           <Text style={styles.emptyStateText}>{TEXTS.EMPTY_TASKS}</Text>
+          <View style={styles.ideasWrap}>
+            <Text style={styles.ideasTitle}>{TEXTS.EMPTY_TASKS_HELP_TITLE}</Text>
+            <Text style={styles.ideaItem}>• {TEXTS.EMPTY_TASKS_IDEA_1}</Text>
+            <Text style={styles.ideaItem}>• {TEXTS.EMPTY_TASKS_IDEA_2}</Text>
+            <Text style={styles.ideaItem}>• {TEXTS.EMPTY_TASKS_IDEA_3}</Text>
+          </View>
         </View>
       )}
     </View>
@@ -139,6 +145,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.CARD_BACKGROUND,
     borderRadius: TASKS_SECTION_BORDER_RADIUS,
     padding: TASKS_SECTION_PADDING,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
+  },
+  tasksSectionCompact: {
+    padding: 12,
   },
   taskHeader: {
     flexDirection: 'row',
@@ -148,19 +159,23 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: TITLE_FONT_SIZE,
-    fontWeight: 'bold',
-    color: COLORS.WHITE,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+    color: 'rgba(255,255,255,0.94)',
     marginBottom: TITLE_MARGIN_BOTTOM,
   },
   taskCount: {
-    color: COLORS.ACCENT,
-    fontSize: 14,
+    color: FOCUS_META,
+    fontSize: 13,
     fontWeight: '500',
   },
   inputContainer: {
     flexDirection: 'row',
     marginBottom: INPUT_CONTAINER_MARGIN_BOTTOM,
     gap: CONTROLS_GAP,
+  },
+  inputContainerCompact: {
+    marginBottom: 12,
   },
   input: {
     flex: 1,
@@ -170,6 +185,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: INPUT_PADDING_HORIZONTAL,
     color: COLORS.WHITE,
     fontSize: INPUT_FONT_SIZE,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
+  },
+  inputCompact: {
+    height: 42,
+    fontSize: 14,
   },
   addButton: {
     width: BUTTON_SIZE,
@@ -178,6 +199,10 @@ const styles = StyleSheet.create({
     borderRadius: INPUT_BORDER_RADIUS,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  addButtonCompact: {
+    width: 42,
+    height: 42,
   },
   taskList: {
     gap: TASK_LIST_GAP,
@@ -188,6 +213,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.INPUT_BACKGROUND,
     borderRadius: TASK_ITEM_BORDER_RADIUS,
     padding: TASK_ITEM_PADDING,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
+  },
+  taskItemCompact: {
+    paddingVertical: 9,
+    paddingHorizontal: 10,
   },
   checkbox: {
     marginRight: CHECKBOX_MARGIN_RIGHT,
@@ -218,11 +249,33 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: 'center',
-    padding: EMPTY_STATE_PADDING,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
   },
   emptyStateText: {
-    color: COLORS.ACCENT,
-    fontSize: INPUT_FONT_SIZE,
-    marginTop: EMPTY_STATE_TEXT_MARGIN_TOP,
+    color: FOCUS_META,
+    fontSize: 14,
+    marginTop: 4,
+  },
+  ideasWrap: {
+    marginTop: 10,
+    alignSelf: 'stretch',
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
+  },
+  ideasTitle: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  ideaItem: {
+    color: FOCUS_META,
+    fontSize: 12,
+    marginBottom: 2,
   },
 });

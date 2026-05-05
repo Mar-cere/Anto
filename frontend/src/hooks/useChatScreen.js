@@ -449,6 +449,9 @@ export function useChatScreen() {
           sourceMessageId: String(assistantMessageId),
           source: 'chat_v1',
         };
+        chatService
+          .submitProductProposalFeedback(convId, 'accepted')
+          .catch((e) => console.warn('[useChatScreen] proposal accepted feedback:', e?.message || e));
         if (action?.type === 'propose_task' && action.draft) {
           navigation.navigate('Tasks', {
             mode: 'create',
@@ -469,6 +472,23 @@ export function useChatScreen() {
     },
     [navigation]
   );
+
+  const handleProductProposalReject = useCallback(async (proposalsMessage) => {
+    try {
+      const convId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+      if (!convId || !isValidMongoObjectId24(convId)) return;
+      await chatService.submitProductProposalFeedback(convId, 'rejected');
+      setMessages((prev) =>
+        prev.filter((m) => {
+          const id = m.id || m._id;
+          const targetId = proposalsMessage?.id || proposalsMessage?._id;
+          return String(id) !== String(targetId);
+        })
+      );
+    } catch (e) {
+      console.warn('[useChatScreen] proposal rejected feedback:', e?.message || e);
+    }
+  }, []);
 
   const handleSend = useCallback(async (presetText) => {
     const messageText =
@@ -635,6 +655,24 @@ export function useChatScreen() {
                   timestamp: new Date().toISOString(),
                   assistantMessageId: payload.messageId,
                 },
+              });
+            }
+            if (payload.productActionStatus?.askFirst && payload.productActionStatus?.askFirstPrompt) {
+              next.push({
+                id: `product-actions-ask-first-${Date.now()}`,
+                role: MESSAGE_ROLES.ASSISTANT,
+                type: MESSAGE_TYPES.TEXT,
+                content: payload.productActionStatus.askFirstPrompt,
+                metadata: { timestamp: new Date().toISOString() }
+              });
+            }
+            if (payload.productActionStatus?.paused && payload.productActionStatus?.reason) {
+              next.push({
+                id: `product-actions-status-${Date.now()}`,
+                role: 'system',
+                type: 'product_action_status',
+                status: payload.productActionStatus,
+                metadata: { timestamp: new Date().toISOString() }
               });
             }
             return next;
@@ -1264,6 +1302,7 @@ export function useChatScreen() {
     chatFeedbackEnabled,
     handleMessageFeedback,
     handleProductProposalPress,
+    handleProductProposalReject,
     feedbackSubmittingId,
     showSessionIntentionPrompt,
     sessionIntentionSubmitting,

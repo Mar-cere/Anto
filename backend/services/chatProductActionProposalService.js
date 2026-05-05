@@ -148,6 +148,28 @@ function deriveTaskTitle(content, firstLine) {
   return firstLine;
 }
 
+function deriveRationaleShort(content, type, needLevel) {
+  if (STUDY_CONTEXT_CUES.test(content)) {
+    return 'Mencionaste estudio/examen y carga cercana.';
+  }
+  if (/\b(?:la\s+)?cocina|encimera|escritorio|desorden\b/i.test(content)) {
+    return 'Detecté una zona concreta para empezar por algo pequeño.';
+  }
+  if (OVERLOAD_CUES.test(content) && TIME_COMMITMENT_CUES.test(content)) {
+    return 'Nombraste sobrecarga y horizonte temporal.';
+  }
+  if (type === 'propose_habit') {
+    return 'Suena a repetición diaria, encaja mejor como hábito.';
+  }
+  if (needLevel === 'high') {
+    return 'Hay señales claras para bajar esto a un paso accionable.';
+  }
+  if (needLevel === 'medium') {
+    return 'Puedo ayudarte a convertirlo en un paso concreto si te sirve.';
+  }
+  return 'Si te ayuda, podemos convertirlo en una tarea concreta.';
+}
+
 function startOfToday() {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
@@ -348,6 +370,7 @@ export function buildProposedProductActions(input) {
   }
 
   const firstLine = content.split('\n')[0] || content;
+  const needLevel = getProductActionNeedLevel(content);
 
   if (HABIT_HINTS.test(content)) {
     const habitTitle = EXPLICIT_HABIT_TO_APP.test(firstLine) && firstLine.split(/\s+/).filter(Boolean).length <= 8
@@ -368,7 +391,7 @@ export function buildProposedProductActions(input) {
           },
           priority: 'medium'
         },
-        rationaleShort: 'Podés convertirlo en hábito con recordatorio.'
+        rationaleShort: deriveRationaleShort(content, 'propose_habit', needLevel)
       }
     ];
   }
@@ -388,7 +411,7 @@ export function buildProposedProductActions(input) {
         category: 'General',
         tags: []
       },
-      rationaleShort: 'Si querés, dejalo como tarea con fecha.'
+      rationaleShort: deriveRationaleShort(content, 'propose_task', needLevel)
     }
   ];
 }

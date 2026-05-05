@@ -171,6 +171,7 @@ const TaskItem = memo(({ item, onPress }) => {
     </Animated.View>
   );
 });
+TaskItem.displayName = 'TaskItem';
 
 const TaskCard = memo(() => {
   const navigation = useNavigation();
@@ -305,6 +306,7 @@ const TaskCard = memo(() => {
     </View>
   );
 });
+TaskCard.displayName = 'TaskCard';
 
 const styles = StyleSheet.create({
   taskCard: {

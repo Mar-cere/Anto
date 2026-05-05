@@ -14,6 +14,7 @@ export const DEFAULT_CUSTOM_TIME = 25 * 60;
 export const DEFAULT_PREP_TIME = 3 * 60;
 export const INTERVAL_DURATION = 1000;
 export const WARNING_TIME = 10;
+export const DAILY_POMODORO_GOAL = 6;
 
 // Animación
 export const ANIMATION_DURATION = 300;
@@ -43,8 +44,8 @@ export const COLORS = {
   SUCCESS: '#4CAF50',
   ERROR: '#FF5252',
   PRIMARY: colors.primary,
-  CARD_BACKGROUND: 'rgba(29, 43, 95, 0.8)',
-  INPUT_BACKGROUND: 'rgba(255, 255, 255, 0.05)',
+  CARD_BACKGROUND: 'rgba(255, 255, 255, 0.04)',
+  INPUT_BACKGROUND: 'rgba(255, 255, 255, 0.04)',
   BUTTON_BACKGROUND: 'rgba(255, 255, 255, 0.1)',
   MODAL_OVERLAY: 'rgba(0, 0, 0, 0.5)',
   MODAL_BACKGROUND: '#1D2B5F',
@@ -56,7 +57,7 @@ export const COLORS = {
   MEDITATION_BUTTON_BACKGROUND: 'rgba(156, 39, 176, 0.1)',
   MEDITATION_BUTTON_BORDER: 'rgba(156, 39, 176, 0.3)',
   CLEAR_BUTTON_BACKGROUND: 'rgba(255, 82, 82, 0.1)',
-  HEADER_BORDER: 'rgba(26, 221, 219, 0.1)',
+  HEADER_BORDER: 'rgba(255, 255, 255, 0.08)',
 };
 
 export const TEXTS = {
@@ -81,6 +82,23 @@ export const TEXTS = {
   BREAK: 'Descanso',
   LONG_BREAK: 'Descanso Largo',
   CUSTOM: 'Personalizado',
+  EXIT_GUARD_TITLE: 'Temporizador en curso',
+  EXIT_GUARD_MESSAGE: 'Hay una sesión activa. ¿Deseas salir y detenerla?',
+  EXIT_GUARD_STAY: 'Quedarme',
+  EXIT_GUARD_LEAVE: 'Salir',
+  DAILY_GOAL: 'Hoy',
+  PRESET_LABEL: 'Atajos',
+  EMPTY_TASKS_HELP_TITLE: 'Ideas para iniciar',
+  EMPTY_TASKS_IDEA_1: 'Escribir correo',
+  EMPTY_TASKS_IDEA_2: 'Revisar backlog',
+  EMPTY_TASKS_IDEA_3: 'Planificar día',
+  SUMMARY_TITLE: 'Resumen de ciclo',
+  SUMMARY_FOCUS_TIME: 'Tiempo enfocado',
+  SUMMARY_TASKS_DONE: 'Tareas completadas',
+  SUMMARY_STREAK: 'Racha de hoy',
+  SUMMARY_CLOSE: 'Continuar',
+  CONTINUE: 'Continuar',
+  TAKE_BREAK: 'Tomar descanso',
 };
 
 export const MOTIVATIONAL_MESSAGES = [
@@ -94,12 +112,18 @@ export const MOTIVATIONAL_MESSAGES = [
 export const STATUS_BAR_STYLE = 'light-content';
 export const STATUS_BAR_BACKGROUND = colors.background;
 export const STORAGE_KEY = 'pomodoroTasks';
+export const POMODORO_STATS_STORAGE_KEY = 'pomodoroStats';
 export const DEFAULT_CUSTOM_MINUTES = '25';
 export const DEFAULT_PREP_MINUTES = '3';
 export const MAX_CUSTOM_MINUTES_LENGTH = 3;
 export const MAX_PREP_MINUTES_LENGTH = 2;
 export const BREATH_CYCLE = 4;
 export const VIBRATION_PATTERN = [0, 500, 200, 500];
+export const QUICK_PRESETS = [
+  { id: 'p25', label: '25/5', workMinutes: 25, breakMinutes: 5 },
+  { id: 'p50', label: '50/10', workMinutes: 50, breakMinutes: 10 },
+  { id: 'p90', label: '90/20', workMinutes: 90, breakMinutes: 20 },
+];
 
 // Tamaños y layout
 export const ICON_SIZE = 24;

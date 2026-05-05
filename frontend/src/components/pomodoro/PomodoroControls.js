@@ -36,9 +36,37 @@ export default function PomodoroControls({
   buttonsOpacity,
   buttonsScale,
   mainControlsPosition,
+  quickPresets = [],
+  applyQuickPreset,
+  primaryActionLabel,
+  currentWorkSeconds,
+  currentBreakSeconds,
+  density = 'comfortable',
 }) {
   return (
     <View style={styles.controlsContainer}>
+      <View style={styles.presetsRow}>
+        <Text style={styles.presetsLabel}>{TEXTS.PRESET_LABEL}</Text>
+        <View style={styles.presetsChips}>
+          {quickPresets.map((preset) => {
+            const isPresetActive =
+              currentWorkSeconds === preset.workMinutes * 60 &&
+              currentBreakSeconds === preset.breakMinutes * 60;
+            return (
+              <TouchableOpacity
+                key={preset.id}
+                style={[styles.presetChip, isPresetActive && styles.presetChipActive]}
+                onPress={() => applyQuickPreset?.(preset)}
+                disabled={isActive}
+              >
+                <Text style={[styles.presetChipText, isPresetActive && styles.presetChipTextActive]}>
+                  {preset.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
       <Animated.View
         style={[
           styles.allControls,
@@ -58,6 +86,7 @@ export default function PomodoroControls({
           <TouchableOpacity
             style={[
               styles.controlButton,
+              density === 'compact' && styles.controlButtonCompact,
               { backgroundColor: isActive ? COLORS.PAUSE : modes[mode].color },
             ]}
             onPress={toggleTimer}
@@ -68,8 +97,9 @@ export default function PomodoroControls({
               color={COLORS.WHITE}
             />
           </TouchableOpacity>
+          <Text style={styles.primaryCtaText}>{primaryActionLabel}</Text>
           <TouchableOpacity
-            style={[styles.controlButton, styles.resetButton]}
+            style={[styles.controlButton, styles.resetButton, density === 'compact' && styles.controlButtonCompact]}
             onPress={resetTimer}
           >
             <MaterialCommunityIcons name="restart" size={ICON_SIZE} color={COLORS.WHITE} />
@@ -85,7 +115,11 @@ export default function PomodoroControls({
             }]}
         >
           <TouchableOpacity
-            style={[styles.controlButton, mode === 'break' && { backgroundColor: modes.break.color }]}
+            style={[
+              styles.controlButton,
+              density === 'compact' && styles.controlButtonCompact,
+              mode === 'break' && { backgroundColor: modes.break.color },
+            ]}
             onPress={() => changeMode('break')}
           >
             <MaterialCommunityIcons
@@ -97,6 +131,7 @@ export default function PomodoroControls({
           <TouchableOpacity
             style={[
               styles.controlButton,
+              density === 'compact' && styles.controlButtonCompact,
               mode === 'longBreak' && { backgroundColor: modes.longBreak.color },
             ]}
             onPress={() => changeMode('longBreak')}
@@ -110,6 +145,7 @@ export default function PomodoroControls({
           <TouchableOpacity
             style={[
               styles.controlButton,
+              density === 'compact' && styles.controlButtonCompact,
               mode === 'custom' && { backgroundColor: modes.custom.color },
             ]}
             onPress={onOpenCustomModal}
@@ -164,6 +200,49 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: CONTROLS_MARGIN_BOTTOM,
   },
+  presetsRow: {
+    width: '100%',
+    marginBottom: 12,
+  },
+  presetsLabel: {
+    color: COLORS.ACCENT,
+    fontSize: 12,
+    marginBottom: 6,
+    fontWeight: '500',
+  },
+  presetsChips: {
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  presetChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    minHeight: 34,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  presetChipActive: {
+    backgroundColor: 'rgba(26,221,219,0.14)',
+    borderColor: 'rgba(26,221,219,0.28)',
+  },
+  presetChipText: {
+    color: COLORS.WHITE,
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 16,
+    textAlign: 'center',
+    includeFontPadding: false,
+  },
+  presetChipTextActive: {
+    color: '#D9FCFC',
+    fontWeight: '600',
+  },
   allControls: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -174,6 +253,15 @@ const styles = StyleSheet.create({
   mainControls: {
     flexDirection: 'row',
     gap: CONTROLS_GAP,
+    alignItems: 'center',
+  },
+  primaryCtaText: {
+    color: COLORS.ACCENT,
+    fontSize: 12,
+    fontWeight: '600',
+    marginHorizontal: 4,
+    minWidth: 78,
+    textAlign: 'center',
   },
   additionalControls: {
     flexDirection: 'row',
@@ -187,6 +275,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.BUTTON_BACKGROUND,
+  },
+  controlButtonCompact: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
   },
   resetButton: {
     backgroundColor: COLORS.BUTTON_BACKGROUND,

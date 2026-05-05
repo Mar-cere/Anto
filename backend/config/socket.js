@@ -257,6 +257,13 @@ export const setupSocketIO = (server) => {
         });
         
         // 6. Generar respuesta usando OpenAI
+        const sessionIntentionSafe = sanitizeSessionIntentionForClient(conversation.sessionIntention);
+        const responseStrategyHint =
+          sessionIntentionSafe === 'vent'
+            ? 'validate_first_then_action'
+            : sessionIntentionSafe === 'plan'
+              ? 'action_first_then_validation'
+              : 'balanced';
         const response = await openaiService.generarRespuesta(
           userMessage,
           {
@@ -267,7 +274,8 @@ export const setupSocketIO = (server) => {
             currentConversationId: conversation._id,
             sessionRetention,
             conversationPattern,
-            sessionIntention: sanitizeSessionIntentionForClient(conversation.sessionIntention),
+            sessionIntention: sessionIntentionSafe,
+            responseStrategyHint,
             _promptTelemetry: {
               userId,
               conversationId: conversation._id,
@@ -300,6 +308,7 @@ export const setupSocketIO = (server) => {
         });
 
         let proposedProductActions = [];
+        let productActionStatus = { paused: false, reason: null, askFirst: false };
         try {
           proposedProductActions = chatProductActionProposalService.buildProposedProductActions({
             riskLevel,
@@ -314,12 +323,14 @@ export const setupSocketIO = (server) => {
         }
         if (proposedProductActions.length > 0) {
           try {
-            proposedProductActions =
-              await conversationProductProposalCapService.filterProposedProductActionsByConversationCap(
+            const proposalEval =
+              await conversationProductProposalCapService.evaluateProposedProductActionsState(
                 messageText,
                 conversation._id,
                 proposedProductActions
               );
+            proposedProductActions = proposalEval.actions;
+            productActionStatus = proposalEval.status || productActionStatus;
           } catch (capErr) {
             console.warn('[SocketIO] product proposal cap:', capErr?.message || capErr);
           }
@@ -364,7 +375,8 @@ export const setupSocketIO = (server) => {
           text: response.content,
           userId: currentUserId,
           timestamp: new Date(),
-          proposedProductActions
+          proposedProductActions,
+          productActionStatus
         });
         
         console.log(`[SocketIO] Mensaje procesado para usuario ${currentUserId}`);

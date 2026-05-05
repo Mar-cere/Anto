@@ -289,6 +289,7 @@ export const sendMessageStream = async (text, { onChunk, onDone }) => {
         content: data?.assistantMessage?.content ?? '',
         suggestions: data?.suggestions,
         proposedProductActions: sanitizeProposedProductActions(data?.proposedProductActions),
+        productActionStatus: data?.productActionStatus || null,
         context: data?.context,
         guest: data?.guest,
       });
@@ -513,6 +514,27 @@ export const submitMessageFeedback = async (messageId, helpful) => {
   return api.patch(`/api/chat/messages/${id}/feedback`, { helpful });
 };
 
+export const submitProductProposalFeedback = async (conversationId, action) => {
+  const token = await AsyncStorage.getItem('userToken');
+  if (!token) {
+    const e = new Error('Sesión requerida');
+    e.code = 'NO_AUTH';
+    throw e;
+  }
+  const cid = String(conversationId ?? '').trim();
+  if (!/^[\da-f]{24}$/i.test(cid)) {
+    const e = new Error('ID de conversación inválido');
+    e.code = 'INVALID_CONVERSATION_ID';
+    throw e;
+  }
+  if (action !== 'accepted' && action !== 'rejected') {
+    const e = new Error('action inválida');
+    e.code = 'INVALID_ACTION';
+    throw e;
+  }
+  return api.post(`/api/chat/conversations/${cid}/product-proposal-feedback`, { action });
+};
+
 // Agregar función para obtener mensajes (+ meta de conversación)
 export const getMessages = async (conversationId) => {
   try {
@@ -538,6 +560,7 @@ export default {
   sendMessage,
   sendMessageStream,
   submitMessageFeedback,
+  submitProductProposalFeedback,
   onMessage,
   onError,
   saveMessages,

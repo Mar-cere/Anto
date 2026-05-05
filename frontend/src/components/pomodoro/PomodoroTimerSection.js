@@ -3,7 +3,7 @@
  * @author AntoApp Team
  */
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import MeditationView from '../MeditationView';
 import {
@@ -16,6 +16,7 @@ import {
   TIMER_FONT_SIZE,
   TIMER_SECTION_MARGIN_VERTICAL,
 } from '../../screens/pomodoro/pomodoroScreenConstants';
+import { FOCUS_BORDER_SUBTLE } from '../../styles/focusCardTheme';
 
 export default function PomodoroTimerSection({
   mode,
@@ -25,7 +26,20 @@ export default function PomodoroTimerSection({
   progressAnimation,
   fadeAnim,
   isMeditating,
+  density = 'comfortable',
 }) {
+  const modeTone = `${modes[mode].color}22`;
+  const modeTransition = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    modeTransition.setValue(0);
+    Animated.timing(modeTransition, {
+      toValue: 1,
+      duration: 260,
+      useNativeDriver: true,
+    }).start();
+  }, [mode, modeTransition]);
+
   if (mode === 'meditation' && isMeditating) {
     return (
       <View style={styles.timerSection}>
@@ -36,17 +50,54 @@ export default function PomodoroTimerSection({
 
   return (
     <View style={styles.timerSection}>
-      <Animated.Text
-        style={[styles.modeLabel, { color: modes[mode].color, opacity: fadeAnim }]}
+      <Animated.View
+        style={[
+          styles.modePill,
+          { backgroundColor: modeTone, borderColor: `${modes[mode].color}44` },
+          {
+            opacity: Animated.multiply(fadeAnim, modeTransition),
+            transform: [
+              {
+                translateY: modeTransition.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [8, 0],
+                }),
+              },
+            ],
+          },
+        ]}
       >
-        {modes[mode].label}
-      </Animated.Text>
+        <Animated.Text
+          style={[
+            styles.modeLabel,
+            density === 'compact' && styles.modeLabelCompact,
+            { color: modes[mode].color },
+          ]}
+        >
+          {modes[mode].label}
+        </Animated.Text>
+      </Animated.View>
       <Animated.Text
-        style={[styles.timerText, { color: modes[mode].color, opacity: fadeAnim }]}
+        style={[
+          styles.timerText,
+          density === 'compact' && styles.timerTextCompact,
+          {
+            color: modes[mode].color,
+            opacity: Animated.multiply(fadeAnim, modeTransition),
+            transform: [
+              {
+                translateY: modeTransition.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [10, 0],
+                }),
+              },
+            ],
+          },
+        ]}
       >
         {formatTime(timeLeft)}
       </Animated.Text>
-      <View style={styles.progressBar}>
+      <View style={[styles.progressBar, density === 'compact' && styles.progressBarCompact]}>
         <Animated.View
           style={[
             styles.progressFill,
@@ -59,6 +110,9 @@ export default function PomodoroTimerSection({
             },
           ]}
         />
+        <View style={styles.milestone} />
+        <View style={[styles.milestone, styles.milestone50]} />
+        <View style={[styles.milestone, styles.milestone75]} />
       </View>
     </View>
   );
@@ -71,13 +125,33 @@ const styles = StyleSheet.create({
   },
   modeLabel: {
     fontSize: MODE_LABEL_FONT_SIZE,
-    fontWeight: '600',
+    fontWeight: '500',
+    letterSpacing: -0.2,
+    lineHeight: 24,
+    textAlign: 'center',
+    includeFontPadding: false,
+  },
+  modePill: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    minHeight: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: MODE_LABEL_MARGIN_BOTTOM,
+  },
+  modeLabelCompact: {
+    fontSize: 18,
+    lineHeight: 22,
   },
   timerText: {
     fontSize: TIMER_FONT_SIZE,
     fontWeight: 'bold',
     fontVariant: ['tabular-nums'],
+  },
+  timerTextCompact: {
+    fontSize: 60,
   },
   progressBar: {
     width: '100%',
@@ -86,9 +160,28 @@ const styles = StyleSheet.create({
     borderRadius: PROGRESS_BAR_BORDER_RADIUS,
     marginTop: PROGRESS_BAR_MARGIN_TOP,
     overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
+  },
+  progressBarCompact: {
+    marginTop: 16,
   },
   progressFill: {
     height: '100%',
     borderRadius: PROGRESS_BAR_BORDER_RADIUS,
+  },
+  milestone: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: StyleSheet.hairlineWidth,
+    left: '25%',
+    backgroundColor: 'rgba(255,255,255,0.35)',
+  },
+  milestone50: {
+    left: '50%',
+  },
+  milestone75: {
+    left: '75%',
   },
 });

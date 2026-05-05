@@ -6,9 +6,9 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { StatusBar, StyleSheet, Text, View } from 'react-native';
+import { FOCUS_BORDER_SUBTLE, FOCUS_META } from '../../styles/focusCardTheme';
 import {
   COLORS,
-  HEADER_BORDER_WIDTH,
   HEADER_GAP,
   HEADER_ICON_SIZE,
   HEADER_PADDING,
@@ -17,7 +17,14 @@ import {
   TEXTS,
 } from '../../screens/pomodoro/pomodoroScreenConstants';
 
-export default function PomodoroScreenHeader() {
+export default function PomodoroScreenHeader({ mode, isActive, completedTasksCount = 0, totalTasks = 0 }) {
+  const modeLabelMap = {
+    work: 'Trabajo',
+    break: 'Descanso',
+    longBreak: 'Descanso largo',
+    meditation: 'Meditación',
+    custom: 'Personalizado',
+  };
   return (
     <View style={styles.headerContainer}>
       <StatusBar barStyle={STATUS_BAR_STYLE} backgroundColor={STATUS_BAR_BACKGROUND} />
@@ -28,7 +35,12 @@ export default function PomodoroScreenHeader() {
             size={HEADER_ICON_SIZE}
             color={COLORS.PRIMARY}
           />
-          <Text style={styles.headerTitle}>{TEXTS.TITLE}</Text>
+          <View>
+            <Text style={styles.headerTitle}>{TEXTS.TITLE}</Text>
+            <Text style={styles.headerMeta}>
+              {isActive ? 'En progreso' : 'Pausado'} · {modeLabelMap[mode] || 'Trabajo'} · {completedTasksCount}/{totalTasks} tareas
+            </Text>
+          </View>
         </View>
       </View>
     </View>
@@ -37,14 +49,16 @@ export default function PomodoroScreenHeader() {
 
 const styles = StyleSheet.create({
   headerContainer: {
-    borderBottomWidth: HEADER_BORDER_WIDTH,
-    borderBottomColor: COLORS.HEADER_BORDER,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: FOCUS_BORDER_SUBTLE,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: HEADER_PADDING,
+    paddingHorizontal: HEADER_PADDING,
+    paddingBottom: HEADER_PADDING,
+    paddingTop: 8,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -52,8 +66,15 @@ const styles = StyleSheet.create({
     gap: HEADER_GAP,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.WHITE,
+    fontSize: 22,
+    fontWeight: '600',
+    letterSpacing: -0.3,
+    color: 'rgba(255,255,255,0.94)',
+  },
+  headerMeta: {
+    marginTop: 4,
+    color: FOCUS_META,
+    fontSize: 12,
+    fontWeight: '500',
   },
 });

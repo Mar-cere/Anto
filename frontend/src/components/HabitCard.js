@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { 
   View, Text, TouchableOpacity, ActivityIndicator, Animated, 
   Easing, Alert, RefreshControl, ScrollView
@@ -12,8 +12,8 @@ import { api, ENDPOINTS } from '../config/api';
 import { getApiErrorMessage, isAuthError } from '../utils/apiErrorHandler';
 
 const HabitItem = memo(({ habit, onPress }) => {
-  const scaleAnim = new Animated.Value(1);
-  const progressAnim = new Animated.Value(0);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(progressAnim, {
@@ -22,7 +22,7 @@ const HabitItem = memo(({ habit, onPress }) => {
       easing: Easing.out(Easing.exp),
       useNativeDriver: false
     }).start();
-  }, [habit.progress]);
+  }, [habit.progress, progressAnim]);
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -125,6 +125,7 @@ const HabitItem = memo(({ habit, onPress }) => {
     </Animated.View>
   );
 });
+HabitItem.displayName = 'HabitItem';
 
 const HabitCard = memo(() => {
   const navigation = useNavigation();
@@ -264,6 +265,7 @@ const HabitCard = memo(() => {
     </View>
   );
 });
+HabitCard.displayName = 'HabitCard';
 
 const styles = {
   habitsContainer: {

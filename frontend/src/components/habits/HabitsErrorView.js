@@ -8,7 +8,6 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import {
   COLORS,
-  ERROR_CONTAINER_GAP,
   ERROR_CONTAINER_PADDING,
   ERROR_ICON_SIZE,
   RETRY_BUTTON_BORDER_RADIUS,

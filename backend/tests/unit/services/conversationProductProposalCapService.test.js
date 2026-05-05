@@ -102,14 +102,14 @@ describe('conversationProductProposalCapService', () => {
     expect(out).toEqual([]);
   });
 
-  it('permite la segunda oferta no explícita cuando count es 1', async () => {
+  it('permite una oferta no explícita con count 1 cuando la necesidad es alta', async () => {
     findByIdMock.mockReturnValue({
       select: () => ({
         lean: jest.fn().mockResolvedValue({ nonExplicitProductProposalCount: 1, lastNonExplicitProductProposalAt: null })
       })
     });
     const out = await filterProposedProductActionsByConversationCap(
-      'necesito ordenar el escritorio',
+      'estoy atareado, mañana examen y no sé por dónde empezar a estudiar',
       convId,
       actions
     );

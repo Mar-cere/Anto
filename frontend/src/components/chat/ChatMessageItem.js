@@ -3,8 +3,8 @@
  */
 
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import ActionSuggestionCard from '../ActionSuggestionCard';
 import MarkdownText from '../MarkdownText';
 import {
@@ -127,35 +127,144 @@ const styles = StyleSheet.create({
   },
   suggestionsTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.2,
     color: CHAT_COLORS.ACCENT,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   productProposalCard: {
-    marginBottom: 10,
-    paddingVertical: 12,
+    marginBottom: 12,
+    paddingVertical: 13,
     paddingHorizontal: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(26, 221, 219, 0.35)',
-    backgroundColor: 'rgba(26, 221, 219, 0.08)',
+    borderColor: 'rgba(26, 221, 219, 0.3)',
+    backgroundColor: 'rgba(18, 31, 72, 0.88)',
+    shadowColor: '#000',
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 3,
+  },
+  productProposalTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  productProposalChip: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(26, 221, 219, 0.45)',
+    backgroundColor: 'rgba(26, 221, 219, 0.14)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  productProposalChipText: {
+    color: CHAT_COLORS.PRIMARY,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  productProposalHint: {
+    color: CHAT_COLORS.ACCENT,
+    fontSize: 11,
+    opacity: 0.88,
   },
   productProposalLabel: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
-    color: CHAT_COLORS.PRIMARY,
-    marginBottom: 4,
-  },
-  productProposalSub: {
-    fontSize: 12,
-    color: CHAT_COLORS.ACCENT,
-    opacity: 0.9,
+    color: CHAT_COLORS.WHITE,
     marginBottom: 6,
   },
+  productProposalSub: {
+    fontSize: 12.5,
+    color: CHAT_COLORS.ACCENT,
+    opacity: 0.92,
+    marginBottom: 7,
+  },
   productProposalTitle: {
-    fontSize: 13,
+    fontSize: 14,
+    lineHeight: 19,
     color: CHAT_COLORS.BOT_TEXT,
     fontStyle: 'italic',
+    marginBottom: 2,
+  },
+  productProposalWhy: {
+    fontSize: 11.5,
+    color: CHAT_COLORS.ACCENT,
+    opacity: 0.9,
+    marginTop: 6,
+    marginBottom: 8,
+    borderLeftWidth: 2,
+    borderLeftColor: 'rgba(163, 184, 232, 0.45)',
+    paddingLeft: 8,
+    lineHeight: 16,
+  },
+  proposalDivider: {
+    height: 1,
+    backgroundColor: 'rgba(163, 184, 232, 0.2)',
+    marginBottom: 8,
+  },
+  proposalEditInput: {
+    borderWidth: 1,
+    borderColor: 'rgba(163, 184, 232, 0.42)',
+    borderRadius: 10,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+    color: CHAT_COLORS.BOT_TEXT,
+    fontSize: 13,
+    marginTop: 7,
+    backgroundColor: 'rgba(3, 10, 36, 0.34)',
+  },
+  proposalActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    gap: 8,
+  },
+  proposalPrimaryBtn: {
+    flex: 1,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(26, 221, 219, 0.62)',
+    backgroundColor: 'rgba(26, 221, 219, 0.26)',
+    paddingVertical: 9,
+    alignItems: 'center',
+  },
+  proposalPrimaryBtnText: {
+    color: CHAT_COLORS.WHITE,
+    fontSize: 12.5,
+    fontWeight: '700',
+  },
+  proposalGhostBtn: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(163, 184, 232, 0.58)',
+    backgroundColor: 'rgba(163, 184, 232, 0.08)',
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+  },
+  proposalGhostBtnText: {
+    color: CHAT_COLORS.ACCENT,
+    fontSize: 12.5,
+    fontWeight: '600',
+  },
+  statusCard: {
+    marginBottom: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(163, 184, 232, 0.32)',
+    backgroundColor: 'rgba(163, 184, 232, 0.08)',
+  },
+  statusCardText: {
+    color: CHAT_COLORS.ACCENT,
+    fontSize: 12,
+    lineHeight: 17,
   },
   streamingDotsContainer: {
     flexDirection: 'row',
@@ -208,11 +317,13 @@ function ChatMessageItem({
   onSuggestionPress,
   onSuggestionDismiss,
   onProductProposalPress,
+  onProductProposalReject,
   feedbackEnabled,
   feedbackTargetId,
   onMessageFeedback,
   feedbackSubmittingId,
 }) {
+  const [proposalDraftEdits, setProposalDraftEdits] = useState({});
   const message = item.userMessage || item.assistantMessage || item;
   const isUser = message.role === MESSAGE_ROLES.USER;
   const rawId = message._id || message.id;
@@ -230,6 +341,45 @@ function ChatMessageItem({
   const feedbackBusy =
     Boolean(feedbackSubmittingId) && String(feedbackSubmittingId) === String(rawId);
 
+  const parseDateOrNull = (raw) => {
+    const s = String(raw || '').trim();
+    if (!s) return null;
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toISOString();
+  };
+
+  const getStatusText = (status) => {
+    if (!status?.paused) return null;
+    if (status.reason === 'cooldown') {
+      const sec = Number(status.cooldownSecondsRemaining || 0);
+      if (sec > 0) {
+        const min = Math.max(1, Math.ceil(sec / 60));
+        return `Sugerencias pausadas por unos minutos (${min}m) para no saturarte.`;
+      }
+      return 'Sugerencias pausadas temporalmente para no saturarte.';
+    }
+    if (status.reason === 'cap') {
+      return 'Ya te ofrecí suficiente por ahora en esta conversación.';
+    }
+    if (status.reason === 'user_reject_streak') {
+      return 'Bajo la intensidad de sugerencias porque no te estaban ayudando.';
+    }
+    return null;
+  };
+
+  if (message.type === 'product_action_status') {
+    const txt = getStatusText(message.status);
+    if (!txt) return null;
+    return (
+      <View style={styles.suggestionsContainer}>
+        <View style={styles.statusCard}>
+          <Text style={styles.statusCardText}>{txt}</Text>
+        </View>
+      </View>
+    );
+  }
+
   const handleThumb = (dir) => {
     if (!onMessageFeedback || !showFeedback || feedbackBusy) return;
     const next = currentVote === dir ? null : dir;
@@ -241,14 +391,17 @@ function ChatMessageItem({
       <View style={styles.suggestionsContainer}>
         <Text style={styles.suggestionsTitle}>{TEXTS.PRODUCT_ACTIONS_TITLE}</Text>
         {message.proposedProductActions.map((action) => (
-          <TouchableOpacity
-            key={action.id}
-            style={styles.productProposalCard}
-            onPress={() => onProductProposalPress?.(action, message)}
-            accessibilityRole="button"
-          >
+          <View key={action.id} style={styles.productProposalCard}>
+            <View style={styles.productProposalTopRow}>
+              <View style={styles.productProposalChip}>
+                <Text style={styles.productProposalChipText}>
+                  {action.type === 'propose_habit' ? 'Hábito' : 'Tarea'}
+                </Text>
+              </View>
+              <Text style={styles.productProposalHint}>Editar rápido</Text>
+            </View>
             <Text style={styles.productProposalLabel}>
-              {action.type === 'propose_habit' ? 'Crear hábito' : 'Crear tarea'}
+              {action.type === 'propose_habit' ? 'Sugerencia de hábito' : 'Sugerencia de tarea'}
             </Text>
             {action.rationaleShort ? (
               <Text style={styles.productProposalSub}>{action.rationaleShort}</Text>
@@ -258,7 +411,79 @@ function ChatMessageItem({
                 “{action.draft.title}”
               </Text>
             ) : null}
-          </TouchableOpacity>
+            {action.rationaleShort ? (
+              <Text style={styles.productProposalWhy}>Por qué: {action.rationaleShort}</Text>
+            ) : null}
+            <View style={styles.proposalDivider} />
+            <TextInput
+              style={styles.proposalEditInput}
+              placeholder="Título (verbo + objeto + contexto)"
+              placeholderTextColor="rgba(163,184,232,0.7)"
+              value={proposalDraftEdits[action.id]?.title ?? action.draft?.title ?? ''}
+              onChangeText={(value) =>
+                setProposalDraftEdits((prev) => ({
+                  ...prev,
+                  [action.id]: {
+                    ...(prev[action.id] || {}),
+                    title: value,
+                  },
+                }))
+              }
+            />
+            <TextInput
+              style={styles.proposalEditInput}
+              placeholder="Fecha/hora opcional (YYYY-MM-DD HH:mm)"
+              placeholderTextColor="rgba(163,184,232,0.7)"
+              value={proposalDraftEdits[action.id]?.when ?? ''}
+              onChangeText={(value) =>
+                setProposalDraftEdits((prev) => ({
+                  ...prev,
+                  [action.id]: {
+                    ...(prev[action.id] || {}),
+                    when: value,
+                  },
+                }))
+              }
+            />
+            <View style={styles.proposalActionsRow}>
+              <TouchableOpacity
+                style={styles.proposalPrimaryBtn}
+                onPress={() => {
+                  const edit = proposalDraftEdits[action.id] || {};
+                  const nextAction = {
+                    ...action,
+                    draft: {
+                      ...action.draft,
+                      ...(edit.title ? { title: edit.title } : {}),
+                    },
+                  };
+                  const parsedWhen = parseDateOrNull(edit.when);
+                  if (parsedWhen) {
+                    if (action.type === 'propose_habit') {
+                      nextAction.draft.reminder = {
+                        ...(nextAction.draft.reminder || {}),
+                        enabled: true,
+                        time: parsedWhen,
+                      };
+                    } else {
+                      nextAction.draft.dueDate = parsedWhen;
+                    }
+                  }
+                  onProductProposalPress?.(nextAction, message);
+                }}
+                accessibilityRole="button"
+              >
+                <Text style={styles.proposalPrimaryBtnText}>Crear</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.proposalGhostBtn}
+                onPress={() => onProductProposalReject?.(message)}
+                accessibilityRole="button"
+              >
+                <Text style={styles.proposalGhostBtnText}>No aplica</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         ))}
       </View>
     );

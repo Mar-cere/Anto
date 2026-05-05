@@ -214,9 +214,12 @@ export default function SwipeableHabitItem({
           <TouchableOpacity
             style={[styles.actionButtonContent, styles.archiveButton]}
             onPress={handleArchive}
-            disabled={item.status?.archived}
           >
-            <MaterialCommunityIcons name="archive" size={ACTION_ICON_SIZE} color={COLORS.WHITE} />
+            <MaterialCommunityIcons
+              name={item.status?.archived ? 'archive-arrow-up-outline' : 'archive'}
+              size={ACTION_ICON_SIZE}
+              color={COLORS.WHITE}
+            />
           </TouchableOpacity>
         </Animated.View>
         <Animated.View style={[styles.actionButton, { opacity: deleteOpacity }]}>
@@ -456,9 +459,10 @@ const styles = StyleSheet.create({
   },
   habitInfo: { flex: 1, gap: 4 },
   habitTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: COLORS.WHITE,
+    letterSpacing: -0.2,
   },
   habitDescription: {
     fontSize: 14,

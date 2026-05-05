@@ -9,6 +9,7 @@ import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { commonStyles, cardColors, CardHeader } from './common/CardStyles';
 import Svg, { Circle } from 'react-native-svg';
+import { FOCUS_BORDER_SUBTLE, FOCUS_KICKER_COLOR, FOCUS_META } from '../styles/focusCardTheme';
 
 const { width } = Dimensions.get('window');
 const TIMER_SIZE = width * 0.4;
@@ -153,6 +154,7 @@ const PomodoroCard = memo(() => {
   const [timeLeft, setTimeLeft] = useState(modes.work.time);
   const [mode, setMode] = useState('work');
   const [sessionsCompleted, setSessionsCompleted] = useState(0);
+  const entryAnim = useRef(new Animated.Value(0)).current;
 
   // Cargar sesiones completadas al iniciar
   useEffect(() => {
@@ -168,6 +170,15 @@ const PomodoroCard = memo(() => {
     };
     loadSessions();
   }, []);
+
+  useEffect(() => {
+    Animated.timing(entryAnim, {
+      toValue: 1,
+      duration: 280,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [entryAnim]);
 
   // Guardar sesiones completadas
   const saveSessions = async (count) => {
@@ -212,7 +223,33 @@ const PomodoroCard = memo(() => {
         onViewAll={() => navigation.navigate('Pomodoro')}
       />
 
-      <View style={styles.contentContainer}>
+      <Animated.View
+        style={[
+          styles.contentContainer,
+          {
+            opacity: entryAnim,
+            transform: [
+              {
+                translateY: entryAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [8, 0],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <View style={styles.metaRow}>
+          <View style={styles.metaChip}>
+            <MaterialCommunityIcons
+              name={isActive ? 'play-circle-outline' : 'pause-circle-outline'}
+              size={14}
+              color={FOCUS_KICKER_COLOR}
+            />
+            <Text style={styles.metaChipText}>{isActive ? 'En progreso' : 'Pausado'}</Text>
+          </View>
+          <Text style={styles.descriptionText}>{modes[mode].description}</Text>
+        </View>
         <TimerDisplay 
           timeLeft={timeLeft}
           totalTime={modes[mode].time}
@@ -275,16 +312,45 @@ const PomodoroCard = memo(() => {
             <Text style={styles.statLabel}>Minutos</Text>
           </View>
         </View>
-      </View>
+      </Animated.View>
     </View>
   );
 });
+PomodoroCard.displayName = 'PomodoroCard';
 
 const styles = {
   contentContainer: {
     alignItems: 'center',
-    gap: 24,
-    paddingVertical: 16,
+    gap: 22,
+    paddingVertical: 10,
+  },
+  metaRow: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  metaChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
+  },
+  metaChipText: {
+    color: FOCUS_KICKER_COLOR,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  descriptionText: {
+    color: FOCUS_META,
+    fontSize: 12,
+    fontWeight: '500',
   },
   timerContainer: {
     alignItems: 'center',
@@ -300,8 +366,8 @@ const styles = {
     fontVariant: ['tabular-nums'],
   },
   timerLabel: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.55)',
+    fontSize: 13,
+    color: FOCUS_META,
     marginTop: 4,
   },
   controlsContainer: {
@@ -323,7 +389,7 @@ const styles = {
     paddingTop: 18,
     marginTop: 4,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+    borderTopColor: FOCUS_BORDER_SUBTLE,
   },
   statItem: {
     alignItems: 'center',
@@ -336,7 +402,7 @@ const styles = {
   },
   statLabel: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.45)',
+    color: FOCUS_META,
   }
 };
 

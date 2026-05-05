@@ -7,7 +7,7 @@ import { StatusBar } from 'react-native';
 import { colors } from '../../styles/globalStyles';
 
 // Animación
-export const SWIPE_THRESHOLD = -3;
+export const SWIPE_THRESHOLD = -14;
 export const SWIPE_ANIMATION_DURATION = 200;
 export const DELETE_ANIMATION_DURATION = 300;
 export const SWIPE_DISTANCE = -130;
@@ -17,10 +17,10 @@ export const ANIMATION_FINAL_OPACITY = 1;
 export const ANIMATION_INITIAL_OPACITY = 0;
 
 // Gestos
-export const ACTIVE_OFFSET_X = [-3, 0];
+export const ACTIVE_OFFSET_X = [-12, 12];
 export const ACTIVE_OFFSET_Y = [-100, 100];
-export const DELAY_PRESS_IN = 300;
-export const DELAY_COMPLETE_PRESS_IN = 500;
+export const DELAY_PRESS_IN = 120;
+export const DELAY_COMPLETE_PRESS_IN = 180;
 export const HIT_SLOP_SIZE = 10;
 export const ACTIVE_OPACITY = 0.7;
 
@@ -153,10 +153,10 @@ export const COLORS = {
   INFO: '#6BCB77',
   ARCHIVE: 'rgba(255, 152, 0, 0.9)',
   DELETE: 'rgba(244, 67, 54, 0.9)',
-  CARD_BACKGROUND: 'rgba(29, 43, 95, 0.85)',
-  CARD_ARCHIVED_BACKGROUND: 'rgba(29, 43, 95, 0.4)',
-  CARD_BORDER: 'rgba(26, 221, 219, 0.15)',
-  CARD_ARCHIVED_BORDER: 'rgba(163, 184, 232, 0.1)',
+  CARD_BACKGROUND: 'rgba(255, 255, 255, 0.04)',
+  CARD_ARCHIVED_BACKGROUND: 'rgba(255, 255, 255, 0.025)',
+  CARD_BORDER: 'rgba(255, 255, 255, 0.1)',
+  CARD_ARCHIVED_BORDER: 'rgba(255, 255, 255, 0.07)',
   ICON_BACKGROUND: 'rgba(26, 221, 219, 0.1)',
   ICON_ARCHIVED_BACKGROUND: 'rgba(163, 184, 232, 0.1)',
   COMPLETE_BUTTON_BACKGROUND: 'rgba(255, 255, 255, 0.1)',
@@ -164,8 +164,8 @@ export const COLORS = {
   PROGRESS_INDICATOR_BACKGROUND: 'rgba(26, 221, 219, 0.15)',
   PROGRESS_INDICATOR_BORDER: 'rgba(26, 221, 219, 0.3)',
   FILTER_BACKGROUND: 'rgba(255, 255, 255, 0.1)',
-  HEADER_BACKGROUND: 'rgba(29, 43, 95, 0.1)',
-  HEADER_BORDER: 'rgba(26, 221, 219, 0.1)',
+  HEADER_BACKGROUND: 'rgba(255, 255, 255, 0.02)',
+  HEADER_BORDER: 'rgba(255, 255, 255, 0.08)',
   ADD_FIRST_BUTTON_BACKGROUND: 'rgba(26, 221, 219, 0.1)',
   ADD_FIRST_BUTTON_BORDER: 'rgba(26, 221, 219, 0.2)',
   REFRESH_COLOR: colors.primary,

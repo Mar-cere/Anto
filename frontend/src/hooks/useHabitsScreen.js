@@ -5,7 +5,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 import { api, ENDPOINTS } from '../config/api';
 import { ROUTES } from '../constants/routes';
@@ -20,12 +20,17 @@ import {
 } from '../screens/habits/habitsScreenConstants';
 import { isValidClientRequestId } from '../utils/clientRequestId';
 import { postProductActionTelemetry } from '../utils/productActionTelemetry';
+import { useToast } from '../context/ToastContext';
+
+const DELETE_DELAY = 2200;
 
 export function useHabitsScreen({ route, navigation }) {
   const { isConnected, isInternetReachable } = useNetworkStatus();
   const isOffline = !isConnected || isInternetReachable === false;
   const habitChatOriginRef = useRef(null);
   const habitClientRequestIdRef = useRef(null);
+  const pendingDeleteRef = useRef({ timeoutId: null, habit: null });
+  const { showToast } = useToast();
   const [habitModalReminderIso, setHabitModalReminderIso] = useState(null);
 
   const [habits, setHabits] = useState([]);
@@ -35,6 +40,14 @@ export function useHabitsScreen({ route, navigation }) {
   const [error, setError] = useState(null);
   const [filterType, setFilterType] = useState(FILTER_TYPES.ACTIVE);
   const [formData, setFormData] = useState(getDefaultFormData);
+
+  const clearPendingDelete = useCallback(() => {
+    const { timeoutId } = pendingDeleteRef.current;
+    if (timeoutId) clearTimeout(timeoutId);
+    pendingDeleteRef.current = { timeoutId: null, habit: null };
+  }, []);
+
+  useEffect(() => () => clearPendingDelete(), [clearPendingDelete]);
 
   const loadHabits = useCallback(
     async (isRefresh = false) => {
@@ -184,6 +197,27 @@ export function useHabitsScreen({ route, navigation }) {
           prev.map((h) => (h._id === habitId ? updatedHabit : h))
         );
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        showToast({
+          message: updatedHabit.status?.completedToday ? 'Hábito completado' : 'Hábito marcado pendiente',
+          type: 'success',
+          duration: DELETE_DELAY,
+          action: {
+            label: 'Deshacer',
+            onPress: async () => {
+              try {
+                const undo = await api.patch(`${ENDPOINTS.HABIT_BY_ID(habitId)}/toggle`);
+                const undoHabit = undo.data;
+                setHabits((prev) => prev.map((h) => (h._id === habitId ? undoHabit : h)));
+                await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              } catch (undoErr) {
+                Alert.alert(
+                  TEXTS.ERROR_UPDATE,
+                  getApiErrorMessage(undoErr, { isOffline }) || TEXTS.ERROR_UPDATE_MESSAGE
+                );
+              }
+            },
+          },
+        });
       } catch (err) {
         console.error('Error al actualizar hábito:', err);
         Alert.alert(
@@ -192,7 +226,7 @@ export function useHabitsScreen({ route, navigation }) {
         );
       }
     },
-    [isOffline]
+    [isOffline, showToast]
   );
 
   const toggleArchiveHabit = useCallback(
@@ -209,6 +243,33 @@ export function useHabitsScreen({ route, navigation }) {
             prev.map((h) => (h._id === habitId ? updatedHabit : h))
           );
         }
+        showToast({
+          message: updatedHabit.status?.archived ? 'Hábito archivado' : 'Hábito desarchivado',
+          type: 'success',
+          duration: DELETE_DELAY,
+          action: {
+            label: 'Deshacer',
+            onPress: async () => {
+              try {
+                const undo = await api.patch(`${ENDPOINTS.HABIT_BY_ID(habitId)}/archive`);
+                const undoHabit = undo.data || undo;
+                if (filterType === FILTER_TYPES.ACTIVE && undoHabit.status?.archived) {
+                  setHabits((prev) => prev.filter((h) => h._id !== habitId));
+                } else if (filterType === FILTER_TYPES.ARCHIVED && !undoHabit.status?.archived) {
+                  setHabits((prev) => prev.filter((h) => h._id !== habitId));
+                } else {
+                  setHabits((prev) => prev.map((h) => (h._id === habitId ? undoHabit : h)));
+                }
+                await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              } catch (undoErr) {
+                Alert.alert(
+                  TEXTS.ERROR_ARCHIVE,
+                  getApiErrorMessage(undoErr, { isOffline }) || TEXTS.ERROR_ARCHIVE_MESSAGE
+                );
+              }
+            },
+          },
+        });
       } catch (err) {
         console.error('Error al archivar hábito:', err);
         Alert.alert(
@@ -217,25 +278,46 @@ export function useHabitsScreen({ route, navigation }) {
         );
       }
     },
-    [filterType, isOffline]
+    [filterType, isOffline, showToast]
   );
 
   const handleDeleteHabit = useCallback(
     async (habitId) => {
-      try {
-        await api.delete(ENDPOINTS.HABIT_BY_ID(habitId));
-        setHabits((prev) => prev.filter((h) => h._id !== habitId));
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        await cancelHabitNotifications(habitId);
-      } catch (err) {
-        console.error('Error al eliminar hábito:', err);
-        Alert.alert(
-          TEXTS.ERROR_DELETE,
-          getApiErrorMessage(err, { isOffline }) || TEXTS.ERROR_DELETE_MESSAGE
-        );
-      }
+      clearPendingDelete();
+      const habitToDelete = habits.find((h) => h._id === habitId);
+      if (!habitToDelete) return;
+      setHabits((prev) => prev.filter((h) => h._id !== habitId));
+      showToast({
+        message: 'Hábito eliminado',
+        type: 'warning',
+        duration: DELETE_DELAY,
+        action: {
+          label: 'Deshacer',
+          onPress: () => {
+            clearPendingDelete();
+            setHabits((prev) => [habitToDelete, ...prev]);
+          },
+        },
+      });
+      const timeoutId = setTimeout(async () => {
+        if (pendingDeleteRef.current.habit?._id !== habitId) return;
+        pendingDeleteRef.current = { timeoutId: null, habit: null };
+        try {
+          await api.delete(ENDPOINTS.HABIT_BY_ID(habitId));
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          await cancelHabitNotifications(habitId);
+        } catch (err) {
+          console.error('Error al eliminar hábito:', err);
+          setHabits((prev) => [habitToDelete, ...prev.filter((h) => h._id !== habitId)]);
+          Alert.alert(
+            TEXTS.ERROR_DELETE,
+            getApiErrorMessage(err, { isOffline }) || TEXTS.ERROR_DELETE_MESSAGE
+          );
+        }
+      }, DELETE_DELAY);
+      pendingDeleteRef.current = { timeoutId, habit: habitToDelete };
     },
-    [isOffline]
+    [clearPendingDelete, habits, isOffline, showToast]
   );
 
   const resetForm = useCallback(() => {

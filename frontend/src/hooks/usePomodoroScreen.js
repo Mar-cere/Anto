@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Easing, Vibration } from 'react-native';
+import { Animated, Easing, Vibration } from 'react-native';
 import { getModes } from '../screens/pomodoro/pomodoroScreenConstants';
 import {
   ANIMATION_DURATION,
@@ -15,18 +15,29 @@ import {
   BUTTONS_OPACITY_INACTIVE,
   BUTTONS_SCALE_ACTIVE,
   BUTTONS_SCALE_INACTIVE,
+  DAILY_POMODORO_GOAL,
   DEFAULT_CUSTOM_MINUTES,
   DEFAULT_PREP_MINUTES,
   INTERVAL_DURATION,
-  MOTIVATIONAL_MESSAGES,
   NAVBAR_TRANSLATE_Y,
+  POMODORO_STATS_STORAGE_KEY,
   PROGRESS_ANIMATION_DURATION,
+  QUICK_PRESETS,
   STORAGE_KEY,
   TEXTS,
   VIBRATION_PATTERN,
   WARNING_TIME,
 } from '../screens/pomodoro/pomodoroScreenConstants';
 import { sendImmediateNotification } from '../utils/notifications';
+
+const getTodayKey = () => new Date().toISOString().slice(0, 10);
+const toMinutes = (seconds) => Math.floor(seconds / 60);
+const isYesterday = (previous, current) => {
+  const prev = new Date(`${previous}T00:00:00`);
+  const curr = new Date(`${current}T00:00:00`);
+  const diff = (curr - prev) / (1000 * 60 * 60 * 24);
+  return diff === 1;
+};
 
 export function usePomodoroScreen() {
   const modesRef = useRef(getModes());
@@ -52,6 +63,21 @@ export function usePomodoroScreen() {
   const [buttonsScale] = useState(() => new Animated.Value(1));
   const [mainControlsPosition] = useState(() => new Animated.Value(0));
   const [isMeditating, setIsMeditating] = useState(false);
+  const [exitGuardEnabled] = useState(true);
+  const [dailyGoal] = useState(DAILY_POMODORO_GOAL);
+  const [summaryVisible, setSummaryVisible] = useState(false);
+  const [summaryData, setSummaryData] = useState({
+    focusedMinutes: 0,
+    completedTasks: 0,
+    streakDays: 0,
+  });
+  const [stats, setStats] = useState({
+    dateKey: getTodayKey(),
+    sessionsToday: 0,
+    focusedSecondsToday: 0,
+    streakDays: 0,
+    lastFocusDate: null,
+  });
   const [navBarAnim] = useState(() => ({
     translateY: new Animated.Value(0),
     opacity: new Animated.Value(1),
@@ -91,6 +117,13 @@ export function usePomodoroScreen() {
     return modes[mode].time;
   }, [mode, isPreparationPhase]);
 
+  const primaryActionLabel = (() => {
+    if (isActive) return 'Pausar';
+    if (mode === 'break' || mode === 'longBreak') return TEXTS.TAKE_BREAK;
+    if (timeLeft < getCurrentModeTime()) return TEXTS.CONTINUE;
+    return TEXTS.START;
+  })();
+
   const resetTimer = useCallback(() => {
     setIsActive(false);
     const baseTime = mode === 'custom'
@@ -129,6 +162,20 @@ export function usePomodoroScreen() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }, []);
 
+  const applyQuickPreset = useCallback(
+    (preset) => {
+      modesRef.current.work.time = preset.workMinutes * 60;
+      modesRef.current.break.time = preset.breakMinutes * 60;
+      setMode('work');
+      setIsPreparationPhase(false);
+      setIsActive(false);
+      setTimeLeft(modesRef.current.work.time);
+      progressAnimation.setValue(0);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    },
+    [progressAnimation]
+  );
+
   // Timer effect
   useEffect(() => {
     setIsMeditating(mode === 'meditation' && isActive);
@@ -162,9 +209,44 @@ export function usePomodoroScreen() {
         } else {
           Vibration.vibrate(VIBRATION_PATTERN);
         }
-        const message =
-          MOTIVATIONAL_MESSAGES[Math.floor(Math.random() * MOTIVATIONAL_MESSAGES.length)];
-        Alert.alert(TEXTS.SESSION_COMPLETED, message);
+        if (mode === 'work' || mode === 'custom') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        } else if (mode === 'break' || mode === 'longBreak') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        }
+        const isFocusCycle = mode === 'work' || mode === 'custom';
+        if (isFocusCycle) {
+          const todayKey = getTodayKey();
+          const completedTasks = tasks.filter((task) => task.completed).length;
+          const focusedSeconds = getCurrentModeTime();
+          setStats((prev) => {
+            const base =
+              prev.dateKey === todayKey
+                ? prev
+                : { ...prev, dateKey: todayKey, sessionsToday: 0, focusedSecondsToday: 0 };
+            let streakDays = base.streakDays;
+            if (base.lastFocusDate !== todayKey) {
+              streakDays =
+                base.lastFocusDate && isYesterday(base.lastFocusDate, todayKey)
+                  ? base.streakDays + 1
+                  : 1;
+            }
+            const next = {
+              ...base,
+              sessionsToday: base.sessionsToday + 1,
+              focusedSecondsToday: base.focusedSecondsToday + focusedSeconds,
+              streakDays,
+              lastFocusDate: todayKey,
+            };
+            setSummaryData({
+              focusedMinutes: toMinutes(next.focusedSecondsToday),
+              completedTasks,
+              streakDays: next.streakDays,
+            });
+            return next;
+          });
+          setSummaryVisible(true);
+        }
         toggleMode();
       }
     }
@@ -181,6 +263,7 @@ export function usePomodoroScreen() {
     progressAnimation,
     getCurrentModeTime,
     toggleMode,
+    tasks,
   ]);
 
   // Warning blink effect
@@ -226,6 +309,42 @@ export function usePomodoroScreen() {
       })
     );
   }, []);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const saved = await AsyncStorage.getItem(POMODORO_STATS_STORAGE_KEY);
+        if (!saved) return;
+        const parsed = JSON.parse(saved);
+        const todayKey = getTodayKey();
+        if (parsed.dateKey !== todayKey) {
+          setStats((prev) => ({
+            ...prev,
+            ...parsed,
+            dateKey: todayKey,
+            sessionsToday: 0,
+            focusedSecondsToday: 0,
+          }));
+          return;
+        }
+        setStats((prev) => ({ ...prev, ...parsed }));
+      } catch (e) {
+        console.error('Error cargando estadísticas pomodoro:', e);
+      }
+    };
+    loadStats();
+  }, []);
+
+  useEffect(() => {
+    const saveStats = async () => {
+      try {
+        await AsyncStorage.setItem(POMODORO_STATS_STORAGE_KEY, JSON.stringify(stats));
+      } catch (e) {
+        console.error('Error guardando estadísticas pomodoro:', e);
+      }
+    };
+    saveStats();
+  }, [stats]);
 
   const deleteTask = useCallback((taskId) => {
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
@@ -315,9 +434,12 @@ export function usePomodoroScreen() {
     setPrepTimeEnabled,
     prepTime,
     setPrepTime,
+    quickPresets: QUICK_PRESETS,
     toggleTimer,
+    applyQuickPreset,
     resetTimer,
     changeMode,
+    primaryActionLabel,
     formatTime,
     handleAddTask,
     toggleTask,
@@ -331,5 +453,11 @@ export function usePomodoroScreen() {
     navBarAnim,
     fadeAnim,
     handleCustomTimerConfirm,
+    dailyGoal,
+    sessionsToday: stats.sessionsToday,
+    summaryVisible,
+    setSummaryVisible,
+    summaryData,
+    exitGuardEnabled,
   };
 }

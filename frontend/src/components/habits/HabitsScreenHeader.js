@@ -5,7 +5,7 @@
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { FOCUS_BORDER_SUBTLE, FOCUS_KICKER_COLOR, FOCUS_META } from '../../styles/focusCardTheme';
 import {
   COLORS,
@@ -20,7 +20,13 @@ import {
   TEXTS,
 } from '../../screens/habits/habitsScreenConstants';
 
-export default function HabitsScreenHeader({ filterType, onFilterChange, counts = { active: 0, archived: 0 } }) {
+export default function HabitsScreenHeader({
+  filterType,
+  onFilterChange,
+  counts = { active: 0, archived: 0 },
+  searchQuery = '',
+  onSearch,
+}) {
   return (
     <View style={styles.headerContainer}>
       <View style={styles.header}>
@@ -76,6 +82,21 @@ export default function HabitsScreenHeader({ filterType, onFilterChange, counts 
             </Text>
           </TouchableOpacity>
         </View>
+        <View style={styles.searchInputContainer}>
+          <MaterialCommunityIcons name="magnify" size={20} color={FOCUS_KICKER_COLOR} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar hábito…"
+            placeholderTextColor={FOCUS_META}
+            value={searchQuery}
+            onChangeText={onSearch}
+          />
+          {searchQuery.length > 0 ? (
+            <TouchableOpacity onPress={() => onSearch?.('')}>
+              <MaterialCommunityIcons name="close" size={20} color={FOCUS_META} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
     </View>
   );
@@ -110,6 +131,7 @@ const styles = StyleSheet.create({
   filterButtons: {
     flexDirection: 'row',
     gap: FILTER_GAP,
+    marginBottom: 12,
   },
   filterButton: {
     flexDirection: 'row',
@@ -133,5 +155,22 @@ const styles = StyleSheet.create({
   },
   filterButtonTextActive: {
     color: COLORS.WHITE,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    color: COLORS.WHITE,
+    fontSize: 16,
+    paddingVertical: 8,
   },
 });

@@ -80,6 +80,15 @@ const conversationSchema = new mongoose.Schema({
   lastNonExplicitProductProposalAt: {
     type: Date,
     default: null
+  },
+  /**
+   * Rechazos consecutivos de propuestas no explícitas en esta conversación.
+   * Se resetea al aceptar una propuesta.
+   */
+  nonExplicitProductProposalRejectStreak: {
+    type: Number,
+    default: 0,
+    min: 0
   }
 }, {
   timestamps: true // Crea createdAt y updatedAt automáticamente
