@@ -64,6 +64,15 @@ const conversationSchema = new mongoose.Schema({
     type: String,
     enum: SESSION_INTENTION_VALUES,
     default: undefined
+  },
+  /**
+   * Veces que se ofreció propuesta productiva (tarea/hábito) sin pedido explícito al usuario.
+   * Máx. 2 por conversación; los mensajes explícitos ("en mis tareas", etc.) no incrementan y no se bloquean.
+   */
+  nonExplicitProductProposalCount: {
+    type: Number,
+    default: 0,
+    min: 0
   }
 }, {
   timestamps: true // Crea createdAt y updatedAt automáticamente

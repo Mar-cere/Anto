@@ -136,7 +136,8 @@ Alineado a `habitSchema` en `backend/routes/habitRoutes.js`:
 
 Reglas de producto a implementar con flags o contadores server-side:
 
-- **No** en cada mensaje: máximo **N** propuestas productivas por ventana (p. ej. por conversación o por hora), con N bajo al inicio (p. ej. 1 cada X turnos o 1 por sesión hasta validar).
+- **Por conversación (hilo):** máximo **2** emisiones de `proposedProductActions` cuando el usuario **no** pide explícito guardar en la app (p. ej. «en mis tareas», «generala en mis tareas»). Esas frases **no** cuentan contra el tope y **siempre** pueden generar propuesta. Contador: `nonExplicitProductProposalCount` en `Conversation`; lógica en `conversationProductProposalCapService.js` (HTTP/SSE, JSON y Socket).
+- **No** en cada mensaje sin techo: otros límites por hora / política siguen abiertos a tuning.
 - **Prioridad:** si hay conflicto entre muchas ideas, el servidor devuelve **como mucho** el límite del §4.2 y elige por política (claridad del intent, baja carga cognitiva declarada, etc.).
 - **Coexistencia con `suggestions`:** mantener dos canales claros: técnicas vs `proposedProductActions`; evitar dos CTAs competidoras en el mismo turno si el diseño lo considera ruidoso (ajuste de UX en implementación).
 
@@ -167,7 +168,7 @@ Reglas de producto a implementar con flags o contadores server-side:
 ## 10. Checklist de implementación (resumen)
 
 1. [x] Extender respuesta autenticada del chat con `proposedProductActions` validado servidor-side.  
-2. [x] Reglas: no invitado, no crisis/alto riesgo (heurística de oferta); límites de frecuencia finos pendientes de tuning.  
+2. [x] Reglas: no invitado, no crisis/alto riesgo (heurística de oferta); tope 2 propuestas no explícitas por conversación + excepción pedido explícito.  
 3. [x] Frontend: al recibir propuesta, abrir modal con **draft** pre-cargado; confirmación → `POST` existente.  
 4. [x] Persistir procedencia §5 en modelo (`chatOrigin` en `Task` / `Habit`).  
 5. [x] Idempotencia §3.1 (`clientRequestId` + `idempotentReplay`).  

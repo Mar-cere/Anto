@@ -74,14 +74,40 @@ describe('chatProductActionProposalService', () => {
     expect(actions[0].draft.icon).toBe('meditation');
   });
 
-  it('buildProposedProductActions vacío si intención no es plan/organize', () => {
+  it('buildProposedProductActions vacío en vent si no hay señal accionable', () => {
     const actions = buildProposedProductActions({
       ...base,
+      userContent: 'solo estoy triste hoy y no tengo ganas de hablar de nada concreto',
       sessionIntention: 'vent',
       riskLevel: 'LOW',
       isCrisis: false
     });
     expect(actions).toEqual([]);
+  });
+
+  it('buildProposedProductActions en vent si la conversación sugiere orden o pasos (sin pedido explícito)', () => {
+    const actions = buildProposedProductActions({
+      ...base,
+      userContent: 'la cocina me agobia y no sé por dónde empezar',
+      sessionIntention: 'vent',
+      riskLevel: 'LOW',
+      isCrisis: false
+    });
+    expect(actions).toHaveLength(1);
+    expect(actions[0].type).toBe('propose_task');
+  });
+
+  it('buildProposedProductActions en vent si el usuario pide guardar en mis tareas', () => {
+    const actions = buildProposedProductActions({
+      ...base,
+      userContent: 'generala en mis tareas',
+      sessionIntention: 'vent',
+      riskLevel: 'LOW',
+      isCrisis: false
+    });
+    expect(actions).toHaveLength(1);
+    expect(actions[0].type).toBe('propose_task');
+    expect(actions[0].draft.title).toMatch(/Paso acordado/i);
   });
 
   it('buildProposedProductActions con intención technique si el texto planifica', () => {

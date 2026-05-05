@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Modal, 
   View, 
@@ -6,17 +6,27 @@ import {
   TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   StyleSheet,
   Switch,
   ScrollView,
-  Animated
+  Animated,
+  InteractionManager,
+  AccessibilityInfo,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { getApiErrorMessage } from '../../utils/apiErrorHandler';
 import { useToast } from '../../context/ToastContext';
+import { colors } from '../../styles/globalStyles';
+import {
+  FOCUS_BORDER_SUBTLE,
+  FOCUS_CHEVRON_MUTED,
+  FOCUS_META,
+  FOCUS_ACCENT_BORDER,
+} from '../../styles/focusCardTheme';
 
 const CreateTaskModal = ({
   visible,
@@ -30,12 +40,57 @@ const CreateTaskModal = ({
   const [notificationEnabled, setNotificationEnabled] = useState(true);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const slideAnim = new Animated.Value(0);
-  
+  const scrollRef = useRef(null);
+  const scrollHintTimeouts = useRef([]);
+
   const isTask = formData.itemType === 'task';
 
   useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const subShow = Keyboard.addListener(showEvt, () => setKeyboardVisible(true));
+    const subHide = Keyboard.addListener(hideEvt, () => setKeyboardVisible(false));
+    return () => {
+      subShow.remove();
+      subHide.remove();
+    };
+  }, []);
+
+  /** Pequeño desplazamiento y vuelta al abrir: sugiere que hay más contenido al hacer scroll. */
+  useEffect(() => {
+    if (!visible) {
+      scrollHintTimeouts.current.forEach(clearTimeout);
+      scrollHintTimeouts.current = [];
+      return undefined;
+    }
+    const clearAll = () => {
+      scrollHintTimeouts.current.forEach(clearTimeout);
+      scrollHintTimeouts.current = [];
+    };
+    const interaction = InteractionManager.runAfterInteractions(() => {
+      const tOpen = setTimeout(() => {
+        AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
+          if (reduce) return;
+          scrollRef.current?.scrollTo({ y: 20, animated: true });
+          const tBack = setTimeout(() => {
+            scrollRef.current?.scrollTo({ y: 0, animated: true });
+          }, 360);
+          scrollHintTimeouts.current.push(tBack);
+        });
+      }, 480);
+      scrollHintTimeouts.current.push(tOpen);
+    });
+    return () => {
+      interaction.cancel?.();
+      clearAll();
+    };
+  }, [visible, isTask]);
+
+  useEffect(() => {
     if (visible) {
+      setKeyboardVisible(false);
       setNotificationEnabled(true);
       setErrors({});
       setIsSubmitting(false);
@@ -46,6 +101,9 @@ const CreateTaskModal = ({
         friction: 7,
       }).start();
     } else {
+      setKeyboardVisible(false);
+      setIsSubmitting(false);
+      setPickerMode(null);
       Animated.timing(slideAnim, {
         toValue: 0,
         duration: 200,
@@ -163,11 +221,12 @@ const CreateTaskModal = ({
       await onSubmit(dataToSubmit);
     } catch (error) {
       console.error('Error en handleSubmit:', error);
-      setIsSubmitting(false);
       showToast({
         message: getApiErrorMessage(error) || 'Error al crear la tarea.',
         type: 'error',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   }, [validateForm, formData, notificationEnabled, isTask, onSubmit, showToast]);
 
@@ -213,17 +272,30 @@ const CreateTaskModal = ({
           onPress={handleClose}
         />
         <View style={styles.modalContent}>
+          <View style={styles.sheetGrabber} />
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
               {isTask ? 'Nueva Tarea' : 'Nuevo Recordatorio'}
             </Text>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={handleClose}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="close" size={24} color="#A3B8E8" />
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              {keyboardVisible ? (
+                <TouchableOpacity
+                  style={styles.keyboardDismissBtn}
+                  onPress={() => Keyboard.dismiss()}
+                  activeOpacity={0.7}
+                  hitSlop={10}
+                >
+                  <Text style={styles.keyboardDismissText}>Listo</Text>
+                </TouchableOpacity>
+              ) : null}
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={handleClose}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close" size={22} color={FOCUS_CHEVRON_MUTED} />
+              </TouchableOpacity>
+            </View>
           </View>
           
           <KeyboardAvoidingView
@@ -231,12 +303,13 @@ const CreateTaskModal = ({
             style={styles.keyboardContainer}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
           >
-            <ScrollView 
+            <ScrollView
+              ref={scrollRef}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.scrollContent}
               keyboardShouldPersistTaps="handled"
-              bounces={false}
-              overScrollMode="never"
+              bounces={Platform.OS === 'ios'}
+              overScrollMode={Platform.OS === 'android' ? 'auto' : 'never'}
             >
             <View style={styles.typeSelector}>
               <TouchableOpacity
@@ -250,7 +323,7 @@ const CreateTaskModal = ({
                 <Ionicons 
                   name="checkbox-outline" 
                   size={20} 
-                  color={isTask ? '#1ADDDB' : '#A3B8E8'} 
+                  color={isTask ? colors.primary : FOCUS_META} 
                 />
                 <Text style={[
                   styles.typeButtonText,
@@ -269,7 +342,7 @@ const CreateTaskModal = ({
                 <Ionicons 
                   name="alarm-outline" 
                   size={20} 
-                  color={!isTask ? '#FF6B6B' : '#A3B8E8'} 
+                  color={!isTask ? colors.error : FOCUS_META} 
                 />
                 <Text style={[
                   styles.typeButtonText,
@@ -287,7 +360,7 @@ const CreateTaskModal = ({
                   errors.title && styles.inputError
                 ]}
                 placeholder="Ingresa el título"
-                placeholderTextColor="#A3B8E8"
+                placeholderTextColor={FOCUS_META}
                 value={formData.title}
                 onChangeText={(text) => {
                   setFormData({...formData, title: text});
@@ -310,7 +383,7 @@ const CreateTaskModal = ({
                     errors.description && styles.inputError
                   ]}
                   placeholder="Describe tu tarea..."
-                  placeholderTextColor="#A3B8E8"
+                  placeholderTextColor={FOCUS_META}
                   value={formData.description}
                   onChangeText={(text) => {
                     setFormData({...formData, description: text});
@@ -345,7 +418,7 @@ const CreateTaskModal = ({
                   <Ionicons 
                     name="calendar-outline" 
                     size={20} 
-                    color={!isTask ? '#FF6B6B' : '#1ADDDB'} 
+                    color={!isTask ? colors.error : colors.primary} 
                   />
                   <Text style={[
                     styles.dateTimeButtonText,
@@ -368,7 +441,7 @@ const CreateTaskModal = ({
                   <Ionicons 
                     name="time-outline" 
                     size={20} 
-                    color={!isTask ? '#FF6B6B' : '#1ADDDB'} 
+                    color={!isTask ? colors.error : colors.primary} 
                   />
                   <Text style={[
                     styles.dateTimeButtonText,
@@ -436,14 +509,14 @@ const CreateTaskModal = ({
 
             <View style={styles.notificationContainer}>
               <View style={styles.notificationHeader}>
-                <Ionicons name="notifications-outline" size={20} color="#A3B8E8" />
+                <Ionicons name="notifications-outline" size={20} color={FOCUS_META} />
                 <Text style={styles.notificationLabel}>Notificación</Text>
               </View>
               <Switch
                 value={notificationEnabled}
                 onValueChange={setNotificationEnabled}
-                thumbColor={notificationEnabled ? "#1ADDDB" : "#ccc"}
-                trackColor={{ false: "#A3B8E8", true: "#1ADDDB" }}
+                thumbColor={notificationEnabled ? colors.primary : 'rgba(255,255,255,0.45)'}
+                trackColor={{ false: 'rgba(255,255,255,0.2)', true: 'rgba(26, 221, 219, 0.45)' }}
               />
             </View>
 
@@ -460,7 +533,7 @@ const CreateTaskModal = ({
               >
                 {isSubmitting ? (
                   <View style={styles.loadingContainer}>
-                    <Ionicons name="hourglass-outline" size={20} color="#FFFFFF" />
+                    <Ionicons name="hourglass-outline" size={20} color={colors.background} />
                     <Text style={styles.submitButtonText}>Creando...</Text>
                   </View>
                 ) : (
@@ -489,21 +562,32 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
   },
   modalContent: {
-    backgroundColor: 'rgba(29, 43, 95, 0.95)',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '85%',
-    minHeight: '50%',
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
+    maxHeight: '90%',
+    minHeight: '48%',
+  },
+  sheetGrabber: {
+    alignSelf: 'center',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    marginTop: 10,
+    marginBottom: 4,
   },
   keyboardContainer: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 28,
     gap: 16,
   },
   modalHeader: {
@@ -511,23 +595,42 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
+    paddingTop: 14,
+    paddingBottom: 12,
   },
   modalTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+    color: 'rgba(255,255,255,0.94)',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  keyboardDismissBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(26, 221, 219, 0.12)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_ACCENT_BORDER,
+  },
+  keyboardDismissText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.primary,
   },
   closeButton: {
     padding: 8,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
   typeSelector: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 4,
   },
   typeButton: {
     flex: 1,
@@ -535,66 +638,70 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderWidth: 1,
-    borderColor: 'transparent',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
   },
   typeButtonActive: {
     backgroundColor: 'rgba(26, 221, 219, 0.1)',
-    borderColor: 'rgba(26, 221, 219, 0.3)',
+    borderColor: FOCUS_ACCENT_BORDER,
   },
   reminderTypeButtonActive: {
     backgroundColor: 'rgba(255, 107, 107, 0.1)',
-    borderColor: 'rgba(255, 107, 107, 0.3)',
+    borderColor: 'rgba(255, 107, 107, 0.35)',
   },
   typeButtonText: {
-    color: '#A3B8E8',
-    fontSize: 16,
+    color: FOCUS_META,
+    fontSize: 15,
     fontWeight: '500',
   },
   typeButtonTextActive: {
-    color: '#1ADDDB',
+    color: colors.primary,
   },
   reminderTypeButtonTextActive: {
-    color: '#FF6B6B',
+    color: colors.error,
   },
   inputContainer: {
     gap: 8,
   },
   inputLabel: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    color: 'rgba(163, 184, 232, 0.85)',
+    fontSize: 13,
     fontWeight: '600',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: 14,
     padding: 14,
-    color: '#FFFFFF',
+    color: colors.white,
     fontSize: 16,
-    borderWidth: 1,
-    borderColor: 'transparent',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
   },
   inputError: {
-    borderColor: '#FF6B6B',
-    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+    borderColor: colors.error,
+    backgroundColor: 'rgba(255, 107, 107, 0.08)',
   },
   reminderInput: {
-    borderColor: 'rgba(255, 107, 107, 0.3)',
+    borderColor: 'rgba(255, 107, 107, 0.28)',
   },
   textArea: {
     height: 100,
     textAlignVertical: 'top',
   },
   errorText: {
-    color: '#FF6B6B',
-    fontSize: 14,
+    color: colors.error,
+    fontSize: 13,
     marginTop: 4,
+    lineHeight: 18,
   },
   charCount: {
-    color: '#A3B8E8',
+    color: FOCUS_META,
     fontSize: 12,
     textAlign: 'right',
     marginTop: 4,
@@ -611,13 +718,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     padding: 14,
-    borderRadius: 12,
-    backgroundColor: 'rgba(26, 221, 219, 0.1)',
-    borderWidth: 1,
-    borderColor: 'transparent',
+    borderRadius: 14,
+    backgroundColor: 'rgba(26, 221, 219, 0.08)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
   },
   reminderDateTimeButton: {
-    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+    backgroundColor: 'rgba(255, 107, 107, 0.08)',
   },
   dateButton: {
     flex: 3,
@@ -626,20 +733,22 @@ const styles = StyleSheet.create({
     flex: 2,
   },
   dateTimeButtonText: {
-    color: '#1ADDDB',
-    fontSize: 16,
+    color: colors.primary,
+    fontSize: 15,
     fontWeight: '500',
   },
   reminderDateTimeText: {
-    color: '#FF6B6B',
+    color: colors.error,
   },
   pickerContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Platform.OS === 'ios' ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-    borderRadius: 12,
+    backgroundColor: Platform.OS === 'ios' ? 'rgba(255, 255, 255, 0.04)' : 'transparent',
+    borderRadius: 14,
     marginVertical: 8,
     paddingVertical: Platform.OS === 'ios' ? 8 : 0,
+    borderWidth: Platform.OS === 'ios' ? StyleSheet.hairlineWidth : 0,
+    borderColor: FOCUS_BORDER_SUBTLE,
   },
   picker: {
     width: '100%',
@@ -650,10 +759,12 @@ const styles = StyleSheet.create({
     }),
   },
   sectionTitle: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    color: 'rgba(163, 184, 232, 0.85)',
+    fontSize: 13,
     fontWeight: '600',
-    marginBottom: 12,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+    marginBottom: 10,
   },
   priorityButtons: {
     flexDirection: 'row',
@@ -666,16 +777,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'transparent',
   },
   priorityButtonActive: {
-    borderColor: '#1ADDDB',
-    backgroundColor: 'rgba(26, 221, 219, 0.1)',
+    borderColor: FOCUS_ACCENT_BORDER,
+    backgroundColor: 'rgba(26, 221, 219, 0.12)',
   },
   priorityButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
   notificationContainer: {
@@ -684,8 +795,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
   },
   notificationHeader: {
     flexDirection: 'row',
@@ -693,36 +806,32 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   notificationLabel: {
-    color: '#A3B8E8',
-    fontSize: 16,
+    color: FOCUS_META,
+    fontSize: 15,
     fontWeight: '500',
   },
   submitButtonContainer: {
-    marginTop: 16,
-    paddingBottom: 8,
+    marginTop: 8,
+    paddingBottom: 4,
   },
   submitButton: {
-    backgroundColor: '#1ADDDB',
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: colors.primary,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 999,
     alignItems: 'center',
-    shadowColor: '#1ADDDB',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
   submitButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.55,
   },
   reminderSubmitButton: {
-    backgroundColor: '#FF6B6B',
-    shadowColor: '#FF6B6B',
+    backgroundColor: colors.error,
   },
   submitButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    color: colors.background,
+    fontSize: 15,
     fontWeight: '600',
+    letterSpacing: 0.2,
   },
   loadingContainer: {
     flexDirection: 'row',

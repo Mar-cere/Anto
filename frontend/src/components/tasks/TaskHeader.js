@@ -1,13 +1,35 @@
-import React, { useState, useCallback } from 'react';
-import { 
-  View, Text, TouchableOpacity, StyleSheet, StatusBar, TextInput, Animated 
+import React, { useState, useCallback, useMemo, useRef } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  StatusBar,
+  TextInput,
+  Animated,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { colors } from '../../styles/globalStyles';
+import { FOCUS_BORDER_SUBTLE, FOCUS_KICKER_COLOR, FOCUS_META } from '../../styles/focusCardTheme';
 
-const TaskHeader = ({ filterType, onFilterChange, onSearch, searchQuery = '' }) => {
+const TaskHeader = ({
+  filterType,
+  onFilterChange,
+  onSearch,
+  searchQuery = '',
+  counts = { all: 0, task: 0, reminder: 0 },
+  density = 'comfortable',
+  onDensityChange,
+}) => {
+  const handleSearchChange = useCallback(
+    (text) => {
+      onSearch?.(text);
+    },
+    [onSearch]
+  );
   const [isSearchVisible, setIsSearchVisible] = useState(false);
-  const searchAnim = new Animated.Value(0);
+  const searchAnim = useRef(new Animated.Value(0)).current;
 
   const toggleSearch = useCallback(() => {
     Animated.spring(searchAnim, {
@@ -18,36 +40,61 @@ const TaskHeader = ({ filterType, onFilterChange, onSearch, searchQuery = '' }) 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }, [isSearchVisible, searchAnim]);
 
-  const handleFilterChange = useCallback((type) => {
-    onFilterChange(type);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, [onFilterChange]);
+  const handleFilterChange = useCallback(
+    (type) => {
+      onFilterChange(type);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    },
+    [onFilterChange]
+  );
 
-  const getFilterCount = useCallback((type) => {
-    // Esta función podría recibir los conteos como props si es necesario
-    return null;
-  }, []);
+  const toggleDensity = useCallback(() => {
+    const next = density === 'comfortable' ? 'compact' : 'comfortable';
+    onDensityChange?.(next);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, [density, onDensityChange]);
+
+  const activeCountText = useMemo(() => {
+    if (filterType === 'task') return `${counts.task || 0} tareas`;
+    if (filterType === 'reminder') return `${counts.reminder || 0} recordatorios`;
+    return `${counts.all || 0} elementos`;
+  }, [filterType, counts]);
 
   return (
     <View style={styles.headerContainer}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <Text style={styles.headerTitle}>Mis Tareas</Text>
-          <TouchableOpacity
-            style={styles.searchButton}
-            onPress={toggleSearch}
-            activeOpacity={0.7}
-          >
-            <MaterialCommunityIcons 
-              name={isSearchVisible ? "close" : "magnify"} 
-              size={24} 
-              color="#A3B8E8" 
+          <View>
+            <Text style={styles.headerTitle}>Mis tareas</Text>
+            <Text style={styles.headerMeta}>{activeCountText}</Text>
+          </View>
+          <TouchableOpacity style={styles.searchButton} onPress={toggleSearch} activeOpacity={0.7}>
+            <MaterialCommunityIcons
+              name={isSearchVisible ? 'close' : 'magnify'}
+              size={22}
+              color={FOCUS_KICKER_COLOR}
             />
           </TouchableOpacity>
         </View>
+        <View style={styles.toolsRow}>
+          <TouchableOpacity
+            style={[styles.densityButton, density === 'compact' && styles.densityButtonActive]}
+            activeOpacity={0.8}
+            onPress={toggleDensity}
+          >
+            <MaterialCommunityIcons
+              name={density === 'compact' ? 'view-agenda-outline' : 'view-stream-outline'}
+              size={16}
+              color={density === 'compact' ? colors.background : FOCUS_KICKER_COLOR}
+            />
+            <Text style={[styles.densityButtonText, density === 'compact' && styles.densityButtonTextActive]}>
+              {density === 'compact' ? 'Estético' : 'Estándar'}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-        <Animated.View 
+        <Animated.View
           style={[
             styles.searchContainer,
             {
@@ -56,21 +103,21 @@ const TaskHeader = ({ filterType, onFilterChange, onSearch, searchQuery = '' }) 
                 outputRange: [0, 50],
               }),
               opacity: searchAnim,
-            }
+            },
           ]}
         >
           <View style={styles.searchInputContainer}>
-            <MaterialCommunityIcons name="magnify" size={20} color="#A3B8E8" />
+            <MaterialCommunityIcons name="magnify" size={20} color={FOCUS_KICKER_COLOR} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Buscar tareas..."
-              placeholderTextColor="#A3B8E8"
+              placeholder="Buscar…"
+              placeholderTextColor={FOCUS_META}
               value={searchQuery}
-              onChangeText={onSearch}
+              onChangeText={handleSearchChange}
             />
             {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => onSearch('')}>
-                <MaterialCommunityIcons name="close" size={20} color="#A3B8E8" />
+              <TouchableOpacity onPress={() => handleSearchChange('')}>
+                <MaterialCommunityIcons name="close" size={20} color={FOCUS_META} />
               </TouchableOpacity>
             )}
           </View>
@@ -80,31 +127,27 @@ const TaskHeader = ({ filterType, onFilterChange, onSearch, searchQuery = '' }) 
           {[
             { type: 'all', label: 'Todos', icon: 'format-list-bulleted' },
             { type: 'task', label: 'Tareas', icon: 'checkbox-blank-outline' },
-            { type: 'reminder', label: 'Recordatorios', icon: 'clock-outline' }
+            { type: 'reminder', label: 'Recordatorios', icon: 'clock-outline' },
           ].map((filter) => (
             <TouchableOpacity
               key={filter.type}
-              style={[
-                styles.filterButton,
-                filterType === filter.type && styles.filterButtonActive
-              ]}
+              style={[styles.filterButton, filterType === filter.type && styles.filterButtonActive]}
               onPress={() => handleFilterChange(filter.type)}
               activeOpacity={0.7}
             >
-              <MaterialCommunityIcons 
-                name={filter.icon} 
-                size={16} 
-                color={filterType === filter.type ? '#FFFFFF' : '#A3B8E8'} 
+              <MaterialCommunityIcons
+                name={filter.icon}
+                size={16}
+                color={filterType === filter.type ? colors.background : FOCUS_KICKER_COLOR}
               />
-              <Text style={[
-                styles.filterButtonText,
-                filterType === filter.type && styles.filterButtonTextActive
-              ]}>
+              <Text
+                style={[styles.filterButtonText, filterType === filter.type && styles.filterButtonTextActive]}
+              >
                 {filter.label}
               </Text>
-              {getFilterCount(filter.type) && (
+              {!!counts?.[filter.type] && (
                 <View style={styles.filterCount}>
-                  <Text style={styles.filterCountText}>{getFilterCount(filter.type)}</Text>
+                  <Text style={styles.filterCountText}>{counts[filter.type]}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -117,51 +160,84 @@ const TaskHeader = ({ filterType, onFilterChange, onSearch, searchQuery = '' }) 
 
 const styles = StyleSheet.create({
   headerContainer: {
-    backgroundColor: 'rgba(29, 43, 95, 0.95)',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(26, 221, 219, 0.1)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: colors.background,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: FOCUS_BORDER_SUBTLE,
   },
   header: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
+    fontSize: 22,
+    fontWeight: '600',
+    letterSpacing: -0.3,
+    color: 'rgba(255,255,255,0.94)',
+  },
+  headerMeta: {
+    marginTop: 2,
+    color: FOCUS_META,
+    fontSize: 12,
+    fontWeight: '500',
   },
   searchButton: {
     padding: 8,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
   searchContainer: {
-    marginBottom: 16,
+    marginBottom: 12,
     overflow: 'hidden',
+  },
+  toolsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: 10,
+  },
+  densityButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 12,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
+  },
+  densityButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: 'rgba(26, 221, 219, 0.35)',
+  },
+  densityButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: FOCUS_KICKER_COLOR,
+  },
+  densityButtonTextActive: {
+    color: colors.background,
   },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 8,
   },
   searchInput: {
     flex: 1,
-    color: '#FFFFFF',
+    color: colors.white,
     fontSize: 16,
     paddingVertical: 8,
   },
@@ -174,28 +250,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderWidth: 1,
-    borderColor: 'transparent',
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
   },
   filterButtonActive: {
-    backgroundColor: '#1ADDDB',
-    borderColor: 'rgba(26, 221, 219, 0.3)',
-    shadowColor: '#1ADDDB',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: colors.primary,
+    borderColor: 'rgba(26, 221, 219, 0.35)',
   },
   filterButtonText: {
-    color: '#A3B8E8',
-    fontSize: 14,
+    color: FOCUS_KICKER_COLOR,
+    fontSize: 13,
     fontWeight: '500',
   },
   filterButtonTextActive: {
-    color: '#FFFFFF',
+    color: colors.background,
     fontWeight: '600',
   },
   filterCount: {
@@ -207,7 +278,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   filterCountText: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontSize: 12,
     fontWeight: '600',
   },

@@ -10,7 +10,7 @@ jest.mock('../../../styles/globalStyles', () => ({
     white: '#FFFFFF',
     textSecondary: '#A3B8E8',
     error: '#FF6B6B',
-    cardBackground: 'rgba(29, 43, 95, 0.8)',
+    cardBackground: 'rgba(255, 255, 255, 0.04)',
   },
 }));
 

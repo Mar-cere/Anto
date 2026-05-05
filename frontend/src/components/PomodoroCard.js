@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { 
   View, Text, TouchableOpacity, Animated, Easing, Vibration,
-  Dimensions
+  Dimensions, StyleSheet
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -301,7 +301,7 @@ const styles = {
   },
   timerLabel: {
     fontSize: 14,
-    color: cardColors.secondary,
+    color: 'rgba(255, 255, 255, 0.55)',
     marginTop: 4,
   },
   controlsContainer: {
@@ -314,18 +314,16 @@ const styles = {
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
     paddingHorizontal: 16,
-    marginTop: 8,
+    paddingTop: 18,
+    marginTop: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
   },
   statItem: {
     alignItems: 'center',
@@ -333,12 +331,12 @@ const styles = {
   },
   statValue: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.94)',
   },
   statLabel: {
     fontSize: 12,
-    color: cardColors.secondary,
+    color: 'rgba(255, 255, 255, 0.45)',
   }
 };
 

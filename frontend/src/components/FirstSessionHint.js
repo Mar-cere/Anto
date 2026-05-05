@@ -24,6 +24,7 @@ import {
   setFirstSessionHintDismissed,
 } from '../utils/firstSessionHintStorage';
 import { colors } from '../styles/globalStyles';
+import { FOCUS_PANEL } from '../styles/focusCardTheme';
 
 export { getFirstSessionHintDismissedKey, isFirstSessionHintDismissed, setFirstSessionHintDismissed };
 
@@ -127,16 +128,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   card: {
-    backgroundColor: colors.cardBackground || colors.background,
-    borderRadius: 16,
-    padding: 20,
+    ...FOCUS_PANEL,
+    marginBottom: 0,
+    paddingVertical: 22,
+    paddingHorizontal: 20,
     width: '100%',
     maxWidth: 340,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
   },
   iconRow: {
     alignItems: 'center',

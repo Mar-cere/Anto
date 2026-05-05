@@ -1,56 +1,64 @@
-import { 
-    View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-    import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { colors } from '../../styles/globalStyles';
+import {
+  FOCUS_PANEL,
+  FOCUS_ICON_WRAP,
+  FOCUS_CHEVRON_MUTED,
+  FOCUS_BORDER_SUBTLE,
+  FOCUS_ACCENT_BORDER,
+  FOCUS_META,
+  FOCUS_KICKER_COLOR,
+} from '../../styles/focusCardTheme';
 
 export const cardColors = {
   primary: '#1ADDDB',
   secondary: '#A3B8E8',
-  background: 'rgba(29, 43, 95, 0.8)',
-  cardBg: 'rgba(255, 255, 255, 0.05)',
+  background: 'rgba(255, 255, 255, 0.04)',
+  cardBg: 'rgba(255, 255, 255, 0.03)',
   success: '#4CAF50',
   warning: '#FFD93D',
   error: '#FF6B6B',
-  border: 'rgba(26, 221, 219, 0.1)',
+  border: 'rgba(255, 255, 255, 0.1)',
 };
 
 export const commonStyles = StyleSheet.create({
   cardContainer: {
-    backgroundColor: cardColors.background,
-    borderRadius: 15,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: cardColors.border,
+    ...FOCUS_PANEL,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
+    flex: 1,
+    minWidth: 0,
+  },
+  headerIconWrap: {
+    ...FOCUS_ICON_WRAP,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.white,
+    fontSize: 15,
+    fontWeight: '500',
+    lineHeight: 20,
+    flex: 1,
+    minWidth: 0,
   },
   viewAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 20,
+    borderRadius: 12,
     backgroundColor: 'rgba(26, 221, 219, 0.1)',
+    flexShrink: 0,
   },
   viewAllText: {
     color: cardColors.primary,
@@ -59,9 +67,12 @@ export const commonStyles = StyleSheet.create({
   },
   itemContainer: {
     backgroundColor: cardColors.cardBg,
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     marginBottom: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -69,8 +80,9 @@ export const commonStyles = StyleSheet.create({
     gap: 12,
   },
   emptyText: {
-    color: cardColors.secondary,
-    fontSize: 16,
+    color: FOCUS_META,
+    fontSize: 15,
+    lineHeight: 22,
     textAlign: 'center',
   },
   addButton: {
@@ -81,10 +93,10 @@ export const commonStyles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 12,
     marginTop: 16,
-    borderRadius: 12,
-    backgroundColor: 'rgba(26, 221, 219, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(26, 221, 219, 0.2)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(26, 221, 219, 0.08)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_ACCENT_BORDER,
     borderStyle: 'dashed',
   },
   addButtonText: {
@@ -100,30 +112,26 @@ export const commonStyles = StyleSheet.create({
 export const CardHeader = ({ icon, title, onViewAll }) => (
   <View style={commonStyles.cardHeader}>
     <View style={commonStyles.titleContainer}>
-      <MaterialCommunityIcons name={icon} size={24} color={cardColors.primary} />
-      <Text style={commonStyles.title}>{title}</Text>
+      <View style={commonStyles.headerIconWrap}>
+        <MaterialCommunityIcons name={icon} size={20} color={cardColors.primary} />
+      </View>
+      <Text style={commonStyles.title} numberOfLines={2}>
+        {title}
+      </Text>
     </View>
-    <TouchableOpacity 
-      style={commonStyles.viewAllButton}
-      onPress={onViewAll}
-      activeOpacity={0.7}
-    >
+    <TouchableOpacity style={commonStyles.viewAllButton} onPress={onViewAll} activeOpacity={0.7}>
       <Text style={commonStyles.viewAllText}>Ver todos</Text>
-      <MaterialCommunityIcons name="chevron-right" size={16} color={cardColors.primary} />
+      <MaterialCommunityIcons name="chevron-right" size={18} color={FOCUS_CHEVRON_MUTED} />
     </TouchableOpacity>
   </View>
 );
 
 export const EmptyState = ({ icon, message, onAdd, addButtonText }) => (
   <View style={commonStyles.emptyContainer}>
-    <MaterialCommunityIcons name={icon} size={40} color={cardColors.secondary} />
+    <MaterialCommunityIcons name={icon} size={40} color={FOCUS_KICKER_COLOR} />
     <Text style={commonStyles.emptyText}>{message}</Text>
     {onAdd && (
-      <TouchableOpacity 
-        style={commonStyles.addButton}
-        onPress={onAdd}
-        activeOpacity={0.7}
-      >
+      <TouchableOpacity style={commonStyles.addButton} onPress={onAdd} activeOpacity={0.7}>
         <MaterialCommunityIcons name="plus" size={16} color={cardColors.primary} />
         <Text style={commonStyles.addButtonText}>{addButtonText}</Text>
       </TouchableOpacity>

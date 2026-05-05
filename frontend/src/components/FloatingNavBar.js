@@ -104,13 +104,7 @@ const FloatingNavBar = ({
   );
 
   return (
-    <View
-      style={[
-        styles.floatingBarSlot,
-        { transform: [{ translateY: insets.bottom }] },
-      ]}
-      pointerEvents="box-none"
-    >
+    <View style={styles.floatingBarSlot} pointerEvents="box-none">
     <Animated.View
       style={[
         styles.floatingBar,
@@ -229,19 +223,19 @@ const styles = StyleSheet.create({
   },
   floatingBar: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(3, 10, 36, 0.96)',
+    backgroundColor: 'rgba(3, 10, 36, 0.94)',
     borderRadius: 22,
     minHeight: 64,
     alignItems: 'center',
     paddingHorizontal: 6,
     paddingTop: 6,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    elevation: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(26, 221, 219, 0.35)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   button: {
     flex: 1,

@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { commonStyles, cardColors, CardHeader, EmptyState } from './common/CardStyles';
+import { FOCUS_CHEVRON_MUTED, FOCUS_KICKER_COLOR } from '../styles/focusCardTheme';
 import * as Haptics from 'expo-haptics';
 import { api, ENDPOINTS } from '../config/api';
 import { getApiErrorMessage, isAuthError } from '../utils/apiErrorHandler';
@@ -50,13 +51,13 @@ const TaskItem = memo(({ item, onPress }) => {
             backgroundColor: isOverdue 
               ? 'rgba(255, 107, 107, 0.1)' 
               : isTask 
-                ? 'rgba(255, 255, 255, 0.05)' 
-                : 'rgba(255, 107, 107, 0.05)',
+                ? 'rgba(255, 255, 255, 0.03)' 
+                : 'rgba(255, 107, 107, 0.06)',
             borderColor: isOverdue 
-              ? 'rgba(255, 107, 107, 0.3)' 
+              ? 'rgba(255, 107, 107, 0.28)' 
               : isTask 
-                ? 'rgba(26, 221, 219, 0.1)' 
-                : 'rgba(255, 107, 107, 0.1)',
+                ? 'rgba(255, 255, 255, 0.1)' 
+                : 'rgba(255, 107, 107, 0.15)',
           }
         ]}
         onPress={onPress}
@@ -76,8 +77,8 @@ const TaskItem = memo(({ item, onPress }) => {
                 backgroundColor: isOverdue 
                   ? 'rgba(255, 107, 107, 0.2)' 
                   : isTask 
-                    ? 'rgba(26, 221, 219, 0.2)' 
-                    : 'rgba(255, 107, 107, 0.2)'
+                    ? 'rgba(26, 221, 219, 0.1)' 
+                    : 'rgba(255, 107, 107, 0.15)'
               }
             ]}>
               <MaterialCommunityIcons 
@@ -129,7 +130,7 @@ const TaskItem = memo(({ item, onPress }) => {
                 <MaterialCommunityIcons 
                   name="calendar" 
                   size={12} 
-                  color={isOverdue ? cardColors.error : cardColors.secondary} 
+                  color={isOverdue ? cardColors.error : FOCUS_KICKER_COLOR} 
                 />
                 <Text style={[
                   styles.dateText,
@@ -145,7 +146,7 @@ const TaskItem = memo(({ item, onPress }) => {
                 <MaterialCommunityIcons 
                   name="clock-outline" 
                   size={12} 
-                  color={isOverdue ? cardColors.error : cardColors.secondary} 
+                  color={isOverdue ? cardColors.error : FOCUS_KICKER_COLOR} 
                 />
                 <Text style={[
                   styles.timeText,
@@ -161,8 +162,8 @@ const TaskItem = memo(({ item, onPress }) => {
             </View>
             <MaterialCommunityIcons 
               name="chevron-right" 
-              size={20} 
-              color={cardColors.secondary} 
+              size={18} 
+              color={FOCUS_CHEVRON_MUTED} 
             />
           </View>
         </View>
@@ -305,15 +306,11 @@ const TaskCard = memo(() => {
 
 const styles = StyleSheet.create({
   taskCard: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    marginBottom: 10,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   taskContent: {
     gap: 12,
@@ -326,7 +323,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -336,8 +333,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   typeText: {
-    color: cardColors.secondary,
-    fontSize: 14,
+    color: FOCUS_KICKER_COLOR,
+    fontSize: 13,
     fontWeight: '500',
   },
   taskBody: {
@@ -347,8 +344,9 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '500',
+    lineHeight: 20,
     color: '#FFFFFF',
     marginRight: 12,
   },
@@ -383,27 +381,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   timeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   dateText: {
-    color: cardColors.secondary,
-    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.55)',
+    fontSize: 13,
+    lineHeight: 18,
   },
   timeText: {
-    color: cardColors.secondary,
-    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.55)',
+    fontSize: 13,
+    lineHeight: 18,
   },
   overdueBadge: {
     backgroundColor: 'rgba(255, 107, 107, 0.2)',

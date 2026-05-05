@@ -281,7 +281,7 @@ const styles = {
   habitIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -290,8 +290,9 @@ const styles = {
     gap: 4,
   },
   habitTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '500',
+    lineHeight: 20,
     color: '#FFFFFF',
   },
   streakContainer: {
@@ -305,7 +306,7 @@ const styles = {
   },
   bestStreakText: {
     fontSize: 12,
-    color: cardColors.secondary,
+    color: 'rgba(255, 255, 255, 0.45)',
     marginLeft: 4,
   },
   progressSection: {
@@ -317,16 +318,18 @@ const styles = {
     alignItems: 'center',
   },
   statusText: {
-    fontSize: 12,
-    color: cardColors.secondary,
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.55)',
+    lineHeight: 18,
   },
   completedText: {
     color: cardColors.success,
     fontWeight: '500',
   },
   progressText: {
-    fontSize: 12,
-    color: cardColors.secondary,
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.55)',
+    lineHeight: 18,
     fontWeight: '500',
   },
   progressBar: {

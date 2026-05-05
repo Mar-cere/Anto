@@ -16,16 +16,18 @@ import {
   View
 } from 'react-native';
 import { colors } from '../styles/globalStyles';
+import {
+  FOCUS_INNER_ROW,
+  FOCUS_PANEL,
+  FOCUS_BORDER_SUBTLE,
+  FOCUS_CHEVRON_MUTED,
+  FOCUS_BODY_SOFT,
+  FOCUS_META,
+} from '../styles/focusCardTheme';
 
-// Constantes de estilos
-const CARD_PADDING = 12;
-const CARD_BORDER_RADIUS = 12;
 const CARD_MARGIN_BOTTOM = 8;
 const ICON_SIZE = 20;
 const ICON_MARGIN_RIGHT = 10;
-const TITLE_FONT_SIZE = 14;
-const TITLE_FONT_WEIGHT = '600';
-const TITLE_MARGIN_BOTTOM = 4;
 
 const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
   const [showPreview, setShowPreview] = useState(false);
@@ -147,8 +149,8 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
           </View>
           <Ionicons 
             name="chevron-forward" 
-            size={16} 
-            color={colors.accent} 
+            size={18} 
+            color={FOCUS_CHEVRON_MUTED} 
             style={styles.chevron}
           />
         </TouchableOpacity>
@@ -208,19 +210,10 @@ const styles = StyleSheet.create({
     marginBottom: CARD_MARGIN_BOTTOM,
   },
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...FOCUS_INNER_ROW,
     justifyContent: 'space-between',
-    backgroundColor: colors.background,
-    padding: CARD_PADDING,
-    borderRadius: CARD_BORDER_RADIUS,
-    borderWidth: 1,
-    borderColor: colors.accent + '30',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
   },
   content: {
     flexDirection: 'row',
@@ -232,9 +225,10 @@ const styles = StyleSheet.create({
     marginRight: ICON_MARGIN_RIGHT,
   },
   label: {
-    fontSize: TITLE_FONT_SIZE,
-    fontWeight: TITLE_FONT_WEIGHT,
-    color: colors.text,
+    fontSize: 15,
+    fontWeight: '500',
+    lineHeight: 20,
+    color: colors.white,
     flex: 1,
   },
   chevron: {
@@ -252,51 +246,52 @@ const styles = StyleSheet.create({
     maxWidth: 400,
   },
   previewCard: {
-    backgroundColor: colors.background,
-    borderRadius: 16,
-    padding: 24,
+    ...FOCUS_PANEL,
+    marginBottom: 0,
+    paddingVertical: 24,
+    paddingHorizontal: 22,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
   previewIcon: {
     fontSize: 48,
     marginBottom: 16,
   },
   previewTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: colors.text,
+    fontSize: 17,
+    fontWeight: '400',
+    lineHeight: 26,
+    letterSpacing: -0.2,
+    color: 'rgba(255,255,255,0.94)',
     marginBottom: 12,
     textAlign: 'center',
   },
   previewDescription: {
-    fontSize: 16,
-    color: colors.textSecondary,
+    fontSize: 14,
+    color: FOCUS_BODY_SOFT,
     textAlign: 'center',
     marginBottom: 24,
-    lineHeight: 24,
+    lineHeight: 21,
+    fontWeight: '400',
   },
   previewHint: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    fontSize: 13,
+    color: FOCUS_META,
     marginBottom: 20,
     fontStyle: 'italic',
+    lineHeight: 18,
   },
   previewButton: {
     backgroundColor: colors.primary,
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 999,
     marginBottom: 12,
   },
   previewButtonText: {
-    color: colors.white,
-    fontSize: 16,
+    color: colors.background,
+    fontSize: 15,
     fontWeight: '600',
+    letterSpacing: 0.2,
   },
   previewCloseButton: {
     position: 'absolute',

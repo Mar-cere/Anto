@@ -833,7 +833,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   skeletonCard: {
-    marginBottom: 12,
+    marginBottom: 20,
   },
   background: {
     flex: 1,

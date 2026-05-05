@@ -9,8 +9,9 @@ export const colors = {
   accent: '#1ADDDB',
   // Colores secundarios
   textSecondary: '#A3B8E8',
-  cardBackground: 'rgba(29, 43, 95, 0.8)',
-  border: 'rgba(26, 221, 219, 0.15)',
+  /** Superficie de tarjeta alineada al panel "foco" del dashboard (vidrio suave). */
+  cardBackground: 'rgba(255, 255, 255, 0.04)',
+  border: 'rgba(255, 255, 255, 0.1)',
   // Colores de estado
   error: '#FF6B6B',
   success: '#4CAF50',

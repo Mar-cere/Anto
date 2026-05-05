@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import quotes from '../data/quotes';
+import { colors } from '../styles/globalStyles';
+import { FOCUS_PANEL, FOCUS_BODY_SOFT } from '../styles/focusCardTheme';
 
 const QuoteSection = () => {
   const [currentQuote, setCurrentQuote] = useState('');
@@ -51,8 +53,8 @@ const QuoteSection = () => {
       <View style={styles.quoteContainer}>
         <MaterialCommunityIcons 
           name="format-quote-open" 
-          size={24} 
-          color="#1ADDDB" 
+          size={22} 
+          color={colors.primary} 
           style={styles.quoteIcon}
         />
         
@@ -62,8 +64,8 @@ const QuoteSection = () => {
         
         <MaterialCommunityIcons 
           name="format-quote-close" 
-          size={24} 
-          color="#1ADDDB" 
+          size={22} 
+          color={colors.primary} 
           style={styles.quoteIcon}
         />
       </View>
@@ -73,12 +75,9 @@ const QuoteSection = () => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'rgba(29, 43, 95, 0.8)',
-    borderRadius: 15,
-    padding: 4,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#1ADDDB',
+    ...FOCUS_PANEL,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
   },
   quoteContainer: {
     flexDirection: 'row',
@@ -88,15 +87,16 @@ const styles = StyleSheet.create({
   },
   quoteText: {
     flex: 1,
-    fontSize: 16,
-    color: '#A3B8E8',
+    fontSize: 14,
+    color: FOCUS_BODY_SOFT,
     fontStyle: 'italic',
-    lineHeight: 24,
+    lineHeight: 21,
+    fontWeight: '400',
     textAlign: 'center',
     marginHorizontal: 8,
   },
   quoteIcon: {
-    opacity: 0.7,
+    opacity: 0.85,
   },
 });
 

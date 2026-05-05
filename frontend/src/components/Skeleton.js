@@ -10,7 +10,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
-import { colors } from '../styles/globalStyles';
+import { FOCUS_PANEL } from '../styles/focusCardTheme';
 
 const DEFAULT_DURATION = 900;
 const MIN_OPACITY = 0.45;
@@ -80,15 +80,13 @@ export const SkeletonCard = ({ style }) => {
 const styles = StyleSheet.create({
   block: {
     backgroundColor: baseColor,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: highlightColor,
   },
   card: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 16,
+    ...FOCUS_PANEL,
+    paddingVertical: 20,
+    paddingHorizontal: 18,
   },
   row: {
     flexDirection: 'row',

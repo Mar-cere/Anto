@@ -21,6 +21,7 @@ import { sanitizeSessionIntentionForClient } from '../constants/sessionIntention
 import { evaluateSuicideRisk } from '../constants/crisis.js';
 import chatProductActionProposalService from '../services/chatProductActionProposalService.js';
 import chatProductActionLlmService from '../services/chatProductActionLlmService.js';
+import conversationProductProposalCapService from '../services/conversationProductProposalCapService.js';
 import metricsService from '../services/metricsService.js';
 
 // Constantes de configuración
@@ -314,6 +315,18 @@ export const setupSocketIO = (server) => {
         if (proposedProductActions.length > 0) {
           try {
             proposedProductActions =
+              await conversationProductProposalCapService.filterProposedProductActionsByConversationCap(
+                messageText,
+                conversation._id,
+                proposedProductActions
+              );
+          } catch (capErr) {
+            console.warn('[SocketIO] product proposal cap:', capErr?.message || capErr);
+          }
+        }
+        if (proposedProductActions.length > 0) {
+          try {
+            proposedProductActions =
               await chatProductActionLlmService.enrichProposedProductActionsWithLlm(
                 proposedProductActions,
                 { userContent: messageText, assistantContent: response.content }
@@ -333,6 +346,15 @@ export const setupSocketIO = (server) => {
               { conversationId: String(conversation._id) }
             )
             .catch(() => {});
+          conversationProductProposalCapService
+            .incrementNonExplicitProductProposalCountIfApplied(
+              messageText,
+              conversation._id,
+              proposedProductActions.length
+            )
+            .catch((incErr) =>
+              console.warn('[SocketIO] product proposal cap inc:', incErr?.message || incErr)
+            );
         }
         
         // 9. Emitir respuesta al cliente

@@ -27,6 +27,7 @@ import User from '../models/User.js';
 import actionSuggestionService from '../services/actionSuggestionService.js';
 import chatProductActionProposalService from '../services/chatProductActionProposalService.js';
 import chatProductActionLlmService from '../services/chatProductActionLlmService.js';
+import conversationProductProposalCapService from '../services/conversationProductProposalCapService.js';
 import clinicalScalesService from '../services/clinicalScalesService.js';
 import CognitiveDistortionReport from '../models/CognitiveDistortionReport.js';
 import ClinicalScaleResult from '../models/ClinicalScaleResult.js';
@@ -1249,6 +1250,19 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                 if (proposedProductActions.length > 0) {
                   try {
                     proposedProductActions =
+                      await conversationProductProposalCapService.filterProposedProductActionsByConversationCap(
+                        content,
+                        conversationId,
+                        proposedProductActions
+                      );
+                  } catch (capErr) {
+                    console.warn('[ChatRoutes] product proposal cap (stream):', capErr?.message || capErr);
+                  }
+                }
+
+                if (proposedProductActions.length > 0) {
+                  try {
+                    proposedProductActions =
                       await chatProductActionLlmService.enrichProposedProductActionsWithLlm(
                         proposedProductActions,
                         { userContent: content, assistantContent: response.content }
@@ -1268,6 +1282,15 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                       { conversationId: String(conversationId) }
                     )
                     .catch(() => {});
+                  conversationProductProposalCapService
+                    .incrementNonExplicitProductProposalCountIfApplied(
+                      content,
+                      conversationId,
+                      proposedProductActions.length
+                    )
+                    .catch((incErr) =>
+                      console.warn('[ChatRoutes] product proposal cap inc (stream):', incErr?.message || incErr)
+                    );
                 }
 
                 res.write('data: ' + JSON.stringify({
@@ -1649,6 +1672,19 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         if (proposedProductActions.length > 0) {
           try {
             proposedProductActions =
+              await conversationProductProposalCapService.filterProposedProductActionsByConversationCap(
+                content,
+                conversationId,
+                proposedProductActions
+              );
+          } catch (capErr) {
+            console.warn('[ChatRoutes] product proposal cap (non-stream):', capErr?.message || capErr);
+          }
+        }
+
+        if (proposedProductActions.length > 0) {
+          try {
+            proposedProductActions =
               await chatProductActionLlmService.enrichProposedProductActionsWithLlm(
                 proposedProductActions,
                 { userContent: content, assistantContent: response.content }
@@ -1668,6 +1704,15 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               { conversationId: String(conversationId) }
             )
             .catch(() => {});
+          conversationProductProposalCapService
+            .incrementNonExplicitProductProposalCountIfApplied(
+              content,
+              conversationId,
+              proposedProductActions.length
+            )
+            .catch((incErr) =>
+              console.warn('[ChatRoutes] product proposal cap inc (non-stream):', incErr?.message || incErr)
+            );
         }
         
         // Registrar métrica de tiempo de respuesta de forma asíncrona

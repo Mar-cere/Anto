@@ -2,12 +2,16 @@ import React, { useEffect, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { colors } from '../../styles/globalStyles';
+import { FOCUS_KICKER_COLOR, FOCUS_META } from '../../styles/focusCardTheme';
 
-const TaskItem = ({ item, onPress, onToggleComplete, onDelete }) => {
+const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPressIn = 0, density = 'comfortable' }) => {
   const isTask = item.itemType === 'task';
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+  const prevCompletedRef = useRef(item.completed);
   
   // Función para verificar si está caducado
   const isOverdue = useCallback(() => {
@@ -22,38 +26,89 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete }) => {
   }, [item.completed, isOverdue]);
 
   const itemState = getItemState();
+  const cardVisualTone = itemState === 'overdue'
+    ? styles.cardToneOverdue
+    : itemState === 'completed'
+      ? styles.cardToneCompleted
+      : isTask
+        ? styles.cardToneTask
+        : styles.cardToneReminder;
+
+  const getTemporalLabel = useCallback(() => {
+    if (itemState === 'completed') return 'Completada';
+    const due = new Date(item.dueDate);
+    if (Number.isNaN(due.getTime())) return isTask ? 'Tarea' : 'Recordatorio';
+    const now = new Date();
+    const startToday = new Date(now);
+    startToday.setHours(0, 0, 0, 0);
+    const startDue = new Date(due);
+    startDue.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((startDue - startToday) / 86400000);
+    if (itemState === 'overdue') return 'Atrasada';
+    if (diffDays === 0) return 'Vence hoy';
+    if (diffDays === 1) return 'Mañana';
+    if (diffDays > 1 && diffDays <= 7) return `En ${diffDays} días`;
+    return isTask ? 'Planificada' : 'Programado';
+  }, [itemState, item.dueDate, isTask]);
 
   // Animación de entrada
   useEffect(() => {
-    Animated.spring(slideAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      tension: 50,
-      friction: 7,
-    }).start();
-  }, []);
-
-  // Animación cuando se completa
-  useEffect(() => {
-    if (item.completed) {
+    Animated.parallel([
+      Animated.spring(slideAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 7,
+      }),
       Animated.sequence([
-        // Primero reducimos la opacidad a 0.8
-        Animated.timing(fadeAnim, {
-          toValue: 0.8,
-          duration: 300,
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 240,
           useNativeDriver: true,
         }),
-        // Esperamos 2 segundos
-        Animated.delay(2000),
-        // Reducimos más la opacidad
-        Animated.timing(fadeAnim, {
-          toValue: 0.5,
-          duration: 500,
+        Animated.timing(glowAnim, {
+          toValue: 0,
+          duration: 700,
           useNativeDriver: true,
-        })
+        }),
+      ]),
+    ]).start();
+  }, [slideAnim, glowAnim]);
+
+  // Animación premium cuando se completa.
+  useEffect(() => {
+    const wasCompleted = prevCompletedRef.current;
+    if (!wasCompleted && item.completed) {
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.03,
+          duration: 120,
+          useNativeDriver: true,
+        }),
+        Animated.parallel([
+          Animated.timing(scaleAnim, {
+            toValue: 0.98,
+            duration: 180,
+            useNativeDriver: true,
+          }),
+        Animated.timing(fadeAnim, {
+          toValue: 0.82,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+        ]),
+        Animated.timing(fadeAnim, {
+          toValue: 0.62,
+          duration: 320,
+          useNativeDriver: true,
+        }),
       ]).start();
+    } else if (!item.completed) {
+      fadeAnim.setValue(1);
+      scaleAnim.setValue(1);
     }
-  }, [item.completed, fadeAnim]);
+    prevCompletedRef.current = item.completed;
+  }, [item.completed, fadeAnim, scaleAnim]);
 
   const handlePress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -110,6 +165,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete }) => {
     <Animated.View 
       style={[
         styles.container,
+        swipeRow && styles.containerSwipe,
         {
           opacity: fadeAnim,
           transform: [
@@ -127,6 +183,8 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete }) => {
       <TouchableOpacity
         style={[
           styles.itemCard,
+          cardVisualTone,
+          density === 'compact' && styles.itemCardCompact,
           itemState === 'completed' && styles.completedItem,
           itemState === 'overdue' && styles.overdueItem
         ]}
@@ -134,28 +192,76 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete }) => {
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         activeOpacity={0.8}
+        delayPressIn={delayPressIn}
       >
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.entryGlow,
+            {
+              opacity: glowAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 0.22],
+              }),
+            },
+          ]}
+        />
         <View style={styles.itemHeader}>
+          <View
+            style={[
+              styles.priorityAccent,
+              itemState === 'overdue'
+                ? styles.priorityAccentOverdue
+                : isTask
+                  ? getPriorityAccent(item.priority)
+                  : styles.priorityAccentReminder,
+            ]}
+          />
           <View style={styles.itemTitleContainer}>
             <View style={[
               styles.iconContainer,
               { 
                 backgroundColor: itemState === 'overdue' 
-                  ? 'rgba(255, 107, 107, 0.15)' 
+                  ? 'rgba(255, 107, 107, 0.12)' 
                   : isTask 
-                    ? 'rgba(26, 221, 219, 0.15)' 
-                    : 'rgba(255, 107, 107, 0.15)'
+                    ? 'rgba(26, 221, 219, 0.1)' 
+                    : 'rgba(255, 107, 107, 0.12)'
               }
             ]}>
               <Ionicons 
                 name={isTask ? 'checkbox-outline' : 'alarm-outline'} 
                 size={20} 
-                color={itemState === 'overdue' ? '#FF6B6B' : isTask ? '#1ADDDB' : '#FF6B6B'} 
+                color={itemState === 'overdue' ? colors.error : isTask ? colors.primary : colors.error} 
               />
             </View>
             <View style={styles.titleContainer}>
+              <View style={styles.contextRow}>
+                <View style={[styles.typePill, isTask ? styles.typePillTask : styles.typePillReminder]}>
+                  <Text style={[styles.typePillText, isTask ? styles.typePillTextTask : styles.typePillTextReminder]}>
+                    {isTask ? 'TAREA' : 'RECORDATORIO'}
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.timePill,
+                    itemState === 'overdue' && styles.timePillOverdue,
+                    itemState === 'completed' && styles.timePillCompleted,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.timePillText,
+                      itemState === 'overdue' && styles.timePillTextOverdue,
+                      itemState === 'completed' && styles.timePillTextCompleted,
+                    ]}
+                  >
+                    {getTemporalLabel()}
+                  </Text>
+                </View>
+              </View>
               <Text style={[
                 styles.itemTitle,
+                density === 'compact' && styles.itemTitleCompact,
                 itemState === 'completed' && styles.completedTitle,
                 itemState === 'overdue' && styles.overdueTitle
               ]} numberOfLines={1}>
@@ -164,6 +270,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete }) => {
               {item.description && (
                 <Text style={[
                   styles.itemDescription,
+                  density === 'compact' && styles.itemDescriptionCompact,
                   itemState === 'completed' && styles.completedDescription,
                   itemState === 'overdue' && styles.overdueDescription
                 ]} numberOfLines={1}>
@@ -185,7 +292,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete }) => {
                 <Ionicons 
                   name={item.completed ? 'checkmark-circle' : 'ellipse-outline'} 
                   size={24} 
-                  color={item.completed ? '#4CAF50' : '#A3B8E8'} 
+                  color={item.completed ? '#4CAF50' : FOCUS_KICKER_COLOR} 
                 />
               </TouchableOpacity>
             )}
@@ -194,7 +301,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete }) => {
               onPress={handleDelete}
               activeOpacity={0.7}
             >
-              <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
+              <Ionicons name="trash-outline" size={20} color={colors.error} />
             </TouchableOpacity>
           </View>
         </View>
@@ -203,15 +310,17 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete }) => {
           <View style={styles.itemMetadata}>
             <View style={[
               styles.dateContainer,
+              density === 'compact' && styles.metaContainerCompact,
               itemState === 'overdue' && styles.overdueDateContainer
             ]}>
               <Ionicons 
                 name="calendar-outline" 
                 size={14} 
-                color={itemState === 'overdue' ? '#FF6B6B' : '#A3B8E8'} 
+                color={itemState === 'overdue' ? colors.error : FOCUS_KICKER_COLOR} 
               />
               <Text style={[
                 styles.itemDate,
+                density === 'compact' && styles.itemDateCompact,
                 itemState === 'overdue' && styles.overdueDate
               ]}>
                 {new Date(item.dueDate).toLocaleDateString('es-ES', {
@@ -222,15 +331,17 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete }) => {
             </View>
             <View style={[
               styles.timeContainer,
+              density === 'compact' && styles.metaContainerCompact,
               itemState === 'overdue' && styles.overdueDateContainer
             ]}>
               <Ionicons 
                 name="time-outline" 
                 size={14} 
-                color={itemState === 'overdue' ? '#FF6B6B' : '#A3B8E8'} 
+                color={itemState === 'overdue' ? colors.error : FOCUS_KICKER_COLOR} 
               />
               <Text style={[
                 styles.itemDate,
+                density === 'compact' && styles.itemDateCompact,
                 itemState === 'overdue' && styles.overdueDate
               ]}>
                 {new Date(item.dueDate).toLocaleTimeString('es-ES', { 
@@ -276,28 +387,73 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: 8,
   },
+  containerSwipe: {
+    marginBottom: 0,
+  },
   itemCard: {
-    backgroundColor: 'rgba(29, 43, 95, 0.8)',
+    backgroundColor: 'rgba(255, 255, 255, 0.045)',
     borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(26, 221, 219, 0.1)',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
     elevation: 2,
+    overflow: 'hidden',
+  },
+  entryGlow: {
+    position: 'absolute',
+    top: -24,
+    left: -18,
+    right: -18,
+    height: 56,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.55)',
+    transform: [{ rotate: '-7deg' }],
+  },
+  cardToneTask: {
+    borderColor: 'rgba(26, 221, 219, 0.18)',
+  },
+  cardToneReminder: {
+    borderColor: 'rgba(255, 107, 107, 0.17)',
+  },
+  cardToneCompleted: {
+    borderColor: 'rgba(76, 175, 80, 0.2)',
+  },
+  cardToneOverdue: {
+    borderColor: 'rgba(255, 107, 107, 0.28)',
+  },
+  itemCardCompact: {
+    paddingVertical: 10,
+    paddingHorizontal: 11,
   },
   completedItem: {
-    opacity: 0.7,
-    backgroundColor: 'rgba(29, 43, 95, 0.4)',
-    borderColor: 'rgba(76, 175, 80, 0.2)',
+    opacity: 0.72,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderColor: 'rgba(76, 175, 80, 0.25)',
   },
   itemHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 12,
+  },
+  priorityAccent: {
+    width: 3,
+    borderRadius: 2,
+    marginRight: 10,
+    alignSelf: 'stretch',
+    minHeight: 60,
+    marginTop: 1,
+  },
+  priorityAccentOverdue: {
+    backgroundColor: 'rgba(255, 107, 107, 0.95)',
+  },
+  priorityAccentReminder: {
+    backgroundColor: 'rgba(255, 159, 67, 0.95)',
   },
   itemTitleContainer: {
     flexDirection: 'row',
@@ -308,7 +464,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 2,
@@ -317,25 +473,95 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 4,
   },
+  contextRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 3,
+    flexWrap: 'wrap',
+  },
+  typePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  typePillTask: {
+    backgroundColor: 'rgba(26, 221, 219, 0.09)',
+    borderColor: 'rgba(26, 221, 219, 0.28)',
+  },
+  typePillReminder: {
+    backgroundColor: 'rgba(255, 107, 107, 0.08)',
+    borderColor: 'rgba(255, 107, 107, 0.24)',
+  },
+  typePillText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+  },
+  typePillTextTask: {
+    color: colors.primary,
+  },
+  typePillTextReminder: {
+    color: colors.error,
+  },
+  timePill: {
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.16)',
+  },
+  timePillOverdue: {
+    backgroundColor: 'rgba(255,107,107,0.14)',
+    borderColor: 'rgba(255,107,107,0.32)',
+  },
+  timePillCompleted: {
+    backgroundColor: 'rgba(76,175,80,0.14)',
+    borderColor: 'rgba(76,175,80,0.32)',
+  },
+  timePillText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.75)',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  timePillTextOverdue: {
+    color: colors.error,
+  },
+  timePillTextCompleted: {
+    color: '#8AE29D',
+  },
   itemTitle: {
-    fontSize: 16,
+    fontSize: 15.5,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.white,
+    lineHeight: 21,
+    letterSpacing: -0.15,
+  },
+  itemTitleCompact: {
+    fontSize: 15,
     lineHeight: 20,
   },
   completedTitle: {
-    color: '#A3B8E8',
+    color: FOCUS_META,
     textDecorationLine: 'line-through',
   },
   itemDescription: {
-    fontSize: 14,
-    color: '#A3B8E8',
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.6)',
     lineHeight: 18,
-    opacity: 0.8,
+    fontWeight: '400',
+  },
+  itemDescriptionCompact: {
+    fontSize: 12.5,
+    lineHeight: 17,
   },
   completedDescription: {
-    color: '#A3B8E8',
-    opacity: 0.5,
+    color: FOCUS_META,
+    opacity: 0.55,
   },
   itemActions: {
     flexDirection: 'row',
@@ -345,7 +571,7 @@ const styles = StyleSheet.create({
   completeButton: {
     padding: 6,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
   },
   completedButton: {
     backgroundColor: 'rgba(76, 175, 80, 0.1)',
@@ -369,7 +595,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.045)',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
@@ -378,15 +604,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.045)',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
   },
   itemDate: {
     fontSize: 12,
-    color: '#A3B8E8',
+    color: 'rgba(255, 255, 255, 0.55)',
     fontWeight: '500',
+  },
+  itemDateCompact: {
+    fontSize: 11,
+  },
+  metaContainerCompact: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   priorityBadge: {
     flexDirection: 'row',
@@ -395,6 +628,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.28)',
   },
   priorityText: {
     fontSize: 12,
@@ -402,22 +637,22 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   overdueItem: {
-    borderColor: 'rgba(255, 107, 107, 0.3)',
-    backgroundColor: 'rgba(255, 107, 107, 0.05)',
+    borderColor: 'rgba(255, 107, 107, 0.28)',
+    backgroundColor: 'rgba(255, 107, 107, 0.06)',
   },
   overdueTitle: {
-    color: '#FF6B6B',
+    color: colors.error,
     textDecorationLine: 'line-through',
   },
   overdueDescription: {
-    color: '#FF6B6B',
-    opacity: 0.7,
+    color: colors.error,
+    opacity: 0.75,
   },
   overdueDateContainer: {
     backgroundColor: 'rgba(255, 107, 107, 0.1)',
   },
   overdueDate: {
-    color: '#FF6B6B',
+    color: colors.error,
   },
   overdueBadge: {
     flexDirection: 'row',
@@ -446,6 +681,15 @@ const getPriorityColor = (priority) => {
     case 'medium': return '#FFD93D';
     case 'low': return '#6BCB77';
     default: return '#95A5A6';
+  }
+};
+
+const getPriorityAccent = (priority) => {
+  switch (priority) {
+    case 'high': return { backgroundColor: 'rgba(255, 107, 107, 0.95)' };
+    case 'medium': return { backgroundColor: 'rgba(255, 217, 61, 0.95)' };
+    case 'low': return { backgroundColor: 'rgba(107, 203, 119, 0.95)' };
+    default: return { backgroundColor: 'rgba(149, 165, 166, 0.95)' };
   }
 };
 

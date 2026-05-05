@@ -14,18 +14,45 @@ function isValidObjectIdParam(v) {
 
 const HABIT_HINTS = /hábito|rutina\s+diaria|todos\s+los\s+días|cada\s+día|constancia\s+diaria/i;
 
-/** Intención "técnica" pero el texto huele a planificación concreta (no sobrecargar: solo con señal clara). */
-const PLANNING_LEXICON =
-  /planific|organiz|tarea|pendiente|mañana|pasado\s+mañana|recordatorio|esta\s+semana|próxim[oa]s?\s+días|checklist|lista\s+de|prioridad|agendar|bloque\s+de\s+tiempo/i;
+/**
+ * Señales de que el mensaje puede traducirse en tarea u hábito sin pedido explícito (“ponelo en mis tareas”).
+ * Incluye planificación, orden en la vida cotidiana, micro-pasos, rutinas y sobrecarga + intención de ordenar.
+ * No cubre solo malestar sin ancla accionable (p. ej. “estoy triste” sin más).
+ */
+const NATURAL_PRODUCT_LEXICON =
+  /planific|organiz|orden(?:ar|o)?|limpi(?:ar)?|lavar|recoger|tarea|tareas|pendiente|to-?do|checklist|lista\s+de|prioridad|agendar|recordatorio|esta\s+semana|próxim[oa]s?\s+días|mañana|pasado\s+mañana|bloque\s+de\s+tiempo|empezar\s+por|primer(?:o)?\s+paso|paso\s+(?:chico|pequeño|concreto)|micro(?:\s|-)?paso|algo\s+concreto|rutina|constancia|h[aá]bito|todos\s+los\s+días|cada\s+día|diari[oa]s?|levantarme|acostarme|dormir\s+mejor|despertar|ejercicio|meditar|\b(?:beber|tomar)\s+m[aá]s\s+agua\b|estiramientos|generar\s+tareas|crear\s+tareas|tengo\s+que\s+(?:hacer|terminar|ordenar|limpiar|preparar|llamar|mandar|escribir|empezar|entregar|pagar)|deber[ií]a\s+(?:hacer|ordenar|empezar|terminar)|necesito\s+(?:ordenar|hacer|terminar|preparar|empezar)|quiero\s+(?:organizar|ordenar|empezar|dejar|lograr)|me\s+agobia|abruma|no\s+doy\s+abasto|mucho\s+encima|muchas\s+cosas\s+(?:a\s+la\s+vez|encima)|no\s+sé\s+por\s+dónde\s+empezar|sin\s+saber\s+por\s+dónde|(?:la\s+)?cocina|encimera|escritorio|desorden/i;
+
+/**
+ * Pide guardar en la app aunque la sesión sea "desahogar" (vent). Ej.: "generala en mis tareas".
+ * El título concreto suele venir del turno anterior del asistente (refinar con LLM si está activo).
+ */
+const EXPLICIT_TASK_TO_APP =
+  /\ben\s+mis\s+tareas\b|guardar(?:me|te)?\s+como\s+tarea\b|agregar(?:lo|la)?\s+a\s+mis\s+tareas\b|\bgener(?:á|a)(?:la|lo)?\s+en\s+mis\s+tareas\b/i;
+
+const EXPLICIT_HABIT_TO_APP =
+  /\ben\s+mis\s+h[aá]bitos\b|guardar(?:me|te)?\s+como\s+h[aá]bito\b|agregar(?:lo|la)?\s+a\s+mis\s+h[aá]bitos\b/i;
 
 /**
  * @param {'vent'|'organize'|'technique'|'plan'|null} intention
  * @param {string} content
  */
 function sessionAllowsProductDraft(intention, content) {
+  if (EXPLICIT_TASK_TO_APP.test(content) || EXPLICIT_HABIT_TO_APP.test(content)) return true;
   if (intention === 'plan' || intention === 'organize') return true;
-  if (intention === 'technique' && PLANNING_LEXICON.test(content)) return true;
+  if (intention === 'technique' && NATURAL_PRODUCT_LEXICON.test(content)) return true;
+  if (intention === 'vent' && NATURAL_PRODUCT_LEXICON.test(content)) return true;
   return false;
+}
+
+/** Comando corto tipo "generala en mis tareas" sin descripción en el mismo mensaje. */
+function isShortExplicitTaskCommand(content) {
+  const line = String(content || '')
+    .trim()
+    .split('\n')[0]
+    .trim();
+  if (!EXPLICIT_TASK_TO_APP.test(line)) return false;
+  const words = line.split(/\s+/).filter(Boolean);
+  return words.length <= 8 || line.length <= 44;
 }
 
 function defaultDueDateNextEvening() {
@@ -198,6 +225,12 @@ export function shouldOfferProductActions({ riskLevel, isCrisis }) {
   return true;
 }
 
+/** True si el usuario pidió guardar en la app (no cuenta para el tope por conversación). */
+export function isExplicitProductActionRequest(userContent) {
+  const c = String(userContent || '');
+  return EXPLICIT_TASK_TO_APP.test(c) || EXPLICIT_HABIT_TO_APP.test(c);
+}
+
 /**
  * @param {{
  *   riskLevel?: string,
@@ -240,12 +273,15 @@ export function buildProposedProductActions(input) {
   const firstLine = content.split('\n')[0] || content;
 
   if (HABIT_HINTS.test(content)) {
+    const habitTitle = EXPLICIT_HABIT_TO_APP.test(firstLine) && firstLine.split(/\s+/).filter(Boolean).length <= 8
+      ? 'Hábito acordado en el chat'
+      : firstLine;
     return [
       {
         type: 'propose_habit',
         id: crypto.randomUUID(),
         draft: {
-          title: clampTitle(firstLine),
+          title: clampTitle(habitTitle),
           description: '',
           icon: 'meditation',
           frequency: 'daily',
@@ -260,12 +296,16 @@ export function buildProposedProductActions(input) {
     ];
   }
 
+  const taskTitle = isShortExplicitTaskCommand(content)
+    ? 'Paso acordado en el chat'
+    : firstLine;
+
   return [
     {
       type: 'propose_task',
       id: crypto.randomUUID(),
       draft: {
-        title: clampTitle(content),
+        title: clampTitle(taskTitle),
         description: '',
         dueDate: defaultDueDateNextEvening().toISOString(),
         priority: 'medium',
@@ -280,6 +320,7 @@ export function buildProposedProductActions(input) {
 
 export default {
   shouldOfferProductActions,
+  isExplicitProductActionRequest,
   buildProposedProductActions,
   mergeProductActionDraftFromLlm,
   mergeTaskDraftFromLlm,
