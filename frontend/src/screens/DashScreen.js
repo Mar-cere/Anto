@@ -757,7 +757,7 @@ const DashScreen = () => {
         </DashboardScroll>
         </SafeAreaView>
       </ImageBackground>
-      <FloatingNavBar activeTab="home" accessibilityLabel={DASH.NAVBAR_LABEL} />
+      <FloatingNavBar activeTab="home" accessibilityLabel={DASH.NAVBAR_LABEL} slotBottomOffset={0} />
       
       {/* Overlay de resaltado para el tutorial */}
       <TutorialHighlight

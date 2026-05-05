@@ -5,11 +5,10 @@
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
-import { Platform, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FOCUS_BORDER_SUBTLE, FOCUS_KICKER_COLOR, FOCUS_META } from '../../styles/focusCardTheme';
 import {
   COLORS,
-  DEFAULT_ANDROID_PADDING_TOP,
-  DEFAULT_IOS_PADDING_TOP,
   FILTER_BORDER_RADIUS,
   FILTER_GAP,
   FILTER_ICON_SIZE,
@@ -18,20 +17,21 @@ import {
   FILTER_TYPES,
   HEADER_PADDING,
   HEADER_TITLE_MARGIN_BOTTOM,
-  STATUS_BAR_BACKGROUND,
-  STATUS_BAR_STYLE,
   TEXTS,
 } from '../../screens/habits/habitsScreenConstants';
 
-export default function HabitsScreenHeader({ filterType, onFilterChange }) {
-  const paddingTop =
-    Platform.OS === 'ios' ? DEFAULT_IOS_PADDING_TOP : (StatusBar.currentHeight ?? DEFAULT_ANDROID_PADDING_TOP);
-
+export default function HabitsScreenHeader({ filterType, onFilterChange, counts = { active: 0, archived: 0 } }) {
   return (
-    <View style={[styles.headerContainer, { paddingTop }]}>
-      <StatusBar barStyle={STATUS_BAR_STYLE} backgroundColor={STATUS_BAR_BACKGROUND} />
+    <View style={styles.headerContainer}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{TEXTS.TITLE}</Text>
+        <View style={styles.titleWrap}>
+          <Text style={styles.headerTitle}>{TEXTS.TITLE}</Text>
+          <Text style={styles.headerMeta}>
+            {filterType === FILTER_TYPES.ACTIVE
+              ? `${counts.active || 0} activos`
+              : `${counts.archived || 0} archivados`}
+          </Text>
+        </View>
         <View style={styles.filterButtons}>
           <TouchableOpacity
             style={[
@@ -83,18 +83,29 @@ export default function HabitsScreenHeader({ filterType, onFilterChange }) {
 
 const styles = StyleSheet.create({
   headerContainer: {
-    backgroundColor: COLORS.HEADER_BACKGROUND,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.HEADER_BORDER,
+    backgroundColor: COLORS.BACKGROUND,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: FOCUS_BORDER_SUBTLE,
   },
   header: {
-    padding: HEADER_PADDING,
+    paddingHorizontal: HEADER_PADDING,
+    paddingBottom: HEADER_PADDING,
+    paddingTop: 8,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.WHITE,
+    fontSize: 22,
+    fontWeight: '600',
+    letterSpacing: -0.3,
+    color: 'rgba(255,255,255,0.94)',
+  },
+  titleWrap: {
     marginBottom: HEADER_TITLE_MARGIN_BOTTOM,
+  },
+  headerMeta: {
+    marginTop: 4,
+    color: FOCUS_META,
+    fontSize: 12,
+    fontWeight: '500',
   },
   filterButtons: {
     flexDirection: 'row',
@@ -107,14 +118,17 @@ const styles = StyleSheet.create({
     paddingVertical: FILTER_PADDING_VERTICAL,
     paddingHorizontal: FILTER_PADDING_HORIZONTAL,
     borderRadius: FILTER_BORDER_RADIUS,
-    backgroundColor: COLORS.FILTER_BACKGROUND,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
   },
   filterButtonActive: {
     backgroundColor: COLORS.PRIMARY,
+    borderColor: 'rgba(26, 221, 219, 0.35)',
   },
   filterButtonText: {
-    color: COLORS.ACCENT,
-    fontSize: 14,
+    color: FOCUS_KICKER_COLOR,
+    fontSize: 13,
     fontWeight: '500',
   },
   filterButtonTextActive: {

@@ -210,6 +210,8 @@ const HabitCard = memo(() => {
           message="No hay hábitos activos"
           onAdd={() => navigation.navigate('Habits', { openModal: true })}
           addButtonText="Crear hábito"
+          compact
+          showIcon={false}
         />
       );
     }

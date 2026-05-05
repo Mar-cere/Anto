@@ -14,8 +14,10 @@ import {
   RefreshControl,
   StyleSheet,
   TouchableOpacity,
+  Text,
   View,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import CreateHabitModal from '../components/habits/CreateHabitModal';
 import HabitsEmptyView from '../components/habits/HabitsEmptyView';
 import HabitsErrorView from '../components/habits/HabitsErrorView';
@@ -29,7 +31,6 @@ import {
   FLATLIST_INITIAL_NUM_TO_RENDER,
   FLATLIST_MAX_TO_RENDER_PER_BATCH,
   FLATLIST_WINDOW_SIZE,
-  LIST_GAP,
   LIST_PADDING,
   LIST_PADDING_BOTTOM,
   FAB_BORDER_RADIUS,
@@ -40,6 +41,7 @@ import {
 } from './habits/habitsScreenConstants';
 
 export default function HabitsScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const {
     habits,
     modalVisible,
@@ -65,6 +67,10 @@ export default function HabitsScreen({ route, navigation }) {
   } = useHabitsScreen({ route, navigation });
 
   const showSkeleton = loading && !error && habits.length === 0;
+  const habitsCount = {
+    active: habits.filter((h) => !h?.status?.archived).length,
+    archived: habits.filter((h) => h?.status?.archived).length,
+  };
 
   const renderItem = ({ item }) => {
     if (showSkeleton) return <SkeletonCard />;
@@ -106,18 +112,35 @@ export default function HabitsScreen({ route, navigation }) {
           <HabitsEmptyView filterType={filterType} onCreateFirst={openModal} />
         ) : null
       }
+      ListHeaderComponent={
+        !showSkeleton ? (
+          <View style={styles.countRow}>
+            <Text style={styles.countText}>
+              {filterType === 'active'
+                ? `${habitsCount.active} activos`
+                : `${habitsCount.archived} archivados`}
+            </Text>
+          </View>
+        ) : null
+      }
     />
   );
 
   return (
     <View style={styles.container}>
-      <HabitsScreenHeader filterType={filterType} onFilterChange={setFilterType} />
-      {error ? (
-        <HabitsErrorView errorMessage={error} onRetry={() => loadHabits()} />
-      ) : (
-        listContent
-      )}
-      <TouchableOpacity style={styles.fab} onPress={openModal}>
+      <SafeAreaView style={styles.safeAreaContent} edges={['top', 'left', 'right']}>
+        <HabitsScreenHeader
+          filterType={filterType}
+          onFilterChange={setFilterType}
+          counts={habitsCount}
+        />
+        {error ? (
+          <HabitsErrorView errorMessage={error} onRetry={() => loadHabits()} />
+        ) : (
+          listContent
+        )}
+      </SafeAreaView>
+      <TouchableOpacity style={[styles.fab, { bottom: insets.bottom + FAB_BOTTOM }]} onPress={openModal}>
         <MaterialCommunityIcons name="plus" size={ICON_SIZE} color={COLORS.WHITE} />
       </TouchableOpacity>
       <CreateHabitModal
@@ -138,11 +161,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.BACKGROUND,
   },
+  safeAreaContent: {
+    flex: 1,
+    backgroundColor: COLORS.BACKGROUND,
+  },
   listContainer: {
     flexGrow: 1,
     padding: LIST_PADDING,
-    gap: LIST_GAP,
     paddingBottom: LIST_PADDING_BOTTOM,
+  },
+  countRow: {
+    marginBottom: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignSelf: 'flex-start',
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  countText: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 13,
+    fontWeight: '500',
   },
   fab: {
     position: 'absolute',

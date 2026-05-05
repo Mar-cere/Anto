@@ -263,6 +263,8 @@ const TaskCard = memo(() => {
           message="No hay tareas pendientes"
           onAdd={() => navigation.navigate('Tasks', { mode: 'create', openModal: true })}
           addButtonText="Agregar tarea"
+          compact
+          showIcon={false}
         />
       );
     }

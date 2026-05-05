@@ -1,6 +1,8 @@
 import {
   buildProposedProductActions,
   shouldOfferProductActions,
+  isExplicitProductActionRequest,
+  getProductActionNeedLevel,
   mergeTaskDraftFromLlm,
   mergeHabitDraftFromLlm,
   mergeProductActionDraftFromLlm
@@ -132,6 +134,63 @@ describe('chatProductActionProposalService', () => {
     expect(actions).toHaveLength(1);
     expect(actions[0].type).toBe('propose_task');
     expect(actions[0].draft.title).toMatch(/Paso acordado/i);
+  });
+
+  it('buildProposedProductActions detecta pedido explícito "puedes generar la tarea"', () => {
+    const actions = buildProposedProductActions({
+      ...base,
+      userContent: 'puedes generar la tarea',
+      sessionIntention: 'vent',
+      riskLevel: 'LOW',
+      isCrisis: false
+    });
+    expect(actions).toHaveLength(1);
+    expect(actions[0].type).toBe('propose_task');
+  });
+
+  it('batería explícita: tareas y hábitos detectados como pedido explícito', () => {
+    const explicitSamples = [
+      'puedes generar la tarea',
+      'podés generar la tarea',
+      'podrias crear la tarea',
+      'podrías crear la tarea',
+      'crea la tarea',
+      'crear una tarea',
+      'genera una tarea',
+      'arma la tarea',
+      'haz la tarea',
+      'agregalo a mis tareas',
+      'agregarlo a mis tareas',
+      'guardame como tarea',
+      'en mis tareas',
+      'puedes generar el hábito',
+      'podés crear un hábito',
+      'crea el hábito',
+      'genera un hábito',
+      'guardar como hábito',
+      'agregarlo a mis hábitos',
+      'en mis hábitos'
+    ];
+    explicitSamples.forEach((text) => {
+      expect(isExplicitProductActionRequest(text)).toBe(true);
+    });
+  });
+
+  it('getProductActionNeedLevel clasifica low/medium/high', () => {
+    expect(getProductActionNeedLevel('me siento raro, no sé')).toBe('low');
+    expect(getProductActionNeedLevel('quiero ordenar la semana')).toBe('medium');
+    expect(getProductActionNeedLevel('estoy atareado, mañana examen y no sé por dónde empezar a estudiar')).toBe('high');
+  });
+
+  it('no sugiere si el usuario pide no sugerencias de tareas', () => {
+    const actions = buildProposedProductActions({
+      ...base,
+      userContent: 'no me sugieras tareas, solo escuchar por favor',
+      sessionIntention: 'vent',
+      riskLevel: 'LOW',
+      isCrisis: false
+    });
+    expect(actions).toEqual([]);
   });
 
   it('buildProposedProductActions con intención technique si el texto planifica', () => {

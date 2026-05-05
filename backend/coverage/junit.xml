@@ -1,37 +1,83 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="16" failures="0" errors="0" time="0.297">
-  <testsuite name="chatProductActionProposalService" errors="0" failures="0" skipped="0" timestamp="2026-05-05T03:57:16" time="0.277" tests="16">
-    <testcase classname="chatProductActionProposalService shouldOfferProductActions false si crisis" name="chatProductActionProposalService shouldOfferProductActions false si crisis" time="0.001">
+<testsuites name="jest tests" tests="37" failures="0" errors="0" time="0.956">
+  <testsuite name="chatProductActionProposalService semantic eval fixtures" errors="0" failures="0" skipped="0" timestamp="2026-05-05T14:15:48" time="0.398" tests="1">
+    <testcase classname="chatProductActionProposalService semantic eval fixtures mantiene comportamiento esperado sobre fixtures de regresión" name="chatProductActionProposalService semantic eval fixtures mantiene comportamiento esperado sobre fixtures de regresión" time="0.017">
     </testcase>
-    <testcase classname="chatProductActionProposalService shouldOfferProductActions false si MEDIUM o HIGH" name="chatProductActionProposalService shouldOfferProductActions false si MEDIUM o HIGH" time="0.001">
+  </testsuite>
+  <testsuite name="chatProductActionProposalService" errors="0" failures="0" skipped="0" timestamp="2026-05-05T14:15:49" time="0.255" tests="22">
+    <testcase classname="chatProductActionProposalService shouldOfferProductActions false si crisis" name="chatProductActionProposalService shouldOfferProductActions false si crisis" time="0.005">
     </testcase>
-    <testcase classname="chatProductActionProposalService shouldOfferProductActions true si LOW sin crisis" name="chatProductActionProposalService shouldOfferProductActions true si LOW sin crisis" time="0">
+    <testcase classname="chatProductActionProposalService shouldOfferProductActions false si MEDIUM o HIGH" name="chatProductActionProposalService shouldOfferProductActions false si MEDIUM o HIGH" time="0.025">
     </testcase>
-    <testcase classname="chatProductActionProposalService buildProposedProductActions devuelve propose_task con intención plan" name="chatProductActionProposalService buildProposedProductActions devuelve propose_task con intención plan" time="0.006">
+    <testcase classname="chatProductActionProposalService shouldOfferProductActions true si LOW sin crisis" name="chatProductActionProposalService shouldOfferProductActions true si LOW sin crisis" time="0.004">
     </testcase>
-    <testcase classname="chatProductActionProposalService shape de propuesta task cumple contrato v1 (type, id, draft mínimo)" name="chatProductActionProposalService shape de propuesta task cumple contrato v1 (type, id, draft mínimo)" time="0.001">
+    <testcase classname="chatProductActionProposalService buildProposedProductActions devuelve propose_task con intención plan" name="chatProductActionProposalService buildProposedProductActions devuelve propose_task con intención plan" time="0.011">
     </testcase>
-    <testcase classname="chatProductActionProposalService buildProposedProductActions devuelve propose_habit si el texto sugiere hábito" name="chatProductActionProposalService buildProposedProductActions devuelve propose_habit si el texto sugiere hábito" time="0">
+    <testcase classname="chatProductActionProposalService shape de propuesta task cumple contrato v1 (type, id, draft mínimo)" name="chatProductActionProposalService shape de propuesta task cumple contrato v1 (type, id, draft mínimo)" time="0.003">
+    </testcase>
+    <testcase classname="chatProductActionProposalService buildProposedProductActions devuelve propose_habit si el texto sugiere hábito" name="chatProductActionProposalService buildProposedProductActions devuelve propose_habit si el texto sugiere hábito" time="0.005">
     </testcase>
     <testcase classname="chatProductActionProposalService buildProposedProductActions vacío en vent si no hay señal accionable" name="chatProductActionProposalService buildProposedProductActions vacío en vent si no hay señal accionable" time="0">
     </testcase>
-    <testcase classname="chatProductActionProposalService buildProposedProductActions en vent si la conversación sugiere orden o pasos (sin pedido explícito)" name="chatProductActionProposalService buildProposedProductActions en vent si la conversación sugiere orden o pasos (sin pedido explícito)" time="0.001">
+    <testcase classname="chatProductActionProposalService buildProposedProductActions en vent si la conversación sugiere orden o pasos (sin pedido explícito)" name="chatProductActionProposalService buildProposedProductActions en vent si la conversación sugiere orden o pasos (sin pedido explícito)" time="0">
+    </testcase>
+    <testcase classname="chatProductActionProposalService buildProposedProductActions en vent con estudiar usa título concreto" name="chatProductActionProposalService buildProposedProductActions en vent con estudiar usa título concreto" time="0.001">
+    </testcase>
+    <testcase classname="chatProductActionProposalService buildProposedProductActions no propone tarea abstracta sin ancla accionable" name="chatProductActionProposalService buildProposedProductActions no propone tarea abstracta sin ancla accionable" time="0">
     </testcase>
     <testcase classname="chatProductActionProposalService buildProposedProductActions en vent si el usuario pide guardar en mis tareas" name="chatProductActionProposalService buildProposedProductActions en vent si el usuario pide guardar en mis tareas" time="0">
     </testcase>
-    <testcase classname="chatProductActionProposalService buildProposedProductActions con intención technique si el texto planifica" name="chatProductActionProposalService buildProposedProductActions con intención technique si el texto planifica" time="0">
+    <testcase classname="chatProductActionProposalService buildProposedProductActions detecta pedido explícito &quot;puedes generar la tarea&quot;" name="chatProductActionProposalService buildProposedProductActions detecta pedido explícito &quot;puedes generar la tarea&quot;" time="0.001">
     </testcase>
-    <testcase classname="chatProductActionProposalService buildProposedProductActions vacío si mensaje muy corto" name="chatProductActionProposalService buildProposedProductActions vacío si mensaje muy corto" time="0.001">
+    <testcase classname="chatProductActionProposalService batería explícita: tareas y hábitos detectados como pedido explícito" name="chatProductActionProposalService batería explícita: tareas y hábitos detectados como pedido explícito" time="0.006">
+    </testcase>
+    <testcase classname="chatProductActionProposalService getProductActionNeedLevel clasifica low/medium/high" name="chatProductActionProposalService getProductActionNeedLevel clasifica low/medium/high" time="0">
+    </testcase>
+    <testcase classname="chatProductActionProposalService no sugiere si el usuario pide no sugerencias de tareas" name="chatProductActionProposalService no sugiere si el usuario pide no sugerencias de tareas" time="0">
+    </testcase>
+    <testcase classname="chatProductActionProposalService buildProposedProductActions con intención technique si el texto planifica" name="chatProductActionProposalService buildProposedProductActions con intención technique si el texto planifica" time="0.001">
+    </testcase>
+    <testcase classname="chatProductActionProposalService buildProposedProductActions vacío si mensaje muy corto" name="chatProductActionProposalService buildProposedProductActions vacío si mensaje muy corto" time="0">
     </testcase>
     <testcase classname="chatProductActionProposalService buildProposedProductActions vacío si conversationId no es ObjectId válido" name="chatProductActionProposalService buildProposedProductActions vacío si conversationId no es ObjectId válido" time="0">
     </testcase>
     <testcase classname="chatProductActionProposalService mergeProductActionDraftFromLlm deja borrador intacto si type es desconocido" name="chatProductActionProposalService mergeProductActionDraftFromLlm deja borrador intacto si type es desconocido" time="0">
     </testcase>
-    <testcase classname="chatProductActionProposalService merge desde LLM mergeTaskDraftFromLlm ignora dueDate anterior a hoy" name="chatProductActionProposalService merge desde LLM mergeTaskDraftFromLlm ignora dueDate anterior a hoy" time="0">
+    <testcase classname="chatProductActionProposalService merge desde LLM mergeTaskDraftFromLlm ignora dueDate anterior a hoy" name="chatProductActionProposalService merge desde LLM mergeTaskDraftFromLlm ignora dueDate anterior a hoy" time="0.001">
     </testcase>
-    <testcase classname="chatProductActionProposalService merge desde LLM mergeHabitDraftFromLlm ignora icon inválido" name="chatProductActionProposalService merge desde LLM mergeHabitDraftFromLlm ignora icon inválido" time="0">
+    <testcase classname="chatProductActionProposalService merge desde LLM mergeHabitDraftFromLlm ignora icon inválido" name="chatProductActionProposalService merge desde LLM mergeHabitDraftFromLlm ignora icon inválido" time="0.001">
     </testcase>
     <testcase classname="chatProductActionProposalService merge desde LLM mergeProductActionDraftFromLlm acepta payload anidado en draft" name="chatProductActionProposalService merge desde LLM mergeProductActionDraftFromLlm acepta payload anidado en draft" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="conversationProductProposalCapService" errors="0" failures="0" skipped="0" timestamp="2026-05-05T14:15:49" time="0.227" tests="14">
+    <testcase classname="conversationProductProposalCapService expone máximo 2 no explícitas por conversación" name="conversationProductProposalCapService expone máximo 2 no explícitas por conversación" time="0.001">
+    </testcase>
+    <testcase classname="conversationProductProposalCapService expone enfriamiento para no sugerir en cada turno" name="conversationProductProposalCapService expone enfriamiento para no sugerir en cada turno" time="0">
+    </testcase>
+    <testcase classname="conversationProductProposalCapService expone cap y cooldown dinámicos por nivel" name="conversationProductProposalCapService expone cap y cooldown dinámicos por nivel" time="0.001">
+    </testcase>
+    <testcase classname="conversationProductProposalCapService no consulta BD si el pedido es explícito" name="conversationProductProposalCapService no consulta BD si el pedido es explícito" time="0">
+    </testcase>
+    <testcase classname="conversationProductProposalCapService toma &quot;puedes generar la tarea&quot; como explícito (sin cap/cooldown)" name="conversationProductProposalCapService toma &quot;puedes generar la tarea&quot; como explícito (sin cap/cooldown)" time="0">
+    </testcase>
+    <testcase classname="conversationProductProposalCapService batería explícita no consulta BD (task + habit)" name="conversationProductProposalCapService batería explícita no consulta BD (task + habit)" time="0.001">
+    </testcase>
+    <testcase classname="conversationProductProposalCapService vacía propuestas si ya se alcanzó el tope no explícito" name="conversationProductProposalCapService vacía propuestas si ya se alcanzó el tope no explícito" time="0">
+    </testcase>
+    <testcase classname="conversationProductProposalCapService permite la segunda oferta no explícita cuando count es 1" name="conversationProductProposalCapService permite la segunda oferta no explícita cuando count es 1" time="0">
+    </testcase>
+    <testcase classname="conversationProductProposalCapService bloquea por enfriamiento si hubo propuesta reciente" name="conversationProductProposalCapService bloquea por enfriamiento si hubo propuesta reciente" time="0">
+    </testcase>
+    <testcase classname="conversationProductProposalCapService cap low permite 1 y bloquea desde la segunda no explícita" name="conversationProductProposalCapService cap low permite 1 y bloquea desde la segunda no explícita" time="0">
+    </testcase>
+    <testcase classname="conversationProductProposalCapService cap high permite hasta 3 no explícitas" name="conversationProductProposalCapService cap high permite hasta 3 no explícitas" time="0">
+    </testcase>
+    <testcase classname="conversationProductProposalCapService cooldown high (5m) permite tras 6m" name="conversationProductProposalCapService cooldown high (5m) permite tras 6m" time="0">
+    </testcase>
+    <testcase classname="conversationProductProposalCapService incrementNonExplicit no llama updateOne si el mensaje es explícito" name="conversationProductProposalCapService incrementNonExplicit no llama updateOne si el mensaje es explícito" time="0">
+    </testcase>
+    <testcase classname="conversationProductProposalCapService incrementNonExplicit llama updateOne si no es explícito y hubo emisión" name="conversationProductProposalCapService incrementNonExplicit llama updateOne si no es explícito y hubo emisión" time="0">
     </testcase>
   </testsuite>
 </testsuites>

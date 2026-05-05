@@ -3,7 +3,6 @@ import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback } from 'react';
 import { Animated, Image, Platform, Pressable, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CHAT_BACK_TARGET } from '../navigation/navigationHelpers';
 import { setChatEntryBackTarget } from '../utils/chatEntryContext';
 import { colors } from '../styles/globalStyles';
@@ -21,12 +20,13 @@ const FloatingNavBar = ({
   onTabPress,
   animValues = {},
   accessibilityLabel: barAccessibilityLabel,
+  slotBottomOffset = 8,
 }) => {
   const { translateY = new Animated.Value(0), opacity = new Animated.Value(1) } = animValues;
-  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
 
-  const bottomPadding = Math.max(insets.bottom, 8);
+  // Altura visual fija para mantener la barra en la misma posición en todas las pantallas.
+  const bottomPadding = 8;
 
   const handleTabPress = useCallback(
     (screen, tab) => {
@@ -104,7 +104,7 @@ const FloatingNavBar = ({
   );
 
   return (
-    <View style={styles.floatingBarSlot} pointerEvents="box-none">
+    <View style={[styles.floatingBarSlot, { bottom: slotBottomOffset }]} pointerEvents="box-none">
     <Animated.View
       style={[
         styles.floatingBar,
@@ -216,7 +216,7 @@ function NavTab({
 const styles = StyleSheet.create({
   floatingBarSlot: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 8,
     left: 8,
     right: 8,
     zIndex: 1000,

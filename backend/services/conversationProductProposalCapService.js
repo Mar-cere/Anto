@@ -3,10 +3,25 @@
  * @see chatProductActionProposalService.isExplicitProductActionRequest
  */
 import Conversation from '../models/Conversation.js';
-import { isExplicitProductActionRequest } from './chatProductActionProposalService.js';
+import {
+  getProductActionNeedLevel,
+  isExplicitProductActionRequest
+} from './chatProductActionProposalService.js';
 
 export const MAX_NON_EXPLICIT_PRODUCT_PROPOSALS_PER_CONVERSATION = 2;
 export const NON_EXPLICIT_PRODUCT_PROPOSAL_COOLDOWN_MS = 10 * 60 * 1000;
+
+export const CAP_BY_NEED_LEVEL = {
+  low: 1,
+  medium: 2,
+  high: 3
+};
+
+export const COOLDOWN_MS_BY_NEED_LEVEL = {
+  low: 20 * 60 * 1000,
+  medium: NON_EXPLICIT_PRODUCT_PROPOSAL_COOLDOWN_MS,
+  high: 5 * 60 * 1000
+};
 
 /**
  * @param {string} userContent
@@ -28,13 +43,16 @@ export async function filterProposedProductActionsByConversationCap(
     .select('nonExplicitProductProposalCount lastNonExplicitProductProposalAt')
     .lean();
   const n = conv?.nonExplicitProductProposalCount ?? 0;
-  if (n >= MAX_NON_EXPLICIT_PRODUCT_PROPOSALS_PER_CONVERSATION) {
+  const needLevel = getProductActionNeedLevel(userContent);
+  const dynamicCap = CAP_BY_NEED_LEVEL[needLevel] ?? MAX_NON_EXPLICIT_PRODUCT_PROPOSALS_PER_CONVERSATION;
+  if (n >= dynamicCap) {
     return [];
   }
   const lastAt = conv?.lastNonExplicitProductProposalAt
     ? new Date(conv.lastNonExplicitProductProposalAt).getTime()
     : null;
-  if (lastAt && Date.now() - lastAt < NON_EXPLICIT_PRODUCT_PROPOSAL_COOLDOWN_MS) {
+  const cooldownMs = COOLDOWN_MS_BY_NEED_LEVEL[needLevel] ?? NON_EXPLICIT_PRODUCT_PROPOSAL_COOLDOWN_MS;
+  if (lastAt && Date.now() - lastAt < cooldownMs) {
     return [];
   }
   return proposedProductActions;
@@ -65,6 +83,8 @@ export async function incrementNonExplicitProductProposalCountIfApplied(
 export default {
   MAX_NON_EXPLICIT_PRODUCT_PROPOSALS_PER_CONVERSATION,
   NON_EXPLICIT_PRODUCT_PROPOSAL_COOLDOWN_MS,
+  CAP_BY_NEED_LEVEL,
+  COOLDOWN_MS_BY_NEED_LEVEL,
   filterProposedProductActionsByConversationCap,
   incrementNonExplicitProductProposalCountIfApplied
 };

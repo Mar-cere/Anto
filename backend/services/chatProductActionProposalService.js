@@ -12,7 +12,7 @@ function isValidObjectIdParam(v) {
   return s.length > 0 && mongoose.Types.ObjectId.isValid(s);
 }
 
-const HABIT_HINTS = /hábito|rutina\s+diaria|todos\s+los\s+días|cada\s+día|constancia\s+diaria/i;
+const HABIT_HINTS = /h[áa]bito|rutina\s+diaria|todos\s+los\s+días|cada\s+día|constancia\s+diaria/i;
 
 /**
  * Señales de que el mensaje puede traducirse en tarea u hábito sin pedido explícito (“ponelo en mis tareas”).
@@ -27,10 +27,10 @@ const NATURAL_PRODUCT_LEXICON =
  * El título concreto suele venir del turno anterior del asistente (refinar con LLM si está activo).
  */
 const EXPLICIT_TASK_TO_APP =
-  /\ben\s+mis\s+tareas\b|guardar(?:me|te)?\s+como\s+tarea\b|agregar(?:lo|la)?\s+a\s+mis\s+tareas\b|\bgener(?:á|a)(?:la|lo)?\s+en\s+mis\s+tareas\b/i;
+  /\ben\s+mis\s+tareas\b|guard(?:a|ar)(?:me|te)?\s+como\s+tarea\b|agreg(?:a|ar)(?:lo|la)?\s+a\s+mis\s+tareas\b|\bgener(?:á|a)(?:la|lo)?\s+en\s+mis\s+tareas\b|\b(?:puedes|pod[eé]s|podrias|podr[ií]as)?\s*(?:crear|crea|generar|genera|armar|arma|hacer|haz)\s+(?:la\s+)?tarea\b|\b(?:crea|crear|genera|generar)\s+(?:una\s+)?tarea\b/i;
 
 const EXPLICIT_HABIT_TO_APP =
-  /\ben\s+mis\s+h[aá]bitos\b|guardar(?:me|te)?\s+como\s+h[aá]bito\b|agregar(?:lo|la)?\s+a\s+mis\s+h[aá]bitos\b/i;
+  /\ben\s+mis\s+h[aá]bitos\b|guard(?:a|ar)(?:me|te)?\s+como\s+h[aá]bito\b|agreg(?:a|ar)(?:lo|la)?\s+a\s+mis\s+h[aá]bitos\b|\b(?:puedes|pod[eé]s|podrias|podr[ií]as)?\s*(?:crear|crea|generar|genera|armar|arma|hacer|haz)\s+(?:el\s+|un\s+)?h[aá]bito\b|\b(?:crea|crear|genera|generar)\s+(?:un\s+)?h[aá]bito\b/i;
 
 const CONCRETE_ACTION_ANCHORS =
   /\b(ordenar|limpiar|lavar|recoger|agendar|estudiar|repasar|resumir|leer|escribir|entregar|pagar|llamar|preparar|cocinar|entrenar|meditar|hidratarme|dormir|tarea|pendiente|h[aá]bito|rutina)\b|\b(cocina|encimera|escritorio|materia|examen|parcial|cap[ií]tulo|apunte|temario)\b/i;
@@ -46,6 +46,9 @@ const OVERLOAD_CUES =
 
 const STUDY_CONTEXT_CUES =
   /\b(estudiar|estudio|materia|examen|parcial|temario|apunte|final)\b/i;
+
+const NO_PRODUCT_ACTION_INTENT =
+  /\b(no\s+me\s+sugieras?\s+tareas?|sin\s+tareas?|solo\s+escuchar|solo\s+desahogar|no\s+quiero\s+planificar|no\s+quiero\s+tareas?)\b/i;
 
 function hasConcreteActionAnchor(content) {
   return CONCRETE_ACTION_ANCHORS.test(content);
@@ -66,11 +69,24 @@ function proposalConfidenceScore(content) {
 }
 
 /**
+ * Nivel de necesidad para modular cap/cooldown de propuestas no explícitas.
+ * @param {string} content
+ * @returns {'low'|'medium'|'high'}
+ */
+export function getProductActionNeedLevel(content) {
+  const score = proposalConfidenceScore(String(content || ''));
+  if (score >= 5) return 'high';
+  if (score >= 3) return 'medium';
+  return 'low';
+}
+
+/**
  * @param {'vent'|'organize'|'technique'|'plan'|null} intention
  * @param {string} content
  */
 function sessionAllowsProductDraft(intention, content) {
   if (EXPLICIT_TASK_TO_APP.test(content) || EXPLICIT_HABIT_TO_APP.test(content)) return true;
+  if (NO_PRODUCT_ACTION_INTENT.test(content)) return false;
   if (isAbstractWithoutAction(content)) return false;
   const score = proposalConfidenceScore(content);
   if (intention === 'plan' || intention === 'organize') return score >= 1;
@@ -380,6 +396,7 @@ export function buildProposedProductActions(input) {
 export default {
   shouldOfferProductActions,
   isExplicitProductActionRequest,
+  getProductActionNeedLevel,
   buildProposedProductActions,
   mergeProductActionDraftFromLlm,
   mergeTaskDraftFromLlm,

@@ -16,6 +16,7 @@ import {
   RETRY_BUTTON_PADDING_VERTICAL,
   TEXTS,
 } from '../../screens/habits/habitsScreenConstants';
+import { FOCUS_META } from '../../styles/focusCardTheme';
 
 export default function HabitsErrorView({ errorMessage, onRetry }) {
   return (
@@ -32,32 +33,36 @@ export default function HabitsErrorView({ errorMessage, onRetry }) {
 
 const styles = StyleSheet.create({
   errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    margin: 16,
+    padding: ERROR_CONTAINER_PADDING / 1.4,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 217, 61, 0.12)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255, 217, 61, 0.35)',
+    gap: 10,
     alignItems: 'center',
-    padding: ERROR_CONTAINER_PADDING,
-    gap: ERROR_CONTAINER_GAP,
   },
   errorText: {
-    color: COLORS.ERROR,
-    fontSize: 18,
+    color: COLORS.WHITE,
+    fontSize: 15,
     fontWeight: '600',
     textAlign: 'center',
   },
   errorSubtext: {
-    color: COLORS.ACCENT,
-    fontSize: 14,
+    color: FOCUS_META,
+    fontSize: 13,
     textAlign: 'center',
+    lineHeight: 18,
   },
   retryButton: {
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: 'rgba(255,255,255,0.1)',
     paddingHorizontal: RETRY_BUTTON_PADDING_HORIZONTAL,
     paddingVertical: RETRY_BUTTON_PADDING_VERTICAL,
     borderRadius: RETRY_BUTTON_BORDER_RADIUS,
   },
   retryText: {
-    color: COLORS.WHITE,
-    fontSize: 16,
+    color: COLORS.PRIMARY,
+    fontSize: 14,
     fontWeight: '600',
   },
 });

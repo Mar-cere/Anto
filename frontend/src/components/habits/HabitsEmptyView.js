@@ -20,6 +20,7 @@ import {
   FILTER_TYPES,
   TEXTS,
 } from '../../screens/habits/habitsScreenConstants';
+import { FOCUS_META } from '../../styles/focusCardTheme';
 
 export default function HabitsEmptyView({ filterType, onCreateFirst }) {
   const isActive = filterType === FILTER_TYPES.ACTIVE;
@@ -55,14 +56,15 @@ const styles = StyleSheet.create({
     gap: EMPTY_CONTAINER_GAP,
   },
   emptyText: {
-    color: COLORS.ACCENT,
-    fontSize: 16,
+    color: FOCUS_META,
+    fontSize: 17,
+    fontWeight: '500',
     textAlign: 'center',
   },
   emptySubtext: {
-    color: COLORS.ACCENT,
+    color: FOCUS_META,
     fontSize: 14,
-    opacity: 0.9,
+    lineHeight: 20,
     textAlign: 'center',
     marginTop: 8,
   },

@@ -1,17 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  AccessibilityInfo,
+  Keyboard,
+  KeyboardAvoidingView,
+  InteractionManager,
   Modal,
-  View,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Alert,
-  ScrollView,
-  Platform
+  View,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { colors } from '../../styles/globalStyles';
+import { FOCUS_ACCENT_BORDER, FOCUS_BORDER_SUBTLE, FOCUS_CHEVRON_MUTED, FOCUS_META } from '../../styles/focusCardTheme';
 
 const HABIT_ICONS = [
   { key: 'exercise', icon: 'run' },
@@ -34,6 +40,10 @@ const CreateHabitModal = ({
 }) => {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [reminderTime, setReminderTime] = useState(new Date());
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const scrollRef = useRef(null);
+  const scrollHintTimeouts = useRef([]);
+
   useEffect(() => {
     if (visible && initialReminderIso) {
       const d = new Date(initialReminderIso);
@@ -42,6 +52,43 @@ const CreateHabitModal = ({
       }
     }
   }, [visible, initialReminderIso]);
+
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const subShow = Keyboard.addListener(showEvt, () => setKeyboardVisible(true));
+    const subHide = Keyboard.addListener(hideEvt, () => setKeyboardVisible(false));
+    return () => {
+      subShow.remove();
+      subHide.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!visible) {
+      scrollHintTimeouts.current.forEach(clearTimeout);
+      scrollHintTimeouts.current = [];
+      return undefined;
+    }
+    const interaction = InteractionManager.runAfterInteractions(() => {
+      const tOpen = setTimeout(() => {
+        AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
+          if (reduce) return;
+          scrollRef.current?.scrollTo({ y: 18, animated: true });
+          const tBack = setTimeout(() => {
+            scrollRef.current?.scrollTo({ y: 0, animated: true });
+          }, 340);
+          scrollHintTimeouts.current.push(tBack);
+        });
+      }, 420);
+      scrollHintTimeouts.current.push(tOpen);
+    });
+    return () => {
+      interaction.cancel?.();
+      scrollHintTimeouts.current.forEach(clearTimeout);
+      scrollHintTimeouts.current = [];
+    };
+  }, [visible]);
 
   const handleSubmit = () => {
     if (!formData.title.trim()) {
@@ -86,18 +133,32 @@ const CreateHabitModal = ({
       onRequestClose={onClose}
     >
       <View style={styles.modalContainer}>
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose} />
         <View style={styles.modalContent}>
+          <View style={styles.sheetGrabber} />
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Nuevo Hábito</Text>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={onClose}
-            >
-              <MaterialCommunityIcons name="close" size={24} color="#A3B8E8" />
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              {keyboardVisible ? (
+                <TouchableOpacity style={styles.keyboardDismissBtn} onPress={() => Keyboard.dismiss()}>
+                  <Text style={styles.keyboardDismissText}>Listo</Text>
+                </TouchableOpacity>
+              ) : null}
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={onClose}
+              >
+                <MaterialCommunityIcons name="close" size={22} color={FOCUS_CHEVRON_MUTED} />
+              </TouchableOpacity>
+            </View>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.keyboardContainer}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+          >
+          <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <TextInput
               style={styles.input}
               placeholder="Título del hábito"
@@ -216,6 +277,7 @@ const CreateHabitModal = ({
               <Text style={styles.submitButtonText}>Crear Hábito</Text>
             </TouchableOpacity>
           </ScrollView>
+          </KeyboardAvoidingView>
         </View>
       </View>
 
@@ -254,44 +316,81 @@ const CreateHabitModal = ({
 const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
   },
   modalContent: {
-    backgroundColor: 'rgba(29, 43, 95, 0.95)',
-    borderRadius: 20,
-    padding: 20,
-    width: '90%',
-    maxWidth: 400,
-    maxHeight: '80%',
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
+    maxHeight: '90%',
+    minHeight: '48%',
+    paddingHorizontal: 20,
+  },
+  sheetGrabber: {
+    alignSelf: 'center',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    marginTop: 10,
+    marginBottom: 6,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 14,
+    marginTop: 6,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.94)',
+    letterSpacing: -0.2,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  keyboardDismissBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(26, 221, 219, 0.12)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_ACCENT_BORDER,
+  },
+  keyboardDismissText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
   },
   closeButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    padding: 8,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  keyboardContainer: {
+    flex: 1,
+  },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
-    padding: 12,
-    color: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: 14,
+    padding: 14,
+    color: colors.white,
     fontSize: 16,
     marginBottom: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
   },
   textArea: {
     height: 80,
@@ -301,10 +400,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: 'rgba(163, 184, 232, 0.85)',
     marginBottom: 8,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   iconSelector: {
     flexDirection: 'row',
@@ -314,7 +415,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
@@ -335,8 +436,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     padding: 12,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
   },
   frequencyButtonSelected: {
     backgroundColor: 'rgba(26, 221, 219, 0.1)',
@@ -356,13 +459,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 12,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     gap: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
   },
   timeSelectorText: {
     flex: 1,
-    color: '#FFFFFF',
+    color: colors.white,
     fontSize: 16,
     textAlign: 'center',
   },
@@ -379,7 +484,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(29, 43, 95, 0.98)',
+    backgroundColor: colors.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -409,16 +514,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   submitButton: {
-    backgroundColor: '#1ADDDB',
+    backgroundColor: colors.primary,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 999,
     alignItems: 'center',
     marginTop: 8,
+    marginBottom: 20,
   },
   submitButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    color: colors.background,
+    fontSize: 15,
     fontWeight: '600',
+    letterSpacing: 0.2,
   },
 });
 

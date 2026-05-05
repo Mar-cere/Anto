@@ -126,15 +126,49 @@ export const CardHeader = ({ icon, title, onViewAll }) => (
   </View>
 );
 
-export const EmptyState = ({ icon, message, onAdd, addButtonText }) => (
-  <View style={commonStyles.emptyContainer}>
-    <MaterialCommunityIcons name={icon} size={40} color={FOCUS_KICKER_COLOR} />
-    <Text style={commonStyles.emptyText}>{message}</Text>
+export const EmptyState = ({ icon, message, onAdd, addButtonText, compact = false, showIcon = true }) => (
+  <View style={[commonStyles.emptyContainer, compact && compactStyles.emptyContainer]}>
+    {showIcon ? (
+      <MaterialCommunityIcons
+        name={icon}
+        size={compact ? 24 : 40}
+        color={FOCUS_KICKER_COLOR}
+      />
+    ) : null}
+    <Text style={[commonStyles.emptyText, compact && compactStyles.emptyText]}>{message}</Text>
     {onAdd && (
-      <TouchableOpacity style={commonStyles.addButton} onPress={onAdd} activeOpacity={0.7}>
-        <MaterialCommunityIcons name="plus" size={16} color={cardColors.primary} />
-        <Text style={commonStyles.addButtonText}>{addButtonText}</Text>
+      <TouchableOpacity
+        style={[commonStyles.addButton, compact && compactStyles.addButton]}
+        onPress={onAdd}
+        activeOpacity={0.7}
+      >
+        <MaterialCommunityIcons name="plus" size={compact ? 14 : 16} color={cardColors.primary} />
+        <Text style={[commonStyles.addButtonText, compact && compactStyles.addButtonText]}>
+          {addButtonText}
+        </Text>
       </TouchableOpacity>
     )}
   </View>
 );
+
+const compactStyles = StyleSheet.create({
+  emptyContainer: {
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    gap: 8,
+  },
+  emptyText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  addButton: {
+    marginTop: 6,
+    paddingVertical: 9,
+    borderRadius: 12,
+    borderColor: 'rgba(26, 221, 219, 0.14)',
+    backgroundColor: 'rgba(26, 221, 219, 0.06)',
+  },
+  addButtonText: {
+    fontSize: 13,
+  },
+});
