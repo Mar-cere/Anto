@@ -60,6 +60,7 @@ export default function HabitsScreen({ route, navigation }) {
     handleDeleteHabit,
     resetForm,
     openModal,
+    handleHabitModalClose,
     habitModalReminderIso,
   } = useHabitsScreen({ route, navigation });
 
@@ -121,10 +122,7 @@ export default function HabitsScreen({ route, navigation }) {
       </TouchableOpacity>
       <CreateHabitModal
         visible={modalVisible}
-        onClose={() => {
-          setModalVisible(false);
-          resetForm();
-        }}
+        onClose={handleHabitModalClose}
         onSubmit={handleAddHabit}
         formData={formData}
         setFormData={setFormData}

@@ -10,6 +10,10 @@ import { validateObjectId } from '../middleware/validation.js';
 import Task from '../models/Task.js';
 import User from '../models/User.js';
 import { validateChatOriginForUser } from '../utils/validateChatOriginForUser.js';
+import {
+  recordProductActionCreatedFromDoc,
+  recordProductActionCreateFailed
+} from '../utils/metricsProductActions.js';
 
 const router = express.Router();
 
@@ -381,6 +385,7 @@ router.post('/', createTaskLimiter, async (req, res) => {
     if (value.chatOrigin) {
       const originOk = await validateChatOriginForUser(value.chatOrigin, req.user._id);
       if (!originOk) {
+        await recordProductActionCreateFailed(req.user._id, 'task');
         return res.status(400).json({
           message: 'Origen de chat inválido: la conversación o el mensaje no existe o no pertenece al usuario'
         });
@@ -396,6 +401,7 @@ router.post('/', createTaskLimiter, async (req, res) => {
         deletedAt: { $exists: false }
       });
       if (existingTask) {
+        await recordProductActionCreatedFromDoc(req.user._id, 'task', existingTask, true);
         return res.status(200).json({
           success: true,
           message: 'Tarea ya registrada (reintento idempotente)',
@@ -443,6 +449,7 @@ router.post('/', createTaskLimiter, async (req, res) => {
           deletedAt: { $exists: false }
         });
         if (replay) {
+          await recordProductActionCreatedFromDoc(req.user._id, 'task', replay, true);
           return res.status(200).json({
             success: true,
             message: 'Tarea ya registrada (reintento idempotente)',
@@ -454,6 +461,7 @@ router.post('/', createTaskLimiter, async (req, res) => {
       throw saveErr;
     }
 
+    await recordProductActionCreatedFromDoc(req.user._id, 'task', task, false);
     res.status(201).json({ 
       success: true, 
       message: 'Tarea creada exitosamente',
@@ -461,6 +469,9 @@ router.post('/', createTaskLimiter, async (req, res) => {
     });
   } catch (error) {
     console.error('Error al crear tarea:', error);
+    if (req.body?.chatOrigin) {
+      await recordProductActionCreateFailed(req.user._id, 'task');
+    }
     res.status(400).json({ 
       message: 'Error al crear la tarea',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined

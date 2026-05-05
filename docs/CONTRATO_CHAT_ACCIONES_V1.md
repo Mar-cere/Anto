@@ -144,9 +144,16 @@ Reglas de producto a implementar con flags o contadores server-side:
 
 ## 8. Telemetría
 
-**Implementado (servidor, memoria / agregados):** `product_action_proposed` con `count`, `types`, `transport` (`sse` \| `http_json` \| `socket`) y `conversationId` en metadata.
+**Servidor (memoria / agregados en `metricsService.js`):**
 
-**Pendiente (cliente o API de confirmación):** `product_action_confirm_opened` / `edited`, `product_action_created` / `dismissed` / `failed`, y opcionalmente señales de enriquecimiento LLM (éxito / omitido / timeout).
+- `product_action_proposed` — `count`, `types`, `transport` (`sse` \| `http_json` \| `socket`), metadata con `conversationId` donde aplique.
+- `product_action_created` — al **201** o **200** idempotente de `POST /api/tasks` o `POST /api/habits` cuando el documento persistido tiene `chatOrigin`; `data`: `resource` (`task` \| `habit`), `fromChat`, `idempotentReplay`.
+- `product_action_create_failed` — origen de chat inválido (`validateChatOriginForUser`) o error al persistir con `chatOrigin` en el body; `data`: `fromChat`, `resource`. El cliente puede reportar el mismo tipo vía `POST /api/metrics/product-action` con `event: create_failed` (flujo modal con borrador desde chat).
+- `product_action_confirm_dismissed` — cierre del modal sin confirmar; principalmente vía `POST /api/metrics/product-action` con `event: confirm_dismissed`, `surface` (`task_modal` \| `habit_modal`); agregado `bySurface`.
+
+**Cliente:** `ENDPOINTS.METRICS_PRODUCT_ACTION` (`/api/metrics/product-action`), util `postProductActionTelemetry` — dismiss al cerrar modal si había `chatOrigin` / `clientRequestId` pendiente; `create_failed` en catch de creación en ese mismo flujo.
+
+**Opcional / pendiente de producto:** `product_action_confirm_opened` / `edited`, y señales explícitas de enriquecimiento LLM (éxito / omitido / timeout).
 
 ---
 
@@ -165,7 +172,7 @@ Reglas de producto a implementar con flags o contadores server-side:
 4. [x] Persistir procedencia §5 en modelo (`chatOrigin` en `Task` / `Habit`).  
 5. [x] Idempotencia §3.1 (`clientRequestId` + `idempotentReplay`).  
 6. [x] Refinamiento LLM §3.2 (opcional, con fallback heurístico).  
-7. [ ] Telemetría §8 restante (confirmación / dismiss / fallo en cliente o backend).
+7. [x] Telemetría §8: `product_action_created`, `product_action_create_failed`, `product_action_confirm_dismissed`, `POST /api/metrics/product-action`.
 
 ---
 
@@ -175,7 +182,7 @@ Reglas de producto a implementar con flags o contadores server-side:
 - **LLM (paso A):** `backend/services/chatProductActionLlmService.js` — `enrichProposedProductActionsWithLlm`; invocado desde `chatRoutes.js` (SSE `done` y JSON 201) y `socket.js` tras generar la respuesta del asistente. Ver §3.2.
 - **HTTP:** `backend/routes/chatRoutes.js` — `proposedProductActions` en evento final stream y en cuerpo 201 no-stream.
 - **Socket.IO:** `backend/config/socket.js` — `proposedProductActions` en `message:received`; misma evaluación de riesgo (`evaluateSuicideRisk`) y mismos servicios heurística + LLM.
-- **Métricas:** `product_action_proposed` (count, types, transport: `sse` \| `http_json` \| `socket`) y agregados `productActionProposals` en `metricsService.js`.
+- **Métricas:** `product_action_proposed` (`productActionProposals`); `product_action_created` / `product_action_create_failed` / `product_action_confirm_dismissed` (`productActionOutcomes`); `POST /api/metrics/product-action` en `metricsRoutes.js`; helpers `backend/utils/metricsProductActions.js` en rutas de creación.
 - **Modelos / API:** `chatOrigin` y `clientRequestId` en `Task` y `Habit`; `POST`/`PUT` validados en `taskRoutes.js` / `habitRoutes.js` (Joi + idempotencia §3.1 + **`backend/utils/validateChatOriginForUser.js`** antes de persistir `chatOrigin`).
 - **Cliente:** `useChatScreen` + `ChatMessageItem`; navegación a tareas/hábitos con borrador, `chatOrigin` y `taskClientRequestId` / `habitClientRequestId` (`frontend/src/utils/clientRequestId.js`).
 

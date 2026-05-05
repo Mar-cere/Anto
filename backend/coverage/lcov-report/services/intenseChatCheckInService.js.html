@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">8.75% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/79</span>
+                <span class='fraction'>7/80</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">11.11% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/39</span>
+                <span class='fraction'>5/45</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">9.33% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/74</span>
+                <span class='fraction'>7/75</span>
             </div>
         
             
@@ -264,7 +264,9 @@
 <a name='L199'></a><a href='#L199'>199</a>
 <a name='L200'></a><a href='#L200'>200</a>
 <a name='L201'></a><a href='#L201'>201</a>
-<a name='L202'></a><a href='#L202'>202</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L202'></a><a href='#L202'>202</a>
+<a name='L203'></a><a href='#L203'>203</a>
+<a name='L204'></a><a href='#L204'>204</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -273,14 +275,16 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -463,7 +467,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
  * Programa y procesa un check-in push poco después de mensajes muy intensos en el chat,
@@ -474,12 +478,14 @@ import Message from '../models/Message.js';
 import User from '../models/User.js';
 import pushNotificationService from './pushNotificationService.js';
 &nbsp;
-export const DELAY_MIN_MS = <span class="cstat-no" title="statement not covered" >2 * 60 * 1000;</span>
-export const DELAY_MAX_MS = <span class="cstat-no" title="statement not covered" >5 * 60 * 1000;</span>
-export const PROCESS_INTERVAL_MS = <span class="cstat-no" title="statement not covered" >60 * 1000;</span>
-/** Evita saturar si hubo varios picos seguidos */
-export const SENT_COOLDOWN_MS = <span class="cstat-no" title="statement not covered" >45 * 60 * 1000;</span>
-export const INTENSITY_THRESHOLD = <span class="cstat-no" title="statement not covered" >8;</span>
+export const DELAY_MIN_MS = 2 * 60 * 1000;
+export const DELAY_MAX_MS = 5 * 60 * 1000;
+export const PROCESS_INTERVAL_MS = 60 * 1000;
+/** Evita saturar si hubo varios picos seguidos (minutos; default 90). */
+const _cooldownMin = parseInt(process.env.INTENSE_CHAT_CHECKIN_COOLDOWN_MINUTES || '90', 10);
+export const SENT_COOLDOWN_MS =
+  (Number.isFinite(_cooldownMin) &amp;&amp; _cooldownMin &gt;= 30 ? _cooldownMin : <span class="branch-1 cbranch-no" title="branch not covered" >90)</span> * 60 * 1000;
+export const INTENSITY_THRESHOLD = 8;
 &nbsp;
 export function <span class="fstat-no" title="function not covered" >shouldOfferWellbeingCheckIn(</span>{ isCrisis, emotionalIntensity, riskLevel }) {
 <span class="cstat-no" title="statement not covered" >  if (isCrisis) <span class="cstat-no" title="statement not covered" >return false;</span></span>
@@ -664,7 +670,7 @@ class IntenseChatCheckInService {
   }
 }
 &nbsp;
-const intenseChatCheckInService = <span class="cstat-no" title="statement not covered" >new IntenseChatCheckInService();</span>
+const intenseChatCheckInService = new IntenseChatCheckInService();
 export default intenseChatCheckInService;
 &nbsp;</pre></td></tr></table></pre>
 
@@ -673,7 +679,7 @@ export default intenseChatCheckInService;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-02T04:48:00.172Z
+                at 2026-05-05T00:02:30.813Z
             </div>
         <script src="../prettify.js"></script>
         <script>

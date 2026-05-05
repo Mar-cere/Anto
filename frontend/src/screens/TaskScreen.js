@@ -34,6 +34,7 @@ import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getApiErrorMessage, isAuthError } from '../utils/apiErrorHandler';
 import { isValidClientRequestId } from '../utils/clientRequestId';
+import { postProductActionTelemetry } from '../utils/productActionTelemetry';
 import { colors } from '../styles/globalStyles';
 
 // Constantes de prioridad
@@ -260,6 +261,21 @@ const TaskScreen = ({ route }) => {
     }
   }, [route.params, navigation]);
 
+  const handleTaskModalClose = useCallback(() => {
+    const hadChatFlow = Boolean(
+      pendingChatOriginRef.current || pendingClientRequestIdRef.current
+    );
+    setState((prev) => ({ ...prev, modalVisible: false }));
+    if (hadChatFlow) {
+      void postProductActionTelemetry({
+        event: 'confirm_dismissed',
+        surface: 'task_modal',
+      });
+    }
+    pendingChatOriginRef.current = null;
+    pendingClientRequestIdRef.current = null;
+  }, []);
+
   // Crear tarea o recordatorio
   const handleSubmit = async (data) => {
     try {
@@ -301,6 +317,13 @@ const TaskScreen = ({ route }) => {
       });
     } catch (error) {
       console.error('Error creando tarea:', error);
+      if (pendingChatOriginRef.current || pendingClientRequestIdRef.current) {
+        void postProductActionTelemetry({
+          event: 'create_failed',
+          surface: 'task_modal',
+          resource: 'task',
+        });
+      }
       const errorMessage = error.errors?.length > 0
         ? `${TEXTS.INVALID_DATA} ${error.errors.join(', ')}`
         : getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_CREATE_TASK;
@@ -515,7 +538,7 @@ const TaskScreen = ({ route }) => {
       </TouchableOpacity>
       <CreateTaskModal
         visible={state.modalVisible}
-        onClose={() => setState(prev => ({ ...prev, modalVisible: false }))}
+        onClose={handleTaskModalClose}
         onSubmit={handleSubmit}
         formData={formData}
         setFormData={setFormData}

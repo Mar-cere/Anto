@@ -1,74 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="24" failures="0" errors="0" time="6.045">
-  <testsuite name="Task Routes" errors="0" failures="0" skipped="10" timestamp="2026-05-04T23:54:50" time="3.467" tests="13">
-    <testcase classname="Task Routes POST /api/tasks debe crear una nueva tarea con datos válidos" name="Task Routes POST /api/tasks debe crear una nueva tarea con datos válidos" time="0">
-      <skipped/>
+<testsuites name="jest tests" tests="8" failures="0" errors="0" time="3.96">
+  <testsuite name="Metrics Routes" errors="0" failures="0" skipped="0" timestamp="2026-05-05T00:02:38" time="3.931" tests="8">
+    <testcase classname="Metrics Routes GET /api/metrics/system debe obtener métricas generales del sistema" name="Metrics Routes GET /api/metrics/system debe obtener métricas generales del sistema" time="0.155">
     </testcase>
-    <testcase classname="Task Routes POST /api/tasks debe devolver la misma tarea en segundo POST con el mismo clientRequestId" name="Task Routes POST /api/tasks debe devolver la misma tarea en segundo POST con el mismo clientRequestId" time="0">
-      <skipped/>
+    <testcase classname="Metrics Routes GET /api/metrics/system debe rechazar request sin autenticación" name="Metrics Routes GET /api/metrics/system debe rechazar request sin autenticación" time="0.018">
     </testcase>
-    <testcase classname="Task Routes POST /api/tasks debe rechazar crear tarea con chatOrigin de conversación inexistente" name="Task Routes POST /api/tasks debe rechazar crear tarea con chatOrigin de conversación inexistente" time="0.356">
+    <testcase classname="Metrics Routes GET /api/metrics/me debe obtener métricas del usuario" name="Metrics Routes GET /api/metrics/me debe obtener métricas del usuario" time="0.02">
     </testcase>
-    <testcase classname="Task Routes POST /api/tasks debe crear tarea con chatOrigin cuando conversación y mensaje existen y son del usuario" name="Task Routes POST /api/tasks debe crear tarea con chatOrigin cuando conversación y mensaje existen y son del usuario" time="0.255">
+    <testcase classname="Metrics Routes GET /api/metrics/health debe obtener estadísticas de salud del sistema" name="Metrics Routes GET /api/metrics/health debe obtener estadísticas de salud del sistema" time="0.026">
     </testcase>
-    <testcase classname="Task Routes POST /api/tasks debe rechazar chatOrigin si el mensaje no pertenece a esa conversación" name="Task Routes POST /api/tasks debe rechazar chatOrigin si el mensaje no pertenece a esa conversación" time="0.252">
+    <testcase classname="Metrics Routes POST /api/metrics/product-action debe rechazar sin autenticación" name="Metrics Routes POST /api/metrics/product-action debe rechazar sin autenticación" time="0.062">
     </testcase>
-    <testcase classname="Task Routes POST /api/tasks debe rechazar crear tarea sin autenticación" name="Task Routes POST /api/tasks debe rechazar crear tarea sin autenticación" time="0">
-      <skipped/>
+    <testcase classname="Metrics Routes POST /api/metrics/product-action debe registrar confirm_dismissed con token" name="Metrics Routes POST /api/metrics/product-action debe registrar confirm_dismissed con token" time="0.182">
     </testcase>
-    <testcase classname="Task Routes POST /api/tasks debe rechazar crear tarea sin título" name="Task Routes POST /api/tasks debe rechazar crear tarea sin título" time="0">
-      <skipped/>
+    <testcase classname="Metrics Routes POST /api/metrics/product-action debe rechazar create_failed sin resource" name="Metrics Routes POST /api/metrics/product-action debe rechazar create_failed sin resource" time="0.057">
     </testcase>
-    <testcase classname="Task Routes GET /api/tasks debe obtener todas las tareas del usuario" name="Task Routes GET /api/tasks debe obtener todas las tareas del usuario" time="0">
-      <skipped/>
-    </testcase>
-    <testcase classname="Task Routes GET /api/tasks debe filtrar tareas por status" name="Task Routes GET /api/tasks debe filtrar tareas por status" time="0">
-      <skipped/>
-    </testcase>
-    <testcase classname="Task Routes GET /api/tasks/:id debe obtener una tarea específica" name="Task Routes GET /api/tasks/:id debe obtener una tarea específica" time="0">
-      <skipped/>
-    </testcase>
-    <testcase classname="Task Routes GET /api/tasks/:id debe rechazar obtener tarea de otro usuario" name="Task Routes GET /api/tasks/:id debe rechazar obtener tarea de otro usuario" time="0">
-      <skipped/>
-    </testcase>
-    <testcase classname="Task Routes PUT /api/tasks/:id debe actualizar una tarea existente" name="Task Routes PUT /api/tasks/:id debe actualizar una tarea existente" time="0">
-      <skipped/>
-    </testcase>
-    <testcase classname="Task Routes DELETE /api/tasks/:id debe eliminar una tarea existente" name="Task Routes DELETE /api/tasks/:id debe eliminar una tarea existente" time="0">
-      <skipped/>
-    </testcase>
-  </testsuite>
-  <testsuite name="Habit Routes" errors="0" failures="0" skipped="9" timestamp="2026-05-04T23:54:53" time="2.524" tests="11">
-    <testcase classname="Habit Routes POST /api/habits debe crear un nuevo hábito con datos válidos" name="Habit Routes POST /api/habits debe crear un nuevo hábito con datos válidos" time="0">
-      <skipped/>
-    </testcase>
-    <testcase classname="Habit Routes POST /api/habits debe devolver el mismo hábito en segundo POST con el mismo clientRequestId" name="Habit Routes POST /api/habits debe devolver el mismo hábito en segundo POST con el mismo clientRequestId" time="0">
-      <skipped/>
-    </testcase>
-    <testcase classname="Habit Routes POST /api/habits debe rechazar hábito con chatOrigin de conversación inexistente" name="Habit Routes POST /api/habits debe rechazar hábito con chatOrigin de conversación inexistente" time="0.314">
-    </testcase>
-    <testcase classname="Habit Routes POST /api/habits debe crear hábito con chatOrigin cuando conversación y mensaje existen y son del usuario" name="Habit Routes POST /api/habits debe crear hábito con chatOrigin cuando conversación y mensaje existen y son del usuario" time="0.235">
-    </testcase>
-    <testcase classname="Habit Routes POST /api/habits debe rechazar crear hábito sin autenticación" name="Habit Routes POST /api/habits debe rechazar crear hábito sin autenticación" time="0">
-      <skipped/>
-    </testcase>
-    <testcase classname="Habit Routes POST /api/habits debe rechazar crear hábito con datos inválidos" name="Habit Routes POST /api/habits debe rechazar crear hábito con datos inválidos" time="0">
-      <skipped/>
-    </testcase>
-    <testcase classname="Habit Routes GET /api/habits debe obtener todos los hábitos del usuario" name="Habit Routes GET /api/habits debe obtener todos los hábitos del usuario" time="0">
-      <skipped/>
-    </testcase>
-    <testcase classname="Habit Routes GET /api/habits debe filtrar hábitos por status" name="Habit Routes GET /api/habits debe filtrar hábitos por status" time="0">
-      <skipped/>
-    </testcase>
-    <testcase classname="Habit Routes GET /api/habits/active debe obtener hábitos activos" name="Habit Routes GET /api/habits/active debe obtener hábitos activos" time="0">
-      <skipped/>
-    </testcase>
-    <testcase classname="Habit Routes PUT /api/habits/:id debe actualizar un hábito existente" name="Habit Routes PUT /api/habits/:id debe actualizar un hábito existente" time="0">
-      <skipped/>
-    </testcase>
-    <testcase classname="Habit Routes DELETE /api/habits/:id debe eliminar un hábito existente" name="Habit Routes DELETE /api/habits/:id debe eliminar un hábito existente" time="0">
-      <skipped/>
+    <testcase classname="Metrics Routes POST /api/metrics/product-action debe registrar create_failed con resource" name="Metrics Routes POST /api/metrics/product-action debe registrar create_failed con resource" time="0.014">
     </testcase>
   </testsuite>
 </testsuites>

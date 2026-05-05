@@ -98,6 +98,16 @@ class MetricsService {
         proposalsEmitted: 0,
         byTransport: {}
       },
+      /** Resultados tras confirmación o abandono (memoria + historial; ver §8 contrato). */
+      productActionOutcomes: {
+        created: 0,
+        createdFromChat: 0,
+        idempotentFromChat: 0,
+        createFailed: 0,
+        createFailedFromChat: 0,
+        confirmDismissed: 0,
+        bySurface: {}
+      },
       responseGeneration: {
         total: 0,
         averageTime: 0,
@@ -326,6 +336,29 @@ class MetricsService {
         pa.proposalsEmitted += Number(data.count) || 0;
         const tr = data.transport || 'unknown';
         pa.byTransport[tr] = (pa.byTransport[tr] || 0) + 1;
+        break;
+      }
+
+      case 'product_action_created': {
+        const o = this.inMemoryMetrics.productActionOutcomes;
+        o.created++;
+        if (data.fromChat) o.createdFromChat++;
+        if (data.idempotentReplay) o.idempotentFromChat++;
+        break;
+      }
+
+      case 'product_action_create_failed': {
+        const o = this.inMemoryMetrics.productActionOutcomes;
+        o.createFailed++;
+        if (data.fromChat) o.createFailedFromChat++;
+        break;
+      }
+
+      case 'product_action_confirm_dismissed': {
+        const o = this.inMemoryMetrics.productActionOutcomes;
+        o.confirmDismissed++;
+        const surf = data.surface || 'unknown';
+        o.bySurface[surf] = (o.bySurface[surf] || 0) + 1;
         break;
       }
 

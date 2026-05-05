@@ -54,6 +54,8 @@ export const ENDPOINTS = {
   RESEND_VERIFICATION_CODE: '/api/auth/resend-verification-code',
   HEALTH: '/health',
   ME: '/api/users/me',
+  /** Telemetría §8 contrato chat → tarea/hábito (dismiss / fallo cliente). */
+  METRICS_PRODUCT_ACTION: '/api/metrics/product-action',
   PROFILE: '/api/users/me',
   UPDATE_PROFILE: '/api/users/me',
   ONBOARDING_PREFERENCES: '/api/users/me/onboarding-preferences',

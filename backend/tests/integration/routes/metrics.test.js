@@ -114,5 +114,42 @@ describe('Metrics Routes', () => {
       expect(response.body).toHaveProperty('data');
     });
   });
+
+  describe('POST /api/metrics/product-action', () => {
+    it('debe rechazar sin autenticación', async () => {
+      await request(app)
+        .post('/api/metrics/product-action')
+        .send({ event: 'confirm_dismissed', surface: 'task_modal' })
+        .expect(401);
+    });
+
+    it('debe registrar confirm_dismissed con token', async () => {
+      const response = await request(app)
+        .post('/api/metrics/product-action')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ event: 'confirm_dismissed', surface: 'habit_modal' })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('success', true);
+    });
+
+    it('debe rechazar create_failed sin resource', async () => {
+      const response = await request(app)
+        .post('/api/metrics/product-action')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ event: 'create_failed', surface: 'task_modal' })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('debe registrar create_failed con resource', async () => {
+      await request(app)
+        .post('/api/metrics/product-action')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ event: 'create_failed', surface: 'task_modal', resource: 'task' })
+        .expect(200);
+    });
+  });
 });
 

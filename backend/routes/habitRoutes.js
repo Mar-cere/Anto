@@ -10,6 +10,10 @@ import { validateObjectId } from '../middleware/validation.js';
 import Habit from '../models/Habit.js';
 import User from '../models/User.js';
 import { validateChatOriginForUser } from '../utils/validateChatOriginForUser.js';
+import {
+  recordProductActionCreatedFromDoc,
+  recordProductActionCreateFailed
+} from '../utils/metricsProductActions.js';
 
 const router = express.Router();
 
@@ -518,6 +522,7 @@ router.post('/', createHabitLimiter, async (req, res) => {
     if (value.chatOrigin) {
       const originOk = await validateChatOriginForUser(value.chatOrigin, req.user._id);
       if (!originOk) {
+        await recordProductActionCreateFailed(req.user._id, 'habit');
         return res.status(400).json({
           success: false,
           message: 'Origen de chat inválido: la conversación o el mensaje no existe o no pertenece al usuario'
@@ -532,6 +537,7 @@ router.post('/', createHabitLimiter, async (req, res) => {
         deletedAt: { $exists: false }
       });
       if (existingHabit) {
+        await recordProductActionCreatedFromDoc(req.user._id, 'habit', existingHabit, true);
         return res.status(200).json({
           success: true,
           message: 'Hábito ya registrado (reintento idempotente)',
@@ -578,6 +584,7 @@ router.post('/', createHabitLimiter, async (req, res) => {
           deletedAt: { $exists: false }
         });
         if (replay) {
+          await recordProductActionCreatedFromDoc(req.user._id, 'habit', replay, true);
           return res.status(200).json({
             success: true,
             message: 'Hábito ya registrado (reintento idempotente)',
@@ -588,6 +595,7 @@ router.post('/', createHabitLimiter, async (req, res) => {
       }
       throw saveErr;
     }
+    await recordProductActionCreatedFromDoc(req.user._id, 'habit', habit, false);
     res.status(201).json({ 
       success: true, 
       data: habit,
@@ -595,6 +603,9 @@ router.post('/', createHabitLimiter, async (req, res) => {
     });
   } catch (error) {
     console.error('Error al crear hábito:', error);
+    if (req.body?.chatOrigin) {
+      await recordProductActionCreateFailed(req.user._id, 'habit');
+    }
     res.status(400).json({ 
       success: false,
       message: 'Error al crear el hábito', 

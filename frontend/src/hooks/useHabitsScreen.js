@@ -19,6 +19,7 @@ import {
   TEXTS,
 } from '../screens/habits/habitsScreenConstants';
 import { isValidClientRequestId } from '../utils/clientRequestId';
+import { postProductActionTelemetry } from '../utils/productActionTelemetry';
 
 export function useHabitsScreen({ route, navigation }) {
   const { isConnected, isInternetReachable } = useNetworkStatus();
@@ -157,6 +158,13 @@ export function useHabitsScreen({ route, navigation }) {
         }
       } catch (err) {
         console.error('Error al crear hábito:', err);
+        if (habitChatOriginRef.current || habitClientRequestIdRef.current) {
+          void postProductActionTelemetry({
+            event: 'create_failed',
+            surface: 'habit_modal',
+            resource: 'habit',
+          });
+        }
         Alert.alert(
           TEXTS.ERROR_CREATE,
           getApiErrorMessage(err, { isOffline }) || TEXTS.ERROR_CREATE_MESSAGE
@@ -237,6 +245,20 @@ export function useHabitsScreen({ route, navigation }) {
     setFormData(getDefaultFormData());
   }, []);
 
+  const handleHabitModalClose = useCallback(() => {
+    const hadChatFlow = Boolean(
+      habitChatOriginRef.current || habitClientRequestIdRef.current
+    );
+    setModalVisible(false);
+    if (hadChatFlow) {
+      void postProductActionTelemetry({
+        event: 'confirm_dismissed',
+        surface: 'habit_modal',
+      });
+    }
+    resetForm();
+  }, [resetForm]);
+
   const openModal = useCallback(() => {
     resetForm();
     setModalVisible(true);
@@ -262,6 +284,7 @@ export function useHabitsScreen({ route, navigation }) {
     handleDeleteHabit,
     resetForm,
     openModal,
+    handleHabitModalClose,
     habitModalReminderIso,
   };
 }

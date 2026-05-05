@@ -4,8 +4,21 @@
  * Endpoints para obtener métricas del sistema y estadísticas de salud
  */
 import express from 'express';
+import Joi from 'joi';
 import { authenticateToken } from '../middleware/auth.js';
 import metricsService from '../services/metricsService.js';
+
+const productActionMetricSchema = Joi.object({
+  event: Joi.string().valid('confirm_dismissed', 'create_failed').required(),
+  surface: Joi.string().valid('task_modal', 'habit_modal').required(),
+  resource: Joi.string()
+    .valid('task', 'habit')
+    .when('event', {
+      is: 'create_failed',
+      then: Joi.required(),
+      otherwise: Joi.forbidden()
+    })
+});
 
 const router = express.Router();
 
@@ -63,6 +76,39 @@ router.get('/health', authenticateToken, isAdmin, async (req, res) => {
       success: false,
       message: 'Error al obtener estadísticas de salud',
       error: error.message
+    });
+  }
+});
+
+/** Dismiss modal sin confirmar o fallo de creación (cliente), §8 contrato chat acciones. */
+router.post('/product-action', authenticateToken, async (req, res) => {
+  try {
+    const { error, value } = productActionMetricSchema.validate(req.body, { stripUnknown: true });
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.details[0]?.message || 'Datos inválidos'
+      });
+    }
+    if (value.event === 'confirm_dismissed') {
+      await metricsService.recordMetric(
+        'product_action_confirm_dismissed',
+        { surface: value.surface },
+        req.user._id.toString()
+      );
+    } else {
+      await metricsService.recordMetric(
+        'product_action_create_failed',
+        { fromChat: true, resource: value.resource },
+        req.user._id.toString()
+      );
+    }
+    return res.status(200).json({ success: true });
+  } catch (e) {
+    console.error('POST /api/metrics/product-action', e);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al registrar métrica'
     });
   }
 });
