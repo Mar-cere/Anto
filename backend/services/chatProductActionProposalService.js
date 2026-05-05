@@ -27,10 +27,10 @@ const NATURAL_PRODUCT_LEXICON =
  * El título concreto suele venir del turno anterior del asistente (refinar con LLM si está activo).
  */
 const EXPLICIT_TASK_TO_APP =
-  /\ben\s+mis\s+tareas\b|guard(?:a|ar)(?:me|te)?\s+como\s+tarea\b|agreg(?:a|ar)(?:lo|la)?\s+a\s+mis\s+tareas\b|\bgener(?:á|a)(?:la|lo)?\s+en\s+mis\s+tareas\b|\b(?:puedes|pod[eé]s|podrias|podr[ií]as)?\s*(?:crear|crea|generar|genera|armar|arma|hacer|haz)\s+(?:la\s+)?tarea\b|\b(?:crea|crear|genera|generar)\s+(?:una\s+)?tarea\b/i;
+  /\ben\s+mis\s+tareas\b|guard(?:a|ar)(?:me|te)?\s+como\s+tarea(?:s)?\b|agreg(?:a|ar)(?:lo|la)?\s+a\s+mis\s+tareas\b|\bgener(?:á|a)(?:la|lo)?\s+en\s+mis\s+tareas\b|\b(?:puedes|pod[eé]s|podrias|podr[ií]as)?\s*(?:crear|crea|generar|genera|generar[ií]as|armar|arma|hacer|haz)\s+(?:la\s+|las\s+)?tarea(?:s)?\b|\b(?:crea|crear|genera|generar|generar[ií]as)\s+(?:una\s+|unas\s+)?tarea(?:s)?\b|\b(?:generame|gen[eé]rame|armame|pasame)\s+(?:una\s+|unas\s+)?tarea(?:s)?\b/i;
 
 const EXPLICIT_HABIT_TO_APP =
-  /\ben\s+mis\s+h[aá]bitos\b|guard(?:a|ar)(?:me|te)?\s+como\s+h[aá]bito\b|agreg(?:a|ar)(?:lo|la)?\s+a\s+mis\s+h[aá]bitos\b|\b(?:puedes|pod[eé]s|podrias|podr[ií]as)?\s*(?:crear|crea|generar|genera|armar|arma|hacer|haz)\s+(?:el\s+|un\s+)?h[aá]bito\b|\b(?:crea|crear|genera|generar)\s+(?:un\s+)?h[aá]bito\b/i;
+  /\ben\s+mis\s+h[aá]bitos\b|guard(?:a|ar)(?:me|te)?\s+como\s+h[aá]bito(?:s)?\b|agreg(?:a|ar)(?:lo|la)?\s+a\s+mis\s+h[aá]bitos\b|\b(?:puedes|pod[eé]s|podrias|podr[ií]as)?\s*(?:crear|crea|generar|genera|generar[ií]as|armar|arma|hacer|haz)\s+(?:el\s+|un\s+|los\s+|unos\s+)?h[aá]bito(?:s)?\b|\b(?:crea|crear|genera|generar|generar[ií]as)\s+(?:un\s+|unos\s+)?h[aá]bito(?:s)?\b|\b(?:generame|gen[eé]rame|armame|pasame)\s+(?:un\s+|unos\s+)?h[aá]bito(?:s)?\b/i;
 
 const CONCRETE_ACTION_ANCHORS =
   /\b(ordenar|limpiar|lavar|recoger|agendar|estudiar|repasar|resumir|leer|escribir|entregar|pagar|llamar|preparar|cocinar|entrenar|meditar|hidratarme|dormir|tarea|pendiente|h[aá]bito|rutina)\b|\b(cocina|encimera|escritorio|materia|examen|parcial|cap[ií]tulo|apunte|temario)\b/i;
@@ -75,8 +75,9 @@ function proposalConfidenceScore(content) {
  */
 export function getProductActionNeedLevel(content) {
   const score = proposalConfidenceScore(String(content || ''));
-  if (score >= 5) return 'high';
-  if (score >= 3) return 'medium';
+  // Umbrales: ligeramente menos conservadores para capturar más casos accionables.
+  if (score >= 4) return 'high';
+  if (score >= 2) return 'medium';
   return 'low';
 }
 
@@ -95,7 +96,7 @@ function sessionAllowsProductDraft(intention, content) {
     intention === 'vent' &&
     NATURAL_PRODUCT_LEXICON.test(content) &&
     hasConcreteActionAnchor(content) &&
-    score >= 4
+    score >= 3
   ) {
     return true;
   }

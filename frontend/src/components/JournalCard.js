@@ -7,22 +7,70 @@
  * @author AntoApp Team
  */
 
-import React, { useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, Animated, StyleSheet, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { commonStyles, cardColors, CardHeader } from './common/CardStyles';
 import {
   FOCUS_INNER_ROW,
-  FOCUS_ICON_WRAP,
   FOCUS_CHEVRON_MUTED,
+  FOCUS_KICKER_COLOR,
   FOCUS_META,
+  FOCUS_BORDER_SUBTLE,
 } from '../styles/focusCardTheme';
+
+const GRATITUDE_ENTRIES_KEY = 'gratitudeJournalEntries';
 
 const JournalCard = () => {
   const navigation = useNavigation();
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const entryAnim = useRef(new Animated.Value(0)).current;
+  const [entriesCount, setEntriesCount] = useState(0);
+  const [lastEntryText, setLastEntryText] = useState('');
+  const [lastEntryDate, setLastEntryDate] = useState(null);
+
+  useEffect(() => {
+    Animated.timing(entryAnim, {
+      toValue: 1,
+      duration: 260,
+      useNativeDriver: true,
+    }).start();
+  }, [entryAnim]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const saved = await AsyncStorage.getItem(GRATITUDE_ENTRIES_KEY);
+        if (!saved) return;
+        const parsed = JSON.parse(saved);
+        if (!Array.isArray(parsed)) return;
+        setEntriesCount(parsed.length);
+        const latest = parsed[0];
+        if (latest?.text) setLastEntryText(String(latest.text));
+        if (latest?.date) setLastEntryDate(latest.date);
+      } catch (e) {
+        // si falla, el card funciona igual en modo estático
+      }
+    };
+    const unsub = navigation.addListener('focus', load);
+    load();
+    return unsub;
+  }, [navigation]);
+
+  const lastDateLabel = useMemo(() => {
+    if (!lastEntryDate) return null;
+    try {
+      return new Date(lastEntryDate).toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: 'short',
+      });
+    } catch {
+      return null;
+    }
+  }, [lastEntryDate]);
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -56,7 +104,23 @@ const JournalCard = () => {
   };
 
   return (
-    <Animated.View style={[commonStyles.cardContainer, { transform: [{ scale: scaleAnim }] }]}>
+    <Animated.View
+      style={[
+        commonStyles.cardContainer,
+        {
+          transform: [
+            { scale: scaleAnim },
+            {
+              translateY: entryAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [8, 0],
+              }),
+            },
+          ],
+          opacity: entryAnim,
+        },
+      ]}
+    >
       <CardHeader icon="book-heart" title="Diario de Gratitud" onViewAll={handleViewAll} />
       <TouchableOpacity
         onPress={handlePress}
@@ -67,12 +131,24 @@ const JournalCard = () => {
         accessibilityLabel="Abrir diario de gratitud"
       >
         <View style={styles.row}>
-          <View style={styles.iconWrap}>
-            <MaterialCommunityIcons name="book-heart" size={20} color={cardColors.primary} />
-          </View>
           <View style={styles.textBlock}>
-            <Text style={styles.rowTitle}>Escribe sobre lo que agradeces</Text>
-            <Text style={styles.rowMeta}>Practica la gratitud y mejora tu bienestar emocional</Text>
+            <View style={styles.metaTopRow}>
+              <View style={styles.metaChip}>
+                <MaterialCommunityIcons name="calendar" size={12} color={FOCUS_KICKER_COLOR} />
+                <Text style={styles.metaChipText}>
+                  {lastDateLabel ? `Última: ${lastDateLabel}` : 'Hoy'}
+                </Text>
+              </View>
+              <Text style={styles.countText}>{entriesCount ? `${entriesCount}` : ''}</Text>
+            </View>
+            <Text style={styles.rowTitle}>
+              {lastEntryText ? 'Última entrada' : 'Escribe sobre lo que agradeces'}
+            </Text>
+            <Text style={styles.rowMeta} numberOfLines={2}>
+              {lastEntryText
+                ? lastEntryText
+                : 'Practica la gratitud y mejora tu bienestar emocional'}
+            </Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={18} color={FOCUS_CHEVRON_MUTED} />
         </View>
@@ -85,15 +161,43 @@ const styles = StyleSheet.create({
   row: {
     ...FOCUS_INNER_ROW,
     marginBottom: 0,
-  },
-  iconWrap: {
-    ...FOCUS_ICON_WRAP,
-    marginRight: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
   },
   textBlock: {
     flex: 1,
     minWidth: 0,
     marginRight: 8,
+  },
+  metaTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  metaChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
+  },
+  metaChipText: {
+    color: FOCUS_KICKER_COLOR,
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 16,
+    textAlign: 'center',
+    includeFontPadding: false,
+  },
+  countText: {
+    color: FOCUS_META,
+    fontSize: 12,
+    fontWeight: '700',
   },
   rowTitle: {
     fontSize: 15,

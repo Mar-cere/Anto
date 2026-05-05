@@ -95,7 +95,7 @@ describe('conversationProductProposalCapService', () => {
       })
     });
     const out = await filterProposedProductActionsByConversationCap(
-      'la cocina me agobia',
+      'quiero ordenar mi día',
       convId,
       actions
     );

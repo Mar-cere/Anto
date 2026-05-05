@@ -18,9 +18,9 @@ export const PRODUCT_ACTION_PROPOSAL_EVAL_FIXTURES = [
 
   // --- Naturales que sí deberían sugerir ---
   { name: 'natural-vent-study-overload', text: 'estoy muy atareado, mañana examen y no sé por dónde empezar a estudiar', intention: 'vent', explicit: false, suggest: true, type: 'propose_task', need: 'high' },
-  { name: 'natural-vent-kitchen', text: 'la cocina me agobia y no sé por dónde empezar', intention: 'vent', explicit: false, suggest: true, type: 'propose_task', need: 'medium' },
-  { name: 'natural-plan-organize-week', text: 'quiero organizar la semana y dejar pasos concretos para mañana', intention: 'plan', explicit: false, suggest: true, type: 'propose_task', need: 'low' },
-  { name: 'natural-technique-with-planning', text: 'necesito una técnica y también organizar tareas pendientes de esta semana', intention: 'technique', explicit: false, suggest: true, type: 'propose_task', need: 'low' },
+  { name: 'natural-vent-kitchen', text: 'la cocina me agobia y no sé por dónde empezar', intention: 'vent', explicit: false, suggest: true, type: 'propose_task', need: 'high' },
+  { name: 'natural-plan-organize-week', text: 'quiero organizar la semana y dejar pasos concretos para mañana', intention: 'plan', explicit: false, suggest: true, type: 'propose_task', need: 'medium' },
+  { name: 'natural-technique-with-planning', text: 'necesito una técnica y también organizar tareas pendientes de esta semana', intention: 'technique', explicit: false, suggest: true, type: 'propose_task', need: 'medium' },
   { name: 'natural-habit-daily', text: 'me gustaría un hábito diario de meditación de 5 minutos', intention: 'plan', explicit: false, suggest: true, type: 'propose_habit', need: 'medium' },
   { name: 'natural-habit-water', text: 'quiero tomar más agua cada día', intention: 'organize', explicit: false, suggest: true, type: 'propose_habit', need: 'low' },
 
@@ -34,7 +34,7 @@ export const PRODUCT_ACTION_PROPOSAL_EVAL_FIXTURES = [
 
   // --- Bordes para evitar regresiones ---
   { name: 'edge-explicit-overrides-no-suggest', text: 'no me sugieras tareas, pero puedes crear la tarea de repasar química', intention: 'vent', explicit: true, suggest: true, type: 'propose_task' },
-  { name: 'edge-plan-minimum-signal', text: 'ordenar escritorio hoy', intention: 'plan', explicit: false, suggest: true, type: 'propose_task', need: 'medium' },
+  { name: 'edge-plan-minimum-signal', text: 'ordenar escritorio hoy', intention: 'plan', explicit: false, suggest: true, type: 'propose_task', need: 'high' },
   { name: 'edge-organize-low-signal', text: 'quiero ordenar', intention: 'organize', explicit: false, suggest: true, type: 'propose_task', need: 'medium' },
   { name: 'edge-vent-no-concrete-anchor', text: 'estoy abrumado con todo', intention: 'vent', explicit: false, suggest: false, need: 'low' },
   { name: 'edge-explicit-task-without-accents', text: 'podrias generar la tarea', intention: 'vent', explicit: true, suggest: true, type: 'propose_task' },
