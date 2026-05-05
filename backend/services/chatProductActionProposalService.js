@@ -32,15 +32,57 @@ const EXPLICIT_TASK_TO_APP =
 const EXPLICIT_HABIT_TO_APP =
   /\ben\s+mis\s+h[aá]bitos\b|guardar(?:me|te)?\s+como\s+h[aá]bito\b|agregar(?:lo|la)?\s+a\s+mis\s+h[aá]bitos\b/i;
 
+const CONCRETE_ACTION_ANCHORS =
+  /\b(ordenar|limpiar|lavar|recoger|agendar|estudiar|repasar|resumir|leer|escribir|entregar|pagar|llamar|preparar|cocinar|entrenar|meditar|hidratarme|dormir|tarea|pendiente|h[aá]bito|rutina)\b|\b(cocina|encimera|escritorio|materia|examen|parcial|cap[ií]tulo|apunte|temario)\b/i;
+
+const ABSTRACT_ONLY_THEMES =
+  /\b(sobreplanific|perfeccionism|ansiedad|estr[eé]s|rumiaci[oó]n|autoexigencia|agobio)\b/i;
+
+const TIME_COMMITMENT_CUES =
+  /\b(hoy|mañana|esta\s+semana|próxim[oa]s?\s+días|antes\s+de|para\s+el\s+(?:viernes|sábado|domingo|lunes|martes|miércoles|jueves)|a\s+las?\s+\d{1,2})\b/i;
+
+const OVERLOAD_CUES =
+  /\b(ataread[oa]|me\s+agobia|abruma|no\s+doy\s+abasto|mucho\s+que\s+hacer|no\s+s[eé]\s+por\s+d[oó]nde\s+empezar)\b/i;
+
+const STUDY_CONTEXT_CUES =
+  /\b(estudiar|estudio|materia|examen|parcial|temario|apunte|final)\b/i;
+
+function hasConcreteActionAnchor(content) {
+  return CONCRETE_ACTION_ANCHORS.test(content);
+}
+
+function isAbstractWithoutAction(content) {
+  return ABSTRACT_ONLY_THEMES.test(content) && !hasConcreteActionAnchor(content);
+}
+
+function proposalConfidenceScore(content) {
+  let score = 0;
+  if (hasConcreteActionAnchor(content)) score += 2;
+  if (TIME_COMMITMENT_CUES.test(content)) score += 1;
+  if (OVERLOAD_CUES.test(content)) score += 1;
+  if (STUDY_CONTEXT_CUES.test(content)) score += 1;
+  if (NATURAL_PRODUCT_LEXICON.test(content)) score += 1;
+  return score;
+}
+
 /**
  * @param {'vent'|'organize'|'technique'|'plan'|null} intention
  * @param {string} content
  */
 function sessionAllowsProductDraft(intention, content) {
   if (EXPLICIT_TASK_TO_APP.test(content) || EXPLICIT_HABIT_TO_APP.test(content)) return true;
-  if (intention === 'plan' || intention === 'organize') return true;
-  if (intention === 'technique' && NATURAL_PRODUCT_LEXICON.test(content)) return true;
-  if (intention === 'vent' && NATURAL_PRODUCT_LEXICON.test(content)) return true;
+  if (isAbstractWithoutAction(content)) return false;
+  const score = proposalConfidenceScore(content);
+  if (intention === 'plan' || intention === 'organize') return score >= 1;
+  if (intention === 'technique' && NATURAL_PRODUCT_LEXICON.test(content)) return score >= 2;
+  if (
+    intention === 'vent' &&
+    NATURAL_PRODUCT_LEXICON.test(content) &&
+    hasConcreteActionAnchor(content) &&
+    score >= 4
+  ) {
+    return true;
+  }
   return false;
 }
 
@@ -69,6 +111,25 @@ function clampTitle(raw, minLen = 3, maxLen = 100) {
     .slice(0, maxLen);
   if (t.length >= minLen) return t;
   return 'Paso acordado en el chat'.slice(0, maxLen);
+}
+
+function deriveTaskTitle(content, firstLine) {
+  if (isShortExplicitTaskCommand(content)) {
+    return 'Paso acordado en el chat';
+  }
+  if (/\bestudiar|materia|examen|parcial|temario|apunte\b/i.test(content)) {
+    return 'Bloque de estudio prioritario';
+  }
+  if (/\b(?:la\s+)?cocina|encimera\b/i.test(content)) {
+    return 'Ordenar encimera de cocina';
+  }
+  if (/\bescritorio|desorden\b/i.test(content)) {
+    return 'Ordenar escritorio';
+  }
+  if (isAbstractWithoutAction(content)) {
+    return 'Paso concreto acordado en el chat';
+  }
+  return firstLine;
 }
 
 function startOfToday() {
@@ -296,9 +357,7 @@ export function buildProposedProductActions(input) {
     ];
   }
 
-  const taskTitle = isShortExplicitTaskCommand(content)
-    ? 'Paso acordado en el chat'
-    : firstLine;
+  const taskTitle = deriveTaskTitle(content, firstLine);
 
   return [
     {

@@ -137,6 +137,8 @@ Alineado a `habitSchema` en `backend/routes/habitRoutes.js`:
 Reglas de producto a implementar con flags o contadores server-side:
 
 - **Por conversación (hilo):** máximo **2** emisiones de `proposedProductActions` cuando el usuario **no** pide explícito guardar en la app (p. ej. «en mis tareas», «generala en mis tareas»). Esas frases **no** cuentan contra el tope y **siempre** pueden generar propuesta. Contador: `nonExplicitProductProposalCount` en `Conversation`; lógica en `conversationProductProposalCapService.js` (HTTP/SSE, JSON y Socket).
+- **Enfriamiento no explícito:** además del tope, se aplica cooldown de **10 minutos** entre propuestas no explícitas (`lastNonExplicitProductProposalAt`), para evitar sugerencias turno-a-turno.
+- **Umbral de confianza:** antes de sugerir sin pedido explícito, el backend requiere señales combinadas (ancla concreta de acción + contexto temporal/sobrecarga, con umbral más estricto en `vent`) y descarta frases abstractas sin acción concreta.
 - **No** en cada mensaje sin techo: otros límites por hora / política siguen abiertos a tuning.
 - **Prioridad:** si hay conflicto entre muchas ideas, el servidor devuelve **como mucho** el límite del §4.2 y elige por política (claridad del intent, baja carga cognitiva declarada, etc.).
 - **Coexistencia con `suggestions`:** mantener dos canales claros: técnicas vs `proposedProductActions`; evitar dos CTAs competidoras en el mismo turno si el diseño lo considera ruidoso (ajuste de UX en implementación).

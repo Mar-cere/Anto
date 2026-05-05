@@ -99,7 +99,7 @@ const TEXTS = {
 };
 
 // Constantes de estilos
-const DELETE_DELAY = 3500; // ms
+const DELETE_DELAY = 2200; // ms
 const LIST_PADDING = 16;
 /** Espacio bajo la lista: barra flotante (~88) + botón central + FAB + margen (alineado con Dash ~132 + safe area). */
 const LIST_PADDING_BOTTOM_EXTRA = 132;

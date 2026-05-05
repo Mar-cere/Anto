@@ -73,6 +73,13 @@ const conversationSchema = new mongoose.Schema({
     type: Number,
     default: 0,
     min: 0
+  },
+  /**
+   * Enfriamiento para no sugerir tarea/hábito en cada turno no explícito.
+   */
+  lastNonExplicitProductProposalAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true // Crea createdAt y updatedAt automáticamente

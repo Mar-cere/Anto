@@ -97,6 +97,30 @@ describe('chatProductActionProposalService', () => {
     expect(actions[0].type).toBe('propose_task');
   });
 
+  it('buildProposedProductActions en vent con estudiar usa título concreto', () => {
+    const actions = buildProposedProductActions({
+      ...base,
+      userContent: 'estoy muy atareado, tengo mucho que estudiar',
+      sessionIntention: 'vent',
+      riskLevel: 'LOW',
+      isCrisis: false
+    });
+    expect(actions).toHaveLength(1);
+    expect(actions[0].type).toBe('propose_task');
+    expect(actions[0].draft.title).toBe('Bloque de estudio prioritario');
+  });
+
+  it('buildProposedProductActions no propone tarea abstracta sin ancla accionable', () => {
+    const actions = buildProposedProductActions({
+      ...base,
+      userContent: 'me estresa la sobreplanificación, siento mucha autoexigencia',
+      sessionIntention: 'vent',
+      riskLevel: 'LOW',
+      isCrisis: false
+    });
+    expect(actions).toEqual([]);
+  });
+
   it('buildProposedProductActions en vent si el usuario pide guardar en mis tareas', () => {
     const actions = buildProposedProductActions({
       ...base,

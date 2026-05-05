@@ -6,6 +6,7 @@ import Conversation from '../models/Conversation.js';
 import { isExplicitProductActionRequest } from './chatProductActionProposalService.js';
 
 export const MAX_NON_EXPLICIT_PRODUCT_PROPOSALS_PER_CONVERSATION = 2;
+export const NON_EXPLICIT_PRODUCT_PROPOSAL_COOLDOWN_MS = 10 * 60 * 1000;
 
 /**
  * @param {string} userContent
@@ -24,10 +25,16 @@ export async function filterProposedProductActionsByConversationCap(
   }
 
   const conv = await Conversation.findById(conversationId)
-    .select('nonExplicitProductProposalCount')
+    .select('nonExplicitProductProposalCount lastNonExplicitProductProposalAt')
     .lean();
   const n = conv?.nonExplicitProductProposalCount ?? 0;
   if (n >= MAX_NON_EXPLICIT_PRODUCT_PROPOSALS_PER_CONVERSATION) {
+    return [];
+  }
+  const lastAt = conv?.lastNonExplicitProductProposalAt
+    ? new Date(conv.lastNonExplicitProductProposalAt).getTime()
+    : null;
+  if (lastAt && Date.now() - lastAt < NON_EXPLICIT_PRODUCT_PROPOSAL_COOLDOWN_MS) {
     return [];
   }
   return proposedProductActions;
@@ -48,12 +55,16 @@ export async function incrementNonExplicitProductProposalCountIfApplied(
 
   await Conversation.updateOne(
     { _id: conversationId },
-    { $inc: { nonExplicitProductProposalCount: 1 } }
+    {
+      $inc: { nonExplicitProductProposalCount: 1 },
+      $set: { lastNonExplicitProductProposalAt: new Date() }
+    }
   );
 }
 
 export default {
   MAX_NON_EXPLICIT_PRODUCT_PROPOSALS_PER_CONVERSATION,
+  NON_EXPLICIT_PRODUCT_PROPOSAL_COOLDOWN_MS,
   filterProposedProductActionsByConversationCap,
   incrementNonExplicitProductProposalCountIfApplied
 };
