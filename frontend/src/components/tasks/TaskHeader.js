@@ -19,8 +19,6 @@ const TaskHeader = ({
   onSearch,
   searchQuery = '',
   counts = { all: 0, task: 0, reminder: 0 },
-  density = 'comfortable',
-  onDensityChange,
 }) => {
   const handleSearchChange = useCallback(
     (text) => {
@@ -48,12 +46,6 @@ const TaskHeader = ({
     [onFilterChange]
   );
 
-  const toggleDensity = useCallback(() => {
-    const next = density === 'comfortable' ? 'compact' : 'comfortable';
-    onDensityChange?.(next);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, [density, onDensityChange]);
-
   const activeCountText = useMemo(() => {
     if (filterType === 'task') return `${counts.task || 0} tareas`;
     if (filterType === 'reminder') return `${counts.reminder || 0} recordatorios`;
@@ -75,22 +67,6 @@ const TaskHeader = ({
               size={22}
               color={FOCUS_KICKER_COLOR}
             />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.toolsRow}>
-          <TouchableOpacity
-            style={[styles.densityButton, density === 'compact' && styles.densityButtonActive]}
-            activeOpacity={0.8}
-            onPress={toggleDensity}
-          >
-            <MaterialCommunityIcons
-              name={density === 'compact' ? 'view-agenda-outline' : 'view-stream-outline'}
-              size={16}
-              color={density === 'compact' ? colors.background : FOCUS_KICKER_COLOR}
-            />
-            <Text style={[styles.densityButtonText, density === 'compact' && styles.densityButtonTextActive]}>
-              {density === 'compact' ? 'Estético' : 'Estándar'}
-            </Text>
           </TouchableOpacity>
         </View>
 
@@ -195,34 +171,6 @@ const styles = StyleSheet.create({
   searchContainer: {
     marginBottom: 12,
     overflow: 'hidden',
-  },
-  toolsRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginBottom: 10,
-  },
-  densityButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderRadius: 12,
-    paddingVertical: 7,
-    paddingHorizontal: 10,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-  },
-  densityButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: 'rgba(26, 221, 219, 0.35)',
-  },
-  densityButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: FOCUS_KICKER_COLOR,
-  },
-  densityButtonTextActive: {
-    color: colors.background,
   },
   searchInputContainer: {
     flexDirection: 'row',

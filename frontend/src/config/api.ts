@@ -62,6 +62,8 @@ export const ENDPOINTS = {
   TASKS: '/api/tasks',
   TASKS_PENDING: '/api/tasks/pending',
   TASK_BY_ID: (id: string) => `/api/tasks/${id}`,
+  /** POST: genera hasta 5 subtareas con LLM y las persiste (tareas/metas). */
+  TASK_SUBTASKS_GENERATE: (id: string) => `/api/tasks/${id}/subtasks/generate`,
   HABITS: '/api/habits',
   HABITS_ACTIVE: '/api/habits/active',
   HABIT_BY_ID: (id: string) => `/api/habits/${id}`,

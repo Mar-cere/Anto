@@ -125,8 +125,6 @@ const FAB_ICON_SIZE = 24;
 const FLATLIST_MAX_TO_RENDER = 10;
 const FLATLIST_WINDOW_SIZE = 10;
 const FLATLIST_INITIAL_NUM_TO_RENDER = 10;
-const DENSITY_STORAGE_KEY = 'tasksDensityPreference';
-
 // Constantes de colores
 const COLORS = {
   BACKGROUND: colors.background,
@@ -191,33 +189,6 @@ const TaskScreen = ({ route }) => {
   }, [state.items]);
 
   useEffect(() => () => clearPendingComplete(), [clearPendingComplete]);
-
-  useEffect(() => {
-    let mounted = true;
-    const loadDensity = async () => {
-      try {
-        const saved = await AsyncStorage.getItem(DENSITY_STORAGE_KEY);
-        if (mounted && (saved === 'compact' || saved === 'comfortable')) {
-          setDensity(saved);
-        }
-      } catch (err) {
-        console.warn('No se pudo cargar preferencia de densidad', err);
-      }
-    };
-    loadDensity();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const handleDensityChange = useCallback(async (nextDensity) => {
-    setDensity(nextDensity);
-    try {
-      await AsyncStorage.setItem(DENSITY_STORAGE_KEY, nextDensity);
-    } catch (err) {
-      console.warn('No se pudo guardar preferencia de densidad', err);
-    }
-  }, []);
 
   // Cargar items desde la API
   const loadItems = useCallback(async (isRefresh = false) => {
@@ -552,6 +523,18 @@ const TaskScreen = ({ route }) => {
     setState((prev) => ({ ...prev, detailModalVisible: false, selectedItem: null }));
   }, []);
 
+  const handleTaskUpdatedFromDetail = useCallback((updated) => {
+    if (!updated?._id) return;
+    setState((prev) => ({
+      ...prev,
+      items: prev.items.map((i) => (i._id === updated._id ? { ...i, ...updated } : i)),
+      selectedItem:
+        prev.detailModalVisible && prev.selectedItem?._id === updated._id
+          ? { ...prev.selectedItem, ...updated }
+          : prev.selectedItem,
+    }));
+  }, []);
+
   const renderItem = useCallback(
     ({ item, section }) => {
       if (section.skeleton) {
@@ -565,11 +548,11 @@ const TaskScreen = ({ route }) => {
           }
           onToggleComplete={handleToggleComplete}
           onDelete={handleDeleteItem}
-          density={density}
+          density="compact"
         />
       );
     },
-    [handleToggleComplete, handleDeleteItem, density]
+    [handleToggleComplete, handleDeleteItem]
   );
 
   const renderSectionHeader = useCallback(({ section }) => {
@@ -705,8 +688,6 @@ const TaskScreen = ({ route }) => {
         searchQuery={searchQuery}
         onSearch={setSearchQuery}
         counts={filterCounts}
-        density={density}
-        onDensityChange={handleDensityChange}
       />
       <SectionList
         ref={sectionListRef}
@@ -769,6 +750,8 @@ const TaskScreen = ({ route }) => {
         onClose={closeDetailModal}
         onToggleComplete={handleToggleComplete}
         onDelete={handleDeleteItem}
+        onTaskUpdated={handleTaskUpdatedFromDetail}
+        isOffline={isOffline}
       />
       <FloatingNavBar activeTab="calendar" />
     </View>

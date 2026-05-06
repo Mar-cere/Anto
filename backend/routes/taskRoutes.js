@@ -14,6 +14,11 @@ import {
   recordProductActionCreatedFromDoc,
   recordProductActionCreateFailed
 } from '../utils/metricsProductActions.js';
+import {
+  generateSubtaskTitlesWithLlm,
+  pickNewSubtaskTitles,
+  MAX_SUBTASKS_TOTAL
+} from '../services/taskSubtasksLlmService.js';
 
 const router = express.Router();
 
@@ -119,7 +124,9 @@ const subtaskSchema = Joi.object({
       'string.min': 'El título de la subtarea debe tener al menos 1 carácter',
       'string.max': 'El título de la subtarea debe tener máximo 100 caracteres',
       'any.required': 'El título de la subtarea es requerido'
-    })
+    }),
+  completed: Joi.boolean().optional(),
+  completedAt: Joi.date().optional().allow(null)
 });
 
 const notificationSchema = Joi.object({
@@ -790,6 +797,79 @@ router.patch('/:id/cancel', validateObjectId, patchTaskLimiter, async (req, res)
     console.error('Error al cancelar tarea:', error);
     res.status(400).json({ 
       message: 'Error al cancelar la tarea',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Sugerir subtareas con LLM (1–5) y persistir las que no dupliquen títulos existentes
+router.post('/:id/subtasks/generate', validateObjectId, patchTaskLimiter, async (req, res) => {
+  try {
+    const task = await findTaskById(req.params.id, req.user._id);
+
+    if (!task) {
+      return res.status(404).json({ message: 'Tarea no encontrada' });
+    }
+
+    if (task.itemType !== 'task' && task.itemType !== 'goal') {
+      return res.status(400).json({
+        message: 'Solo tareas y metas admiten generación de subtareas'
+      });
+    }
+
+    const rawTitles = await generateSubtaskTitlesWithLlm({
+      title: task.title,
+      description: task.description,
+      itemType: task.itemType
+    });
+
+    const toAdd = pickNewSubtaskTitles(task.subtasks, rawTitles, {
+      maxTotal: MAX_SUBTASKS_TOTAL
+    });
+
+    if (toAdd.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No se añadieron subtareas nuevas (límite alcanzado o ya existían)',
+        addedCount: 0,
+        data: task
+      });
+    }
+
+    for (const t of toAdd) {
+      task.subtasks.push({ title: t, completed: false });
+    }
+    await task.save();
+
+    res.json({
+      success: true,
+      message: `${toAdd.length} subtarea(s) añadida(s)`,
+      addedCount: toAdd.length,
+      data: task
+    });
+  } catch (error) {
+    console.error('Error generando subtareas (LLM):', error);
+    const code = error?.message;
+    if (code === 'SUBTASKS_LLM_DISABLED') {
+      return res.status(503).json({
+        message: 'Generación de subtareas desactivada en el servidor'
+      });
+    }
+    if (code === 'OPENAI_NOT_CONFIGURED') {
+      return res.status(503).json({
+        message: 'Asistente no disponible (falta configuración en el servidor)'
+      });
+    }
+    if (code === 'LLM_PARSE_FAILED') {
+      return res.status(502).json({
+        message: 'No se pudo interpretar la respuesta del asistente. Intenta de nuevo.'
+      });
+    }
+    if (code === 'TASK_TITLE_REQUIRED') {
+      return res.status(400).json({ message: 'La tarea no tiene un título válido' });
+    }
+    res.status(500).json({
+      message: 'Error al generar subtareas',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
