@@ -15,6 +15,13 @@ export const DEFAULT_PREP_TIME = 3 * 60;
 export const INTERVAL_DURATION = 1000;
 export const WARNING_TIME = 10;
 export const DAILY_POMODORO_GOAL = 6;
+/** Duración de trabajo al elegir una tarea sin tiempo estimado (minutos). */
+export const POMODORO_DEFAULT_TASK_MINUTES = 25;
+export const POMODORO_TASK_FOCUS_MIN_MINUTES = 5;
+export const POMODORO_TASK_FOCUS_MAX_MINUTES = 120;
+export const POMODORO_PENDING_TASKS_LIMIT = 15;
+/** Tamaño de bloque usado solo para textos orientativos (p. ej. “≈ N bloques”). */
+export const POMODORO_DISPLAY_BLOCK_MINUTES = 25;
 
 // Animación
 export const ANIMATION_DURATION = 300;
@@ -68,10 +75,25 @@ export const TEXTS = {
   MINUTES: 'minutos',
   CANCEL: 'Cancelar',
   START: 'Iniciar',
-  TASKS_TITLE: 'Tareas para esta sesión',
-  NEW_TASK_PLACEHOLDER: 'Nueva tarea...',
-  CLEAR_COMPLETED: 'Limpiar completadas',
-  EMPTY_TASKS: 'No hay tareas para esta sesión',
+  PENDING_SECTION_KICKER: 'Enlace con tareas',
+  PENDING_TASKS_TITLE: 'Siguiente foco',
+  PENDING_TASKS_HINT: 'Elige una tarea: sincronizamos estado, tiempo estimado y el temporizador.',
+  SEE_ALL_TASKS: 'Ver todas',
+  ESTIMATED_MINUTES: '{n} min estimados',
+  ESTIMATE_DEFAULT_SHORT: '25 min (por defecto)',
+  MULTI_BLOCK_HINT: '≈ {n} bloques de ~25 min',
+  TASK_STATUS_IN_PROGRESS: 'En curso',
+  TASK_FOCUS_ACTIVE: 'En temporizador',
+  DUE_DATE_SHORT: 'Vence {date}',
+  SUMMARY_SUBTITLE: 'Sesión de foco completada',
+  SUMMARY_DISMISS_HINT: 'Toca fuera para cerrar',
+  ERROR_FOCUS_TITLE: 'No se pudo enlazar',
+  ERROR_FOCUS_MESSAGE: 'La tarea no se marcó como en curso. Revisa la conexión e inténtalo de nuevo.',
+  FOCUS_THIS_TASK: 'Enfocar',
+  PENDING_TASKS_EMPTY: 'No hay tareas pendientes',
+  PENDING_TASKS_EMPTY_HINT: 'Crea tareas en la pestaña Tareas para enlazarlas aquí.',
+  PENDING_LOAD_ERROR: 'No se pudieron cargar las tareas',
+  RETRY: 'Reintentar',
   SESSION_COMPLETED: '¡Sesión Completada!',
   POMODORO_COMPLETED: '¡Pomodoro completado! ⏲️',
   POMODORO_COMPLETED_MESSAGE: '¡Tómate un descanso o inicia una nueva sesión!',
@@ -88,15 +110,16 @@ export const TEXTS = {
   EXIT_GUARD_LEAVE: 'Salir',
   DAILY_GOAL: 'Hoy',
   PRESET_LABEL: 'Atajos',
-  EMPTY_TASKS_HELP_TITLE: 'Ideas para iniciar',
-  EMPTY_TASKS_IDEA_1: 'Escribir correo',
-  EMPTY_TASKS_IDEA_2: 'Revisar backlog',
-  EMPTY_TASKS_IDEA_3: 'Planificar día',
-  SUMMARY_TITLE: 'Resumen de ciclo',
+  SUMMARY_TITLE: 'Resumen del bloque',
   SUMMARY_FOCUS_TIME: 'Tiempo enfocado',
-  SUMMARY_TASKS_DONE: 'Tareas completadas',
+  SUMMARY_LINKED_TASK: 'Tarea en foco',
   SUMMARY_STREAK: 'Racha de hoy',
+  SUMMARY_TIME_LOGGED: 'Se sumaron {n} min al tiempo real de la tarea.',
+  SUMMARY_OPEN_TASK: 'Abrir tarea',
+  SUMMARY_MARK_TASK_DONE: 'Marcar tarea lista',
   SUMMARY_CLOSE: 'Continuar',
+  ERROR_COMPLETE_TASK_TITLE: 'No se completó la tarea',
+  ERROR_COMPLETE_TASK_MESSAGE: 'Inténtalo de nuevo cuando tengas conexión.',
   CONTINUE: 'Continuar',
   TAKE_BREAK: 'Tomar descanso',
 };
@@ -111,6 +134,7 @@ export const MOTIVATIONAL_MESSAGES = [
 
 export const STATUS_BAR_STYLE = 'light-content';
 export const STATUS_BAR_BACKGROUND = colors.background;
+/** Clave legada; la lista de tareas locales del Pomodoro ya no se usa. */
 export const STORAGE_KEY = 'pomodoroTasks';
 export const POMODORO_STATS_STORAGE_KEY = 'pomodoroStats';
 export const DEFAULT_CUSTOM_MINUTES = '25';

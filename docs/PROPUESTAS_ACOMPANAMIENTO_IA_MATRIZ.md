@@ -4,13 +4,28 @@ Listado de **200** ideas. **Hecha:** `Sí` = entregado; `Sí*` = entregado, pend
 
 **Matriz:** Urgencia, Impacto, Retención (1–5). **Imp*** = redondeo de la media de Impacto y Retención. **Costo** B/M/A. **T** tiempo dev S/M/L. **Q** = cuadrante Eisenhower (misma regla que en versiones anteriores del doc).
 
+### Resumen de la última sesión (#4 + #47) — especificación v1
+
+**Backend + app (MVP):** modelo `SessionSummaryJob`, `User.lastSessionSummary`, worker `ENABLE_LAST_SESSION_SUMMARY`, `POST /api/chat/conversations/:id/session-summary/schedule`, `GET /api/summary/last-session`, `lastSessionSummary` en `GET /api/summary/focus`. **Cliente:** `schedule` best-effort al salir del chat / segundo plano; tarjeta **Perfil** e **Inicio** con enlace al `conversationId` del resumen. **Pendiente opcional:** métricas de uso, notificación educativa única, badge en lista de conversaciones. Complementa **#103** (cierre en prompt).
+
+| Decisión | Detalle |
+|----------|---------|
+| Disparo | Al **salir del chat o de la app**, encolar generación tras **5–10 min** de inactividad en el `conversationId` relevante; job **idempotente** (un cierre lógico por ventana; criterio robusto ante background/kill). |
+| Generación | **LLM** con **topes de extensión** según datos del hilo (emoción, **riesgo/crisis**): **mayor riesgo → resumen más corto y neutro** (menos detalle sensible, menos rumiación). |
+| Formato | Hasta **3 bullets** “qué me llevo” (**#47**) + **1–2 líneas** puente / próxima vez (**#4**); límites explícitos por nivel de riesgo. |
+| Persistencia | **Un solo resumen activo** por usuario: al generarse uno nuevo, **sustituye** al anterior (sin historial ni borrado manual en v1). Acoplar bien a la **conversación que disparó el job** para no desalinear hilo vs texto. |
+| Umbral mínimo | Sesiones **muy cortas/triviales**: **no** llamar al LLM; placeholder breve u omitir según regla única de producto. |
+| UI | **Tarjeta en perfil e inicio** (`LastSessionSummaryCard`); **snippet** también vía foco (`/api/summary/focus`). CTA abre el chat en la **conversación** asociada al resumen. Opcional **badge** en lista de conversaciones. |
+| Notificaciones | **No** push en cada resumen generado; la primera vez puede bastar **una** notificación educativa o solo **descubrimiento in-app**. |
+| Relación **#11** | El bloque de resumen en app puede enlazar o reutilizar copy; **#11** sigue siendo agregado más amplio; este arco es **solo última sesión**. |
+
 
 | # | Propuesta | Descripción | Hecha | Urg | Imp | Ret | Imp* | Costo | T | Q |
 |---|-----------|-------------|-------|-----|-----|-----|------|-------|---|---|
 | 1 | Ritual inicio sesión | Al abrir el chat: micro-check-in o una línea de continuidad (“cómo llegas hoy”, “lo último que quedó pendiente”) antes de la lista fría de conversaciones. | No | 3 | 4 | 4 | 4 | M | S | Q2 |
 | 2 | Focos de acompañamiento | 1–3 temas por temporada (ansiedad, duelo, etc.) que alineen tono, sugerencias y métricas al proceso personal. | No | 3 | 5 | 5 | 5 | M | M | Q2 |
 | 3 | Solo escucha / orientación | Preferencia explícita: validación sin consejos vs pasos concretos y tareas. | No | 2 | 4 | 4 | 4 | M | M | Q2 |
-| 4 | Cierre de sesión breve | Al salir del chat: nota opcional o resumen de 2 líneas para la próxima sesión. | No | 2 | 3 | 4 | 4 | B | S | Q2 |
+| 4 | Cierre de sesión breve | **Arco resumen última sesión** (sección anterior): 1–2 líneas puente / próxima vez, mismo artefacto que #47. App: schedule al salir/background, tarjeta perfil + inicio, apertura del hilo por `conversationId`. | Sí* | 2 | 3 | 4 | 4 | B | S | Q2 |
 | 5 | Mapa del proceso | Vista simple de etapas (exploración → experimentación → revisión) para dar estructura visible al acompañamiento. | No | 2 | 4 | 3 | 4 | M | M | Q2 |
 | 6 | Puente protocolos–chat | Que el chat nombre y retome protocolos activos en mensajes posteriores, sin silos de pantalla. | No | 3 | 5 | 4 | 5 | M | M | Q2 |
 | 7 | Bitácora terapéutica | Plantillas cortas (pensamiento–emoción–conducta) además del diario libre; opción exportar. | No | 2 | 4 | 4 | 4 | M | M | Q2 |
@@ -53,7 +68,7 @@ Listado de **200** ideas. **Hecha:** `Sí` = entregado; `Sí*` = entregado, pend
 | 44 | Carta yo futuro | El usuario escribe mensaje para sí mismo/a; la app lo muestra en fecha elegida. | No | 1 | 3 | 4 | 4 | B | S | Q2 |
 | 45 | Copy nocturno | Respuestas más breves y menos activantes en horario configurable (sueño, rumiación). | No | 2 | 3 | 3 | 3 | M | S | Q4 |
 | 46 | Curación clínica prompts | Revisión periódica por psicólogos asesores de prompts, disclaimers y respuestas tipo (governance). | No | 3 | 5 | 3 | 4 | A | L | Q2 |
-| 47 | Narrativa cierre sesión | Al terminar, opción de 3 bullets generados o editados por el usuario: “qué me llevo hoy”. | No | 2 | 4 | 5 | 5 | M | M | Q2 |
+| 47 | Narrativa cierre sesión | **Arco resumen última sesión**: bullets + bridge con topes por crisis; un activo por usuario. Mismo pipeline que #4; riesgo persistido en `Message.metadata` para el tier; UI móvil alineada a #4. | Sí* | 2 | 4 | 5 | 5 | M | M | Q2 |
 | 48 | Roleplay breve | Escena corta con guión suave para practicar asertividad; límites y aviso de que no es realidad social. | No | 2 | 4 | 3 | 4 | M | M | Q2 |
 | 49 | Escala 0–10 foco | Un 0–10 de “cómo voy con [foco]” con histórico simple y narrativa en resúmenes. | No | 3 | 4 | 5 | 5 | B | S | Q2 |
 | 50 | Atajo lock screen / widget | Acceso ultrarrápido a respiración o ancla sin abrir el chat completo (plataforma según viabilidad). | No | 4 | 4 | 3 | 4 | M | M | Q1 |
@@ -73,7 +88,7 @@ Listado de **200** ideas. **Hecha:** `Sí` = entregado; `Sí*` = entregado, pend
 | 64 | Ancla hilo de sesión | Cada N turnos o al detectar salto de tema, línea que ancla lo acordado o lo vivido en **esta** sesión (continuidad tipo consultorio). | No | 3 | 4 | 5 | 5 | M | M | Q2 |
 | 65 | Fine-tuning / DPO interno | Entrenar o alinear con conversaciones revisadas por criterio clínico para subir calidad terapéutica estable (no solo prompt). | No | 2 | 5 | 4 | 5 | A | L | Q2 |
 | 66 | LLM judge en sombra | Segunda pasada opcional o muestreo: detectar invalidación, jerga inútil o desvío del foco antes de enviar (con latencia acotada o async). | No | 2 | 4 | 3 | 4 | A | L | Q2 |
-| 67 | SLO latencia + alertas | Dashboards p95 por ruta de chat, regresiones tras deploy; sensación de “app seria” y menos abandono en crisis. | Parcial | 3 | 4 | 4 | 4 | B | S | Q2 |
+| 67 | SLO latencia + alertas | Dashboards p95 por ruta de chat, regresiones tras deploy; sensación de “app seria” y menos abandono en crisis. | Sí* | 3 | 4 | 4 | 4 | B | S | Q2 |
 | 68 | Micro-etiquetas fase (UI opt-in) | Modo opcional que muestra en UI la “fase” del turno (estilo proceso terapéutico); educativo, no clínico. | No | 2 | 3 | 3 | 3 | M | M | Q4 |
 | 69 | Respuesta mínima si desahogo | Cuando el usuario solo ventila, priorizar presencia breve + validación en lugar de paquete de consejos (no sobre-intervenir). | No | 3 | 4 | 4 | 4 | M | S | Q2 |
 | 70 | Desambiguación corto/irónico | Detección de sarcasmo/ambigüedad o mensaje muy corto → una pregunta de intención o tono antes de interpretar en serio. | No | 3 | 4 | 4 | 4 | M | M | Q2 |
@@ -109,7 +124,7 @@ Listado de **200** ideas. **Hecha:** `Sí` = entregado; `Sí*` = entregado, pend
 | 100 | Hoja sesión imprimible | PDF o pantalla imprimible: foco del día, acuerdos, próximo paso; **sin** volcar el chat crudo; puente entre sesión y vida. | No | 2 | 4 | 3 | 4 | M | M | Q2 |
 | 101 | Acompañante humano limitado | Invitación a familiar o persona de confianza: ve solo resúmenes o checklist acordados, **no** el chat íntimo; consentimientos y revocación claros. | No | 3 | 4 | 3 | 4 | A | L | Q2 |
 | 102 | Micro-intervenciones 60s | Una por emoción o trigger, lanzable desde notificación, widget o slash; continuidad terapéutica fuera del hilo largo. | No | 3 | 4 | 5 | 5 | B | M | Q2 |
-| 103 | Cierre natural de sesión | La IA sugiere cerrar cuando baja la carga temática; encadena con cierre breve (#47) y opcional hábito/tarea (#52–#53). | Parcial | 3 | 4 | 4 | 4 | M | S | Q2 |
+| 103 | Cierre natural de sesión | Heurística `settled` + hilo sustantivo y (si hay datos) caída de intensidad en historial → `suggestThematicMicroClosure` y viñeta en system prompt (reflexión breve, un paso, sin listas; hábito/tarea solo alineado a #52–#53/caps). Cierre tipo #47 como guía de prosa. HTTP, socket e invitado. | Sí* | 3 | 4 | 4 | 4 | M | S | Q2 |
 | 104 | Perfil sensibilidad temas | Lista editable (violencia, cuerpo, familia, sustancias, etc.) para evitar reactivar sin necesidad y ajustar lenguaje del modelo. | No | 3 | 5 | 4 | 5 | M | M | Q2 |
 | 105 | Alta confianza vs exploración | Menos sugerencias automáticas (hábitos, tareas, contenido fuerte) hasta que el usuario eleve confianza; reduce sensación de app intrusiva. | No | 2 | 4 | 4 | 4 | M | M | Q2 |
 | 106 | Salud digital contexto opt-in | Lectura opt-in de sueño/pasos (HealthKit / Health Connect / Google Fit) como señales de contexto para el modelo, con granularidad de permisos. | No | 2 | 4 | 4 | 4 | M | L | Q2 |

@@ -19,6 +19,7 @@ import CognitiveDistortionReport from './CognitiveDistortionReport.js';
 import IntenseChatCheckIn from './IntenseChatCheckIn.js';
 import GuestSession from './GuestSession.js';
 import OpenAITokenUsageDay from './OpenAITokenUsageDay.js';
+import SessionSummaryJob from './SessionSummaryJob.js';
 
 // Validar que todos los modelos estén correctamente exportados
 const models = {
@@ -43,6 +44,7 @@ const models = {
   IntenseChatCheckIn,
   GuestSession,
   OpenAITokenUsageDay,
+  SessionSummaryJob,
 };
 
 // Verificar que cada modelo sea válido
@@ -74,6 +76,7 @@ export {
   IntenseChatCheckIn,
   GuestSession,
   OpenAITokenUsageDay,
+  SessionSummaryJob,
 };
 
 export default models; 

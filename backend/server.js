@@ -568,6 +568,33 @@ if (process.env.NODE_ENV !== 'test') {
     }, 180000); // Esperar 3 minutos después del inicio para que MongoDB esté listo
   }
 
+  // Monitor SLO de latencia de chat (NO en test)
+  if (features.chatLatencySloMonitor && process.env.NODE_ENV !== 'test') {
+    setTimeout(async () => {
+      try {
+        const { startChatLatencySloMonitor } = await import(
+          './services/chatLatencySloMonitorService.js'
+        );
+        startChatLatencySloMonitor();
+      } catch (error) {
+        logger.error('❌ Error iniciando monitor SLO latencia chat', { error: error.message });
+      }
+    }, 135000);
+  }
+
+  if (features.lastSessionSummaryWorker && process.env.NODE_ENV !== 'test') {
+    setTimeout(async () => {
+      try {
+        const { startLastSessionSummaryWorker } = await import(
+          './services/lastSessionSummaryService.js'
+        );
+        startLastSessionSummaryWorker();
+      } catch (error) {
+        logger.error('❌ Error iniciando worker resumen última sesión', { error: error.message });
+      }
+    }, 60000);
+  }
+
   // Informe diario de uso OpenAI por correo (NO en test)
   if (features.openaiDailyCostReport && process.env.NODE_ENV !== 'test') {
     setTimeout(async () => {

@@ -4,6 +4,7 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { buildDashboardFocus } from '../services/dashboardFocusService.js';
+import { getLastSessionSummaryForUser } from '../services/lastSessionSummaryService.js';
 import { buildUserSummary } from '../services/userSummaryService.js';
 
 const router = express.Router();
@@ -17,6 +18,23 @@ const router = express.Router();
  * GET /api/summary/focus
  * Panel “foco actual”: resumen de semana, prioridad (reglas + LLM opcional), tareas, chats, escalas (último autoinforme).
  */
+/**
+ * GET /api/summary/last-session
+ * Resumen persistido de la última sesión de chat (#4 + #47); null si aún no hay.
+ */
+router.get('/last-session', authenticateToken, async (req, res) => {
+  try {
+    const data = await getLastSessionSummaryForUser(req.user._id);
+    return res.json({ success: true, data });
+  } catch (err) {
+    console.error('[summaryRoutes] Error /last-session:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al obtener el resumen de la última sesión'
+    });
+  }
+});
+
 router.get('/focus', authenticateToken, async (req, res) => {
   try {
     const data = await buildDashboardFocus(req.user._id);

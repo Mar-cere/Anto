@@ -1,15 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="5" failures="0" errors="0" time="0.74">
-  <testsuite name="prompt regression golden (#119)" errors="0" failures="0" skipped="0" timestamp="2026-05-05T22:42:36" time="0.718" tests="5">
-    <testcase classname="prompt regression golden (#119) BASE_ASSISTANT_PROMPT mantiene anclas de seguridad y anti-minimización en crisis" name="prompt regression golden (#119) BASE_ASSISTANT_PROMPT mantiene anclas de seguridad y anti-minimización en crisis" time="0.002">
+<testsuites name="jest tests" tests="10" failures="0" errors="0" time="0.859">
+  <testsuite name="lastSessionSummaryService" errors="0" failures="0" skipped="0" timestamp="2026-05-06T21:14:37" time="0.825" tests="10">
+    <testcase classname="lastSessionSummaryService maxRiskTierFromLevels elige el riesgo máximo" name="lastSessionSummaryService maxRiskTierFromLevels elige el riesgo máximo" time="0.002">
     </testcase>
-    <testcase classname="prompt regression golden (#119) caso vnp_high_intensity" name="prompt regression golden (#119) caso vnp_high_intensity" time="0.002">
+    <testcase classname="lastSessionSummaryService maxRiskTierFromLevels devuelve low sin niveles" name="lastSessionSummaryService maxRiskTierFromLevels devuelve low sin niveles" time="0">
     </testcase>
-    <testcase classname="prompt regression golden (#119) caso low_confidence_clarify" name="prompt regression golden (#119) caso low_confidence_clarify" time="0.001">
+    <testcase classname="lastSessionSummaryService getSummaryLimitsForRiskTier acorta en crisis alta" name="lastSessionSummaryService getSummaryLimitsForRiskTier acorta en crisis alta" time="0">
     </testcase>
-    <testcase classname="prompt regression golden (#119) caso understanding_non_baseline" name="prompt regression golden (#119) caso understanding_non_baseline" time="0">
+    <testcase classname="lastSessionSummaryService collectRiskLevelsFromMessages extrae riskLevel de metadata" name="lastSessionSummaryService collectRiskLevelsFromMessages extrae riskLevel de metadata" time="0.001">
     </testcase>
-    <testcase classname="prompt regression golden (#119) caso crisis_medium_prepended" name="prompt regression golden (#119) caso crisis_medium_prepended" time="0.001">
+    <testcase classname="lastSessionSummaryService collectRiskLevelsFromMessages lee metadata.context.crisis y normaliza espacios" name="lastSessionSummaryService collectRiskLevelsFromMessages lee metadata.context.crisis y normaliza espacios" time="0">
+    </testcase>
+    <testcase classname="lastSessionSummaryService collectRiskLevelsFromMessages valores desconocidos se normalizan a LOW" name="lastSessionSummaryService collectRiskLevelsFromMessages valores desconocidos se normalizan a LOW" time="0.001">
+    </testcase>
+    <testcase classname="lastSessionSummaryService collectRiskLevelsFromMessages sin array devuelve vacío" name="lastSessionSummaryService collectRiskLevelsFromMessages sin array devuelve vacío" time="0">
+    </testcase>
+    <testcase classname="lastSessionSummaryService scheduleLastSessionSummary rechaza ids inválidos antes de consultar" name="lastSessionSummaryService scheduleLastSessionSummary rechaza ids inválidos antes de consultar" time="0.001">
+    </testcase>
+    <testcase classname="lastSessionSummaryService countUserTurnStats cuenta solo mensajes de usuario" name="lastSessionSummaryService countUserTurnStats cuenta solo mensajes de usuario" time="0">
+    </testcase>
+    <testcase classname="lastSessionSummaryService countUserTurnStats entrada no array devuelve ceros" name="lastSessionSummaryService countUserTurnStats entrada no array devuelve ceros" time="0">
     </testcase>
   </testsuite>
 </testsuites>

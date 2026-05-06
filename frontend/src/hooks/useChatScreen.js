@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CommonActions, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, InteractionManager } from 'react-native';
+import { Alert, Animated, AppState, InteractionManager } from 'react-native';
 import chatService from '../services/chatService';
 import paymentService from '../services/paymentService';
 import websocketService from '../services/websocketService';
@@ -88,6 +88,9 @@ export function useChatScreen() {
     count: 0,
     windowStart: 0,
   });
+  /** Ref sincronizado con `messages` para programar resumen al salir / background sin cierre obsoleto. */
+  const messagesRef = useRef(messages);
+  const lastSessionSummaryScheduleAtRef = useRef(0);
 
   const flatListRef = useRef(null);
   const inputRef = useRef(null);
@@ -120,6 +123,38 @@ export function useChatScreen() {
     }
   }, []);
   scrollToBottomStableRef.current = scrollToBottom;
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  /** Best-effort: programa resumen de última sesión en servidor (#4 + #47). */
+  const scheduleLastSessionSummaryDeferred = useCallback(async () => {
+    const DEBOUNCE_MS = 20000;
+    if (Date.now() - lastSessionSummaryScheduleAtRef.current < DEBOUNCE_MS) return;
+    try {
+      if (await chatService.isGuestChatMode()) return;
+      const hasUserTurn = messagesRef.current.some(
+        (m) =>
+          m.role === MESSAGE_ROLES.USER && String(m.content || '').trim().length > 0
+      );
+      if (!hasUserTurn) return;
+      const cid = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+      if (!cid || !isValidMongoObjectId24(cid)) return;
+      lastSessionSummaryScheduleAtRef.current = Date.now();
+      await chatService.scheduleLastSessionSummary(cid);
+    } catch (_) {
+      /* silencioso: no bloquear UX */
+    }
+  }, []);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') return;
+      void scheduleLastSessionSummaryDeferred();
+    });
+    return () => sub.remove();
+  }, [scheduleLastSessionSummaryDeferred]);
 
   const handleMessagesContentSizeChange = useCallback(() => {
     if (!stickToBottomRef.current) return;
@@ -198,6 +233,14 @@ export function useChatScreen() {
       if (userToken) {
         setGuestQuota(null);
         await chatService.initializeSocket();
+        const paramOpenId = route.params?.openConversationId;
+        if (paramOpenId && isValidMongoObjectId24(String(paramOpenId))) {
+          const cidParam = String(paramOpenId);
+          await AsyncStorage.setItem(STORAGE_KEYS.CONVERSATION_ID, cidParam);
+          try {
+            navigation.setParams({ openConversationId: undefined });
+          } catch (_) {}
+        }
         let conversationId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
         if (conversationId) {
           const pack = await chatService.getMessages(conversationId);
@@ -320,7 +363,7 @@ export function useChatScreen() {
         scrollToBottomStableRef.current?.(false, { force: true });
       });
     }
-  }, [navigation, route.params?.startGuest]);
+  }, [navigation, route.params?.startGuest, route.params?.openConversationId]);
 
   const skipSessionIntention = useCallback(() => {
     setShowSessionIntentionPrompt(false);
@@ -1252,10 +1295,16 @@ export function useChatScreen() {
           clearTimeout(contentSizeScrollTimerRef.current);
           contentSizeScrollTimerRef.current = null;
         }
+        void scheduleLastSessionSummaryDeferred();
         setMessages([]);
         setShowSessionIntentionPrompt(false);
       };
-    }, [loadTrialInfo, initializeConversation, offerGuestHandoffIfPending])
+    }, [
+      loadTrialInfo,
+      initializeConversation,
+      offerGuestHandoffIfPending,
+      scheduleLastSessionSummaryDeferred,
+    ])
   );
 
   return {

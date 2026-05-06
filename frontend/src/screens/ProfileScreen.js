@@ -22,6 +22,7 @@ import { ProfileStats } from './profileScreen/ProfileStats';
 import { ProfileOptions } from './profileScreen/ProfileOptions';
 import { ProfileEmergencySection } from './profileScreen/ProfileEmergencySection';
 import { ProfileLogoutButton } from './profileScreen/ProfileLogoutButton';
+import { LastSessionSummaryCard } from '../components/LastSessionSummaryCard';
 import { styles } from './profileScreen/profileScreenStyles';
 import { COLORS, SCROLL_PADDING_BOTTOM, BACKGROUND_IMAGE } from './profileScreen/profileScreenConstants';
 
@@ -35,6 +36,8 @@ export default function ProfileScreen() {
     emergencyContacts,
     loadingContacts,
     subscriptionStatus,
+    lastSessionSummary,
+    openChatFromLastSession,
     showEmergencyContactsModal,
     setShowEmergencyContactsModal,
     showEditContactModal,
@@ -78,6 +81,10 @@ export default function ProfileScreen() {
           </View>
 
           <ProfileSubscription subscriptionStatus={subscriptionStatus} />
+          <LastSessionSummaryCard
+            summary={lastSessionSummary}
+            onOpenChat={() => openChatFromLastSession(lastSessionSummary?.conversationId)}
+          />
           <ProfileStats userData={userData} detailedStats={detailedStats} />
           <ProfileOptions navigation={navigation} />
 

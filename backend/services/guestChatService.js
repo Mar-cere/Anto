@@ -8,7 +8,11 @@ import {
   GUEST_MAX_USER_MESSAGES,
   GUEST_SESSION_HOURS
 } from '../constants/guestChat.js';
-import { evaluateSuicideRisk, shouldAttachCrisisContextToPrompt } from '../constants/crisis.js';
+import {
+  evaluateSuicideRisk,
+  normalizeStoredCrisisRiskLevel,
+  shouldAttachCrisisContextToPrompt
+} from '../constants/crisis.js';
 import { sanitizeSessionIntentionForClient } from '../constants/sessionIntention.js';
 import { buildHistoryForPromptFromMessages } from './openai/openaiPromptBuilder.js';
 import { Conversation, Message } from '../models/index.js';
@@ -29,7 +33,7 @@ import {
 } from '../routes/chat/chatContextAnalysis.js';
 import { HISTORIAL_LIMITE } from '../routes/chat/chatConstants.js';
 import { analyzeConversationPattern } from './chat/conversationPatternAnalyzer.js';
-import { buildSessionRetentionPayload } from './sessionRetentionHints.js';
+import { buildSessionRetentionPayload, withThematicMicroClosureRetention } from './sessionRetentionHints.js';
 import { inferChatSessionPhase } from './chat/sessionPhaseHints.js';
 import { scheduleRollingSummaryRefresh } from './conversationRollingSummaryService.js';
 
@@ -305,6 +309,17 @@ export async function sendGuestMessage(guestSession, contentRaw) {
     conversationContext
   });
 
+  try {
+    userMessage.metadata = {
+      ...(userMessage.metadata?.toObject?.() || userMessage.metadata || {}),
+      crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) }
+    };
+    userMessage.markModified('metadata');
+    await userMessage.save();
+  } catch (persistRiskMetaErr) {
+    console.warn('[GuestChat] metadata.crisis en mensaje usuario:', persistRiskMetaErr?.message);
+  }
+
   const isCrisis =
     riskLevel === 'MEDIUM' ||
     riskLevel === 'HIGH' ||
@@ -341,13 +356,6 @@ export async function sendGuestMessage(guestSession, contentRaw) {
   });
 
   const conversationPattern = analyzeConversationPattern(conversationHistory, content);
-  const sessionRetention = buildSessionRetentionPayload({
-    conversationHistoryNewestFirst: conversationHistory,
-    userContent: content,
-    priorConversationCount: null,
-    threadMessageLimit: GUEST_MAX_USER_MESSAGES * 2,
-    conversationPattern
-  });
 
   const conversationRoll = await Conversation.findById(conversationId)
     .select('rollingSummary sessionIntention')
@@ -359,6 +367,17 @@ export async function sendGuestMessage(guestSession, contentRaw) {
     userContent: content.trim(),
     conversationHistoryNewestFirst: conversationHistory
   });
+
+  const sessionRetention = withThematicMicroClosureRetention(
+    buildSessionRetentionPayload({
+      conversationHistoryNewestFirst: conversationHistory,
+      userContent: content,
+      priorConversationCount: null,
+      threadMessageLimit: GUEST_MAX_USER_MESSAGES * 2,
+      conversationPattern
+    }),
+    { sessionPhase, conversationHistoryNewestFirst: conversationHistory }
+  );
 
   const openaiContext = {
     rollingSummary: conversationRoll?.rollingSummary || null,
@@ -421,6 +440,7 @@ export async function sendGuestMessage(guestSession, contentRaw) {
     metadata: {
       status: 'sent',
       guest: true,
+      crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
       context: {
         emotional: emocionalNormalizado,
         contextual: contextualAnalysis,

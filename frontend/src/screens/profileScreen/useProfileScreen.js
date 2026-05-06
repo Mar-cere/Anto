@@ -15,6 +15,8 @@ import {
   TEXTS,
   REFRESH_ANIMATION_DURATION,
 } from './profileScreenConstants';
+import { STORAGE_KEYS as CHAT_STORAGE_KEYS } from '../chat/chatScreenConstants';
+import { isValidMongoObjectId24 } from '../../utils/mongoId';
 
 export function useProfileScreen(navigation) {
   const { showToast } = useToast();
@@ -29,6 +31,8 @@ export function useProfileScreen(navigation) {
   const [selectedContact, setSelectedContact] = useState(null);
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+  /** Resumen última sesión chat (#4 + #47); null si no hay o error. */
+  const [lastSessionSummary, setLastSessionSummary] = useState(null);
 
   const loadUserData = useCallback(async () => {
     try {
@@ -87,11 +91,31 @@ export function useProfileScreen(navigation) {
     }
   }, []);
 
+  const loadLastSessionSummary = useCallback(async () => {
+    try {
+      const token = await AsyncStorage.getItem(STORAGE_KEYS.USER_TOKEN);
+      if (!token) {
+        setLastSessionSummary(null);
+        return;
+      }
+      const res = await api.get(ENDPOINTS.SUMMARY_LAST_SESSION);
+      if (res && typeof res === 'object' && res.success === true && 'data' in res) {
+        setLastSessionSummary(res.data ?? null);
+      } else {
+        setLastSessionSummary(null);
+      }
+    } catch (error) {
+      console.warn('[ProfileScreen] last-session:', error?.message || error);
+      setLastSessionSummary(null);
+    }
+  }, []);
+
   useEffect(() => {
     loadUserData();
     loadEmergencyContacts();
     loadSubscriptionStatus();
-  }, [loadUserData, loadEmergencyContacts, loadSubscriptionStatus]);
+    loadLastSessionSummary();
+  }, [loadUserData, loadEmergencyContacts, loadSubscriptionStatus, loadLastSessionSummary]);
 
   const triggerRefreshAnim = useCallback(() => {
     Animated.sequence([
@@ -116,7 +140,8 @@ export function useProfileScreen(navigation) {
     loadUserData();
     loadEmergencyContacts();
     loadSubscriptionStatus();
-  }, [loadUserData, loadEmergencyContacts, loadSubscriptionStatus, triggerRefreshAnim]);
+    loadLastSessionSummary();
+  }, [loadUserData, loadEmergencyContacts, loadSubscriptionStatus, loadLastSessionSummary, triggerRefreshAnim]);
 
   const handleDeleteContact = useCallback(
     async (contactId) => {
@@ -192,6 +217,35 @@ export function useProfileScreen(navigation) {
     setSelectedContact(null);
   }, []);
 
+  /** Abre el chat; si hay conversación del resumen, la activa (misma lógica que el foco del dashboard). */
+  const openChatFromLastSession = useCallback(
+    async (conversationId) => {
+      try {
+        const cid = conversationId && isValidMongoObjectId24(String(conversationId)) ? String(conversationId) : null;
+        if (cid) {
+          await AsyncStorage.setItem(CHAT_STORAGE_KEYS.CONVERSATION_ID, cid);
+        }
+        const state = navigation.getState?.();
+        if (state?.type === 'tab') {
+          if (cid) navigation.navigate('Chat', { openConversationId: cid });
+          else navigation.navigate('Chat');
+          return;
+        }
+        if (cid) {
+          navigation.navigate('MainTabs', { screen: 'Chat', params: { openConversationId: cid } });
+        } else {
+          navigation.navigate('MainTabs', { screen: 'Chat' });
+        }
+      } catch (e) {
+        console.warn('[ProfileScreen] navigate Chat:', e?.message);
+        try {
+          navigation.navigate('Chat');
+        } catch (_) {}
+      }
+    },
+    [navigation]
+  );
+
   return {
     loading,
     refreshing,
@@ -200,6 +254,8 @@ export function useProfileScreen(navigation) {
     emergencyContacts,
     loadingContacts,
     subscriptionStatus,
+    lastSessionSummary,
+    openChatFromLastSession,
     showEmergencyContactsModal,
     setShowEmergencyContactsModal,
     showEditContactModal,

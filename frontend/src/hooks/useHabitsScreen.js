@@ -30,6 +30,8 @@ export function useHabitsScreen({ route, navigation }) {
   const habitChatOriginRef = useRef(null);
   const habitClientRequestIdRef = useRef(null);
   const pendingDeleteRef = useRef({ timeoutId: null, habit: null });
+  // Blindaje contra respuestas fuera de orden (toques rápidos / red lenta).
+  const habitToggleReqIdRef = useRef({});
   const { showToast } = useToast();
   const [habitModalReminderIso, setHabitModalReminderIso] = useState(null);
 
@@ -189,8 +191,29 @@ export function useHabitsScreen({ route, navigation }) {
 
   const toggleHabitComplete = useCallback(
     async (habitId) => {
+      const reqId = `${habitId}:${Date.now()}:${Math.random().toString(16).slice(2)}`;
+      habitToggleReqIdRef.current[habitId] = reqId;
+
+      let previousHabit = null;
       try {
+        // Actualización optimista: cambia el estado en UI sin esperar a la red.
+        setHabits((prev) =>
+          prev.map((h) => {
+            if (h._id !== habitId) return h;
+            previousHabit = h;
+            return {
+              ...h,
+              status: {
+                ...(h.status || {}),
+                completedToday: !h.status?.completedToday,
+              },
+            };
+          })
+        );
+
         const result = await api.patch(`${ENDPOINTS.HABIT_BY_ID(habitId)}/toggle`, {});
+        // Si hubo otro toggle más reciente, ignorar esta respuesta.
+        if (habitToggleReqIdRef.current[habitId] !== reqId) return;
         if (result && typeof result === 'object' && result.success === false) {
           throw new Error(result.message || TEXTS.ERROR_UPDATE_MESSAGE);
         }
@@ -228,6 +251,10 @@ export function useHabitsScreen({ route, navigation }) {
         });
       } catch (err) {
         console.error('Error al actualizar hábito:', err);
+        // Revertir UI si la actualización falló.
+        if (habitToggleReqIdRef.current[habitId] === reqId && previousHabit?._id) {
+          setHabits((prev) => prev.map((h) => (h._id === habitId ? previousHabit : h)));
+        }
         Alert.alert(
           TEXTS.ERROR_UPDATE,
           getApiErrorMessage(err, { isOffline }) || TEXTS.ERROR_UPDATE_MESSAGE

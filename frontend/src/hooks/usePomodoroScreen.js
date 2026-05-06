@@ -1,15 +1,15 @@
 /**
- * Hook con la lógica de la pantalla Pomodoro (timer, modos, tareas, modal personalizado).
+ * Hook con la lógica de la pantalla Pomodoro (timer, modos, tareas pendientes API, modal personalizado).
  * @author AntoApp Team
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
-import * as Notifications from 'expo-notifications';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Vibration } from 'react-native';
-import { getModes } from '../screens/pomodoro/pomodoroScreenConstants';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, Animated, Easing, Vibration } from 'react-native';
+import { api, ENDPOINTS } from '../config/api';
 import {
+  getModes,
   ANIMATION_DURATION,
   BUTTONS_OPACITY_ACTIVE,
   BUTTONS_OPACITY_INACTIVE,
@@ -20,15 +20,19 @@ import {
   DEFAULT_PREP_MINUTES,
   INTERVAL_DURATION,
   NAVBAR_TRANSLATE_Y,
+  POMODORO_DEFAULT_TASK_MINUTES,
+  POMODORO_PENDING_TASKS_LIMIT,
   POMODORO_STATS_STORAGE_KEY,
+  POMODORO_TASK_FOCUS_MAX_MINUTES,
+  POMODORO_TASK_FOCUS_MIN_MINUTES,
   PROGRESS_ANIMATION_DURATION,
   QUICK_PRESETS,
-  STORAGE_KEY,
   TEXTS,
   VIBRATION_PATTERN,
   WARNING_TIME,
 } from '../screens/pomodoro/pomodoroScreenConstants';
-import { sendImmediateNotification } from '../utils/notifications';
+import { getApiErrorMessage } from '../utils/apiErrorHandler';
+import { cancelTaskNotifications, sendImmediateNotification } from '../utils/notifications';
 
 const getTodayKey = () => new Date().toISOString().slice(0, 10);
 const toMinutes = (seconds) => Math.floor(seconds / 60);
@@ -39,6 +43,34 @@ const isYesterday = (previous, current) => {
   return diff === 1;
 };
 
+const clampInt = (n, min, max) => Math.min(max, Math.max(min, Math.round(n)));
+
+/** Orden fijo de prioridad para la lista de foco (urgente primero). */
+const POMODORO_PRIORITY_RANK = { urgent: 0, high: 1, medium: 2, low: 3 };
+
+const pomodoroPendingPriorityRank = (task) =>
+  POMODORO_PRIORITY_RANK[task?.priority] ?? 2;
+
+const dueTimestampOrInfinity = (task) => {
+  if (!task?.dueDate) return Number.POSITIVE_INFINITY;
+  const t = new Date(task.dueDate).getTime();
+  return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY;
+};
+
+export function sortPomodoroPendingTasks(list) {
+  const safe = Array.isArray(list) ? list.filter((t) => t && t._id) : [];
+  return safe.sort((a, b) => {
+    const prog = (t) => (t.status === 'in_progress' ? 0 : 1);
+    const pa = prog(a);
+    const pb = prog(b);
+    if (pa !== pb) return pa - pb;
+    const pra = pomodoroPendingPriorityRank(a);
+    const prb = pomodoroPendingPriorityRank(b);
+    if (pra !== prb) return pra - prb;
+    return dueTimestampOrInfinity(a) - dueTimestampOrInfinity(b);
+  });
+}
+
 export function usePomodoroScreen() {
   const modesRef = useRef(getModes());
   const modes = modesRef.current;
@@ -48,8 +80,11 @@ export function usePomodoroScreen() {
   const [mode, setMode] = useState('work');
   const progressAnimation = useRef(new Animated.Value(0)).current;
 
-  const [inputText, setInputText] = useState('');
-  const [tasks, setTasks] = useState([]);
+  const [pendingTasks, setPendingTasks] = useState([]);
+  const [pendingTasksLoading, setPendingTasksLoading] = useState(false);
+  const [pendingTasksError, setPendingTasksError] = useState(null);
+  const [focusTask, setFocusTask] = useState(null);
+  const [focusingTaskId, setFocusingTaskId] = useState(null);
 
   const [customTimeModalVisible, setCustomTimeModalVisible] = useState(false);
   const [customMinutes, setCustomMinutes] = useState(DEFAULT_CUSTOM_MINUTES);
@@ -68,9 +103,12 @@ export function usePomodoroScreen() {
   const [summaryVisible, setSummaryVisible] = useState(false);
   const [summaryData, setSummaryData] = useState({
     focusedMinutes: 0,
-    completedTasks: 0,
+    linkedTaskTitle: '',
+    linkedTaskId: '',
+    sessionBlockMinutes: 0,
     streakDays: 0,
   });
+  const [summaryActionBusy, setSummaryActionBusy] = useState(false);
   const [stats, setStats] = useState({
     dateKey: getTodayKey(),
     sessionsToday: 0,
@@ -83,6 +121,14 @@ export function usePomodoroScreen() {
     opacity: new Animated.Value(1),
   }));
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  /** Serializa GET+PUT de tiempo real para evitar condiciones de carrera entre bloques seguidos. */
+  const logFocusTimeChainRef = useRef(Promise.resolve());
+  /** Ignora aplicar estado de “Enfocar” si hubo un toque más reciente en otra tarea. */
+  const focusFromTaskTokenRef = useRef(0);
+  /** Solo aplica el último loadPendingTasks terminado (focus + pull simultáneos). */
+  const pendingTasksLoadGenRef = useRef(0);
+  /** Evita doble envío de “completar” antes de re-render. */
+  const summaryActionBusyRef = useRef(false);
 
   const toggleTimer = useCallback(() => {
     setIsActive((prev) => {
@@ -115,7 +161,7 @@ export function usePomodoroScreen() {
       return isPreparationPhase ? customPrepSecondsRef.current : customWorkSecondsRef.current;
     }
     return modes[mode].time;
-  }, [mode, isPreparationPhase]);
+  }, [mode, isPreparationPhase, modes]);
 
   const primaryActionLabel = (() => {
     if (isActive) return 'Pausar';
@@ -132,7 +178,7 @@ export function usePomodoroScreen() {
     setTimeLeft(baseTime);
     progressAnimation.setValue(0);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-  }, [mode, isPreparationPhase, progressAnimation]);
+  }, [mode, isPreparationPhase, progressAnimation, modes]);
 
   const toggleMode = useCallback(() => {
     const newMode = mode === 'work' ? 'break' : 'work';
@@ -141,7 +187,7 @@ export function usePomodoroScreen() {
     setIsActive(false);
     progressAnimation.setValue(0);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, [mode, progressAnimation]);
+  }, [mode, progressAnimation, modes]);
 
   const changeMode = useCallback(
     (newMode) => {
@@ -153,7 +199,7 @@ export function usePomodoroScreen() {
         setTimeLeft(customWorkSecondsRef.current);
       }
     },
-    [progressAnimation]
+    [progressAnimation, modes]
   );
 
   const formatTime = useCallback((seconds) => {
@@ -166,6 +212,7 @@ export function usePomodoroScreen() {
     (preset) => {
       modesRef.current.work.time = preset.workMinutes * 60;
       modesRef.current.break.time = preset.breakMinutes * 60;
+      setFocusTask(null);
       setMode('work');
       setIsPreparationPhase(false);
       setIsActive(false);
@@ -175,6 +222,24 @@ export function usePomodoroScreen() {
     },
     [progressAnimation]
   );
+
+  const logFocusTimeToTask = useCallback(async (taskId, sessionSeconds) => {
+    if (!taskId || sessionSeconds < 1) return;
+    const addMinutes = Math.max(1, toMinutes(sessionSeconds));
+    logFocusTimeChainRef.current = logFocusTimeChainRef.current.then(async () => {
+      try {
+        const res = await api.get(ENDPOINTS.TASK_BY_ID(taskId));
+        const task = res?.data ?? res;
+        if (!task?._id) return;
+        const prevActual =
+          typeof task.actualTime === 'number' && task.actualTime >= 0 ? task.actualTime : 0;
+        await api.put(ENDPOINTS.TASK_BY_ID(taskId), { actualTime: prevActual + addMinutes });
+      } catch (e) {
+        console.error('Pomodoro: registrar tiempo real en tarea:', e);
+      }
+    });
+    await logFocusTimeChainRef.current;
+  }, []);
 
   // Timer effect
   useEffect(() => {
@@ -217,8 +282,13 @@ export function usePomodoroScreen() {
         const isFocusCycle = mode === 'work' || mode === 'custom';
         if (isFocusCycle) {
           const todayKey = getTodayKey();
-          const completedTasks = tasks.filter((task) => task.completed).length;
+          const linkedTaskTitle = focusTask?.title ? String(focusTask.title) : '';
+          const linkedTaskId = focusTask?._id ? String(focusTask._id) : '';
           const focusedSeconds = getCurrentModeTime();
+          const sessionBlockMinutes = Math.max(1, toMinutes(focusedSeconds));
+          if (linkedTaskId) {
+            void logFocusTimeToTask(linkedTaskId, focusedSeconds);
+          }
           setStats((prev) => {
             const base =
               prev.dateKey === todayKey
@@ -240,7 +310,9 @@ export function usePomodoroScreen() {
             };
             setSummaryData({
               focusedMinutes: toMinutes(next.focusedSecondsToday),
-              completedTasks,
+              linkedTaskTitle,
+              linkedTaskId,
+              sessionBlockMinutes: linkedTaskId ? sessionBlockMinutes : 0,
               streakDays: next.streakDays,
             });
             return next;
@@ -263,7 +335,8 @@ export function usePomodoroScreen() {
     progressAnimation,
     getCurrentModeTime,
     toggleMode,
-    tasks,
+    focusTask,
+    logFocusTimeToTask,
   ]);
 
   // Warning blink effect
@@ -286,29 +359,114 @@ export function usePomodoroScreen() {
     }
   }, [timeLeft, isActive, fadeAnim, toggleTimer]);
 
-  const handleAddTask = useCallback(() => {
-    if (inputText.trim()) {
-      setTasks((prev) => [
-        ...prev,
-        { id: Date.now(), text: inputText.trim(), completed: false },
-      ]);
-      setInputText('');
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  const completeLinkedTask = useCallback(async (taskId) => {
+    if (!taskId || summaryActionBusyRef.current) return;
+    summaryActionBusyRef.current = true;
+    setSummaryActionBusy(true);
+    try {
+      const res = await api.patch(`${ENDPOINTS.TASK_BY_ID(taskId)}/complete`, {});
+      if (res && typeof res === 'object' && res.success === false) {
+        throw new Error(res.message || TEXTS.ERROR_COMPLETE_TASK_MESSAGE);
+      }
+      await cancelTaskNotifications(taskId);
+      setPendingTasks((prev) => prev.filter((t) => t._id !== taskId));
+      setFocusTask((prev) => (prev?._id === taskId ? null : prev));
+      setSummaryVisible(false);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      console.error('Pomodoro: completar tarea desde resumen:', e);
+      Alert.alert(
+        TEXTS.ERROR_COMPLETE_TASK_TITLE,
+        getApiErrorMessage(e) || TEXTS.ERROR_COMPLETE_TASK_MESSAGE
+      );
+    } finally {
+      summaryActionBusyRef.current = false;
+      setSummaryActionBusy(false);
     }
-  }, [inputText]);
-
-  const toggleTask = useCallback((taskId) => {
-    setTasks((prev) =>
-      prev.map((task) => {
-        if (task.id === taskId) {
-          const completed = !task.completed;
-          if (completed) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          return { ...task, completed };
-        }
-        return task;
-      })
-    );
   }, []);
+
+  const loadPendingTasks = useCallback(async () => {
+    const gen = ++pendingTasksLoadGenRef.current;
+    try {
+      setPendingTasksError(null);
+      setPendingTasksLoading(true);
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        if (gen === pendingTasksLoadGenRef.current) {
+          setPendingTasks([]);
+        }
+        return;
+      }
+      const res = await api.get(ENDPOINTS.TASKS_PENDING, {
+        type: 'task',
+        limit: String(POMODORO_PENDING_TASKS_LIMIT),
+      });
+      const raw = res?.data;
+      const list = Array.isArray(raw) ? raw : [];
+      if (gen === pendingTasksLoadGenRef.current) {
+        setPendingTasks(sortPomodoroPendingTasks(list));
+      }
+    } catch (e) {
+      console.error('Error cargando tareas pendientes (Pomodoro):', e);
+      if (gen === pendingTasksLoadGenRef.current) {
+        setPendingTasksError(getApiErrorMessage(e) || TEXTS.PENDING_LOAD_ERROR);
+      }
+    } finally {
+      if (gen === pendingTasksLoadGenRef.current) {
+        setPendingTasksLoading(false);
+      }
+    }
+  }, []);
+
+  const startFocusFromPendingTask = useCallback(
+    async (task) => {
+      if (!task?._id) return;
+      const requestToken = ++focusFromTaskTokenRef.current;
+      setFocusingTaskId(task._id);
+      try {
+        await api.put(ENDPOINTS.TASK_BY_ID(task._id), { status: 'in_progress' });
+      } catch (e) {
+        console.error('Error al marcar tarea en curso (Pomodoro):', e);
+        Alert.alert(
+          TEXTS.ERROR_FOCUS_TITLE,
+          getApiErrorMessage(e) || TEXTS.ERROR_FOCUS_MESSAGE
+        );
+        return;
+      } finally {
+        setFocusingTaskId(null);
+      }
+
+      if (requestToken !== focusFromTaskTokenRef.current) {
+        return;
+      }
+
+      const raw =
+        typeof task.estimatedTime === 'number' && task.estimatedTime > 0
+          ? task.estimatedTime
+          : POMODORO_DEFAULT_TASK_MINUTES;
+      const minutes = clampInt(raw, POMODORO_TASK_FOCUS_MIN_MINUTES, POMODORO_TASK_FOCUS_MAX_MINUTES);
+      const seconds = minutes * 60;
+      modesRef.current.work.time = seconds;
+      setPendingTasks((prev) =>
+        sortPomodoroPendingTasks(
+          prev.map((t) => (t._id === task._id ? { ...t, status: 'in_progress' } : t))
+        )
+      );
+      setFocusTask({
+        _id: task._id,
+        title: task.title || '',
+        minutesPlanned: minutes,
+      });
+      setMode('work');
+      setIsPreparationPhase(false);
+      setIsActive(false);
+      setTimeLeft(seconds);
+      progressAnimation.setValue(0);
+      setCustomTimeModalVisible(false);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    },
+    [progressAnimation]
+  );
 
   useEffect(() => {
     const loadStats = async () => {
@@ -346,39 +504,6 @@ export function usePomodoroScreen() {
     saveStats();
   }, [stats]);
 
-  const deleteTask = useCallback((taskId) => {
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-  }, []);
-
-  const clearCompletedTasks = useCallback(() => {
-    setTasks((prev) => prev.filter((t) => !t.completed));
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-  }, []);
-
-  useEffect(() => {
-    const saveTasks = async () => {
-      try {
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-      } catch (e) {
-        console.error('Error guardando tareas:', e);
-      }
-    };
-    saveTasks();
-  }, [tasks]);
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const saved = await AsyncStorage.getItem(STORAGE_KEY);
-        if (saved) setTasks(JSON.parse(saved));
-      } catch (e) {
-        console.error('Error cargando tareas:', e);
-      }
-    };
-    load();
-  }, []);
-
   // Navbar hide when active
   useEffect(() => {
     Animated.parallel([
@@ -401,6 +526,7 @@ export function usePomodoroScreen() {
       const prepSec = prepMinutes ? prepMinutes * 60 : 0;
       customWorkSecondsRef.current = workSec;
       customPrepSecondsRef.current = prepSec;
+      setFocusTask(null);
       if (prepSec > 0) {
         setIsPreparationPhase(true);
         setTimeLeft(prepSec);
@@ -415,17 +541,19 @@ export function usePomodoroScreen() {
     [progressAnimation]
   );
 
-  const completedTasksCount = tasks.filter((t) => t.completed).length;
-
   return {
     modes,
     isActive,
     timeLeft,
     mode,
     progressAnimation,
-    inputText,
-    setInputText,
-    tasks,
+    pendingTasks,
+    pendingTasksLoading,
+    pendingTasksError,
+    loadPendingTasks,
+    focusTask,
+    focusingTaskId,
+    startFocusFromPendingTask,
     customTimeModalVisible,
     setCustomTimeModalVisible,
     customMinutes,
@@ -441,11 +569,6 @@ export function usePomodoroScreen() {
     changeMode,
     primaryActionLabel,
     formatTime,
-    handleAddTask,
-    toggleTask,
-    deleteTask,
-    clearCompletedTasks,
-    completedTasksCount,
     buttonsOpacity,
     buttonsScale,
     mainControlsPosition,
@@ -458,6 +581,8 @@ export function usePomodoroScreen() {
     summaryVisible,
     setSummaryVisible,
     summaryData,
+    summaryActionBusy,
+    completeLinkedTask,
     exitGuardEnabled,
   };
 }

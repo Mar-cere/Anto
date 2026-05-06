@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/414</span>
+                <span class='fraction'>0/417</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/329</span>
+                <span class='fraction'>0/332</span>
             </div>
         
             
@@ -921,7 +921,13 @@
 <a name='L856'></a><a href='#L856'>856</a>
 <a name='L857'></a><a href='#L857'>857</a>
 <a name='L858'></a><a href='#L858'>858</a>
-<a name='L859'></a><a href='#L859'>859</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L859'></a><a href='#L859'>859</a>
+<a name='L860'></a><a href='#L860'>860</a>
+<a name='L861'></a><a href='#L861'>861</a>
+<a name='L862'></a><a href='#L862'>862</a>
+<a name='L863'></a><a href='#L863'>863</a>
+<a name='L864'></a><a href='#L864'>864</a>
+<a name='L865'></a><a href='#L865'>865</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -950,6 +956,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1707,11 +1716,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1805,6 +1817,9 @@ import {
   getSessionPhaseSystemSnippet
 } from '../chat/sessionPhaseHints.js';
 import { getSessionIntentionSystemSnippet } from '../chat/sessionIntentionHints.js';
+import { buildSensitiveVnpSystemSnippet } from '../chat/sensitiveResponseTemplate.js';
+import { buildUnderstandingPipelineSnippet } from '../chat/understandingPipeline.js';
+import { buildLowConfidenceClarifySnippet } from '../chat/lowConfidenceClarifyTemplate.js';
 import { normalizeSessionIntention } from '../../constants/sessionIntention.js';
 &nbsp;
 function <span class="fstat-no" title="function not covered" >getTimeOfDay(</span>) {
@@ -2394,7 +2409,7 @@ export function <span class="fstat-no" title="function not covered" >generarMens
 <span class="cstat-no" title="statement not covered" >  return messages;</span>
 }
 &nbsp;
-const BASE_ASSISTANT_PROMPT = <span class="cstat-no" title="statement not covered" >`Eres Anto, un asistente de bienestar emocional dentro de una app. Tu objetivo es combinar **claridad útil** con un tono **profesional y accesible**: como un buen orientador en salud mental, no como un chat informal ni como un terapeuta clínico.</span>
+export const BASE_ASSISTANT_PROMPT = <span class="cstat-no" title="statement not covered" >`Eres Anto, un asistente de bienestar emocional dentro de una app. Tu objetivo es combinar **claridad útil** con un tono **profesional y accesible**: como un buen orientador en salud mental, no como un chat informal ni como un terapeuta clínico.</span>
 &nbsp;
 ### Estilo por defecto
 - Idioma: español.
@@ -2565,6 +2580,8 @@ export async function <span class="fstat-no" title="function not covered" >build
   // Prompt base de comportamiento (reglas de estilo, seguridad y UX conversacional).
   // Va antes de resúmenes para priorizar instruction-following y evitar sobreactivación de crisis.
 <span class="cstat-no" title="statement not covered" >  systemMessage = `${BASE_ASSISTANT_PROMPT}\n\n---\n\n${systemMessage}`;</span>
+<span class="cstat-no" title="statement not covered" >  systemMessage += buildUnderstandingPipelineSnippet(contexto);</span>
+<span class="cstat-no" title="statement not covered" >  systemMessage += buildLowConfidenceClarifySnippet(contexto);</span>
 &nbsp;
   const threadSnippet = <span class="cstat-no" title="statement not covered" >buildRecentThreadSummarySnippet(contexto.safetyHistory || []);</span>
 <span class="cstat-no" title="statement not covered" >  if (threadSnippet) <span class="cstat-no" title="statement not covered" >systemMessage += threadSnippet;</span></span>
@@ -2576,6 +2593,7 @@ export async function <span class="fstat-no" title="function not covered" >build
 <span class="cstat-no" title="statement not covered" >  systemMessage += buildProgressiveClosureSnippet(conversationPattern, sessionIntention);</span>
 <span class="cstat-no" title="statement not covered" >  systemMessage += buildPhaseRouterSnippet(contexto);</span>
 <span class="cstat-no" title="statement not covered" >  systemMessage += buildAntiRobotRewriteSnippet();</span>
+<span class="cstat-no" title="statement not covered" >  systemMessage += buildSensitiveVnpSystemSnippet(contexto);</span>
 &nbsp;
   const roll = <span class="cstat-no" title="statement not covered" >contexto.rollingSummary &amp;&amp; String(contexto.rollingSummary).trim();</span>
 <span class="cstat-no" title="statement not covered" >  if (roll) {</span>
@@ -2644,7 +2662,7 @@ export async function <span class="fstat-no" title="function not covered" >build
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-05T19:16:29.846Z
+                at 2026-05-06T17:36:51.353Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

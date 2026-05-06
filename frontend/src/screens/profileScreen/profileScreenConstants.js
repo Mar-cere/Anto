@@ -46,6 +46,9 @@ export const TEXTS = {
   ERROR: 'Error',
   DELETE: 'Eliminar',
   LOADING_CONTACTS: 'Cargando...',
+  LAST_SESSION_TITLE: 'Última conversación',
+  LAST_SESSION_PLACEHOLDER_BADGE: 'Vista rápida',
+  LAST_SESSION_OPEN_CHAT: 'Abrir chat',
 };
 
 export const BACKGROUND_OPACITY = 0.1;

@@ -37,7 +37,6 @@ import {
   COLORS,
   COMPLETE_BUTTON_BORDER_RADIUS,
   COMPLETE_BUTTON_SIZE,
-  DELAY_COMPLETE_PRESS_IN,
   DELAY_PRESS_IN,
   DELETE_ANIMATION_DURATION,
   DELETE_DISTANCE,
@@ -204,7 +203,10 @@ export default function SwipeableHabitItem({
 
   return (
     <View style={styles.swipeableContainer}>
-      <Animated.View style={[styles.progressIndicator, { opacity: progressOpacity }]}>
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.progressIndicator, { opacity: progressOpacity }]}
+      >
         <MaterialCommunityIcons name="chevron-left" size={PROGRESS_ICON_SIZE} color={COLORS.PRIMARY} />
         <Text style={styles.progressText}>{TEXTS.PROGRESS_HINT}</Text>
       </Animated.View>
@@ -286,7 +288,7 @@ export default function SwipeableHabitItem({
                   item.status?.completedToday && styles.completedButton,
                 ]}
                 disabled={item.status?.archived}
-                delayPressIn={DELAY_COMPLETE_PRESS_IN}
+                delayPressIn={0}
                 hitSlop={{
                   top: HIT_SLOP_SIZE,
                   bottom: HIT_SLOP_SIZE,
@@ -362,7 +364,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 2,
+    zIndex: 3,
     backgroundColor: COLORS.PROGRESS_INDICATOR_BACKGROUND,
     borderRadius: PROGRESS_INDICATOR_BORDER_RADIUS,
     paddingHorizontal: PROGRESS_INDICATOR_PADDING_HORIZONTAL,
@@ -390,7 +392,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    zIndex: 1,
+    zIndex: 0,
     paddingRight: ACTION_BUTTON_PADDING_RIGHT,
     gap: ACTION_BUTTON_GAP,
   },
@@ -433,11 +435,12 @@ const styles = StyleSheet.create({
     borderColor: COLORS.CARD_BORDER,
     width: '100%',
     position: 'relative',
+    zIndex: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 8,
+    elevation: 10,
   },
   archivedHabitCard: {
     backgroundColor: COLORS.CARD_ARCHIVED_BACKGROUND,

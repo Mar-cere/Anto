@@ -86,6 +86,37 @@ export const PROMPT_GOLDEN_CASES = [
       allOf: ['SITUACIÓN DE CRISIS', 'NIVEL DE RIESGO: MEDIUM', '### Turno sensible'],
       noneOf: []
     }
+  },
+  {
+    id: 'session_phase_acute_closure_policy',
+    message: { content: 'no puedo más' },
+    context: {
+      sessionPhase: 'acute',
+      emotional: { mainEmotion: 'ansiedad', intensity: 8 },
+      contextual: {
+        intencion: { tipo: 'CRISIS', confianza: 0.95 },
+        urgencia: 'ALTA',
+        tema: { categoria: 'SALUD' }
+      },
+      sessionRetention: {
+        likelyFarewell: false,
+        nearThreadLimit: false,
+        suggestBridgeClosing: true,
+        suggestFatigueClosing: true,
+        suggestThematicMicroClosure: true,
+        suggestCheckpointPause: true,
+        suggestReturningUserWarmOpen: false,
+        suggestFirstTimeExpectation: false
+      },
+      conversationPattern: {},
+      currentMessage: 'no puedo más',
+      history: [],
+      memory: {}
+    },
+    expect: {
+      allOf: ['### Cierre con avance (fase de seguridad)', 'no síntesis de cierre de tramo'],
+      noneOf: ['Varios turnos ya compartidos', 'Hilo ya largo:']
+    }
   }
 ];
 

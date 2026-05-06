@@ -9,7 +9,8 @@ import Message from '../models/Message.js';
 import User from '../models/User.js';
 import { buildHistoryForPromptFromMessages } from '../services/openai/openaiPromptBuilder.js';
 import { analyzeConversationPattern } from '../services/chat/conversationPatternAnalyzer.js';
-import { buildSessionRetentionPayload } from '../services/sessionRetentionHints.js';
+import { buildSessionRetentionPayload, withThematicMicroClosureRetention } from '../services/sessionRetentionHints.js';
+import { inferChatSessionPhase } from '../services/chat/sessionPhaseHints.js';
 import { HISTORIAL_LIMITE, LIMITE_MENSAJES } from '../routes/chat/chatConstants.js';
 import {
   openaiService,
@@ -18,7 +19,7 @@ import {
   userProfileService
 } from '../services/index.js';
 import { sanitizeSessionIntentionForClient } from '../constants/sessionIntention.js';
-import { evaluateSuicideRisk } from '../constants/crisis.js';
+import { evaluateSuicideRisk, normalizeStoredCrisisRiskLevel } from '../constants/crisis.js';
 import chatProductActionProposalService from '../services/chatProductActionProposalService.js';
 import chatProductActionLlmService from '../services/chatProductActionLlmService.js';
 import conversationProductProposalCapService from '../services/conversationProductProposalCapService.js';
@@ -202,14 +203,7 @@ export const setupSocketIO = (server) => {
         ]);
 
         const conversationPattern = analyzeConversationPattern(conversationHistory, messageText);
-        const sessionRetention = buildSessionRetentionPayload({
-          conversationHistoryNewestFirst: conversationHistory,
-          userContent: messageText,
-          priorConversationCount,
-          threadMessageLimit: LIMITE_MENSAJES,
-          conversationPattern
-        });
-        
+
         // 4. Análisis emocional y contextual (en paralelo)
         const [emotionalAnalysis, contextualAnalysis, userProfile] = await Promise.all([
           emotionalAnalyzer.analyzeEmotion(messageText).catch(err => {
@@ -236,13 +230,40 @@ export const setupSocketIO = (server) => {
             conversationContext: {}
           }
         );
+        try {
+          userMessage.metadata = {
+            ...(userMessage.metadata?.toObject?.() || userMessage.metadata || {}),
+            crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) }
+          };
+          userMessage.markModified('metadata');
+          await userMessage.save();
+        } catch (persistRiskMetaErr) {
+          console.warn('[SocketIO] metadata.crisis en mensaje usuario:', persistRiskMetaErr?.message);
+        }
         const isCrisis =
           riskLevel === 'MEDIUM' ||
           riskLevel === 'HIGH' ||
           (contextualAnalysis?.intencion?.tipo === 'CRISIS' &&
             contextualAnalysis?.intencion?.confianza >= 0.9 &&
             riskLevel !== 'LOW');
-        
+
+        const sessionPhase = inferChatSessionPhase({
+          riskLevel,
+          contextualAnalysis: contextualAnalysis || {},
+          userContent: messageText,
+          conversationHistoryNewestFirst: conversationHistory
+        });
+        const sessionRetention = withThematicMicroClosureRetention(
+          buildSessionRetentionPayload({
+            conversationHistoryNewestFirst: conversationHistory,
+            userContent: messageText,
+            priorConversationCount,
+            threadMessageLimit: LIMITE_MENSAJES,
+            conversationPattern
+          }),
+          { sessionPhase, conversationHistoryNewestFirst: conversationHistory }
+        );
+
         // 5. Preparar historial para el prompt
         const historialParaPrompt = buildHistoryForPromptFromMessages(conversationHistory, {
           emotional: emotionalAnalysis,
@@ -272,6 +293,7 @@ export const setupSocketIO = (server) => {
             contextual: contextualAnalysis,
             profile: userProfile,
             currentConversationId: conversation._id,
+            sessionPhase,
             sessionRetention,
             conversationPattern,
             sessionIntention: sessionIntentionSafe,
@@ -293,6 +315,7 @@ export const setupSocketIO = (server) => {
           conversationId: conversation._id,
           metadata: {
             status: 'sent',
+            crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
             context: {
               emotional: emotionalAnalysis,
               contextual: contextualAnalysis,

@@ -39,6 +39,7 @@ import PomodoroCard from '../components/PomodoroCard';
 import JournalCard from '../components/JournalCard';
 import QuoteSection from '../components/QuoteSection';
 import DashboardFocusCard from '../components/DashboardFocusCard';
+import { LastSessionSummaryCard } from '../components/LastSessionSummaryCard';
 import TaskCard from '../components/TaskCard';
 import { SkeletonBlock, SkeletonCard } from '../components/Skeleton';
 import { api, ENDPOINTS } from '../config/api';
@@ -60,6 +61,7 @@ import {
   shouldShowNotificationsPrompt,
 } from '../utils/notificationsPromptPolicy';
 import { setChatEntryBackTarget } from '../utils/chatEntryContext';
+import { isValidMongoObjectId24 } from '../utils/mongoId';
 import { STORAGE_KEYS as CHAT_STORAGE_KEYS } from './chat/chatScreenConstants';
 import { setFirstSessionHintDismissed } from '../utils/firstSessionHintStorage';
 import { markTutorialCompleted } from '../utils/tutorialStorage';
@@ -118,6 +120,7 @@ const DashScreen = () => {
   const [enablingNotifications, setEnablingNotifications] = useState(false);
   const [dashVisitsCount, setDashVisitsCount] = useState(0);
   const [focusPayload, setFocusPayload] = useState(null);
+  const [lastSessionSummary, setLastSessionSummary] = useState(null);
   const dashFirstFocusRef = useRef(true);
   const hasCountedDashVisitRef = useRef(false);
   const tutorialShouldOpenChatRef = useRef(false);
@@ -154,7 +157,7 @@ const DashScreen = () => {
       }
 
       // Cargar datos en paralelo usando api helper
-      const [userData, tasks, habits, focusRes] = await Promise.all([
+      const [userData, tasks, habits, focusRes, lastSessionRes] = await Promise.all([
         api.get(ENDPOINTS.ME).catch(() => {
           setError(DASH.ERROR_USER);
           return {};
@@ -167,7 +170,8 @@ const DashScreen = () => {
           setError(DASH.ERROR_HABITS);
           return [];
         }),
-        api.get(ENDPOINTS.SUMMARY_FOCUS).catch(() => null)
+        api.get(ENDPOINTS.SUMMARY_FOCUS).catch(() => null),
+        api.get(ENDPOINTS.SUMMARY_LAST_SESSION).catch(() => null)
       ]);
 
       if (focusRes && typeof focusRes === 'object' && focusRes.notModified === true) {
@@ -181,6 +185,17 @@ const DashScreen = () => {
         setFocusPayload(focusRes.data);
       } else {
         setFocusPayload(null);
+      }
+
+      if (
+        lastSessionRes &&
+        typeof lastSessionRes === 'object' &&
+        lastSessionRes.success === true &&
+        'data' in lastSessionRes
+      ) {
+        setLastSessionSummary(lastSessionRes.data ?? null);
+      } else {
+        setLastSessionSummary(null);
       }
 
       // Actualizar estados
@@ -512,14 +527,20 @@ const DashScreen = () => {
   const openConversationFromFocus = useCallback(
     async (conversationId) => {
       if (!conversationId) return;
+      const cid = String(conversationId);
       try {
-        await AsyncStorage.setItem(CHAT_STORAGE_KEYS.CONVERSATION_ID, String(conversationId));
+        await AsyncStorage.setItem(CHAT_STORAGE_KEYS.CONVERSATION_ID, cid);
       } catch (_) {
         /* noop */
       }
-      await goToChatFromOnboarding();
+      const state = navigation.getState?.();
+      if (state?.type === 'tab') {
+        navigation.navigate('Chat', { openConversationId: cid });
+        return;
+      }
+      navigation.navigate('MainTabs', { screen: 'Chat', params: { openConversationId: cid } });
     },
-    [goToChatFromOnboarding]
+    [navigation]
   );
 
   // Manejar finalización del tutorial
@@ -721,6 +742,17 @@ const DashScreen = () => {
             data={focusPayload}
             onOpenChat={goToChatFromOnboarding}
             onOpenConversation={openConversationFromFocus}
+          />
+          <LastSessionSummaryCard
+            summary={lastSessionSummary}
+            onOpenChat={() => {
+              const cid = lastSessionSummary?.conversationId;
+              if (cid && isValidMongoObjectId24(String(cid))) {
+                openConversationFromFocus(String(cid));
+              } else {
+                goToChatFromOnboarding();
+              }
+            }}
           />
           <QuoteSection />
           {error && (

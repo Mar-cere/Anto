@@ -15,6 +15,7 @@ import UserInsight from '../models/UserInsight.js';
 import cacheService from './cacheService.js';
 import openaiService from './openaiService.js';
 import { computeNextRoutinePushSlot } from './notificationScheduler.js';
+import { getLastSessionSummaryForUser } from './lastSessionSummaryService.js';
 import { buildUserSummary } from './userSummaryService.js';
 
 function cacheTtlSecondsUntilUtcEndOfDay() {
@@ -430,7 +431,8 @@ export async function buildDashboardFocus(userId) {
     scales,
     habitReminder,
     protocolNext,
-    notificationPreferences
+    notificationPreferences,
+    lastSessionSummary
   ] = await Promise.all([
     buildUserSummary(userId, { period: 'week' }),
     loadUpcomingTasks(userId, 5),
@@ -439,7 +441,8 @@ export async function buildDashboardFocus(userId) {
     loadLatestScales(userId),
     loadNextHabitReminder(userId),
     loadTherapeuticProtocolHint(userId),
-    loadUserNotificationPrefs(userId)
+    loadUserNotificationPrefs(userId),
+    getLastSessionSummaryForUser(userId)
   ]);
 
   const nextPushSlot = computeNextRoutinePushSlot(notificationPreferences);
@@ -481,6 +484,15 @@ export async function buildDashboardFocus(userId) {
   const firstTask = upcomingTasks[0];
   return {
     generatedAt: new Date().toISOString(),
+    lastSessionSummary: lastSessionSummary
+      ? {
+          snippet: lastSessionSummary.snippet,
+          conversationId: lastSessionSummary.conversationId,
+          generatedAt: lastSessionSummary.generatedAt,
+          placeholder: lastSessionSummary.placeholder,
+          headline: 'Tu resumen de la sesión anterior'
+        }
+      : null,
     focus: {
       line: focusLine.text,
       lineSource: focusLine.mode,

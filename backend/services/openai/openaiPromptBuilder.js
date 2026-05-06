@@ -380,7 +380,12 @@ function buildTurnPolicySnippet(conversationPattern = {}, contextual = {}) {
 - Señal de preguntas previas del asistente: ${questionStreak}. Ajusta para no seguir acumulando preguntas.`;
 }
 
-function buildProgressiveClosureSnippet(conversationPattern = {}, sessionIntention = 'vent') {
+function buildProgressiveClosureSnippet(conversationPattern = {}, sessionIntention = 'vent', sessionPhase = 'default') {
+  const phaseNorm = typeof sessionPhase === 'string' ? sessionPhase.trim() : '';
+  if (phaseNorm === 'acute') {
+    return `\n\n### Cierre con avance (fase de seguridad)
+- Con riesgo o crisis activa, el “avance” es **seguridad y claridad breve**, no síntesis de cierre de tramo ni invitación a pausar hasta que el contexto sea estable. **No** uses la opción (d) de “aterrizaje” de la variante estándar; sigue la sección de crisis si aplica.`;
+  }
   const closureRisk = conversationPattern?.closureRisk === true;
   const qStreak = Number(conversationPattern?.questionStreakCount || 0);
   const questionFatigueLine =
@@ -388,8 +393,8 @@ function buildProgressiveClosureSnippet(conversationPattern = {}, sessionIntenti
       ? '\n- **Racha de preguntas:** este turno puede priorizar **síntesis breve** o **pausa opcional** en lugar de otra pregunta amplia.'
       : '';
   return `\n\n### Cierre con avance (anti-abandono)
-- Cada turno debe cerrar con avance: elige exactamente uno -> (a) pregunta focal, (b) micro-acción concreta no corporal, o (c) mini-resumen + confirmación.
-- Evita cierres vacíos/descriptivos sin siguiente paso.
+- Cada turno debe cerrar con avance: elige exactamente uno -> (a) pregunta focal, (b) micro-acción concreta no corporal, (c) mini-resumen + confirmación, o **(d) síntesis breve + puente temporal sin pregunta amplia** cuando la sección **Sesión y retorno** (u otras señales del hilo) indiquen micro-cierre o pausa; el “avance” puede ser **aterrizar** el tramo, no solo seguir indagando.
+- Evita cierres vacíos que no dejen ningún sentido de movimiento ni de conclusión del tramo.
 - Si detectas señal de salida (${closureRisk ? 'sí' : 'no'}), deja una continuidad útil para retorno ("si vuelves, retomamos desde X"), sin culpa ni presión.
 - Prioriza continuidad breve para próximos ingresos: una frase de puente contextual, no menú largo.
 - Intención de sesión actual: ${sessionIntention}. Ajusta el cierre a esa intención.${questionFatigueLine}`;
@@ -638,7 +643,7 @@ export const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emoci
 - Cuando sugieras algo breve (respiración, escribir un momento), **ofrécelo** con cortesía: "¿Te va si…?", "Si te apetece, podemos…", "Cuando quieras, podrías…" — no solo imperativos ("haz", "escribe", "respira") en racha.
 - **No** hace falta **cronómetro** (30 s, 2 min) en cada mensaje; úsalo a veces si ayuda, pero muchas respuestas pueden ser solo conversación + una pregunta clara.
 - Tras una **confesión fuerte** (p. ej. pérdida de trabajo, carga familiar, miedo grave), da 1–2 frases que **reflejen lo específico** que compartió antes de saltar a otro ejercicio; evita "Entiendo." suelto seguido de una orden.
-- Muchos turnos pueden cerrar con **solo** una buena pregunta o un matiz útil, sin deber ni técnica nueva.
+- Muchos turnos pueden cerrar con **solo** una buena pregunta o un matiz útil, sin deber ni técnica nueva; **alterna** eso con turnos que **aterrizan** (mini-conclusión + puente) cuando el hilo ya lleva recorrido, para no dar sensación de conversación sin fin.
 
 ### Desahogo y conversación (misión central)
 - Tu espacio principal es que la persona **hable y se alivie**: escucha activa en texto — refleja matices, nombra lo que importa, evita cortar con la siguiente tarea si el usuario va soltando algo pesado.
@@ -646,7 +651,7 @@ export const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emoci
 - Normaliza que pueda contar sin prisa; una frase de espacio (“cuando quieras seguimos”, “tómate el tiempo”) ayuda si encaja, sin sonar repetitivo en cada mensaje.
 
 ### Cierre de turno y continuidad (sin culpa ni menús repetidos)
-- **Varía los cierres**: no termines siempre con la misma fórmula (“¿prefieres A o B?”, “¿micro-técnica o hablar?”). Alterna: una pregunta abierta que encaje con lo último que dijo, un matiz breve, o —si pidió algo concreto— **una sola vía** sin volver a encuestar.
+- **Varía los cierres**: no termines siempre con la misma fórmula (“¿prefieres A o B?”, “¿micro-técnica o hablar?”). Alterna: una pregunta abierta que encaje con lo último que dijo, un matiz breve, **una síntesis que cierre el tramo sin nueva pregunta** cuando el tema ya aterrizó, o —si pidió algo concreto— **una sola vía** sin volver a encuestar.
 - Si el usuario dice que **no necesita ayuda** o quiere parar: respeta al momento; como mucho **una** frase de puerta abierta (“cuando quieras, seguimos por aquí”). No insistas con opciones ni técnicas en ese mismo mensaje.
 - Si pide **consejo**, **algo práctico** o **pasos**: prioriza **una** recomendación concreta y breve (2–5 oraciones o un solo paso si pidió “paso a paso”) y **como mucho una** pregunta de seguimiento sobre cómo le fue o qué parte quiere afinar. **No** vuelvas a desplegar menú A/B en el mensaje siguiente si ya ofreciste dos caminos en el anterior o si ya eligió; **profundiza** o **concreta** en lugar de repetir el mismo esquema.
 - Tras varios turnos seguidos de desahogo intenso, puedes cerrar con **un** próximo paso suave para cuando vuelva (“si mañana quieres, podemos seguir con…”) — sin presión ni culpa por no escribir antes.
@@ -797,7 +802,11 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   const intentionSnippet = getSessionIntentionSystemSnippet(sessionIntention);
   if (intentionSnippet) systemMessage += intentionSnippet;
   systemMessage += buildTurnPolicySnippet(conversationPattern, contexto.contextual || {});
-  systemMessage += buildProgressiveClosureSnippet(conversationPattern, sessionIntention);
+  systemMessage += buildProgressiveClosureSnippet(
+    conversationPattern,
+    sessionIntention,
+    contexto.sessionPhase || 'default'
+  );
   systemMessage += buildPhaseRouterSnippet(contexto);
   systemMessage += buildAntiRobotRewriteSnippet();
   systemMessage += buildSensitiveVnpSystemSnippet(contexto);
@@ -846,7 +855,9 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     if (parts.length > 0) systemMessage += `\n\nINFORMACIÓN QUE EL USUARIO COMPARTIÓ AL INICIO (úsala para personalizar tu tono y enfoque):\n${parts.join('\n')}`;
   }
 
-  const retentionSnippet = buildSessionRetentionSystemSnippet(contexto.sessionRetention);
+  const retentionSnippet = buildSessionRetentionSystemSnippet(contexto.sessionRetention, {
+    sessionPhase: contexto.sessionPhase || 'default'
+  });
   if (retentionSnippet) {
     systemMessage += retentionSnippet;
   }

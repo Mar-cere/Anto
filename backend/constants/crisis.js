@@ -341,6 +341,21 @@ function isLikelyInterpersonalDistressWithoutSelfHarmLexicon(content) {
 export const shouldSkipEmergencyPhoneNumbersInSafetyAppend = (userMessageContent) =>
   isLikelyInterpersonalDistressWithoutSelfHarmLexicon(userMessageContent || '');
 
+/** Valores que puede devolver `evaluateSuicideRisk` y que persistimos en `Message.metadata.crisis.riskLevel`. */
+const STORED_CRISIS_RISK_LEVELS = new Set(['LOW', 'WARNING', 'MEDIUM', 'HIGH']);
+
+/**
+ * Garantiza que solo se guarden niveles conocidos (evita basura en BD / manipulación).
+ * @param {unknown} raw
+ * @returns {'LOW' | 'WARNING' | 'MEDIUM' | 'HIGH'}
+ */
+export function normalizeStoredCrisisRiskLevel(raw) {
+  const L = String(raw == null ? 'LOW' : raw)
+    .trim()
+    .toUpperCase();
+  return STORED_CRISIS_RISK_LEVELS.has(L) ? L : 'LOW';
+}
+
 /**
  * Evalúa el nivel de riesgo suicida basado en múltiples factores
  * @param {Object} emotionalAnalysis - Análisis emocional del mensaje

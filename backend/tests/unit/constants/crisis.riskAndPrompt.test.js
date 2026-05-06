@@ -3,10 +3,20 @@ import {
   buildCrisisActionDecision,
   evaluateSuicideRisk,
   hasExplicitSuicidalOrSelfHarmLexicon,
+  normalizeStoredCrisisRiskLevel,
   shouldAttachCrisisContextToPrompt,
   shouldSkipEmergencyPhoneNumbersInSafetyAppend,
   shouldUseCompactCrisisSafetyAppend
 } from '../../../constants/crisis.js';
+
+describe('normalizeStoredCrisisRiskLevel', () => {
+  it('acepta variantes y rechaza valores raros', () => {
+    expect(normalizeStoredCrisisRiskLevel('high')).toBe('HIGH');
+    expect(normalizeStoredCrisisRiskLevel('  WARNING  ')).toBe('WARNING');
+    expect(normalizeStoredCrisisRiskLevel('not-a-level')).toBe('LOW');
+    expect(normalizeStoredCrisisRiskLevel(null)).toBe('LOW');
+  });
+});
 
 describe('shouldAttachCrisisContextToPrompt', () => {
   it('solo MEDIUM y HIGH inyectan prompt de crisis completo', () => {

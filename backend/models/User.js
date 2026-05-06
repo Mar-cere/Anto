@@ -313,6 +313,53 @@ const userSchema = new mongoose.Schema({
   privacyAcceptedAt: {
     type: Date,
     default: null
+  },
+  /**
+   * Último resumen de sesión de chat (#4 + #47): un solo documento lógico por usuario;
+   * al generarse uno nuevo sustituye al anterior.
+   */
+  lastSessionSummary: {
+    conversationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Conversation',
+      default: null
+    },
+    bullets: {
+      type: [String],
+      default: [],
+      validate: {
+        validator: (v) => Array.isArray(v) && v.length <= 5,
+        message: 'Máximo 5 bullets'
+      }
+    },
+    bridge: {
+      type: String,
+      default: '',
+      maxlength: 600
+    },
+    snippet: {
+      type: String,
+      default: '',
+      maxlength: 280
+    },
+    riskTier: {
+      type: String,
+      enum: ['low', 'warning', 'medium', 'high', 'unknown'],
+      default: 'unknown'
+    },
+    placeholder: {
+      type: Boolean,
+      default: false
+    },
+    userTurnCount: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    generatedAt: {
+      type: Date,
+      default: null
+    }
   }
 }, {
   timestamps: true,

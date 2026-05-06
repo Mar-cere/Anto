@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import {
   buildCrisisActionDecision,
   evaluateSuicideRisk,
+  normalizeStoredCrisisRiskLevel,
   shouldAttachCrisisContextToPrompt
 } from '../constants/crisis.js';
 import {
@@ -50,7 +51,7 @@ import metricsService from '../services/metricsService.js';
 import paymentAuditService from '../services/paymentAuditService.js';
 import pushNotificationService from '../services/pushNotificationService.js';
 import sessionEmotionalMemory from '../services/sessionEmotionalMemory.js';
-import { buildSessionRetentionPayload } from '../services/sessionRetentionHints.js';
+import { buildSessionRetentionPayload, withThematicMicroClosureRetention } from '../services/sessionRetentionHints.js';
 import therapeuticProtocolService from '../services/therapeuticProtocolService.js';
 import { cursorPaginate } from '../utils/pagination.js';
 import { inferChatSessionPhase } from '../services/chat/sessionPhaseHints.js';
@@ -60,6 +61,7 @@ import {
   wasSessionIntentionProvided
 } from '../constants/sessionIntention.js';
 import { scheduleRollingSummaryRefresh } from '../services/conversationRollingSummaryService.js';
+import { scheduleLastSessionSummary } from '../services/lastSessionSummaryService.js';
 import {
   LIMITE_MENSAJES,
   HISTORIAL_LIMITE,
@@ -389,6 +391,40 @@ router.post('/conversations', protect, requireActiveSubscription(true), async (r
   }
 });
 
+/**
+ * POST /api/chat/conversations/:conversationId/session-summary/schedule
+ * Programa generación del resumen de última sesión tras inactividad (#4 + #47).
+ * Body opcional: { delayMinutes: number } entre 5 y 12 (default 7).
+ */
+router.post(
+  '/conversations/:conversationId/session-summary/schedule',
+  protect,
+  requireActiveSubscription(true),
+  validarConversationId,
+  validarConversacion,
+  async (req, res) => {
+    try {
+      const delayMinutes = req.body?.delayMinutes;
+      const data = await scheduleLastSessionSummary(req.user._id, req.params.conversationId, {
+        delayMinutes
+      });
+      return res.status(202).json({ success: true, data });
+    } catch (error) {
+      if (error?.code === 'INVALID_IDS') {
+        return res.status(400).json({ success: false, message: 'Identificadores inválidos' });
+      }
+      if (error?.code === 'CONVERSATION_NOT_FOUND') {
+        return res.status(404).json({ success: false, message: 'Conversación no encontrada' });
+      }
+      console.error('[chatRoutes] session-summary/schedule:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'No se pudo programar el resumen de sesión'
+      });
+    }
+  }
+);
+
 // Crear nuevo mensaje
 router.post('/messages', protect, requireActiveSubscription(true), sendMessageLimiter, async (req, res) => {
   const startTime = Date.now();
@@ -602,6 +638,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
       .catch(() => {});
 
     if (role === 'user') {
+      /** Persistido en mensajes para resumen de sesión / SLO (collectRiskLevelsFromMessages). */
+      let riskLevel = 'LOW';
       try {
         // 2. Obtener contexto e historial (en paralelo)
         logs.push(`[${Date.now() - startTime}ms] Obteniendo contexto e historial`);
@@ -622,14 +660,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         ]);
 
         const conversationPattern = analyzeConversationPattern(conversationHistory, content.trim());
-        const sessionRetention = buildSessionRetentionPayload({
-          conversationHistoryNewestFirst: conversationHistory,
-          userContent: content.trim(),
-          priorConversationCount,
-          threadMessageLimit: LIMITE_MENSAJES,
-          conversationPattern
-        });
-        
+
         // NUEVO: Pasar conversationId al contexto para referencias a conversaciones anteriores
         const currentConversationId = conversationId;
 
@@ -739,7 +770,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         const engagement = engagementTracker.analyzeEngagement(userMessagesForAnalysis);
 
         // Evaluar riesgo de crisis/suicida con análisis mejorado
-        const riskLevel = evaluateSuicideRisk(
+        riskLevel = evaluateSuicideRisk(
           emotionalAnalysis, 
           contextualAnalysis, 
           content,
@@ -757,6 +788,16 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           crisisHistory,
           conversationContext
         });
+        try {
+          userMessage.metadata = {
+            ...(userMessage.metadata?.toObject?.() || userMessage.metadata || {}),
+            crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) }
+          };
+          userMessage.markModified('metadata');
+          await userMessage.save();
+        } catch (persistRiskMetaErr) {
+          console.warn('[ChatRoutes] metadata.crisis en mensaje usuario:', persistRiskMetaErr?.message);
+        }
         // Solo crear evento de crisis si el nivel es MEDIUM o HIGH
         // WARNING no crea evento de crisis ni envía alertas, solo se registra para monitoreo
         // Solo considerar intención CRISIS si la confianza es muy alta (>= 0.9) Y el score es alto
@@ -1057,6 +1098,16 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           userContent: content.trim(),
           conversationHistoryNewestFirst: conversationHistory
         });
+        const sessionRetention = withThematicMicroClosureRetention(
+          buildSessionRetentionPayload({
+            conversationHistoryNewestFirst: conversationHistory,
+            userContent: content.trim(),
+            priorConversationCount,
+            threadMessageLimit: LIMITE_MENSAJES,
+            conversationPattern
+          }),
+          { sessionPhase, conversationHistoryNewestFirst: conversationHistory }
+        );
         const sessionIntentionSafe = sanitizeSessionIntentionForClient(conversation?.sessionIntention);
         const responseStrategyHint =
           sessionIntentionSafe === 'vent'
@@ -1124,7 +1175,13 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               'chat_usage',
               { action: 'streaming_request', isGuest: false },
               req.user._id.toString(),
-              { conversationId: String(conversationId) }
+              {
+                conversationId: String(conversationId),
+                transport: 'http',
+                endpoint: 'chat',
+                surface: 'registered',
+                streaming: true
+              }
             )
             .catch(() => {});
 
@@ -1149,7 +1206,13 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                         ttftMs: firstChunkAt - startTime
                       },
                       req.user._id.toString(),
-                      { conversationId: String(conversationId), streaming: true }
+                      {
+                        conversationId: String(conversationId),
+                        transport: 'http',
+                        endpoint: 'chat',
+                        surface: 'registered',
+                        streaming: true
+                      }
                     )
                     .catch(() => {});
                 }
@@ -1168,6 +1231,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                     conversationId,
                     metadata: {
                       status: 'sent',
+                      crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
                       context: {
                         emotional: emocionalNormalizado,
                         contextual: contextualAnalysis,
@@ -1186,6 +1250,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                       conversationId,
                       metadata: {
                         status: 'sent',
+                        crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
                         context: {
                           emotional: { mainEmotion: 'neutral', intensity: emocionalNormalizado.intensity || 5 },
                           contextual: contextualAnalysis,
@@ -1411,6 +1476,9 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             {
               conversationId: String(conversationId),
               streaming: false,
+              transport: 'http',
+              endpoint: 'chat',
+              surface: 'registered',
               model: modelRouting?.model,
               route: modelRouting?.route,
               routeReason: modelRouting?.reason
@@ -1434,6 +1502,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             conversationId,
             metadata: {
               status: 'sent',
+              crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
               context: {
                 emotional: emocionalNormalizado,
                 contextual: contextualAnalysis,
@@ -1455,6 +1524,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               conversationId,
               metadata: {
                 status: 'sent',
+                crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
                 context: {
                   emotional: {
                     mainEmotion: 'neutral',
@@ -1832,6 +1902,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             conversationId,
             metadata: {
               status: 'sent',
+              crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
               error: error.message
             }
           });

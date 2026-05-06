@@ -2,7 +2,10 @@ import { describe, it, expect } from '@jest/globals';
 import {
   detectLikelyFarewell,
   buildSessionRetentionPayload,
-  buildSessionRetentionSystemSnippet
+  buildSessionRetentionSystemSnippet,
+  detectEmotionalIntensityWindDown,
+  withThematicMicroClosureRetention,
+  coerceEmotionalIntensity01to10
 } from '../../../services/sessionRetentionHints.js';
 
 describe('sessionRetentionHints', () => {
@@ -104,6 +107,177 @@ describe('sessionRetentionHints', () => {
       expect(p.userTurnCount).toBe(4);
       expect(p.suggestCheckpointPause).toBe(true);
     });
+
+    it('incluye suggestThematicMicroClosure en false por defecto', () => {
+      const p = buildSessionRetentionPayload({
+        conversationHistoryNewestFirst: [{ role: 'user', content: 'hola' }],
+        userContent: 'hola',
+        priorConversationCount: 0,
+        threadMessageLimit: 100
+      });
+      expect(p.suggestThematicMicroClosure).toBe(false);
+    });
+
+    it('normaliza threadMessageLimit inválido a 100', () => {
+      const p = buildSessionRetentionPayload({
+        conversationHistoryNewestFirst: [{ role: 'user', content: 'hola' }],
+        userContent: 'hola',
+        priorConversationCount: 0,
+        threadMessageLimit: Number.NaN
+      });
+      expect(p.threadMessageLimit).toBe(100);
+    });
+  });
+
+  describe('coerceEmotionalIntensity01to10', () => {
+    it('acepta números y strings numéricos válidos', () => {
+      expect(coerceEmotionalIntensity01to10(8)).toBe(8);
+      expect(coerceEmotionalIntensity01to10(' 9 ')).toBe(9);
+      expect(coerceEmotionalIntensity01to10(0)).toBe(1);
+      expect(coerceEmotionalIntensity01to10(11)).toBe(10);
+    });
+    it('rechaza valores no finitos o no numéricos', () => {
+      expect(coerceEmotionalIntensity01to10(NaN)).toBeNull();
+      expect(coerceEmotionalIntensity01to10('x')).toBeNull();
+      expect(coerceEmotionalIntensity01to10(null)).toBeNull();
+    });
+  });
+
+  describe('detectEmotionalIntensityWindDown', () => {
+    it('detecta caída clara entre turnos del usuario', () => {
+      const newestFirst = [
+        { role: 'user', content: 'x', metadata: { context: { emotional: { intensity: 5 } } } },
+        { role: 'assistant', content: 'a' },
+        { role: 'user', content: 'y', metadata: { context: { emotional: { intensity: 9 } } } },
+        { role: 'assistant', content: 'b' },
+        { role: 'user', content: 'z', metadata: { context: { emotional: { intensity: 9 } } } },
+        { role: 'assistant', content: 'c' },
+        { role: 'user', content: 'w', metadata: { context: { emotional: { intensity: 8 } } } },
+        { role: 'assistant', content: 'd' }
+      ];
+      expect(detectEmotionalIntensityWindDown(newestFirst)).toBe(true);
+    });
+
+    it('no dispara con un solo valor de intensidad', () => {
+      const newestFirst = [
+        { role: 'user', content: 'x', metadata: { context: { emotional: { intensity: 5 } } } },
+        { role: 'assistant', content: 'a' }
+      ];
+      expect(detectEmotionalIntensityWindDown(newestFirst)).toBe(false);
+    });
+
+    it('usa intensidades almacenadas como string', () => {
+      const newestFirst = [
+        { role: 'user', content: 'x', metadata: { context: { emotional: { intensity: '5' } } } },
+        { role: 'assistant', content: 'a' },
+        { role: 'user', content: 'y', metadata: { context: { emotional: { intensity: '9' } } } },
+        { role: 'assistant', content: 'b' },
+        { role: 'user', content: 'z', metadata: { context: { emotional: { intensity: '9' } } } },
+        { role: 'assistant', content: 'c' },
+        { role: 'user', content: 'w', metadata: { context: { emotional: { intensity: '8' } } } },
+        { role: 'assistant', content: 'd' }
+      ];
+      expect(detectEmotionalIntensityWindDown(newestFirst)).toBe(true);
+    });
+  });
+
+  describe('withThematicMicroClosureRetention', () => {
+    it('activa micro-cierre temático en fase settled con hilo sustantivo y caída de intensidad', () => {
+      const newestFirst = [
+        { role: 'user', content: 'por ahora estoy ok', metadata: { context: { emotional: { intensity: 5 } } } },
+        { role: 'assistant', content: 'a' },
+        { role: 'user', content: 'mal', metadata: { context: { emotional: { intensity: 9 } } } },
+        { role: 'assistant', content: 'b' },
+        { role: 'user', content: 'peor', metadata: { context: { emotional: { intensity: 9 } } } },
+        { role: 'assistant', content: 'c' },
+        { role: 'user', content: 'uf', metadata: { context: { emotional: { intensity: 8 } } } },
+        { role: 'assistant', content: 'd' }
+      ];
+      const base = buildSessionRetentionPayload({
+        conversationHistoryNewestFirst: newestFirst,
+        userContent: 'por ahora estoy ok',
+        priorConversationCount: 1,
+        threadMessageLimit: 100
+      });
+      const enriched = withThematicMicroClosureRetention(base, {
+        sessionPhase: 'settled',
+        conversationHistoryNewestFirst: newestFirst
+      });
+      expect(enriched.suggestThematicMicroClosure).toBe(true);
+    });
+
+    it('acepta sessionPhase con espacios', () => {
+      const newestFirst = [
+        { role: 'user', content: 'por ahora estoy ok', metadata: { context: { emotional: { intensity: 5 } } } },
+        { role: 'assistant', content: 'a' },
+        { role: 'user', content: 'mal', metadata: { context: { emotional: { intensity: 9 } } } },
+        { role: 'assistant', content: 'b' },
+        { role: 'user', content: 'peor', metadata: { context: { emotional: { intensity: 9 } } } },
+        { role: 'assistant', content: 'c' },
+        { role: 'user', content: 'uf', metadata: { context: { emotional: { intensity: 8 } } } },
+        { role: 'assistant', content: 'd' }
+      ];
+      const base = buildSessionRetentionPayload({
+        conversationHistoryNewestFirst: newestFirst,
+        userContent: 'por ahora estoy ok',
+        priorConversationCount: 1,
+        threadMessageLimit: 100
+      });
+      const enriched = withThematicMicroClosureRetention(base, {
+        sessionPhase: '  settled  ',
+        conversationHistoryNewestFirst: newestFirst
+      });
+      expect(enriched.suggestThematicMicroClosure).toBe(true);
+    });
+
+    it('no activa si ya aplica cierre por fatiga (evita duplicar instrucciones)', () => {
+      const chrono = [];
+      for (let t = 0; t < 9; t++) {
+        chrono.push({
+          role: 'user',
+          content: t === 8 ? 'por ahora estoy ok' : `m${t}`,
+          metadata: { context: { emotional: { intensity: t === 8 ? 5 : 9 } } }
+        });
+        chrono.push({ role: 'assistant', content: 'ok' });
+      }
+      const newestFirst = chrono.slice().reverse();
+      const base = buildSessionRetentionPayload({
+        conversationHistoryNewestFirst: newestFirst,
+        userContent: 'por ahora estoy ok',
+        priorConversationCount: 1,
+        threadMessageLimit: 200
+      });
+      expect(base.suggestFatigueClosing).toBe(true);
+      const enriched = withThematicMicroClosureRetention(base, {
+        sessionPhase: 'settled',
+        conversationHistoryNewestFirst: newestFirst
+      });
+      expect(enriched.suggestThematicMicroClosure).toBe(false);
+    });
+
+    it('no activa si la fase no es settled', () => {
+      const newestFirst = [
+        { role: 'user', content: 'x', metadata: { context: { emotional: { intensity: 5 } } } },
+        { role: 'assistant', content: 'a' },
+        { role: 'user', content: 'y', metadata: { context: { emotional: { intensity: 9 } } } },
+        { role: 'assistant', content: 'b' },
+        { role: 'user', content: 'z', metadata: { context: { emotional: { intensity: 9 } } } },
+        { role: 'assistant', content: 'c' },
+        { role: 'user', content: 'w', metadata: { context: { emotional: { intensity: 8 } } } },
+        { role: 'assistant', content: 'd' }
+      ];
+      const base = buildSessionRetentionPayload({
+        conversationHistoryNewestFirst: newestFirst,
+        userContent: 'x',
+        priorConversationCount: 1,
+        threadMessageLimit: 100
+      });
+      const enriched = withThematicMicroClosureRetention(base, {
+        sessionPhase: 'default',
+        conversationHistoryNewestFirst: newestFirst
+      });
+      expect(enriched.suggestThematicMicroClosure).toBe(false);
+    });
   });
 
   describe('buildSessionRetentionSystemSnippet', () => {
@@ -144,6 +318,74 @@ describe('sessionRetentionHints', () => {
       });
       const s = buildSessionRetentionSystemSnippet(p);
       expect(s).toContain('preguntas seguidas');
+    });
+
+    it('incluye guía de micro-cierre temático cuando aplica', () => {
+      const p = buildSessionRetentionPayload({
+        conversationHistoryNewestFirst: [],
+        userContent: 'x',
+        priorConversationCount: 0,
+        threadMessageLimit: 100
+      });
+      const p2 = { ...p, suggestThematicMicroClosure: true };
+      const s = buildSessionRetentionSystemSnippet(p2);
+      expect(s).toContain('aterrizar el tramo');
+      expect(s).toContain('listas numeradas');
+    });
+
+    it('en fase acute omite cierres reflexivos aunque el payload los pida', () => {
+      const p = {
+        likelyFarewell: false,
+        nearThreadLimit: false,
+        suggestBridgeClosing: true,
+        suggestFatigueClosing: true,
+        suggestThematicMicroClosure: true,
+        suggestCheckpointPause: true,
+        suggestReturningUserWarmOpen: false,
+        suggestFirstTimeExpectation: false
+      };
+      const s = buildSessionRetentionSystemSnippet(p, { sessionPhase: 'acute' });
+      expect(s).toBe('');
+    });
+
+    it('en fase acute mantiene despedida sin viñetas de cierre reflexivo', () => {
+      const p = {
+        likelyFarewell: true,
+        nearThreadLimit: false,
+        suggestBridgeClosing: true,
+        suggestFatigueClosing: true
+      };
+      const s = buildSessionRetentionSystemSnippet(p, { sessionPhase: 'acute' });
+      expect(s).toContain('Prioridad de seguridad');
+      expect(s).toContain('despedida');
+      expect(s).not.toContain('Varios turnos ya compartidos');
+    });
+
+    it('en fase acute mantiene aviso de límite técnico del hilo', () => {
+      const p = {
+        likelyFarewell: false,
+        nearThreadLimit: true,
+        totalMessages: 40,
+        threadMessageLimit: 50,
+        suggestBridgeClosing: true
+      };
+      const s = buildSessionRetentionSystemSnippet(p, { sessionPhase: 'acute' });
+      expect(s).toContain('Prioridad de seguridad');
+      expect(s).toContain('límite del chat');
+      expect(s).not.toContain('Varios turnos ya compartidos');
+    });
+
+    it('sanitiza contadores en aviso de límite de hilo', () => {
+      const p = {
+        likelyFarewell: false,
+        nearThreadLimit: true,
+        totalMessages: 9e20,
+        threadMessageLimit: Number.NaN,
+        suggestThematicMicroClosure: false
+      };
+      const s = buildSessionRetentionSystemSnippet(p);
+      expect(s).toContain('500000');
+      expect(s).toMatch(/límite del chat es ~0\)/);
     });
   });
 });

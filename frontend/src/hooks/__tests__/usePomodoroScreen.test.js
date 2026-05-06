@@ -16,6 +16,21 @@ jest.mock('react-native', () => ({
 }));
 jest.mock('../../styles/globalStyles', () => ({ colors: {} }));
 
+jest.mock('../../config/api', () => ({
+  api: {
+    get: jest.fn().mockResolvedValue({ success: true, data: [] }),
+    put: jest.fn().mockResolvedValue({ success: true, data: {} }),
+    patch: jest.fn().mockResolvedValue({ success: true, data: { _id: 't1' } }),
+  },
+  ENDPOINTS: {
+    TASKS_PENDING: '/api/tasks/pending',
+    TASK_BY_ID: (id) => `/api/tasks/${id}`,
+  },
+}));
+jest.mock('../../utils/apiErrorHandler', () => ({
+  getApiErrorMessage: (e) => e?.message || 'Error',
+}));
+
 const mockModes = {
   work: { time: 25 * 60, label: 'Trabajo' },
   break: { time: 5 * 60, label: 'Descanso' },
@@ -29,39 +44,92 @@ jest.mock('../../screens/pomodoro/pomodoroScreenConstants', () => ({
   BUTTONS_OPACITY_INACTIVE: 1,
   BUTTONS_SCALE_ACTIVE: 0.5,
   BUTTONS_SCALE_INACTIVE: 1,
+  DAILY_POMODORO_GOAL: 6,
   DEFAULT_CUSTOM_MINUTES: '25',
   DEFAULT_PREP_MINUTES: '3',
   INTERVAL_DURATION: 1000,
   MOTIVATIONAL_MESSAGES: ['Well done!'],
   NAVBAR_TRANSLATE_Y: 100,
+  POMODORO_DEFAULT_TASK_MINUTES: 25,
+  POMODORO_PENDING_TASKS_LIMIT: 15,
+  POMODORO_STATS_STORAGE_KEY: 'pomodoroStats',
+  POMODORO_TASK_FOCUS_MAX_MINUTES: 120,
+  POMODORO_TASK_FOCUS_MIN_MINUTES: 5,
+  POMODORO_DISPLAY_BLOCK_MINUTES: 25,
   PROGRESS_ANIMATION_DURATION: 1000,
-  STORAGE_KEY: 'pomodoroTasks',
+  QUICK_PRESETS: [],
   TEXTS: {
     POMODORO_COMPLETED: 'Done',
     POMODORO_COMPLETED_MESSAGE: 'Message',
     SESSION_COMPLETED: 'Session',
+    PENDING_LOAD_ERROR: 'pending error',
+    ERROR_FOCUS_TITLE: 'Error',
+    ERROR_FOCUS_MESSAGE: 'Focus error',
+    ERROR_COMPLETE_TASK_TITLE: 'Complete error',
+    ERROR_COMPLETE_TASK_MESSAGE: 'Complete failed',
   },
   VIBRATION_PATTERN: [0, 500],
   WARNING_TIME: 10,
 }));
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(),
-  notificationAsync: jest.fn(),
+  notificationAsync: jest.fn().mockResolvedValue(undefined),
   ImpactFeedbackStyle: { Light: 0, Medium: 1 },
   NotificationFeedbackType: { Success: 1 },
 }));
-jest.mock('expo-notifications', () => ({ setNotificationHandler: jest.fn() }));
-jest.mock('../../utils/notifications', () => ({ sendImmediateNotification: jest.fn() }));
+jest.mock('../../utils/notifications', () => ({
+  sendImmediateNotification: jest.fn(),
+  cancelTaskNotifications: jest.fn().mockResolvedValue(undefined),
+}));
 jest.mock('@react-native-async-storage/async-storage', () => ({
   __esModule: true,
   default: {
-    getItem: jest.fn().mockResolvedValue(JSON.stringify([])),
+    getItem: jest.fn().mockResolvedValue(null),
     setItem: jest.fn().mockResolvedValue(undefined),
   },
 }));
 
 import { renderHook, act } from '@testing-library/react-native';
-import { usePomodoroScreen } from '../usePomodoroScreen';
+import { sortPomodoroPendingTasks, usePomodoroScreen } from '../usePomodoroScreen';
+
+describe('sortPomodoroPendingTasks', () => {
+  it('ordena por en curso, luego prioridad, luego fecha de vencimiento', () => {
+    const dEarly = new Date('2026-05-01').toISOString();
+    const dLate = new Date('2026-05-20').toISOString();
+    const input = [
+      { _id: 'low_late', status: 'pending', priority: 'low', dueDate: dLate },
+      { _id: 'prog', status: 'in_progress', priority: 'medium', dueDate: dLate },
+      { _id: 'urgent', status: 'pending', priority: 'urgent', dueDate: dLate },
+      { _id: 'high_early', status: 'pending', priority: 'high', dueDate: dEarly },
+    ];
+    expect(sortPomodoroPendingTasks(input).map((t) => t._id)).toEqual([
+      'prog',
+      'urgent',
+      'high_early',
+      'low_late',
+    ]);
+  });
+
+  it('misma prioridad: vencimiento más cercano primero', () => {
+    const d1 = new Date('2026-05-10').toISOString();
+    const d2 = new Date('2026-05-15').toISOString();
+    const input = [
+      { _id: 'later', status: 'pending', priority: 'medium', dueDate: d2 },
+      { _id: 'sooner', status: 'pending', priority: 'medium', dueDate: d1 },
+    ];
+    expect(sortPomodoroPendingTasks(input).map((t) => t._id)).toEqual(['sooner', 'later']);
+  });
+
+  it('excluye filas sin _id y ordena fechas inválidas al final', () => {
+    const d = new Date('2026-05-10').toISOString();
+    const input = [
+      { _id: 'invalidDate', status: 'pending', priority: 'medium', dueDate: 'not-a-date' },
+      { _id: 'ok', status: 'pending', priority: 'medium', dueDate: d },
+      { title: 'sin id' },
+    ];
+    expect(sortPomodoroPendingTasks(input).map((t) => t._id)).toEqual(['ok', 'invalidDate']);
+  });
+});
 
 describe('usePomodoroScreen', () => {
   beforeEach(() => {
@@ -74,16 +142,17 @@ describe('usePomodoroScreen', () => {
       modes: expect.any(Object),
       isActive: false,
       mode: 'work',
-      inputText: '',
-      tasks: expect.any(Array),
+      pendingTasks: expect.any(Array),
+      focusingTaskId: null,
       customTimeModalVisible: false,
     });
     expect(typeof result.current.formatTime).toBe('function');
     expect(typeof result.current.toggleTimer).toBe('function');
     expect(typeof result.current.resetTimer).toBe('function');
     expect(typeof result.current.changeMode).toBe('function');
-    expect(typeof result.current.handleAddTask).toBe('function');
-    expect(typeof result.current.setInputText).toBe('function');
+    expect(typeof result.current.loadPendingTasks).toBe('function');
+    expect(typeof result.current.startFocusFromPendingTask).toBe('function');
+    expect(typeof result.current.completeLinkedTask).toBe('function');
   });
 
   it('formatTime debe formatear segundos como MM:SS', () => {
@@ -102,14 +171,5 @@ describe('usePomodoroScreen', () => {
     });
     expect(result.current.mode).toBe('break');
     expect(result.current.timeLeft).toBe(5 * 60);
-  });
-
-  it('setInputText debe actualizar inputText', () => {
-    const { result } = renderHook(() => usePomodoroScreen());
-    expect(result.current.inputText).toBe('');
-    act(() => {
-      result.current.setInputText('Nueva tarea');
-    });
-    expect(result.current.inputText).toBe('Nueva tarea');
   });
 });

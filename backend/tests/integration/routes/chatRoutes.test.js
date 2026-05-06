@@ -10,6 +10,7 @@ import app from '../../../server.js';
 import User from '../../../models/User.js';
 import Conversation from '../../../models/Conversation.js';
 import Message from '../../../models/Message.js';
+import SessionSummaryJob from '../../../models/SessionSummaryJob.js';
 import {
   connectDatabase,
   clearDatabase,
@@ -203,6 +204,36 @@ describe('Chat Routes', () => {
         .expect(404);
 
       expect(response.body).toHaveProperty('message');
+    });
+  });
+
+  describe('POST /api/chat/conversations/:conversationId/session-summary/schedule', () => {
+    it('programa job pendiente con delay acotado', async () => {
+      const conversation = await Conversation.create({
+        userId: testUser._id,
+        status: 'active'
+      });
+      await Message.create({
+        conversationId: conversation._id,
+        userId: testUser._id,
+        role: 'user',
+        content: 'hola'
+      });
+
+      const response = await request(app)
+        .post(`/api/chat/conversations/${conversation._id}/session-summary/schedule`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ delayMinutes: 6 })
+        .expect(202);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toMatchObject({ scheduled: true, delayMinutes: 6 });
+      expect(response.body.data).toHaveProperty('runAt');
+      expect(response.body.data).toHaveProperty('baselineLastMessageAt');
+
+      const job = await SessionSummaryJob.findOne({ userId: testUser._id, status: 'pending' });
+      expect(job).toBeTruthy();
+      expect(String(job.conversationId)).toBe(String(conversation._id));
     });
   });
 

@@ -14,6 +14,7 @@
  * | openaiDailyCostReport      | ENABLE_OPENAI_DAILY_COST_REPORT | activo | correo diario uso OpenAI |
  * | trialRetentionEmail        | ENABLE_TRIAL_RETENTION_EMAIL   | activo | correo fin día ~2 de trial corto |
  * | weeklySummaryEmail         | ENABLE_WEEKLY_SUMMARY_EMAIL o ENABLE_WEEKLY_TIPS_EMAIL | off | aviso resumen semanal (neutro); slot `WEEKLY_TIPS_EMAIL_SLOT` |
+ * | lastSessionSummaryWorker   | ENABLE_LAST_SESSION_SUMMARY    | activo salvo `false` | worker resumen última sesión (#4+#47); tick `LAST_SESSION_SUMMARY_TICK_MS`; reencola `processing` viejos con `LAST_SESSION_SUMMARY_STALE_MS` (default 15 min) |
  * | swagger                    | ENABLE_SWAGGER + NODE_ENV      | ver abajo | en prod solo si `ENABLE_SWAGGER=true` |
  *
  * Para los cuatro primeros, cualquier valor distinto de la cadena `'false'`
@@ -49,6 +50,8 @@ export const features = Object.freeze({
   notificationScheduler: envIsNotFalse(process.env.ENABLE_NOTIFICATION_SCHEDULER),
   openaiDailyCostReport: envIsNotFalse(process.env.ENABLE_OPENAI_DAILY_COST_REPORT),
   trialRetentionEmail: envIsNotFalse(process.env.ENABLE_TRIAL_RETENTION_EMAIL),
+  /** Monitor SLO p95 de chat (Sentry + logs). Default: activo salvo 'false'. */
+  chatLatencySloMonitor: envIsNotFalse(process.env.ENABLE_CHAT_LATENCY_SLO_MONITOR),
   /**
    * Correo semanal de aviso de resumen (plantilla neutra). Opt-in:
    * `ENABLE_WEEKLY_SUMMARY_EMAIL=true` o, por compatibilidad, `ENABLE_WEEKLY_TIPS_EMAIL=true`.
@@ -57,6 +60,8 @@ export const features = Object.freeze({
     process.env.ENABLE_WEEKLY_SUMMARY_EMAIL === 'true' ||
     process.env.ENABLE_WEEKLY_TIPS_EMAIL === 'true',
   swagger: resolveSwaggerEnabled(),
+  /** Worker que procesa jobs de resumen de última sesión (#4 + #47). Default activo salvo `false`. */
+  lastSessionSummaryWorker: envIsNotFalse(process.env.ENABLE_LAST_SESSION_SUMMARY),
 });
 
 export default features;

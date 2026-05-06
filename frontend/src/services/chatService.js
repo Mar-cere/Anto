@@ -537,7 +537,35 @@ export const submitProductProposalFeedback = async (conversationId, action) => {
   return api.post(`/api/chat/conversations/${cid}/product-proposal-feedback`, { action });
 };
 
-// Agregar función para obtener mensajes (+ meta de conversación)
+/**
+ * Programa en servidor la generación diferida del resumen de última sesión (#4 + #47).
+ * Sin op si invitado, sin token o id inválido. Errores de red se ignoran (best-effort).
+ * @param {string} conversationId
+ * @param {{ delayMinutes?: number }} [options]
+ * @returns {Promise<object|null>}
+ */
+export const scheduleLastSessionSummary = async (conversationId, options = {}) => {
+  try {
+    if (await isGuestChatMode()) return null;
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token) return null;
+    const cid = String(conversationId || '').trim();
+    if (!/^[\da-f]{24}$/i.test(cid)) return null;
+    const body = {};
+    if (options.delayMinutes != null && options.delayMinutes !== '') {
+      const n = Number(options.delayMinutes);
+      if (Number.isFinite(n)) body.delayMinutes = n;
+    }
+    return await api.post(`/api/chat/conversations/${cid}/session-summary/schedule`, body);
+  } catch (e) {
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.warn('[chatService] scheduleLastSessionSummary:', e?.message || e);
+    }
+    return null;
+  }
+};
+
+/** Obtiene mensajes y meta de conversación. */
 export const getMessages = async (conversationId) => {
   try {
     const response = await api.get(`/api/chat/conversations/${conversationId}`);
@@ -561,6 +589,7 @@ export default {
   initializeSocket,
   sendMessage,
   sendMessageStream,
+  scheduleLastSessionSummary,
   submitMessageFeedback,
   submitProductProposalFeedback,
   onMessage,

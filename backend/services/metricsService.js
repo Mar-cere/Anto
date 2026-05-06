@@ -42,6 +42,11 @@ class MetricsService {
         streamingFirstChunks: 0,
         ttftMsSamples: [],
         nonStreamLatencyMsSamples: [],
+        /**
+         * Latencia por ruta/superficie (solo memoria).
+         * Key sugerida: `${transport}:${endpoint}:${surface}`.
+         */
+        latencyByRoute: {},
         guestSessionsCreated: 0,
         guestMessagesUserSaved: 0,
         guestMessagesAssistantSaved: 0,
@@ -158,6 +163,9 @@ class MetricsService {
     // Historial de métricas (últimas 1000 entradas)
     this.metricsHistory = [];
     this.MAX_HISTORY_SIZE = 1000;
+
+    /** Límite defensivo de keys en latencyByRoute (evita crecimiento sin límite). */
+    this.MAX_LATENCY_ROUTES = 30;
   }
 
   /**
@@ -234,7 +242,7 @@ class MetricsService {
   async recordMetric(type, data, userId = null, metadata = {}) {
     try {
       // Actualizar métricas en memoria
-      this.updateInMemoryMetrics(type, data, userId);
+      this.updateInMemoryMetrics(type, data, userId, metadata);
 
       // Agregar al historial
       this.addToHistory({
@@ -268,7 +276,7 @@ class MetricsService {
    * @param {Object} data - Datos
    * @param {string} userId - ID del usuario
    */
-  updateInMemoryMetrics(type, data, userId) {
+  updateInMemoryMetrics(type, data, userId, metadata = {}) {
     switch (type) {
       case 'emotional_analysis':
         this.inMemoryMetrics.emotionalAnalysis.total++;
@@ -435,6 +443,22 @@ class MetricsService {
         const cu = this.inMemoryMetrics.chatUsage;
         const action = data?.action;
         const isGuest = data?.isGuest === true;
+        const routeKey = this._routeKeyFromMetadata(metadata, { isGuest });
+        const now = Date.now();
+        const routeBucket =
+          routeKey && cu.latencyByRoute
+            ? (cu.latencyByRoute[routeKey] ||= {
+                streamingFirstChunks: 0,
+                nonStreamingResponses: 0,
+                ttftMsSamples: [],
+                nonStreamLatencyMsSamples: [],
+                lastSeenAt: now
+              })
+            : null;
+        if (routeBucket) {
+          routeBucket.lastSeenAt = now;
+          this._enforceLatencyRouteCap(cu);
+        }
 
         if (action === 'conversation_created') {
           cu.conversationsCreated++;
@@ -475,6 +499,11 @@ class MetricsService {
           if (Number.isFinite(ttftMs) && ttftMs >= 0) {
             cu.ttftMsSamples.push(ttftMs);
             if (cu.ttftMsSamples.length > 1000) cu.ttftMsSamples.shift();
+            if (routeBucket) {
+              routeBucket.streamingFirstChunks++;
+              routeBucket.ttftMsSamples.push(ttftMs);
+              if (routeBucket.ttftMsSamples.length > 500) routeBucket.ttftMsSamples.shift();
+            }
           }
         }
         if (action === 'non_stream_response_ready') {
@@ -482,6 +511,13 @@ class MetricsService {
           if (Number.isFinite(latencyMs) && latencyMs >= 0) {
             cu.nonStreamLatencyMsSamples.push(latencyMs);
             if (cu.nonStreamLatencyMsSamples.length > 1000) cu.nonStreamLatencyMsSamples.shift();
+            if (routeBucket) {
+              routeBucket.nonStreamingResponses++;
+              routeBucket.nonStreamLatencyMsSamples.push(latencyMs);
+              if (routeBucket.nonStreamLatencyMsSamples.length > 500) {
+                routeBucket.nonStreamLatencyMsSamples.shift();
+              }
+            }
           }
         }
 
@@ -497,6 +533,60 @@ class MetricsService {
 
         break;
       }
+    }
+  }
+
+  /**
+   * Evita crecimiento infinito de latencyByRoute.
+   * Estrategia: si supera el máximo, eliminar las rutas menos recientes.
+   * @param {any} cu - chatUsage bucket
+   */
+  _enforceLatencyRouteCap(cu) {
+    try {
+      const map = cu?.latencyByRoute;
+      if (!map || typeof map !== 'object') return;
+      const keys = Object.keys(map);
+      if (keys.length <= this.MAX_LATENCY_ROUTES) return;
+
+      const toDrop = keys
+        .map((k) => ({ k, t: Number(map[k]?.lastSeenAt || 0) }))
+        .sort((a, b) => a.t - b.t)
+        .slice(0, Math.max(1, keys.length - this.MAX_LATENCY_ROUTES));
+
+      toDrop.forEach(({ k }) => {
+        delete map[k];
+      });
+    } catch {
+      // no-op
+    }
+  }
+
+  /**
+   * Key canónica para agrupar latencia por ruta.
+   * @param {Object} metadata
+   * @param {{ isGuest?: boolean }} hint
+   * @returns {string | null}
+   */
+  _routeKeyFromMetadata(metadata, hint = {}) {
+    try {
+      const transport = typeof metadata?.transport === 'string' ? metadata.transport.trim() : '';
+      const endpoint = typeof metadata?.endpoint === 'string' ? metadata.endpoint.trim() : '';
+      const surfaceRaw = typeof metadata?.surface === 'string' ? metadata.surface.trim() : '';
+      const surface =
+        surfaceRaw ||
+        (hint.isGuest === true ? 'guest' : hint.isGuest === false ? 'registered' : '');
+      const clean = (s) =>
+        String(s || '')
+          .replace(/[\u0000-\u001F]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 32);
+      const t = clean(transport) || 'unknown';
+      const e = clean(endpoint) || 'chat';
+      const s = clean(surface) || 'unknown';
+      return `${t}:${e}:${s}`;
+    } catch {
+      return null;
     }
   }
 
@@ -611,6 +701,26 @@ class MetricsService {
       const idx = Math.min(sorted.length - 1, Math.max(0, Math.ceil((p / 100) * sorted.length) - 1));
       return sorted[idx];
     };
+
+    const latencyByRoute = Object.entries(cu.latencyByRoute || {}).reduce((acc, [k, v]) => {
+      const ttftSamples = Array.isArray(v?.ttftMsSamples) ? v.ttftMsSamples : [];
+      const nonSamples = Array.isArray(v?.nonStreamLatencyMsSamples) ? v.nonStreamLatencyMsSamples : [];
+      acc[k] = {
+        streamingFirstChunks: Number(v?.streamingFirstChunks || 0),
+        nonStreamingResponses: Number(v?.nonStreamingResponses || 0),
+        ttft: {
+          samples: ttftSamples.length,
+          p50Ms: calcPercentile(ttftSamples, 50),
+          p95Ms: calcPercentile(ttftSamples, 95)
+        },
+        nonStreaming: {
+          samples: nonSamples.length,
+          p50Ms: calcPercentile(nonSamples, 50),
+          p95Ms: calcPercentile(nonSamples, 95)
+        }
+      };
+      return acc;
+    }, {});
     const chatUsage = {
       conversationsCreated: cu.conversationsCreated,
       messages: {
@@ -638,6 +748,7 @@ class MetricsService {
         p50Ms: calcPercentile(cu.nonStreamLatencyMsSamples, 50),
         p95Ms: calcPercentile(cu.nonStreamLatencyMsSamples, 95)
       },
+      latencyByRoute,
       guest: {
         sessionsCreated: cu.guestSessionsCreated
       },
