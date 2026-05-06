@@ -5,6 +5,8 @@
 
 jest.mock('react-native', () => ({
   Alert: { alert: jest.fn() },
+  Dimensions: { get: jest.fn(() => ({ width: 390, height: 844, scale: 2, fontScale: 1 })) },
+  StyleSheet: { create: (s) => s, flatten: (x) => x, hairlineWidth: 1 },
   Animated: {
     Value: jest.fn().mockImplementation((initial) => ({ _value: initial })),
     timing: jest.fn().mockReturnValue({ start: jest.fn() }),

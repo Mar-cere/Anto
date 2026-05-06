@@ -149,11 +149,13 @@ export function useChatScreen() {
   }, []);
 
   useEffect(() => {
-    const sub = AppState.addEventListener('change', (next) => {
+    const add = AppState?.addEventListener;
+    if (typeof add !== 'function') return undefined;
+    const sub = add.call(AppState, 'change', (next) => {
       if (next === 'active') return;
       void scheduleLastSessionSummaryDeferred();
     });
-    return () => sub.remove();
+    return () => sub?.remove?.();
   }, [scheduleLastSessionSummaryDeferred]);
 
   const handleMessagesContentSizeChange = useCallback(() => {

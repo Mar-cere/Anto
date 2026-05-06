@@ -7,6 +7,12 @@
 
 jest.mock('react-native', () => ({
   Alert: { alert: jest.fn() },
+  AppState: {
+    currentState: 'active',
+    addEventListener: jest.fn((_event, _handler) => ({
+      remove: jest.fn(),
+    })),
+  },
   Animated: {
     Value: jest.fn(() => ({ setValue: jest.fn() })),
     timing: jest.fn(() => ({ start: jest.fn() })),

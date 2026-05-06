@@ -10,8 +10,14 @@ jest.mock('react-native', () => ({
   ActivityIndicator: Mock,
   SafeAreaView: Mock,
   StatusBar: Mock,
-  StyleSheet: { create: (s) => s, flatten: (x) => x },
+  StyleSheet: { create: (s) => s, flatten: (x) => x, hairlineWidth: 1 },
   Alert: { alert: jest.fn() },
+  AppState: {
+    currentState: 'active',
+    addEventListener: jest.fn((_event, _handler) => ({
+      remove: jest.fn(),
+    })),
+  },
   Linking: { openURL: jest.fn().mockResolvedValue(undefined), canOpenURL: jest.fn().mockResolvedValue(true) },
   Platform: {
     OS: 'ios',
