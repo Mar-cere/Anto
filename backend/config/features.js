@@ -14,7 +14,7 @@
  * | openaiDailyCostReport      | ENABLE_OPENAI_DAILY_COST_REPORT | activo | correo diario uso OpenAI |
  * | trialRetentionEmail        | ENABLE_TRIAL_RETENTION_EMAIL   | activo | correo fin día ~2 de trial corto |
  * | weeklySummaryEmail         | ENABLE_WEEKLY_SUMMARY_EMAIL o ENABLE_WEEKLY_TIPS_EMAIL | off | aviso resumen semanal (neutro); slot `WEEKLY_TIPS_EMAIL_SLOT` |
- * | lastSessionSummaryWorker   | ENABLE_LAST_SESSION_SUMMARY    | activo salvo `false` | worker resumen última sesión (#4+#47); tick `LAST_SESSION_SUMMARY_TICK_MS`; reencola `processing` viejos con `LAST_SESSION_SUMMARY_STALE_MS` (default 15 min) |
+ * | lastSessionSummaryWorker   | ENABLE_LAST_SESSION_SUMMARY    | activo salvo `false` | worker continuidad último chat (#4+#47); tick `LAST_SESSION_SUMMARY_TICK_MS`; reencola `processing` viejos con `LAST_SESSION_SUMMARY_STALE_MS` (default 15 min); reintentos LLM `LAST_SESSION_SUMMARY_MAX_ATTEMPTS` (default 2, máx 5) |
  * | swagger                    | ENABLE_SWAGGER + NODE_ENV      | ver abajo | en prod solo si `ENABLE_SWAGGER=true` |
  *
  * Para los cuatro primeros, cualquier valor distinto de la cadena `'false'`
@@ -60,7 +60,7 @@ export const features = Object.freeze({
     process.env.ENABLE_WEEKLY_SUMMARY_EMAIL === 'true' ||
     process.env.ENABLE_WEEKLY_TIPS_EMAIL === 'true',
   swagger: resolveSwaggerEnabled(),
-  /** Worker que procesa jobs de resumen de última sesión (#4 + #47). Default activo salvo `false`. */
+  /** Worker que procesa jobs de continuidad del último chat (#4 + #47). Default activo salvo `false`. */
   lastSessionSummaryWorker: envIsNotFalse(process.env.ENABLE_LAST_SESSION_SUMMARY),
 });
 

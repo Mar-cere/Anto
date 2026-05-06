@@ -1,5 +1,5 @@
 /**
- * Job diferido para generar el resumen de última sesión (#4 + #47).
+ * Job diferido para la continuidad del último chat (#4 + #47).
  * Un usuario solo debe tener un job `pending` a la vez (reemplazo al reprogramar).
  */
 import mongoose from 'mongoose';
@@ -42,6 +42,13 @@ const sessionSummaryJobSchema = new mongoose.Schema(
       type: String,
       maxlength: 2000,
       default: null
+    },
+    /** Reintentos tras fallo de LLM (no cuenta cancelaciones). */
+    attempts: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 10
     }
   },
   { timestamps: true }

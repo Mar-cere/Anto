@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">13.33% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/30</span>
+                <span class='fraction'>4/30</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">13.33% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/30</span>
+                <span class='fraction'>4/30</span>
             </div>
         
             
@@ -221,7 +221,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -265,7 +265,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -299,25 +299,16 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -339,6 +330,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -351,7 +351,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -373,7 +373,7 @@
  * Detecta señales de recaída y proporciona intervenciones preventivas
  */
 &nbsp;
-export const RELAPSE_WARNING_SIGNS = <span class="cstat-no" title="statement not covered" >{</span>
+export const RELAPSE_WARNING_SIGNS = {
   // Señales emocionales
   emotional: {
     patterns: [
@@ -417,7 +417,7 @@ export const RELAPSE_WARNING_SIGNS = <span class="cstat-no" title="statement not
   }
 };
 &nbsp;
-export const RELAPSE_PREVENTION = <span class="cstat-no" title="statement not covered" >{</span>
+export const RELAPSE_PREVENTION = {
   // Plan de prevención de recaídas
   relapsePreventionPlan: {
     steps: [
@@ -451,7 +451,7 @@ export const RELAPSE_PREVENTION = <span class="cstat-no" title="statement not co
  * @param {string} messageContent - Contenido del mensaje
  * @returns {Object|null} Objeto con señales detectadas o null
  */
-export const detectRelapseSigns = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(m</span>essageContent) =&gt; {</span>
+export const detectRelapseSigns = <span class="fstat-no" title="function not covered" >(m</span>essageContent) =&gt; {
 <span class="cstat-no" title="statement not covered" >  if (!messageContent || typeof messageContent !== 'string') {</span>
 <span class="cstat-no" title="statement not covered" >    return null;</span>
   }
@@ -503,7 +503,7 @@ export const detectRelapseSigns = <span class="cstat-no" title="statement not co
  * @param {Object} detectedSigns - Señales detectadas
  * @returns {Object} Intervención apropiada
  */
-export const getRelapseIntervention = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(d</span>etectedSigns) =&gt; {</span>
+export const getRelapseIntervention = <span class="fstat-no" title="function not covered" >(d</span>etectedSigns) =&gt; {
 <span class="cstat-no" title="statement not covered" >  if (!detectedSigns || detectedSigns.patterns.length === 0) {</span>
 <span class="cstat-no" title="statement not covered" >    return null;</span>
   }
@@ -526,7 +526,7 @@ export const getRelapseIntervention = <span class="cstat-no" title="statement no
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-06T17:36:51.353Z
+                at 2026-05-06T22:49:43.204Z
             </div>
         <script src="../prettify.js"></script>
         <script>

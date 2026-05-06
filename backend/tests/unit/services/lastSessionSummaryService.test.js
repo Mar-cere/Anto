@@ -4,7 +4,8 @@ import {
   getSummaryLimitsForRiskTier,
   collectRiskLevelsFromMessages,
   countUserTurnStats,
-  scheduleLastSessionSummary
+  scheduleLastSessionSummary,
+  sanitizeContinuationText
 } from '../../../services/lastSessionSummaryService.js';
 
 describe('lastSessionSummaryService', () => {
@@ -57,6 +58,13 @@ describe('lastSessionSummaryService', () => {
       await expect(scheduleLastSessionSummary('not-an-id', 'also-invalid')).rejects.toMatchObject({
         code: 'INVALID_IDS'
       });
+    });
+  });
+
+  describe('sanitizeContinuationText', () => {
+    it('elimina caracteres de control y respeta maxLen', () => {
+      expect(sanitizeContinuationText('hola\u0000mundo', 100)).toBe('holamundo');
+      expect(sanitizeContinuationText('abcdef', 3)).toBe('abc');
     });
   });
 

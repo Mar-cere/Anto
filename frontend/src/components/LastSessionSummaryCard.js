@@ -1,5 +1,5 @@
 /**
- * Tarjeta: resumen persistido de la última sesión de chat (#4 + #47).
+ * Tarjeta: continuidad del último chat (#4 + #47); nombre de producto distinto del resumen semanal/mensual.
  * Usada en Perfil y en Inicio.
  */
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -107,9 +107,9 @@ export function LastSessionSummaryCard({ summary, onOpenChat }) {
     <View style={styles.container}>
       <View style={styles.card}>
         <View style={styles.kickerRow}>
-          <Text style={styles.kicker}>{TEXTS.LAST_SESSION_TITLE}</Text>
+          <Text style={styles.kicker}>{TEXTS.CHAT_CONTINUITY_TITLE}</Text>
           {summary.placeholder ? (
-            <Text style={styles.badge}>{TEXTS.LAST_SESSION_PLACEHOLDER_BADGE}</Text>
+            <Text style={styles.badge}>{TEXTS.CHAT_CONTINUITY_QUICK_BADGE}</Text>
           ) : null}
         </View>
         <Text style={styles.snippet}>{text}</Text>
@@ -119,7 +119,7 @@ export function LastSessionSummaryCard({ summary, onOpenChat }) {
             style={styles.cta}
             onPress={onOpenChat}
             accessibilityRole="button"
-            accessibilityLabel={TEXTS.LAST_SESSION_OPEN_CHAT}
+            accessibilityLabel={TEXTS.CHAT_CONTINUITY_OPEN_CHAT}
           >
             <MaterialCommunityIcons
               name="chat-outline"
@@ -127,7 +127,7 @@ export function LastSessionSummaryCard({ summary, onOpenChat }) {
               color={CARD.KICKER}
               style={{ marginRight: 6 }}
             />
-            <Text style={styles.ctaText}>{TEXTS.LAST_SESSION_OPEN_CHAT}</Text>
+            <Text style={styles.ctaText}>{TEXTS.CHAT_CONTINUITY_OPEN_CHAT}</Text>
           </TouchableOpacity>
         ) : null}
       </View>

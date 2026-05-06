@@ -235,6 +235,44 @@ describe('Chat Routes', () => {
       expect(job).toBeTruthy();
       expect(String(job.conversationId)).toBe(String(conversation._id));
     });
+
+    it('no programa job si la conversación no tiene mensajes', async () => {
+      const conversation = await Conversation.create({
+        userId: testUser._id,
+        status: 'active'
+      });
+
+      const response = await request(app)
+        .post(`/api/chat/conversations/${conversation._id}/session-summary/schedule`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(202);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toMatchObject({ scheduled: false, reason: 'NO_MESSAGES' });
+      const job = await SessionSummaryJob.findOne({ userId: testUser._id });
+      expect(job).toBeFalsy();
+    });
+
+    it('rechaza delayMinutes no numérico', async () => {
+      const conversation = await Conversation.create({
+        userId: testUser._id,
+        status: 'active'
+      });
+      await Message.create({
+        conversationId: conversation._id,
+        userId: testUser._id,
+        role: 'user',
+        content: 'hola'
+      });
+
+      const response = await request(app)
+        .post(`/api/chat/conversations/${conversation._id}/session-summary/schedule`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ delayMinutes: 'nope' })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
   });
 
   describe('DELETE /api/chat/conversations/:conversationId', () => {

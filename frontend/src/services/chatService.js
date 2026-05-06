@@ -538,7 +538,7 @@ export const submitProductProposalFeedback = async (conversationId, action) => {
 };
 
 /**
- * Programa en servidor la generación diferida del resumen de última sesión (#4 + #47).
+ * Programa en servidor la continuidad diferida del último chat (#4 + #47); no sustituye al resumen semanal/mensual.
  * Sin op si invitado, sin token o id inválido. Errores de red se ignoran (best-effort).
  * @param {string} conversationId
  * @param {{ delayMinutes?: number }} [options]

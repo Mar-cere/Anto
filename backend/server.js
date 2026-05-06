@@ -590,7 +590,7 @@ if (process.env.NODE_ENV !== 'test') {
         );
         startLastSessionSummaryWorker();
       } catch (error) {
-        logger.error('❌ Error iniciando worker resumen última sesión', { error: error.message });
+        logger.error('❌ Error iniciando worker continuidad del chat', { error: error.message });
       }
     }, 60000);
   }

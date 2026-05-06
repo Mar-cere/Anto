@@ -315,8 +315,8 @@ const userSchema = new mongoose.Schema({
     default: null
   },
   /**
-   * Último resumen de sesión de chat (#4 + #47): un solo documento lógico por usuario;
-   * al generarse uno nuevo sustituye al anterior.
+   * Continuidad del último chat (#4 + #47): un solo documento lógico por usuario;
+   * al generarse uno nuevo sustituye al anterior (no es el resumen semanal/mensual).
    */
   lastSessionSummary: {
     conversationId: {

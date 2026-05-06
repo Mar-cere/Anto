@@ -31,7 +31,7 @@ export function useProfileScreen(navigation) {
   const [selectedContact, setSelectedContact] = useState(null);
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
-  /** Resumen última sesión chat (#4 + #47); null si no hay o error. */
+  /** Continuidad del último chat (#4 + #47); null si no hay o error. */
   const [lastSessionSummary, setLastSessionSummary] = useState(null);
 
   const loadUserData = useCallback(async () => {
@@ -105,7 +105,7 @@ export function useProfileScreen(navigation) {
         setLastSessionSummary(null);
       }
     } catch (error) {
-      console.warn('[ProfileScreen] last-session:', error?.message || error);
+      console.warn('[ProfileScreen] continuidad-chat:', error?.message || error);
       setLastSessionSummary(null);
     }
   }, []);

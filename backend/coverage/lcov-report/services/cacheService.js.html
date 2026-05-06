@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">10.41% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/144</span>
+                <span class='fraction'>15/144</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">2.89% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/69</span>
+                <span class='fraction'>2/69</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">15.78% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/19</span>
+                <span class='fraction'>3/19</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">9.85% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/142</span>
+                <span class='fraction'>14/142</span>
             </div>
         
             
@@ -455,26 +455,26 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -814,11 +814,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -835,27 +835,27 @@
  */
 &nbsp;
 class CacheService {
-<span class="fstat-no" title="function not covered" >  co</span>nstructor() {
-<span class="cstat-no" title="statement not covered" >    this.memoryCache = new Map();</span>
-<span class="cstat-no" title="statement not covered" >    this.redisClient = null;</span>
-<span class="cstat-no" title="statement not covered" >    this.useRedis = false;</span>
-<span class="cstat-no" title="statement not covered" >    this.defaultTTL = 3600; </span>// 1 hora por defecto
-<span class="cstat-no" title="statement not covered" >    this.locks = new Map(); </span>// Locks para evitar cache stampede
+  constructor() {
+    this.memoryCache = new Map();
+    this.redisClient = null;
+    this.useRedis = false;
+    this.defaultTTL = 3600; // 1 hora por defecto
+    this.locks = new Map(); // Locks para evitar cache stampede
     
     // Intentar inicializar Redis si está disponible
-<span class="cstat-no" title="statement not covered" >    this.initializeRedis();</span>
+    this.initializeRedis();
   }
 &nbsp;
   /**
    * Inicializa Redis si está disponible
    */
-<span class="fstat-no" title="function not covered" >  as</span>ync initializeRedis() {
-<span class="cstat-no" title="statement not covered" >    try {</span>
+  async initializeRedis() {
+    try {
       // Solo intentar cargar Redis si está disponible
-      const redis = <span class="cstat-no" title="statement not covered" >await import('redis').catch(<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >null)</span>;</span>
-<span class="cstat-no" title="statement not covered" >      if (!redis) {</span>
-<span class="cstat-no" title="statement not covered" >        console.log('[CacheService] Redis no disponible, usando caché en memoria');</span>
-<span class="cstat-no" title="statement not covered" >        return;</span>
+      const redis = await import('redis').catch(() =&gt; null);
+      <span class="missing-if-branch" title="else path not taken" >E</span>if (!redis) {
+        console.log('[CacheService] Redis no disponible, usando caché en memoria');
+        return;
       }
 &nbsp;
       const redisUrl = <span class="cstat-no" title="statement not covered" >process.env.REDIS_URL || process.env.REDISCLOUD_URL;</span>
@@ -1195,11 +1195,11 @@ class CacheService {
 }
 &nbsp;
 // Inicializar limpieza periódica de entradas expiradas (solo para memoria)
-const cacheService = <span class="cstat-no" title="statement not covered" >new CacheService();</span>
+const cacheService = new CacheService();
 &nbsp;
 // Limpiar entradas expiradas cada 5 minutos
-<span class="cstat-no" title="statement not covered" >if (!cacheService.useRedis) {</span>
-<span class="cstat-no" title="statement not covered" >  setInterval(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="missing-if-branch" title="else path not taken" >E</span>if (!cacheService.useRedis) {
+  setInterval(<span class="fstat-no" title="function not covered" >()</span> =&gt; {
 <span class="cstat-no" title="statement not covered" >    cacheService.cleanExpired();</span>
   }, 5 * 60 * 1000);
 }
@@ -1213,7 +1213,7 @@ export default cacheService;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-06T17:36:51.353Z
+                at 2026-05-06T22:49:43.204Z
             </div>
         <script src="../prettify.js"></script>
         <script>

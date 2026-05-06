@@ -20,7 +20,7 @@ const router = express.Router();
  */
 /**
  * GET /api/summary/last-session
- * Resumen persistido de la última sesión de chat (#4 + #47); null si aún no hay.
+ * Continuidad del último chat (#4 + #47), persistida; null si aún no hay. (Ruta histórica; no es el resumen semanal/mensual.)
  */
 router.get('/last-session', authenticateToken, async (req, res) => {
   try {
@@ -30,7 +30,7 @@ router.get('/last-session', authenticateToken, async (req, res) => {
     console.error('[summaryRoutes] Error /last-session:', err);
     return res.status(500).json({
       success: false,
-      message: 'Error al obtener el resumen de la última sesión'
+      message: 'Error al obtener la continuidad del chat'
     });
   }
 });

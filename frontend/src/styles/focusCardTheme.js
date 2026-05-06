@@ -92,6 +92,30 @@ export const dashboardFocusStyles = StyleSheet.create({
   reminderChevron: {
     marginLeft: 6,
   },
+  lastSessionRow: {
+    marginBottom: 16,
+  },
+  lastSessionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'nowrap',
+    width: '100%',
+  },
+  lastSessionHeadline: {
+    flex: 1,
+    minWidth: 0,
+  },
+  lastSessionBadge: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: FOCUS_META,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginLeft: 8,
+  },
   protocolRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',

@@ -490,7 +490,7 @@ export async function buildDashboardFocus(userId) {
           conversationId: lastSessionSummary.conversationId,
           generatedAt: lastSessionSummary.generatedAt,
           placeholder: lastSessionSummary.placeholder,
-          headline: 'Tu resumen de la sesión anterior'
+          headline: 'Continuidad del chat'
         }
       : null,
     focus: {

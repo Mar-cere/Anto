@@ -4,20 +4,20 @@ Listado de **200** ideas. **Hecha:** `Sí` = entregado; `Sí*` = entregado, pend
 
 **Matriz:** Urgencia, Impacto, Retención (1–5). **Imp*** = redondeo de la media de Impacto y Retención. **Costo** B/M/A. **T** tiempo dev S/M/L. **Q** = cuadrante Eisenhower (misma regla que en versiones anteriores del doc).
 
-### Resumen de la última sesión (#4 + #47) — especificación v1
+### Continuidad del chat (#4 + #47) — especificación v1
 
-**Backend + app (MVP):** modelo `SessionSummaryJob`, `User.lastSessionSummary`, worker `ENABLE_LAST_SESSION_SUMMARY`, `POST /api/chat/conversations/:id/session-summary/schedule`, `GET /api/summary/last-session`, `lastSessionSummary` en `GET /api/summary/focus`. **Cliente:** `schedule` best-effort al salir del chat / segundo plano; tarjeta **Perfil** e **Inicio** con enlace al `conversationId` del resumen. **Pendiente opcional:** métricas de uso, notificación educativa única, badge en lista de conversaciones. Complementa **#103** (cierre en prompt).
+**Nombre de producto:** “Continuidad del chat” (no es el resumen semanal/mensual **#11**). **Backend + app (MVP):** modelo `SessionSummaryJob`, `User.lastSessionSummary`, worker `ENABLE_LAST_SESSION_SUMMARY`, `POST /api/chat/conversations/:id/session-summary/schedule`, `GET /api/summary/last-session`, `lastSessionSummary` en `GET /api/summary/focus`. **Cliente:** `schedule` best-effort al salir del chat / segundo plano; tarjeta **Perfil** e **Inicio** con enlace al `conversationId` del hilo. **Robustez (v1):** al reprogramar se cancelan jobs `pending`/`processing` del usuario; el worker solo persiste si el job sigue en `processing` (evita carreras con un reschedule); sin mensajes en la conversación no se encola; lectura API omite continuidad si la conversación ya no existe; fallo LLM con reintentos acotados (`LAST_SESSION_SUMMARY_MAX_ATTEMPTS`, default 2); saneo de texto; rate limit en `schedule`; cuerpo `delayMinutes` validado. **Fuera de alcance por ahora:** notificación educativa (push o similar); badge o cualquier indicador en la **lista de conversaciones** del chat. **Pendiente opcional:** métricas de uso. Complementa **#103** (cierre en prompt).
 
 | Decisión | Detalle |
 |----------|---------|
 | Disparo | Al **salir del chat o de la app**, encolar generación tras **5–10 min** de inactividad en el `conversationId` relevante; job **idempotente** (un cierre lógico por ventana; criterio robusto ante background/kill). |
-| Generación | **LLM** con **topes de extensión** según datos del hilo (emoción, **riesgo/crisis**): **mayor riesgo → resumen más corto y neutro** (menos detalle sensible, menos rumiación). |
+| Generación | **LLM** con **topes de extensión** según datos del hilo (emoción, **riesgo/crisis**): **mayor riesgo → texto más corto y neutro** (menos detalle sensible, menos rumiación). |
 | Formato | Hasta **3 bullets** “qué me llevo” (**#47**) + **1–2 líneas** puente / próxima vez (**#4**); límites explícitos por nivel de riesgo. |
-| Persistencia | **Un solo resumen activo** por usuario: al generarse uno nuevo, **sustituye** al anterior (sin historial ni borrado manual en v1). Acoplar bien a la **conversación que disparó el job** para no desalinear hilo vs texto. |
+| Persistencia | **Un solo bloque de continuidad activo** por usuario: al generarse uno nuevo, **sustituye** al anterior (sin historial ni borrado manual en v1). Acoplar bien a la **conversación que disparó el job** para no desalinear hilo vs texto. |
 | Umbral mínimo | Sesiones **muy cortas/triviales**: **no** llamar al LLM; placeholder breve u omitir según regla única de producto. |
-| UI | **Tarjeta en perfil e inicio** (`LastSessionSummaryCard`); **snippet** también vía foco (`/api/summary/focus`). CTA abre el chat en la **conversación** asociada al resumen. Opcional **badge** en lista de conversaciones. |
-| Notificaciones | **No** push en cada resumen generado; la primera vez puede bastar **una** notificación educativa o solo **descubrimiento in-app**. |
-| Relación **#11** | El bloque de resumen en app puede enlazar o reutilizar copy; **#11** sigue siendo agregado más amplio; este arco es **solo última sesión**. |
+| UI | **Perfil:** tarjeta dedicada (`LastSessionSummaryCard`). **Inicio:** mismo contenido **integrado en el bloque de foco** (`lastSessionSummary` en `/api/summary/focus`), sin segunda tarjeta ni petición extra. CTA abre el chat en la **conversación** de la continuidad. **No** se añade indicador en la lista de conversaciones (alcance cerrado). |
+| Notificaciones | **No** push por cada generación. **No** notificación educativa dedicada en v1 actual; el descubrimiento es solo vía **Perfil** e **Inicio**. |
+| Relación **#11** | **#11** es el resumen agregado en app (semanal/mensual, temas recurrentes); esta funcionalidad es **solo** puente al último hilo de chat, sin solapar naming ni expectativa de “resumen de actividad”. |
 
 
 | # | Propuesta | Descripción | Hecha | Urg | Imp | Ret | Imp* | Costo | T | Q |
@@ -25,7 +25,7 @@ Listado de **200** ideas. **Hecha:** `Sí` = entregado; `Sí*` = entregado, pend
 | 1 | Ritual inicio sesión | Al abrir el chat: micro-check-in o una línea de continuidad (“cómo llegas hoy”, “lo último que quedó pendiente”) antes de la lista fría de conversaciones. | No | 3 | 4 | 4 | 4 | M | S | Q2 |
 | 2 | Focos de acompañamiento | 1–3 temas por temporada (ansiedad, duelo, etc.) que alineen tono, sugerencias y métricas al proceso personal. | No | 3 | 5 | 5 | 5 | M | M | Q2 |
 | 3 | Solo escucha / orientación | Preferencia explícita: validación sin consejos vs pasos concretos y tareas. | No | 2 | 4 | 4 | 4 | M | M | Q2 |
-| 4 | Cierre de sesión breve | **Arco resumen última sesión** (sección anterior): 1–2 líneas puente / próxima vez, mismo artefacto que #47. App: schedule al salir/background, tarjeta perfil + inicio, apertura del hilo por `conversationId`. | Sí* | 2 | 3 | 4 | 4 | B | S | Q2 |
+| 4 | Cierre de sesión breve | **Arco continuidad del chat** (sección anterior): 1–2 líneas puente / próxima vez, mismo artefacto que #47. App: schedule al salir/background, tarjeta perfil + inicio, apertura del hilo por `conversationId`. | Sí | 2 | 3 | 4 | 4 | B | S | Q2 |
 | 5 | Mapa del proceso | Vista simple de etapas (exploración → experimentación → revisión) para dar estructura visible al acompañamiento. | No | 2 | 4 | 3 | 4 | M | M | Q2 |
 | 6 | Puente protocolos–chat | Que el chat nombre y retome protocolos activos en mensajes posteriores, sin silos de pantalla. | No | 3 | 5 | 4 | 5 | M | M | Q2 |
 | 7 | Bitácora terapéutica | Plantillas cortas (pensamiento–emoción–conducta) además del diario libre; opción exportar. | No | 2 | 4 | 4 | 4 | M | M | Q2 |
@@ -68,7 +68,7 @@ Listado de **200** ideas. **Hecha:** `Sí` = entregado; `Sí*` = entregado, pend
 | 44 | Carta yo futuro | El usuario escribe mensaje para sí mismo/a; la app lo muestra en fecha elegida. | No | 1 | 3 | 4 | 4 | B | S | Q2 |
 | 45 | Copy nocturno | Respuestas más breves y menos activantes en horario configurable (sueño, rumiación). | No | 2 | 3 | 3 | 3 | M | S | Q4 |
 | 46 | Curación clínica prompts | Revisión periódica por psicólogos asesores de prompts, disclaimers y respuestas tipo (governance). | No | 3 | 5 | 3 | 4 | A | L | Q2 |
-| 47 | Narrativa cierre sesión | **Arco resumen última sesión**: bullets + bridge con topes por crisis; un activo por usuario. Mismo pipeline que #4; riesgo persistido en `Message.metadata` para el tier; UI móvil alineada a #4. | Sí* | 2 | 4 | 5 | 5 | M | M | Q2 |
+| 47 | Narrativa cierre sesión | **Arco continuidad del chat**: bullets + bridge con topes por crisis; un activo por usuario. Mismo pipeline que #4; riesgo persistido en `Message.metadata` para el tier; UI móvil alineada a #4. | Sí | 2 | 4 | 5 | 5 | M | M | Q2 |
 | 48 | Roleplay breve | Escena corta con guión suave para practicar asertividad; límites y aviso de que no es realidad social. | No | 2 | 4 | 3 | 4 | M | M | Q2 |
 | 49 | Escala 0–10 foco | Un 0–10 de “cómo voy con [foco]” con histórico simple y narrativa en resúmenes. | No | 3 | 4 | 5 | 5 | B | S | Q2 |
 | 50 | Atajo lock screen / widget | Acceso ultrarrápido a respiración o ancla sin abrir el chat completo (plataforma según viabilidad). | No | 4 | 4 | 3 | 4 | M | M | Q1 |

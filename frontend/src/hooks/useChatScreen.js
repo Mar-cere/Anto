@@ -128,7 +128,7 @@ export function useChatScreen() {
     messagesRef.current = messages;
   }, [messages]);
 
-  /** Best-effort: programa resumen de última sesión en servidor (#4 + #47). */
+  /** Best-effort: programa continuidad del último chat en servidor (#4 + #47). */
   const scheduleLastSessionSummaryDeferred = useCallback(async () => {
     const DEBOUNCE_MS = 20000;
     if (Date.now() - lastSessionSummaryScheduleAtRef.current < DEBOUNCE_MS) return;

@@ -1,5 +1,5 @@
 /**
- * Resumen de última sesión de chat (#4 + #47): programación diferida y generación vía LLM.
+ * Continuidad del último chat (#4 + #47): programación diferida y síntesis breve vía LLM (nombre de producto ≠ resumen semanal/mensual).
  */
 import mongoose from 'mongoose';
 import { normalizeStoredCrisisRiskLevel } from '../constants/crisis.js';
@@ -18,6 +18,8 @@ const DEFAULT_DELAY_MIN = 7;
 const MIN_DELAY_MIN = 5;
 const MAX_DELAY_MIN = 12;
 const MESSAGES_FOR_TRANSCRIPT = 48;
+const MAX_LLM_ATTEMPTS_CAP = 5;
+const LLM_RETRY_DELAY_MS = 20_000;
 
 function clampDelayMinutes(n) {
   const x = Math.floor(Number(n));
@@ -104,10 +106,19 @@ export function countUserTurnStats(msgs) {
   return { userTurns: turns, userChars: chars };
 }
 
+/** Evita caracteres de control / null bytes en texto persistido (LLM o placeholder). */
+export function sanitizeContinuationText(s, maxLen) {
+  const t = String(s || '')
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+    .trim();
+  if (!maxLen || maxLen <= 0) return t;
+  return t.length > maxLen ? t.slice(0, maxLen) : t;
+}
+
 function buildSnippet(bullets, bridge) {
   const first = bullets[0] ? String(bullets[0]).replace(/\s+/g, ' ').trim() : '';
   const b = bridge ? String(bridge).replace(/\s+/g, ' ').trim() : '';
-  const raw = first || b || 'Resumen de tu última conversación.';
+  const raw = first || b || 'Podés retomar el hilo en el chat cuando quieras.';
   return raw.length > 220 ? `${raw.slice(0, 217)}…` : raw;
 }
 
@@ -126,6 +137,39 @@ function parseJsonObject(raw) {
   const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if (fence) o = tryParse(fence[1].trim());
   return o;
+}
+
+function maxLlmAttempts() {
+  const raw = parseInt(process.env.LAST_SESSION_SUMMARY_MAX_ATTEMPTS || '2', 10);
+  if (!Number.isFinite(raw)) return 2;
+  return Math.min(MAX_LLM_ATTEMPTS_CAP, Math.max(1, raw));
+}
+
+async function isJobStillProcessing(jobId) {
+  if (!jobId) return false;
+  const j = await SessionSummaryJob.findById(jobId).select('status').lean();
+  return j?.status === 'processing';
+}
+
+/**
+ * Persiste en User solo si el job sigue `processing`; evita pisar datos tras reschedule/cancel.
+ */
+async function persistAndCompleteJob(jobId, persistFn) {
+  if (!(await isJobStillProcessing(jobId))) return;
+  try {
+    await persistFn();
+  } catch (err) {
+    logger.error('[lastSessionSummary] persist fallida', {
+      jobId: String(jobId),
+      error: err?.message
+    });
+    await SessionSummaryJob.updateOne(
+      { _id: jobId, status: 'processing' },
+      { $set: { status: 'failed', lastError: String(err?.message || err).slice(0, 1900) } }
+    );
+    return;
+  }
+  await SessionSummaryJob.updateOne({ _id: jobId, status: 'processing' }, { $set: { status: 'done' } });
 }
 
 /**
@@ -149,6 +193,14 @@ export async function scheduleLastSessionSummary(userId, conversationId, opts = 
     throw err;
   }
 
+  const hasMessages = await Message.exists({ conversationId: cid });
+  if (!hasMessages) {
+    return {
+      scheduled: false,
+      reason: 'NO_MESSAGES'
+    };
+  }
+
   const lastMsg = await Message.findOne({ conversationId: cid })
     .sort({ createdAt: -1 })
     .select('createdAt')
@@ -158,13 +210,17 @@ export async function scheduleLastSessionSummary(userId, conversationId, opts = 
   const delayMinutes = clampDelayMinutes(opts.delayMinutes);
   const runAt = new Date(Date.now() + delayMinutes * 60 * 1000);
 
-  await SessionSummaryJob.deleteMany({ userId: uid, status: 'pending' });
+  await SessionSummaryJob.updateMany(
+    { userId: uid, status: { $in: ['pending', 'processing'] } },
+    { $set: { status: 'cancelled' } }
+  );
   const job = await SessionSummaryJob.create({
     userId: uid,
     conversationId: cid,
     runAt,
     baselineLastMessageAt,
-    status: 'pending'
+    status: 'pending',
+    attempts: 0
   });
 
   return {
@@ -176,9 +232,11 @@ export async function scheduleLastSessionSummary(userId, conversationId, opts = 
 }
 
 async function savePlaceholderSummary(userId, conversationId, { userTurns, riskTier }) {
-  const bridge =
-    'Esta sesión fue breve. Cuando quieras podés seguir en el chat; aquí no hace falta un resumen largo.';
-  const snippet = 'Sesión breve — seguí cuando quieras.';
+  const bridge = sanitizeContinuationText(
+    'Esta charla fue breve. Cuando quieras podés seguir en el chat; no hace falta guardar mucho detalle.',
+    600
+  );
+  const snippet = sanitizeContinuationText('Charla breve — seguí cuando quieras.', 280);
   await User.updateOne(
     { _id: userId },
     {
@@ -236,17 +294,21 @@ async function processOneJob(job) {
   const riskTier = maxRiskTierFromLevels(riskLevels);
 
   if (userTurns < MIN_USER_TURNS_FOR_LLM || userChars < MIN_USER_CHARS_FOR_LLM) {
-    await savePlaceholderSummary(userId, conversationId, { userTurns, riskTier });
-    await SessionSummaryJob.updateOne({ _id: job._id }, { $set: { status: 'done' } });
+    await persistAndCompleteJob(job._id, () =>
+      savePlaceholderSummary(userId, conversationId, { userTurns, riskTier })
+    );
     return;
   }
 
   if (!process.env.OPENAI_API_KEY) {
     logger.warn('[lastSessionSummary] OPENAI_API_KEY ausente; placeholder');
-    await savePlaceholderSummary(userId, conversationId, { userTurns, riskTier });
-    await SessionSummaryJob.updateOne({ _id: job._id }, { $set: { status: 'done' } });
+    await persistAndCompleteJob(job._id, () =>
+      savePlaceholderSummary(userId, conversationId, { userTurns, riskTier })
+    );
     return;
   }
+
+  if (!(await isJobStillProcessing(job._id))) return;
 
   const limits = getSummaryLimitsForRiskTier(riskTier);
   const transcript = msgs
@@ -264,7 +326,7 @@ async function processOneJob(job) {
       messages: [
         {
           role: 'system',
-          content: `Eres un asistente que resume conversaciones de bienestar emocional en una app. ${limits.systemExtra} Objetivo: ayudar a la persona a recordar el hilo sin rumiación. Salida: solo JSON válido, sin markdown.`
+          content: `Eres un asistente que redacta una síntesis breve de continuidad para conversaciones de bienestar emocional en una app (no es un informe clínico ni un resumen de actividad semanal). ${limits.systemExtra} Objetivo: ayudar a la persona a recordar el hilo sin rumiación. Salida: solo JSON válido, sin markdown.`
         },
         { role: 'user', content: userPrompt }
       ],
@@ -272,43 +334,79 @@ async function processOneJob(job) {
       temperature: 0.25
     });
 
+    if (!(await isJobStillProcessing(job._id))) return;
+
     const raw = completion?.choices?.[0]?.message?.content || '';
     const parsed = parseJsonObject(raw);
-    let bullets = Array.isArray(parsed?.bullets) ? parsed.bullets.map((x) => String(x).trim()).filter(Boolean) : [];
-    let bridge = String(parsed?.bridge || '').trim();
+    let bullets = Array.isArray(parsed?.bullets)
+      ? parsed.bullets
+          .map((x) => sanitizeContinuationText(x, limits.bulletMaxChars))
+          .filter(Boolean)
+      : [];
+    let bridge = sanitizeContinuationText(parsed?.bridge, limits.bridgeMaxChars);
 
     bullets = bullets.slice(0, limits.maxBullets).map((b) => b.slice(0, limits.bulletMaxChars));
     bridge = bridge.slice(0, limits.bridgeMaxChars);
 
     if (!bullets.length && !bridge) {
-      await savePlaceholderSummary(userId, conversationId, { userTurns, riskTier });
+      await persistAndCompleteJob(job._id, () =>
+        savePlaceholderSummary(userId, conversationId, { userTurns, riskTier })
+      );
     } else {
       const snippet = buildSnippet(bullets, bridge);
-      await User.updateOne(
-        { _id: userId },
+      const safeSnippet = sanitizeContinuationText(snippet, 280);
+      const safeBridge = sanitizeContinuationText(bridge || snippet, 600);
+      const safeBullets = bullets.map((b) => sanitizeContinuationText(b, 400)).filter(Boolean);
+      await persistAndCompleteJob(job._id, () =>
+        User.updateOne(
+          { _id: userId },
+          {
+            $set: {
+              lastSessionSummary: {
+                conversationId,
+                bullets: safeBullets.slice(0, 5),
+                bridge: safeBridge || safeSnippet,
+                snippet: safeSnippet,
+                riskTier,
+                placeholder: false,
+                userTurnCount: userTurns,
+                generatedAt: new Date()
+              }
+            }
+          }
+        )
+      );
+    }
+  } catch (e) {
+    logger.error('[lastSessionSummary] generación fallida', { error: e?.message, jobId: String(job._id) });
+    const current = await SessionSummaryJob.findById(job._id).select('status attempts').lean();
+    if (current?.status !== 'processing') return;
+
+    const attempts = Number(current.attempts) || 0;
+    const maxTry = maxLlmAttempts();
+    if (attempts + 1 < maxTry) {
+      await SessionSummaryJob.updateOne(
+        { _id: job._id, status: 'processing' },
         {
           $set: {
-            lastSessionSummary: {
-              conversationId,
-              bullets,
-              bridge: bridge || snippet,
-              snippet,
-              riskTier,
-              placeholder: false,
-              userTurnCount: userTurns,
-              generatedAt: new Date()
-            }
+            status: 'pending',
+            runAt: new Date(Date.now() + LLM_RETRY_DELAY_MS),
+            attempts: attempts + 1,
+            lastError: String(e?.message || e).slice(0, 500)
           }
         }
       );
+      logger.warn('[lastSessionSummary] reintento programado', {
+        jobId: String(job._id),
+        attempt: attempts + 1,
+        maxTry
+      });
+    } else {
+      await SessionSummaryJob.updateOne(
+        { _id: job._id, status: 'processing' },
+        { $set: { status: 'failed', lastError: String(e?.message || e).slice(0, 1900) } }
+      );
     }
-    await SessionSummaryJob.updateOne({ _id: job._id }, { $set: { status: 'done' } });
-  } catch (e) {
-    logger.error('[lastSessionSummary] generación fallida', { error: e?.message, jobId: String(job._id) });
-    await SessionSummaryJob.updateOne(
-      { _id: job._id },
-      { $set: { status: 'failed', lastError: String(e?.message || e).slice(0, 1900) } }
-    );
   }
 }
 
@@ -367,11 +465,16 @@ const RISK_TIER_API = new Set(['low', 'warning', 'medium', 'high', 'unknown']);
 
 export async function getLastSessionSummaryForUser(userId) {
   if (!mongoose.isValidObjectId(userId)) return null;
-  const u = await User.findById(userId)
+  const uid = new mongoose.Types.ObjectId(String(userId));
+  const u = await User.findById(uid)
     .select('lastSessionSummary')
     .lean();
   const s = u?.lastSessionSummary;
   if (!s || !s.generatedAt) return null;
+  if (s.conversationId) {
+    const convOk = await Conversation.exists({ _id: s.conversationId, userId: uid });
+    if (!convOk) return null;
+  }
   const tierRaw = String(s.riskTier || 'unknown').toLowerCase();
   const riskTier = RISK_TIER_API.has(tierRaw) ? tierRaw : 'unknown';
   return {
@@ -389,7 +492,7 @@ export async function getLastSessionSummaryForUser(userId) {
 export function startLastSessionSummaryWorker() {
   const enabled = process.env.ENABLE_LAST_SESSION_SUMMARY !== 'false';
   if (!enabled) {
-    logger.info('📋 Resumen última sesión: worker desactivado (ENABLE_LAST_SESSION_SUMMARY=false)');
+    logger.info('📋 Continuidad del chat: worker desactivado (ENABLE_LAST_SESSION_SUMMARY=false)');
     return { stop: () => {} };
   }
   const intervalMs = parseInt(process.env.LAST_SESSION_SUMMARY_TICK_MS || '45000', 10);
@@ -399,7 +502,7 @@ export function startLastSessionSummaryWorker() {
       logger.error('[lastSessionSummary] tick', { error: e?.message })
     );
   }, safeMs);
-  logger.info(`📋 Resumen última sesión: worker cada ${safeMs}ms`);
+  logger.info(`📋 Continuidad del chat: worker cada ${safeMs}ms`);
   return {
     stop: () => clearInterval(id)
   };

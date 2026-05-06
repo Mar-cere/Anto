@@ -69,6 +69,7 @@ import {
   patchMessageLimiter,
   messageFeedbackLimiter,
   sendMessageLimiter,
+  scheduleSessionSummaryLimiter,
   isValidObjectId,
   validarConversationId,
   validarConversacion,
@@ -393,18 +394,34 @@ router.post('/conversations', protect, requireActiveSubscription(true), async (r
 
 /**
  * POST /api/chat/conversations/:conversationId/session-summary/schedule
- * Programa generación del resumen de última sesión tras inactividad (#4 + #47).
+ * Programa generación de la continuidad del último chat tras inactividad (#4 + #47).
  * Body opcional: { delayMinutes: number } entre 5 y 12 (default 7).
  */
 router.post(
   '/conversations/:conversationId/session-summary/schedule',
   protect,
   requireActiveSubscription(true),
+  scheduleSessionSummaryLimiter,
   validarConversationId,
   validarConversacion,
   async (req, res) => {
     try {
-      const delayMinutes = req.body?.delayMinutes;
+      const rawDelay = req.body?.delayMinutes;
+      const delayMinutes =
+        rawDelay === undefined || rawDelay === null || rawDelay === ''
+          ? undefined
+          : Number(rawDelay);
+      if (
+        rawDelay !== undefined &&
+        rawDelay !== null &&
+        rawDelay !== '' &&
+        !Number.isFinite(delayMinutes)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: 'delayMinutes debe ser un número entre 5 y 12'
+        });
+      }
       const data = await scheduleLastSessionSummary(req.user._id, req.params.conversationId, {
         delayMinutes
       });
@@ -419,7 +436,7 @@ router.post(
       console.error('[chatRoutes] session-summary/schedule:', error);
       return res.status(500).json({
         success: false,
-        message: 'No se pudo programar el resumen de sesión'
+        message: 'No se pudo programar la continuidad del chat'
       });
     }
   }
@@ -638,7 +655,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
       .catch(() => {});
 
     if (role === 'user') {
-      /** Persistido en mensajes para resumen de sesión / SLO (collectRiskLevelsFromMessages). */
+      /** Persistido en mensajes para continuidad post-chat / SLO (collectRiskLevelsFromMessages). */
       let riskLevel = 'LOW';
       try {
         // 2. Obtener contexto e historial (en paralelo)

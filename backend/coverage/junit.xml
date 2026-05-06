@@ -1,25 +1,56 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="10" failures="0" errors="0" time="0.859">
-  <testsuite name="lastSessionSummaryService" errors="0" failures="0" skipped="0" timestamp="2026-05-06T21:14:37" time="0.825" tests="10">
-    <testcase classname="lastSessionSummaryService maxRiskTierFromLevels elige el riesgo máximo" name="lastSessionSummaryService maxRiskTierFromLevels elige el riesgo máximo" time="0.002">
+<testsuites name="jest tests" tests="21" failures="0" errors="0" time="4.304">
+  <testsuite name="lastSessionSummaryService" errors="0" failures="0" skipped="0" timestamp="2026-05-06T22:50:34" time="1.188" tests="11">
+    <testcase classname="lastSessionSummaryService maxRiskTierFromLevels elige el riesgo máximo" name="lastSessionSummaryService maxRiskTierFromLevels elige el riesgo máximo" time="0.006">
     </testcase>
     <testcase classname="lastSessionSummaryService maxRiskTierFromLevels devuelve low sin niveles" name="lastSessionSummaryService maxRiskTierFromLevels devuelve low sin niveles" time="0">
     </testcase>
-    <testcase classname="lastSessionSummaryService getSummaryLimitsForRiskTier acorta en crisis alta" name="lastSessionSummaryService getSummaryLimitsForRiskTier acorta en crisis alta" time="0">
+    <testcase classname="lastSessionSummaryService getSummaryLimitsForRiskTier acorta en crisis alta" name="lastSessionSummaryService getSummaryLimitsForRiskTier acorta en crisis alta" time="0.001">
     </testcase>
-    <testcase classname="lastSessionSummaryService collectRiskLevelsFromMessages extrae riskLevel de metadata" name="lastSessionSummaryService collectRiskLevelsFromMessages extrae riskLevel de metadata" time="0.001">
+    <testcase classname="lastSessionSummaryService collectRiskLevelsFromMessages extrae riskLevel de metadata" name="lastSessionSummaryService collectRiskLevelsFromMessages extrae riskLevel de metadata" time="0">
     </testcase>
-    <testcase classname="lastSessionSummaryService collectRiskLevelsFromMessages lee metadata.context.crisis y normaliza espacios" name="lastSessionSummaryService collectRiskLevelsFromMessages lee metadata.context.crisis y normaliza espacios" time="0">
+    <testcase classname="lastSessionSummaryService collectRiskLevelsFromMessages lee metadata.context.crisis y normaliza espacios" name="lastSessionSummaryService collectRiskLevelsFromMessages lee metadata.context.crisis y normaliza espacios" time="0.001">
     </testcase>
-    <testcase classname="lastSessionSummaryService collectRiskLevelsFromMessages valores desconocidos se normalizan a LOW" name="lastSessionSummaryService collectRiskLevelsFromMessages valores desconocidos se normalizan a LOW" time="0.001">
+    <testcase classname="lastSessionSummaryService collectRiskLevelsFromMessages valores desconocidos se normalizan a LOW" name="lastSessionSummaryService collectRiskLevelsFromMessages valores desconocidos se normalizan a LOW" time="0">
     </testcase>
     <testcase classname="lastSessionSummaryService collectRiskLevelsFromMessages sin array devuelve vacío" name="lastSessionSummaryService collectRiskLevelsFromMessages sin array devuelve vacío" time="0">
     </testcase>
     <testcase classname="lastSessionSummaryService scheduleLastSessionSummary rechaza ids inválidos antes de consultar" name="lastSessionSummaryService scheduleLastSessionSummary rechaza ids inválidos antes de consultar" time="0.001">
     </testcase>
+    <testcase classname="lastSessionSummaryService sanitizeContinuationText elimina caracteres de control y respeta maxLen" name="lastSessionSummaryService sanitizeContinuationText elimina caracteres de control y respeta maxLen" time="0">
+    </testcase>
     <testcase classname="lastSessionSummaryService countUserTurnStats cuenta solo mensajes de usuario" name="lastSessionSummaryService countUserTurnStats cuenta solo mensajes de usuario" time="0">
     </testcase>
-    <testcase classname="lastSessionSummaryService countUserTurnStats entrada no array devuelve ceros" name="lastSessionSummaryService countUserTurnStats entrada no array devuelve ceros" time="0">
+    <testcase classname="lastSessionSummaryService countUserTurnStats entrada no array devuelve ceros" name="lastSessionSummaryService countUserTurnStats entrada no array devuelve ceros" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="Chat Routes" errors="0" failures="0" skipped="7" timestamp="2026-05-06T22:50:34" time="3.639" tests="10">
+    <testcase classname="Chat Routes GET /api/chat/conversations debe obtener las conversaciones del usuario" name="Chat Routes GET /api/chat/conversations debe obtener las conversaciones del usuario" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Chat Routes GET /api/chat/conversations debe rechazar request sin autenticación" name="Chat Routes GET /api/chat/conversations debe rechazar request sin autenticación" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Chat Routes POST /api/chat/conversations debe crear una nueva conversación" name="Chat Routes POST /api/chat/conversations debe crear una nueva conversación" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Chat Routes POST /api/chat/conversations debe rechazar request sin autenticación" name="Chat Routes POST /api/chat/conversations debe rechazar request sin autenticación" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Chat Routes GET /api/chat/conversations/:conversationId debe obtener mensajes de una conversación" name="Chat Routes GET /api/chat/conversations/:conversationId debe obtener mensajes de una conversación" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Chat Routes GET /api/chat/conversations/:conversationId debe rechazar obtener conversación de otro usuario" name="Chat Routes GET /api/chat/conversations/:conversationId debe rechazar obtener conversación de otro usuario" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Chat Routes POST /api/chat/conversations/:conversationId/session-summary/schedule programa job pendiente con delay acotado" name="Chat Routes POST /api/chat/conversations/:conversationId/session-summary/schedule programa job pendiente con delay acotado" time="0.231">
+    </testcase>
+    <testcase classname="Chat Routes POST /api/chat/conversations/:conversationId/session-summary/schedule no programa job si la conversación no tiene mensajes" name="Chat Routes POST /api/chat/conversations/:conversationId/session-summary/schedule no programa job si la conversación no tiene mensajes" time="0.025">
+    </testcase>
+    <testcase classname="Chat Routes POST /api/chat/conversations/:conversationId/session-summary/schedule rechaza delayMinutes no numérico" name="Chat Routes POST /api/chat/conversations/:conversationId/session-summary/schedule rechaza delayMinutes no numérico" time="0.023">
+    </testcase>
+    <testcase classname="Chat Routes DELETE /api/chat/conversations/:conversationId debe eliminar una conversación" name="Chat Routes DELETE /api/chat/conversations/:conversationId debe eliminar una conversación" time="0">
+      <skipped/>
     </testcase>
   </testsuite>
 </testsuites>

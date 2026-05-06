@@ -12,7 +12,8 @@ export {
   deleteConversationLimiter,
   patchMessageLimiter,
   messageFeedbackLimiter,
-  sendMessageLimiter
+  sendMessageLimiter,
+  scheduleSessionSummaryLimiter
 } from './chatConstants.js';
 
 export { isValidObjectId, validarConversationId, validarConversacion } from './chatMiddleware.js';

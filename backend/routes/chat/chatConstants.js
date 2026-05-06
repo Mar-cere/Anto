@@ -45,3 +45,13 @@ export const sendMessageLimiter = rateLimit({
   skipSuccessfulRequests: false,
   skipFailedRequests: false
 });
+
+/** Programación best-effort de continuidad del chat (#4 + #47); límite por usuario autenticado. */
+export const scheduleSessionSummaryLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  message: 'Demasiadas peticiones de programación. Intenta más tarde.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => (req.user?._id ? String(req.user._id) : req.ip ?? 'unknown')
+});
