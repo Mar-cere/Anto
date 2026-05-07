@@ -51,6 +51,7 @@ const TaskDetailModal = ({
   const scrollHintTimeouts = useRef([]);
   const [generatingSubtasks, setGeneratingSubtasks] = useState(false);
   const [subtaskBusyIndex, setSubtaskBusyIndex] = useState(null);
+  const generateSubtasksInFlightRef = useRef(false);
 
   const handleClose = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -88,13 +89,15 @@ const TaskDetailModal = ({
 
   useEffect(() => {
     if (!visible) {
+      generateSubtasksInFlightRef.current = false;
       setGeneratingSubtasks(false);
       setSubtaskBusyIndex(null);
     }
   }, [visible]);
 
   const handleGenerateSubtasks = useCallback(async () => {
-    if (!item?._id || generatingSubtasks) return;
+    if (!item?._id || generateSubtasksInFlightRef.current) return;
+    generateSubtasksInFlightRef.current = true;
     setGeneratingSubtasks(true);
     try {
       const body = await api.post(ENDPOINTS.TASK_SUBTASKS_GENERATE(item._id), {});
@@ -112,9 +115,10 @@ const TaskDetailModal = ({
         getApiErrorMessage(e, { isOffline }) || 'Intenta de nuevo más tarde.'
       );
     } finally {
+      generateSubtasksInFlightRef.current = false;
       setGeneratingSubtasks(false);
     }
-  }, [item?._id, generatingSubtasks, onTaskUpdated, isOffline]);
+  }, [item?._id, onTaskUpdated, isOffline]);
 
   const handleToggleSubtask = useCallback(
     async (index) => {

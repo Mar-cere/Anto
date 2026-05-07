@@ -88,7 +88,8 @@ const findTaskById = async (taskId, userId, populate = false) => {
   }
   const query = Task.findOne({
     _id: new mongoose.Types.ObjectId(taskId),
-    userId: new mongoose.Types.ObjectId(userId)
+    userId: new mongoose.Types.ObjectId(userId),
+    deletedAt: { $exists: false }
   });
   
   if (populate) {
@@ -817,6 +818,12 @@ router.post('/:id/subtasks/generate', validateObjectId, patchTaskLimiter, async 
       });
     }
 
+    if (task.status === 'completed' || task.status === 'cancelled') {
+      return res.status(400).json({
+        message: 'No se pueden sugerir subtareas en una tarea completada o cancelada'
+      });
+    }
+
     const rawTitles = await generateSubtaskTitlesWithLlm({
       title: task.title,
       description: task.description,
@@ -839,7 +846,7 @@ router.post('/:id/subtasks/generate', validateObjectId, patchTaskLimiter, async 
     for (const t of toAdd) {
       task.subtasks.push({ title: t, completed: false });
     }
-    await task.save();
+    await task.save({ validateModifiedOnly: true });
 
     res.json({
       success: true,
@@ -849,6 +856,12 @@ router.post('/:id/subtasks/generate', validateObjectId, patchTaskLimiter, async 
     });
   } catch (error) {
     console.error('Error generando subtareas (LLM):', error);
+    if (error?.name === 'ValidationError') {
+      return res.status(400).json({
+        message: 'No se pudo guardar las subtareas. Revisa los datos de la tarea.',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
     const code = error?.message;
     if (code === 'SUBTASKS_LLM_DISABLED') {
       return res.status(503).json({
@@ -867,6 +880,12 @@ router.post('/:id/subtasks/generate', validateObjectId, patchTaskLimiter, async 
     }
     if (code === 'TASK_TITLE_REQUIRED') {
       return res.status(400).json({ message: 'La tarea no tiene un título válido' });
+    }
+    const status = error?.status ?? error?.statusCode;
+    if (status === 408 || /timeout|timed out|ETIMEDOUT/i.test(String(error?.message || ''))) {
+      return res.status(504).json({
+        message: 'El asistente tardó demasiado. Intenta de nuevo.'
+      });
     }
     res.status(500).json({
       message: 'Error al generar subtareas',
@@ -920,7 +939,11 @@ router.patch('/:id/subtasks/:subtaskIndex/complete', validateObjectId, patchTask
     if (!task) {
       return res.status(404).json({ message: 'Tarea no encontrada' });
     }
-    
+
+    if (subtaskIndex >= task.subtasks.length) {
+      return res.status(400).json({ message: 'Índice de subtarea fuera de rango' });
+    }
+
     await task.completeSubtask(subtaskIndex);
     
     res.json({ 

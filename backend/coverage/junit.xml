@@ -1,11 +1,164 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="3" failures="0" errors="0" time="1.978">
-  <testsuite name="taskSubtasksLlmService.pickNewSubtaskTitles" errors="0" failures="0" skipped="0" timestamp="2026-05-06T23:54:01" time="1.903" tests="3">
-    <testcase classname="taskSubtasksLlmService.pickNewSubtaskTitles deduplica respecto a subtareas existentes y respeta el máximo por llamada" name="taskSubtasksLlmService.pickNewSubtaskTitles deduplica respecto a subtareas existentes y respeta el máximo por llamada" time="0.001">
+<testsuites name="jest tests" tests="56" failures="0" errors="0" time="0.737">
+  <testsuite name="Task Model" errors="0" failures="0" skipped="47" timestamp="2026-05-07T02:04:06" time="0.713" tests="56">
+    <testcase classname="Task Model Validaciones debe crear una tarea válida" name="Task Model Validaciones debe crear una tarea válida" time="0">
+      <skipped/>
     </testcase>
-    <testcase classname="taskSubtasksLlmService.pickNewSubtaskTitles respeta el límite total de subtareas en la tarea" name="taskSubtasksLlmService.pickNewSubtaskTitles respeta el límite total de subtareas en la tarea" time="0">
+    <testcase classname="Task Model Validaciones debe requerir userId" name="Task Model Validaciones debe requerir userId" time="0">
+      <skipped/>
     </testcase>
-    <testcase classname="taskSubtasksLlmService.pickNewSubtaskTitles filtra títulos demasiado cortos" name="taskSubtasksLlmService.pickNewSubtaskTitles filtra títulos demasiado cortos" time="0">
+    <testcase classname="Task Model Validaciones debe requerir title" name="Task Model Validaciones debe requerir title" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Validaciones debe requerir dueDate" name="Task Model Validaciones debe requerir dueDate" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Validaciones debe validar status enum" name="Task Model Validaciones debe validar status enum" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Validaciones debe validar priority enum" name="Task Model Validaciones debe validar priority enum" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Validaciones debe validar estimatedTime máximo" name="Task Model Validaciones debe validar estimatedTime máximo" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Validaciones debe validar estimatedTime mínimo" name="Task Model Validaciones debe validar estimatedTime mínimo" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Validaciones debe validar progress máximo" name="Task Model Validaciones debe validar progress máximo" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Validaciones debe validar progress mínimo" name="Task Model Validaciones debe validar progress mínimo" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Validaciones debe validar itemType enum" name="Task Model Validaciones debe validar itemType enum" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Validaciones debe aceptar todos los tipos de itemType válidos" name="Task Model Validaciones debe aceptar todos los tipos de itemType válidos" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Validaciones debe validar que parentTask no sea la misma tarea" name="Task Model Validaciones debe validar que parentTask no sea la misma tarea" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Validaciones debe validar repeat.endDate después de dueDate" name="Task Model Validaciones debe validar repeat.endDate después de dueDate" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Validaciones debe rechazar dueDate pasada al crear (documento nuevo)" name="Task Model Validaciones debe rechazar dueDate pasada al crear (documento nuevo)" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Validaciones debe permitir guardar subtareas si el vencimiento ya pasó y no se modifica dueDate" name="Task Model Validaciones debe permitir guardar subtareas si el vencimiento ya pasó y no se modifica dueDate" time="0.092">
+    </testcase>
+    <testcase classname="Task Model Validaciones debe rechazar si se asigna dueDate pasada en un documento existente" name="Task Model Validaciones debe rechazar si se asigna dueDate pasada en un documento existente" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Estructura del modelo debe tener subtasks como array" name="Task Model Estructura del modelo debe tener subtasks como array" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Estructura del modelo debe tener tags como array" name="Task Model Estructura del modelo debe tener tags como array" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Estructura del modelo debe generar id único automáticamente" name="Task Model Estructura del modelo debe generar id único automáticamente" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Métodos de instancia debe marcar tarea como completada" name="Task Model Métodos de instancia debe marcar tarea como completada" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Métodos de instancia no debe permitir marcar recordatorio como completado" name="Task Model Métodos de instancia no debe permitir marcar recordatorio como completado" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Métodos de instancia debe marcar tarea como en progreso" name="Task Model Métodos de instancia debe marcar tarea como en progreso" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Métodos de instancia no debe permitir marcar recordatorio como en progreso" name="Task Model Métodos de instancia no debe permitir marcar recordatorio como en progreso" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Métodos de instancia debe cancelar tarea" name="Task Model Métodos de instancia debe cancelar tarea" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Métodos de instancia debe agregar subtarea" name="Task Model Métodos de instancia debe agregar subtarea" time="0.008">
+    </testcase>
+    <testcase classname="Task Model Métodos de instancia debe completar subtarea" name="Task Model Métodos de instancia debe completar subtarea" time="0.024">
+    </testcase>
+    <testcase classname="Task Model Métodos de instancia debe lanzar error al completar subtarea con índice inválido" name="Task Model Métodos de instancia debe lanzar error al completar subtarea con índice inválido" time="0.002">
+    </testcase>
+    <testcase classname="Task Model Métodos de instancia debe hacer soft delete" name="Task Model Métodos de instancia debe hacer soft delete" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Propiedades virtuales debe calcular isOverdue correctamente" name="Task Model Propiedades virtuales debe calcular isOverdue correctamente" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Propiedades virtuales debe retornar false para isOverdue si está completada" name="Task Model Propiedades virtuales debe retornar false para isOverdue si está completada" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Propiedades virtuales debe calcular daysUntilDue correctamente" name="Task Model Propiedades virtuales debe calcular daysUntilDue correctamente" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Propiedades virtuales debe calcular completionRate correctamente con subtareas" name="Task Model Propiedades virtuales debe calcular completionRate correctamente con subtareas" time="0.001">
+    </testcase>
+    <testcase classname="Task Model Propiedades virtuales debe retornar 100% completionRate si está completada sin subtareas" name="Task Model Propiedades virtuales debe retornar 100% completionRate si está completada sin subtareas" time="0.001">
+    </testcase>
+    <testcase classname="Task Model Propiedades virtuales isOverdue debe retornar false si no hay dueDate" name="Task Model Propiedades virtuales isOverdue debe retornar false si no hay dueDate" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Propiedades virtuales daysUntilDue debe retornar null si no hay dueDate" name="Task Model Propiedades virtuales daysUntilDue debe retornar null si no hay dueDate" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Propiedades virtuales isOverdue debe retornar false si está cancelada" name="Task Model Propiedades virtuales isOverdue debe retornar false si está cancelada" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Propiedades virtuales completionRate debe calcularse correctamente con todas las subtareas completadas" name="Task Model Propiedades virtuales completionRate debe calcularse correctamente con todas las subtareas completadas" time="0.001">
+    </testcase>
+    <testcase classname="Task Model Propiedades virtuales completionRate debe retornar 0% si no hay subtareas y no está completada" name="Task Model Propiedades virtuales completionRate debe retornar 0% si no hay subtareas y no está completada" time="0.001">
+    </testcase>
+    <testcase classname="Task Model Propiedades virtuales daysUntilDue debe calcular días negativos para fechas pasadas" name="Task Model Propiedades virtuales daysUntilDue debe calcular días negativos para fechas pasadas" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Middleware pre-save debe establecer completedAt cuando status cambia a completed" name="Task Model Middleware pre-save debe establecer completedAt cuando status cambia a completed" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Middleware pre-save debe actualizar progress basado en subtareas al guardar" name="Task Model Middleware pre-save debe actualizar progress basado en subtareas al guardar" time="0.002">
+    </testcase>
+    <testcase classname="Task Model Métodos estáticos debe tener método getPendingItems" name="Task Model Métodos estáticos debe tener método getPendingItems" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Métodos estáticos debe tener método getOverdueItems" name="Task Model Métodos estáticos debe tener método getOverdueItems" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Métodos estáticos debe tener método getStats" name="Task Model Métodos estáticos debe tener método getStats" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Métodos estáticos getPendingItems debe retornar array vacío sin tareas" name="Task Model Métodos estáticos getPendingItems debe retornar array vacío sin tareas" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Métodos estáticos getPendingItems debe filtrar por tipo" name="Task Model Métodos estáticos getPendingItems debe filtrar por tipo" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Métodos estáticos getPendingItems debe filtrar por categoría" name="Task Model Métodos estáticos getPendingItems debe filtrar por categoría" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Métodos estáticos getPendingItems debe filtrar por prioridad" name="Task Model Métodos estáticos getPendingItems debe filtrar por prioridad" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Métodos estáticos getOverdueItems debe retornar tareas vencidas" name="Task Model Métodos estáticos getOverdueItems debe retornar tareas vencidas" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Métodos estáticos getOverdueItems no debe retornar tareas completadas" name="Task Model Métodos estáticos getOverdueItems no debe retornar tareas completadas" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Métodos estáticos getStats debe calcular estadísticas correctamente" name="Task Model Métodos estáticos getStats debe calcular estadísticas correctamente" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Métodos estáticos getPendingItems debe filtrar por categoría" name="Task Model Métodos estáticos getPendingItems debe filtrar por categoría" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Métodos estáticos getOverdueItems debe retornar tareas vencidas" name="Task Model Métodos estáticos getOverdueItems debe retornar tareas vencidas" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Métodos estáticos getStats debe retornar estadísticas vacías sin tareas" name="Task Model Métodos estáticos getStats debe retornar estadísticas vacías sin tareas" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Task Model Métodos estáticos getStats debe calcular estadísticas correctamente" name="Task Model Métodos estáticos getStats debe calcular estadísticas correctamente" time="0">
+      <skipped/>
     </testcase>
   </testsuite>
 </testsuites>

@@ -12,6 +12,8 @@ const MAX_SUBTASKS_TOTAL = 25;
 const MAX_TITLE_LEN = 100;
 const MIN_TITLE_LEN = 2;
 const MAX_COMPLETION_JSON_CHARS = 8000;
+/** Tope de elementos leídos del array del LLM antes de sanear (evita respuestas abusivas). */
+const MAX_RAW_SUBTASKS_FROM_LLM = 24;
 
 const TIMEOUT_RAW = parseInt(process.env.TASK_SUBTASKS_LLM_TIMEOUT_MS || '14000', 10);
 const LLM_TIMEOUT_MS = Math.min(60000, Math.max(5000, Number.isFinite(TIMEOUT_RAW) ? TIMEOUT_RAW : 14000));
@@ -158,7 +160,10 @@ Responde SOLO con un JSON válido: {"subtasks":["...","..."]}`;
   if (!Array.isArray(arr)) {
     throw new Error('LLM_PARSE_FAILED');
   }
-  return arr.map((x) => String(x ?? '').trim()).filter(Boolean);
+  return arr
+    .slice(0, MAX_RAW_SUBTASKS_FROM_LLM)
+    .map((x) => String(x ?? '').trim())
+    .filter(Boolean);
 }
 
 export {

@@ -205,6 +205,49 @@ describe('Task Model', () => {
       const error = task.validateSync();
       expect(error).toBeDefined();
     });
+
+    it('debe rechazar dueDate pasada al crear (documento nuevo)', () => {
+      const task = new Task({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Tarea',
+        status: 'pending',
+        dueDate: new Date(Date.now() - 48 * 60 * 60 * 1000)
+      });
+      const error = task.validateSync();
+      expect(error).toBeDefined();
+      expect(error.errors.dueDate).toBeDefined();
+    });
+
+    it('debe permitir guardar subtareas si el vencimiento ya pasó y no se modifica dueDate', async () => {
+      const userId = new mongoose.Types.ObjectId();
+      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const task = await Task.create({
+        userId,
+        title: 'Tarea caducada luego',
+        status: 'pending',
+        dueDate: tomorrow
+      });
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      await Task.collection.updateOne({ _id: task._id }, { $set: { dueDate: yesterday } });
+      const loaded = await Task.findById(task._id);
+      loaded.subtasks.push({ title: 'Subtarea tras vencimiento', completed: false });
+      await expect(loaded.save()).resolves.toBeDefined();
+      expect(loaded.subtasks.length).toBe(1);
+    });
+
+    it('debe rechazar si se asigna dueDate pasada en un documento existente', async () => {
+      const userId = new mongoose.Types.ObjectId();
+      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const task = await Task.create({
+        userId,
+        title: 'Tarea',
+        status: 'pending',
+        dueDate: tomorrow
+      });
+      const loaded = await Task.findById(task._id);
+      loaded.dueDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      await expect(loaded.save()).rejects.toThrow();
+    });
   });
 
   describe('Estructura del modelo', () => {

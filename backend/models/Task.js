@@ -33,7 +33,14 @@ const taskSchema = new mongoose.Schema({
     required: [true, 'La fecha de vencimiento es requerida'],
     validate: {
       validator: function(value) {
-        return value && value >= new Date(new Date().setHours(0, 0, 0, 0));
+        if (!value) return false;
+        const startOfToday = new Date(new Date().setHours(0, 0, 0, 0));
+        // Creación o cambio explícito de vencimiento: no permitir fechas pasadas.
+        if (this.isNew || this.isModified('dueDate')) {
+          return value >= startOfToday;
+        }
+        // Tarea ya persistida con vcto. pasado: permitir otros cambios (subtareas, estado, etc.).
+        return true;
       },
       message: 'La fecha de vencimiento no puede ser anterior a hoy'
     }
@@ -314,14 +321,14 @@ taskSchema.methods.addSubtask = function(subtaskTitle) {
     title: subtaskTitle,
     completed: false
   });
-  return this.save();
+  return this.save({ validateModifiedOnly: true });
 };
 
 taskSchema.methods.completeSubtask = function(subtaskIndex) {
   if (subtaskIndex >= 0 && subtaskIndex < this.subtasks.length) {
     this.subtasks[subtaskIndex].completed = true;
     this.subtasks[subtaskIndex].completedAt = new Date();
-    return this.save();
+    return this.save({ validateModifiedOnly: true });
   }
   throw new Error('Índice de subtarea inválido');
 };
