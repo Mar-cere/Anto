@@ -824,6 +824,14 @@ router.post('/:id/subtasks/generate', validateObjectId, patchTaskLimiter, async 
       });
     }
 
+    // Producto v1: la generación se permite una sola vez. Si ya existen subtareas, no regenerar ni añadir.
+    if (Array.isArray(task.subtasks) && task.subtasks.length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: 'Esta tarea ya tiene subtareas. Edita el detalle si necesitas ajustes.'
+      });
+    }
+
     const rawTitles = await generateSubtaskTitlesWithLlm({
       title: task.title,
       description: task.description,
@@ -955,6 +963,59 @@ router.patch('/:id/subtasks/:subtaskIndex/complete', validateObjectId, patchTask
     console.error('Error al completar subtarea:', error);
     res.status(400).json({ 
       message: error.message || 'Error al completar la subtarea',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Eliminar subtarea por índice
+router.delete('/:id/subtasks/:subtaskIndex', validateObjectId, patchTaskLimiter, async (req, res) => {
+  try {
+    const subtaskIndex = parseInt(req.params.subtaskIndex);
+    if (isNaN(subtaskIndex) || subtaskIndex < 0) {
+      return res.status(400).json({ message: 'Índice de subtarea inválido' });
+    }
+    const task = await findTaskById(req.params.id, req.user._id);
+    if (!task) {
+      return res.status(404).json({ message: 'Tarea no encontrada' });
+    }
+    if (subtaskIndex >= task.subtasks.length) {
+      return res.status(400).json({ message: 'Índice de subtarea fuera de rango' });
+    }
+    task.subtasks.splice(subtaskIndex, 1);
+    await task.save({ validateModifiedOnly: true });
+    return res.json({
+      success: true,
+      message: 'Subtarea eliminada',
+      data: task
+    });
+  } catch (error) {
+    console.error('Error al eliminar subtarea:', error);
+    return res.status(400).json({
+      message: error.message || 'Error al eliminar la subtarea',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Limpiar todas las subtareas (recuperación rápida si se generaron demasiadas)
+router.delete('/:id/subtasks', validateObjectId, patchTaskLimiter, async (req, res) => {
+  try {
+    const task = await findTaskById(req.params.id, req.user._id);
+    if (!task) {
+      return res.status(404).json({ message: 'Tarea no encontrada' });
+    }
+    task.subtasks = [];
+    await task.save({ validateModifiedOnly: true });
+    return res.json({
+      success: true,
+      message: 'Subtareas eliminadas',
+      data: task
+    });
+  } catch (error) {
+    console.error('Error al limpiar subtareas:', error);
+    return res.status(400).json({
+      message: error.message || 'Error al eliminar las subtareas',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

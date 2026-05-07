@@ -7,11 +7,24 @@ import { FOCUS_KICKER_COLOR, FOCUS_META } from '../../styles/focusCardTheme';
 
 const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPressIn = 0, density = 'comfortable' }) => {
   const isTask = item.itemType === 'task';
+  const isGoal = item.itemType === 'goal';
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
   const prevCompletedRef = useRef(item.completed);
+  const canShowSubtasks = (isTask || isGoal) && Array.isArray(item.subtasks) && item.subtasks.length > 0;
+  const subtaskDoneCount = useRef(0);
+  const nextSubtaskTitle = useRef('');
+  if (canShowSubtasks) {
+    const done = item.subtasks.filter((s) => !!s?.completed).length;
+    subtaskDoneCount.current = done;
+    const next = item.subtasks.find((s) => s && !s.completed && String(s.title || '').trim().length > 0);
+    nextSubtaskTitle.current = next ? String(next.title || '').trim() : '';
+  } else {
+    subtaskDoneCount.current = 0;
+    nextSubtaskTitle.current = '';
+  }
   
   // Función para verificar si está caducado
   const isOverdue = useCallback(() => {
@@ -277,6 +290,14 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
                   {item.description}
                 </Text>
               )}
+              {canShowSubtasks ? (
+                <View style={styles.subtasksPreviewRow}>
+                  <Text style={styles.subtasksPreviewText} numberOfLines={1}>
+                    {`Subtareas · ${subtaskDoneCount.current}/${item.subtasks.length}`}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={16} color={FOCUS_META} />
+                </View>
+              ) : null}
             </View>
           </View>
           <View style={styles.itemActions}>
@@ -553,6 +574,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: 'rgba(255,255,255,0.6)',
     lineHeight: 18,
+    fontWeight: '400',
+  },
+  subtasksPreviewRow: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  subtasksPreviewText: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 12,
+    color: FOCUS_META,
     fontWeight: '400',
   },
   itemDescriptionCompact: {

@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     width: '100%',
     maxWidth: 500,
-    maxHeight: '90%',
+    maxHeight: '92%',
     borderWidth: 1,
     borderColor: 'rgba(163, 184, 232, 0.2)',
   },

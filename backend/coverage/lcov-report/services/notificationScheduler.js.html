@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">6.02% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/299</span>
+                <span class='fraction'>18/299</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">12.06% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/232</span>
+                <span class='fraction'>28/232</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">3.84% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/26</span>
+                <span class='fraction'>1/26</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">6.29% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/286</span>
+                <span class='fraction'>18/286</span>
             </div>
         
             
@@ -857,36 +857,36 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -898,7 +898,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1600,7 +1600,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
@@ -1625,38 +1625,38 @@ import User from '../models/User.js';
 import pushNotificationService from './pushNotificationService.js';
 &nbsp;
 class NotificationScheduler {
-<span class="fstat-no" title="function not covered" >  co</span>nstructor() {
+  constructor() {
     // Intervalo para verificar notificaciones programadas (cada minuto)
-<span class="cstat-no" title="statement not covered" >    this.CHECK_INTERVAL_MS = 60 * 1000;</span>
+    this.CHECK_INTERVAL_MS = 60 * 1000;
 &nbsp;
-    const pollHoursRaw = <span class="cstat-no" title="statement not covered" >parseInt(process.env.NOTIFICATION_INACTIVITY_POLL_HOURS || '2', 10);</span>
-    const pollHours = <span class="cstat-no" title="statement not covered" >Number.isFinite(pollHoursRaw) &amp;&amp; pollHoursRaw &gt;= 1 ? Math.min(24, pollHoursRaw) : 2;</span>
-<span class="cstat-no" title="statement not covered" >    this.INACTIVITY_CHECK_INTERVAL_MS = pollHours * 60 * 60 * 1000;</span>
+    const pollHoursRaw = parseInt(process.env.NOTIFICATION_INACTIVITY_POLL_HOURS || '2', 10);
+    const pollHours = Number.isFinite(pollHoursRaw) &amp;&amp; pollHoursRaw &gt;= 1 ? Math.min(24, pollHoursRaw) : <span class="branch-1 cbranch-no" title="branch not covered" >2;</span>
+    this.INACTIVITY_CHECK_INTERVAL_MS = pollHours * 60 * 60 * 1000;
 &nbsp;
-    const rawDailyMax = <span class="cstat-no" title="statement not covered" >parseInt(process.env.NOTIFICATION_DAILY_MAX_PER_USER || '3', 10);</span>
-<span class="cstat-no" title="statement not covered" >    this.DAILY_MAX_PER_USER = Number.isFinite(rawDailyMax)</span>
+    const rawDailyMax = parseInt(process.env.NOTIFICATION_DAILY_MAX_PER_USER || '3', 10);
+    this.DAILY_MAX_PER_USER = Number.isFinite(rawDailyMax)
       ? Math.min(20, Math.max(1, rawDailyMax))
-      : 3;
+      : <span class="branch-1 cbranch-no" title="branch not covered" >3;</span>
 &nbsp;
-    const minGapRaw = <span class="cstat-no" title="statement not covered" >parseInt(process.env.NOTIFICATION_MIN_HOURS_BETWEEN_ROUTINE || '5', 10);</span>
-<span class="cstat-no" title="statement not covered" >    this.MIN_HOURS_BETWEEN_ROUTINE =</span>
-      Number.isFinite(minGapRaw) &amp;&amp; minGapRaw &gt;= 0 ? Math.min(24, minGapRaw) : 5;
+    const minGapRaw = parseInt(process.env.NOTIFICATION_MIN_HOURS_BETWEEN_ROUTINE || '5', 10);
+    this.MIN_HOURS_BETWEEN_ROUTINE =
+      Number.isFinite(minGapRaw) &amp;&amp; minGapRaw &gt;= 0 ? Math.min(24, minGapRaw) : <span class="branch-1 cbranch-no" title="branch not covered" >5;</span>
 &nbsp;
-    const inactThRaw = <span class="cstat-no" title="statement not covered" >parseInt(process.env.NOTIFICATION_INACTIVITY_THRESHOLD_HOURS || '72', 10);</span>
-<span class="cstat-no" title="statement not covered" >    this.INACTIVITY_THRESHOLD_HOURS =</span>
-      Number.isFinite(inactThRaw) &amp;&amp; inactThRaw &gt;= 24 ? Math.min(336, inactThRaw) : 72;
+    const inactThRaw = parseInt(process.env.NOTIFICATION_INACTIVITY_THRESHOLD_HOURS || '72', 10);
+    this.INACTIVITY_THRESHOLD_HOURS =
+      Number.isFinite(inactThRaw) &amp;&amp; inactThRaw &gt;= 24 ? Math.min(336, inactThRaw) : <span class="branch-1 cbranch-no" title="branch not covered" >72;</span>
 &nbsp;
-    const taskCapRaw = <span class="cstat-no" title="statement not covered" >parseInt(process.env.NOTIFICATION_TASKS_DUE_TOMORROW_MAX || '2', 10);</span>
-<span class="cstat-no" title="statement not covered" >    this.TASKS_DUE_TOMORROW_MAX =</span>
-      Number.isFinite(taskCapRaw) &amp;&amp; taskCapRaw &gt;= 1 ? Math.min(10, taskCapRaw) : 2;
+    const taskCapRaw = parseInt(process.env.NOTIFICATION_TASKS_DUE_TOMORROW_MAX || '2', 10);
+    this.TASKS_DUE_TOMORROW_MAX =
+      Number.isFinite(taskCapRaw) &amp;&amp; taskCapRaw &gt;= 1 ? Math.min(10, taskCapRaw) : <span class="branch-1 cbranch-no" title="branch not covered" >2;</span>
 &nbsp;
-    const bsCoolRaw = <span class="cstat-no" title="statement not covered" >parseInt(process.env.NOTIFICATION_BETWEEN_SESSIONS_COOLDOWN_HOURS || '48', 10);</span>
-<span class="cstat-no" title="statement not covered" >    this.BETWEEN_SESSIONS_COOLDOWN_HOURS =</span>
-      Number.isFinite(bsCoolRaw) &amp;&amp; bsCoolRaw &gt;= 6 ? Math.min(168, bsCoolRaw) : 48;
+    const bsCoolRaw = parseInt(process.env.NOTIFICATION_BETWEEN_SESSIONS_COOLDOWN_HOURS || '48', 10);
+    this.BETWEEN_SESSIONS_COOLDOWN_HOURS =
+      Number.isFinite(bsCoolRaw) &amp;&amp; bsCoolRaw &gt;= 6 ? Math.min(168, bsCoolRaw) : <span class="branch-1 cbranch-no" title="branch not covered" >48;</span>
 &nbsp;
-    const T = <span class="cstat-no" title="statement not covered" >pushNotificationService.NOTIFICATION_TYPES;</span>
+    const T = pushNotificationService.NOTIFICATION_TYPES;
     /** Tipos de rutina/bienestar que comparten el espaciado mínimo entre sí (no incluye tareas). */
-<span class="cstat-no" title="statement not covered" >    this.ROUTINE_SPACING_TYPES = [</span>
+    this.ROUTINE_SPACING_TYPES = [
       T.MORNING_MOTIVATION,
       T.EVENING_REFLECTION,
       T.HYDRATION_REMINDER,
@@ -1668,7 +1668,7 @@ class NotificationScheduler {
       T.WEEKLY_REFLECTION
     ];
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    this.isRunning = false;</span>
+    this.isRunning = false;
   }
 &nbsp;
 <span class="fstat-no" title="function not covered" >  as</span>ync _countUserSentToday(userId) {
@@ -2370,7 +2370,7 @@ export function <span class="fstat-no" title="function not covered" >computeNext
 <span class="cstat-no" title="statement not covered" >  return slots[0];</span>
 }
 &nbsp;
-const notificationScheduler = <span class="cstat-no" title="statement not covered" >new NotificationScheduler();</span>
+const notificationScheduler = new NotificationScheduler();
 export default notificationScheduler;
 &nbsp;
 &nbsp;</pre></td></tr></table></pre>
@@ -2380,7 +2380,7 @@ export default notificationScheduler;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-06T23:54:06.396Z
+                at 2026-05-07T14:12:40.506Z
             </div>
         <script src="../prettify.js"></script>
         <script>

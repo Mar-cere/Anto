@@ -161,6 +161,70 @@ const TaskDetailModal = ({
     [item, subtaskBusyIndex, onTaskUpdated, isOffline]
   );
 
+  const handleDeleteSubtask = useCallback(
+    async (index) => {
+      if (subtaskBusyIndex !== null || !item?._id) return;
+      const st = Array.isArray(item.subtasks) ? item.subtasks[index] : null;
+      if (!st) return;
+      Alert.alert('Eliminar subtarea', `¿Eliminar "${st.title}"?`, [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setSubtaskBusyIndex(index);
+              const body = await api.delete(`${ENDPOINTS.TASK_BY_ID(item._id)}/subtasks/${index}`);
+              const next = taskPayloadFromApi(body);
+              if (next) onTaskUpdated?.(next);
+              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } catch (e) {
+              Alert.alert(
+                'Subtarea',
+                getApiErrorMessage(e, { isOffline }) || 'No se pudo eliminar.'
+              );
+            } finally {
+              setSubtaskBusyIndex(null);
+            }
+          }
+        }
+      ]);
+    },
+    [item, subtaskBusyIndex, onTaskUpdated, isOffline]
+  );
+
+  const handleClearSubtasks = useCallback(() => {
+    if (subtaskBusyIndex !== null || !item?._id) return;
+    if (!Array.isArray(item.subtasks) || item.subtasks.length === 0) return;
+    Alert.alert(
+      'Eliminar subtareas',
+      'Esto eliminará todas las subtareas de esta tarea. Podrás agregar nuevas manualmente.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setSubtaskBusyIndex(0);
+              const body = await api.delete(`${ENDPOINTS.TASK_BY_ID(item._id)}/subtasks`);
+              const next = taskPayloadFromApi(body);
+              if (next) onTaskUpdated?.(next);
+              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } catch (e) {
+              Alert.alert(
+                'Subtareas',
+                getApiErrorMessage(e, { isOffline }) || 'No se pudieron eliminar.'
+              );
+            } finally {
+              setSubtaskBusyIndex(null);
+            }
+          }
+        }
+      ]
+    );
+  }, [item, subtaskBusyIndex, onTaskUpdated, isOffline]);
+
   if (!item) return null;
 
   const isTask = item.itemType === 'task';
@@ -169,6 +233,7 @@ const TaskDetailModal = ({
   const subtasks = Array.isArray(item.subtasks) ? item.subtasks : [];
   const taskDone = item.completed === true || item.status === 'completed';
   const isOverdue = new Date(item.dueDate) < new Date() && !taskDone;
+  const canGenerateSubtasks = canUseSubtasks && subtasks.length === 0;
 
   const formatDate = (d) =>
     new Date(d).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -235,26 +300,28 @@ const TaskDetailModal = ({
                 <Text style={styles.subtasksHint}>
                   Hasta cinco pasos sugeridos según el título y la descripción.
                 </Text>
-                <TouchableOpacity
-                  style={[
-                    styles.generateSubtasksBtn,
-                    generatingSubtasks && styles.generateSubtasksBtnDisabled,
-                  ]}
-                  onPress={handleGenerateSubtasks}
-                  disabled={generatingSubtasks || taskDone}
-                  activeOpacity={0.85}
-                  accessibilityRole="button"
-                  accessibilityLabel="Sugerir subtareas con inteligencia artificial"
-                >
-                  {generatingSubtasks ? (
-                    <ActivityIndicator color={colors.background} size="small" />
-                  ) : (
-                    <Ionicons name="sparkles" size={18} color={colors.background} />
-                  )}
-                  <Text style={styles.generateSubtasksBtnText}>
-                    {generatingSubtasks ? 'Generando…' : 'Sugerir pasos (IA)'}
-                  </Text>
-                </TouchableOpacity>
+                {canGenerateSubtasks ? (
+                  <TouchableOpacity
+                    style={[
+                      styles.generateSubtasksBtn,
+                      generatingSubtasks && styles.generateSubtasksBtnDisabled,
+                    ]}
+                    onPress={handleGenerateSubtasks}
+                    disabled={generatingSubtasks || taskDone}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel="Sugerir subtareas con inteligencia artificial"
+                  >
+                    {generatingSubtasks ? (
+                      <ActivityIndicator color={colors.background} size="small" />
+                    ) : (
+                      <Ionicons name="sparkles" size={18} color={colors.background} />
+                    )}
+                    <Text style={styles.generateSubtasksBtnText}>
+                      {generatingSubtasks ? 'Generando…' : 'Sugerir pasos (IA)'}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
                 {subtasks.length === 0 ? (
                   <Text style={styles.subtasksEmpty}>Aún no hay subtareas.</Text>
                 ) : (
@@ -263,33 +330,60 @@ const TaskDetailModal = ({
                       const busy = subtaskBusyIndex === idx;
                       const done = !!st.completed;
                       return (
-                        <TouchableOpacity
+                        <View
                           key={`subtask-row-${idx}`}
                           style={[styles.subtaskRow, done && styles.subtaskRowDone]}
-                          onPress={() => handleToggleSubtask(idx)}
-                          disabled={subtaskBusyIndex !== null || taskDone}
-                          activeOpacity={0.75}
-                          accessibilityRole="checkbox"
-                          accessibilityState={{ checked: done, disabled: taskDone }}
                         >
-                          {busy ? (
-                            <ActivityIndicator size="small" color={colors.primary} />
-                          ) : (
-                            <Ionicons
-                              name={done ? 'checkbox' : 'square-outline'}
-                              size={22}
-                              color={done ? colors.success : FOCUS_META}
-                            />
-                          )}
-                          <Text
-                            style={[styles.subtaskTitle, done && styles.subtaskTitleDone]}
-                            numberOfLines={3}
+                          <TouchableOpacity
+                            style={styles.subtaskMainPress}
+                            onPress={() => handleToggleSubtask(idx)}
+                            disabled={subtaskBusyIndex !== null || taskDone}
+                            activeOpacity={0.75}
+                            accessibilityRole="checkbox"
+                            accessibilityState={{ checked: done, disabled: taskDone }}
                           >
-                            {st.title}
-                          </Text>
-                        </TouchableOpacity>
+                            {busy ? (
+                              <ActivityIndicator size="small" color={colors.primary} />
+                            ) : (
+                              <Ionicons
+                                name={done ? 'checkbox' : 'square-outline'}
+                                size={22}
+                                color={done ? colors.success : FOCUS_META}
+                              />
+                            )}
+                            <Text
+                              style={[styles.subtaskTitle, done && styles.subtaskTitleDone]}
+                              numberOfLines={3}
+                            >
+                              {st.title}
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.subtaskDeleteBtn}
+                            onPress={() => handleDeleteSubtask(idx)}
+                            disabled={taskDone || subtaskBusyIndex !== null}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Eliminar subtarea: ${st.title}`}
+                            hitSlop={10}
+                          >
+                            <Ionicons name="close" size={18} color={FOCUS_META} />
+                          </TouchableOpacity>
+                        </View>
                       );
                     })}
+                    <TouchableOpacity
+                      style={styles.clearSubtasksBtn}
+                      onPress={handleClearSubtasks}
+                      activeOpacity={0.85}
+                      accessibilityRole="button"
+                      accessibilityLabel="Eliminar todas las subtareas"
+                      disabled={taskDone || subtaskBusyIndex !== null}
+                    >
+                      <Ionicons name="trash-outline" size={16} color={colors.error} />
+                      <Text style={styles.clearSubtasksBtnText}>
+                        {`Eliminar todas (${subtasks.length})`}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 )}
               </View>
@@ -346,7 +440,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 22,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderColor: FOCUS_BORDER_SUBTLE,
-    maxHeight: '88%',
+    maxHeight: '92%',
     paddingBottom: 8,
   },
   grabber: {
@@ -377,9 +471,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: 'rgba(255,255,255,0.06)',
   },
-  scroll: {
-    maxHeight: 480,
-  },
+  scroll: {},
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 16,
@@ -506,6 +598,37 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 10,
     borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: FOCUS_BORDER_SUBTLE,
+  },
+  clearSubtasksBtn: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 107, 107, 0.08)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255, 107, 107, 0.22)',
+  },
+  clearSubtasksBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.error,
+  },
+  subtaskMainPress: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  subtaskDeleteBtn: {
+    padding: 6,
+    borderRadius: 10,
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: FOCUS_BORDER_SUBTLE,

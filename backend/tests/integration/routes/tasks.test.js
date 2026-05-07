@@ -286,6 +286,78 @@ describe('Task Routes', () => {
     });
   });
 
+  describe('POST /api/tasks/:id/subtasks/generate', () => {
+    it('debe rechazar si la tarea ya tiene subtareas (no regenerar)', async () => {
+      const task = await Task.create({
+        userId: testUser._id,
+        title: 'Tarea con subtareas',
+        description: 'x',
+        itemType: 'task',
+        status: 'pending',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        subtasks: [{ title: 'Paso 1', completed: false }],
+      });
+
+      const response = await request(app)
+        .post(`/api/tasks/${task._id}/subtasks/generate`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({})
+        .expect(409);
+
+      expect(response.body.success).toBe(false);
+      expect(String(response.body.message || '')).toMatch(/ya tiene subtareas/i);
+    });
+  });
+
+  describe('DELETE /api/tasks/:id/subtasks/:subtaskIndex', () => {
+    it('debe eliminar una subtarea por índice', async () => {
+      const task = await Task.create({
+        userId: testUser._id,
+        title: 'Tarea con 2 subtareas',
+        description: 'x',
+        itemType: 'task',
+        status: 'pending',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        subtasks: [
+          { title: 'Paso 1', completed: false },
+          { title: 'Paso 2', completed: false },
+        ],
+      });
+
+      const response = await request(app)
+        .delete(`/api/tasks/${task._id}/subtasks/0`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.subtasks).toHaveLength(1);
+      expect(response.body.data.subtasks[0].title).toBe('Paso 2');
+    });
+  });
+
+  describe('DELETE /api/tasks/:id/subtasks', () => {
+    it('debe limpiar todas las subtareas', async () => {
+      const task = await Task.create({
+        userId: testUser._id,
+        title: 'Tarea con muchas subtareas',
+        description: 'x',
+        itemType: 'task',
+        status: 'pending',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        subtasks: Array.from({ length: 5 }, (_, i) => ({ title: `Paso ${i + 1}`, completed: false })),
+      });
+
+      const response = await request(app)
+        .delete(`/api/tasks/${task._id}/subtasks`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(Array.isArray(response.body.data.subtasks)).toBe(true);
+      expect(response.body.data.subtasks).toHaveLength(0);
+    });
+  });
+
   describe('GET /api/tasks', () => {
     it('debe obtener todas las tareas del usuario', async () => {
       // Crear las tareas antes de hacer la petición

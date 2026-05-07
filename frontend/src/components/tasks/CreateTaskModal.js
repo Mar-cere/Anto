@@ -570,7 +570,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 22,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderColor: FOCUS_BORDER_SUBTLE,
-    maxHeight: '90%',
+    maxHeight: '92%',
     minHeight: '48%',
   },
   sheetGrabber: {
