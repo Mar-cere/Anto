@@ -75,7 +75,7 @@ const PREHEADER_VARIANTS = [
   (name) =>
     `¿Hace rato que no miras cómo vienes? ${name} ofrece una vista clara, sin apuro. Tú eliges cuándo entrar.`,
   (name) =>
-    `Ecosistema nuevo en ${name}: tareas, hábitos y pomodoros desde el chat, tema claro y avisos más inteligentes. Mira tu resumen.`
+    `Regalo de 2 días de prueba y ecosistema nuevo en ${name}: tareas, hábitos y pomodoros desde el chat. Mira tu resumen.`
 ];
 
 /** Párrafos de apertura (invitación + perspectiva). */
@@ -145,7 +145,8 @@ const WEEKLY_PRODUCT_NEWS_LINES = [
   `Chat mejorado: continuidad más natural, respuestas más estables y recuperación cuando una respuesta se corta; al volver, un resumen breve de la última sesión ayuda a retomar.`,
   `Tema claro: nueva apariencia luminosa para quien prefiere pantallas claras y lectura cómoda de día.`,
   `Notificaciones inteligentes: avisos más pertinentes, menos ruido y límites diarios que cuidan tu atención sin dejarte fuera de lo importante.`,
-  `Resumen semanal y mensual renovado: ves en conjunto cómo encajan chat, tareas, hábitos y foco, para entender tu semana con una sola mirada.`
+  `Resumen semanal y mensual renovado: ves en conjunto cómo encajan chat, tareas, hábitos y foco, para entender tu semana con una sola mirada.`,
+  `Regalo con este envío: dos días más de prueba premium, aplicados en la cuenta si calificas (prueba en curso o al retomar tras un período gratuito vencido; no suma en plan premium de pago), para que vuelvas a disfrutar la app con tiempo.`
 ];
 
 const CLOSING_LINE_VARIANTS = [
@@ -180,6 +181,7 @@ const CLOSING_LINE_VARIANTS = [
  *   updatesSectionTitle: string,
  *   updatesIntro: string,
  *   updatesLines: string[],
+ *   trialGiftPremiumNote: string,
  *   downloadPrompt: string,
  *   closingLine: string,
  * }}
@@ -209,7 +211,15 @@ export function buildWeeklySummaryEmailContext(user, isoParts) {
   const benefitLines = BENEFIT_BUNDLES[weeklyContentVariantIndex(isoWeekYear, isoWeek, BENEFIT_BUNDLES.length, 4)];
 
   const updatesSectionTitle = 'Novedades de la semana';
-  const updatesIntro = `Hay un ecosistema nuevo alrededor del chat —tareas, hábitos y pomodoros—, tareas inteligentes, un chat más sólido, tema claro y notificaciones inteligentes. Abre ${APP_NAME} y comprueba cómo encaja todo con tu resumen.`;
+  const updatesIntro = `Este envío va con un regalo: dos días más de prueba premium para que te reencantes con la app (los sumamos en cuentas elegibles al procesar este correo; si ya tienes plan de pago activo, tu suscripción no cambia). Además, hay un ecosistema nuevo alrededor del chat —tareas, hábitos y pomodoros—, tareas inteligentes, un chat más sólido, tema claro y notificaciones inteligentes. Abre ${APP_NAME} y comprueba cómo encaja todo con tu resumen.`;
+
+  const rawSubStatus = user?.subscription?.status;
+  const subStatus = typeof rawSubStatus === 'string' ? rawSubStatus.trim() : '';
+  const trialGiftPremiumNote =
+    subStatus === 'premium'
+      ? `Tienes plan premium activo: el regalo de días extra de prueba no altera tu suscripción. Gracias por seguir en ${APP_NAME}.`
+      : '';
+
   const updatesLines = [...WEEKLY_PRODUCT_NEWS_LINES];
 
   const downloadPrompt = `Si todavía no tienes la app instalada, puedes descargarla y empezar a usar ${APP_NAME} hoy mismo.`;
@@ -230,6 +240,7 @@ export function buildWeeklySummaryEmailContext(user, isoParts) {
     updatesSectionTitle,
     updatesIntro,
     updatesLines,
+    trialGiftPremiumNote,
     downloadPrompt,
     closingLine
   };

@@ -34,7 +34,7 @@ describe('buildWeeklySummaryEmailContext', () => {
         username: 'maria',
         stats: { tasksCompleted: 99, habitsStreak: 9, totalSessions: 50, lastActive: new Date() },
         createdAt: new Date(Date.now() - 20 * 86400000),
-        subscription: { status: 'premium' }
+        subscription: { status: 'trial' }
       },
       { isoWeekYear: 2026, isoWeek: 16, yearWeekKey: '2026-W16' }
     );
@@ -44,10 +44,11 @@ describe('buildWeeklySummaryEmailContext', () => {
     expect(ctx.benefitLines).toHaveLength(2);
     expect(ctx.updatesSectionTitle).toBe('Novedades de la semana');
     expect(ctx.updatesIntro.length).toBeGreaterThan(20);
-    expect(ctx.updatesLines).toHaveLength(6);
+    expect(ctx.updatesLines).toHaveLength(7);
     expect(ctx.updatesLines.join(' ')).toMatch(
-      /resumen|chat|notificaciones|tareas|hábitos|pomodoro|tema claro/i
+      /resumen|chat|notificaciones|tareas|hábitos|pomodoro|tema claro|prueba premium/i
     );
+    expect(ctx.trialGiftPremiumNote).toBe('');
     expect(ctx.closingLine).toMatch(/Anto|acompañarte/i);
     expect(ctx.subjectLine).not.toContain('99');
     expect(ctx.leadParagraph).toMatch(/ritmo|semana/i);
@@ -59,5 +60,13 @@ describe('buildWeeklySummaryEmailContext', () => {
       { isoWeekYear: 2026, isoWeek: 1, yearWeekKey: '2026-W01' }
     );
     expect(ctx.displayName).toBe('solo_user');
+  });
+
+  it('añade nota de regalo para cuentas premium', () => {
+    const ctx = buildWeeklySummaryEmailContext(
+      { username: 'pro', stats: {}, subscription: { status: 'premium' } },
+      { isoWeekYear: 2026, isoWeek: 20, yearWeekKey: '2026-W20' }
+    );
+    expect(ctx.trialGiftPremiumNote).toMatch(/premium|suscripción/i);
   });
 });

@@ -7,6 +7,7 @@
  */
 
 import User from '../models/User.js';
+import Subscription from '../models/Subscription.js';
 import mailer from '../config/mailer.js';
 import logger from '../utils/logger.js';
 import { enqueueEmail } from './emailQueueService.js';
@@ -158,7 +159,7 @@ class EmailMarketingService {
             new: true,
             sort: { _id: 1 },
             select:
-              'email username name createdAt stats.tasksCompleted stats.habitsStreak stats.totalSessions stats.lastActive subscription.status'
+              'email username name createdAt stats.tasksCompleted stats.habitsStreak stats.totalSessions stats.lastActive subscription.status subscription.trialStartDate subscription.trialEndDate subscription.trialGrantedAt'
           }
         );
 
@@ -184,6 +185,14 @@ class EmailMarketingService {
           } else {
             results.sent += 1;
             logger.info(`[EmailMarketing] Resumen semanal enviado a ${user.email} (${yearWeekKey})`);
+            try {
+              const gift = await applyWeeklySummaryTrialGift(user._id);
+              if (gift.applied) {
+                logger.info(`[EmailMarketing] Regalo trial post-correo aplicado a ${user.email}`);
+              }
+            } catch (giftErr) {
+              logger.error(`[EmailMarketing] Regalo trial post-correo falló (${user.email}):`, giftErr.message);
+            }
           }
         } catch (error) {
           await releaseClaim();

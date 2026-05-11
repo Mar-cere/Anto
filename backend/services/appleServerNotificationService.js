@@ -12,7 +12,34 @@ import {
   SignedDataVerifier,
   Subtype,
   Type,
+  VerificationException,
+  VerificationStatus,
 } from '@apple/app-store-server-library';
+
+/**
+ * La librería de Apple usa `appAppleId !== appAppleId` (estricto). En notificaciones V2 el campo
+ * a veces viene como string o ausente; eso provoca INVALID_APP_IDENTIFIER con .message vacío.
+ */
+SignedDataVerifier.prototype.verifyNotification = function verifyNotificationLooseAppId(
+  bundleId,
+  appAppleId,
+  environment,
+) {
+  if (this.bundleId !== bundleId) {
+    throw new VerificationException(VerificationStatus.INVALID_APP_IDENTIFIER);
+  }
+  if (
+    this.environment === Environment.PRODUCTION &&
+    this.appAppleId !== undefined &&
+    appAppleId !== undefined &&
+    Number(this.appAppleId) !== Number(appAppleId)
+  ) {
+    throw new VerificationException(VerificationStatus.INVALID_APP_IDENTIFIER);
+  }
+  if (this.environment !== environment) {
+    throw new VerificationException(VerificationStatus.INVALID_ENVIRONMENT);
+  }
+};
 
 import AppleServerNotification from '../models/AppleServerNotification.js';
 import Subscription from '../models/Subscription.js';
@@ -37,10 +64,12 @@ function getBundleId() {
   return process.env.APPLE_BUNDLE_ID || 'com.anto.app';
 }
 
-function buildVerifiers() {
+/**
+ * @param {boolean} enableOnlineChecks OCSP / comprobaciones en red (puede fallar en hosts sin salida o con proxy)
+ */
+function buildVerifiers(enableOnlineChecks) {
   const roots = loadAppleRootCertificates();
   const bundleId = getBundleId();
-  const enableOnlineChecks = process.env.APPLE_ASN_ONLINE_OCSP !== 'false';
   const appAppleIdRaw = process.env.APPLE_APP_APPLE_ID;
   const appAppleId =
     appAppleIdRaw !== undefined && appAppleIdRaw !== '' && !Number.isNaN(Number(appAppleIdRaw))
@@ -52,24 +81,47 @@ function buildVerifiers() {
     enableOnlineChecks,
     Environment.PRODUCTION,
     bundleId,
-    appAppleId
+    appAppleId,
   );
   const sandbox = new SignedDataVerifier(
     roots,
     enableOnlineChecks,
     Environment.SANDBOX,
     bundleId,
-    undefined
+    undefined,
   );
   return { production, sandbox };
 }
 
-let verifierCache;
-function getVerifiers() {
-  if (!verifierCache) {
-    verifierCache = buildVerifiers();
+/** @type {Map<string, { production: SignedDataVerifier, sandbox: SignedDataVerifier }>} */
+const verifierCache = new Map();
+
+function getVerifiers(enableOnlineChecks) {
+  const key = enableOnlineChecks ? 'online' : 'offline';
+  if (!verifierCache.has(key)) {
+    verifierCache.set(key, buildVerifiers(enableOnlineChecks));
   }
-  return verifierCache;
+  return verifierCache.get(key);
+}
+
+/** VerificationException de Apple no rellena .message; usar status numérico. */
+function formatAppleVerifyError(err) {
+  if (err != null && typeof err === 'object' && 'status' in err) {
+    const code = err.status;
+    const label = VerificationStatus[code] ?? `STATUS_${code}`;
+    const cause =
+      err.cause && typeof err.cause.message === 'string' && err.cause.message
+        ? ` — ${err.cause.message}`
+        : '';
+    return `${label}${cause}`;
+  }
+  const m = err?.message;
+  if (m) return m;
+  try {
+    return String(err);
+  } catch {
+    return 'error desconocido';
+  }
 }
 
 /**
@@ -77,19 +129,43 @@ function getVerifiers() {
  * @returns {Promise<{ verifier: SignedDataVerifier, payload: import('@apple/app-store-server-library').ResponseBodyV2DecodedPayload }>}
  */
 async function verifyNotificationPayload(signedPayload) {
-  const { production, sandbox } = getVerifiers();
-  try {
-    const payload = await production.verifyAndDecodeNotification(signedPayload);
-    return { verifier: production, payload };
-  } catch (e1) {
+  const preferOnline = process.env.APPLE_ASN_ONLINE_OCSP !== 'false';
+  const modes = preferOnline ? [true, false] : [false];
+
+  let lastProdErr;
+  let lastSandboxErr;
+
+  for (const enableOnline of modes) {
+    const { production, sandbox } = getVerifiers(enableOnline);
     try {
-      const payload = await sandbox.verifyAndDecodeNotification(signedPayload);
-      return { verifier: sandbox, payload };
-    } catch (e2) {
-      const msg = `Fallo verificación JWS (prod: ${e1?.message}; sandbox: ${e2?.message})`;
-      throw new Error(msg);
+      const payload = await production.verifyAndDecodeNotification(signedPayload);
+      if (!enableOnline && preferOnline) {
+        logger.warn(
+          '[AppleASN] JWS verificado (producción) sin OCSP en línea; si es habitual, define APPLE_ASN_ONLINE_OCSP=false',
+        );
+      }
+      return { verifier: production, payload };
+    } catch (e1) {
+      lastProdErr = e1;
+      try {
+        const payload = await sandbox.verifyAndDecodeNotification(signedPayload);
+        if (!enableOnline && preferOnline) {
+          logger.warn(
+            '[AppleASN] JWS verificado (sandbox) sin OCSP en línea; si es habitual, define APPLE_ASN_ONLINE_OCSP=false',
+          );
+        }
+        return { verifier: sandbox, payload };
+      } catch (e2) {
+        lastSandboxErr = e2;
+      }
     }
   }
+
+  const hint =
+    'Revisa APPLE_BUNDLE_ID, APPLE_APP_APPLE_ID (número en App Store Connect → App → Información general) y certificado backend/certs/apple_root_ca_g3.pem. Si el host bloquea OCSP, define APPLE_ASN_ONLINE_OCSP=false.';
+  throw new Error(
+    `Fallo verificación JWS (prod: ${formatAppleVerifyError(lastProdErr)}; sandbox: ${formatAppleVerifyError(lastSandboxErr)}). ${hint}`,
+  );
 }
 
 /**

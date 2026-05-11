@@ -760,6 +760,11 @@ const emailTemplates = {
               <ul style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.98rem; line-height: 1.6; margin: 0; padding-left: 20px; text-align: left;">
                 ${updatesListHtml}
               </ul>
+              ${
+                context.trialGiftPremiumNote
+                  ? `<p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem; line-height: 1.55; margin: 16px 0 0 0; text-align: center; font-style: italic;">${escapeHtmlText(context.trialGiftPremiumNote)}</p>`
+                  : ''
+              }
             </div>
             <div style="background: rgba(29, 43, 95, 0.06); padding: 18px 20px; border-radius: 14px; margin: 0 0 20px 0; border: 1px solid rgba(29, 43, 95, 0.08);">
               <p style="color: ${EMAIL_COLORS.PRIMARY_MEDIUM}; font-size: 0.88rem; font-weight: 700; margin: 0 0 12px 0; letter-spacing: 0.04em; text-transform: uppercase; text-align: center;">
