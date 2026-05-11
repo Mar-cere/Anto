@@ -18,7 +18,7 @@ describe('weeklyEmailSubjectIndex / buildWeeklySummarySubjectLine', () => {
     const w = 'Semana 16 · 2026';
     const i = weeklyEmailSubjectIndex(2026, 16);
     expect(i).toBeGreaterThanOrEqual(0);
-    expect(i).toBeLessThan(5);
+    expect(i).toBeLessThan(7);
     const s = buildWeeklySummarySubjectLine(w, 2026, 16);
     expect(s.startsWith(w)).toBe(true);
     expect(s).toContain('Anto');
@@ -42,8 +42,12 @@ describe('buildWeeklySummaryEmailContext', () => {
     expect(ctx.weekLabel).toBe('Semana 16 · 2026');
     expect(ctx.preheaderText.length).toBeGreaterThan(10);
     expect(ctx.benefitLines).toHaveLength(2);
-    expect(ctx.updatesLines?.length ?? 0).toBeGreaterThanOrEqual(3);
-    expect(ctx.updatesLines.join(' ')).toMatch(/resumen|chat|dashboard|notificaciones/i);
+    expect(ctx.updatesSectionTitle).toBe('Novedades de la semana');
+    expect(ctx.updatesIntro.length).toBeGreaterThan(20);
+    expect(ctx.updatesLines).toHaveLength(6);
+    expect(ctx.updatesLines.join(' ')).toMatch(
+      /resumen|chat|notificaciones|tareas|hábitos|pomodoro|tema claro/i
+    );
     expect(ctx.closingLine).toMatch(/Anto|acompañarte/i);
     expect(ctx.subjectLine).not.toContain('99');
     expect(ctx.leadParagraph).toMatch(/ritmo|semana/i);

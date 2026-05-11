@@ -443,22 +443,26 @@ userSchema.methods.updateHabitsStreak = function(streak) {
   return this.save();
 };
 
-// Middleware pre-save: ejecuta antes de guardar
-userSchema.pre('save', function(next) {
-  if (!this.id) {
-    this.id = crypto.randomBytes(16).toString('hex');
-  }
-  
-  if (this.isModified('password')) {
-    this.lastPasswordChange = new Date();
-  }
-
+// Migración de estilos legados ANTES del enum (validate corre antes que save; ver Mongoose middleware order)
+userSchema.pre('validate', function(next) {
   const rs = this.preferences?.responseStyle;
   if (rs && LEGACY_RESPONSE_STYLE_MAP[rs]) {
     this.preferences.responseStyle = LEGACY_RESPONSE_STYLE_MAP[rs];
     this.markModified('preferences');
   }
-  
+  next();
+});
+
+// Middleware pre-save: ejecuta antes de guardar
+userSchema.pre('save', function(next) {
+  if (!this.id) {
+    this.id = crypto.randomBytes(16).toString('hex');
+  }
+
+  if (this.isModified('password')) {
+    this.lastPasswordChange = new Date();
+  }
+
   next();
 });
 

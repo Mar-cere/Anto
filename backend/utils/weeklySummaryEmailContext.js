@@ -41,7 +41,9 @@ const SUBJECT_BUILDERS = [
   (weekLabel) => `${weekLabel} — Un momento para revisar tu semana en ${APP_NAME}`,
   (weekLabel) => `${weekLabel} — Tu resumen semanal, en un clic, en ${APP_NAME}`,
   (weekLabel) => `${weekLabel} — Cierra la semana con calma en ${APP_NAME}`,
-  (weekLabel) => `${weekLabel} — Mira tu semana cuando quieras en ${APP_NAME}`
+  (weekLabel) => `${weekLabel} — Mira tu semana cuando quieras en ${APP_NAME}`,
+  (weekLabel) => `${weekLabel} — Tu semana, con perspectiva, en ${APP_NAME}`,
+  (weekLabel) => `${weekLabel} — Novedades en la app y tu resumen en ${APP_NAME}`
 ];
 
 /**
@@ -58,20 +60,22 @@ export function buildWeeklySummarySubjectLine(weekLabel, isoWeekYear, isoWeek) {
   return SUBJECT_BUILDERS[i](weekLabel);
 }
 
-/** Preheaders: tono invitación sin datos sensibles. */
+/** Preheaders: tono invitación sin datos sensibles (longitud moderada para vista previa en móvil). */
 const PREHEADER_VARIANTS = [
   (name) =>
-    `Un recordatorio breve y privado para regalarte un minuto con ${name} y mirar tu semana con calma. Si hace un tiempo que no entras, también es una buena excusa para retomar: todo el detalle te espera dentro de la app, con tu sesión iniciada.`,
+    `Un minuto privado para mirar tu semana con calma en ${name}. El detalle completo está en la app, con tu sesión iniciada.`,
   (name) =>
-    `Te escribimos con cariño para invitarte a abrir ${name}: no hace falta que la semana haya sido perfecta; a veces mirar atrás con gentileza cambia cómo te sientes hoy.`,
+    `Te invitamos a abrir ${name}: no hace falta una semana perfecta; mirar atrás con gentileza a veces cambia el día.`,
   (name) =>
-    `Un solo clic y vuelves a tu espacio en ${name}. Este correo no trae juicios ni números: solo un empujón suave para que retomes tu resumen cuando te sea posible.`,
+    `Un clic y vuelves a tu espacio en ${name}. Sin juicios ni números en el correo: solo un recordatorio para retomar tu resumen.`,
   (name) =>
-    `Si la semana fue intensa, ${name} puede ayudarte a ordenar cabeza y corazón. Entra cuando puedas: tu resumen semanal y mensual sigue esperándote.`,
+    `Si la semana fue intensa, ${name} ayuda a ordenar cabeza y corazón. Tu resumen semanal y mensual sigue ahí cuando puedas.`,
   (name) =>
-    `Pequeño recordatorio desde ${name}: regalarte un respiro y revisar tu semana también es autocuidado. Lo que importa está en la app, con tu privacidad respetada.`,
+    `Regalarte un respiro y revisar la semana también es autocuidado. En ${name} lo ves con privacidad, dentro de la app.`,
   (name) =>
-    `¿Hace rato que no miras cómo vienes? ${name} te ofrece una vista clara de tu proceso, sin apuro. Este mensaje solo abre la puerta; tú eliges el momento.`
+    `¿Hace rato que no miras cómo vienes? ${name} ofrece una vista clara, sin apuro. Tú eliges cuándo entrar.`,
+  (name) =>
+    `Ecosistema nuevo en ${name}: tareas, hábitos y pomodoros desde el chat, tema claro y avisos más inteligentes. Mira tu resumen.`
 ];
 
 /** Párrafos de apertura (invitación + perspectiva). */
@@ -131,26 +135,17 @@ const BENEFIT_BUNDLES = [
   ]
 ];
 
-/** “Novedades” genéricas del producto; rotan para que el correo no se sienta siempre idéntico. */
-const UPDATES_BUNDLES = [
-  [
-    `Renovamos cómo ves tu resumen semanal y mensual: más claro y humano, para que volver a mirar tu semana sea natural, aunque haya pasado unos días sin abrir la app. Este mismo correo solo te recuerda que estamos aquí; lo importante siempre lo ves dentro de la app, con tu privacidad cuidada.`,
-    'En el chat la conversación se siente más fluida y cercana: menos interrupciones que te saquen del momento y más continuidad para acompañarte cuando lo necesitas.',
-    'La app se siente más liviana en el día a día: menos ruido en los avisos y, cuando hace falta, más contención y claridad en los mensajes que te importan.',
-    'Pequeños detalles en la pantalla para que retomar sea más fácil y agradable: porque volver a conectar contigo también es un gesto de autocuidado.'
-  ],
-  [
-    'Seguimos puliendo la experiencia del resumen para que sea una conversación en silencio contigo: menos fricción, más sensación de “esto me representa”.',
-    'Mejoras en cómo se muestran hábitos y rachas para que celebres lo sostenido sin convertirlo en una carrera.',
-    'Ajustes de tono y ritmo en notificaciones: menos avisos genéricos y más señales útiles cuando realmente suman.',
-    'El enlace de este correo te lleva directo a abrir la app: si algo falla, siempre puedes ir a Perfil y abrir el resumen manualmente.'
-  ],
-  [
-    'Trabajamos en que el resumen mensual dialogue mejor con el semanal: dos escalas para entender tu proceso sin mezclarlo todo en una sola pantalla.',
-    'Refinamos textos y microcopias para que las explicaciones se sientan cercanas, no técnicas ni frías.',
-    'En el chat priorizamos la continuidad del hilo emocional: menos saltos bruscos cuando retomas una conversación difícil.',
-    'Cuidamos la privacidad de punta a punta: lo sensible no viaja por correo; lo ves solo dentro de la app autenticada.'
-  ]
+/**
+ * Novedades recientes visibles en la app (actualizar este bloque cuando cambie el producto).
+ * Redacción orientada a persona usuaria; sin métricas ni datos de la cuenta.
+ */
+const WEEKLY_PRODUCT_NEWS_LINES = [
+  `Nuevo ecosistema conectado con el chat: puedes impulsar tareas, hábitos y pomodoros desde la conversación, sin perder el hilo de lo que te importa.`,
+  `Tareas inteligentes: propuestas y seguimiento más alineados con lo que hablaste, para pasar del “qué podría hacer” al “qué voy a hacer”, con menos fricción.`,
+  `Chat mejorado: continuidad más natural, respuestas más estables y recuperación cuando una respuesta se corta; al volver, un resumen breve de la última sesión ayuda a retomar.`,
+  `Tema claro: nueva apariencia luminosa para quien prefiere pantallas claras y lectura cómoda de día.`,
+  `Notificaciones inteligentes: avisos más pertinentes, menos ruido y límites diarios que cuidan tu atención sin dejarte fuera de lo importante.`,
+  `Resumen semanal y mensual renovado: ves en conjunto cómo encajan chat, tareas, hábitos y foco, para entender tu semana con una sola mirada.`
 ];
 
 const CLOSING_LINE_VARIANTS = [
@@ -183,6 +178,7 @@ const CLOSING_LINE_VARIANTS = [
  *   benefitSectionTitle: string,
  *   benefitLines: string[],
  *   updatesSectionTitle: string,
+ *   updatesIntro: string,
  *   updatesLines: string[],
  *   downloadPrompt: string,
  *   closingLine: string,
@@ -213,7 +209,8 @@ export function buildWeeklySummaryEmailContext(user, isoParts) {
   const benefitLines = BENEFIT_BUNDLES[weeklyContentVariantIndex(isoWeekYear, isoWeek, BENEFIT_BUNDLES.length, 4)];
 
   const updatesSectionTitle = 'Novedades de la semana';
-  const updatesLines = UPDATES_BUNDLES[weeklyContentVariantIndex(isoWeekYear, isoWeek, UPDATES_BUNDLES.length, 5)];
+  const updatesIntro = `Hay un ecosistema nuevo alrededor del chat —tareas, hábitos y pomodoros—, tareas inteligentes, un chat más sólido, tema claro y notificaciones inteligentes. Abre ${APP_NAME} y comprueba cómo encaja todo con tu resumen.`;
+  const updatesLines = [...WEEKLY_PRODUCT_NEWS_LINES];
 
   const downloadPrompt = `Si todavía no tienes la app instalada, puedes descargarla y empezar a usar ${APP_NAME} hoy mismo.`;
 
@@ -231,6 +228,7 @@ export function buildWeeklySummaryEmailContext(user, isoParts) {
     benefitSectionTitle,
     benefitLines,
     updatesSectionTitle,
+    updatesIntro,
     updatesLines,
     downloadPrompt,
     closingLine

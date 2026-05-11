@@ -247,6 +247,16 @@ const userProfileSchema = new mongoose.Schema({
 // Índices para optimizar consultas
 userProfileSchema.index({ 'metadata.ultimaInteraccion': -1 });
 
+// Migración responseStyle legado antes de validar el enum (validate → save en Mongoose)
+userProfileSchema.pre('validate', function(next) {
+  const rs = this.preferences?.responseStyle;
+  if (rs && LEGACY_RESPONSE_STYLE_MAP[rs]) {
+    this.preferences.responseStyle = LEGACY_RESPONSE_STYLE_MAP[rs];
+    this.markModified('preferences');
+  }
+  next();
+});
+
 // Middleware pre-save: asegura valores por defecto en la creación
 userProfileSchema.pre('save', function(next) {
   if (!this.emotionalPatterns) {
@@ -279,11 +289,6 @@ userProfileSchema.pre('save', function(next) {
         sunday: 0
       }
     };
-  }
-  const rs = this.preferences?.responseStyle;
-  if (rs && LEGACY_RESPONSE_STYLE_MAP[rs]) {
-    this.preferences.responseStyle = LEGACY_RESPONSE_STYLE_MAP[rs];
-    this.markModified('preferences');
   }
   next();
 });

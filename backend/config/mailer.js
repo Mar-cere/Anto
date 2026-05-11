@@ -750,20 +750,23 @@ const emailTemplates = {
             <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.02rem; line-height: 1.75; margin-bottom: 20px; text-align: center;">
               ${escapeHtmlText(context.reflectionParagraph || '')}
             </p>
+            <div style="background: linear-gradient(145deg, rgba(26, 221, 219, 0.16) 0%, rgba(29, 43, 95, 0.07) 100%); padding: 22px 20px; border-radius: 16px; margin: 0 0 22px 0; border: 1px solid rgba(26, 221, 219, 0.38); box-shadow: 0 6px 22px rgba(29, 43, 95, 0.10);">
+              <p style="color: ${EMAIL_COLORS.PRIMARY_MEDIUM}; font-size: 0.95rem; font-weight: 800; margin: 0 0 14px 0; letter-spacing: 0.03em; text-transform: uppercase; text-align: center;">
+                ${escapeHtmlText(context.updatesSectionTitle)}
+              </p>
+              <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.02rem; line-height: 1.65; margin: 0 0 16px 0; text-align: center; font-weight: 600;">
+                ${escapeHtmlText(context.updatesIntro || '')}
+              </p>
+              <ul style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.98rem; line-height: 1.6; margin: 0; padding-left: 20px; text-align: left;">
+                ${updatesListHtml}
+              </ul>
+            </div>
             <div style="background: rgba(29, 43, 95, 0.06); padding: 18px 20px; border-radius: 14px; margin: 0 0 20px 0; border: 1px solid rgba(29, 43, 95, 0.08);">
               <p style="color: ${EMAIL_COLORS.PRIMARY_MEDIUM}; font-size: 0.88rem; font-weight: 700; margin: 0 0 12px 0; letter-spacing: 0.04em; text-transform: uppercase; text-align: center;">
                 ${escapeHtmlText(context.benefitSectionTitle)}
               </p>
               <ul style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.97rem; line-height: 1.55; margin: 0; padding-left: 20px; text-align: left;">
                 ${benefitListHtml}
-              </ul>
-            </div>
-            <div style="background: rgba(26, 221, 219, 0.10); padding: 18px 20px; border-radius: 14px; margin: 0 0 20px 0; border: 1px solid rgba(26, 221, 219, 0.25);">
-              <p style="color: ${EMAIL_COLORS.PRIMARY_MEDIUM}; font-size: 0.88rem; font-weight: 700; margin: 0 0 12px 0; letter-spacing: 0.04em; text-transform: uppercase; text-align: center;">
-                ${escapeHtmlText(context.updatesSectionTitle)}
-              </p>
-              <ul style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.97rem; line-height: 1.55; margin: 0; padding-left: 20px; text-align: left;">
-                ${updatesListHtml}
               </ul>
             </div>
             <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.98rem; line-height: 1.65; margin-bottom: 18px; text-align: center;">
@@ -775,7 +778,7 @@ const emailTemplates = {
             <div style="text-align: center; margin: 28px 0 8px 0;">
               <a href="${appHref}"
                  style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); color: ${EMAIL_COLORS.TEXT_WHITE}; padding: 14px 28px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: 700; font-size: 1.05rem;">
-                Abrir ${APP_NAME}
+                Ver mi resumen semanal
               </a>
             </div>
             <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem; line-height: 1.55; margin-top: 18px; text-align: center;">
