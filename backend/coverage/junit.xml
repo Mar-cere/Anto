@@ -1,13 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="5" failures="0" errors="0" time="0.39">
-  <testsuite name="CheckSubscription Middleware" errors="0" failures="0" skipped="0" timestamp="2026-05-11T15:30:41" time="0.364" tests="5">
-    <testcase classname="CheckSubscription Middleware requireActiveSubscription debe permitir acceso cuando el usuario tiene premium activo (modelo User)" name="CheckSubscription Middleware requireActiveSubscription debe permitir acceso cuando el usuario tiene premium activo (modelo User)" time="0.002">
+<testsuites name="jest tests" tests="7" failures="0" errors="0" time="1.179">
+  <testsuite name="PaymentServiceMercadoPago" errors="0" failures="0" skipped="0" timestamp="2026-05-11T15:51:12" time="0.909" tests="2">
+    <testcase classname="PaymentServiceMercadoPago Métodos del servicio debe tener métodos exportados" name="PaymentServiceMercadoPago Métodos del servicio debe tener métodos exportados" time="0.002">
+    </testcase>
+    <testcase classname="PaymentServiceMercadoPago Métodos del servicio debe tener método createCheckoutSession si existe" name="PaymentServiceMercadoPago Métodos del servicio debe tener método createCheckoutSession si existe" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="CheckSubscription Middleware" errors="0" failures="0" skipped="0" timestamp="2026-05-11T15:51:12" time="0.978" tests="5">
+    <testcase classname="CheckSubscription Middleware requireActiveSubscription debe permitir acceso cuando el usuario tiene premium activo (modelo User)" name="CheckSubscription Middleware requireActiveSubscription debe permitir acceso cuando el usuario tiene premium activo (modelo User)" time="0.003">
     </testcase>
     <testcase classname="CheckSubscription Middleware requireActiveSubscription debe permitir primera sesión por gracia cuando no hay suscripción y no hay mensajes previos" name="CheckSubscription Middleware requireActiveSubscription debe permitir primera sesión por gracia cuando no hay suscripción y no hay mensajes previos" time="0.001">
     </testcase>
     <testcase classname="CheckSubscription Middleware requireActiveSubscription debe bloquear cuando no hay suscripción y ya existe historial del usuario" name="CheckSubscription Middleware requireActiveSubscription debe bloquear cuando no hay suscripción y ya existe historial del usuario" time="0.001">
     </testcase>
-    <testcase classname="CheckSubscription Middleware requireActiveSubscription debe permitir acceso cuando existe documento Subscription desactualizado pero User tiene premium vigente" name="CheckSubscription Middleware requireActiveSubscription debe permitir acceso cuando existe documento Subscription desactualizado pero User tiene premium vigente" time="0">
+    <testcase classname="CheckSubscription Middleware requireActiveSubscription debe permitir acceso cuando existe documento Subscription desactualizado pero User tiene premium vigente" name="CheckSubscription Middleware requireActiveSubscription debe permitir acceso cuando existe documento Subscription desactualizado pero User tiene premium vigente" time="0.003">
     </testcase>
     <testcase classname="CheckSubscription Middleware requireActiveSubscription no debe aplicar gracia fuera de rutas iniciales del chat" name="CheckSubscription Middleware requireActiveSubscription no debe aplicar gracia fuera de rutas iniciales del chat" time="0">
     </testcase>

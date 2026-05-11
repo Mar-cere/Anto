@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">14.7% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>10/68</span>
+                <span class='fraction'>0/68</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">13.79% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>8/58</span>
+                <span class='fraction'>0/58</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">25% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/4</span>
+                <span class='fraction'>0/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">14.92% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>10/67</span>
+                <span class='fraction'>0/67</span>
             </div>
         
             
@@ -437,13 +437,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -456,21 +456,21 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -654,17 +654,17 @@ class TrialNotificationService {
    * @param {string} userId - ID del usuario
    * @returns {Promise&lt;Object&gt;} - Información del trial
    */
-  async getTrialInfo(userId) {
-    try {
-      const user = await User.findById(userId).select('subscription');
-      const subscription = await Subscription.findOne({ userId });
-      const now = new Date();
+<span class="fstat-no" title="function not covered" >  as</span>ync getTrialInfo(userId) {
+<span class="cstat-no" title="statement not covered" >    try {</span>
+      const user = <span class="cstat-no" title="statement not covered" >await User.findById(userId).select('subscription');</span>
+      const subscription = <span class="cstat-no" title="statement not covered" >await Subscription.findOne({ userId });</span>
+      const now = <span class="cstat-no" title="statement not covered" >new Date();</span>
 &nbsp;
       // Suscripción premium vigente en User: no mostrar banner ni trial
-      <span class="missing-if-branch" title="if path not taken" >I</span>if (
+<span class="cstat-no" title="statement not covered" >      if (</span>
         user?.subscription?.status === 'premium' &amp;&amp;
-<span class="branch-1 cbranch-no" title="branch not covered" >        user.subscription.subscriptionEndDate </span>&amp;&amp;
-<span class="branch-2 cbranch-no" title="branch not covered" >        new Date(user.subscription.subscriptionEndDate) &gt;= now</span>
+        user.subscription.subscriptionEndDate &amp;&amp;
+        new Date(user.subscription.subscriptionEndDate) &gt;= now
       ) {
 <span class="cstat-no" title="statement not covered" >        return {</span>
           isInTrial: false,
@@ -674,21 +674,21 @@ class TrialNotificationService {
       }
 &nbsp;
       // Verificar trial en modelo User
-      let trialEndDate = user?.subscription?.trialEndDate;
-      let isInTrial = user?.subscription?.status === 'trial' &amp;&amp; 
-<span class="branch-1 cbranch-no" title="branch not covered" >                     trialEndDate </span>&amp;&amp; 
-<span class="branch-2 cbranch-no" title="branch not covered" >                     now &lt;= trialEndDate;</span>
+      let trialEndDate = <span class="cstat-no" title="statement not covered" >user?.subscription?.trialEndDate;</span>
+      let isInTrial = <span class="cstat-no" title="statement not covered" >user?.subscription?.status === 'trial' &amp;&amp; </span>
+                     trialEndDate &amp;&amp; 
+                     now &lt;= trialEndDate;
 &nbsp;
       // Si no está en trial en User, verificar en Subscription
-      <span class="missing-if-branch" title="if path not taken" >I</span>if (!isInTrial &amp;&amp; subscription) {
+<span class="cstat-no" title="statement not covered" >      if (!isInTrial &amp;&amp; subscription) {</span>
 <span class="cstat-no" title="statement not covered" >        trialEndDate = subscription.trialEnd;</span>
 <span class="cstat-no" title="statement not covered" >        isInTrial = subscription.status === 'trialing' &amp;&amp; </span>
                    trialEndDate &amp;&amp; 
                    now &lt;= trialEndDate;
       }
 &nbsp;
-      <span class="missing-if-branch" title="else path not taken" >E</span>if (!isInTrial || <span class="branch-1 cbranch-no" title="branch not covered" >!trialEndDate)</span> {
-        return {
+<span class="cstat-no" title="statement not covered" >      if (!isInTrial || !trialEndDate) {</span>
+<span class="cstat-no" title="statement not covered" >        return {</span>
           isInTrial: false,
           daysRemaining: 0,
           trialEndDate: null,
@@ -724,7 +724,7 @@ export default new TrialNotificationService();
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-09T01:58:42.925Z
+                at 2026-05-11T15:51:16.460Z
             </div>
         <script src="../prettify.js"></script>
         <script>

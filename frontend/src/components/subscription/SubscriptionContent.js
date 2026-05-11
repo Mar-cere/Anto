@@ -34,9 +34,26 @@ export default function SubscriptionContent({
 }) {
   const insets = useSafeAreaInsets();
   const { colors, resolvedScheme } = useTheme();
+  const endMs = subscriptionStatus?.subscriptionEndDate
+    ? new Date(subscriptionStatus.subscriptionEndDate).getTime()
+    : NaN;
+  const subscriptionPeriodEnded = Number.isFinite(endMs) && endMs < Date.now();
+  const trialEndMs = subscriptionStatus?.trialEndDate
+    ? new Date(subscriptionStatus.trialEndDate).getTime()
+    : NaN;
+  const trialEnded = Number.isFinite(trialEndMs) && trialEndMs < Date.now();
+  const st = subscriptionStatus?.status;
+  const premiumOrActiveOk =
+    (st === 'premium' || st === 'active') &&
+    subscriptionStatus?.isActive !== false &&
+    !subscriptionPeriodEnded;
+  const trialOk =
+    (st === 'trialing' || st === 'trial') &&
+    subscriptionStatus?.isActive !== false &&
+    subscriptionStatus?.isInTrial !== false &&
+    !trialEnded;
   const hasActiveSubscription =
-    subscriptionStatus?.hasSubscription &&
-    (subscriptionStatus?.status === 'premium' || subscriptionStatus?.status === 'active');
+    !!subscriptionStatus?.hasSubscription && (premiumOrActiveOk || trialOk);
   const sortedPlans = [...(plans || [])].sort(
     (a, b) => (PLAN_ORDER[a.id] || 99) - (PLAN_ORDER[b.id] || 99)
   );
@@ -135,6 +152,7 @@ export default function SubscriptionContent({
             daysRemaining={subscriptionStatus.daysRemaining ?? null}
             trialEndDate={subscriptionStatus.trialEndDate ?? null}
             subscriptionEndDate={subscriptionStatus.subscriptionEndDate ?? null}
+            isActive={subscriptionStatus.isActive}
           />
           {hasActiveSubscription && (
             <TouchableOpacity style={styles.cancelButton} onPress={onCancelSubscription}>

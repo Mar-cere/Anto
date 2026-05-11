@@ -12,12 +12,34 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { SPACING } from '../../constants/ui';
 
-const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscriptionEndDate }) => {
+const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscriptionEndDate, isActive }) => {
   const { colors } = useTheme();
   const normalizedStatus = (status || 'free').toLowerCase();
+
+  const nowMs = Date.now();
+  const endMs = subscriptionEndDate ? new Date(subscriptionEndDate).getTime() : NaN;
+  const subscriptionPeriodEnded = Number.isFinite(endMs) && endMs < nowMs;
+  const trialEndMs = trialEndDate ? new Date(trialEndDate).getTime() : NaN;
+  const trialPeriodEnded = Number.isFinite(trialEndMs) && trialEndMs < nowMs;
+
+  let effectiveStatus = normalizedStatus;
+  if (isActive === false && (normalizedStatus === 'premium' || normalizedStatus === 'active')) {
+    effectiveStatus = 'expired';
+  } else if (
+    (normalizedStatus === 'premium' || normalizedStatus === 'active') &&
+    subscriptionPeriodEnded
+  ) {
+    effectiveStatus = 'expired';
+  } else if (
+    (normalizedStatus === 'trialing' || normalizedStatus === 'trial') &&
+    trialPeriodEnded
+  ) {
+    effectiveStatus = 'expired';
+  }
+
   const getStatusInfo = () => {
     // Normalizar: estados que el backend puede devolver y el frontend no trataba
-    switch (normalizedStatus) {
+    switch (effectiveStatus) {
       case 'free':
         return {
           icon: 'account-outline',
@@ -151,15 +173,23 @@ const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscri
 
       {(trialEndDate || subscriptionEndDate) && (
         <View style={styles.datesContainer}>
-          {trialEndDate && (normalizedStatus === 'trialing' || normalizedStatus === 'trial') && (
+          {trialEndDate && (effectiveStatus === 'trialing' || effectiveStatus === 'trial') && (
             <View style={styles.dateItem}>
               <Text style={styles.dateLabel}>Fin del Trial:</Text>
               <Text style={styles.dateValue}>{formatDate(trialEndDate)}</Text>
             </View>
           )}
-          {subscriptionEndDate && (normalizedStatus === 'premium' || normalizedStatus === 'active') && (
+          {subscriptionEndDate &&
+            (effectiveStatus === 'premium' || effectiveStatus === 'active') &&
+            !subscriptionPeriodEnded && (
             <View style={styles.dateItem}>
               <Text style={styles.dateLabel}>Próxima Renovación:</Text>
+              <Text style={styles.dateValue}>{formatDate(subscriptionEndDate)}</Text>
+            </View>
+          )}
+          {subscriptionEndDate && effectiveStatus === 'expired' && subscriptionPeriodEnded && (
+            <View style={styles.dateItem}>
+              <Text style={styles.dateLabel}>Vigencia hasta:</Text>
               <Text style={styles.dateValue}>{formatDate(subscriptionEndDate)}</Text>
             </View>
           )}

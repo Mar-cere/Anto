@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">10.2% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>10/98</span>
+                <span class='fraction'>0/98</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">2.29% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>2/87</span>
+                <span class='fraction'>0/87</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">25% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>3/12</span>
+                <span class='fraction'>0/12</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">9.57% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>9/94</span>
+                <span class='fraction'>0/94</span>
             </div>
         
             
@@ -408,8 +408,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">25x</span>
-<span class="cline-any cline-yes">25x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -418,11 +418,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -430,7 +430,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -722,10 +722,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">25x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">25x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -741,9 +741,9 @@ import whatsappService from './whatsappService.js';
 import pushNotificationService from './pushNotificationService.js';
 &nbsp;
 class EmergencyAlertService {
-  constructor() {
-    this.ALERT_COOLDOWN_MINUTES = 60; // Evitar múltiples alertas en 1 hora
-    this.lastAlertTimestamps = new Map(); // userId -&gt; timestamp
+<span class="fstat-no" title="function not covered" >  co</span>nstructor() {
+<span class="cstat-no" title="statement not covered" >    this.ALERT_COOLDOWN_MINUTES = 60; </span>// Evitar múltiples alertas en 1 hora
+<span class="cstat-no" title="statement not covered" >    this.lastAlertTimestamps = new Map(); </span>// userId -&gt; timestamp
   }
 &nbsp;
   /**
@@ -751,20 +751,20 @@ class EmergencyAlertService {
    * @param {string} userId - ID del usuario
    * @returns {boolean} true si se puede enviar alerta
    */
-  canSendAlert(userId) {
-    const lastAlert = this.lastAlertTimestamps.get(userId);
-    if (!lastAlert) return true;
+<span class="fstat-no" title="function not covered" >  ca</span>nSendAlert(userId) {
+    const lastAlert = <span class="cstat-no" title="statement not covered" >this.lastAlertTimestamps.get(userId);</span>
+<span class="cstat-no" title="statement not covered" >    if (!lastAlert) <span class="cstat-no" title="statement not covered" >return true;</span></span>
     
-    const minutesSinceLastAlert = (Date.now() - lastAlert) / (1000 * 60);
-    return minutesSinceLastAlert &gt;= this.ALERT_COOLDOWN_MINUTES;
+    const minutesSinceLastAlert = <span class="cstat-no" title="statement not covered" >(Date.now() - lastAlert) / (1000 * 60);</span>
+<span class="cstat-no" title="statement not covered" >    return minutesSinceLastAlert &gt;= this.ALERT_COOLDOWN_MINUTES;</span>
   }
 &nbsp;
   /**
    * Registra que se envió una alerta
    * @param {string} userId - ID del usuario
    */
-  recordAlertSent(userId) {
-    this.lastAlertTimestamps.set(userId, Date.now());
+<span class="fstat-no" title="function not covered" >  re</span>cordAlertSent(userId) {
+<span class="cstat-no" title="statement not covered" >    this.lastAlertTimestamps.set(userId, Date.now());</span>
   }
 &nbsp;
   /**
@@ -1056,10 +1056,10 @@ class EmergencyAlertService {
 }
 &nbsp;
 // Singleton instance
-const emergencyAlertService = new EmergencyAlertService();
+const emergencyAlertService = <span class="cstat-no" title="statement not covered" >new EmergencyAlertService();</span>
 &nbsp;
 // Limpiar cache cada hora
-setInterval(<span class="fstat-no" title="function not covered" >()</span> =&gt; {
+<span class="cstat-no" title="statement not covered" >setInterval(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  emergencyAlertService.cleanupOldAlerts();</span>
 }, 60 * 60 * 1000);
 &nbsp;
@@ -1072,7 +1072,7 @@ export default emergencyAlertService;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-09T01:58:42.925Z
+                at 2026-05-11T15:51:16.460Z
             </div>
         <script src="../prettify.js"></script>
         <script>

@@ -491,9 +491,19 @@ class PaymentServiceMercadoPago {
         periodEnd >= now &&
         (subscription.status === 'active' || subscription.status === 'trialing');
 
+      // No exponer "active"/"trialing" si el periodo ya terminó (evita UI "Premium Activo" con fecha pasada).
+      let resolvedStatus = subscription.status;
+      if (
+        periodEnd &&
+        periodEnd < now &&
+        (subscription.status === 'active' || subscription.status === 'trialing')
+      ) {
+        resolvedStatus = 'expired';
+      }
+
       return {
         hasSubscription: true,
-        status: subscription.status,
+        status: resolvedStatus,
         plan: subscription.plan,
         isActive,
         isInTrial,
@@ -510,6 +520,51 @@ class PaymentServiceMercadoPago {
     }
 
     const userSubscription = userSub;
+    const uEnd = userSubscription.subscriptionEndDate
+      ? new Date(userSubscription.subscriptionEndDate)
+      : null;
+    const uTrialEnd = userSubscription.trialEndDate ? new Date(userSubscription.trialEndDate) : null;
+
+    if (
+      userSubscription.status === 'premium' &&
+      uEnd &&
+      !Number.isNaN(uEnd.getTime()) &&
+      uEnd < now
+    ) {
+      return {
+        hasSubscription: true,
+        status: 'expired',
+        plan: userSubscription.plan,
+        isActive: false,
+        isInTrial: false,
+        trialStartDate: userSubscription.trialStartDate,
+        trialEndDate: userSubscription.trialEndDate,
+        subscriptionStartDate: userSubscription.subscriptionStartDate,
+        subscriptionEndDate: userSubscription.subscriptionEndDate,
+        daysRemaining: 0,
+      };
+    }
+
+    if (
+      userSubscription.status === 'trial' &&
+      uTrialEnd &&
+      !Number.isNaN(uTrialEnd.getTime()) &&
+      uTrialEnd < now
+    ) {
+      return {
+        hasSubscription: true,
+        status: 'expired',
+        plan: userSubscription.plan,
+        isActive: false,
+        isInTrial: false,
+        trialStartDate: userSubscription.trialStartDate,
+        trialEndDate: userSubscription.trialEndDate,
+        subscriptionStartDate: userSubscription.subscriptionStartDate,
+        subscriptionEndDate: userSubscription.subscriptionEndDate,
+        daysRemaining: 0,
+      };
+    }
+
     return {
       hasSubscription: userSubscription.status !== 'free',
       status: userSubscription.status,

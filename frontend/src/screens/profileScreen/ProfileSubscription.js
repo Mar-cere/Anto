@@ -23,6 +23,7 @@ export function ProfileSubscription({ subscriptionStatus, nestedAfterProfile }) 
         daysRemaining={subscriptionStatus.daysRemaining}
         trialEndDate={subscriptionStatus.trialEndDate}
         subscriptionEndDate={subscriptionStatus.subscriptionEndDate}
+        isActive={subscriptionStatus.isActive}
       />
     </View>
   );
