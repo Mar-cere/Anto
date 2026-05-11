@@ -140,13 +140,12 @@ const BENEFIT_BUNDLES = [
  * Redacción orientada a persona usuaria; sin métricas ni datos de la cuenta.
  */
 const WEEKLY_PRODUCT_NEWS_LINES = [
-  `Nuevo ecosistema conectado con el chat: puedes impulsar tareas, hábitos y pomodoros desde la conversación, sin perder el hilo de lo que te importa.`,
-  `Tareas inteligentes: propuestas y seguimiento más alineados con lo que hablaste, para pasar del “qué podría hacer” al “qué voy a hacer”, con menos fricción.`,
-  `Chat mejorado: continuidad más natural, respuestas más estables y recuperación cuando una respuesta se corta; al volver, un resumen breve de la última sesión ayuda a retomar.`,
-  `Tema claro: nueva apariencia luminosa para quien prefiere pantallas claras y lectura cómoda de día.`,
-  `Notificaciones inteligentes: avisos más pertinentes, menos ruido y límites diarios que cuidan tu atención sin dejarte fuera de lo importante.`,
-  `Resumen semanal y mensual renovado: ves en conjunto cómo encajan chat, tareas, hábitos y foco, para entender tu semana con una sola mirada.`,
-  `Regalo con este envío: dos días más de prueba premium, aplicados en la cuenta si calificas (prueba en curso o al retomar tras un período gratuito vencido; no suma en plan premium de pago), para que vuelvas a disfrutar la app con tiempo.`
+  `Ecosistema conectado al chat: tareas, hábitos y pomodoros sin salir de la conversación.`,
+  `Tareas inteligentes: propuestas alineadas con lo que hablaste y menos fricción para pasar a la acción.`,
+  `Chat más estable: mejor continuidad, recuperación si se corta una respuesta y resumen breve al volver.`,
+  `Tema claro para quien prefiere pantallas luminosas y lectura cómoda.`,
+  `Notificaciones inteligentes: avisos más útiles, menos ruido y límites diarios razonables.`,
+  `Resumen semanal y mensual renovado: una sola vista para ver cómo encajan chat, tareas, hábitos y foco.`
 ];
 
 const CLOSING_LINE_VARIANTS = [
@@ -207,11 +206,11 @@ export function buildWeeklySummaryEmailContext(user, isoParts) {
 
   const whereParagraph = `Desde aquí puedes abrir ${APP_NAME} directamente. Si el enlace no funciona en tu dispositivo, también encontrarás debajo la ruta para llegar al resumen manualmente.`;
 
-  const benefitSectionTitle = 'Qué te espera al abrir tu resumen';
+  const benefitSectionTitle = 'En tu resumen';
   const benefitLines = BENEFIT_BUNDLES[weeklyContentVariantIndex(isoWeekYear, isoWeek, BENEFIT_BUNDLES.length, 4)];
 
   const updatesSectionTitle = 'Novedades de la semana';
-  const updatesIntro = `Este envío va con un regalo: dos días más de prueba premium para que te reencantes con la app (los sumamos en cuentas elegibles al procesar este correo; si ya tienes plan de pago activo, tu suscripción no cambia). Además, hay un ecosistema nuevo alrededor del chat —tareas, hábitos y pomodoros—, tareas inteligentes, un chat más sólido, tema claro y notificaciones inteligentes. Abre ${APP_NAME} y comprueba cómo encaja todo con tu resumen.`;
+  const updatesIntro = `Regalo al enviar este correo: dos días extra de prueba premium en cuentas que califiquen (se aplican al procesar el envío). Si tienes suscripción de pago activa, tu plan no cambia. Lo nuevo de la app está resumido en la lista de abajo.`;
 
   const rawSubStatus = user?.subscription?.status;
   const subStatus = typeof rawSubStatus === 'string' ? rawSubStatus.trim() : '';

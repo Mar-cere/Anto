@@ -44,9 +44,10 @@ describe('buildWeeklySummaryEmailContext', () => {
     expect(ctx.benefitLines).toHaveLength(2);
     expect(ctx.updatesSectionTitle).toBe('Novedades de la semana');
     expect(ctx.updatesIntro.length).toBeGreaterThan(20);
-    expect(ctx.updatesLines).toHaveLength(7);
+    expect(ctx.benefitSectionTitle).toBe('En tu resumen');
+    expect(ctx.updatesLines).toHaveLength(6);
     expect(ctx.updatesLines.join(' ')).toMatch(
-      /resumen|chat|notificaciones|tareas|hábitos|pomodoro|tema claro|prueba premium/i
+      /resumen|notificaciones|tareas|hábitos|pomodoro|tema claro|chat|Ecosistema/i
     );
     expect(ctx.trialGiftPremiumNote).toBe('');
     expect(ctx.closingLine).toMatch(/Anto|acompañarte/i);

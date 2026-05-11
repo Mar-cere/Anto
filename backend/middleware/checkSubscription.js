@@ -12,8 +12,41 @@ import Subscription from '../models/Subscription.js';
 import User from '../models/User.js';
 import Message from '../models/Message.js';
 import paymentAuditService from '../services/paymentAuditService.js';
+import paymentService from '../services/paymentService.js';
 
 const FIRST_SESSION_GRACE_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Misma regla de negocio que GET /subscription-status (paymentServiceMercadoPago.getSubscriptionStatus).
+ * Evita desincronía con el virtual `isActive` de Mongoose en el documento Subscription.
+ */
+function interpretSubscriptionAccess(apiStatus, allowTrial) {
+  if (!apiStatus) {
+    return { allowed: false, isActive: false, isInTrial: false, status: 'free', plan: null };
+  }
+  const now = new Date();
+  const premiumOk =
+    apiStatus.status === 'premium' &&
+    apiStatus.subscriptionEndDate &&
+    new Date(apiStatus.subscriptionEndDate) >= now;
+  const trialOk =
+    allowTrial &&
+    apiStatus.status === 'trial' &&
+    apiStatus.trialEndDate &&
+    new Date(apiStatus.trialEndDate) >= now;
+  const fromServiceFlags =
+    apiStatus.isActive === true || (allowTrial && apiStatus.isInTrial === true);
+  const allowed = Boolean(fromServiceFlags || premiumOk || trialOk);
+  const isActive = apiStatus.isActive === true || premiumOk;
+  const isInTrial = apiStatus.isInTrial === true || trialOk;
+  return {
+    allowed,
+    isActive,
+    isInTrial,
+    status: apiStatus.status,
+    plan: apiStatus.plan ?? null,
+  };
+}
 
 const canApplyFirstSessionGrace = (req) => {
   if (!req?.path) return false;
@@ -90,44 +123,34 @@ export const requireActiveSubscription = (allowTrial = true) => {
       
       // Buscar suscripción en modelo separado
       // Asegurar que userIdString sea un ObjectId válido
-      const userIdObjectId = mongoose.Types.ObjectId.isValid(userIdString) 
-        ? new mongoose.Types.ObjectId(userIdString) 
+      const userIdObjectId = mongoose.Types.ObjectId.isValid(userIdString)
+        ? new mongoose.Types.ObjectId(userIdString)
         : userIdString;
-      let subscription = await Subscription.findOne({ userId: userIdObjectId });
 
-      // Misma prioridad que paymentServiceMercadoPago.getSubscriptionStatus:
-      // premium vigente en User (Apple / MP) gana sobre un documento Subscription desactualizado.
-      const userForPremiumGate = await User.findById(userIdObjectId)
-        .select('subscription email username name createdAt')
-        .lean();
-      const nowGate = new Date();
-      const usGate = userForPremiumGate?.subscription;
-      const hasPremiumOnUser =
-        usGate &&
-        usGate.status === 'premium' &&
-        usGate.subscriptionEndDate &&
-        new Date(usGate.subscriptionEndDate) >= nowGate;
-
-      if (hasPremiumOnUser) {
+      const apiStatus = await paymentService.getSubscriptionStatus(userIdString);
+      const gate = interpretSubscriptionAccess(apiStatus, allowTrial);
+      if (gate.allowed) {
         req.subscription = {
-          isActive: true,
-          isInTrial: false,
-          status: 'premium',
-          plan: usGate.plan,
+          isActive: gate.isActive,
+          isInTrial: gate.isInTrial,
+          status: gate.status,
+          plan: gate.plan,
         };
+        const userForEmail = await User.findById(userIdObjectId).select('email').lean();
         await paymentAuditService.logEvent('SUBSCRIPTION_CHECK_ALLOWED', {
           userId: userIdString,
-          userEmail: userForPremiumGate?.email || 'unknown',
-          status: 'premium',
-          isInTrial: false,
-          hasActiveSub: true,
-          source: 'user_subscription_overrides_subscription_doc',
-          hasSubscriptionDoc: !!subscription,
+          userEmail: userForEmail?.email || 'unknown',
+          status: gate.status,
+          isInTrial: gate.isInTrial,
+          isActive: gate.isActive,
+          source: 'getSubscriptionStatus',
           processingTime: Date.now() - startTime,
           endpoint: req.path,
         }, userIdString);
         return next();
       }
+
+      let subscription = await Subscription.findOne({ userId: userIdObjectId });
 
       // Si no existe, verificar en modelo User
       if (!subscription) {

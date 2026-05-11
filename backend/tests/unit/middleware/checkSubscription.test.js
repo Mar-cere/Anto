@@ -10,6 +10,7 @@ import Message from '../../../models/Message.js';
 import Subscription from '../../../models/Subscription.js';
 import User from '../../../models/User.js';
 import paymentAuditService from '../../../services/paymentAuditService.js';
+import paymentService from '../../../services/paymentService.js';
 
 const makeRes = () => {
   const res = {};
@@ -52,10 +53,22 @@ describe('CheckSubscription Middleware', () => {
     jest.restoreAllMocks();
     jest.spyOn(paymentAuditService, 'verifyUserAccess').mockResolvedValue({ ok: true });
     jest.spyOn(paymentAuditService, 'logEvent').mockResolvedValue({});
+    jest.spyOn(paymentService, 'getSubscriptionStatus').mockResolvedValue({
+      hasSubscription: false,
+      status: 'free',
+    });
   });
 
   describe('requireActiveSubscription', () => {
     it('debe permitir acceso cuando el usuario tiene premium activo (modelo User)', async () => {
+      jest.spyOn(paymentService, 'getSubscriptionStatus').mockResolvedValue({
+        hasSubscription: true,
+        status: 'premium',
+        isActive: true,
+        isInTrial: false,
+        plan: 'monthly',
+        subscriptionEndDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      });
       jest.spyOn(Subscription, 'findOne').mockResolvedValue(null);
       mockUserFindByIdResult({
         email: 'test@anto.app',
@@ -150,6 +163,14 @@ describe('CheckSubscription Middleware', () => {
     });
 
     it('debe permitir acceso cuando existe documento Subscription desactualizado pero User tiene premium vigente', async () => {
+      jest.spyOn(paymentService, 'getSubscriptionStatus').mockResolvedValue({
+        hasSubscription: true,
+        status: 'premium',
+        isActive: true,
+        isInTrial: false,
+        plan: 'monthly',
+        subscriptionEndDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      });
       jest.spyOn(Subscription, 'findOne').mockResolvedValue({
         status: 'active',
         isActive: false,

@@ -720,85 +720,87 @@ const emailTemplates = {
     const benefitListHtml = (context.benefitLines || [])
       .map(
         (line) =>
-          `<li style="margin: 0 0 10px 0; padding-left: 4px;">${escapeHtmlText(line)}</li>`
+          `<li style="margin:0 0 8px 0;padding-left:2px;">${escapeHtmlText(line)}</li>`
       )
       .join('');
     const updatesListHtml = (context.updatesLines || [])
       .map(
         (line) =>
-          `<li style="margin: 0 0 10px 0; padding-left: 4px;">${escapeHtmlText(line)}</li>`
+          `<li style="margin:0 0 8px 0;padding-left:2px;">${escapeHtmlText(line)}</li>`
       )
       .join('');
+    const card = `background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;padding:28px 24px;margin:0 auto;max-width:560px;box-shadow:0 2px 12px rgba(29,43,95,0.06);`;
+    const sectionTitle = `color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:15px;font-weight:700;margin:0 0 12px 0;line-height:1.3;`;
+    const body = `color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 14px 0;text-align:left;`;
+    const small = `color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;line-height:1.55;margin:0 0 12px 0;text-align:left;`;
+    const hr = `border:0;border-top:1px solid #e8edf4;margin:26px 0;height:0;`;
+
     return {
       subject: context.subjectLine,
       html: `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: ${EMAIL_COLORS.BACKGROUND};">
+        <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;padding:16px 12px;background:${EMAIL_COLORS.BACKGROUND};">
           <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:transparent;width:0;height:0;opacity:0;">
             ${escapeHtmlText(context.preheaderText)}
           </div>
           ${getEmailHeader('Resumen semanal')}
-          <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); margin: -24px 24px 24px 24px; padding: 32px 24px; border-radius: 18px; box-shadow: 0 8px 32px rgba(31,38,135,0.10); border: 1px solid rgba(255,255,255,0.18);">
-            <p style="color: ${EMAIL_COLORS.ACCENT}; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.03em; text-align: center; margin: 0 0 8px 0;">
+          <div style="${card}">
+            <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;font-weight:600;margin:0 0 6px 0;text-align:left;letter-spacing:0.02em;">
               ${escapeHtmlText(context.weekLabel)}
             </p>
-            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.1rem; line-height: 1.75; margin-bottom: 18px; text-align: center;">
+            <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:18px;font-weight:600;margin:0 0 16px 0;text-align:left;line-height:1.35;">
               ${greeting}
             </p>
-            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; line-height: 1.75; margin-bottom: 16px; text-align: center;">
+            <p style="${body}">
               ${escapeHtmlText(context.leadParagraph)}
             </p>
-            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.02rem; line-height: 1.75; margin-bottom: 20px; text-align: center;">
-              ${escapeHtmlText(context.reflectionParagraph || '')}
-            </p>
-            <div style="background: linear-gradient(145deg, rgba(26, 221, 219, 0.16) 0%, rgba(29, 43, 95, 0.07) 100%); padding: 22px 20px; border-radius: 16px; margin: 0 0 22px 0; border: 1px solid rgba(26, 221, 219, 0.38); box-shadow: 0 6px 22px rgba(29, 43, 95, 0.10);">
-              <p style="color: ${EMAIL_COLORS.PRIMARY_MEDIUM}; font-size: 0.95rem; font-weight: 800; margin: 0 0 14px 0; letter-spacing: 0.03em; text-transform: uppercase; text-align: center;">
-                ${escapeHtmlText(context.updatesSectionTitle)}
-              </p>
-              <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.02rem; line-height: 1.65; margin: 0 0 16px 0; text-align: center; font-weight: 600;">
-                ${escapeHtmlText(context.updatesIntro || '')}
-              </p>
-              <ul style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.98rem; line-height: 1.6; margin: 0; padding-left: 20px; text-align: left;">
-                ${updatesListHtml}
-              </ul>
-              ${
-                context.trialGiftPremiumNote
-                  ? `<p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem; line-height: 1.55; margin: 16px 0 0 0; text-align: center; font-style: italic;">${escapeHtmlText(context.trialGiftPremiumNote)}</p>`
-                  : ''
-              }
-            </div>
-            <div style="background: rgba(29, 43, 95, 0.06); padding: 18px 20px; border-radius: 14px; margin: 0 0 20px 0; border: 1px solid rgba(29, 43, 95, 0.08);">
-              <p style="color: ${EMAIL_COLORS.PRIMARY_MEDIUM}; font-size: 0.88rem; font-weight: 700; margin: 0 0 12px 0; letter-spacing: 0.04em; text-transform: uppercase; text-align: center;">
-                ${escapeHtmlText(context.benefitSectionTitle)}
-              </p>
-              <ul style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.97rem; line-height: 1.55; margin: 0; padding-left: 20px; text-align: left;">
-                ${benefitListHtml}
-              </ul>
-            </div>
-            <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.98rem; line-height: 1.65; margin-bottom: 18px; text-align: center;">
-              ${escapeHtmlText(context.privacyParagraph)}
-            </p>
-            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.98rem; line-height: 1.65; margin-bottom: 24px; text-align: center;">
-              ${escapeHtmlText(context.whereParagraph)}
-            </p>
-            <div style="text-align: center; margin: 28px 0 8px 0;">
+
+            <div style="text-align:center;margin:22px 0 8px 0;">
               <a href="${appHref}"
-                 style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); color: ${EMAIL_COLORS.TEXT_WHITE}; padding: 14px 28px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: 700; font-size: 1.05rem;">
+                 style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
                 Ver mi resumen semanal
               </a>
             </div>
-            <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem; line-height: 1.55; margin-top: 18px; text-align: center;">
-              ¿El enlace no abre la app? Ábrela tú, inicia sesión y ve a Perfil → «Resumen semanal y mensual».
+            <p style="${small}text-align:center;margin-top:10px;">
+              Si el enlace no abre la app: inicia sesión y ve a <strong>Perfil</strong> → «Resumen semanal y mensual».
             </p>
-            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.95rem; line-height: 1.55; margin-top: 14px; text-align: center;">
+
+            <hr style="${hr}" />
+
+            <p style="${sectionTitle}">${escapeHtmlText(context.updatesSectionTitle)}</p>
+            <p style="${body}margin-bottom:12px;">
+              ${escapeHtmlText(context.updatesIntro || '')}
+            </p>
+            <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.55;margin:0 0 8px 0;padding-left:20px;text-align:left;">
+              ${updatesListHtml}
+            </ul>
+            ${
+              context.trialGiftPremiumNote
+                ? `<p style="${small}font-style:italic;margin-top:4px;">${escapeHtmlText(context.trialGiftPremiumNote)}</p>`
+                : ''
+            }
+
+            <hr style="${hr}" />
+
+            <p style="${sectionTitle}">${escapeHtmlText(context.benefitSectionTitle)}</p>
+            <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.55;margin:0;padding-left:20px;text-align:left;">
+              ${benefitListHtml}
+            </ul>
+
+            <hr style="${hr}" />
+
+            <p style="${small}margin-bottom:10px;">${escapeHtmlText(context.privacyParagraph)}</p>
+            <p style="${small}margin-bottom:0;">${escapeHtmlText(context.whereParagraph)}</p>
+
+            <p style="${body}margin-top:22px;margin-bottom:8px;text-align:center;font-size:14px;">
               ${escapeHtmlText(context.downloadPrompt)}
             </p>
-            <div style="text-align: center; margin: 14px 0 8px 0;">
+            <div style="text-align:center;margin:0 0 8px 0;">
               <a href="${appStoreHref}"
-                 style="background: ${EMAIL_COLORS.PRIMARY_DARK}; color: ${EMAIL_COLORS.TEXT_WHITE}; padding: 12px 24px; text-decoration: none; border-radius: 10px; display: inline-block; font-weight: 700; font-size: 1rem;">
+                 style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:14px;font-weight:600;text-decoration:underline;">
                 Descargar en App Store
               </a>
             </div>
-            <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem; line-height: 1.5; margin-top: 22px; text-align: center; font-style: italic;">
+            <p style="${small}text-align:center;font-style:italic;margin-top:18px;margin-bottom:0;">
               ${escapeHtmlText(context.closingLine)}
             </p>
           </div>
