@@ -36,8 +36,14 @@ const makeReq = (overrides = {}) => ({
 });
 
 const mockUserFindByIdResult = (userDoc) => {
+  const chain = {
+    lean: jest.fn().mockResolvedValue(userDoc),
+  };
+  const p = Promise.resolve(userDoc);
+  chain.then = p.then.bind(p);
+  chain.catch = p.catch.bind(p);
   jest.spyOn(User, 'findById').mockImplementation(() => ({
-    select: jest.fn().mockResolvedValue(userDoc)
+    select: jest.fn(() => chain),
   }));
 };
 
@@ -140,6 +146,40 @@ describe('CheckSubscription Middleware', () => {
         expect.objectContaining({
           requiresSubscription: true
         })
+      );
+    });
+
+    it('debe permitir acceso cuando existe documento Subscription desactualizado pero User tiene premium vigente', async () => {
+      jest.spyOn(Subscription, 'findOne').mockResolvedValue({
+        status: 'active',
+        isActive: false,
+        currentPeriodEnd: new Date(Date.now() - 86400000),
+      });
+      mockUserFindByIdResult({
+        email: 'premium@anto.app',
+        subscription: {
+          status: 'premium',
+          plan: 'monthly',
+          trialEndDate: null,
+          subscriptionEndDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        },
+      });
+      jest.spyOn(Message, 'exists').mockResolvedValue(false);
+
+      const middleware = requireActiveSubscription(true);
+      const req = makeReq();
+      const res = makeRes();
+      const next = jest.fn();
+
+      await middleware(req, res, next);
+
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(res.status).not.toHaveBeenCalled();
+      expect(req.subscription).toEqual(
+        expect.objectContaining({
+          isActive: true,
+          status: 'premium',
+        }),
       );
     });
 

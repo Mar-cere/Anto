@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="5" failures="0" errors="0" time="0.075">
-  <testsuite name="escapeHtmlText" errors="0" failures="0" skipped="0" timestamp="2026-05-11T15:07:36" time="0.062" tests="5">
-    <testcase classname="escapeHtmlText escapa caracteres HTML" name="escapeHtmlText escapa caracteres HTML" time="0.001">
+<testsuites name="jest tests" tests="5" failures="0" errors="0" time="0.342">
+  <testsuite name="CheckSubscription Middleware" errors="0" failures="0" skipped="0" timestamp="2026-05-11T15:19:42" time="0.297" tests="5">
+    <testcase classname="CheckSubscription Middleware requireActiveSubscription debe permitir acceso cuando el usuario tiene premium activo (modelo User)" name="CheckSubscription Middleware requireActiveSubscription debe permitir acceso cuando el usuario tiene premium activo (modelo User)" time="0.002">
     </testcase>
-    <testcase classname="weeklyEmailSubjectIndex / buildWeeklySummarySubjectLine rota asunto según semana ISO sin datos personales" name="weeklyEmailSubjectIndex / buildWeeklySummarySubjectLine rota asunto según semana ISO sin datos personales" time="0.001">
+    <testcase classname="CheckSubscription Middleware requireActiveSubscription debe permitir primera sesión por gracia cuando no hay suscripción y no hay mensajes previos" name="CheckSubscription Middleware requireActiveSubscription debe permitir primera sesión por gracia cuando no hay suscripción y no hay mensajes previos" time="0">
     </testcase>
-    <testcase classname="buildWeeklySummaryEmailContext incluye preheader, beneficios y cierre sin filtrar stats del usuario" name="buildWeeklySummaryEmailContext incluye preheader, beneficios y cierre sin filtrar stats del usuario" time="0">
+    <testcase classname="CheckSubscription Middleware requireActiveSubscription debe bloquear cuando no hay suscripción y ya existe historial del usuario" name="CheckSubscription Middleware requireActiveSubscription debe bloquear cuando no hay suscripción y ya existe historial del usuario" time="0.001">
     </testcase>
-    <testcase classname="buildWeeklySummaryEmailContext usa username si no hay nombre" name="buildWeeklySummaryEmailContext usa username si no hay nombre" time="0">
+    <testcase classname="CheckSubscription Middleware requireActiveSubscription debe permitir acceso cuando existe documento Subscription desactualizado pero User tiene premium vigente" name="CheckSubscription Middleware requireActiveSubscription debe permitir acceso cuando existe documento Subscription desactualizado pero User tiene premium vigente" time="0">
     </testcase>
-    <testcase classname="buildWeeklySummaryEmailContext añade nota de regalo para cuentas premium" name="buildWeeklySummaryEmailContext añade nota de regalo para cuentas premium" time="0">
+    <testcase classname="CheckSubscription Middleware requireActiveSubscription no debe aplicar gracia fuera de rutas iniciales del chat" name="CheckSubscription Middleware requireActiveSubscription no debe aplicar gracia fuera de rutas iniciales del chat" time="0.001">
     </testcase>
   </testsuite>
 </testsuites>

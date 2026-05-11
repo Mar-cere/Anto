@@ -95,6 +95,40 @@ export const requireActiveSubscription = (allowTrial = true) => {
         : userIdString;
       let subscription = await Subscription.findOne({ userId: userIdObjectId });
 
+      // Misma prioridad que paymentServiceMercadoPago.getSubscriptionStatus:
+      // premium vigente en User (Apple / MP) gana sobre un documento Subscription desactualizado.
+      const userForPremiumGate = await User.findById(userIdObjectId)
+        .select('subscription email username name createdAt')
+        .lean();
+      const nowGate = new Date();
+      const usGate = userForPremiumGate?.subscription;
+      const hasPremiumOnUser =
+        usGate &&
+        usGate.status === 'premium' &&
+        usGate.subscriptionEndDate &&
+        new Date(usGate.subscriptionEndDate) >= nowGate;
+
+      if (hasPremiumOnUser) {
+        req.subscription = {
+          isActive: true,
+          isInTrial: false,
+          status: 'premium',
+          plan: usGate.plan,
+        };
+        await paymentAuditService.logEvent('SUBSCRIPTION_CHECK_ALLOWED', {
+          userId: userIdString,
+          userEmail: userForPremiumGate?.email || 'unknown',
+          status: 'premium',
+          isInTrial: false,
+          hasActiveSub: true,
+          source: 'user_subscription_overrides_subscription_doc',
+          hasSubscriptionDoc: !!subscription,
+          processingTime: Date.now() - startTime,
+          endpoint: req.path,
+        }, userIdString);
+        return next();
+      }
+
       // Si no existe, verificar en modelo User
       if (!subscription) {
         const user = await User.findById(userIdObjectId).select('subscription email username name createdAt');
