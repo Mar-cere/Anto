@@ -396,12 +396,12 @@ router.get(
               ...status,
             };
           },
-          300 // TTL de 5 minutos
+          120 // 2 min: menor desfase entre UI y gate del chat
         );
 
         logger.debug('[PaymentRoutes] Respuesta guardada en caché', {
           userId: userId.toString(),
-          ttl: 300,
+          ttl: 120,
         });
       } catch (cacheError) {
         logger.error('[PaymentRoutes] Error en getOrSet para subscription-status', {

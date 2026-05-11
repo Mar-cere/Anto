@@ -1,52 +1,21 @@
 /**
  * Middleware para verificar suscripción activa
- * 
- * Verifica si el usuario tiene una suscripción activa o está en trial.
- * Útil para restringir acceso a features premium.
- * 
+ *
+ * La decisión de acceso usa solo paymentService.getSubscriptionStatus + interpretSubscriptionAccess
+ * (misma regla que GET /api/payments/subscription-status). No se re-evalúa con el documento
+ * Subscription y su virtual isActive para evitar desincronía.
+ *
  * @author AntoApp Team
  */
 
 import mongoose from 'mongoose';
-import Subscription from '../models/Subscription.js';
 import User from '../models/User.js';
 import Message from '../models/Message.js';
 import paymentAuditService from '../services/paymentAuditService.js';
 import paymentService from '../services/paymentService.js';
+import { interpretSubscriptionAccess } from '../utils/subscriptionAccess.js';
 
 const FIRST_SESSION_GRACE_WINDOW_MS = 24 * 60 * 60 * 1000;
-
-/**
- * Misma regla de negocio que GET /subscription-status (paymentServiceMercadoPago.getSubscriptionStatus).
- * Evita desincronía con el virtual `isActive` de Mongoose en el documento Subscription.
- */
-function interpretSubscriptionAccess(apiStatus, allowTrial) {
-  if (!apiStatus) {
-    return { allowed: false, isActive: false, isInTrial: false, status: 'free', plan: null };
-  }
-  const now = new Date();
-  const premiumOk =
-    apiStatus.status === 'premium' &&
-    apiStatus.subscriptionEndDate &&
-    new Date(apiStatus.subscriptionEndDate) >= now;
-  const trialOk =
-    allowTrial &&
-    apiStatus.status === 'trial' &&
-    apiStatus.trialEndDate &&
-    new Date(apiStatus.trialEndDate) >= now;
-  const fromServiceFlags =
-    apiStatus.isActive === true || (allowTrial && apiStatus.isInTrial === true);
-  const allowed = Boolean(fromServiceFlags || premiumOk || trialOk);
-  const isActive = apiStatus.isActive === true || premiumOk;
-  const isInTrial = apiStatus.isInTrial === true || trialOk;
-  return {
-    allowed,
-    isActive,
-    isInTrial,
-    status: apiStatus.status,
-    plan: apiStatus.plan ?? null,
-  };
-}
 
 const canApplyFirstSessionGrace = (req) => {
   if (!req?.path) return false;
@@ -64,70 +33,93 @@ export const requireActiveSubscription = (allowTrial = true) => {
     try {
       const userId = req.user?._id;
       if (!userId || !userId.toString) {
-        // Registrar intento de acceso sin autenticación
-        await paymentAuditService.logEvent('SUBSCRIPTION_CHECK_FAILED', {
-          reason: 'no_user_id',
-          ip: req.ip,
-          userAgent: req.get('user-agent'),
-        }, null);
-        
+        await paymentAuditService.logEvent(
+          'SUBSCRIPTION_CHECK_FAILED',
+          {
+            reason: 'no_user_id',
+            ip: req.ip,
+            userAgent: req.get('user-agent'),
+          },
+          null,
+        );
+
         return res.status(401).json({
           success: false,
           error: 'Usuario no autenticado',
         });
       }
 
-      // Verificar si el usuario tiene rol de emergencia (bypass de suscripción)
       const userRole = req.user?.role;
       if (userRole === 'emergency') {
-        // Usuarios con rol emergency tienen acceso completo sin suscripción
         req.subscription = {
           isActive: true,
           isInTrial: false,
           status: 'emergency',
           plan: 'emergency',
-          bypass: true // Flag para indicar que es bypass de emergencia
+          bypass: true,
         };
-        
-        // Registrar acceso de emergencia
-        await paymentAuditService.logEvent('SUBSCRIPTION_CHECK_EMERGENCY_BYPASS', {
-          userId: userId.toString(),
-          userEmail: req.user?.email || 'unknown',
-          ip: req.ip,
-          userAgent: req.get('user-agent'),
-          endpoint: req.path,
-        }, userId.toString());
-        
+
+        await paymentAuditService.logEvent(
+          'SUBSCRIPTION_CHECK_EMERGENCY_BYPASS',
+          {
+            userId: userId.toString(),
+            userEmail: req.user?.email || 'unknown',
+            ip: req.ip,
+            userAgent: req.get('user-agent'),
+            endpoint: req.path,
+          },
+          userId.toString(),
+        );
+
         return next();
       }
 
       const userIdString = userId.toString();
 
-      // Validar formato de ObjectId
       if (!userIdString.match(/^[0-9a-fA-F]{24}$/)) {
-        await paymentAuditService.logEvent('SUBSCRIPTION_CHECK_FAILED', {
-          reason: 'invalid_user_id_format',
-          userId: userIdString,
-          ip: req.ip,
-          userAgent: req.get('user-agent'),
-        }, null);
-        
+        await paymentAuditService.logEvent(
+          'SUBSCRIPTION_CHECK_FAILED',
+          {
+            reason: 'invalid_user_id_format',
+            userId: userIdString,
+            ip: req.ip,
+            userAgent: req.get('user-agent'),
+          },
+          null,
+        );
+
         return res.status(400).json({
           success: false,
           error: 'ID de usuario inválido',
         });
       }
 
-      // Verificar acceso usando el servicio de auditoría (validación adicional)
-      const accessVerification = await paymentAuditService.verifyUserAccess(userIdString);
-      
-      // Buscar suscripción en modelo separado
-      // Asegurar que userIdString sea un ObjectId válido
       const userIdObjectId = mongoose.Types.ObjectId.isValid(userIdString)
         ? new mongoose.Types.ObjectId(userIdString)
         : userIdString;
 
-      const apiStatus = await paymentService.getSubscriptionStatus(userIdString);
+      let apiStatus;
+      try {
+        apiStatus = await paymentService.getSubscriptionStatus(userIdString);
+      } catch (statusErr) {
+        console.error('[checkSubscription] getSubscriptionStatus', statusErr);
+        await paymentAuditService.logEvent(
+          'SUBSCRIPTION_CHECK_FAILED',
+          {
+            reason: 'subscription_status_error',
+            message: statusErr?.message,
+            userId: userIdString,
+            ip: req.ip,
+            userAgent: req.get('user-agent'),
+          },
+          userIdString,
+        );
+        return res.status(503).json({
+          success: false,
+          error: 'No se pudo verificar la suscripción. Intenta de nuevo en unos segundos.',
+        });
+      }
+
       const gate = interpretSubscriptionAccess(apiStatus, allowTrial);
       if (gate.allowed) {
         req.subscription = {
@@ -137,239 +129,131 @@ export const requireActiveSubscription = (allowTrial = true) => {
           plan: gate.plan,
         };
         const userForEmail = await User.findById(userIdObjectId).select('email').lean();
-        await paymentAuditService.logEvent('SUBSCRIPTION_CHECK_ALLOWED', {
-          userId: userIdString,
-          userEmail: userForEmail?.email || 'unknown',
-          status: gate.status,
-          isInTrial: gate.isInTrial,
-          isActive: gate.isActive,
-          source: 'getSubscriptionStatus',
-          processingTime: Date.now() - startTime,
-          endpoint: req.path,
-        }, userIdString);
+        await paymentAuditService.logEvent(
+          'SUBSCRIPTION_CHECK_ALLOWED',
+          {
+            userId: userIdString,
+            userEmail: userForEmail?.email || 'unknown',
+            status: gate.status,
+            isInTrial: gate.isInTrial,
+            isActive: gate.isActive,
+            source: 'getSubscriptionStatus',
+            processingTime: Date.now() - startTime,
+            endpoint: req.path,
+          },
+          userIdString,
+        );
         return next();
       }
 
-      let subscription = await Subscription.findOne({ userId: userIdObjectId });
+      const user = await User.findById(userIdObjectId)
+        .select('email username name createdAt subscription')
+        .lean();
 
-      // Si no existe, verificar en modelo User
-      if (!subscription) {
-        const user = await User.findById(userIdObjectId).select('subscription email username name createdAt');
-        if (!user) {
-          // Registrar intento de acceso con usuario inexistente
-          await paymentAuditService.logEvent('SUBSCRIPTION_CHECK_FAILED', {
+      if (!user) {
+        await paymentAuditService.logEvent(
+          'SUBSCRIPTION_CHECK_FAILED',
+          {
             reason: 'user_not_found',
             userId: userIdString,
             ip: req.ip,
             userAgent: req.get('user-agent'),
-          }, userIdString);
-          
-          return res.status(404).json({
-            success: false,
-            error: 'Usuario no encontrado',
-          });
-        }
+          },
+          userIdString,
+        );
 
-        const userSub = user.subscription;
-        const now = new Date();
+        return res.status(404).json({
+          success: false,
+          error: 'Usuario no encontrado',
+        });
+      }
 
-        // Verificar si tiene suscripción activa
-        const hasActiveSub = userSub.status === 'premium' && 
-                            userSub.subscriptionEndDate && 
-                            now <= userSub.subscriptionEndDate;
+      const userSub = user.subscription || {};
+      const now = new Date();
 
-        // Verificar si está en trial
-        const isInTrial = userSub.status === 'trial' && 
-                         userSub.trialEndDate && 
-                         now <= userSub.trialEndDate;
-
-        if (!hasActiveSub && (!allowTrial || !isInTrial)) {
-          const accountAgeMs = user?.createdAt ? Date.now() - new Date(user.createdAt).getTime() : Number.POSITIVE_INFINITY;
-          const isNewAccountForGrace = Number.isFinite(accountAgeMs) && accountAgeMs >= 0 && accountAgeMs <= FIRST_SESSION_GRACE_WINDOW_MS;
-          if (allowTrial && canApplyFirstSessionGrace(req) && isNewAccountForGrace) {
-            const hasAnyUserMessages = await Message.exists({
-              userId: userIdObjectId,
-              role: 'user'
-            });
-            if (!hasAnyUserMessages) {
-              req.subscription = {
-                isActive: false,
-                isInTrial: false,
-                status: userSub.status,
-                plan: userSub.plan,
-                firstSessionGrace: true
-              };
-              await paymentAuditService.logEvent('SUBSCRIPTION_FIRST_SESSION_GRACE_GRANTED', {
-                userId: userIdString,
-                userEmail: user.email,
-                currentStatus: userSub.status,
-                endpoint: req.path,
-                method: req.method,
-                accountAgeMs
-              }, userIdString);
-              return next();
-            }
-          }
-
-          // Si el trial expiró, actualizar el status a 'expired'
-          if (userSub.status === 'trial' && userSub.trialEndDate && now > userSub.trialEndDate) {
-            user.subscription.status = 'expired';
-            await user.save();
-            
-            // Registrar expiración de trial
-            await paymentAuditService.logEvent('TRIAL_EXPIRED', {
-              userId: userIdString,
-              userEmail: user.email,
-              trialEndDate: userSub.trialEndDate,
-              ip: req.ip,
-            }, userIdString);
-          }
-          
-          // Registrar acceso denegado
-          await paymentAuditService.logEvent('SUBSCRIPTION_CHECK_DENIED', {
+      if (userSub.status === 'trial' && userSub.trialEndDate && now > new Date(userSub.trialEndDate)) {
+        await User.updateOne({ _id: userIdObjectId }, { $set: { 'subscription.status': 'expired' } });
+        await paymentAuditService.logEvent(
+          'TRIAL_EXPIRED',
+          {
             userId: userIdString,
             userEmail: user.email,
-            currentStatus: userSub.status,
-            allowTrial,
-            isInTrial,
-            hasActiveSub,
-            ip: req.ip,
-            userAgent: req.get('user-agent'),
-            endpoint: req.path,
-            method: req.method,
-          }, userIdString);
-          
-          return res.status(403).json({
-            success: false,
-            error: 'Se requiere suscripción activa o trial válido para usar el chat',
-            requiresSubscription: true,
-            currentStatus: userSub.status,
             trialEndDate: userSub.trialEndDate,
-            message: userSub.status === 'trial' && userSub.trialEndDate && now > userSub.trialEndDate
-              ? 'Tu período de prueba ha expirado. Por favor, suscríbete para continuar usando el chat.'
-              : 'Necesitas una suscripción activa para usar el chat.',
-          });
-        }
-
-        // Agregar información de suscripción al request
-        req.subscription = {
-          isActive: hasActiveSub,
-          isInTrial: isInTrial,
-          status: userSub.status,
-          plan: userSub.plan,
-        };
-
-        // Registrar acceso permitido
-        await paymentAuditService.logEvent('SUBSCRIPTION_CHECK_ALLOWED', {
-          userId: userIdString,
-          userEmail: user.email,
-          status: userSub.status,
-          isInTrial,
-          hasActiveSub,
-          processingTime: Date.now() - startTime,
-          endpoint: req.path,
-        }, userIdString);
-
-        return next();
+            ip: req.ip,
+          },
+          userIdString,
+        );
       }
 
-      // Verificar suscripción en modelo separado
-      const now = new Date();
-      const isActive = subscription.isActive;
-      let isInTrial = subscription.isInTrial;
-      
-      // Si el trial expiró, actualizar el status
-      if (subscription.status === 'trialing' && subscription.trialEnd && now > subscription.trialEnd) {
-        subscription.status = 'expired';
-        await subscription.save();
-        isInTrial = false;
-      }
+      const accountAgeMs = user.createdAt
+        ? Date.now() - new Date(user.createdAt).getTime()
+        : Number.POSITIVE_INFINITY;
+      const isNewAccountForGrace =
+        Number.isFinite(accountAgeMs) && accountAgeMs >= 0 && accountAgeMs <= FIRST_SESSION_GRACE_WINDOW_MS;
 
-      if (!isActive && (!allowTrial || !isInTrial)) {
-        const userForGrace = await User.findById(userIdObjectId).select('email createdAt').lean();
-        const accountAgeMs = userForGrace?.createdAt
-          ? Date.now() - new Date(userForGrace.createdAt).getTime()
-          : Number.POSITIVE_INFINITY;
-        const isNewAccountForGrace = Number.isFinite(accountAgeMs) && accountAgeMs >= 0 && accountAgeMs <= FIRST_SESSION_GRACE_WINDOW_MS;
-        if (allowTrial && canApplyFirstSessionGrace(req) && isNewAccountForGrace) {
-          const hasAnyUserMessages = await Message.exists({
-            userId: userIdObjectId,
-            role: 'user'
-          });
-          if (!hasAnyUserMessages) {
-            req.subscription = {
-              isActive: false,
-              isInTrial: false,
-              status: subscription.status,
-              plan: subscription.plan,
-              firstSessionGrace: true
-            };
-            await paymentAuditService.logEvent('SUBSCRIPTION_FIRST_SESSION_GRACE_GRANTED', {
+      if (allowTrial && canApplyFirstSessionGrace(req) && isNewAccountForGrace) {
+        const hasAnyUserMessages = await Message.exists({
+          userId: userIdObjectId,
+          role: 'user',
+        });
+        if (!hasAnyUserMessages) {
+          req.subscription = {
+            isActive: false,
+            isInTrial: false,
+            status: userSub.status || 'free',
+            plan: userSub.plan,
+            firstSessionGrace: true,
+          };
+          await paymentAuditService.logEvent(
+            'SUBSCRIPTION_FIRST_SESSION_GRACE_GRANTED',
+            {
               userId: userIdString,
-              userEmail: userForGrace?.email || 'unknown',
-              currentStatus: subscription.status,
+              userEmail: user.email,
+              currentStatus: userSub.status,
               endpoint: req.path,
               method: req.method,
-              accountAgeMs
-            }, userIdString);
-            return next();
-          }
+              accountAgeMs,
+            },
+            userIdString,
+          );
+          return next();
         }
+      }
 
-        // Obtener información del usuario para logging
-        const user = await User.findById(userIdString)
-          .select('email username name')
-          .lean();
-
-        // Registrar acceso denegado
-        await paymentAuditService.logEvent('SUBSCRIPTION_CHECK_DENIED', {
+      await paymentAuditService.logEvent(
+        'SUBSCRIPTION_CHECK_DENIED',
+        {
           userId: userIdString,
-          userEmail: user?.email || 'unknown',
-          currentStatus: subscription.status,
+          userEmail: user.email,
+          apiStatus: apiStatus?.status,
+          apiIsActive: apiStatus?.isActive,
+          apiIsInTrial: apiStatus?.isInTrial,
+          userSubscriptionStatus: userSub.status,
           allowTrial,
-          isInTrial,
-          isActive,
+          source: 'getSubscriptionStatus',
+          processingTime: Date.now() - startTime,
           ip: req.ip,
           userAgent: req.get('user-agent'),
           endpoint: req.path,
           method: req.method,
-        }, userIdString);
-        
-        return res.status(403).json({
-          success: false,
-          error: 'Se requiere suscripción activa o trial válido para usar el chat',
-          requiresSubscription: true,
-          currentStatus: subscription.status,
-          trialEnd: subscription.trialEnd,
-          message: subscription.status === 'trialing' && subscription.trialEnd && now > subscription.trialEnd
+        },
+        userIdString,
+      );
+
+      const trialEndedMsg =
+        userSub.status === 'trial' && userSub.trialEndDate && now > new Date(userSub.trialEndDate);
+
+      return res.status(403).json({
+        success: false,
+        error: 'Se requiere suscripción activa o trial válido para usar el chat',
+        requiresSubscription: true,
+        currentStatus: apiStatus?.status ?? userSub.status,
+        trialEndDate: apiStatus?.trialEndDate ?? userSub.trialEndDate,
+        message:
+          trialEndedMsg
             ? 'Tu período de prueba ha expirado. Por favor, suscríbete para continuar usando el chat.'
             : 'Necesitas una suscripción activa para usar el chat.',
-        });
-      }
-
-      // Agregar información de suscripción al request
-      req.subscription = {
-        isActive,
-        isInTrial,
-        status: subscription.status,
-        plan: subscription.plan,
-      };
-
-      // Registrar acceso permitido
-      const user = await User.findById(userIdString)
-        .select('email')
-        .lean();
-      await paymentAuditService.logEvent('SUBSCRIPTION_CHECK_ALLOWED', {
-        userId: userIdString,
-        userEmail: user?.email || 'unknown',
-        status: subscription.status,
-        isInTrial,
-        isActive,
-        processingTime: Date.now() - startTime,
-        endpoint: req.path,
-      }, userIdString);
-
-      next();
+      });
     } catch (error) {
       console.error('Error verificando suscripción:', error);
       res.status(500).json({
@@ -395,57 +279,41 @@ export const requirePremium = () => {
         });
       }
 
-      const subscription = await Subscription.findOne({ userId });
-      
-      if (!subscription) {
-        const user = await User.findById(userId)
-          .select('subscription')
-          .lean();
-        if (!user || user.subscription.status !== 'premium') {
-          return res.status(403).json({
-            success: false,
-            error: 'Se requiere suscripción premium',
-            requiresPremium: true,
-          });
-        }
-
-        const now = new Date();
-        if (!user.subscription.subscriptionEndDate || 
-            now > user.subscription.subscriptionEndDate) {
-          return res.status(403).json({
-            success: false,
-            error: 'Suscripción expirada',
-            requiresPremium: true,
-          });
-        }
-
-        req.subscription = {
-          isActive: true,
-          isInTrial: false,
-          status: 'premium',
-          plan: user.subscription.plan,
-        };
-
-        return next();
-      }
-
-      if (subscription.status !== 'active' || !subscription.isActive) {
-        return res.status(403).json({
+      const userIdString = userId.toString();
+      let apiStatus;
+      try {
+        apiStatus = await paymentService.getSubscriptionStatus(userIdString);
+      } catch (e) {
+        console.error('[requirePremium] getSubscriptionStatus', e);
+        return res.status(503).json({
           success: false,
-          error: 'Se requiere suscripción premium activa',
-          requiresPremium: true,
-          currentStatus: subscription.status,
+          error: 'No se pudo verificar la suscripción.',
         });
       }
 
-      req.subscription = {
-        isActive: true,
-        isInTrial: false,
-        status: subscription.status,
-        plan: subscription.plan,
-      };
+      const gate = interpretSubscriptionAccess(apiStatus, true);
+      const st = String(apiStatus?.status || '').toLowerCase();
+      // Solo pago de suscripción (no trial / trialing), alineado con rutas que exigen premium real
+      const premiumAllowed =
+        gate.allowed &&
+        (st === 'premium' || (st === 'active' && apiStatus?.isActive === true));
 
-      next();
+      if (premiumAllowed) {
+        req.subscription = {
+          isActive: true,
+          isInTrial: gate.isInTrial,
+          status: apiStatus?.status || 'premium',
+          plan: gate.plan,
+        };
+        return next();
+      }
+
+      return res.status(403).json({
+        success: false,
+        error: 'Se requiere suscripción premium',
+        requiresPremium: true,
+        currentStatus: apiStatus?.status,
+      });
     } catch (error) {
       console.error('Error verificando suscripción premium:', error);
       res.status(500).json({
@@ -458,7 +326,7 @@ export const requirePremium = () => {
 
 /**
  * Middleware opcional: agrega información de suscripción sin bloquear
- * Útil para mostrar diferentes UI según el estado de suscripción
+ * Usa la misma fuente que el resto de la app (getSubscriptionStatus).
  */
 export const attachSubscriptionInfo = async (req, res, next) => {
   try {
@@ -467,41 +335,19 @@ export const attachSubscriptionInfo = async (req, res, next) => {
       return next();
     }
 
-    const subscription = await Subscription.findOne({ userId });
-    
-    if (subscription) {
-      req.subscription = {
-        isActive: subscription.isActive,
-        isInTrial: subscription.isInTrial,
-        status: subscription.status,
-        plan: subscription.plan,
-        daysRemaining: subscription.daysRemaining,
-      };
-    } else {
-      const user = await User.findById(userId).select('subscription');
-      if (user) {
-        const now = new Date();
-        const hasActiveSub = user.subscription.status === 'premium' && 
-                            user.subscription.subscriptionEndDate && 
-                            now <= user.subscription.subscriptionEndDate;
-        const isInTrial = user.subscription.status === 'trial' && 
-                         user.subscription.trialEndDate && 
-                         now <= user.subscription.trialEndDate;
-
-        req.subscription = {
-          isActive: hasActiveSub,
-          isInTrial: isInTrial,
-          status: user.subscription.status,
-          plan: user.subscription.plan,
-        };
-      }
-    }
+    const apiStatus = await paymentService.getSubscriptionStatus(userId.toString());
+    const gate = interpretSubscriptionAccess(apiStatus, true);
+    req.subscription = {
+      isActive: gate.isActive,
+      isInTrial: gate.isInTrial,
+      status: gate.status,
+      plan: gate.plan,
+      daysRemaining: apiStatus?.daysRemaining,
+    };
 
     next();
   } catch (error) {
     console.error('Error adjuntando información de suscripción:', error);
-    // No bloquear la request, solo continuar sin información
     next();
   }
 };
-

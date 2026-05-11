@@ -47,8 +47,11 @@ function resolveIapExport(raw) {
 }
 
 /**
- * Si el nativo no está en el binario (Expo Go, build viejo), cargar el paquete JS dispara
- * "Cannot find native module 'ExpoInAppPurchases'". Comprobar antes con expo-modules-core.
+ * Evita cargar el JS de IAP en entornos sin nativo (p. ej. Expo Go).
+ * Importante: en algunos builds iOS (New Architecture, frameworks estáticos, etc.)
+ * `requireOptionalNativeModule('ExpoInAppPurchases')` puede ser `null` aunque
+ * `require('expo-in-app-purchases')` funcione. En ese caso NO debemos bloquear:
+ * el `require` real y `isIapModuleUsable` son la fuente de verdad.
  */
 function isExpoInAppPurchasesNativeAvailable() {
   if (Platform.OS !== 'ios') {
@@ -57,12 +60,15 @@ function isExpoInAppPurchasesNativeAvailable() {
   try {
     const core = require('expo-modules-core');
     if (typeof core.requireOptionalNativeModule === 'function') {
-      return core.requireOptionalNativeModule('ExpoInAppPurchases') != null;
+      const native = core.requireOptionalNativeModule('ExpoInAppPurchases');
+      if (native != null) {
+        return true;
+      }
+      // `null` no implica ausencia del binario IAP; intentar require() más abajo.
     }
   } catch {
     /* sin expo-modules-core en este entorno */
   }
-  // Sin API de comprobación: no bloquear (builds antiguos / entornos raros)
   return true;
 }
 

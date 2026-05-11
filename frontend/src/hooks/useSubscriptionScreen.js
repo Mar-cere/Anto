@@ -13,6 +13,7 @@ import { getApiErrorMessage } from '../utils/apiErrorHandler';
 import { HARDCODED_PLANS, TEXTS } from '../screens/subscription/subscriptionScreenConstants';
 import { API_URL } from '../config/api';
 import { useToast } from '../context/ToastContext';
+import { subscriptionLooksCurrentlyUsable } from '../utils/subscriptionAccess';
 
 export function useSubscriptionScreen() {
   const navigation = useNavigation();
@@ -65,11 +66,7 @@ export function useSubscriptionScreen() {
         while (attempts > 0 && !cancelled) {
           try {
             const status = await paymentService.getSubscriptionStatus();
-            const isActive =
-              status?.success &&
-              status?.hasSubscription &&
-              (status?.status === 'premium' || status?.status === 'active' || status?.status === 'trialing');
-            if (isActive) {
+            if (subscriptionLooksCurrentlyUsable(status)) {
               setPendingPaymentVerification(false);
               await loadData();
               return true;
@@ -103,11 +100,7 @@ export function useSubscriptionScreen() {
       while (attempts > 0 && !cancelled) {
         try {
           const status = await paymentService.getSubscriptionStatus();
-          const isActive =
-            status?.success &&
-            status?.hasSubscription &&
-            (status?.status === 'premium' || status?.status === 'active' || status?.status === 'trialing');
-          if (isActive) {
+          if (subscriptionLooksCurrentlyUsable(status)) {
             setPendingPaymentVerification(false);
             await loadData();
             showToast({
@@ -174,17 +167,13 @@ export function useSubscriptionScreen() {
         showToast({ message: 'Plan no válido. Vuelve a elegir un plan.', type: 'warning' });
         return;
       }
-      if (subscriptionStatus?.hasSubscription) {
-        const status = subscriptionStatus.status;
-        const isActive = status === 'premium' || status === 'active' || status === 'trialing';
-        if (isActive) {
-          const currentPlan = subscriptionStatus.plan || 'desconocido';
-          const daysRemaining = subscriptionStatus.daysRemaining;
-          const message = daysRemaining
-            ? `Ya tienes ${currentPlan} activa (${daysRemaining} día(s)). Puedes elegir otro plan o volver atrás.`
-            : `Ya tienes ${currentPlan} activa. Puedes elegir otro plan si lo necesitas.`;
-          showToast({ message, type: 'info', duration: 4500 });
-        }
+      if (subscriptionStatus?.hasSubscription && subscriptionLooksCurrentlyUsable(subscriptionStatus)) {
+        const currentPlan = subscriptionStatus.plan || 'desconocido';
+        const daysRemaining = subscriptionStatus.daysRemaining;
+        const message = daysRemaining
+          ? `Ya tienes ${currentPlan} activa (${daysRemaining} día(s)). Puedes elegir otro plan o volver atrás.`
+          : `Ya tienes ${currentPlan} activa. Puedes elegir otro plan si lo necesitas.`;
+        showToast({ message, type: 'info', duration: 4500 });
       }
       try {
         setSubscribing(true);
@@ -226,7 +215,7 @@ export function useSubscriptionScreen() {
                 try {
                   await loadData();
                   const newStatus = await paymentService.getSubscriptionStatus();
-                  if (newStatus?.success && newStatus?.hasSubscription) statusUpdated = true;
+                  if (subscriptionLooksCurrentlyUsable(newStatus)) statusUpdated = true;
                   else await new Promise((r) => setTimeout(r, 1000));
                 } catch (_) {}
                 retries--;
@@ -240,7 +229,7 @@ export function useSubscriptionScreen() {
               try {
                 await loadData();
                 const newStatus = await paymentService.getSubscriptionStatus();
-                if (newStatus?.success && newStatus?.hasSubscription) {
+                if (subscriptionLooksCurrentlyUsable(newStatus)) {
                   showToast({
                     message: 'Tu suscripción ya estaba activa. Estado actualizado.',
                     type: 'default',
@@ -280,6 +269,15 @@ export function useSubscriptionScreen() {
             setSubscribing(false);
             setSelectedPlan(null);
           }
+          return;
+        }
+        if (Platform.OS === 'ios' && !storeKitService.isAvailable()) {
+          showToast({
+            message:
+              'En iOS las suscripciones se pagan con App Store. Esta instalación no tiene compras in-app (por ejemplo Expo Go o un binario sin IAP). Instala desde TestFlight o recompila con expo-in-app-purchases. En Android se usa Mercado Pago.',
+            type: 'error',
+            duration: 10000,
+          });
           return;
         }
         const checkoutResponse = await paymentService.createCheckoutSession(plan.id, PAYMENT_SUCCESS_RETURN_URL, null);

@@ -20,6 +20,7 @@ import { LEGAL_URLS, TEXTS } from '../../screens/subscription/subscriptionScreen
 import SubscriptionLegalSection from './SubscriptionLegalSection';
 import { useTheme } from '../../context/ThemeContext';
 import { SPACING } from '../../constants/ui';
+import { subscriptionLooksCurrentlyUsable } from '../../utils/subscriptionAccess';
 
 const PLAN_ORDER = { monthly: 1, quarterly: 2, semestral: 3, yearly: 4 };
 
@@ -34,26 +35,7 @@ export default function SubscriptionContent({
 }) {
   const insets = useSafeAreaInsets();
   const { colors, resolvedScheme } = useTheme();
-  const endMs = subscriptionStatus?.subscriptionEndDate
-    ? new Date(subscriptionStatus.subscriptionEndDate).getTime()
-    : NaN;
-  const subscriptionPeriodEnded = Number.isFinite(endMs) && endMs < Date.now();
-  const trialEndMs = subscriptionStatus?.trialEndDate
-    ? new Date(subscriptionStatus.trialEndDate).getTime()
-    : NaN;
-  const trialEnded = Number.isFinite(trialEndMs) && trialEndMs < Date.now();
-  const st = subscriptionStatus?.status;
-  const premiumOrActiveOk =
-    (st === 'premium' || st === 'active') &&
-    subscriptionStatus?.isActive !== false &&
-    !subscriptionPeriodEnded;
-  const trialOk =
-    (st === 'trialing' || st === 'trial') &&
-    subscriptionStatus?.isActive !== false &&
-    subscriptionStatus?.isInTrial !== false &&
-    !trialEnded;
-  const hasActiveSubscription =
-    !!subscriptionStatus?.hasSubscription && (premiumOrActiveOk || trialOk);
+  const hasActiveSubscription = subscriptionLooksCurrentlyUsable(subscriptionStatus);
   const sortedPlans = [...(plans || [])].sort(
     (a, b) => (PLAN_ORDER[a.id] || 99) - (PLAN_ORDER[b.id] || 99)
   );

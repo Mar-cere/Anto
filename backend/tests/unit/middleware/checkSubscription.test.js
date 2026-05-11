@@ -7,7 +7,6 @@
 import { jest } from '@jest/globals';
 import { requireActiveSubscription } from '../../../middleware/checkSubscription.js';
 import Message from '../../../models/Message.js';
-import Subscription from '../../../models/Subscription.js';
 import User from '../../../models/User.js';
 import paymentAuditService from '../../../services/paymentAuditService.js';
 import paymentService from '../../../services/paymentService.js';
@@ -51,7 +50,6 @@ const mockUserFindByIdResult = (userDoc) => {
 describe('CheckSubscription Middleware', () => {
   beforeEach(() => {
     jest.restoreAllMocks();
-    jest.spyOn(paymentAuditService, 'verifyUserAccess').mockResolvedValue({ ok: true });
     jest.spyOn(paymentAuditService, 'logEvent').mockResolvedValue({});
     jest.spyOn(paymentService, 'getSubscriptionStatus').mockResolvedValue({
       hasSubscription: false,
@@ -69,7 +67,6 @@ describe('CheckSubscription Middleware', () => {
         plan: 'monthly',
         subscriptionEndDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
       });
-      jest.spyOn(Subscription, 'findOne').mockResolvedValue(null);
       mockUserFindByIdResult({
         email: 'test@anto.app',
         subscription: {
@@ -101,7 +98,6 @@ describe('CheckSubscription Middleware', () => {
     });
 
     it('debe permitir primera sesión por gracia cuando no hay suscripción y no hay mensajes previos', async () => {
-      jest.spyOn(Subscription, 'findOne').mockResolvedValue(null);
       mockUserFindByIdResult({
         email: 'new@anto.app',
         createdAt: new Date(Date.now() - 60 * 60 * 1000),
@@ -133,7 +129,6 @@ describe('CheckSubscription Middleware', () => {
     });
 
     it('debe bloquear cuando no hay suscripción y ya existe historial del usuario', async () => {
-      jest.spyOn(Subscription, 'findOne').mockResolvedValue(null);
       mockUserFindByIdResult({
         email: 'old@anto.app',
         createdAt: new Date(Date.now() - 60 * 60 * 1000),
@@ -162,7 +157,7 @@ describe('CheckSubscription Middleware', () => {
       );
     });
 
-    it('debe permitir acceso cuando existe documento Subscription desactualizado pero User tiene premium vigente', async () => {
+    it('debe permitir acceso cuando getSubscriptionStatus indica premium vigente (sin depender del doc Subscription)', async () => {
       jest.spyOn(paymentService, 'getSubscriptionStatus').mockResolvedValue({
         hasSubscription: true,
         status: 'premium',
@@ -170,11 +165,6 @@ describe('CheckSubscription Middleware', () => {
         isInTrial: false,
         plan: 'monthly',
         subscriptionEndDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      });
-      jest.spyOn(Subscription, 'findOne').mockResolvedValue({
-        status: 'active',
-        isActive: false,
-        currentPeriodEnd: new Date(Date.now() - 86400000),
       });
       mockUserFindByIdResult({
         email: 'premium@anto.app',
@@ -205,7 +195,6 @@ describe('CheckSubscription Middleware', () => {
     });
 
     it('no debe aplicar gracia fuera de rutas iniciales del chat', async () => {
-      jest.spyOn(Subscription, 'findOne').mockResolvedValue(null);
       mockUserFindByIdResult({
         email: 'new@anto.app',
         createdAt: new Date(Date.now() - 30 * 60 * 1000),
@@ -228,6 +217,38 @@ describe('CheckSubscription Middleware', () => {
       expect(next).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(403);
       expect(req.subscription).toBeUndefined();
+    });
+
+    it('debe denegar si el servicio dice active con isActive false sin rutas legacy', async () => {
+      jest.spyOn(paymentService, 'getSubscriptionStatus').mockResolvedValue({
+        hasSubscription: true,
+        status: 'active',
+        isActive: false,
+        isInTrial: false,
+        plan: 'monthly',
+        subscriptionEndDate: new Date(Date.now() - 86400000),
+      });
+      mockUserFindByIdResult({
+        email: 'stale@anto.app',
+        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        subscription: {
+          status: 'premium',
+          plan: 'monthly',
+          trialEndDate: null,
+          subscriptionEndDate: new Date(Date.now() - 86400000),
+        },
+      });
+      jest.spyOn(Message, 'exists').mockResolvedValue(true);
+
+      const middleware = requireActiveSubscription(true);
+      const req = makeReq({ path: '/messages' });
+      const res = makeRes();
+      const next = jest.fn();
+
+      await middleware(req, res, next);
+
+      expect(next).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(403);
     });
   });
 });
