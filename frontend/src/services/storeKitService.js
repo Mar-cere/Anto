@@ -107,9 +107,10 @@ function getInAppPurchasesModule() {
     const resolved = resolveIapExport(raw);
 
     if (!isIapModuleUsable(resolved)) {
-      if (__DEV__ && process.env.NODE_ENV !== 'test') {
+      if (process.env.NODE_ENV !== 'test') {
         console.warn(
-          '[StoreKit] expo-in-app-purchases no expone la API esperada. Reinstala dependencias y recompila iOS (npx expo run:ios).',
+          '[StoreKit] expo-in-app-purchases: el JS existe pero la API no es utilizable (suele indicar que el nativo ExpoInAppPurchases no está en el binario). ' +
+            'Expo Go no incluye compras in-app. Genera un binario nativo: npx expo run:ios, eas build, o instala desde TestFlight.',
           resolved ? Object.keys(resolved) : 'sin export válido',
         );
       }

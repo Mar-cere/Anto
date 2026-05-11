@@ -13,8 +13,30 @@ import Transaction from '../models/Transaction.js';
 import Subscription from '../models/Subscription.js';
 import User from '../models/User.js';
 import paymentAuditService from './paymentAuditService.js';
+import cacheService from './cacheService.js';
 import logger from '../utils/logger.js';
 import { fetchMercadoPagoPaymentById, fetchMercadoPagoPreapprovalById } from '../utils/mercadopagoPaymentApi.js';
+
+/**
+ * Cuando la vista efectiva es "expired", invalida el caché de GET /subscription-status
+ * y alinea User.subscription.status si seguía en premium/trial (evita caché/UI vs gate del chat).
+ */
+async function finalizeExpiredSubscriptionView(userId, payload, userSub) {
+  if (!userId || !payload || payload.status !== 'expired') return;
+  try {
+    await cacheService.delete(cacheService.generateKey('subscription', userId));
+  } catch (e) {
+    logger.warn('[PaymentServiceMP] invalidar caché subscription-status', { userId, message: e?.message });
+  }
+  const us = userSub?.status;
+  if (us === 'premium' || us === 'trial') {
+    try {
+      await User.updateOne({ _id: userId }, { $set: { 'subscription.status': 'expired' } });
+    } catch (e) {
+      logger.warn('[PaymentServiceMP] sync User.subscription.status a expired', { userId, message: e?.message });
+    }
+  }
+}
 
 /** En producción, por defecto exige coincidencia de email pagador vs usuario. */
 function mercadoPagoStrictPayerEmail() {
@@ -501,7 +523,7 @@ class PaymentServiceMercadoPago {
         resolvedStatus = 'expired';
       }
 
-      return {
+      const result = {
         hasSubscription: true,
         status: resolvedStatus,
         plan: subscription.plan,
@@ -517,6 +539,10 @@ class PaymentServiceMercadoPago {
         cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
         canceledAt: subscription.canceledAt,
       };
+      if (resolvedStatus === 'expired') {
+        await finalizeExpiredSubscriptionView(userId, result, userSub);
+      }
+      return result;
     }
 
     const userSubscription = userSub;
@@ -531,7 +557,7 @@ class PaymentServiceMercadoPago {
       !Number.isNaN(uEnd.getTime()) &&
       uEnd < now
     ) {
-      return {
+      const result = {
         hasSubscription: true,
         status: 'expired',
         plan: userSubscription.plan,
@@ -543,6 +569,8 @@ class PaymentServiceMercadoPago {
         subscriptionEndDate: userSubscription.subscriptionEndDate,
         daysRemaining: 0,
       };
+      await finalizeExpiredSubscriptionView(userId, result, userSub);
+      return result;
     }
 
     if (
@@ -551,7 +579,7 @@ class PaymentServiceMercadoPago {
       !Number.isNaN(uTrialEnd.getTime()) &&
       uTrialEnd < now
     ) {
-      return {
+      const result = {
         hasSubscription: true,
         status: 'expired',
         plan: userSubscription.plan,
@@ -563,6 +591,8 @@ class PaymentServiceMercadoPago {
         subscriptionEndDate: userSubscription.subscriptionEndDate,
         daysRemaining: 0,
       };
+      await finalizeExpiredSubscriptionView(userId, result, userSub);
+      return result;
     }
 
     return {
