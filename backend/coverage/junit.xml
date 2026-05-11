@@ -1,35 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="13" failures="0" errors="0" time="0.56">
-  <testsuite name="PaymentServiceMercadoPago" errors="0" failures="0" skipped="0" timestamp="2026-05-11T16:34:40" time="0.344" tests="2">
-    <testcase classname="PaymentServiceMercadoPago Métodos del servicio debe tener métodos exportados" name="PaymentServiceMercadoPago Métodos del servicio debe tener métodos exportados" time="0.001">
+<testsuites name="jest tests" tests="3" failures="0" errors="0" time="1.033">
+  <testsuite name="PaymentRecoveryService" errors="0" failures="0" skipped="0" timestamp="2026-05-11T17:24:24" time="0.41" tests="1">
+    <testcase classname="PaymentRecoveryService Métodos del servicio debe tener métodos exportados" name="PaymentRecoveryService Métodos del servicio debe tener métodos exportados" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="PaymentServiceMercadoPago" errors="0" failures="0" skipped="0" timestamp="2026-05-11T17:24:24" time="0.41" tests="2">
+    <testcase classname="PaymentServiceMercadoPago Métodos del servicio debe tener métodos exportados" name="PaymentServiceMercadoPago Métodos del servicio debe tener métodos exportados" time="0.003">
     </testcase>
     <testcase classname="PaymentServiceMercadoPago Métodos del servicio debe tener método createCheckoutSession si existe" name="PaymentServiceMercadoPago Métodos del servicio debe tener método createCheckoutSession si existe" time="0">
-    </testcase>
-  </testsuite>
-  <testsuite name="CheckSubscription Middleware" errors="0" failures="0" skipped="0" timestamp="2026-05-11T16:34:40" time="0.15" tests="6">
-    <testcase classname="CheckSubscription Middleware requireActiveSubscription debe permitir acceso cuando el usuario tiene premium activo (modelo User)" name="CheckSubscription Middleware requireActiveSubscription debe permitir acceso cuando el usuario tiene premium activo (modelo User)" time="0.005">
-    </testcase>
-    <testcase classname="CheckSubscription Middleware requireActiveSubscription debe permitir primera sesión por gracia cuando no hay suscripción y no hay mensajes previos" name="CheckSubscription Middleware requireActiveSubscription debe permitir primera sesión por gracia cuando no hay suscripción y no hay mensajes previos" time="0">
-    </testcase>
-    <testcase classname="CheckSubscription Middleware requireActiveSubscription debe bloquear cuando no hay suscripción y ya existe historial del usuario" name="CheckSubscription Middleware requireActiveSubscription debe bloquear cuando no hay suscripción y ya existe historial del usuario" time="0">
-    </testcase>
-    <testcase classname="CheckSubscription Middleware requireActiveSubscription debe permitir acceso cuando getSubscriptionStatus indica premium vigente (sin depender del doc Subscription)" name="CheckSubscription Middleware requireActiveSubscription debe permitir acceso cuando getSubscriptionStatus indica premium vigente (sin depender del doc Subscription)" time="0">
-    </testcase>
-    <testcase classname="CheckSubscription Middleware requireActiveSubscription no debe aplicar gracia fuera de rutas iniciales del chat" name="CheckSubscription Middleware requireActiveSubscription no debe aplicar gracia fuera de rutas iniciales del chat" time="0">
-    </testcase>
-    <testcase classname="CheckSubscription Middleware requireActiveSubscription debe denegar si el servicio dice active con isActive false sin rutas legacy" name="CheckSubscription Middleware requireActiveSubscription debe denegar si el servicio dice active con isActive false sin rutas legacy" time="0">
-    </testcase>
-  </testsuite>
-  <testsuite name="subscriptionAccess" errors="0" failures="0" skipped="0" timestamp="2026-05-11T16:34:41" time="0.038" tests="5">
-    <testcase classname="subscriptionAccess interpretSubscriptionAccess deniega estados terminales aunque vengan flags sueltos" name="subscriptionAccess interpretSubscriptionAccess deniega estados terminales aunque vengan flags sueltos" time="0.003">
-    </testcase>
-    <testcase classname="subscriptionAccess interpretSubscriptionAccess permite premium con fecha de fin futura" name="subscriptionAccess interpretSubscriptionAccess permite premium con fecha de fin futura" time="0">
-    </testcase>
-    <testcase classname="subscriptionAccess interpretSubscriptionAccess permite trial User con trialEndDate futura" name="subscriptionAccess interpretSubscriptionAccess permite trial User con trialEndDate futura" time="0">
-    </testcase>
-    <testcase classname="subscriptionAccess interpretSubscriptionAccess permite cuando el servicio marca isActive true (Mercado Pago)" name="subscriptionAccess interpretSubscriptionAccess permite cuando el servicio marca isActive true (Mercado Pago)" time="0">
-    </testcase>
-    <testcase classname="subscriptionAccess interpretSubscriptionAccess deniega active con isActive false (periodo vencido en servicio)" name="subscriptionAccess interpretSubscriptionAccess deniega active con isActive false (periodo vencido en servicio)" time="0">
     </testcase>
   </testsuite>
 </testsuites>

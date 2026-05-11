@@ -49,11 +49,46 @@ class PaymentRecoveryService {
       const userId = transaction.userId._id;
       const plan = transaction.plan;
 
-      // Verificar si ya está activada
+      // Verificar si ya está activada (por fechas; premium vencido debe poder recuperarse)
       const existingSubscription = await Subscription.findOne({ userId });
       const user = await User.findById(userId);
+      const now = new Date();
 
-      if (existingSubscription?.status === 'active' || user?.subscription.status === 'premium') {
+      const subEnd = existingSubscription?.currentPeriodEnd
+        ? new Date(existingSubscription.currentPeriodEnd)
+        : null;
+      const subTrialEnd = existingSubscription?.trialEnd
+        ? new Date(existingSubscription.trialEnd)
+        : null;
+      const userPremiumEnd = user?.subscription?.subscriptionEndDate
+        ? new Date(user.subscription.subscriptionEndDate)
+        : null;
+      const userTrialEnd = user?.subscription?.trialEndDate
+        ? new Date(user.subscription.trialEndDate)
+        : null;
+
+      const subActiveVigent =
+        existingSubscription?.status === 'active' &&
+        subEnd &&
+        !Number.isNaN(subEnd.getTime()) &&
+        subEnd >= now;
+      const subTrialingVigent =
+        existingSubscription?.status === 'trialing' &&
+        subTrialEnd &&
+        !Number.isNaN(subTrialEnd.getTime()) &&
+        subTrialEnd >= now;
+      const userPremiumVigent =
+        user?.subscription?.status === 'premium' &&
+        userPremiumEnd &&
+        !Number.isNaN(userPremiumEnd.getTime()) &&
+        userPremiumEnd >= now;
+      const userTrialVigent =
+        user?.subscription?.status === 'trial' &&
+        userTrialEnd &&
+        !Number.isNaN(userTrialEnd.getTime()) &&
+        userTrialEnd >= now;
+
+      if (subActiveVigent || subTrialingVigent || userPremiumVigent || userTrialVigent) {
         return {
           success: true,
           message: 'La suscripción ya está activa',

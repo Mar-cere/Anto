@@ -1353,52 +1353,9 @@ class PaymentServiceMercadoPago {
         existingPeriodEnd: subscription?.currentPeriodEnd?.toISOString(),
       });
 
-      // Validar que no haya una suscripción activa duplicada
-      if (subscription && subscription.status === 'active' && subscription.currentPeriodEnd >= now) {
-        // Ya hay una suscripción activa, verificar si es la misma transacción
-        const existingTransactionId = subscription.metadata?.lastActivatedFrom || subscription.metadata?.activatedFrom;
-        if (existingTransactionId && existingTransactionId !== transaction._id.toString()) {
-          logger.warn('[activateSubscriptionFromPayment] Intento de activación duplicada', {
-            transactionId: transaction._id.toString(),
-            userId: userIdString,
-            existingTransactionId,
-            subscriptionId: subscription._id.toString(),
-            plan,
-          });
-
-          await paymentAuditService.logEvent('SUBSCRIPTION_DUPLICATE_ACTIVATION_ATTEMPT', {
-            transactionId: transaction._id.toString(),
-            existingTransactionId,
-            subscriptionId: subscription._id.toString(),
-            userId: userIdString,
-            plan,
-          }, userIdString, transaction._id.toString());
-          
-          // Actualizar la transacción existente con referencia a la nueva
-          subscription.metadata = {
-            ...subscription.metadata,
-            duplicateTransactionAttempts: [
-              ...(subscription.metadata.duplicateTransactionAttempts || []),
-              {
-                transactionId: transaction._id.toString(),
-                attemptedAt: now.toISOString(),
-              }
-            ],
-          };
-          await subscription.save();
-          
-          // Retornar éxito pero indicar que ya estaba activa
-          return {
-            success: true,
-            alreadyActive: true,
-            subscriptionId: subscription._id.toString(),
-            userId: userIdString,
-            plan,
-            periodStart: subscription.currentPeriodStart,
-            periodEnd: subscription.currentPeriodEnd,
-          };
-        }
-      }
+      // La idempotencia por paymentId (metadata.subscriptionActivatedForPaymentId + chequeo en el webhook)
+      // ya evita doble activación del mismo cobro. No bloquear aquí otra transacción distinta: eso era
+      // una renovación legítima y dejaba el período viejo sin extender aunque MP hubiera cobrado.
 
       const isNewSubscription = !subscription;
       
