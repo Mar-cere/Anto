@@ -1,8 +1,7 @@
 /**
  * Constantes de layout y UI para RegisterScreen
  */
-import { colors } from '../../styles/globalStyles';
-import { OPACITIES, SCALES, STATUS_BAR } from '../../constants/ui';
+import { OPACITIES, SCALES } from '../../constants/ui';
 
 export const STORAGE_KEYS = {
   USER_TOKEN: 'userToken',
@@ -18,8 +17,6 @@ export const TITLE_MARGIN_TOP = 60;
 export const TITLE_MARGIN_BOTTOM = 10;
 export const SUBTITLE_MARGIN_BOTTOM = 30;
 export const LOADING_SCALE = SCALES.LOADING;
-export const STATUS_BAR_STYLE = STATUS_BAR.STYLE;
-export const STATUS_BAR_BACKGROUND = colors.background;
 export const CHECKBOX_SIZE = 20;
 export const CHECKBOX_BORDER_WIDTH = 2;
 export const CHECKBOX_BORDER_RADIUS = 4;

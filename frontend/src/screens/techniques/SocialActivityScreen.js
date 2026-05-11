@@ -6,7 +6,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -19,8 +19,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
-import { colors } from '../../styles/globalStyles';
-import { techniqueScreenStyles } from './techniqueScreenStyles';
+import { useTheme } from '../../context/ThemeContext';
+import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const SOCIAL_ACTIVITIES = [
   {
@@ -84,6 +84,22 @@ const SOCIAL_ACTIVITIES = [
 const SocialActivityScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { colors, statusBarStyle } = useTheme();
+  const techniqueScreenStyles = useTechniqueScreenStyles();
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        scrollView: {
+          flex: 1,
+        },
+      }),
+    [colors],
+  );
 
   const handleSelectActivity = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -91,7 +107,7 @@ const SocialActivityScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header
         title="Actividades Sociales"
@@ -135,14 +151,6 @@ const SocialActivityScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-});
+// `styles` se deriva del tema dentro del componente.
 
 export default SocialActivityScreen;

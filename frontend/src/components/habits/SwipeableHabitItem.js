@@ -5,7 +5,7 @@
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import {
   Alert,
   Animated,
@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import { useTheme } from '../../context/ThemeContext';
 import {
   ACTION_BUTTON_BORDER_RADIUS,
   ACTION_BUTTON_GAP,
@@ -34,7 +35,6 @@ import {
   CARD_GAP,
   CARD_PADDING,
   CARD_FOOTER_MARGIN_TOP,
-  COLORS,
   COMPLETE_BUTTON_BORDER_RADIUS,
   COMPLETE_BUTTON_SIZE,
   DELAY_PRESS_IN,
@@ -61,6 +61,7 @@ import {
   SWIPE_DISTANCE,
   SWIPE_THRESHOLD,
   TEXTS,
+  createHabitsColors,
 } from '../../screens/habits/habitsScreenConstants';
 
 const ACTIVE_OPACITY = 0.7;
@@ -76,6 +77,172 @@ export default function SwipeableHabitItem({
   const deleteOpacity = useRef(new Animated.Value(ANIMATION_INITIAL_OPACITY)).current;
   const archiveOpacity = useRef(new Animated.Value(ANIMATION_INITIAL_OPACITY)).current;
   const progressOpacity = useRef(new Animated.Value(ANIMATION_INITIAL_OPACITY)).current;
+
+  const { colors: themeColors } = useTheme();
+  const COLORS = useMemo(() => createHabitsColors(themeColors), [themeColors]);
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        swipeableContainer: {
+          position: 'relative',
+          marginBottom: 12,
+          width: '100%',
+        },
+        progressIndicator: {
+          position: 'absolute',
+          right: PROGRESS_INDICATOR_RIGHT,
+          top: 0,
+          bottom: 0,
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 3,
+          backgroundColor: COLORS.PROGRESS_INDICATOR_BACKGROUND,
+          borderRadius: PROGRESS_INDICATOR_BORDER_RADIUS,
+          paddingHorizontal: PROGRESS_INDICATOR_PADDING_HORIZONTAL,
+          paddingVertical: PROGRESS_INDICATOR_PADDING_VERTICAL,
+          borderWidth: PROGRESS_INDICATOR_BORDER_WIDTH,
+          borderColor: COLORS.PROGRESS_INDICATOR_BORDER,
+          shadowColor: COLORS.PRIMARY,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.2,
+          shadowRadius: 4,
+          elevation: 3,
+        },
+        progressText: {
+          color: COLORS.PRIMARY,
+          fontSize: 11,
+          fontWeight: '600',
+          marginTop: PROGRESS_TEXT_MARGIN_TOP,
+          textAlign: 'center',
+          letterSpacing: 0.3,
+        },
+        actionButtons: {
+          position: 'absolute',
+          right: 0,
+          top: 0,
+          bottom: 0,
+          flexDirection: 'row',
+          alignItems: 'center',
+          zIndex: 0,
+          paddingRight: ACTION_BUTTON_PADDING_RIGHT,
+          gap: ACTION_BUTTON_GAP,
+        },
+        actionButton: {
+          width: ACTION_BUTTON_WIDTH,
+          height: '100%',
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginHorizontal: ACTION_BUTTON_MARGIN_HORIZONTAL,
+          borderRadius: ACTION_BUTTON_BORDER_RADIUS,
+          overflow: 'hidden',
+        },
+        actionButtonContent: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          borderRadius: ACTION_BUTTON_BORDER_RADIUS,
+          marginHorizontal: ACTION_BUTTON_MARGIN_HORIZONTAL,
+          paddingVertical: ACTION_BUTTON_PADDING_VERTICAL,
+          paddingHorizontal: ACTION_BUTTON_PADDING_HORIZONTAL,
+          shadowColor: COLORS.CARD_SHADOW,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 4,
+          elevation: 5,
+        },
+        archiveButton: {
+          backgroundColor: COLORS.ARCHIVE,
+          marginLeft: ARCHIVE_BUTTON_MARGIN_LEFT,
+        },
+        deleteButton: {
+          backgroundColor: COLORS.DELETE,
+        },
+        habitCard: {
+          backgroundColor: COLORS.CARD_BACKGROUND,
+          borderRadius: CARD_BORDER_RADIUS,
+          padding: CARD_PADDING,
+          gap: CARD_GAP,
+          borderWidth: CARD_BORDER_WIDTH,
+          borderColor: COLORS.CARD_BORDER,
+          width: '100%',
+          position: 'relative',
+          zIndex: 2,
+          shadowColor: COLORS.CARD_SHADOW,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+          elevation: 10,
+        },
+        archivedHabitCard: {
+          backgroundColor: COLORS.CARD_ARCHIVED_BACKGROUND,
+          borderColor: COLORS.CARD_ARCHIVED_BORDER,
+        },
+        habitContent: { flex: 1 },
+        habitHeader: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        },
+        habitTitlePressable: {
+          flex: 1,
+          minWidth: 0,
+        },
+        habitFooterTouchable: {
+          alignSelf: 'stretch',
+        },
+        habitTitleContainer: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+          flex: 1,
+        },
+        iconContainer: {
+          width: ICON_CONTAINER_SIZE,
+          height: ICON_CONTAINER_SIZE,
+          borderRadius: ICON_CONTAINER_BORDER_RADIUS,
+          backgroundColor: COLORS.ICON_BACKGROUND,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        archivedIconContainer: {
+          backgroundColor: COLORS.ICON_ARCHIVED_BACKGROUND,
+        },
+        habitInfo: { flex: 1, gap: 4 },
+        habitTitle: {
+          fontSize: 16,
+          fontWeight: '600',
+          color: COLORS.WHITE,
+          letterSpacing: -0.2,
+        },
+        habitDescription: {
+          fontSize: 14,
+          color: COLORS.ACCENT,
+        },
+        habitFooter: { marginTop: CARD_FOOTER_MARGIN_TOP },
+        habitStats: { flexDirection: 'row', gap: STAT_GAP },
+        statItem: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: STAT_ITEM_GAP,
+        },
+        statText: {
+          fontSize: 12,
+          color: COLORS.ACCENT,
+        },
+        completeButton: {
+          width: COMPLETE_BUTTON_SIZE,
+          height: COMPLETE_BUTTON_SIZE,
+          borderRadius: COMPLETE_BUTTON_BORDER_RADIUS,
+          backgroundColor: COLORS.COMPLETE_BUTTON_BACKGROUND,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        completedButton: {
+          backgroundColor: COLORS.COMPLETE_BUTTON_COMPLETED_BACKGROUND,
+        },
+      }),
+    [COLORS],
+  );
 
   const onGestureEvent = Animated.event(
     [{ nativeEvent: { translationX: translateX } }],
@@ -350,163 +517,3 @@ export default function SwipeableHabitItem({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  swipeableContainer: {
-    position: 'relative',
-    marginBottom: 12,
-    width: '100%',
-  },
-  progressIndicator: {
-    position: 'absolute',
-    right: PROGRESS_INDICATOR_RIGHT,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 3,
-    backgroundColor: COLORS.PROGRESS_INDICATOR_BACKGROUND,
-    borderRadius: PROGRESS_INDICATOR_BORDER_RADIUS,
-    paddingHorizontal: PROGRESS_INDICATOR_PADDING_HORIZONTAL,
-    paddingVertical: PROGRESS_INDICATOR_PADDING_VERTICAL,
-    borderWidth: PROGRESS_INDICATOR_BORDER_WIDTH,
-    borderColor: COLORS.PROGRESS_INDICATOR_BORDER,
-    shadowColor: COLORS.PRIMARY,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  progressText: {
-    color: COLORS.PRIMARY,
-    fontSize: 11,
-    fontWeight: '600',
-    marginTop: PROGRESS_TEXT_MARGIN_TOP,
-    textAlign: 'center',
-    letterSpacing: 0.3,
-  },
-  actionButtons: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    zIndex: 0,
-    paddingRight: ACTION_BUTTON_PADDING_RIGHT,
-    gap: ACTION_BUTTON_GAP,
-  },
-  actionButton: {
-    width: ACTION_BUTTON_WIDTH,
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: ACTION_BUTTON_MARGIN_HORIZONTAL,
-    borderRadius: ACTION_BUTTON_BORDER_RADIUS,
-    overflow: 'hidden',
-  },
-  actionButtonContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: ACTION_BUTTON_BORDER_RADIUS,
-    marginHorizontal: ACTION_BUTTON_MARGIN_HORIZONTAL,
-    paddingVertical: ACTION_BUTTON_PADDING_VERTICAL,
-    paddingHorizontal: ACTION_BUTTON_PADDING_HORIZONTAL,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  archiveButton: {
-    backgroundColor: COLORS.ARCHIVE,
-    marginLeft: ARCHIVE_BUTTON_MARGIN_LEFT,
-  },
-  deleteButton: {
-    backgroundColor: COLORS.DELETE,
-  },
-  habitCard: {
-    backgroundColor: COLORS.CARD_BACKGROUND,
-    borderRadius: CARD_BORDER_RADIUS,
-    padding: CARD_PADDING,
-    gap: CARD_GAP,
-    borderWidth: CARD_BORDER_WIDTH,
-    borderColor: COLORS.CARD_BORDER,
-    width: '100%',
-    position: 'relative',
-    zIndex: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
-  },
-  archivedHabitCard: {
-    backgroundColor: COLORS.CARD_ARCHIVED_BACKGROUND,
-    borderColor: COLORS.CARD_ARCHIVED_BORDER,
-  },
-  habitContent: { flex: 1 },
-  habitHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  habitTitlePressable: {
-    flex: 1,
-    minWidth: 0,
-  },
-  habitFooterTouchable: {
-    alignSelf: 'stretch',
-  },
-  habitTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  iconContainer: {
-    width: ICON_CONTAINER_SIZE,
-    height: ICON_CONTAINER_SIZE,
-    borderRadius: ICON_CONTAINER_BORDER_RADIUS,
-    backgroundColor: COLORS.ICON_BACKGROUND,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  archivedIconContainer: {
-    backgroundColor: COLORS.ICON_ARCHIVED_BACKGROUND,
-  },
-  habitInfo: { flex: 1, gap: 4 },
-  habitTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.WHITE,
-    letterSpacing: -0.2,
-  },
-  habitDescription: {
-    fontSize: 14,
-    color: COLORS.ACCENT,
-  },
-  habitFooter: { marginTop: CARD_FOOTER_MARGIN_TOP },
-  habitStats: { flexDirection: 'row', gap: STAT_GAP },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: STAT_ITEM_GAP,
-  },
-  statText: {
-    fontSize: 12,
-    color: COLORS.ACCENT,
-  },
-  completeButton: {
-    width: COMPLETE_BUTTON_SIZE,
-    height: COMPLETE_BUTTON_SIZE,
-    borderRadius: COMPLETE_BUTTON_BORDER_RADIUS,
-    backgroundColor: COLORS.COMPLETE_BUTTON_BACKGROUND,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  completedButton: {
-    backgroundColor: COLORS.COMPLETE_BUTTON_COMPLETED_BACKGROUND,
-  },
-});

@@ -1,37 +1,67 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="16" failures="0" errors="0" time="41.014">
-  <testsuite name="Task Routes" errors="0" failures="0" skipped="0" timestamp="2026-05-07T14:11:58" time="40.689" tests="16">
-    <testcase classname="Task Routes POST /api/tasks debe crear una nueva tarea con datos válidos" name="Task Routes POST /api/tasks debe crear una nueva tarea con datos válidos" time="8.782">
+<testsuites name="jest tests" tests="30" failures="0" errors="0" time="1.374">
+  <testsuite name="User Model" errors="0" failures="0" skipped="0" timestamp="2026-05-09T01:59:25" time="0.39" tests="10">
+    <testcase classname="User Model comparePassword debe comparar correctamente una contraseña válida" name="User Model comparePassword debe comparar correctamente una contraseña válida" time="0.007">
     </testcase>
-    <testcase classname="Task Routes POST /api/tasks debe devolver la misma tarea en segundo POST con el mismo clientRequestId" name="Task Routes POST /api/tasks debe devolver la misma tarea en segundo POST con el mismo clientRequestId" time="2.663">
+    <testcase classname="User Model comparePassword debe rechazar una contraseña incorrecta" name="User Model comparePassword debe rechazar una contraseña incorrecta" time="0.001">
     </testcase>
-    <testcase classname="Task Routes POST /api/tasks debe rechazar crear tarea con chatOrigin de conversación inexistente" name="Task Routes POST /api/tasks debe rechazar crear tarea con chatOrigin de conversación inexistente" time="1.105">
+    <testcase classname="User Model toJSON debe excluir campos sensibles del JSON" name="User Model toJSON debe excluir campos sensibles del JSON" time="0.002">
     </testcase>
-    <testcase classname="Task Routes POST /api/tasks debe crear tarea con chatOrigin cuando conversación y mensaje existen y son del usuario" name="Task Routes POST /api/tasks debe crear tarea con chatOrigin cuando conversación y mensaje existen y son del usuario" time="0.925">
+    <testcase classname="User Model updateLastActive debe actualizar lastActive y totalSessions" name="User Model updateLastActive debe actualizar lastActive y totalSessions" time="0.002">
     </testcase>
-    <testcase classname="Task Routes POST /api/tasks debe rechazar chatOrigin si el mensaje no pertenece a esa conversación" name="Task Routes POST /api/tasks debe rechazar chatOrigin si el mensaje no pertenece a esa conversación" time="0.411">
+    <testcase classname="User Model incrementTasksCompleted debe incrementar tasksCompleted" name="User Model incrementTasksCompleted debe incrementar tasksCompleted" time="0.001">
     </testcase>
-    <testcase classname="Task Routes POST /api/tasks debe rechazar crear tarea sin autenticación" name="Task Routes POST /api/tasks debe rechazar crear tarea sin autenticación" time="0.275">
+    <testcase classname="User Model updateHabitsStreak debe actualizar habitsStreak si el nuevo valor es mayor" name="User Model updateHabitsStreak debe actualizar habitsStreak si el nuevo valor es mayor" time="0">
     </testcase>
-    <testcase classname="Task Routes POST /api/tasks debe rechazar crear tarea sin título" name="Task Routes POST /api/tasks debe rechazar crear tarea sin título" time="0.271">
+    <testcase classname="User Model updateHabitsStreak no debe actualizar habitsStreak si el nuevo valor es menor" name="User Model updateHabitsStreak no debe actualizar habitsStreak si el nuevo valor es menor" time="0.001">
     </testcase>
-    <testcase classname="Task Routes POST /api/tasks/:id/subtasks/generate debe rechazar si la tarea ya tiene subtareas (no regenerar)" name="Task Routes POST /api/tasks/:id/subtasks/generate debe rechazar si la tarea ya tiene subtareas (no regenerar)" time="0.351">
+    <testcase classname="User Model Validaciones debe validar formato de email" name="User Model Validaciones debe validar formato de email" time="0.001">
     </testcase>
-    <testcase classname="Task Routes DELETE /api/tasks/:id/subtasks/:subtaskIndex debe eliminar una subtarea por índice" name="Task Routes DELETE /api/tasks/:id/subtasks/:subtaskIndex debe eliminar una subtarea por índice" time="0.966">
+    <testcase classname="User Model Validaciones debe validar longitud mínima de username" name="User Model Validaciones debe validar longitud mínima de username" time="0.001">
     </testcase>
-    <testcase classname="Task Routes DELETE /api/tasks/:id/subtasks debe limpiar todas las subtareas" name="Task Routes DELETE /api/tasks/:id/subtasks debe limpiar todas las subtareas" time="0.357">
+    <testcase classname="User Model Validaciones debe validar formato de username (solo letras minúsculas, números y guiones bajos)" name="User Model Validaciones debe validar formato de username (solo letras minúsculas, números y guiones bajos)" time="0.001">
     </testcase>
-    <testcase classname="Task Routes GET /api/tasks debe obtener todas las tareas del usuario" name="Task Routes GET /api/tasks debe obtener todas las tareas del usuario" time="1.968">
+  </testsuite>
+  <testsuite name="User Routes" errors="0" failures="0" skipped="0" timestamp="2026-05-09T01:59:25" time="0.733" tests="20">
+    <testcase classname="User Routes GET /api/users/me debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me debe rechazar consulta sin autenticación" time="0.017">
     </testcase>
-    <testcase classname="Task Routes GET /api/tasks debe filtrar tareas por status" name="Task Routes GET /api/tasks debe filtrar tareas por status" time="0.321">
+    <testcase classname="User Routes PUT /api/users/me debe rechazar actualización sin autenticación" name="User Routes PUT /api/users/me debe rechazar actualización sin autenticación" time="0.007">
     </testcase>
-    <testcase classname="Task Routes GET /api/tasks/:id debe obtener una tarea específica" name="Task Routes GET /api/tasks/:id debe obtener una tarea específica" time="0.274">
+    <testcase classname="User Routes PUT /api/users/me/password debe rechazar cambio de contraseña sin autenticación" name="User Routes PUT /api/users/me/password debe rechazar cambio de contraseña sin autenticación" time="0.002">
     </testcase>
-    <testcase classname="Task Routes GET /api/tasks/:id debe rechazar obtener tarea de otro usuario" name="Task Routes GET /api/tasks/:id debe rechazar obtener tarea de otro usuario" time="0.257">
+    <testcase classname="User Routes PUT /api/users/me/password debe rechazar cambio sin contraseña actual" name="User Routes PUT /api/users/me/password debe rechazar cambio sin contraseña actual" time="0.001">
     </testcase>
-    <testcase classname="Task Routes PUT /api/tasks/:id debe actualizar una tarea existente" name="Task Routes PUT /api/tasks/:id debe actualizar una tarea existente" time="0.733">
+    <testcase classname="User Routes GET /api/users/me/subscription debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/subscription debe rechazar consulta sin autenticación" time="0.002">
     </testcase>
-    <testcase classname="Task Routes DELETE /api/tasks/:id debe eliminar una tarea existente" name="Task Routes DELETE /api/tasks/:id debe eliminar una tarea existente" time="0.469">
+    <testcase classname="User Routes GET /api/users/me/stats debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/stats debe rechazar consulta sin autenticación" time="0.001">
+    </testcase>
+    <testcase classname="User Routes DELETE /api/users/me debe rechazar eliminación sin autenticación" name="User Routes DELETE /api/users/me debe rechazar eliminación sin autenticación" time="0.001">
+    </testcase>
+    <testcase classname="User Routes GET /api/users/me/emergency-contacts debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/emergency-contacts debe rechazar consulta sin autenticación" time="0.001">
+    </testcase>
+    <testcase classname="User Routes POST /api/users/me/emergency-contacts debe rechazar creación sin autenticación" name="User Routes POST /api/users/me/emergency-contacts debe rechazar creación sin autenticación" time="0.003">
+    </testcase>
+    <testcase classname="User Routes POST /api/users/me/emergency-contacts debe rechazar creación sin datos requeridos" name="User Routes POST /api/users/me/emergency-contacts debe rechazar creación sin datos requeridos" time="0.002">
+    </testcase>
+    <testcase classname="User Routes PUT /api/users/me/emergency-contacts/:contactId debe rechazar actualización sin autenticación" name="User Routes PUT /api/users/me/emergency-contacts/:contactId debe rechazar actualización sin autenticación" time="0.001">
+    </testcase>
+    <testcase classname="User Routes DELETE /api/users/me/emergency-contacts/:contactId debe rechazar eliminación sin autenticación" name="User Routes DELETE /api/users/me/emergency-contacts/:contactId debe rechazar eliminación sin autenticación" time="0.001">
+    </testcase>
+    <testcase classname="User Routes PATCH /api/users/me/emergency-contacts/:contactId/toggle debe rechazar toggle sin autenticación" name="User Routes PATCH /api/users/me/emergency-contacts/:contactId/toggle debe rechazar toggle sin autenticación" time="0.001">
+    </testcase>
+    <testcase classname="User Routes POST /api/users/me/emergency-contacts/:contactId/test debe rechazar test sin autenticación" name="User Routes POST /api/users/me/emergency-contacts/:contactId/test debe rechazar test sin autenticación" time="0.001">
+    </testcase>
+    <testcase classname="User Routes POST /api/users/me/emergency-contacts/test-alert debe rechazar test sin autenticación" name="User Routes POST /api/users/me/emergency-contacts/test-alert debe rechazar test sin autenticación" time="0">
+    </testcase>
+    <testcase classname="User Routes POST /api/users/me/emergency-contacts/:contactId/test-whatsapp debe rechazar test sin autenticación" name="User Routes POST /api/users/me/emergency-contacts/:contactId/test-whatsapp debe rechazar test sin autenticación" time="0.001">
+    </testcase>
+    <testcase classname="User Routes GET /api/users/me/emergency-alerts debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/emergency-alerts debe rechazar consulta sin autenticación" time="0.001">
+    </testcase>
+    <testcase classname="User Routes GET /api/users/me/emergency-alerts/stats debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/emergency-alerts/stats debe rechazar consulta sin autenticación" time="0.001">
+    </testcase>
+    <testcase classname="User Routes GET /api/users/me/emergency-alerts/patterns debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/emergency-alerts/patterns debe rechazar consulta sin autenticación" time="0">
+    </testcase>
+    <testcase classname="User Routes GET /api/users/me/whatsapp-message-status/:messageSid debe rechazar consulta sin autenticación" name="User Routes GET /api/users/me/whatsapp-message-status/:messageSid debe rechazar consulta sin autenticación" time="0.001">
     </testcase>
   </testsuite>
 </testsuites>

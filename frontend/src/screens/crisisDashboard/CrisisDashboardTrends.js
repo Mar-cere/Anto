@@ -6,9 +6,9 @@ import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { LineChart } from 'react-native-chart-kit';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { styles } from './crisisDashboardStyles';
-import { TEXTS, CHART_HEIGHT, CHART_CONFIG, TREND_PERIODS } from './crisisDashboardConstants';
-import { colors } from '../../styles/globalStyles';
+import { useCrisisDashboardStyles } from './crisisDashboardStyles';
+import { TEXTS, CHART_HEIGHT, createChartConfig, TREND_PERIODS } from './crisisDashboardConstants';
+import { useTheme } from '../../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -21,6 +21,9 @@ export function CrisisDashboardTrends({
   getTrendIcon,
   getTrendIconColor,
 }) {
+  const styles = useCrisisDashboardStyles();
+  const { colors } = useTheme();
+  const chartConfig = createChartConfig(colors);
   const trendLabel = getTrendLabel();
   const trendIcon = getTrendIcon();
   const trendIconColor = getTrendIconColor() || colors.primary;
@@ -60,7 +63,7 @@ export function CrisisDashboardTrends({
             data={formatTrendData()}
             width={width - 40}
             height={CHART_HEIGHT}
-            chartConfig={CHART_CONFIG}
+            chartConfig={chartConfig}
             bezier
             style={styles.chart}
             withInnerLines={false}

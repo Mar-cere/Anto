@@ -9,7 +9,7 @@
  */
 
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -27,7 +27,7 @@ import ParticleBackground from '../components/ParticleBackground';
 import { handleApiError } from '../config/api';
 import { ROUTES } from '../constants/routes';
 import { userService } from '../services/userService';
-import { colors } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
 
 // Constantes de textos
 const TEXTS = {
@@ -69,8 +69,6 @@ const LOADING_INDICATOR_SCALE = 1.5;
 
 // Constantes de estilos
 const BACKGROUND_OPACITY = 0.1;
-const STATUS_BAR_STYLE = 'light-content';
-const STATUS_BAR_BACKGROUND = '#030A24';
 const CONTENT_PADDING_HORIZONTAL = 20;
 const CONTENT_PADDING_VERTICAL = 40;
 const BACK_BUTTON_TOP = 40;
@@ -106,18 +104,12 @@ const TEXT_SHADOW_OFFSET_HEIGHT = 1;
 const TEXT_SHADOW_RADIUS = 3;
 const BACK_ICON_SIZE = 24;
 
-// Constantes de colores
-const COLORS = {
-  BACKGROUND: colors.background,
-  PRIMARY: colors.primary,
-  WHITE: colors.white,
-  ACCENT: '#A3B8E8',
-  ERROR: '#FF6B6B',
-  INPUT_BACKGROUND: '#1D2B5F',
-  BUTTON_BACKGROUND: 'rgba(26, 221, 219, 0.9)',
-  BUTTON_DISABLED_BACKGROUND: 'rgba(26, 221, 219, 0.5)',
-  BUTTON_SHADOW: colors.primary,
-  TEXT_SHADOW: 'rgba(0, 0, 0, 0.75)',
+const hexToRgba = (hex, alpha) => {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
 };
 
 // Constantes de imágenes
@@ -127,10 +119,150 @@ const BACKGROUND_IMAGE = require('../images/back.png');
 const NAVIGATION_ROUTE_NEW_PASSWORD = 'NewPassword';
 
 const VerifyCodeScreen = ({ navigation, route }) => {
-  // Obtener email de los parámetros de ruta
   const { email } = route.params || {};
+  const { colors, statusBarStyle } = useTheme();
 
-  // Referencias para animaciones
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flexGrow: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: colors.background,
+        },
+        background: {
+          flex: 1,
+          width: '100%',
+          height: '100%',
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        imageStyle: {
+          opacity: BACKGROUND_OPACITY,
+          resizeMode: 'cover',
+        },
+        content: {
+          alignItems: 'center',
+          width: '100%',
+          flex: 1,
+          paddingHorizontal: CONTENT_PADDING_HORIZONTAL,
+          paddingVertical: CONTENT_PADDING_VERTICAL,
+        },
+        backButton: {
+          position: 'absolute',
+          top: BACK_BUTTON_TOP,
+          left: BACK_BUTTON_LEFT,
+          zIndex: BACK_BUTTON_Z_INDEX,
+        },
+        title: {
+          fontSize: 34,
+          fontWeight: 'bold',
+          color: colors.white,
+          marginBottom: TITLE_MARGIN_BOTTOM,
+          marginTop: TITLE_MARGIN_TOP,
+          textShadowColor: 'rgba(0, 0, 0, 0.75)',
+          textShadowOffset: { width: TEXT_SHADOW_OFFSET_WIDTH, height: TEXT_SHADOW_OFFSET_HEIGHT },
+          textShadowRadius: TEXT_SHADOW_RADIUS,
+          textAlign: 'center',
+        },
+        subtitle: {
+          fontSize: 18,
+          color: colors.textSecondary,
+          marginBottom: SUBTITLE_MARGIN_BOTTOM,
+          textAlign: 'center',
+        },
+        emailText: {
+          fontSize: 18,
+          color: colors.primary,
+          fontWeight: 'bold',
+          marginBottom: EMAIL_TEXT_MARGIN_BOTTOM,
+          textAlign: 'center',
+        },
+        codeContainer: {
+          flexDirection: 'row',
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginBottom: CODE_CONTAINER_MARGIN_BOTTOM,
+          width: '100%',
+        },
+        codeInput: {
+          backgroundColor: colors.chromeInput,
+          borderRadius: CODE_INPUT_BORDER_RADIUS,
+          width: CODE_INPUT_WIDTH,
+          height: CODE_INPUT_HEIGHT,
+          fontSize: CODE_INPUT_FONT_SIZE,
+          fontWeight: 'bold',
+          color: colors.text,
+          textAlign: 'center',
+          marginHorizontal: CODE_INPUT_MARGIN_HORIZONTAL,
+          borderWidth: CODE_INPUT_BORDER_WIDTH,
+          borderColor: 'transparent',
+        },
+        inputError: {
+          borderColor: colors.error,
+          borderWidth: CODE_INPUT_BORDER_WIDTH,
+        },
+        errorText: {
+          color: colors.error,
+          fontSize: 14,
+          marginTop: ERROR_TEXT_MARGIN_TOP,
+          textAlign: 'center',
+        },
+        button: {
+          backgroundColor: colors.primary,
+          paddingVertical: BUTTON_PADDING_VERTICAL,
+          borderRadius: BUTTON_BORDER_RADIUS,
+          width: '100%',
+          alignItems: 'center',
+          marginTop: BUTTON_MARGIN_TOP,
+          marginBottom: BUTTON_MARGIN_BOTTOM,
+          paddingHorizontal: BUTTON_PADDING_HORIZONTAL,
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: BUTTON_SHADOW_OFFSET_Y },
+          shadowOpacity: BUTTON_SHADOW_OPACITY,
+          shadowRadius: BUTTON_SHADOW_RADIUS,
+          elevation: BUTTON_ELEVATION,
+          maxWidth: BUTTON_MAX_WIDTH,
+          alignSelf: 'center',
+        },
+        buttonText: {
+          color: colors.white,
+          fontSize: 18,
+          fontWeight: 'bold',
+        },
+        disabledButton: {
+          backgroundColor: hexToRgba(colors.primary, 0.45),
+        },
+        resendContainer: {
+          marginTop: RESEND_CONTAINER_MARGIN_TOP,
+          alignItems: 'center',
+        },
+        resendText: {
+          color: colors.primary,
+          fontSize: 16,
+          fontWeight: 'bold',
+          textDecorationLine: 'underline',
+        },
+        countdownText: {
+          color: colors.textSecondary,
+          fontSize: 16,
+        },
+        linkContainer: {
+          marginTop: LINK_CONTAINER_MARGIN_TOP,
+        },
+        linkText: {
+          fontSize: 16,
+          color: colors.primary,
+          fontWeight: 'bold',
+        },
+        loadingIndicator: {
+          transform: [{ scale: LOADING_INDICATOR_SCALE }],
+        },
+      }),
+    [colors],
+  );
+
   const buttonScale = useRef(new Animated.Value(BUTTON_SCALE_NORMAL)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateYAnim = useRef(new Animated.Value(TRANSLATE_Y_ANIMATION_INITIAL)).current;
@@ -274,10 +406,7 @@ const VerifyCodeScreen = ({ navigation, route }) => {
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
-      <StatusBar 
-        barStyle={STATUS_BAR_STYLE} 
-        backgroundColor={STATUS_BAR_BACKGROUND} 
-      />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ImageBackground 
         source={BACKGROUND_IMAGE} 
         style={styles.background} 
@@ -288,7 +417,7 @@ const VerifyCodeScreen = ({ navigation, route }) => {
         {isLoading ? (
           <ActivityIndicator 
             size="large" 
-            color={COLORS.PRIMARY} 
+            color={colors.primary} 
             style={styles.loadingIndicator} 
           />
         ) : (
@@ -305,7 +434,7 @@ const VerifyCodeScreen = ({ navigation, route }) => {
               style={styles.backButton} 
               onPress={() => navigation.goBack()}
             >
-              <Ionicons name="arrow-back" size={BACK_ICON_SIZE} color={COLORS.WHITE} />
+              <Ionicons name="arrow-back" size={BACK_ICON_SIZE} color={colors.white} />
             </TouchableOpacity>
 
             <Text style={styles.title}>{TEXTS.TITLE}</Text>
@@ -350,7 +479,7 @@ const VerifyCodeScreen = ({ navigation, route }) => {
                 onPressOut={handlePressOut}
               >
                 {isSubmitting ? (
-                  <ActivityIndicator size="small" color={COLORS.WHITE} />
+                  <ActivityIndicator size="small" color={colors.white} />
                 ) : (
                   <Text style={styles.buttonText}>{TEXTS.BUTTON_VERIFY}</Text>
                 )}
@@ -382,142 +511,5 @@ const VerifyCodeScreen = ({ navigation, route }) => {
     </KeyboardAwareScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.BACKGROUND,
-  },
-  background: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imageStyle: {
-    opacity: BACKGROUND_OPACITY,
-    resizeMode: 'cover',
-  },
-  content: {
-    alignItems: 'center',
-    width: '100%',
-    flex: 1,
-    paddingHorizontal: CONTENT_PADDING_HORIZONTAL,
-    paddingVertical: CONTENT_PADDING_VERTICAL,
-  },
-  backButton: {
-    position: 'absolute',
-    top: BACK_BUTTON_TOP,
-    left: BACK_BUTTON_LEFT,
-    zIndex: BACK_BUTTON_Z_INDEX,
-  },
-  title: {
-    fontSize: 34, 
-    fontWeight: 'bold',
-    color: COLORS.WHITE,
-    marginBottom: TITLE_MARGIN_BOTTOM, 
-    marginTop: TITLE_MARGIN_TOP,
-    textShadowColor: COLORS.TEXT_SHADOW,
-    textShadowOffset: { width: TEXT_SHADOW_OFFSET_WIDTH, height: TEXT_SHADOW_OFFSET_HEIGHT },
-    textShadowRadius: TEXT_SHADOW_RADIUS,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 18, 
-    color: COLORS.ACCENT,
-    marginBottom: SUBTITLE_MARGIN_BOTTOM, 
-    textAlign: 'center',
-  },
-  emailText: {
-    fontSize: 18,
-    color: COLORS.PRIMARY,
-    fontWeight: 'bold',
-    marginBottom: EMAIL_TEXT_MARGIN_BOTTOM,
-    textAlign: 'center',
-  },
-  codeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: CODE_CONTAINER_MARGIN_BOTTOM,
-    width: '100%',
-  },
-  codeInput: {
-    backgroundColor: COLORS.INPUT_BACKGROUND,
-    borderRadius: CODE_INPUT_BORDER_RADIUS,
-    width: CODE_INPUT_WIDTH,
-    height: CODE_INPUT_HEIGHT,
-    fontSize: CODE_INPUT_FONT_SIZE,
-    fontWeight: 'bold',
-    color: COLORS.WHITE,
-    textAlign: 'center',
-    marginHorizontal: CODE_INPUT_MARGIN_HORIZONTAL,
-    borderWidth: CODE_INPUT_BORDER_WIDTH,
-    borderColor: 'transparent',
-  },
-  inputError: {
-    borderColor: COLORS.ERROR,
-    borderWidth: CODE_INPUT_BORDER_WIDTH,
-  },
-  errorText: {
-    color: COLORS.ERROR,
-    fontSize: 14,
-    marginTop: ERROR_TEXT_MARGIN_TOP,
-    textAlign: 'center',
-  },
-  button: {
-    backgroundColor: COLORS.BUTTON_BACKGROUND,
-    paddingVertical: BUTTON_PADDING_VERTICAL, 
-    borderRadius: BUTTON_BORDER_RADIUS, 
-    width: '100%',
-    alignItems: 'center',
-    marginTop: BUTTON_MARGIN_TOP,
-    marginBottom: BUTTON_MARGIN_BOTTOM, 
-    paddingHorizontal: BUTTON_PADDING_HORIZONTAL,
-    shadowColor: COLORS.BUTTON_SHADOW,
-    shadowOffset: { width: 0, height: BUTTON_SHADOW_OFFSET_Y },
-    shadowOpacity: BUTTON_SHADOW_OPACITY,
-    shadowRadius: BUTTON_SHADOW_RADIUS,
-    elevation: BUTTON_ELEVATION,
-    maxWidth: BUTTON_MAX_WIDTH,
-    alignSelf: 'center',
-  },
-  buttonText: {
-    color: COLORS.WHITE,
-    fontSize: 18, 
-    fontWeight: 'bold',
-  },
-  disabledButton: {
-    backgroundColor: COLORS.BUTTON_DISABLED_BACKGROUND,
-  },
-  resendContainer: {
-    marginTop: RESEND_CONTAINER_MARGIN_TOP,
-    alignItems: 'center',
-  },
-  resendText: {
-    color: COLORS.PRIMARY,
-    fontSize: 16,
-    fontWeight: 'bold',
-    textDecorationLine: 'underline',
-  },
-  countdownText: {
-    color: COLORS.ACCENT,
-    fontSize: 16,
-  },
-  linkContainer: {
-    marginTop: LINK_CONTAINER_MARGIN_TOP,
-  },
-  linkText: {
-    fontSize: 16, 
-    color: COLORS.PRIMARY,
-    fontWeight: 'bold',
-  },
-  loadingIndicator: {
-    transform: [{ scale: LOADING_INDICATOR_SCALE }],
-  },
-});
 
 export default VerifyCodeScreen; 

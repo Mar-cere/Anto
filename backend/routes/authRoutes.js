@@ -3,7 +3,7 @@
  */
 import crypto from 'crypto';
 import express from 'express';
-import rateLimit from 'express-rate-limit';
+import { createRateLimiter } from '../utils/createRateLimiter.js';
 import Joi from 'joi';
 import jwt from 'jsonwebtoken';
 import mailer from '../config/mailer.js';
@@ -15,7 +15,7 @@ import { enqueueEmail } from '../services/emailQueueService.js';
 const router = express.Router();
 
 // Rate limiters: control de frecuencia de peticiones
-const loginLimiter = rateLimit({
+const loginLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 5,
   message: 'Demasiados intentos de inicio de sesión. Por favor, intente más tarde.',
@@ -24,7 +24,7 @@ const loginLimiter = rateLimit({
   skipSuccessfulRequests: true
 });
 
-const registerLimiter = rateLimit({
+const registerLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hora
   max: 3,
   message: 'Demasiados intentos de registro. Por favor, intente más tarde.',
@@ -32,7 +32,7 @@ const registerLimiter = rateLimit({
   legacyHeaders: false
 });
 
-const passwordResetLimiter = rateLimit({
+const passwordResetLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hora
   max: 3,
   message: 'Demasiados intentos de recuperación de contraseña. Por favor, intente más tarde.',

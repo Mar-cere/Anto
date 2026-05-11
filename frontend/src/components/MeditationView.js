@@ -1,10 +1,54 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { View, Text, Animated, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
 const MeditationView = () => {
+  const { colors } = useTheme();
   const [currentText, setCurrentText] = useState('Inhala...');
   const animation = useRef(new Animated.Value(1)).current;
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          width: '100%',
+          height: 300,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'transparent',
+        },
+        contentContainer: {
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+        },
+        circle: {
+          width: 120,
+          height: 120,
+          borderRadius: 75,
+          backgroundColor: colors.accentLineSoft,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderWidth: 2,
+          borderColor: colors.glassBorderLight,
+          marginBottom: 30,
+        },
+        text: {
+          fontSize: 32,
+          fontWeight: '500',
+          textAlign: 'center',
+          letterSpacing: 2,
+          position: 'absolute',
+          bottom: -40,
+          width: '100%',
+          textShadowColor: 'rgba(0, 0, 0, 0.3)',
+          textShadowOffset: { width: 0, height: 1 },
+          textShadowRadius: 3,
+        },
+      }),
+    [colors],
+  );
 
   // Función para manejar la animación con tiempos ajustados
   const handleAnimation = () => {
@@ -73,16 +117,12 @@ const MeditationView = () => {
             }
           ]}
         >
-          <MaterialCommunityIcons 
-            name="meditation" 
-            size={48} 
-            color="#FFFFFF" 
-          />
+          <MaterialCommunityIcons name="meditation" size={48} color={colors.primary} />
         </Animated.View>
         <Text style={[
           styles.text,
           { 
-            color: currentText === 'Mantén...' ? '#A3B8E8' : '#FFFFFF'
+            color: currentText === 'Mantén...' ? colors.primary : colors.text
           }
         ]}>
           {currentText}
@@ -91,43 +131,5 @@ const MeditationView = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    height: 300,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-  },
-  contentContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  circle: {
-    width: 120,
-    height: 120,
-    borderRadius: 75,
-    backgroundColor: 'rgba(163, 184, 232, 0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-    marginBottom: 30,
-  },
-  text: {
-    fontSize: 32,
-    fontWeight: '500',
-    textAlign: 'center',
-    letterSpacing: 2,
-    position: 'absolute',
-    bottom: -40,
-    width: '100%',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  }
-});
 
 export default MeditationView;

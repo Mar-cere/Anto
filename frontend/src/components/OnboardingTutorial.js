@@ -11,7 +11,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
@@ -24,15 +24,15 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { colors } from '../styles/globalStyles';
-
-const { width, height } = Dimensions.get('window');
-
+import { SPACING } from '../constants/ui';
+import { useTheme } from '../context/ThemeContext';
 import {
   getTutorialStorageKey,
   isTutorialCompleted as isTutorialCompletedStorage,
   resetTutorial as resetTutorialStorage,
 } from '../utils/tutorialStorage';
+
+const { width, height } = Dimensions.get('window');
 
 export const isTutorialCompleted = isTutorialCompletedStorage;
 export const resetTutorial = resetTutorialStorage;
@@ -50,48 +50,245 @@ const TEXTS = {
   SWIPE_TO_SKIP: 'Desliza hacia abajo para omitir',
 };
 
-// Pasos del tutorial
-const TUTORIAL_STEPS = [
-  {
-    id: 1,
-    icon: 'home',
-    title: 'Dashboard Principal',
-    description: 'Tu centro de control con resumen de tareas, hábitos y bienestar emocional.',
-    color: colors.primary,
-    highlightElement: null, // No resaltar nada en el dashboard general
-  },
-  {
-    id: 2,
-    icon: 'message-text',
-    title: 'Chat de Apoyo',
-    description: 'Conversa con nuestro asistente de IA. Recibe apoyo emocional personalizado 24/7.',
-    color: '#4ECDC4',
-    highlightElement: 'chat', // Resaltar el botón de chat
-  },
-  {
-    id: 3,
-    icon: 'check-circle',
-    title: 'Tareas y Hábitos',
-    description: 'Organiza tu día y construye hábitos saludables con seguimiento constante.',
-    color: '#FFA500',
-    highlightElement: 'tasks-habits', // Resaltar las tarjetas de tareas y hábitos
-  },
-  {
-    id: 4,
-    icon: 'alert-circle',
-    title: 'Contactos de Emergencia',
-    description: 'Configura contactos de confianza que recibirán alertas en situaciones de riesgo.',
-    color: '#FF6B6B',
-    highlightElement: 'settings', // Resaltar el botón de ajustes donde están los contactos
-  },
-];
-
 const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHighlightChange, userId = null }) => {
   const navigation = useNavigation();
+  const { colors } = useTheme();
   const [currentStep, setCurrentStep] = useState(-1); // -1 = pantalla de bienvenida
   const [fadeAnim] = useState(new Animated.Value(1));
   const [scaleAnim] = useState(new Animated.Value(1));
   const [slideAnim] = useState(new Animated.Value(0));
+
+  const tutorialSteps = useMemo(
+    () => [
+      {
+        id: 1,
+        icon: 'home',
+        title: 'Dashboard Principal',
+        description: 'Tu centro de control con resumen de tareas, hábitos y bienestar emocional.',
+        color: colors.primary,
+        highlightElement: null,
+      },
+      {
+        id: 2,
+        icon: 'message-text',
+        title: 'Chat de Apoyo',
+        description: 'Conversa con nuestro asistente de IA. Recibe apoyo emocional personalizado 24/7.',
+        color: colors.secondary ?? colors.accentLine,
+        highlightElement: 'chat',
+      },
+      {
+        id: 3,
+        icon: 'check-circle',
+        title: 'Tareas y Hábitos',
+        description: 'Organiza tu día y construye hábitos saludables con seguimiento constante.',
+        color: colors.warning,
+        highlightElement: 'tasks-habits',
+      },
+      {
+        id: 4,
+        icon: 'alert-circle',
+        title: 'Contactos de Emergencia',
+        description: 'Configura contactos de confianza que recibirán alertas en situaciones de riesgo.',
+        color: colors.error,
+        highlightElement: 'settings',
+      },
+    ],
+    [colors],
+  );
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.backdropStrong ?? 'rgba(0, 0, 0, 0.9)',
+          paddingTop: Platform.OS === 'ios' ? 50 : 20,
+        },
+        header: {
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingTop: 10,
+          paddingBottom: 20,
+        },
+        skipButton: {
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: 8,
+        },
+        skipButtonText: {
+          color: colors.text,
+          fontSize: 16,
+          opacity: 0.75,
+        },
+        swipeHint: {
+          color: colors.text,
+          fontSize: 12,
+          opacity: 0.55,
+          marginTop: 4,
+          textAlign: 'center',
+        },
+        content: {
+          flexGrow: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingHorizontal: 30,
+          paddingBottom: 100,
+        },
+        stepContainer: {
+          alignItems: 'center',
+          width: '100%',
+        },
+        iconContainer: {
+          width: 160,
+          height: 160,
+          borderRadius: 80,
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginBottom: 40,
+        },
+        progressContainer: {
+          width: '100%',
+          marginBottom: 30,
+        },
+        progressBar: {
+          width: '100%',
+          height: 6,
+          backgroundColor: colors.glassFill,
+          borderRadius: 3,
+          overflow: 'hidden',
+          marginBottom: 12,
+          borderWidth: 1,
+          borderColor: colors.glassOutline,
+        },
+        progressFill: {
+          height: '100%',
+          borderRadius: 3,
+        },
+        progressInfo: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          width: '100%',
+        },
+        progressText: {
+          color: colors.text,
+          fontSize: 12,
+          opacity: 0.7,
+          fontWeight: '700',
+        },
+        arrowHint: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 4,
+        },
+        arrowText: {
+          fontSize: 12,
+          fontWeight: '600',
+        },
+        title: {
+          fontSize: 32,
+          fontWeight: 'bold',
+          color: colors.text,
+          textAlign: 'center',
+          marginBottom: 20,
+        },
+        description: {
+          fontSize: 17,
+          color: colors.text,
+          textAlign: 'center',
+          lineHeight: 26,
+          opacity: 0.85,
+          marginBottom: 40,
+          paddingHorizontal: 10,
+        },
+        dotsContainer: {
+          flexDirection: 'row',
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginTop: 20,
+        },
+        dot: {
+          width: 8,
+          height: 8,
+          borderRadius: 4,
+          backgroundColor: colors.glassFill,
+          borderWidth: 1,
+          borderColor: colors.glassOutline,
+          marginHorizontal: 4,
+        },
+        dotActive: {
+          width: 24,
+          height: 8,
+          borderRadius: 4,
+        },
+        footer: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+          paddingTop: 20,
+          borderTopWidth: 1,
+          borderTopColor: colors.glassOutline,
+        },
+        navButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingVertical: 14,
+          paddingHorizontal: 24,
+          borderRadius: 25,
+          minWidth: 120,
+        },
+        previousButton: {
+          backgroundColor: colors.glassFill,
+          borderWidth: 1,
+          borderColor: colors.glassOutline,
+        },
+        nextButton: {
+          backgroundColor: colors.primary,
+        },
+        navButtonDisabled: {
+          opacity: 0.55,
+        },
+        navButtonText: {
+          color: colors.textOnPrimary,
+          fontSize: 16,
+          fontWeight: '700',
+          marginHorizontal: 8,
+        },
+        navButtonTextDisabled: {
+          color: colors.textSecondary,
+        },
+        welcomeTitle: {
+          fontSize: 42,
+          fontWeight: 'bold',
+          color: colors.text,
+          textAlign: 'center',
+          marginBottom: 16,
+          marginTop: 20,
+        },
+        welcomeSubtitle: {
+          fontSize: 24,
+          color: colors.primary,
+          textAlign: 'center',
+          marginBottom: 20,
+          fontWeight: '700',
+        },
+        welcomeDescription: {
+          fontSize: 18,
+          color: colors.text,
+          textAlign: 'center',
+          lineHeight: 28,
+          opacity: 0.9,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+        },
+        welcomeButton: {
+          backgroundColor: colors.primary,
+          width: '100%',
+        },
+      }),
+    [colors],
+  );
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (evt, gestureState) => {
@@ -107,9 +304,9 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
     })
   ).current;
 
-  const totalSteps = TUTORIAL_STEPS.length;
+  const totalSteps = tutorialSteps.length;
   const isWelcomeScreen = currentStep === -1;
-  const currentStepData = currentStep >= 0 ? TUTORIAL_STEPS[currentStep] : null;
+  const currentStepData = currentStep >= 0 ? tutorialSteps[currentStep] : null;
 
   const handleNext = () => {
     if (isWelcomeScreen) {
@@ -131,8 +328,8 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
         fadeAnim.setValue(1);
         setCurrentStep(0);
         // Notificar cambio de highlight
-        if (onHighlightChange && TUTORIAL_STEPS[0].highlightElement) {
-          onHighlightChange(TUTORIAL_STEPS[0].highlightElement);
+        if (onHighlightChange && tutorialSteps[0].highlightElement) {
+          onHighlightChange(tutorialSteps[0].highlightElement);
         }
         Animated.parallel([
           Animated.timing(slideAnim, {
@@ -170,7 +367,7 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
         setCurrentStep(nextStep);
         // Notificar cambio de highlight
         if (onHighlightChange) {
-          onHighlightChange(TUTORIAL_STEPS[nextStep]?.highlightElement || null);
+          onHighlightChange(tutorialSteps[nextStep]?.highlightElement || null);
         }
         Animated.parallel([
           Animated.timing(slideAnim, {
@@ -211,7 +408,7 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
         setCurrentStep(prevStep);
         // Notificar cambio de highlight
         if (onHighlightChange) {
-          onHighlightChange(TUTORIAL_STEPS[prevStep]?.highlightElement || null);
+          onHighlightChange(tutorialSteps[prevStep]?.highlightElement || null);
         }
         Animated.parallel([
           Animated.timing(slideAnim, {
@@ -431,7 +628,7 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
 
               {/* Indicadores de pasos */}
               <View style={styles.dotsContainer}>
-                {TUTORIAL_STEPS.map((_, index) => (
+                {tutorialSteps.map((_, index) => (
                   <View
                     key={index}
                     style={[
@@ -464,7 +661,7 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
               <MaterialCommunityIcons
                 name="chevron-left"
                 size={24}
-                color={currentStep === 0 ? '#666' : colors.white}
+                color={currentStep === 0 ? colors.textSecondary : colors.textOnPrimary}
               />
               <Text
                 style={[
@@ -498,7 +695,7 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
               <MaterialCommunityIcons
                 name="chevron-right"
                 size={24}
-                color={colors.white}
+                color={colors.textOnPrimary}
               />
             )}
           </TouchableOpacity>
@@ -508,189 +705,7 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
-  },
-  header: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 20,
-  },
-  skipButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  skipButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    opacity: 0.7,
-  },
-  swipeHint: {
-    color: colors.white,
-    fontSize: 12,
-    opacity: 0.5,
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  content: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 30,
-    paddingBottom: 100,
-  },
-  stepContainer: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  iconContainer: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  progressContainer: {
-    width: '100%',
-    marginBottom: 30,
-  },
-  progressBar: {
-    width: '100%',
-    height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 3,
-    overflow: 'hidden',
-    marginBottom: 12,
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  progressInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-  },
-  progressText: {
-    color: colors.white,
-    fontSize: 12,
-    opacity: 0.6,
-    fontWeight: '600',
-  },
-  arrowHint: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  arrowText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: colors.white,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  description: {
-    fontSize: 17,
-    color: colors.white,
-    textAlign: 'center',
-    lineHeight: 26,
-    opacity: 0.85,
-    marginBottom: 40,
-    paddingHorizontal: 10,
-  },
-  dotsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    marginHorizontal: 4,
-  },
-  dotActive: {
-    width: 24,
-    height: 8,
-    borderRadius: 4,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  navButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 25,
-    minWidth: 120,
-  },
-  previousButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  nextButton: {
-    backgroundColor: colors.primary,
-  },
-  navButtonDisabled: {
-    opacity: 0.5,
-  },
-  navButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '600',
-    marginHorizontal: 8,
-  },
-  navButtonTextDisabled: {
-    color: '#666',
-  },
-  welcomeTitle: {
-    fontSize: 42,
-    fontWeight: 'bold',
-    color: colors.white,
-    textAlign: 'center',
-    marginBottom: 16,
-    marginTop: 20,
-  },
-  welcomeSubtitle: {
-    fontSize: 24,
-    color: colors.primary,
-    textAlign: 'center',
-    marginBottom: 20,
-    fontWeight: '600',
-  },
-  welcomeDescription: {
-    fontSize: 18,
-    color: colors.white,
-    textAlign: 'center',
-    lineHeight: 28,
-    opacity: 0.9,
-    paddingHorizontal: 20,
-  },
-  welcomeButton: {
-    backgroundColor: colors.primary,
-    width: '100%',
-  },
-});
+// `styles` se crea por tema dentro del componente.
 
 export default OnboardingTutorial;
 

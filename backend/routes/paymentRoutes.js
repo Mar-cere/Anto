@@ -8,7 +8,7 @@
  */
 
 import express from 'express';
-import rateLimit from 'express-rate-limit';
+import { createRateLimiter } from '../utils/createRateLimiter.js';
 import Joi from 'joi';
 import { formatAmount, getPlanPrice } from '../config/mercadopago.js';
 import { authenticateToken } from '../middleware/auth.js';
@@ -94,7 +94,7 @@ router.get('/return/cancel', (req, res) => {
 });
 
 // Rate limiters para pagos
-const checkoutLimiter = rateLimit({
+const checkoutLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 5, // Máximo 5 intentos de checkout por 15 minutos
   message: 'Demasiados intentos de checkout. Por favor, intente más tarde.',
@@ -106,7 +106,7 @@ const checkoutLimiter = rateLimit({
   }
 });
 
-const paymentLimiter = rateLimit({
+const paymentLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hora
   max: 20, // Máximo 20 operaciones de pago por hora
   message: 'Demasiadas operaciones de pago. Por favor, intente más tarde.',
@@ -118,7 +118,7 @@ const paymentLimiter = rateLimit({
 });
 
 // Webhooks de terceros (Mercado Pago, Apple ASN); límite permisivo
-const webhookLimiter = rateLimit({
+const webhookLimiter = createRateLimiter({
   windowMs: 1 * 60 * 1000,
   max: 100,
   message: 'Demasiadas solicitudes de webhook',

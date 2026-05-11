@@ -7,7 +7,7 @@
  * @author AntoApp Team
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,9 +17,9 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { colors } from '../styles/globalStyles';
-import { FOCUS_ACCENT_BORDER, FOCUS_META } from '../styles/focusCardTheme';
 import * as Haptics from 'expo-haptics';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING } from '../constants/ui';
 
 const TEXTS = {
   TRIAL_ACTIVE: 'Trial activo',
@@ -30,7 +30,88 @@ const TEXTS = {
 
 const TrialBanner = ({ daysRemaining, onDismiss, dismissed = false }) => {
   const navigation = useNavigation();
+  const { colors } = useTheme();
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
+
+  const hexToRgba = (hex, alpha) => {
+    const h = hex.replace('#', '');
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  };
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingVertical: 14,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          marginTop: 4,
+          marginBottom: 12,
+          borderRadius: 22,
+          borderWidth: StyleSheet.hairlineWidth,
+        },
+        content: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          flex: 1,
+          minWidth: 0,
+        },
+        iconWrap: {
+          width: 40,
+          height: 40,
+          borderRadius: 12,
+          borderWidth: StyleSheet.hairlineWidth,
+          backgroundColor: colors.glassFill,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        textContainer: {
+          marginLeft: 12,
+          flex: 1,
+          minWidth: 0,
+        },
+        title: {
+          fontSize: 14,
+          fontWeight: '600',
+          marginBottom: 2,
+          lineHeight: 19,
+        },
+        subtitle: {
+          fontSize: 12,
+          color: colors.textSecondary,
+          lineHeight: 17,
+        },
+        actions: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginLeft: 8,
+          flexShrink: 0,
+        },
+        subscribeButton: {
+          paddingHorizontal: 14,
+          paddingVertical: 8,
+          borderRadius: 14,
+          marginRight: 6,
+          backgroundColor: colors.glassFill,
+          borderWidth: StyleSheet.hairlineWidth,
+        },
+        subscribeButtonText: {
+          fontSize: 13,
+          fontWeight: '600',
+        },
+        dismissButton: {
+          padding: 8,
+          borderRadius: 12,
+          backgroundColor: colors.glassFill,
+        },
+      }),
+    [colors],
+  );
 
   React.useEffect(() => {
     if (!dismissed) {
@@ -60,12 +141,8 @@ const TrialBanner = ({ daysRemaining, onDismiss, dismissed = false }) => {
 
   const isExpiringSoon = daysRemaining <= 2;
   const accentColor = isExpiringSoon ? colors.warning : colors.primary;
-  const surfaceBg = isExpiringSoon
-    ? 'rgba(255, 217, 61, 0.12)'
-    : 'rgba(26, 221, 219, 0.1)';
-  const borderColor = isExpiringSoon
-    ? 'rgba(255, 217, 61, 0.4)'
-    : FOCUS_ACCENT_BORDER;
+  const surfaceBg = isExpiringSoon ? hexToRgba(colors.warning, 0.12) : hexToRgba(colors.primary, 0.1);
+  const borderColor = isExpiringSoon ? hexToRgba(colors.warning, 0.4) : colors.accentLine;
 
   return (
     <Animated.View
@@ -109,80 +186,11 @@ const TrialBanner = ({ daysRemaining, onDismiss, dismissed = false }) => {
           accessibilityRole="button"
           accessibilityLabel="Cerrar aviso de trial"
         >
-          <MaterialCommunityIcons name="close" size={20} color={FOCUS_META} />
+          <MaterialCommunityIcons name="close" size={20} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
     </Animated.View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 8,
-    borderRadius: 22,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  content: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    minWidth: 0,
-  },
-  iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  textContainer: {
-    marginLeft: 12,
-    flex: 1,
-    minWidth: 0,
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 2,
-    lineHeight: 19,
-  },
-  subtitle: {
-    fontSize: 12,
-    color: FOCUS_META,
-    lineHeight: 17,
-  },
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 8,
-    flexShrink: 0,
-  },
-  subscribeButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 14,
-    marginRight: 6,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  subscribeButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  dismissButton: {
-    padding: 8,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-  },
-});
 
 export default TrialBanner;

@@ -9,7 +9,8 @@ import React from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { colors } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING } from '../constants/ui';
 
 const TEXTS = {
   TITLE: 'Activa las notificaciones',
@@ -23,7 +24,72 @@ const NotificationsPromptBanner = ({
   onDismiss,
   enabling = false,
 }) => {
+  const { colors } = useTheme();
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
+
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingVertical: 14,
+          paddingHorizontal: 14,
+          marginTop: 4,
+          marginBottom: 12,
+          borderRadius: 18,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+          borderLeftWidth: 4,
+          borderLeftColor: colors.primary,
+          backgroundColor: colors.cardBackground,
+        },
+        content: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          flex: 1,
+        },
+        textContainer: {
+          marginLeft: 12,
+          flex: 1,
+        },
+        title: {
+          fontSize: 15,
+          fontWeight: '600',
+          marginBottom: 2,
+          color: colors.text,
+        },
+        subtitle: {
+          fontSize: 13,
+          color: colors.textSecondary,
+        },
+        actions: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginLeft: 8,
+        },
+        enableButton: {
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: 6,
+          borderRadius: 8,
+          marginRight: 8,
+          backgroundColor: colors.primary,
+        },
+        enableButtonDisabled: {
+          opacity: 0.7,
+        },
+        enableButtonText: {
+          color: colors.white,
+          fontSize: 12,
+          fontWeight: '600',
+        },
+        dismissButton: {
+          padding: 4,
+        },
+      }),
+    [colors],
+  );
 
   React.useEffect(() => {
     if (visible) {
@@ -73,64 +139,6 @@ const NotificationsPromptBanner = ({
     </Animated.View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 8,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    backgroundColor: colors.primary + '20',
-    borderLeftColor: colors.primary,
-  },
-  content: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  textContainer: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 2,
-    color: colors.primary,
-  },
-  subtitle: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  enableButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    marginRight: 8,
-    backgroundColor: colors.primary,
-  },
-  enableButtonDisabled: {
-    opacity: 0.7,
-  },
-  enableButtonText: {
-    color: colors.white,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  dismissButton: {
-    padding: 4,
-  },
-});
 
 export default NotificationsPromptBanner;
 

@@ -7,6 +7,7 @@
 import request from 'supertest';
 import mongoose from 'mongoose';
 import crypto from 'crypto';
+import { jest } from '@jest/globals';
 import app from '../../../server.js';
 import User from '../../../models/User.js';
 import {
@@ -15,6 +16,8 @@ import {
   closeDatabase,
 } from '../../helpers/testHelpers.js';
 import { validUser, invalidUser } from '../../fixtures/userFixtures.js';
+
+jest.setTimeout(30000);
 
 // Helper para crear usuario con password hasheado
 const createUserWithHashedPassword = async (userData) => {

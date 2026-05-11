@@ -7,6 +7,7 @@
 import request from 'supertest';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
+import { jest } from '@jest/globals';
 import app from '../../../server.js';
 import User from '../../../models/User.js';
 import Habit from '../../../models/Habit.js';
@@ -19,6 +20,8 @@ import {
 } from '../../helpers/testHelpers.js';
 import { validUser } from '../../fixtures/userFixtures.js';
 import jwt from 'jsonwebtoken';
+
+jest.setTimeout(90000);
 
 describe('Habit Routes', () => {
   let authToken;

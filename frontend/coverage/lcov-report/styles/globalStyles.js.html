@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -175,26 +175,54 @@
 <a name='L110'></a><a href='#L110'>110</a>
 <a name='L111'></a><a href='#L111'>111</a>
 <a name='L112'></a><a href='#L112'>112</a>
-<a name='L113'></a><a href='#L113'>113</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -288,8 +316,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { StyleSheet } from 'react-native';
+import { TYPOGRAPHY } from '../constants/ui';
 &nbsp;
-export const colors = <span class="cstat-no" title="statement not covered" >{</span>
+export const colors = {
   primary: '#1ADDDB',
   background: '#030A24',
   white: '#FFFFFF',
@@ -297,8 +326,9 @@ export const colors = <span class="cstat-no" title="statement not covered" >{</s
   accent: '#1ADDDB',
   // Colores secundarios
   textSecondary: '#A3B8E8',
-  cardBackground: 'rgba(29, 43, 95, 0.8)',
-  border: 'rgba(26, 221, 219, 0.15)',
+  /** Superficie de tarjeta alineada al panel "foco" del dashboard (vidrio suave). */
+  cardBackground: 'rgba(255, 255, 255, 0.04)',
+  border: 'rgba(255, 255, 255, 0.1)',
   // Colores de estado
   error: '#FF6B6B',
   success: '#4CAF50',
@@ -306,13 +336,13 @@ export const colors = <span class="cstat-no" title="statement not covered" >{</s
   info: '#6BCB77',
 };
 &nbsp;
-export const globalStyles = <span class="cstat-no" title="statement not covered" >StyleSheet.create({</span>
+export const globalStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
   titleText: {
-    fontSize: 36,
+    fontSize: TYPOGRAPHY.TITLE,
     fontWeight: 'bold',
     color: colors.white,
     textAlign: 'center',
@@ -323,17 +353,25 @@ export const globalStyles = <span class="cstat-no" title="statement not covered"
   },
   errorText: {
     color: '#FF6B6B',
-    fontSize: 14,
+    fontSize: TYPOGRAPHY.CAPTION,
     marginTop: 8,
     marginLeft: 5,
     textAlign: 'left',
     fontWeight: '500',
   },
   subTitleText: {
-    fontSize: 18,
+    fontSize: TYPOGRAPHY.SUBTITLE,
     color: colors.white,
     textAlign: 'center',
     opacity: 0.8,
+  },
+  bodyText: {
+    fontSize: TYPOGRAPHY.BODY,
+    color: colors.text,
+  },
+  captionText: {
+    fontSize: TYPOGRAPHY.CAPTION,
+    color: colors.textSecondary,
   },
   buttonContainer: {
     width: '100%',
@@ -359,7 +397,7 @@ export const globalStyles = <span class="cstat-no" title="statement not covered"
   },
   buttonText: {
     color: colors.white,
-    fontSize: 18,
+    fontSize: TYPOGRAPHY.BODY,
     fontWeight: 'bold',
   },
   disabledButton: {
@@ -385,9 +423,13 @@ export const globalStyles = <span class="cstat-no" title="statement not covered"
     borderColor: 'transparent',
     paddingHorizontal: 10,
   },
+  inputContainerFocused: {
+    borderColor: 'rgba(26, 221, 219, 0.6)',
+    borderWidth: 1.5,
+  },
   input: {
     flex: 1,
-    fontSize: 18,
+    fontSize: TYPOGRAPHY.BODY,
     color: '#FFFFFF',
     paddingVertical: 14,
     paddingHorizontal: 10,
@@ -406,7 +448,7 @@ export const globalStyles = <span class="cstat-no" title="statement not covered"
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-08T14:11:47.197Z
+                at 2026-05-07T20:12:13.462Z
             </div>
         <script src="../prettify.js"></script>
         <script>

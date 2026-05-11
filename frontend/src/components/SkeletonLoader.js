@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, Animated } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 
 // Componente de esqueleto para carga
 const SkeletonLoader = ({ width, height, style }) => {
+  const { colors } = useTheme();
   const opacity = useState(new Animated.Value(0.3))[0];
   
   useEffect(() => {
@@ -32,7 +34,7 @@ const SkeletonLoader = ({ width, height, style }) => {
         {
           width,
           height,
-          backgroundColor: '#3D4B7C',
+          backgroundColor: colors.chromeInput,
           borderRadius: 5,
           opacity,
         },

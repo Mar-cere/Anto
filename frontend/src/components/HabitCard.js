@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, memo, useRef } from 'react';
 import { 
   View, Text, TouchableOpacity, ActivityIndicator, Animated, 
   Easing, Alert, RefreshControl, ScrollView
@@ -6,14 +6,17 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { commonStyles, cardColors, CardHeader, EmptyState } from './common/CardStyles';
+import { useCardStylesDynamic, CardHeader, EmptyState } from './common/CardStyles';
 import * as Haptics from 'expo-haptics';
 import { api, ENDPOINTS } from '../config/api';
 import { getApiErrorMessage, isAuthError } from '../utils/apiErrorHandler';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING } from '../constants/ui';
 
-const HabitItem = memo(({ habit, onPress }) => {
+const HabitItem = memo(({ habit, onPress, styles, commonStyles }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const { colors } = useTheme();
 
   useEffect(() => {
     Animated.timing(progressAnim, {
@@ -39,14 +42,7 @@ const HabitItem = memo(({ habit, onPress }) => {
     }).start();
   };
 
-  const getStreakColor = (streak = 0) => {
-    if (streak >= 30) return '#FFD700'; // Oro
-    if (streak >= 15) return '#C0C0C0'; // Plata
-    if (streak >= 7) return '#CD7F32'; // Bronce
-    return cardColors.primary;
-  };
-
-  const streakColor = getStreakColor(habit.progress?.streak);
+  const accentColor = colors.primary;
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
@@ -63,11 +59,11 @@ const HabitItem = memo(({ habit, onPress }) => {
         <View style={styles.habitContent}>
           {/* Icono y título */}
           <View style={styles.habitHeader}>
-            <View style={[styles.habitIcon, { backgroundColor: streakColor }]}>
+            <View style={[styles.habitIcon, { backgroundColor: accentColor }]}>
               <MaterialCommunityIcons 
                 name={habit.icon || 'lightning-bolt'} 
                 size={20} 
-                color="#FFFFFF" 
+                color={colors.textOnPrimary} 
               />
             </View>
             <View style={styles.habitInfo}>
@@ -78,9 +74,9 @@ const HabitItem = memo(({ habit, onPress }) => {
                 <MaterialCommunityIcons 
                   name="fire" 
                   size={14} 
-                  color={streakColor} 
+                  color={accentColor} 
                 />
-                <Text style={[styles.streakText, { color: streakColor }]}>
+                <Text style={[styles.streakText, { color: accentColor }]}>
                   {habit.progress?.streak || 0} días
                 </Text>
                 {habit.progress?.bestStreak > (habit.progress?.streak || 0) && (
@@ -114,7 +110,7 @@ const HabitItem = memo(({ habit, onPress }) => {
                       inputRange: [0, 1],
                       outputRange: ['0%', '100%']
                     }),
-                    backgroundColor: streakColor
+                    backgroundColor: accentColor
                   }
                 ]} 
               />
@@ -129,6 +125,9 @@ HabitItem.displayName = 'HabitItem';
 
 const HabitCard = memo(() => {
   const navigation = useNavigation();
+  const { colors } = useTheme();
+  const { commonStyles } = useCardStylesDynamic();
+  const styles = useMemo(() => createStyles(colors, commonStyles), [colors, commonStyles]);
   const [habits, setHabits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -180,7 +179,7 @@ const HabitCard = memo(() => {
 
   const renderContent = () => {
     if (loading) {
-      return <ActivityIndicator color={cardColors.primary} style={commonStyles.loader} />;
+      return <ActivityIndicator color={colors.primary} style={commonStyles.loader} />;
     }
 
     if (error) {
@@ -189,7 +188,7 @@ const HabitCard = memo(() => {
           <MaterialCommunityIcons 
             name="alert-circle" 
             size={24} 
-            color={cardColors.error} 
+            color={colors.error} 
           />
           <Text style={styles.errorText}>No se pudo cargar. Revisa tu conexión e intenta de nuevo.</Text>
           <TouchableOpacity 
@@ -224,8 +223,8 @@ const HabitCard = memo(() => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[cardColors.primary]}
-            tintColor={cardColors.primary}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
       >
@@ -235,6 +234,8 @@ const HabitCard = memo(() => {
               key={habit._id}
               habit={habit}
               onPress={() => navigation.navigate('Habits', { habitId: habit._id })}
+              styles={styles}
+              commonStyles={commonStyles}
             />
           ))}
           <TouchableOpacity 
@@ -244,7 +245,7 @@ const HabitCard = memo(() => {
             <MaterialCommunityIcons 
               name="plus" 
               size={20} 
-              color={cardColors.primary} 
+              color={colors.primary} 
             />
             <Text style={styles.addHabitText}>Nuevo hábito</Text>
           </TouchableOpacity>
@@ -267,12 +268,12 @@ const HabitCard = memo(() => {
 });
 HabitCard.displayName = 'HabitCard';
 
-const styles = {
+const createStyles = (colors, commonStyles) => ({
   habitsContainer: {
     gap: 12,
   },
   habitItem: {
-    padding: 16,
+    padding: SPACING.SCREEN_EDGE_INSET,
   },
   habitContent: {
     gap: 12,
@@ -297,7 +298,7 @@ const styles = {
     fontSize: 15,
     fontWeight: '500',
     lineHeight: 20,
-    color: '#FFFFFF',
+    color: colors.text,
   },
   streakContainer: {
     flexDirection: 'row',
@@ -310,7 +311,7 @@ const styles = {
   },
   bestStreakText: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.45)',
+    color: colors.textMuted,
     marginLeft: 4,
   },
   progressSection: {
@@ -323,22 +324,22 @@ const styles = {
   },
   statusText: {
     fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.55)',
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   completedText: {
-    color: cardColors.success,
+    color: colors.success,
     fontWeight: '500',
   },
   progressText: {
     fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.55)',
+    color: colors.textSecondary,
     lineHeight: 18,
     fontWeight: '500',
   },
   progressBar: {
     height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: colors.accentLineSoft,
     borderRadius: 2,
     overflow: 'hidden',
   },
@@ -355,25 +356,25 @@ const styles = {
   },
   errorContainer: {
     alignItems: 'center',
-    padding: 20,
+    padding: SPACING.SCREEN_EDGE_INSET,
     gap: 12,
   },
   errorText: {
-    color: cardColors.error,
+    color: colors.error,
     fontSize: 14,
     textAlign: 'center',
   },
   retryButton: {
-    backgroundColor: cardColors.primary,
-    paddingHorizontal: 16,
+    backgroundColor: colors.primary,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     paddingVertical: 8,
     borderRadius: 8,
   },
   retryText: {
-    color: '#FFFFFF',
+    color: colors.textOnPrimary,
     fontSize: 14,
     fontWeight: '500',
   }
-};
+});
 
 export default HabitCard;

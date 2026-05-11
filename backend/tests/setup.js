@@ -20,6 +20,7 @@ dotenv.config({ path: path.join(__dirname, '../.env.test') });
 process.env.NODE_ENV = process.env.NODE_ENV || 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key-for-jwt-signing-min-32-chars';
 process.env.MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/anto-test';
+// La URI efectiva por proceso añade sufijo -w<JEST_WORKER_ID> en tests/helpers/testHelpers.js (evita races entre workers).
 // Evitar conexión a Redis en tests (evita socket hang up en GET /api/payments/plans, etc.)
 if (process.env.REDIS_URL === undefined) process.env.REDIS_URL = '';
 

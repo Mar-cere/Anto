@@ -6,6 +6,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import MeditationView from '../MeditationView';
+import { SPACING } from '../../constants/ui';
 import {
   COLORS,
   MODE_LABEL_FONT_SIZE,
@@ -134,7 +135,7 @@ const styles = StyleSheet.create({
   modePill: {
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 999,
-    paddingHorizontal: 14,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     paddingVertical: 8,
     minHeight: 42,
     alignItems: 'center',

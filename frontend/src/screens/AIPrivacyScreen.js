@@ -1,10 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ParticleBackground from '../components/ParticleBackground';
-import { colors } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING } from '../constants/ui';
 
 const PRIVACY_URL = 'https://www.antoapps.com/privacidad';
 
@@ -37,51 +38,56 @@ const TEXTS = {
 
 const ICON_SIZE = 24;
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(26, 221, 219, 0.2)',
-    backgroundColor: 'rgba(12, 20, 56, 0.9)',
-  },
-  headerButton: { width: 40, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { color: colors.white, fontSize: 18, fontWeight: '700' },
-  scrollView: { flex: 1 },
-  content: { padding: 16, paddingBottom: 36 },
-  introText: { color: '#D8E3FF', fontSize: 14, lineHeight: 21, marginBottom: 16 },
-  card: {
-    backgroundColor: 'rgba(29, 43, 95, 0.85)',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(26, 221, 219, 0.14)',
-    padding: 14,
-    marginBottom: 12,
-  },
-  question: { color: colors.white, fontSize: 15, fontWeight: '700', marginBottom: 6 },
-  answer: { color: '#C8D6FF', fontSize: 14, lineHeight: 20 },
-  sectionTitle: { color: '#A3B8E8', fontSize: 15, fontWeight: '700', marginBottom: 8 },
-  bulletRow: { flexDirection: 'row', marginBottom: 6 },
-  bulletDot: { color: '#1ADDDb', marginRight: 8, fontSize: 14 },
-  bulletText: { color: '#C8D6FF', fontSize: 14, lineHeight: 20, flex: 1 },
-  policyButton: {
-    marginTop: 8,
-    backgroundColor: 'rgba(26, 221, 219, 0.18)',
-    borderWidth: 1,
-    borderColor: 'rgba(26, 221, 219, 0.45)',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  policyButtonText: { color: colors.white, fontSize: 14, fontWeight: '700' },
-});
-
 export default function AIPrivacyScreen() {
   const navigation = useNavigation();
+  const { colors } = useTheme();
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        header: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: 10,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+          backgroundColor: colors.chromeHeader,
+        },
+        headerButton: { width: 40, alignItems: 'center', justifyContent: 'center' },
+        headerTitle: { color: colors.text, fontSize: 18, fontWeight: '700' },
+        scrollView: { flex: 1 },
+        content: { padding: SPACING.SCREEN_EDGE_INSET, paddingBottom: 36 },
+        introText: { color: colors.textSecondary, fontSize: 14, lineHeight: 21, marginBottom: 16 },
+        card: {
+          backgroundColor: colors.chromeCard,
+          borderRadius: 14,
+          borderWidth: 1,
+          borderColor: colors.chromeCardBorder,
+          padding: 14,
+          marginBottom: 12,
+        },
+        question: { color: colors.text, fontSize: 15, fontWeight: '700', marginBottom: 6 },
+        answer: { color: colors.textSecondary, fontSize: 14, lineHeight: 20 },
+        sectionTitle: { color: colors.primary, fontSize: 15, fontWeight: '700', marginBottom: 8 },
+        bulletRow: { flexDirection: 'row', marginBottom: 6 },
+        bulletDot: { color: colors.primary, marginRight: 8, fontSize: 14 },
+        bulletText: { color: colors.textSecondary, fontSize: 14, lineHeight: 20, flex: 1 },
+        policyButton: {
+          marginTop: 8,
+          backgroundColor: colors.accentLineSoft,
+          borderWidth: 1,
+          borderColor: colors.accentLine,
+          borderRadius: 10,
+          paddingVertical: 12,
+          alignItems: 'center',
+        },
+        policyButtonText: { color: colors.text, fontSize: 14, fontWeight: '700' },
+      }),
+    [colors],
+  );
 
   const handleOpenPolicy = async () => {
     try {
@@ -101,7 +107,7 @@ export default function AIPrivacyScreen() {
           onPress={() => navigation.goBack()}
           accessibilityLabel={TEXTS.BACK}
         >
-          <MaterialCommunityIcons name="arrow-left" size={ICON_SIZE} color={colors.white} />
+          <MaterialCommunityIcons name="arrow-left" size={ICON_SIZE} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{TEXTS.TITLE}</Text>
         <View style={styles.headerButton} />

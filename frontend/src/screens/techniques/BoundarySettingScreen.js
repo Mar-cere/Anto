@@ -6,7 +6,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -22,9 +22,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
-import { colors } from '../../styles/globalStyles';
-import { FOCUS_META } from '../../styles/focusCardTheme';
-import { techniqueScreenStyles } from './techniqueScreenStyles';
+import { useTheme } from '../../context/ThemeContext';
+import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const BOUNDARY_GUIDES = [
   {
@@ -56,7 +55,26 @@ const BOUNDARY_GUIDES = [
 const BoundarySettingScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { colors, statusBarStyle } = useTheme();
+  const techniqueScreenStyles = useTechniqueScreenStyles();
   const [boundaryText, setBoundaryText] = useState('');
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        keyboardView: {
+          flex: 1,
+        },
+        scrollView: {
+          flex: 1,
+        },
+      }),
+    [colors],
+  );
 
   const handleSave = () => {
     if (boundaryText.trim()) {
@@ -67,7 +85,7 @@ const BoundarySettingScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header
         title="Establecer Límites"
@@ -112,7 +130,7 @@ const BoundarySettingScreen = () => {
             <TextInput
               style={techniqueScreenStyles.textInput}
               placeholder='Ejemplo: No responderé mensajes de trabajo después de las 8 PM'
-              placeholderTextColor={FOCUS_META}
+              placeholderTextColor={colors.textSecondary}
               value={boundaryText}
               onChangeText={setBoundaryText}
               multiline
@@ -135,18 +153,5 @@ const BoundarySettingScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-});
 
 export default BoundarySettingScreen;

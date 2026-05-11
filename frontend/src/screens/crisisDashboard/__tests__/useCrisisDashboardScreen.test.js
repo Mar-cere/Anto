@@ -15,7 +15,15 @@ jest.mock('../../../config/api', () => ({
 }));
 jest.mock('../../../styles/globalStyles', () => ({ colors: {} }));
 
+jest.mock('../../../context/ThemeContext', () => {
+  const { lightColors } = require('../../../styles/themePalettes');
+  return {
+    useTheme: () => ({ colors: lightColors }),
+  };
+});
+
 import { renderHook, act } from '@testing-library/react-native';
+import { lightColors } from '../../../styles/themePalettes';
 import { api } from '../../../config/api';
 import { useCrisisDashboardScreen } from '../useCrisisDashboardScreen';
 
@@ -131,9 +139,9 @@ describe('useCrisisDashboardScreen', () => {
     await act(async () => {
       await new Promise((r) => setTimeout(r, 50));
     });
-    expect(result.current.getRiskLevelColor('LOW')).toBe('#4ECDC4');
-    expect(result.current.getRiskLevelColor('HIGH')).toBe('#E74C3C');
-    expect(result.current.getRiskLevelColor('UNKNOWN')).toBe('#4ECDC4');
+    expect(result.current.getRiskLevelColor('LOW')).toBe(lightColors.success);
+    expect(result.current.getRiskLevelColor('HIGH')).toBe(lightColors.error);
+    expect(result.current.getRiskLevelColor('UNKNOWN')).toBe(lightColors.success);
   });
 
   it('getRiskLevelText devuelve texto para LOW y el level para desconocido', async () => {
@@ -258,7 +266,7 @@ describe('useCrisisDashboardScreen', () => {
     expect(result.current.getTrendLabel()).toMatch(/Tendencia:/);
     expect(result.current.getTrendLabel()).toMatch(/Mejorando/);
     expect(result.current.getTrendIcon()).toBe('trending-down');
-    expect(result.current.getTrendIconColor()).toBe('#4ECDC4');
+    expect(result.current.getTrendIconColor()).toBe(lightColors.success);
   });
 
   it('getTrendLabel/getTrendIcon/getTrendIconColor con trend declining', async () => {
@@ -279,7 +287,7 @@ describe('useCrisisDashboardScreen', () => {
     });
     expect(result.current.getTrendLabel()).toMatch(/Deteriorando/);
     expect(result.current.getTrendIcon()).toBe('trending-up');
-    expect(result.current.getTrendIconColor()).toBe('#FF6B6B');
+    expect(result.current.getTrendIconColor()).toBe(lightColors.error);
   });
 
   it('getTrendLabel/getTrendIcon con trend stable', async () => {

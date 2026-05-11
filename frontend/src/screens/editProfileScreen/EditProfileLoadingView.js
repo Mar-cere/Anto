@@ -3,13 +3,14 @@
  */
 import React from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
-import { styles } from './editProfileScreenStyles';
-import { COLORS, TEXTS } from './editProfileScreenConstants';
+import { useEditProfileScreenStyles } from './editProfileScreenStyles';
+import { TEXTS } from './editProfileScreenConstants';
 
 export function EditProfileLoadingView() {
+  const { styles, editProfileColors } = useEditProfileScreenStyles();
   return (
     <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+      <ActivityIndicator size="large" color={editProfileColors.PRIMARY} />
       <Text style={styles.loadingText}>{TEXTS.LOADING}</Text>
     </View>
   );

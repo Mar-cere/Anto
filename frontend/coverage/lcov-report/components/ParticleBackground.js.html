@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/13</span>
+                <span class='fraction'>0/11</span>
             </div>
         
             
@@ -39,14 +39,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/3</span>
+                <span class='fraction'>0/5</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/13</span>
+                <span class='fraction'>0/11</span>
             </div>
         
             
@@ -137,30 +137,17 @@
 <a name='L72'></a><a href='#L72'>72</a>
 <a name='L73'></a><a href='#L73'>73</a>
 <a name='L74'></a><a href='#L74'>74</a>
-<a name='L75'></a><a href='#L75'>75</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -172,7 +159,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -204,6 +192,24 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -211,71 +217,74 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React, { useRef, useEffect } from 'react';
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React, { useEffect, useRef } from 'react';
 import { Animated, Dimensions, View } from 'react-native';
 &nbsp;
+const PARTICLE_COUNT = <span class="cstat-no" title="statement not covered" >10;</span>
+&nbsp;
 const ParticleBackground = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
-  // Crea 10 partículas con posiciones y animaciones aleatorias
-  const particles = <span class="cstat-no" title="statement not covered" >Array(10).fill(0).map(<span class="fstat-no" title="function not covered" >(_</span>, i) =&gt; {</span>
-    // Posiciones iniciales
-    const initialPosX = <span class="cstat-no" title="statement not covered" >Math.random() * Dimensions.get('window').width;</span>
-    const initialPosY = <span class="cstat-no" title="statement not covered" >Math.random() * Dimensions.get('window').height;</span>
-    
-    // Valores para animación de transform
-    const translateX = <span class="cstat-no" title="statement not covered" >useRef(new Animated.Value(0)).current;</span>
-    const translateY = <span class="cstat-no" title="statement not covered" >useRef(new Animated.Value(0)).current;</span>
-    const opacity = <span class="cstat-no" title="statement not covered" >useRef(new Animated.Value(Math.random() * 0.5 + 0.1)).current;</span>
-    const size = <span class="cstat-no" title="statement not covered" >Math.random() * 4 + 2;</span>
-    
-<span class="cstat-no" title="statement not covered" >    useEffect(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
-      // Animación de opacidad
+  const particlesRef = <span class="cstat-no" title="statement not covered" >useRef(</span>
+    Array.from({ length: PARTICLE_COUNT }, <span class="fstat-no" title="function not covered" >(_</span>, i) =&gt; (<span class="cstat-no" title="statement not covered" >{</span>
+      key: i,
+      initialPosX: Math.random() * Dimensions.get('window').width,
+      initialPosY: Math.random() * Dimensions.get('window').height,
+      translateX: new Animated.Value(0),
+      translateY: new Animated.Value(0),
+      opacity: new Animated.Value(Math.random() * 0.5 + 0.1),
+      size: Math.random() * 4 + 2,
+    }))
+  );
+&nbsp;
+<span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    particlesRef.current.forEach(<span class="fstat-no" title="function not covered" >(p</span>article) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      Animated.loop(</span>
         Animated.sequence([
-          Animated.timing(opacity, {
+          Animated.timing(particle.opacity, {
             toValue: Math.random() * 0.5 + 0.1,
             duration: 2000 + Math.random() * 3000,
             useNativeDriver: true,
           }),
-          Animated.timing(opacity, {
+          Animated.timing(particle.opacity, {
             toValue: Math.random() * 0.3 + 0.05,
             duration: 2000 + Math.random() * 3000,
             useNativeDriver: true,
           }),
         ])
       ).start();
-      
-      // Animación de movimiento con transform
+&nbsp;
 <span class="cstat-no" title="statement not covered" >      Animated.loop(</span>
         Animated.sequence([
-          Animated.timing(translateX, {
-            toValue: Math.random() * 50 - 25, // Movimiento de -25 a +25
+          Animated.timing(particle.translateX, {
+            toValue: Math.random() * 50 - 25,
             duration: 8000 + Math.random() * 7000,
             useNativeDriver: true,
           }),
-          Animated.timing(translateY, {
-            toValue: Math.random() * 50 - 25, // Movimiento de -25 a +25
+          Animated.timing(particle.translateY, {
+            toValue: Math.random() * 50 - 25,
             duration: 8000 + Math.random() * 7000,
             useNativeDriver: true,
           }),
         ])
       ).start();
-    }, []);
-    
+    });
+  }, []);
+&nbsp;
+  const particles = <span class="cstat-no" title="statement not covered" >particlesRef.current.map(<span class="fstat-no" title="function not covered" >(p</span>article) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    return (</span>
       &lt;Animated.View
-        key={i}
+        key={particle.key}
         style={{
           position: 'absolute',
-          left: initialPosX,
-          top: initialPosY,
-          width: size,
-          height: size,
-          borderRadius: size / 2,
+          left: particle.initialPosX,
+          top: particle.initialPosY,
+          width: particle.size,
+          height: particle.size,
+          borderRadius: particle.size / 2,
           backgroundColor: '#1ADDDB',
-          opacity: opacity,
+          opacity: particle.opacity,
           transform: [
-            { translateX: translateX },
-            { translateY: translateY }
+            { translateX: particle.translateX },
+            { translateY: particle.translateY },
           ]
         }}
       /&gt;
@@ -292,7 +301,7 @@ export default ParticleBackground; </pre></td></tr></table></pre>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-08T14:11:47.197Z
+                at 2026-05-07T20:12:13.462Z
             </div>
         <script src="../prettify.js"></script>
         <script>

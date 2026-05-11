@@ -3,13 +3,7 @@
  * @author AntoApp Team
  */
 
-jest.mock('../../../styles/globalStyles', () => ({
-  colors: {
-    background: '#030A24',
-    primary: '#1ADDDB',
-    white: '#FFFFFF',
-  },
-}));
+jest.mock('../../../styles/globalStyles', () => jest.requireActual('../../../styles/globalStyles'));
 
 // Evitar require de imagen en tests
 jest.mock('../../../images/back.png', () => ({}), { virtual: true });
@@ -96,11 +90,11 @@ describe('editProfileScreenConstants', () => {
       expect(COLORS.BACKGROUND).toBeDefined();
       expect(COLORS.PRIMARY).toBeDefined();
       expect(COLORS.WHITE).toBeDefined();
-      expect(COLORS.ACCENT).toBe('#A3B8E8');
+      expect(COLORS.ACCENT).toBe('#44D7FB');
       expect(COLORS.ERROR).toBe('#FF6B6B');
       expect(COLORS.SUCCESS).toBe('#4CAF50');
       expect(COLORS.HEADER_BACKGROUND).toBeDefined();
-      expect(COLORS.INPUT_BACKGROUND).toBe('#1D2B5F');
+      expect(COLORS.INPUT_BACKGROUND).toBe('#F3F5FB');
     });
   });
 

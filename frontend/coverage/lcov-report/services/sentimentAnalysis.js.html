@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">15.71% </span>
+                <span class="strong">15.54% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>22/140</span>
+                <span class='fraction'>23/148</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">6.06% </span>
+                <span class="strong">5.47% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>4/66</span>
+                <span class='fraction'>4/73</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">9.09% </span>
+                <span class="strong">8.33% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>2/22</span>
+                <span class='fraction'>2/24</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">16.79% </span>
+                <span class="strong">16.78% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>22/131</span>
+                <span class='fraction'>23/137</span>
             </div>
         
             
@@ -465,12 +465,30 @@
 <a name='L400'></a><a href='#L400'>400</a>
 <a name='L401'></a><a href='#L401'>401</a>
 <a name='L402'></a><a href='#L402'>402</a>
-<a name='L403'></a><a href='#L403'>403</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L403'></a><a href='#L403'>403</a>
+<a name='L404'></a><a href='#L404'>404</a>
+<a name='L405'></a><a href='#L405'>405</a>
+<a name='L406'></a><a href='#L406'>406</a>
+<a name='L407'></a><a href='#L407'>407</a>
+<a name='L408'></a><a href='#L408'>408</a>
+<a name='L409'></a><a href='#L409'>409</a>
+<a name='L410'></a><a href='#L410'>410</a>
+<a name='L411'></a><a href='#L411'>411</a>
+<a name='L412'></a><a href='#L412'>412</a>
+<a name='L413'></a><a href='#L413'>413</a>
+<a name='L414'></a><a href='#L414'>414</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -486,6 +504,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -871,15 +893,22 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OPENAI_API_KEY, OPENAI_API_URL } from './openai';
 &nbsp;
-// Cliente de OpenAI para análisis de sentimientos
-const sentimentClient = axios.create({
-  baseURL: OPENAI_API_URL,
-  timeout: 15000, // 15 segundos de timeout
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${OPENAI_API_KEY}`
-  }
-});
+const hasFrontendOpenAIConfig = <span class="fstat-no" title="function not covered" >()</span> =&gt; {
+<span class="cstat-no" title="statement not covered" >  return Boolean(OPENAI_API_URL &amp;&amp; OPENAI_API_URL.startsWith('http') &amp;&amp; OPENAI_API_KEY);</span>
+};
+&nbsp;
+// Cliente de OpenAI para análisis de sentimientos (lazy: solo si hay config)
+const getSentimentClient = <span class="fstat-no" title="function not covered" >()</span> =&gt; {
+<span class="cstat-no" title="statement not covered" >  if (!hasFrontendOpenAIConfig()) <span class="cstat-no" title="statement not covered" >return null;</span></span>
+<span class="cstat-no" title="statement not covered" >  return axios.create({</span>
+    baseURL: OPENAI_API_URL,
+    timeout: 15000, // 15 segundos de timeout
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+  });
+};
 &nbsp;
 /**
  * Analiza el sentimiento de los mensajes del usuario
@@ -888,6 +917,10 @@ const sentimentClient = axios.create({
  */
 export const analyzeSentiment = <span class="fstat-no" title="function not covered" >as</span>ync (messages) =&gt; {
 <span class="cstat-no" title="statement not covered" >  try {</span>
+    // IA en frontend normalmente está deshabilitada; no romper UX si no hay config.
+    const sentimentClient = <span class="cstat-no" title="statement not covered" >getSentimentClient();</span>
+<span class="cstat-no" title="statement not covered" >    if (!sentimentClient) <span class="cstat-no" title="statement not covered" >return null;</span></span>
+&nbsp;
     // Obtener solo los últimos 3 mensajes del usuario para el análisis
     const recentUserMessages = <span class="cstat-no" title="statement not covered" >messages</span>
       .filter(<span class="fstat-no" title="function not covered" >ms</span>g =&gt; <span class="cstat-no" title="statement not covered" >msg.sender === 'user')</span>
@@ -1276,7 +1309,7 @@ export default {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-08T14:11:47.197Z
+                at 2026-05-07T20:12:13.462Z
             </div>
         <script src="../prettify.js"></script>
         <script>

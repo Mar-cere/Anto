@@ -34,16 +34,14 @@ describe('Message Model', () => {
       expect(error).toBeUndefined();
     });
 
-    it('debe requerir userId', () => {
+    it('debe rechazar mensaje sin userId ni guestSessionId', async () => {
       const message = new Message({
         conversationId: new mongoose.Types.ObjectId(),
         role: 'user',
         content: 'Test message'
       });
 
-      const error = message.validateSync();
-      expect(error).toBeDefined();
-      expect(error.errors.userId).toBeDefined();
+      await expect(message.validate()).rejects.toThrow(/userId|guestSessionId|Mensaje requiere/i);
     });
 
     it('debe requerir conversationId', () => {

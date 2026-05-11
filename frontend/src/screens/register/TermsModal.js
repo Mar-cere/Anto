@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Modal, ScrollView, Alert, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { REGISTER as TEXTS } from '../../constants/translations';
-import { colors } from '../../styles/globalStyles';
-import { styles } from './registerScreenStyles';
+import { useTheme } from '../../context/ThemeContext';
+import { useRegisterScreenStyles } from './registerScreenStyles';
 import { ACTIVE_OPACITY, BUTTON_ACTIVE_OPACITY } from './registerScreenConstants';
 import { URLS } from './registerScreenConstants';
 
@@ -18,6 +18,8 @@ const openUrl = async (url) => {
 };
 
 export function TermsModal({ visible, onClose, onAccept }) {
+  const { colors } = useTheme();
+  const styles = useRegisterScreenStyles();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
@@ -25,7 +27,7 @@ export function TermsModal({ visible, onClose, onAccept }) {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{TEXTS.TERMS_ALERT_TITLE}</Text>
             <TouchableOpacity onPress={onClose} style={styles.modalCloseButton} activeOpacity={ACTIVE_OPACITY} accessibilityLabel="Cerrar">
-              <Ionicons name="close" size={24} color={colors.white} />
+              <Ionicons name="close" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator>

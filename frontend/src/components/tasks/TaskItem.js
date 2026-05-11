@@ -1,11 +1,30 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { colors } from '../../styles/globalStyles';
-import { FOCUS_KICKER_COLOR, FOCUS_META } from '../../styles/focusCardTheme';
+import { useTheme } from '../../context/ThemeContext';
+import { SPACING } from '../../constants/ui';
 
 const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPressIn = 0, density = 'comfortable' }) => {
+  const { colors } = useTheme();
+  const getPriorityColor = useCallback((priority) => {
+    switch (priority) {
+      case 'high': return colors.error;
+      case 'medium': return colors.warning;
+      case 'low': return colors.success;
+      default: return colors.textMuted;
+    }
+  }, [colors]);
+
+  const getPriorityAccent = useCallback((priority) => {
+    switch (priority) {
+      case 'high': return { backgroundColor: colors.error };
+      case 'medium': return { backgroundColor: colors.warning };
+      case 'low': return { backgroundColor: colors.success };
+      default: return { backgroundColor: colors.textMuted };
+    }
+  }, [colors]);
+
   const isTask = item.itemType === 'task';
   const isGoal = item.itemType === 'goal';
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -39,13 +58,322 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
   }, [item.completed, isOverdue]);
 
   const itemState = getItemState();
-  const cardVisualTone = itemState === 'overdue'
-    ? styles.cardToneOverdue
-    : itemState === 'completed'
-      ? styles.cardToneCompleted
-      : isTask
-        ? styles.cardToneTask
-        : styles.cardToneReminder;
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          marginBottom: 8,
+        },
+        containerSwipe: {
+          marginBottom: 0,
+        },
+        itemCard: {
+          backgroundColor: colors.chromeCard,
+          borderRadius: 16,
+          paddingVertical: 12,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.chromeCardBorder,
+          shadowColor: colors.glassShadow,
+          shadowOpacity: 0.14,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 2,
+          overflow: 'hidden',
+        },
+        entryGlow: {
+          position: 'absolute',
+          top: -24,
+          left: -18,
+          right: -18,
+          height: 56,
+          borderRadius: 20,
+          backgroundColor: 'rgba(255,255,255,0.55)',
+          transform: [{ rotate: '-7deg' }],
+        },
+        cardToneTask: {
+          borderColor: colors.accentLine,
+        },
+        cardToneReminder: {
+          borderColor: colors.error,
+        },
+        cardToneCompleted: {
+          borderColor: colors.success,
+        },
+        cardToneOverdue: {
+          borderColor: colors.error,
+        },
+        itemCardCompact: {
+          paddingVertical: 10,
+          paddingHorizontal: 11,
+        },
+        completedItem: {
+          opacity: 0.72,
+          backgroundColor: colors.glassFill,
+          borderColor: colors.success,
+        },
+        itemHeader: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: 12,
+        },
+        priorityAccent: {
+          width: 3,
+          borderRadius: 2,
+          marginRight: 10,
+          alignSelf: 'stretch',
+          minHeight: 60,
+          marginTop: 1,
+        },
+        priorityAccentOverdue: {
+          backgroundColor: colors.error,
+        },
+        priorityAccentReminder: {
+          backgroundColor: colors.warning,
+        },
+        itemTitleContainer: {
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          gap: 12,
+          flex: 1,
+        },
+        iconContainer: {
+          width: 40,
+          height: 40,
+          borderRadius: 12,
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginTop: 2,
+        },
+        titleContainer: {
+          flex: 1,
+          gap: 4,
+        },
+        contextRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          marginBottom: 3,
+          flexWrap: 'wrap',
+        },
+        typePill: {
+          paddingHorizontal: 8,
+          paddingVertical: 3,
+          borderRadius: 999,
+          borderWidth: StyleSheet.hairlineWidth,
+        },
+        typePillTask: {
+          backgroundColor: colors.accentLineSoft,
+          borderColor: colors.accentLine,
+        },
+        typePillReminder: {
+          backgroundColor: 'rgba(255, 107, 107, 0.08)',
+          borderColor: 'rgba(255, 107, 107, 0.24)',
+        },
+        typePillText: {
+          fontSize: 10,
+          fontWeight: '700',
+          letterSpacing: 0.6,
+        },
+        typePillTextTask: {
+          color: colors.primary,
+        },
+        typePillTextReminder: {
+          color: colors.error,
+        },
+        timePill: {
+          paddingHorizontal: 9,
+          paddingVertical: 3,
+          borderRadius: 999,
+          backgroundColor: colors.glassFill,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.glassOutline,
+        },
+        timePillOverdue: {
+          backgroundColor: 'rgba(255,107,107,0.14)',
+          borderColor: 'rgba(255,107,107,0.32)',
+        },
+        timePillCompleted: {
+          backgroundColor: 'rgba(76,175,80,0.14)',
+          borderColor: 'rgba(76,175,80,0.32)',
+        },
+        timePillText: {
+          fontSize: 10,
+          fontWeight: '700',
+          color: colors.textSecondary,
+          letterSpacing: 0.5,
+          textTransform: 'uppercase',
+        },
+        timePillTextOverdue: {
+          color: colors.error,
+        },
+        timePillTextCompleted: {
+          color: colors.success,
+        },
+        itemTitle: {
+          fontSize: 15.5,
+          fontWeight: '600',
+          color: colors.text,
+          lineHeight: 21,
+          letterSpacing: -0.15,
+        },
+        itemTitleCompact: {
+          fontSize: 15,
+          lineHeight: 20,
+        },
+        completedTitle: {
+          color: colors.textSecondary,
+          textDecorationLine: 'line-through',
+        },
+        itemDescription: {
+          fontSize: 13,
+          color: colors.textSecondary,
+          lineHeight: 18,
+          fontWeight: '400',
+        },
+        subtasksPreviewRow: {
+          marginTop: 8,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+        },
+        subtasksPreviewText: {
+          flex: 1,
+          minWidth: 0,
+          fontSize: 12,
+          color: colors.textSecondary,
+          fontWeight: '400',
+        },
+        itemDescriptionCompact: {
+          fontSize: 12.5,
+          lineHeight: 17,
+        },
+        completedDescription: {
+          color: colors.textSecondary,
+          opacity: 0.55,
+        },
+        itemActions: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+        },
+        completeButton: {
+          padding: 6,
+          borderRadius: 12,
+          backgroundColor: colors.glassFill,
+        },
+        completedButton: {
+          backgroundColor: colors.accentLineSoft,
+        },
+        deleteButton: {
+          padding: 6,
+          borderRadius: 12,
+          backgroundColor: 'rgba(255, 107, 107, 0.1)',
+        },
+        itemFooter: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        },
+        itemMetadata: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+        },
+        dateContainer: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          backgroundColor: colors.glassFill,
+          paddingHorizontal: 10,
+          paddingVertical: 6,
+          borderRadius: 10,
+        },
+        timeContainer: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          backgroundColor: colors.glassFill,
+          paddingHorizontal: 10,
+          paddingVertical: 6,
+          borderRadius: 10,
+        },
+        itemDate: {
+          fontSize: 12,
+          color: colors.textSecondary,
+          fontWeight: '500',
+        },
+        itemDateCompact: {
+          fontSize: 11,
+        },
+        metaContainerCompact: {
+          paddingHorizontal: 8,
+          paddingVertical: 4,
+        },
+        priorityBadge: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 4,
+          paddingVertical: 6,
+          paddingHorizontal: 10,
+          borderRadius: 12,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+        },
+        priorityText: {
+          fontSize: 12,
+          color: colors.textOnPrimary,
+          fontWeight: '600',
+        },
+        overdueItem: {
+          borderColor: colors.error,
+          backgroundColor: 'rgba(255, 107, 107, 0.06)',
+        },
+        overdueTitle: {
+          color: colors.error,
+          textDecorationLine: 'line-through',
+        },
+        overdueDescription: {
+          color: colors.error,
+          opacity: 0.75,
+        },
+        overdueDateContainer: {
+          backgroundColor: 'rgba(255, 107, 107, 0.1)',
+        },
+        overdueDate: {
+          color: colors.error,
+        },
+        overdueBadge: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 4,
+          backgroundColor: 'rgba(255, 107, 107, 0.2)',
+          paddingVertical: 6,
+          paddingHorizontal: 10,
+          borderRadius: 12,
+        },
+        overdueText: {
+          color: colors.error,
+          fontSize: 12,
+          fontWeight: '600',
+        },
+        badgeContainer: {
+          flexDirection: 'row',
+          gap: 8,
+        },
+      }),
+    [colors],
+  );
+
+  const cardVisualTone =
+    itemState === 'overdue'
+      ? styles.cardToneOverdue
+      : itemState === 'completed'
+        ? styles.cardToneCompleted
+        : isTask
+          ? styles.cardToneTask
+          : styles.cardToneReminder;
 
   const getTemporalLabel = useCallback(() => {
     if (itemState === 'completed') return 'Completada';
@@ -237,7 +565,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
                 backgroundColor: itemState === 'overdue' 
                   ? 'rgba(255, 107, 107, 0.12)' 
                   : isTask 
-                    ? 'rgba(26, 221, 219, 0.1)' 
+                    ? 'rgba(30, 131, 211, 0.1)' 
                     : 'rgba(255, 107, 107, 0.12)'
               }
             ]}>
@@ -295,7 +623,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
                   <Text style={styles.subtasksPreviewText} numberOfLines={1}>
                     {`Subtareas · ${subtaskDoneCount.current}/${item.subtasks.length}`}
                   </Text>
-                  <Ionicons name="chevron-forward" size={16} color={FOCUS_META} />
+                  <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
                 </View>
               ) : null}
             </View>
@@ -313,7 +641,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
                 <Ionicons 
                   name={item.completed ? 'checkmark-circle' : 'ellipse-outline'} 
                   size={24} 
-                  color={item.completed ? '#4CAF50' : FOCUS_KICKER_COLOR} 
+                  color={item.completed ? colors.success : colors.primary} 
                 />
               </TouchableOpacity>
             )}
@@ -337,7 +665,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
               <Ionicons 
                 name="calendar-outline" 
                 size={14} 
-                color={itemState === 'overdue' ? colors.error : FOCUS_KICKER_COLOR} 
+                color={itemState === 'overdue' ? colors.error : colors.primary} 
               />
               <Text style={[
                 styles.itemDate,
@@ -358,7 +686,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
               <Ionicons 
                 name="time-outline" 
                 size={14} 
-                color={itemState === 'overdue' ? colors.error : FOCUS_KICKER_COLOR} 
+                color={itemState === 'overdue' ? colors.error : colors.primary} 
               />
               <Text style={[
                 styles.itemDate,
@@ -382,7 +710,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
                 <Ionicons 
                   name={getPriorityIcon(item.priority)} 
                   size={12} 
-                  color="#FFFFFF" 
+                  color={colors.textOnPrimary} 
                 />
                 <Text style={styles.priorityText}>
                   {getPriorityText(item.priority)}
@@ -391,7 +719,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
             )}
             {itemState === 'overdue' && (
               <View style={styles.overdueBadge}>
-                <Ionicons name="alert-circle" size={12} color="#FF6B6B" />
+                <Ionicons name="alert-circle" size={12} color={colors.error} />
                 <Text style={styles.overdueText}>
                   {isTask ? 'Caducada' : 'Pasado'}
                 </Text>
@@ -402,329 +730,6 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
       </TouchableOpacity>
     </Animated.View>
   );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 8,
-  },
-  containerSwipe: {
-    marginBottom: 0,
-  },
-  itemCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.045)',
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
-    shadowColor: '#000',
-    shadowOpacity: 0.14,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
-    overflow: 'hidden',
-  },
-  entryGlow: {
-    position: 'absolute',
-    top: -24,
-    left: -18,
-    right: -18,
-    height: 56,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.55)',
-    transform: [{ rotate: '-7deg' }],
-  },
-  cardToneTask: {
-    borderColor: 'rgba(26, 221, 219, 0.18)',
-  },
-  cardToneReminder: {
-    borderColor: 'rgba(255, 107, 107, 0.17)',
-  },
-  cardToneCompleted: {
-    borderColor: 'rgba(76, 175, 80, 0.2)',
-  },
-  cardToneOverdue: {
-    borderColor: 'rgba(255, 107, 107, 0.28)',
-  },
-  itemCardCompact: {
-    paddingVertical: 10,
-    paddingHorizontal: 11,
-  },
-  completedItem: {
-    opacity: 0.72,
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderColor: 'rgba(76, 175, 80, 0.25)',
-  },
-  itemHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  priorityAccent: {
-    width: 3,
-    borderRadius: 2,
-    marginRight: 10,
-    alignSelf: 'stretch',
-    minHeight: 60,
-    marginTop: 1,
-  },
-  priorityAccentOverdue: {
-    backgroundColor: 'rgba(255, 107, 107, 0.95)',
-  },
-  priorityAccentReminder: {
-    backgroundColor: 'rgba(255, 159, 67, 0.95)',
-  },
-  itemTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    flex: 1,
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  titleContainer: {
-    flex: 1,
-    gap: 4,
-  },
-  contextRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 3,
-    flexWrap: 'wrap',
-  },
-  typePill: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  typePillTask: {
-    backgroundColor: 'rgba(26, 221, 219, 0.09)',
-    borderColor: 'rgba(26, 221, 219, 0.28)',
-  },
-  typePillReminder: {
-    backgroundColor: 'rgba(255, 107, 107, 0.08)',
-    borderColor: 'rgba(255, 107, 107, 0.24)',
-  },
-  typePillText: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-  },
-  typePillTextTask: {
-    color: colors.primary,
-  },
-  typePillTextReminder: {
-    color: colors.error,
-  },
-  timePill: {
-    paddingHorizontal: 9,
-    paddingVertical: 3,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.16)',
-  },
-  timePillOverdue: {
-    backgroundColor: 'rgba(255,107,107,0.14)',
-    borderColor: 'rgba(255,107,107,0.32)',
-  },
-  timePillCompleted: {
-    backgroundColor: 'rgba(76,175,80,0.14)',
-    borderColor: 'rgba(76,175,80,0.32)',
-  },
-  timePillText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.75)',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  timePillTextOverdue: {
-    color: colors.error,
-  },
-  timePillTextCompleted: {
-    color: '#8AE29D',
-  },
-  itemTitle: {
-    fontSize: 15.5,
-    fontWeight: '600',
-    color: colors.white,
-    lineHeight: 21,
-    letterSpacing: -0.15,
-  },
-  itemTitleCompact: {
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  completedTitle: {
-    color: FOCUS_META,
-    textDecorationLine: 'line-through',
-  },
-  itemDescription: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.6)',
-    lineHeight: 18,
-    fontWeight: '400',
-  },
-  subtasksPreviewRow: {
-    marginTop: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  subtasksPreviewText: {
-    flex: 1,
-    minWidth: 0,
-    fontSize: 12,
-    color: FOCUS_META,
-    fontWeight: '400',
-  },
-  itemDescriptionCompact: {
-    fontSize: 12.5,
-    lineHeight: 17,
-  },
-  completedDescription: {
-    color: FOCUS_META,
-    opacity: 0.55,
-  },
-  itemActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  completeButton: {
-    padding: 6,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-  },
-  completedButton: {
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
-  },
-  deleteButton: {
-    padding: 6,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 107, 107, 0.1)',
-  },
-  itemFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  itemMetadata: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  dateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.045)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  timeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.045)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  itemDate: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.55)',
-    fontWeight: '500',
-  },
-  itemDateCompact: {
-    fontSize: 11,
-  },
-  metaContainerCompact: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  priorityBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.28)',
-  },
-  priorityText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  overdueItem: {
-    borderColor: 'rgba(255, 107, 107, 0.28)',
-    backgroundColor: 'rgba(255, 107, 107, 0.06)',
-  },
-  overdueTitle: {
-    color: colors.error,
-    textDecorationLine: 'line-through',
-  },
-  overdueDescription: {
-    color: colors.error,
-    opacity: 0.75,
-  },
-  overdueDateContainer: {
-    backgroundColor: 'rgba(255, 107, 107, 0.1)',
-  },
-  overdueDate: {
-    color: colors.error,
-  },
-  overdueBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255, 107, 107, 0.2)',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-  },
-  overdueText: {
-    color: '#FF6B6B',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  badgeContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  }
-});
-
-// Funciones auxiliares para el manejo de prioridades
-const getPriorityColor = (priority) => {
-  switch (priority) {
-    case 'high': return '#FF6B6B';
-    case 'medium': return '#FFD93D';
-    case 'low': return '#6BCB77';
-    default: return '#95A5A6';
-  }
-};
-
-const getPriorityAccent = (priority) => {
-  switch (priority) {
-    case 'high': return { backgroundColor: 'rgba(255, 107, 107, 0.95)' };
-    case 'medium': return { backgroundColor: 'rgba(255, 217, 61, 0.95)' };
-    case 'low': return { backgroundColor: 'rgba(107, 203, 119, 0.95)' };
-    default: return { backgroundColor: 'rgba(149, 165, 166, 0.95)' };
-  }
 };
 
 const getPriorityIcon = (priority) => {

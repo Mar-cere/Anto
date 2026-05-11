@@ -127,21 +127,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -149,16 +141,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -167,9 +150,26 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -181,7 +181,7 @@
  * Constantes y rate limiters para rutas de chat.
  * Extraído de chatRoutes para mantener el archivo principal manejable.
  */
-import rateLimit from 'express-rate-limit';
+import { createRateLimiter } from '../../utils/createRateLimiter.js';
 &nbsp;
 // Límites de mensajes y contexto
 export const LIMITE_MENSAJES = 100;
@@ -190,7 +190,7 @@ export const VENTANA_CONTEXTO = 20 * 60 * 1000;
 /** Últimos N mensajes de la misma conversación (sin ventana temporal) para contexto acotado. */
 export const HISTORIAL_LIMITE = 24;
 &nbsp;
-export const deleteConversationLimiter = rateLimit({
+export const deleteConversationLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 10,
   message: 'Demasiadas eliminaciones de conversaciones. Por favor, intente más tarde.',
@@ -198,7 +198,7 @@ export const deleteConversationLimiter = rateLimit({
   legacyHeaders: false
 });
 &nbsp;
-export const patchMessageLimiter = rateLimit({
+export const patchMessageLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 30,
   message: 'Demasiadas actualizaciones de mensajes. Por favor, intente más tarde.',
@@ -207,7 +207,7 @@ export const patchMessageLimiter = rateLimit({
 });
 &nbsp;
 /** Valoraciones pulgar arriba/abajo (independiente del PATCH de estado de entrega). */
-export const messageFeedbackLimiter = rateLimit({
+export const messageFeedbackLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 120,
   message: 'Demasiadas valoraciones seguidas. Espera un momento e inténtalo de nuevo.',
@@ -215,7 +215,7 @@ export const messageFeedbackLimiter = rateLimit({
   legacyHeaders: false
 });
 &nbsp;
-export const sendMessageLimiter = rateLimit({
+export const sendMessageLimiter = createRateLimiter({
   windowMs: 1 * 60 * 1000,
   max: 20,
   message: 'Demasiados mensajes enviados. Por favor, espera un momento antes de intentar de nuevo.',
@@ -226,7 +226,7 @@ export const sendMessageLimiter = rateLimit({
 });
 &nbsp;
 /** Programación best-effort de continuidad del chat (#4 + #47); límite por usuario autenticado. */
-export const scheduleSessionSummaryLimiter = rateLimit({
+export const scheduleSessionSummaryLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 60,
   message: 'Demasiadas peticiones de programación. Intenta más tarde.',
@@ -241,7 +241,7 @@ export const scheduleSessionSummaryLimiter = rateLimit({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-07T14:12:40.506Z
+                at 2026-05-09T01:58:42.925Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

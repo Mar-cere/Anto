@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">3.33% </span>
+                <span class="strong">23.33% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>1/30</span>
+                <span class='fraction'>7/30</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">8.33% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/36</span>
+                <span class='fraction'>3/36</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">20% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/5</span>
+                <span class='fraction'>1/5</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">4.16% </span>
+                <span class="strong">29.16% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>1/24</span>
+                <span class='fraction'>7/24</span>
             </div>
         
             
@@ -140,7 +140,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">31x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -150,17 +150,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -219,18 +219,18 @@ const CACHE_MAX_AGE_MS = 30 * 60 * 1000; // 30 minutos
  * @param {Object} contextualAnalysis - Análisis contextual
  * @returns {string} Clave de caché
  */
-export function <span class="fstat-no" title="function not covered" >generateResponseCacheKey(</span>messageContent, emotionalAnalysis, contextualAnalysis) {
-  const normalizedMessage = <span class="cstat-no" title="statement not covered" >messageContent.toLowerCase().trim().replace(/\s+/g, ' ');</span>
-  const emotion = <span class="cstat-no" title="statement not covered" >emotionalAnalysis?.mainEmotion || 'neutral';</span>
-  const intent = <span class="cstat-no" title="statement not covered" >contextualAnalysis?.intencion?.tipo || 'EMOTIONAL_SUPPORT';</span>
-  const topic = <span class="cstat-no" title="statement not covered" >emotionalAnalysis?.topic || contextualAnalysis?.tema || 'general';</span>
-  const cacheData = <span class="cstat-no" title="statement not covered" >{</span>
+export function generateResponseCacheKey(messageContent, emotionalAnalysis, contextualAnalysis) {
+  const normalizedMessage = messageContent.toLowerCase().trim().replace(/\s+/g, ' ');
+  const emotion = emotionalAnalysis?.mainEmotion || <span class="branch-1 cbranch-no" title="branch not covered" >'neutral';</span>
+  const intent = contextualAnalysis?.intencion?.tipo || <span class="branch-1 cbranch-no" title="branch not covered" >'EMOTIONAL_SUPPORT';</span>
+  const topic = emotionalAnalysis?.topic || <span class="branch-1 cbranch-no" title="branch not covered" >contextualAnalysis?.tema </span>|| <span class="branch-2 cbranch-no" title="branch not covered" >'general';</span>
+  const cacheData = {
     message: normalizedMessage.substring(0, 100),
     emotion,
     intent,
     topic
   };
-<span class="cstat-no" title="statement not covered" >  return cacheService.generateKey('response', cacheData);</span>
+  return cacheService.generateKey('response', cacheData);
 }
 &nbsp;
 /**
@@ -280,7 +280,7 @@ export function <span class="fstat-no" title="function not covered" >adaptCached
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-07T14:12:40.506Z
+                at 2026-05-09T01:58:42.925Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

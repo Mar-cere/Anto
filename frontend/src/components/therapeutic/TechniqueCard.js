@@ -4,15 +4,15 @@
  */
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   StyleSheet,
   Text,
   TouchableOpacity,
   View
 } from 'react-native';
-import { colors } from '../../styles/globalStyles';
-import { FOCUS_BORDER_SUBTLE, FOCUS_CHEVRON_MUTED } from '../../styles/focusCardTheme';
+import { useTheme } from '../../context/ThemeContext';
+import { getFocusTheme } from '../../styles/focusCardTheme';
 
 // Constantes de estilos
 const CARD_PADDING = 16;
@@ -28,14 +28,6 @@ const TYPE_ICONS = {
   DBT: 'heart-pulse',
   ACT: 'compass',
   immediate: 'lightning-bolt',
-};
-
-// Mapeo de tipos a colores
-const TYPE_COLORS = {
-  CBT: '#4A90E2',
-  DBT: '#E94B3C',
-  ACT: '#50C878',
-  immediate: '#FFB800',
 };
 
 function resolveTechniqueType(technique) {
@@ -55,10 +47,122 @@ const TechniqueCard = ({ technique, onPress, variant = 'default' }) => {
     return null;
   }
 
+  const { colors, resolvedScheme } = useTheme();
+  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+  const typeAccent = useMemo(
+    () => ({
+      CBT: colors.primary,
+      DBT: colors.error,
+      ACT: colors.success,
+      immediate: colors.warning,
+    }),
+    [colors],
+  );
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        card: {
+          backgroundColor: colors.cardBackground,
+          borderRadius: CARD_BORDER_RADIUS,
+          padding: CARD_PADDING,
+          marginBottom: CARD_MARGIN_BOTTOM,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+          borderLeftWidth: 3,
+          shadowColor: colors.glassShadow ?? colors.shadowAmbient,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
+          elevation: 2,
+        },
+        cardCompact: {
+          borderLeftWidth: 3,
+          paddingVertical: 12,
+          paddingHorizontal: 14,
+          marginBottom: 10,
+          shadowOpacity: 0.06,
+          shadowRadius: 6,
+          elevation: 2,
+        },
+        header: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginBottom: 12,
+        },
+        headerCompact: {
+          marginBottom: 8,
+        },
+        iconContainer: {
+          width: 48,
+          height: 48,
+          borderRadius: 14,
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginRight: 12,
+        },
+        headerText: {
+          flex: 1,
+        },
+        title: {
+          fontSize: TITLE_FONT_SIZE,
+          fontWeight: '600',
+          color: colors.text,
+          marginBottom: 4,
+        },
+        typeContainer: {
+          flexDirection: 'row',
+        },
+        typeBadge: {
+          paddingHorizontal: 8,
+          paddingVertical: 4,
+          borderRadius: 12,
+        },
+        typeText: {
+          fontSize: 11,
+          fontWeight: '600',
+          textTransform: 'uppercase',
+        },
+        description: {
+          fontSize: DESCRIPTION_FONT_SIZE,
+          color: colors.textSecondary,
+          lineHeight: 20,
+          marginBottom: 12,
+        },
+        descriptionCompact: {
+          marginBottom: 8,
+          fontSize: 13,
+          lineHeight: 18,
+        },
+        whenToUseContainer: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginBottom: 8,
+          gap: 6,
+        },
+        whenToUseText: {
+          fontSize: 12,
+          color: colors.textSecondary,
+          flex: 1,
+        },
+        stepsIndicator: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+        },
+        stepsText: {
+          fontSize: 12,
+          color: colors.textSecondary,
+          fontWeight: '600',
+        },
+      }),
+    [colors, t],
+  );
+
   const compact = variant === 'compact';
   const type = resolveTechniqueType(technique);
   const icon = TYPE_ICONS[type] || 'book-open-variant';
-  const color = TYPE_COLORS[type] || colors.primary;
+  const color = typeAccent[type] || colors.primary;
 
   return (
     <TouchableOpacity
@@ -92,7 +196,7 @@ const TechniqueCard = ({ technique, onPress, variant = 'default' }) => {
             </View>
           ) : null}
         </View>
-        <MaterialCommunityIcons name="chevron-right" size={22} color={FOCUS_CHEVRON_MUTED} />
+        <MaterialCommunityIcons name="chevron-right" size={22} color={t.FOCUS_CHEVRON_MUTED} />
       </View>
 
       {technique.description ? (
@@ -133,100 +237,7 @@ const TechniqueCard = ({ technique, onPress, variant = 'default' }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: CARD_BORDER_RADIUS,
-    padding: CARD_PADDING,
-    marginBottom: CARD_MARGIN_BOTTOM,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-    borderLeftWidth: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  cardCompact: {
-    borderLeftWidth: 3,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    marginBottom: 10,
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  headerCompact: {
-    marginBottom: 8,
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  headerText: {
-    flex: 1,
-  },
-  title: {
-    fontSize: TITLE_FONT_SIZE,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  typeContainer: {
-    flexDirection: 'row',
-  },
-  typeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  typeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  description: {
-    fontSize: DESCRIPTION_FONT_SIZE,
-    color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  descriptionCompact: {
-    marginBottom: 8,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  whenToUseContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 6,
-  },
-  whenToUseText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    flex: 1,
-  },
-  stepsIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  stepsText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-});
+// `styles` se deriva del tema dentro del componente.
 
 export default TechniqueCard;
 

@@ -3,12 +3,13 @@
  */
 
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import ActionSuggestionCard from '../ActionSuggestionCard';
 import MarkdownText from '../MarkdownText';
+import { SPACING } from '../../constants/ui';
+import { useTheme } from '../../context/ThemeContext';
 import {
-  CHAT_COLORS,
   LAYOUT,
   MESSAGE_ROLES,
   MESSAGE_TYPES,
@@ -17,9 +18,10 @@ import {
   TYPING_ANIMATION_DURATION,
   TYPING_ANIMATION_TO_VALUE,
   TYPING_TRANSLATE_Y,
+  useChatColors,
 } from '../../screens/chat/chatScreenConstants';
 
-function AnimatedDot({ delay, dotStyle }) {
+function AnimatedDot({ delay, dotStyle, styles }) {
   const anim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     const loop = Animated.loop(
@@ -49,7 +51,7 @@ function AnimatedDot({ delay, dotStyle }) {
   );
 }
 
-function StreamingDots({ isBot }) {
+function StreamingDots({ isBot, styles }) {
   return (
     <View style={styles.streamingDotsContainer}>
       {TYPING_ANIMATION_DELAYS.map((delay, i) => (
@@ -57,13 +59,15 @@ function StreamingDots({ isBot }) {
           key={i}
           delay={delay}
           dotStyle={isBot ? styles.streamingDotBot : styles.streamingDotUser}
+          styles={styles}
         />
       ))}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (themeColors, c) =>
+  StyleSheet.create({
   messageContainer: {
     flexDirection: 'row',
     marginBottom: LAYOUT.MESSAGE_CONTAINER_MARGIN_BOTTOM,
@@ -83,20 +87,20 @@ const styles = StyleSheet.create({
   },
   userBubble: {
     maxWidth: '92%',
-    backgroundColor: CHAT_COLORS.USER_BUBBLE,
+    backgroundColor: c.USER_BUBBLE,
     borderBottomRightRadius: LAYOUT.MESSAGE_BUBBLE_CORNER_RADIUS,
     marginLeft: 'auto',
   },
   botBubble: {
-    backgroundColor: CHAT_COLORS.BOT_BUBBLE,
+    backgroundColor: c.BOT_BUBBLE,
     borderBottomLeftRadius: LAYOUT.MESSAGE_BUBBLE_CORNER_RADIUS,
     marginRight: 'auto',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CHAT_COLORS.BOT_BUBBLE_BORDER,
+    borderColor: c.BOT_BUBBLE_BORDER,
   },
   errorBubble: {
-    backgroundColor: CHAT_COLORS.ERROR_BUBBLE_BACKGROUND,
-    borderColor: CHAT_COLORS.ERROR_BUBBLE_BORDER,
+    backgroundColor: c.ERROR_BUBBLE_BACKGROUND,
+    borderColor: c.ERROR_BUBBLE_BORDER,
     borderWidth: 1,
   },
   messageText: {
@@ -104,24 +108,24 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   userMessageText: {
-    color: CHAT_COLORS.USER_TEXT,
+    color: c.USER_TEXT,
   },
   botMessageText: {
-    color: CHAT_COLORS.BOT_TEXT,
+    color: c.BOT_TEXT,
   },
   messageTextBold: {
     fontWeight: 'bold',
   },
   userMessageTextBold: {
     fontWeight: 'bold',
-    color: CHAT_COLORS.USER_TEXT,
+    color: c.USER_TEXT,
   },
   botMessageTextBold: {
     fontWeight: 'bold',
-    color: CHAT_COLORS.BOT_TEXT,
+    color: c.BOT_TEXT,
   },
   errorText: {
-    color: CHAT_COLORS.ERROR,
+    color: c.ERROR,
   },
   suggestionsContainer: {
     marginBottom: 16,
@@ -132,7 +136,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 2,
     textTransform: 'uppercase',
-    color: CHAT_COLORS.ACCENT,
+    color: c.ACCENT,
     marginBottom: 12,
   },
   productProposalCard: {
@@ -141,12 +145,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(26, 221, 219, 0.3)',
-    backgroundColor: 'rgba(18, 31, 72, 0.88)',
-    shadowColor: '#000',
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
+    borderColor: 'rgba(30, 131, 211, 0.28)',
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    shadowColor: themeColors.glassShadow,
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
     elevation: 3,
   },
   productProposalTopRow: {
@@ -158,68 +162,68 @@ const styles = StyleSheet.create({
   productProposalChip: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(26, 221, 219, 0.45)',
-    backgroundColor: 'rgba(26, 221, 219, 0.14)',
+    borderColor: 'rgba(30, 131, 211, 0.45)',
+    backgroundColor: 'rgba(30, 131, 211, 0.12)',
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   productProposalChipText: {
-    color: CHAT_COLORS.PRIMARY,
+    color: c.PRIMARY,
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
   productProposalHint: {
-    color: CHAT_COLORS.ACCENT,
+    color: c.ACCENT,
     fontSize: 11,
     opacity: 0.88,
   },
   productProposalLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: CHAT_COLORS.WHITE,
+    color: c.BOT_TEXT,
     marginBottom: 6,
   },
   productProposalSub: {
     fontSize: 12.5,
-    color: CHAT_COLORS.ACCENT,
+    color: c.ACCENT,
     opacity: 0.92,
     marginBottom: 7,
   },
   productProposalTitle: {
     fontSize: 14,
     lineHeight: 19,
-    color: CHAT_COLORS.BOT_TEXT,
+    color: c.BOT_TEXT,
     fontStyle: 'italic',
     marginBottom: 2,
   },
   productProposalWhy: {
     fontSize: 11.5,
-    color: CHAT_COLORS.ACCENT,
+    color: c.ACCENT,
     opacity: 0.9,
     marginTop: 6,
     marginBottom: 8,
     borderLeftWidth: 2,
-    borderLeftColor: 'rgba(163, 184, 232, 0.45)',
+    borderLeftColor: 'rgba(30, 131, 211, 0.35)',
     paddingLeft: 8,
     lineHeight: 16,
   },
   proposalDivider: {
     height: 1,
-    backgroundColor: 'rgba(163, 184, 232, 0.2)',
+    backgroundColor: 'rgba(36, 35, 79, 0.08)',
     marginBottom: 8,
   },
   proposalEditInput: {
     borderWidth: 1,
-    borderColor: 'rgba(163, 184, 232, 0.42)',
+    borderColor: themeColors.border,
     borderRadius: 10,
     paddingHorizontal: 11,
     paddingVertical: 8,
-    color: CHAT_COLORS.BOT_TEXT,
+    color: c.BOT_TEXT,
     fontSize: 13,
     marginTop: 7,
-    backgroundColor: 'rgba(3, 10, 36, 0.34)',
+    backgroundColor: themeColors.chromeInput,
   },
   proposalActionsRow: {
     flexDirection: 'row',
@@ -231,41 +235,41 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(26, 221, 219, 0.62)',
-    backgroundColor: 'rgba(26, 221, 219, 0.26)',
+    borderColor: 'rgba(30, 131, 211, 0.45)',
+    backgroundColor: 'rgba(30, 131, 211, 0.14)',
     paddingVertical: 9,
     alignItems: 'center',
   },
   proposalPrimaryBtnText: {
-    color: CHAT_COLORS.WHITE,
+    color: c.PRIMARY,
     fontSize: 12.5,
     fontWeight: '700',
   },
   proposalGhostBtn: {
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(163, 184, 232, 0.58)',
-    backgroundColor: 'rgba(163, 184, 232, 0.08)',
+    borderColor: 'rgba(36, 35, 79, 0.14)',
+    backgroundColor: 'rgba(36, 35, 79, 0.04)',
     paddingVertical: 9,
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     alignItems: 'center',
   },
   proposalGhostBtnText: {
-    color: CHAT_COLORS.ACCENT,
+    color: c.ACCENT,
     fontSize: 12.5,
     fontWeight: '600',
   },
   statusCard: {
     marginBottom: 10,
     paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(163, 184, 232, 0.32)',
-    backgroundColor: 'rgba(163, 184, 232, 0.08)',
+    borderColor: 'rgba(36, 35, 79, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
   },
   statusCardText: {
-    color: CHAT_COLORS.ACCENT,
+    color: c.ACCENT,
     fontSize: 12,
     lineHeight: 17,
   },
@@ -280,10 +284,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 2,
   },
   streamingDotBot: {
-    backgroundColor: CHAT_COLORS.BOT_TEXT,
+    backgroundColor: c.BOT_TEXT,
   },
   streamingDotUser: {
-    backgroundColor: CHAT_COLORS.USER_TEXT,
+    backgroundColor: c.USER_TEXT,
   },
   botColumn: {
     maxWidth: '94%',
@@ -296,7 +300,7 @@ const styles = StyleSheet.create({
   },
   feedbackHint: {
     fontSize: 11,
-    color: CHAT_COLORS.ACCENT,
+    color: c.ACCENT,
     opacity: 0.75,
     marginBottom: 6,
   },
@@ -308,7 +312,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 6,
   },
-});
+  });
 
 function isValidMongoMessageId(id) {
   const s = id != null ? String(id) : '';
@@ -326,6 +330,10 @@ function ChatMessageItem({
   onMessageFeedback,
   feedbackSubmittingId,
 }) {
+  const { colors } = useTheme();
+  const chatColors = useChatColors();
+  const styles = useMemo(() => createStyles(colors, chatColors), [colors, chatColors]);
+
   const [proposalDraftEdits, setProposalDraftEdits] = useState({});
   const message = item.userMessage || item.assistantMessage || item;
   const isUser = message.role === MESSAGE_ROLES.USER;
@@ -418,7 +426,7 @@ function ChatMessageItem({
             <TextInput
               style={styles.proposalEditInput}
               placeholder="Título (verbo + objeto + contexto)"
-              placeholderTextColor="rgba(163,184,232,0.7)"
+              placeholderTextColor="rgba(92, 90, 120, 0.62)"
               value={proposalDraftEdits[action.id]?.title ?? action.draft?.title ?? ''}
               onChangeText={(value) =>
                 setProposalDraftEdits((prev) => ({
@@ -433,7 +441,7 @@ function ChatMessageItem({
             <TextInput
               style={styles.proposalEditInput}
               placeholder="Fecha/hora opcional (YYYY-MM-DD HH:mm)"
-              placeholderTextColor="rgba(163,184,232,0.7)"
+              placeholderTextColor="rgba(92, 90, 120, 0.62)"
               value={proposalDraftEdits[action.id]?.when ?? ''}
               onChangeText={(value) =>
                 setProposalDraftEdits((prev) => ({
@@ -514,7 +522,7 @@ function ChatMessageItem({
       ]}
     >
       {message.metadata?.streaming && !message.content ? (
-        <StreamingDots isBot={!isUser} />
+        <StreamingDots isBot={!isUser} styles={styles} />
       ) : (
         <MarkdownText
           style={[
@@ -560,7 +568,7 @@ function ChatMessageItem({
                   <Ionicons
                     name={currentVote === 'up' ? 'thumbs-up' : 'thumbs-up-outline'}
                     size={20}
-                    color={currentVote === 'up' ? CHAT_COLORS.PRIMARY : CHAT_COLORS.ACCENT}
+                    color={currentVote === 'up' ? chatColors.PRIMARY : chatColors.ACCENT}
                   />
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -574,7 +582,7 @@ function ChatMessageItem({
                   <Ionicons
                     name={currentVote === 'down' ? 'thumbs-down' : 'thumbs-down-outline'}
                     size={20}
-                    color={currentVote === 'down' ? CHAT_COLORS.PRIMARY : CHAT_COLORS.ACCENT}
+                    color={currentVote === 'down' ? chatColors.PRIMARY : chatColors.ACCENT}
                   />
                 </TouchableOpacity>
               </View>

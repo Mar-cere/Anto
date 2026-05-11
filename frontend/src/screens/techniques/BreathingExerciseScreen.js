@@ -5,7 +5,7 @@
 
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   SafeAreaView,
   StatusBar,
@@ -16,11 +16,26 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BreathingExercise from '../../components/therapeutic/BreathingExercise';
 import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
-import { colors } from '../../styles/globalStyles';
+import { useTheme } from '../../context/ThemeContext';
 
 const BreathingExerciseScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { colors, statusBarStyle } = useTheme();
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        content: {
+          flex: 1,
+        },
+      }),
+    [colors],
+  );
 
   const handleComplete = (data) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -32,7 +47,7 @@ const BreathingExerciseScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header
         title="Ejercicio de Respiración"
@@ -48,16 +63,7 @@ const BreathingExerciseScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    flex: 1,
-  },
-});
+// `styles` se deriva del tema dentro del componente.
 
 export default BreathingExerciseScreen;
 

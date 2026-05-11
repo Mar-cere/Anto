@@ -10,13 +10,61 @@ import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 
 /**
+ * Aísla la BD por worker de Jest para que clearDatabase en un proceso no borre
+ * datos de otro (suites en paralelo compartían anto-test).
+ */
+function resolveTestMongoUri() {
+  let uri = process.env.MONGO_URI || 'mongodb://localhost:27017/anto-test';
+  const wid = process.env.JEST_WORKER_ID;
+  if (wid === undefined || wid === '') {
+    return uri;
+  }
+
+  const qIndex = uri.indexOf('?');
+  const pathAndHost = qIndex === -1 ? uri : uri.slice(0, qIndex);
+  const query = qIndex === -1 ? '' : uri.slice(qIndex);
+  const lastSlash = pathAndHost.lastIndexOf('/');
+  if (lastSlash < 0 || lastSlash >= pathAndHost.length - 1) {
+    return uri;
+  }
+
+  let dbName = pathAndHost.slice(lastSlash + 1);
+  if (!dbName) {
+    return uri;
+  }
+  const suffix = `-w${wid}`;
+  if (dbName.endsWith(suffix)) {
+    return uri;
+  }
+  if (/-w\d+$/.test(dbName)) {
+    dbName = dbName.replace(/-w\d+$/, suffix);
+  } else {
+    dbName = `${dbName}${suffix}`;
+  }
+  return `${pathAndHost.slice(0, lastSlash + 1)}${dbName}${query}`;
+}
+
+/**
  * Limpiar base de datos de test
  */
 export const clearDatabase = async () => {
   if (mongoose.connection.readyState === 1) {
+    // Si la conexión está "abierta" pero no es utilizable, no bloquear los tests.
+    try {
+      await mongoose.connection.db.admin().ping();
+    } catch (error) {
+      return;
+    }
     const collections = mongoose.connection.collections;
     for (const key in collections) {
-      await collections[key].deleteMany({});
+      try {
+        // Evita trabajo innecesario: si está vacía, saltar.
+        const count = await collections[key].estimatedDocumentCount({ maxTimeMS: 2000 });
+        if (!count) continue;
+        await collections[key].deleteMany({}, { maxTimeMS: 5000 });
+      } catch (error) {
+        // Ignorar: algunos suites corren sin Mongo o hay locks temporales.
+      }
     }
   }
 };
@@ -47,7 +95,7 @@ export const closeDatabase = async () => {
  */
 export const connectDatabase = async () => {
   if (mongoose.connection.readyState === 0) {
-    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/anto-test';
+    const mongoUri = resolveTestMongoUri();
     try {
       await mongoose.connect(mongoUri, {
         serverSelectionTimeoutMS: 5000,
@@ -57,6 +105,12 @@ export const connectDatabase = async () => {
     } catch (error) {
       console.warn('⚠️ No se pudo conectar a MongoDB para tests:', error.message);
       console.warn('⚠️ Los tests continuarán pero algunos pueden fallar');
+      // Importante: si el driver alcanzó a crear monitores/sockets, desconectar para no dejar handles abiertos.
+      try {
+        await mongoose.disconnect();
+      } catch (disconnectError) {
+        // Ignorar errores al desconectar tras fallo de conexión
+      }
     }
   }
 };

@@ -1,7 +1,7 @@
 /**
  * Constantes para EditProfileScreen y subcomponentes
  */
-import { colors } from '../../styles/globalStyles';
+import { lightColors } from '../../styles/themePalettes';
 
 export const TEXTS = {
   LOADING: 'Cargando perfil...',
@@ -87,23 +87,28 @@ export const ICON_SIZE = 24;
 export const EMAIL_ICON_SIZE = 20;
 export const EMAIL_ICON_MARGIN_RIGHT = 8;
 
-export const COLORS = {
-  BACKGROUND: colors.background,
-  PRIMARY: colors.primary,
-  WHITE: colors.white,
-  ACCENT: '#A3B8E8',
-  ERROR: '#FF6B6B',
-  SUCCESS: '#4CAF50',
-  HEADER_BACKGROUND: 'rgba(3, 10, 36, 0.8)',
-  HEADER_BORDER: 'rgba(26, 221, 219, 0.1)',
-  HEADER_BUTTON_BACKGROUND: 'rgba(29, 43, 95, 0.5)',
-  CARD_BACKGROUND: 'rgba(29, 43, 95, 0.8)',
-  CARD_BORDER: 'rgba(26, 221, 219, 0.1)',
-  INPUT_BACKGROUND: '#1D2B5F',
-  INPUT_DISABLED_BACKGROUND: 'rgba(29, 43, 95, 0.5)',
-  SAVE_SUCCESS_BACKGROUND: 'rgba(76, 175, 80, 0.15)',
-  SAVE_SUCCESS_SHADOW: '#4CAF50',
-};
+export function createEditProfileColors(colors) {
+  return {
+    BACKGROUND: colors.background,
+    PRIMARY: colors.primary,
+    WHITE: colors.white,
+    ACCENT: colors.primaryBright ?? colors.primary,
+    ERROR: colors.error,
+    SUCCESS: colors.success,
+    HEADER_BACKGROUND: colors.chromeHeader ?? colors.background,
+    HEADER_BORDER: colors.chromeHeaderBorder ?? colors.border,
+    HEADER_BUTTON_BACKGROUND: colors.chromeIconButton ?? colors.glassFill ?? colors.accentLineSoft,
+    CARD_BACKGROUND: colors.chromeCard ?? colors.cardBackground ?? colors.surface,
+    CARD_BORDER: colors.chromeCardBorder ?? colors.border,
+    INPUT_BACKGROUND: colors.chromeInput ?? colors.surface,
+    INPUT_DISABLED_BACKGROUND: colors.chromeInputDisabled ?? colors.chromeInput ?? colors.surface,
+    SAVE_SUCCESS_BACKGROUND: colors.successSoft,
+    SAVE_SUCCESS_SHADOW: colors.success,
+  };
+}
+
+/** Compatibilidad legacy (tests/archivos no migrados) */
+export const COLORS = createEditProfileColors(lightColors);
 
 export const DEFAULT_FORM_DATA = {
   name: '',

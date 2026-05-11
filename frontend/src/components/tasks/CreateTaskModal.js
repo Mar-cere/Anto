@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Modal, 
   View, 
@@ -20,13 +20,9 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { getApiErrorMessage } from '../../utils/apiErrorHandler';
 import { useToast } from '../../context/ToastContext';
-import { colors } from '../../styles/globalStyles';
-import {
-  FOCUS_BORDER_SUBTLE,
-  FOCUS_CHEVRON_MUTED,
-  FOCUS_META,
-  FOCUS_ACCENT_BORDER,
-} from '../../styles/focusCardTheme';
+import { useTheme } from '../../context/ThemeContext';
+import { getFocusTheme } from '../../styles/focusCardTheme';
+import { SPACING } from '../../constants/ui';
 
 const CreateTaskModal = ({
   visible,
@@ -36,6 +32,260 @@ const CreateTaskModal = ({
   setFormData
 }) => {
   const { showToast } = useToast();
+  const { colors, resolvedScheme } = useTheme();
+  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        modalContainer: {
+          flex: 1,
+          justifyContent: 'flex-end',
+        },
+        overlay: {
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.55)',
+        },
+        modalContent: {
+          backgroundColor: colors.background,
+          borderTopLeftRadius: 22,
+          borderTopRightRadius: 22,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+          maxHeight: '92%',
+          minHeight: '48%',
+        },
+        sheetGrabber: {
+          alignSelf: 'center',
+          width: 36,
+          height: 4,
+          borderRadius: 2,
+          backgroundColor: colors.glassFill,
+          marginTop: 10,
+          marginBottom: 4,
+        },
+        keyboardContainer: {
+          flex: 1,
+        },
+        scrollContent: {
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingBottom: Platform.OS === 'ios' ? 36 : 28,
+          gap: 16,
+        },
+        modalHeader: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingTop: 14,
+          paddingBottom: 12,
+        },
+        modalTitle: {
+          fontSize: 17,
+          fontWeight: '600',
+          letterSpacing: -0.2,
+          color: colors.text,
+        },
+        headerActions: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+        },
+        keyboardDismissBtn: {
+          paddingVertical: 8,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          borderRadius: 12,
+          backgroundColor: colors.accentLineSoft,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_ACCENT_BORDER,
+        },
+        keyboardDismissText: {
+          fontSize: 15,
+          fontWeight: '600',
+          color: colors.primary,
+        },
+        closeButton: {
+          padding: 8,
+          borderRadius: 12,
+          backgroundColor: colors.glassFill,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        typeSelector: {
+          flexDirection: 'row',
+          gap: 12,
+          marginBottom: 4,
+        },
+        typeButton: {
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          paddingVertical: 12,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          borderRadius: 14,
+          backgroundColor: colors.glassFill,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        typeButtonActive: {
+          backgroundColor: colors.accentLineSoft,
+          borderColor: t.FOCUS_ACCENT_BORDER,
+        },
+        reminderTypeButtonActive: {
+          backgroundColor: colors.dangerSoft ?? 'rgba(255, 107, 107, 0.1)',
+          borderColor: colors.dangerBorder ?? 'rgba(255, 107, 107, 0.35)',
+        },
+        typeButtonText: {
+          color: t.FOCUS_META,
+          fontSize: 15,
+          fontWeight: '500',
+        },
+        typeButtonTextActive: {
+          color: colors.primary,
+        },
+        reminderTypeButtonTextActive: {
+          color: colors.error,
+        },
+        inputContainer: {
+          gap: 8,
+        },
+        inputLabel: {
+          color: t.FOCUS_KICKER_COLOR,
+          fontSize: 13,
+          fontWeight: '600',
+          letterSpacing: 0.3,
+          textTransform: 'uppercase',
+        },
+        input: {
+          backgroundColor: colors.chromeInput,
+          borderRadius: 14,
+          padding: 14,
+          color: colors.text,
+          fontSize: 16,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        inputError: {
+          borderColor: colors.error,
+          backgroundColor: colors.dangerSoft ?? 'rgba(255, 107, 107, 0.08)',
+        },
+        reminderInput: {
+          borderColor: colors.dangerBorder ?? 'rgba(255, 107, 107, 0.28)',
+        },
+        textArea: {
+          height: 100,
+          textAlignVertical: 'top',
+        },
+        errorText: {
+          color: colors.error,
+          fontSize: 13,
+          marginTop: 4,
+          lineHeight: 18,
+        },
+        charCount: {
+          color: t.FOCUS_META,
+          fontSize: 12,
+          textAlign: 'right',
+          marginTop: 4,
+        },
+        dateTimeContainer: {
+          gap: 8,
+        },
+        dateTimeButtons: {
+          flexDirection: 'row',
+          gap: 12,
+        },
+        dateTimeButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+          padding: 14,
+          borderRadius: 14,
+          backgroundColor: colors.accentLineSoft,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        reminderDateTimeButton: {
+          backgroundColor: colors.dangerSoft ?? 'rgba(255, 107, 107, 0.08)',
+        },
+        dateButton: {
+          flex: 3,
+        },
+        timeButton: {
+          flex: 2,
+        },
+        dateTimeButtonText: {
+          color: colors.primary,
+          fontSize: 15,
+          fontWeight: '500',
+        },
+        notificationRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: 14,
+          borderRadius: 14,
+          backgroundColor: colors.glassFill,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        notificationLeft: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+          flex: 1,
+          minWidth: 0,
+        },
+        notificationTextBlock: {
+          flex: 1,
+          minWidth: 0,
+        },
+        notificationTitle: {
+          color: colors.text,
+          fontSize: 14,
+          fontWeight: '600',
+        },
+        notificationHint: {
+          color: colors.textSecondary,
+          fontSize: 12,
+          marginTop: 2,
+        },
+        submitButtonContainer: {
+          paddingTop: 4,
+        },
+        submitButton: {
+          backgroundColor: colors.primary,
+          paddingVertical: 16,
+          paddingHorizontal: 18,
+          borderRadius: 999,
+          alignItems: 'center',
+        },
+        reminderSubmitButton: {
+          backgroundColor: colors.error,
+        },
+        submitButtonDisabled: {
+          opacity: 0.8,
+        },
+        loadingContainer: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+        },
+        submitButtonText: {
+          color: colors.textOnPrimary,
+          fontSize: 15,
+          fontWeight: '600',
+          letterSpacing: 0.2,
+        },
+      }),
+    [colors, t],
+  );
   const [pickerMode, setPickerMode] = useState(null);
   const [notificationEnabled, setNotificationEnabled] = useState(true);
   const [errors, setErrors] = useState({});
@@ -293,7 +543,7 @@ const CreateTaskModal = ({
                 onPress={handleClose}
                 activeOpacity={0.7}
               >
-                <Ionicons name="close" size={22} color={FOCUS_CHEVRON_MUTED} />
+                <Ionicons name="close" size={22} color={t.FOCUS_CHEVRON_MUTED} />
               </TouchableOpacity>
             </View>
           </View>
@@ -323,7 +573,7 @@ const CreateTaskModal = ({
                 <Ionicons 
                   name="checkbox-outline" 
                   size={20} 
-                  color={isTask ? colors.primary : FOCUS_META} 
+                  color={isTask ? colors.primary : t.FOCUS_META} 
                 />
                 <Text style={[
                   styles.typeButtonText,
@@ -342,7 +592,7 @@ const CreateTaskModal = ({
                 <Ionicons 
                   name="alarm-outline" 
                   size={20} 
-                  color={!isTask ? colors.error : FOCUS_META} 
+                  color={!isTask ? colors.error : t.FOCUS_META} 
                 />
                 <Text style={[
                   styles.typeButtonText,
@@ -360,7 +610,7 @@ const CreateTaskModal = ({
                   errors.title && styles.inputError
                 ]}
                 placeholder="Ingresa el título"
-                placeholderTextColor={FOCUS_META}
+                placeholderTextColor={colors.textSecondary}
                 value={formData.title}
                 onChangeText={(text) => {
                   setFormData({...formData, title: text});
@@ -383,7 +633,7 @@ const CreateTaskModal = ({
                     errors.description && styles.inputError
                   ]}
                   placeholder="Describe tu tarea..."
-                  placeholderTextColor={FOCUS_META}
+                  placeholderTextColor={colors.textSecondary}
                   value={formData.description}
                   onChangeText={(text) => {
                     setFormData({...formData, description: text});
@@ -465,7 +715,7 @@ const CreateTaskModal = ({
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                   onChange={pickerMode === 'date' ? handleDateChange : handleTimeChange}
                   minimumDate={pickerMode === 'date' ? new Date() : undefined}
-                  textColor="#FFFFFF"
+                  textColor={colors.text}
                   style={styles.picker}
                 />
               </View>
@@ -476,16 +726,16 @@ const CreateTaskModal = ({
                 <Text style={styles.sectionTitle}>Prioridad</Text>
                 <View style={styles.priorityButtons}>
                   {[
-                    { value: 'high', label: 'Alta', color: '#FF6B6B', icon: 'alert-circle' },
-                    { value: 'medium', label: 'Media', color: '#FFD93D', icon: 'alert' },
-                    { value: 'low', label: 'Baja', color: '#6BCB77', icon: 'checkmark-circle' }
+                    { value: 'high', label: 'Alta', color: colors.error, icon: 'alert-circle' },
+                    { value: 'medium', label: 'Media', color: colors.warning, icon: 'alert' },
+                    { value: 'low', label: 'Baja', color: colors.success, icon: 'checkmark-circle' },
                   ].map((priority) => (
                     <TouchableOpacity
                       key={priority.value}
                       style={[
                         styles.priorityButton,
                         formData.priority === priority.value && styles.priorityButtonActive,
-                        { backgroundColor: priority.color + '20' }
+                        { backgroundColor: `${priority.color}20` }
                       ]}
                       onPress={() => handlePriorityChange(priority.value)}
                       activeOpacity={0.7}
@@ -509,14 +759,14 @@ const CreateTaskModal = ({
 
             <View style={styles.notificationContainer}>
               <View style={styles.notificationHeader}>
-                <Ionicons name="notifications-outline" size={20} color={FOCUS_META} />
+                <Ionicons name="notifications-outline" size={20} color={colors.textSecondary} />
                 <Text style={styles.notificationLabel}>Notificación</Text>
               </View>
               <Switch
                 value={notificationEnabled}
                 onValueChange={setNotificationEnabled}
-                thumbColor={notificationEnabled ? colors.primary : 'rgba(255,255,255,0.45)'}
-                trackColor={{ false: 'rgba(255,255,255,0.2)', true: 'rgba(26, 221, 219, 0.45)' }}
+                thumbColor={notificationEnabled ? colors.primary : colors.textSecondary}
+                trackColor={{ false: 'rgba(255,255,255,0.2)', true: 'rgba(30, 131, 211, 0.45)' }}
               />
             </View>
 
@@ -533,7 +783,7 @@ const CreateTaskModal = ({
               >
                 {isSubmitting ? (
                   <View style={styles.loadingContainer}>
-                    <Ionicons name="hourglass-outline" size={20} color={colors.background} />
+                    <Ionicons name="hourglass-outline" size={20} color={colors.textOnPrimary} />
                     <Text style={styles.submitButtonText}>Creando...</Text>
                   </View>
                 ) : (
@@ -551,7 +801,7 @@ const CreateTaskModal = ({
   );
 };
 
-const styles = StyleSheet.create({
+/* const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -569,7 +819,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
+    borderColor: t.FOCUS_BORDER_SUBTLE,
     maxHeight: '92%',
     minHeight: '48%',
   },
@@ -586,7 +836,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     paddingBottom: Platform.OS === 'ios' ? 36 : 28,
     gap: 16,
   },
@@ -594,7 +844,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     paddingTop: 14,
     paddingBottom: 12,
   },
@@ -611,11 +861,11 @@ const styles = StyleSheet.create({
   },
   keyboardDismissBtn: {
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     borderRadius: 12,
-    backgroundColor: 'rgba(26, 221, 219, 0.12)',
+    backgroundColor: 'rgba(30, 131, 211, 0.12)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_ACCENT_BORDER,
+    borderColor: t.FOCUS_ACCENT_BORDER,
   },
   keyboardDismissText: {
     fontSize: 15,
@@ -639,22 +889,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 12,
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     borderRadius: 14,
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
+    borderColor: t.FOCUS_BORDER_SUBTLE,
   },
   typeButtonActive: {
-    backgroundColor: 'rgba(26, 221, 219, 0.1)',
-    borderColor: FOCUS_ACCENT_BORDER,
+    backgroundColor: 'rgba(30, 131, 211, 0.1)',
+    borderColor: t.FOCUS_ACCENT_BORDER,
   },
   reminderTypeButtonActive: {
     backgroundColor: 'rgba(255, 107, 107, 0.1)',
     borderColor: 'rgba(255, 107, 107, 0.35)',
   },
   typeButtonText: {
-    color: FOCUS_META,
+    color: t.FOCUS_META,
     fontSize: 15,
     fontWeight: '500',
   },
@@ -668,7 +918,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   inputLabel: {
-    color: 'rgba(163, 184, 232, 0.85)',
+    color: 'rgba(92, 90, 120, 0.88)',
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: 0.3,
@@ -678,10 +928,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
     borderRadius: 14,
     padding: 14,
-    color: colors.white,
+    color: colors.text,
     fontSize: 16,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
+    borderColor: t.FOCUS_BORDER_SUBTLE,
   },
   inputError: {
     borderColor: colors.error,
@@ -701,7 +951,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   charCount: {
-    color: FOCUS_META,
+    color: t.FOCUS_META,
     fontSize: 12,
     textAlign: 'right',
     marginTop: 4,
@@ -719,9 +969,9 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 14,
     borderRadius: 14,
-    backgroundColor: 'rgba(26, 221, 219, 0.08)',
+    backgroundColor: 'rgba(30, 131, 211, 0.08)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
+    borderColor: t.FOCUS_BORDER_SUBTLE,
   },
   reminderDateTimeButton: {
     backgroundColor: 'rgba(255, 107, 107, 0.08)',
@@ -748,7 +998,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     paddingVertical: Platform.OS === 'ios' ? 8 : 0,
     borderWidth: Platform.OS === 'ios' ? StyleSheet.hairlineWidth : 0,
-    borderColor: FOCUS_BORDER_SUBTLE,
+    borderColor: t.FOCUS_BORDER_SUBTLE,
   },
   picker: {
     width: '100%',
@@ -759,7 +1009,7 @@ const styles = StyleSheet.create({
     }),
   },
   sectionTitle: {
-    color: 'rgba(163, 184, 232, 0.85)',
+    color: 'rgba(92, 90, 120, 0.88)',
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: 0.3,
@@ -782,8 +1032,8 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   priorityButtonActive: {
-    borderColor: FOCUS_ACCENT_BORDER,
-    backgroundColor: 'rgba(26, 221, 219, 0.12)',
+    borderColor: t.FOCUS_ACCENT_BORDER,
+    backgroundColor: 'rgba(30, 131, 211, 0.12)',
   },
   priorityButtonText: {
     fontSize: 13,
@@ -794,11 +1044,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     backgroundColor: 'rgba(255, 255, 255, 0.03)',
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
+    borderColor: t.FOCUS_BORDER_SUBTLE,
   },
   notificationHeader: {
     flexDirection: 'row',
@@ -806,7 +1056,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   notificationLabel: {
-    color: FOCUS_META,
+    color: t.FOCUS_META,
     fontSize: 15,
     fontWeight: '500',
   },
@@ -817,7 +1067,7 @@ const styles = StyleSheet.create({
   submitButton: {
     backgroundColor: colors.primary,
     paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     borderRadius: 999,
     alignItems: 'center',
   },
@@ -838,6 +1088,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-});
+}); */
 
 export default CreateTaskModal; 

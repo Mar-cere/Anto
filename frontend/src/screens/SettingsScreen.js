@@ -14,12 +14,14 @@ import { useNavigation } from '@react-navigation/native';
 import SettingsConfirmModal from '../components/settings/SettingsConfirmModal';
 import SettingsContent from '../components/settings/SettingsContent';
 import SettingsHeader from '../components/settings/SettingsHeader';
+import { useTheme } from '../context/ThemeContext';
 import { useSettingsScreen } from '../hooks/useSettingsScreen';
-import { COLORS, TEXTS } from './settings/settingsScreenConstants';
+import { TEXTS } from './settings/settingsScreenConstants';
 
 export default function SettingsScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const {
     user,
     showLogoutModal,
@@ -30,24 +32,30 @@ export default function SettingsScreen() {
     handleLogout,
     handleDeleteAccount,
     handleTogglePushNotifications,
-    handleCycleResponseStyle,
+    handleUpdateNotificationPreferences,
+    handleSetResponseStyle,
     handleChatPreferenceChange,
     handleTestNotification,
+    handleSetThemePreference,
   } = useSettingsScreen({ navigation });
 
   return (
-    <SafeAreaView style={[styles.safeArea, { paddingTop: insets.top }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { paddingTop: insets.top, backgroundColor: colors.background }]}
+    >
       <SettingsHeader onBack={() => navigation.goBack()} />
       <SettingsContent
         navigation={navigation}
         user={user}
         pushNotificationsEnabled={pushNotificationsEnabled}
         onTogglePushNotifications={handleTogglePushNotifications}
-        onCycleResponseStyle={handleCycleResponseStyle}
+        onUpdateNotificationPreferences={handleUpdateNotificationPreferences}
+        onSetResponseStyle={handleSetResponseStyle}
         onChatPreferenceChange={handleChatPreferenceChange}
         onShowLogoutModal={() => setShowLogoutModal(true)}
         onShowDeleteModal={() => setShowDeleteModal(true)}
         onTestNotification={handleTestNotification}
+        onSetThemePreference={handleSetThemePreference}
       />
       <SettingsConfirmModal
         visible={showLogoutModal}
@@ -77,6 +85,5 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
   },
 });

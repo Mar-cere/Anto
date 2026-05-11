@@ -3,34 +3,37 @@
  * @author AntoApp Team
  */
 
-jest.mock('../../../styles/globalStyles', () => ({
-  colors: {
-    background: '#030A24',
-    primary: '#1ADDDB',
-    white: '#FFFFFF',
-  },
-}));
+jest.mock('../../../styles/globalStyles', () => jest.requireActual('../../../styles/globalStyles'));
 
 import {
   TEXTS,
   STORAGE_KEYS,
   NAVIGATION_ROUTES,
-  COLORS,
+  buildSettingsCOLORS,
   RESPONSE_STYLE_LABELS,
+  RESPONSE_STYLE_PREVIEW,
   RESPONSE_STYLES,
+  DEFAULT_RESPONSE_STYLE,
+  normalizeResponseStyle,
   SCROLL_PADDING_BOTTOM,
   ICON_SIZE,
   MODAL_WIDTH,
 } from '../settingsScreenConstants';
+import { lightColors } from '../../../styles/themePalettes';
+
+const COLORS = buildSettingsCOLORS(lightColors);
 
 describe('settingsScreenConstants', () => {
   describe('TEXTS', () => {
     it('debe tener título y secciones', () => {
       expect(TEXTS.TITLE).toBe('Configuración');
-      expect(TEXTS.PREFERENCES).toBe('Preferencias');
+      expect(TEXTS.SECTION_SYSTEM).toBe('Sistema');
+      expect(TEXTS.SECTION_CHAT).toBe('Chat');
+      expect(TEXTS.SECTION_ACCOUNT_AND_PLAN).toBe('Cuenta y suscripción');
       expect(TEXTS.ACCOUNT).toBe('Cuenta');
       expect(TEXTS.SUPPORT).toBe('Soporte');
       expect(TEXTS.ABOUT).toBe('Acerca de');
+      expect(TEXTS.SECTION_SYSTEM_INTRO.length).toBeLessThan(40);
     });
     it('debe tener textos de cuenta y modales', () => {
       expect(TEXTS.CHANGE_PASSWORD).toBeDefined();
@@ -50,6 +53,18 @@ describe('settingsScreenConstants', () => {
     it('debe tener textos de suscripción e historial', () => {
       expect(TEXTS.SUBSCRIPTION).toBeDefined();
       expect(TEXTS.TRANSACTION_HISTORY).toBeDefined();
+    });
+    it('debe tener subsecciones de Chat (estilo y tono)', () => {
+      expect(TEXTS.CHAT_SUBSECTION_RESPONSE_STYLE).toBe('Estilo de respuesta');
+      expect(TEXTS.CHAT_TONE_TITLE).toContain('Tono');
+      expect(TEXTS.CHAT_CUSTOMIZATION_TITLE).toBe('Personalización del chat');
+      expect(TEXTS.SECTION_CHAT_INTRO).toContain('Amplía');
+      expect(TEXTS.RESPONSE_STYLE_A11Y_LABEL).toBeDefined();
+    });
+    it('debe tener textos de notificaciones detalladas', () => {
+      expect(TEXTS.NOTIFICATIONS_TYPES_TITLE).toBe('Tipos');
+      expect(TEXTS.NOTIFICATIONS_ADVANCED_TITLE).toBe('Avanzado');
+      expect(TEXTS.NOTIFICATIONS_HINT_SCHEDULE).toContain('Diarios');
     });
   });
 
@@ -73,15 +88,16 @@ describe('settingsScreenConstants', () => {
       expect(COLORS.BACKGROUND).toBeDefined();
       expect(COLORS.PRIMARY).toBeDefined();
       expect(COLORS.WHITE).toBeDefined();
-      expect(COLORS.ACCENT).toBe('#A3B8E8');
+      expect(COLORS.ACCENT).toBe('#44D7FB');
       expect(COLORS.ERROR).toBe('#FF6B6B');
+      expect(COLORS.SWITCH_DISABLED).toBe(lightColors.textSecondary);
     });
     it('debe tener estilos de modal e ítem', () => {
       expect(COLORS.ITEM_BACKGROUND).toBeDefined();
       expect(COLORS.ITEM_BORDER).toBeDefined();
       expect(COLORS.MODAL_BACKGROUND).toBeDefined();
       expect(COLORS.MODAL_BUTTON_CANCEL).toBeDefined();
-      expect(COLORS.MODAL_BUTTON_DELETE).toBeDefined();
+      expect(COLORS.MODAL_BUTTON_DELETE).toBe(lightColors.dangerSoft);
     });
   });
 
@@ -91,17 +107,52 @@ describe('settingsScreenConstants', () => {
       expect(RESPONSE_STYLE_LABELS.balanced).toBe('Equilibrado');
       expect(RESPONSE_STYLE_LABELS.deep).toBe('Profundo');
       expect(RESPONSE_STYLE_LABELS.empatico).toBe('Empático');
-      expect(RESPONSE_STYLE_LABELS.profesional).toBe('Profesional');
-      expect(RESPONSE_STYLE_LABELS.directo).toBe('Directo');
-      expect(RESPONSE_STYLE_LABELS.calido).toBe('Cálido');
       expect(RESPONSE_STYLE_LABELS.estructurado).toBe('Estructurado');
     });
   });
 
+  describe('RESPONSE_STYLE_PREVIEW', () => {
+    it('tiene una vista previa por cada estilo del array', () => {
+      RESPONSE_STYLES.forEach((key) => {
+        expect(typeof RESPONSE_STYLE_PREVIEW[key]).toBe('string');
+        expect(RESPONSE_STYLE_PREVIEW[key].length).toBeGreaterThan(4);
+      });
+    });
+    it('cada estilo tiene etiqueta y preview definidos', () => {
+      RESPONSE_STYLES.forEach((key) => {
+        expect(RESPONSE_STYLE_LABELS[key]).toBeTruthy();
+        expect(RESPONSE_STYLE_PREVIEW[key]).toBeTruthy();
+      });
+    });
+  });
+
+  describe('normalizeResponseStyle', () => {
+    it('devuelve la clave cuando es válida', () => {
+      expect(normalizeResponseStyle('brief')).toBe('brief');
+      expect(normalizeResponseStyle('balanced')).toBe('balanced');
+    });
+    it('recorta espacios en claves válidas', () => {
+      expect(normalizeResponseStyle('  deep  ')).toBe('deep');
+    });
+    it('usa DEFAULT_RESPONSE_STYLE ante valores inválidos', () => {
+      expect(normalizeResponseStyle('')).toBe(DEFAULT_RESPONSE_STYLE);
+      expect(normalizeResponseStyle(null)).toBe(DEFAULT_RESPONSE_STYLE);
+      expect(normalizeResponseStyle('legacy-unknown')).toBe(
+        DEFAULT_RESPONSE_STYLE,
+      );
+      expect(normalizeResponseStyle(123)).toBe(DEFAULT_RESPONSE_STYLE);
+    });
+    it('mapea estilos legados a los canónicos', () => {
+      expect(normalizeResponseStyle('calido')).toBe('empatico');
+      expect(normalizeResponseStyle('profesional')).toBe('estructurado');
+      expect(normalizeResponseStyle('directo')).toBe('brief');
+    });
+  });
+
   describe('RESPONSE_STYLES', () => {
-    it('debe ser array de 8 estilos', () => {
+    it('debe ser array de 5 estilos canónicos', () => {
       expect(Array.isArray(RESPONSE_STYLES)).toBe(true);
-      expect(RESPONSE_STYLES).toHaveLength(8);
+      expect(RESPONSE_STYLES).toHaveLength(5);
       expect(RESPONSE_STYLES).toContain('brief');
       expect(RESPONSE_STYLES).toContain('balanced');
       expect(RESPONSE_STYLES).toContain('estructurado');

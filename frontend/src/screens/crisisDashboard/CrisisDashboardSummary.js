@@ -4,11 +4,13 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { styles } from './crisisDashboardStyles';
+import { useCrisisDashboardStyles } from './crisisDashboardStyles';
 import { TEXTS } from './crisisDashboardConstants';
-import { colors } from '../../styles/globalStyles';
+import { useTheme } from '../../context/ThemeContext';
 
 export function CrisisDashboardSummary({ summary, getRiskLevelColor, getRiskLevelText }) {
+  const styles = useCrisisDashboardStyles();
+  const { colors } = useTheme();
   if (!summary) return null;
 
   const totalCrises = Number(summary.totalCrises) || 0;
@@ -40,7 +42,7 @@ export function CrisisDashboardSummary({ summary, getRiskLevelColor, getRiskLeve
           <Text style={styles.summaryLabel}>{TEXTS.RECENT}</Text>
         </View>
         <View style={styles.summaryCard}>
-          <MaterialCommunityIcons name="check-circle" size={32} color="#4ECDC4" />
+          <MaterialCommunityIcons name="check-circle" size={32} color={colors.success} />
           <Text style={styles.summaryValue}>{resolutionPct}%</Text>
           <Text style={styles.summaryLabel}>{TEXTS.RESOLUTION_RATE}</Text>
         </View>

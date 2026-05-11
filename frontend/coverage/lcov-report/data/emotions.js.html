@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/11</span>
+                <span class='fraction'>11/11</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/11</span>
+                <span class='fraction'>11/11</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -131,7 +131,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -156,7 +156,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -168,9 +168,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">54x</span>
+<span class="cline-any cline-yes">54x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -178,14 +178,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -194,7 +194,7 @@
  * Estas frases se muestran de forma aleatoria en la pantalla de inicio
  * y pueden ser utilizadas en otras partes de la aplicación
  */
-export const emotions = <span class="cstat-no" title="statement not covered" >[</span>
+export const emotions = [
   "¿Ansiedad?",
   "¿Estrés?",
   "¿Confusión?",
@@ -219,7 +219,7 @@ export const emotions = <span class="cstat-no" title="statement not covered" >[<
 /**
  * Categorías de emociones para uso en análisis o filtrado
  */
-export const emotionCategories = <span class="cstat-no" title="statement not covered" >{</span>
+export const emotionCategories = {
   ansiedad: ["¿Ansiedad?", "¿Preocupación?", "¿Pánico?", "¿Inquietud?"],
   tristeza: ["¿Soledad?", "¿Desesperanza?", "¿Desánimo?"],
   estres: ["¿Estrés?", "¿Agobio?", "¿Abrumado?", "¿Frustración?"],
@@ -231,9 +231,9 @@ export const emotionCategories = <span class="cstat-no" title="statement not cov
  * Obtiene una emoción aleatoria de la lista
  * @returns {string} Una emoción aleatoria
  */
-export const getRandomEmotion = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
-  const randomIndex = <span class="cstat-no" title="statement not covered" >Math.floor(Math.random() * emotions.length);</span>
-<span class="cstat-no" title="statement not covered" >  return emotions[randomIndex];</span>
+export const getRandomEmotion = () =&gt; {
+  const randomIndex = Math.floor(Math.random() * emotions.length);
+  return emotions[randomIndex];
 };
 &nbsp;
 /**
@@ -241,14 +241,14 @@ export const getRandomEmotion = <span class="cstat-no" title="statement not cove
  * @param {string} category - La categoría de emoción (ansiedad, tristeza, etc.)
  * @returns {string} Una emoción aleatoria de la categoría especificada
  */
-export const getRandomEmotionByCategory = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(c</span>ategory) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >  if (!emotionCategories[category]) {</span>
-<span class="cstat-no" title="statement not covered" >    return getRandomEmotion();</span>
+export const getRandomEmotionByCategory = (category) =&gt; {
+  if (!emotionCategories[category]) {
+    return getRandomEmotion();
   }
   
-  const categoryEmotions = <span class="cstat-no" title="statement not covered" >emotionCategories[category];</span>
-  const randomIndex = <span class="cstat-no" title="statement not covered" >Math.floor(Math.random() * categoryEmotions.length);</span>
-<span class="cstat-no" title="statement not covered" >  return categoryEmotions[randomIndex];</span>
+  const categoryEmotions = emotionCategories[category];
+  const randomIndex = Math.floor(Math.random() * categoryEmotions.length);
+  return categoryEmotions[randomIndex];
 };
 &nbsp;
 export default emotions;
@@ -259,7 +259,7 @@ export default emotions;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-08T14:11:47.197Z
+                at 2026-05-07T20:12:13.462Z
             </div>
         <script src="../prettify.js"></script>
         <script>

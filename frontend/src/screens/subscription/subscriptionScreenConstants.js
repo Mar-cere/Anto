@@ -3,7 +3,7 @@
  * @author AntoApp Team
  */
 
-import { colors } from '../../styles/globalStyles';
+import { lightColors as legacyColors } from '../../styles/themePalettes';
 
 export const LEGAL_URLS = {
   TERMS_EULA: 'https://www.antoapps.com/terminos',
@@ -45,11 +45,20 @@ export const HARDCODED_PLANS = [
 
 export const PLAN_ORDER = { monthly: 1, quarterly: 2, semestral: 3, yearly: 4 };
 
-export const COLORS = {
-  background: colors.background,
-  primary: colors.primary,
-  white: colors.white,
-  textSecondary: colors.textSecondary,
-  error: colors.error,
-  cardBackground: colors.cardBackground,
-};
+/**
+ * Export legacy usado por tests antiguos.
+ * En UI usar useTheme().colors.
+ */
+export function createSubscriptionColors(colors) {
+  return {
+    background: colors.background,
+    primary: colors.primary,
+    white: colors.white,
+    textSecondary: colors.textSecondary,
+    error: colors.error,
+    cardBackground: colors.cardBackground ?? colors.surface,
+  };
+}
+
+/** Compatibilidad legacy (tests/archivos no migrados) */
+export const COLORS = createSubscriptionColors(legacyColors);

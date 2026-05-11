@@ -18,10 +18,11 @@ import SubscriptionErrorView from '../components/subscription/SubscriptionErrorV
 import SubscriptionLoadingView from '../components/subscription/SubscriptionLoadingView';
 import { useSubscriptionScreen } from '../hooks/useSubscriptionScreen';
 import { TEXTS } from './subscription/subscriptionScreenConstants';
-import { colors } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
 
 export default function SubscriptionScreen() {
   const insets = useSafeAreaInsets();
+  const { colors, statusBarStyle } = useTheme();
   const {
     plans,
     subscriptionStatus,
@@ -89,7 +90,7 @@ export default function SubscriptionScreen() {
 
   return (
     <SafeAreaView style={[{ flex: 1, backgroundColor: colors.background }, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <Header greeting="" userName="" showBackButton title={TEXTS.TITLE} />
       {loading && <SubscriptionLoadingView />}
       {!loading && error && <SubscriptionErrorView error={error} onRetry={loadData} />}

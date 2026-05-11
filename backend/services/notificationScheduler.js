@@ -14,6 +14,7 @@
  */
 
 import mongoose from 'mongoose';
+import Habit from '../models/Habit.js';
 import NotificationEngagement from '../models/NotificationEngagement.js';
 import Task from '../models/Task.js';
 import User from '../models/User.js';
@@ -93,8 +94,67 @@ class NotificationScheduler {
     return user?.notificationPreferences?.types?.taskReminders !== false;
   }
 
+  _habitRemindersEnabled(user) {
+    return user?.notificationPreferences?.types?.habitReminders !== false;
+  }
+
   _betweenSessionsEnabled(user) {
     return user?.notificationPreferences?.types?.betweenSessionsMessages !== false;
+  }
+
+  _dailyRemindersEnabled(user) {
+    return user?.notificationPreferences?.types?.dailyReminders !== false;
+  }
+
+  _getUserTimezone(user) {
+    const tz = user?.preferences?.timezone;
+    if (typeof tz !== 'string' || !tz.includes('/')) return 'UTC';
+    return tz;
+  }
+
+  _getLocalHourMinute(now, timeZone) {
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).formatToParts(now);
+      const hh = parseInt(parts.find((p) => p.type === 'hour')?.value || '', 10);
+      const mm = parseInt(parts.find((p) => p.type === 'minute')?.value || '', 10);
+      if (Number.isFinite(hh) && Number.isFinite(mm)) return { hh, mm };
+    } catch {}
+    return { hh: now.getUTCHours(), mm: now.getUTCMinutes() };
+  }
+
+  _getStartOfDayInTzUtc(now, timeZone) {
+    // Devuelve el instante UTC que corresponde a 00:00 del día local del usuario.
+    // Implementación basada en reconstruir YYYY-MM-DD local en tz y calcular su offset.
+    try {
+      const dateParts = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(now); // "YYYY-MM-DD"
+      const [y, m, d] = dateParts.split('-').map((x) => parseInt(x, 10));
+      const utcMidnight = new Date(Date.UTC(y, (m || 1) - 1, d || 1, 0, 0, 0, 0));
+      // Calcular offset (min) del tz en esa fecha comparando hora local de utcMidnight.
+      const localHm = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      })
+        .formatToParts(utcMidnight);
+      const lh = parseInt(localHm.find((p) => p.type === 'hour')?.value || '0', 10);
+      const lm = parseInt(localHm.find((p) => p.type === 'minute')?.value || '0', 10);
+      // Si utcMidnight en tz no es 00:00, ajustar.
+      const deltaMinutes = lh * 60 + lm;
+      return new Date(utcMidnight.getTime() - deltaMinutes * 60 * 1000);
+    } catch {
+      return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
+    }
   }
 
   async _hasRecentNotificationOfType(userId, notificationType, windowHours = 24) {
@@ -297,22 +357,24 @@ class NotificationScheduler {
       const users = await User.find({
         'notificationPreferences.enabled': true,
         pushToken: { $exists: true, $ne: null }
-      }).select('notificationPreferences pushToken _id');
+      }).select('notificationPreferences pushToken _id preferences.timezone');
 
       const results = {
         checked: users.length,
         sent: 0,
         skipped: 0,
-        errors: 0
+        errors: 0,
+        habitsChecked: 0,
+        habitsSent: 0,
       };
 
       for (const user of users) {
         try {
-          const h = now.getHours();
-          const m = now.getMinutes();
+          const tz = this._getUserTimezone(user);
+          const { hh: h, mm: m } = this._getLocalHourMinute(now, tz);
 
           // Verificar notificación matutina
-          if (user.notificationPreferences?.morning?.enabled) {
+          if (this._wellnessTypesEnabled(user) && user.notificationPreferences?.morning?.enabled) {
             const morningHour = user.notificationPreferences.morning.hour || 8;
             const morningMinute = user.notificationPreferences.morning.minute || 0;
             
@@ -328,7 +390,7 @@ class NotificationScheduler {
           }
 
           // Verificar notificación vespertina
-          if (user.notificationPreferences?.evening?.enabled) {
+          if (this._wellnessTypesEnabled(user) && user.notificationPreferences?.evening?.enabled) {
             const eveningHour = user.notificationPreferences.evening.hour || 19;
             const eveningMinute = user.notificationPreferences.evening.minute || 0;
             
@@ -364,8 +426,19 @@ class NotificationScheduler {
         }
       }
 
-      const hh = now.getHours();
-      const mm = now.getMinutes();
+      // Recordatorios de hábitos (por minuto, según Habit.reminder.time)
+      try {
+        const habitResult = await this.notifyHabitsForCurrentMinute(now);
+        results.habitsChecked = habitResult.checked;
+        results.habitsSent = habitResult.sent;
+      } catch (habitErr) {
+        console.error('[NotificationScheduler] notifyHabitsForCurrentMinute:', habitErr);
+        results.errors++;
+      }
+
+      // Para tareas, mantenemos un horario fijo en UTC para evitar depender del timezone (puede ajustarse luego).
+      const hh = now.getUTCHours();
+      const mm = now.getUTCMinutes();
       if (hh === 10 && mm === 5) {
         try {
           await this.notifyTasksDueTomorrow();
@@ -450,6 +523,12 @@ class NotificationScheduler {
           break;
         case pushNotificationService.NOTIFICATION_TYPES.WEEKLY_REFLECTION:
           result = await pushNotificationService.sendWeeklyReflection(pushToken, options);
+          break;
+        case pushNotificationService.NOTIFICATION_TYPES.HABIT_REMINDER:
+          result = await pushNotificationService.sendHabitReminder(pushToken, options);
+          break;
+        case pushNotificationService.NOTIFICATION_TYPES.TASK_REMINDER:
+          result = await pushNotificationService.sendTaskReminder(pushToken, options);
           break;
         case pushNotificationService.NOTIFICATION_TYPES.TASK_DUE_SOON:
           result = await pushNotificationService.sendTaskDueSoon(pushToken, options);
@@ -596,7 +675,10 @@ class NotificationScheduler {
       [pushNotificationService.NOTIFICATION_TYPES.MORNING_MOTIVATION]: 'motivationalMessages',
       [pushNotificationService.NOTIFICATION_TYPES.EVENING_REFLECTION]: 'motivationalMessages',
       [pushNotificationService.NOTIFICATION_TYPES.BETWEEN_SESSIONS_NUDGE]: 'betweenSessionsMessages',
-      [pushNotificationService.NOTIFICATION_TYPES.PROGRESS_POSITIVE]: 'motivationalMessages'
+      [pushNotificationService.NOTIFICATION_TYPES.PROGRESS_POSITIVE]: 'motivationalMessages',
+      [pushNotificationService.NOTIFICATION_TYPES.HABIT_REMINDER]: 'habitReminders',
+      [pushNotificationService.NOTIFICATION_TYPES.TASK_REMINDER]: 'taskReminders',
+      [pushNotificationService.NOTIFICATION_TYPES.TASK_DUE_SOON]: 'taskReminders',
     };
     return mapping[notificationType] || 'dailyReminders';
   }
@@ -645,7 +727,7 @@ class NotificationScheduler {
       for (const user of inactiveUsers) {
         try {
           // Verificar si el usuario tiene habilitadas las notificaciones diarias
-          if (user.notificationPreferences?.types?.dailyReminders === false) {
+          if (!this._dailyRemindersEnabled(user)) {
             results.skipped++;
             continue;
           }
@@ -719,6 +801,114 @@ class NotificationScheduler {
   stop() {
     this.isRunning = false;
     console.log('[NotificationScheduler] ⏹️ Servicio de programación de notificaciones detenido');
+  }
+
+  /**
+   * Envía recordatorios de hábitos cuya hora coincide con el minuto actual.
+   * Asume que `reminder.time` se almacena en UTC (ISO) desde el cliente.
+   * Deduplicación: no reenvía si `reminder.lastNotified` ya es hoy (UTC).
+   */
+  async notifyHabitsForCurrentMinute(now = new Date()) {
+    // Optimización: agrupar por zona horaria y resolver con 1 aggregate por tz.
+    const users = await User.find({
+      'notificationPreferences.enabled': true,
+      pushToken: { $exists: true, $ne: null },
+      $or: [
+        { 'notificationPreferences.types.habitReminders': { $ne: false } },
+        { 'notificationPreferences.types.habitReminders': { $exists: false } },
+      ],
+    })
+      .select('_id pushToken notificationPreferences preferences.timezone')
+      .lean();
+
+    if (!users.length) {
+      return { checked: 0, sent: 0 };
+    }
+
+    const groups = new Map(); // tz -> { userIds: ObjectId[], pushByUserId: Map<string,string> }
+    for (const u of users) {
+      if (!this._habitRemindersEnabled(u)) continue;
+      const tz = this._getUserTimezone(u);
+      if (!groups.has(tz)) {
+        groups.set(tz, { userIds: [], pushByUserId: new Map() });
+      }
+      const g = groups.get(tz);
+      g.userIds.push(u._id);
+      g.pushByUserId.set(String(u._id), u.pushToken);
+    }
+
+    let checked = 0;
+    let sent = 0;
+
+    for (const [tz, g] of groups.entries()) {
+      if (!g.userIds.length) continue;
+      const { hh, mm } = this._getLocalHourMinute(now, tz);
+      const startOfLocalDayUtc = this._getStartOfDayInTzUtc(now, tz);
+
+      // Buscar hábitos cuyo reminder.time cae en hh:mm de la zona horaria tz, y que no hayan sido notificados hoy (día local).
+      const matches = await Habit.aggregate([
+        {
+          $match: {
+            userId: { $in: g.userIds },
+            'reminder.enabled': true,
+            'status.archived': { $ne: true },
+            deletedAt: { $exists: false },
+            $or: [
+              { 'reminder.lastNotified': { $exists: false } },
+              { 'reminder.lastNotified': null },
+              { 'reminder.lastNotified': { $lt: startOfLocalDayUtc } },
+            ],
+          },
+        },
+        {
+          $addFields: {
+            _rtParts: {
+              $dateToParts: { date: '$reminder.time', timezone: tz },
+            },
+          },
+        },
+        { $match: { '_rtParts.hour': hh, '_rtParts.minute': mm } },
+        { $project: { title: 1, userId: 1 } },
+        { $limit: 2000 },
+      ]);
+
+      checked += matches.length;
+      if (!matches.length) continue;
+
+      const toMarkNotified = [];
+
+      for (const h of matches) {
+        const userIdStr = String(h.userId);
+        const pushToken = g.pushByUserId.get(userIdStr);
+        if (!pushToken) continue;
+
+        const ok = await this.sendScheduledNotification(
+          h.userId,
+          pushToken,
+          pushNotificationService.NOTIFICATION_TYPES.HABIT_REMINDER,
+          {
+            timeOfDay: 'habit',
+            habitId: String(h._id),
+            habitName: String(h.title || 'Hábito').slice(0, 120),
+          }
+        );
+        if (ok) {
+          sent++;
+          toMarkNotified.push(h._id);
+        }
+      }
+
+      if (toMarkNotified.length) {
+        try {
+          await Habit.updateMany(
+            { _id: { $in: toMarkNotified } },
+            { $set: { 'reminder.lastNotified': now } }
+          );
+        } catch {}
+      }
+    }
+
+    return { checked, sent };
   }
 }
 

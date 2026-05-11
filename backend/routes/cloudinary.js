@@ -3,14 +3,14 @@
  */
 import cloudinary from 'cloudinary';
 import express from 'express';
-import rateLimit from 'express-rate-limit';
+import { createRateLimiter } from '../utils/createRateLimiter.js';
 import Joi from 'joi';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // Rate limiter para eliminación de recursos
-const deleteResourceLimiter = rateLimit({
+const deleteResourceLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 10,
   message: 'Demasiadas eliminaciones de recursos. Por favor, intente más tarde.',

@@ -1082,6 +1082,12 @@ export function buildChatPreferenceSnippet(chatPreferences) {
   return `PREFERENCIAS DE TONO DEL USUARIO (respétalas sin contradecir seguridad ni crisis):\n${parts.map((p) => `- ${p}`).join('\n')}`;
 }
 
+const LEGACY_RESPONSE_STYLE_MAP = {
+  calido: 'empatico',
+  profesional: 'estructurado',
+  directo: 'brief',
+};
+
 /**
  * Construye un prompt personalizado completo usando todas las directrices
  * @param {Object} context - Contexto completo del usuario
@@ -1103,13 +1109,15 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
     topic = 'general',
     sessionTrends = null,
     conversationContext = null,
-    responseStyle = 'balanced',
+    responseStyle: rawResponseStyle = 'balanced',
     gender = null, // NUEVO: Género del usuario
     pronouns = null, // NUEVO: Pronombres preferidos
     chatPreferences = null,
     /** 'MEDIUM' | 'HIGH' | null — anula preferencias de tono “frías” por seguridad */
     crisisRiskLevel = null
   } = context;
+
+  const responseStyle = LEGACY_RESPONSE_STYLE_MAP[rawResponseStyle] || rawResponseStyle;
 
   // Obtener directrices específicas
   const emotionGuidelines = getEmotionGuidelines(emotion);
@@ -1244,15 +1252,6 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
   } else if (responseStyle === 'empatico') {
     maxWords = 60; // Respuestas empáticas moderadas
     responseStructure = `Comprensión sin plantilla fija: 2 oraciones, máximo ${maxWords} palabras. Varía el inicio; no uses siempre "lo siento"/"es válido"/parafrasear el mismo dolor. La empatía = atender el detalle y el tono, no repetir fórmulas.`;
-  } else if (responseStyle === 'profesional') {
-    maxWords = 55; // Respuestas profesionales estructuradas
-    responseStructure = `Tono profesional: 2 oraciones, máximo ${maxWords} palabras. Claridad y orientación; evita abrir siempre con condolencia genérica.`;
-  } else if (responseStyle === 'directo') {
-    maxWords = 35; // Respuestas directas y claras
-    responseStructure = `Directo: 1-2 oraciones, máximo ${maxWords} palabras. Idea principal + opcional pregunta corta; sin rodeos ni preámbulos empáticos repetitivos.`;
-  } else if (responseStyle === 'calido') {
-    maxWords = 50; // Respuestas cálidas y cercanas
-    responseStructure = `Calidez: 2 oraciones, máximo ${maxWords} palabras. Cercanía con variedad (no siempre las mismas frases de validación); apoyo concreto.`;
   } else if (responseStyle === 'estructurado') {
     maxWords = 60; // Respuestas organizadas
     responseStructure = `Organizado: 2-3 oraciones, máximo ${maxWords} palabras. Estructura clara sin forzar "paso 1 = reconocimiento empático" en cada mensaje.`;
@@ -1272,12 +1271,6 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
     prompt += `ESTILO DE RESPUESTA: PROFUNDO. Explora más a fondo, ofrece reflexiones, valida emocionalmente. Máximo ${maxWords} palabras. Puedes ser más extenso y reflexivo.\n\n`;
   } else if (responseStyle === 'empatico') {
     prompt += `ESTILO DE RESPUESTA: EMPÁTICO. Prioriza comprensión y acompañamiento con variedad: no repitas las mismas frases de validación ni abrumes con disculpas. Muestra que escuchas atendiendo al detalle y al tono. Máximo ${maxWords} palabras.\n\n`;
-  } else if (responseStyle === 'profesional') {
-    prompt += `ESTILO DE RESPUESTA: PROFESIONAL. Mantén un tono formal y estructurado. Usa lenguaje profesional pero accesible. Máximo ${maxWords} palabras. Sé claro, organizado y orientativo.\n\n`;
-  } else if (responseStyle === 'directo') {
-    prompt += `ESTILO DE RESPUESTA: DIRECTO. Ve directo al punto, evita rodeos. Sé claro, conciso y específico. Máximo ${maxWords} palabras. No uses lenguaje innecesario.\n\n`;
-  } else if (responseStyle === 'calido') {
-    prompt += `ESTILO DE RESPUESTA: CÁLIDO. Sé cercano, amigable y acogedor. Usa un tono cálido y humano. Máximo ${maxWords} palabras. Muestra cercanía y calidez en cada respuesta.\n\n`;
   } else if (responseStyle === 'estructurado') {
     prompt += `ESTILO DE RESPUESTA: ESTRUCTURADO. Organiza tu respuesta de forma sistemática. Usa puntos claros y estructura lógica. Máximo ${maxWords} palabras. Sé organizado y metódico.\n\n`;
   } else {

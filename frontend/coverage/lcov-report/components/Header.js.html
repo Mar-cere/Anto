@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/22</span>
+                <span class='fraction'>0/26</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/22</span>
+                <span class='fraction'>0/26</span>
             </div>
         
             
@@ -202,14 +202,7 @@
 <a name='L137'></a><a href='#L137'>137</a>
 <a name='L138'></a><a href='#L138'>138</a>
 <a name='L139'></a><a href='#L139'>139</a>
-<a name='L140'></a><a href='#L140'>140</a>
-<a name='L141'></a><a href='#L141'>141</a>
-<a name='L142'></a><a href='#L142'>142</a>
-<a name='L143'></a><a href='#L143'>143</a>
-<a name='L144'></a><a href='#L144'>144</a>
-<a name='L145'></a><a href='#L145'>145</a>
-<a name='L146'></a><a href='#L146'>146</a>
-<a name='L147'></a><a href='#L147'>147</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L140'></a><a href='#L140'>140</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -220,6 +213,10 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -272,14 +269,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -345,27 +338,24 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React, { memo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { StatusBar } from 'react-native';
 import { colors } from '../styles/globalStyles';
+import { FOCUS_KICKER_COLOR } from '../styles/focusCardTheme';
 &nbsp;
-const Header = <span class="cstat-no" title="statement not covered" >memo(<span class="fstat-no" title="function not covered" >({</span> greeting, userName, userAvatar, title, showBackButton }) =&gt; {</span>
+const Header = <span class="cstat-no" title="statement not covered" >memo(<span class="fstat-no" title="function not covered" >({</span> greeting, userName, title, showBackButton, onBackPress }) =&gt; {</span>
   const navigation = <span class="cstat-no" title="statement not covered" >useNavigation();</span>
-  
+&nbsp;
   const handleBackPress = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    if (typeof onBackPress === 'function') {</span>
+<span class="cstat-no" title="statement not covered" >      onBackPress();</span>
+<span class="cstat-no" title="statement not covered" >      return;</span>
+    }
 <span class="cstat-no" title="statement not covered" >    if (navigation.canGoBack()) {</span>
 <span class="cstat-no" title="statement not covered" >      navigation.goBack();</span>
     }
@@ -402,44 +392,40 @@ const Header = <span class="cstat-no" title="statement not covered" >memo(<span 
   // Si se pasa title y showBackButton, renderizar header simple con botón de retroceso
 <span class="cstat-no" title="statement not covered" >  if (title &amp;&amp; showBackButton) {</span>
 <span class="cstat-no" title="statement not covered" >    return (</span>
-      &lt;View style={styles.headerContainer}&gt;
+      &lt;View style={styles.headerContainer} accessibilityRole="header"&gt;
         &lt;View style={styles.headerLeft}&gt;
           &lt;TouchableOpacity
             onPress={handleBackPress}
             style={styles.backButton}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Volver atrás"
+            accessibilityHint="Doble toque para volver a la pantalla anterior"
           &gt;
             &lt;MaterialCommunityIcons name="arrow-left" size={24} color={colors.white} /&gt;
           &lt;/TouchableOpacity&gt;
-          &lt;Text style={styles.title}&gt;{title}&lt;/Text&gt;
+          &lt;Text style={styles.title} accessibilityRole="header"&gt;{title}&lt;/Text&gt;
         &lt;/View&gt;
       &lt;/View&gt;
     );
   }
 &nbsp;
-  // Header original con greeting y avatar
+  // Header original con greeting
 <span class="cstat-no" title="statement not covered" >  return (</span>
-    &lt;View style={styles.headerContainer}&gt;
+    &lt;View style={styles.headerContainer} accessibilityRole="header"&gt;
       &lt;View style={styles.headerLeft}&gt;
-        &lt;Text style={styles.greeting}&gt;{greeting || 'Bienvenido'}&lt;/Text&gt;
+        &lt;Text style={styles.greeting} accessibilityRole="header"&gt;{greeting || 'Bienvenido'}&lt;/Text&gt;
       &lt;/View&gt;
       
       &lt;View style={styles.headerRight}&gt;
         &lt;TouchableOpacity 
           onPress={handleProfilePress}
-          style={styles.avatarContainer}
+          style={styles.profileButton}
+          accessibilityRole="button"
+          accessibilityLabel="Ir a perfil"
+          accessibilityHint="Doble toque para abrir tu perfil"
         &gt;
-          {userAvatar ? (
-            &lt;Image 
-              source={{ uri: userAvatar }} 
-              style={styles.avatar}
-              defaultSource={require('../images/avatar.png')}
-            /&gt;
-          ) : (
-            &lt;View style={styles.avatarPlaceholder}&gt;
-              &lt;MaterialCommunityIcons name="account" size={24} color="#A3B8E8" /&gt;
-            &lt;/View&gt;
-          )}
+            &lt;MaterialCommunityIcons name="account" size={24} color={FOCUS_KICKER_COLOR} /&gt;
         &lt;/TouchableOpacity&gt;
       &lt;/View&gt;
     &lt;/View&gt;
@@ -478,27 +464,20 @@ const styles = <span class="cstat-no" title="statement not covered" >StyleSheet.
   },
   greeting: {
     fontSize: 20,
-    color: '#A3B8E8',
+    color: FOCUS_KICKER_COLOR,
     marginBottom: 4,
   },
-  avatarContainer: {
-    borderWidth: 2,
-    borderColor: '#1ADDDB',
-    borderRadius: 22,
-    overflow: 'hidden',
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  avatarPlaceholder: {
+  profileButton: {
     width: 40,
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 20,
+    backgroundColor: 'rgba(163, 184, 232, 0.1)',
   },
 });
+&nbsp;
+<span class="cstat-no" title="statement not covered" >Header.displayName = 'Header';</span>
 &nbsp;
 export default Header;
 &nbsp;</pre></td></tr></table></pre>
@@ -508,7 +487,7 @@ export default Header;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-08T14:11:47.197Z
+                at 2026-05-07T20:12:13.462Z
             </div>
         <script src="../prettify.js"></script>
         <script>

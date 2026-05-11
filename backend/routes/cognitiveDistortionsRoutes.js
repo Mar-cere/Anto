@@ -3,7 +3,7 @@
  * Endpoints para consultar reportes de distorsiones cognitivas detectadas
  */
 import express from 'express';
-import rateLimit from 'express-rate-limit';
+import { createRateLimiter } from '../utils/createRateLimiter.js';
 import { authenticateToken as protect } from '../middleware/auth.js';
 import { requireActiveSubscription } from '../middleware/checkSubscription.js';
 import CognitiveDistortionReport from '../models/CognitiveDistortionReport.js';
@@ -13,7 +13,7 @@ import logger from '../utils/logger.js';
 const router = express.Router();
 
 // Rate limiting para distorsiones cognitivas
-const distortionsLimiter = rateLimit({
+const distortionsLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 50, // Máximo 50 requests por 15 minutos
   message: 'Demasiadas solicitudes. Por favor, espera un momento.',

@@ -10,15 +10,25 @@ export interface ChatPreferences {
   preferQuestions?: boolean;
 }
 
+/** Estilo de respuesta del chat (enum Joi en backend `userRoutes`) */
+export type ResponseStyle =
+  | 'brief'
+  | 'balanced'
+  | 'deep'
+  | 'empatico'
+  | 'estructurado';
+
 /** Preferencias de usuario (alineado con backend) */
 export interface UserPreferences {
   theme?: 'light' | 'dark' | 'auto';
   notifications?: boolean;
   language?: 'es' | 'en';
+  /** IANA time zone, p. ej. "America/Argentina/Buenos_Aires" */
+  timezone?: string;
   privacy?: {
     profileVisibility?: 'public' | 'private' | 'friends';
   };
-  responseStyle?: string;
+  responseStyle?: ResponseStyle;
   chatPreferences?: ChatPreferences;
 }
 

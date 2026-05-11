@@ -5,7 +5,7 @@
 import React from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { RefreshControl, SafeAreaView, ScrollView, StatusBar, View } from 'react-native';
-import { colors } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
 import { useCrisisDashboardScreen } from './crisisDashboard/useCrisisDashboardScreen';
 import { CrisisDashboardHeader } from './crisisDashboard/CrisisDashboardHeader';
 import { CrisisDashboardSupportSection } from './crisisDashboard/CrisisDashboardSupportSection';
@@ -17,11 +17,13 @@ import { CrisisDashboardMonthlyChart } from './crisisDashboard/CrisisDashboardMo
 import { CrisisDashboardEmotionPie } from './crisisDashboard/CrisisDashboardEmotionPie';
 import { CrisisDashboardHistory } from './crisisDashboard/CrisisDashboardHistory';
 import { CrisisDashboardEmpty } from './crisisDashboard/CrisisDashboardEmpty';
-import { styles } from './crisisDashboard/crisisDashboardStyles';
+import { useCrisisDashboardStyles } from './crisisDashboard/crisisDashboardStyles';
 import { crisisSafeGoBack, crisisSafeNavigate } from './crisisDashboard/crisisDashboardNavigate';
 
 export default function CrisisDashboardScreen() {
   const navigation = useNavigation();
+  const { colors, statusBarStyle } = useTheme();
+  const styles = useCrisisDashboardStyles();
   const {
     loading,
     refreshing,
@@ -56,7 +58,7 @@ export default function CrisisDashboardScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ScrollView
         style={styles.scrollView}
         refreshControl={

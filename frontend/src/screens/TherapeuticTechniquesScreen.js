@@ -21,20 +21,21 @@ import FloatingNavBar from '../components/FloatingNavBar';
 import Header from '../components/Header';
 import ParticleBackground from '../components/ParticleBackground';
 import TechniqueCard from '../components/therapeutic/TechniqueCard';
-import { colors } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
 import {
   CATEGORIES,
-  CATEGORY_ACCENT,
   CATEGORY_FULL_LABEL,
   CATEGORY_HINT,
   CATEGORY_ORDER,
   CATEGORY_SHORT_LABEL,
+  createCategoryAccent,
   EMOTIONS,
   SECTION_KEYS,
   TEXTS,
 } from './therapeuticTechniques/therapeuticTechniquesConstants';
 import { therapeuticSafeNavigate } from './therapeuticTechniques/therapeuticTechniquesNavigate';
-import { styles } from './therapeuticTechniques/therapeuticTechniquesStyles';
+import { SPACING } from '../constants/ui';
+import { useTherapeuticTechniquesStyles } from './therapeuticTechniques/therapeuticTechniquesStyles';
 import { useTherapeuticTechniquesScreen } from './therapeuticTechniques/useTherapeuticTechniquesScreen';
 
 const initialExpanded = () => ({
@@ -47,6 +48,8 @@ const initialExpanded = () => ({
 const TherapeuticTechniquesScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { colors, statusBarStyle } = useTheme();
+  const styles = useTherapeuticTechniquesStyles();
   const {
     selectedEmotion,
     setSelectedEmotion,
@@ -67,6 +70,8 @@ const TherapeuticTechniquesScreen = () => {
     const found = EMOTIONS.find((e) => e.key === selectedEmotion);
     return found?.label ?? EMOTIONS[0].label;
   }, [selectedEmotion]);
+
+  const categoryAccent = useMemo(() => createCategoryAccent(colors), [colors]);
 
   const clearEmotionFilter = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -122,7 +127,7 @@ const TherapeuticTechniquesScreen = () => {
             <MaterialCommunityIcons
               name={emotion.icon}
               size={18}
-              color={selected ? colors.white : colors.primary}
+              color={selected ? colors.textOnPrimary : colors.primary}
             />
             <Text
               style={[styles.emotionButtonText, selected && styles.emotionButtonTextActive]}
@@ -143,7 +148,7 @@ const TherapeuticTechniquesScreen = () => {
     const short = CATEGORY_SHORT_LABEL[categoryKey];
     const full = CATEGORY_FULL_LABEL[categoryKey];
     const hint = CATEGORY_HINT[categoryKey];
-    const accent = CATEGORY_ACCENT[categoryKey] || colors.primary;
+    const accent = categoryAccent[categoryKey] || colors.primary;
 
     return (
       <View style={styles.categorySection} key={categoryKey}>
@@ -224,7 +229,7 @@ const TherapeuticTechniquesScreen = () => {
           <MaterialCommunityIcons
             name={isFilteredEmpty ? 'filter-off' : 'book-open-variant'}
             size={48}
-            color={colors.accent}
+            color={colors.textSecondary}
           />
           <Text style={styles.emptyText}>
             {isFilteredEmpty ? TEXTS.NO_MATCH_FILTER : TEXTS.NO_TECHNIQUES}
@@ -241,7 +246,10 @@ const TherapeuticTechniquesScreen = () => {
     return (
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA },
+        ]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -263,7 +271,7 @@ const TherapeuticTechniquesScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header title={TEXTS.TITLE} showBackButton />
 

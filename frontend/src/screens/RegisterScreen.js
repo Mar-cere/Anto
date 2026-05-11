@@ -13,15 +13,16 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { useNavigation } from '@react-navigation/native';
 import ParticleBackground from '../components/ParticleBackground';
 import OfflineBanner from '../components/OfflineBanner';
-import { colors } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
 import { useRegisterScreen } from './register/useRegisterScreen';
 import { RegisterForm } from './register/RegisterForm';
 import { NameInfoModal } from './register/NameInfoModal';
 import { TermsModal } from './register/TermsModal';
-import { styles } from './register/registerScreenStyles';
-import { STATUS_BAR_STYLE, STATUS_BAR_BACKGROUND } from './register/registerScreenConstants';
+import { useRegisterScreenStyles } from './register/registerScreenStyles';
 const RegisterScreen = () => {
   const navigation = useNavigation();
+  const { colors, statusBarStyle } = useTheme();
+  const styles = useRegisterScreenStyles();
   const {
     formData,
     errors,
@@ -52,7 +53,7 @@ const RegisterScreen = () => {
 
   return (
     <KeyboardAwareScrollView contentContainerStyle={styles.container}>
-      <StatusBar barStyle={STATUS_BAR_STYLE} backgroundColor={STATUS_BAR_BACKGROUND} />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <OfflineBanner />
       <ImageBackground source={require('../images/back.png')} style={styles.background} imageStyle={styles.imageStyle}>
         <ParticleBackground />

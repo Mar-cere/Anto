@@ -2,7 +2,7 @@
  * Constantes y rate limiters para rutas de chat.
  * Extraído de chatRoutes para mantener el archivo principal manejable.
  */
-import rateLimit from 'express-rate-limit';
+import { createRateLimiter } from '../../utils/createRateLimiter.js';
 
 // Límites de mensajes y contexto
 export const LIMITE_MENSAJES = 100;
@@ -11,7 +11,7 @@ export const VENTANA_CONTEXTO = 20 * 60 * 1000;
 /** Últimos N mensajes de la misma conversación (sin ventana temporal) para contexto acotado. */
 export const HISTORIAL_LIMITE = 24;
 
-export const deleteConversationLimiter = rateLimit({
+export const deleteConversationLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 10,
   message: 'Demasiadas eliminaciones de conversaciones. Por favor, intente más tarde.',
@@ -19,7 +19,7 @@ export const deleteConversationLimiter = rateLimit({
   legacyHeaders: false
 });
 
-export const patchMessageLimiter = rateLimit({
+export const patchMessageLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 30,
   message: 'Demasiadas actualizaciones de mensajes. Por favor, intente más tarde.',
@@ -28,7 +28,7 @@ export const patchMessageLimiter = rateLimit({
 });
 
 /** Valoraciones pulgar arriba/abajo (independiente del PATCH de estado de entrega). */
-export const messageFeedbackLimiter = rateLimit({
+export const messageFeedbackLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 120,
   message: 'Demasiadas valoraciones seguidas. Espera un momento e inténtalo de nuevo.',
@@ -36,7 +36,7 @@ export const messageFeedbackLimiter = rateLimit({
   legacyHeaders: false
 });
 
-export const sendMessageLimiter = rateLimit({
+export const sendMessageLimiter = createRateLimiter({
   windowMs: 1 * 60 * 1000,
   max: 20,
   message: 'Demasiados mensajes enviados. Por favor, espera un momento antes de intentar de nuevo.',
@@ -47,7 +47,7 @@ export const sendMessageLimiter = rateLimit({
 });
 
 /** Programación best-effort de continuidad del chat (#4 + #47); límite por usuario autenticado. */
-export const scheduleSessionSummaryLimiter = rateLimit({
+export const scheduleSessionSummaryLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 60,
   message: 'Demasiadas peticiones de programación. Intenta más tarde.',

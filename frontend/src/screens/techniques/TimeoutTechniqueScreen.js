@@ -6,7 +6,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -19,8 +19,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
-import { colors } from '../../styles/globalStyles';
-import { techniqueScreenStyles } from './techniqueScreenStyles';
+import { useTheme } from '../../context/ThemeContext';
+import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const TIMEOUT_STEPS = [
   {
@@ -58,9 +58,29 @@ const TIMEOUT_STEPS = [
 const TimeoutTechniqueScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { colors, statusBarStyle } = useTheme();
+  const techniqueScreenStyles = useTechniqueScreenStyles();
   const [currentStep, setCurrentStep] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(300);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        scrollView: {
+          flex: 1,
+        },
+        activeBlock: {
+          marginTop: 4,
+          gap: 14,
+        },
+      }),
+    [colors],
+  );
 
   useEffect(() => {
     let interval = null;
@@ -106,7 +126,7 @@ const TimeoutTechniqueScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header
         title="Técnica de Tiempo Fuera"
@@ -188,18 +208,6 @@ const TimeoutTechniqueScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  activeBlock: {
-    marginTop: 4,
-    gap: 14,
-  },
-});
+// `styles` se deriva del tema dentro del componente.
 
 export default TimeoutTechniqueScreen;

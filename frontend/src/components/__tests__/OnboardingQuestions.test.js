@@ -35,14 +35,22 @@ jest.mock('expo-haptics', () => ({
   ImpactFeedbackStyle: { Light: 'light', Medium: 'medium' }
 }));
 
-jest.mock('../../styles/globalStyles', () => ({
-  colors: {
-    primary: '#1adddb',
-    white: '#ffffff',
-    text: '#ffffff',
-    textSecondary: '#a3b8e8',
-    error: '#c62828'
-  }
+jest.mock('../../context/ThemeContext', () => ({
+  useTheme: () => ({
+    colors: {
+      primary: '#1adddb',
+      textOnPrimary: '#ffffff',
+      text: '#ffffff',
+      textSecondary: '#a3b8e8',
+      error: '#c62828',
+      modalSurface: '#122052',
+      chromeCard: '#122052',
+      accentLine: 'rgba(30, 131, 211, 0.25)',
+      accentLineSoft: 'rgba(30, 131, 211, 0.12)',
+      border: 'rgba(163, 184, 232, 0.25)',
+      glassFill: 'rgba(255,255,255,0.03)',
+    },
+  }),
 }));
 
 const mockPatch = jest.fn();

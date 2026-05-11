@@ -1,6 +1,10 @@
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import notifications from '../data/notifications';
+import { lightColors } from '../styles/themePalettes';
+
+/** Color de acento en Android (canal); alineado con marca / primary de paleta clara. */
+const ANDROID_NOTIFICATION_ACCENT = lightColors.primary;
 
 const TriggerType = Notifications.SchedulableTriggerInputTypes;
 
@@ -94,7 +98,7 @@ export const scheduleDailyNotification = async (hour, minute) => {
       android: {
         channelId: 'anto-notifications',
         smallIcon: 'notification-icon',
-        color: '#1ADDDB',
+        color: ANDROID_NOTIFICATION_ACCENT,
       },
       ios: {
         sound: true,
@@ -117,7 +121,7 @@ export const scheduleDailyNotification = async (hour, minute) => {
       android: {
         channelId: 'anto-notifications',
         smallIcon: 'notification-icon',
-        color: '#1ADDDB',
+        color: ANDROID_NOTIFICATION_ACCENT,
       },
       ios: {
         sound: true,
@@ -288,7 +292,7 @@ export const scheduleHabitNotification = async (habit) => {
         android: {
           channelId: 'anto-habits',
           smallIcon: 'notification-icon',
-          color: '#1ADDDB',
+          color: ANDROID_NOTIFICATION_ACCENT,
         },
         ios: {
           sound: true,

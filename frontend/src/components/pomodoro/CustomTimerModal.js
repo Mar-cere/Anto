@@ -23,6 +23,7 @@ import {
   MAX_CUSTOM_MINUTES_LENGTH,
   MAX_PREP_MINUTES_LENGTH,
   MODAL_BUTTON_BORDER_RADIUS,
+  MODAL_BUTTON_PADDING,
   MODAL_BUTTONS_GAP,
   MODAL_CONTENT_PADDING,
   MODAL_MAX_WIDTH,
@@ -39,8 +40,6 @@ import {
   TIME_INPUT_WIDTH,
   TEXTS,
 } from '../../screens/pomodoro/pomodoroScreenConstants';
-
-const MODAL_BUTTON_PADDING = 16;
 
 export default function CustomTimerModal({
   visible,

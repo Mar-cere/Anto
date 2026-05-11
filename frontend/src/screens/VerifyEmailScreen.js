@@ -9,7 +9,7 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -31,10 +31,11 @@ import ParticleBackground from '../components/ParticleBackground';
 import OfflineBanner from '../components/OfflineBanner';
 import { api, ENDPOINTS } from '../config/api';
 import { ROUTES } from '../constants/routes';
-import { colors, globalStyles } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { clearPersistedChatSession } from '../utils/chatSessionStorage';
 import { useToast } from '../context/ToastContext';
+import { SPACING } from '../constants/ui';
 
 // Constantes
 const CODE_LENGTH = 6;
@@ -45,6 +46,130 @@ const VerifyEmailScreen = () => {
   const route = useRoute();
   const { refreshSession } = useAuth();
   const { showToast } = useToast();
+  const { colors, statusBarStyle } = useTheme();
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+        },
+        background: {
+          flex: 1,
+        },
+        imageStyle: {
+          opacity: 0.3,
+        },
+        scrollContent: {
+          flexGrow: 1,
+          justifyContent: 'center',
+          padding: SPACING.SCREEN_EDGE_INSET,
+        },
+        content: {
+          flex: 1,
+          justifyContent: 'center',
+        },
+        backButton: {
+          position: 'absolute',
+          top: 50,
+          left: 20,
+          zIndex: 10,
+          padding: 8,
+        },
+        header: {
+          alignItems: 'center',
+          marginBottom: 40,
+          marginTop: 60,
+        },
+        title: {
+          fontSize: 28,
+          fontWeight: 'bold',
+          color: colors.white,
+          marginTop: 20,
+          marginBottom: 12,
+          textAlign: 'center',
+        },
+        subtitle: {
+          fontSize: 16,
+          color: colors.textSecondary,
+          textAlign: 'center',
+          marginBottom: 8,
+        },
+        email: {
+          fontSize: 16,
+          fontWeight: '600',
+          color: colors.primary,
+          textAlign: 'center',
+        },
+        codeContainer: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          marginBottom: 24,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+        },
+        codeInput: {
+          width: 45,
+          height: 60,
+          borderWidth: 2,
+          borderColor: colors.border,
+          borderRadius: 12,
+          backgroundColor: colors.chromeInput,
+          color: colors.text,
+          fontSize: 24,
+          fontWeight: 'bold',
+          textAlign: 'center',
+        },
+        codeInputFilled: {
+          borderColor: colors.primary,
+          backgroundColor: colors.accentLineSoft,
+        },
+        timer: {
+          fontSize: 14,
+          color: colors.textSecondary,
+          textAlign: 'center',
+          marginBottom: 24,
+        },
+        verifyButton: {
+          backgroundColor: colors.primary,
+          paddingVertical: 16,
+          borderRadius: 12,
+          alignItems: 'center',
+          marginBottom: 16,
+        },
+        verifyButtonDisabled: {
+          opacity: 0.5,
+        },
+        verifyButtonText: {
+          color: colors.white,
+          fontSize: 18,
+          fontWeight: 'bold',
+        },
+        resendButton: {
+          paddingVertical: 12,
+          alignItems: 'center',
+        },
+        resendButtonText: {
+          color: colors.primary,
+          fontSize: 16,
+          fontWeight: '600',
+        },
+        infoContainer: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginTop: 24,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+        },
+        infoText: {
+          flex: 1,
+          fontSize: 14,
+          color: colors.textSecondary,
+          marginLeft: 8,
+          textAlign: 'center',
+        },
+      }),
+    [colors],
+  );
+
   const email = route.params?.email || '';
   
   const [code, setCode] = useState(['', '', '', '', '', '']);
@@ -244,7 +369,7 @@ const VerifyEmailScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <OfflineBanner />
       
       <ImageBackground
@@ -350,124 +475,6 @@ const VerifyEmailScreen = () => {
     </KeyboardAvoidingView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  background: {
-    flex: 1,
-  },
-  imageStyle: {
-    opacity: 0.3,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  backButton: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    zIndex: 10,
-    padding: 8,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 40,
-    marginTop: 60,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginTop: 20,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  email: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primary,
-    textAlign: 'center',
-  },
-  codeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-    paddingHorizontal: 20,
-  },
-  codeInput: {
-    width: 45,
-    height: 60,
-    borderWidth: 2,
-    borderColor: colors.border,
-    borderRadius: 12,
-    backgroundColor: 'rgba(29, 43, 95, 0.8)',
-    color: colors.white,
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  codeInputFilled: {
-    borderColor: colors.primary,
-    backgroundColor: 'rgba(26, 221, 219, 0.2)',
-  },
-  timer: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  verifyButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  verifyButtonDisabled: {
-    opacity: 0.5,
-  },
-  verifyButtonText: {
-    color: colors.white,
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  resendButton: {
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  resendButtonText: {
-    color: colors.primary,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  infoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 24,
-    paddingHorizontal: 20,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginLeft: 8,
-    textAlign: 'center',
-  },
-});
 
 export default VerifyEmailScreen;
 

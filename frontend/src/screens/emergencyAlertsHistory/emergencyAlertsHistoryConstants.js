@@ -2,8 +2,18 @@
  * Constantes para EmergencyAlertsHistoryScreen
  */
 import { Dimensions } from 'react-native';
+import { lightColors } from '../../styles/themePalettes';
 
 const { width } = Dimensions.get('window');
+
+function rgbaFromHex(hex, alpha = 1) {
+  const h = String(hex).replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  const a = Math.min(1, Math.max(0, Number(alpha) === Number(alpha) ? alpha : 1));
+  return `rgba(${r},${g},${b},${a})`;
+}
 
 export const CHART_WIDTH = width - 40;
 export const CHART_HEIGHT = 220;
@@ -93,26 +103,36 @@ export const TEXTS = {
   PATTERNS_WEEKEND_VS_WEEKDAY: 'Fin de semana vs días laborables',
 };
 
-export const CHART_CONFIG = {
-  backgroundColor: '#1D2B5F',
-  backgroundGradientFrom: '#1D2B5F',
-  backgroundGradientTo: '#1D2B5F',
-  decimalPlaces: 0,
-  color: (opacity = 1) => `rgba(26, 221, 219, ${opacity})`,
-  labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-  style: { borderRadius: 16 },
-  propsForDots: { r: '6', strokeWidth: '2', stroke: '#1ADDDB' },
-};
+export function createEmergencyChartConfig(colors) {
+  const surface = colors.surface ?? colors.cardBackground ?? colors.background;
+  return {
+    backgroundColor: surface,
+    backgroundGradientFrom: surface,
+    backgroundGradientTo: surface,
+    decimalPlaces: 0,
+    color: (opacity = 1) => rgbaFromHex(colors.primary, opacity),
+    labelColor: (opacity = 1) => rgbaFromHex(colors.text, opacity),
+    style: { borderRadius: 16 },
+    propsForDots: { r: '6', strokeWidth: '2', stroke: colors.primary },
+  };
+}
 
-export const PIE_CHART_CONFIG = {
-  backgroundColor: '#1D2B5F',
-  backgroundGradientFrom: '#1D2B5F',
-  backgroundGradientTo: '#1D2B5F',
-  color: (opacity = 1) => `rgba(26, 221, 219, ${opacity})`,
-  labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-  decimalPlaces: 0,
-  style: { borderRadius: 16 },
-};
+export function createEmergencyPieChartConfig(colors) {
+  const surface = colors.surface ?? colors.cardBackground ?? colors.background;
+  return {
+    backgroundColor: surface,
+    backgroundGradientFrom: surface,
+    backgroundGradientTo: surface,
+    color: (opacity = 1) => rgbaFromHex(colors.primary, opacity),
+    labelColor: (opacity = 1) => rgbaFromHex(colors.text, opacity),
+    decimalPlaces: 0,
+    style: { borderRadius: 16 },
+  };
+}
+
+/** Compatibilidad: tema claro de paleta. */
+export const CHART_CONFIG = createEmergencyChartConfig(lightColors);
+export const PIE_CHART_CONFIG = createEmergencyPieChartConfig(lightColors);
 
 export const TABS = {
   HISTORY: 'history',
@@ -123,13 +143,20 @@ export const TABS = {
 /** Límite de caracteres del detalle en pantalla de error global. */
 export const EMERGENCY_ERROR_DETAIL_MAX_LEN = 280;
 
-export const STATUS_COLORS = {
-  sent: '#4ECDC4',
-  partial: '#FFA500',
-  failed: '#FF6B6B',
-};
+export function createStatusColors(colors) {
+  return {
+    sent: colors.success,
+    partial: colors.warning,
+    failed: colors.error,
+  };
+}
 
-export const RISK_COLORS = {
-  MEDIUM: '#FFA500',
-  HIGH: '#FF6B6B',
-};
+export function createRiskColors(colors) {
+  return {
+    MEDIUM: colors.warning,
+    HIGH: colors.error,
+  };
+}
+
+export const STATUS_COLORS = createStatusColors(lightColors);
+export const RISK_COLORS = createRiskColors(lightColors);

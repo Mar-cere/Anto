@@ -6,7 +6,7 @@
  * @author AntoApp Team
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -26,7 +26,8 @@ import Header from '../components/Header';
 import FloatingNavBar from '../components/FloatingNavBar';
 import paymentService from '../services/paymentService';
 import { getApiErrorMessage } from '../utils/apiErrorHandler';
-import { colors } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING } from '../constants/ui';
 
 // Constantes
 const TEXTS = {
@@ -52,6 +53,135 @@ const TEXTS = {
 const PaymentMethodScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { colors, statusBarStyle } = useTheme();
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        centerContainer: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 32,
+        },
+        loadingText: {
+          marginTop: 16,
+          color: colors.textSecondary,
+          fontSize: 16,
+        },
+        errorText: {
+          marginTop: 16,
+          marginBottom: 24,
+          color: colors.error,
+          fontSize: 16,
+          textAlign: 'center',
+        },
+        retryButton: {
+          backgroundColor: colors.primary,
+          paddingHorizontal: 24,
+          paddingVertical: 12,
+          borderRadius: 12,
+        },
+        retryButtonText: {
+          color: colors.textOnPrimary,
+          fontSize: 16,
+          fontWeight: 'bold',
+        },
+        scrollView: {
+          flex: 1,
+        },
+        scrollContent: {
+          padding: SPACING.SCREEN_EDGE_INSET,
+        },
+        infoCard: {
+          backgroundColor: colors.cardBackground,
+          borderRadius: 12,
+          padding: 24,
+          marginBottom: 16,
+          alignItems: 'center',
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        infoTitle: {
+          fontSize: 18,
+          fontWeight: 'bold',
+          color: colors.text,
+          marginTop: 16,
+          marginBottom: 8,
+          textAlign: 'center',
+        },
+        infoText: {
+          fontSize: 14,
+          color: colors.textSecondary,
+          textAlign: 'center',
+          marginBottom: 16,
+        },
+        primaryButton: {
+          backgroundColor: colors.primary,
+          paddingHorizontal: 24,
+          paddingVertical: 12,
+          borderRadius: 12,
+          marginTop: 8,
+        },
+        primaryButtonText: {
+          color: colors.textOnPrimary,
+          fontSize: 16,
+          fontWeight: 'bold',
+        },
+        secondaryButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: `${colors.primary}20`,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: 10,
+          borderRadius: 12,
+          marginTop: 8,
+        },
+        secondaryButtonText: {
+          color: colors.primary,
+          fontSize: 14,
+          fontWeight: '600',
+          marginLeft: 8,
+        },
+        section: {
+          marginTop: 8,
+        },
+        sectionTitle: {
+          fontSize: 18,
+          fontWeight: 'bold',
+          color: colors.text,
+          marginBottom: 16,
+        },
+        methodCard: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: colors.cardBackground,
+          borderRadius: 12,
+          padding: SPACING.SCREEN_EDGE_INSET,
+          marginBottom: 12,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        methodInfo: {
+          flex: 1,
+          marginLeft: 16,
+        },
+        methodName: {
+          fontSize: 16,
+          fontWeight: '600',
+          color: colors.text,
+          marginBottom: 4,
+        },
+        methodDescription: {
+          fontSize: 14,
+          color: colors.textSecondary,
+        },
+      }),
+    [colors],
+  );
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -221,7 +351,10 @@ const PaymentMethodScreen = () => {
     return (
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {renderCurrentMethod()}
@@ -239,7 +372,7 @@ const PaymentMethodScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} />
       <Header
         greeting=""
         userName=""
@@ -251,131 +384,6 @@ const PaymentMethodScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  loadingText: {
-    marginTop: 16,
-    color: colors.textSecondary,
-    fontSize: 16,
-  },
-  errorText: {
-    marginTop: 16,
-    marginBottom: 24,
-    color: colors.error,
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  retryButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  retryButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-  },
-  infoCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 24,
-    marginBottom: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  infoTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginTop: 16,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  infoText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-    marginTop: 8,
-  },
-  primaryButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  secondaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primary + '20',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 12,
-    marginTop: 8,
-  },
-  secondaryButtonText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  section: {
-    marginTop: 8,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 16,
-  },
-  methodCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  methodInfo: {
-    flex: 1,
-    marginLeft: 16,
-  },
-  methodName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  methodDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-});
 
 export default PaymentMethodScreen;
 

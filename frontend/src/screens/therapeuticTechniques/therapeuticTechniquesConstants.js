@@ -2,6 +2,8 @@
  * Constantes para la pantalla de técnicas terapéuticas.
  */
 
+import { lightColors } from '../../styles/themePalettes';
+
 export const CATEGORIES = {
   IMMEDIATE: 'immediate',
   CBT: 'CBT',
@@ -41,13 +43,18 @@ export const TEXTS = {
   SECTION_COLLAPSE: 'Cerrar sección',
 };
 
-/** Acento visual por categoría (alineado con TechniqueCard). */
-export const CATEGORY_ACCENT = {
-  [CATEGORIES.IMMEDIATE]: '#FFB800',
-  [CATEGORIES.CBT]: '#4A90E2',
-  [CATEGORIES.DBT]: '#E94B3C',
-  [CATEGORIES.ACT]: '#50C878',
-};
+/** Acento visual por categoría (tokens del tema; TechniqueCard / cabeceras). */
+export function createCategoryAccent(colors) {
+  return {
+    [CATEGORIES.IMMEDIATE]: colors.warning,
+    [CATEGORIES.CBT]: colors.primary,
+    [CATEGORIES.DBT]: colors.error,
+    [CATEGORIES.ACT]: colors.success,
+  };
+}
+
+/** Compatibilidad: paleta clara. */
+export const CATEGORY_ACCENT = createCategoryAccent(lightColors);
 
 /** Una frase por categoría: qué aporta (visible aunque el acordeón esté cerrado). */
 export const CATEGORY_HINT = {

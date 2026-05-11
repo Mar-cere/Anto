@@ -5,7 +5,7 @@
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Animated,
   StyleSheet,
@@ -13,7 +13,8 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { colors } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING } from '../constants/ui';
 
 const ProtocolProgressIndicator = ({ 
   protocol, 
@@ -22,6 +23,7 @@ const ProtocolProgressIndicator = ({
   onSkip,
   onPause 
 }) => {
+  const { colors } = useTheme();
   const progress = currentStep / totalSteps;
   const progressAnim = React.useRef(new Animated.Value(progress)).current;
 
@@ -37,6 +39,81 @@ const ProtocolProgressIndicator = ({
     inputRange: [0, 1],
     outputRange: ['0%', '100%'],
   });
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          backgroundColor: colors.cardBackground,
+          borderRadius: 12,
+          padding: SPACING.SCREEN_EDGE_INSET,
+          marginBottom: 12,
+          borderWidth: 1,
+          borderColor: colors.accentLine,
+          shadowColor: colors.glassShadow,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 3,
+        },
+        header: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 8,
+        },
+        headerLeft: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+        },
+        title: {
+          fontSize: 14,
+          fontWeight: '600',
+          color: colors.text,
+        },
+        pauseButton: {
+          padding: 4,
+        },
+        protocolName: {
+          fontSize: 16,
+          fontWeight: '600',
+          color: colors.primary,
+          marginBottom: 12,
+        },
+        progressContainer: {
+          marginBottom: 12,
+        },
+        progressBar: {
+          height: 6,
+          backgroundColor: colors.border,
+          borderRadius: 3,
+          overflow: 'hidden',
+          marginBottom: 8,
+        },
+        progressFill: {
+          height: '100%',
+          backgroundColor: colors.primary,
+          borderRadius: 3,
+        },
+        progressText: {
+          fontSize: 12,
+          color: colors.textSecondary,
+          textAlign: 'right',
+        },
+        skipButton: {
+          alignSelf: 'flex-end',
+          paddingVertical: 6,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+        },
+        skipButtonText: {
+          fontSize: 12,
+          color: colors.textSecondary,
+          textDecorationLine: 'underline',
+        },
+      }),
+    [colors],
+  );
 
   return (
     <View style={styles.container}>
@@ -96,77 +173,6 @@ const ProtocolProgressIndicator = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.primary + '30',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  pauseButton: {
-    padding: 4,
-  },
-  protocolName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primary,
-    marginBottom: 12,
-  },
-  progressContainer: {
-    marginBottom: 12,
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: colors.border,
-    borderRadius: 3,
-    overflow: 'hidden',
-    marginBottom: 8,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: colors.primary,
-    borderRadius: 3,
-  },
-  progressText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    textAlign: 'right',
-  },
-  skipButton: {
-    alignSelf: 'flex-end',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  skipButtonText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    textDecorationLine: 'underline',
-  },
-});
 
 export default ProtocolProgressIndicator;
 

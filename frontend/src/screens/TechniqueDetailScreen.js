@@ -6,7 +6,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -23,14 +23,9 @@ import ParticleBackground from '../components/ParticleBackground';
 import BreathingExercise from '../components/therapeutic/BreathingExercise';
 import GroundingExercise from '../components/therapeutic/GroundingExercise';
 import { api, ENDPOINTS } from '../config/api';
-import { colors } from '../styles/globalStyles';
-import {
-  FOCUS_ACCENT_BORDER,
-  FOCUS_BORDER_SUBTLE,
-  FOCUS_KICKER_COLOR,
-  FOCUS_META,
-  FOCUS_PANEL,
-} from '../styles/focusCardTheme';
+import { useTheme } from '../context/ThemeContext';
+import { getFocusTheme } from '../styles/focusCardTheme';
+import { SPACING } from '../constants/ui';
 
 // Constantes de textos
 const TEXTS = {
@@ -56,6 +51,176 @@ const TechniqueDetailScreen = () => {
   const route = useRoute();
   const insets = useSafeAreaInsets();
   const { technique } = route.params || {};
+  const { colors, resolvedScheme, statusBarStyle } = useTheme();
+  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        scrollView: {
+          flex: 1,
+        },
+        scrollContent: {
+          padding: SPACING.SCREEN_EDGE_INSET,
+        },
+        header: {
+          marginBottom: 22,
+          ...t.FOCUS_PANEL,
+        },
+        typeBadge: {
+          alignSelf: 'flex-start',
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: 6,
+          borderRadius: 14,
+          marginBottom: 12,
+        },
+        typeText: {
+          fontSize: 11,
+          fontWeight: '600',
+          letterSpacing: 1.2,
+          textTransform: 'uppercase',
+        },
+        title: {
+          fontSize: 22,
+          fontWeight: '600',
+          color: colors.text,
+          lineHeight: 30,
+          letterSpacing: 0.2,
+        },
+        section: {
+          marginBottom: 20,
+          ...t.FOCUS_PANEL,
+        },
+        sectionTitleRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+          marginBottom: 12,
+        },
+        sectionTitle: {
+          fontSize: 11,
+          fontWeight: '600',
+          letterSpacing: 2,
+          textTransform: 'uppercase',
+          color: t.FOCUS_KICKER_COLOR,
+          marginBottom: 12,
+        },
+        sectionContent: {
+          fontSize: 16,
+          color: t.FOCUS_META,
+          lineHeight: 24,
+          letterSpacing: 0.2,
+        },
+        stepItem: {
+          flexDirection: 'row',
+          marginBottom: 18,
+          gap: 14,
+          alignItems: 'flex-start',
+        },
+        stepNumber: {
+          width: 32,
+          height: 32,
+          borderRadius: 12,
+          backgroundColor: colors.accentLineSoft,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_ACCENT_BORDER,
+          justifyContent: 'center',
+          alignItems: 'center',
+          flexShrink: 0,
+        },
+        stepNumberText: {
+          fontSize: 15,
+          fontWeight: '700',
+          color: colors.primary,
+        },
+        stepText: {
+          flex: 1,
+          fontSize: 16,
+          color: colors.text,
+          lineHeight: 24,
+          letterSpacing: 0.2,
+        },
+        subTechnique: {
+          marginBottom: 16,
+          padding: SPACING.SCREEN_EDGE_INSET,
+          backgroundColor: colors.glassFill,
+          borderRadius: 14,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        subTechniqueTitle: {
+          fontSize: 16,
+          fontWeight: '600',
+          color: colors.text,
+          marginBottom: 12,
+        },
+        exerciseButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.accentLineSoft,
+          paddingVertical: 16,
+          paddingHorizontal: 24,
+          borderRadius: 16,
+          gap: 12,
+          marginTop: 8,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_ACCENT_BORDER,
+        },
+        exerciseButtonText: {
+          fontSize: 17,
+          fontWeight: '600',
+          color: colors.text,
+        },
+        exerciseContainer: {
+          flex: 1,
+          padding: SPACING.SCREEN_EDGE_INSET,
+        },
+        completedContainer: {
+          alignItems: 'center',
+          padding: SPACING.SCREEN_EDGE_INSET,
+          marginTop: 20,
+        },
+        completedText: {
+          fontSize: 18,
+          fontWeight: '600',
+          color: colors.success,
+          marginTop: 12,
+          marginBottom: 20,
+        },
+        retryButton: {
+          paddingHorizontal: 24,
+          paddingVertical: 12,
+          borderRadius: 14,
+          backgroundColor: colors.accentLineSoft,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_ACCENT_BORDER,
+        },
+        retryButtonText: {
+          fontSize: 16,
+          fontWeight: '600',
+          color: colors.text,
+        },
+        errorContainer: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: SPACING.SCREEN_EDGE_INSET,
+          gap: 16,
+        },
+        errorText: {
+          fontSize: 18,
+          color: colors.error,
+          textAlign: 'center',
+          fontWeight: '600',
+        },
+      }),
+    [colors, t],
+  );
 
   const [showExercise, setShowExercise] = useState(false);
   const [exerciseCompleted, setExerciseCompleted] = useState(false);
@@ -63,7 +228,7 @@ const TechniqueDetailScreen = () => {
   if (!technique) {
     return (
       <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-        <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+        <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
         <ParticleBackground />
         <Header title="Técnica" showBackButton />
         <View style={styles.errorContainer}>
@@ -149,7 +314,12 @@ const TechniqueDetailScreen = () => {
     return (
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          !showExercise
+            ? { paddingBottom: insets.bottom + SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA }
+            : { paddingBottom: insets.bottom + SPACING.SCREEN_EDGE_INSET },
+        ]}
       >
         {/* Header de la técnica */}
         <View style={styles.header}>
@@ -260,7 +430,7 @@ const TechniqueDetailScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header title={technique.name} showBackButton />
       {renderContent()}
@@ -268,171 +438,6 @@ const TechniqueDetailScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 120,
-  },
-  header: {
-    marginBottom: 22,
-    ...FOCUS_PANEL,
-  },
-  typeBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    marginBottom: 12,
-  },
-  typeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: colors.white,
-    lineHeight: 30,
-    letterSpacing: 0.2,
-  },
-  section: {
-    marginBottom: 20,
-    ...FOCUS_PANEL,
-  },
-  sectionTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    color: FOCUS_KICKER_COLOR,
-    marginBottom: 12,
-  },
-  sectionContent: {
-    fontSize: 16,
-    color: FOCUS_META,
-    lineHeight: 24,
-    letterSpacing: 0.2,
-  },
-  stepItem: {
-    flexDirection: 'row',
-    marginBottom: 18,
-    gap: 14,
-    alignItems: 'flex-start',
-  },
-  stepNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 12,
-    backgroundColor: 'rgba(26, 221, 219, 0.22)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_ACCENT_BORDER,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexShrink: 0,
-  },
-  stepNumberText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  stepText: {
-    flex: 1,
-    fontSize: 16,
-    color: colors.white,
-    lineHeight: 24,
-    letterSpacing: 0.2,
-  },
-  subTechnique: {
-    marginBottom: 16,
-    padding: 16,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-  },
-  subTechniqueTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 12,
-  },
-  exerciseButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(26, 221, 219, 0.2)',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    gap: 12,
-    marginTop: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_ACCENT_BORDER,
-  },
-  exerciseButtonText: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.white,
-  },
-  exerciseContainer: {
-    flex: 1,
-    padding: 20,
-  },
-  completedContainer: {
-    alignItems: 'center',
-    padding: 20,
-    marginTop: 20,
-  },
-  completedText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.success,
-    marginTop: 12,
-    marginBottom: 20,
-  },
-  retryButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: 'rgba(26, 221, 219, 0.18)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_ACCENT_BORDER,
-  },
-  retryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.white,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    gap: 16,
-  },
-  errorText: {
-    fontSize: 18,
-    color: colors.error,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-});
 
 export default TechniqueDetailScreen;
 

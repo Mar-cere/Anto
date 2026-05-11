@@ -1,7 +1,45 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING } from '../constants/ui';
 
 const EmotionBanner = ({ emotions, onPress }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        emergencyContainer: {
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 10,
+        },
+        emergencyTextContainer: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: 12,
+          maxWidth: '95%',
+        },
+        emotionContainer: {
+          width: 130,
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: 24,
+        },
+        emotionText: {
+          fontSize: 15,
+          color: colors.primary,
+          fontWeight: 'bold',
+        },
+        emergencyText: {
+          fontSize: 15,
+          color: colors.primary,
+          fontWeight: 'bold',
+        },
+      }),
+    [colors],
+  );
   const [currentEmotion, setCurrentEmotion] = useState(0);
   const emotionOpacity = useRef(new Animated.Value(1)).current;
   const emotionTranslateX = useRef(new Animated.Value(0)).current;
@@ -120,43 +158,5 @@ const EmotionBanner = ({ emotions, onPress }) => {
     </TouchableOpacity>
   );
 };
-
-const styles = StyleSheet.create({
-  emergencyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-  emergencyTextContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    maxWidth: '95%',
-  },
-  emotionContainer: {
-    width: 130, // Ancho aumentado para acomodar textos más largos
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 24, // Altura fija para mantener la alineaciónr
-  },
-  emotionText: {
-    fontSize: 15,
-    color: '#1ADDDB',
-    fontWeight: 'bold',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  emergencyText: {
-    fontSize: 15,
-    color: '#1ADDDB',
-    fontWeight: 'bold',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-});
 
 export default EmotionBanner; 

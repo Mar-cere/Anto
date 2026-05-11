@@ -3,9 +3,7 @@
  * @author AntoApp Team
  */
 
-jest.mock('../../../styles/globalStyles', () => ({
-  colors: { background: '#0a0', primary: '#1dd', white: '#fff' },
-}));
+jest.mock('../../../styles/themePalettes', () => jest.requireActual('../../../styles/themePalettes'));
 
 import {
   TEXTS,
@@ -19,6 +17,7 @@ import {
   DEFAULT_DETAILED_STATS,
   STORAGE_KEYS,
 } from '../profileScreenConstants';
+import { lightColors } from '../../../styles/themePalettes';
 
 describe('profileScreenConstants', () => {
   describe('TEXTS', () => {
@@ -69,15 +68,26 @@ describe('profileScreenConstants', () => {
 
   describe('COLORS', () => {
     it('debe tener BACKGROUND, PRIMARY, WHITE', () => {
-      expect(COLORS.BACKGROUND).toBe('#0a0');
-      expect(COLORS.PRIMARY).toBe('#1dd');
-      expect(COLORS.WHITE).toBe('#fff');
+      expect(COLORS.BACKGROUND).toBe(lightColors.background);
+      expect(COLORS.PRIMARY).toBe(lightColors.primary);
+      expect(COLORS.WHITE).toBe(lightColors.white);
     });
     it('debe tener colores de acento y error', () => {
       expect(COLORS.ACCENT).toBeDefined();
       expect(COLORS.ERROR).toBeDefined();
       expect(COLORS.HEADER_BACKGROUND).toBeDefined();
       expect(COLORS.LOGOUT_BUTTON_BACKGROUND).toBeDefined();
+      expect(COLORS.STAT_ICON_HABITS).toBe(lightColors.primary);
+      expect(COLORS.STAT_ICON_STREAK).toBe(lightColors.warning);
+    });
+    it('debe mapear texto semántico del tema', () => {
+      expect(COLORS.TEXT).toBe(lightColors.text);
+      expect(COLORS.TEXT_SECONDARY).toBe(lightColors.textSecondary);
+      expect(COLORS.TEXT_MUTED).toBe(lightColors.textMuted);
+    });
+    it('debe mapear superficie de bloque y sombra como Configuración', () => {
+      expect(COLORS.SETTINGS_SECTION_SURFACE).toBe(lightColors.settingsSectionSurface);
+      expect(COLORS.GLASS_SHADOW).toBe(lightColors.glassShadow);
     });
   });
 

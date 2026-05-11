@@ -13,49 +13,138 @@ import { Platform } from 'react-native';
 let InAppPurchases = null;
 let moduleChecked = false;
 
+/** API mínima que debe exponer expo-in-app-purchases para considerar el módulo utilizable */
+function isIapModuleUsable(m) {
+  if (!m || typeof m !== 'object') {
+    return false;
+  }
+  return (
+    typeof m.connectAsync === 'function' &&
+    typeof m.getProductsAsync === 'function' &&
+    typeof m.purchaseItemAsync === 'function' &&
+    m.IAPResponseCode != null &&
+    typeof m.IAPResponseCode === 'object'
+  );
+}
+
+function resolveIapExport(raw) {
+  if (raw == null) {
+    return null;
+  }
+  const candidates = [];
+  if (typeof raw === 'object') {
+    candidates.push(raw);
+    if (raw.default != null) {
+      candidates.push(raw.default);
+    }
+  }
+  for (const c of candidates) {
+    if (c != null && typeof c === 'object' && typeof c.connectAsync === 'function') {
+      return c;
+    }
+  }
+  return null;
+}
+
+/**
+ * Si el nativo no está en el binario (Expo Go, build viejo), cargar el paquete JS dispara
+ * "Cannot find native module 'ExpoInAppPurchases'". Comprobar antes con expo-modules-core.
+ */
+function isExpoInAppPurchasesNativeAvailable() {
+  if (Platform.OS !== 'ios') {
+    return false;
+  }
+  try {
+    const core = require('expo-modules-core');
+    if (typeof core.requireOptionalNativeModule === 'function') {
+      return core.requireOptionalNativeModule('ExpoInAppPurchases') != null;
+    }
+  } catch {
+    /* sin expo-modules-core en este entorno */
+  }
+  // Sin API de comprobación: no bloquear (builds antiguos / entornos raros)
+  return true;
+}
+
 // Función helper para obtener el módulo de forma segura
 function getInAppPurchasesModule() {
   // Si ya verificamos y no está disponible, retornar null
   if (moduleChecked && !InAppPurchases) {
-    console.log('[StoreKit] 🔍 getInAppPurchasesModule: Módulo ya verificado y no disponible');
+    if (__DEV__) {
+      console.log('[StoreKit] getInAppPurchasesModule: módulo no disponible (cache)');
+    }
     return null;
   }
-  
-  // Si ya está cargado, retornarlo
-  if (InAppPurchases) {
-    console.log('[StoreKit] ✅ getInAppPurchasesModule: Módulo ya cargado, retornando referencia');
+
+  // Si ya está cargado y es válido, retornarlo
+  if (InAppPurchases && isIapModuleUsable(InAppPurchases)) {
     return InAppPurchases;
   }
-  
+
   // Intentar cargar el módulo dinámicamente
   try {
-    console.log('[StoreKit] 🔄 getInAppPurchasesModule: Intentando cargar módulo...');
-    // Usar require.ensure o require con manejo de errores
-    const module = require('expo-in-app-purchases');
-    InAppPurchases = module;
+    if (!isExpoInAppPurchasesNativeAvailable()) {
+      moduleChecked = true;
+      InAppPurchases = null;
+      if (__DEV__ && process.env.NODE_ENV !== 'test') {
+        console.warn(
+          '[StoreKit] IAP nativo no enlazado (no uses Expo Go). Genera un development build: npx expo run:ios o eas build --profile development',
+        );
+      }
+      return null;
+    }
+
+    if (__DEV__ && process.env.NODE_ENV !== 'test') {
+      console.log('[StoreKit] getInAppPurchasesModule: cargando expo-in-app-purchases…');
+    }
+    const raw = require('expo-in-app-purchases');
+    const resolved = resolveIapExport(raw);
+
+    if (!isIapModuleUsable(resolved)) {
+      if (__DEV__ && process.env.NODE_ENV !== 'test') {
+        console.warn(
+          '[StoreKit] expo-in-app-purchases no expone la API esperada. Reinstala dependencias y recompila iOS (npx expo run:ios).',
+          resolved ? Object.keys(resolved) : 'sin export válido',
+        );
+      }
+      moduleChecked = true;
+      InAppPurchases = null;
+      return null;
+    }
+
+    InAppPurchases = resolved;
     moduleChecked = true;
-    
-    // Verificar métodos disponibles
-    const hasMethods = {
-      connectAsync: typeof module.connectAsync === 'function',
-      purchaseItemAsync: typeof module.purchaseItemAsync === 'function',
-      IAPResponseCode: !!module.IAPResponseCode,
-      getProductsAsync: typeof module.getProductsAsync === 'function',
-    };
-    
-    console.log('[StoreKit] ✅ getInAppPurchasesModule: Módulo cargado exitosamente', {
-      hasMethods,
-      moduleKeys: Object.keys(module),
-    });
-    
+
+    if (__DEV__) {
+      console.log('[StoreKit] módulo IAP listo');
+    }
+
     return InAppPurchases;
   } catch (error) {
-    // El módulo no está disponible (Expo Go o no compilado)
-    // Esto es normal en desarrollo, no mostrar error
-    console.error('[StoreKit] ❌ getInAppPurchasesModule: Error cargando módulo', {
-      error: error.message,
-      stack: error.stack,
-    });
+    const msg = error?.message || String(error || '');
+    const looksLikeMissingNpm =
+      /cannot find module|unable to resolve module|does not exist in the haste module map/i.test(
+        msg,
+      );
+    // Expo Go / build sin código nativo IAP: el JS existe pero el nativo no está enlazado
+    const looksLikeNativeMissing =
+      /native module|TurboModule|ExpoGo|not supported|ExpoInAppPurchases|cannot find native module/i.test(
+        msg,
+      );
+    const looksLikeJestVirtualMock = /expo-in-app-purchases not available/i.test(msg);
+
+    if (looksLikeMissingNpm) {
+      console.error(
+        '[StoreKit] Falta el paquete npm. Instala con: npx expo install expo-in-app-purchases',
+        msg,
+      );
+    } else if (process.env.NODE_ENV !== 'test' || !looksLikeJestVirtualMock) {
+      // Esperado en Expo Go o hasta recompilar tras añadir el módulo
+      console.warn('[StoreKit] IAP no disponible en este entorno (rebuild nativo o dev client):', msg);
+    }
+    if (__DEV__ && !looksLikeMissingNpm && !looksLikeNativeMissing && !looksLikeJestVirtualMock) {
+      console.warn('[StoreKit] Detalle:', error?.stack);
+    }
     moduleChecked = true;
     InAppPurchases = null;
     return null;
@@ -104,8 +193,11 @@ class StoreKitService {
     if (Platform.OS !== 'ios') {
       return false;
     }
-    const module = getInAppPurchasesModule();
-    return module !== null;
+    try {
+      return getInAppPurchasesModule() != null;
+    } catch {
+      return false;
+    }
   }
 
   /**

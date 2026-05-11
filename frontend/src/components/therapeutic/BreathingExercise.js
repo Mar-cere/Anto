@@ -5,7 +5,7 @@
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
@@ -14,8 +14,9 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { FOCUS_ACCENT_BORDER, FOCUS_META } from '../../styles/focusCardTheme';
-import { colors } from '../../styles/globalStyles';
+import { useTheme } from '../../context/ThemeContext';
+import { getFocusTheme } from '../../styles/focusCardTheme';
+import { SPACING } from '../../constants/ui';
 
 const { width } = Dimensions.get('window');
 
@@ -45,6 +46,85 @@ const BreathingExercise = ({
   holdDuration = HOLD_DURATION,
   exhaleDuration = EXHALE_DURATION,
 }) => {
+  const { colors, resolvedScheme } = useTheme();
+  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: SPACING.SCREEN_EDGE_INSET,
+        },
+        circleContainer: {
+          width: Math.min(280, width * 0.7),
+          height: Math.min(280, width * 0.7),
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginBottom: 40,
+        },
+        circle: {
+          width: '100%',
+          height: '100%',
+          borderRadius: Math.min(140, width * 0.35),
+          borderWidth: 4,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        phaseText: {
+          fontSize: 34,
+          fontWeight: 'bold',
+          marginBottom: 12,
+          letterSpacing: 1,
+        },
+        countdownText: {
+          fontSize: 52,
+          fontWeight: 'bold',
+          color: colors.text,
+          letterSpacing: 2,
+        },
+        infoContainer: {
+          marginBottom: 30,
+        },
+        cyclesText: {
+          fontSize: 16,
+          color: t.FOCUS_META,
+          fontWeight: '500',
+        },
+        controlsContainer: {
+          width: '100%',
+          gap: 15,
+        },
+        button: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingVertical: 16,
+          paddingHorizontal: 32,
+          borderRadius: 14,
+          gap: 12,
+        },
+        primaryButton: {
+          backgroundColor: colors.primary,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_ACCENT_BORDER,
+        },
+        secondaryButton: {
+          backgroundColor: colors.glassFill,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_ACCENT_BORDER,
+        },
+        buttonText: {
+          fontSize: 16,
+          fontWeight: '600',
+          color: colors.textOnPrimary,
+        },
+      }),
+    [colors, t],
+  );
+
   const [isActive, setIsActive] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [currentPhase, setCurrentPhase] = useState('inhale');
@@ -224,7 +304,7 @@ const BreathingExercise = ({
           <MaterialCommunityIcons
             name={isActive && !isPaused ? 'pause' : 'play'}
             size={24}
-            color={colors.white}
+            color={colors.textOnPrimary}
           />
           <Text style={styles.buttonText}>
             {!isActive ? TEXTS.START : isPaused ? TEXTS.RESUME : TEXTS.PAUSE}
@@ -250,78 +330,6 @@ const BreathingExercise = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  circleContainer: {
-    width: Math.min(280, width * 0.7),
-    height: Math.min(280, width * 0.7),
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  circle: {
-    width: '100%',
-    height: '100%',
-    borderRadius: Math.min(140, width * 0.35),
-    borderWidth: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  phaseText: {
-    fontSize: 34,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    letterSpacing: 1,
-  },
-  countdownText: {
-    fontSize: 52,
-    fontWeight: 'bold',
-    color: colors.white,
-    letterSpacing: 2,
-  },
-  infoContainer: {
-    marginBottom: 30,
-  },
-  cyclesText: {
-    fontSize: 16,
-    color: FOCUS_META,
-    fontWeight: '500',
-  },
-  controlsContainer: {
-    width: '100%',
-    gap: 15,
-  },
-  button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 14,
-    gap: 12,
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_ACCENT_BORDER,
-  },
-  secondaryButton: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_ACCENT_BORDER,
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.white,
-  },
-});
 
 export default BreathingExercise;
 

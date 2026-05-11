@@ -10,7 +10,7 @@
 
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -24,7 +24,7 @@ import {
   View
 } from 'react-native';
 import { BarChart, LineChart, PieChart } from 'react-native-chart-kit';
-import { colors } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -77,6 +77,90 @@ const PERIODS = {
 // Constantes de tiempo
 const LOAD_DELAY = 1000; // ms
 
+function rgbaFromHex(hex, alpha = 1) {
+  const h = String(hex).replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function buildInitialTaskStats(cc) {
+  return {
+    daily: {
+      labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+      datasets: [
+        {
+          data: [3, 5, 2, 4, 6, 3, 4],
+          color: cc.TASK,
+          strokeWidth: 2,
+        },
+      ],
+      legend: ['Tareas completadas'],
+    },
+    weekly: {
+      labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
+      datasets: [
+        {
+          data: [12, 18, 15, 20],
+          color: cc.TASK,
+          strokeWidth: 2,
+        },
+      ],
+      legend: ['Tareas completadas por semana'],
+    },
+    monthly: {
+      labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+      datasets: [
+        {
+          data: [45, 52, 38, 60, 55, 48],
+          color: cc.TASK,
+          strokeWidth: 2,
+        },
+      ],
+      legend: ['Tareas completadas por mes'],
+    },
+  };
+}
+
+function buildInitialHabitStats(cc) {
+  return {
+    daily: {
+      labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+      datasets: [
+        {
+          data: [0.7, 0.8, 0.5, 0.9, 0.6, 0.7, 0.8],
+          color: cc.HABIT,
+          strokeWidth: 2,
+        },
+      ],
+      legend: ['Progreso de hábitos'],
+    },
+    weekly: {
+      labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
+      datasets: [
+        {
+          data: [0.65, 0.75, 0.8, 0.85],
+          color: cc.HABIT,
+          strokeWidth: 2,
+        },
+      ],
+      legend: ['Progreso promedio semanal'],
+    },
+    monthly: {
+      labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+      datasets: [
+        {
+          data: [0.6, 0.65, 0.7, 0.75, 0.8, 0.85],
+          color: cc.HABIT,
+          strokeWidth: 2,
+        },
+      ],
+      legend: ['Progreso promedio mensual'],
+    },
+  };
+}
+
 // Constantes de gráficos
 const CHART_HEIGHT = 220;
 const CHART_WIDTH_OFFSET = 40;
@@ -88,18 +172,6 @@ const PIE_CHART_PADDING_LEFT = 15;
 const PIE_CHART_CENTER_X = 10;
 const PIE_CHART_CENTER_Y = 0;
 
-// Constantes de colores para gráficos
-const CHART_COLORS = {
-  TASK: (opacity = 1) => `rgba(255, 99, 132, ${opacity})`,
-  HABIT: (opacity = 1) => `rgba(54, 162, 235, ${opacity})`,
-  WHITE: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-  BACKGROUND_FROM: '#1D2B5F',
-  BACKGROUND_TO: '#1D2B5F',
-  STROKE: '#1D2B5F',
-};
-
-// Constantes de estilos
-const STATUS_BAR_STYLE = 'light-content';
 const BACK_BUTTON_SIZE = 40;
 const BACK_BUTTON_BORDER_RADIUS = 20;
 const HEADER_PADDING_HORIZONTAL = 20;
@@ -143,172 +215,329 @@ const BOTTOM_SPACE_HEIGHT = 40;
 const LOADING_INDICATOR_MARGIN_BOTTOM = 20;
 const LOADING_TEXT_MARGIN_TOP = 20;
 
-// Constantes de colores
-const COLORS = {
-  BACKGROUND: colors.background,
-  PRIMARY: colors.primary,
-  WHITE: colors.white,
-  ACCENT: '#A3B8E8',
-  ERROR: '#FF6347',
-  ITEM_BACKGROUND: 'rgba(29, 43, 95, 0.8)',
-  SELECTOR_BACKGROUND: 'rgba(29, 43, 95, 0.5)',
-  ACTIVE_BUTTON_BACKGROUND: 'rgba(255, 255, 255, 0.15)',
-  ERROR_BACKGROUND: 'rgba(255, 99, 71, 0.2)',
-  ERROR_BUTTON_BACKGROUND: 'rgba(255, 255, 255, 0.2)',
-  STAT_ITEM_BACKGROUND: 'rgba(255, 255, 255, 0.05)',
-  ANALYSIS_ITEM_BACKGROUND: 'rgba(255, 255, 255, 0.05)',
-  ANALYSIS_ICON_BACKGROUND: 'rgba(255, 255, 255, 0.1)',
-  BACK_BUTTON_BACKGROUND: 'rgba(255, 255, 255, 0.1)',
-  SHADOW: '#000',
-  LEGEND_FONT: '#7F7F7F',
-};
-
 const StadisticsScreen = () => {
   const navigation = useNavigation();
+  const { colors, statusBarStyle } = useTheme();
+
+  const chartColors = useMemo(
+    () => ({
+      TASK: (opacity = 1) => rgbaFromHex(colors.error, opacity),
+      HABIT: (opacity = 1) => rgbaFromHex(colors.primary, opacity),
+      LABEL: (opacity = 1) => rgbaFromHex(colors.text, Math.min(1, 0.75 + opacity * 0.25)),
+      LINE: (opacity = 1) => rgbaFromHex(colors.primary, opacity),
+      BACKGROUND_FROM: colors.surface ?? colors.cardBackground ?? colors.background,
+      BACKGROUND_TO: colors.surface ?? colors.cardBackground ?? colors.background,
+      STROKE: colors.primary,
+    }),
+    [colors],
+  );
+
+  const chartConfig = useMemo(
+    () => ({
+      backgroundGradientFrom: chartColors.BACKGROUND_FROM,
+      backgroundGradientTo: chartColors.BACKGROUND_TO,
+      decimalPlaces: CHART_DECIMAL_PLACES,
+      color: chartColors.LINE,
+      labelColor: chartColors.LABEL,
+      style: {
+        borderRadius: CHART_BORDER_RADIUS,
+      },
+      propsForDots: {
+        r: CHART_DOT_RADIUS.toString(),
+        strokeWidth: CHART_DOT_STROKE_WIDTH.toString(),
+        stroke: chartColors.STROKE,
+      },
+    }),
+    [chartColors],
+  );
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        loadingContainer: {
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        loadingText: {
+          color: colors.textSecondary,
+          fontSize: 18,
+          fontWeight: '500',
+          marginTop: LOADING_TEXT_MARGIN_TOP,
+        },
+        header: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: HEADER_PADDING_HORIZONTAL,
+          paddingVertical: HEADER_PADDING_VERTICAL,
+          backgroundColor: colors.cardBackground ?? colors.surface,
+        },
+        headerTitle: {
+          fontSize: 20,
+          fontWeight: 'bold',
+          color: colors.text,
+        },
+        backButton: {
+          width: BACK_BUTTON_SIZE,
+          height: BACK_BUTTON_SIZE,
+          borderRadius: BACK_BUTTON_BORDER_RADIUS,
+          backgroundColor: colors.chromeIconButton ?? colors.glassFill ?? colors.accentLineSoft,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        backButtonText: {
+          fontSize: 24,
+          color: colors.text,
+        },
+        dataTypeSelector: {
+          flexDirection: 'row',
+          marginHorizontal: SELECTOR_MARGIN_HORIZONTAL,
+          marginTop: SELECTOR_MARGIN_TOP,
+          marginBottom: SELECTOR_MARGIN_BOTTOM,
+          borderRadius: SELECTOR_BORDER_RADIUS,
+          backgroundColor: colors.chromeInput ?? 'rgba(36, 35, 79, 0.06)',
+          padding: SELECTOR_PADDING,
+        },
+        dataTypeButton: {
+          flex: 1,
+          paddingVertical: BUTTON_PADDING_VERTICAL,
+          alignItems: 'center',
+          borderRadius: BUTTON_BORDER_RADIUS,
+        },
+        activeDataTypeButton: {
+          backgroundColor: colors.accentLineSoft,
+        },
+        dataTypeButtonText: {
+          color: colors.textSecondary,
+          fontSize: 16,
+          fontWeight: '500',
+        },
+        activeDataTypeButtonText: {
+          color: colors.text,
+          fontWeight: 'bold',
+        },
+        tabSelector: {
+          flexDirection: 'row',
+          marginHorizontal: SELECTOR_MARGIN_HORIZONTAL,
+          marginTop: SELECTOR_MARGIN_BOTTOM,
+          marginBottom: SELECTOR_MARGIN_TOP,
+          borderRadius: SELECTOR_BORDER_RADIUS,
+          backgroundColor: colors.chromeInput ?? 'rgba(36, 35, 79, 0.06)',
+          padding: SELECTOR_PADDING,
+        },
+        tabButton: {
+          flex: 1,
+          paddingVertical: BUTTON_PADDING_VERTICAL,
+          alignItems: 'center',
+          borderRadius: BUTTON_BORDER_RADIUS,
+        },
+        activeTabButton: {
+          backgroundColor: colors.accentLineSoft,
+        },
+        tabButtonText: {
+          color: colors.textSecondary,
+          fontSize: 16,
+          fontWeight: '500',
+        },
+        activeTabButtonText: {
+          color: colors.text,
+          fontWeight: 'bold',
+        },
+        scrollView: {
+          flex: 1,
+        },
+        scrollViewContent: {
+          paddingHorizontal: SCROLL_PADDING_HORIZONTAL,
+        },
+        errorContainer: {
+          backgroundColor: colors.dangerSoft ?? 'rgba(255, 99, 71, 0.2)',
+          borderRadius: SELECTOR_BORDER_RADIUS,
+          padding: ERROR_PADDING,
+          marginBottom: ERROR_MARGIN_BOTTOM,
+          borderLeftWidth: ERROR_BORDER_LEFT_WIDTH,
+          borderLeftColor: colors.error,
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        },
+        errorText: {
+          color: colors.text,
+          fontSize: 16,
+          flex: 1,
+        },
+        errorButton: {
+          paddingHorizontal: ERROR_BUTTON_PADDING_HORIZONTAL,
+          paddingVertical: ERROR_BUTTON_PADDING_VERTICAL,
+          borderRadius: ERROR_BUTTON_BORDER_RADIUS,
+          backgroundColor: colors.glassFill ?? 'rgba(255, 255, 255, 0.2)',
+          marginLeft: ERROR_BUTTON_MARGIN_LEFT,
+        },
+        errorButtonText: {
+          color: colors.text,
+          fontSize: 14,
+        },
+        chartContainer: {
+          backgroundColor: colors.cardBackground ?? colors.surface,
+          borderRadius: CHART_CONTAINER_BORDER_RADIUS,
+          padding: CHART_CONTAINER_PADDING,
+          marginBottom: CHART_CONTAINER_MARGIN_BOTTOM,
+          shadowColor: colors.glassShadow ?? colors.shadowAmbient,
+          shadowOffset: { width: 0, height: CHART_SHADOW_OFFSET_Y },
+          shadowOpacity: CHART_SHADOW_OPACITY,
+          shadowRadius: CHART_SHADOW_RADIUS,
+          elevation: CHART_ELEVATION,
+        },
+        chartTitle: {
+          color: colors.textSecondary,
+          fontSize: 18,
+          fontWeight: '600',
+          marginBottom: CHART_TITLE_MARGIN_BOTTOM,
+          textAlign: 'center',
+        },
+        chart: {
+          borderRadius: SELECTOR_BORDER_RADIUS,
+          marginVertical: 8,
+        },
+        sectionTitle: {
+          fontSize: 20,
+          fontWeight: '600',
+          color: colors.textSecondary,
+          marginBottom: SECTION_TITLE_MARGIN_BOTTOM,
+          paddingLeft: SECTION_TITLE_PADDING_LEFT,
+        },
+        statsContainer: {
+          backgroundColor: colors.cardBackground ?? colors.surface,
+          borderRadius: CHART_CONTAINER_BORDER_RADIUS,
+          padding: CHART_CONTAINER_PADDING,
+          marginBottom: CHART_CONTAINER_MARGIN_BOTTOM,
+          shadowColor: colors.glassShadow ?? colors.shadowAmbient,
+          shadowOffset: { width: 0, height: CHART_SHADOW_OFFSET_Y },
+          shadowOpacity: CHART_SHADOW_OPACITY,
+          shadowRadius: CHART_SHADOW_RADIUS,
+          elevation: CHART_ELEVATION,
+        },
+        statsGrid: {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          justifyContent: 'space-between',
+        },
+        statItem: {
+          width: STAT_ITEM_WIDTH,
+          backgroundColor: colors.glassFill ?? 'rgba(255, 255, 255, 0.55)',
+          borderRadius: STAT_ITEM_BORDER_RADIUS,
+          padding: STAT_ITEM_PADDING,
+          marginBottom: STAT_ITEM_MARGIN_BOTTOM,
+          alignItems: 'center',
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+        },
+        statValue: {
+          fontSize: 24,
+          fontWeight: 'bold',
+          color: colors.text,
+          marginBottom: STAT_VALUE_MARGIN_BOTTOM,
+        },
+        statLabel: {
+          fontSize: 14,
+          color: colors.textSecondary,
+        },
+        analysisContainer: {
+          backgroundColor: colors.cardBackground ?? colors.surface,
+          borderRadius: CHART_CONTAINER_BORDER_RADIUS,
+          padding: CHART_CONTAINER_PADDING,
+          marginBottom: CHART_CONTAINER_MARGIN_BOTTOM,
+          shadowColor: colors.glassShadow ?? colors.shadowAmbient,
+          shadowOffset: { width: 0, height: CHART_SHADOW_OFFSET_Y },
+          shadowOpacity: CHART_SHADOW_OPACITY,
+          shadowRadius: CHART_SHADOW_RADIUS,
+          elevation: CHART_ELEVATION,
+        },
+        analysisItem: {
+          flexDirection: 'row',
+          marginBottom: ANALYSIS_ITEM_MARGIN_BOTTOM,
+          backgroundColor: colors.glassFill ?? 'rgba(255, 255, 255, 0.45)',
+          borderRadius: STAT_ITEM_BORDER_RADIUS,
+          padding: STAT_ITEM_PADDING,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+        },
+        analysisIconContainer: {
+          width: ANALYSIS_ICON_SIZE,
+          height: ANALYSIS_ICON_SIZE,
+          borderRadius: ANALYSIS_ICON_BORDER_RADIUS,
+          backgroundColor: colors.accentLineSoft,
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginRight: ANALYSIS_ICON_MARGIN_RIGHT,
+        },
+        analysisIcon: {
+          fontSize: 20,
+        },
+        analysisTextContainer: {
+          flex: 1,
+        },
+        analysisTitle: {
+          fontSize: 16,
+          fontWeight: 'bold',
+          color: colors.text,
+          marginBottom: ANALYSIS_TITLE_MARGIN_BOTTOM,
+        },
+        analysisDescription: {
+          fontSize: 14,
+          color: colors.textSecondary,
+          lineHeight: 20,
+        },
+      }),
+    [colors],
+  );
   const [activeTab, setActiveTab] = useState(PERIODS.DAILY);
   const [activeDataType, setActiveDataType] = useState(DATA_TYPES.TASKS);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   
-  // Datos de ejemplo para las gráficas
-  const [taskStats, setTaskStats] = useState({
-    daily: {
-      labels: ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
-      datasets: [
-        {
-          data: [3, 5, 2, 4, 6, 3, 4],
-          color: (opacity = 1) => `rgba(255, 99, 132, ${opacity})`,
-          strokeWidth: 2
-        }
-      ],
-      legend: ["Tareas completadas"]
-    },
-    weekly: {
-      labels: ["Sem 1", "Sem 2", "Sem 3", "Sem 4"],
-      datasets: [
-        {
-          data: [12, 18, 15, 20],
-          color: (opacity = 1) => `rgba(255, 99, 132, ${opacity})`,
-          strokeWidth: 2
-        }
-      ],
-      legend: ["Tareas completadas por semana"]
-    },
-    monthly: {
-      labels: ["Ene", "Feb", "Mar", "Abr", "May", "Jun"],
-      datasets: [
-        {
-          data: [45, 52, 38, 60, 55, 48],
-          color: (opacity = 1) => `rgba(255, 99, 132, ${opacity})`,
-          strokeWidth: 2
-        }
-      ],
-      legend: ["Tareas completadas por mes"]
-    }
-  });
-  
-  const [habitStats, setHabitStats] = useState({
-    daily: {
-      labels: ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
-      datasets: [
-        {
-          data: [0.7, 0.8, 0.5, 0.9, 0.6, 0.7, 0.8],
-          color: (opacity = 1) => `rgba(54, 162, 235, ${opacity})`,
-          strokeWidth: 2
-        }
-      ],
-      legend: ["Progreso de hábitos"]
-    },
-    weekly: {
-      labels: ["Sem 1", "Sem 2", "Sem 3", "Sem 4"],
-      datasets: [
-        {
-          data: [0.65, 0.75, 0.8, 0.85],
-          color: (opacity = 1) => `rgba(54, 162, 235, ${opacity})`,
-          strokeWidth: 2
-        }
-      ],
-      legend: ["Progreso promedio semanal"]
-    },
-    monthly: {
-      labels: ["Ene", "Feb", "Mar", "Abr", "May", "Jun"],
-      datasets: [
-        {
-          data: [0.6, 0.65, 0.7, 0.75, 0.8, 0.85],
-          color: (opacity = 1) => `rgba(54, 162, 235, ${opacity})`,
-          strokeWidth: 2
-        }
-      ],
-      legend: ["Progreso promedio mensual"]
-    }
-  });
-  
+  // Datos de ejemplo para las gráficas (colores de series vía chartColors; pie/categoría en useMemo)
+  const [taskStats, setTaskStats] = useState(() => buildInitialTaskStats(chartColors));
+  const [habitStats, setHabitStats] = useState(() => buildInitialHabitStats(chartColors));
+
   const [pieData, setPieData] = useState([
-    {
-      name: "Completadas",
-      population: 75,
-      color: "rgba(54, 162, 235, 0.8)",
-      legendFontColor: "#7F7F7F",
-      legendFontSize: 15
-    },
-    {
-      name: "Pendientes",
-      population: 25,
-      color: "rgba(255, 99, 132, 0.8)",
-      legendFontColor: "#7F7F7F",
-      legendFontSize: 15
-    }
+    { name: 'Completadas', population: 75, legendFontSize: 15 },
+    { name: 'Pendientes', population: 25, legendFontSize: 15 },
   ]);
-  
+
   const [categoryData, setCategoryData] = useState([
-    {
-      name: "Trabajo",
-      tasks: 12,
-      color: "#FF6384",
-      legendFontColor: "#7F7F7F",
-      legendFontSize: 15
-    },
-    {
-      name: "Salud",
-      tasks: 8,
-      color: "#36A2EB",
-      legendFontColor: "#7F7F7F",
-      legendFontSize: 15
-    },
-    {
-      name: "Hogar",
-      tasks: 6,
-      color: "#FFCE56",
-      legendFontColor: "#7F7F7F",
-      legendFontSize: 15
-    },
-    {
-      name: "Estudio",
-      tasks: 4,
-      color: "#4BC0C0",
-      legendFontColor: "#7F7F7F",
-      legendFontSize: 15
-    }
+    { name: 'Trabajo', tasks: 12, legendFontSize: 15 },
+    { name: 'Salud', tasks: 8, legendFontSize: 15 },
+    { name: 'Hogar', tasks: 6, legendFontSize: 15 },
+    { name: 'Estudio', tasks: 4, legendFontSize: 15 },
   ]);
-  
-  // Configuración común para gráficos
-  const chartConfig = {
-    backgroundGradientFrom: CHART_COLORS.BACKGROUND_FROM,
-    backgroundGradientTo: CHART_COLORS.BACKGROUND_TO,
-    decimalPlaces: CHART_DECIMAL_PLACES,
-    color: CHART_COLORS.WHITE,
-    labelColor: CHART_COLORS.WHITE,
-    style: {
-      borderRadius: CHART_BORDER_RADIUS
-    },
-    propsForDots: {
-      r: CHART_DOT_RADIUS.toString(),
-      strokeWidth: CHART_DOT_STROKE_WIDTH.toString(),
-      stroke: CHART_COLORS.STROKE
-    }
-  };
-  
+
+  const pieDataForChart = useMemo(
+    () =>
+      pieData.map((item, index) => ({
+        ...item,
+        color:
+          index === 0
+            ? rgbaFromHex(colors.primary, 0.85)
+            : rgbaFromHex(colors.error, 0.85),
+        legendFontColor: colors.textSecondary,
+      })),
+    [pieData, colors],
+  );
+
+  const categoryDataForChart = useMemo(() => {
+    const accents = [colors.primary, colors.info, colors.warning, colors.success];
+    return categoryData.map((item, i) => ({
+      ...item,
+      color: accents[i % accents.length],
+      legendFontColor: colors.textSecondary,
+    }));
+  }, [categoryData, colors]);
+
   // Cargar datos
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -322,65 +551,64 @@ const StadisticsScreen = () => {
       // Por ahora usamos datos de ejemplo
       
       // Generar datos aleatorios para simular cambios
-      setTaskStats({
+      setTaskStats((prev) => ({
         daily: {
-          ...taskStats.daily,
+          ...prev.daily,
           datasets: [{
-            ...taskStats.daily.datasets[0],
-            data: Array(7).fill().map(() => Math.floor(Math.random() * 8) + 1)
-          }]
+            ...prev.daily.datasets[0],
+            data: Array(7).fill().map(() => Math.floor(Math.random() * 8) + 1),
+            color: chartColors.TASK,
+          }],
         },
         weekly: {
-          ...taskStats.weekly,
+          ...prev.weekly,
           datasets: [{
-            ...taskStats.weekly.datasets[0],
-            data: Array(4).fill().map(() => Math.floor(Math.random() * 15) + 10)
-          }]
+            ...prev.weekly.datasets[0],
+            data: Array(4).fill().map(() => Math.floor(Math.random() * 15) + 10),
+            color: chartColors.TASK,
+          }],
         },
         monthly: {
-          ...taskStats.monthly,
+          ...prev.monthly,
           datasets: [{
-            ...taskStats.monthly.datasets[0],
-            data: Array(6).fill().map(() => Math.floor(Math.random() * 30) + 30)
-          }]
-        }
-      });
-      
-      setHabitStats({
+            ...prev.monthly.datasets[0],
+            data: Array(6).fill().map(() => Math.floor(Math.random() * 30) + 30),
+            color: chartColors.TASK,
+          }],
+        },
+      }));
+
+      setHabitStats((prev) => ({
         daily: {
-          ...habitStats.daily,
+          ...prev.daily,
           datasets: [{
-            ...habitStats.daily.datasets[0],
-            data: Array(7).fill().map(() => parseFloat((Math.random() * 0.5 + 0.5).toFixed(1)))
-          }]
+            ...prev.daily.datasets[0],
+            data: Array(7).fill().map(() => parseFloat((Math.random() * 0.5 + 0.5).toFixed(1))),
+            color: chartColors.HABIT,
+          }],
         },
         weekly: {
-          ...habitStats.weekly,
+          ...prev.weekly,
           datasets: [{
-            ...habitStats.weekly.datasets[0],
-            data: Array(4).fill().map(() => parseFloat((Math.random() * 0.3 + 0.6).toFixed(1)))
-          }]
+            ...prev.weekly.datasets[0],
+            data: Array(4).fill().map(() => parseFloat((Math.random() * 0.3 + 0.6).toFixed(1))),
+            color: chartColors.HABIT,
+          }],
         },
         monthly: {
-          ...habitStats.monthly,
+          ...prev.monthly,
           datasets: [{
-            ...habitStats.monthly.datasets[0],
-            data: Array(6).fill().map(() => parseFloat((Math.random() * 0.3 + 0.6).toFixed(1)))
-          }]
-        }
-      });
-      
-      // Actualizar datos de gráfico circular
+            ...prev.monthly.datasets[0],
+            data: Array(6).fill().map(() => parseFloat((Math.random() * 0.3 + 0.6).toFixed(1))),
+            color: chartColors.HABIT,
+          }],
+        },
+      }));
+
       const completedPercentage = Math.floor(Math.random() * 40) + 60;
-      setPieData([
-        {
-          ...pieData[0],
-          population: completedPercentage
-        },
-        {
-          ...pieData[1],
-          population: 100 - completedPercentage
-        }
+      setPieData((prev) => [
+        { ...prev[0], population: completedPercentage },
+        { ...prev[1], population: 100 - completedPercentage },
       ]);
       
     } catch (err) {
@@ -390,12 +618,11 @@ const StadisticsScreen = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
-  
-  // Cargar datos al inicio
+  }, [chartColors]);
+
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
   
   // Pull to refresh
   const onRefresh = useCallback(() => {
@@ -420,10 +647,10 @@ const StadisticsScreen = () => {
   if (loading && !refreshing) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
-        <StatusBar barStyle={STATUS_BAR_STYLE} />
+        <StatusBar barStyle={statusBarStyle} />
         <ActivityIndicator 
           size="large" 
-          color={COLORS.ACCENT} 
+          color={colors.primary} 
           style={{ marginBottom: LOADING_INDICATOR_MARGIN_BOTTOM }} 
         />
         <Text style={styles.loadingText}>{TEXTS.LOADING}</Text>
@@ -474,7 +701,7 @@ const StadisticsScreen = () => {
   
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle={STATUS_BAR_STYLE} />
+      <StatusBar barStyle={statusBarStyle} />
       
       {/* Encabezado */}
       <View style={styles.header}>
@@ -543,10 +770,10 @@ const StadisticsScreen = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[COLORS.ACCENT]}
-            tintColor={COLORS.ACCENT}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
             title={TEXTS.REFRESHING}
-            titleColor={COLORS.ACCENT}
+            titleColor={colors.primary}
           />
         }
       >
@@ -624,7 +851,7 @@ const StadisticsScreen = () => {
             {activeDataType === DATA_TYPES.TASKS ? TEXTS.TASKS_DISTRIBUTION : TEXTS.PROGRESS_BY_CATEGORY}
           </Text>
           <PieChart
-            data={activeDataType === DATA_TYPES.TASKS ? pieData : categoryData}
+            data={activeDataType === DATA_TYPES.TASKS ? pieDataForChart : categoryDataForChart}
             width={width - CHART_WIDTH_OFFSET}
             height={CHART_HEIGHT}
             chartConfig={chartConfig}
@@ -685,241 +912,5 @@ const StadisticsScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
-  },
-  loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: COLORS.ACCENT,
-    fontSize: 18,
-    fontWeight: '500',
-    marginTop: LOADING_TEXT_MARGIN_TOP,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: HEADER_PADDING_HORIZONTAL,
-    paddingVertical: HEADER_PADDING_VERTICAL,
-    backgroundColor: COLORS.ITEM_BACKGROUND,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.WHITE,
-  },
-  backButton: {
-    width: BACK_BUTTON_SIZE,
-    height: BACK_BUTTON_SIZE,
-    borderRadius: BACK_BUTTON_BORDER_RADIUS,
-    backgroundColor: COLORS.BACK_BUTTON_BACKGROUND,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backButtonText: {
-    fontSize: 24,
-    color: COLORS.WHITE,
-  },
-  dataTypeSelector: {
-    flexDirection: 'row',
-    marginHorizontal: SELECTOR_MARGIN_HORIZONTAL,
-    marginTop: SELECTOR_MARGIN_TOP,
-    marginBottom: SELECTOR_MARGIN_BOTTOM,
-    borderRadius: SELECTOR_BORDER_RADIUS,
-    backgroundColor: COLORS.SELECTOR_BACKGROUND,
-    padding: SELECTOR_PADDING,
-  },
-  dataTypeButton: {
-    flex: 1,
-    paddingVertical: BUTTON_PADDING_VERTICAL,
-    alignItems: 'center',
-    borderRadius: BUTTON_BORDER_RADIUS,
-  },
-  activeDataTypeButton: {
-    backgroundColor: COLORS.ACTIVE_BUTTON_BACKGROUND,
-  },
-  dataTypeButtonText: {
-    color: COLORS.ACCENT,
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  activeDataTypeButtonText: {
-    color: COLORS.WHITE,
-    fontWeight: 'bold',
-  },
-  tabSelector: {
-    flexDirection: 'row',
-    marginHorizontal: SELECTOR_MARGIN_HORIZONTAL,
-    marginTop: SELECTOR_MARGIN_BOTTOM,
-    marginBottom: SELECTOR_MARGIN_TOP,
-    borderRadius: SELECTOR_BORDER_RADIUS,
-    backgroundColor: COLORS.SELECTOR_BACKGROUND,
-    padding: SELECTOR_PADDING,
-  },
-  tabButton: {
-    flex: 1,
-    paddingVertical: BUTTON_PADDING_VERTICAL,
-    alignItems: 'center',
-    borderRadius: BUTTON_BORDER_RADIUS,
-  },
-  activeTabButton: {
-    backgroundColor: COLORS.ACTIVE_BUTTON_BACKGROUND,
-  },
-  tabButtonText: {
-    color: COLORS.ACCENT,
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  activeTabButtonText: {
-    color: COLORS.WHITE,
-    fontWeight: 'bold',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollViewContent: {
-    paddingHorizontal: SCROLL_PADDING_HORIZONTAL,
-  },
-  errorContainer: {
-    backgroundColor: COLORS.ERROR_BACKGROUND,
-    borderRadius: SELECTOR_BORDER_RADIUS,
-    padding: ERROR_PADDING,
-    marginBottom: ERROR_MARGIN_BOTTOM,
-    borderLeftWidth: ERROR_BORDER_LEFT_WIDTH,
-    borderLeftColor: COLORS.ERROR,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  errorText: {
-    color: COLORS.WHITE,
-    fontSize: 16,
-    flex: 1,
-  },
-  errorButton: {
-    paddingHorizontal: ERROR_BUTTON_PADDING_HORIZONTAL,
-    paddingVertical: ERROR_BUTTON_PADDING_VERTICAL,
-    borderRadius: ERROR_BUTTON_BORDER_RADIUS,
-    backgroundColor: COLORS.ERROR_BUTTON_BACKGROUND,
-    marginLeft: ERROR_BUTTON_MARGIN_LEFT,
-  },
-  errorButtonText: {
-    color: COLORS.WHITE,
-    fontSize: 14,
-  },
-  chartContainer: {
-    backgroundColor: COLORS.ITEM_BACKGROUND,
-    borderRadius: CHART_CONTAINER_BORDER_RADIUS,
-    padding: CHART_CONTAINER_PADDING,
-    marginBottom: CHART_CONTAINER_MARGIN_BOTTOM,
-    shadowColor: COLORS.SHADOW,
-    shadowOffset: { width: 0, height: CHART_SHADOW_OFFSET_Y },
-    shadowOpacity: CHART_SHADOW_OPACITY,
-    shadowRadius: CHART_SHADOW_RADIUS,
-    elevation: CHART_ELEVATION,
-  },
-  chartTitle: {
-    color: COLORS.ACCENT,
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: CHART_TITLE_MARGIN_BOTTOM,
-    textAlign: 'center',
-  },
-  chart: {
-    borderRadius: SELECTOR_BORDER_RADIUS,
-    marginVertical: 8,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: COLORS.ACCENT,
-    marginBottom: SECTION_TITLE_MARGIN_BOTTOM,
-    paddingLeft: SECTION_TITLE_PADDING_LEFT,
-  },
-  statsContainer: {
-    backgroundColor: COLORS.ITEM_BACKGROUND,
-    borderRadius: CHART_CONTAINER_BORDER_RADIUS,
-    padding: CHART_CONTAINER_PADDING,
-    marginBottom: CHART_CONTAINER_MARGIN_BOTTOM,
-    shadowColor: COLORS.SHADOW,
-    shadowOffset: { width: 0, height: CHART_SHADOW_OFFSET_Y },
-    shadowOpacity: CHART_SHADOW_OPACITY,
-    shadowRadius: CHART_SHADOW_RADIUS,
-    elevation: CHART_ELEVATION,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  statItem: {
-    width: STAT_ITEM_WIDTH,
-    backgroundColor: COLORS.STAT_ITEM_BACKGROUND,
-    borderRadius: STAT_ITEM_BORDER_RADIUS,
-    padding: STAT_ITEM_PADDING,
-    marginBottom: STAT_ITEM_MARGIN_BOTTOM,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.WHITE,
-    marginBottom: STAT_VALUE_MARGIN_BOTTOM,
-  },
-  statLabel: {
-    fontSize: 14,
-    color: COLORS.ACCENT,
-  },
-  analysisContainer: {
-    backgroundColor: COLORS.ITEM_BACKGROUND,
-    borderRadius: CHART_CONTAINER_BORDER_RADIUS,
-    padding: CHART_CONTAINER_PADDING,
-    marginBottom: CHART_CONTAINER_MARGIN_BOTTOM,
-    shadowColor: COLORS.SHADOW,
-    shadowOffset: { width: 0, height: CHART_SHADOW_OFFSET_Y },
-    shadowOpacity: CHART_SHADOW_OPACITY,
-    shadowRadius: CHART_SHADOW_RADIUS,
-    elevation: CHART_ELEVATION,
-  },
-  analysisItem: {
-    flexDirection: 'row',
-    marginBottom: ANALYSIS_ITEM_MARGIN_BOTTOM,
-    backgroundColor: COLORS.ANALYSIS_ITEM_BACKGROUND,
-    borderRadius: STAT_ITEM_BORDER_RADIUS,
-    padding: STAT_ITEM_PADDING,
-  },
-  analysisIconContainer: {
-    width: ANALYSIS_ICON_SIZE,
-    height: ANALYSIS_ICON_SIZE,
-    borderRadius: ANALYSIS_ICON_BORDER_RADIUS,
-    backgroundColor: COLORS.ANALYSIS_ICON_BACKGROUND,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: ANALYSIS_ICON_MARGIN_RIGHT,
-  },
-  analysisIcon: {
-    fontSize: 20,
-  },
-  analysisTextContainer: {
-    flex: 1,
-  },
-  analysisTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.WHITE,
-    marginBottom: ANALYSIS_TITLE_MARGIN_BOTTOM,
-  },
-  analysisDescription: {
-    fontSize: 14,
-    color: COLORS.ACCENT,
-    lineHeight: 20,
-  },
-});
 
 export default StadisticsScreen;

@@ -5,7 +5,7 @@
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -17,20 +17,10 @@ import {
   View
 } from 'react-native';
 import {
-  FOCUS_ACCENT_BORDER,
-  FOCUS_BORDER_SUBTLE,
-  FOCUS_META,
+  getFocusTheme,
 } from '../../styles/focusCardTheme';
-import { colors } from '../../styles/globalStyles';
-
-// Constantes de categorías
-const CATEGORIES = [
-  { key: 'see', label: '5 cosas que puedes VER', icon: 'eye', color: colors.primary },
-  { key: 'touch', label: '4 cosas que puedes TOCAR', icon: 'hand-back-left', color: colors.success },
-  { key: 'hear', label: '3 cosas que puedes OÍR', icon: 'ear-hearing', color: colors.warning },
-  { key: 'smell', label: '2 cosas que puedes OLER', icon: 'nose', color: colors.error },
-  { key: 'taste', label: '1 cosa que puedes SABOREAR', icon: 'food', color: colors.accent },
-];
+import { useTheme } from '../../context/ThemeContext';
+import { SPACING } from '../../constants/ui';
 
 // Constantes de textos
 const TEXTS = {
@@ -45,6 +35,180 @@ const TEXTS = {
 };
 
 const GroundingExercise = ({ onComplete }) => {
+  const { colors, resolvedScheme } = useTheme();
+  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+  const CATEGORIES = useMemo(
+    () => [
+      { key: 'see', label: '5 cosas que puedes VER', icon: 'eye', color: colors.primary },
+      { key: 'touch', label: '4 cosas que puedes TOCAR', icon: 'hand-back-left', color: colors.success },
+      { key: 'hear', label: '3 cosas que puedes OÍR', icon: 'ear-hearing', color: colors.warning },
+      { key: 'smell', label: '2 cosas que puedes OLER', icon: 'nose', color: colors.error },
+      { key: 'taste', label: '1 cosa que puedes SABOREAR', icon: 'food', color: colors.accent },
+    ],
+    [colors],
+  );
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: 'transparent',
+        },
+        scrollView: {
+          flex: 1,
+        },
+        scrollContent: {
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingTop: 8,
+          paddingBottom: 48,
+        },
+        title: {
+          fontSize: 22,
+          fontWeight: '700',
+          color: colors.text,
+          marginBottom: 10,
+          letterSpacing: 0.3,
+        },
+        description: {
+          fontSize: 15,
+          color: t.FOCUS_META,
+          lineHeight: 22,
+          marginBottom: 22,
+          letterSpacing: 0.2,
+        },
+        progressContainer: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          marginBottom: 30,
+          paddingHorizontal: 10,
+        },
+        progressDot: {
+          width: 12,
+          height: 12,
+          borderRadius: 6,
+        },
+        progressDotActive: {
+          width: 16,
+          height: 16,
+          borderRadius: 8,
+        },
+        progressDotCompleted: {},
+        categoryCard: {
+          backgroundColor: colors.cardBackground,
+          borderRadius: 22,
+          borderWidth: StyleSheet.hairlineWidth * 2,
+          overflow: 'hidden',
+        },
+        categoryHeader: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          padding: SPACING.SCREEN_EDGE_INSET,
+          gap: 12,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        categoryTitle: {
+          fontSize: 18,
+          fontWeight: '600',
+        },
+        responsesContainer: {
+          padding: SPACING.SCREEN_EDGE_INSET,
+          gap: 10,
+        },
+        responseItem: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: 12,
+          backgroundColor: colors.glassFill,
+          borderRadius: 14,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        responseText: {
+          fontSize: 14,
+          color: colors.text,
+          flex: 1,
+        },
+        removeButton: {
+          marginLeft: 10,
+        },
+        inputContainer: {
+          flexDirection: 'row',
+          padding: SPACING.SCREEN_EDGE_INSET,
+          gap: 10,
+        },
+        input: {
+          flex: 1,
+          backgroundColor: colors.chromeInput,
+          borderRadius: 14,
+          padding: 14,
+          fontSize: 15,
+          color: colors.text,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+          minHeight: 48,
+        },
+        addButton: {
+          width: 48,
+          height: 48,
+          borderRadius: 14,
+          justifyContent: 'center',
+          alignItems: 'center',
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_ACCENT_BORDER,
+        },
+        nextButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 18,
+          gap: 10,
+          borderBottomLeftRadius: 20,
+          borderBottomRightRadius: 20,
+        },
+        nextButtonText: {
+          fontSize: 16,
+          fontWeight: '600',
+          color: colors.textOnPrimary,
+        },
+        completedContainer: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: SPACING.SCREEN_EDGE_INSET,
+        },
+        completedTitle: {
+          fontSize: 22,
+          fontWeight: '700',
+          color: colors.text,
+          marginTop: 20,
+          marginBottom: 10,
+        },
+        completedText: {
+          fontSize: 15,
+          color: t.FOCUS_META,
+          textAlign: 'center',
+          marginBottom: 30,
+          lineHeight: 22,
+        },
+        resetButton: {
+          paddingHorizontal: 28,
+          paddingVertical: 14,
+          borderRadius: 14,
+          backgroundColor: colors.primary,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_ACCENT_BORDER,
+        },
+        resetButtonText: {
+          fontSize: 16,
+          fontWeight: '600',
+          color: colors.textOnPrimary,
+        },
+      }),
+    [colors, t],
+  );
   const [responses, setResponses] = useState({
     see: [],
     touch: [],
@@ -225,7 +389,7 @@ const GroundingExercise = ({ onComplete }) => {
             <TextInput
               style={styles.input}
               placeholder={TEXTS.PLACEHOLDER}
-              placeholderTextColor={FOCUS_META}
+              placeholderTextColor={colors.textSecondary}
               value={currentInput}
               onChangeText={setCurrentInput}
               onSubmitEditing={handleAddResponse}
@@ -234,7 +398,7 @@ const GroundingExercise = ({ onComplete }) => {
               style={[styles.addButton, { backgroundColor: currentCat.color }]}
               onPress={handleAddResponse}
             >
-              <MaterialCommunityIcons name="plus" size={20} color={colors.white} />
+              <MaterialCommunityIcons name="plus" size={20} color={colors.textOnPrimary} />
             </TouchableOpacity>
           </View>
         )}
@@ -248,7 +412,7 @@ const GroundingExercise = ({ onComplete }) => {
             <Text style={styles.nextButtonText}>
               {currentCategory < CATEGORIES.length - 1 ? TEXTS.NEXT : TEXTS.COMPLETE}
             </Text>
-            <MaterialCommunityIcons name="arrow-right" size={20} color={colors.white} />
+            <MaterialCommunityIcons name="arrow-right" size={20} color={colors.textOnPrimary} />
           </TouchableOpacity>
         )}
       </View>
@@ -256,166 +420,7 @@ const GroundingExercise = ({ onComplete }) => {
     </KeyboardAvoidingView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 48,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.white,
-    marginBottom: 10,
-    letterSpacing: 0.3,
-  },
-  description: {
-    fontSize: 15,
-    color: FOCUS_META,
-    lineHeight: 22,
-    marginBottom: 22,
-    letterSpacing: 0.2,
-  },
-  progressContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 30,
-    paddingHorizontal: 10,
-  },
-  progressDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  progressDotActive: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-  },
-  progressDotCompleted: {
-    // Ya tiene el color de la categoría
-  },
-  categoryCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 22,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    overflow: 'hidden',
-  },
-  categoryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    gap: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: FOCUS_BORDER_SUBTLE,
-  },
-  categoryTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  responsesContainer: {
-    padding: 16,
-    gap: 10,
-  },
-  responseItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-  },
-  responseText: {
-    fontSize: 14,
-    color: colors.white,
-    flex: 1,
-  },
-  removeButton: {
-    marginLeft: 10,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 10,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 14,
-    padding: 14,
-    fontSize: 15,
-    color: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-    minHeight: 48,
-  },
-  addButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_ACCENT_BORDER,
-  },
-  nextButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 18,
-    gap: 10,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-  },
-  nextButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.white,
-  },
-  completedContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  completedTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.white,
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  completedText: {
-    fontSize: 15,
-    color: FOCUS_META,
-    textAlign: 'center',
-    marginBottom: 30,
-    lineHeight: 22,
-  },
-  resetButton: {
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: colors.primary,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_ACCENT_BORDER,
-  },
-  resetButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.white,
-  },
-});
+// `styles` se crea por tema dentro del componente.
 
 export default GroundingExercise;
 

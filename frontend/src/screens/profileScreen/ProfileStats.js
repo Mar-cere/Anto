@@ -4,10 +4,12 @@
 import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { styles } from './profileScreenStyles';
-import { COLORS, TEXTS, STAT_ICON_SIZE } from './profileScreenConstants';
+import { useProfileScreenStyles } from './profileScreenStyles';
+import { TEXTS, STAT_ICON_SIZE } from './profileScreenConstants';
 
 export function ProfileStats({ userData, detailedStats }) {
+  const { styles, profileColors } = useProfileScreenStyles();
+
   return (
     <View style={styles.statsContainer}>
       <Text style={styles.sectionTitle}>{TEXTS.STATS_TITLE}</Text>
@@ -17,7 +19,7 @@ export function ProfileStats({ userData, detailedStats }) {
         contentContainerStyle={styles.statsGrid}
       >
         <View style={styles.statItem}>
-          <MaterialCommunityIcons name="check-circle" size={STAT_ICON_SIZE} color={COLORS.PRIMARY} />
+          <MaterialCommunityIcons name="check-circle" size={STAT_ICON_SIZE} color={profileColors.PRIMARY} />
           <Text style={styles.statValue}>{userData.stats.tasksCompleted}</Text>
           <Text style={styles.statLabel}>{TEXTS.TASKS_COMPLETED}</Text>
           <Text style={styles.statSubLabel}>
@@ -25,7 +27,7 @@ export function ProfileStats({ userData, detailedStats }) {
           </Text>
         </View>
         <View style={styles.statItem}>
-          <MaterialCommunityIcons name="lightning-bolt" size={STAT_ICON_SIZE} color={COLORS.GOLD} />
+          <MaterialCommunityIcons name="lightning-bolt" size={STAT_ICON_SIZE} color={profileColors.STAT_ICON_HABITS} />
           <Text style={styles.statValue}>{detailedStats.habitsActive}</Text>
           <Text style={styles.statLabel}>{TEXTS.HABITS_ACTIVE}</Text>
           <Text style={styles.statSubLabel}>
@@ -33,7 +35,7 @@ export function ProfileStats({ userData, detailedStats }) {
           </Text>
         </View>
         <View style={styles.statItem}>
-          <MaterialCommunityIcons name="fire" size={STAT_ICON_SIZE} color={COLORS.ORANGE} />
+          <MaterialCommunityIcons name="fire" size={STAT_ICON_SIZE} color={profileColors.STAT_ICON_STREAK} />
           <Text style={styles.statValue}>{userData.stats.habitsStreak}</Text>
           <Text style={styles.statLabel}>{TEXTS.CURRENT_STREAK}</Text>
           <Text style={styles.statSubLabel}>

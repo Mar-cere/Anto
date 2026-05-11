@@ -9,7 +9,7 @@
  */
 
 import { createStackNavigator } from '@react-navigation/stack';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ROUTES } from '../constants/routes';
 import DashScreen from '../screens/DashScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
@@ -50,17 +50,13 @@ import SocialActivityScreen from '../screens/techniques/SocialActivityScreen';
 import AboutScreen from '../screens/AboutScreen';
 import AIPrivacyScreen from '../screens/AIPrivacyScreen';
 import SummaryScreen from '../screens/SummaryScreen';
-import { colors } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
 import TabNavigator from './TabNavigator';
 
 const Stack = createStackNavigator();
 
-// Constantes de estilos del header
-const HEADER_BACKGROUND = '#1D1B70';
-const HEADER_TINT_COLOR = colors.white;
 const HEADER_SHOWN = false;
 const HEADER_TITLE_FONT_WEIGHT = 'bold';
-const CARD_BACKGROUND = colors.background;
 
 // Nombres de rutas adicionales (no definidas en ROUTES)
 const ROUTE_NAMES = {
@@ -98,16 +94,22 @@ const ROUTE_NAMES = {
  * @returns {JSX.Element} Stack Navigator con todas las pantallas configuradas
  */
 const StackNavigator = () => {
+  const { colors } = useTheme();
+  const screenOptions = useMemo(
+    () => ({
+      headerStyle: { backgroundColor: colors.navigationHeader },
+      headerTintColor: colors.white,
+      headerShown: HEADER_SHOWN,
+      headerTitleStyle: { fontWeight: HEADER_TITLE_FONT_WEIGHT },
+      cardStyle: { backgroundColor: colors.navigationCard },
+    }),
+    [colors],
+  );
+
   return (
     <Stack.Navigator
       initialRouteName={ROUTE_NAMES.HOME}
-      screenOptions={{
-        headerStyle: { backgroundColor: HEADER_BACKGROUND },
-        headerTintColor: HEADER_TINT_COLOR,
-        headerShown: HEADER_SHOWN,
-        headerTitleStyle: { fontWeight: HEADER_TITLE_FONT_WEIGHT },
-        cardStyle: { backgroundColor: CARD_BACKGROUND }
-      }}
+      screenOptions={screenOptions}
     >
       {/* Pantalla inicial */}
       <Stack.Screen 

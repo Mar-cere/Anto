@@ -2,15 +2,10 @@
  * Regresión UI/copys del modo invitado (banner de cuota alineado con backend).
  */
 
-jest.mock('../../../styles/globalStyles', () => ({
-  colors: {
-    background: '#030A24',
-    primary: '#1ADDDB',
-    white: '#FFFFFF',
-  },
-}));
+jest.mock('../../../styles/globalStyles', () => jest.requireActual('../../../styles/globalStyles'));
 
 jest.mock('react-native', () => ({
+  Platform: { OS: 'ios', select: (d) => d.ios, isPad: false, isTVOS: false },
   Dimensions: {
     get: jest.fn(() => ({ width: 390, height: 844 })),
   },

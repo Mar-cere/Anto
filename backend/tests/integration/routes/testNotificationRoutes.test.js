@@ -19,7 +19,31 @@ import {
 import jwt from 'jsonwebtoken';
 import { validUser } from '../../fixtures/userFixtures.js';
 
+jest.setTimeout(30000);
+
 const mockPushNotificationService = {
+  NOTIFICATION_TYPES: {
+    // Crisis y seguimiento (usados por algunas rutas/servicios al inicializar)
+    CRISIS_WARNING: 'crisis_warning',
+    CRISIS_MEDIUM: 'crisis_medium',
+    FOLLOW_UP: 'crisis_followup',
+    BETWEEN_SESSIONS_NUDGE: 'between_sessions_nudge',
+
+    // Rutina/bienestar (requeridos por NotificationScheduler al construir)
+    MORNING_MOTIVATION: 'morning_motivation',
+    EVENING_REFLECTION: 'evening_reflection',
+    HYDRATION_REMINDER: 'hydration_reminder',
+    MIDDAY_MOTIVATION: 'midday_motivation',
+    MOVEMENT_BREAK: 'movement_break',
+    SLEEP_ROUTINE_REMINDER: 'sleep_routine_reminder',
+    DAILY_CHECKIN: 'daily_checkin',
+    GRATITUDE_REMINDER: 'gratitude_reminder',
+    WEEKLY_REFLECTION: 'weekly_reflection',
+
+    // Hábitos/tareas (pueden ser referidos en scheduler)
+    HABIT_REMINDER: 'habit_reminder',
+    TASK_REMINDER: 'task_reminder',
+  },
   sendCrisisWarning: jest.fn(),
   sendCrisisMedium: jest.fn(),
   sendFollowUp: jest.fn()

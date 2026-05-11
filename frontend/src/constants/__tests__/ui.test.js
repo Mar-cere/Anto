@@ -4,12 +4,12 @@
  * @author AntoApp Team
  */
 
-import { STATUS_BAR, OPACITIES, SCALES, SPACING, BORDERS } from '../ui';
+import { BORDERS, OPACITIES, SCALES, SPACING, STATUS_BAR } from '../ui';
 
 describe('ui constants', () => {
   describe('STATUS_BAR', () => {
     it('debe tener STYLE y BACKGROUND', () => {
-      expect(STATUS_BAR.STYLE).toBe('light-content');
+      expect(STATUS_BAR.STYLE).toBe('dark-content');
       expect(STATUS_BAR.BACKGROUND).toBe('transparent');
     });
     it('debe tener DEFAULT_HEIGHT numérico', () => {
@@ -43,7 +43,13 @@ describe('ui constants', () => {
 
   describe('SPACING', () => {
     it('debe tener espaciados positivos', () => {
-      expect(SPACING.CONTENT_PADDING_BOTTOM).toBe(120);
+      expect(SPACING.SCREEN_EDGE_INSET).toBe(14);
+      expect(SPACING.FLOATING_NAV_DOCK_INSET_RELIEF).toBe(24);
+      expect(SPACING.FLOATING_NAV_DOCK_ABOVE_SAFE).toBe(0);
+      expect(SPACING.FLOATING_NAV_DOCK_MIN_FROM_BOTTOM).toBe(8);
+      expect(SPACING.FLOATING_NAV_DOCK_FALLBACK_BOTTOM_WEB).toBe(34);
+      expect(SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA).toBe(132);
+      expect(SPACING.CONTENT_PADDING_BOTTOM).toBe(132);
       expect(SPACING.ERROR_PADDING).toBe(15);
       expect(SPACING.ERROR_MARGIN_BOTTOM).toBe(20);
       expect(SPACING.ERROR_BUTTON_PADDING_HORIZONTAL).toBe(15);

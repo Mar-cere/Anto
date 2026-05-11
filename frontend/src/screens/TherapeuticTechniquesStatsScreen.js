@@ -11,7 +11,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -30,7 +30,8 @@ import FloatingNavBar from '../components/FloatingNavBar';
 import Header from '../components/Header';
 import ParticleBackground from '../components/ParticleBackground';
 import { api, ENDPOINTS } from '../config/api';
-import { colors } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING } from '../constants/ui';
 
 const { width } = Dimensions.get('window');
 
@@ -59,6 +60,146 @@ const TEXTS = {
 
 const TherapeuticTechniquesStatsScreen = () => {
   const insets = useSafeAreaInsets();
+  const { colors, statusBarStyle, resolvedScheme } = useTheme();
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        scrollView: {
+          flex: 1,
+        },
+        scrollContent: {
+          padding: SPACING.SCREEN_EDGE_INSET,
+        },
+        section: {
+          marginBottom: 32,
+        },
+        sectionTitle: {
+          fontSize: 22,
+          fontWeight: 'bold',
+          color: colors.text,
+          marginBottom: 16,
+          letterSpacing: 0.5,
+        },
+        statsGrid: {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: 15,
+        },
+        statCard: {
+          width: (width - 60) / 2 - 7.5,
+          backgroundColor: colors.cardBackground,
+          borderRadius: 14,
+          padding: 18,
+          alignItems: 'center',
+          gap: 10,
+          shadowColor: colors.glassShadow ?? colors.shadowAmbient,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 3,
+        },
+        statValue: {
+          fontSize: 24,
+          fontWeight: 'bold',
+          color: colors.text,
+        },
+        statLabel: {
+          fontSize: 12,
+          color: colors.textSecondary,
+          textAlign: 'center',
+        },
+        listContainer: {
+          gap: 12,
+        },
+        listItem: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          backgroundColor: colors.cardBackground,
+          borderRadius: 12,
+          padding: SPACING.SCREEN_EDGE_INSET,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+        },
+        listItemContent: {
+          flex: 1,
+        },
+        listItemTitle: {
+          fontSize: 16,
+          fontWeight: '600',
+          color: colors.text,
+          marginBottom: 4,
+        },
+        listItemSubtitle: {
+          fontSize: 14,
+          color: colors.textSecondary,
+        },
+        effectivenessBadge: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 4,
+          backgroundColor: `${colors.warning}20`,
+          paddingHorizontal: 10,
+          paddingVertical: 6,
+          borderRadius: 12,
+        },
+        effectivenessText: {
+          fontSize: 14,
+          fontWeight: '600',
+          color: colors.warning,
+        },
+        chart: {
+          marginVertical: 8,
+          borderRadius: 16,
+        },
+        centerContainer: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: SPACING.SCREEN_EDGE_INSET,
+        },
+        loadingText: {
+          marginTop: 15,
+          fontSize: 16,
+          color: colors.textSecondary,
+        },
+        errorText: {
+          marginTop: 15,
+          fontSize: 16,
+          color: colors.error,
+          textAlign: 'center',
+        },
+        emptyText: {
+          marginTop: 15,
+          fontSize: 16,
+          color: colors.textSecondary,
+          textAlign: 'center',
+        },
+        retryButton: {
+          marginTop: 20,
+          paddingHorizontal: 24,
+          paddingVertical: 12,
+          borderRadius: 10,
+          backgroundColor: colors.primary,
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.3,
+          shadowRadius: 4,
+          elevation: 3,
+        },
+        retryButtonText: {
+          color: colors.textOnPrimary,
+          fontSize: 16,
+          fontWeight: '600',
+        },
+      }),
+    [colors],
+  );
+
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -219,7 +360,8 @@ const TherapeuticTechniquesStatsScreen = () => {
             backgroundGradientTo: colors.cardBackground,
             decimalPlaces: 0,
             color: (opacity = 1) => `rgba(29, 27, 112, ${opacity})`,
-            labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+            labelColor: (opacity = 1) =>
+              resolvedScheme === 'dark' ? `rgba(255, 255, 255, ${opacity})` : `rgba(36, 35, 79, ${opacity})`,
             style: {
               borderRadius: 16,
             },
@@ -277,7 +419,7 @@ const TherapeuticTechniquesStatsScreen = () => {
       }),
       datasets: [{
         data: stats.usageByDay.map(item => item.count),
-        color: (opacity = 1) => `rgba(26, 221, 219, ${opacity})`,
+        color: (opacity = 1) => `rgba(30, 131, 211, ${opacity})`,
         strokeWidth: 3,
       }],
     };
@@ -296,8 +438,9 @@ const TherapeuticTechniquesStatsScreen = () => {
             backgroundGradientFrom: colors.cardBackground,
             backgroundGradientTo: colors.cardBackground,
             decimalPlaces: 0,
-            color: (opacity = 1) => `rgba(26, 221, 219, ${opacity})`,
-            labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+            color: (opacity = 1) => `rgba(30, 131, 211, ${opacity})`,
+            labelColor: (opacity = 1) =>
+              resolvedScheme === 'dark' ? `rgba(255, 255, 255, ${opacity})` : `rgba(36, 35, 79, ${opacity})`,
             style: {
               borderRadius: 16,
             },
@@ -344,7 +487,10 @@ const TherapeuticTechniquesStatsScreen = () => {
     return (
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA },
+        ]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -364,7 +510,7 @@ const TherapeuticTechniquesStatsScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header title={TEXTS.TITLE} showBackButton />
       {renderContent()}
@@ -372,140 +518,6 @@ const TherapeuticTechniquesStatsScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 120,
-  },
-  section: {
-    marginBottom: 32,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 16,
-    letterSpacing: 0.5,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 15,
-  },
-  statCard: {
-    width: (width - 60) / 2 - 7.5,
-    backgroundColor: colors.cardBackground,
-    borderRadius: 14,
-    padding: 18,
-    alignItems: 'center',
-    gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  listContainer: {
-    gap: 12,
-  },
-  listItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-  },
-  listItemContent: {
-    flex: 1,
-  },
-  listItemTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  listItemSubtitle: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  effectivenessBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: `${colors.warning}20`,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  effectivenessText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.warning,
-  },
-  chart: {
-    marginVertical: 8,
-    borderRadius: 16,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  loadingText: {
-    marginTop: 15,
-    fontSize: 16,
-    color: colors.textSecondary,
-  },
-  errorText: {
-    marginTop: 15,
-    fontSize: 16,
-    color: colors.error,
-    textAlign: 'center',
-  },
-  emptyText: {
-    marginTop: 15,
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  retryButton: {
-    marginTop: 20,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  retryButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
 
 export default TherapeuticTechniquesStatsScreen;
 

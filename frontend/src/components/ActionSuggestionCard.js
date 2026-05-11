@@ -5,7 +5,7 @@
  */
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Modal,
@@ -15,21 +15,117 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { colors } from '../styles/globalStyles';
-import {
-  FOCUS_INNER_ROW,
-  FOCUS_PANEL,
-  FOCUS_BORDER_SUBTLE,
-  FOCUS_CHEVRON_MUTED,
-  FOCUS_BODY_SOFT,
-  FOCUS_META,
-} from '../styles/focusCardTheme';
+import { useTheme } from '../context/ThemeContext';
+import { getFocusTheme } from '../styles/focusCardTheme';
+import { SPACING } from '../constants/ui';
 
 const CARD_MARGIN_BOTTOM = 8;
 const ICON_SIZE = 20;
 const ICON_MARGIN_RIGHT = 10;
 
 const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
+  const { colors, resolvedScheme } = useTheme();
+  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        cardContainer: {
+          marginBottom: CARD_MARGIN_BOTTOM,
+        },
+        card: {
+          ...t.FOCUS_INNER_ROW,
+          justifyContent: 'space-between',
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        content: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          flex: 1,
+        },
+        icon: {
+          fontSize: ICON_SIZE,
+          marginRight: ICON_MARGIN_RIGHT,
+        },
+        label: {
+          fontSize: 15,
+          fontWeight: '500',
+          lineHeight: 20,
+          color: colors.text,
+          flex: 1,
+        },
+        chevron: {
+          marginLeft: 8,
+        },
+        previewOverlay: {
+          flex: 1,
+          backgroundColor: colors.backdropStrong ?? 'rgba(0, 0, 0, 0.5)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: SPACING.SCREEN_EDGE_INSET,
+        },
+        previewContainer: {
+          width: '100%',
+          maxWidth: 400,
+        },
+        previewCard: {
+          ...t.FOCUS_PANEL,
+          marginBottom: 0,
+          paddingVertical: 24,
+          paddingHorizontal: 22,
+          alignItems: 'center',
+        },
+        previewIcon: {
+          fontSize: 48,
+          marginBottom: 16,
+        },
+        previewTitle: {
+          fontSize: 17,
+          fontWeight: '400',
+          lineHeight: 26,
+          letterSpacing: -0.2,
+          color: colors.text,
+          marginBottom: 12,
+          textAlign: 'center',
+        },
+        previewDescription: {
+          fontSize: 14,
+          color: t.FOCUS_BODY_SOFT,
+          textAlign: 'center',
+          marginBottom: 24,
+          lineHeight: 21,
+          fontWeight: '400',
+        },
+        previewHint: {
+          fontSize: 13,
+          color: t.FOCUS_META,
+          marginBottom: 20,
+          fontStyle: 'italic',
+          lineHeight: 18,
+        },
+        previewButton: {
+          backgroundColor: colors.primary,
+          paddingHorizontal: 28,
+          paddingVertical: 14,
+          borderRadius: 999,
+          marginBottom: 12,
+        },
+        previewButtonText: {
+          color: colors.textOnPrimary,
+          fontSize: 15,
+          fontWeight: '600',
+          letterSpacing: 0.2,
+        },
+        previewCloseButton: {
+          position: 'absolute',
+          top: 12,
+          right: 12,
+          padding: 8,
+        },
+      }),
+    [colors, t],
+  );
+
   const [showPreview, setShowPreview] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
@@ -150,7 +246,7 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
           <Ionicons 
             name="chevron-forward" 
             size={18} 
-            color={FOCUS_CHEVRON_MUTED} 
+            color={t.FOCUS_CHEVRON_MUTED} 
             style={styles.chevron}
           />
         </TouchableOpacity>
@@ -204,102 +300,6 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
     </>
   );
 };
-
-const styles = StyleSheet.create({
-  cardContainer: {
-    marginBottom: CARD_MARGIN_BOTTOM,
-  },
-  card: {
-    ...FOCUS_INNER_ROW,
-    justifyContent: 'space-between',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-  },
-  content: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  icon: {
-    fontSize: ICON_SIZE,
-    marginRight: ICON_MARGIN_RIGHT,
-  },
-  label: {
-    fontSize: 15,
-    fontWeight: '500',
-    lineHeight: 20,
-    color: colors.white,
-    flex: 1,
-  },
-  chevron: {
-    marginLeft: 8,
-  },
-  previewOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  previewContainer: {
-    width: '100%',
-    maxWidth: 400,
-  },
-  previewCard: {
-    ...FOCUS_PANEL,
-    marginBottom: 0,
-    paddingVertical: 24,
-    paddingHorizontal: 22,
-    alignItems: 'center',
-  },
-  previewIcon: {
-    fontSize: 48,
-    marginBottom: 16,
-  },
-  previewTitle: {
-    fontSize: 17,
-    fontWeight: '400',
-    lineHeight: 26,
-    letterSpacing: -0.2,
-    color: 'rgba(255,255,255,0.94)',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  previewDescription: {
-    fontSize: 14,
-    color: FOCUS_BODY_SOFT,
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 21,
-    fontWeight: '400',
-  },
-  previewHint: {
-    fontSize: 13,
-    color: FOCUS_META,
-    marginBottom: 20,
-    fontStyle: 'italic',
-    lineHeight: 18,
-  },
-  previewButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 999,
-    marginBottom: 12,
-  },
-  previewButtonText: {
-    color: colors.background,
-    fontSize: 15,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  },
-  previewCloseButton: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    padding: 8,
-  },
-});
 
 export default ActionSuggestionCard;
 

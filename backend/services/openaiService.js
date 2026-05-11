@@ -1107,6 +1107,8 @@ class OpenAIService {
    * @returns {number} Longitud en tokens
    */
   determinarLongitudRespuesta(contexto, userMessage = '', responseStyle = 'balanced') {
+    const LEGACY_RS = { calido: 'empatico', profesional: 'estructurado', directo: 'brief' };
+    const style = LEGACY_RS[responseStyle] || responseStyle;
     // Ajuste dinámico basado en longitud del mensaje del usuario
     const userMessageLength = userMessage.length;
     let baseLength;
@@ -1121,17 +1123,14 @@ class OpenAIService {
     }
     
     // Ajustar según el estilo de respuesta preferido del usuario
-    if (responseStyle === 'brief' || responseStyle === 'directo') {
-      // Respuestas breves/directas: reducir la longitud base
+    if (style === 'brief') {
       baseLength = Math.min(baseLength, RESPONSE_LENGTHS.SHORT);
-    } else if (responseStyle === 'deep' || responseStyle === 'estructurado') {
-      // Respuestas profundas/estructuradas: aumentar la longitud base
+    } else if (style === 'deep' || style === 'estructurado') {
       baseLength = Math.max(baseLength, RESPONSE_LENGTHS.MEDIUM);
       if (baseLength === RESPONSE_LENGTHS.MEDIUM) {
         baseLength = RESPONSE_LENGTHS.LONG;
       }
-    } else if (responseStyle === 'empatico' || responseStyle === 'profesional' || responseStyle === 'calido') {
-      // Respuestas empáticas/profesionales/cálidas: longitud media-alta
+    } else if (style === 'empatico') {
       baseLength = Math.max(baseLength, RESPONSE_LENGTHS.MEDIUM);
     }
     // balanced mantiene la longitud calculada

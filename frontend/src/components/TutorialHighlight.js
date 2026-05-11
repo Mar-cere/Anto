@@ -7,9 +7,9 @@
  * @author AntoApp Team
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Dimensions, StyleSheet, View } from 'react-native';
-import { colors } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -42,8 +42,57 @@ const ELEMENT_POSITIONS = {
 };
 
 const TutorialHighlight = ({ highlightElement, visible }) => {
+  const { colors } = useTheme();
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0.5)).current;
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        overlay: {
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 9999,
+        },
+        darkLayer: {
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        },
+        hole: {
+          position: 'absolute',
+          backgroundColor: 'transparent',
+          borderWidth: 3,
+          borderColor: colors.primary,
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 1,
+          shadowRadius: 25,
+          elevation: 15,
+        },
+        glow: {
+          position: 'absolute',
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        glowInner: {
+          backgroundColor: colors.primary,
+          opacity: 0.2,
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 1,
+          shadowRadius: 30,
+          elevation: 15,
+        },
+      }),
+    [colors],
+  );
 
   useEffect(() => {
     if (visible && highlightElement) {
@@ -143,50 +192,6 @@ const TutorialHighlight = ({ highlightElement, visible }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 9999,
-  },
-  darkLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-  },
-  hole: {
-    position: 'absolute',
-    backgroundColor: 'transparent',
-    borderWidth: 3,
-    borderColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 25,
-    elevation: 15,
-  },
-  glow: {
-    position: 'absolute',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  glowInner: {
-    backgroundColor: colors.primary,
-    opacity: 0.2,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 30,
-    elevation: 15,
-  },
-});
 
 export default TutorialHighlight;
 

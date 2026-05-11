@@ -4,8 +4,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { styles } from './editProfileScreenStyles';
-import { COLORS, TEXTS, ICON_SIZE } from './editProfileScreenConstants';
+import { useEditProfileScreenStyles } from './editProfileScreenStyles';
+import { TEXTS, ICON_SIZE } from './editProfileScreenConstants';
 
 export function EditProfileHeader({
   navigation,
@@ -14,6 +14,7 @@ export function EditProfileHeader({
   onSave,
   onEdit,
 }) {
+  const { styles, editProfileColors } = useEditProfileScreenStyles();
   return (
     <View style={styles.header}>
       <TouchableOpacity
@@ -21,7 +22,7 @@ export function EditProfileHeader({
         onPress={() => navigation.goBack()}
         accessibilityLabel={TEXTS.BACK}
       >
-        <MaterialCommunityIcons name="arrow-left" size={ICON_SIZE} color={COLORS.WHITE} />
+        <MaterialCommunityIcons name="arrow-left" size={ICON_SIZE} color={editProfileColors.WHITE} />
       </TouchableOpacity>
       <Text style={styles.headerTitle}>{TEXTS.PROFILE_TITLE}</Text>
       {editing ? (
@@ -34,7 +35,7 @@ export function EditProfileHeader({
           <MaterialCommunityIcons
             name="content-save"
             size={ICON_SIZE}
-            color={saving ? COLORS.ACCENT : COLORS.PRIMARY}
+            color={saving ? editProfileColors.ACCENT : editProfileColors.PRIMARY}
           />
         </TouchableOpacity>
       ) : (
@@ -43,7 +44,7 @@ export function EditProfileHeader({
           onPress={onEdit}
           accessibilityLabel={TEXTS.EDIT_PROFILE}
         >
-          <MaterialCommunityIcons name="pencil" size={ICON_SIZE} color={COLORS.PRIMARY} />
+          <MaterialCommunityIcons name="pencil" size={ICON_SIZE} color={editProfileColors.PRIMARY} />
         </TouchableOpacity>
       )}
     </View>

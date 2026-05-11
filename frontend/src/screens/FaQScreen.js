@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
@@ -30,7 +30,8 @@ import { ROUTES } from '../constants/routes';
 import { CHAT_BACK_TARGET } from '../navigation/navigationHelpers';
 import { setChatEntryBackTarget } from '../utils/chatEntryContext';
 import faqData from '../data/FaQScreen';
-import { colors } from '../styles/globalStyles';
+import { SPACING } from '../constants/ui';
+import { useTheme } from '../context/ThemeContext';
 
 // Constantes de textos
 const TEXTS = {
@@ -44,14 +45,12 @@ const TEXTS = {
 
 // Constantes de estilos
 const BACKGROUND_OPACITY = 0.1;
-const STATUS_BAR_STYLE = 'light-content';
-const STATUS_BAR_BACKGROUND = '#030A24';
-const HEADER_PADDING_HORIZONTAL = 20;
+const HEADER_PADDING_HORIZONTAL = SPACING.SCREEN_EDGE_INSET;
 const HEADER_PADDING_TOP = 50;
 const HEADER_PADDING_BOTTOM = 20;
 const BACK_BUTTON_PADDING = 8;
 const HEADER_TITLE_MARGIN_LEFT = 12;
-const SCROLL_VIEW_PADDING = 20;
+const SCROLL_VIEW_PADDING = SPACING.SCREEN_EDGE_INSET;
 const IMAGE_CONTAINER_MARGIN_VERTICAL = 24;
 const ANTO_IMAGE_SIZE = 120;
 const ANTO_IMAGE_BORDER_RADIUS = 60;
@@ -63,42 +62,25 @@ const SECTION_TITLE_MARGIN_BOTTOM = 20;
 const SECTION_TITLE_PADDING_BOTTOM = 12;
 const FAQ_ITEM_BORDER_RADIUS = 16;
 const FAQ_ITEM_MARGIN_BOTTOM = 14;
-const FAQ_ITEM_HEADER_PADDING = 20;
+const FAQ_ITEM_HEADER_PADDING = SPACING.SCREEN_EDGE_INSET;
 const FAQ_ITEM_HEADER_PADDING_VERTICAL = 18;
 const QUESTION_PADDING_RIGHT = 12;
-const FAQ_ITEM_BODY_PADDING = 20;
+const FAQ_ITEM_BODY_PADDING = SPACING.SCREEN_EDGE_INSET;
 const FAQ_ITEM_BODY_PADDING_TOP = 0;
 const ANSWER_LINE_HEIGHT = 22;
 const CONTACT_SECTION_BORDER_RADIUS = 20;
-const CONTACT_SECTION_PADDING = 24;
+const CONTACT_SECTION_PADDING = SPACING.SCREEN_EDGE_INSET;
 const CONTACT_SECTION_MARGIN_TOP = 24;
 const CONTACT_SECTION_MARGIN_BOTTOM = 32;
 const CONTACT_TITLE_MARGIN_BOTTOM = 8;
 const CONTACT_SUBTITLE_MARGIN_BOTTOM = 20;
-const CONTACT_BUTTON_PADDING_VERTICAL = 16;
-const CONTACT_BUTTON_PADDING_HORIZONTAL = 32;
+const CONTACT_BUTTON_PADDING_VERTICAL = SPACING.SCREEN_EDGE_INSET;
+const CONTACT_BUTTON_PADDING_HORIZONTAL = SPACING.SCREEN_EDGE_INSET * 2;
 const CONTACT_BUTTON_BORDER_RADIUS = 30;
 const BOTTOM_SPACE_HEIGHT = 100;
 const ICON_SIZE = 26;
 const CHEVRON_ICON_SIZE = 22;
 const ANIMATION_DURATION = 300;
-
-// Constantes de colores
-const COLORS = {
-  BACKGROUND: colors.background,
-  PRIMARY: colors.primary,
-  WHITE: colors.white,
-  ACCENT: '#B8C5E0',
-  ACCENT_LIGHT: '#D4DDF0',
-  HEADER_BACKGROUND: 'rgba(29, 43, 95, 0.95)',
-  CARD_BACKGROUND: 'rgba(29, 43, 95, 0.85)',
-  CARD_BACKGROUND_HOVER: 'rgba(29, 43, 95, 0.95)',
-  CARD_BORDER: 'rgba(26, 221, 219, 0.25)',
-  CARD_BORDER_STRONG: 'rgba(26, 221, 219, 0.4)',
-  FAQ_ITEM_BODY_BACKGROUND: 'rgba(29, 43, 95, 0.6)',
-  CONTACT_BUTTON_TEXT: colors.background,
-  SECTION_TITLE_GRADIENT: 'rgba(26, 221, 219, 0.15)',
-};
 
 // Constantes de imágenes
 const BACKGROUND_IMAGE = require('../images/back.png');
@@ -117,7 +99,7 @@ const CHEVRON_DOWN = 'chevron-down';
  * @param {string} question - Texto de la pregunta
  * @param {string} answer - Texto de la respuesta
  */
-const FaqItem = ({ question, answer }) => {
+const FaqItem = ({ question, answer, colors, styles }) => {
   const [expanded, setExpanded] = useState(false);
   const animatedOpacity = useRef(new Animated.Value(0)).current;
   const rotateValue = useRef(new Animated.Value(0)).current;
@@ -177,7 +159,7 @@ const FaqItem = ({ question, answer }) => {
           <Ionicons 
             name={CHEVRON_DOWN} 
             size={CHEVRON_ICON_SIZE} 
-            color={COLORS.PRIMARY} 
+            color={colors.primary} 
           />
         </Animated.View>
       </TouchableOpacity>
@@ -199,8 +181,245 @@ const FaqItem = ({ question, answer }) => {
 };
 const FaQScreen = () => {
   const navigation = useNavigation();
+  const { colors, statusBarStyle } = useTheme();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        background: {
+          flex: 1,
+          width: '100%',
+        },
+        imageStyle: {
+          opacity: BACKGROUND_OPACITY,
+        },
+        header: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: HEADER_PADDING_HORIZONTAL,
+          paddingTop: HEADER_PADDING_TOP,
+          paddingBottom: HEADER_PADDING_BOTTOM,
+          backgroundColor: colors.chromeHeader,
+          ...Platform.select({
+            ios: {
+              shadowColor: colors.glassShadow ?? colors.shadowAmbient,
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 8,
+            },
+            android: {
+              elevation: 4,
+            },
+          }),
+        },
+        backButton: {
+          padding: BACK_BUTTON_PADDING,
+          borderRadius: 8,
+        },
+        headerTitle: {
+          color: colors.text,
+          fontSize: 22,
+          fontWeight: '700',
+          marginLeft: HEADER_TITLE_MARGIN_LEFT,
+          letterSpacing: 0.5,
+        },
+        scrollView: {
+          flex: 1,
+        },
+        scrollContent: {
+          padding: SCROLL_VIEW_PADDING,
+        },
+        imageContainer: {
+          alignItems: 'center',
+          marginVertical: IMAGE_CONTAINER_MARGIN_VERTICAL,
+        },
+        antoImageWrapper: {
+          width: ANTO_IMAGE_SIZE,
+          height: ANTO_IMAGE_SIZE,
+          borderRadius: ANTO_IMAGE_BORDER_RADIUS,
+          backgroundColor: colors.primary,
+          ...Platform.select({
+            ios: {
+              shadowColor: colors.primary,
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.3,
+              shadowRadius: ANTO_IMAGE_SHADOW_RADIUS,
+            },
+            android: {
+              elevation: 8,
+            },
+          }),
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        antoImage: {
+          width: ANTO_IMAGE_SIZE - 8,
+          height: ANTO_IMAGE_SIZE - 8,
+          borderRadius: ANTO_IMAGE_BORDER_RADIUS - 4,
+        },
+        introText: {
+          color: colors.textSecondary,
+          fontSize: 17,
+          textAlign: 'center',
+          marginBottom: INTRO_TEXT_MARGIN_BOTTOM,
+          lineHeight: INTRO_TEXT_LINE_HEIGHT,
+          paddingHorizontal: 8,
+        },
+        section: {
+          marginBottom: SECTION_MARGIN_BOTTOM,
+        },
+        sectionTitleContainer: {
+          marginBottom: SECTION_TITLE_MARGIN_BOTTOM,
+          paddingBottom: SECTION_TITLE_PADDING_BOTTOM,
+          borderBottomWidth: 2,
+          borderBottomColor: colors.chromeCardBorder,
+          backgroundColor: colors.accentLineSoft,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: 8,
+          borderRadius: 8,
+        },
+        sectionTitle: {
+          color: colors.primary,
+          fontSize: 20,
+          fontWeight: '700',
+          letterSpacing: 0.3,
+        },
+        faqItemContainer: {
+          backgroundColor: colors.chromeCard,
+          borderRadius: FAQ_ITEM_BORDER_RADIUS,
+          marginBottom: FAQ_ITEM_MARGIN_BOTTOM,
+          overflow: 'hidden',
+          borderWidth: 1,
+          borderColor: colors.chromeCardBorder,
+          ...Platform.select({
+            ios: {
+              shadowColor: colors.glassShadow ?? colors.shadowAmbient,
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+            },
+            android: {
+              elevation: 2,
+            },
+          }),
+        },
+        faqItemContainerExpanded: {
+          borderColor: colors.accentLine,
+          ...Platform.select({
+            ios: {
+              shadowOpacity: 0.15,
+              shadowRadius: 6,
+            },
+            android: {
+              elevation: 4,
+            },
+          }),
+        },
+        faqItemHeader: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingHorizontal: FAQ_ITEM_HEADER_PADDING,
+          paddingVertical: FAQ_ITEM_HEADER_PADDING_VERTICAL,
+        },
+        question: {
+          color: colors.text,
+          fontSize: 16,
+          fontWeight: '600',
+          flex: 1,
+          paddingRight: QUESTION_PADDING_RIGHT,
+          lineHeight: 22,
+        },
+        faqItemBody: {
+          paddingHorizontal: FAQ_ITEM_BODY_PADDING,
+          paddingBottom: FAQ_ITEM_BODY_PADDING,
+          paddingTop: FAQ_ITEM_BODY_PADDING_TOP,
+          backgroundColor: colors.glassFill,
+          overflow: 'hidden',
+        },
+        answer: {
+          color: colors.textSecondary,
+          fontSize: 15,
+          lineHeight: ANSWER_LINE_HEIGHT,
+        },
+        contactSection: {
+          backgroundColor: colors.chromeCard,
+          borderRadius: CONTACT_SECTION_BORDER_RADIUS,
+          padding: CONTACT_SECTION_PADDING,
+          alignItems: 'center',
+          marginTop: CONTACT_SECTION_MARGIN_TOP,
+          marginBottom: CONTACT_SECTION_MARGIN_BOTTOM,
+          borderWidth: 2,
+          borderColor: colors.accentLine,
+          ...Platform.select({
+            ios: {
+              shadowColor: colors.primary,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.2,
+              shadowRadius: 8,
+            },
+            android: {
+              elevation: 6,
+            },
+          }),
+        },
+        contactIcon: {
+          marginBottom: 12,
+        },
+        contactTitle: {
+          color: colors.text,
+          fontSize: 20,
+          fontWeight: '700',
+          marginBottom: CONTACT_TITLE_MARGIN_BOTTOM,
+          textAlign: 'center',
+        },
+        contactSubtitle: {
+          color: colors.textSecondary,
+          fontSize: 15,
+          marginBottom: CONTACT_SUBTITLE_MARGIN_BOTTOM,
+          textAlign: 'center',
+        },
+        contactButton: {
+          backgroundColor: colors.primary,
+          paddingVertical: CONTACT_BUTTON_PADDING_VERTICAL,
+          paddingHorizontal: CONTACT_BUTTON_PADDING_HORIZONTAL,
+          borderRadius: CONTACT_BUTTON_BORDER_RADIUS,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          ...Platform.select({
+            ios: {
+              shadowColor: colors.primary,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+            },
+            android: {
+              elevation: 4,
+            },
+          }),
+        },
+        contactButtonText: {
+          color: colors.textOnPrimary,
+          fontSize: 17,
+          fontWeight: '700',
+          marginRight: 8,
+        },
+        contactButtonIcon: {
+          marginLeft: 4,
+        },
+        bottomSpace: {
+          height: BOTTOM_SPACE_HEIGHT,
+        },
+      }),
+    [colors],
+  );
   
   React.useEffect(() => {
     Animated.parallel([
@@ -248,8 +467,8 @@ const FaQScreen = () => {
   return (
     <View style={styles.container}>
       <StatusBar 
-        barStyle={STATUS_BAR_STYLE} 
-        backgroundColor={STATUS_BAR_BACKGROUND} 
+        barStyle={statusBarStyle} 
+        backgroundColor={colors.background} 
         translucent
       />
       <ImageBackground
@@ -274,7 +493,7 @@ const FaQScreen = () => {
             <Ionicons 
               name="arrow-back" 
               size={ICON_SIZE} 
-              color={COLORS.PRIMARY} 
+              color={colors.primary} 
             />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{TEXTS.TITLE}</Text>
@@ -320,6 +539,8 @@ const FaQScreen = () => {
                     key={itemIndex}
                     question={item.question}
                     answer={item.answer}
+                    colors={colors}
+                    styles={styles}
                   />
                 ))}
               </View>
@@ -330,7 +551,7 @@ const FaQScreen = () => {
               <Ionicons 
                 name="chatbubble-ellipses" 
                 size={32} 
-                color={COLORS.PRIMARY} 
+                color={colors.primary} 
                 style={styles.contactIcon}
               />
               <Text style={styles.contactTitle}>{TEXTS.CONTACT_TITLE}</Text>
@@ -344,7 +565,7 @@ const FaQScreen = () => {
                 <Ionicons 
                   name="arrow-forward" 
                   size={20} 
-                  color={COLORS.CONTACT_BUTTON_TEXT} 
+                  color={colors.textOnPrimary} 
                   style={styles.contactButtonIcon}
                 />
               </TouchableOpacity>
@@ -358,237 +579,5 @@ const FaQScreen = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
-  },
-  background: {
-    flex: 1,
-    width: '100%',
-  },
-  imageStyle: {
-    opacity: BACKGROUND_OPACITY,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: HEADER_PADDING_HORIZONTAL,
-    paddingTop: HEADER_PADDING_TOP,
-    paddingBottom: HEADER_PADDING_BOTTOM,
-    backgroundColor: COLORS.HEADER_BACKGROUND,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  backButton: {
-    padding: BACK_BUTTON_PADDING,
-    borderRadius: 8,
-  },
-  headerTitle: {
-    color: COLORS.WHITE,
-    fontSize: 22,
-    fontWeight: '700',
-    marginLeft: HEADER_TITLE_MARGIN_LEFT,
-    letterSpacing: 0.5,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: SCROLL_VIEW_PADDING,
-  },
-  imageContainer: {
-    alignItems: 'center',
-    marginVertical: IMAGE_CONTAINER_MARGIN_VERTICAL,
-  },
-  antoImageWrapper: {
-    width: ANTO_IMAGE_SIZE,
-    height: ANTO_IMAGE_SIZE,
-    borderRadius: ANTO_IMAGE_BORDER_RADIUS,
-    backgroundColor: COLORS.PRIMARY,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.PRIMARY,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: ANTO_IMAGE_SHADOW_RADIUS,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  antoImage: {
-    width: ANTO_IMAGE_SIZE - 8,
-    height: ANTO_IMAGE_SIZE - 8,
-    borderRadius: ANTO_IMAGE_BORDER_RADIUS - 4,
-  },
-  introText: {
-    color: COLORS.ACCENT,
-    fontSize: 17,
-    textAlign: 'center',
-    marginBottom: INTRO_TEXT_MARGIN_BOTTOM,
-    lineHeight: INTRO_TEXT_LINE_HEIGHT,
-    paddingHorizontal: 8,
-  },
-  section: {
-    marginBottom: SECTION_MARGIN_BOTTOM,
-  },
-  sectionTitleContainer: {
-    marginBottom: SECTION_TITLE_MARGIN_BOTTOM,
-    paddingBottom: SECTION_TITLE_PADDING_BOTTOM,
-    borderBottomWidth: 2,
-    borderBottomColor: COLORS.CARD_BORDER,
-    backgroundColor: COLORS.SECTION_TITLE_GRADIENT,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  sectionTitle: {
-    color: COLORS.PRIMARY,
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  faqItemContainer: {
-    backgroundColor: COLORS.CARD_BACKGROUND,
-    borderRadius: FAQ_ITEM_BORDER_RADIUS,
-    marginBottom: FAQ_ITEM_MARGIN_BOTTOM,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: COLORS.CARD_BORDER,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  faqItemContainerExpanded: {
-    borderColor: COLORS.CARD_BORDER_STRONG,
-    ...Platform.select({
-      ios: {
-        shadowOpacity: 0.15,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  faqItemHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: FAQ_ITEM_HEADER_PADDING,
-    paddingVertical: FAQ_ITEM_HEADER_PADDING_VERTICAL,
-  },
-  question: {
-    color: COLORS.WHITE,
-    fontSize: 16,
-    fontWeight: '600',
-    flex: 1,
-    paddingRight: QUESTION_PADDING_RIGHT,
-    lineHeight: 22,
-  },
-  faqItemBody: {
-    paddingHorizontal: FAQ_ITEM_BODY_PADDING,
-    paddingBottom: FAQ_ITEM_BODY_PADDING,
-    paddingTop: FAQ_ITEM_BODY_PADDING_TOP,
-    backgroundColor: COLORS.FAQ_ITEM_BODY_BACKGROUND,
-    overflow: 'hidden',
-  },
-  answer: {
-    color: COLORS.ACCENT_LIGHT,
-    fontSize: 15,
-    lineHeight: ANSWER_LINE_HEIGHT,
-  },
-  contactSection: {
-    backgroundColor: COLORS.CARD_BACKGROUND,
-    borderRadius: CONTACT_SECTION_BORDER_RADIUS,
-    padding: CONTACT_SECTION_PADDING,
-    alignItems: 'center',
-    marginTop: CONTACT_SECTION_MARGIN_TOP,
-    marginBottom: CONTACT_SECTION_MARGIN_BOTTOM,
-    borderWidth: 2,
-    borderColor: COLORS.CARD_BORDER_STRONG,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
-  },
-  contactIcon: {
-    marginBottom: 12,
-  },
-  contactTitle: {
-    color: COLORS.WHITE,
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: CONTACT_TITLE_MARGIN_BOTTOM,
-    textAlign: 'center',
-  },
-  contactSubtitle: {
-    color: COLORS.ACCENT,
-    fontSize: 15,
-    marginBottom: CONTACT_SUBTITLE_MARGIN_BOTTOM,
-    textAlign: 'center',
-  },
-  contactButton: {
-    backgroundColor: COLORS.PRIMARY,
-    paddingVertical: CONTACT_BUTTON_PADDING_VERTICAL,
-    paddingHorizontal: CONTACT_BUTTON_PADDING_HORIZONTAL,
-    borderRadius: CONTACT_BUTTON_BORDER_RADIUS,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  contactButtonText: {
-    color: COLORS.CONTACT_BUTTON_TEXT,
-    fontSize: 17,
-    fontWeight: '700',
-    marginRight: 8,
-  },
-  contactButtonIcon: {
-    marginLeft: 4,
-  },
-  bottomSpace: {
-    height: BOTTOM_SPACE_HEIGHT,
-  },
-});
 
 export default FaQScreen;

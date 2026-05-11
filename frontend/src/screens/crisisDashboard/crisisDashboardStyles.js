@@ -2,15 +2,19 @@
  * Estilos para CrisisDashboardScreen y subcomponentes
  * Alineados con globalStyles y patrón de tarjetas / opciones del perfil.
  */
+import { useMemo } from 'react';
 import { StyleSheet } from 'react-native';
-import { colors } from '../../styles/globalStyles';
+import { useTheme } from '../../context/ThemeContext';
 import { TYPOGRAPHY } from '../../constants/ui';
+import { lightColors } from '../../styles/themePalettes';
+import { SPACING } from '../../constants/ui';
 
-/** Superficie de tarjeta (mismo criterio que ProfileScreen: CARD_BACKGROUND) */
-const CARD_SURFACE = colors.cardBackground;
-const CARD_BORDER = colors.border;
+export function createCrisisDashboardStyles(colors) {
+  /** Superficie de tarjeta (mismo criterio que ProfileScreen: CARD_BACKGROUND) */
+  const CARD_SURFACE = colors.cardBackground;
+  const CARD_BORDER = colors.border;
 
-export const styles = StyleSheet.create({
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -32,17 +36,17 @@ export const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: SPACING.SCREEN_EDGE_INSET,
   },
   errorText: {
-    color: colors.white,
+    color: colors.text,
     fontSize: 18,
     fontWeight: 'bold',
     marginTop: 16,
     textAlign: 'center',
   },
   errorDetail: {
-    color: '#FF6B6B',
+    color: colors.error,
     fontSize: 14,
     marginTop: 8,
     textAlign: 'center',
@@ -55,7 +59,7 @@ export const styles = StyleSheet.create({
     marginTop: 24,
   },
   retryButtonText: {
-    color: colors.white,
+    color: colors.textOnPrimary,
     fontSize: TYPOGRAPHY.BODY,
     fontWeight: '600',
   },
@@ -63,7 +67,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     paddingTop: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
@@ -75,13 +79,13 @@ export const styles = StyleSheet.create({
   title: {
     fontSize: TYPOGRAPHY.TITLE,
     fontWeight: 'bold',
-    color: colors.white,
+    color: colors.text,
   },
   placeholder: {
     width: 40,
   },
   section: {
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     marginBottom: 24,
   },
   sectionHeader: {
@@ -97,7 +101,7 @@ export const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: TYPOGRAPHY.SUBTITLE,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.text,
     marginBottom: 12,
   },
   sectionSubtitle: {
@@ -113,7 +117,7 @@ export const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: 28,
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     lineHeight: 20,
   },
   periodSelectorContainer: {
@@ -130,7 +134,7 @@ export const styles = StyleSheet.create({
     width: '48%',
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: 16,
+    padding: SPACING.SCREEN_EDGE_INSET,
     marginBottom: 12,
     alignItems: 'center',
     borderWidth: 1,
@@ -139,7 +143,7 @@ export const styles = StyleSheet.create({
   summaryValue: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: colors.white,
+    color: colors.text,
     marginTop: 8,
   },
   summaryLabel: {
@@ -151,7 +155,7 @@ export const styles = StyleSheet.create({
   riskCard: {
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: 16,
+    padding: SPACING.SCREEN_EDGE_INSET,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -160,16 +164,16 @@ export const styles = StyleSheet.create({
   },
   riskLabel: {
     fontSize: 16,
-    color: colors.white,
+    color: colors.text,
     fontWeight: '600',
   },
   riskBadge: {
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     paddingVertical: 8,
     borderRadius: 20,
   },
   riskText: {
-    color: colors.white,
+    color: colors.textOnPrimary,
     fontSize: 14,
     fontWeight: 'bold',
   },
@@ -196,13 +200,13 @@ export const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.SMALL,
   },
   periodButtonTextActive: {
-    color: colors.white,
+    color: colors.textOnPrimary,
     fontWeight: 'bold',
   },
   chartContainer: {
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: 16,
+    padding: SPACING.SCREEN_EDGE_INSET,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: CARD_BORDER,
@@ -217,14 +221,14 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   trendText: {
-    color: colors.white,
+    color: colors.text,
     fontSize: TYPOGRAPHY.CAPTION,
     marginLeft: 8,
   },
   historyItem: {
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: 16,
+    padding: SPACING.SCREEN_EDGE_INSET,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: CARD_BORDER,
@@ -244,7 +248,7 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   historyDate: {
-    color: colors.white,
+    color: colors.text,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -271,7 +275,7 @@ export const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: TYPOGRAPHY.SUBTITLE,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.text,
     marginTop: 16,
   },
   emptyMessage: {
@@ -287,7 +291,7 @@ export const styles = StyleSheet.create({
   supportTitle: {
     fontSize: TYPOGRAPHY.SUBTITLE,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.text,
     marginBottom: 8,
   },
   supportSubtitle: {
@@ -301,7 +305,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: 16,
+    padding: SPACING.SCREEN_EDGE_INSET,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: CARD_BORDER,
@@ -317,7 +321,7 @@ export const styles = StyleSheet.create({
   },
   supportActionTitle: {
     fontSize: TYPOGRAPHY.BODY,
-    color: colors.white,
+    color: colors.text,
   },
   supportActionHint: {
     fontSize: TYPOGRAPHY.SMALL,
@@ -327,4 +331,13 @@ export const styles = StyleSheet.create({
   supportChevron: {
     marginLeft: 8,
   },
-});
+  });
+}
+
+export function useCrisisDashboardStyles() {
+  const { colors } = useTheme();
+  return useMemo(() => createCrisisDashboardStyles(colors), [colors]);
+}
+
+/** Compatibilidad legacy (tema claro) para módulos no migrados. */
+export const styles = createCrisisDashboardStyles(lightColors);

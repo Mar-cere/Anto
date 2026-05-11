@@ -10,7 +10,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -30,12 +30,13 @@ import {
 } from '../constants/animations';
 import { ROUTES } from '../constants/routes';
 import { HOME as TEXTS } from '../constants/translations';
-import { OPACITIES, SCALES, STATUS_BAR } from '../constants/ui';
+import { OPACITIES, SCALES, SPACING } from '../constants/ui';
 import {
   NAV_STORAGE_OPEN_CHAT_AFTER_LOGIN,
   openEmergencyChatFromHome,
 } from '../navigation/navigationHelpers';
-import { colors, globalStyles } from '../styles/globalStyles';
+import { createGlobalStyles } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
 
 // Constantes específicas de esta pantalla
 const ANIMATION_INITIAL_DELAY = ANIMATION_DELAYS.SCREEN_ENTRY;
@@ -54,9 +55,6 @@ const TEXT_MARGIN_BOTTOM = 50;
 const FOOTER_BOTTOM = 40;
 const LOADING_SCALE = SCALES.LOADING;
 
-// Constantes de StatusBar
-const STATUS_BAR_STYLE = STATUS_BAR.STYLE;
-
 // Mapeo de rutas para navegación
 const ROUTE_MAP = {
   [ROUTES.SIGN_IN]: ROUTES.SIGN_IN,
@@ -67,6 +65,58 @@ const ROUTE_MAP = {
 
 const HomeScreen = () => {
   const navigation = useNavigation();
+  const { colors, statusBarStyle } = useTheme();
+  const styles = useMemo(() => {
+    const gs = createGlobalStyles(colors);
+    return StyleSheet.create({
+      container: gs.container,
+      titleText: gs.titleText,
+      subTitleText: gs.subTitleText,
+      buttonContainer: gs.buttonContainer,
+      FQText: gs.FQText,
+      background: {
+        flex: 1,
+        resizeMode: 'cover',
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      imageStyle: {
+        opacity: IMAGE_OPACITY,
+      },
+      contentContainer: {
+        flex: 1,
+        width: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: HORIZONTAL_PADDING,
+      },
+      loadingIndicator: {
+        transform: [{ scale: LOADING_SCALE }],
+      },
+      textContainer: {
+        alignItems: 'center',
+        marginBottom: TEXT_MARGIN_BOTTOM,
+      },
+      footerContainer: {
+        position: 'absolute',
+        bottom: FOOTER_BOTTOM,
+        width: '100%',
+        alignItems: 'center',
+      },
+      emergencyContainer: {
+        paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+        paddingVertical: 12,
+        marginBottom: 10,
+      },
+      emergencyText: {
+        fontSize: 15,
+        color: colors.primary,
+        fontWeight: 'bold',
+        textAlign: 'center',
+      },
+    });
+  }, [colors]);
+
   const [isLoading, setIsLoading] = useState(true);
   
   // Valores para animaciones
@@ -135,7 +185,7 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle={STATUS_BAR_STYLE} />
+      <StatusBar barStyle={statusBarStyle} />
       <ImageBackground 
         source={require('../images/back.png')} 
         style={styles.background} 
@@ -219,51 +269,5 @@ const HomeScreen = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  ...globalStyles,
-  background: {
-    flex: 1,
-    resizeMode: 'cover',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imageStyle: {
-    opacity: IMAGE_OPACITY,
-  },
-  contentContainer: {
-    flex: 1,
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: HORIZONTAL_PADDING,
-  },
-  loadingIndicator: {
-    transform: [{ scale: LOADING_SCALE }],
-  },
-  textContainer: {
-    alignItems: 'center',
-    marginBottom: TEXT_MARGIN_BOTTOM,
-  },
-  footerContainer: {
-    position: 'absolute',
-    bottom: FOOTER_BOTTOM,
-    width: '100%',
-    alignItems: 'center',
-  },
-  emergencyContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    marginBottom: 10,
-  },
-  emergencyText: {
-    fontSize: 15,
-    color: '#1ADDDB',
-    fontWeight: 'bold',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-});
 
 export default HomeScreen;

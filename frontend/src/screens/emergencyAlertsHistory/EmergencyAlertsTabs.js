@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { styles } from './emergencyAlertsHistoryStyles';
+import { useEmergencyAlertsHistoryStyles } from './emergencyAlertsHistoryStyles';
 import { TEXTS, TABS } from './emergencyAlertsHistoryConstants';
 
 /** null = sin badge; número finito >= 0 para pill y a11y */
@@ -25,6 +25,7 @@ export function EmergencyAlertsTabs({
   statsCount,
   patternsCount,
 }) {
+  const styles = useEmergencyAlertsHistoryStyles();
   const onPress = (tab) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     if (typeof onTabChange === 'function') {

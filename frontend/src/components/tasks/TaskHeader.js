@@ -10,8 +10,8 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { colors } from '../../styles/globalStyles';
-import { FOCUS_BORDER_SUBTLE, FOCUS_KICKER_COLOR, FOCUS_META } from '../../styles/focusCardTheme';
+import { useTheme } from '../../context/ThemeContext';
+import { SPACING } from '../../constants/ui';
 
 const TaskHeader = ({
   filterType,
@@ -20,6 +20,7 @@ const TaskHeader = ({
   searchQuery = '',
   counts = { all: 0, task: 0, reminder: 0 },
 }) => {
+  const { colors, statusBarStyle } = useTheme();
   const handleSearchChange = useCallback(
     (text) => {
       onSearch?.(text);
@@ -52,9 +53,113 @@ const TaskHeader = ({
     return `${counts.all || 0} elementos`;
   }, [filterType, counts]);
 
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        headerContainer: {
+          backgroundColor: colors.background,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: colors.chromeHeaderBorder,
+        },
+        header: {
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingTop: 8,
+          paddingBottom: 16,
+        },
+        headerTop: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 14,
+        },
+        headerTitle: {
+          fontSize: 22,
+          fontWeight: '600',
+          letterSpacing: -0.3,
+          color: colors.text,
+        },
+        headerMeta: {
+          marginTop: 2,
+          color: colors.textSecondary,
+          fontSize: 12,
+          fontWeight: '500',
+        },
+        searchButton: {
+          padding: 8,
+          borderRadius: 12,
+          backgroundColor: colors.glassFill,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.chromeHeaderBorder,
+        },
+        searchContainer: {
+          marginBottom: 12,
+          overflow: 'hidden',
+        },
+        searchInputContainer: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: colors.chromeInput,
+          borderRadius: 14,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.chromeHeaderBorder,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: 8,
+          gap: 8,
+        },
+        searchInput: {
+          flex: 1,
+          color: colors.text,
+          fontSize: 16,
+          paddingVertical: 8,
+        },
+        filterButtons: {
+          flexDirection: 'row',
+          gap: 8,
+        },
+        filterButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          paddingVertical: 10,
+          paddingHorizontal: 14,
+          borderRadius: 14,
+          backgroundColor: colors.glassFill,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.chromeHeaderBorder,
+        },
+        filterButtonActive: {
+          backgroundColor: colors.primary,
+          borderColor: colors.accentLine,
+        },
+        filterButtonText: {
+          color: colors.text,
+          fontSize: 13,
+          fontWeight: '500',
+        },
+        filterButtonTextActive: {
+          color: colors.textOnPrimary,
+          fontWeight: '600',
+        },
+        filterCount: {
+          backgroundColor: 'rgba(255, 255, 255, 0.2)',
+          borderRadius: 10,
+          paddingHorizontal: 6,
+          paddingVertical: 2,
+          minWidth: 20,
+          alignItems: 'center',
+        },
+        filterCountText: {
+          color: colors.textOnPrimary,
+          fontSize: 12,
+          fontWeight: '600',
+        },
+      }),
+    [colors],
+  );
+
   return (
     <View style={styles.headerContainer}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View>
@@ -65,7 +170,7 @@ const TaskHeader = ({
             <MaterialCommunityIcons
               name={isSearchVisible ? 'close' : 'magnify'}
               size={22}
-              color={FOCUS_KICKER_COLOR}
+              color={colors.primary}
             />
           </TouchableOpacity>
         </View>
@@ -83,17 +188,17 @@ const TaskHeader = ({
           ]}
         >
           <View style={styles.searchInputContainer}>
-            <MaterialCommunityIcons name="magnify" size={20} color={FOCUS_KICKER_COLOR} />
+            <MaterialCommunityIcons name="magnify" size={20} color={colors.primary} />
             <TextInput
               style={styles.searchInput}
               placeholder="Buscar…"
-              placeholderTextColor={FOCUS_META}
+              placeholderTextColor={colors.textSecondary}
               value={searchQuery}
               onChangeText={handleSearchChange}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => handleSearchChange('')}>
-                <MaterialCommunityIcons name="close" size={20} color={FOCUS_META} />
+                <MaterialCommunityIcons name="close" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             )}
           </View>
@@ -114,7 +219,7 @@ const TaskHeader = ({
               <MaterialCommunityIcons
                 name={filter.icon}
                 size={16}
-                color={filterType === filter.type ? colors.background : FOCUS_KICKER_COLOR}
+                color={filterType === filter.type ? colors.textOnPrimary : colors.primary}
               />
               <Text
                 style={[styles.filterButtonText, filterType === filter.type && styles.filterButtonTextActive]}
@@ -133,103 +238,5 @@ const TaskHeader = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  headerContainer: {
-    backgroundColor: colors.background,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: FOCUS_BORDER_SUBTLE,
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 16,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    letterSpacing: -0.3,
-    color: 'rgba(255,255,255,0.94)',
-  },
-  headerMeta: {
-    marginTop: 2,
-    color: FOCUS_META,
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  searchButton: {
-    padding: 8,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  searchContainer: {
-    marginBottom: 12,
-    overflow: 'hidden',
-  },
-  searchInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 8,
-  },
-  searchInput: {
-    flex: 1,
-    color: colors.white,
-    fontSize: 16,
-    paddingVertical: 8,
-  },
-  filterButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-  },
-  filterButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: 'rgba(26, 221, 219, 0.35)',
-  },
-  filterButtonText: {
-    color: FOCUS_KICKER_COLOR,
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  filterButtonTextActive: {
-    color: colors.background,
-    fontWeight: '600',
-  },
-  filterCount: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    minWidth: 20,
-    alignItems: 'center',
-  },
-  filterCountText: {
-    color: colors.white,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-});
 
 export default TaskHeader;

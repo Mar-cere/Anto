@@ -1,9 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Dimensions, View } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 
 const PARTICLE_COUNT = 10;
 
 const ParticleBackground = () => {
+  const { colors } = useTheme();
   const particlesRef = useRef(
     Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
       key: i,
@@ -61,7 +63,7 @@ const ParticleBackground = () => {
           width: particle.size,
           height: particle.size,
           borderRadius: particle.size / 2,
-          backgroundColor: '#1ADDDB',
+          backgroundColor: colors.primary,
           opacity: particle.opacity,
           transform: [
             { translateX: particle.translateX },

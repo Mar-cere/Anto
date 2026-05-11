@@ -10,7 +10,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -36,11 +36,11 @@ import {
   openEmergencyChatFromHome,
 } from '../navigation/navigationHelpers';
 import chatService from '../services/chatService';
-import { colors, globalStyles } from '../styles/globalStyles';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { getApiErrorMessage } from '../utils/apiErrorHandler';
-import { useToast } from '../context/ToastContext';
 
 // Constantes de animación
 const ANIMATION_INITIAL_DELAY = 500; // ms
@@ -101,8 +101,6 @@ const HORIZONTAL_PADDING = 20;
 const TEXT_MARGIN_BOTTOM = 40;
 const LOADING_SCALE = 1.5;
 const MAX_FORM_WIDTH = 400;
-const STATUS_BAR_STYLE = 'light-content';
-const STATUS_BAR_BACKGROUND = colors.background;
 
 // Constantes de opacidad
 const DISABLED_OPACITY = 0.5;
@@ -132,6 +130,14 @@ const validateField = (field, value) => {
   }
 };
 
+const hexToRgba = (hex, alpha) => {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+};
+
 // Helper: guardar datos de autenticación
 const saveAuthData = async (tokens, user, email) => {
   const itemsToSave = [
@@ -159,6 +165,106 @@ const SignInScreen = () => {
   const navigation = useNavigation();
   const { refreshSession } = useAuth();
   const { showToast } = useToast();
+  const { colors, globalStyles: gs, statusBarStyle } = useTheme();
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: gs.container,
+        titleText: gs.titleText,
+        subTitleText: gs.subTitleText,
+        buttonContainer: gs.buttonContainer,
+        background: {
+          flex: 1,
+          width: '100%',
+          height: '100%',
+        },
+        imageStyle: {
+          opacity: IMAGE_OPACITY,
+        },
+        contentContainer: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingHorizontal: HORIZONTAL_PADDING,
+        },
+        formContainer: {
+          width: '100%',
+          maxWidth: MAX_FORM_WIDTH,
+          alignItems: 'center',
+        },
+        loadingIndicator: {
+          transform: [{ scale: LOADING_SCALE }],
+        },
+        textContainer: {
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginBottom: TEXT_MARGIN_BOTTOM,
+        },
+        mainButton: {
+          backgroundColor: colors.primary,
+          paddingVertical: 18,
+          paddingHorizontal: 60,
+          borderRadius: 25,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 16,
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 5,
+          width: '100%',
+          maxWidth: 300,
+        },
+        mainButtonText: {
+          color: colors.white,
+          fontSize: 20,
+          fontWeight: 'bold',
+        },
+        secondaryButton: {
+          borderColor: colors.primary,
+          borderWidth: 2,
+          paddingVertical: 18,
+          paddingHorizontal: 50,
+          borderRadius: 25,
+          alignItems: 'center',
+          justifyContent: 'center',
+          shadowColor: colors.glassShadow,
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.15,
+          shadowRadius: 4,
+          elevation: 5,
+          marginBottom: 16,
+          width: '100%',
+          maxWidth: 300,
+          backgroundColor: colors.surface,
+        },
+        secondaryButtonText: {
+          color: colors.primary,
+          fontSize: 20,
+          fontWeight: 'bold',
+        },
+        forgotPasswordText: {
+          marginTop: 20,
+          fontSize: 16,
+          color: colors.primary,
+          textAlign: 'center',
+          fontWeight: 'bold',
+        },
+        backButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginTop: 50,
+        },
+        backButtonText: {
+          fontSize: 16,
+          color: colors.primary,
+          marginLeft: 5,
+        },
+      }),
+    [colors, gs],
+  );
 
   // Estado de red
   const { isConnected, isInternetReachable } = useNetworkStatus();
@@ -395,7 +501,7 @@ const SignInScreen = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle={STATUS_BAR_STYLE} backgroundColor={STATUS_BAR_BACKGROUND} />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       
       {/* Offline Banner */}
       <OfflineBanner />
@@ -433,22 +539,22 @@ const SignInScreen = () => {
                     <Text style={styles.subTitleText}>{TEXTS.SUBTITLE}</Text>
                   </View>
 
-                  <View style={globalStyles.inputWrapper}>
+                  <View style={gs.inputWrapper}>
                     <View style={[
-                      globalStyles.inputContainer, 
-                      errors.email && globalStyles.inputError,
-                      focusedField === 'email' && globalStyles.inputContainerFocused
+                      gs.inputContainer, 
+                      errors.email && gs.inputError,
+                      focusedField === 'email' && gs.inputContainerFocused
                     ]}>
                       <Ionicons 
                         name="mail-outline" 
                         size={20} 
                         color={colors.primary} 
-                        style={globalStyles.inputIcon} 
+                        style={gs.inputIcon} 
                       />
                       <TextInput
-                        style={globalStyles.input}
+                        style={gs.input}
                         placeholder={TEXTS.EMAIL_PLACEHOLDER}
-                        placeholderTextColor={errors.email ? '#FF6B6B' : colors.accent}
+                        placeholderTextColor={errors.email ? colors.error : colors.accent}
                         keyboardType="email-address"
                         autoCapitalize="none"
                         onChangeText={(text) => handleInputChange('email', text)}
@@ -460,23 +566,23 @@ const SignInScreen = () => {
                         accessibilityState={{ invalid: Boolean(errors.email) }}
                       />
                     </View>
-                    {errors.email ? <Text style={globalStyles.errorText}>{errors.email}</Text> : null}
+                    {errors.email ? <Text style={gs.errorText}>{errors.email}</Text> : null}
                   </View>
 
-                  <View style={globalStyles.inputWrapper}>
+                  <View style={gs.inputWrapper}>
                     <View style={[
-                      globalStyles.inputContainer, 
-                      errors.password && globalStyles.inputError,
-                      focusedField === 'password' && globalStyles.inputContainerFocused
+                      gs.inputContainer, 
+                      errors.password && gs.inputError,
+                      focusedField === 'password' && gs.inputContainerFocused
                     ]}>
                       <Ionicons 
                         name="lock-closed-outline" 
                         size={20} 
                         color={colors.primary} 
-                        style={globalStyles.inputIcon} 
+                        style={gs.inputIcon} 
                       />
                       <TextInput
-                        style={globalStyles.input}
+                        style={gs.input}
                         placeholder={TEXTS.PASSWORD_PLACEHOLDER}
                         placeholderTextColor={colors.accent}
                         secureTextEntry={!isPasswordVisible}
@@ -490,7 +596,7 @@ const SignInScreen = () => {
                       />
                       <TouchableOpacity 
                         onPress={() => setPasswordVisible(!isPasswordVisible)} 
-                        style={globalStyles.inputIcon}
+                        style={gs.inputIcon}
                         accessibilityRole="button"
                         accessibilityLabel={isPasswordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                         accessibilityHint="Doble toque para alternar visibilidad"
@@ -502,7 +608,7 @@ const SignInScreen = () => {
                         />
                       </TouchableOpacity>
                     </View>
-                    {errors.password ? <Text style={globalStyles.errorText}>{errors.password}</Text> : null}
+                    {errors.password ? <Text style={gs.errorText}>{errors.password}</Text> : null}
                   </View>
 
                   <View style={styles.buttonContainer}>
@@ -515,9 +621,9 @@ const SignInScreen = () => {
                         {
                           transform: [{ scale: buttonScale }],
                           opacity: isButtonDisabled ? BUTTON_DISABLED_OPACITY : buttonOpacity,
-                          backgroundColor: isButtonDisabled ? 
-                            `rgba(26, 221, 219, ${BUTTON_DISABLED_OPACITY})` : 
-                            `rgba(26, 221, 219, ${BUTTON_OPACITY})`
+                          backgroundColor: isButtonDisabled
+                            ? hexToRgba(colors.primary, BUTTON_DISABLED_OPACITY)
+                            : hexToRgba(colors.primary, BUTTON_OPACITY),
                         }
                       ]}
                       activeOpacity={ACTIVE_OPACITY}
@@ -581,97 +687,5 @@ const SignInScreen = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  ...globalStyles,
-  background: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
-  imageStyle: {
-    opacity: IMAGE_OPACITY,
-  },
-  contentContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: HORIZONTAL_PADDING,
-  },
-  formContainer: {
-    width: '100%',
-    maxWidth: MAX_FORM_WIDTH,
-    alignItems: 'center',
-  },
-  loadingIndicator: {
-    transform: [{ scale: LOADING_SCALE }],
-  },
-  textContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: TEXT_MARGIN_BOTTOM,
-  },
-  mainButton: {
-    backgroundColor: `rgba(26, 221, 219, ${BUTTON_OPACITY})`,
-    paddingVertical: 18,
-    paddingHorizontal: 60,
-    borderRadius: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    width: '100%',
-    maxWidth: 300,
-  },
-  mainButtonText: {
-    color: colors.white,
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  secondaryButton: {
-    borderColor: `rgba(26, 221, 219, ${BUTTON_OPACITY})`,
-    borderWidth: 2,
-    paddingVertical: 18,
-    paddingHorizontal: 50,
-    borderRadius: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-    marginBottom: 16,
-    width: '100%',
-    maxWidth: 300,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-  },
-  secondaryButtonText: {
-    color: `rgba(26, 221, 219, ${BUTTON_OPACITY})`,
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  forgotPasswordText: {
-    marginTop: 20,
-    fontSize: 16,
-    color: colors.primary,
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 50,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: colors.primary,
-    marginLeft: 5,
-  },
-});
 
 export default SignInScreen;

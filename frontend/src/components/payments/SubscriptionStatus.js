@@ -6,16 +6,18 @@
  * @author AntoApp Team
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors } from '../../styles/globalStyles';
+import { useTheme } from '../../context/ThemeContext';
+import { SPACING } from '../../constants/ui';
 
 const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscriptionEndDate }) => {
+  const { colors } = useTheme();
+  const normalizedStatus = (status || 'free').toLowerCase();
   const getStatusInfo = () => {
     // Normalizar: estados que el backend puede devolver y el frontend no trataba
-    const normalized = (status || 'free').toLowerCase();
-    switch (normalized) {
+    switch (normalizedStatus) {
       case 'free':
         return {
           icon: 'account-outline',
@@ -79,6 +81,60 @@ const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscri
     });
   };
 
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          backgroundColor: colors.cardBackground,
+          borderRadius: 16,
+          padding: SPACING.SCREEN_EDGE_INSET,
+          marginBottom: 16,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        header: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginBottom: 12,
+        },
+        headerText: {
+          marginLeft: 12,
+          flex: 1,
+        },
+        label: {
+          fontSize: 18,
+          fontWeight: 'bold',
+          color: colors.text,
+          marginBottom: 4,
+        },
+        description: {
+          fontSize: 14,
+          color: colors.textSecondary,
+        },
+        datesContainer: {
+          marginTop: 12,
+          paddingTop: 12,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+        },
+        dateItem: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          marginBottom: 8,
+        },
+        dateLabel: {
+          fontSize: 14,
+          color: colors.textSecondary,
+        },
+        dateValue: {
+          fontSize: 14,
+          color: colors.text,
+          fontWeight: '600',
+        },
+      }),
+    [colors],
+  );
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -95,13 +151,13 @@ const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscri
 
       {(trialEndDate || subscriptionEndDate) && (
         <View style={styles.datesContainer}>
-          {trialEndDate && status === 'trialing' && (
+          {trialEndDate && (normalizedStatus === 'trialing' || normalizedStatus === 'trial') && (
             <View style={styles.dateItem}>
               <Text style={styles.dateLabel}>Fin del Trial:</Text>
               <Text style={styles.dateValue}>{formatDate(trialEndDate)}</Text>
             </View>
           )}
-          {subscriptionEndDate && (status === 'premium' || status === 'active') && (
+          {subscriptionEndDate && (normalizedStatus === 'premium' || normalizedStatus === 'active') && (
             <View style={styles.dateItem}>
               <Text style={styles.dateLabel}>Próxima Renovación:</Text>
               <Text style={styles.dateValue}>{formatDate(subscriptionEndDate)}</Text>
@@ -112,56 +168,6 @@ const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscri
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  headerText: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  label: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 4,
-  },
-  description: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  datesContainer: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  dateItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  dateLabel: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  dateValue: {
-    fontSize: 14,
-    color: colors.white,
-    fontWeight: '600',
-  },
-});
 
 export default SubscriptionStatus;
 

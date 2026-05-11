@@ -5,8 +5,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { styles } from './profileScreenStyles';
-import { COLORS, TEXTS, ICON_SIZE } from './profileScreenConstants';
+import { useProfileScreenStyles } from './profileScreenStyles';
+import { TEXTS, ICON_SIZE } from './profileScreenConstants';
 
 function hapticLight() {
   if (Platform.OS === 'ios') {
@@ -24,6 +24,7 @@ export function ProfileEmergencySection({
   onOpenAlertsHistory,
   onOpenEmergencyModal,
 }) {
+  const { styles, profileColors } = useProfileScreenStyles();
   return (
     <View style={styles.optionsContainer}>
       <Text style={styles.sectionTitle}>{TEXTS.EMERGENCY_CONTACTS}</Text>
@@ -55,7 +56,7 @@ export function ProfileEmergencySection({
                         style={styles.contactActionButton}
                         accessibilityLabel="Editar contacto"
                       >
-                        <Ionicons name="pencil-outline" size={18} color={COLORS.PRIMARY} />
+                        <Ionicons name="pencil-outline" size={18} color={profileColors.PRIMARY} />
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => onDeleteContact(contact._id)}
@@ -65,7 +66,7 @@ export function ProfileEmergencySection({
                         <MaterialCommunityIcons
                           name="delete-outline"
                           size={18}
-                          color={COLORS.ERROR}
+                          color={profileColors.ERROR}
                         />
                       </TouchableOpacity>
                     </View>
@@ -76,7 +77,7 @@ export function ProfileEmergencySection({
                         <MaterialCommunityIcons
                           name="whatsapp"
                           size={16}
-                          color={COLORS.ACCENT}
+                          color={profileColors.PRIMARY}
                         />
                         <Text style={styles.contactDetailText}>{contact.phone}</Text>
                       </View>
@@ -85,7 +86,7 @@ export function ProfileEmergencySection({
                         <MaterialCommunityIcons
                           name="alert-outline"
                           size={16}
-                          color={COLORS.ERROR}
+                          color={profileColors.ERROR}
                         />
                         <Text style={styles.contactDetailText}>
                           Falta teléfono para alertas por WhatsApp
@@ -96,7 +97,7 @@ export function ProfileEmergencySection({
                       <MaterialCommunityIcons
                         name="email-outline"
                         size={16}
-                        color={COLORS.ACCENT}
+                        color={profileColors.PRIMARY}
                       />
                       <Text style={styles.contactDetailText}>{contact.email}</Text>
                     </View>
@@ -116,9 +117,9 @@ export function ProfileEmergencySection({
           }}
           accessibilityLabel={TEXTS.ADD_CONTACTS}
         >
-          <MaterialCommunityIcons name="plus-circle" size={ICON_SIZE} color={COLORS.PRIMARY} />
+          <MaterialCommunityIcons name="plus-circle" size={ICON_SIZE} color={profileColors.PRIMARY} />
           <Text style={styles.optionText}>{TEXTS.ADD_CONTACTS}</Text>
-          <MaterialCommunityIcons name="chevron-right" size={ICON_SIZE} color={COLORS.ACCENT} />
+          <MaterialCommunityIcons name="chevron-right" size={ICON_SIZE} color={profileColors.PRIMARY} />
         </TouchableOpacity>
       )}
 
@@ -130,12 +131,12 @@ export function ProfileEmergencySection({
         }}
         accessibilityLabel={TEXTS.CRISIS_DASHBOARD}
       >
-        <MaterialCommunityIcons name="chart-line" size={ICON_SIZE} color={COLORS.PRIMARY} />
+        <MaterialCommunityIcons name="chart-line" size={ICON_SIZE} color={profileColors.PRIMARY} />
         <View style={styles.optionContent}>
           <Text style={styles.optionText}>{TEXTS.CRISIS_DASHBOARD}</Text>
           <Text style={styles.optionSubtext}>{TEXTS.CRISIS_DASHBOARD_DESC}</Text>
         </View>
-        <MaterialCommunityIcons name="chevron-right" size={ICON_SIZE} color={COLORS.ACCENT} />
+        <MaterialCommunityIcons name="chevron-right" size={ICON_SIZE} color={profileColors.PRIMARY} />
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -146,12 +147,12 @@ export function ProfileEmergencySection({
         }}
         accessibilityLabel={TEXTS.ALERTS_HISTORY}
       >
-        <MaterialCommunityIcons name="history" size={ICON_SIZE} color={COLORS.PRIMARY} />
+        <MaterialCommunityIcons name="history" size={ICON_SIZE} color={profileColors.PRIMARY} />
         <View style={styles.optionContent}>
           <Text style={styles.optionText}>{TEXTS.ALERTS_HISTORY}</Text>
           <Text style={styles.optionSubtext}>{TEXTS.ALERTS_HISTORY_DESC}</Text>
         </View>
-        <MaterialCommunityIcons name="chevron-right" size={ICON_SIZE} color={COLORS.ACCENT} />
+        <MaterialCommunityIcons name="chevron-right" size={ICON_SIZE} color={profileColors.PRIMARY} />
       </TouchableOpacity>
     </View>
   );

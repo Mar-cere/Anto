@@ -13,14 +13,9 @@ import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { commonStyles, CardHeader } from './common/CardStyles';
-import {
-  FOCUS_INNER_ROW,
-  FOCUS_CHEVRON_MUTED,
-  FOCUS_KICKER_COLOR,
-  FOCUS_META,
-  FOCUS_BORDER_SUBTLE,
-} from '../styles/focusCardTheme';
+import { useCardStylesDynamic, CardHeader } from './common/CardStyles';
+import { useTheme } from '../context/ThemeContext';
+import { getFocusTheme } from '../styles/focusCardTheme';
 import {
   getGratitudeEntryPreviewLine,
   sanitizeGratitudeEntriesFromStorage,
@@ -30,6 +25,69 @@ const GRATITUDE_ENTRIES_KEY = 'gratitudeJournalEntries';
 
 const JournalCard = () => {
   const navigation = useNavigation();
+  const { colors, resolvedScheme } = useTheme();
+  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+  const { commonStyles } = useCardStylesDynamic();
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        row: {
+          ...t.FOCUS_INNER_ROW,
+          marginBottom: 0,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        textBlock: {
+          flex: 1,
+          minWidth: 0,
+          marginRight: 8,
+        },
+        metaTopRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 8,
+        },
+        metaChip: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          paddingHorizontal: 10,
+          paddingVertical: 6,
+          borderRadius: 999,
+          backgroundColor: colors.glassFill,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        metaChipText: {
+          color: t.FOCUS_KICKER_COLOR,
+          fontSize: 12,
+          fontWeight: '600',
+          lineHeight: 16,
+          textAlign: 'center',
+          includeFontPadding: false,
+        },
+        countText: {
+          color: t.FOCUS_META,
+          fontSize: 12,
+          fontWeight: '700',
+        },
+        rowTitle: {
+          fontSize: 15,
+          fontWeight: '500',
+          lineHeight: 20,
+          color: colors.text,
+        },
+        rowMeta: {
+          marginTop: 4,
+          fontSize: 13,
+          lineHeight: 18,
+          color: t.FOCUS_META,
+          fontWeight: '400',
+        },
+      }),
+    [colors, t],
+  );
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const entryAnim = useRef(new Animated.Value(0)).current;
   const [entriesCount, setEntriesCount] = useState(0);
@@ -139,7 +197,7 @@ const JournalCard = () => {
           <View style={styles.textBlock}>
             <View style={styles.metaTopRow}>
               <View style={styles.metaChip}>
-                <MaterialCommunityIcons name="calendar" size={12} color={FOCUS_KICKER_COLOR} />
+                <MaterialCommunityIcons name="calendar" size={12} color={t.FOCUS_KICKER_COLOR} />
                 <Text style={styles.metaChipText}>
                   {lastDateLabel ? `Última: ${lastDateLabel}` : 'Hoy'}
                 </Text>
@@ -155,68 +213,11 @@ const JournalCard = () => {
                 : 'Practica la gratitud y mejora tu bienestar emocional'}
             </Text>
           </View>
-          <MaterialCommunityIcons name="chevron-right" size={18} color={FOCUS_CHEVRON_MUTED} />
+          <MaterialCommunityIcons name="chevron-right" size={18} color={t.FOCUS_CHEVRON_MUTED} />
         </View>
       </TouchableOpacity>
     </Animated.View>
   );
 };
-
-const styles = StyleSheet.create({
-  row: {
-    ...FOCUS_INNER_ROW,
-    marginBottom: 0,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-  },
-  textBlock: {
-    flex: 1,
-    minWidth: 0,
-    marginRight: 8,
-  },
-  metaTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  metaChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-  },
-  metaChipText: {
-    color: FOCUS_KICKER_COLOR,
-    fontSize: 12,
-    fontWeight: '600',
-    lineHeight: 16,
-    textAlign: 'center',
-    includeFontPadding: false,
-  },
-  countText: {
-    color: FOCUS_META,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  rowTitle: {
-    fontSize: 15,
-    fontWeight: '500',
-    lineHeight: 20,
-    color: '#FFFFFF',
-  },
-  rowMeta: {
-    marginTop: 4,
-    fontSize: 13,
-    lineHeight: 18,
-    color: FOCUS_META,
-    fontWeight: '400',
-  },
-});
 
 export default JournalCard;

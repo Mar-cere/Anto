@@ -7,7 +7,7 @@
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useEffect, useRef } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import {
   Animated,
   StyleSheet,
@@ -23,8 +23,9 @@ import {
   isFirstSessionHintDismissed,
   setFirstSessionHintDismissed,
 } from '../utils/firstSessionHintStorage';
-import { colors } from '../styles/globalStyles';
-import { FOCUS_PANEL } from '../styles/focusCardTheme';
+import { useTheme } from '../context/ThemeContext';
+import { getFocusTheme } from '../styles/focusCardTheme';
+import { SPACING } from '../constants/ui';
 
 export { getFirstSessionHintDismissedKey, isFirstSessionHintDismissed, setFirstSessionHintDismissed };
 
@@ -38,6 +39,91 @@ const TEXTS = {
 const FirstSessionHint = ({ visible, onDismiss, userId = null }) => {
   const navigation = useNavigation();
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const { colors, resolvedScheme } = useTheme();
+  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        overlay: {
+          ...StyleSheet.absoluteFillObject,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 24,
+        },
+        backdrop: {
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor: colors.overlay,
+        },
+        cardWrapper: {
+          width: '100%',
+          maxWidth: 340,
+          alignSelf: 'center',
+        },
+        card: {
+          ...t.FOCUS_PANEL,
+          marginBottom: 0,
+          paddingVertical: 22,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          width: '100%',
+          maxWidth: 340,
+        },
+        iconRow: {
+          alignItems: 'center',
+          marginBottom: 12,
+        },
+        iconCircle: {
+          width: 48,
+          height: 48,
+          borderRadius: 24,
+          backgroundColor: colors.accentLineSoft,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        title: {
+          fontSize: 18,
+          fontWeight: '700',
+          color: colors.text,
+          textAlign: 'center',
+          marginBottom: 6,
+        },
+        message: {
+          fontSize: 15,
+          color: colors.textSecondary,
+          textAlign: 'center',
+          lineHeight: 22,
+          marginBottom: 20,
+        },
+        actions: {
+          flexDirection: 'row',
+          gap: 10,
+          justifyContent: 'center',
+        },
+        primaryButton: {
+          backgroundColor: colors.primary,
+          paddingVertical: 12,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          borderRadius: 12,
+        },
+        primaryButtonText: {
+          color: colors.textOnPrimary,
+          fontSize: 15,
+          fontWeight: '600',
+        },
+        secondaryButton: {
+          paddingVertical: 12,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        secondaryButtonText: {
+          color: colors.textSecondary,
+          fontSize: 15,
+        },
+      }),
+    [colors, t],
+  );
 
   useEffect(() => {
     if (visible) {
@@ -110,84 +196,5 @@ const FirstSessionHint = ({ visible, onDismiss, userId = null }) => {
     </Animated.View>
   );
 };
-
-const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(3, 10, 36, 0.75)',
-  },
-  cardWrapper: {
-    width: '100%',
-    maxWidth: 340,
-    alignSelf: 'center',
-  },
-  card: {
-    ...FOCUS_PANEL,
-    marginBottom: 0,
-    paddingVertical: 22,
-    paddingHorizontal: 20,
-    width: '100%',
-    maxWidth: 340,
-  },
-  iconRow: {
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.primary + '22',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: 6,
-  },
-  message: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 20,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: 10,
-    justifyContent: 'center',
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-  },
-  primaryButtonText: {
-    color: colors.white,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  secondaryButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.textSecondary + '60',
-  },
-  secondaryButtonText: {
-    color: colors.textSecondary,
-    fontSize: 15,
-  },
-});
 
 export default FirstSessionHint;

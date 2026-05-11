@@ -6,7 +6,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -19,8 +19,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
-import { colors } from '../../styles/globalStyles';
-import { techniqueScreenStyles } from './techniqueScreenStyles';
+import { useTheme } from '../../context/ThemeContext';
+import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const ACTIVITIES = [
   {
@@ -84,7 +84,23 @@ const ACTIVITIES = [
 const ActivitySuggestionScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { colors, statusBarStyle } = useTheme();
+  const techniqueScreenStyles = useTechniqueScreenStyles();
   const [selectedActivity, setSelectedActivity] = useState(null);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        scrollView: {
+          flex: 1,
+        },
+      }),
+    [colors],
+  );
 
   const handleSelectActivity = (activity) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -93,7 +109,7 @@ const ActivitySuggestionScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header
         title="Actividades Sugeridas"
@@ -149,14 +165,6 @@ const ActivitySuggestionScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-});
+// `styles` se deriva del tema dentro del componente.
 
 export default ActivitySuggestionScreen;

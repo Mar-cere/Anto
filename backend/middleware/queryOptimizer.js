@@ -20,6 +20,16 @@ export const ensureIndexes = async () => {
     await User.collection.createIndex({ email: 1 }, { unique: true, sparse: true });
     await User.collection.createIndex({ username: 1 }, { unique: true, sparse: true });
     await User.collection.createIndex({ createdAt: -1 });
+    // Programador de notificaciones: usuarios con push habilitado (processScheduled, hábitos, inactivos)
+    await User.collection.createIndex(
+      { 'notificationPreferences.enabled': 1, pushToken: 1, 'stats.lastActive': 1 },
+      {
+        partialFilterExpression: {
+          'notificationPreferences.enabled': true,
+          pushToken: { $exists: true, $ne: null },
+        },
+      }
+    );
 
     // Índices para Message
     const Message = mongoose.model('Message');
@@ -36,7 +46,21 @@ export const ensureIndexes = async () => {
     // Índices para Habit
     const Habit = mongoose.model('Habit');
     await Habit.collection.createIndex({ userId: 1, createdAt: -1 });
-    await Habit.collection.createIndex({ userId: 1, isActive: 1 });
+    // Nota: isActive es un virtual, no indexable.
+    await Habit.collection.createIndex({ userId: 1, 'status.archived': 1 });
+    await Habit.collection.createIndex({ userId: 1, 'reminder.enabled': 1, 'reminder.lastNotified': 1 });
+    await Habit.collection.createIndex({ 'reminder.time': 1 });
+    // Índice parcial: hábitos activos con recordatorio habilitado (scheduler)
+    await Habit.collection.createIndex(
+      { userId: 1, 'reminder.lastNotified': 1 },
+      {
+        partialFilterExpression: {
+          'reminder.enabled': true,
+          'status.archived': { $ne: true },
+          deletedAt: { $exists: false },
+        },
+      }
+    );
 
     // Índices para CrisisEvent
     const CrisisEvent = mongoose.model('CrisisEvent');

@@ -6,7 +6,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -19,8 +19,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
-import { colors } from '../../styles/globalStyles';
-import { techniqueScreenStyles } from './techniqueScreenStyles';
+import { useTheme } from '../../context/ThemeContext';
+import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const MINDFULNESS_EXERCISES = [
   {
@@ -56,9 +56,48 @@ const MINDFULNESS_EXERCISES = [
 const MindfulnessScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { colors, statusBarStyle } = useTheme();
+  const techniqueScreenStyles = useTechniqueScreenStyles();
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [isActive, setIsActive] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        scrollView: {
+          flex: 1,
+        },
+        activeCard: {
+          alignItems: 'center',
+          alignSelf: 'stretch',
+          borderColor: colors.primary,
+          borderWidth: StyleSheet.hairlineWidth,
+        },
+        timerBlock: {
+          alignItems: 'center',
+          marginBottom: 20,
+          alignSelf: 'stretch',
+        },
+        activeCopy: {
+          alignSelf: 'stretch',
+          marginBottom: 8,
+        },
+        activeTitle: {
+          textAlign: 'center',
+          marginBottom: 8,
+        },
+        activeBody: {
+          textAlign: 'center',
+          marginBottom: 0,
+        },
+      }),
+    [colors],
+  );
 
   useEffect(() => {
     let interval = null;
@@ -95,7 +134,7 @@ const MindfulnessScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header
         title="Mindfulness"
@@ -161,38 +200,7 @@ const MindfulnessScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  activeCard: {
-    alignItems: 'center',
-    alignSelf: 'stretch',
-    borderColor: colors.primary,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  timerBlock: {
-    alignItems: 'center',
-    marginBottom: 20,
-    alignSelf: 'stretch',
-  },
-  activeCopy: {
-    alignSelf: 'stretch',
-    marginBottom: 8,
-  },
-  activeTitle: {
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  activeBody: {
-    textAlign: 'center',
-    marginBottom: 0,
-  },
-});
+// `styles` se deriva del tema dentro del componente.
 
 export default MindfulnessScreen;
 

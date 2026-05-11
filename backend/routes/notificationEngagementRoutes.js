@@ -3,14 +3,14 @@
  */
 
 import express from 'express';
-import rateLimit from 'express-rate-limit';
+import { createRateLimiter } from '../utils/createRateLimiter.js';
 import mongoose from 'mongoose';
 import { authenticateToken } from '../middleware/auth.js';
 import NotificationEngagement from '../models/NotificationEngagement.js';
 
 const router = express.Router();
 
-const patchEngagementLimiter = rateLimit({
+const patchEngagementLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 30,
   message: 'Demasiadas actualizaciones. Por favor, intente más tarde.',

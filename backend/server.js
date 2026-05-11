@@ -11,7 +11,7 @@
 import compression from 'compression';
 import cors from 'cors';
 import express from 'express';
-import rateLimit from 'express-rate-limit';
+import { createRateLimiter } from './utils/createRateLimiter.js';
 import helmet from 'helmet';
 import http from 'http';
 import mongoose from 'mongoose';
@@ -269,7 +269,7 @@ if (config.app.environment === 'development') {
 }
 
 // Configuración de rate limiting (excluir /health)
-const limiter = rateLimit({
+const limiter = createRateLimiter({
   windowMs: RATE_LIMIT_WINDOW_MS,
   max: RATE_LIMIT_MAX_REQUESTS,
   skip: (req) => req.path === '/health' // Excluir /health del rate limiting

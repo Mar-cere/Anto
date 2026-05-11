@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   Keyboard,
@@ -16,8 +16,9 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { colors } from '../../styles/globalStyles';
-import { FOCUS_ACCENT_BORDER, FOCUS_BORDER_SUBTLE, FOCUS_CHEVRON_MUTED } from '../../styles/focusCardTheme';
+import { useTheme } from '../../context/ThemeContext';
+import { getFocusTheme } from '../../styles/focusCardTheme';
+import { SPACING } from '../../constants/ui';
 
 const HABIT_ICONS = [
   { key: 'exercise', icon: 'run' },
@@ -38,6 +39,233 @@ const CreateHabitModal = ({
   setFormData,
   initialReminderIso = null,
 }) => {
+  const { colors, resolvedScheme } = useTheme();
+  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        modalContainer: {
+          flex: 1,
+          justifyContent: 'flex-end',
+        },
+        overlay: {
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor: 'rgba(0, 0, 0, 0.55)',
+        },
+        modalContent: {
+          backgroundColor: colors.background,
+          borderTopLeftRadius: 22,
+          borderTopRightRadius: 22,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+          maxHeight: '92%',
+          minHeight: '48%',
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+        },
+        sheetGrabber: {
+          alignSelf: 'center',
+          width: 36,
+          height: 4,
+          borderRadius: 2,
+          backgroundColor: colors.glassFill,
+          marginTop: 10,
+          marginBottom: 6,
+        },
+        modalHeader: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 14,
+          marginTop: 6,
+        },
+        modalTitle: {
+          fontSize: 17,
+          fontWeight: '600',
+          color: colors.text,
+          letterSpacing: -0.2,
+        },
+        headerActions: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+        },
+        keyboardDismissBtn: {
+          paddingVertical: 8,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          borderRadius: 12,
+          backgroundColor: colors.accentLineSoft,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_ACCENT_BORDER,
+        },
+        keyboardDismissText: {
+          color: colors.primary,
+          fontSize: 14,
+          fontWeight: '600',
+        },
+        closeButton: {
+          padding: 8,
+          borderRadius: 12,
+          backgroundColor: colors.glassFill,
+          justifyContent: 'center',
+          alignItems: 'center',
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        keyboardContainer: {
+          flex: 1,
+        },
+        input: {
+          backgroundColor: colors.chromeInput,
+          borderRadius: 14,
+          padding: 14,
+          color: colors.text,
+          fontSize: 16,
+          marginBottom: 16,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        textArea: {
+          height: 80,
+          textAlignVertical: 'top',
+        },
+        sectionContainer: {
+          marginBottom: 16,
+        },
+        sectionTitle: {
+          fontSize: 13,
+          fontWeight: '600',
+          color: t.FOCUS_KICKER_COLOR,
+          marginBottom: 8,
+          letterSpacing: 0.3,
+          textTransform: 'uppercase',
+        },
+        iconSelector: {
+          flexDirection: 'row',
+          marginBottom: 8,
+        },
+        iconButton: {
+          width: 48,
+          height: 48,
+          borderRadius: 24,
+          backgroundColor: colors.glassFill,
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginRight: 8,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        iconButtonSelected: {
+          backgroundColor: colors.accentLineSoft,
+          borderWidth: 1,
+          borderColor: colors.primary,
+        },
+        frequencySelector: {
+          flexDirection: 'row',
+          gap: 12,
+        },
+        frequencyButton: {
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          padding: 12,
+          borderRadius: 14,
+          backgroundColor: colors.glassFill,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        frequencyButtonSelected: {
+          backgroundColor: colors.accentLineSoft,
+          borderWidth: 1,
+          borderColor: colors.primary,
+        },
+        frequencyButtonText: {
+          color: colors.textSecondary,
+          fontSize: 14,
+          fontWeight: '500',
+        },
+        frequencyButtonTextSelected: {
+          color: colors.primary,
+          fontWeight: '700',
+        },
+        timeSelector: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: 12,
+          borderRadius: 14,
+          backgroundColor: colors.glassFill,
+          gap: 12,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        timeSelectorText: {
+          flex: 1,
+          color: colors.text,
+          fontSize: 16,
+          textAlign: 'center',
+        },
+        timePickerOverlay: {
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        },
+        timePickerContainer: {
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: colors.background,
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          padding: SPACING.SCREEN_EDGE_INSET,
+          paddingBottom: 40,
+          borderTopWidth: 1,
+          borderTopColor: t.FOCUS_ACCENT_BORDER,
+        },
+        timePickerHeader: {
+          alignItems: 'center',
+          marginBottom: 16,
+        },
+        timePickerTitle: {
+          color: colors.text,
+          fontSize: 18,
+          fontWeight: '600',
+        },
+        timePickerDoneButton: {
+          backgroundColor: colors.primary,
+          padding: 12,
+          borderRadius: 12,
+          alignItems: 'center',
+          marginTop: 16,
+        },
+        timePickerDoneText: {
+          color: colors.textOnPrimary,
+          fontSize: 16,
+          fontWeight: '600',
+        },
+        submitButton: {
+          backgroundColor: colors.primary,
+          padding: SPACING.SCREEN_EDGE_INSET,
+          borderRadius: 999,
+          alignItems: 'center',
+          marginTop: 8,
+          marginBottom: 20,
+        },
+        submitButtonText: {
+          color: colors.textOnPrimary,
+          fontSize: 15,
+          fontWeight: '600',
+          letterSpacing: 0.2,
+        },
+      }),
+    [colors, t],
+  );
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [reminderTime, setReminderTime] = useState(new Date());
   const [keyboardVisible, setKeyboardVisible] = useState(false);
@@ -148,7 +376,7 @@ const CreateHabitModal = ({
                 style={styles.closeButton}
                 onPress={onClose}
               >
-                <MaterialCommunityIcons name="close" size={22} color={FOCUS_CHEVRON_MUTED} />
+                <MaterialCommunityIcons name="close" size={22} color={t.FOCUS_CHEVRON_MUTED} />
               </TouchableOpacity>
             </View>
           </View>
@@ -162,7 +390,7 @@ const CreateHabitModal = ({
             <TextInput
               style={styles.input}
               placeholder="Título del hábito"
-              placeholderTextColor="#A3B8E8"
+              placeholderTextColor={colors.textSecondary}
               value={formData.title}
               onChangeText={(text) => setFormData({...formData, title: text})}
               maxLength={50}
@@ -171,7 +399,7 @@ const CreateHabitModal = ({
             <TextInput
               style={[styles.input, styles.textArea]}
               placeholder="Descripción (opcional)"
-              placeholderTextColor="#A3B8E8"
+              placeholderTextColor={colors.textSecondary}
               value={formData.description}
               onChangeText={(text) => setFormData({...formData, description: text})}
               multiline
@@ -198,7 +426,7 @@ const CreateHabitModal = ({
                     <MaterialCommunityIcons
                       name={item.icon}
                       size={24}
-                      color={formData.icon === item.key ? "#1ADDDB" : "#A3B8E8"}
+                      color={formData.icon === item.key ? colors.primary : colors.textSecondary}
                     />
                   </TouchableOpacity>
                 ))}
@@ -218,7 +446,7 @@ const CreateHabitModal = ({
                   <MaterialCommunityIcons 
                     name="repeat" 
                     size={20} 
-                    color={formData.frequency === 'daily' ? "#1ADDDB" : "#A3B8E8"} 
+                    color={formData.frequency === 'daily' ? colors.primary : colors.textSecondary} 
                   />
                   <Text style={[
                     styles.frequencyButtonText,
@@ -235,7 +463,7 @@ const CreateHabitModal = ({
                   <MaterialCommunityIcons 
                     name="calendar-week" 
                     size={20} 
-                    color={formData.frequency === 'weekly' ? "#1ADDDB" : "#A3B8E8"} 
+                    color={formData.frequency === 'weekly' ? colors.primary : colors.textSecondary} 
                   />
                   <Text style={[
                     styles.frequencyButtonText,
@@ -254,7 +482,7 @@ const CreateHabitModal = ({
                 <MaterialCommunityIcons 
                   name="clock-outline" 
                   size={20} 
-                  color="#1ADDDB" 
+                  color={colors.primary} 
                 />
                 <Text style={styles.timeSelectorText}>
                   {reminderTime.toLocaleTimeString('es-ES', { 
@@ -265,7 +493,7 @@ const CreateHabitModal = ({
                 <MaterialCommunityIcons 
                   name="chevron-right" 
                   size={20} 
-                  color="#A3B8E8" 
+                  color={colors.textSecondary} 
                 />
               </TouchableOpacity>
             </View>
@@ -298,7 +526,7 @@ const CreateHabitModal = ({
               is24Hour={true}
               display="spinner"
               onChange={handleTimeChange}
-              textColor="#FFFFFF"
+              textColor={colors.text}
             />
             <TouchableOpacity
               style={styles.timePickerDoneButton}
@@ -312,221 +540,5 @@ const CreateHabitModal = ({
     </Modal>
   );
 };
-
-const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-  },
-  modalContent: {
-    backgroundColor: colors.background,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-    maxHeight: '92%',
-    minHeight: '48%',
-    paddingHorizontal: 20,
-  },
-  sheetGrabber: {
-    alignSelf: 'center',
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    marginTop: 10,
-    marginBottom: 6,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-    marginTop: 6,
-  },
-  modalTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.94)',
-    letterSpacing: -0.2,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  keyboardDismissBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    backgroundColor: 'rgba(26, 221, 219, 0.12)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_ACCENT_BORDER,
-  },
-  keyboardDismissText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  closeButton: {
-    padding: 8,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  keyboardContainer: {
-    flex: 1,
-  },
-  input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: 14,
-    padding: 14,
-    color: colors.white,
-    fontSize: 16,
-    marginBottom: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-  },
-  textArea: {
-    height: 80,
-    textAlignVertical: 'top',
-  },
-  sectionContainer: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: 'rgba(163, 184, 232, 0.85)',
-    marginBottom: 8,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
-  iconSelector: {
-    flexDirection: 'row',
-    marginBottom: 8,
-  },
-  iconButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  iconButtonSelected: {
-    backgroundColor: 'rgba(26, 221, 219, 0.1)',
-    borderWidth: 1,
-    borderColor: '#1ADDDB',
-  },
-  frequencySelector: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  frequencyButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    padding: 12,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-  },
-  frequencyButtonSelected: {
-    backgroundColor: 'rgba(26, 221, 219, 0.1)',
-    borderWidth: 1,
-    borderColor: '#1ADDDB',
-  },
-  frequencyButtonText: {
-    color: '#A3B8E8',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  frequencyButtonTextSelected: {
-    color: '#1ADDDB',
-  },
-  timeSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    gap: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-  },
-  timeSelectorText: {
-    flex: 1,
-    color: colors.white,
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  timePickerOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  timePickerContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.background,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 40,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(26, 221, 219, 0.2)',
-  },
-  timePickerHeader: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  timePickerTitle: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  timePickerDoneButton: {
-    backgroundColor: '#1ADDDB',
-    padding: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  timePickerDoneText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  submitButton: {
-    backgroundColor: colors.primary,
-    padding: 16,
-    borderRadius: 999,
-    alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 20,
-  },
-  submitButtonText: {
-    color: colors.background,
-    fontSize: 15,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  },
-});
 
 export default CreateHabitModal;

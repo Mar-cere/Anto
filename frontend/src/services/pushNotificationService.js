@@ -12,6 +12,7 @@ import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { api, ENDPOINTS } from '../config/api';
+import { lightColors } from '../styles/themePalettes';
 
 // Constantes
 const STORAGE_KEYS = {
@@ -31,7 +32,7 @@ const setupNotificationChannels = async () => {
       name: 'Alertas de Crisis',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 500, 200, 500],
-      lightColor: '#FF6B6B',
+      lightColor: lightColors.error,
       sound: 'default',
       enableVibrate: true,
     });
@@ -41,7 +42,7 @@ const setupNotificationChannels = async () => {
       name: 'Seguimientos',
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#4ECDC4',
+      lightColor: lightColors.success,
       sound: 'default',
     });
 
@@ -50,7 +51,7 @@ const setupNotificationChannels = async () => {
       name: 'Recordatorios',
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250],
-      lightColor: '#1ADDDB',
+      lightColor: lightColors.primary,
       sound: 'default',
     });
 
@@ -59,7 +60,7 @@ const setupNotificationChannels = async () => {
       name: 'Notificaciones Generales',
       importance: Notifications.AndroidImportance.DEFAULT,
       vibrationPattern: [0, 200],
-      lightColor: '#1ADDDB',
+      lightColor: lightColors.primary,
       sound: 'default',
     });
 
@@ -68,7 +69,7 @@ const setupNotificationChannels = async () => {
       name: 'Trial y Suscripciones',
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FFA500',
+      lightColor: lightColors.warning,
       sound: 'default',
       enableVibrate: true,
     });

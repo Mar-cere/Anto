@@ -4,11 +4,11 @@
  */
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { FOCUS_BORDER_SUBTLE, FOCUS_KICKER_COLOR, FOCUS_META } from '../../styles/focusCardTheme';
+import { useTheme } from '../../context/ThemeContext';
 import {
-  COLORS,
+  createHabitsColors,
   FILTER_BORDER_RADIUS,
   FILTER_GAP,
   FILTER_ICON_SIZE,
@@ -19,6 +19,8 @@ import {
   HEADER_TITLE_MARGIN_BOTTOM,
   TEXTS,
 } from '../../screens/habits/habitsScreenConstants';
+import { getFocusTheme } from '../../styles/focusCardTheme';
+import { SPACING } from '../../constants/ui';
 
 export default function HabitsScreenHeader({
   filterType,
@@ -27,6 +29,86 @@ export default function HabitsScreenHeader({
   searchQuery = '',
   onSearch,
 }) {
+  const { colors, resolvedScheme } = useTheme();
+  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+  const HC = useMemo(() => createHabitsColors(colors), [colors]);
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        headerContainer: {
+          backgroundColor: HC.BACKGROUND,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        header: {
+          paddingHorizontal: HEADER_PADDING,
+          paddingBottom: HEADER_PADDING,
+          paddingTop: 8,
+        },
+        headerTitle: {
+          fontSize: 22,
+          fontWeight: '600',
+          letterSpacing: -0.3,
+          color: colors.text,
+        },
+        titleWrap: {
+          marginBottom: HEADER_TITLE_MARGIN_BOTTOM,
+        },
+        headerMeta: {
+          marginTop: 4,
+          color: t.FOCUS_META,
+          fontSize: 12,
+          fontWeight: '500',
+        },
+        filterButtons: {
+          flexDirection: 'row',
+          gap: FILTER_GAP,
+          marginBottom: 12,
+        },
+        filterButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+          paddingVertical: FILTER_PADDING_VERTICAL,
+          paddingHorizontal: FILTER_PADDING_HORIZONTAL,
+          borderRadius: FILTER_BORDER_RADIUS,
+          backgroundColor: t.FOCUS_INNER_ROW.backgroundColor,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        filterButtonActive: {
+          backgroundColor: HC.PRIMARY,
+          borderColor: colors.accentLine,
+        },
+        filterButtonText: {
+          color: t.FOCUS_KICKER_COLOR,
+          fontSize: 13,
+          fontWeight: '500',
+        },
+        filterButtonTextActive: {
+          color: colors.textOnPrimary,
+        },
+        searchInputContainer: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: t.FOCUS_INNER_ROW.backgroundColor,
+          borderRadius: 14,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: 8,
+          gap: 8,
+        },
+        searchInput: {
+          flex: 1,
+          color: colors.text,
+          fontSize: 16,
+          paddingVertical: 8,
+        },
+      }),
+    [colors, t, HC],
+  );
+
   return (
     <View style={styles.headerContainer}>
       <View style={styles.header}>
@@ -49,7 +131,7 @@ export default function HabitsScreenHeader({
             <MaterialCommunityIcons
               name="checkbox-marked-circle-outline"
               size={FILTER_ICON_SIZE}
-              color={filterType === FILTER_TYPES.ACTIVE ? COLORS.WHITE : COLORS.ACCENT}
+              color={filterType === FILTER_TYPES.ACTIVE ? colors.textOnPrimary : HC.ACCENT}
             />
             <Text
               style={[
@@ -70,7 +152,7 @@ export default function HabitsScreenHeader({
             <MaterialCommunityIcons
               name="archive-outline"
               size={FILTER_ICON_SIZE}
-              color={filterType === FILTER_TYPES.ARCHIVED ? COLORS.WHITE : COLORS.ACCENT}
+              color={filterType === FILTER_TYPES.ARCHIVED ? colors.textOnPrimary : HC.ACCENT}
             />
             <Text
               style={[
@@ -83,17 +165,17 @@ export default function HabitsScreenHeader({
           </TouchableOpacity>
         </View>
         <View style={styles.searchInputContainer}>
-          <MaterialCommunityIcons name="magnify" size={20} color={FOCUS_KICKER_COLOR} />
+          <MaterialCommunityIcons name="magnify" size={20} color={t.FOCUS_KICKER_COLOR} />
           <TextInput
             style={styles.searchInput}
             placeholder="Buscar hábito…"
-            placeholderTextColor={FOCUS_META}
+            placeholderTextColor={t.FOCUS_META}
             value={searchQuery}
             onChangeText={onSearch}
           />
           {searchQuery.length > 0 ? (
             <TouchableOpacity onPress={() => onSearch?.('')}>
-              <MaterialCommunityIcons name="close" size={20} color={FOCUS_META} />
+              <MaterialCommunityIcons name="close" size={20} color={t.FOCUS_META} />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -101,76 +183,3 @@ export default function HabitsScreenHeader({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  headerContainer: {
-    backgroundColor: COLORS.BACKGROUND,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: FOCUS_BORDER_SUBTLE,
-  },
-  header: {
-    paddingHorizontal: HEADER_PADDING,
-    paddingBottom: HEADER_PADDING,
-    paddingTop: 8,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    letterSpacing: -0.3,
-    color: 'rgba(255,255,255,0.94)',
-  },
-  titleWrap: {
-    marginBottom: HEADER_TITLE_MARGIN_BOTTOM,
-  },
-  headerMeta: {
-    marginTop: 4,
-    color: FOCUS_META,
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  filterButtons: {
-    flexDirection: 'row',
-    gap: FILTER_GAP,
-    marginBottom: 12,
-  },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: FILTER_PADDING_VERTICAL,
-    paddingHorizontal: FILTER_PADDING_HORIZONTAL,
-    borderRadius: FILTER_BORDER_RADIUS,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-  },
-  filterButtonActive: {
-    backgroundColor: COLORS.PRIMARY,
-    borderColor: 'rgba(26, 221, 219, 0.35)',
-  },
-  filterButtonText: {
-    color: FOCUS_KICKER_COLOR,
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  filterButtonTextActive: {
-    color: COLORS.WHITE,
-  },
-  searchInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 8,
-  },
-  searchInput: {
-    flex: 1,
-    color: COLORS.WHITE,
-    fontSize: 16,
-    paddingVertical: 8,
-  },
-});

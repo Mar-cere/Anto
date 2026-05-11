@@ -6,7 +6,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -22,9 +22,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
-import { colors } from '../../styles/globalStyles';
-import { FOCUS_META } from '../../styles/focusCardTheme';
-import { techniqueScreenStyles } from './techniqueScreenStyles';
+import { useTheme } from '../../context/ThemeContext';
+import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const GRIEF_RESOURCES = [
   {
@@ -56,7 +55,26 @@ const GRIEF_RESOURCES = [
 const GriefSupportScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { colors, statusBarStyle } = useTheme();
+  const techniqueScreenStyles = useTechniqueScreenStyles();
   const [memoryText, setMemoryText] = useState('');
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        keyboardView: {
+          flex: 1,
+        },
+        scrollView: {
+          flex: 1,
+        },
+      }),
+    [colors],
+  );
 
   const handleSaveMemory = () => {
     if (memoryText.trim()) {
@@ -67,7 +85,7 @@ const GriefSupportScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header
         title="Apoyo en Duelo"
@@ -114,7 +132,7 @@ const GriefSupportScreen = () => {
             <TextInput
               style={[techniqueScreenStyles.textInput, techniqueScreenStyles.textInputTall]}
               placeholder="Escribe un recuerdo especial que quieras preservar..."
-              placeholderTextColor={FOCUS_META}
+              placeholderTextColor={colors.textSecondary}
               value={memoryText}
               onChangeText={setMemoryText}
               multiline
@@ -137,18 +155,6 @@ const GriefSupportScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-});
+// `styles` se deriva del tema dentro del componente.
 
 export default GriefSupportScreen;

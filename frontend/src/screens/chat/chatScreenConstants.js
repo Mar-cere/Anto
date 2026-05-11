@@ -2,18 +2,19 @@
  * Constantes compartidas para ChatScreen y sus subcomponentes.
  */
 
+import { useMemo } from 'react';
 import { Dimensions } from 'react-native';
+import { useTheme } from '../../context/ThemeContext';
 import { GUEST_CHAT_STORAGE_KEYS } from '../../constants/guestChatStorageKeys';
 import { SESSION_INTENTION_VALUES } from '../../constants/sessionIntention';
-import { colors } from '../../styles/globalStyles';
-import {
-  FOCUS_ACCENT_BORDER,
-  FOCUS_BORDER_SUBTLE,
-  FOCUS_KICKER_COLOR,
-  FOCUS_META,
-} from '../../styles/focusCardTheme';
+import { SPACING } from '../../constants/ui';
+import { getFocusTheme } from '../../styles/focusCardTheme';
+import { lightColors } from '../../styles/themePalettes';
 
 const { width } = Dimensions.get('window');
+
+/** Mismo inset horizontal que el resto de la app (`SPACING.SCREEN_EDGE_INSET`). */
+const GUTTER = SPACING.SCREEN_EDGE_INSET;
 
 // Textos
 export const TEXTS = {
@@ -128,9 +129,9 @@ export const LAYOUT = {
   HEADER_PADDING_TOP_IOS: 30,
   HEADER_PADDING_TOP_ANDROID: 40,
   HEADER_PADDING_BOTTOM: 10,
-  HEADER_PADDING_HORIZONTAL: 16,
+  HEADER_PADDING_HORIZONTAL: GUTTER,
   HEADER_AVATAR_SIZE: 30,
-  MESSAGES_LIST_PADDING_HORIZONTAL: 14,
+  MESSAGES_LIST_PADDING_HORIZONTAL: GUTTER,
   MESSAGES_LIST_PADDING_TOP: 16,
   MESSAGES_LIST_PADDING_BOTTOM: 16,
   MESSAGE_CONTAINER_MARGIN_BOTTOM: 16,
@@ -138,11 +139,11 @@ export const LAYOUT = {
   MESSAGE_BUBBLE_BORDER_RADIUS: 22,
   MESSAGE_BUBBLE_MARGIN_BOTTOM: 8,
   MESSAGE_BUBBLE_CORNER_RADIUS: 6,
-  INPUT_CONTAINER_PADDING_HORIZONTAL: 16,
+  INPUT_CONTAINER_PADDING_HORIZONTAL: GUTTER,
   INPUT_CONTAINER_PADDING_VERTICAL: 10,
   INPUT_CONTAINER_MARGIN_BOTTOM: 28,
   INPUT_BORDER_RADIUS: 22,
-  INPUT_PADDING_HORIZONTAL: 16,
+  INPUT_PADDING_HORIZONTAL: GUTTER,
   INPUT_PADDING_VERTICAL: 10,
   INPUT_MAX_HEIGHT: 100,
   SEND_BUTTON_SIZE: 40,
@@ -157,11 +158,11 @@ export const LAYOUT = {
   MODAL_PADDING: 24,
   MODAL_TITLE_MARGIN_BOTTOM: 16,
   MODAL_TEXT_MARGIN_BOTTOM: 24,
-  MODAL_BUTTON_PADDING_HORIZONTAL: 16,
+  MODAL_BUTTON_PADDING_HORIZONTAL: GUTTER,
   MODAL_BUTTON_PADDING_VERTICAL: 10,
   MODAL_BUTTON_BORDER_RADIUS: 8,
   MODAL_BUTTON_MARGIN_LEFT: 12,
-  TYPING_INDICATOR_PADDING_HORIZONTAL: 14,
+  TYPING_INDICATOR_PADDING_HORIZONTAL: GUTTER,
   TYPING_INDICATOR_PADDING_BOTTOM: 8,
   TYPING_CONTAINER_MARGIN_BOTTOM: 8,
   TYPING_BUBBLE_MAX_WIDTH: '60%',
@@ -169,7 +170,6 @@ export const LAYOUT = {
   TYPING_DOT_SIZE: 6,
   TYPING_DOT_BORDER_RADIUS: 3,
   TYPING_DOT_MARGIN_HORIZONTAL: 2,
-  EMPTY_CONTAINER_PADDING: 20,
   KEYBOARD_VERTICAL_OFFSET_IOS: 10,
   KEYBOARD_VERTICAL_OFFSET_ANDROID: 0,
   MAX_MESSAGE_LENGTH: 500,
@@ -178,7 +178,9 @@ export const LAYOUT = {
   FLATLIST_WINDOW_SIZE: 10,
   FLATLIST_MAX_TO_RENDER_PER_BATCH: 10,
   GUEST_BANNER_PADDING_VERTICAL: 8,
-  GUEST_BANNER_PADDING_HORIZONTAL: 14,
+  GUEST_BANNER_PADDING_HORIZONTAL: GUTTER,
+  EMPTY_CONTAINER_PADDING_VERTICAL: 20,
+  EMPTY_CONTAINER_PADDING_HORIZONTAL: GUTTER,
 };
 
 /** Debe coincidir con `GUEST_MAX_USER_MESSAGES` en el backend */
@@ -188,42 +190,54 @@ export function formatGuestQuotaBanner(remaining, max) {
   return `Modo sin cuenta · ${remaining} de ${max} mensajes restantes`;
 }
 
-export const CHAT_COLORS = {
-  BACKGROUND: colors.background,
-  PRIMARY: colors.primary,
-  WHITE: colors.white,
-  ACCENT: FOCUS_KICKER_COLOR,
-  ERROR: '#FF6464',
-  HEADER_BACKGROUND: colors.background,
-  HEADER_BORDER: 'rgba(163, 184, 232, 0.1)',
-  USER_BUBBLE: colors.primary,
-  USER_TEXT: colors.background,
-  BOT_BUBBLE: 'rgba(29, 43, 95, 0.88)',
-  BOT_BUBBLE_BORDER: FOCUS_BORDER_SUBTLE,
-  BOT_TEXT: colors.white,
-  INPUT_BACKGROUND: 'rgba(6, 12, 40, 0.45)',
-  INPUT_BORDER: FOCUS_BORDER_SUBTLE,
-  INPUT_FIELD_BACKGROUND: 'rgba(255, 255, 255, 0.04)',
-  INPUT_FIELD_BORDER: FOCUS_BORDER_SUBTLE,
-  INPUT_PLACEHOLDER: FOCUS_META,
-  SEND_BUTTON_BACKGROUND: 'rgba(26, 221, 219, 0.18)',
-  SEND_BUTTON_BORDER: FOCUS_ACCENT_BORDER,
-  SEND_BUTTON_DISABLED_BACKGROUND: 'rgba(29, 43, 95, 0.55)',
-  SCROLL_BUTTON_BACKGROUND: 'rgba(26, 221, 219, 0.2)',
-  SCROLL_BUTTON_BORDER: FOCUS_ACCENT_BORDER,
-  MODAL_OVERLAY: 'rgba(3, 10, 36, 0.82)',
-  MODAL_BACKGROUND: 'rgba(29, 43, 95, 0.94)',
-  MODAL_BORDER: FOCUS_ACCENT_BORDER,
-  MODAL_CANCEL_BACKGROUND: 'rgba(163, 184, 232, 0.2)',
-  MODAL_CONFIRM_BACKGROUND: 'rgba(255, 100, 100, 0.2)',
-  MODAL_CONFIRM_BORDER: 'rgba(255, 100, 100, 0.5)',
-  ERROR_BUBBLE_BACKGROUND: 'rgba(255, 0, 0, 0.1)',
-  ERROR_BUBBLE_BORDER: '#FF6464',
-  TYPING_BUBBLE_BACKGROUND: 'rgba(29, 43, 95, 0.88)',
-  TYPING_DOT: colors.primary,
-  GUEST_BANNER_BACKGROUND: 'rgba(26, 221, 219, 0.12)',
-  GUEST_BANNER_BORDER: 'rgba(26, 221, 219, 0.35)',
-};
+export function createChatColors(colors, resolvedScheme = 'light') {
+  const t = getFocusTheme(colors, resolvedScheme);
+  return {
+    BACKGROUND: colors.background,
+    PRIMARY: colors.primary,
+    WHITE: colors.white,
+    ACCENT: t.FOCUS_KICKER_COLOR,
+    ERROR: colors.error,
+    HEADER_BACKGROUND: colors.background,
+    HEADER_BORDER: colors.border,
+    USER_BUBBLE: colors.primary,
+    USER_TEXT: colors.textOnPrimary ?? colors.white,
+    BOT_BUBBLE: colors.assistantBubble ?? colors.cardBackground,
+    BOT_BUBBLE_BORDER: colors.assistantBubbleBorder ?? colors.border,
+    BOT_TEXT: colors.text,
+    INPUT_BACKGROUND: colors.glassFill,
+    INPUT_BORDER: colors.glassOutline ?? colors.border,
+    INPUT_FIELD_BACKGROUND: colors.surface,
+    INPUT_FIELD_BORDER: colors.border,
+    INPUT_PLACEHOLDER: colors.textMuted ?? colors.textSecondary,
+    SEND_BUTTON_BACKGROUND: colors.accentLineSoft,
+    SEND_BUTTON_BORDER: t.FOCUS_ACCENT_BORDER,
+    SEND_BUTTON_DISABLED_BACKGROUND: colors.chromeInputDisabled,
+    SCROLL_BUTTON_BACKGROUND: colors.accentLineSoft,
+    SCROLL_BUTTON_BORDER: t.FOCUS_ACCENT_BORDER,
+    MODAL_OVERLAY: colors.overlay,
+    MODAL_BACKGROUND: colors.modalSurface,
+    MODAL_BORDER: colors.glassOutline ?? colors.border,
+    MODAL_CANCEL_BACKGROUND: colors.accentLineSoft,
+    MODAL_CONFIRM_BACKGROUND: colors.dangerSoft ?? 'rgba(255, 100, 100, 0.14)',
+    MODAL_CONFIRM_BORDER: colors.dangerBorder ?? 'rgba(255, 100, 100, 0.45)',
+    ERROR_BUBBLE_BACKGROUND: colors.dangerSoft ?? 'rgba(255, 100, 100, 0.08)',
+    ERROR_BUBBLE_BORDER: colors.error,
+    TYPING_BUBBLE_BACKGROUND: colors.assistantBubble ?? colors.cardBackground,
+    TYPING_DOT: colors.primary,
+    GUEST_BANNER_BACKGROUND: colors.accentLineSoft,
+    GUEST_BANNER_BORDER: colors.accentLine ?? colors.border,
+  };
+}
+
+/** Paleta del chat según el tema activo (dentro de ThemeProvider). */
+export function useChatColors() {
+  const { colors, resolvedScheme } = useTheme();
+  return useMemo(() => createChatColors(colors, resolvedScheme), [colors, resolvedScheme]);
+}
+
+/** Compatibilidad legacy (tests/archivos no migrados) */
+export const CHAT_COLORS = createChatColors(lightColors, 'light');
 
 export const ICON_SIZES = {
   BACK: 24,

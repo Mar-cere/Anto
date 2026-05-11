@@ -3,14 +3,16 @@
  */
 import React from 'react';
 import { ActivityIndicator, SafeAreaView, StatusBar, Text, View } from 'react-native';
-import { styles } from './crisisDashboardStyles';
+import { useCrisisDashboardStyles } from './crisisDashboardStyles';
 import { TEXTS } from './crisisDashboardConstants';
-import { colors } from '../../styles/globalStyles';
+import { useTheme } from '../../context/ThemeContext';
 
 export function CrisisDashboardLoadingView() {
+  const styles = useCrisisDashboardStyles();
+  const { colors, statusBarStyle } = useTheme();
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>{TEXTS.LOADING}</Text>

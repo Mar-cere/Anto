@@ -4,7 +4,8 @@
  */
 
 import { StatusBar } from 'react-native';
-import { colors } from '../../styles/globalStyles';
+import { SPACING } from '../../constants/ui';
+import { lightColors } from '../../styles/themePalettes';
 
 // Animación
 export const SWIPE_THRESHOLD = -14;
@@ -76,24 +77,23 @@ export const TEXTS = {
   NO_TOKEN: 'No se encontró token de autenticación',
 };
 
-export const STATUS_BAR_STYLE = 'light-content';
-export const STATUS_BAR_BACKGROUND = colors.background;
+export const STATUS_BAR_STYLE = 'dark-content';
+export const STATUS_BAR_BACKGROUND = lightColors.background;
 export const DEFAULT_IOS_PADDING_TOP = 50;
 export const DEFAULT_ANDROID_PADDING_TOP = StatusBar.currentHeight ?? 0;
 
-export const HEADER_PADDING = 16;
+export const HEADER_PADDING = SPACING.SCREEN_EDGE_INSET;
 export const HEADER_TITLE_MARGIN_BOTTOM = 16;
 export const FILTER_GAP = 12;
 export const FILTER_PADDING_VERTICAL = 8;
-export const FILTER_PADDING_HORIZONTAL = 16;
+export const FILTER_PADDING_HORIZONTAL = SPACING.SCREEN_EDGE_INSET;
 export const FILTER_BORDER_RADIUS = 20;
-export const LIST_PADDING = 16;
 export const LIST_GAP = 12;
-export const LIST_PADDING_BOTTOM = 100;
+export const LIST_PADDING_BOTTOM = SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA;
 export const FAB_SIZE = 56;
 export const FAB_BORDER_RADIUS = 28;
 export const FAB_BOTTOM = 100;
-export const FAB_RIGHT = 16;
+export const FAB_RIGHT = SPACING.SCREEN_EDGE_INSET;
 export const ICON_SIZE = 24;
 export const ACTION_ICON_SIZE = 32;
 export const PROGRESS_ICON_SIZE = 20;
@@ -142,34 +142,41 @@ export const ADD_FIRST_BUTTON_GAP = 8;
 export const ADD_FIRST_BUTTON_BORDER_WIDTH = 1;
 export const SESSION_EXPIRED_DELAY = 100;
 
-export const COLORS = {
-  PRIMARY: colors.primary,
-  WHITE: colors.white,
-  BACKGROUND: colors.background,
-  ACCENT: '#A3B8E8',
-  ERROR: '#FF6B6B',
-  SUCCESS: '#4CAF50',
-  WARNING: '#FFD93D',
-  INFO: '#6BCB77',
-  ARCHIVE: 'rgba(255, 152, 0, 0.9)',
-  DELETE: 'rgba(244, 67, 54, 0.9)',
-  CARD_BACKGROUND: 'rgba(255, 255, 255, 0.04)',
-  CARD_ARCHIVED_BACKGROUND: 'rgba(255, 255, 255, 0.025)',
-  CARD_BORDER: 'rgba(255, 255, 255, 0.1)',
-  CARD_ARCHIVED_BORDER: 'rgba(255, 255, 255, 0.07)',
-  ICON_BACKGROUND: 'rgba(26, 221, 219, 0.1)',
-  ICON_ARCHIVED_BACKGROUND: 'rgba(163, 184, 232, 0.1)',
-  COMPLETE_BUTTON_BACKGROUND: 'rgba(255, 255, 255, 0.1)',
-  COMPLETE_BUTTON_COMPLETED_BACKGROUND: 'rgba(76, 175, 80, 0.1)',
-  PROGRESS_INDICATOR_BACKGROUND: 'rgba(26, 221, 219, 0.15)',
-  PROGRESS_INDICATOR_BORDER: 'rgba(26, 221, 219, 0.3)',
-  FILTER_BACKGROUND: 'rgba(255, 255, 255, 0.1)',
-  HEADER_BACKGROUND: 'rgba(255, 255, 255, 0.02)',
-  HEADER_BORDER: 'rgba(255, 255, 255, 0.08)',
-  ADD_FIRST_BUTTON_BACKGROUND: 'rgba(26, 221, 219, 0.1)',
-  ADD_FIRST_BUTTON_BORDER: 'rgba(26, 221, 219, 0.2)',
-  REFRESH_COLOR: colors.primary,
-};
+export function createHabitsColors(colors) {
+  return {
+    PRIMARY: colors.primary,
+    WHITE: colors.white,
+    BACKGROUND: colors.background,
+    ACCENT: colors.primaryBright ?? colors.primary,
+    ERROR: colors.error,
+    SUCCESS: colors.success,
+    WARNING: colors.warning,
+    INFO: colors.info,
+    ARCHIVE: 'rgba(255, 152, 0, 0.9)',
+    DELETE: 'rgba(244, 67, 54, 0.9)',
+    CARD_BACKGROUND: colors.cardBackground ?? colors.surface,
+    CARD_ARCHIVED_BACKGROUND: 'rgba(36, 35, 79, 0.04)',
+    CARD_BORDER: colors.border,
+    CARD_ARCHIVED_BORDER: 'rgba(36, 35, 79, 0.06)',
+    ICON_BACKGROUND: colors.accentLineSoft,
+    ICON_ARCHIVED_BACKGROUND: 'rgba(36, 35, 79, 0.06)',
+    COMPLETE_BUTTON_BACKGROUND: colors.accentLineSoft,
+    COMPLETE_BUTTON_COMPLETED_BACKGROUND: 'rgba(76, 175, 80, 0.12)',
+    PROGRESS_INDICATOR_BACKGROUND: colors.accentLineSoft,
+    PROGRESS_INDICATOR_BORDER: colors.accentLine ?? colors.border,
+    FILTER_BACKGROUND: colors.glassFill ?? colors.accentLineSoft,
+    HEADER_BACKGROUND: colors.chromeHeader ?? colors.background,
+    HEADER_BORDER: colors.chromeHeaderBorder ?? colors.border,
+    ADD_FIRST_BUTTON_BACKGROUND: colors.accentLineSoft,
+    ADD_FIRST_BUTTON_BORDER: colors.accentLine ?? colors.border,
+    REFRESH_COLOR: colors.primary,
+    /** Sombra iOS coherente con tema (evita #000 fijo en tarjetas) */
+    CARD_SHADOW: colors.glassShadow ?? colors.shadowAmbient,
+  };
+}
+
+/** Compatibilidad legacy (tests/archivos no migrados) */
+export const COLORS = createHabitsColors(lightColors);
 
 export const HABIT_ICONS = {
   exercise: 'run',

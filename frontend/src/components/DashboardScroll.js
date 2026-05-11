@@ -1,17 +1,41 @@
 import React from 'react';
-import { 
-  ScrollView, 
-  RefreshControl, 
-  StyleSheet, 
-  View
+import {
+  ScrollView,
+  RefreshControl,
+  StyleSheet,
+  View,
 } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING } from '../constants/ui';
 
-const DashboardScroll = ({ 
+const DashboardScroll = ({
   children, 
   refreshing, 
   onRefresh,
   contentContainerStyle,
 }) => {
+  const { colors } = useTheme();
+
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: 'transparent',
+        },
+        scrollView: {
+          flex: 1,
+          backgroundColor: 'transparent',
+        },
+        contentContainer: {
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingTop: 8,
+          paddingBottom: 100,
+        },
+      }),
+    [],
+  );
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -21,9 +45,9 @@ const DashboardScroll = ({
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#1ADDDB"
-            colors={["#1ADDDB"]}
-            progressBackgroundColor="rgba(29, 43, 95, 0.8)"
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+            progressBackgroundColor={colors.surface}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -34,19 +58,5 @@ const DashboardScroll = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 8,
-    paddingTop: 8, // Reducido porque ya no necesitamos tanto espacio arriba
-    paddingBottom: 100, // Espacio para la barra flotante
-  }
-});
 
 export default DashboardScroll;

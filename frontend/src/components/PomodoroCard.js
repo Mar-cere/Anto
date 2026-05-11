@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, memo, useRef } from 'react';
 import { 
   View, Text, TouchableOpacity, Animated, Easing, Vibration,
   Dimensions, StyleSheet
@@ -7,33 +7,40 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { commonStyles, cardColors, CardHeader } from './common/CardStyles';
+import { CardHeader, useCardStylesDynamic } from './common/CardStyles';
 import Svg, { Circle } from 'react-native-svg';
-import { FOCUS_BORDER_SUBTLE, FOCUS_KICKER_COLOR, FOCUS_META } from '../styles/focusCardTheme';
+import { useTheme } from '../context/ThemeContext';
+import { getFocusTheme } from '../styles/focusCardTheme';
+import { SPACING } from '../constants/ui';
 
 const { width } = Dimensions.get('window');
 const TIMER_SIZE = width * 0.4;
 
-const modes = {
-  work: { 
-    time: 25 * 60, 
-    color: '#FF6B6B',
-    icon: 'brain',
-    label: 'Tiempo de Trabajo',
-    description: 'Mantén el foco'
-  },
-  break: { 
-    time: 5 * 60, 
-    color: '#4CAF50',
-    icon: 'coffee',
-    label: 'Descanso',
-    description: 'Toma un respiro'
-  }
-};
+const WORK_DURATION_SEC = 25 * 60;
+const BREAK_DURATION_SEC = 5 * 60;
+
+function buildPomodoroModes(colors) {
+  return {
+    work: {
+      time: WORK_DURATION_SEC,
+      color: colors.error,
+      icon: 'brain',
+      label: 'Tiempo de Trabajo',
+      description: 'Mantén el foco',
+    },
+    break: {
+      time: BREAK_DURATION_SEC,
+      color: colors.success,
+      icon: 'coffee',
+      label: 'Descanso',
+      description: 'Toma un respiro',
+    },
+  };
+}
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-const TimerDisplay = memo(({ timeLeft, totalTime, isActive, color }) => {
+const TimerDisplay = memo(({ timeLeft, totalTime, isActive, color, styles, trackColor }) => {
   const progressAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -87,7 +94,7 @@ const TimerDisplay = memo(({ timeLeft, totalTime, isActive, color }) => {
           cx={TIMER_SIZE / 2}
           cy={TIMER_SIZE / 2}
           r={(TIMER_SIZE / 2) - 10}
-          stroke="rgba(255,255,255,0.1)"
+          stroke={trackColor}
           strokeWidth="10"
           fill="transparent"
         />
@@ -116,7 +123,7 @@ const TimerDisplay = memo(({ timeLeft, totalTime, isActive, color }) => {
   );
 });
 
-const ControlButton = memo(({ icon, onPress, color, size = 50 }) => {
+const ControlButton = memo(({ icon, onPress, color, size = 50, styles, iconColor }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -142,19 +149,26 @@ const ControlButton = memo(({ icon, onPress, color, size = 50 }) => {
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
       >
-        <MaterialCommunityIcons name={icon} size={size * 0.5} color="#FFFFFF" />
+        <MaterialCommunityIcons name={icon} size={size * 0.5} color={iconColor} />
       </TouchableOpacity>
     </Animated.View>
   );
 });
 
-const PomodoroCard = memo(() => {
+const PomodoroCard = memo(({ collapsible = false, defaultExpanded = false }) => {
   const navigation = useNavigation();
+  const { colors, resolvedScheme } = useTheme();
+  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+  const { cardColors, commonStyles } = useCardStylesDynamic();
+  const styles = useMemo(() => createStyles(colors, t), [colors, t]);
+  const modes = useMemo(() => buildPomodoroModes(colors), [colors]);
   const [isActive, setIsActive] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(modes.work.time);
+  const [timeLeft, setTimeLeft] = useState(WORK_DURATION_SEC);
   const [mode, setMode] = useState('work');
   const [sessionsCompleted, setSessionsCompleted] = useState(0);
   const entryAnim = useRef(new Animated.Value(0)).current;
+  const zeroHandledRef = useRef(false);
+  const [expanded, setExpanded] = useState(!collapsible || defaultExpanded);
 
   // Cargar sesiones completadas al iniciar
   useEffect(() => {
@@ -196,24 +210,53 @@ const PomodoroCard = memo(() => {
   }, []);
 
   useEffect(() => {
+    if (timeLeft > 0) {
+      zeroHandledRef.current = false;
+    }
+  }, [timeLeft]);
+
+  useEffect(() => {
     let interval = null;
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => {
-        setTimeLeft(time => time - 1);
+        setTimeLeft((sec) => sec - 1);
       }, 1000);
-    } else if (timeLeft === 0) {
+    } else if (timeLeft === 0 && isActive && !zeroHandledRef.current) {
+      zeroHandledRef.current = true;
       notifyTimeUp();
       if (mode === 'work') {
-        // Incrementar sesiones completadas solo cuando termina el trabajo
-        const newCount = sessionsCompleted + 1;
-        setSessionsCompleted(newCount);
-        saveSessions(newCount);
+        setSessionsCompleted((c) => {
+          const next = c + 1;
+          saveSessions(next);
+          return next;
+        });
       }
-      setMode(mode === 'work' ? 'break' : 'work');
-      setTimeLeft(modes[mode === 'work' ? 'break' : 'work'].time);
+      const nextMode = mode === 'work' ? 'break' : 'work';
+      setMode(nextMode);
+      setTimeLeft(modes[nextMode].time);
     }
     return () => clearInterval(interval);
-  }, [isActive, timeLeft, mode, sessionsCompleted, notifyTimeUp]);
+  }, [isActive, timeLeft, mode, notifyTimeUp, modes]);
+
+  useEffect(() => {
+    // Si no es colapsable, siempre está expandido.
+    if (!collapsible && !expanded) setExpanded(true);
+  }, [collapsible, expanded]);
+
+  const formatTimeShort = useCallback((seconds) => {
+    const s = Math.max(0, Number(seconds) || 0);
+    const mins = Math.floor(s / 60);
+    const secs = s % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }, []);
+
+  const handleTogglePlay = useCallback(() => {
+    const next = !isActive;
+    setIsActive(next);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    // Requisito UX: en el dashboard, iniciar/pausar expande.
+    if (collapsible && !expanded) setExpanded(true);
+  }, [isActive, collapsible, expanded]);
 
   return (
     <View style={commonStyles.cardContainer}>
@@ -223,106 +266,225 @@ const PomodoroCard = memo(() => {
         onViewAll={() => navigation.navigate('Pomodoro')}
       />
 
-      <Animated.View
-        style={[
-          styles.contentContainer,
-          {
-            opacity: entryAnim,
-            transform: [
-              {
-                translateY: entryAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [8, 0],
-                }),
-              },
-            ],
-          },
-        ]}
-      >
-        <View style={styles.metaRow}>
-          <View style={styles.metaChip}>
-            <MaterialCommunityIcons
-              name={isActive ? 'play-circle-outline' : 'pause-circle-outline'}
-              size={14}
-              color={FOCUS_KICKER_COLOR}
-            />
-            <Text style={styles.metaChipText}>{isActive ? 'En progreso' : 'Pausado'}</Text>
+      {collapsible && !expanded ? (
+        <TouchableOpacity
+          style={styles.compactRow}
+          onPress={() => setExpanded(true)}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir Pomodoro"
+        >
+          <View style={styles.compactLeft}>
+            <View style={styles.compactChip}>
+              <MaterialCommunityIcons
+                name={isActive ? 'pause-circle-outline' : 'play-circle-outline'}
+                size={14}
+                color={t.FOCUS_KICKER_COLOR}
+              />
+              <Text style={styles.compactChipText}>{isActive ? 'En progreso' : 'Pausado'}</Text>
+            </View>
+            <Text style={styles.compactTime}>{formatTimeShort(timeLeft)}</Text>
           </View>
-          <Text style={styles.descriptionText}>{modes[mode].description}</Text>
-        </View>
-        <TimerDisplay 
-          timeLeft={timeLeft}
-          totalTime={modes[mode].time}
-          isActive={isActive}
-          color={modes[mode].color}
-        />
+          <View style={styles.compactRight}>
+            <TouchableOpacity
+              style={[styles.compactPlayBtn, { backgroundColor: modes[mode].color }]}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                handleTogglePlay();
+              }}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={isActive ? 'Pausar Pomodoro' : 'Iniciar Pomodoro'}
+            >
+              <MaterialCommunityIcons name={isActive ? 'pause' : 'play'} size={18} color={colors.textOnPrimary} />
+            </TouchableOpacity>
+            <MaterialCommunityIcons name="chevron-down" size={18} color={t.FOCUS_META} />
+          </View>
+        </TouchableOpacity>
+      ) : (
+        <Animated.View
+          style={[
+            styles.contentContainer,
+            {
+              opacity: entryAnim,
+              transform: [
+                {
+                  translateY: entryAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [8, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          {collapsible ? (
+            <TouchableOpacity
+              style={styles.collapseHandle}
+              onPress={() => setExpanded(false)}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Contraer Pomodoro"
+            >
+              <Text style={styles.collapseHandleText}>Contraer</Text>
+              <MaterialCommunityIcons name="chevron-up" size={18} color={t.FOCUS_META} />
+            </TouchableOpacity>
+          ) : null}
 
-        <View style={styles.controlsContainer}>
-          <ControlButton 
-            icon={isActive ? 'pause' : 'play'}
-            onPress={() => {
-              setIsActive(!isActive);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            }}
+          <View style={styles.metaRow}>
+            <View style={styles.metaChip}>
+              <MaterialCommunityIcons
+                name={isActive ? 'pause-circle-outline' : 'play-circle-outline'}
+                size={14}
+                color={t.FOCUS_KICKER_COLOR}
+              />
+              <Text style={styles.metaChipText}>{isActive ? 'En progreso' : 'Pausado'}</Text>
+            </View>
+            <Text style={styles.descriptionText}>{modes[mode].description}</Text>
+          </View>
+          <TimerDisplay 
+            timeLeft={timeLeft}
+            totalTime={modes[mode].time}
+            isActive={isActive}
             color={modes[mode].color}
-            size={60}
+            styles={styles}
+            trackColor={colors.glassOutline}
           />
-          <ControlButton 
-            icon="restart"
-            onPress={() => {
-              setTimeLeft(modes[mode].time);
-              setIsActive(false);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            }}
-            color="rgba(255,255,255,0.2)"
-            size={46}
-          />
-          <ControlButton 
-            icon={mode === 'work' ? 'coffee' : 'brain'}
-            onPress={() => {
-              setMode(mode === 'work' ? 'break' : 'work');
-              setTimeLeft(modes[mode === 'work' ? 'break' : 'work'].time);
-              setIsActive(false);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            }}
-            color="rgba(255,255,255,0.2)"
-            size={46}
-          />
-        </View>
 
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <MaterialCommunityIcons 
-              name="check-circle" 
-              size={20} 
-              color={cardColors.success} 
+          <View style={styles.controlsContainer}>
+            <ControlButton 
+              icon={isActive ? 'pause' : 'play'}
+              onPress={handleTogglePlay}
+              color={modes[mode].color}
+              size={60}
+              styles={styles}
+              iconColor={colors.textOnPrimary}
             />
-            <Text style={styles.statValue}>{sessionsCompleted}</Text>
-            <Text style={styles.statLabel}>Sesiones</Text>
-          </View>
-          <View style={styles.statItem}>
-            <MaterialCommunityIcons 
-              name="timer-outline" 
-              size={20} 
-              color={modes[mode].color} 
+            <ControlButton 
+              icon="restart"
+              onPress={() => {
+                setTimeLeft(modes[mode].time);
+                setIsActive(false);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              }}
+              color={colors.accentLineSoft}
+              size={46}
+              styles={styles}
+              iconColor={colors.text}
             />
-            <Text style={styles.statValue}>
-              {Math.floor((modes[mode].time - timeLeft) / 60)}
-            </Text>
-            <Text style={styles.statLabel}>Minutos</Text>
+            <ControlButton 
+              icon={mode === 'work' ? 'coffee' : 'brain'}
+              onPress={() => {
+                setMode(mode === 'work' ? 'break' : 'work');
+                setTimeLeft(modes[mode === 'work' ? 'break' : 'work'].time);
+                setIsActive(false);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              }}
+              color={colors.accentLineSoft}
+              size={46}
+              styles={styles}
+              iconColor={colors.text}
+            />
           </View>
-        </View>
-      </Animated.View>
+
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <MaterialCommunityIcons 
+                name="check-circle" 
+                size={20} 
+                color={cardColors.success} 
+              />
+              <Text style={styles.statValue}>{sessionsCompleted}</Text>
+              <Text style={styles.statLabel}>Sesiones</Text>
+            </View>
+            <View style={styles.statItem}>
+              <MaterialCommunityIcons 
+                name="timer-outline" 
+                size={20} 
+                color={modes[mode].color} 
+              />
+              <Text style={styles.statValue}>
+                {Math.floor((modes[mode].time - timeLeft) / 60)}
+              </Text>
+              <Text style={styles.statLabel}>Minutos</Text>
+            </View>
+          </View>
+        </Animated.View>
+      )}
     </View>
   );
 });
 PomodoroCard.displayName = 'PomodoroCard';
 
-const styles = {
+const createStyles = (colors, t) => ({
   contentContainer: {
     alignItems: 'center',
     gap: 22,
     paddingVertical: 10,
+  },
+  collapseHandle: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 6,
+    marginTop: -4,
+  },
+  collapseHandleText: {
+    color: t.FOCUS_META,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  compactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+    borderRadius: 14,
+    backgroundColor: colors.glassFill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: t.FOCUS_BORDER_SUBTLE,
+  },
+  compactLeft: {
+    flex: 1,
+    minWidth: 0,
+    gap: 8,
+  },
+  compactChip: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: colors.glassFill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: t.FOCUS_BORDER_SUBTLE,
+  },
+  compactChipText: {
+    color: t.FOCUS_KICKER_COLOR,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  compactTime: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.text,
+    fontVariant: ['tabular-nums'],
+  },
+  compactRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  compactPlayBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   metaRow: {
     width: '100%',
@@ -338,17 +500,17 @@ const styles = {
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: colors.glassFill,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
+    borderColor: t.FOCUS_BORDER_SUBTLE,
   },
   metaChipText: {
-    color: FOCUS_KICKER_COLOR,
+    color: t.FOCUS_KICKER_COLOR,
     fontSize: 12,
     fontWeight: '500',
   },
   descriptionText: {
-    color: FOCUS_META,
+    color: t.FOCUS_META,
     fontSize: 12,
     fontWeight: '500',
   },
@@ -367,7 +529,7 @@ const styles = {
   },
   timerLabel: {
     fontSize: 13,
-    color: FOCUS_META,
+    color: t.FOCUS_META,
     marginTop: 4,
   },
   controlsContainer: {
@@ -385,11 +547,11 @@ const styles = {
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     paddingTop: 18,
     marginTop: 4,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: FOCUS_BORDER_SUBTLE,
+    borderTopColor: t.FOCUS_BORDER_SUBTLE,
   },
   statItem: {
     alignItems: 'center',
@@ -398,12 +560,12 @@ const styles = {
   statValue: {
     fontSize: 20,
     fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.94)',
+    color: colors.text,
   },
   statLabel: {
     fontSize: 12,
-    color: FOCUS_META,
-  }
-};
+    color: t.FOCUS_META,
+  },
+});
 
 export default PomodoroCard;

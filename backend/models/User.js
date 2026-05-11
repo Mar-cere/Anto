@@ -4,6 +4,13 @@
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 
+/** Valores antiguos de preferences.responseStyle → estilos canónicos (brief, balanced, deep, empatico, estructurado). */
+const LEGACY_RESPONSE_STYLE_MAP = {
+  calido: 'empatico',
+  profesional: 'estructurado',
+  directo: 'brief',
+};
+
 const userSchema = new mongoose.Schema({
   // ID único generado automáticamente
   id: {
@@ -112,9 +119,16 @@ const userSchema = new mongoose.Schema({
     // NUEVO: Estilo de respuesta preferido
     responseStyle: {
       type: String,
-      enum: ['brief', 'balanced', 'deep', 'empatico', 'profesional', 'directo', 'calido', 'estructurado'],
+      enum: ['brief', 'balanced', 'deep', 'empatico', 'estructurado'],
       default: 'balanced',
-      description: 'Estilo de respuesta: brief (breve y directo), balanced (equilibrado), deep (profundo y reflexivo), empatico (empático y comprensivo), profesional (formal y estructurado), directo (claro y conciso), calido (cálido y cercano), estructurado (organizado y sistemático)'
+      description: 'Estilo de respuesta: brief, balanced, deep, empatico, estructurado (legados calido/profesional/directo se migran al guardar)'
+    }
+    ,
+    timezone: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: [64, 'La zona horaria no puede exceder 64 caracteres']
     }
   },
   // Estadísticas del usuario
@@ -437,6 +451,12 @@ userSchema.pre('save', function(next) {
   
   if (this.isModified('password')) {
     this.lastPasswordChange = new Date();
+  }
+
+  const rs = this.preferences?.responseStyle;
+  if (rs && LEGACY_RESPONSE_STYLE_MAP[rs]) {
+    this.preferences.responseStyle = LEGACY_RESPONSE_STYLE_MAP[rs];
+    this.markModified('preferences');
   }
   
   next();

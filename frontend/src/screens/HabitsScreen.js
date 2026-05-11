@@ -25,17 +25,18 @@ import HabitsScreenHeader from '../components/habits/HabitsScreenHeader';
 import SwipeableHabitItem from '../components/habits/SwipeableHabitItem';
 import FloatingNavBar from '../components/FloatingNavBar';
 import { SkeletonCard } from '../components/Skeleton';
+import { useTheme } from '../context/ThemeContext';
 import { useHabitsScreen } from '../hooks/useHabitsScreen';
+import { SPACING } from '../constants/ui';
+import { getFocusTheme } from '../styles/focusCardTheme';
 import {
-  COLORS,
+  createHabitsColors,
   FLATLIST_INITIAL_NUM_TO_RENDER,
   FLATLIST_MAX_TO_RENDER_PER_BATCH,
   FLATLIST_WINDOW_SIZE,
-  LIST_PADDING,
   LIST_PADDING_BOTTOM,
   FAB_BORDER_RADIUS,
   FAB_BOTTOM,
-  FAB_RIGHT,
   FAB_SIZE,
   ICON_SIZE,
 } from './habits/habitsScreenConstants';
@@ -45,6 +46,10 @@ let lastHabitsFilterType = 'active';
 
 export default function HabitsScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
+  const { colors, resolvedScheme } = useTheme();
+  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+  const HC = useMemo(() => createHabitsColors(colors), [colors]);
+  const styles = useMemo(() => createHabitsScreenStyles(colors, t, HC), [colors, t, HC]);
   const [searchQuery, setSearchQuery] = useState(lastHabitsSearchQuery);
   const {
     habits,
@@ -168,14 +173,14 @@ export default function HabitsScreen({ route, navigation }) {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          colors={[COLORS.REFRESH_COLOR]}
-          tintColor={COLORS.REFRESH_COLOR}
+          colors={[HC.REFRESH_COLOR]}
+          tintColor={HC.REFRESH_COLOR}
         />
       }
       ListEmptyComponent={
         !loading && searchQuery.trim() ? (
           <View style={styles.searchEmpty}>
-            <MaterialCommunityIcons name="magnify-close" size={36} color={COLORS.ACCENT} />
+            <MaterialCommunityIcons name="magnify-close" size={36} color={HC.ACCENT} />
             <Text style={styles.searchEmptyTitle}>Sin resultados</Text>
             <Text style={styles.searchEmptyText}>Prueba con otra palabra o limpia la búsqueda.</Text>
           </View>
@@ -228,7 +233,7 @@ export default function HabitsScreen({ route, navigation }) {
         )}
       </SafeAreaView>
       <TouchableOpacity style={[styles.fab, { bottom: insets.bottom + FAB_BOTTOM }]} onPress={openModal}>
-        <MaterialCommunityIcons name="plus" size={ICON_SIZE} color={COLORS.WHITE} />
+        <MaterialCommunityIcons name="plus" size={ICON_SIZE} color={colors.textOnPrimary} />
       </TouchableOpacity>
       <CreateHabitModal
         visible={modalVisible}
@@ -243,126 +248,130 @@ export default function HabitsScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
-  },
-  safeAreaContent: {
-    flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
-  },
-  listContainer: {
-    flexGrow: 1,
-    padding: LIST_PADDING,
-    paddingBottom: LIST_PADDING_BOTTOM,
-  },
-  listHeaderWrap: {
-    marginBottom: 8,
-  },
-  countRow: {
-    marginBottom: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    alignSelf: 'flex-start',
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  countText: {
-    color: 'rgba(255,255,255,0.55)',
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  summaryPill: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-  },
-  summaryPillLabel: {
-    color: COLORS.ACCENT,
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  summaryPillValue: {
-    color: COLORS.WHITE,
-    marginTop: 2,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  sectionHeader: {
-    backgroundColor: 'rgba(26, 33, 49, 0.72)',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    marginBottom: 6,
-    marginTop: 4,
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.09)',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sectionHeaderText: {
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-    color: 'rgba(191, 209, 247, 0.92)',
-  },
-  sectionCountPill: {
-    minWidth: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-  },
-  sectionCountText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.9)',
-  },
-  searchEmpty: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 30,
-    gap: 8,
-  },
-  searchEmptyTitle: {
-    color: COLORS.WHITE,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  searchEmptyText: {
-    color: COLORS.ACCENT,
-    fontSize: 13,
-    textAlign: 'center',
-  },
-  fab: {
-    position: 'absolute',
-    right: FAB_RIGHT,
-    bottom: FAB_BOTTOM,
-    width: FAB_SIZE,
-    height: FAB_SIZE,
-    borderRadius: FAB_BORDER_RADIUS,
-    backgroundColor: COLORS.PRIMARY,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 8,
-    shadowColor: COLORS.PRIMARY,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-});
+function createHabitsScreenStyles(colors, t, HC) {
+  const pillBg = t.FOCUS_INNER_ROW.backgroundColor;
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: HC.BACKGROUND,
+    },
+    safeAreaContent: {
+      flex: 1,
+      backgroundColor: HC.BACKGROUND,
+    },
+    listContainer: {
+      flexGrow: 1,
+      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+      paddingTop: 4,
+      paddingBottom: LIST_PADDING_BOTTOM,
+    },
+    listHeaderWrap: {
+      marginBottom: 8,
+    },
+    countRow: {
+      marginBottom: 10,
+      paddingVertical: 8,
+      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+      alignSelf: 'flex-start',
+      borderRadius: 12,
+      backgroundColor: pillBg,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
+    },
+    countText: {
+      color: t.FOCUS_META,
+      fontSize: 13,
+      fontWeight: '500',
+    },
+    summaryRow: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    summaryPill: {
+      flex: 1,
+      backgroundColor: pillBg,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
+      borderRadius: 12,
+      paddingVertical: 8,
+      paddingHorizontal: 10,
+    },
+    summaryPillLabel: {
+      color: HC.ACCENT,
+      fontSize: 11,
+      fontWeight: '500',
+    },
+    summaryPillValue: {
+      color: colors.text,
+      marginTop: 2,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    sectionHeader: {
+      backgroundColor: colors.glassFillStrong,
+      paddingVertical: 8,
+      paddingHorizontal: 10,
+      marginBottom: 6,
+      marginTop: 4,
+      borderRadius: 10,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    sectionHeaderText: {
+      fontSize: 12,
+      fontWeight: '600',
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
+      color: colors.textSecondary,
+    },
+    sectionCountPill: {
+      minWidth: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 999,
+      backgroundColor: colors.accentLineSoft,
+    },
+    sectionCountText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    searchEmpty: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingTop: 30,
+      gap: 8,
+    },
+    searchEmptyTitle: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    searchEmptyText: {
+      color: HC.ACCENT,
+      fontSize: 13,
+      textAlign: 'center',
+    },
+    fab: {
+      position: 'absolute',
+      right: SPACING.SCREEN_EDGE_INSET,
+      bottom: FAB_BOTTOM,
+      width: FAB_SIZE,
+      height: FAB_SIZE,
+      borderRadius: FAB_BORDER_RADIUS,
+      backgroundColor: HC.PRIMARY,
+      justifyContent: 'center',
+      alignItems: 'center',
+      elevation: 8,
+      shadowColor: HC.PRIMARY,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+    },
+  });
+}

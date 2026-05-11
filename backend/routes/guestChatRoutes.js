@@ -2,25 +2,25 @@
  * Chat invitado (sin cuenta) — límite de mensajes, sin suscripción.
  */
 import express from 'express';
-import rateLimit from 'express-rate-limit';
+import { createRateLimiter } from '../utils/createRateLimiter.js';
 import mongoose from 'mongoose';
 import { authenticateGuest } from '../middleware/guestAuth.js';
 import Message from '../models/Message.js';
 import guestChatService from '../services/guestChatService.js';
 import metricsService from '../services/metricsService.js';
+import { GUEST_SESSION_CREATE_RATE_LIMIT } from '../constants/guestChat.js';
 
 const router = express.Router();
 
-const guestSessionCreateLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 15,
+const guestSessionCreateLimiter = createRateLimiter({
+  ...GUEST_SESSION_CREATE_RATE_LIMIT,
   message: 'Demasiadas sesiones de invitado. Intenta más tarde o crea una cuenta.',
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 
 /** Anti-spam: envíos por IP (trust proxy en server.js) */
-const guestMessagePostLimiter = rateLimit({
+const guestMessagePostLimiter = createRateLimiter({
   windowMs: 60 * 1000,
   max: 20,
   message: 'Demasiados mensajes. Espera un momento e inténtalo de nuevo.',
@@ -28,7 +28,7 @@ const guestMessagePostLimiter = rateLimit({
   legacyHeaders: false
 });
 
-const guestMessagesGetLimiter = rateLimit({
+const guestMessagesGetLimiter = createRateLimiter({
   windowMs: 60 * 1000,
   max: 45,
   message: 'Demasiadas peticiones. Espera un momento.',
@@ -36,7 +36,7 @@ const guestMessagesGetLimiter = rateLimit({
   legacyHeaders: false
 });
 
-const guestConversationDeleteLimiter = rateLimit({
+const guestConversationDeleteLimiter = createRateLimiter({
   windowMs: 60 * 1000,
   max: 15,
   message: 'Demasiadas peticiones. Espera un momento.',

@@ -9,7 +9,7 @@
  */
 
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -26,7 +26,7 @@ import ParticleBackground from '../components/ParticleBackground';
 import { handleApiError } from '../config/api';
 import { ROUTES } from '../constants/routes';
 import { userService } from '../services/userService';
-import { colors, globalStyles } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
 
 // Constantes de textos
 const TEXTS = {
@@ -63,8 +63,6 @@ const LOADING_INDICATOR_SCALE = 1.5;
 
 // Constantes de estilos
 const BACKGROUND_OPACITY = 0.1;
-const STATUS_BAR_STYLE = 'light-content';
-const STATUS_BAR_BACKGROUND = '#030A24';
 const CONTENT_PADDING_HORIZONTAL = 20;
 const CONTENT_PADDING_VERTICAL = 40;
 const BACK_BUTTON_TOP = 40;
@@ -81,20 +79,80 @@ const ICON_SIZE = 24;
 const EMAIL_ICON_SIZE = 20;
 const SEND_ICON_SIZE = 20;
 const SEND_ICON_MARGIN_RIGHT = 8;
-
-// Constantes de colores
-const COLORS = {
-  BACKGROUND: colors.background,
-  PRIMARY: colors.primary,
-  WHITE: colors.white,
-  ACCENT: colors.accent,
-  TEXT_SHADOW: 'rgba(0, 0, 0, 0.75)',
-};
+const TEXT_SHADOW = 'rgba(0, 0, 0, 0.75)';
 
 // Constantes de imágenes
 const BACKGROUND_IMAGE = require('../images/back.png');
 
 const RecoverPasswordScreen = ({ navigation }) => {
+  const { colors, globalStyles: gs, statusBarStyle } = useTheme();
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flexGrow: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: colors.background,
+        },
+        background: {
+          flex: 1,
+          width: '100%',
+          height: '100%',
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        imageStyle: {
+          opacity: BACKGROUND_OPACITY,
+          resizeMode: 'cover',
+        },
+        content: {
+          alignItems: 'center',
+          width: '100%',
+          flex: 1,
+          paddingHorizontal: CONTENT_PADDING_HORIZONTAL,
+          paddingVertical: CONTENT_PADDING_VERTICAL,
+          position: 'relative',
+        },
+        backButton: {
+          position: 'absolute',
+          top: BACK_BUTTON_TOP,
+          left: BACK_BUTTON_LEFT,
+          zIndex: BACK_BUTTON_Z_INDEX,
+        },
+        title: {
+          fontSize: 34,
+          fontWeight: 'bold',
+          color: colors.white,
+          marginBottom: TITLE_MARGIN_BOTTOM,
+          marginTop: TITLE_MARGIN_TOP,
+          textShadowColor: TEXT_SHADOW,
+          textShadowOffset: { width: TEXT_SHADOW_OFFSET_WIDTH, height: TEXT_SHADOW_OFFSET_HEIGHT },
+          textShadowRadius: TEXT_SHADOW_RADIUS,
+          textAlign: 'center',
+        },
+        subtitle: {
+          fontSize: 18,
+          color: colors.accent,
+          marginBottom: SUBTITLE_MARGIN_BOTTOM,
+          textAlign: 'center',
+        },
+        linkContainer: {
+          marginTop: LINK_CONTAINER_MARGIN_TOP,
+        },
+        linkText: {
+          fontSize: 16,
+          color: colors.primary,
+          fontWeight: 'bold',
+        },
+        loadingIndicator: {
+          transform: [{ scale: LOADING_INDICATOR_SCALE }],
+        },
+      }),
+    [colors],
+  );
+
   // Referencias para animaciones
   const buttonScale = useRef(new Animated.Value(BUTTON_SCALE_NORMAL)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -177,10 +235,7 @@ const RecoverPasswordScreen = ({ navigation }) => {
 
   return (
     <KeyboardAwareScrollView contentContainerStyle={styles.container}>
-      <StatusBar 
-        barStyle={STATUS_BAR_STYLE} 
-        backgroundColor={STATUS_BAR_BACKGROUND} 
-      />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ImageBackground 
         source={BACKGROUND_IMAGE} 
         style={styles.background} 
@@ -191,7 +246,7 @@ const RecoverPasswordScreen = ({ navigation }) => {
         {isLoading ? (
           <ActivityIndicator 
             size="large" 
-            color={COLORS.PRIMARY} 
+            color={colors.primary} 
             style={styles.loadingIndicator} 
           />
         ) : (
@@ -212,7 +267,7 @@ const RecoverPasswordScreen = ({ navigation }) => {
               <Ionicons 
                 name="arrow-back" 
                 size={ICON_SIZE} 
-                color={COLORS.WHITE} 
+                color={colors.white} 
               />
             </TouchableOpacity>
 
@@ -222,21 +277,21 @@ const RecoverPasswordScreen = ({ navigation }) => {
               {TEXTS.SUBTITLE}
             </Text>
 
-            <View style={globalStyles.inputWrapper}>
+            <View style={gs.inputWrapper}>
               <View style={[
-                globalStyles.inputContainer, 
-                error && globalStyles.inputError
+                gs.inputContainer, 
+                error && gs.inputError
               ]}>
                 <Ionicons 
                   name="mail-outline" 
                   size={EMAIL_ICON_SIZE} 
-                  color={COLORS.PRIMARY} 
-                  style={globalStyles.inputIcon} 
+                  color={colors.primary} 
+                  style={gs.inputIcon} 
                 />
                 <TextInput 
-                  style={globalStyles.input}
+                  style={gs.input}
                   placeholder={TEXTS.EMAIL_PLACEHOLDER} 
-                  placeholderTextColor={COLORS.ACCENT}
+                  placeholderTextColor={colors.accent}
                   keyboardType="email-address" 
                   autoCapitalize="none"
                   value={email}
@@ -248,12 +303,12 @@ const RecoverPasswordScreen = ({ navigation }) => {
                   testID="recoverEmailInput"
                 />
               </View>
-              {error ? <Text style={globalStyles.errorText}>{error}</Text> : null}
+              {error ? <Text style={gs.errorText}>{error}</Text> : null}
             </View>
 
             <Animated.View style={{ transform: [{ scale: buttonScale }], width: '100%' }}>
               <TouchableOpacity 
-                style={[globalStyles.modernButton, isSubmitting && globalStyles.disabledButton]} 
+                style={[gs.modernButton, isSubmitting && gs.disabledButton]} 
                 onPress={handleRecoverPassword} 
                 disabled={isSubmitting}
                 activeOpacity={BUTTON_ACTIVE_OPACITY}
@@ -263,16 +318,16 @@ const RecoverPasswordScreen = ({ navigation }) => {
                 testID="sendCodeButton"
               >
                 {isSubmitting ? (
-                  <ActivityIndicator size="small" color={COLORS.WHITE} />
+                  <ActivityIndicator size="small" color={colors.white} />
                 ) : (
                   <>
                     <Ionicons 
                       name="send-outline" 
                       size={SEND_ICON_SIZE} 
-                      color={COLORS.WHITE} 
+                      color={colors.white} 
                       style={{ marginRight: SEND_ICON_MARGIN_RIGHT }} 
                     />
-                    <Text style={globalStyles.buttonText}>{TEXTS.BUTTON_SEND_CODE}</Text>
+                    <Text style={gs.buttonText}>{TEXTS.BUTTON_SEND_CODE}</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -291,67 +346,5 @@ const RecoverPasswordScreen = ({ navigation }) => {
     </KeyboardAwareScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.BACKGROUND,
-  },
-  background: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imageStyle: {
-    opacity: BACKGROUND_OPACITY,
-    resizeMode: 'cover',
-  },
-  content: {
-    alignItems: 'center',
-    width: '100%',
-    flex: 1,
-    paddingHorizontal: CONTENT_PADDING_HORIZONTAL,
-    paddingVertical: CONTENT_PADDING_VERTICAL,
-    position: 'relative',
-  },
-  backButton: {
-    position: 'absolute',
-    top: BACK_BUTTON_TOP,
-    left: BACK_BUTTON_LEFT,
-    zIndex: BACK_BUTTON_Z_INDEX,
-  },
-  title: {
-    fontSize: 34, 
-    fontWeight: 'bold',
-    color: COLORS.WHITE,
-    marginBottom: TITLE_MARGIN_BOTTOM, 
-    marginTop: TITLE_MARGIN_TOP,
-    textShadowColor: COLORS.TEXT_SHADOW,
-    textShadowOffset: { width: TEXT_SHADOW_OFFSET_WIDTH, height: TEXT_SHADOW_OFFSET_HEIGHT },
-    textShadowRadius: TEXT_SHADOW_RADIUS,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 18, 
-    color: COLORS.ACCENT,
-    marginBottom: SUBTITLE_MARGIN_BOTTOM, 
-    textAlign: 'center',
-  },
-  linkContainer: {
-    marginTop: LINK_CONTAINER_MARGIN_TOP,
-  },
-  linkText: {
-    fontSize: 16, 
-    color: COLORS.PRIMARY,
-    fontWeight: 'bold',
-  },
-  loadingIndicator: {
-    transform: [{ scale: LOADING_INDICATOR_SCALE }],
-  },
-});
 
 export default RecoverPasswordScreen; 

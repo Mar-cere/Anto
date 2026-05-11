@@ -3,7 +3,8 @@
  * @author AntoApp Team
  */
 
-import { colors } from '../../styles/globalStyles';
+import { SPACING } from '../../constants/ui';
+import { lightColors as legacyColors } from '../../styles/themePalettes';
 
 // Tiempo (segundos)
 export const WORK_TIME = 25 * 60;
@@ -38,34 +39,39 @@ export const FADE_OPACITY_MAX = 1;
 export const MAIN_CONTROLS_TRANSLATE_X = 80;
 export const MODE_TRANSITION_DELAY = 150;
 
-export const COLORS = {
-  WORK: '#FF6B6B',
-  BREAK: '#4CAF50',
-  LONG_BREAK: '#2196F3',
-  MEDITATION: '#9C27B0',
-  CUSTOM: '#FF9800',
-  PAUSE: '#FF5252',
-  BACKGROUND: colors.background,
-  WHITE: colors.white,
-  ACCENT: '#A3B8E8',
-  SUCCESS: '#4CAF50',
-  ERROR: '#FF5252',
-  PRIMARY: colors.primary,
-  CARD_BACKGROUND: 'rgba(255, 255, 255, 0.04)',
-  INPUT_BACKGROUND: 'rgba(255, 255, 255, 0.04)',
-  BUTTON_BACKGROUND: 'rgba(255, 255, 255, 0.1)',
-  MODAL_OVERLAY: 'rgba(0, 0, 0, 0.5)',
-  MODAL_BACKGROUND: '#1D2B5F',
-  SWITCH_TRACK_FALSE: '#1D2B5F',
-  SWITCH_TRACK_TRUE: colors.primary,
-  SWITCH_THUMB_FALSE: '#A3B8E8',
-  SWITCH_THUMB_TRUE: colors.white,
-  PROGRESS_BACKGROUND: 'rgba(255, 255, 255, 0.1)',
-  MEDITATION_BUTTON_BACKGROUND: 'rgba(156, 39, 176, 0.1)',
-  MEDITATION_BUTTON_BORDER: 'rgba(156, 39, 176, 0.3)',
-  CLEAR_BUTTON_BACKGROUND: 'rgba(255, 82, 82, 0.1)',
-  HEADER_BORDER: 'rgba(255, 255, 255, 0.08)',
-};
+export function createPomodoroColors(colors) {
+  return {
+    WORK: colors.error,
+    BREAK: colors.success,
+    LONG_BREAK: colors.info ?? colors.primary,
+    MEDITATION: colors.accentWarm,
+    CUSTOM: colors.warning,
+    PAUSE: colors.error,
+    BACKGROUND: colors.background,
+    WHITE: colors.white,
+    ACCENT: colors.primaryBright ?? colors.primary,
+    SUCCESS: colors.success,
+    ERROR: colors.error,
+    PRIMARY: colors.primary,
+    CARD_BACKGROUND: colors.cardBackground ?? colors.surface,
+    INPUT_BACKGROUND: colors.chromeInput,
+    BUTTON_BACKGROUND: colors.accentLineSoft,
+    MODAL_OVERLAY: colors.overlay,
+    MODAL_BACKGROUND: colors.modalSurface,
+    SWITCH_TRACK_FALSE: colors.border,
+    SWITCH_TRACK_TRUE: colors.primary,
+    SWITCH_THUMB_FALSE: colors.textSecondary,
+    SWITCH_THUMB_TRUE: colors.white,
+    PROGRESS_BACKGROUND: colors.accentLineSoft ?? 'rgba(36, 35, 79, 0.08)',
+    MEDITATION_BUTTON_BACKGROUND: colors.accentLineSoft,
+    MEDITATION_BUTTON_BORDER: colors.accentLine,
+    CLEAR_BUTTON_BACKGROUND: colors.dangerSoft ?? 'rgba(255, 82, 82, 0.1)',
+    HEADER_BORDER: colors.border,
+  };
+}
+
+/** Compatibilidad legacy (tests/archivos no migrados) */
+export const COLORS = createPomodoroColors(legacyColors);
 
 export const TEXTS = {
   TITLE: 'Pomodoro',
@@ -132,8 +138,8 @@ export const MOTIVATIONAL_MESSAGES = [
   '¡Vas por buen camino! ✨',
 ];
 
-export const STATUS_BAR_STYLE = 'light-content';
-export const STATUS_BAR_BACKGROUND = colors.background;
+export const STATUS_BAR_STYLE = 'dark-content';
+export const STATUS_BAR_BACKGROUND = legacyColors.background;
 /** Clave legada; la lista de tareas locales del Pomodoro ya no se usa. */
 export const STORAGE_KEY = 'pomodoroTasks';
 export const POMODORO_STATS_STORAGE_KEY = 'pomodoroStats';
@@ -168,22 +174,22 @@ export const PROGRESS_BAR_BORDER_RADIUS = 2;
 export const MODAL_MAX_WIDTH = 400;
 export const MODAL_WIDTH_PERCENT = '90%';
 export const MEDITATION_BUTTON_WIDTH_PERCENT = '80%';
-export const CONTAINER_PADDING_BOTTOM = 85;
-export const HEADER_PADDING = 16;
-export const CONTENT_PADDING = 16;
+export const CONTAINER_PADDING_BOTTOM = SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA;
+export const HEADER_PADDING = SPACING.SCREEN_EDGE_INSET;
+export const CONTENT_PADDING = SPACING.SCREEN_EDGE_INSET;
 export const TIMER_SECTION_MARGIN_VERTICAL = 24;
 export const MODE_LABEL_MARGIN_BOTTOM = 16;
 export const PROGRESS_BAR_MARGIN_TOP = 24;
 export const CONTROLS_MARGIN_BOTTOM = 24;
 export const CONTROLS_GAP = 8;
 export const ADDITIONAL_CONTROLS_MARGIN_LEFT = 8;
-export const TASKS_SECTION_PADDING = 16;
+export const TASKS_SECTION_PADDING = SPACING.SCREEN_EDGE_INSET;
 export const TASKS_SECTION_BORDER_RADIUS = 16;
 export const TITLE_MARGIN_BOTTOM = 16;
 export const INPUT_CONTAINER_MARGIN_BOTTOM = 16;
 export const INPUT_HEIGHT = 48;
 export const INPUT_BORDER_RADIUS = 12;
-export const INPUT_PADDING_HORIZONTAL = 16;
+export const INPUT_PADDING_HORIZONTAL = SPACING.SCREEN_EDGE_INSET;
 export const TASK_LIST_GAP = 8;
 export const TASK_ITEM_PADDING = 12;
 export const TASK_ITEM_BORDER_RADIUS = 12;
@@ -202,14 +208,14 @@ export const INPUT_GROUP_MARGIN_BOTTOM = 24;
 export const INPUT_LABEL_MARGIN_BOTTOM = 8;
 export const TIME_INPUT_CONTAINER_GAP = 8;
 export const TIME_INPUT_WIDTH = 100;
-export const TIME_INPUT_PADDING = 16;
+export const TIME_INPUT_PADDING = SPACING.SCREEN_EDGE_INSET;
 export const TIME_INPUT_BORDER_RADIUS = 12;
 export const PREP_TIME_CONTAINER_MARGIN_BOTTOM = 24;
 export const PREP_TIME_HEADER_MARGIN_BOTTOM = 16;
 export const MODAL_BUTTONS_GAP = 16;
 export const MODAL_BUTTON_PADDING = 16;
 export const MODAL_BUTTON_BORDER_RADIUS = 12;
-export const MEDITATION_BUTTON_CONTAINER_PADDING_HORIZONTAL = 16;
+export const MEDITATION_BUTTON_CONTAINER_PADDING_HORIZONTAL = SPACING.SCREEN_EDGE_INSET;
 export const MEDITATION_BUTTON_PADDING_VERTICAL = 12;
 export const MEDITATION_BUTTON_PADDING_HORIZONTAL = 24;
 export const MEDITATION_BUTTON_GAP = 8;

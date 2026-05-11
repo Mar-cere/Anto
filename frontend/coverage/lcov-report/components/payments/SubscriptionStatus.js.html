@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/17</span>
+                <span class='fraction'>0/18</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/22</span>
+                <span class='fraction'>0/30</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/16</span>
+                <span class='fraction'>0/17</span>
             </div>
         
             
@@ -223,7 +223,14 @@
 <a name='L158'></a><a href='#L158'>158</a>
 <a name='L159'></a><a href='#L159'>159</a>
 <a name='L160'></a><a href='#L160'>160</a>
-<a name='L161'></a><a href='#L161'>161</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L161'></a><a href='#L161'>161</a>
+<a name='L162'></a><a href='#L162'>162</a>
+<a name='L163'></a><a href='#L163'>163</a>
+<a name='L164'></a><a href='#L164'>164</a>
+<a name='L165'></a><a href='#L165'>165</a>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a>
+<a name='L168'></a><a href='#L168'>168</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -238,14 +245,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -262,7 +264,19 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -398,7 +412,9 @@ import { colors } from '../../styles/globalStyles';
 &nbsp;
 const SubscriptionStatus = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >({</span> status, plan, daysRemaining, trialEndDate, subscriptionEndDate }) =&gt; {</span>
   const getStatusInfo = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    switch (status) {</span>
+    // Normalizar: estados que el backend puede devolver y el frontend no trataba
+    const normalized = <span class="cstat-no" title="statement not covered" >(status || 'free').toLowerCase();</span>
+<span class="cstat-no" title="statement not covered" >    switch (normalized) {</span>
       case 'free':
 <span class="cstat-no" title="statement not covered" >        return {</span>
           icon: 'account-outline',
@@ -407,16 +423,16 @@ const SubscriptionStatus = <span class="cstat-no" title="statement not covered" 
           description: 'Actualiza a Premium para acceder a todas las funciones',
         };
       case 'trialing':
+      case 'trial':
 <span class="cstat-no" title="statement not covered" >        return {</span>
           icon: 'clock-outline',
           color: colors.warning,
           label: 'Periodo de Prueba',
-          description: `Trial activo - ${daysRemaining || 0} días restantes`,
+          description: `Trial activo - ${daysRemaining ?? 0} días restantes`,
         };
       case 'premium':
       case 'active':
         const planNames = <span class="cstat-no" title="statement not covered" >{</span>
-          weekly: 'Plan Semanal',
           monthly: 'Plan Mensual',
           quarterly: 'Plan Trimestral',
           semestral: 'Plan Semestral',
@@ -429,11 +445,16 @@ const SubscriptionStatus = <span class="cstat-no" title="statement not covered" 
           description: planNames[plan] || 'Plan Premium',
         };
       case 'expired':
+      case 'canceled':
+      case 'past_due':
+      case 'unpaid':
+      case 'incomplete':
+      case 'incomplete_expired':
 <span class="cstat-no" title="statement not covered" >        return {</span>
           icon: 'alert-circle-outline',
           color: colors.error,
           label: 'Suscripción Expirada',
-          description: 'Tu suscripción ha expirado',
+          description: 'Tu suscripción ha expirado o fue cancelada',
         };
       default:
 <span class="cstat-no" title="statement not covered" >        return {</span>
@@ -550,7 +571,7 @@ export default SubscriptionStatus;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-08T14:11:47.197Z
+                at 2026-05-07T20:12:13.462Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

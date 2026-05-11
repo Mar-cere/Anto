@@ -7,14 +7,14 @@
  */
 
 import express from 'express';
-import rateLimit from 'express-rate-limit';
+import { createRateLimiter } from '../utils/createRateLimiter.js';
 import { authenticateToken } from '../middleware/auth.js';
 import User from '../models/User.js';
 import pushNotificationService from '../services/pushNotificationService.js';
 
 const router = express.Router();
 
-const deletePushTokenLimiter = rateLimit({
+const deletePushTokenLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 5,
   message: 'Demasiadas eliminaciones de tokens. Por favor, intente más tarde.',

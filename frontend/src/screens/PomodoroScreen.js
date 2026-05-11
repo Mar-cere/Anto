@@ -8,7 +8,7 @@
  */
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -33,16 +33,234 @@ import PomodoroTimerSection from '../components/pomodoro/PomodoroTimerSection';
 import FloatingNavBar from '../components/FloatingNavBar';
 import { usePomodoroScreen } from '../hooks/usePomodoroScreen';
 import {
-  COLORS,
   CONTAINER_PADDING_BOTTOM,
   CONTENT_PADDING,
   TEXTS,
 } from './pomodoro/pomodoroScreenConstants';
-import { FOCUS_BORDER_SUBTLE, FOCUS_KICKER_COLOR, FOCUS_META } from '../styles/focusCardTheme';
+import { useTheme } from '../context/ThemeContext';
+import { getFocusTheme } from '../styles/focusCardTheme';
+import { createPomodoroColors } from './pomodoro/pomodoroScreenConstants';
+import { SPACING } from '../constants/ui';
 
 export default function PomodoroScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { colors, resolvedScheme } = useTheme();
+  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+  const PC = useMemo(() => createPomodoroColors(colors), [colors]);
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        safeArea: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        content: {
+          flex: 1,
+          padding: CONTENT_PADDING,
+        },
+        goalCard: {
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+          borderRadius: 14,
+          backgroundColor: colors.cardBackground ?? colors.surface,
+          padding: 12,
+          marginBottom: 10,
+        },
+        goalHeader: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        },
+        goalTitle: {
+          color: colors.text,
+          fontSize: 14,
+          fontWeight: '600',
+        },
+        goalPct: {
+          color: t.FOCUS_KICKER_COLOR,
+          fontSize: 12,
+          fontWeight: '600',
+        },
+        goalTrack: {
+          marginTop: 8,
+          height: 6,
+          borderRadius: 999,
+          backgroundColor: colors.accentLineSoft,
+          overflow: 'hidden',
+        },
+        goalFill: {
+          height: '100%',
+          backgroundColor: colors.primary,
+        },
+        summaryOverlay: {
+          flex: 1,
+          position: 'relative',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 24,
+        },
+        summaryBackdrop: {
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor: colors.backdropStrong ?? 'rgba(0,0,0,0.5)',
+        },
+        summaryCard: {
+          width: '100%',
+          maxWidth: 360,
+          borderRadius: 20,
+          backgroundColor: colors.modalSurface,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+          padding: SPACING.SCREEN_EDGE_INSET,
+          zIndex: 1,
+          shadowColor: colors.glassShadow ?? colors.shadowAmbient,
+          shadowOffset: { width: 0, height: 12 },
+          shadowOpacity: 0.35,
+          shadowRadius: 24,
+          elevation: 12,
+        },
+        summaryHero: {
+          alignItems: 'center',
+          marginBottom: 16,
+        },
+        summaryIconWrap: {
+          width: 64,
+          height: 64,
+          borderRadius: 20,
+          backgroundColor: colors.accentLineSoft,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 12,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.accentLine,
+        },
+        summaryTitle: {
+          color: colors.text,
+          fontSize: 19,
+          fontWeight: '600',
+          textAlign: 'center',
+          letterSpacing: -0.3,
+        },
+        summarySubtitle: {
+          marginTop: 6,
+          color: t.FOCUS_META,
+          fontSize: 13,
+          textAlign: 'center',
+          lineHeight: 18,
+        },
+        summaryLine: {
+          color: t.FOCUS_META,
+          fontSize: 14,
+        },
+        summaryMetricsRow: {
+          flexDirection: 'row',
+          gap: 10,
+          marginBottom: 12,
+        },
+        metricCard: {
+          flex: 1,
+          borderRadius: 14,
+          paddingVertical: 12,
+          paddingHorizontal: 10,
+          backgroundColor: colors.glassFill,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+          gap: 6,
+        },
+        metricValue: {
+          color: colors.text,
+          fontSize: 15,
+          fontWeight: '700',
+          marginBottom: 0,
+        },
+        metricLabel: {
+          color: t.FOCUS_META,
+          fontSize: 11,
+          fontWeight: '500',
+        },
+        streakRow: {
+          borderRadius: 12,
+          backgroundColor: colors.glassFill,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+          paddingVertical: 10,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          marginBottom: 6,
+          gap: 10,
+        },
+        streakInnerRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+        },
+        summaryLoggedLine: {
+          flex: 1,
+          fontSize: 12,
+          lineHeight: 17,
+        },
+        summaryLinkedActions: {
+          gap: 10,
+          marginTop: 8,
+        },
+        summaryDismissHint: {
+          textAlign: 'center',
+          color: t.FOCUS_META,
+          fontSize: 11,
+          marginTop: 10,
+          marginBottom: 4,
+        },
+        summaryButton: {
+          marginTop: 6,
+          backgroundColor: colors.primary,
+          borderRadius: 14,
+          paddingVertical: 14,
+          alignItems: 'center',
+        },
+        summaryButtonSecondary: {
+          borderRadius: 14,
+          paddingVertical: 14,
+          paddingHorizontal: 14,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          backgroundColor: colors.glassFill,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        summaryButtonSecondaryText: {
+          color: colors.text,
+          fontSize: 14,
+          fontWeight: '600',
+        },
+        summaryButtonSuccess: {
+          borderRadius: 14,
+          paddingVertical: 14,
+          paddingHorizontal: 14,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          backgroundColor: PC.SUCCESS,
+          minHeight: 52,
+        },
+        summaryButtonText: {
+          color: colors.textOnPrimary,
+          fontSize: 15,
+          fontWeight: '600',
+        },
+        summaryButtonTextInline: {
+          color: colors.textOnPrimary,
+          fontSize: 15,
+          fontWeight: '700',
+        },
+      }),
+    [colors, t, PC],
+  );
   const {
     modes,
     isActive,
@@ -207,7 +425,7 @@ export default function PomodoroScreen() {
   }, [navigation, isActive, exitGuardEnabled]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <PomodoroScreenHeader
         mode={mode}
         isActive={isActive}
@@ -223,8 +441,8 @@ export default function PomodoroScreen() {
             <RefreshControl
               refreshing={listRefreshing}
               onRefresh={handleRefreshList}
-              colors={[COLORS.PRIMARY]}
-              tintColor={COLORS.PRIMARY}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
             />
           }
         >
@@ -332,14 +550,14 @@ export default function PomodoroScreen() {
             >
               <View style={styles.summaryHero}>
                 <View style={styles.summaryIconWrap}>
-                  <MaterialCommunityIcons name="check-decagram" size={36} color={COLORS.PRIMARY} />
+                  <MaterialCommunityIcons name="check-decagram" size={36} color={colors.primary} />
                 </View>
                 <Text style={styles.summaryTitle}>{TEXTS.SUMMARY_TITLE}</Text>
                 <Text style={styles.summarySubtitle}>{TEXTS.SUMMARY_SUBTITLE}</Text>
               </View>
               <View style={styles.summaryMetricsRow}>
                 <View style={styles.metricCard}>
-                  <MaterialCommunityIcons name="clock-check-outline" size={18} color={FOCUS_KICKER_COLOR} />
+                  <MaterialCommunityIcons name="clock-check-outline" size={18} color={t.FOCUS_KICKER_COLOR} />
                   <Text style={styles.metricValue}>{summaryData.focusedMinutes} min</Text>
                   <Text style={styles.metricLabel}>{TEXTS.SUMMARY_FOCUS_TIME}</Text>
                 </View>
@@ -347,7 +565,7 @@ export default function PomodoroScreen() {
                   <MaterialCommunityIcons
                     name={summaryData.linkedTaskTitle ? 'bookmark-outline' : 'minus'}
                     size={18}
-                    color={FOCUS_KICKER_COLOR}
+                    color={t.FOCUS_KICKER_COLOR}
                   />
                   <Text style={styles.metricValue} numberOfLines={2}>
                     {summaryData.linkedTaskTitle || '—'}
@@ -357,14 +575,14 @@ export default function PomodoroScreen() {
               </View>
               <View style={styles.streakRow}>
                 <View style={styles.streakInnerRow}>
-                  <MaterialCommunityIcons name="fire" size={16} color={FOCUS_KICKER_COLOR} />
+                  <MaterialCommunityIcons name="fire" size={16} color={t.FOCUS_KICKER_COLOR} />
                   <Text style={styles.summaryLine}>
                     {TEXTS.SUMMARY_STREAK}: {summaryData.streakDays} d
                   </Text>
                 </View>
                 {summaryData.linkedTaskId && summaryData.sessionBlockMinutes > 0 ? (
                   <View style={styles.streakInnerRow}>
-                    <MaterialCommunityIcons name="chart-timeline-variant" size={16} color={FOCUS_META} />
+                    <MaterialCommunityIcons name="chart-timeline-variant" size={16} color={t.FOCUS_META} />
                     <Text style={[styles.summaryLine, styles.summaryLoggedLine]}>
                       {TEXTS.SUMMARY_TIME_LOGGED.replace(
                         '{n}',
@@ -382,10 +600,10 @@ export default function PomodoroScreen() {
                     disabled={summaryActionBusy}
                   >
                     {summaryActionBusy ? (
-                      <ActivityIndicator color={COLORS.WHITE} size="small" />
+                      <ActivityIndicator color={colors.textOnPrimary} size="small" />
                     ) : (
                       <>
-                        <MaterialCommunityIcons name="check-circle-outline" size={20} color={COLORS.WHITE} />
+                        <MaterialCommunityIcons name="check-circle-outline" size={20} color={colors.textOnPrimary} />
                         <Text style={styles.summaryButtonTextInline}>{TEXTS.SUMMARY_MARK_TASK_DONE}</Text>
                       </>
                     )}
@@ -395,7 +613,7 @@ export default function PomodoroScreen() {
                     onPress={handleOpenSummaryLinkedTask}
                     disabled={summaryActionBusy}
                   >
-                    <MaterialCommunityIcons name="open-in-app" size={18} color="rgba(255,255,255,0.92)" />
+                    <MaterialCommunityIcons name="open-in-app" size={18} color={colors.text} />
                     <Text style={styles.summaryButtonSecondaryText}>{TEXTS.SUMMARY_OPEN_TASK}</Text>
                   </TouchableOpacity>
                 </View>
@@ -418,213 +636,3 @@ export default function PomodoroScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
-  },
-  content: {
-    flex: 1,
-    padding: CONTENT_PADDING,
-  },
-  goalCard: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-    borderRadius: 14,
-    backgroundColor: COLORS.CARD_BACKGROUND,
-    padding: 12,
-    marginBottom: 10,
-  },
-  goalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  goalTitle: {
-    color: 'rgba(255,255,255,0.94)',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  goalPct: {
-    color: FOCUS_KICKER_COLOR,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  goalTrack: {
-    marginTop: 8,
-    height: 6,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    overflow: 'hidden',
-  },
-  goalFill: {
-    height: '100%',
-    backgroundColor: COLORS.PRIMARY,
-  },
-  summaryOverlay: {
-    flex: 1,
-    position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  summaryBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  summaryCard: {
-    width: '100%',
-    maxWidth: 360,
-    borderRadius: 20,
-    backgroundColor: COLORS.MODAL_BACKGROUND,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-    padding: 20,
-    zIndex: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.35,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  summaryHero: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  summaryIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    backgroundColor: 'rgba(26, 221, 219, 0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(26, 221, 219, 0.22)',
-  },
-  summaryTitle: {
-    color: 'rgba(255,255,255,0.94)',
-    fontSize: 19,
-    fontWeight: '600',
-    textAlign: 'center',
-    letterSpacing: -0.3,
-  },
-  summarySubtitle: {
-    marginTop: 6,
-    color: FOCUS_META,
-    fontSize: 13,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  summaryLine: {
-    color: FOCUS_META,
-    fontSize: 14,
-  },
-  summaryMetricsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 12,
-  },
-  metricCard: {
-    flex: 1,
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-    gap: 6,
-  },
-  metricValue: {
-    color: 'rgba(255,255,255,0.95)',
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: 0,
-  },
-  metricLabel: {
-    color: FOCUS_META,
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  streakRow: {
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginBottom: 6,
-    gap: 10,
-  },
-  streakInnerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  summaryLoggedLine: {
-    flex: 1,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  summaryLinkedActions: {
-    gap: 10,
-    marginTop: 8,
-  },
-  summaryDismissHint: {
-    textAlign: 'center',
-    color: FOCUS_META,
-    fontSize: 11,
-    marginTop: 10,
-    marginBottom: 4,
-  },
-  summaryButton: {
-    marginTop: 6,
-    backgroundColor: COLORS.PRIMARY,
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  summaryButtonSecondary: {
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
-  },
-  summaryButtonSecondaryText: {
-    color: 'rgba(255,255,255,0.92)',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  summaryButtonSuccess: {
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: COLORS.SUCCESS,
-    minHeight: 52,
-  },
-  summaryButtonText: {
-    color: COLORS.WHITE,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  summaryButtonTextInline: {
-    color: COLORS.WHITE,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-});

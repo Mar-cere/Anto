@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { SPACING } from '../constants/ui';
 /**
  * Componente que muestra un banner cuando el dispositivo está offline.
  * Mensaje en lenguaje claro y accesible para VoiceOver/TalkBack.
@@ -31,7 +32,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: 'rgba(255, 107, 107, 0.14)',
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1000,

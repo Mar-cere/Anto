@@ -5,7 +5,7 @@
 import React from 'react';
 import { SafeAreaView, ScrollView, FlatList, RefreshControl, StatusBar, View, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { colors } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
 import { useEmergencyAlertsHistoryScreen } from './emergencyAlertsHistory/useEmergencyAlertsHistoryScreen';
 import { EmergencyAlertsHeader } from './emergencyAlertsHistory/EmergencyAlertsHeader';
 import { EmergencyAlertsTabs } from './emergencyAlertsHistory/EmergencyAlertsTabs';
@@ -16,7 +16,7 @@ import { EmergencyAlertsErrorView } from './emergencyAlertsHistory/EmergencyAler
 import { EmergencyAlertsTabError } from './emergencyAlertsHistory/EmergencyAlertsTabError';
 import { StatsTab } from './emergencyAlertsHistory/StatsTab';
 import { PatternsTab } from './emergencyAlertsHistory/PatternsTab';
-import { styles } from './emergencyAlertsHistory/emergencyAlertsHistoryStyles';
+import { useEmergencyAlertsHistoryStyles } from './emergencyAlertsHistory/emergencyAlertsHistoryStyles';
 import { TEXTS, TABS, FLATLIST } from './emergencyAlertsHistory/emergencyAlertsHistoryConstants';
 import { crisisSafeGoBack, crisisSafeNavigate } from './crisisDashboard/crisisDashboardNavigate';
 import {
@@ -27,6 +27,8 @@ import {
 
 const EmergencyAlertsHistoryScreen = () => {
   const navigation = useNavigation();
+  const { colors, statusBarStyle } = useTheme();
+  const styles = useEmergencyAlertsHistoryStyles();
   const {
     activeTab,
     setActiveTab,
@@ -76,7 +78,7 @@ const EmergencyAlertsHistoryScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <EmergencyAlertsHeader onBack={() => crisisSafeGoBack(navigation)} />
       <EmergencyAlertsTabs
         activeTab={activeTab}

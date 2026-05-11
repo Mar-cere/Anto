@@ -1,12 +1,64 @@
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors } from '../styles/globalStyles';
-import { FOCUS_KICKER_COLOR } from '../styles/focusCardTheme';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING } from '../constants/ui';
 
 const Header = memo(({ greeting, userName, title, showBackButton, onBackPress }) => {
   const navigation = useNavigation();
+  const { colors } = useTheme();
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        headerContainer: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: 12,
+        },
+        headerLeft: {
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+        },
+        headerRight: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 16,
+        },
+        backButton: {
+          padding: 8,
+          borderRadius: 12,
+          backgroundColor: colors.chromeHeaderBack,
+        },
+        title: {
+          fontSize: 22,
+          fontWeight: 'bold',
+          color: colors.text,
+          letterSpacing: 0.5,
+        },
+        greeting: {
+          fontSize: 19,
+          fontWeight: '600',
+          color: colors.text,
+          marginBottom: 4,
+          letterSpacing: 0.2,
+        },
+        profileButton: {
+          width: 40,
+          height: 40,
+          justifyContent: 'center',
+          alignItems: 'center',
+          borderRadius: 20,
+          backgroundColor: colors.chromeHeaderProfile,
+        },
+      }),
+    [colors],
+  );
 
   const handleBackPress = () => {
     if (typeof onBackPress === 'function') {
@@ -17,27 +69,22 @@ const Header = memo(({ greeting, userName, title, showBackButton, onBackPress })
       navigation.goBack();
     }
   };
-  
+
   const handleProfilePress = () => {
     try {
-      // Verificar si estamos dentro de un Tab Navigator
       const tabNavigator = navigation.getParent();
-      
+
       if (tabNavigator && tabNavigator.getState) {
         const state = tabNavigator.getState();
-        // Si el estado tiene type 'tab', estamos en un Tab Navigator
         if (state?.type === 'tab') {
-          // Navegar usando el Tab Navigator directamente
           tabNavigator.navigate('Perfil');
           return;
         }
       }
 
-      // Si no estamos en un Tab Navigator, navegar a MainTabs con la pantalla específica
       navigation.navigate('MainTabs', { screen: 'Perfil' });
     } catch (error) {
       console.error('Error al navegar a Perfil:', error);
-      // Fallback: intentar navegar directamente
       try {
         navigation.navigate('Perfil');
       } catch (e) {
@@ -45,8 +92,7 @@ const Header = memo(({ greeting, userName, title, showBackButton, onBackPress })
       }
     }
   };
-  
-  // Si se pasa title y showBackButton, renderizar header simple con botón de retroceso
+
   if (title && showBackButton) {
     return (
       <View style={styles.headerContainer} accessibilityRole="header">
@@ -59,79 +105,37 @@ const Header = memo(({ greeting, userName, title, showBackButton, onBackPress })
             accessibilityLabel="Volver atrás"
             accessibilityHint="Doble toque para volver a la pantalla anterior"
           >
-            <MaterialCommunityIcons name="arrow-left" size={24} color={colors.white} />
+            <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.title} accessibilityRole="header">{title}</Text>
+          <Text style={styles.title} accessibilityRole="header">
+            {title}
+          </Text>
         </View>
       </View>
     );
   }
 
-  // Header original con greeting
   return (
     <View style={styles.headerContainer} accessibilityRole="header">
       <View style={styles.headerLeft}>
-        <Text style={styles.greeting} accessibilityRole="header">{greeting || 'Bienvenido'}</Text>
+        <Text style={styles.greeting} accessibilityRole="header">
+          {greeting || 'Bienvenido'}
+        </Text>
       </View>
-      
+
       <View style={styles.headerRight}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={handleProfilePress}
           style={styles.profileButton}
           accessibilityRole="button"
           accessibilityLabel="Ir a perfil"
           accessibilityHint="Doble toque para abrir tu perfil"
         >
-            <MaterialCommunityIcons name="account" size={24} color={FOCUS_KICKER_COLOR} />
+          <MaterialCommunityIcons name="account" size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
     </View>
   );
-});
-
-const styles = StyleSheet.create({
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  headerLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  backButton: {
-    padding: 8,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: colors.white,
-    letterSpacing: 0.5,
-  },
-  greeting: {
-    fontSize: 20,
-    color: FOCUS_KICKER_COLOR,
-    marginBottom: 4,
-  },
-  profileButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 20,
-    backgroundColor: 'rgba(163, 184, 232, 0.1)',
-  },
 });
 
 Header.displayName = 'Header';

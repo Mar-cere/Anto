@@ -27,8 +27,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../components/Header';
 import FloatingNavBar from '../components/FloatingNavBar';
 import { SkeletonCard } from '../components/Skeleton';
-import { colors } from '../styles/globalStyles';
 import api, { ENDPOINTS } from '../config/api';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING } from '../constants/ui';
 
 // Constantes
 const TEXTS = {
@@ -54,15 +55,6 @@ const TEXTS = {
   VIEW_PLANS: 'Ver planes',
 };
 
-const STATUS_COLORS = {
-  completed: colors.success,
-  pending: colors.warning,
-  processing: colors.warning,
-  failed: colors.error,
-  canceled: colors.textSecondary,
-  refunded: colors.textSecondary,
-};
-
 const STATUS_ICONS = {
   completed: 'check-circle',
   pending: 'clock-outline',
@@ -80,6 +72,341 @@ const FLATLIST_MAX_TO_RENDER_PER_BATCH = 10;
 const TransactionHistoryScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { colors, statusBarStyle, resolvedScheme } = useTheme();
+
+  const STATUS_COLORS = useMemo(
+    () => ({
+      completed: colors.success,
+      pending: colors.warning,
+      processing: colors.warning,
+      failed: colors.error,
+      canceled: colors.textSecondary,
+      refunded: colors.textSecondary,
+    }),
+    [colors],
+  );
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        mainFill: {
+          flex: 1,
+        },
+        screenInset: {
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+        },
+        centeredVertical: {
+          flex: 1,
+          justifyContent: 'center',
+        },
+        /** Mismo criterio que Configuración / Suscripción (`settingsSectionSurface`). */
+        sectionShell: {
+          padding: 14,
+          marginBottom: 18,
+          borderRadius: 18,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+          backgroundColor: colors.settingsSectionSurface,
+          shadowColor: colors.glassShadow,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: resolvedScheme === 'dark' ? 0.35 : 0.1,
+          shadowRadius: 10,
+          elevation: resolvedScheme === 'dark' ? 4 : 2,
+        },
+        stateShell: {
+          alignItems: 'center',
+          paddingVertical: 20,
+        },
+        centerContainer: {
+          alignItems: 'center',
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+        },
+        loadingText: {
+          marginTop: 16,
+          color: colors.textSecondary,
+          fontSize: 16,
+        },
+        errorText: {
+          marginTop: 16,
+          marginBottom: 24,
+          color: colors.error,
+          fontSize: 16,
+          textAlign: 'center',
+        },
+        retryButton: {
+          backgroundColor: colors.primary,
+          paddingHorizontal: 24,
+          paddingVertical: 12,
+          borderRadius: 12,
+        },
+        retryButtonText: {
+          color: colors.textOnPrimary,
+          fontSize: 16,
+          fontWeight: 'bold',
+        },
+        emptyText: {
+          marginTop: 16,
+          fontSize: 18,
+          fontWeight: 'bold',
+          color: colors.text,
+          textAlign: 'center',
+        },
+        emptySubtext: {
+          marginTop: 8,
+          fontSize: 14,
+          color: colors.textSecondary,
+          textAlign: 'center',
+        },
+        skeletonInner: {
+          paddingTop: 4,
+        },
+        skeletonCard: {
+          marginBottom: 12,
+        },
+        emptyCtaButton: {
+          marginTop: 24,
+          backgroundColor: colors.primary,
+          paddingHorizontal: 24,
+          paddingVertical: 14,
+          borderRadius: 12,
+        },
+        emptyCtaButtonText: {
+          color: colors.textOnPrimary,
+          fontSize: 16,
+          fontWeight: '600',
+        },
+        listContent: {
+          paddingTop: 4,
+        },
+        listFlex: {
+          flex: 1,
+        },
+        transactionCard: {
+          backgroundColor: colors.chromeCard,
+          borderRadius: 12,
+          padding: SPACING.SCREEN_EDGE_INSET,
+          marginBottom: 12,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        transactionHeader: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: 8,
+        },
+        transactionInfo: {
+          flex: 1,
+        },
+        transactionDate: {
+          fontSize: 14,
+          color: colors.textSecondary,
+          marginBottom: 4,
+        },
+        planBadge: {
+          alignSelf: 'flex-start',
+          backgroundColor: `${colors.primary}20`,
+          paddingHorizontal: 8,
+          paddingVertical: 4,
+          borderRadius: 6,
+          marginTop: 4,
+        },
+        planText: {
+          fontSize: 10,
+          fontWeight: 'bold',
+          color: colors.primary,
+        },
+        statusBadge: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 8,
+          paddingVertical: 4,
+          borderRadius: 6,
+        },
+        statusText: {
+          fontSize: 12,
+          fontWeight: '600',
+          marginLeft: 4,
+        },
+        description: {
+          fontSize: 14,
+          color: colors.text,
+          marginBottom: 12,
+        },
+        transactionFooter: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingTop: 12,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+        },
+        amount: {
+          fontSize: 18,
+          fontWeight: 'bold',
+          color: colors.text,
+        },
+        type: {
+          fontSize: 12,
+          color: colors.textSecondary,
+        },
+        searchContainer: {
+          flexDirection: 'row',
+          gap: 12,
+        },
+        searchBar: {
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: colors.chromeCard,
+          borderRadius: 12,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: 8,
+          borderWidth: 1,
+          borderColor: colors.border,
+          gap: 8,
+        },
+        searchInput: {
+          flex: 1,
+          color: colors.text,
+          fontSize: 14,
+        },
+        filterButton: {
+          width: 48,
+          height: 48,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: colors.chromeCard,
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: colors.border,
+          position: 'relative',
+        },
+        filterButtonActive: {
+          borderColor: colors.primary,
+          backgroundColor: `${colors.primary}20`,
+        },
+        filterBadge: {
+          position: 'absolute',
+          top: 8,
+          right: 8,
+          width: 8,
+          height: 8,
+          borderRadius: 4,
+          backgroundColor: colors.primary,
+        },
+        activeFiltersContainer: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginTop: 12,
+          paddingTop: 12,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: colors.border,
+        },
+        activeFiltersText: {
+          fontSize: 14,
+          color: colors.textSecondary,
+        },
+        clearFiltersText: {
+          fontSize: 14,
+          color: colors.primary,
+          fontWeight: '600',
+        },
+        modalOverlay: {
+          flex: 1,
+          backgroundColor: colors.backdropStrong ?? 'rgba(0, 0, 0, 0.5)',
+          justifyContent: 'flex-end',
+        },
+        modalContent: {
+          backgroundColor: colors.cardBackground,
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          maxHeight: '80%',
+        },
+        modalHeader: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: SPACING.SCREEN_EDGE_INSET,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        },
+        modalTitle: {
+          fontSize: 20,
+          fontWeight: 'bold',
+          color: colors.text,
+        },
+        modalBody: {
+          padding: SPACING.SCREEN_EDGE_INSET,
+        },
+        filterSection: {
+          marginBottom: 24,
+        },
+        filterSectionTitle: {
+          fontSize: 16,
+          fontWeight: '600',
+          color: colors.text,
+          marginBottom: 12,
+        },
+        filterOption: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: SPACING.SCREEN_EDGE_INSET,
+          backgroundColor: colors.background,
+          borderRadius: 12,
+          marginBottom: 8,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        filterOptionActive: {
+          borderColor: colors.primary,
+          backgroundColor: `${colors.primary}20`,
+        },
+        filterOptionText: {
+          fontSize: 14,
+          color: colors.text,
+        },
+        filterOptionTextActive: {
+          color: colors.primary,
+          fontWeight: '600',
+        },
+        modalFooter: {
+          flexDirection: 'row',
+          padding: SPACING.SCREEN_EDGE_INSET,
+          gap: 12,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+        },
+        modalButton: {
+          flex: 1,
+          padding: SPACING.SCREEN_EDGE_INSET,
+          borderRadius: 12,
+          backgroundColor: colors.background,
+          borderWidth: 1,
+          borderColor: colors.border,
+          alignItems: 'center',
+        },
+        modalButtonPrimary: {
+          backgroundColor: colors.primary,
+          borderColor: colors.primary,
+        },
+        modalButtonText: {
+          fontSize: 16,
+          fontWeight: '600',
+          color: colors.text,
+        },
+        modalButtonTextPrimary: {
+          color: colors.textOnPrimary,
+        },
+      }),
+    [colors, resolvedScheme],
+  );
 
   const handleViewPlans = () => {
     navigation.navigate('Subscription');
@@ -226,7 +553,7 @@ const TransactionHistoryScreen = () => {
               </View>
             )}
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
+          <View style={[styles.statusBadge, { backgroundColor: `${statusColor}20` }]}>
             <MaterialCommunityIcons name={statusIcon} size={16} color={statusColor} />
             <Text style={[styles.statusText, { color: statusColor }]}>
               {formatStatus(item.status)}
@@ -254,100 +581,130 @@ const TransactionHistoryScreen = () => {
   const renderContent = () => {
     if (loading && transactions.length === 0) {
       return (
-        <View style={styles.skeletonContainer}>
-          {Array.from({ length: 6 }, (_, i) => (
-            <SkeletonCard key={`tx-skeleton-${i}`} style={styles.skeletonCard} />
-          ))}
+        <View style={styles.mainFill}>
+          <View style={styles.screenInset}>
+            <View style={styles.sectionShell}>
+              <View style={styles.skeletonInner}>
+                {Array.from({ length: 6 }, (_, i) => (
+                  <SkeletonCard key={`tx-skeleton-${i}`} style={styles.skeletonCard} />
+                ))}
+              </View>
+            </View>
+          </View>
         </View>
       );
     }
 
     if (error && transactions.length === 0) {
       return (
-        <View style={styles.centerContainer}>
-          <MaterialCommunityIcons name="alert-circle" size={64} color={colors.error} />
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={() => loadTransactions()}>
-            <Text style={styles.retryButtonText}>{TEXTS.RETRY}</Text>
-          </TouchableOpacity>
+        <View style={styles.mainFill}>
+          <View style={[styles.screenInset, styles.centeredVertical]}>
+            <View style={[styles.sectionShell, styles.stateShell]}>
+              <View style={styles.centerContainer}>
+                <MaterialCommunityIcons name="alert-circle" size={64} color={colors.error} />
+                <Text style={styles.errorText}>{error}</Text>
+                <TouchableOpacity style={styles.retryButton} onPress={() => loadTransactions()}>
+                  <Text style={styles.retryButtonText}>{TEXTS.RETRY}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
         </View>
       );
     }
 
     if (transactions.length === 0) {
       return (
-        <View style={styles.centerContainer}>
-          <MaterialCommunityIcons name="receipt" size={64} color={colors.textSecondary} />
-          <Text style={styles.emptyText}>{TEXTS.NO_TRANSACTIONS}</Text>
-          <Text style={styles.emptySubtext}>{TEXTS.NO_TRANSACTIONS_DESC}</Text>
-          <TouchableOpacity style={styles.emptyCtaButton} onPress={handleViewPlans}>
-            <Text style={styles.emptyCtaButtonText}>{TEXTS.VIEW_PLANS}</Text>
-          </TouchableOpacity>
+        <View style={styles.mainFill}>
+          <View style={[styles.screenInset, styles.centeredVertical]}>
+            <View style={[styles.sectionShell, styles.stateShell]}>
+              <View style={styles.centerContainer}>
+                <MaterialCommunityIcons name="receipt" size={64} color={colors.textSecondary} />
+                <Text style={styles.emptyText}>{TEXTS.NO_TRANSACTIONS}</Text>
+                <Text style={styles.emptySubtext}>{TEXTS.NO_TRANSACTIONS_DESC}</Text>
+                <TouchableOpacity style={styles.emptyCtaButton} onPress={handleViewPlans}>
+                  <Text style={styles.emptyCtaButtonText}>{TEXTS.VIEW_PLANS}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
         </View>
       );
     }
 
     if (filteredTransactions.length === 0 && hasActiveFilters) {
       return (
-        <View style={styles.centerContainer}>
-          <MaterialCommunityIcons name="filter-remove" size={64} color={colors.textSecondary} />
-          <Text style={styles.emptyText}>{TEXTS.NO_FILTERED_TRANSACTIONS}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={clearFilters}>
-            <Text style={styles.retryButtonText}>{TEXTS.CLEAR_FILTERS}</Text>
-          </TouchableOpacity>
+        <View style={styles.mainFill}>
+          <View style={[styles.screenInset, styles.centeredVertical]}>
+            <View style={[styles.sectionShell, styles.stateShell]}>
+              <View style={styles.centerContainer}>
+                <MaterialCommunityIcons name="filter-remove" size={64} color={colors.textSecondary} />
+                <Text style={styles.emptyText}>{TEXTS.NO_FILTERED_TRANSACTIONS}</Text>
+                <TouchableOpacity style={styles.retryButton} onPress={clearFilters}>
+                  <Text style={styles.retryButtonText}>{TEXTS.CLEAR_FILTERS}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
         </View>
       );
     }
 
     return (
-      <>
-        {/* Barra de búsqueda y filtros */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <MaterialCommunityIcons name="magnify" size={20} color={colors.textSecondary} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder={TEXTS.SEARCH_PLACEHOLDER}
-              placeholderTextColor={colors.textSecondary}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <MaterialCommunityIcons name="close-circle" size={20} color={colors.textSecondary} />
+      <View style={styles.mainFill}>
+        <View style={styles.screenInset}>
+          <View style={styles.sectionShell}>
+            <View style={styles.searchContainer}>
+              <View style={styles.searchBar}>
+                <MaterialCommunityIcons name="magnify" size={20} color={colors.textSecondary} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder={TEXTS.SEARCH_PLACEHOLDER}
+                  placeholderTextColor={colors.textSecondary}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery('')}>
+                    <MaterialCommunityIcons name="close-circle" size={20} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                )}
+              </View>
+              <TouchableOpacity
+                style={[styles.filterButton, hasActiveFilters && styles.filterButtonActive]}
+                onPress={() => setShowFilterModal(true)}
+              >
+                <MaterialCommunityIcons
+                  name="filter"
+                  size={20}
+                  color={hasActiveFilters ? colors.primary : colors.textSecondary}
+                />
+                {hasActiveFilters && <View style={styles.filterBadge} />}
               </TouchableOpacity>
+            </View>
+            {hasActiveFilters && (
+              <View style={styles.activeFiltersContainer}>
+                <Text style={styles.activeFiltersText}>
+                  {filteredTransactions.length} de {transactions.length} transacciones
+                </Text>
+                <TouchableOpacity onPress={clearFilters}>
+                  <Text style={styles.clearFiltersText}>{TEXTS.CLEAR_FILTERS}</Text>
+                </TouchableOpacity>
+              </View>
             )}
           </View>
-          <TouchableOpacity
-            style={[styles.filterButton, hasActiveFilters && styles.filterButtonActive]}
-            onPress={() => setShowFilterModal(true)}
-          >
-            <MaterialCommunityIcons
-              name="filter"
-              size={20}
-              color={hasActiveFilters ? colors.primary : colors.textSecondary}
-            />
-            {hasActiveFilters && <View style={styles.filterBadge} />}
-          </TouchableOpacity>
         </View>
-
-        {/* Indicador de filtros activos */}
-        {hasActiveFilters && (
-          <View style={styles.activeFiltersContainer}>
-            <Text style={styles.activeFiltersText}>
-              {filteredTransactions.length} de {transactions.length} transacciones
-            </Text>
-            <TouchableOpacity onPress={clearFilters}>
-              <Text style={styles.clearFiltersText}>{TEXTS.CLEAR_FILTERS}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
 
         <FlatList
           data={filteredTransactions}
           renderItem={renderTransaction}
           keyExtractor={(item) => item._id || item.id}
-          contentContainerStyle={styles.listContent}
+          style={styles.listFlex}
+          contentContainerStyle={[
+            styles.listContent,
+            styles.screenInset,
+            { paddingBottom: insets.bottom + SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA },
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -365,7 +722,6 @@ const TransactionHistoryScreen = () => {
           maxToRenderPerBatch={FLATLIST_MAX_TO_RENDER_PER_BATCH}
         />
 
-        {/* Modal de filtros */}
         <Modal
           visible={showFilterModal}
           transparent={true}
@@ -461,13 +817,13 @@ const TransactionHistoryScreen = () => {
             </View>
           </View>
         </Modal>
-      </>
+      </View>
     );
   };
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} />
       <Header
         greeting=""
         userName=""
@@ -479,299 +835,6 @@ const TransactionHistoryScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  loadingText: {
-    marginTop: 16,
-    color: colors.textSecondary,
-    fontSize: 16,
-  },
-  errorText: {
-    marginTop: 16,
-    marginBottom: 24,
-    color: colors.error,
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  retryButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  retryButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  emptyText: {
-    marginTop: 16,
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
-    textAlign: 'center',
-  },
-  emptySubtext: {
-    marginTop: 8,
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  skeletonContainer: {
-    padding: 16,
-    paddingTop: 24,
-  },
-  skeletonCard: {
-    marginBottom: 12,
-  },
-  emptyCtaButton: {
-    marginTop: 24,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  emptyCtaButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  listContent: {
-    padding: 16,
-  },
-  transactionCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  transactionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  transactionInfo: {
-    flex: 1,
-  },
-  transactionDate: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  planBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.primary + '20',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginTop: 4,
-  },
-  planText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: colors.primary,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-  description: {
-    fontSize: 14,
-    color: colors.text,
-    marginBottom: 12,
-  },
-  transactionFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  amount: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  type: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 12,
-    backgroundColor: colors.background,
-  },
-  searchBar: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: 8,
-  },
-  searchInput: {
-    flex: 1,
-    color: colors.text,
-    fontSize: 14,
-  },
-  filterButton: {
-    width: 48,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    position: 'relative',
-  },
-  filterButtonActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primary + '20',
-  },
-  filterBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
-  },
-  activeFiltersContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: colors.cardBackground,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  activeFiltersText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  clearFiltersText: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: colors.cardBackground,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  modalBody: {
-    padding: 20,
-  },
-  filterSection: {
-    marginBottom: 24,
-  },
-  filterSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 12,
-  },
-  filterOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  filterOptionActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primary + '20',
-  },
-  filterOptionText: {
-    fontSize: 14,
-    color: colors.text,
-  },
-  filterOptionTextActive: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    padding: 20,
-    gap: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  modalButton: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-  },
-  modalButtonPrimary: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  modalButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  modalButtonTextPrimary: {
-    color: colors.white,
-  },
-});
 
 export default TransactionHistoryScreen;
 

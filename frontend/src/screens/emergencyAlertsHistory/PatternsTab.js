@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { styles } from './emergencyAlertsHistoryStyles';
+import { useEmergencyAlertsHistoryStyles } from './emergencyAlertsHistoryStyles';
 import { TEXTS } from './emergencyAlertsHistoryConstants';
-import { colors } from '../../styles/globalStyles';
+import { useTheme } from '../../context/ThemeContext';
 import { countPatternPeriodAlerts } from './emergencyAlertsHistoryUtils';
 
 export function PatternsTab({ patterns }) {
@@ -11,6 +11,8 @@ export function PatternsTab({ patterns }) {
     return null;
   }
 
+  const { colors } = useTheme();
+  const styles = useEmergencyAlertsHistoryStyles();
   const totalInPeriod = countPatternPeriodAlerts(patterns);
   const insufficient = totalInPeriod < 2;
 
@@ -45,9 +47,9 @@ export function PatternsTab({ patterns }) {
                 size={24}
                 color={
                   patterns.frequency.increasing
-                    ? '#FF6B6B'
+                    ? colors.error
                     : patterns.frequency.decreasing
-                      ? '#4ECDC4'
+                      ? colors.success
                       : colors.primary
                 }
               />
@@ -79,9 +81,9 @@ export function PatternsTab({ patterns }) {
                 size={24}
                 color={
                   patterns.riskLevelTrend.escalating
-                    ? '#FF6B6B'
+                    ? colors.error
                     : patterns.riskLevelTrend.improving
-                      ? '#4ECDC4'
+                      ? colors.success
                       : colors.primary
                 }
               />
@@ -164,7 +166,7 @@ export function PatternsTab({ patterns }) {
           <Text style={styles.sectionTitle}>{TEXTS.RECOMMENDATIONS}</Text>
           {patterns.recommendations.map((recommendation, index) => (
             <View key={index} style={styles.recommendationCard}>
-              <MaterialCommunityIcons name="lightbulb-on" size={20} color="#FFA500" />
+              <MaterialCommunityIcons name="lightbulb-on" size={20} color={colors.warning} />
               <Text style={styles.recommendationText}>{recommendation}</Text>
             </View>
           ))}

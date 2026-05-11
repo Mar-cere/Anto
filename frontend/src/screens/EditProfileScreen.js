@@ -13,10 +13,11 @@ import { EditProfileLoadingView } from './editProfileScreen/EditProfileLoadingVi
 import { EditProfileHeader } from './editProfileScreen/EditProfileHeader';
 import { EditProfileForm } from './editProfileScreen/EditProfileForm';
 import { EditProfileSaveSuccess } from './editProfileScreen/EditProfileSaveSuccess';
-import { styles } from './editProfileScreen/editProfileScreenStyles';
+import { useEditProfileScreenStyles } from './editProfileScreen/editProfileScreenStyles';
 import { BACKGROUND_IMAGE } from './editProfileScreen/editProfileScreenConstants';
 
 export default function EditProfileScreen({ navigation }) {
+  const { styles } = useEditProfileScreenStyles();
   const {
     loading,
     editing,

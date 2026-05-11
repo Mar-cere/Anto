@@ -1,9 +1,11 @@
 /**
- * Estilos para EditProfileScreen y subcomponentes
+ * Estilos para EditProfileScreen (tema claro/oscuro vía useEditProfileScreenStyles).
  */
+import { useMemo } from 'react';
 import { StyleSheet } from 'react-native';
+import { useTheme } from '../../context/ThemeContext';
 import {
-  COLORS,
+  createEditProfileColors,
   BACKGROUND_OPACITY,
   HEADER_PADDING_HORIZONTAL,
   HEADER_PADDING_VERTICAL,
@@ -41,150 +43,159 @@ import {
   SAVE_SUCCESS_TEXT_MARGIN_LEFT,
 } from './editProfileScreenConstants';
 
-export const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
-  },
-  background: {
-    flex: 1,
-  },
-  imageStyle: {
-    opacity: BACKGROUND_OPACITY,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.BACKGROUND,
-  },
-  loadingText: {
-    color: COLORS.ACCENT,
-    fontSize: 18,
-    marginTop: LOADING_TEXT_MARGIN_TOP,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: HEADER_PADDING_HORIZONTAL,
-    paddingVertical: HEADER_PADDING_VERTICAL,
-    backgroundColor: COLORS.HEADER_BACKGROUND,
-    borderBottomWidth: HEADER_BORDER_WIDTH,
-    borderBottomColor: COLORS.HEADER_BORDER,
-  },
-  headerButton: {
-    width: HEADER_BUTTON_SIZE,
-    height: HEADER_BUTTON_SIZE,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: HEADER_BUTTON_BORDER_RADIUS,
-    backgroundColor: COLORS.HEADER_BUTTON_BACKGROUND,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.WHITE,
-  },
-  content: {
-    flex: 1,
-    padding: CONTENT_PADDING,
-  },
-  contentPaddingBottom: {
-    paddingBottom: CONTENT_PADDING_BOTTOM,
-  },
-  section: {
-    marginBottom: SECTION_MARGIN_BOTTOM,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.WHITE,
-    marginBottom: SECTION_TITLE_MARGIN_BOTTOM,
-  },
-  inputContainer: {
-    marginBottom: INPUT_CONTAINER_MARGIN_BOTTOM,
-  },
-  label: {
-    fontSize: 14,
-    color: COLORS.ACCENT,
-    marginBottom: LABEL_MARGIN_BOTTOM,
-  },
-  input: {
-    backgroundColor: COLORS.INPUT_BACKGROUND,
-    borderRadius: INPUT_BORDER_RADIUS,
-    paddingHorizontal: INPUT_PADDING_HORIZONTAL,
-    paddingVertical: INPUT_PADDING_VERTICAL,
-    fontSize: 16,
-    color: COLORS.WHITE,
-    borderWidth: INPUT_BORDER_WIDTH,
-    borderColor: COLORS.CARD_BORDER,
-  },
-  inputError: {
-    borderColor: COLORS.ERROR,
-  },
-  errorText: {
-    color: COLORS.ERROR,
-    fontSize: 12,
-    marginTop: ERROR_TEXT_MARGIN_TOP,
-  },
-  helperText: {
-    color: COLORS.ACCENT,
-    fontSize: 12,
-    marginTop: HELPER_TEXT_MARGIN_TOP,
-  },
-  profileHeader: {
-    alignItems: 'center',
-    paddingVertical: PROFILE_HEADER_PADDING_VERTICAL,
-  },
-  profileName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.WHITE,
-    marginBottom: PROFILE_NAME_MARGIN_BOTTOM,
-  },
-  profileUsername: {
-    fontSize: 16,
-    color: COLORS.ACCENT,
-    marginBottom: PROFILE_USERNAME_MARGIN_BOTTOM,
-  },
-  inputDisabled: {
-    opacity: INPUT_DISABLED_OPACITY,
-    backgroundColor: COLORS.INPUT_DISABLED_BACKGROUND,
-  },
-  disabledButton: {
-    opacity: DISABLED_BUTTON_OPACITY,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.INPUT_BACKGROUND,
-    borderRadius: INPUT_BORDER_RADIUS,
-    paddingHorizontal: INPUT_WRAPPER_PADDING_HORIZONTAL,
-    borderWidth: INPUT_BORDER_WIDTH,
-    borderColor: COLORS.CARD_BORDER,
-  },
-  saveSuccessIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.SAVE_SUCCESS_BACKGROUND,
-    paddingHorizontal: SAVE_SUCCESS_PADDING_HORIZONTAL,
-    paddingVertical: SAVE_SUCCESS_PADDING_VERTICAL,
-    borderRadius: SAVE_SUCCESS_BORDER_RADIUS,
-    position: 'absolute',
-    top: SAVE_SUCCESS_TOP,
-    alignSelf: 'center',
-    zIndex: SAVE_SUCCESS_Z_INDEX,
-    shadowColor: COLORS.SAVE_SUCCESS_SHADOW,
-    shadowOffset: { width: 0, height: SAVE_SUCCESS_SHADOW_OFFSET_Y },
-    shadowOpacity: SAVE_SUCCESS_SHADOW_OPACITY,
-    shadowRadius: SAVE_SUCCESS_SHADOW_RADIUS,
-    elevation: SAVE_SUCCESS_ELEVATION,
-  },
-  saveSuccessText: {
-    color: COLORS.SUCCESS,
-    marginLeft: SAVE_SUCCESS_TEXT_MARGIN_LEFT,
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-});
+function buildStyles(c) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.BACKGROUND,
+    },
+    background: {
+      flex: 1,
+    },
+    imageStyle: {
+      opacity: BACKGROUND_OPACITY,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: c.BACKGROUND,
+    },
+    loadingText: {
+      color: c.ACCENT,
+      fontSize: 18,
+      marginTop: LOADING_TEXT_MARGIN_TOP,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: HEADER_PADDING_HORIZONTAL,
+      paddingVertical: HEADER_PADDING_VERTICAL,
+      backgroundColor: c.HEADER_BACKGROUND,
+      borderBottomWidth: HEADER_BORDER_WIDTH,
+      borderBottomColor: c.HEADER_BORDER,
+    },
+    headerButton: {
+      width: HEADER_BUTTON_SIZE,
+      height: HEADER_BUTTON_SIZE,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: HEADER_BUTTON_BORDER_RADIUS,
+      backgroundColor: c.HEADER_BUTTON_BACKGROUND,
+    },
+    headerTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: c.WHITE,
+    },
+    content: {
+      flex: 1,
+      padding: CONTENT_PADDING,
+    },
+    contentPaddingBottom: {
+      paddingBottom: CONTENT_PADDING_BOTTOM,
+    },
+    section: {
+      marginBottom: SECTION_MARGIN_BOTTOM,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: c.WHITE,
+      marginBottom: SECTION_TITLE_MARGIN_BOTTOM,
+    },
+    inputContainer: {
+      marginBottom: INPUT_CONTAINER_MARGIN_BOTTOM,
+    },
+    label: {
+      fontSize: 14,
+      color: c.ACCENT,
+      marginBottom: LABEL_MARGIN_BOTTOM,
+    },
+    input: {
+      backgroundColor: c.INPUT_BACKGROUND,
+      borderRadius: INPUT_BORDER_RADIUS,
+      paddingHorizontal: INPUT_PADDING_HORIZONTAL,
+      paddingVertical: INPUT_PADDING_VERTICAL,
+      fontSize: 16,
+      color: c.WHITE,
+      borderWidth: INPUT_BORDER_WIDTH,
+      borderColor: c.CARD_BORDER,
+    },
+    inputError: {
+      borderColor: c.ERROR,
+    },
+    errorText: {
+      color: c.ERROR,
+      fontSize: 12,
+      marginTop: ERROR_TEXT_MARGIN_TOP,
+    },
+    helperText: {
+      color: c.ACCENT,
+      fontSize: 12,
+      marginTop: HELPER_TEXT_MARGIN_TOP,
+    },
+    profileHeader: {
+      alignItems: 'center',
+      paddingVertical: PROFILE_HEADER_PADDING_VERTICAL,
+    },
+    profileName: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: c.WHITE,
+      marginBottom: PROFILE_NAME_MARGIN_BOTTOM,
+    },
+    profileUsername: {
+      fontSize: 16,
+      color: c.ACCENT,
+      marginBottom: PROFILE_USERNAME_MARGIN_BOTTOM,
+    },
+    inputDisabled: {
+      opacity: INPUT_DISABLED_OPACITY,
+      backgroundColor: c.INPUT_DISABLED_BACKGROUND,
+    },
+    disabledButton: {
+      opacity: DISABLED_BUTTON_OPACITY,
+    },
+    inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.INPUT_BACKGROUND,
+      borderRadius: INPUT_BORDER_RADIUS,
+      paddingHorizontal: INPUT_WRAPPER_PADDING_HORIZONTAL,
+      borderWidth: INPUT_BORDER_WIDTH,
+      borderColor: c.CARD_BORDER,
+    },
+    saveSuccessIndicator: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.SAVE_SUCCESS_BACKGROUND,
+      paddingHorizontal: SAVE_SUCCESS_PADDING_HORIZONTAL,
+      paddingVertical: SAVE_SUCCESS_PADDING_VERTICAL,
+      borderRadius: SAVE_SUCCESS_BORDER_RADIUS,
+      position: 'absolute',
+      top: SAVE_SUCCESS_TOP,
+      alignSelf: 'center',
+      zIndex: SAVE_SUCCESS_Z_INDEX,
+      shadowColor: c.SAVE_SUCCESS_SHADOW,
+      shadowOffset: { width: 0, height: SAVE_SUCCESS_SHADOW_OFFSET_Y },
+      shadowOpacity: SAVE_SUCCESS_SHADOW_OPACITY,
+      shadowRadius: SAVE_SUCCESS_SHADOW_RADIUS,
+      elevation: SAVE_SUCCESS_ELEVATION,
+    },
+    saveSuccessText: {
+      color: c.SUCCESS,
+      marginLeft: SAVE_SUCCESS_TEXT_MARGIN_LEFT,
+      fontSize: 18,
+      fontWeight: 'bold',
+    },
+  });
+}
+
+export function useEditProfileScreenStyles() {
+  const { colors } = useTheme();
+  const editProfileColors = useMemo(() => createEditProfileColors(colors), [colors]);
+  const styles = useMemo(() => buildStyles(editProfileColors), [editProfileColors]);
+  return { styles, editProfileColors };
+}

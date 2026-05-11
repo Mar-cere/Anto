@@ -9,7 +9,7 @@
 
 // Configuración de StatusBar
 export const STATUS_BAR = {
-  STYLE: 'light-content', // 'light-content' | 'dark-content' | 'auto'
+  STYLE: 'dark-content', // fondos claros: iconos de estado oscuros
   BACKGROUND: 'transparent',
   DEFAULT_HEIGHT: 44, // Altura por defecto en iOS
 };
@@ -32,7 +32,35 @@ export const SCALES = {
 
 // Espaciado y padding común
 export const SPACING = {
-  CONTENT_PADDING_BOTTOM: 120,
+  /**
+   * Inset horizontal del borde de pantalla al contenido (header con saludo, scroll del dashboard, etc.).
+   */
+  SCREEN_EDGE_INSET: 14,
+  /**
+   * Resta aplicada al inset inferior efectivo para acercar la barra al borde (menos “hueco” sobre el home indicator).
+   */
+  FLOATING_NAV_DOCK_INSET_RELIEF: 24,
+  /**
+   * Suma al cálculo del `bottom` del dock (suele 0). No usar negativos: ajusta INSET_RELIEF o el mínimo.
+   */
+  FLOATING_NAV_DOCK_ABOVE_SAFE: 0,
+  /**
+   * Mínimo de `bottom` del dock (suelo) cuando el cálculo quedaría demasiado bajo o el inset real es 0.
+   */
+  FLOATING_NAV_DOCK_MIN_FROM_BOTTOM: 8,
+  /**
+   * En Web, `useSafeAreaInsets().bottom` suele ser 0: sin esto, el dock queda en MIN_FROM_BOTTOM y
+   * **cambiar INSET_RELIEF no hace nada** (el “máximo” fija siempre el mismo valor).
+   * iOS/Android nativo usan el inset real del dispositivo.
+   */
+  FLOATING_NAV_DOCK_FALLBACK_BOTTOM_WEB: 34,
+  /**
+   * Suma típica a `insets.bottom` en listas/scroll cuando hay FloatingNavBar (barra + botón central + respiro).
+   * Misma base que Dash, Tareas, Hábitos, Pomodoro, etc.
+   */
+  FLOATING_NAV_SCROLL_BOTTOM_EXTRA: 132,
+  /** @deprecated Preferir FLOATING_NAV_SCROLL_BOTTOM_EXTRA; mismo valor para compatibilidad. */
+  CONTENT_PADDING_BOTTOM: 132,
   ERROR_PADDING: 15,
   ERROR_MARGIN_BOTTOM: 20,
   ERROR_TEXT_MARGIN_BOTTOM: 10,

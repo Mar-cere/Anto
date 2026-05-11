@@ -2,7 +2,7 @@
  * Rutas de Journal (Diario de Gratitud) - Gestiona CRUD de entradas de diario
  */
 import express from 'express';
-import rateLimit from 'express-rate-limit';
+import { createRateLimiter } from '../utils/createRateLimiter.js';
 import Joi from 'joi';
 import mongoose from 'mongoose';
 import { authenticateToken } from '../middleware/auth.js';
@@ -12,7 +12,7 @@ import Journal from '../models/Journal.js';
 const router = express.Router();
 
 // Rate limiters: control de frecuencia de peticiones
-const createJournalLimiter = rateLimit({
+const createJournalLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 20,
   message: 'Demasiadas entradas creadas. Por favor, intente más tarde.',
@@ -20,7 +20,7 @@ const createJournalLimiter = rateLimit({
   legacyHeaders: false
 });
 
-const updateJournalLimiter = rateLimit({
+const updateJournalLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 30,
   message: 'Demasiadas actualizaciones. Por favor, intente más tarde.',
@@ -28,7 +28,7 @@ const updateJournalLimiter = rateLimit({
   legacyHeaders: false
 });
 
-const deleteJournalLimiter = rateLimit({
+const deleteJournalLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 20,
   message: 'Demasiadas eliminaciones. Por favor, intente más tarde.',

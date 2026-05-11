@@ -38,8 +38,8 @@ import { getApiErrorMessage, isAuthError } from '../utils/apiErrorHandler';
 import { isValidClientRequestId } from '../utils/clientRequestId';
 import { postProductActionTelemetry } from '../utils/productActionTelemetry';
 import { buildTaskSections } from '../utils/taskDateSections';
-import { colors } from '../styles/globalStyles';
-import { FOCUS_KICKER_COLOR, FOCUS_META, FOCUS_ACCENT_BORDER } from '../styles/focusCardTheme';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING } from '../constants/ui';
 
 // Constantes de prioridad
 const PRIORITY_VALUES = {
@@ -100,12 +100,8 @@ const TEXTS = {
 
 // Constantes de estilos
 const DELETE_DELAY = 2200; // ms
-const LIST_PADDING = 16;
-/** Espacio bajo la lista: barra flotante (~88) + botón central + FAB + margen (alineado con Dash ~132 + safe area). */
-const LIST_PADDING_BOTTOM_EXTRA = 132;
 const FAB_SIZE = 56;
 const FAB_BORDER_RADIUS = 28;
-const FAB_RIGHT = 16;
 const FAB_BOTTOM_OFFSET = 86;
 const FAB_ELEVATION = 8;
 const FAB_SHADOW_OFFSET_Y = 4;
@@ -125,14 +121,6 @@ const FAB_ICON_SIZE = 24;
 const FLATLIST_MAX_TO_RENDER = 10;
 const FLATLIST_WINDOW_SIZE = 10;
 const FLATLIST_INITIAL_NUM_TO_RENDER = 10;
-// Constantes de colores
-const COLORS = {
-  BACKGROUND: colors.background,
-  PRIMARY: colors.primary,
-  WHITE: colors.white,
-  REFRESH_COLOR: colors.primary,
-};
-
 const FILTER_META = {
   all: { label: 'Todo', icon: 'layers-outline' },
   task: { label: 'Tareas', icon: 'checkbox-outline' },
@@ -164,6 +152,7 @@ const INITIAL_STATE = {
 
 const TaskScreen = ({ route }) => {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const { isConnected, isInternetReachable } = useNetworkStatus();
   const isOffline = !isConnected || isInternetReachable === false;
   const [state, setState] = useState(INITIAL_STATE);
@@ -177,6 +166,181 @@ const TaskScreen = ({ route }) => {
   const [density, setDensity] = useState('comfortable');
   const itemsRef = useRef([]);
   const pendingCompleteRef = useRef({ timeoutId: null, itemId: null });
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        gestureRoot: {
+          flex: 1,
+        },
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        safeAreaContent: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        listFlex: {
+          flex: 1,
+        },
+        listContainer: {
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingTop: 4,
+          paddingBottom: SPACING.SCREEN_EDGE_INSET,
+          flexGrow: 1,
+        },
+        countRow: {
+          marginBottom: 10,
+          paddingVertical: 8,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          alignSelf: 'flex-start',
+          borderRadius: 12,
+          backgroundColor: colors.glassFill,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.glassOutline,
+        },
+        countText: {
+          fontSize: 13,
+          fontWeight: '500',
+          color: colors.textSecondary,
+          letterSpacing: 0.2,
+        },
+        sectionHeader: {
+          backgroundColor: colors.chromeHeader,
+          paddingVertical: 8,
+          paddingBottom: 6,
+          marginTop: 4,
+          marginBottom: 4,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderRadius: 10,
+          paddingHorizontal: 10,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.chromeHeaderBorder,
+        },
+        sectionHeaderText: {
+          fontSize: 12,
+          fontWeight: '600',
+          letterSpacing: 1.2,
+          textTransform: 'uppercase',
+          color: colors.text,
+        },
+        sectionCountPill: {
+          minWidth: 24,
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingHorizontal: 8,
+          paddingVertical: 3,
+          borderRadius: 999,
+          backgroundColor: colors.glassFillStrong,
+        },
+        sectionCountText: {
+          fontSize: 12,
+          fontWeight: '700',
+          color: colors.text,
+        },
+        fab: {
+          position: 'absolute',
+          right: SPACING.SCREEN_EDGE_INSET,
+          width: FAB_SIZE,
+          height: FAB_SIZE,
+          borderRadius: FAB_BORDER_RADIUS,
+          backgroundColor: colors.primary,
+          justifyContent: 'center',
+          alignItems: 'center',
+          elevation: FAB_ELEVATION,
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: FAB_SHADOW_OFFSET_Y },
+          shadowOpacity: FAB_SHADOW_OPACITY,
+          shadowRadius: FAB_SHADOW_RADIUS,
+          zIndex: FAB_Z_INDEX,
+        },
+        emptyContainer: {
+          alignItems: 'center',
+          marginTop: EMPTY_CONTAINER_MARGIN_TOP,
+          flex: 1,
+          justifyContent: 'center',
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+        },
+        emptyText: {
+          color: colors.text,
+          fontSize: 17,
+          fontWeight: '500',
+          marginTop: EMPTY_TEXT_MARGIN_TOP,
+          textAlign: 'center',
+          lineHeight: 24,
+        },
+        emptySubtext: {
+          color: colors.textSecondary,
+          fontSize: 14,
+          lineHeight: 20,
+          textAlign: 'center',
+          marginTop: 8,
+          marginBottom: EMPTY_TEXT_MARGIN_BOTTOM,
+        },
+        addFirstButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: ADD_FIRST_BUTTON_GAP,
+          paddingVertical: ADD_FIRST_BUTTON_PADDING_VERTICAL,
+          paddingHorizontal: ADD_FIRST_BUTTON_PADDING_HORIZONTAL,
+          borderRadius: 14,
+          backgroundColor: colors.accentLineSoft,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.accentLine,
+        },
+        addFirstButtonText: {
+          color: colors.primary,
+          fontSize: 14,
+          fontWeight: '500',
+        },
+        errorBanner: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginBottom: 12,
+          paddingVertical: 12,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          borderRadius: 14,
+          backgroundColor: 'rgba(255, 217, 61, 0.12)',
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: 'rgba(255, 217, 61, 0.35)',
+          gap: 10,
+        },
+        errorBannerIcon: {
+          flexShrink: 0,
+        },
+        errorBannerTextWrap: {
+          flex: 1,
+          minWidth: 0,
+        },
+        errorBannerTitle: {
+          color: colors.text,
+          fontSize: 14,
+          fontWeight: '600',
+          marginBottom: 2,
+        },
+        errorBannerMeta: {
+          color: colors.textSecondary,
+          fontSize: 12,
+          lineHeight: 16,
+        },
+        errorBannerRetry: {
+          flexShrink: 0,
+          paddingVertical: 8,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          borderRadius: 12,
+          backgroundColor: colors.glassFill,
+        },
+        errorBannerRetryText: {
+          color: colors.primary,
+          fontSize: 13,
+          fontWeight: '600',
+        },
+      }),
+    [colors],
+  );
 
   const clearPendingComplete = useCallback(() => {
     const { timeoutId } = pendingCompleteRef.current;
@@ -585,7 +749,7 @@ const TaskScreen = ({ route }) => {
         <Ionicons
           name="checkmark-done-circle-outline"
           size={EMPTY_ICON_SIZE}
-          color={FOCUS_KICKER_COLOR}
+          color={colors.primary}
         />
         <Text style={styles.emptyText}>{getEmptyText()}</Text>
         <Text style={styles.emptySubtext}>{TEXTS.EMPTY_SUBTITLE}</Text>
@@ -593,7 +757,7 @@ const TaskScreen = ({ route }) => {
           style={styles.addFirstButton}
           onPress={() => setState((prev) => ({ ...prev, modalVisible: true }))}
         >
-          <Ionicons name="add" size={ADD_FIRST_ICON_SIZE} color={COLORS.PRIMARY} />
+          <Ionicons name="add" size={ADD_FIRST_ICON_SIZE} color={colors.primary} />
           <Text style={styles.addFirstButtonText}>{getAddText()}</Text>
         </TouchableOpacity>
       </View>
@@ -605,11 +769,11 @@ const TaskScreen = ({ route }) => {
     if (state.error && state.items.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Ionicons name="cloud-offline-outline" size={EMPTY_ICON_SIZE} color={FOCUS_KICKER_COLOR} />
+          <Ionicons name="cloud-offline-outline" size={EMPTY_ICON_SIZE} color={colors.primary} />
           <Text style={styles.emptyText}>{state.error}</Text>
           <Text style={styles.emptySubtext}>{TEXTS.LOAD_ERROR_HINT}</Text>
           <TouchableOpacity style={styles.addFirstButton} onPress={() => loadItems()}>
-            <Ionicons name="refresh" size={ADD_FIRST_ICON_SIZE} color={COLORS.PRIMARY} />
+            <Ionicons name="refresh" size={ADD_FIRST_ICON_SIZE} color={colors.primary} />
             <Text style={styles.addFirstButtonText}>{TEXTS.RETRY}</Text>
           </TouchableOpacity>
         </View>
@@ -618,13 +782,13 @@ const TaskScreen = ({ route }) => {
     if (searchQuery.trim() && displayItems.length === 0 && typeFilteredItems.length > 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Ionicons name="search-outline" size={EMPTY_ICON_SIZE} color={FOCUS_KICKER_COLOR} />
+          <Ionicons name="search-outline" size={EMPTY_ICON_SIZE} color={colors.primary} />
           <Text style={styles.emptyText}>{TEXTS.SEARCH_NO_RESULTS}</Text>
           <Text style={styles.emptySubtext}>
             Prueba con otras palabras o borra el filtro de búsqueda.
           </Text>
           <TouchableOpacity style={styles.addFirstButton} onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle-outline" size={ADD_FIRST_ICON_SIZE} color={COLORS.PRIMARY} />
+            <Ionicons name="close-circle-outline" size={ADD_FIRST_ICON_SIZE} color={colors.primary} />
             <Text style={styles.addFirstButtonText}>Limpiar búsqueda</Text>
           </TouchableOpacity>
         </View>
@@ -699,15 +863,15 @@ const TaskScreen = ({ route }) => {
         stickySectionHeadersEnabled
         contentContainerStyle={[
           styles.listContainer,
-          { paddingBottom: insets.bottom + LIST_PADDING_BOTTOM_EXTRA },
+          { paddingBottom: insets.bottom + SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA },
         ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={state.refreshing}
             onRefresh={onRefresh}
-            colors={[COLORS.REFRESH_COLOR]}
-            tintColor={COLORS.REFRESH_COLOR}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
         ListHeaderComponent={renderListHeader}
@@ -734,7 +898,7 @@ const TaskScreen = ({ route }) => {
         <Ionicons 
           name={FILTER_META[state.filterType]?.icon || 'add'} 
           size={FAB_ICON_SIZE} 
-          color={COLORS.WHITE} 
+          color={colors.white} 
         />
       </TouchableOpacity>
       <CreateTaskModal
@@ -758,175 +922,5 @@ const TaskScreen = ({ route }) => {
     </GestureHandlerRootView>
   );
 };
-
-const styles = StyleSheet.create({
-  gestureRoot: {
-    flex: 1,
-  },
-  container: { 
-    flex: 1, 
-    backgroundColor: COLORS.BACKGROUND 
-  },
-  safeAreaContent: {
-    flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
-  },
-  listFlex: {
-    flex: 1,
-  },
-  listContainer: { 
-    padding: LIST_PADDING, 
-    flexGrow: 1,
-    paddingTop: 4,
-  },
-  countRow: {
-    marginBottom: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    alignSelf: 'flex-start',
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  countText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: FOCUS_META,
-    letterSpacing: 0.2,
-  },
-  sectionHeader: {
-    backgroundColor: 'rgba(26, 33, 49, 0.72)',
-    paddingVertical: 8,
-    paddingBottom: 6,
-    marginTop: 4,
-    marginBottom: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.09)',
-  },
-  sectionHeaderText: {
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-    color: 'rgba(191, 209, 247, 0.92)',
-  },
-  sectionCountPill: {
-    minWidth: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-  },
-  sectionCountText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.9)',
-  },
-  fab: {
-    position: 'absolute',
-    right: FAB_RIGHT,
-    width: FAB_SIZE,
-    height: FAB_SIZE,
-    borderRadius: FAB_BORDER_RADIUS,
-    backgroundColor: COLORS.PRIMARY,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: FAB_ELEVATION,
-    shadowColor: COLORS.PRIMARY,
-    shadowOffset: { width: 0, height: FAB_SHADOW_OFFSET_Y },
-    shadowOpacity: FAB_SHADOW_OPACITY,
-    shadowRadius: FAB_SHADOW_RADIUS,
-    zIndex: FAB_Z_INDEX,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    marginTop: EMPTY_CONTAINER_MARGIN_TOP,
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 8,
-  },
-  emptyText: {
-    color: FOCUS_META,
-    fontSize: 17,
-    fontWeight: '500',
-    marginTop: EMPTY_TEXT_MARGIN_TOP,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  emptySubtext: {
-    color: FOCUS_META,
-    fontSize: 14,
-    lineHeight: 20,
-    textAlign: 'center',
-    marginTop: 8,
-    marginBottom: EMPTY_TEXT_MARGIN_BOTTOM,
-  },
-  addFirstButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: ADD_FIRST_BUTTON_GAP,
-    paddingVertical: ADD_FIRST_BUTTON_PADDING_VERTICAL,
-    paddingHorizontal: ADD_FIRST_BUTTON_PADDING_HORIZONTAL,
-    borderRadius: 14,
-    backgroundColor: 'rgba(26, 221, 219, 0.08)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_ACCENT_BORDER,
-  },
-  addFirstButtonText: {
-    color: COLORS.PRIMARY,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  errorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 217, 61, 0.12)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255, 217, 61, 0.35)',
-    gap: 10,
-  },
-  errorBannerIcon: {
-    flexShrink: 0,
-  },
-  errorBannerTextWrap: {
-    flex: 1,
-    minWidth: 0,
-  },
-  errorBannerTitle: {
-    color: colors.white,
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  errorBannerMeta: {
-    color: FOCUS_META,
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  errorBannerRetry: {
-    flexShrink: 0,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  errorBannerRetryText: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-});
 
 export default TaskScreen; 

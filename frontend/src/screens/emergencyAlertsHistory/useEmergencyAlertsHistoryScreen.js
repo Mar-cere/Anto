@@ -3,8 +3,17 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, ENDPOINTS } from '../../config/api';
+import { useTheme } from '../../context/ThemeContext';
 import { TEXTS, TABS } from './emergencyAlertsHistoryConstants';
 import { safeNonNegativeInt } from './emergencyAlertsHistoryUtils';
+
+function rgbaFromHex(hex, alpha = 1) {
+  const h = String(hex).replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
 function reasonToMessage(reason) {
   if (reason instanceof Error) return reason.message || TEXTS.ERROR_UNKNOWN;
@@ -39,6 +48,7 @@ function parseObjectDataResponse(res) {
 }
 
 export function useEmergencyAlertsHistoryScreen() {
+  const { colors } = useTheme();
   const isMountedRef = useRef(true);
   useEffect(() => {
     isMountedRef.current = true;
@@ -221,11 +231,26 @@ export function useEmergencyAlertsHistoryScreen() {
   const formatStatusData = useCallback(() => {
     if (!stats?.byStatus || typeof stats.byStatus !== 'object') return null;
     return [
-      { name: TEXTS.SENT, population: safeNonNegativeInt(stats.byStatus.sent, 0), color: '#4ECDC4', legendFontColor: '#FFFFFF' },
-      { name: TEXTS.PARTIAL, population: safeNonNegativeInt(stats.byStatus.partial, 0), color: '#FFA500', legendFontColor: '#FFFFFF' },
-      { name: TEXTS.FAILED, population: safeNonNegativeInt(stats.byStatus.failed, 0), color: '#FF6B6B', legendFontColor: '#FFFFFF' },
+      {
+        name: TEXTS.SENT,
+        population: safeNonNegativeInt(stats.byStatus.sent, 0),
+        color: colors.success,
+        legendFontColor: colors.textOnPrimary,
+      },
+      {
+        name: TEXTS.PARTIAL,
+        population: safeNonNegativeInt(stats.byStatus.partial, 0),
+        color: colors.warning,
+        legendFontColor: colors.textOnPrimary,
+      },
+      {
+        name: TEXTS.FAILED,
+        population: safeNonNegativeInt(stats.byStatus.failed, 0),
+        color: colors.error,
+        legendFontColor: colors.textOnPrimary,
+      },
     ].filter((item) => item.population > 0);
-  }, [stats]);
+  }, [stats, colors]);
 
   const formatChannelData = useCallback(() => {
     if (!stats?.byChannel || typeof stats.byChannel !== 'object') return null;
@@ -239,18 +264,18 @@ export function useEmergencyAlertsHistoryScreen() {
             safeNonNegativeInt(email?.sent, 0),
             safeNonNegativeInt(wa?.sent, 0),
           ],
-          color: (opacity = 1) => `rgba(26, 221, 219, ${opacity})`,
+          color: (opacity = 1) => rgbaFromHex(colors.primary, opacity),
         },
         {
           data: [
             safeNonNegativeInt(email?.failed, 0),
             safeNonNegativeInt(wa?.failed, 0),
           ],
-          color: (opacity = 1) => `rgba(255, 107, 107, ${opacity})`,
+          color: (opacity = 1) => rgbaFromHex(colors.error, opacity),
         },
       ],
     };
-  }, [stats]);
+  }, [stats, colors]);
 
   const formatDayData = useCallback(() => {
     if (!stats?.byDay || typeof stats.byDay !== 'object' || Array.isArray(stats.byDay)) return null;

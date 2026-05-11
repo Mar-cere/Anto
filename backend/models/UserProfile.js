@@ -3,6 +3,12 @@
  */
 import mongoose from 'mongoose';
 
+const LEGACY_RESPONSE_STYLE_MAP = {
+  calido: 'empatico',
+  profesional: 'estructurado',
+  directo: 'brief',
+};
+
 // Sub-esquemas: estructuras reutilizables
 const EmotionTimePatternSchema = new mongoose.Schema({
   morning: { type: Number, default: 0 },
@@ -109,7 +115,7 @@ const userProfileSchema = new mongoose.Schema({
     // Longitud y estructura de respuesta: afecta maxWords y estructura del prompt
     responseStyle: {
       type: String,
-      enum: ['brief', 'balanced', 'deep', 'empatico', 'profesional', 'directo', 'calido', 'estructurado'],
+      enum: ['brief', 'balanced', 'deep', 'empatico', 'estructurado'],
       default: 'balanced'
     },
     responseLength: {
@@ -273,6 +279,11 @@ userProfileSchema.pre('save', function(next) {
         sunday: 0
       }
     };
+  }
+  const rs = this.preferences?.responseStyle;
+  if (rs && LEGACY_RESPONSE_STYLE_MAP[rs]) {
+    this.preferences.responseStyle = LEGACY_RESPONSE_STYLE_MAP[rs];
+    this.markModified('preferences');
   }
   next();
 });

@@ -10,7 +10,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Linking,
   ScrollView,
@@ -20,19 +20,12 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '../styles/globalStyles';
 import ParticleBackground from '../components/ParticleBackground';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING } from '../constants/ui';
 
 // Constantes
 const ICON_SIZE = 24;
-const COLORS = {
-  BACKGROUND: colors.background,
-  PRIMARY: colors.primary,
-  WHITE: colors.white,
-  ACCENT: '#A3B8E8',
-  TEXT_SECONDARY: '#B0B0B0',
-};
-
 const TEXTS = {
   TITLE: 'Sobre Anto',
   BACK: 'Volver',
@@ -81,6 +74,155 @@ const APP_VERSION_LABEL = `Versión ${Constants.expoConfig?.version ?? '—'}`;
 
 const AboutScreen = () => {
   const navigation = useNavigation();
+  const { colors } = useTheme();
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        header: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: 12,
+          marginBottom: 8,
+        },
+        headerButton: {
+          width: 40,
+          height: 40,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        headerTitle: {
+          fontSize: 20,
+          fontWeight: 'bold',
+          color: colors.text,
+        },
+        scrollView: {
+          flex: 1,
+        },
+        scrollContent: {
+          padding: SPACING.SCREEN_EDGE_INSET,
+          paddingBottom: 32,
+        },
+        section: {
+          marginBottom: 32,
+        },
+        sectionHeader: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginBottom: 16,
+          gap: 12,
+        },
+        sectionTitle: {
+          fontSize: 22,
+          fontWeight: 'bold',
+          color: colors.text,
+        },
+        sectionText: {
+          fontSize: 16,
+          lineHeight: 24,
+          color: colors.textSecondary,
+          textAlign: 'justify',
+        },
+        valueCard: {
+          flexDirection: 'row',
+          backgroundColor: colors.chromeCard,
+          borderRadius: 12,
+          padding: SPACING.SCREEN_EDGE_INSET,
+          marginBottom: 12,
+          borderWidth: 1,
+          borderColor: colors.chromeCardBorder,
+        },
+        valueIconContainer: {
+          width: 48,
+          height: 48,
+          borderRadius: 24,
+          backgroundColor: colors.accentLineSoft,
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginRight: 16,
+        },
+        valueContent: {
+          flex: 1,
+        },
+        valueTitle: {
+          fontSize: 18,
+          fontWeight: '600',
+          color: colors.text,
+          marginBottom: 6,
+        },
+        valueDescription: {
+          fontSize: 14,
+          lineHeight: 20,
+          color: colors.textSecondary,
+        },
+        contactButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: colors.chromeCard,
+          borderRadius: 12,
+          padding: SPACING.SCREEN_EDGE_INSET,
+          borderWidth: 1,
+          borderColor: colors.chromeCardBorder,
+          gap: 12,
+        },
+        contactEmail: {
+          fontSize: 16,
+          color: colors.primary,
+          fontWeight: '500',
+        },
+        legalButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: colors.chromeCard,
+          borderRadius: 12,
+          padding: SPACING.SCREEN_EDGE_INSET,
+          marginBottom: 12,
+          borderWidth: 1,
+          borderColor: colors.chromeCardBorder,
+          gap: 12,
+        },
+        legalLinkText: {
+          flex: 1,
+          fontSize: 16,
+          color: colors.primary,
+          fontWeight: '500',
+        },
+        aiCtaButton: {
+          marginTop: 16,
+        },
+        aiCtaTextWrap: {
+          flex: 1,
+        },
+        aiCtaTitle: {
+          fontSize: 16,
+          color: colors.primary,
+          fontWeight: '600',
+        },
+        aiCtaHint: {
+          fontSize: 13,
+          color: colors.textSecondary,
+          marginTop: 4,
+        },
+        versionContainer: {
+          alignItems: 'center',
+          marginTop: 16,
+          paddingTop: 24,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+        },
+        versionText: {
+          fontSize: 14,
+          color: colors.textSecondary,
+        },
+      }),
+    [colors],
+  );
 
   const handleGoBack = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -101,7 +243,7 @@ const AboutScreen = () => {
           <MaterialCommunityIcons 
             name="arrow-left" 
             size={ICON_SIZE} 
-            color={COLORS.WHITE} 
+            color={colors.text} 
           />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{TEXTS.TITLE}</Text>
@@ -119,7 +261,7 @@ const AboutScreen = () => {
             <MaterialCommunityIcons 
               name="target" 
               size={28} 
-              color={COLORS.PRIMARY} 
+              color={colors.primary} 
             />
             <Text style={styles.sectionTitle}>{TEXTS.MISSION_TITLE}</Text>
           </View>
@@ -132,7 +274,7 @@ const AboutScreen = () => {
             <MaterialCommunityIcons 
               name="star-circle" 
               size={28} 
-              color={COLORS.PRIMARY} 
+              color={colors.primary} 
             />
             <Text style={styles.sectionTitle}>{TEXTS.VALUES_TITLE}</Text>
           </View>
@@ -142,7 +284,7 @@ const AboutScreen = () => {
                 <MaterialCommunityIcons 
                   name={value.icon} 
                   size={24} 
-                  color={COLORS.PRIMARY} 
+                  color={colors.primary} 
                 />
               </View>
               <View style={styles.valueContent}>
@@ -159,7 +301,7 @@ const AboutScreen = () => {
             <MaterialCommunityIcons 
               name="robot" 
               size={28} 
-              color={COLORS.PRIMARY} 
+              color={colors.primary} 
             />
             <Text style={styles.sectionTitle}>{TEXTS.TECHNOLOGY_TITLE}</Text>
           </View>
@@ -172,7 +314,7 @@ const AboutScreen = () => {
             <MaterialCommunityIcons 
               name="handshake" 
               size={28} 
-              color={COLORS.PRIMARY} 
+              color={colors.primary} 
             />
             <Text style={styles.sectionTitle}>{TEXTS.TEAM_TITLE}</Text>
           </View>
@@ -185,7 +327,7 @@ const AboutScreen = () => {
             <MaterialCommunityIcons
               name="brain"
               size={28}
-              color={COLORS.PRIMARY}
+              color={colors.primary}
             />
             <Text style={styles.sectionTitle}>{TEXTS.AI_TITLE}</Text>
           </View>
@@ -202,13 +344,13 @@ const AboutScreen = () => {
             <MaterialCommunityIcons
               name="shield-account-outline"
               size={20}
-              color={COLORS.PRIMARY}
+              color={colors.primary}
             />
             <View style={styles.aiCtaTextWrap}>
               <Text style={styles.aiCtaTitle}>{TEXTS.AI_CTA}</Text>
               <Text style={styles.aiCtaHint}>{TEXTS.AI_CTA_HINT}</Text>
             </View>
-            <MaterialCommunityIcons name="chevron-right" size={22} color={COLORS.TEXT_SECONDARY} />
+            <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
@@ -218,7 +360,7 @@ const AboutScreen = () => {
             <MaterialCommunityIcons 
               name="email" 
               size={28} 
-              color={COLORS.PRIMARY} 
+              color={colors.primary} 
             />
             <Text style={styles.sectionTitle}>{TEXTS.CONTACT_TITLE}</Text>
           </View>
@@ -232,7 +374,7 @@ const AboutScreen = () => {
             <MaterialCommunityIcons 
               name="email-outline" 
               size={20} 
-              color={COLORS.PRIMARY} 
+              color={colors.primary} 
             />
             <Text style={styles.contactEmail}>{TEXTS.CONTACT_EMAIL}</Text>
           </TouchableOpacity>
@@ -244,7 +386,7 @@ const AboutScreen = () => {
             <MaterialCommunityIcons 
               name="file-document-outline" 
               size={28} 
-              color={COLORS.PRIMARY} 
+              color={colors.primary} 
             />
             <Text style={styles.sectionTitle}>{TEXTS.LEGAL_TITLE}</Text>
           </View>
@@ -262,13 +404,13 @@ const AboutScreen = () => {
             <MaterialCommunityIcons 
               name="file-document" 
               size={20} 
-              color={COLORS.PRIMARY} 
+              color={colors.primary} 
             />
             <Text style={styles.legalLinkText}>{TEXTS.TERMS_LINK}</Text>
             <MaterialCommunityIcons 
               name="open-in-new" 
               size={16} 
-              color={COLORS.TEXT_SECONDARY} 
+              color={colors.textSecondary} 
             />
           </TouchableOpacity>
           <TouchableOpacity 
@@ -285,13 +427,13 @@ const AboutScreen = () => {
             <MaterialCommunityIcons 
               name="shield-lock-outline" 
               size={20} 
-              color={COLORS.PRIMARY} 
+              color={colors.primary} 
             />
             <Text style={styles.legalLinkText}>{TEXTS.PRIVACY_LINK}</Text>
             <MaterialCommunityIcons 
               name="open-in-new" 
               size={16} 
-              color={COLORS.TEXT_SECONDARY} 
+              color={colors.textSecondary} 
             />
           </TouchableOpacity>
         </View>
@@ -304,150 +446,6 @@ const AboutScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 8,
-  },
-  headerButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.WHITE,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  section: {
-    marginBottom: 32,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    gap: 12,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: COLORS.WHITE,
-  },
-  sectionText: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: COLORS.TEXT_SECONDARY,
-    textAlign: 'justify',
-  },
-  valueCard: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(29, 43, 95, 0.6)',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(26, 221, 219, 0.1)',
-  },
-  valueIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(26, 221, 219, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  valueContent: {
-    flex: 1,
-  },
-  valueTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.WHITE,
-    marginBottom: 6,
-  },
-  valueDescription: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: COLORS.TEXT_SECONDARY,
-  },
-  contactButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(29, 43, 95, 0.6)',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(26, 221, 219, 0.1)',
-    gap: 12,
-  },
-  contactEmail: {
-    fontSize: 16,
-    color: COLORS.PRIMARY,
-    fontWeight: '500',
-  },
-  legalButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(29, 43, 95, 0.6)',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(26, 221, 219, 0.1)',
-    gap: 12,
-  },
-  legalLinkText: {
-    flex: 1,
-    fontSize: 16,
-    color: COLORS.PRIMARY,
-    fontWeight: '500',
-  },
-  aiCtaButton: {
-    marginTop: 16,
-  },
-  aiCtaTextWrap: {
-    flex: 1,
-  },
-  aiCtaTitle: {
-    fontSize: 16,
-    color: COLORS.PRIMARY,
-    fontWeight: '600',
-  },
-  aiCtaHint: {
-    fontSize: 13,
-    color: COLORS.TEXT_SECONDARY,
-    marginTop: 4,
-  },
-  versionContainer: {
-    alignItems: 'center',
-    marginTop: 16,
-    paddingTop: 24,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(26, 221, 219, 0.1)',
-  },
-  versionText: {
-    fontSize: 14,
-    color: COLORS.TEXT_SECONDARY,
-  },
-});
 
 export default AboutScreen;
 

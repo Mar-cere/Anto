@@ -134,12 +134,13 @@ describe('Flujo completo: Chat con Análisis Emocional', () => {
       .send(userMessage)
       .expect(201);
 
-    expect(messageResponse.body).toHaveProperty('_id');
-    expect(messageResponse.body.content).toBe(userMessage.content);
-    expect(messageResponse.body.role).toBe('user');
+    const userPayload = messageResponse.body.userMessage || messageResponse.body;
+    expect(userPayload).toHaveProperty('_id');
+    expect(userPayload.content).toBe(userMessage.content);
+    expect(userPayload.role).toBe('user');
 
     // Verificar que el mensaje se guardó en la base de datos
-    const savedMessage = await Message.findById(messageResponse.body._id);
+    const savedMessage = await Message.findById(userPayload._id);
     expect(savedMessage).toBeDefined();
     expect(savedMessage.conversationId.toString()).toBe(conversationId);
 

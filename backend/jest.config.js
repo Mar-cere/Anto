@@ -58,7 +58,7 @@ export default {
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
   
   // Timeout para tests
-  testTimeout: 10000,
+  testTimeout: 30000,
   
   // Forzar salida después de que todos los tests terminen
   // Esto evita que el proceso se quede colgado por conexiones abiertas

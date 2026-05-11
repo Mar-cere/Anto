@@ -1,7 +1,16 @@
 /**
  * Constantes para CrisisDashboardScreen y subcomponentes
  */
-import { colors } from '../../styles/globalStyles';
+import { lightColors } from '../../styles/themePalettes';
+
+function rgbaFromHex(hex, alpha = 1) {
+  const h = String(hex).replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  const a = Math.min(1, Math.max(0, Number(alpha) === Number(alpha) ? alpha : 1));
+  return `rgba(${r},${g},${b},${a})`;
+}
 
 export const TEXTS = {
   TITLE: 'Dashboard de Crisis',
@@ -58,49 +67,65 @@ export const TEXTS = {
 
 export const CHART_HEIGHT = 220;
 
-export const CHART_CONFIG = {
-  backgroundColor: '#1D2B5F',
-  backgroundGradientFrom: '#1D2B5F',
-  backgroundGradientTo: '#1D2B5F',
-  decimalPlaces: 1,
-  color: (opacity = 1) => `rgba(26, 221, 219, ${opacity})`,
-  labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-  style: { borderRadius: 16 },
-  propsForDots: {
-    r: '6',
-    strokeWidth: '2',
-    stroke: '#1ADDDB',
-  },
-};
+export function createChartConfig(colors) {
+  const surface = colors.surface ?? colors.cardBackground ?? colors.background;
+  return {
+    backgroundColor: surface,
+    backgroundGradientFrom: surface,
+    backgroundGradientTo: surface,
+    decimalPlaces: 1,
+    color: (opacity = 1) => rgbaFromHex(colors.primary, opacity),
+    labelColor: (opacity = 1) => rgbaFromHex(colors.text, opacity),
+    style: { borderRadius: 16 },
+    propsForDots: {
+      r: '6',
+      strokeWidth: '2',
+      stroke: colors.primary,
+    },
+  };
+}
 
-export const PIE_CHART_CONFIG = {
-  backgroundColor: '#1D2B5F',
-  backgroundGradientFrom: '#1D2B5F',
-  backgroundGradientTo: '#1D2B5F',
-  color: (opacity = 1) => `rgba(26, 221, 219, ${opacity})`,
-  labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-  decimalPlaces: 0,
-  style: { borderRadius: 16 },
-};
+export function createPieChartConfig(colors) {
+  const surface = colors.surface ?? colors.cardBackground ?? colors.background;
+  return {
+    backgroundColor: surface,
+    backgroundGradientFrom: surface,
+    backgroundGradientTo: surface,
+    color: (opacity = 1) => rgbaFromHex(colors.primary, opacity),
+    labelColor: (opacity = 1) => rgbaFromHex(colors.text, opacity),
+    decimalPlaces: 0,
+    style: { borderRadius: 16 },
+  };
+}
 
-export const EMOTION_COLORS = {
-  tristeza: '#FF6B6B',
-  ansiedad: '#FFA500',
-  enojo: '#FF4444',
-  miedo: '#9B59B6',
-  alegria: '#4ECDC4',
-  esperanza: '#95E1D3',
-  neutral: '#95A5A6',
-  verguenza: '#E74C3C',
-  culpa: '#C0392B',
-};
+/** Colores por emoción alineados con tokens del tema (claro/oscuro). */
+export function createEmotionColors(colors) {
+  return {
+    tristeza: colors.error,
+    ansiedad: colors.warning,
+    enojo: colors.error,
+    miedo: colors.info,
+    alegria: colors.success,
+    esperanza: colors.success,
+    neutral: colors.textSecondary,
+    verguenza: colors.error,
+    culpa: colors.error,
+  };
+}
 
-export const RISK_LEVEL_COLORS = {
-  LOW: '#4ECDC4',
-  WARNING: '#FFA500',
-  MEDIUM: '#FF6B6B',
-  HIGH: '#E74C3C',
-};
+export function createRiskLevelColors(colors) {
+  return {
+    LOW: colors.success,
+    WARNING: colors.warning,
+    MEDIUM: colors.error,
+    HIGH: colors.error,
+  };
+}
+
+/** Compatibilidad legacy (tema claro de paleta). */
+export const EMOTION_COLORS = createEmotionColors(lightColors);
+
+export const RISK_LEVEL_COLORS = createRiskLevelColors(lightColors);
 
 export const RISK_LEVEL_TEXTS = {
   LOW: TEXTS.LOW,
@@ -113,3 +138,7 @@ export const TREND_PERIODS = ['7d', '30d', '90d'];
 
 /** Límite de caracteres del detalle de error en pantalla (evita textos enormes del backend). */
 export const CRISIS_ERROR_DETAIL_MAX_LEN = 280;
+
+/** Compatibilidad legacy (tema claro) para código no migrado. */
+export const CHART_CONFIG = createChartConfig(lightColors);
+export const PIE_CHART_CONFIG = createPieChartConfig(lightColors);

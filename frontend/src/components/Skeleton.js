@@ -8,16 +8,14 @@
  * @author AntoApp Team
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
-import { FOCUS_PANEL } from '../styles/focusCardTheme';
+import { useTheme } from '../context/ThemeContext';
+import { getFocusTheme } from '../styles/focusCardTheme';
 
 const DEFAULT_DURATION = 900;
 const MIN_OPACITY = 0.45;
 const MAX_OPACITY = 1;
-
-const baseColor = 'rgba(255,255,255,0.08)';
-const highlightColor = 'rgba(255,255,255,0.12)';
 
 export const SkeletonBlock = ({
   width = '100%',
@@ -26,6 +24,20 @@ export const SkeletonBlock = ({
   style,
 }) => {
   const opacity = useRef(new Animated.Value(MIN_OPACITY)).current;
+  const { colors, resolvedScheme } = useTheme();
+  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        block: {
+          backgroundColor: colors.glassFill,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.glassOutline ?? t.FOCUS_BORDER_SUBTLE,
+        },
+      }),
+    [colors, t],
+  );
 
   useEffect(() => {
     const anim = Animated.loop(
@@ -63,6 +75,37 @@ export const SkeletonBlock = ({
 };
 
 export const SkeletonCard = ({ style }) => {
+  const { colors, resolvedScheme } = useTheme();
+  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        card: {
+          ...t.FOCUS_PANEL,
+          paddingVertical: 20,
+          paddingHorizontal: 18,
+        },
+        row: {
+          flexDirection: 'row',
+          alignItems: 'center',
+        },
+        icon: {
+          marginRight: 12,
+        },
+        flex: {
+          flex: 1,
+        },
+        mt8: {
+          marginTop: 8,
+        },
+        mt12: {
+          marginTop: 12,
+        },
+      }),
+    [t],
+  );
+
   return (
     <View style={[styles.card, style]}>
       <View style={styles.row}>
@@ -76,35 +119,6 @@ export const SkeletonCard = ({ style }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  block: {
-    backgroundColor: baseColor,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: highlightColor,
-  },
-  card: {
-    ...FOCUS_PANEL,
-    paddingVertical: 20,
-    paddingHorizontal: 18,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  icon: {
-    marginRight: 12,
-  },
-  flex: {
-    flex: 1,
-  },
-  mt8: {
-    marginTop: 8,
-  },
-  mt12: {
-    marginTop: 12,
-  },
-});
 
 export default SkeletonBlock;
 

@@ -1,13 +1,16 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { styles } from './emergencyAlertsHistoryStyles';
+import { useTheme } from '../../context/ThemeContext';
+import { useEmergencyAlertsHistoryStyles } from './emergencyAlertsHistoryStyles';
 import { TEXTS } from './emergencyAlertsHistoryConstants';
 
 export function EmergencyAlertsEmptyState({ onConfigureContacts }) {
+  const { colors } = useTheme();
+  const styles = useEmergencyAlertsHistoryStyles();
   return (
     <View style={styles.emptyContainer}>
-      <MaterialCommunityIcons name="bell-off" size={64} color="#A3B8E8" />
+      <MaterialCommunityIcons name="bell-off" size={64} color={colors.textSecondary} />
       <Text style={styles.emptyTitle}>{TEXTS.NO_ALERTS}</Text>
       <Text style={styles.emptyMessage}>{TEXTS.NO_ALERTS_MESSAGE}</Text>
       <TouchableOpacity

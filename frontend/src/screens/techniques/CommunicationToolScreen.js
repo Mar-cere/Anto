@@ -6,7 +6,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -22,9 +22,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
-import { colors } from '../../styles/globalStyles';
-import { FOCUS_META } from '../../styles/focusCardTheme';
-import { techniqueScreenStyles } from './techniqueScreenStyles';
+import { useTheme } from '../../context/ThemeContext';
+import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const TECHNIQUES = [
   {
@@ -60,8 +59,38 @@ const TECHNIQUES = [
 const CommunicationToolScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { colors, statusBarStyle } = useTheme();
+  const techniqueScreenStyles = useTechniqueScreenStyles();
   const [selectedTechnique, setSelectedTechnique] = useState(null);
   const [practiceText, setPracticeText] = useState('');
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        content: {
+          flex: 1,
+        },
+        scrollView: {
+          flex: 1,
+        },
+        introCenter: {
+          textAlign: 'center',
+        },
+        practiceIcon: {
+          alignSelf: 'center',
+          marginBottom: 12,
+        },
+        practiceCenter: {
+          textAlign: 'center',
+          marginBottom: 8,
+        },
+      }),
+    [colors],
+  );
 
   const handleSelectTechnique = (technique) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -76,7 +105,7 @@ const CommunicationToolScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header
         title="Herramienta de Comunicación"
@@ -163,7 +192,7 @@ const CommunicationToolScreen = () => {
               <TextInput
                 style={[techniqueScreenStyles.textInput, techniqueScreenStyles.textInputTall]}
                 placeholder="Escribe tu mensaje aquí..."
-                placeholderTextColor={FOCUS_META}
+                placeholderTextColor={colors.textSecondary}
                 value={practiceText}
                 onChangeText={setPracticeText}
                 multiline
@@ -189,28 +218,6 @@ const CommunicationToolScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  introCenter: {
-    textAlign: 'center',
-  },
-  practiceIcon: {
-    alignSelf: 'center',
-    marginBottom: 12,
-  },
-  practiceCenter: {
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-});
+// `styles` se deriva del tema dentro del componente.
 
 export default CommunicationToolScreen;

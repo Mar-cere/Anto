@@ -168,6 +168,32 @@ habitSchema.index({ userId: 1, frequency: 1 });
 habitSchema.index({ 'reminder.time': 1 });
 habitSchema.index({ 'status.completedToday': 1 });
 habitSchema.index({ 'progress.streak': -1 });
+
+/**
+ * Scheduler de notificaciones:
+ * - Filtra por usuario + reminder.enabled + archivado + "no notificado hoy".
+ * - `deletedAt` es select:false pero sigue siendo indexable.
+ * Nota: el match por hora/minuto usa $dateToParts (no indexable), pero estos índices reducen el set candidato.
+ */
+habitSchema.index({
+  userId: 1,
+  'reminder.enabled': 1,
+  'status.archived': 1,
+  'reminder.lastNotified': 1,
+  deletedAt: 1,
+});
+
+// Variante parcial: solo hábitos activos con recordatorio habilitado (reduce tamaño del índice).
+habitSchema.index(
+  { userId: 1, 'reminder.lastNotified': 1 },
+  {
+    partialFilterExpression: {
+      'reminder.enabled': true,
+      'status.archived': { $ne: true },
+      deletedAt: { $exists: false },
+    },
+  }
+);
 habitSchema.index(
   { userId: 1, clientRequestId: 1 },
   {

@@ -163,6 +163,69 @@ describe('User Routes', () => {
         .send({ name: 'Test' })
         .expect(401);
     });
+
+    it('debe persistir preferences.timezone válida (IANA)', async () => {
+      const tz = 'America/Argentina/Buenos_Aires';
+      const response = await request(app)
+        .put('/api/users/me')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ preferences: { timezone: tz } })
+        .expect(200);
+
+      expect(response.body.user.preferences.timezone).toBe(tz);
+    });
+
+    it('debe rechazar timezone que supera el límite de longitud', async () => {
+      await request(app)
+        .put('/api/users/me')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ preferences: { timezone: 'z'.repeat(65) } })
+        .expect(400);
+    });
+
+    it('debe fusionar notificationPreferences.types en actualizaciones parciales', async () => {
+      await request(app)
+        .put('/api/users/me')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          notificationPreferences: {
+            types: {
+              dailyReminders: false,
+              habitReminders: true,
+              taskReminders: true,
+              motivationalMessages: true,
+              betweenSessionsMessages: true,
+            },
+          },
+        })
+        .expect(200);
+
+      const merged = await request(app)
+        .put('/api/users/me')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          notificationPreferences: {
+            types: { motivationalMessages: false },
+          },
+        })
+        .expect(200);
+
+      expect(merged.body.user.notificationPreferences.types.dailyReminders).toBe(false);
+      expect(merged.body.user.notificationPreferences.types.habitReminders).toBe(true);
+      expect(merged.body.user.notificationPreferences.types.motivationalMessages).toBe(false);
+    });
+
+    it('debe rechazar notificationPreferences.morning.hour fuera de rango', async () => {
+      await request(app)
+        .put('/api/users/me')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          notificationPreferences: {
+            morning: { enabled: true, hour: 24, minute: 0 },
+          },
+        })
+        .expect(400);
+    });
   });
 
   describe('PUT /api/users/me/password', () => {

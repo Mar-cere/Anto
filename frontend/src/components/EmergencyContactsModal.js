@@ -9,7 +9,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -25,8 +25,9 @@ import {
 } from 'react-native';
 import { api, ENDPOINTS } from '../config/api';
 import { getApiErrorMessage } from '../utils/apiErrorHandler';
-import { colors } from '../styles/globalStyles';
 import { useToast } from '../context/ToastContext';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING } from '../constants/ui';
 
 // Constantes de validación
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -71,6 +72,183 @@ const TEXTS = {
 
 const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [], isFirstTime = false }) => {
   const { showToast } = useToast();
+  const { colors } = useTheme();
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        modalContainer: {
+          flex: 1,
+        },
+        modalOverlay: {
+          flex: 1,
+          backgroundColor: colors.backdropStrong ?? 'rgba(0, 0, 0, 0.7)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: SPACING.SCREEN_EDGE_INSET,
+        },
+        modalContent: {
+          backgroundColor: colors.modalSurface ?? colors.background,
+          borderRadius: 20,
+          width: '100%',
+          maxWidth: 500,
+          maxHeight: '92%',
+          borderWidth: 1,
+          borderColor: colors.border ?? 'rgba(36, 35, 79, 0.10)',
+        },
+        modalHeader: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          padding: SPACING.SCREEN_EDGE_INSET,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border ?? 'rgba(36, 35, 79, 0.06)',
+        },
+        headerContent: {
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          flex: 1,
+          marginRight: 10,
+        },
+        headerText: {
+          marginLeft: 12,
+          flex: 1,
+        },
+        modalTitle: {
+          fontSize: 22,
+          fontWeight: 'bold',
+          color: colors.text,
+          marginBottom: 4,
+        },
+        modalSubtitle: {
+          fontSize: 14,
+          color: colors.textSecondary,
+          lineHeight: 20,
+        },
+        closeButton: {
+          padding: 4,
+        },
+        scrollView: {
+          maxHeight: 400,
+          padding: SPACING.SCREEN_EDGE_INSET,
+        },
+        contactForm: {
+          marginBottom: 24,
+          paddingBottom: 24,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border ?? 'rgba(36, 35, 79, 0.06)',
+        },
+        contactHeader: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 16,
+        },
+        contactNumber: {
+          fontSize: 16,
+          fontWeight: '600',
+          color: colors.primary,
+        },
+        removeButton: {
+          padding: 4,
+        },
+        inputGroup: {
+          marginBottom: 16,
+        },
+        label: {
+          fontSize: 14,
+          fontWeight: '600',
+          color: colors.text,
+          marginBottom: 8,
+        },
+        inputContainer: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: colors.chromeInput ?? 'rgba(36, 35, 79, 0.06)',
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: colors.border ?? 'rgba(36, 35, 79, 0.10)',
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          minHeight: 50,
+        },
+        inputError: {
+          borderColor: colors.error,
+          borderWidth: 2,
+        },
+        inputIcon: {
+          marginRight: 12,
+        },
+        input: {
+          flex: 1,
+          color: colors.text,
+          fontSize: 16,
+          paddingVertical: 12,
+        },
+        errorText: {
+          color: colors.error,
+          fontSize: 12,
+          marginTop: 4,
+          marginLeft: 4,
+        },
+        helperText: {
+          color: colors.textSecondary,
+          fontSize: 12,
+          marginTop: 4,
+          marginLeft: 4,
+        },
+        addButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: SPACING.SCREEN_EDGE_INSET,
+          borderRadius: 12,
+          borderWidth: 2,
+          borderColor: colors.primary,
+          borderStyle: 'dashed',
+          marginTop: 8,
+        },
+        addButtonText: {
+          color: colors.primary,
+          fontSize: 16,
+          fontWeight: '600',
+          marginLeft: 8,
+        },
+        modalActions: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          padding: SPACING.SCREEN_EDGE_INSET,
+          borderTopWidth: 1,
+          borderTopColor: colors.border ?? 'rgba(36, 35, 79, 0.06)',
+          gap: 12,
+        },
+        actionButton: {
+          flex: 1,
+          paddingVertical: 14,
+          borderRadius: 12,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        skipButton: {
+          backgroundColor: colors.accentLineSoft ?? 'rgba(36, 35, 79, 0.06)',
+          borderWidth: 1,
+          borderColor: colors.accentLine ?? 'rgba(30, 131, 211, 0.18)',
+        },
+        skipButtonText: {
+          color: colors.textSecondary,
+          fontSize: 16,
+          fontWeight: '600',
+        },
+        saveButton: {
+          backgroundColor: colors.primary,
+        },
+        saveButtonText: {
+          color: colors.textOnPrimary,
+          fontSize: 16,
+          fontWeight: 'bold',
+        },
+      }),
+    [colors],
+  );
+
   const [contacts, setContacts] = useState([
     { name: '', email: '', phone: '', relationship: '' }
   ]);
@@ -300,7 +478,7 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
                 onPress={() => handleRemoveContact(index)}
                 style={styles.removeButton}
               >
-                <Ionicons name="trash-outline" size={20} color={colors.error || '#FF6B6B'} />
+                <Ionicons name="trash-outline" size={20} color={colors.error} />
               </TouchableOpacity>
             )}
           </View>
@@ -331,7 +509,7 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
             <TextInput
               style={styles.input}
               placeholder={TEXTS.EMAIL_PLACEHOLDER}
-              placeholderTextColor={colors.accent}
+              placeholderTextColor={colors.textSecondary}
               keyboardType="email-address"
               autoCapitalize="none"
               value={contact.email}
@@ -350,7 +528,7 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
             <TextInput
               style={styles.input}
               placeholder={TEXTS.PHONE_PLACEHOLDER}
-              placeholderTextColor={colors.accent}
+              placeholderTextColor={colors.textSecondary}
               keyboardType="phone-pad"
               value={contact.phone}
               onChangeText={(text) => handleFieldChange(index, 'phone', text)}
@@ -371,7 +549,7 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
             <TextInput
               style={styles.input}
               placeholder={TEXTS.RELATIONSHIP_PLACEHOLDER}
-              placeholderTextColor={colors.accent}
+              placeholderTextColor={colors.textSecondary}
               value={contact.relationship}
               onChangeText={(text) => handleFieldChange(index, 'relationship', text)}
               maxLength={MAX_RELATIONSHIP_LENGTH}
@@ -453,7 +631,7 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
-                  <ActivityIndicator size="small" color={colors.white} />
+                  <ActivityIndicator size="small" color={colors.textOnPrimary} />
                 ) : (
                   <Text style={styles.saveButtonText}>{TEXTS.SAVE}</Text>
                 )}
@@ -465,178 +643,6 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
     </Modal>
   );
 };
-
-const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: colors.background,
-    borderRadius: 20,
-    width: '100%',
-    maxWidth: 500,
-    maxHeight: '92%',
-    borderWidth: 1,
-    borderColor: 'rgba(163, 184, 232, 0.2)',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(163, 184, 232, 0.1)',
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    flex: 1,
-    marginRight: 10,
-  },
-  headerText: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 4,
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: colors.accent,
-    lineHeight: 20,
-  },
-  closeButton: {
-    padding: 4,
-  },
-  scrollView: {
-    maxHeight: 400,
-    padding: 20,
-  },
-  contactForm: {
-    marginBottom: 24,
-    paddingBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(163, 184, 232, 0.1)',
-  },
-  contactHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  contactNumber: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  removeButton: {
-    padding: 4,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.white,
-    marginBottom: 8,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(163, 184, 232, 0.1)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(163, 184, 232, 0.2)',
-    paddingHorizontal: 12,
-    minHeight: 50,
-  },
-  inputError: {
-    borderColor: colors.error || '#FF6B6B',
-    borderWidth: 2,
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    color: colors.white,
-    fontSize: 16,
-    paddingVertical: 12,
-  },
-  errorText: {
-    color: colors.error || '#FF6B6B',
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  helperText: {
-    color: colors.accent,
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    borderStyle: 'dashed',
-    marginTop: 8,
-  },
-  addButtonText: {
-    color: colors.primary,
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(163, 184, 232, 0.1)',
-    gap: 12,
-  },
-  actionButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  skipButton: {
-    backgroundColor: 'rgba(163, 184, 232, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(163, 184, 232, 0.3)',
-  },
-  skipButtonText: {
-    color: colors.accent,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  saveButton: {
-    backgroundColor: colors.primary,
-  },
-  saveButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
 
 export default EmergencyContactsModal;
 

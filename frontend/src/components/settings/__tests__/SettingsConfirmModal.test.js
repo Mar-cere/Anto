@@ -3,21 +3,28 @@
  * @author AntoApp Team
  */
 
-jest.mock('../../../screens/settings/settingsScreenConstants', () => ({
-  COLORS: {
-    MODAL_OVERLAY: 'rgba(0,0,0,0.5)',
-    MODAL_BACKGROUND: '#1D2B5F',
-    ITEM_BORDER: '#333',
-    WHITE: '#fff',
-    ACCENT: '#aaa',
-    PRIMARY: '#0f0',
-    MODAL_BUTTON_CANCEL: '#222',
-    MODAL_BUTTON_DELETE: '#400',
-    ERROR: '#f00',
-  },
-  MODAL_WIDTH: '80%',
-  TEXTS: { CONFIRM: 'Confirmar', CANCEL: 'Cancelar' },
+jest.mock('../../../context/ThemeContext', () => ({
+  useTheme: () => ({
+    colors: {
+      background: '#E8EDF8',
+      primary: '#1E83D3',
+      primaryBright: '#44D7FB',
+      white: '#FFFFFF',
+      chromeCard: 'rgba(255,255,255,0.82)',
+      chromeCardBorder: 'rgba(36,35,79,0.06)',
+      overlay: 'rgba(36,35,79,0.42)',
+      modalSurface: 'rgba(255,255,255,0.96)',
+      accentLineSoft: 'rgba(30,131,211,0.18)',
+      text: '#24234F',
+      textSecondary: '#5C5A78',
+      textOnPrimary: '#FFFFFF',
+    },
+  }),
 }));
+
+jest.mock('../../../screens/settings/settingsScreenConstants', () =>
+  jest.requireActual('../../../screens/settings/settingsScreenConstants'),
+);
 
 import React from 'react';
 import TestRenderer from 'react-test-renderer';

@@ -4,10 +4,19 @@
 
 import mongoose from 'mongoose';
 import crypto from 'crypto';
+import { jest } from '@jest/globals';
 import User from '../../../models/User.js';
 import Transaction from '../../../models/Transaction.js';
-import appleReceiptService from '../../../services/appleReceiptService.js';
 import { connectDatabase, clearDatabase, closeDatabase } from '../../helpers/testHelpers.js';
+
+// Evita IO real (Gmail/SendGrid) durante este test: el servicio importa el mailer dinámicamente.
+jest.unstable_mockModule('../../../config/mailer.js', () => ({
+  default: {
+    sendSubscriptionThankYouEmail: jest.fn(async () => true),
+  },
+}));
+
+const appleReceiptService = (await import('../../../services/appleReceiptService.js')).default;
 
 function buildReceiptResponse(appleTxnId) {
   const now = Date.now();

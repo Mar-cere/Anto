@@ -6,8 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { memo, useCallback, useMemo } from 'react';
 import { Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { DASH } from '../constants/translations';
-import { colors } from '../styles/globalStyles';
-import { dashboardFocusStyles as styles } from '../styles/focusCardTheme';
+import { useTheme } from '../context/ThemeContext';
+import { createDashboardFocusStyles } from '../styles/focusCardTheme';
 
 const COMPACT_WIDTH = 400;
 
@@ -45,22 +45,29 @@ function reminderIcon(kind) {
 
 const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation }) => {
   const { width } = useWindowDimensions();
-  const isCompact = width < COMPACT_WIDTH;
+  const { colors, resolvedScheme } = useTheme();
+  const styles = useMemo(
+    () => createDashboardFocusStyles(colors, resolvedScheme),
+    [colors, resolvedScheme],
+  );
 
   const handleConv = useCallback(
     (id) => {
       if (onOpenConversation) onOpenConversation(id);
     },
-    [onOpenConversation]
+    [onOpenConversation],
   );
 
-  if (!data) return null;
-
-  const { focus, reminder, protocolNext, nextTask, lastSessionSummary: lastSession } = data;
+  const isCompact = width < COMPACT_WIDTH;
+  const reminder = data?.reminder;
+  const lastSession = data?.lastSessionSummary;
+  const focus = data?.focus;
+  const protocolNext = data?.protocolNext;
+  const nextTask = data?.nextTask;
 
   const displayedReminder = useMemo(
     () => pickDisplayedReminder(reminder?.candidates, isCompact),
-    [reminder?.candidates, isCompact]
+    [reminder?.candidates, isCompact],
   );
 
   const lastSessionText = useMemo(() => {
@@ -79,9 +86,6 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation }) => {
     return String(rid) === lastSessionConvId;
   }, [displayedReminder, lastSessionConvId]);
 
-  const showLastSessionRow =
-    Boolean(lastSessionText) && !lastSessionDuplicatesChatReminder;
-
   const onReminderPress = useCallback(() => {
     if (!displayedReminder || displayedReminder.kind !== 'chat') return;
     if (displayedReminder.conversationId) {
@@ -99,6 +103,11 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation }) => {
     }
   }, [lastSessionConvId, handleConv, onOpenConversation, onOpenChat]);
 
+  if (!data) return null;
+
+  const showLastSessionRow =
+    Boolean(lastSessionText) && !lastSessionDuplicatesChatReminder;
+
   const showTherapeuticProtocol =
     protocolNext?.line && protocolNext?.source === 'therapeutic_record';
 
@@ -106,6 +115,9 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation }) => {
 
   const showNextTaskRow =
     nextTask?.title && displayedReminder?.kind !== 'task';
+
+  const chevronMuted =
+    resolvedScheme === 'dark' ? 'rgba(245, 247, 255, 0.35)' : 'rgba(36, 35, 79, 0.28)';
 
   return (
     <View style={styles.card} accessibilityRole="summary">
@@ -134,7 +146,7 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation }) => {
             ) : null}
           </View>
           {reminderIsPressable ? (
-            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.35)" style={styles.reminderChevron} />
+            <Ionicons name="chevron-forward" size={18} color={chevronMuted} style={styles.reminderChevron} />
           ) : null}
         </TouchableOpacity>
       ) : null}
@@ -163,7 +175,7 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation }) => {
               {lastSessionText}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.35)" style={styles.reminderChevron} />
+          <Ionicons name="chevron-forward" size={18} color={chevronMuted} style={styles.reminderChevron} />
         </TouchableOpacity>
       ) : null}
 
@@ -212,7 +224,7 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation }) => {
         accessibilityLabel={DASH.FOCUS_CHAT_CTA}
       >
         <Text style={styles.ctaText}>{DASH.FOCUS_CHAT_CTA}</Text>
-        <Ionicons name="arrow-forward" size={18} color={colors.background} style={styles.ctaArrow} />
+        <Ionicons name="arrow-forward" size={18} color={colors.textOnPrimary} style={styles.ctaArrow} />
       </TouchableOpacity>
     </View>
   );

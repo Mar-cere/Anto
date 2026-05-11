@@ -3,8 +3,9 @@
  * @author AntoApp Team
  */
 
-jest.mock('../../../styles/globalStyles', () => ({ colors: {} }));
+jest.mock('../../../styles/globalStyles', () => jest.requireActual('../../../styles/globalStyles'));
 
+import { lightColors } from '../../../styles/themePalettes';
 import {
   TEXTS,
   CHART_HEIGHT,
@@ -79,7 +80,7 @@ describe('crisisDashboardConstants', () => {
 
   describe('CHART_CONFIG', () => {
     it('debe tener backgroundColor y decimalPlaces', () => {
-      expect(CHART_CONFIG.backgroundColor).toBe('#1D2B5F');
+      expect(CHART_CONFIG.backgroundColor).toBe(lightColors.surface);
       expect(CHART_CONFIG.decimalPlaces).toBe(1);
       expect(CHART_CONFIG.style).toEqual({ borderRadius: 16 });
     });
@@ -87,7 +88,11 @@ describe('crisisDashboardConstants', () => {
       expect(typeof CHART_CONFIG.color).toBe('function');
       expect(typeof CHART_CONFIG.labelColor).toBe('function');
       expect(CHART_CONFIG.color(0.5)).toContain('0.5');
-      expect(CHART_CONFIG.propsForDots).toMatchObject({ r: '6', strokeWidth: '2', stroke: '#1ADDDB' });
+      expect(CHART_CONFIG.propsForDots).toMatchObject({
+        r: '6',
+        strokeWidth: '2',
+        stroke: lightColors.primary,
+      });
     });
   });
 
@@ -99,21 +104,21 @@ describe('crisisDashboardConstants', () => {
   });
 
   describe('EMOTION_COLORS', () => {
-    it('debe tener color por emoción', () => {
-      expect(EMOTION_COLORS.tristeza).toBe('#FF6B6B');
-      expect(EMOTION_COLORS.ansiedad).toBe('#FFA500');
-      expect(EMOTION_COLORS.alegria).toBe('#4ECDC4');
-      expect(EMOTION_COLORS.miedo).toBe('#9B59B6');
-      expect(EMOTION_COLORS.neutral).toBe('#95A5A6');
+    it('debe tener color por emoción (tokens tema claro)', () => {
+      expect(EMOTION_COLORS.tristeza).toBe(lightColors.error);
+      expect(EMOTION_COLORS.ansiedad).toBe(lightColors.warning);
+      expect(EMOTION_COLORS.alegria).toBe(lightColors.success);
+      expect(EMOTION_COLORS.miedo).toBe(lightColors.info);
+      expect(EMOTION_COLORS.neutral).toBe(lightColors.textSecondary);
     });
   });
 
   describe('RISK_LEVEL_COLORS', () => {
     it('debe tener LOW, WARNING, MEDIUM, HIGH', () => {
-      expect(RISK_LEVEL_COLORS.LOW).toBe('#4ECDC4');
-      expect(RISK_LEVEL_COLORS.WARNING).toBe('#FFA500');
-      expect(RISK_LEVEL_COLORS.MEDIUM).toBe('#FF6B6B');
-      expect(RISK_LEVEL_COLORS.HIGH).toBe('#E74C3C');
+      expect(RISK_LEVEL_COLORS.LOW).toBe(lightColors.success);
+      expect(RISK_LEVEL_COLORS.WARNING).toBe(lightColors.warning);
+      expect(RISK_LEVEL_COLORS.MEDIUM).toBe(lightColors.error);
+      expect(RISK_LEVEL_COLORS.HIGH).toBe(lightColors.error);
     });
   });
 

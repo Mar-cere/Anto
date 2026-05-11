@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { BarChart, LineChart, PieChart } from 'react-native-chart-kit';
-import { styles } from './emergencyAlertsHistoryStyles';
+import { useTheme } from '../../context/ThemeContext';
+import { useEmergencyAlertsHistoryStyles } from './emergencyAlertsHistoryStyles';
 import {
   TEXTS,
   CHART_HEIGHT,
   CHART_WIDTH,
-  CHART_CONFIG,
-  PIE_CHART_CONFIG,
+  createEmergencyChartConfig,
+  createEmergencyPieChartConfig,
 } from './emergencyAlertsHistoryConstants';
 import { safeNonNegativeInt } from './emergencyAlertsHistoryUtils';
 
@@ -18,6 +19,11 @@ export function StatsTab({
   formatChannelData,
   formatDayData,
 }) {
+  const { colors } = useTheme();
+  const styles = useEmergencyAlertsHistoryStyles();
+  const chartConfig = useMemo(() => createEmergencyChartConfig(colors), [colors]);
+  const pieChartConfig = useMemo(() => createEmergencyPieChartConfig(colors), [colors]);
+
   if (stats == null || typeof stats !== 'object' || Array.isArray(stats)) return null;
 
   const total = safeNonNegativeInt(stats.total, 0);
@@ -51,7 +57,7 @@ export function StatsTab({
               data={riskData}
               width={CHART_WIDTH}
               height={CHART_HEIGHT}
-              chartConfig={CHART_CONFIG}
+              chartConfig={chartConfig}
               style={styles.chart}
               showValuesOnTopOfBars
               fromZero
@@ -68,7 +74,7 @@ export function StatsTab({
               data={statusData}
               width={CHART_WIDTH}
               height={CHART_HEIGHT}
-              chartConfig={PIE_CHART_CONFIG}
+              chartConfig={pieChartConfig}
               accessor="population"
               backgroundColor="transparent"
               paddingLeft="15"
@@ -86,7 +92,7 @@ export function StatsTab({
               data={channelData}
               width={CHART_WIDTH}
               height={CHART_HEIGHT}
-              chartConfig={CHART_CONFIG}
+              chartConfig={chartConfig}
               style={styles.chart}
               showValuesOnTopOfBars
               fromZero
@@ -103,7 +109,7 @@ export function StatsTab({
               data={dayData}
               width={CHART_WIDTH}
               height={CHART_HEIGHT}
-              chartConfig={CHART_CONFIG}
+              chartConfig={chartConfig}
               bezier
               style={styles.chart}
             />

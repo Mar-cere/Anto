@@ -2,7 +2,7 @@
  * Modal de detalle de tarea / recordatorio (hoja inferior, estilo alineado al foco).
  * Tareas y metas: subtareas, sugerencia con IA (hasta 5), marcar completadas.
  */
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Modal,
   View,
@@ -20,16 +20,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { api, ENDPOINTS } from '../../config/api';
 import { getApiErrorMessage } from '../../utils/apiErrorHandler';
-import { colors } from '../../styles/globalStyles';
-import {
-  FOCUS_BORDER_SUBTLE,
-  FOCUS_CHEVRON_MUTED,
-  FOCUS_ICON_WRAP,
-  FOCUS_INNER_ROW,
-  FOCUS_KICKER_SOFT,
-  FOCUS_META,
-  FOCUS_META_SOFT,
-} from '../../styles/focusCardTheme';
+import { useTheme } from '../../context/ThemeContext';
+import { getFocusTheme } from '../../styles/focusCardTheme';
+import { SPACING } from '../../constants/ui';
 
 function taskPayloadFromApi(body) {
   if (!body || typeof body !== 'object') return null;
@@ -47,6 +40,277 @@ const TaskDetailModal = ({
   onTaskUpdated,
   isOffline = false,
 }) => {
+  const { colors, resolvedScheme } = useTheme();
+  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        wrap: {
+          flex: 1,
+          justifyContent: 'flex-end',
+        },
+        overlay: {
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor: 'rgba(0, 0, 0, 0.55)',
+        },
+        sheet: {
+          backgroundColor: colors.background,
+          borderTopLeftRadius: 22,
+          borderTopRightRadius: 22,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+          maxHeight: '92%',
+          paddingBottom: 8,
+        },
+        grabber: {
+          alignSelf: 'center',
+          width: 36,
+          height: 4,
+          borderRadius: 2,
+          backgroundColor: colors.glassFill,
+          marginTop: 10,
+          marginBottom: 6,
+        },
+        header: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingBottom: 12,
+        },
+        kicker: {
+          fontSize: 11,
+          fontWeight: '600',
+          letterSpacing: 1.2,
+          textTransform: 'uppercase',
+          color: t.FOCUS_KICKER_SOFT,
+        },
+        closeBtn: {
+          padding: 6,
+          borderRadius: 12,
+          backgroundColor: colors.glassFill,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        scroll: {},
+        scrollContent: {
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingBottom: 16,
+          gap: 16,
+        },
+        heroRow: {
+          ...t.FOCUS_INNER_ROW,
+          alignItems: 'flex-start',
+        },
+        iconWrap: {
+          ...t.FOCUS_ICON_WRAP,
+          marginRight: 12,
+        },
+        heroText: {
+          flex: 1,
+          minWidth: 0,
+        },
+        title: {
+          fontSize: 17,
+          fontWeight: '500',
+          lineHeight: 24,
+          letterSpacing: -0.2,
+          color: colors.text,
+        },
+        titleOverdue: {
+          color: colors.error,
+        },
+        description: {
+          marginTop: 8,
+          fontSize: 14,
+          lineHeight: 21,
+          color: t.FOCUS_META,
+          fontWeight: '400',
+        },
+        metaBlock: {
+          paddingVertical: 12,
+          paddingHorizontal: 14,
+          borderRadius: 14,
+          backgroundColor: colors.glassFill,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+          gap: 6,
+        },
+        metaLabel: {
+          fontSize: 11,
+          fontWeight: '600',
+          letterSpacing: 0.8,
+          textTransform: 'uppercase',
+          color: t.FOCUS_KICKER_SOFT,
+          marginTop: 4,
+        },
+        metaValue: {
+          fontSize: 15,
+          color: t.FOCUS_META_SOFT,
+          marginBottom: 4,
+        },
+        overduePill: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          alignSelf: 'flex-start',
+          marginTop: 8,
+          paddingVertical: 6,
+          paddingHorizontal: 10,
+          borderRadius: 12,
+          backgroundColor: colors.dangerSoft ?? 'rgba(255, 107, 107, 0.12)',
+        },
+        overduePillText: {
+          color: colors.error,
+          fontSize: 12,
+          fontWeight: '600',
+        },
+        subtasksSection: {
+          paddingVertical: 12,
+          paddingHorizontal: 14,
+          borderRadius: 14,
+          backgroundColor: colors.glassFill,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+          gap: 10,
+        },
+        subtasksKicker: {
+          fontSize: 11,
+          fontWeight: '600',
+          letterSpacing: 0.8,
+          textTransform: 'uppercase',
+          color: t.FOCUS_KICKER_SOFT,
+        },
+        subtasksHint: {
+          fontSize: 12,
+          color: t.FOCUS_META,
+          lineHeight: 17,
+        },
+        generateSubtasksBtn: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          backgroundColor: colors.primary,
+          paddingVertical: 12,
+          paddingHorizontal: 14,
+          borderRadius: 12,
+        },
+        generateSubtasksBtnDisabled: {
+          opacity: 0.85,
+        },
+        generateSubtasksBtnText: {
+          color: colors.textOnPrimary,
+          fontSize: 14,
+          fontWeight: '600',
+        },
+        subtasksEmpty: {
+          fontSize: 13,
+          color: t.FOCUS_META,
+          fontStyle: 'italic',
+        },
+        subtasksList: {
+          gap: 8,
+        },
+        subtaskRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+          paddingVertical: 10,
+          paddingHorizontal: 10,
+          borderRadius: 12,
+          backgroundColor: colors.chromeInput,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        clearSubtasksBtn: {
+          alignSelf: 'flex-start',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+          paddingVertical: 8,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          borderRadius: 12,
+          backgroundColor: colors.dangerSoft ?? 'rgba(255, 107, 107, 0.08)',
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.dangerBorder ?? 'rgba(255, 107, 107, 0.22)',
+        },
+        clearSubtasksBtnText: {
+          fontSize: 13,
+          fontWeight: '600',
+          color: colors.error,
+        },
+        subtaskMainPress: {
+          flex: 1,
+          minWidth: 0,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+        },
+        subtaskDeleteBtn: {
+          padding: 6,
+          borderRadius: 10,
+          backgroundColor: colors.chromeInput,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        subtaskRowDone: {
+          opacity: 0.75,
+        },
+        subtaskTitle: {
+          flex: 1,
+          fontSize: 14,
+          color: colors.text,
+          lineHeight: 20,
+        },
+        subtaskTitleDone: {
+          textDecorationLine: 'line-through',
+          color: t.FOCUS_META,
+        },
+        actions: {
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingTop: 8,
+          gap: 10,
+        },
+        primaryCta: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          backgroundColor: colors.primary,
+          paddingVertical: 14,
+          borderRadius: 999,
+        },
+        primaryCtaText: {
+          color: colors.textOnPrimary,
+          fontSize: 15,
+          fontWeight: '600',
+          letterSpacing: 0.2,
+        },
+        dangerBtn: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          paddingVertical: 14,
+          borderRadius: 14,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.dangerBorder ?? 'rgba(255, 107, 107, 0.28)',
+          backgroundColor: colors.dangerSoft ?? 'rgba(255, 107, 107, 0.08)',
+        },
+        dangerText: {
+          color: colors.error,
+          fontSize: 15,
+          fontWeight: '600',
+        },
+        homeIndicatorSpacer: {
+          height: 8,
+        },
+      }),
+    [colors, t],
+  );
+
   const scrollRef = useRef(null);
   const scrollHintTimeouts = useRef([]);
   const [generatingSubtasks, setGeneratingSubtasks] = useState(false);
@@ -251,7 +515,7 @@ const TaskDetailModal = ({
               {isTask ? 'Tarea' : isGoal ? 'Meta' : 'Recordatorio'}
             </Text>
             <TouchableOpacity style={styles.closeBtn} onPress={handleClose} hitSlop={12}>
-              <Ionicons name="close" size={22} color={FOCUS_CHEVRON_MUTED} />
+              <Ionicons name="close" size={22} color={t.FOCUS_CHEVRON_MUTED} />
             </TouchableOpacity>
           </View>
 
@@ -348,7 +612,7 @@ const TaskDetailModal = ({
                               <Ionicons
                                 name={done ? 'checkbox' : 'square-outline'}
                                 size={22}
-                                color={done ? colors.success : FOCUS_META}
+                                color={done ? colors.success : t.FOCUS_META}
                               />
                             )}
                             <Text
@@ -366,7 +630,7 @@ const TaskDetailModal = ({
                             accessibilityLabel={`Eliminar subtarea: ${st.title}`}
                             hitSlop={10}
                           >
-                            <Ionicons name="close" size={18} color={FOCUS_META} />
+                            <Ionicons name="close" size={18} color={t.FOCUS_META} />
                           </TouchableOpacity>
                         </View>
                       );
@@ -425,7 +689,7 @@ const TaskDetailModal = ({
   );
 };
 
-const styles = StyleSheet.create({
+/* const styles = StyleSheet.create({
   wrap: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -439,7 +703,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
+    borderColor: t.FOCUS_BORDER_SUBTLE,
     maxHeight: '92%',
     paddingBottom: 8,
   },
@@ -456,7 +720,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     paddingBottom: 12,
   },
   kicker: {
@@ -464,7 +728,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
-    color: FOCUS_KICKER_SOFT,
+    color: t.FOCUS_KICKER_SOFT,
   },
   closeBtn: {
     padding: 6,
@@ -473,16 +737,16 @@ const styles = StyleSheet.create({
   },
   scroll: {},
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     paddingBottom: 16,
     gap: 16,
   },
   heroRow: {
-    ...FOCUS_INNER_ROW,
+    ...t.FOCUS_INNER_ROW,
     alignItems: 'flex-start',
   },
   iconWrap: {
-    ...FOCUS_ICON_WRAP,
+    ...t.FOCUS_ICON_WRAP,
     marginRight: 12,
   },
   heroText: {
@@ -503,7 +767,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 14,
     lineHeight: 21,
-    color: FOCUS_META,
+    color: t.FOCUS_META,
     fontWeight: '400',
   },
   metaBlock: {
@@ -512,7 +776,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.03)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
+    borderColor: t.FOCUS_BORDER_SUBTLE,
     gap: 6,
   },
   metaLabel: {
@@ -520,12 +784,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
-    color: FOCUS_KICKER_SOFT,
+    color: t.FOCUS_KICKER_SOFT,
     marginTop: 4,
   },
   metaValue: {
     fontSize: 15,
-    color: FOCUS_META_SOFT,
+    color: t.FOCUS_META_SOFT,
     marginBottom: 4,
   },
   overduePill: {
@@ -550,7 +814,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.03)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
+    borderColor: t.FOCUS_BORDER_SUBTLE,
     gap: 10,
   },
   subtasksKicker: {
@@ -558,11 +822,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
-    color: FOCUS_KICKER_SOFT,
+    color: t.FOCUS_KICKER_SOFT,
   },
   subtasksHint: {
     fontSize: 12,
-    color: FOCUS_META,
+    color: t.FOCUS_META,
     lineHeight: 17,
   },
   generateSubtasksBtn: {
@@ -585,7 +849,7 @@ const styles = StyleSheet.create({
   },
   subtasksEmpty: {
     fontSize: 13,
-    color: FOCUS_META,
+    color: t.FOCUS_META,
     fontStyle: 'italic',
   },
   subtasksList: {
@@ -600,7 +864,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
+    borderColor: t.FOCUS_BORDER_SUBTLE,
   },
   clearSubtasksBtn: {
     alignSelf: 'flex-start',
@@ -608,7 +872,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     borderRadius: 12,
     backgroundColor: 'rgba(255, 107, 107, 0.08)',
     borderWidth: StyleSheet.hairlineWidth,
@@ -631,7 +895,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_BORDER_SUBTLE,
+    borderColor: t.FOCUS_BORDER_SUBTLE,
   },
   subtaskRowDone: {
     opacity: 0.75,
@@ -644,10 +908,10 @@ const styles = StyleSheet.create({
   },
   subtaskTitleDone: {
     textDecorationLine: 'line-through',
-    color: FOCUS_META,
+    color: t.FOCUS_META,
   },
   actions: {
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     paddingTop: 8,
     gap: 10,
   },
@@ -685,6 +949,6 @@ const styles = StyleSheet.create({
   homeIndicatorSpacer: {
     height: 8,
   },
-});
+}); */
 
 export default TaskDetailModal;

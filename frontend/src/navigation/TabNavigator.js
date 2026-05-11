@@ -9,20 +9,15 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import React from 'react';
+import React, { useCallback } from 'react';
 import ChatScreen from '../screens/ChatScreen';
 import DashScreen from '../screens/DashScreen';
 import FaQScreen from '../screens/FaQScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
-import { colors } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
 
 const Tab = createBottomTabNavigator();
-
-// Constantes de estilos del Tab Bar
-const TAB_BAR_BACKGROUND = '#1D1B70';
-const TAB_BAR_ACTIVE_TINT = colors.white;
-const TAB_BAR_INACTIVE_TINT = '#A3ADDB';
 
 // Nombres de las pestañas
 const TAB_NAMES = {
@@ -50,24 +45,28 @@ const TAB_ICONS = {
  * @returns {JSX.Element} Tab Navigator con todas las pestañas configuradas
  */
 const TabNavigator = () => {
+  const { colors } = useTheme();
+  const screenOptions = useCallback(
+    ({ route }) => ({
+      headerShown: false,
+      tabBarIcon: ({ color, size }) => {
+        const iconName = TAB_ICONS[route.name] || 'help-outline';
+        return <Ionicons name={iconName} size={size} color={color} />;
+      },
+      tabBarStyle: {
+        height: 0,
+        opacity: 0,
+        elevation: 0,
+        backgroundColor: colors.navigationHeader,
+      },
+      tabBarActiveTintColor: colors.white,
+      tabBarInactiveTintColor: colors.tabBarInactive,
+    }),
+    [colors],
+  );
+
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarIcon: ({ color, size }) => {
-          const iconName = TAB_ICONS[route.name] || 'help-outline';
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-        tabBarStyle: { 
-          height: 0,
-          opacity: 0,
-          elevation: 0,
-          backgroundColor: TAB_BAR_BACKGROUND 
-        },
-        tabBarActiveTintColor: TAB_BAR_ACTIVE_TINT,
-        tabBarInactiveTintColor: TAB_BAR_INACTIVE_TINT,
-      })}
-    >
+    <Tab.Navigator screenOptions={screenOptions}>
       <Tab.Screen 
         name={TAB_NAMES.INICIO} 
         component={DashScreen}

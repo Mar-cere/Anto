@@ -26,14 +26,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
 import { useToast } from '../../context/ToastContext';
-import {
-  FOCUS_ACCENT_BORDER,
-  FOCUS_BORDER_SUBTLE,
-  FOCUS_KICKER_COLOR,
-  FOCUS_META,
-} from '../../styles/focusCardTheme';
-import { colors } from '../../styles/globalStyles';
-import { techniqueScreenStyles } from './techniqueScreenStyles';
+import { useTheme } from '../../context/ThemeContext';
+import { getFocusTheme } from '../../styles/focusCardTheme';
+import { useTechniqueScreenStyles } from './techniqueScreenStyles';
+import { SPACING } from '../../constants/ui';
 import {
   getGratitudeEntryDisplayText,
   sanitizeGratitudeEntriesFromStorage,
@@ -53,6 +49,213 @@ const ROTATING_EXAMPLES = [
   'Ejemplo: “Valoro el descanso que pude tomar hoy.”',
 ];
 
+function createStyles(colors, t) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    keyboardView: {
+      flex: 1,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    todayMeta: {
+      marginTop: 8,
+      color: t.FOCUS_META,
+      fontSize: 13,
+      fontWeight: '600',
+      letterSpacing: 0.2,
+      textTransform: 'capitalize',
+    },
+    composerCard: {
+      backgroundColor: colors.cardBackground,
+      borderRadius: 22,
+      padding: SPACING.SCREEN_EDGE_INSET,
+      marginBottom: 14,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.FOCUS_BORDER_SUBTLE,
+    },
+    privacyRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 10,
+    },
+    privacyText: {
+      color: t.FOCUS_KICKER_COLOR,
+      fontSize: 12,
+      fontWeight: '700',
+      letterSpacing: 0.4,
+    },
+    composerHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    composerTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    clearText: {
+      color: colors.primary,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    templatesRow: {
+      paddingVertical: 6,
+      gap: 10,
+    },
+    templateChip: {
+      borderRadius: 999,
+      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+      paddingVertical: 8,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.FOCUS_BORDER_SUBTLE,
+      backgroundColor: colors.glassFill,
+    },
+    templateChipText: {
+      color: t.FOCUS_KICKER_COLOR,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    linesBlock: {
+      marginTop: 10,
+      gap: 10,
+    },
+    lineRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderRadius: 14,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.FOCUS_BORDER_SUBTLE,
+      backgroundColor: colors.chromeInput,
+      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+      paddingVertical: 8,
+    },
+    linePrefix: {
+      color: t.FOCUS_META,
+      fontWeight: '800',
+      marginRight: 8,
+      minWidth: 22,
+      textAlign: 'right',
+    },
+    lineInput: {
+      flex: 1,
+      minWidth: 0,
+      color: colors.text,
+      fontSize: 14,
+      paddingVertical: 6,
+    },
+    footerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: 14,
+      gap: 12,
+    },
+    toggleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    toggleLabel: {
+      color: t.FOCUS_META,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    subtleIconButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+      paddingVertical: 10,
+      borderRadius: 14,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.FOCUS_ACCENT_BORDER,
+      backgroundColor: colors.glassFill,
+    },
+    subtleIconText: {
+      color: t.FOCUS_KICKER_COLOR,
+      fontWeight: '700',
+      fontSize: 13,
+    },
+    entriesHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+      marginTop: 18,
+    },
+    entriesTitle: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: colors.text,
+    },
+    entryCard: {
+      backgroundColor: colors.cardBackground,
+      borderRadius: 22,
+      padding: SPACING.SCREEN_EDGE_INSET,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.FOCUS_BORDER_SUBTLE,
+      marginBottom: 12,
+    },
+    entryMeta: {
+      color: t.FOCUS_META,
+      fontSize: 12,
+      fontWeight: '700',
+      marginBottom: 10,
+    },
+    entryText: {
+      color: colors.text,
+      fontSize: 14,
+      lineHeight: 22,
+    },
+    entryActionsRow: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      marginTop: 12,
+    },
+    deleteButton: {
+      paddingVertical: 10,
+      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+      borderRadius: 14,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.FOCUS_BORDER_SUBTLE,
+      backgroundColor: colors.glassFill,
+    },
+    deleteButtonText: {
+      color: colors.textSecondary,
+      fontSize: 13,
+      fontWeight: '800',
+    },
+    emptyStateCard: {
+      backgroundColor: colors.cardBackground,
+      borderRadius: 22,
+      padding: SPACING.SCREEN_EDGE_INSET,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.FOCUS_BORDER_SUBTLE,
+      alignItems: 'center',
+    },
+    emptyStateTitle: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '800',
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    emptyStateText: {
+      color: t.FOCUS_META,
+      fontSize: 14,
+      lineHeight: 20,
+      textAlign: 'center',
+    },
+  });
+}
+
 function isSameLocalDay(isoDate, refDate = new Date()) {
   try {
     const d = new Date(isoDate);
@@ -70,6 +273,10 @@ const GratitudeJournalScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
+  const { colors, resolvedScheme, statusBarStyle } = useTheme();
+  const techniqueScreenStyles = useTechniqueScreenStyles();
+  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+  const styles = useMemo(() => createStyles(colors, t), [colors, t]);
   const [entries, setEntries] = useState([]);
   const [line1, setLine1] = useState('');
   const [line2, setLine2] = useState('');
@@ -229,7 +436,7 @@ const GratitudeJournalScreen = () => {
         ref={inputRef}
         style={styles.lineInput}
         placeholder={placeholder}
-        placeholderTextColor={FOCUS_META}
+        placeholderTextColor={colors.textSecondary}
         value={value}
         onChangeText={setValue}
         onFocus={() => {
@@ -247,7 +454,7 @@ const GratitudeJournalScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header
         title="Diario de Gratitud"
@@ -278,7 +485,7 @@ const GratitudeJournalScreen = () => {
 
           <View style={styles.composerCard}>
             <View style={styles.privacyRow}>
-              <MaterialCommunityIcons name="lock-outline" size={14} color={FOCUS_KICKER_COLOR} />
+              <MaterialCommunityIcons name="lock-outline" size={14} color={t.FOCUS_KICKER_COLOR} />
               <Text style={styles.privacyText}>Solo en tu dispositivo</Text>
             </View>
 
@@ -346,7 +553,7 @@ const GratitudeJournalScreen = () => {
                 accessibilityRole="button"
                 accessibilityLabel="Ocultar teclado"
               >
-                <MaterialCommunityIcons name="keyboard-close" size={16} color={FOCUS_KICKER_COLOR} />
+                <MaterialCommunityIcons name="keyboard-close" size={16} color={t.FOCUS_KICKER_COLOR} />
                 <Text style={styles.keyboardChipText}>Listo</Text>
               </TouchableOpacity>
               <Animated.View style={{ flex: 1, transform: [{ scale: saveBtnScale }] }}>
@@ -444,6 +651,7 @@ const GratitudeJournalScreen = () => {
   );
 };
 
+/*
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -466,7 +674,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBackground,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: FOCUS_BORDER_SUBTLE,
-    padding: 16,
+    padding: SPACING.SCREEN_EDGE_INSET,
     marginBottom: 14,
   },
   privacyRow: {
@@ -503,7 +711,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   templateChip: {
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     paddingVertical: 8,
     borderRadius: 999,
     backgroundColor: 'rgba(255,255,255,0.04)',
@@ -525,7 +733,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: FOCUS_BORDER_SUBTLE,
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     minHeight: 48,
   },
   linePrefix: {
@@ -553,7 +761,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     paddingVertical: 10,
     borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.06)',
@@ -592,7 +800,7 @@ const styles = StyleSheet.create({
   },
   filterChipActive: {
     borderColor: FOCUS_ACCENT_BORDER,
-    backgroundColor: 'rgba(26,221,219,0.12)',
+    backgroundColor: 'rgba(30, 131, 211,0.12)',
   },
   filterChipText: {
     color: FOCUS_META,
@@ -619,7 +827,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBackground,
     borderRadius: 22,
     paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: FOCUS_BORDER_SUBTLE,
   },
@@ -687,5 +895,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+*/
 
 export default GratitudeJournalScreen;

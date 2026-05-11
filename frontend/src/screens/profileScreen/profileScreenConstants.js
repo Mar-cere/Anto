@@ -1,7 +1,10 @@
 /**
  * Constantes para ProfileScreen y subcomponentes
  */
-import { colors } from '../../styles/globalStyles';
+import { SPACING } from '../../constants/ui';
+import { lightColors } from '../../styles/themePalettes';
+
+const G = SPACING.SCREEN_EDGE_INSET;
 
 export const TEXTS = {
   LOADING: 'Cargando perfil...',
@@ -57,55 +60,71 @@ export const REFRESH_ANIMATION_DURATION = 300;
 export const REFRESH_SCALE_MAX = 1.05;
 export const REFRESH_OPACITY_MIN = 0.7;
 export const SCROLL_PADDING_BOTTOM = 48;
-export const HEADER_PADDING_HORIZONTAL = 16;
+export const HEADER_PADDING_HORIZONTAL = G;
 export const HEADER_PADDING_VERTICAL = 12;
 export const HEADER_BUTTON_SIZE = 40;
 export const HEADER_BUTTON_BORDER_RADIUS = 20;
 export const HEADER_BORDER_WIDTH = 1;
-export const PROFILE_SECTION_PADDING = 20;
+export const PROFILE_SECTION_PADDING = G;
 export const USER_NAME_MARGIN_BOTTOM = 4;
-export const USER_EMAIL_MARGIN_BOTTOM = 16;
-export const STATS_CONTAINER_PADDING = 16;
-export const SECTION_TITLE_MARGIN_BOTTOM = 16;
+export const USER_EMAIL_MARGIN_BOTTOM = G;
+export const STATS_CONTAINER_PADDING = G;
+export const SECTION_TITLE_MARGIN_BOTTOM = G;
 export const STAT_ITEM_WIDTH = 160;
 export const STAT_ITEM_BORDER_RADIUS = 12;
-export const STAT_ITEM_PADDING = 16;
+export const STAT_ITEM_PADDING = G;
 export const STAT_ITEM_MARGIN_RIGHT = 12;
 export const STAT_ITEM_BORDER_WIDTH = 1;
 export const STATS_GRID_PADDING_VERTICAL = 4;
 export const STAT_VALUE_MARGIN_VERTICAL = 8;
 export const STAT_SUB_LABEL_MARGIN_TOP = 4;
-export const OPTIONS_CONTAINER_PADDING = 16;
+export const OPTIONS_CONTAINER_PADDING = G;
 export const OPTION_BUTTON_BORDER_RADIUS = 12;
-export const OPTION_BUTTON_PADDING = 16;
+export const OPTION_BUTTON_PADDING = G;
 export const OPTION_BUTTON_MARGIN_BOTTOM = 12;
 export const OPTION_BUTTON_BORDER_WIDTH = 1;
-export const OPTION_TEXT_MARGIN_LEFT = 16;
+export const OPTION_TEXT_MARGIN_LEFT = G;
 export const LOGOUT_BUTTON_BORDER_RADIUS = 12;
-export const LOGOUT_BUTTON_PADDING = 16;
-export const LOGOUT_BUTTON_MARGIN = 16;
+export const LOGOUT_BUTTON_PADDING = G;
+export const LOGOUT_BUTTON_MARGIN = G;
 export const LOGOUT_TEXT_MARGIN_LEFT = 8;
 export const LOADING_TEXT_MARGIN_TOP = 10;
 export const ICON_SIZE = 24;
 export const STAT_ICON_SIZE = 24;
 
-export const COLORS = {
-  BACKGROUND: colors.background,
-  PRIMARY: colors.primary,
-  WHITE: colors.white,
-  ACCENT: '#A3B8E8',
-  GOLD: '#FFD700',
-  ORANGE: '#FF9F1C',
-  ERROR: '#FF6B6B',
-  HEADER_BACKGROUND: 'rgba(3, 10, 36, 0.8)',
-  HEADER_BORDER: 'rgba(26, 221, 219, 0.1)',
-  HEADER_BUTTON_BACKGROUND: 'rgba(29, 43, 95, 0.5)',
-  CARD_BACKGROUND: 'rgba(29, 43, 95, 0.8)',
-  CARD_BORDER: 'rgba(26, 221, 219, 0.1)',
-  REFRESH_PROGRESS_BACKGROUND: 'rgba(29, 43, 95, 0.8)',
-  LOGOUT_BUTTON_BACKGROUND: 'rgba(255, 107, 107, 0.1)',
-  LOGOUT_BUTTON_BORDER: 'rgba(255, 107, 107, 0.3)',
-};
+export function createProfileColors(colors) {
+  return {
+    BACKGROUND: colors.background,
+    PRIMARY: colors.primary,
+    WHITE: colors.white,
+    /** Texto principal (encabezado cromado, títulos sobre fondo, tarjetas claras). */
+    TEXT: colors.text,
+    TEXT_SECONDARY: colors.textSecondary,
+    TEXT_MUTED: colors.textMuted,
+    ACCENT: colors.primaryBright ?? colors.primary,
+    /** Icono hábitos: primary legible sobre tarjeta clara en tema light. */
+    STAT_ICON_HABITS: colors.primary,
+    /** Icono racha actual (fuego). */
+    STAT_ICON_STREAK: colors.warning,
+    ERROR: colors.error,
+    HEADER_BACKGROUND: colors.chromeHeader ?? colors.background,
+    HEADER_BORDER: colors.chromeHeaderBorder ?? colors.border,
+    HEADER_BUTTON_BACKGROUND: colors.chromeIconButton ?? colors.glassFill ?? colors.accentLineSoft,
+    CARD_BACKGROUND: colors.chromeCard ?? colors.cardBackground ?? colors.surface,
+    CARD_BORDER: colors.chromeCardBorder ?? colors.border,
+    REFRESH_PROGRESS_BACKGROUND: colors.chromeCard ?? colors.cardBackground ?? colors.surface,
+    LOGOUT_BUTTON_BACKGROUND: colors.dangerSoft,
+    LOGOUT_BUTTON_BORDER: colors.dangerBorder,
+    CONTACT_ACTION_EDIT_BACKGROUND: colors.accentLineSoft,
+    CONTACT_ACTION_DELETE_BACKGROUND: colors.dangerSoft,
+    /** Mismo rol que bloques de Configuración (`settingsSectionSurface`). */
+    SETTINGS_SECTION_SURFACE: colors.settingsSectionSurface,
+    GLASS_SHADOW: colors.glassShadow,
+  };
+}
+
+/** Compatibilidad legacy (tests/archivos no migrados) */
+export const COLORS = createProfileColors(lightColors);
 
 export const DEFAULT_USER_DATA = {
   username: '',
@@ -132,5 +151,3 @@ export const STORAGE_KEYS = {
   USER_DATA: 'userData',
   USER_PREFERENCES: 'userPreferences',
 };
-
-export const BACKGROUND_IMAGE = require('../../images/back.png');

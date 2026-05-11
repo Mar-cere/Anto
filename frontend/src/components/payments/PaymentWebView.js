@@ -8,7 +8,7 @@
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -22,7 +22,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
-import { colors } from '../../styles/globalStyles';
+import { useTheme } from '../../context/ThemeContext';
+import { SPACING } from '../../constants/ui';
 
 // Verificar que WebView esté disponible
 if (!WebView) {
@@ -46,6 +47,148 @@ const TEXTS = {
 const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
   const insets = useSafeAreaInsets();
   const webViewRef = useRef(null);
+  const { colors, statusBarStyle } = useTheme();
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        header: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: 12,
+          backgroundColor: colors.cardBackground,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        },
+        closeButton: {
+          padding: 8,
+        },
+        headerTitle: {
+          fontSize: 18,
+          fontWeight: 'bold',
+          color: colors.text,
+          flex: 1,
+          textAlign: 'center',
+        },
+        placeholder: {
+          width: 40,
+        },
+        webview: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        loadingContainer: {
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: colors.background,
+          zIndex: 1,
+        },
+        loadingText: {
+          marginTop: 16,
+          color: colors.textSecondary,
+          fontSize: 16,
+        },
+        errorContainer: {
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: colors.background,
+          padding: 32,
+          zIndex: 2,
+        },
+        errorText: {
+          marginTop: 16,
+          marginBottom: 24,
+          color: colors.error,
+          fontSize: 16,
+          textAlign: 'center',
+        },
+        errorButtonsContainer: {
+          flexDirection: 'row',
+          gap: 12,
+          marginTop: 8,
+        },
+        retryButton: {
+          backgroundColor: colors.primary,
+          paddingHorizontal: 24,
+          paddingVertical: 12,
+          borderRadius: 12,
+        },
+        errorButton: {
+          backgroundColor: colors.primary,
+        },
+        browserButton: {
+          backgroundColor: colors.textSecondary,
+        },
+        retryButtonText: {
+          color: colors.textOnPrimary,
+          fontSize: 16,
+          fontWeight: 'bold',
+        },
+        progressBarContainer: {
+          height: 3,
+          backgroundColor: colors.border,
+          width: '100%',
+        },
+        progressBar: {
+          height: '100%',
+          backgroundColor: colors.primary,
+        },
+        secureText: {
+          marginTop: 8,
+          color: colors.textSecondary,
+          fontSize: 12,
+          fontStyle: 'italic',
+        },
+        processingContainer: {
+          position: 'absolute',
+          top: 60,
+          left: 0,
+          right: 0,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.cardBackground,
+          paddingVertical: 8,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          zIndex: 1,
+        },
+        processingText: {
+          marginLeft: 8,
+          color: colors.primary,
+          fontSize: 14,
+          fontWeight: '600',
+        },
+        browserFallbackButton: {
+          marginTop: 14,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: 10,
+          borderRadius: 10,
+          borderWidth: 1,
+          borderColor: colors.primary,
+        },
+        browserFallbackButtonText: {
+          color: colors.primary,
+          fontSize: 14,
+          fontWeight: '600',
+        },
+      }),
+    [colors],
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState(0);
@@ -220,7 +363,7 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} />
       
       {/* Header */}
       <View style={styles.header}>
@@ -232,7 +375,7 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
           }}
           accessibilityLabel={TEXTS.CLOSE}
         >
-          <MaterialCommunityIcons name="close" size={24} color={colors.white} />
+          <MaterialCommunityIcons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Pago con Mercado Pago</Text>
         <View style={styles.placeholder} />
@@ -340,144 +483,6 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: colors.cardBackground,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  closeButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.white,
-    flex: 1,
-    textAlign: 'center',
-  },
-  placeholder: {
-    width: 40,
-  },
-  webview: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  loadingContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    zIndex: 1,
-  },
-  loadingText: {
-    marginTop: 16,
-    color: colors.textSecondary,
-    fontSize: 16,
-  },
-  errorContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    padding: 32,
-    zIndex: 2,
-  },
-  errorText: {
-    marginTop: 16,
-    marginBottom: 24,
-    color: colors.error,
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  errorButtonsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
-  },
-  retryButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  errorButton: {
-    backgroundColor: colors.primary,
-  },
-  browserButton: {
-    backgroundColor: colors.textSecondary,
-  },
-  retryButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  progressBarContainer: {
-    height: 3,
-    backgroundColor: colors.border,
-    width: '100%',
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: colors.primary,
-  },
-  secureText: {
-    marginTop: 8,
-    color: colors.textSecondary,
-    fontSize: 12,
-    fontStyle: 'italic',
-  },
-  processingContainer: {
-    position: 'absolute',
-    top: 60,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.cardBackground,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    zIndex: 1,
-  },
-  processingText: {
-    marginLeft: 8,
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  browserFallbackButton: {
-    marginTop: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  browserFallbackButtonText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-});
 
 export default PaymentWebView;
 

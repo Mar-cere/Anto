@@ -6,11 +6,12 @@
  * @author AntoApp Team
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors } from '../../styles/globalStyles';
 import * as Haptics from 'expo-haptics';
+import { useTheme } from '../../context/ThemeContext';
+import { SPACING } from '../../constants/ui';
 
 const PlanCard = ({ 
   plan, 
@@ -20,6 +21,133 @@ const PlanCard = ({
   onSelect,
   disabled = false,
 }) => {
+  const { colors } = useTheme();
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        card: {
+          backgroundColor: colors.cardBackground,
+          borderRadius: 16,
+          padding: SPACING.SCREEN_EDGE_INSET,
+          marginBottom: 16,
+          borderWidth: 2,
+          borderColor: colors.border,
+          position: 'relative',
+        },
+        cardSelected: {
+          borderColor: colors.primary,
+          backgroundColor: colors.accentLineSoft,
+        },
+        cardCurrent: {
+          borderColor: colors.success,
+          backgroundColor: 'rgba(76, 175, 80, 0.1)',
+        },
+        cardDisabled: {
+          opacity: 0.6,
+        },
+        recommendedBadge: {
+          position: 'absolute',
+          top: -10,
+          right: 20,
+          backgroundColor: colors.primary,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: 4,
+          borderRadius: 12,
+          zIndex: 1,
+        },
+        recommendedText: {
+          color: colors.textOnPrimary,
+          fontSize: 12,
+          fontWeight: 'bold',
+        },
+        currentBadge: {
+          position: 'absolute',
+          top: -10,
+          right: 20,
+          backgroundColor: colors.success,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: 4,
+          borderRadius: 12,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 4,
+          zIndex: 1,
+        },
+        currentText: {
+          color: colors.textOnPrimary,
+          fontSize: 12,
+          fontWeight: 'bold',
+        },
+        header: {
+          marginBottom: 16,
+        },
+        name: {
+          fontSize: 24,
+          fontWeight: 'bold',
+          color: colors.text,
+          marginBottom: 8,
+        },
+        priceContainer: {
+          flexDirection: 'row',
+          alignItems: 'baseline',
+        },
+        price: {
+          fontSize: 32,
+          fontWeight: 'bold',
+          color: colors.primary,
+        },
+        interval: {
+          fontSize: 16,
+          color: colors.textSecondary,
+          marginLeft: 4,
+        },
+        featuresContainer: {
+          marginBottom: 20,
+        },
+        feature: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginBottom: 8,
+        },
+        featureIcon: {
+          marginRight: 8,
+        },
+        featureText: {
+          color: colors.text,
+          fontSize: 14,
+          flex: 1,
+        },
+        button: {
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderColor: colors.primary,
+          borderRadius: 12,
+          paddingVertical: 12,
+          alignItems: 'center',
+        },
+        buttonSelected: {
+          backgroundColor: colors.primary,
+        },
+        buttonDisabled: {
+          borderColor: colors.textSecondary,
+          opacity: 0.5,
+        },
+        buttonText: {
+          color: colors.primary,
+          fontSize: 16,
+          fontWeight: 'bold',
+        },
+        buttonTextSelected: {
+          color: colors.textOnPrimary,
+        },
+        buttonTextDisabled: {
+          color: colors.textSecondary,
+        },
+      }),
+    [colors],
+  );
+
   const handlePress = () => {
     if (!disabled && onSelect) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -100,127 +228,6 @@ const PlanCard = ({
     </TouchableOpacity>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 2,
-    borderColor: colors.border,
-    position: 'relative',
-  },
-  cardSelected: {
-    borderColor: colors.primary,
-    backgroundColor: 'rgba(26, 221, 219, 0.1)',
-  },
-  cardCurrent: {
-    borderColor: colors.success,
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
-  },
-  cardDisabled: {
-    opacity: 0.6,
-  },
-  recommendedBadge: {
-    position: 'absolute',
-    top: -10,
-    right: 20,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    zIndex: 1,
-  },
-  recommendedText: {
-    color: colors.background,
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  currentBadge: {
-    position: 'absolute',
-    top: -10,
-    right: 20,
-    backgroundColor: colors.success,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    zIndex: 1,
-  },
-  currentText: {
-    color: colors.background,
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  header: {
-    marginBottom: 16,
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 8,
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  price: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: colors.primary,
-  },
-  interval: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginLeft: 4,
-  },
-  featuresContainer: {
-    marginBottom: 20,
-  },
-  feature: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  featureIcon: {
-    marginRight: 8,
-  },
-  featureText: {
-    color: colors.text,
-    fontSize: 14,
-    flex: 1,
-  },
-  button: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  buttonSelected: {
-    backgroundColor: colors.primary,
-  },
-  buttonDisabled: {
-    borderColor: colors.textSecondary,
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: colors.primary,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  buttonTextSelected: {
-    color: colors.background,
-  },
-  buttonTextDisabled: {
-    color: colors.textSecondary,
-  },
-});
 
 export default PlanCard;
 

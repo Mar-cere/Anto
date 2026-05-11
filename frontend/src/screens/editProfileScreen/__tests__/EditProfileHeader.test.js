@@ -3,9 +3,13 @@
  * @author AntoApp Team
  */
 
-jest.mock('../editProfileScreenStyles', () => ({ styles: {} }));
+jest.mock('../editProfileScreenStyles', () => ({
+  useEditProfileScreenStyles: () => ({
+    styles: {},
+    editProfileColors: { WHITE: '#fff', PRIMARY: '#1E83D3', ACCENT: '#5C5A78' },
+  }),
+}));
 jest.mock('../editProfileScreenConstants', () => ({
-  COLORS: { WHITE: '#fff', PRIMARY: '#1ADDDB', ACCENT: '#A3B8E8' },
   TEXTS: {
     BACK: 'Volver',
     PROFILE_TITLE: 'Mi Perfil',

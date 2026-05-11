@@ -4,12 +4,16 @@
 import React from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
-import { styles } from './crisisDashboardStyles';
-import { TEXTS, CHART_HEIGHT, CHART_CONFIG } from './crisisDashboardConstants';
+import { useCrisisDashboardStyles } from './crisisDashboardStyles';
+import { TEXTS, CHART_HEIGHT, createChartConfig } from './crisisDashboardConstants';
+import { useTheme } from '../../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
 export function CrisisDashboardMonthlyChart({ crisisByMonth, formatMonthlyData }) {
+  const styles = useCrisisDashboardStyles();
+  const { colors } = useTheme();
+  const chartConfig = createChartConfig(colors);
   const hasBars =
     Array.isArray(crisisByMonth) &&
     crisisByMonth.length > 0 &&
@@ -25,7 +29,7 @@ export function CrisisDashboardMonthlyChart({ crisisByMonth, formatMonthlyData }
             data={formatMonthlyData()}
             width={width - 40}
             height={CHART_HEIGHT}
-            chartConfig={CHART_CONFIG}
+            chartConfig={chartConfig}
             style={styles.chart}
             withInnerLines={false}
             showValuesOnTopOfBars

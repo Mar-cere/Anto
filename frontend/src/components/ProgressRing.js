@@ -1,11 +1,15 @@
-import React, { useState, useEffect} from 'react';
-import {Animated, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Animated, StyleSheet } from 'react-native';
 import Svg, { Circle, Text as SvgText, G, Line } from 'react-native-svg';
+import { useTheme } from '../context/ThemeContext';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 // Componente de anillo de progreso
 const ProgressRing = ({ radius, strokeWidth, progress, color }) => {
+  const { colors } = useTheme();
+  const trackStroke = useMemo(() => colors.border || colors.chromeCardBorder, [colors]);
+  const labelFill = useMemo(() => colors.text, [colors]);
   const normalizedRadius = radius - strokeWidth / 2;
   const circumference = normalizedRadius * 2 * Math.PI;
   const strokeDashoffset = circumference - (progress * circumference);
@@ -28,7 +32,7 @@ const ProgressRing = ({ radius, strokeWidth, progress, color }) => {
   return (
     <Svg height={radius * 2} width={radius * 2} style={styles.svg}>
       <Circle
-        stroke="#e6e6e6"
+        stroke={trackStroke}
         fill="transparent"
         strokeWidth={strokeWidth}
         r={normalizedRadius}
@@ -50,7 +54,7 @@ const ProgressRing = ({ radius, strokeWidth, progress, color }) => {
         x={radius}
         y={radius + 5}
         textAnchor="middle"
-        fill="#FFFFFF"
+        fill={labelFill}
         fontSize="12"
       >
         {`${Math.round(progress * 100)}%`}

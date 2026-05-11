@@ -4,9 +4,8 @@
 import React from 'react';
 import { View, Text, TextInput } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { styles } from './editProfileScreenStyles';
+import { useEditProfileScreenStyles } from './editProfileScreenStyles';
 import {
-  COLORS,
   TEXTS,
   EMAIL_ICON_SIZE,
   EMAIL_ICON_MARGIN_RIGHT,
@@ -18,6 +17,7 @@ export function EditProfileForm({
   editing,
   onFormChange,
 }) {
+  const { styles, editProfileColors } = useEditProfileScreenStyles();
   return (
     <>
       <View style={styles.profileHeader}>
@@ -36,7 +36,7 @@ export function EditProfileForm({
             onChangeText={(text) => onFormChange('name', text)}
             editable={editing}
             placeholder={TEXTS.ADD_NAME}
-            placeholderTextColor={COLORS.ACCENT}
+            placeholderTextColor={editProfileColors.ACCENT}
           />
           {errors.name ? (
             <Text style={styles.errorText}>{errors.name}</Text>
@@ -46,7 +46,7 @@ export function EditProfileForm({
         <View style={styles.inputContainer}>
           <Text style={styles.label}>{TEXTS.USERNAME}</Text>
           <TextInput
-            style={[styles.input, { color: COLORS.ACCENT }]}
+            style={[styles.input, { color: editProfileColors.ACCENT }]}
             value={formData.username}
             editable={false}
           />
@@ -59,7 +59,7 @@ export function EditProfileForm({
             <MaterialCommunityIcons
               name="email"
               size={EMAIL_ICON_SIZE}
-              color={COLORS.ACCENT}
+              color={editProfileColors.ACCENT}
               style={{ marginRight: EMAIL_ICON_MARGIN_RIGHT }}
             />
             <TextInput
@@ -70,7 +70,7 @@ export function EditProfileForm({
               autoCapitalize="none"
               editable={editing}
               placeholder={TEXTS.EMAIL_PLACEHOLDER}
-              placeholderTextColor={COLORS.ACCENT}
+              placeholderTextColor={editProfileColors.ACCENT}
             />
           </View>
           {errors.email ? (

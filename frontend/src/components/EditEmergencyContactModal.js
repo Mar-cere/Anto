@@ -8,7 +8,7 @@
  */
 
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -25,7 +25,8 @@ import {
 import { useToast } from '../context/ToastContext';
 import { api, ENDPOINTS } from '../config/api';
 import { getApiErrorMessage } from '../utils/apiErrorHandler';
-import { colors } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING } from '../constants/ui';
 
 // Constantes de validación
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -65,6 +66,130 @@ const TEXTS = {
 
 const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
   const { showToast } = useToast();
+  const { colors } = useTheme();
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+        },
+        modalOverlay: {
+          flex: 1,
+          backgroundColor: colors.backdropStrong ?? 'rgba(0, 0, 0, 0.5)',
+          justifyContent: 'flex-end',
+        },
+        modalContent: {
+          backgroundColor: colors.modalSurface ?? colors.background,
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          maxHeight: '92%',
+          paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+        },
+        header: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: SPACING.SCREEN_EDGE_INSET,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        },
+        title: {
+          fontSize: 20,
+          fontWeight: 'bold',
+          color: colors.text,
+        },
+        closeButton: {
+          padding: 4,
+        },
+        scrollView: {
+          flex: 1,
+        },
+        scrollContent: {
+          padding: SPACING.SCREEN_EDGE_INSET,
+        },
+        inputGroup: {
+          marginBottom: 20,
+        },
+        label: {
+          fontSize: 14,
+          fontWeight: '600',
+          color: colors.text,
+          marginBottom: 8,
+        },
+        inputContainer: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: colors.chromeInput ?? colors.surface,
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: colors.border,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: 12,
+        },
+        inputError: {
+          borderColor: colors.error,
+        },
+        inputIcon: {
+          marginRight: 10,
+        },
+        input: {
+          flex: 1,
+          fontSize: 16,
+          color: colors.text,
+        },
+        errorText: {
+          fontSize: 12,
+          color: colors.error,
+          marginTop: 4,
+          marginLeft: 4,
+        },
+        helperText: {
+          fontSize: 12,
+          color: colors.textSecondary,
+          marginTop: 4,
+          marginLeft: 4,
+        },
+        footer: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          padding: SPACING.SCREEN_EDGE_INSET,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+          gap: 12,
+        },
+        button: {
+          flex: 1,
+          paddingVertical: 14,
+          borderRadius: 12,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        cancelButton: {
+          backgroundColor: colors.accentLineSoft ?? colors.surface,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+        },
+        cancelButtonText: {
+          fontSize: 16,
+          fontWeight: '600',
+          color: colors.text,
+        },
+        saveButton: {
+          backgroundColor: colors.primary,
+        },
+        saveButtonDisabled: {
+          opacity: 0.6,
+        },
+        saveButtonText: {
+          fontSize: 16,
+          fontWeight: '600',
+          color: colors.textOnPrimary,
+        },
+      }),
+    [colors],
+  );
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -299,7 +424,7 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
-                  <ActivityIndicator size="small" color={colors.white} />
+                  <ActivityIndicator size="small" color={colors.textOnPrimary} />
                 ) : (
                   <Text style={styles.saveButtonText}>{TEXTS.SAVE}</Text>
                 )}
@@ -311,122 +436,6 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
     </Modal>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: colors.background,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '92%',
-    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  closeButton: {
-    padding: 4,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 8,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.inputBackground || colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-  inputError: {
-    borderColor: colors.error || '#FF6B6B',
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: colors.text,
-  },
-  errorText: {
-    fontSize: 12,
-    color: colors.error || '#FF6B6B',
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  helperText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    gap: 12,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButton: {
-    backgroundColor: colors.surface || '#F5F5F5',
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  saveButton: {
-    backgroundColor: colors.primary,
-  },
-  saveButtonDisabled: {
-    opacity: 0.6,
-  },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.white,
-  },
-});
 
 export default EditEmergencyContactModal;
 

@@ -4,7 +4,7 @@
 import cloudinary from 'cloudinary';
 import crypto from 'crypto';
 import express from 'express';
-import rateLimit from 'express-rate-limit';
+import { createRateLimiter } from '../utils/createRateLimiter.js';
 import Joi from 'joi';
 import mongoose from 'mongoose';
 import { CURRENT_TERMS_VERSION } from '../constants/app.js';
@@ -27,7 +27,7 @@ const router = express.Router();
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 
 // Rate limiters: control de frecuencia de peticiones
-const updateProfileLimiter = rateLimit({
+const updateProfileLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 10,
   message: 'Demasiadas actualizaciones de perfil. Por favor, intente más tarde.',
@@ -36,7 +36,7 @@ const updateProfileLimiter = rateLimit({
 });
 
 
-const deleteUserLimiter = rateLimit({
+const deleteUserLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hora
   max: 3,
   message: 'Demasiados intentos de eliminación de cuenta. Por favor, intente más tarde.',
@@ -44,7 +44,7 @@ const deleteUserLimiter = rateLimit({
   legacyHeaders: false
 });
 
-const deleteContactLimiter = rateLimit({
+const deleteContactLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 10,
   message: 'Demasiadas eliminaciones de contactos. Por favor, intente más tarde.',
@@ -52,7 +52,7 @@ const deleteContactLimiter = rateLimit({
   legacyHeaders: false
 });
 
-const patchContactLimiter = rateLimit({
+const patchContactLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 20,
   message: 'Demasiadas modificaciones de contactos. Por favor, intente más tarde.',
@@ -145,7 +145,8 @@ const updateProfileSchema = Joi.object({
     theme: Joi.string().valid('light', 'dark', 'auto'),
     notifications: Joi.boolean(),
     language: Joi.string().valid('es', 'en'),
-    responseStyle: Joi.string().valid('brief', 'balanced', 'deep', 'empatico', 'profesional', 'directo', 'calido', 'estructurado'),
+    timezone: Joi.string().trim().max(64),
+    responseStyle: Joi.string().valid('brief', 'balanced', 'deep', 'empatico', 'estructurado'),
     privacy: Joi.object({
       profileVisibility: Joi.string().valid('public', 'private', 'friends')
     }),
@@ -388,11 +389,19 @@ router.put('/me', authenticateToken, validateUserObjectId, updateProfileLimiter,
           ...valueForUpdate.preferences
         };
       } else if (key === 'notificationPreferences') {
-        // Asegurar que user.notificationPreferences existe antes de hacer el spread
-        user.notificationPreferences = {
-          ...(user.notificationPreferences || {}),
-          ...value.notificationPreferences
-        };
+        const incoming = valueForUpdate.notificationPreferences || {};
+        const prev = user.notificationPreferences || {};
+        const merged = { ...prev, ...incoming };
+        if (incoming.types && typeof incoming.types === 'object') {
+          merged.types = { ...(prev.types || {}), ...incoming.types };
+        }
+        if (incoming.morning && typeof incoming.morning === 'object') {
+          merged.morning = { ...(prev.morning || {}), ...incoming.morning };
+        }
+        if (incoming.evening && typeof incoming.evening === 'object') {
+          merged.evening = { ...(prev.evening || {}), ...incoming.evening };
+        }
+        user.notificationPreferences = merged;
       } else {
         user[key] = valueForUpdate[key];
       }

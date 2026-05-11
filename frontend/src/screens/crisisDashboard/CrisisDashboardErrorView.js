@@ -4,9 +4,9 @@
 import React from 'react';
 import { SafeAreaView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { styles } from './crisisDashboardStyles';
+import { useCrisisDashboardStyles } from './crisisDashboardStyles';
 import { TEXTS, CRISIS_ERROR_DETAIL_MAX_LEN } from './crisisDashboardConstants';
-import { colors } from '../../styles/globalStyles';
+import { useTheme } from '../../context/ThemeContext';
 
 function sanitizeErrorDetail(raw) {
   if (raw == null) return '';
@@ -16,13 +16,15 @@ function sanitizeErrorDetail(raw) {
 }
 
 export function CrisisDashboardErrorView({ error, onRetry }) {
+  const styles = useCrisisDashboardStyles();
+  const { colors, statusBarStyle } = useTheme();
   const detail = sanitizeErrorDetail(error);
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <View style={styles.errorContainer}>
-        <MaterialCommunityIcons name="alert-circle" size={64} color={colors.primary} accessible={false} />
+        <MaterialCommunityIcons name="alert-circle" size={64} color={colors.error} accessible={false} />
         <Text style={styles.errorText}>{TEXTS.ERROR}</Text>
         {detail.length > 0 ? (
           <Text style={styles.errorDetail} accessibilityLabel={detail}>

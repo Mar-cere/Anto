@@ -1,13 +1,13 @@
 /**
  * Fila de tarea con deslizamiento: completar (solo tareas pendientes) y eliminar (con confirmación).
  */
-import React, { useRef, useCallback } from 'react';
+import React, { useMemo, useRef, useCallback } from 'react';
 import { Alert, Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import TaskItem from './TaskItem';
-import { colors } from '../../styles/globalStyles';
+import { useTheme } from '../../context/ThemeContext';
 
 const SWIPE_THRESHOLD = -14;
 const SWIPE_OPEN = -132;
@@ -18,6 +18,65 @@ const OP_HIDDEN = 0;
 const OP_VISIBLE = 1;
 
 export default function SwipeableTaskItem({ item, onPress, onToggleComplete, onDelete, density = 'comfortable' }) {
+  const { colors } = useTheme();
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        wrap: {
+          position: 'relative',
+          width: '100%',
+          marginBottom: 8,
+          overflow: 'hidden',
+          borderRadius: 14,
+        },
+        actions: {
+          position: 'absolute',
+          right: 0,
+          top: 0,
+          bottom: 0,
+          flexDirection: 'row',
+          alignItems: 'stretch',
+          justifyContent: 'flex-end',
+          paddingRight: 8,
+          gap: 8,
+          zIndex: 0,
+        },
+        actionSlot: {
+          justifyContent: 'center',
+          minWidth: 76,
+        },
+        actionBtn: {
+          flex: 1,
+          borderRadius: 14,
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingVertical: 10,
+          paddingHorizontal: 10,
+          minHeight: 96,
+        },
+        completeBg: {
+          backgroundColor: colors.success,
+          opacity: 0.95,
+        },
+        deleteBg: {
+          backgroundColor: colors.error,
+          opacity: 0.95,
+        },
+        actionLabel: {
+          marginTop: 4,
+          color: colors.textOnPrimary,
+          fontSize: 11,
+          fontWeight: '600',
+        },
+        cardLift: {
+          width: '100%',
+          zIndex: 1,
+          backgroundColor: 'transparent',
+        },
+      }),
+    [colors],
+  );
+
   const translateX = useRef(new Animated.Value(0)).current;
   const completeOpacity = useRef(new Animated.Value(OP_HIDDEN)).current;
   const deleteOpacity = useRef(new Animated.Value(OP_HIDDEN)).current;
@@ -142,7 +201,7 @@ export default function SwipeableTaskItem({ item, onPress, onToggleComplete, onD
               accessibilityLabel="Completar tarea"
               accessibilityRole="button"
             >
-              <Ionicons name="checkmark-done" size={26} color={colors.white} />
+              <Ionicons name="checkmark-done" size={26} color={colors.textOnPrimary} />
               <Text style={styles.actionLabel}>Completar</Text>
             </TouchableOpacity>
           </Animated.View>
@@ -155,7 +214,7 @@ export default function SwipeableTaskItem({ item, onPress, onToggleComplete, onD
             accessibilityLabel="Eliminar"
             accessibilityRole="button"
           >
-            <Ionicons name="trash-outline" size={24} color={colors.white} />
+            <Ionicons name="trash-outline" size={24} color={colors.textOnPrimary} />
             <Text style={styles.actionLabel}>Eliminar</Text>
           </TouchableOpacity>
         </Animated.View>
@@ -182,55 +241,3 @@ export default function SwipeableTaskItem({ item, onPress, onToggleComplete, onD
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: {
-    position: 'relative',
-    width: '100%',
-    marginBottom: 8,
-    overflow: 'hidden',
-    borderRadius: 14,
-  },
-  actions: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    justifyContent: 'flex-end',
-    paddingRight: 8,
-    gap: 8,
-    zIndex: 0,
-  },
-  actionSlot: {
-    justifyContent: 'center',
-    minWidth: 76,
-  },
-  actionBtn: {
-    flex: 1,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    minHeight: 96,
-  },
-  completeBg: {
-    backgroundColor: 'rgba(76, 175, 80, 0.95)',
-  },
-  deleteBg: {
-    backgroundColor: 'rgba(255, 107, 107, 0.95)',
-  },
-  actionLabel: {
-    marginTop: 4,
-    color: colors.white,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  cardLift: {
-    width: '100%',
-    zIndex: 1,
-    backgroundColor: 'transparent',
-  },
-});

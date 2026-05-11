@@ -3,16 +3,7 @@
  * @author AntoApp Team
  */
 
-jest.mock('../../../styles/globalStyles', () => ({
-  colors: {
-    background: '#030A24',
-    primary: '#1ADDDB',
-    white: '#FFFFFF',
-    textSecondary: '#A3B8E8',
-    error: '#FF6B6B',
-    cardBackground: 'rgba(255, 255, 255, 0.04)',
-  },
-}));
+jest.mock('../../../styles/globalStyles', () => jest.requireActual('../../../styles/globalStyles'));
 
 import {
   LEGAL_URLS,

@@ -36,25 +36,28 @@ import PendingOfflineMessageBanner from '../components/chat/PendingOfflineMessag
 import ParticleBackground from '../components/ParticleBackground';
 import { SkeletonBlock } from '../components/Skeleton';
 import TrialBanner from '../components/TrialBanner';
+import { useTheme } from '../context/ThemeContext';
 import { useChatScreen } from '../hooks/useChatScreen';
 import { getFeedbackTargetMessageId } from './chat/chatFeedbackAnchor';
+import { SPACING } from '../constants/ui';
 import {
-  CHAT_COLORS,
   formatGuestQuotaBanner,
   ICON_SIZES,
   LAYOUT,
   MESSAGE_ID_PREFIXES,
   STORAGE_KEYS,
   TEXTS,
+  useChatColors,
 } from './chat/chatScreenConstants';
 
 const BACKGROUND_IMAGE = require('../images/back.png');
 const PRIVACY_URL = 'https://www.antoapps.com/privacidad';
 
-const styles = StyleSheet.create({
+function createChatScreenStyles(c, themeColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: CHAT_COLORS.BACKGROUND,
+    backgroundColor: c.BACKGROUND,
     paddingTop: Platform.OS === 'ios' ? LAYOUT.CONTAINER_PADDING_TOP_IOS : 0,
   },
   backgroundImage: {
@@ -75,15 +78,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: LAYOUT.EMPTY_CONTAINER_PADDING,
-    paddingHorizontal: 28,
+    paddingVertical: LAYOUT.EMPTY_CONTAINER_PADDING_VERTICAL,
+    paddingHorizontal: LAYOUT.EMPTY_CONTAINER_PADDING_HORIZONTAL,
   },
   emptyKicker: {
     fontSize: 11,
     fontWeight: '600',
     letterSpacing: 2,
     textTransform: 'uppercase',
-    color: CHAT_COLORS.ACCENT,
+    color: c.ACCENT,
     marginBottom: 14,
     textAlign: 'center',
   },
@@ -92,23 +95,23 @@ const styles = StyleSheet.create({
     opacity: 0.92,
   },
   emptyText: {
-    color: CHAT_COLORS.WHITE,
+    color: c.BOT_TEXT,
     fontSize: 17,
     fontWeight: '600',
     lineHeight: 24,
     textAlign: 'center',
   },
   emptySubtext: {
-    color: CHAT_COLORS.INPUT_PLACEHOLDER,
+    color: c.INPUT_PLACEHOLDER,
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
     marginTop: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
   },
   skeletonContainer: {
     flex: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: LAYOUT.MESSAGES_LIST_PADDING_HORIZONTAL,
     paddingTop: 16,
     paddingBottom: 16,
   },
@@ -125,11 +128,11 @@ const styles = StyleSheet.create({
   skeletonBubble: {
     width: '86%',
     paddingVertical: 12,
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: themeColors.glassFillStrong,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: themeColors.border,
   },
   skeletonBubbleAssistant: {
     borderTopLeftRadius: 6,
@@ -153,33 +156,33 @@ const styles = StyleSheet.create({
     zIndex: 1,
     elevation: 1,
     borderRadius: LAYOUT.SCROLL_BUTTON_BORDER_RADIUS,
-    backgroundColor: CHAT_COLORS.SCROLL_BUTTON_BACKGROUND,
+    backgroundColor: c.SCROLL_BUTTON_BACKGROUND,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CHAT_COLORS.SCROLL_BUTTON_BORDER,
+    borderColor: c.SCROLL_BUTTON_BORDER,
   },
   aiModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(3, 10, 36, 0.82)',
+    backgroundColor: c.MODAL_OVERLAY,
     justifyContent: 'center',
-    padding: 20,
+    padding: SPACING.SCREEN_EDGE_INSET,
   },
   aiModalCard: {
-    backgroundColor: CHAT_COLORS.MODAL_BACKGROUND,
+    backgroundColor: c.MODAL_BACKGROUND,
     borderRadius: 22,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CHAT_COLORS.MODAL_BORDER,
+    borderColor: c.MODAL_BORDER,
     padding: 22,
   },
   aiModalTitle: {
-    color: CHAT_COLORS.WHITE,
+    color: c.BOT_TEXT,
     fontSize: 19,
     fontWeight: '700',
     marginBottom: 10,
   },
   aiModalText: {
-    color: CHAT_COLORS.INPUT_PLACEHOLDER,
+    color: c.INPUT_PLACEHOLDER,
     fontSize: 14,
     lineHeight: 21,
     marginBottom: 18,
@@ -189,26 +192,26 @@ const styles = StyleSheet.create({
   },
   aiPolicyButton: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(163, 184, 232, 0.4)',
+    borderColor: themeColors.accentLine,
     borderRadius: 14,
     paddingVertical: 12,
     alignItems: 'center',
   },
   aiPolicyButtonText: {
-    color: CHAT_COLORS.ACCENT,
+    color: c.ACCENT,
     fontSize: 14,
     fontWeight: '600',
   },
   aiContinueButton: {
-    backgroundColor: CHAT_COLORS.SEND_BUTTON_BACKGROUND,
+    backgroundColor: c.SEND_BUTTON_BACKGROUND,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CHAT_COLORS.SEND_BUTTON_BORDER,
+    borderColor: c.SEND_BUTTON_BORDER,
     borderRadius: 14,
     paddingVertical: 13,
     alignItems: 'center',
   },
   aiContinueButtonText: {
-    color: CHAT_COLORS.WHITE,
+    color: c.BOT_TEXT,
     fontSize: 15,
     fontWeight: '700',
   },
@@ -220,7 +223,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   handoffPrivacyText: {
-    color: CHAT_COLORS.ACCENT,
+    color: c.ACCENT,
     fontSize: 13,
     lineHeight: 19,
     marginTop: 14,
@@ -230,19 +233,27 @@ const styles = StyleSheet.create({
   guestBanner: {
     paddingVertical: LAYOUT.GUEST_BANNER_PADDING_VERTICAL,
     paddingHorizontal: LAYOUT.GUEST_BANNER_PADDING_HORIZONTAL,
-    backgroundColor: CHAT_COLORS.GUEST_BANNER_BACKGROUND,
+    backgroundColor: c.GUEST_BANNER_BACKGROUND,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: CHAT_COLORS.GUEST_BANNER_BORDER,
+    borderBottomColor: c.GUEST_BANNER_BORDER,
   },
   guestBannerText: {
-    color: CHAT_COLORS.ACCENT,
+    color: c.ACCENT,
     fontSize: 13,
     textAlign: 'center',
     lineHeight: 18,
   },
-});
+  });
+}
 
 const ChatScreen = () => {
+  const { colors: themeColors, statusBarStyle } = useTheme();
+  const chatColors = useChatColors();
+  const styles = useMemo(
+    () => createChatScreenStyles(chatColors, themeColors),
+    [chatColors, themeColors],
+  );
+
   const {
     messages,
     setMessages,
@@ -415,14 +426,14 @@ const ChatScreen = () => {
         <Ionicons
           name="chatbubble-ellipses-outline"
           size={56}
-          color={CHAT_COLORS.PRIMARY}
+          color={chatColors.PRIMARY}
           style={styles.emptyIcon}
         />
         <Text style={styles.emptyText}>{TEXTS.EMPTY}</Text>
         <Text style={styles.emptySubtext}>{TEXTS.EMPTY_SUBTITLE}</Text>
       </View>
     ),
-    []
+    [chatColors.PRIMARY, styles],
   );
 
   return (
@@ -436,7 +447,7 @@ const ChatScreen = () => {
       <StatusBar
         translucent
         backgroundColor="transparent"
-        barStyle="light-content"
+        barStyle={statusBarStyle}
       />
 
       <ChatHeader onBack={handleBack} onOpenMenu={() => setShowClearModal(true)} />
@@ -551,7 +562,7 @@ const ChatScreen = () => {
           accessibilityRole="button"
           accessibilityLabel="Ir al final de la conversación"
         >
-          <Ionicons name="chevron-down" size={ICON_SIZES.SCROLL} color={CHAT_COLORS.WHITE} />
+          <Ionicons name="chevron-down" size={ICON_SIZES.SCROLL} color={chatColors.PRIMARY} />
         </TouchableOpacity>
       )}
 

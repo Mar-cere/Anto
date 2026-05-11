@@ -1,12 +1,13 @@
 /**
  * Hook para CrisisDashboardScreen: carga de métricas, tendencias, historial y formateo para gráficos.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, ENDPOINTS } from '../../config/api';
+import { useTheme } from '../../context/ThemeContext';
 import {
   TEXTS,
-  EMOTION_COLORS,
-  RISK_LEVEL_COLORS,
+  createEmotionColors,
+  createRiskLevelColors,
   RISK_LEVEL_TEXTS,
   TREND_PERIODS,
 } from './crisisDashboardConstants';
@@ -45,6 +46,10 @@ function pickSummaryFailureMessage(settledSummary) {
 }
 
 export function useCrisisDashboardScreen() {
+  const { colors } = useTheme();
+  const emotionColorMap = useMemo(() => createEmotionColors(colors), [colors]);
+  const riskLevelColorMap = useMemo(() => createRiskLevelColors(colors), [colors]);
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -211,15 +216,16 @@ export function useCrisisDashboardScreen() {
       .map(([emotion, value]) => ({
         name: emotion.charAt(0).toUpperCase() + emotion.slice(1),
         value: Math.round(Number(value) * 100),
-        color: EMOTION_COLORS[emotion] || '#1ADDDB',
-        legendFontColor: '#ffffff',
+        color: emotionColorMap[emotion] || colors.primary,
+        legendFontColor: colors.textSecondary,
         legendFontSize: 12,
       }));
-  }, [emotionDistribution]);
+  }, [emotionDistribution, emotionColorMap, colors.primary, colors.textSecondary]);
 
-  const getRiskLevelColor = useCallback((level) => {
-    return RISK_LEVEL_COLORS[level] || RISK_LEVEL_COLORS.LOW;
-  }, []);
+  const getRiskLevelColor = useCallback(
+    (level) => riskLevelColorMap[level] || riskLevelColorMap.LOW,
+    [riskLevelColorMap],
+  );
 
   const getRiskLevelText = useCallback((level) => {
     if (level != null && RISK_LEVEL_TEXTS[level]) return RISK_LEVEL_TEXTS[level];
@@ -257,10 +263,10 @@ export function useCrisisDashboardScreen() {
 
   const getTrendInlineColor = useCallback(() => {
     if (!trends?.trend) return null;
-    if (trends.trend === 'improving') return '#4ECDC4';
-    if (trends.trend === 'declining') return '#FF6B6B';
+    if (trends.trend === 'improving') return colors.success;
+    if (trends.trend === 'declining') return colors.error;
     return null;
-  }, [trends]);
+  }, [trends, colors.success, colors.error]);
 
   return {
     loading,

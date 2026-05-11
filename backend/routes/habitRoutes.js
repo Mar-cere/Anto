@@ -2,7 +2,7 @@
  * Rutas de Hábitos - Gestiona CRUD de hábitos, progreso, estadísticas y recordatorios
  */
 import express from 'express';
-import rateLimit from 'express-rate-limit';
+import { createRateLimiter } from '../utils/createRateLimiter.js';
 import Joi from 'joi';
 import mongoose from 'mongoose';
 import { authenticateToken } from '../middleware/auth.js';
@@ -31,7 +31,7 @@ const MIN_MONTH = 1;
 const MAX_MONTH = 12;
 
 // Rate limiters: control de frecuencia de peticiones
-const createHabitLimiter = rateLimit({
+const createHabitLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 10,
   message: 'Demasiados hábitos creados. Por favor, intente más tarde.',
@@ -39,7 +39,7 @@ const createHabitLimiter = rateLimit({
   legacyHeaders: false
 });
 
-const updateHabitLimiter = rateLimit({
+const updateHabitLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 30,
   message: 'Demasiadas actualizaciones. Por favor, intente más tarde.',
@@ -47,7 +47,7 @@ const updateHabitLimiter = rateLimit({
   legacyHeaders: false
 });
 
-const deleteHabitLimiter = rateLimit({
+const deleteHabitLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 10,
   message: 'Demasiadas eliminaciones. Por favor, intente más tarde.',
@@ -55,7 +55,7 @@ const deleteHabitLimiter = rateLimit({
   legacyHeaders: false
 });
 
-const patchHabitLimiter = rateLimit({
+const patchHabitLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 20,
   message: 'Demasiadas modificaciones. Por favor, intente más tarde.',

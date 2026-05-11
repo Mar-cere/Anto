@@ -5,14 +5,16 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { styles } from './crisisDashboardStyles';
+import { useCrisisDashboardStyles } from './crisisDashboardStyles';
 import { TEXTS } from './crisisDashboardConstants';
-import { colors } from '../../styles/globalStyles';
+import { useTheme } from '../../context/ThemeContext';
 import { crisisSafeNavigate } from './crisisDashboardNavigate';
 
 const SUPPORT_ICON_SIZE = 24;
 
 export function CrisisDashboardSupportSection({ navigation }) {
+  const styles = useCrisisDashboardStyles();
+  const { colors } = useTheme();
   const goProfile = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     crisisSafeNavigate(navigation, 'MainTabs', { screen: 'Perfil' });

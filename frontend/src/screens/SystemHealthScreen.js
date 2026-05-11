@@ -3,7 +3,7 @@
  * 
  * Muestra métricas y estadísticas del sistema para administradores
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,14 +16,126 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { api, ENDPOINTS } from '../config/api';
-import { colors } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING } from '../constants/ui';
 
 const SystemHealthScreen = () => {
+  const { colors } = useTheme();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [healthStats, setHealthStats] = useState(null);
   const [systemMetrics, setSystemMetrics] = useState(null);
   const [error, setError] = useState(null);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        content: {
+          padding: SPACING.SCREEN_EDGE_INSET,
+        },
+        loadingContainer: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        loadingText: {
+          marginTop: 16,
+          color: colors.text,
+          fontSize: 16,
+        },
+        errorContainer: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 32,
+        },
+        errorText: {
+          marginTop: 16,
+          color: colors.error,
+          fontSize: 16,
+          textAlign: 'center',
+        },
+        retryButton: {
+          marginTop: 24,
+          paddingHorizontal: 24,
+          paddingVertical: 12,
+          backgroundColor: colors.primary,
+          borderRadius: 8,
+        },
+        retryButtonText: {
+          color: colors.white,
+          fontSize: 16,
+          fontWeight: '600',
+        },
+        section: {
+          marginBottom: 24,
+        },
+        sectionTitle: {
+          fontSize: 20,
+          fontWeight: 'bold',
+          color: colors.text,
+          marginBottom: 12,
+        },
+        card: {
+          backgroundColor: colors.cardBackground || colors.background,
+          borderRadius: 12,
+          padding: SPACING.SCREEN_EDGE_INSET,
+          borderWidth: 1,
+          borderColor: colors.border || `${colors.accent}30`,
+        },
+        statusCard: {
+          backgroundColor: colors.cardBackground || colors.background,
+          borderRadius: 12,
+          padding: SPACING.SCREEN_EDGE_INSET,
+          borderLeftWidth: 4,
+        },
+        statusHeader: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginBottom: 16,
+        },
+        statusText: {
+          fontSize: 24,
+          fontWeight: 'bold',
+          marginLeft: 12,
+        },
+        metricRow: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingVertical: 8,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border || `${colors.accent}20`,
+        },
+        metricLabel: {
+          fontSize: 16,
+          color: colors.text,
+          flex: 1,
+        },
+        metricValue: {
+          fontSize: 16,
+          fontWeight: '600',
+          color: colors.primary,
+        },
+        subsection: {
+          marginTop: 16,
+          paddingTop: 16,
+          borderTopWidth: 1,
+          borderTopColor: colors.border || `${colors.accent}20`,
+        },
+        subsectionTitle: {
+          fontSize: 14,
+          fontWeight: '600',
+          color: colors.accent,
+          marginBottom: 8,
+        },
+      }),
+    [colors],
+  );
 
   const loadData = useCallback(async () => {
     try {
@@ -62,11 +174,11 @@ const SystemHealthScreen = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'healthy':
-        return colors.success || '#4CAF50';
+        return colors.success;
       case 'degraded':
-        return colors.warning || '#FF9800';
+        return colors.warning;
       case 'unhealthy':
-        return colors.error || '#F44336';
+        return colors.error;
       default:
         return colors.text;
     }
@@ -248,112 +360,6 @@ const SystemHealthScreen = () => {
     </ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: 16,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    color: colors.text,
-    fontSize: 16,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  errorText: {
-    marginTop: 16,
-    color: colors.error,
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  retryButton: {
-    marginTop: 24,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 12,
-  },
-  card: {
-    backgroundColor: colors.cardBackground || colors.background,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.border || colors.accent + '30',
-  },
-  statusCard: {
-    backgroundColor: colors.cardBackground || colors.background,
-    borderRadius: 12,
-    padding: 16,
-    borderLeftWidth: 4,
-  },
-  statusHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  statusText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginLeft: 12,
-  },
-  metricRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border || colors.accent + '20',
-  },
-  metricLabel: {
-    fontSize: 16,
-    color: colors.text,
-    flex: 1,
-  },
-  metricValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  subsection: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: colors.border || colors.accent + '20',
-  },
-  subsectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.accent,
-    marginBottom: 8,
-  },
-});
 
 export default SystemHealthScreen;
 

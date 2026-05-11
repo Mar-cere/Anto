@@ -7,12 +7,13 @@
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { api, ENDPOINTS } from '../config/api';
 import { useToast } from '../context/ToastContext';
-import { colors } from '../styles/globalStyles';
+import { useTheme } from '../context/ThemeContext';
 import { getApiErrorMessage } from '../utils/apiErrorHandler';
+import { SPACING } from '../constants/ui';
 
 const TEXTS = {
   TITLE: 'Para adaptarte mejor',
@@ -32,18 +33,141 @@ const OPTIONS = {
 };
 
 const UI = {
-  CARD_BACKGROUND: '#122052',
-  CARD_BORDER: 'rgba(26, 221, 219, 0.25)',
   OVERLAY: 'rgba(0,0,0,0.6)',
 };
 
 const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) => {
   const { showToast } = useToast();
+  const { colors } = useTheme();
   const [whatExpectFromApp, setWhatExpectFromApp] = useState('');
   const [whatToImproveOrWorkOn, setWhatToImproveOrWorkOn] = useState('');
   const [typeOfSpecialist, setTypeOfSpecialist] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        overlay: {
+          flex: 1,
+          backgroundColor: UI.OVERLAY,
+          justifyContent: 'center',
+          padding: SPACING.SCREEN_EDGE_INSET,
+        },
+        card: {
+          backgroundColor: colors.modalSurface ?? colors.chromeCard,
+          borderWidth: 1,
+          borderColor: colors.accentLine,
+          borderRadius: 16,
+          padding: SPACING.SCREEN_EDGE_INSET,
+          maxHeight: '92%',
+        },
+        header: {
+          alignItems: 'center',
+          marginBottom: 16,
+        },
+        iconCircle: {
+          width: 52,
+          height: 52,
+          borderRadius: 26,
+          backgroundColor: colors.accentLineSoft,
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginBottom: 12,
+        },
+        title: {
+          fontSize: 19,
+          fontWeight: '700',
+          color: colors.text,
+          textAlign: 'center',
+          marginBottom: 6,
+        },
+        subtitle: {
+          fontSize: 13,
+          color: colors.textSecondary,
+          textAlign: 'center',
+          lineHeight: 19,
+        },
+        scroll: {
+          maxHeight: 380,
+        },
+        scrollContent: {
+          paddingBottom: 12,
+        },
+        field: {
+          marginBottom: 14,
+        },
+        label: {
+          color: colors.text,
+          fontSize: 13,
+          fontWeight: '700',
+          marginBottom: 10,
+        },
+        optionList: {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: 10,
+        },
+        optionChip: {
+          borderRadius: 999,
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: colors.glassFill,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: 10,
+        },
+        optionChipSelected: {
+          borderColor: colors.primary,
+          backgroundColor: colors.accentLineSoft,
+        },
+        optionChipText: {
+          color: colors.text,
+          fontSize: 13,
+          fontWeight: '600',
+        },
+        optionChipTextSelected: {
+          color: colors.primary,
+        },
+        errorText: {
+          color: colors.error,
+          marginTop: 8,
+          marginBottom: 6,
+          textAlign: 'center',
+          fontSize: 13,
+          lineHeight: 18,
+        },
+        actions: {
+          marginTop: 16,
+          gap: 10,
+        },
+        primaryButton: {
+          backgroundColor: colors.primary,
+          borderRadius: 14,
+          paddingVertical: 14,
+          alignItems: 'center',
+        },
+        primaryButtonText: {
+          color: colors.textOnPrimary,
+          fontSize: 14,
+          fontWeight: '800',
+          letterSpacing: 0.3,
+        },
+        skipButton: {
+          borderRadius: 14,
+          paddingVertical: 13,
+          alignItems: 'center',
+          backgroundColor: colors.glassFill,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        skipButtonText: {
+          color: colors.textSecondary,
+          fontSize: 13,
+          fontWeight: '700',
+        },
+      }),
+    [colors],
+  );
 
   const handleSkip = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -186,7 +310,7 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
                 activeOpacity={0.8}
               >
                 {loading ? (
-                  <ActivityIndicator color={colors.white} size="small" />
+                  <ActivityIndicator color={colors.textOnPrimary} size="small" />
                 ) : (
                   <Text style={styles.primaryButtonText}>{TEXTS.SUBMIT}</Text>
                 )}
@@ -215,116 +339,6 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
   );
 };
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: UI.OVERLAY,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  card: {
-    backgroundColor: UI.CARD_BACKGROUND,
-    borderWidth: 1,
-    borderColor: UI.CARD_BORDER,
-    borderRadius: 16,
-    padding: 20,
-    maxHeight: '92%',
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  iconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: colors.primary + '22',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 19,
-    fontWeight: '700',
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 19,
-  },
-  scroll: {
-    maxHeight: 380,
-  },
-  scrollContent: {
-    paddingBottom: 12,
-  },
-  field: {
-    marginBottom: 14,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 8,
-  },
-  optionList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  optionChip: {
-    borderWidth: 1,
-    borderColor: colors.textSecondary + '40',
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  optionChipSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primary + '22',
-  },
-  optionChipText: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  optionChipTextSelected: {
-    color: colors.primary,
-  },
-  errorText: {
-    fontSize: 13,
-    color: colors.error || '#c62828',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  actions: {
-    gap: 10,
-    marginTop: 8,
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  primaryButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  skipButton: {
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  skipButtonText: {
-    color: colors.textSecondary,
-    fontSize: 15,
-  },
-});
+// `styles` se deriva del tema dentro del componente.
 
 export default OnboardingQuestions;

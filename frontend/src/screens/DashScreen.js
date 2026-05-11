@@ -45,7 +45,6 @@ import { api, ENDPOINTS } from '../config/api';
 import { ANIMATION_DURATIONS, ANIMATION_OPACITIES, ANIMATION_SCALES } from '../constants/animations';
 import { DASH } from '../constants/translations';
 import { BORDERS, OPACITIES, SPACING, STATUS_BAR } from '../constants/ui';
-import { colors } from '../styles/globalStyles';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getGreetingByHourAndDayAndName } from '../utils/greetings';
 import { areNotificationsEnabled, registerForPushNotifications, requestNotificationPermissions } from '../services/pushNotificationService';
@@ -53,6 +52,7 @@ import paymentService from '../services/paymentService';
 import TrialBanner from '../components/TrialBanner';
 import OfflineBanner from '../components/OfflineBanner';
 import NotificationsPromptBanner from '../components/NotificationsPromptBanner';
+import { useTheme } from '../context/ThemeContext';
 import {
   computeNextPromptAt,
   getNotificationsPromptNextAtKey,
@@ -71,29 +71,124 @@ const STORAGE_KEYS = {
   NOTIFICATIONS_PROMPT_DISMISSED_PREFIX: 'notificationsPromptDismissed:', // legacy (migración)
 };
 
-// Componente para mostrar errores con opciones de recuperación
-const ErrorMessage = ({ message, onRetry, onDismiss }) => (
-  <View style={styles.errorContainer}>
-    <Text style={styles.errorText}>{DASH.ERROR_PREFIX}{message}</Text>
-    <View style={styles.errorButtonsContainer}>
-      {onRetry && (
-        <TouchableOpacity style={styles.errorButton} onPress={onRetry}>
-          <Text style={styles.errorButtonText}>{DASH.RETRY}</Text>
-        </TouchableOpacity>
-      )}
-      {onDismiss && (
-        <TouchableOpacity style={styles.errorButton} onPress={onDismiss}>
-          <Text style={styles.errorButtonText}>{DASH.DISMISS}</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  </View>
-);
-
-
 const DashScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const { colors, statusBarStyle } = useTheme();
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        safeAreaRoot: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        safeAreaMain: {
+          flex: 1,
+          backgroundColor: 'transparent',
+        },
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        centerContent: {
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        loadingText: {
+          color: colors.textSecondary,
+          fontSize: 18,
+          marginTop: SPACING.LOADING_TEXT_MARGIN_TOP,
+        },
+        skeletonScreen: {
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+        },
+        skeletonHeader: {
+          marginBottom: 18,
+        },
+        skeletonHeaderLine: {
+          marginTop: 10,
+        },
+        skeletonCard: {
+          marginBottom: 20,
+        },
+        background: {
+          flex: 1,
+          width: '100%',
+          /** Base uniforme bajo la imagen (opacidad baja): evita franja distinta si el header es transparente. */
+          backgroundColor: colors.background,
+        },
+        imageStyle: {
+          opacity: OPACITIES.IMAGE_BACKGROUND,
+        },
+        /**
+         * Transparente: la misma capa ImageBackground + partículas se ve detrás del saludo
+         * que bajo el scroll. Un color sólido aquí tapaba la textura y marcaba una división.
+         */
+        headerFixed: {
+          backgroundColor: 'transparent',
+          borderBottomWidth: 0,
+          zIndex: 2,
+        },
+        errorContainer: {
+          alignSelf: 'stretch',
+          backgroundColor: colors.dangerSoft ?? 'rgba(255, 107, 107, 0.12)',
+          borderRadius: 22,
+          padding: SPACING.ERROR_PADDING,
+          marginBottom: SPACING.ERROR_MARGIN_BOTTOM,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.dangerBorder ?? 'rgba(255, 107, 107, 0.35)',
+        },
+        errorText: {
+          color: colors.text,
+          fontSize: 15,
+          lineHeight: 22,
+          marginBottom: SPACING.ERROR_TEXT_MARGIN_BOTTOM,
+        },
+        errorButtonsContainer: {
+          flexDirection: 'row',
+          justifyContent: 'flex-end',
+        },
+        errorButtonText: {
+          color: colors.text,
+          fontSize: 14,
+        },
+        errorButton: {
+          paddingHorizontal: SPACING.ERROR_BUTTON_PADDING_HORIZONTAL,
+          paddingVertical: SPACING.ERROR_BUTTON_PADDING_VERTICAL,
+          borderRadius: BORDERS.ERROR_BUTTON_RADIUS,
+          backgroundColor: colors.glassFill ?? 'rgba(255, 255, 255, 0.2)',
+          marginLeft: SPACING.ERROR_BUTTON_MARGIN_LEFT,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.glassOutline ?? colors.border ?? 'rgba(255,255,255,0.14)',
+        },
+      }),
+    [colors],
+  );
+
+  const ErrorMessage = useCallback(
+    ({ message, onRetry, onDismiss }) => (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>
+          {DASH.ERROR_PREFIX}
+          {message}
+        </Text>
+        <View style={styles.errorButtonsContainer}>
+          {onRetry ? (
+            <TouchableOpacity style={styles.errorButton} onPress={onRetry}>
+              <Text style={styles.errorButtonText}>{DASH.RETRY}</Text>
+            </TouchableOpacity>
+          ) : null}
+          {onDismiss ? (
+            <TouchableOpacity style={styles.errorButton} onPress={onDismiss}>
+              <Text style={styles.errorButtonText}>{DASH.DISMISS}</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </View>
+    ),
+    [styles],
+  );
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -684,7 +779,7 @@ const DashScreen = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle={STATUS_BAR.STYLE} backgroundColor={colors.background} />
+      <StatusBar barStyle={statusBarStyle ?? STATUS_BAR.STYLE} backgroundColor={colors.background} />
       <ImageBackground
         source={require('../images/back.png')}
         style={styles.background}
@@ -707,7 +802,7 @@ const DashScreen = () => {
             loadData(true);
           }}
           contentContainerStyle={{
-            paddingBottom: insets.bottom + 132,
+            paddingBottom: insets.bottom + SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA,
           }}
         >
           {/* Trial Banner */}
@@ -731,7 +826,7 @@ const DashScreen = () => {
           />
           <QuoteSection />
           {error && (
-            <ErrorMessage 
+            <ErrorMessage
               message={error}
               onRetry={() => loadData(true)}
               onDismiss={() => setError(null)}
@@ -757,14 +852,14 @@ const DashScreen = () => {
               accessibilityLabel={DASH.HABITS_LABEL}
             />
           </Animated.View>
-          <PomodoroCard accessibilityLabel={DASH.POMODORO_LABEL} />
+          <PomodoroCard accessibilityLabel={DASH.POMODORO_LABEL} collapsible defaultExpanded={false} />
           <Animated.View style={refreshAnimationStyle}>
             <JournalCard />
           </Animated.View>
         </DashboardScroll>
         </SafeAreaView>
       </ImageBackground>
-      <FloatingNavBar activeTab="home" accessibilityLabel={DASH.NAVBAR_LABEL} slotBottomOffset={0} />
+      <FloatingNavBar activeTab="home" accessibilityLabel={DASH.NAVBAR_LABEL} />
       
       {/* Overlay de resaltado para el tutorial */}
       <TutorialHighlight
@@ -808,81 +903,3 @@ const DashScreen = () => {
 };
 
 export default memo(DashScreen);
-
-const styles = StyleSheet.create({
-  safeAreaRoot: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  safeAreaMain: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  centerContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: '#A3B8E8',
-    fontSize: 18,
-    marginTop: SPACING.LOADING_TEXT_MARGIN_TOP,
-  },
-  skeletonScreen: {
-    paddingHorizontal: 16,
-  },
-  skeletonHeader: {
-    marginBottom: 18,
-  },
-  skeletonHeaderLine: {
-    marginTop: 10,
-  },
-  skeletonCard: {
-    marginBottom: 20,
-  },
-  background: {
-    flex: 1,
-    width: '100%',
-  },
-  imageStyle: {
-    opacity: OPACITIES.IMAGE_BACKGROUND,
-  },
-  headerFixed: {
-    backgroundColor: colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(163, 184, 232, 0.1)',
-    zIndex: 2,
-  },
-  errorContainer: {
-    alignSelf: 'stretch',
-    backgroundColor: 'rgba(255, 107, 107, 0.12)',
-    borderRadius: 22,
-    padding: SPACING.ERROR_PADDING,
-    marginBottom: SPACING.ERROR_MARGIN_BOTTOM,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255, 107, 107, 0.35)',
-  },
-  errorText: {
-    color: 'rgba(255,255,255,0.92)',
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: SPACING.ERROR_TEXT_MARGIN_BOTTOM,
-  },
-  errorButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-  errorButtonText: {
-    color: colors.white,
-    fontSize: 14,
-  },
-  errorButton: {
-    paddingHorizontal: SPACING.ERROR_BUTTON_PADDING_HORIZONTAL,
-    paddingVertical: SPACING.ERROR_BUTTON_PADDING_VERTICAL,
-    borderRadius: BORDERS.ERROR_BUTTON_RADIUS,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    marginLeft: SPACING.ERROR_BUTTON_MARGIN_LEFT,
-  },
-});

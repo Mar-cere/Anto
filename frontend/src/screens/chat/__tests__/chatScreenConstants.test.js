@@ -14,14 +14,9 @@ jest.mock('react-native', () => ({
   },
 }));
 
-jest.mock('../../../styles/globalStyles', () => ({
-  colors: {
-    background: '#030A24',
-    primary: '#1ADDDB',
-    white: '#FFFFFF',
-  },
-}));
+jest.mock('../../../styles/globalStyles', () => jest.requireActual('../../../styles/globalStyles'));
 
+import { lightColors } from '../../../styles/themePalettes';
 import {
   TEXTS,
   STORAGE_KEYS,
@@ -135,11 +130,12 @@ describe('chatScreenConstants', () => {
   describe('CHAT_COLORS', () => {
     it('debe tener colores para burbujas y UI', () => {
       expect(CHAT_COLORS.USER_BUBBLE).toBeDefined();
-      expect(CHAT_COLORS.BOT_BUBBLE).toBe('rgba(29, 43, 95, 0.88)');
-      expect(CHAT_COLORS.ACCENT).toBe('rgba(163, 184, 232, 0.85)');
+      expect(CHAT_COLORS.BOT_BUBBLE).toBe('rgba(255, 255, 255, 0.9)');
+      expect(CHAT_COLORS.ACCENT).toBe(lightColors.primary);
       expect(CHAT_COLORS.BOT_BUBBLE_BORDER).toBeDefined();
       expect(CHAT_COLORS.INPUT_PLACEHOLDER).toBeDefined();
-      expect(CHAT_COLORS.ERROR).toBe('#FF6464');
+      expect(CHAT_COLORS.ERROR).toBe(lightColors.error);
+      expect(CHAT_COLORS.SEND_BUTTON_DISABLED_BACKGROUND).toBe(lightColors.chromeInputDisabled);
     });
   });
 

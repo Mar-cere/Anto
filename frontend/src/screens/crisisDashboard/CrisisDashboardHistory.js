@@ -4,10 +4,13 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { styles } from './crisisDashboardStyles';
+import { useTheme } from '../../context/ThemeContext';
+import { useCrisisDashboardStyles } from './crisisDashboardStyles';
 import { TEXTS } from './crisisDashboardConstants';
 
 export function CrisisDashboardHistory({ history, formatDate, getRiskLevelColor, getRiskLevelText, onViewAll }) {
+  const { colors } = useTheme();
+  const styles = useCrisisDashboardStyles();
   const items = Array.isArray(history) ? history : [];
   const hasItems = items.length > 0;
 
@@ -36,7 +39,7 @@ export function CrisisDashboardHistory({ history, formatDate, getRiskLevelColor,
               <Text style={styles.historyRisk}>{getRiskLevelText(crisis.riskLevel)}</Text>
             </View>
             {crisis.alerts?.sent && (
-              <MaterialCommunityIcons name="bell" size={20} color="#1ADDDB" />
+              <MaterialCommunityIcons name="bell" size={20} color={colors.primary} />
             )}
           </View>
           {crisis.triggerMessage?.contentPreview && (

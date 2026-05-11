@@ -4,8 +4,8 @@
  */
 import React from 'react';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  ImageBackground,
   RefreshControl,
   SafeAreaView,
   ScrollView,
@@ -23,10 +23,11 @@ import { ProfileOptions } from './profileScreen/ProfileOptions';
 import { ProfileEmergencySection } from './profileScreen/ProfileEmergencySection';
 import { ProfileLogoutButton } from './profileScreen/ProfileLogoutButton';
 import { LastSessionSummaryCard } from '../components/LastSessionSummaryCard';
-import { styles } from './profileScreen/profileScreenStyles';
-import { COLORS, SCROLL_PADDING_BOTTOM, BACKGROUND_IMAGE } from './profileScreen/profileScreenConstants';
+import { useProfileScreenStyles } from './profileScreen/profileScreenStyles';
 
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
+  const { styles, profileColors } = useProfileScreenStyles();
   const navigation = useNavigation();
   const {
     loading,
@@ -55,41 +56,51 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ImageBackground
-        source={BACKGROUND_IMAGE}
-        style={styles.background}
-        imageStyle={styles.imageStyle}
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+      <ProfileHeader navigation={navigation} />
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={profileColors.PRIMARY}
+            colors={[profileColors.PRIMARY]}
+            progressBackgroundColor={profileColors.REFRESH_PROGRESS_BACKGROUND}
+          />
+        }
       >
-        <ScrollView
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={COLORS.PRIMARY}
-              colors={[COLORS.PRIMARY]}
-              progressBackgroundColor={COLORS.REFRESH_PROGRESS_BACKGROUND}
-            />
-          }
-          contentContainerStyle={{ paddingBottom: SCROLL_PADDING_BOTTOM }}
-        >
-          <ProfileHeader navigation={navigation} />
-
+        <View style={styles.sectionBlock}>
           <View style={styles.profileSection}>
             <Text style={styles.userName}>{userData.username}</Text>
             <Text style={styles.userEmail}>{userData.email}</Text>
           </View>
-
-          <ProfileSubscription subscriptionStatus={subscriptionStatus} />
-          <LastSessionSummaryCard
-            summary={lastSessionSummary}
-            onOpenChat={() => openChatFromLastSession(lastSessionSummary?.conversationId)}
+          <ProfileSubscription
+            subscriptionStatus={subscriptionStatus}
+            nestedAfterProfile
           />
+        </View>
+
+        {lastSessionSummary ? (
+          <View style={styles.sectionBlock}>
+            <LastSessionSummaryCard
+              summary={lastSessionSummary}
+              flushWithParentGutter
+              onOpenChat={() => openChatFromLastSession(lastSessionSummary?.conversationId)}
+            />
+          </View>
+        ) : null}
+
+        <View style={styles.sectionBlock}>
           <ProfileStats userData={userData} detailedStats={detailedStats} />
+        </View>
+
+        <View style={styles.sectionBlock}>
           <ProfileOptions navigation={navigation} />
+        </View>
 
-          <View style={styles.separator} />
-
+        <View style={styles.sectionBlock}>
           <ProfileEmergencySection
             emergencyContacts={emergencyContacts}
             loadingContacts={loadingContacts}
@@ -99,10 +110,10 @@ export default function ProfileScreen() {
             onOpenCrisisDashboard={() => navigation.navigate('CrisisDashboard')}
             onOpenAlertsHistory={() => navigation.navigate('EmergencyAlertsHistory')}
           />
+        </View>
 
-          <ProfileLogoutButton onLogout={handleLogout} />
-        </ScrollView>
-      </ImageBackground>
+        <ProfileLogoutButton onLogout={handleLogout} />
+      </ScrollView>
 
       <EmergencyContactsModal
         visible={showEmergencyContactsModal}

@@ -2,14 +2,18 @@
  * Estilos para EmergencyAlertsHistoryScreen y subcomponentes
  * Alineados con globalStyles (misma base que dashboard de crisis / perfil).
  */
+import { useMemo } from 'react';
 import { StyleSheet } from 'react-native';
-import { colors } from '../../styles/globalStyles';
+import { useTheme } from '../../context/ThemeContext';
 import { TYPOGRAPHY } from '../../constants/ui';
+import { lightColors } from '../../styles/themePalettes';
+import { SPACING } from '../../constants/ui';
 
-const CARD_SURFACE = colors.cardBackground;
-const CARD_BORDER = colors.border;
+export function createEmergencyAlertsHistoryStyles(colors) {
+  const CARD_SURFACE = colors.cardBackground;
+  const CARD_BORDER = colors.border;
 
-export const styles = StyleSheet.create({
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -19,7 +23,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#FFFFFF',
+    color: colors.text,
     marginTop: 16,
     fontSize: 16,
   },
@@ -27,10 +31,10 @@ export const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: SPACING.SCREEN_EDGE_INSET,
   },
   errorText: {
-    color: '#FFFFFF',
+    color: colors.text,
     fontSize: 16,
     textAlign: 'center',
     marginTop: 16,
@@ -41,7 +45,7 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
     marginBottom: 24,
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     lineHeight: 18,
   },
   retryButton: {
@@ -51,7 +55,7 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
   },
   retryButtonText: {
-    color: '#FFFFFF',
+    color: colors.textOnPrimary,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -59,7 +63,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: CARD_BORDER,
@@ -68,7 +72,7 @@ export const styles = StyleSheet.create({
     padding: 8,
   },
   headerTitle: {
-    color: colors.white,
+    color: colors.text,
     fontSize: TYPOGRAPHY.SUBTITLE,
     fontWeight: '600',
   },
@@ -108,7 +112,7 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.error,
   },
   tabCountBadge: {
-    backgroundColor: 'rgba(26, 221, 219, 0.18)',
+    backgroundColor: colors.accentLineSoft,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
@@ -122,7 +126,7 @@ export const styles = StyleSheet.create({
     fontWeight: '700',
   },
   tabCountBadgeTextActive: {
-    color: colors.white,
+    color: colors.textOnPrimary,
   },
   tabCountBadgeActive: {
     backgroundColor: colors.primary,
@@ -144,12 +148,12 @@ export const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   tabContent: {
-    padding: 20,
+    padding: SPACING.SCREEN_EDGE_INSET,
   },
   summaryCard: {
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: 20,
+    padding: SPACING.SCREEN_EDGE_INSET,
     marginBottom: 20,
     alignItems: 'center',
     borderWidth: 1,
@@ -175,11 +179,11 @@ export const styles = StyleSheet.create({
   },
   tabErrorContainer: {
     paddingVertical: 32,
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     alignItems: 'center',
   },
   tabErrorText: {
-    color: colors.white,
+    color: colors.text,
     fontSize: 15,
     textAlign: 'center',
     marginBottom: 16,
@@ -192,7 +196,7 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
   },
   tabRetryButtonText: {
-    color: colors.white,
+    color: colors.textOnPrimary,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -200,7 +204,7 @@ export const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    color: colors.white,
+    color: colors.text,
     fontSize: TYPOGRAPHY.SUBTITLE,
     fontWeight: '600',
     marginBottom: 16,
@@ -219,7 +223,7 @@ export const styles = StyleSheet.create({
   historyItem: {
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: 16,
+    padding: SPACING.SCREEN_EDGE_INSET,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: CARD_BORDER,
@@ -240,22 +244,22 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   historyItemContact: {
-    color: '#FFFFFF',
+    color: colors.text,
     fontSize: 16,
     fontWeight: '600',
   },
   historyItemDate: {
-    color: '#999',
+    color: colors.textSecondary,
     fontSize: 12,
     marginTop: 4,
   },
   statusBadge: {
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     paddingVertical: 4,
     borderRadius: 12,
   },
   statusBadgeText: {
-    color: '#FFFFFF',
+    color: colors.textOnPrimary,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -268,7 +272,7 @@ export const styles = StyleSheet.create({
     marginBottom: 8,
   },
   detailLabel: {
-    color: '#999',
+    color: colors.textSecondary,
     fontSize: 14,
     marginRight: 8,
   },
@@ -278,7 +282,7 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
   },
   riskBadgeText: {
-    color: '#FFFFFF',
+    color: colors.textOnPrimary,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -290,22 +294,22 @@ export const styles = StyleSheet.create({
   channelBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0A1533',
+    backgroundColor: colors.glassFill,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
     gap: 4,
   },
   channelText: {
-    color: '#FFFFFF',
+    color: colors.text,
     fontSize: 12,
   },
   noChannelsText: {
-    color: '#FF6B6B',
+    color: colors.error,
     fontSize: 12,
   },
   testBadge: {
-    backgroundColor: '#1ADDDB',
+    backgroundColor: colors.primary,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -313,20 +317,20 @@ export const styles = StyleSheet.create({
     marginTop: 8,
   },
   testBadgeText: {
-    color: '#0A1533',
+    color: colors.textOnPrimary,
     fontSize: 12,
     fontWeight: '600',
   },
   contactCard: {
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: 16,
+    padding: SPACING.SCREEN_EDGE_INSET,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: CARD_BORDER,
   },
   contactName: {
-    color: '#FFFFFF',
+    color: colors.text,
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 12,
@@ -341,19 +345,19 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   contactStatLabel: {
-    color: '#999',
+    color: colors.textSecondary,
     fontSize: 14,
     marginRight: 4,
   },
   contactStatValue: {
-    color: '#FFFFFF',
+    color: colors.text,
     fontSize: 14,
     fontWeight: '600',
   },
   patternCard: {
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: 16,
+    padding: SPACING.SCREEN_EDGE_INSET,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: CARD_BORDER,
@@ -364,12 +368,12 @@ export const styles = StyleSheet.create({
     gap: 12,
   },
   patternText: {
-    color: '#FFFFFF',
+    color: colors.text,
     fontSize: 16,
     fontWeight: '500',
   },
   patternSubtitle: {
-    color: '#FFFFFF',
+    color: colors.text,
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 12,
@@ -377,24 +381,24 @@ export const styles = StyleSheet.create({
   patternItem: {
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#0A1533',
+    borderBottomColor: colors.border,
   },
   patternItemText: {
-    color: '#FFFFFF',
+    color: colors.text,
     fontSize: 14,
   },
   reliabilityStats: {
     marginTop: 8,
   },
   reliabilityText: {
-    color: '#FFFFFF',
+    color: colors.text,
     fontSize: 14,
     marginBottom: 4,
   },
   recommendationCard: {
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: 16,
+    padding: SPACING.SCREEN_EDGE_INSET,
     marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -403,7 +407,7 @@ export const styles = StyleSheet.create({
     borderColor: CARD_BORDER,
   },
   recommendationText: {
-    color: '#FFFFFF',
+    color: colors.text,
     fontSize: 14,
     flex: 1,
     lineHeight: 20,
@@ -416,11 +420,11 @@ export const styles = StyleSheet.create({
   statsTabEmptyWrap: {
     alignItems: 'center',
     paddingVertical: 28,
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     marginBottom: 8,
   },
   emptyTitle: {
-    color: '#FFFFFF',
+    color: colors.text,
     fontSize: 18,
     fontWeight: '600',
     marginTop: 16,
@@ -440,8 +444,17 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
   },
   emptyCtaButtonText: {
-    color: colors.white,
+    color: colors.textOnPrimary,
     fontSize: 16,
     fontWeight: '600',
   },
-});
+  });
+}
+
+export function useEmergencyAlertsHistoryStyles() {
+  const { colors } = useTheme();
+  return useMemo(() => createEmergencyAlertsHistoryStyles(colors), [colors]);
+}
+
+/** Compatibilidad legacy (tema claro) para módulos no migrados. */
+export const styles = createEmergencyAlertsHistoryStyles(lightColors);

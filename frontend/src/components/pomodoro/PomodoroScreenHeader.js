@@ -4,18 +4,16 @@
  */
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StatusBar, StyleSheet, Text, View } from 'react-native';
-import { FOCUS_BORDER_SUBTLE, FOCUS_META } from '../../styles/focusCardTheme';
 import {
-  COLORS,
   HEADER_GAP,
   HEADER_ICON_SIZE,
   HEADER_PADDING,
-  STATUS_BAR_STYLE,
-  STATUS_BAR_BACKGROUND,
   TEXTS,
 } from '../../screens/pomodoro/pomodoroScreenConstants';
+import { useTheme } from '../../context/ThemeContext';
+import { getFocusTheme } from '../../styles/focusCardTheme';
 
 function shorten(text, maxLen) {
   if (!text || text.length <= maxLen) return text || '';
@@ -28,6 +26,66 @@ export default function PomodoroScreenHeader({
   focusTaskTitle = '',
   pendingTasksCount = 0,
 }) {
+  const { colors, resolvedScheme, statusBarStyle } = useTheme();
+  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        headerContainer: {
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        header: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: HEADER_PADDING,
+          paddingBottom: HEADER_PADDING,
+          paddingTop: 8,
+        },
+        headerLeft: {
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          gap: HEADER_GAP,
+        },
+        headerCopy: {
+          flex: 1,
+          minWidth: 0,
+        },
+        headerTitle: {
+          fontSize: 22,
+          fontWeight: '600',
+          letterSpacing: -0.3,
+          color: colors.text,
+        },
+        headerMetaLine: {
+          marginTop: 4,
+          color: t.FOCUS_META,
+          fontSize: 12,
+          fontWeight: '500',
+        },
+        focusLineRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          marginTop: 6,
+          maxWidth: '100%',
+        },
+        headerMetaFocus: {
+          flex: 1,
+          minWidth: 0,
+          color: t.FOCUS_META,
+          fontSize: 12,
+          fontWeight: '500',
+        },
+        headerMetaFocusStrong: {
+          color: colors.textSecondary,
+          fontWeight: '600',
+        },
+      }),
+    [colors, t],
+  );
+
   const modeLabelMap = {
     work: 'Trabajo',
     break: 'Descanso',
@@ -41,13 +99,13 @@ export default function PomodoroScreenHeader({
     : `${pendingTasksCount} pendiente${pendingTasksCount === 1 ? '' : 's'}`;
   return (
     <View style={styles.headerContainer}>
-      <StatusBar barStyle={STATUS_BAR_STYLE} backgroundColor={STATUS_BAR_BACKGROUND} />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <MaterialCommunityIcons
             name="timer-outline"
             size={HEADER_ICON_SIZE}
-            color={COLORS.PRIMARY}
+            color={colors.primary}
           />
           <View style={styles.headerCopy}>
             <Text style={styles.headerTitle}>{TEXTS.TITLE}</Text>
@@ -56,7 +114,7 @@ export default function PomodoroScreenHeader({
               <MaterialCommunityIcons
                 name={focusTaskTitle ? 'bookmark-outline' : 'format-list-checks'}
                 size={14}
-                color={FOCUS_META}
+                color={t.FOCUS_META}
               />
               <Text
                 style={[styles.headerMetaFocus, focusTaskTitle && styles.headerMetaFocusStrong]}
@@ -71,57 +129,3 @@ export default function PomodoroScreenHeader({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  headerContainer: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: FOCUS_BORDER_SUBTLE,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: HEADER_PADDING,
-    paddingBottom: HEADER_PADDING,
-    paddingTop: 8,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: HEADER_GAP,
-  },
-  headerCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    letterSpacing: -0.3,
-    color: 'rgba(255,255,255,0.94)',
-  },
-  headerMetaLine: {
-    marginTop: 4,
-    color: FOCUS_META,
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  focusLineRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 6,
-    maxWidth: '100%',
-  },
-  headerMetaFocus: {
-    flex: 1,
-    minWidth: 0,
-    color: FOCUS_META,
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  headerMetaFocusStrong: {
-    color: 'rgba(255,255,255,0.78)',
-    fontWeight: '600',
-  },
-});

@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">1.64% </span>
+                <span class="strong">3.84% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>3/182</span>
+                <span class='fraction'>7/182</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">1.12% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/177</span>
+                <span class='fraction'>2/177</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">1.78% </span>
+                <span class="strong">5.35% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/56</span>
+                <span class='fraction'>3/56</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">1.68% </span>
+                <span class="strong">3.93% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>3/178</span>
+                <span class='fraction'>7/178</span>
             </div>
         
             
@@ -1315,10 +1315,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">30x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">30x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2371,7 +2371,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2436,7 +2436,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2445,7 +2445,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2508,7 +2508,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2530,7 +2530,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">30x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
@@ -3605,8 +3605,8 @@ class PushNotificationService {
    * @param {string} type - Tipo de notificación
    * @returns {string}
    */
-<span class="fstat-no" title="function not covered" >  ge</span>tChannelId(type) {
-    const channelMap = <span class="cstat-no" title="statement not covered" >{</span>
+  getChannelId(type) {
+    const channelMap = {
       // Crisis - canal de máxima prioridad
       [this.NOTIFICATION_TYPES.CRISIS_WARNING]: 'anto-crisis',
       [this.NOTIFICATION_TYPES.CRISIS_MEDIUM]: 'anto-crisis',
@@ -3671,7 +3671,7 @@ class PushNotificationService {
       [this.NOTIFICATION_TYPES.EMERGENCY_SAFETY_REVIEW]: 'anto-crisis',
       [this.NOTIFICATION_TYPES.EMERGENCY_INFO_DIGEST]: 'anto-crisis',
     };
-<span class="cstat-no" title="statement not covered" >    return channelMap[type] || 'anto-notifications';</span>
+    return channelMap[type] || <span class="branch-1 cbranch-no" title="branch not covered" >'anto-notifications';</span>
   }
 &nbsp;
   /**
@@ -3679,8 +3679,8 @@ class PushNotificationService {
    * @param {string} type - Tipo de notificación
    * @returns {string}
    */
-<span class="fstat-no" title="function not covered" >  ge</span>tPriority(type) {
-    const priorityMap = <span class="cstat-no" title="statement not covered" >{</span>
+  getPriority(type) {
+    const priorityMap = {
       // Crisis - máxima prioridad
       [this.NOTIFICATION_TYPES.CRISIS_WARNING]: 'high',
       [this.NOTIFICATION_TYPES.CRISIS_MEDIUM]: 'high',
@@ -3743,7 +3743,7 @@ class PushNotificationService {
       [this.NOTIFICATION_TYPES.EMERGENCY_SAFETY_REVIEW]: 'high',
       [this.NOTIFICATION_TYPES.EMERGENCY_INFO_DIGEST]: 'high',
     };
-<span class="cstat-no" title="statement not covered" >    return priorityMap[type] || 'default';</span>
+    return priorityMap[type] || <span class="branch-1 cbranch-no" title="branch not covered" >'default';</span>
   }
 &nbsp;
   /**
@@ -3775,7 +3775,7 @@ export default pushNotificationService;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-07T14:12:40.506Z
+                at 2026-05-09T01:58:42.925Z
             </div>
         <script src="../prettify.js"></script>
         <script>
