@@ -201,6 +201,8 @@ class StoreKitService {
     this.module = null; // Guardar referencia al módulo después de inicializar
     this.purchaseInProgress = false; // Mutex para evitar compras concurrentes
     this.productsLoadingPromise = null; // Mutex para evitar getProductsAsync concurrente
+    /** Espera de respuesta IAP enlazada al listener (expo-in-app-purchases). */
+    this._purchaseUpdateWaiter = null;
   }
 
   /**
@@ -477,7 +479,37 @@ class StoreKitService {
           hasResults: !!(update?.results && Array.isArray(update.results)),
           resultsCount: update?.results?.length || 0,
         });
-        
+
+        const waiter = this._purchaseUpdateWaiter;
+        if (waiter) {
+          const IAPResponseCode = module.IAPResponseCode;
+          if (!update) {
+            waiter.reject(new Error('Respuesta vacía de App Store'));
+            return;
+          }
+          const { responseCode, results } = update;
+          if (responseCode === IAPResponseCode.USER_CANCELED) {
+            waiter.reject(Object.assign(new Error('CANCELLED'), { code: 'USER_CANCELED' }));
+            return;
+          }
+          if (responseCode === IAPResponseCode.OK && Array.isArray(results) && results.length > 0) {
+            const match = results.find((r) => r && r.productId === waiter.productId);
+            if (match || results.length === 1) {
+              waiter.resolve(update);
+              return;
+            }
+            console.warn('[StoreKit] Listener OK sin coincidencia de productId; se ignora hasta timeout o siguiente evento', {
+              expected: waiter.productId,
+              got: results.map((r) => r?.productId),
+            });
+            return;
+          }
+          waiter.reject(
+            new Error(`App Store rechazó la compra (código ${responseCode ?? 'desconocido'})`),
+          );
+          return;
+        }
+
         // Validar que update exista y tenga las propiedades necesarias
         if (!update) {
           console.warn('[StoreKit] ⚠️ Listener: Actualización de compra sin datos');
@@ -521,6 +553,84 @@ class StoreKitService {
     );
     // expo-in-app-purchases usa setPurchaseListener que puede no devolver unsubscribe
     this.purchaseUpdateListener = subscription && typeof subscription.remove === 'function' ? subscription : { remove: () => {} };
+  }
+
+  /**
+   * Inicia purchaseItemAsync y espera la respuesta por setPurchaseListener.
+   * expo-in-app-purchases suele resolver purchaseItemAsync en undefined; el resultado real llega al listener.
+   */
+  awaitPurchaseUpdateAfterRequest(module, productId) {
+    if (this._purchaseUpdateWaiter) {
+      return Promise.reject(
+        new Error(
+          'Hay una compra pendiente procesándose. Esperá unos segundos o usá «Restaurar compras».',
+        ),
+      );
+    }
+    return new Promise((resolve, reject) => {
+      const TIMEOUT_MS = 90000;
+      let timeoutId;
+
+      const cleanupAndResolve = (update) => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        this._purchaseUpdateWaiter = null;
+        resolve(update);
+      };
+      const cleanupAndReject = (err) => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        this._purchaseUpdateWaiter = null;
+        reject(err);
+      };
+
+      timeoutId = setTimeout(() => {
+        cleanupAndReject(
+          new Error(
+            'App Store no respondió en el tiempo esperado. Usá «Restaurar compras» si el cargo fue realizado.',
+          ),
+        );
+      }, TIMEOUT_MS);
+
+      this._purchaseUpdateWaiter = {
+        productId,
+        resolve: cleanupAndResolve,
+        reject: cleanupAndReject,
+      };
+
+      try {
+        const maybePromise = module.purchaseItemAsync(productId);
+        if (maybePromise && typeof maybePromise.then === 'function') {
+          maybePromise.catch((purchaseError) => {
+            const msg = purchaseError?.message || '';
+            if (msg.includes('Must wait for promise to resolve')) {
+              cleanupAndReject(
+                new Error(
+                  'Hay una compra pendiente procesándose. Esperá unos segundos o usá «Restaurar compras».',
+                ),
+              );
+              return;
+            }
+            cleanupAndReject(purchaseError);
+          });
+        }
+      } catch (purchaseError) {
+        const msg = purchaseError?.message || '';
+        if (msg.includes('Must wait for promise to resolve')) {
+          cleanupAndReject(
+            new Error(
+              'Hay una compra pendiente procesándose. Esperá unos segundos o usá «Restaurar compras».',
+            ),
+          );
+          return;
+        }
+        cleanupAndReject(purchaseError);
+      }
+    });
   }
 
   /**
@@ -825,65 +935,52 @@ class StoreKitService {
         timestamp: new Date().toISOString(),
       });
 
-      // Solicitar compra
+      // Solicitar compra: purchaseItemAsync puede resolver undefined; el resultado llega por setPurchaseListener.
       const purchaseRequestTime = Date.now();
       let purchaseResult;
       try {
-        purchaseResult = await module.purchaseItemAsync(productId);
+        purchaseResult = await this.awaitPurchaseUpdateAfterRequest(module, productId);
       } catch (purchaseError) {
-        console.error('[StoreKit] ❌ ERROR al llamar purchaseItemAsync', {
+        const msg = purchaseError?.message || String(purchaseError || '');
+        if (msg === 'CANCELLED') {
+          return {
+            success: false,
+            cancelled: true,
+            error: 'Compra cancelada por el usuario.',
+          };
+        }
+        console.error('[StoreKit] ❌ Error esperando actualización de compra (listener)', {
           productId,
-          error: purchaseError?.message,
+          error: msg,
           errorType: purchaseError?.constructor?.name,
           stack: purchaseError?.stack,
         });
-        const msg = purchaseError?.message || 'Error al procesar la compra. Por favor, intenta de nuevo.';
         if (msg.includes('Must wait for promise to resolve')) {
           return {
             success: false,
-            error: 'La compra anterior todavía se está procesando. Espera unos segundos y vuelve a intentar.',
+            error:
+              'La compra anterior todavía se está procesando. Espera unos segundos y vuelve a intentar.',
           };
         }
         return {
           success: false,
-          error: msg,
+          error: msg || 'Error al procesar la compra. Por favor, intenta de nuevo.',
         };
       }
-      // En Sandbox a veces la primera llamada resuelve sin objeto; un reintento breve suele bastar
-      if (!purchaseResult) {
-        console.warn('[StoreKit] purchaseItemAsync sin resultado; reintento en 500ms...', { productId });
-        await new Promise((r) => setTimeout(r, 500));
-        try {
-          purchaseResult = await module.purchaseItemAsync(productId);
-        } catch (retryPurchaseErr) {
-          console.error('[StoreKit] ❌ ERROR en reintento purchaseItemAsync', {
-            productId,
-            error: retryPurchaseErr?.message,
-          });
-          const msg = retryPurchaseErr?.message || 'Error al procesar la compra.';
-          if (msg.includes('Must wait for promise to resolve')) {
-            return {
-              success: false,
-              error: 'La compra anterior todavía se está procesando. Espera unos segundos y vuelve a intentar.',
-            };
-          }
-          return { success: false, error: msg };
-        }
-      }
       const purchaseRequestDuration = Date.now() - purchaseRequestTime;
-      
+
       // Marcar que estamos procesando esta compra para evitar duplicados en el listener
       let purchaseKey = null;
-      
-      console.log('[StoreKit] 📱 Respuesta de App Store recibida', {
+
+      console.log('[StoreKit] 📱 Respuesta de App Store recibida (listener)', {
         productId,
         hasResult: !!purchaseResult,
         responseTime: `${purchaseRequestDuration}ms`,
         timestamp: new Date().toISOString(),
       });
-      
+
       if (!purchaseResult) {
-        console.warn('[StoreKit] Sin respuesta de purchaseItemAsync tras reintento; prueba Restaurar compras o espera unos segundos.', {
+        console.warn('[StoreKit] Sin respuesta del listener tras purchaseItemAsync', {
           productId,
           plan,
           totalDuration: Date.now() - purchaseStartTime,
@@ -894,7 +991,6 @@ class StoreKitService {
             'App Store no devolvió confirmación de la compra. Espera unos segundos, usa «Restaurar compras» o revisa si ya tienes la suscripción activa.',
         };
       }
-      
       const { responseCode, results } = purchaseResult;
       
       console.log('[StoreKit] 📋 Análisis de respuesta', {
@@ -1292,9 +1388,24 @@ class StoreKitService {
         if (!this.products || this.products.length === 0) {
           await this.loadProducts();
         }
-        // Reintentar la compra una vez
+        // Reintentar la compra una vez (resultado vía listener, no del return de purchaseItemAsync)
         try {
-          const retryResult = await module.purchaseItemAsync(productId);
+          let retryResult;
+          try {
+            retryResult = await this.awaitPurchaseUpdateAfterRequest(module, productId);
+          } catch (listenerErr) {
+            if (listenerErr?.message === 'CANCELLED') {
+              return {
+                success: false,
+                error: 'Compra cancelada por el usuario',
+                cancelled: true,
+              };
+            }
+            return {
+              success: false,
+              error: listenerErr?.message || 'Error al procesar la compra en reintento',
+            };
+          }
           if (!retryResult) {
             return {
               success: false,
@@ -1383,9 +1494,21 @@ class StoreKitService {
           // Verificar que el producto específico esté disponible
           const productAvailable = this.products.some(p => p && p.productId === productId);
           if (productAvailable) {
-            // Reintentar compra después de cargar productos
+            // Reintentar compra después de cargar productos (resultado vía listener)
             try {
-              const retryResult = await module.purchaseItemAsync(productId);
+              let retryResult;
+              try {
+                retryResult = await this.awaitPurchaseUpdateAfterRequest(module, productId);
+              } catch (listenerErr) {
+                if (listenerErr?.message === 'CANCELLED') {
+                  return {
+                    success: false,
+                    error: 'Compra cancelada por el usuario',
+                    cancelled: true,
+                  };
+                }
+                throw listenerErr;
+              }
               if (retryResult && retryResult.responseCode === module.IAPResponseCode.OK && retryResult.results && retryResult.results.length > 0) {
                 const purchase = retryResult.results[0];
                 
@@ -1459,6 +1582,15 @@ class StoreKitService {
       };
     } finally {
       this.purchaseInProgress = false;
+      if (this._purchaseUpdateWaiter) {
+        const w = this._purchaseUpdateWaiter;
+        this._purchaseUpdateWaiter = null;
+        try {
+          w.reject(new Error('Operación de compra interrumpida.'));
+        } catch {
+          /* ignore */
+        }
+      }
     }
   }
 
@@ -1667,6 +1799,15 @@ class StoreKitService {
     this.purchaseUpdateListener = null;
     this.purchaseInProgress = false;
     this.processingPurchases = new Set();
+    if (this._purchaseUpdateWaiter) {
+      const w = this._purchaseUpdateWaiter;
+      this._purchaseUpdateWaiter = null;
+      try {
+        w.reject(new Error('StoreKit desconectado.'));
+      } catch {
+        /* ignore */
+      }
+    }
 
     if (this.isInitialized && this.module) {
       try {
