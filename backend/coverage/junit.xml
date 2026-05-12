@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="3" failures="0" errors="0" time="1.033">
-  <testsuite name="PaymentRecoveryService" errors="0" failures="0" skipped="0" timestamp="2026-05-11T17:24:24" time="0.41" tests="1">
-    <testcase classname="PaymentRecoveryService Métodos del servicio debe tener métodos exportados" name="PaymentRecoveryService Métodos del servicio debe tener métodos exportados" time="0.003">
+<testsuites name="jest tests" tests="2" failures="0" errors="0" time="3.859">
+  <testsuite name="AppleReceiptService processSubscription idempotencia" errors="0" failures="0" skipped="0" timestamp="2026-05-11T23:51:57" time="3.783" tests="2">
+    <testcase classname="AppleReceiptService processSubscription idempotencia dos llamadas con el mismo recibo no duplican Transaction" name="AppleReceiptService processSubscription idempotencia dos llamadas con el mismo recibo no duplican Transaction" time="1.955">
     </testcase>
-  </testsuite>
-  <testsuite name="PaymentServiceMercadoPago" errors="0" failures="0" skipped="0" timestamp="2026-05-11T17:24:24" time="0.41" tests="2">
-    <testcase classname="PaymentServiceMercadoPago Métodos del servicio debe tener métodos exportados" name="PaymentServiceMercadoPago Métodos del servicio debe tener métodos exportados" time="0.003">
-    </testcase>
-    <testcase classname="PaymentServiceMercadoPago Métodos del servicio debe tener método createCheckoutSession si existe" name="PaymentServiceMercadoPago Métodos del servicio debe tener método createCheckoutSession si existe" time="0">
+    <testcase classname="AppleReceiptService processSubscription idempotencia con dos líneas del mismo product_id elige la que caduca más tarde (no solo la compra más reciente)" name="AppleReceiptService processSubscription idempotencia con dos líneas del mismo product_id elige la que caduca más tarde (no solo la compra más reciente)" time="0.251">
     </testcase>
   </testsuite>
 </testsuites>

@@ -7,7 +7,7 @@
  * @author AntoApp Team
  */
 
-import { Platform } from 'react-native';
+import { NativeModules, Platform, TurboModuleRegistry } from 'react-native';
 
 // Importar expo-in-app-purchases de forma condicional
 let InAppPurchases = null;
@@ -47,13 +47,11 @@ function resolveIapExport(raw) {
 }
 
 /**
- * Evita cargar el JS de IAP en entornos sin nativo (p. ej. Expo Go).
- * Importante: en algunos builds iOS (New Architecture, frameworks estáticos, etc.)
- * `requireOptionalNativeModule('ExpoInAppPurchases')` puede ser `null` aunque
- * `require('expo-in-app-purchases')` funcione. En ese caso NO debemos bloquear:
- * el `require` real y `isIapModuleUsable` son la fuente de verdad.
+ * Comprueba si el nativo ExpoInAppPurchases está registrado **sin** ejecutar
+ * `require('expo-in-app-purchases')`: ese require puede lanzar "Cannot find native module"
+ * y en algunos runtimes el error se muestra como fatal aunque exista try/catch arriba.
  */
-function isExpoInAppPurchasesNativeAvailable() {
+function isExpoInAppPurchasesNativeRegistered() {
   if (Platform.OS !== 'ios') {
     return false;
   }
@@ -64,12 +62,24 @@ function isExpoInAppPurchasesNativeAvailable() {
       if (native != null) {
         return true;
       }
-      // `null` no implica ausencia del binario IAP; intentar require() más abajo.
     }
   } catch {
-    /* sin expo-modules-core en este entorno */
+    /* expo-modules-core no disponible en este entorno */
   }
-  return true;
+  try {
+    if (TurboModuleRegistry && typeof TurboModuleRegistry.get === 'function') {
+      const tm = TurboModuleRegistry.get('ExpoInAppPurchases');
+      if (tm != null) {
+        return true;
+      }
+    }
+    if (NativeModules?.ExpoInAppPurchases != null) {
+      return true;
+    }
+  } catch {
+    /* ignore */
+  }
+  return false;
 }
 
 // Función helper para obtener el módulo de forma segura
@@ -89,7 +99,7 @@ function getInAppPurchasesModule() {
 
   // Intentar cargar el módulo dinámicamente
   try {
-    if (!isExpoInAppPurchasesNativeAvailable()) {
+    if (!isExpoInAppPurchasesNativeRegistered()) {
       moduleChecked = true;
       InAppPurchases = null;
       if (__DEV__ && process.env.NODE_ENV !== 'test') {

@@ -188,14 +188,19 @@ class AppleReceiptService {
         hasReceipt: !!receipt,
       });
       
-      // Buscar la transacción más reciente para este producto
-      const transaction = latestReceiptInfo
-        .filter(t => t.product_id === productId)
-        .sort((a, b) => {
-          const dateA = new Date(parseInt(a.purchase_date_ms));
-          const dateB = new Date(parseInt(b.purchase_date_ms));
-          return dateB - dateA;
-        })[0];
+      // Elegir la fila de derecho vigente: entre varias del mismo product_id (renovaciones),
+      // priorizar la que **caduca más tarde** (expires_date_ms), no solo la última compra.
+      const sameProduct = latestReceiptInfo.filter(t => t.product_id === productId);
+      const transaction = sameProduct.sort((a, b) => {
+        const expA = a.expires_date_ms ? parseInt(a.expires_date_ms, 10) : 0;
+        const expB = b.expires_date_ms ? parseInt(b.expires_date_ms, 10) : 0;
+        if (expA !== expB) {
+          return expB - expA;
+        }
+        const purA = a.purchase_date_ms ? parseInt(a.purchase_date_ms, 10) : 0;
+        const purB = b.purchase_date_ms ? parseInt(b.purchase_date_ms, 10) : 0;
+        return purB - purA;
+      })[0];
 
       if (!transaction) {
         logger.payment('AppleReceiptService.processSubscription: transacción no encontrada', {
