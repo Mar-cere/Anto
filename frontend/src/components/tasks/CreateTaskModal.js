@@ -225,6 +225,69 @@ const CreateTaskModal = ({
           fontSize: 15,
           fontWeight: '500',
         },
+        reminderDateTimeText: {
+          color: colors.error,
+          fontSize: 15,
+          fontWeight: '500',
+        },
+        pickerContainer: {
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: Platform.OS === 'ios' ? colors.chromeInput : 'transparent',
+          borderRadius: 14,
+          marginVertical: 8,
+          paddingVertical: Platform.OS === 'ios' ? 8 : 0,
+          borderWidth: Platform.OS === 'ios' ? StyleSheet.hairlineWidth : 0,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        picker: {
+          width: '100%',
+          backgroundColor: 'transparent',
+          ...(Platform.OS === 'android' && {
+            marginLeft: 'auto',
+            marginRight: 'auto',
+          }),
+        },
+        sectionTitle: {
+          color: t.FOCUS_KICKER_COLOR,
+          fontSize: 13,
+          fontWeight: '600',
+          letterSpacing: 0.3,
+          textTransform: 'uppercase',
+          marginBottom: 8,
+        },
+        prioritySelector: {
+          gap: 0,
+        },
+        priorityButtons: {
+          flexDirection: 'row',
+          gap: 8,
+        },
+        priorityButton: {
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 6,
+          paddingVertical: 12,
+          paddingHorizontal: 6,
+          borderRadius: 14,
+          backgroundColor: colors.chromeInput,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        priorityButtonSelected: {
+          borderWidth: 2,
+          backgroundColor: colors.background,
+        },
+        priorityButtonText: {
+          fontSize: 13,
+          fontWeight: '600',
+        },
+        priorityButtonTextMuted: {
+          color: colors.textSecondary,
+          fontWeight: '500',
+        },
         notificationRow: {
           flexDirection: 'row',
           alignItems: 'center',
@@ -234,6 +297,27 @@ const CreateTaskModal = ({
           backgroundColor: colors.glassFill,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        notificationContainer: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingVertical: 12,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          borderRadius: 14,
+          backgroundColor: colors.glassFill,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        notificationHeader: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+        },
+        notificationLabel: {
+          color: colors.textSecondary,
+          fontSize: 15,
+          fontWeight: '500',
         },
         notificationLeft: {
           flexDirection: 'row',
@@ -729,30 +813,36 @@ const CreateTaskModal = ({
                     { value: 'high', label: 'Alta', color: colors.error, icon: 'alert-circle' },
                     { value: 'medium', label: 'Media', color: colors.warning, icon: 'alert' },
                     { value: 'low', label: 'Baja', color: colors.success, icon: 'checkmark-circle' },
-                  ].map((priority) => (
+                  ].map((priority) => {
+                    const selected = formData.priority === priority.value;
+                    return (
                     <TouchableOpacity
                       key={priority.value}
                       style={[
                         styles.priorityButton,
-                        formData.priority === priority.value && styles.priorityButtonActive,
-                        { backgroundColor: `${priority.color}20` }
+                        selected && styles.priorityButtonSelected,
+                        selected && { borderColor: priority.color },
                       ]}
                       onPress={() => handlePriorityChange(priority.value)}
                       activeOpacity={0.7}
                     >
-                      <Ionicons 
-                        name={priority.icon} 
-                        size={16} 
-                        color={priority.color} 
+                      <Ionicons
+                        name={priority.icon}
+                        size={16}
+                        color={selected ? priority.color : colors.textSecondary}
                       />
-                      <Text style={[
-                        styles.priorityButtonText,
-                        { color: priority.color }
-                      ]}>
+                      <Text
+                        style={[
+                          styles.priorityButtonText,
+                          !selected && styles.priorityButtonTextMuted,
+                          selected && { color: priority.color },
+                        ]}
+                      >
                         {priority.label}
                       </Text>
                     </TouchableOpacity>
-                  ))}
+                    );
+                  })}
                 </View>
               </View>
             )}

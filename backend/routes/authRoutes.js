@@ -233,7 +233,7 @@ router.get('/health', (req, res) => {
     status: 'OK', 
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
-    version: '1.3.0'
+    version: '1.3.1'
   });
 });
 
