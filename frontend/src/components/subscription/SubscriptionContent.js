@@ -169,18 +169,19 @@ export default function SubscriptionContent({
             .map((plan) => {
               const isCurrentPlan =
                 subscriptionStatus?.plan && plan.id && subscriptionStatus.plan === plan.id;
+              const isEffectiveCurrentPlan = isCurrentPlan && hasActiveSubscription;
               const isRecommended = plan.id === 'yearly';
               const isSelected = selectedPlan === plan.id;
               const shouldDisable =
                 subscribing ||
-                isCurrentPlan ||
+                isEffectiveCurrentPlan ||
                 (hasActiveSubscription && !isCurrentPlan);
               return (
                 <PlanCard
                   key={plan.id}
                   plan={plan}
                   isSelected={isSelected}
-                  isCurrentPlan={!!isCurrentPlan}
+                  isCurrentPlan={isEffectiveCurrentPlan}
                   isRecommended={isRecommended}
                   onSelect={onSubscribe}
                   disabled={shouldDisable}
