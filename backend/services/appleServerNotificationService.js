@@ -88,7 +88,7 @@ function buildVerifiers(enableOnlineChecks) {
     enableOnlineChecks,
     Environment.SANDBOX,
     bundleId,
-    undefined,
+    appAppleId,
   );
   return { production, sandbox };
 }
@@ -104,7 +104,7 @@ function getVerifiers(enableOnlineChecks) {
   return verifierCache.get(key);
 }
 
-/** VerificationException de Apple no rellena .message; usar status numérico. */
+/** VerificationException de Apple no rellena .message; usar status numérico y causa si existe. */
 function formatAppleVerifyError(err) {
   if (err != null && typeof err === 'object' && 'status' in err) {
     const code = err.status;
@@ -113,7 +113,14 @@ function formatAppleVerifyError(err) {
       err.cause && typeof err.cause.message === 'string' && err.cause.message
         ? ` — ${err.cause.message}`
         : '';
-    return `${label}${cause}`;
+    const causeStack =
+      process.env.APPLE_ASN_DEBUG === 'true' &&
+      err.cause &&
+      typeof err.cause.stack === 'string' &&
+      err.cause.stack
+        ? ` | causeStack: ${err.cause.stack.slice(0, 800)}`
+        : '';
+    return `${label}${cause}${causeStack}`;
   }
   const m = err?.message;
   if (m) return m;

@@ -847,6 +847,18 @@ router.post(
   async (req, res) => {
     try {
       const signedPayload = req.body?.signedPayload;
+      if (process.env.APPLE_ASN_DEBUG === 'true') {
+        const sp = signedPayload;
+        logger.debug('[AppleASN-DEBUG] POST apple-server-notifications', {
+          hasSignedPayload: typeof sp === 'string' && sp.length > 0,
+          signedPayloadLength: typeof sp === 'string' ? sp.length : 0,
+          signedPayloadPrefix: typeof sp === 'string' ? sp.substring(0, 120) : null,
+          bodyTopLevelKeys:
+            req.body && typeof req.body === 'object' && !Array.isArray(req.body)
+              ? Object.keys(req.body)
+              : [],
+        });
+      }
       const result = await handleAppleServerNotification(signedPayload);
       return res.status(200).json({ received: true, ...result });
     } catch (error) {

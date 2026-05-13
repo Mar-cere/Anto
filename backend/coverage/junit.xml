@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="7" failures="0" errors="0" time="0.094">
-  <testsuite name="appleReceiptNormalize" errors="0" failures="0" skipped="0" timestamp="2026-05-13T21:17:50" time="0.073" tests="7">
+<testsuites name="jest tests" tests="8" failures="0" errors="0" time="0.376">
+  <testsuite name="appleReceiptNormalize" errors="0" failures="0" skipped="0" timestamp="2026-05-13T22:50:41" time="0.284" tests="8">
     <testcase classname="appleReceiptNormalize acepta base64 largo sin espacios (PKCS#7)" name="appleReceiptNormalize acepta base64 largo sin espacios (PKCS#7)" time="0.001">
     </testcase>
-    <testcase classname="appleReceiptNormalize elimina saltos de línea y espacios" name="appleReceiptNormalize elimina saltos de línea y espacios" time="0.001">
+    <testcase classname="appleReceiptNormalize elimina saltos de línea y espacios" name="appleReceiptNormalize elimina saltos de línea y espacios" time="0">
     </testcase>
     <testcase classname="appleReceiptNormalize rechaza vacío" name="appleReceiptNormalize rechaza vacío" time="0">
     </testcase>
     <testcase classname="appleReceiptNormalize rechaza demasiado corto" name="appleReceiptNormalize rechaza demasiado corto" time="0">
     </testcase>
+    <testcase classname="appleReceiptNormalize normaliza base64url al estándar que espera verifyReceipt" name="appleReceiptNormalize normaliza base64url al estándar que espera verifyReceipt" time="0.001">
+    </testcase>
     <testcase classname="appleReceiptNormalize rechaza JWT/JSON" name="appleReceiptNormalize rechaza JWT/JSON" time="0">
     </testcase>
     <testcase classname="appleReceiptNormalize rechaza JSON en base64 aunque la cadena no empiece por {" name="appleReceiptNormalize rechaza JSON en base64 aunque la cadena no empiece por {" time="0">
     </testcase>
-    <testcase classname="appleReceiptNormalize rechaza base64 que no decodifica a PKCS#7 (0x30)" name="appleReceiptNormalize rechaza base64 que no decodifica a PKCS#7 (0x30)" time="0.001">
+    <testcase classname="appleReceiptNormalize rechaza base64 que no decodifica a PKCS#7 (0x30)" name="appleReceiptNormalize rechaza base64 que no decodifica a PKCS#7 (0x30)" time="0">
     </testcase>
   </testsuite>
 </testsuites>

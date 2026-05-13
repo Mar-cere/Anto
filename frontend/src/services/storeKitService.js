@@ -22,6 +22,7 @@ function isIapModuleUsable(m) {
     typeof m.connectAsync === 'function' &&
     typeof m.getProductsAsync === 'function' &&
     typeof m.purchaseItemAsync === 'function' &&
+    typeof m.setPurchaseListener === 'function' &&
     m.IAPResponseCode != null &&
     typeof m.IAPResponseCode === 'object'
   );
@@ -38,12 +39,15 @@ function resolveIapExport(raw) {
       candidates.push(raw.default);
     }
   }
-  for (const c of candidates) {
-    if (c != null && typeof c === 'object' && typeof c.connectAsync === 'function') {
-      return c;
-    }
+  /** Metro/CJS puede exponer API en `default` o en la raíz; priorizar el que incluye setPurchaseListener. */
+  const usable = candidates.filter(
+    (c) => c != null && typeof c === 'object' && typeof c.connectAsync === 'function',
+  );
+  if (usable.length === 0) {
+    return null;
   }
-  return null;
+  const withListener = usable.find((c) => typeof c.setPurchaseListener === 'function');
+  return withListener || usable[0];
 }
 
 /**
@@ -467,7 +471,10 @@ class StoreKitService {
     // El procesamiento se hace en purchaseSubscription() para evitar duplicados
     const setListener = module.setPurchaseListener || module.addPurchaseUpdateListener;
     if (typeof setListener !== 'function') {
-      console.error('[StoreKit] setupPurchaseListeners: setPurchaseListener no disponible en el módulo');
+      console.error(
+        '[StoreKit] setupPurchaseListeners: setPurchaseListener no disponible en el módulo IAP (revisá resolveIapExport / duplicados de expo-in-app-purchases).',
+        { keys: module ? Object.keys(module).slice(0, 30) : [] },
+      );
       return;
     }
     // setPurchaseListener no devuelve la suscripción; el paquete reemplaza el listener interno en cada llamada.

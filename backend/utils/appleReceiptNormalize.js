@@ -6,6 +6,20 @@
 const MIN_RECEIPT_BASE64_LENGTH = 32;
 
 /**
+ * verifyReceipt de Apple espera base64 estándar (+, /, padding). iOS a veces entrega base64url.
+ * @param {string} s
+ * @returns {string}
+ */
+function toStandardBase64ForApple(s) {
+  let t = s.replace(/-/g, '+').replace(/_/g, '/');
+  const pad = t.length % 4;
+  if (pad !== 0) {
+    t += '='.repeat(4 - pad);
+  }
+  return t;
+}
+
+/**
  * @param {unknown} receipt
  * @returns {{ ok: true, receipt: string } | { ok: false, error: string }}
  */
@@ -38,9 +52,13 @@ export function normalizeAppleReceiptPayload(receipt) {
   if (!/^[A-Za-z0-9+/=_-]+$/.test(withoutWhitespace)) {
     return { ok: false, error: 'El recibo contiene caracteres no válidos para base64.' };
   }
+  const standardB64 = toStandardBase64ForApple(withoutWhitespace);
+  if (!/^[A-Za-z0-9+/=]+$/.test(standardB64)) {
+    return { ok: false, error: 'El recibo no pudo normalizarse a base64 estándar para Apple.' };
+  }
   let decoded;
   try {
-    decoded = Buffer.from(withoutWhitespace, 'base64');
+    decoded = Buffer.from(standardB64, 'base64');
   } catch {
     return { ok: false, error: 'No se pudo decodificar el recibo como base64.' };
   }
@@ -65,5 +83,5 @@ export function normalizeAppleReceiptPayload(receipt) {
         'El recibo decodificado no tiene el formato PKCS#7 que Apple devuelve en verifyReceipt (se esperaba comenzar con ASN.1 SEQUENCE 0x30).',
     };
   }
-  return { ok: true, receipt: withoutWhitespace };
+  return { ok: true, receipt: standardB64 };
 }

@@ -35,6 +35,18 @@ describe('appleReceiptNormalize', () => {
     expect(r.ok).toBe(false);
   });
 
+  it('normaliza base64url al estándar que espera verifyReceipt', () => {
+    const pk = fakePkcs7ReceiptBase64();
+    const url = pk.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const r = normalizeAppleReceiptPayload(url);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      const d = Buffer.from(r.receipt, 'base64');
+      expect(d[0]).toBe(0x30);
+      expect(r.receipt).toMatch(/^[A-Za-z0-9+/=]+$/);
+    }
+  });
+
   it('rechaza JWT/JSON', () => {
     const r = normalizeAppleReceiptPayload('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' + 'A'.repeat(40));
     expect(r.ok).toBe(false);

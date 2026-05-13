@@ -5,6 +5,15 @@
 
 export const MIN_APP_STORE_RECEIPT_BASE64_LENGTH = 32;
 
+function toStandardBase64ForDecode(s) {
+  let t = s.replace(/-/g, '+').replace(/_/g, '/');
+  const pad = t.length % 4;
+  if (pad !== 0) {
+    t += '='.repeat(4 - pad);
+  }
+  return t;
+}
+
 /**
  * @param {unknown} receipt
  * @returns {string} Cadena base64 sin espacios, o cadena vacía si no es string usable.
@@ -33,7 +42,7 @@ export function isPlausibleAppleReceiptBase64(normalized) {
     return false;
   }
   try {
-    const bin = atob(normalized);
+    const bin = atob(toStandardBase64ForDecode(normalized));
     if (bin.length < 16) {
       return false;
     }

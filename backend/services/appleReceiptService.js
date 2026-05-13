@@ -38,9 +38,10 @@ class AppleReceiptService {
    * Validar recibo con Apple
    * @param {string} receiptData - Datos del recibo (base64)
    * @param {boolean} isSandbox - Si es sandbox o producción
+   * @param {boolean} [fromProd21002Retry] - Interno: evita bucle al reintentar en sandbox tras 21002 en producción
    * @returns {Promise<Object>} - Respuesta de Apple
    */
-  async validateReceiptWithApple(receiptData, isSandbox = false) {
+  async validateReceiptWithApple(receiptData, isSandbox = false, fromProd21002Retry = false) {
     const startTime = Date.now();
     const normalized = normalizeAppleReceiptPayload(receiptData);
     if (!normalized.ok) {
@@ -117,7 +118,15 @@ class AppleReceiptService {
         logger.warn('[AppleReceipt] Recibo de sandbox detectado en producción, revalidando con sandbox', {
           originalStatus: data.status,
         });
-        return this.validateReceiptWithApple(receiptPayload, true);
+        return this.validateReceiptWithApple(receiptPayload, true, false);
+      }
+
+      // En algunos builds (p. ej. TestFlight) Apple puede responder 21002 en producción; un intento en sandbox evita falsos negativos.
+      if (data.status === 21002 && !isSandbox && !fromProd21002Retry) {
+        logger.warn(
+          '[AppleReceipt] status 21002 en producción; reintento único contra sandbox (entorno de prueba / recibo de sandbox)',
+        );
+        return this.validateReceiptWithApple(receiptPayload, true, true);
       }
 
       // Recibo de producción enviado al endpoint sandbox (p. ej. NODE_ENV=development en servidor)
@@ -125,7 +134,7 @@ class AppleReceiptService {
         logger.warn('[AppleReceipt] Recibo de producción detectado en sandbox, revalidando con producción', {
           originalStatus: data.status,
         });
-        return this.validateReceiptWithApple(receiptPayload, false);
+        return this.validateReceiptWithApple(receiptPayload, false, false);
       }
 
       if (data.status !== 0) {
