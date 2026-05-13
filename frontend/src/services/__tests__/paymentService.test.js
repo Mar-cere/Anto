@@ -68,6 +68,14 @@ const apiMock = apiModule.default || apiModule.api;
 const mockLinking = Linking;
 
 describe('PaymentService', () => {
+  /** Base64 PKCS#7 simulado (primer byte 0x30), compatible con validación cliente/servidor */
+  function fakePkcs7ReceiptBase64() {
+    const buf = Buffer.alloc(48, 0xaa);
+    buf[0] = 0x30;
+    buf[1] = 0x82;
+    return buf.toString('base64');
+  }
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockLinking.canOpenURL.mockResolvedValue(true);
@@ -239,8 +247,7 @@ describe('PaymentService', () => {
   });
 
   describe('purchaseWithStoreKit', () => {
-    /** Recibo simulado con longitud mínima compatible con validación cliente/servidor */
-    const VALID_LIKE_RECEIPT = 'A'.repeat(48);
+    const VALID_LIKE_RECEIPT = fakePkcs7ReceiptBase64();
     const mockReceiptData = {
       transactionReceipt: VALID_LIKE_RECEIPT,
       productId: 'com.anto.app.monthly',
@@ -348,7 +355,7 @@ describe('PaymentService', () => {
       const result = await paymentService.purchaseWithStoreKit('monthly');
 
       expect(result.success).toBe(false);
-      expect(result.error).toMatch(/recibo|dispositivo|App Store/i);
+      expect(result.error).toMatch(/recibo|Apple|válid/i);
       if (apiMock) {
         expect(apiMock.post).not.toHaveBeenCalled();
       }
@@ -422,7 +429,7 @@ describe('PaymentService', () => {
   });
 
   describe('restorePurchases', () => {
-    const VALID_LIKE_RECEIPT = 'B'.repeat(48);
+    const VALID_LIKE_RECEIPT = fakePkcs7ReceiptBase64();
     it('retorna error cuando StoreKit no está disponible', async () => {
       Platform.OS = 'android';
       storeKitService.isAvailable.mockReturnValue(false);

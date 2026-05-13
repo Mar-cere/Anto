@@ -494,14 +494,23 @@ class StoreKitService {
           }
           if (responseCode === IAPResponseCode.OK && Array.isArray(results) && results.length > 0) {
             const match = results.find((r) => r && r.productId === waiter.productId);
-            if (match || results.length === 1) {
+            if (match) {
               waiter.resolve(update);
               return;
             }
-            console.warn('[StoreKit] Listener OK sin coincidencia de productId; se ignora hasta timeout o siguiente evento', {
+            if (results.length === 1) {
+              waiter.resolve(update);
+              return;
+            }
+            console.warn('[StoreKit] Listener OK sin coincidencia de productId', {
               expected: waiter.productId,
               got: results.map((r) => r?.productId),
             });
+            waiter.reject(
+              new Error(
+                `App Store devolvió varios resultados y ninguno coincide con el producto esperado (${waiter.productId}). Volvé a intentar o usá «Restaurar compras».`,
+              ),
+            );
             return;
           }
           waiter.reject(

@@ -38,5 +38,32 @@ export function normalizeAppleReceiptPayload(receipt) {
   if (!/^[A-Za-z0-9+/=_-]+$/.test(withoutWhitespace)) {
     return { ok: false, error: 'El recibo contiene caracteres no válidos para base64.' };
   }
+  let decoded;
+  try {
+    decoded = Buffer.from(withoutWhitespace, 'base64');
+  } catch {
+    return { ok: false, error: 'No se pudo decodificar el recibo como base64.' };
+  }
+  if (!decoded.length || decoded.length < 16) {
+    return {
+      ok: false,
+      error: 'El recibo decodificado es demasiado corto para ser un recibo de App Store (PKCS#7).',
+    };
+  }
+  const first = decoded[0];
+  if (first === 0x7b || first === 0x5b) {
+    return {
+      ok: false,
+      error:
+        'El cliente envió datos que decodifican como JSON/array, no el recibo PKCS#7 de la app. Usá el recibo de la App Store (JWS en StoreKit 2 o appStoreReceiptURL en StoreKit 1).',
+    };
+  }
+  if (first !== 0x30) {
+    return {
+      ok: false,
+      error:
+        'El recibo decodificado no tiene el formato PKCS#7 que Apple devuelve en verifyReceipt (se esperaba comenzar con ASN.1 SEQUENCE 0x30).',
+    };
+  }
   return { ok: true, receipt: withoutWhitespace };
 }

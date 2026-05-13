@@ -10,11 +10,12 @@
 import { Platform } from 'react-native';
 import { api, ENDPOINTS } from '../config/api';
 import { Linking } from 'react-native';
-import { normalizeClientAppleReceipt } from '../utils/appleReceiptNormalize';
+import {
+  normalizeClientAppleReceipt,
+  isPlausibleAppleReceiptBase64,
+  MIN_APP_STORE_RECEIPT_BASE64_LENGTH,
+} from '../utils/appleReceiptNormalize';
 import storeKitService from './storeKitService';
-
-/** Coincide con backend: recibo base64 demasiado corto = inválido para Apple. */
-const MIN_APP_STORE_RECEIPT_LENGTH = 32;
 
 class PaymentService {
   /**
@@ -142,15 +143,18 @@ class PaymentService {
         }
 
         const receiptPayload = normalizeClientAppleReceipt(receiptData.transactionReceipt);
-        if (receiptPayload.length < MIN_APP_STORE_RECEIPT_LENGTH) {
-          console.error('[PaymentService] ❌ ERROR: Recibo demasiado corto o vacío tras normalizar', {
+        if (
+          receiptPayload.length < MIN_APP_STORE_RECEIPT_BASE64_LENGTH ||
+          !isPlausibleAppleReceiptBase64(receiptPayload)
+        ) {
+          console.error('[PaymentService] ❌ ERROR: Recibo inválido o vacío tras normalizar', {
             length: receiptPayload.length,
             productId: receiptData.productId,
           });
           return {
             success: false,
             error:
-              'El recibo de la App Store no está disponible en el dispositivo. Probá «Restaurar compras», reiniciar la app o revisar la conexión.',
+              'El recibo no es válido para validar con Apple (vacío o no es el recibo de la app). Probá «Restaurar compras» o reiniciar la app.',
           };
         }
 
@@ -291,11 +295,14 @@ class PaymentService {
       const sorted = [...withReceipt].sort((a, b) => (b.purchaseTime || 0) - (a.purchaseTime || 0));
       const latest = sorted[0];
       const receiptPayload = normalizeClientAppleReceipt(latest.transactionReceipt);
-      if (receiptPayload.length < MIN_APP_STORE_RECEIPT_LENGTH) {
+      if (
+        receiptPayload.length < MIN_APP_STORE_RECEIPT_BASE64_LENGTH ||
+        !isPlausibleAppleReceiptBase64(receiptPayload)
+      ) {
         return {
           success: false,
           error:
-            'El recibo de la App Store no está disponible en el dispositivo. Probá «Restaurar compras» de nuevo o reiniciar la app.',
+            'El recibo no es válido para validar con Apple (vacío o no es el recibo de la app). Probá «Restaurar compras» de nuevo o reiniciar la app.',
           purchases: result.purchases,
         };
       }
