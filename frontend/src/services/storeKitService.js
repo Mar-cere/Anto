@@ -302,6 +302,10 @@ class StoreKitService {
         };
       }
 
+      // Registrar listener ANTES de connectAsync: el nativo puede emitir Expo.purchasesUpdated
+      // al conectar o al hidratar la cola; si no hay listener, RN avisa y se pierden eventos (p. ej. tras Fast Refresh).
+      this.setupPurchaseListeners();
+
       // Conectar con App Store
       console.log('[StoreKit] 🔌 Intentando conectar con App Store...');
       let connectResult;
@@ -328,9 +332,7 @@ class StoreKitService {
           if (typeof module.purchaseItemAsync === 'function' && module.IAPResponseCode) {
             this.isInitialized = true;
             this.initializing = false;
-            if (!this.purchaseUpdateListener) {
-              this.setupPurchaseListeners();
-            }
+            this.setupPurchaseListeners();
             return { success: true };
           } else {
             // Si el módulo no tiene los métodos, resetear y fallar
@@ -393,10 +395,9 @@ class StoreKitService {
       this.isInitialized = true;
       this.initializing = false;
 
-      // Configurar listener para actualizaciones de compras (solo si no existe)
-      if (!this.purchaseUpdateListener) {
-        this.setupPurchaseListeners();
-      }
+      // setupPurchaseListeners ya se llamó antes de connectAsync; volver a registrar no duplica
+      // callbacks útiles (expo reemplaza la suscripción interna) y recupera tras Fast Refresh.
+      this.setupPurchaseListeners();
 
       // Cargar productos disponibles (no crítico si falla, se cargarán cuando se necesiten)
       this.loadProducts().catch(err => {
@@ -419,9 +420,7 @@ class StoreKitService {
         if (typeof module.purchaseItemAsync === 'function' && module.IAPResponseCode) {
           this.isInitialized = true;
           this.initializing = false;
-          if (!this.purchaseUpdateListener) {
-            this.setupPurchaseListeners();
-          }
+          this.setupPurchaseListeners();
           return { success: true };
         }
         this.module = null;
@@ -471,7 +470,8 @@ class StoreKitService {
       console.error('[StoreKit] setupPurchaseListeners: setPurchaseListener no disponible en el módulo');
       return;
     }
-    const subscription = setListener(
+    // setPurchaseListener no devuelve la suscripción; el paquete reemplaza el listener interno en cada llamada.
+    setListener(
       async (update) => {
         console.log('[StoreKit] 📬 Listener: Actualización de compra recibida', {
           hasUpdate: !!update,
@@ -560,8 +560,8 @@ class StoreKitService {
         }
       }
     );
-    // expo-in-app-purchases usa setPurchaseListener que puede no devolver unsubscribe
-    this.purchaseUpdateListener = subscription && typeof subscription.remove === 'function' ? subscription : { remove: () => {} };
+    // Marcador para teardown: expo no expone remove; al desmontar la app basta con dejar de usar el singleton.
+    this.purchaseUpdateListener = { remove: () => {} };
   }
 
   /**
@@ -610,6 +610,9 @@ class StoreKitService {
         resolve: cleanupAndResolve,
         reject: cleanupAndReject,
       };
+
+      // Re-registrar siempre: tras Fast Refresh el módulo JS de expo pierde addListener pero este singleton puede seguir "vivo".
+      this.setupPurchaseListeners();
 
       try {
         const maybePromise = module.purchaseItemAsync(productId);
@@ -1700,6 +1703,10 @@ class StoreKitService {
             transactionId: p.transactionId || p.orderId || null,
             transactionReceipt: p.transactionReceipt || null,
             originalTransactionIdentifierIOS: p.originalTransactionIdentifierIOS || p.originalOrderId || null,
+            purchaseTime:
+              typeof p.purchaseTime === 'number' && !Number.isNaN(p.purchaseTime)
+                ? p.purchaseTime
+                : Number(p.purchaseTime) || 0,
           }));
 
         return {

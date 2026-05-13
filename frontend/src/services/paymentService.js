@@ -283,29 +283,31 @@ class PaymentService {
     const result = await storeKitService.restorePurchases();
     
     if (result.success && result.purchases && result.purchases.length > 0) {
-      const withReceipt = result.purchases.filter((p) => p && p.transactionReceipt && p.productId);
-      if (withReceipt.length === 0) {
+      const withPayload = result.purchases
+        .filter((p) => p && p.transactionReceipt && p.productId)
+        .map((p) => ({
+          ...p,
+          _receiptNorm: normalizeClientAppleReceipt(p.transactionReceipt),
+        }));
+
+      const plausible = withPayload.filter(
+        (p) =>
+          p._receiptNorm.length >= MIN_APP_STORE_RECEIPT_BASE64_LENGTH &&
+          isPlausibleAppleReceiptBase64(p._receiptNorm),
+      );
+
+      if (plausible.length === 0) {
         return {
           success: false,
-          error: 'No se pudo verificar las compras con el servidor. Vuelve a intentar o contacta soporte.',
+          error:
+            'No hay ningún recibo de la app válido entre las compras restauradas. Probá «Restaurar compras» de nuevo o reiniciar la app.',
           purchases: result.purchases,
         };
       }
 
-      const sorted = [...withReceipt].sort((a, b) => (b.purchaseTime || 0) - (a.purchaseTime || 0));
-      const latest = sorted[0];
-      const receiptPayload = normalizeClientAppleReceipt(latest.transactionReceipt);
-      if (
-        receiptPayload.length < MIN_APP_STORE_RECEIPT_BASE64_LENGTH ||
-        !isPlausibleAppleReceiptBase64(receiptPayload)
-      ) {
-        return {
-          success: false,
-          error:
-            'El recibo no es válido para validar con Apple (vacío o no es el recibo de la app). Probá «Restaurar compras» de nuevo o reiniciar la app.',
-          purchases: result.purchases,
-        };
-      }
+      plausible.sort((a, b) => (b.purchaseTime || 0) - (a.purchaseTime || 0));
+      const latest = plausible[0];
+      const receiptPayload = latest._receiptNorm;
 
       try {
         const response = await api.post(ENDPOINTS.PAYMENT_VALIDATE_RECEIPT, {
