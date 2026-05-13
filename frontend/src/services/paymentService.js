@@ -10,7 +10,11 @@
 import { Platform } from 'react-native';
 import { api, ENDPOINTS } from '../config/api';
 import { Linking } from 'react-native';
+import { normalizeClientAppleReceipt } from '../utils/appleReceiptNormalize';
 import storeKitService from './storeKitService';
+
+/** Coincide con backend: recibo base64 demasiado corto = inválido para Apple. */
+const MIN_APP_STORE_RECEIPT_LENGTH = 32;
 
 class PaymentService {
   /**
@@ -137,8 +141,21 @@ class PaymentService {
           };
         }
 
+        const receiptPayload = normalizeClientAppleReceipt(receiptData.transactionReceipt);
+        if (receiptPayload.length < MIN_APP_STORE_RECEIPT_LENGTH) {
+          console.error('[PaymentService] ❌ ERROR: Recibo demasiado corto o vacío tras normalizar', {
+            length: receiptPayload.length,
+            productId: receiptData.productId,
+          });
+          return {
+            success: false,
+            error:
+              'El recibo de la App Store no está disponible en el dispositivo. Probá «Restaurar compras», reiniciar la app o revisar la conexión.',
+          };
+        }
+
         const payload = {
-          receipt: receiptData.transactionReceipt,
+          receipt: receiptPayload,
           productId: receiptData.productId,
         };
 
@@ -262,8 +279,7 @@ class PaymentService {
     const result = await storeKitService.restorePurchases();
     
     if (result.success && result.purchases && result.purchases.length > 0) {
-      const withReceipt = result.purchases.filter(p => p && p.transactionReceipt && p.productId);
-      // Si hay compras pero ninguna trae recibo, no podemos verificar con el servidor
+      const withReceipt = result.purchases.filter((p) => p && p.transactionReceipt && p.productId);
       if (withReceipt.length === 0) {
         return {
           success: false,
@@ -271,52 +287,60 @@ class PaymentService {
           purchases: result.purchases,
         };
       }
-      // Validar en serie: basta la primera que el backend acepte (menos carga y mismo resultado).
-      const errors = [];
-      for (const purchase of withReceipt) {
-        try {
-          const response = await api.post(ENDPOINTS.PAYMENT_VALIDATE_RECEIPT, {
-            receipt: purchase.transactionReceipt,
-            productId: purchase.productId,
-            transactionId: purchase.transactionId || null,
-            originalTransactionIdentifierIOS: purchase.originalTransactionIdentifierIOS || null,
-            restore: true,
-          });
-          if (response && typeof response === 'object' && response.success === false) {
-            const msg = response.error || 'El servidor rechazó la validación del recibo';
-            errors.push(msg);
-            console.warn('[PaymentService] validate-receipt respondió sin éxito (restore):', msg);
-            continue;
-          }
-          console.log('[PaymentService] Compra restaurada validada:', {
-            productId: purchase.productId,
-          });
-          return {
-            success: true,
-            purchases: result.purchases,
-            validation: response,
-          };
-        } catch (error) {
-          const msg =
-            error?.message ||
-            error?.response?.data?.error ||
-            error?.response?.data?.message ||
-            'Error al validar compra';
-          errors.push(msg);
-          console.error('[PaymentService] Error validando compra restaurada:', error);
-        }
+
+      const sorted = [...withReceipt].sort((a, b) => (b.purchaseTime || 0) - (a.purchaseTime || 0));
+      const latest = sorted[0];
+      const receiptPayload = normalizeClientAppleReceipt(latest.transactionReceipt);
+      if (receiptPayload.length < MIN_APP_STORE_RECEIPT_LENGTH) {
+        return {
+          success: false,
+          error:
+            'El recibo de la App Store no está disponible en el dispositivo. Probá «Restaurar compras» de nuevo o reiniciar la app.',
+          purchases: result.purchases,
+        };
       }
 
-      const distinct = [...new Set(errors.filter(Boolean))];
-      const detail = distinct.length > 0 ? distinct.join('\n\n') : '';
-      return {
-        success: false,
-        error:
-          detail ||
-          'No se pudieron validar las compras restauradas con el servidor. Revisa tu conexión o intenta más tarde.',
-        purchases: result.purchases,
-        validationErrors: distinct,
-      };
+      try {
+        const response = await api.post(ENDPOINTS.PAYMENT_VALIDATE_RECEIPT, {
+          receipt: receiptPayload,
+          productId: latest.productId,
+          transactionId: latest.transactionId || latest.orderId || null,
+          originalTransactionIdentifierIOS:
+            latest.originalTransactionIdentifierIOS || latest.originalOrderId || null,
+          restore: true,
+        });
+        if (response && typeof response === 'object' && response.success === false) {
+          const msg = response.error || 'El servidor rechazó la validación del recibo';
+          console.warn('[PaymentService] validate-receipt respondió sin éxito (restore):', msg);
+          return {
+            success: false,
+            error: msg,
+            purchases: result.purchases,
+            validationErrors: [msg],
+          };
+        }
+        console.log('[PaymentService] Compra restaurada validada:', {
+          productId: latest.productId,
+        });
+        return {
+          success: true,
+          purchases: result.purchases,
+          validation: response,
+        };
+      } catch (error) {
+        const msg =
+          error?.message ||
+          error?.response?.data?.error ||
+          error?.response?.data?.message ||
+          'Error al validar compra';
+        console.error('[PaymentService] Error validando compra restaurada:', error);
+        return {
+          success: false,
+          error: msg,
+          purchases: result.purchases,
+          validationErrors: [msg],
+        };
+      }
     }
 
     return result;

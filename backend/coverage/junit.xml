@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="2" failures="0" errors="0" time="3.859">
-  <testsuite name="AppleReceiptService processSubscription idempotencia" errors="0" failures="0" skipped="0" timestamp="2026-05-11T23:51:57" time="3.783" tests="2">
-    <testcase classname="AppleReceiptService processSubscription idempotencia dos llamadas con el mismo recibo no duplican Transaction" name="AppleReceiptService processSubscription idempotencia dos llamadas con el mismo recibo no duplican Transaction" time="1.955">
+<testsuites name="jest tests" tests="5" failures="0" errors="0" time="0.096">
+  <testsuite name="appleReceiptNormalize" errors="0" failures="0" skipped="0" timestamp="2026-05-13T13:51:04" time="0.076" tests="5">
+    <testcase classname="appleReceiptNormalize acepta base64 largo sin espacios" name="appleReceiptNormalize acepta base64 largo sin espacios" time="0.001">
     </testcase>
-    <testcase classname="AppleReceiptService processSubscription idempotencia con dos líneas del mismo product_id elige la que caduca más tarde (no solo la compra más reciente)" name="AppleReceiptService processSubscription idempotencia con dos líneas del mismo product_id elige la que caduca más tarde (no solo la compra más reciente)" time="0.251">
+    <testcase classname="appleReceiptNormalize elimina saltos de línea y espacios" name="appleReceiptNormalize elimina saltos de línea y espacios" time="0.001">
+    </testcase>
+    <testcase classname="appleReceiptNormalize rechaza vacío" name="appleReceiptNormalize rechaza vacío" time="0">
+    </testcase>
+    <testcase classname="appleReceiptNormalize rechaza demasiado corto" name="appleReceiptNormalize rechaza demasiado corto" time="0">
+    </testcase>
+    <testcase classname="appleReceiptNormalize rechaza JWT/JSON" name="appleReceiptNormalize rechaza JWT/JSON" time="0">
     </testcase>
   </testsuite>
 </testsuites>

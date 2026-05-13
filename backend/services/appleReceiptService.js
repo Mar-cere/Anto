@@ -11,6 +11,7 @@ import Subscription from '../models/Subscription.js';
 import Transaction from '../models/Transaction.js';
 import paymentAuditService from './paymentAuditService.js';
 import logger from '../utils/logger.js';
+import { normalizeAppleReceiptPayload } from '../utils/appleReceiptNormalize.js';
 
 // URLs de verificación de Apple
 const APPLE_VERIFY_URL_SANDBOX = 'https://sandbox.itunes.apple.com/verifyReceipt';
@@ -41,12 +42,23 @@ class AppleReceiptService {
    */
   async validateReceiptWithApple(receiptData, isSandbox = false) {
     const startTime = Date.now();
+    const normalized = normalizeAppleReceiptPayload(receiptData);
+    if (!normalized.ok) {
+      logger.error('[AppleReceipt] Recibo inválido antes de llamar a Apple', { error: normalized.error });
+      return {
+        status: 21002,
+        'is-retryable': false,
+        environment: isSandbox ? 'Sandbox' : 'Production',
+      };
+    }
+    const receiptPayload = normalized.receipt;
+
     const verifyUrl = isSandbox ? APPLE_VERIFY_URL_SANDBOX : APPLE_VERIFY_URL_PRODUCTION;
     
     logger.externalService('Apple', 'Validando recibo', {
       isSandbox,
       url: verifyUrl,
-      receiptLength: receiptData ? receiptData.length : 0,
+      receiptLength: receiptPayload ? receiptPayload.length : 0,
       hasSharedSecret: !!process.env.APPLE_SHARED_SECRET,
     });
     
@@ -61,7 +73,7 @@ class AppleReceiptService {
     }
     
     const payload = {
-      'receipt-data': receiptData,
+      'receipt-data': receiptPayload,
       password: sharedSecret, // Shared secret para suscripciones auto-renovables
       'exclude-old-transactions': true,
     };
@@ -105,7 +117,7 @@ class AppleReceiptService {
         logger.warn('[AppleReceipt] Recibo de sandbox detectado en producción, revalidando con sandbox', {
           originalStatus: data.status,
         });
-        return this.validateReceiptWithApple(receiptData, true);
+        return this.validateReceiptWithApple(receiptPayload, true);
       }
 
       // Recibo de producción enviado al endpoint sandbox (p. ej. NODE_ENV=development en servidor)
@@ -113,7 +125,7 @@ class AppleReceiptService {
         logger.warn('[AppleReceipt] Recibo de producción detectado en sandbox, revalidando con producción', {
           originalStatus: data.status,
         });
-        return this.validateReceiptWithApple(receiptData, false);
+        return this.validateReceiptWithApple(receiptPayload, false);
       }
 
       if (data.status !== 0) {

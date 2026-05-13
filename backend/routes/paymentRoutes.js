@@ -20,6 +20,7 @@ import cacheService from '../services/cacheService.js';
 import paymentAuditService from '../services/paymentAuditService.js';
 import paymentService from '../services/paymentService.js';
 import logger from '../utils/logger.js';
+import { normalizeAppleReceiptPayload } from '../utils/appleReceiptNormalize.js';
 import {
   extractMercadoPagoWebhookResourceId,
   verifyMercadoPagoWebhookSignature
@@ -625,7 +626,7 @@ router.get(
  * Validar recibo de Apple App Store (StoreKit)
  */
 const validateReceiptSchema = Joi.object({
-  receipt: Joi.string().required(),
+  receipt: Joi.string().min(1).required(),
   productId: Joi.string().required(),
   transactionId: Joi.string().optional(),
   originalTransactionIdentifierIOS: Joi.string().optional(),
@@ -664,19 +665,37 @@ router.post(
         });
       }
 
-      const { receipt, productId, transactionId, originalTransactionIdentifierIOS, restore } = value;
-      
+      const { receipt: rawReceipt, productId, transactionId, originalTransactionIdentifierIOS, restore } =
+        value;
+
+      const normalized = normalizeAppleReceiptPayload(rawReceipt);
+      if (!normalized.ok) {
+        logger.payment('POST /validate-receipt: recibo inválido antes de Apple', {
+          userId: userId.toString(),
+          productId,
+          reason: normalized.error,
+          rawLength: typeof rawReceipt === 'string' ? rawReceipt.length : 0,
+        });
+        return res.status(400).json({
+          success: false,
+          error: normalized.error,
+          appleStatus: 21002,
+        });
+      }
+      const receipt = normalized.receipt;
+
       logger.payment('POST /validate-receipt: datos validados', {
         userId: userId.toString(),
         productId,
         transactionId: transactionId || 'no proporcionado',
         originalTransactionIdentifierIOS: originalTransactionIdentifierIOS || 'no proporcionado',
         restore,
-        receiptLength: receipt ? receipt.length : 0,
+        receiptLength: receipt.length,
       });
 
       // Validar recibo con Apple
-      const isSandbox = process.env.NODE_ENV !== 'production';
+      const isSandbox =
+        process.env.NODE_ENV !== 'production' || process.env.APPLE_IAP_FORCE_SANDBOX === 'true';
       logger.payment('POST /validate-receipt: iniciando validación con Apple', {
         userId: userId.toString(),
         isSandbox,

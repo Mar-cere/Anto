@@ -239,8 +239,10 @@ describe('PaymentService', () => {
   });
 
   describe('purchaseWithStoreKit', () => {
+    /** Recibo simulado con longitud mínima compatible con validación cliente/servidor */
+    const VALID_LIKE_RECEIPT = 'A'.repeat(48);
     const mockReceiptData = {
-      transactionReceipt: 'base64-receipt-data',
+      transactionReceipt: VALID_LIKE_RECEIPT,
       productId: 'com.anto.app.monthly',
       transactionId: 'tx-123',
       originalTransactionIdentifierIOS: 'orig-456',
@@ -335,9 +337,26 @@ describe('PaymentService', () => {
       }
     });
 
+    it('retorna error cuando el recibo normalizado es demasiado corto', async () => {
+      storeKitService.purchaseSubscription.mockImplementation(async (plan, onValidateReceipt) => {
+        return await onValidateReceipt({
+          transactionReceipt: 'corto',
+          productId: 'com.anto.app.monthly',
+        });
+      });
+
+      const result = await paymentService.purchaseWithStoreKit('monthly');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/recibo|dispositivo|App Store/i);
+      if (apiMock) {
+        expect(apiMock.post).not.toHaveBeenCalled();
+      }
+    });
+
     it('retorna error cuando validateReceipt recibe datos incompletos (sin productId)', async () => {
       storeKitService.purchaseSubscription.mockImplementation(async (plan, onValidateReceipt) => {
-        return await onValidateReceipt({ transactionReceipt: 'base64-data' });
+        return await onValidateReceipt({ transactionReceipt: VALID_LIKE_RECEIPT });
       });
 
       const result = await paymentService.purchaseWithStoreKit('monthly');
@@ -403,6 +422,7 @@ describe('PaymentService', () => {
   });
 
   describe('restorePurchases', () => {
+    const VALID_LIKE_RECEIPT = 'B'.repeat(48);
     it('retorna error cuando StoreKit no está disponible', async () => {
       Platform.OS = 'android';
       storeKitService.isAvailable.mockReturnValue(false);
@@ -433,10 +453,11 @@ describe('PaymentService', () => {
       Platform.OS = 'ios';
       storeKitService.isAvailable.mockReturnValue(true);
       const purchase = {
-        transactionReceipt: 'receipt-1',
+        transactionReceipt: VALID_LIKE_RECEIPT,
         productId: 'com.anto.app.monthly',
         transactionId: 'tx-1',
         originalTransactionIdentifierIOS: 'orig-1',
+        purchaseTime: 2000,
       };
       storeKitService.restorePurchases.mockResolvedValue({ success: true, purchases: [purchase] });
       if (apiMock) {
@@ -449,7 +470,7 @@ describe('PaymentService', () => {
       expect(apiMock.post).toHaveBeenCalledWith(
         '/api/payments/validate-receipt',
         expect.objectContaining({
-          receipt: 'receipt-1',
+          receipt: VALID_LIKE_RECEIPT,
           productId: 'com.anto.app.monthly',
           restore: true,
         })
@@ -462,8 +483,9 @@ describe('PaymentService', () => {
       Platform.OS = 'ios';
       storeKitService.isAvailable.mockReturnValue(true);
       const purchase = {
-        transactionReceipt: 'receipt-1',
+        transactionReceipt: VALID_LIKE_RECEIPT,
         productId: 'com.anto.app.monthly',
+        purchaseTime: 1000,
       };
       storeKitService.restorePurchases.mockResolvedValue({ success: true, purchases: [purchase] });
       if (apiMock) {
