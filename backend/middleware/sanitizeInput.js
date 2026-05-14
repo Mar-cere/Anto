@@ -55,31 +55,39 @@ export const sanitizeString = (input, options = {}) => {
   return sanitized;
 };
 
+/** Claves de cuerpo JSON que pueden llevar recibos PKCS7 en Base64 (Apple); no truncar a 10k. */
+const LONG_SAFE_STRING_KEYS = new Set(['receipt', 'transactionReceipt', 'receipt-data']);
+
 /**
  * Sanitiza un objeto recursivamente
  * @param {Object} obj - Objeto a sanitizar
  * @param {Object} options - Opciones de sanitización
+ * @param {string} [fieldKey] - nombre del campo padre (para límites por clave)
  * @returns {Object} - Objeto sanitizado
  */
-export const sanitizeObject = (obj, options = {}) => {
+export const sanitizeObject = (obj, options = {}, fieldKey = '') => {
   if (obj === null || obj === undefined) {
     return obj;
   }
 
   if (typeof obj === 'string') {
-    return sanitizeString(obj, options);
+    const longOk = LONG_SAFE_STRING_KEYS.has(fieldKey);
+    const merged = longOk
+      ? { ...options, maxLength: Math.max(options.maxLength || 0, 524288) }
+      : options;
+    return sanitizeString(obj, merged);
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(item => sanitizeObject(item, options));
+    return obj.map((item) => sanitizeObject(item, options, fieldKey));
   }
 
   if (typeof obj === 'object') {
     const sanitized = {};
     for (const [key, value] of Object.entries(obj)) {
       // Sanitizar la clave también
-      const sanitizedKey = sanitizeString(key, { allowHTML: false, trim: true });
-      sanitized[sanitizedKey] = sanitizeObject(value, options);
+      const sanitizedKey = sanitizeString(key, { allowHTML: false, trim: true, maxLength: 200 });
+      sanitized[sanitizedKey] = sanitizeObject(value, options, key);
     }
     return sanitized;
   }
