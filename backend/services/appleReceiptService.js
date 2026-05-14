@@ -80,6 +80,18 @@ class AppleReceiptService {
     };
 
     try {
+      logger.debug('[AppleReceipt] Receipt recibido del cliente (preview antes de Apple):', {
+        length: receiptPayload?.length,
+        first20:
+          typeof receiptPayload === 'string' && receiptPayload.length > 0
+            ? receiptPayload.substring(0, Math.min(20, receiptPayload.length))
+            : '',
+        last20:
+          typeof receiptPayload === 'string' && receiptPayload.length > 0
+            ? receiptPayload.substring(Math.max(0, receiptPayload.length - 20))
+            : '',
+      });
+
       logger.debug('[AppleReceipt] Enviando petición a Apple', {
         isSandbox,
         url: verifyUrl,

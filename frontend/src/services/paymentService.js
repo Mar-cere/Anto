@@ -179,6 +179,16 @@ class PaymentService {
           hasOriginalTransactionId: !!payload.originalTransactionIdentifierIOS,
         });
 
+        if (__DEV__) {
+          const rp = receiptPayload;
+          console.log('[PaymentService] 🔍 Receipt a enviar (TEMP):', {
+            length: rp.length,
+            first20: rp.substring(0, Math.min(20, rp.length)),
+            last20: rp.substring(Math.max(0, rp.length - 20)),
+            productId: receiptData.productId,
+          });
+        }
+
         const requestStartTime = Date.now();
         const response = await api.post(ENDPOINTS.PAYMENT_VALIDATE_RECEIPT, payload);
         const requestDuration = Date.now() - requestStartTime;
@@ -310,6 +320,16 @@ class PaymentService {
       const receiptPayload = latest._receiptNorm;
 
       try {
+        if (__DEV__) {
+          const rp = receiptPayload;
+          console.log('[PaymentService] 🔍 Receipt a enviar (TEMP, restore):', {
+            length: rp.length,
+            first20: rp.substring(0, Math.min(20, rp.length)),
+            last20: rp.substring(Math.max(0, rp.length - 20)),
+            productId: latest.productId,
+          });
+        }
+
         const response = await api.post(ENDPOINTS.PAYMENT_VALIDATE_RECEIPT, {
           receipt: receiptPayload,
           productId: latest.productId,
