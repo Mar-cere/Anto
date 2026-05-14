@@ -132,6 +132,33 @@ function formatAppleVerifyError(err) {
 }
 
 /**
+ * Decodifica solo el segmento central del JWS (payload) sin verificar firma.
+ * Útil con APPLE_ASN_DEBUG cuando la librería de Apple falla antes de exponer el payload.
+ * No usar para tomar decisiones de negocio.
+ */
+function decodeSignedPayloadMiddleUnsafe(signedPayload) {
+  if (!signedPayload || typeof signedPayload !== 'string') {
+    return { error: 'signedPayload vacío' };
+  }
+  const parts = signedPayload.split('.');
+  if (parts.length < 2) {
+    return { error: 'no parece JWS (faltan segmentos)' };
+  }
+  try {
+    const json = Buffer.from(parts[1], 'base64url').toString('utf8');
+    const parsed = JSON.parse(json);
+    return {
+      keys: Object.keys(parsed),
+      notificationType: parsed.notificationType ?? null,
+      notificationUUID: parsed.notificationUUID ?? null,
+      bundleId: parsed.data?.bundleId ?? null,
+    };
+  } catch (e) {
+    return { error: e?.message || String(e) };
+  }
+}
+
+/**
  * @param {string} signedPayload
  * @returns {Promise<{ verifier: SignedDataVerifier, payload: import('@apple/app-store-server-library').ResponseBodyV2DecodedPayload }>}
  */
@@ -172,6 +199,13 @@ async function verifyNotificationPayload(signedPayload) {
         lastSandboxErr = e2;
       }
     }
+  }
+
+  if (process.env.APPLE_ASN_DEBUG === 'true') {
+    const unsafe = decodeSignedPayloadMiddleUnsafe(signedPayload);
+    logger.payment(
+      `[AppleASN] JWS segmento payload sin verificar firma (solo diagnóstico) ${JSON.stringify(unsafe)}`,
+    );
   }
 
   const hint =

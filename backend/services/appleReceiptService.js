@@ -80,17 +80,18 @@ class AppleReceiptService {
     };
 
     try {
-      logger.debug('[AppleReceipt] Receipt recibido del cliente (preview antes de Apple):', {
-        length: receiptPayload?.length,
-        first20:
-          typeof receiptPayload === 'string' && receiptPayload.length > 0
-            ? receiptPayload.substring(0, Math.min(20, receiptPayload.length))
-            : '',
-        last20:
-          typeof receiptPayload === 'string' && receiptPayload.length > 0
-            ? receiptPayload.substring(Math.max(0, receiptPayload.length - 20))
-            : '',
-      });
+      const preview =
+        typeof receiptPayload === 'string' && receiptPayload.length > 0
+          ? {
+              length: receiptPayload.length,
+              first20: receiptPayload.substring(0, Math.min(20, receiptPayload.length)),
+              last20: receiptPayload.substring(Math.max(0, receiptPayload.length - 20)),
+            }
+          : { length: 0, first20: '', last20: '' };
+      // Winston en desarrollo solo imprime `message` (printf); el meta no aparece en consola/Render.
+      logger.payment(
+        `[AppleReceipt] Receipt preview antes de Apple ${JSON.stringify(preview)}`,
+      );
 
       logger.debug('[AppleReceipt] Enviando petición a Apple', {
         isSandbox,
@@ -135,7 +136,7 @@ class AppleReceiptService {
 
       // En algunos builds (p. ej. TestFlight) Apple puede responder 21002 en producción; un intento en sandbox evita falsos negativos.
       if (data.status === 21002 && !isSandbox && !fromProd21002Retry) {
-        logger.warn(
+        logger.payment(
           '[AppleReceipt] status 21002 en producción; reintento único contra sandbox (entorno de prueba / recibo de sandbox)',
         );
         return this.validateReceiptWithApple(receiptPayload, true, true);
