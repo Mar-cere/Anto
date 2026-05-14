@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CommonActions, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, AppState, InteractionManager } from 'react-native';
+import { Alert, Animated, AppState, InteractionManager, Platform, Vibration } from 'react-native';
 import chatService from '../services/chatService';
 import paymentService from '../services/paymentService';
 import websocketService from '../services/websocketService';
@@ -44,6 +44,28 @@ import {
   parseGuestHandoffPendingFromStorage,
   parseUserIdFromUserDataStorage,
 } from '../utils/safeStorageJson';
+
+/** Retroalimentación al recibir respuesta del asistente (háptica + vibración corta en Android). */
+function hapticAssistantMessageReceived() {
+  try {
+    const p = Haptics.impactAsync(
+      Platform.OS === 'android'
+        ? Haptics.ImpactFeedbackStyle.Medium
+        : Haptics.ImpactFeedbackStyle.Light
+    );
+    if (p && typeof p.then === 'function') p.catch(() => {});
+  } catch (_) {
+    /* continúa con vibración en Android */
+  }
+  if (Platform.OS === 'android') {
+    try {
+      // Refuerzo: en varios fabricantes el impacto háptico es casi imperceptible.
+      if (typeof Vibration.vibrate === 'function') {
+        Vibration.vibrate(45);
+      }
+    } catch (_) {}
+  }
+}
 
 export function useChatScreen() {
   const navigation = useNavigation();
@@ -727,6 +749,9 @@ export function useChatScreen() {
             return next;
           });
           scrollToBottom(true, { force: false });
+          requestAnimationFrame(() => {
+            hapticAssistantMessageReceived();
+          });
         },
       });
     } catch (err) {
@@ -1201,15 +1226,26 @@ export function useChatScreen() {
     }).start();
 
     const messageUnsubscribe = chatService.onMessage((message) => {
+      const messageId = message._id || message.id;
+      if (!messageId) return;
+      const role = message?.role;
+      const isAssistant = role === MESSAGE_ROLES.ASSISTANT;
+      const isError = message?.type === MESSAGE_TYPES.ERROR;
+
+      let appended = false;
       setMessages((prev) => {
-        const messageId = message._id || message.id;
-        if (!messageId) return prev;
         const exists = prev.some((msg) => msg._id === messageId || msg.id === messageId);
         if (exists) return prev;
+        appended = true;
         const newMessages = [...prev, message];
         chatService.saveMessages(newMessages);
         return newMessages;
       });
+      if (appended && isAssistant && !isError) {
+        requestAnimationFrame(() => {
+          hapticAssistantMessageReceived();
+        });
+      }
       requestAnimationFrame(() => {
         scrollToBottomStableRef.current?.(true, { force: false });
       });

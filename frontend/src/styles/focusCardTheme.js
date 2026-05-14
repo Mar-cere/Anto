@@ -35,7 +35,7 @@ export function getFocusTheme(colors, resolvedScheme = 'light') {
       flexDirection: 'row',
       alignItems: 'center',
       paddingVertical: 12,
-      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+      paddingHorizontal: 12,
       borderRadius: 14,
       backgroundColor: dark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(36, 35, 79, 0.035)',
     },
@@ -60,7 +60,11 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
   const badgeBg = resolvedScheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(36, 35, 79, 0.06)';
 
   return StyleSheet.create({
-    card: t.FOCUS_PANEL,
+    card: {
+      ...t.FOCUS_PANEL,
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+    },
     kicker: {
       fontSize: 11,
       fontWeight: '600',
@@ -74,7 +78,7 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
       alignItems: 'center',
       marginBottom: 16,
       paddingVertical: 12,
-      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+      paddingHorizontal: 12,
       borderRadius: 14,
       backgroundColor: rowBg,
     },
@@ -172,7 +176,7 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
     },
     nextTask: {
       marginBottom: 18,
-      paddingTop: 14,
+      paddingTop: 12,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: t.FOCUS_BORDER_SUBTLE,
     },
@@ -200,8 +204,8 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
       justifyContent: 'center',
       alignSelf: 'stretch',
       backgroundColor: colors.primary,
-      paddingVertical: 14,
-      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+      paddingVertical: 12,
+      paddingHorizontal: 12,
       borderRadius: 999,
     },
     ctaText: {

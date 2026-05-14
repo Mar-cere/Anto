@@ -34,8 +34,6 @@ export const TEXTS = {
   NOTIFICATIONS_A11Y_COLLAPSED: 'Notificaciones, panel contraído',
   NOTIFICATIONS_A11Y_HINT:
     'Doble toque para mostrar u ocultar tipos y horarios',
-  NOTIFICATIONS_STATUS_ON: 'Activadas',
-  NOTIFICATIONS_STATUS_OFF: 'Desactivadas',
   NOTIFICATIONS_SUB_COLLAPSED_HINT: 'Toca para tipos y horarios',
   NOTIFICATIONS_SUB_EXPANDED: 'Tipos y horarios',
   NOTIFICATIONS_TYPES_TITLE: 'Tipos',

@@ -30,6 +30,7 @@ import ChatInput from '../components/chat/ChatInput';
 import ChatMessageItem from '../components/chat/ChatMessageItem';
 import SessionIntentionBanner from '../components/chat/SessionIntentionBanner';
 import ChatTypingIndicator from '../components/chat/ChatTypingIndicator';
+import ChatOptionsSheet from '../components/chat/ChatOptionsSheet';
 import ClearConversationModal from '../components/chat/ClearConversationModal';
 import OfflineBanner from '../components/OfflineBanner';
 import PendingOfflineMessageBanner from '../components/chat/PendingOfflineMessageBanner';
@@ -302,6 +303,7 @@ const ChatScreen = () => {
     [messages, chatFeedbackEnabled]
   );
   const [showAIDisclosure, setShowAIDisclosure] = React.useState(false);
+  const [showChatOptions, setShowChatOptions] = React.useState(false);
 
   React.useEffect(() => {
     let isMounted = true;
@@ -347,6 +349,14 @@ const ChatScreen = () => {
       navigation.navigate('AIPrivacy');
     } catch (error) {
       console.warn('No se pudo abrir pantalla de Privacidad e IA:', error);
+    }
+  }, [navigation]);
+
+  const handleOpenChatCustomization = useCallback(() => {
+    try {
+      navigation.navigate('Ajustes', { expandChatCustomization: true });
+    } catch (error) {
+      console.warn('No se pudo abrir Ajustes desde el chat:', error);
     }
   }, [navigation]);
 
@@ -450,7 +460,17 @@ const ChatScreen = () => {
         barStyle={statusBarStyle}
       />
 
-      <ChatHeader onBack={handleBack} onOpenMenu={() => setShowClearModal(true)} />
+      <ChatHeader onBack={handleBack} onOpenMenu={() => setShowChatOptions(true)} />
+
+      <ChatOptionsSheet
+        visible={showChatOptions}
+        onClose={() => setShowChatOptions(false)}
+        onScrollToBottom={() => scrollToBottom(true, { force: true })}
+        onOpenCustomization={handleOpenChatCustomization}
+        onOpenPrivacy={handleOpenAIDetails}
+        onOpenAiInfo={() => setShowAIDisclosure(true)}
+        onRequestClearConversation={() => setShowClearModal(true)}
+      />
 
       <OfflineBanner />
 

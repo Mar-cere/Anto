@@ -7,10 +7,10 @@
  * @author AntoApp Team
  */
 
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { SafeAreaView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import SettingsConfirmModal from '../components/settings/SettingsConfirmModal';
 import SettingsContent from '../components/settings/SettingsContent';
 import SettingsHeader from '../components/settings/SettingsHeader';
@@ -20,8 +20,19 @@ import { TEXTS } from './settings/settingsScreenConstants';
 
 export default function SettingsScreen() {
   const navigation = useNavigation();
+  const route = useRoute();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const [expandChatRequest, setExpandChatRequest] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (route.params?.expandChatCustomization) {
+        setExpandChatRequest((n) => n + 1);
+        navigation.setParams({ expandChatCustomization: undefined });
+      }
+    }, [navigation, route.params?.expandChatCustomization]),
+  );
   const {
     user,
     showLogoutModal,
@@ -47,6 +58,7 @@ export default function SettingsScreen() {
       <SettingsContent
         navigation={navigation}
         user={user}
+        expandChatCustomizationRequest={expandChatRequest}
         pushNotificationsEnabled={pushNotificationsEnabled}
         onTogglePushNotifications={handleTogglePushNotifications}
         onUpdateNotificationPreferences={handleUpdateNotificationPreferences}

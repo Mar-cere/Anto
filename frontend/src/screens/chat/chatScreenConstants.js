@@ -33,6 +33,17 @@ export const TEXTS = {
   CANCEL: 'Cancelar',
   DELETE: 'Borrar',
   TITLE: 'Anto',
+  /** Menú ⋮ del encabezado del chat */
+  CHAT_OPTIONS_TITLE: 'Opciones del chat',
+  CHAT_OPTIONS_LAST_MESSAGE: 'Ir al último mensaje',
+  CHAT_OPTIONS_CUSTOMIZE: 'Personalización del chat',
+  CHAT_OPTIONS_AI_PRIVACY: 'Privacidad e IA',
+  CHAT_OPTIONS_AI_INFO: 'Uso de la inteligencia artificial',
+  CHAT_OPTIONS_CLEAR: 'Borrar esta conversación',
+  CHAT_OPTIONS_CANCEL: 'Cerrar',
+  CHAT_MENU_A11Y_LABEL: 'Opciones del chat',
+  CHAT_MENU_A11Y_HINT:
+    'Abre un menú con ir al último mensaje, personalización, privacidad, información sobre IA o borrar la conversación',
   SUGGESTIONS_TITLE: 'Sugerencias para ti',
   PRODUCT_ACTIONS_TITLE: 'Puedes guardarlo en la app',
   NETWORK_ERROR: 'Sin conexión a internet. Por favor, verifica tu conexión e intenta nuevamente.',

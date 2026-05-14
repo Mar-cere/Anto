@@ -23,6 +23,8 @@ export function createCardStyles(colors, resolvedScheme = 'light') {
   const commonStyles = StyleSheet.create({
     cardContainer: {
       ...t.FOCUS_PANEL,
+      paddingVertical: 12,
+      paddingHorizontal: 12,
     },
     cardHeader: {
       flexDirection: 'row',
@@ -53,7 +55,7 @@ export function createCardStyles(colors, resolvedScheme = 'light') {
       alignItems: 'center',
       gap: 4,
       paddingVertical: 8,
-      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+      paddingHorizontal: 12,
       borderRadius: 12,
       backgroundColor: colors.accentLineSoft,
       flexShrink: 0,
@@ -66,8 +68,8 @@ export function createCardStyles(colors, resolvedScheme = 'light') {
     itemContainer: {
       backgroundColor: cardColors.cardBg,
       borderRadius: 14,
-      paddingVertical: SPACING.SCREEN_EDGE_INSET,
-      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+      paddingVertical: 12,
+      paddingHorizontal: 12,
       marginBottom: 8,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.FOCUS_BORDER_SUBTLE,
@@ -88,8 +90,8 @@ export function createCardStyles(colors, resolvedScheme = 'light') {
       alignItems: 'center',
       justifyContent: 'center',
       gap: 10,
-      paddingVertical: SPACING.SCREEN_EDGE_INSET,
-      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+      paddingVertical: 12,
+      paddingHorizontal: 12,
       marginTop: 16,
       borderRadius: 14,
       backgroundColor: colors.accentLineSoft,
@@ -103,7 +105,7 @@ export function createCardStyles(colors, resolvedScheme = 'light') {
       fontWeight: '500',
     },
     loader: {
-      padding: 24,
+      padding: 12,
     },
   });
 

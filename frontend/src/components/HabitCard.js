@@ -273,7 +273,7 @@ const createStyles = (colors, commonStyles) => ({
     gap: 12,
   },
   habitItem: {
-    padding: SPACING.SCREEN_EDGE_INSET,
+    padding: 12,
   },
   habitContent: {
     gap: 12,
@@ -356,7 +356,7 @@ const createStyles = (colors, commonStyles) => ({
   },
   errorContainer: {
     alignItems: 'center',
-    padding: SPACING.SCREEN_EDGE_INSET,
+    padding: 12,
     gap: 12,
   },
   errorText: {

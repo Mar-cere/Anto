@@ -11,7 +11,6 @@ import { CardHeader, useCardStylesDynamic } from './common/CardStyles';
 import Svg, { Circle } from 'react-native-svg';
 import { useTheme } from '../context/ThemeContext';
 import { getFocusTheme } from '../styles/focusCardTheme';
-import { SPACING } from '../constants/ui';
 
 const { width } = Dimensions.get('window');
 const TIMER_SIZE = width * 0.4;
@@ -420,7 +419,7 @@ const createStyles = (colors, t) => ({
   contentContainer: {
     alignItems: 'center',
     gap: 22,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   collapseHandle: {
     width: '100%',
@@ -439,8 +438,8 @@ const createStyles = (colors, t) => ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     borderRadius: 14,
     backgroundColor: colors.glassFill,
     borderWidth: StyleSheet.hairlineWidth,
@@ -547,8 +546,8 @@ const createStyles = (colors, t) => ({
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
-    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-    paddingTop: 18,
+    paddingHorizontal: 12,
+    paddingTop: 12,
     marginTop: 4,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: t.FOCUS_BORDER_SUBTLE,

@@ -3,7 +3,7 @@
  * @author AntoApp Team
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Modal,
   StyleSheet,
@@ -13,8 +13,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useTheme } from '../../context/ThemeContext';
 import {
-  COLORS,
+  createPomodoroColors,
   DEFAULT_CUSTOM_MINUTES,
   DEFAULT_PREP_MINUTES,
   INPUT_FONT_SIZE,
@@ -52,6 +53,102 @@ export default function CustomTimerModal({
   setPrepTime,
   onConfirm,
 }) {
+  const { colors } = useTheme();
+  const { PC, styles } = useMemo(() => {
+    const pomodoro = createPomodoroColors(colors);
+    return {
+      PC: pomodoro,
+      styles: StyleSheet.create({
+        modalOverlay: {
+          flex: 1,
+          backgroundColor: pomodoro.MODAL_OVERLAY,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        modalContent: {
+          backgroundColor: pomodoro.MODAL_BACKGROUND,
+          borderRadius: TASKS_SECTION_BORDER_RADIUS,
+          padding: MODAL_CONTENT_PADDING,
+          width: MODAL_WIDTH_PERCENT,
+          maxWidth: MODAL_MAX_WIDTH,
+        },
+        modalTitle: {
+          fontSize: MODAL_TITLE_FONT_SIZE,
+          fontWeight: 'bold',
+          color: colors.text,
+          marginBottom: MODAL_TITLE_MARGIN_BOTTOM,
+          textAlign: 'center',
+        },
+        inputGroup: {
+          marginBottom: INPUT_GROUP_MARGIN_BOTTOM,
+        },
+        inputLabel: {
+          color: colors.text,
+          fontSize: INPUT_FONT_SIZE,
+          marginBottom: INPUT_LABEL_MARGIN_BOTTOM,
+        },
+        timeInputContainer: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: TIME_INPUT_CONTAINER_GAP,
+        },
+        timeInput: {
+          backgroundColor: pomodoro.INPUT_BACKGROUND,
+          borderRadius: TIME_INPUT_BORDER_RADIUS,
+          padding: TIME_INPUT_PADDING,
+          fontSize: TIME_INPUT_FONT_SIZE,
+          color: colors.text,
+          width: TIME_INPUT_WIDTH,
+          textAlign: 'center',
+        },
+        timeUnit: {
+          color: colors.primary,
+          fontSize: INPUT_FONT_SIZE,
+          fontWeight: '500',
+        },
+        prepTimeContainer: {
+          marginBottom: PREP_TIME_CONTAINER_MARGIN_BOTTOM,
+        },
+        prepTimeHeader: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: PREP_TIME_HEADER_MARGIN_BOTTOM,
+        },
+        prepTimeLabel: {
+          color: colors.text,
+          fontSize: INPUT_FONT_SIZE,
+        },
+        modalButtons: {
+          flexDirection: 'row',
+          gap: MODAL_BUTTONS_GAP,
+        },
+        modalButton: {
+          flex: 1,
+          padding: MODAL_BUTTON_PADDING,
+          borderRadius: MODAL_BUTTON_BORDER_RADIUS,
+          alignItems: 'center',
+        },
+        cancelButton: {
+          backgroundColor: pomodoro.BUTTON_BACKGROUND,
+        },
+        confirmButton: {
+          backgroundColor: pomodoro.PRIMARY,
+        },
+        cancelButtonText: {
+          color: colors.text,
+          fontSize: INPUT_FONT_SIZE,
+          fontWeight: '600',
+        },
+        confirmButtonText: {
+          color: colors.textOnPrimary,
+          fontSize: INPUT_FONT_SIZE,
+          fontWeight: '600',
+        },
+      }),
+    };
+  }, [colors]);
+
   const handleConfirm = () => {
     const workMinutes =
       parseInt(customMinutes, 10) || parseInt(DEFAULT_CUSTOM_MINUTES, 10);
@@ -84,7 +181,7 @@ export default function CustomTimerModal({
                 keyboardType="number-pad"
                 maxLength={MAX_CUSTOM_MINUTES_LENGTH}
                 placeholder={DEFAULT_CUSTOM_MINUTES}
-                placeholderTextColor={COLORS.ACCENT}
+                placeholderTextColor={colors.textMuted}
               />
               <Text style={styles.timeUnit}>{TEXTS.MINUTES}</Text>
             </View>
@@ -96,11 +193,11 @@ export default function CustomTimerModal({
                 value={prepTimeEnabled}
                 onValueChange={setPrepTimeEnabled}
                 trackColor={{
-                  false: COLORS.SWITCH_TRACK_FALSE,
-                  true: COLORS.SWITCH_TRACK_TRUE,
+                  false: PC.SWITCH_TRACK_FALSE,
+                  true: PC.SWITCH_TRACK_TRUE,
                 }}
                 thumbColor={
-                  prepTimeEnabled ? COLORS.SWITCH_THUMB_TRUE : COLORS.SWITCH_THUMB_FALSE
+                  prepTimeEnabled ? PC.SWITCH_THUMB_TRUE : PC.SWITCH_THUMB_FALSE
                 }
               />
             </View>
@@ -116,7 +213,7 @@ export default function CustomTimerModal({
                   keyboardType="number-pad"
                   maxLength={MAX_PREP_MINUTES_LENGTH}
                   placeholder={DEFAULT_PREP_MINUTES}
-                  placeholderTextColor={COLORS.ACCENT}
+                  placeholderTextColor={colors.textMuted}
                 />
                 <Text style={styles.timeUnit}>{TEXTS.MINUTES}</Text>
               </View>
@@ -127,13 +224,13 @@ export default function CustomTimerModal({
               style={[styles.modalButton, styles.cancelButton]}
               onPress={onClose}
             >
-              <Text style={styles.modalButtonText}>{TEXTS.CANCEL}</Text>
+              <Text style={styles.cancelButtonText}>{TEXTS.CANCEL}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.modalButton, styles.confirmButton]}
               onPress={handleConfirm}
             >
-              <Text style={styles.modalButtonText}>{TEXTS.START}</Text>
+              <Text style={styles.confirmButtonText}>{TEXTS.START}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -141,86 +238,3 @@ export default function CustomTimerModal({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: COLORS.MODAL_OVERLAY,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: COLORS.MODAL_BACKGROUND,
-    borderRadius: TASKS_SECTION_BORDER_RADIUS,
-    padding: MODAL_CONTENT_PADDING,
-    width: MODAL_WIDTH_PERCENT,
-    maxWidth: MODAL_MAX_WIDTH,
-  },
-  modalTitle: {
-    fontSize: MODAL_TITLE_FONT_SIZE,
-    fontWeight: 'bold',
-    color: COLORS.WHITE,
-    marginBottom: MODAL_TITLE_MARGIN_BOTTOM,
-    textAlign: 'center',
-  },
-  inputGroup: {
-    marginBottom: INPUT_GROUP_MARGIN_BOTTOM,
-  },
-  inputLabel: {
-    color: COLORS.WHITE,
-    fontSize: INPUT_FONT_SIZE,
-    marginBottom: INPUT_LABEL_MARGIN_BOTTOM,
-  },
-  timeInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: TIME_INPUT_CONTAINER_GAP,
-  },
-  timeInput: {
-    backgroundColor: COLORS.INPUT_BACKGROUND,
-    borderRadius: TIME_INPUT_BORDER_RADIUS,
-    padding: TIME_INPUT_PADDING,
-    fontSize: TIME_INPUT_FONT_SIZE,
-    color: COLORS.WHITE,
-    width: TIME_INPUT_WIDTH,
-    textAlign: 'center',
-  },
-  timeUnit: {
-    color: COLORS.ACCENT,
-    fontSize: INPUT_FONT_SIZE,
-  },
-  prepTimeContainer: {
-    marginBottom: PREP_TIME_CONTAINER_MARGIN_BOTTOM,
-  },
-  prepTimeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: PREP_TIME_HEADER_MARGIN_BOTTOM,
-  },
-  prepTimeLabel: {
-    color: COLORS.WHITE,
-    fontSize: INPUT_FONT_SIZE,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: MODAL_BUTTONS_GAP,
-  },
-  modalButton: {
-    flex: 1,
-    padding: MODAL_BUTTON_PADDING,
-    borderRadius: MODAL_BUTTON_BORDER_RADIUS,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: COLORS.BUTTON_BACKGROUND,
-  },
-  confirmButton: {
-    backgroundColor: COLORS.PRIMARY,
-  },
-  modalButtonText: {
-    color: COLORS.WHITE,
-    fontSize: INPUT_FONT_SIZE,
-    fontWeight: '500',
-  },
-});

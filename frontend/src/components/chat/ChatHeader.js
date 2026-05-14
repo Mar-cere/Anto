@@ -79,8 +79,8 @@ export default function ChatHeader({ onBack, onOpenMenu }) {
         style={styles.menuButton}
         onPress={onOpenMenu}
         accessibilityRole="button"
-        accessibilityLabel="Opciones del chat"
-        accessibilityHint="Doble toque para borrar la conversación u otras acciones"
+        accessibilityLabel={TEXTS.CHAT_MENU_A11Y_LABEL}
+        accessibilityHint={TEXTS.CHAT_MENU_A11Y_HINT}
       >
         <Ionicons name="ellipsis-vertical" size={ICON_SIZES.MENU} color={chatColors.ACCENT} />
       </TouchableOpacity>

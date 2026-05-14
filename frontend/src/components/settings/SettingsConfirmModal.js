@@ -89,7 +89,7 @@ export default function SettingsConfirmModal({
               <Text
                 style={{
                   fontSize: 16,
-                  color: destructive ? COLORS.ERROR : palette.white,
+                  color: destructive ? palette.error : palette.textOnPrimary,
                 }}
               >
                 {confirmText}

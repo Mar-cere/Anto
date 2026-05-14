@@ -61,6 +61,7 @@ const LIST_PRESS_OPACITY = 0.74;
 export default function SettingsContent({
   navigation,
   user,
+  expandChatCustomizationRequest = 0,
   pushNotificationsEnabled,
   onTogglePushNotifications,
   onUpdateNotificationPreferences,
@@ -116,6 +117,11 @@ export default function SettingsContent({
       if (savedFlashTimerRef.current) clearTimeout(savedFlashTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (expandChatCustomizationRequest <= 0) return;
+    setChatCustomizationExpanded(true);
+  }, [expandChatCustomizationRequest]);
 
   const notificationPreferences = useMemo(() => {
     const base = user?.notificationPreferences || {};
@@ -408,7 +414,7 @@ export default function SettingsContent({
           alignItems: 'center',
           backgroundColor: COLORS.ITEM_BACKGROUND,
           borderRadius: 12,
-          padding: 14,
+          padding: 12,
           marginBottom: 10,
           borderWidth: 1,
           borderColor: COLORS.ITEM_BORDER,
@@ -454,8 +460,8 @@ export default function SettingsContent({
         settingsLinkRow: {
           flexDirection: 'row',
           alignItems: 'center',
-          paddingVertical: 14,
-          paddingHorizontal: 14,
+          paddingVertical: 12,
+          paddingHorizontal: 12,
           borderBottomWidth: StyleSheet.hairlineWidth,
           borderBottomColor: COLORS.ITEM_BORDER,
         },
@@ -529,7 +535,7 @@ export default function SettingsContent({
           marginTop: -4,
           marginBottom: 12,
           marginLeft: 56,
-          padding: 14,
+          padding: 12,
           borderRadius: 12,
           borderWidth: 1,
           borderColor: COLORS.ITEM_BORDER,
@@ -539,8 +545,7 @@ export default function SettingsContent({
         chatTonePanel: {
           marginTop: 4,
           marginBottom: 8,
-          padding: 14,
-          paddingBottom: 12,
+          padding: 12,
           borderRadius: 12,
           borderWidth: 1,
           borderColor: COLORS.ITEM_BORDER,
@@ -770,7 +775,7 @@ export default function SettingsContent({
               <Text style={styles.itemSubtext} numberOfLines={2}>
                 {notificationsExpanded
                   ? TEXTS.NOTIFICATIONS_SUB_EXPANDED
-                  : `${pushNotificationsEnabled ? TEXTS.NOTIFICATIONS_STATUS_ON : TEXTS.NOTIFICATIONS_STATUS_OFF} · ${TEXTS.NOTIFICATIONS_SUB_COLLAPSED_HINT}`}
+                  : TEXTS.NOTIFICATIONS_SUB_COLLAPSED_HINT}
               </Text>
             </TouchableOpacity>
             <View style={styles.notificationsRight}>

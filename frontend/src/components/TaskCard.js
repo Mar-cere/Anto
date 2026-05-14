@@ -52,7 +52,7 @@ const TaskItem = memo(({ item, onPress }) => {
         taskCard: {
           borderRadius: 14,
           paddingVertical: 12,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingHorizontal: 12,
           marginBottom: 10,
           borderWidth: StyleSheet.hairlineWidth,
         },
@@ -312,7 +312,7 @@ const TaskCard = memo(() => {
         },
         errorContainer: {
           alignItems: 'center',
-          padding: 24,
+          padding: 12,
           gap: 12,
         },
         errorText: {

@@ -58,8 +58,8 @@ const QuoteSection = () => {
           borderWidth: 1,
           borderColor: colors.chromeCardBorder,
           marginBottom: 0,
-          paddingVertical: 14,
-          paddingHorizontal: 14,
+          paddingVertical: 12,
+          paddingHorizontal: 12,
         },
         headerRow: {
           flexDirection: 'row',
