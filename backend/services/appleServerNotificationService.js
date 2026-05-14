@@ -146,6 +146,9 @@ async function verifyNotificationPayload(signedPayload) {
     const { production, sandbox } = getVerifiers(enableOnline);
     try {
       const payload = await production.verifyAndDecodeNotification(signedPayload);
+      if (payload == null || typeof payload !== 'object') {
+        throw new Error('verifyAndDecodeNotification (producción) devolvió un payload inválido');
+      }
       if (!enableOnline && preferOnline) {
         logger.warn(
           '[AppleASN] JWS verificado (producción) sin OCSP en línea; si es habitual, define APPLE_ASN_ONLINE_OCSP=false',
@@ -156,6 +159,9 @@ async function verifyNotificationPayload(signedPayload) {
       lastProdErr = e1;
       try {
         const payload = await sandbox.verifyAndDecodeNotification(signedPayload);
+        if (payload == null || typeof payload !== 'object') {
+          throw new Error('verifyAndDecodeNotification (sandbox) devolvió un payload inválido');
+        }
         if (!enableOnline && preferOnline) {
           logger.warn(
             '[AppleASN] JWS verificado (sandbox) sin OCSP en línea; si es habitual, define APPLE_ASN_ONLINE_OCSP=false',
@@ -281,6 +287,9 @@ export async function handleAppleServerNotification(signedPayload) {
   }
 
   const { verifier, payload } = await verifyNotificationPayload(signedPayload);
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Notificación decodificada inválida (payload vacío)');
+  }
   const notificationUUID = payload.notificationUUID;
   if (!notificationUUID) {
     throw new Error('Notificación sin notificationUUID');

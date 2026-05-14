@@ -32,6 +32,18 @@ function resolveIapExport(raw) {
   if (raw == null) {
     return null;
   }
+  // Si la raíz del paquete ya expone la API completa, usarla siempre: así `setPurchaseListener`
+  // y `connectAsync` comparten el mismo EventEmitter interno del módulo (evita avisos de
+  // «no listeners» cuando Metro resuelve un `default` parcial distinto del namespace raíz).
+  if (
+    typeof raw === 'object' &&
+    typeof raw.connectAsync === 'function' &&
+    typeof raw.setPurchaseListener === 'function' &&
+    raw.IAPResponseCode != null &&
+    typeof raw.IAPResponseCode === 'object'
+  ) {
+    return raw;
+  }
   const candidates = [];
   if (typeof raw === 'object') {
     candidates.push(raw);
@@ -195,6 +207,39 @@ function isAlreadyConnectedError(err) {
   return msg.includes('already connected');
 }
 
+/**
+ * expo-in-app-purchases (iOS) arma el historial con `restoreCompletedTransactions` y recorre
+ * `SKPaymentQueue.transactions`; pueden repetirse filas o acumularse si hay varias restauraciones
+ * en paralelo. Dedupe por id de transacción de Apple (orderId nativo).
+ */
+function dedupePurchaseHistoryRows(rows) {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return rows;
+  }
+  const byKey = new Map();
+  for (const p of rows) {
+    if (!p || !p.productId) continue;
+    const tidRaw =
+      p.orderId != null
+        ? String(p.orderId)
+        : p.transactionId != null
+          ? String(p.transactionId)
+          : p.transactionIdentifier != null
+            ? String(p.transactionIdentifier)
+            : '';
+    const pt =
+      typeof p.purchaseTime === 'number' && !Number.isNaN(p.purchaseTime)
+        ? p.purchaseTime
+        : Number(p.purchaseTime) || 0;
+    const key = tidRaw || `${String(p.productId)}:${pt}`;
+    const prev = byKey.get(key);
+    if (!prev || pt >= (prev.purchaseTime || 0)) {
+      byKey.set(key, { ...p, purchaseTime: pt });
+    }
+  }
+  return Array.from(byKey.values());
+}
+
 class StoreKitService {
   constructor() {
     this.isInitialized = false;
@@ -207,6 +252,8 @@ class StoreKitService {
     this.productsLoadingPromise = null; // Mutex para evitar getProductsAsync concurrente
     /** Espera de respuesta IAP enlazada al listener (expo-in-app-purchases). */
     this._purchaseUpdateWaiter = null;
+    /** Una sola restauración / historial a la vez (evita duplicar filas en la cola). */
+    this._restoreInFlight = null;
   }
 
   /**
@@ -256,6 +303,7 @@ class StoreKitService {
       hasConnectAsync: typeof module.connectAsync === 'function',
       hasPurchaseItemAsync: typeof module.purchaseItemAsync === 'function',
       hasIAPResponseCode: !!module.IAPResponseCode,
+      hasSetPurchaseListener: typeof module.setPurchaseListener === 'function',
     });
 
     // Si ya está inicializado, NO asumir conexión viva: iOS puede cortar la conexión.
@@ -269,6 +317,8 @@ class StoreKitService {
         await new Promise(resolve => setTimeout(resolve, 100));
         attempts++;
         if (this.isInitialized && this.module && typeof this.module.purchaseItemAsync === 'function') {
+          // Otra llamada completó init; tras Fast Reload el paquete IAP puede haber perdido el listener.
+          this.setupPurchaseListeners();
           return { success: true };
         }
       }
@@ -291,6 +341,8 @@ class StoreKitService {
 
     // Guardar referencia al módulo
     this.module = module;
+    // Re-enganchar el listener lo antes posible (expo-in-app-purchases pierde suscripciones al recargar Metro).
+    this.setupPurchaseListeners();
 
     // Marcar como inicializando
     this.initializing = true;
@@ -305,10 +357,6 @@ class StoreKitService {
           error: 'Módulo de compras no disponible. Por favor, reinicia la app.',
         };
       }
-
-      // Registrar listener ANTES de connectAsync: el nativo puede emitir Expo.purchasesUpdated
-      // al conectar o al hidratar la cola; si no hay listener, RN avisa y se pierden eventos (p. ej. tras Fast Refresh).
-      this.setupPurchaseListeners();
 
       // Conectar con App Store
       console.log('[StoreKit] 🔌 Intentando conectar con App Store...');
@@ -1617,133 +1665,156 @@ class StoreKitService {
    * Restaurar compras anteriores
    */
   async restorePurchases() {
-    if (!this.isInitialized && !this.initializing) {
-      const initResult = await this.initialize();
-      if (!initResult.success) {
-        return {
-          success: false,
-          error: initResult.error || 'No se pudo inicializar StoreKit',
-          purchases: [],
-        };
+    if (this._restoreInFlight) {
+      if (__DEV__) {
+        console.log('[StoreKit] restorePurchases: operación ya en curso, reutilizando la misma petición');
       }
-    } else if (this.initializing) {
-      // Esperar a que termine la inicialización
-      let attempts = 0;
-      while (this.initializing && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-        if (this.isInitialized) break;
-      }
-      if (!this.isInitialized) {
-        return {
-          success: false,
-          error: 'No se pudo inicializar StoreKit. Por favor, intenta de nuevo.',
-          purchases: [],
-        };
-      }
+      return this._restoreInFlight;
     }
 
-    let module = this.module || getInAppPurchasesModule();
-    if (!module) {
-      return {
-        success: false,
-        error: 'Módulo nativo no disponible',
-        purchases: [],
-      };
-    }
-    this.module = module;
-
-    try {
-      console.log('[StoreKit] Restaurando compras...');
-
-      // En expo-in-app-purchases, la "restauración" se implementa consultando el historial
-      // (en vez de restorePurchasesAsync, que puede no existir en tu versión).
-      const historyResult = await module.getPurchaseHistoryAsync();
-
-      if (!historyResult) {
-        console.error('[StoreKit] getPurchaseHistoryAsync retornó undefined');
-        return {
-          success: false,
-          error: 'No se recibió respuesta de App Store',
-          purchases: [],
-        };
-      }
-
-      if (typeof historyResult !== 'object') {
-        console.error('[StoreKit] getPurchaseHistoryAsync retornó tipo inválido:', typeof historyResult);
-        return {
-          success: false,
-          error: 'Respuesta inválida de App Store',
-          purchases: [],
-        };
-      }
-
-      const responseCode = historyResult.responseCode;
-      const results = historyResult.results;
-
-      console.log('[StoreKit] Respuesta historial compras:', {
-        responseCode,
-        hasResults: !!results,
-        resultsType: Array.isArray(results) ? 'array' : typeof results,
-        resultsLength: Array.isArray(results) ? results.length : 'N/A',
-      });
-
-      if (responseCode === module.IAPResponseCode.OK) {
-        const validResults = Array.isArray(results) ? results : [];
-
-        if (validResults.length === 0) {
-          console.log('[StoreKit] No se encontraron compras para restaurar');
+    const run = async () => {
+      if (!this.isInitialized && !this.initializing) {
+        const initResult = await this.initialize();
+        if (!initResult.success) {
           return {
-            success: true,
+            success: false,
+            error: initResult.error || 'No se pudo inicializar StoreKit',
             purchases: [],
-            message: 'No se encontraron compras para restaurar',
+          };
+        }
+      } else if (this.initializing) {
+        let attempts = 0;
+        while (this.initializing && attempts < 50) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          attempts++;
+          if (this.isInitialized) break;
+        }
+        if (!this.isInitialized) {
+          return {
+            success: false,
+            error: 'No se pudo inicializar StoreKit. Por favor, intenta de nuevo.',
+            purchases: [],
+          };
+        }
+      }
+
+      let module = this.module || getInAppPurchasesModule();
+      if (!module) {
+        return {
+          success: false,
+          error: 'Módulo nativo no disponible',
+          purchases: [],
+        };
+      }
+      this.module = module;
+
+      try {
+        console.log('[StoreKit] Restaurando compras...');
+
+        const historyResult = await module.getPurchaseHistoryAsync();
+
+        if (!historyResult) {
+          console.error('[StoreKit] getPurchaseHistoryAsync retornó undefined');
+          return {
+            success: false,
+            error: 'No se recibió respuesta de App Store',
+            purchases: [],
           };
         }
 
-        console.log('[StoreKit] Compras restauradas (historial):', validResults.length);
+        if (typeof historyResult !== 'object') {
+          console.error('[StoreKit] getPurchaseHistoryAsync retornó tipo inválido:', typeof historyResult);
+          return {
+            success: false,
+            error: 'Respuesta inválida de App Store',
+            purchases: [],
+          };
+        }
 
-        const mappedPurchases = validResults
-          .filter(p => p && p.productId)
-          .map(p => ({
-            productId: p.productId,
-            plan: PRODUCT_ID_TO_PLAN[p.productId] || p.productId,
-            transactionId: p.transactionId || p.orderId || null,
-            transactionReceipt: p.transactionReceipt || null,
-            originalTransactionIdentifierIOS: p.originalTransactionIdentifierIOS || p.originalOrderId || null,
-            purchaseTime:
-              typeof p.purchaseTime === 'number' && !Number.isNaN(p.purchaseTime)
-                ? p.purchaseTime
-                : Number(p.purchaseTime) || 0,
-          }));
+        const responseCode = historyResult.responseCode;
+        const results = historyResult.results;
 
-        return {
-          success: true,
-          purchases: mappedPurchases,
-        };
-      }
+        const rawCount = Array.isArray(results) ? results.length : 0;
 
-      if (responseCode === module.IAPResponseCode.USER_CANCELED) {
+        console.log('[StoreKit] Respuesta historial compras:', {
+          responseCode,
+          hasResults: !!results,
+          resultsType: Array.isArray(results) ? 'array' : typeof results,
+          resultsLength: Array.isArray(results) ? results.length : 'N/A',
+        });
+
+        if (responseCode === module.IAPResponseCode.OK) {
+          const validResults = Array.isArray(results) ? results : [];
+
+          if (validResults.length === 0) {
+            console.log('[StoreKit] No se encontraron compras para restaurar');
+            return {
+              success: true,
+              purchases: [],
+              message: 'No se encontraron compras para restaurar',
+            };
+          }
+
+          const deduped = dedupePurchaseHistoryRows(validResults);
+          if (deduped.length !== validResults.length && __DEV__) {
+            console.log('[StoreKit] Historial deduplicado', {
+              antes: validResults.length,
+              despues: deduped.length,
+            });
+          }
+
+          console.log('[StoreKit] Compras restauradas (historial):', deduped.length);
+
+          const mappedPurchases = deduped
+            .filter((p) => p && p.productId)
+            .map((p) => ({
+              productId: p.productId,
+              plan: PRODUCT_ID_TO_PLAN[p.productId] || p.productId,
+              transactionId: p.transactionId || p.orderId || null,
+              transactionReceipt: p.transactionReceipt || null,
+              originalTransactionIdentifierIOS:
+                p.originalTransactionIdentifierIOS || p.originalOrderId || null,
+              purchaseTime:
+                typeof p.purchaseTime === 'number' && !Number.isNaN(p.purchaseTime)
+                  ? p.purchaseTime
+                  : Number(p.purchaseTime) || 0,
+            }));
+
+          return {
+            success: true,
+            purchases: mappedPurchases,
+            _debugRawHistoryCount: __DEV__ ? rawCount : undefined,
+          };
+        }
+
+        if (responseCode === module.IAPResponseCode.USER_CANCELED) {
+          return {
+            success: false,
+            error: 'Restauración cancelada por el usuario',
+            purchases: [],
+            cancelled: true,
+          };
+        }
+
         return {
           success: false,
-          error: 'Restauración cancelada por el usuario',
+          error: `Error restaurando compras: ${responseCode}`,
           purchases: [],
-          cancelled: true,
+        };
+      } catch (error) {
+        console.error('[StoreKit] Error restaurando compras:', error);
+        return {
+          success: false,
+          error: error?.message || 'Error al restaurar compras',
+          purchases: [],
         };
       }
+    };
 
-      return {
-        success: false,
-        error: `Error restaurando compras: ${responseCode}`,
-        purchases: [],
-      };
-    } catch (error) {
-      console.error('[StoreKit] Error restaurando compras:', error);
-      return {
-        success: false,
-        error: error?.message || 'Error al restaurar compras',
-        purchases: [],
-      };
-    }
+    this._restoreInFlight = run().finally(() => {
+      this._restoreInFlight = null;
+    });
+    return this._restoreInFlight;
   }
 
   /**
@@ -1778,10 +1849,8 @@ class StoreKitService {
       const { responseCode, results } = historyResult;
       
       if (responseCode === module.IAPResponseCode.OK) {
-        // Validar que results sea un array
-        const validResults = Array.isArray(results) ? results : [];
-        // Filtrar solo suscripciones activas
-        const activeSubscriptions = validResults.filter(p => {
+        const validResults = dedupePurchaseHistoryRows(Array.isArray(results) ? results : []);
+        const activeSubscriptions = validResults.filter((p) => {
           if (!p || !p.productId) return false;
           const plan = PRODUCT_ID_TO_PLAN[p.productId];
           return plan !== undefined;

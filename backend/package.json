@@ -30,7 +30,7 @@
   "author": "AntoApp Team",
   "license": "ISC",
   "dependencies": {
-    "@apple/app-store-server-library": "^3.0.0",
+    "@apple/app-store-server-library": "^3.1.0",
     "@sendgrid/mail": "^8.1.6",
     "@sentry/node": "^10.27.0",
     "bcrypt": "^5.1.1",

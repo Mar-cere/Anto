@@ -870,6 +870,7 @@ router.post(
       if (
         msg === 'signedPayload requerido' ||
         msg.includes('Fallo verificación JWS') ||
+        msg.includes('Notificación decodificada inválida') ||
         msg.includes('Notificación sin notificationUUID')
       ) {
         return res.status(400).json({ received: false, error: msg });

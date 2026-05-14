@@ -300,7 +300,7 @@ class PaymentService {
         return {
           success: false,
           error:
-            'No hay ningún recibo de la app válido entre las compras restauradas. Probá «Restaurar compras» de nuevo o reiniciar la app.',
+            'No hay ningún recibo de la app válido entre las compras restauradas. En el simulador suele faltar el archivo de recibo (utilice un dispositivo físico o un archivo .storekit). En dispositivo físico, intente reiniciar la aplicación o ejecutar de nuevo «Restaurar compras».',
           purchases: result.purchases,
         };
       }
