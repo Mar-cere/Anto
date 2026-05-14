@@ -254,6 +254,8 @@ class StoreKitService {
     this._purchaseUpdateWaiter = null;
     /** Una sola restauración / historial a la vez (evita duplicar filas en la cola). */
     this._restoreInFlight = null;
+    /** Último estado de registro del listener (solo para cleanup / diagnóstico). */
+    this._iapPurchaseListenerBound = false;
   }
 
   /**
@@ -341,8 +343,9 @@ class StoreKitService {
 
     // Guardar referencia al módulo
     this.module = module;
-    // Re-enganchar el listener lo antes posible (expo-in-app-purchases pierde suscripciones al recargar Metro).
-    this.setupPurchaseListeners();
+    // No registrar setPurchaseListener antes de connectAsync: expo hace remove()+addListener()
+    // en cada setPurchaseListener; si el nativo emite Expo.purchasesUpdated entre medias, RN
+    // muestra "no listeners registered" y se pueden perder eventos.
 
     // Marcar como inicializando
     this.initializing = true;
@@ -513,10 +516,10 @@ class StoreKitService {
       return;
     }
     this.module = module;
-    // Listener para actualizaciones de compras
-    // API de expo-in-app-purchases: setPurchaseListener (no addPurchaseUpdateListener)
-    // IMPORTANTE: Este listener solo notifica, NO procesa compras
-    // El procesamiento se hace en purchaseSubscription() para evitar duplicados
+    // setPurchaseListener de expo hace remove()+add en cada llamada; no usamos early-return:
+    // tras Fast Refresh el EventEmitter interno puede quedar sin suscriptores mientras el singleton
+    // de esta clase sigue vivo — hay que volver a registrar siempre que se invoque setup.
+
     const setListener = module.setPurchaseListener || module.addPurchaseUpdateListener;
     if (typeof setListener !== 'function') {
       console.error(
@@ -615,6 +618,7 @@ class StoreKitService {
         }
       }
     );
+    this._iapPurchaseListenerBound = true;
     // Marcador para teardown: expo no expone remove; al desmontar la app basta con dejar de usar el singleton.
     this.purchaseUpdateListener = { remove: () => {} };
   }
@@ -652,6 +656,9 @@ class StoreKitService {
         reject(err);
       };
 
+      // Debe ejecutarse antes del waiter y de purchaseItemAsync. Idempotente si initialize() ya enlazó.
+      this.setupPurchaseListeners();
+
       timeoutId = setTimeout(() => {
         cleanupAndReject(
           new Error(
@@ -665,9 +672,6 @@ class StoreKitService {
         resolve: cleanupAndResolve,
         reject: cleanupAndReject,
       };
-
-      // Re-registrar siempre: tras Fast Refresh el módulo JS de expo pierde addListener pero este singleton puede seguir "vivo".
-      this.setupPurchaseListeners();
 
       try {
         const maybePromise = module.purchaseItemAsync(productId);
@@ -917,6 +921,9 @@ class StoreKitService {
         }
       }
     }
+
+    // Asegurar listener antes de comprar (idempotente si initialize() ya enlazó).
+    this.setupPurchaseListeners();
 
     // Verificar que el módulo esté disponible después de la inicialización
     module = this.module || getInAppPurchasesModule();
@@ -1906,6 +1913,7 @@ class StoreKitService {
         await this.module.disconnectAsync();
         this.isInitialized = false;
         this.module = null;
+        this._iapPurchaseListenerBound = false;
       } catch (error) {
         // Ignorar error al desconectar
       }
