@@ -1506,27 +1506,46 @@ class PaymentServiceMercadoPago {
           providerLabel: 'Mercado Pago',
           reference: txRef,
         };
-        const mpMailSent = await mailer.sendSubscriptionThankYouEmail(
-          user.email,
-          username,
-          plan,
-          periodEnd,
-          receipt,
-          'Confirmación de compra / suscripción (Mercado Pago)'
-        );
+        const mpMailSent = isNewSubscription
+          ? await mailer.sendSubscriptionThankYouEmail(
+              user.email,
+              username,
+              plan,
+              periodEnd,
+              receipt,
+              'Confirmación de compra / suscripción (Mercado Pago)'
+            )
+          : await mailer.sendSubscriptionRenewalEmail(
+              user.email,
+              username,
+              plan,
+              periodEnd,
+              receipt,
+              'Renovación suscripción (Mercado Pago)'
+            );
 
         if (mpMailSent) {
-          logger.payment('Correo de agradecimiento por suscripción enviado', {
-            userId: userIdString,
-            userEmail: user.email,
-            plan,
-          });
+          logger.payment(
+            isNewSubscription
+              ? 'Correo de agradecimiento por suscripción enviado'
+              : 'Correo de renovación por suscripción enviado',
+            {
+              userId: userIdString,
+              userEmail: user.email,
+              plan,
+            }
+          );
         } else {
-          logger.warn('Correo de agradecimiento por suscripción no enviado (mailer devolvió false)', {
-            userId: userIdString,
-            userEmail: user.email,
-            plan,
-          });
+          logger.warn(
+            isNewSubscription
+              ? 'Correo de agradecimiento por suscripción no enviado (mailer devolvió false)'
+              : 'Correo de renovación por suscripción no enviado (mailer devolvió false)',
+            {
+              userId: userIdString,
+              userEmail: user.email,
+              plan,
+            }
+          );
         }
       } catch (emailError) {
         // No fallar la activación si el correo falla, solo loguear el error

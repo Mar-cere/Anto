@@ -1,0 +1,19 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`reEngagementEmail plantilla asunto; preheader oculto; tip determinista para 7 días (snapshot mínimo) 1`] = `"Hace tiempo que no abres Anto"`;
+
+exports[`reEngagementEmail plantilla asunto; preheader oculto; tip determinista para 7 días (snapshot mínimo) 2`] = `
+{
+  "mencionaSieteDias": true,
+  "preheaderOculto": true,
+  "tipIndice2": true,
+}
+`;
+
+exports[`reEngagementEmail plantilla normaliza días inválidos a 1 y rota tip (índice 1) 1`] = `
+{
+  "subject": "Hace tiempo que no abres Anto",
+  "tipIndice1": true,
+  "unDiaEnCuerpo": true,
+}
+`;

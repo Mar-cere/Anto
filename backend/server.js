@@ -509,11 +509,9 @@ if (process.env.NODE_ENV !== 'test') {
         logger.error('❌ Error en correos de retención trial', { error: error.message });
       }
     };
-    if (config.app.environment === 'production') {
-      setTimeout(() => void runTrialRetention(), 120000);
-    }
+    setTimeout(() => void runTrialRetention(), 120000);
     setInterval(() => void runTrialRetention(), TRIAL_RETENTION_INTERVAL_MS);
-    logger.info('✅ Retención trial por correo programada (cada 24 horas)');
+    logger.info('✅ Retención trial por correo programada (primer run ~2 min, luego cada 24 horas)');
   }
 
   // Tips semanales por correo (ventana UTC; solo producción salvo WEEKLY_TIPS_EMAIL_ALLOW_NON_PRODUCTION=true)

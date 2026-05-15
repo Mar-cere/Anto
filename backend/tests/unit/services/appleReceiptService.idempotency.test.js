@@ -13,6 +13,7 @@ import { connectDatabase, clearDatabase, closeDatabase } from '../../helpers/tes
 jest.unstable_mockModule('../../../config/mailer.js', () => ({
   default: {
     sendSubscriptionThankYouEmail: jest.fn(async () => true),
+    sendSubscriptionRenewalEmail: jest.fn(async () => true),
   },
 }));
 

@@ -1,0 +1,23 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`trialRetentionEmail plantilla asunto; preheader oculto; aprox. días si quedan ≥24 h (snapshot mínimo) 1`] = `"Tu prueba en Anto termina pronto"`;
+
+exports[`trialRetentionEmail plantilla asunto; preheader oculto; aprox. días si quedan ≥24 h (snapshot mínimo) 2`] = `
+{
+  "cuerpoMencionaDiasOrientativos": true,
+  "preheaderMenciona54Horas": true,
+  "preheaderMencionaAprox2Dias": true,
+  "preheaderOculto": true,
+}
+`;
+
+exports[`trialRetentionEmail plantilla pocas horas si quedan &lt;6 h; sin cifra exacta de horas en cuerpo ni preheader 1`] = `
+{
+  "pocasHorasEnCuerpo": true,
+  "pocasHorasEnPreheader": true,
+  "preheaderOculto": true,
+  "sinCincoHorasTexto": true,
+  "sinParrafoDiasOrientativos": true,
+  "subject": "Tu prueba en Anto termina pronto",
+}
+`;

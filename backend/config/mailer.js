@@ -19,6 +19,7 @@ import {
   RESET_PASSWORD_PATH,
   RESET_TOKEN_EXPIRATION_HOURS
 } from '../constants/email.js';
+import { emailCtaLabel, getEmailLegalMedicalDisclaimerPlain } from '../constants/emailProductCopy.js';
 import { getUtcIsoWeekParts } from '../utils/isoWeek.js';
 import logger from '../utils/logger.js';
 import {
@@ -133,6 +134,16 @@ const logMailerBootstrap = () => {
 };
 logMailerBootstrap();
 
+const EMAIL_LAYOUT_OUTER = `font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;padding:16px 12px;background:${EMAIL_COLORS.BACKGROUND};`;
+const EMAIL_LAYOUT_CARD = `background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;padding:28px 24px;margin:0 auto;max-width:560px;box-shadow:0 2px 12px rgba(29,43,95,0.06);`;
+const EMAIL_PREHEADER_HIDDEN = `display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:transparent;width:0;height:0;opacity:0;`;
+
+function emailPreheaderHtml(escapedText) {
+  return `<div style="${EMAIL_PREHEADER_HIDDEN}">${escapedText}</div>`;
+}
+
+const EMAIL_LEGAL_DISCLAIMER_ESCAPED = escapeHtmlText(getEmailLegalMedicalDisclaimerPlain());
+
 /**
  * Formatea importe para comprobantes por correo (confirmación de compra).
  * @param {number|null|undefined} amount
@@ -148,6 +159,73 @@ function formatPurchaseAmount(amount, currency) {
   } catch {
     return `${n.toLocaleString('es-CL')} ${code}`;
   }
+}
+
+const SUBSCRIPTION_PLAN_LABELS = {
+  monthly: 'Mensual',
+  quarterly: 'Trimestral',
+  semestral: 'Semestral',
+  yearly: 'Anual',
+};
+
+function subscriptionPlanDisplayName(plan) {
+  return SUBSCRIPTION_PLAN_LABELS[plan] != null ? SUBSCRIPTION_PLAN_LABELS[plan] : String(plan ?? '');
+}
+
+/**
+ * Bloque HTML de comprobante (fecha, producto, importe, proveedor, referencia, vigencia).
+ * @param {object} receipt
+ * @param {string} planNameRaw — etiqueta del plan sin escapar
+ * @param {string} periodEndSafe — fecha fin ya escapada para HTML
+ * @param {{ title?: string }} [options]
+ */
+function buildSubscriptionReceiptHtmlBlock(receipt, planNameRaw, periodEndSafe, options = {}) {
+  if (!receipt) return '';
+  const title = escapeHtmlText(options.title ?? 'Confirmación de compra');
+
+  const purchaseDateStr = receipt.purchaseDate
+    ? new Date(receipt.purchaseDate).toLocaleDateString('es-CL', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null;
+  const purchaseDateSafe = purchaseDateStr ? escapeHtmlText(purchaseDateStr) : null;
+  const amountStr = formatPurchaseAmount(receipt.amount, receipt.currency);
+  const amountSafe = amountStr ? escapeHtmlText(amountStr) : null;
+  const providerSafe = escapeHtmlText(String(receipt.providerLabel ?? '—'));
+  const referenceSafe = escapeHtmlText(String(receipt.reference ?? '—'));
+  const productLineSafe = escapeHtmlText(`Suscripción premium — plan ${planNameRaw}`);
+
+  const dateRow = purchaseDateSafe
+    ? `<tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};width:38%;"><strong>Fecha</strong></td><td style="padding:10px 0;">${purchaseDateSafe}</td></tr>`
+    : '';
+  const amountRow = amountSafe
+    ? `<tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Importe</strong></td><td style="padding:10px 0;"><strong style="color:${EMAIL_COLORS.PRIMARY_DARK};">${amountSafe}</strong></td></tr>`
+    : '';
+
+  return `
+            <div style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM}10 0%,${EMAIL_COLORS.ACCENT}08 100%);padding:24px 18px 26px;border-radius:14px;margin:0 0 24px 0;text-align:left;border:1px solid rgba(29,43,95,0.12);border-left:4px solid ${EMAIL_COLORS.ACCENT};">
+              <p style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:15px;font-weight:700;margin:0 0 16px 0;text-align:center;">
+                ${title}
+              </p>
+              <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:18px 14px 20px;">
+                <table style="width:100%;border-collapse:collapse;color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.5;">
+                  ${dateRow}
+                  <tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Producto</strong></td><td style="padding:10px 0;">${productLineSafe}</td></tr>
+                  ${amountRow}
+                  <tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Pago procesado por</strong></td><td style="padding:10px 0;">${providerSafe}</td></tr>
+                  <tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Referencia</strong></td><td style="padding:10px 0;word-break:break-word;font-family:'Segoe UI Mono','Menlo','Monaco',monospace;font-size:12px;line-height:1.45;">${referenceSafe}</td></tr>
+                  <tr><td style="padding:12px 10px 0 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Vigencia hasta</strong></td><td style="padding:12px 0 0 0;">${periodEndSafe}</td></tr>
+                </table>
+              </div>
+              <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:12px;margin:16px 0 0 0;text-align:center;line-height:1.55;">
+                Puedes conservar este correo como comprobante. Para facturación o soporte, indica la referencia y el correo de tu cuenta.
+              </p>
+            </div>
+          `;
 }
 
 // Helper: crear transporter de nodemailer
@@ -191,8 +269,12 @@ const createTransporter = () => {
 };
 
 // Helper: generar footer común para emails
-const getEmailFooter = () => {
+const getEmailFooter = (options = {}) => {
   const currentYear = new Date().getFullYear();
+  const weeklyReply = options.weeklySummaryAllowReply === true;
+  const replyHtml = weeklyReply
+    ? '¿Dudas sobre la ampliación de prueba? Puedes responder a este correo indicando el email con el que inicias sesión en la app. Para otro tipo de consultas, te recomendamos Instagram (enlace arriba).<br>'
+    : 'Este es un correo automático, por favor no respondas a este mensaje.<br>';
   return `
     <div style="text-align: center; margin: 0 24px 24px 24px;">
       <div style="margin: 10px 0 14px 0;">
@@ -214,7 +296,7 @@ const getEmailFooter = () => {
         </div>
       </div>
       <p style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 0.95rem; margin: 0;">
-        Este es un correo automático, por favor no respondas a este mensaje.<br>
+        ${replyHtml}
         © ${currentYear} <span style="color: ${EMAIL_COLORS.ACCENT};">${APP_NAME}</span>. Todos los derechos reservados.
       </p>
     </div>
@@ -325,33 +407,27 @@ const emailTemplates = {
   verificationCode: (code) => ({
     subject: `Código de Verificación - ${APP_NAME_FULL}`,
     html: `
-      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: ${EMAIL_COLORS.BACKGROUND};">
-        ${getEmailHeader('Código de Verificación')}
-        
-        <div style="background: rgba(20, 28, 56, 0.92); backdrop-filter: blur(12px); margin: -24px 24px 24px 24px; padding: 32px 24px; border-radius: 18px; box-shadow: 0 8px 32px rgba(31,38,135,0.10); border: 1px solid rgba(255,255,255,0.10);">
-          <p style="color: ${EMAIL_COLORS.TEXT_WHITE}; font-size: 1.1rem; line-height: 1.7; margin-bottom: 28px; text-align: center;">
-            ¡Hola!<br>
-            Tu código de verificación para recuperar tu contraseña es:
+      <div style="${EMAIL_LAYOUT_OUTER}">
+        ${emailPreheaderHtml(escapeHtmlText(`Tu código para restablecer acceso en ${APP_NAME}.`))}
+        ${getEmailHeader('Código de verificación')}
+        <div style="${EMAIL_LAYOUT_CARD}">
+          <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 20px 0;text-align:center;">
+            Usa este código para recuperar tu contraseña:
           </p>
-
-          <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); padding: 4px; border-radius: 14px; margin: 32px 0;">
-            <div style="background: white; padding: 24px 0; border-radius: 12px;">
-              <span style="display: block; color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 2.5rem; text-align: center; letter-spacing: 12px; font-weight: bold; font-family: 'Segoe UI Mono', 'Menlo', 'Monaco', monospace;">
+          <div style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);padding:3px;border-radius:12px;margin:0 0 22px 0;">
+            <div style="background:#ffffff;padding:20px 0;border-radius:10px;">
+              <span style="display:block;color:${EMAIL_COLORS.TEXT_DARK};font-size:2rem;text-align:center;letter-spacing:10px;font-weight:700;font-family:'Segoe UI Mono','Menlo','Monaco',monospace;">
                 ${code}
               </span>
             </div>
           </div>
-
-          <div style="margin-top: 24px; text-align: center;">
-            <p style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 1rem; margin-bottom: 8px;">
-              Este código expirará en <span style="color: ${EMAIL_COLORS.ACCENT}; font-weight: bold;">${CODE_EXPIRATION_MINUTES} minutos</span>.
-            </p>
-            <p style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 0.95rem;">
-              Si no solicitaste este código, puedes ignorar este correo.
-            </p>
-          </div>
+          <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:14px;margin:0 0 8px 0;text-align:center;line-height:1.55;">
+            Este código expira en <strong>${CODE_EXPIRATION_MINUTES} minutos</strong>.
+          </p>
+          <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;margin:0;text-align:center;line-height:1.55;">
+            Si no solicitaste este código, puedes ignorar este correo.
+          </p>
         </div>
-
         ${getEmailFooter()}
       </div>
     `
@@ -360,40 +436,40 @@ const emailTemplates = {
   /**
    * Plantilla para código de verificación de email (registro)
    */
-  emailVerificationCode: (code, username) => ({
+  emailVerificationCode: (code, username) => {
+    const safeUser = escapeHtmlText(String(username ?? '').trim() || 'Usuario');
+    return {
     subject: `Verifica tu Email - ${APP_NAME_FULL}`,
     html: `
-      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: ${EMAIL_COLORS.BACKGROUND};">
-        ${getEmailHeader('Verifica tu Email')}
-        
-        <div style="background: rgba(20, 28, 56, 0.92); backdrop-filter: blur(12px); margin: -24px 24px 24px 24px; padding: 32px 24px; border-radius: 18px; box-shadow: 0 8px 32px rgba(31,38,135,0.10); border: 1px solid rgba(255,255,255,0.10);">
-          <p style="color: ${EMAIL_COLORS.TEXT_WHITE}; font-size: 1.1rem; line-height: 1.7; margin-bottom: 28px; text-align: center;">
-            ¡Hola ${username}!<br>
-            Gracias por registrarte en ${APP_NAME}. Para completar tu registro, verifica tu email con el siguiente código:
+      <div style="${EMAIL_LAYOUT_OUTER}">
+        ${emailPreheaderHtml(escapeHtmlText(`Código para verificar tu correo en ${APP_NAME}.`))}
+        ${getEmailHeader('Verifica tu email')}
+        <div style="${EMAIL_LAYOUT_CARD}">
+          <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 20px 0;text-align:center;">
+            Hola, ${safeUser}. Para completar el registro, introduce este código:
           </p>
 
-          <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); padding: 4px; border-radius: 14px; margin: 32px 0;">
-            <div style="background: white; padding: 24px 0; border-radius: 12px;">
-              <span style="display: block; color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 2.5rem; text-align: center; letter-spacing: 12px; font-weight: bold; font-family: 'Segoe UI Mono', 'Menlo', 'Monaco', monospace;">
+          <div style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);padding:3px;border-radius:12px;margin:0 0 22px 0;">
+            <div style="background:#ffffff;padding:20px 0;border-radius:10px;">
+              <span style="display:block;color:${EMAIL_COLORS.TEXT_DARK};font-size:2rem;text-align:center;letter-spacing:10px;font-weight:700;font-family:'Segoe UI Mono','Menlo','Monaco',monospace;">
                 ${code}
               </span>
             </div>
           </div>
 
-          <div style="margin-top: 24px; text-align: center;">
-            <p style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 1rem; margin-bottom: 8px;">
-              Este código expirará en <span style="color: ${EMAIL_COLORS.ACCENT}; font-weight: bold;">${CODE_EXPIRATION_MINUTES} minutos</span>.
-            </p>
-            <p style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 0.95rem;">
-              Si no creaste esta cuenta, puedes ignorar este correo.
-            </p>
-          </div>
+          <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:14px;margin:0 0 8px 0;text-align:center;line-height:1.55;">
+            Este código expira en <strong>${CODE_EXPIRATION_MINUTES} minutos</strong>.
+          </p>
+          <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;margin:0;text-align:center;line-height:1.55;">
+            Si no creaste esta cuenta, puedes ignorar este correo.
+          </p>
         </div>
 
         ${getEmailFooter()}
       </div>
     `
-  }),
+    };
+  },
 
   /**
    * Plantilla para restablecimiento de contraseña
@@ -401,131 +477,163 @@ const emailTemplates = {
   resetPassword: (token) => ({
     subject: `Restablecer Contraseña - ${APP_NAME_FULL}`,
     html: `
-      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: ${EMAIL_COLORS.BACKGROUND};">
-        ${getEmailHeader('Restablecer Contraseña')}
-        
-        <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); margin: -24px 24px 24px 24px; padding: 32px 24px; border-radius: 18px; box-shadow: 0 8px 32px rgba(31,38,135,0.10); border: 1px solid rgba(255,255,255,0.18);">
-          <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.1rem; line-height: 1.7; margin-bottom: 28px; text-align: center;">
-            Has solicitado restablecer tu contraseña. Haz clic en el siguiente enlace:
+      <div style="${EMAIL_LAYOUT_OUTER}">
+        ${emailPreheaderHtml(escapeHtmlText(`Enlace para restablecer contraseña en ${APP_NAME}.`))}
+        ${getEmailHeader('Restablecer contraseña')}
+        <div style="${EMAIL_LAYOUT_CARD}">
+          <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 22px 0;text-align:center;">
+            Solicitaste restablecer tu contraseña. Pulsa el botón para continuar:
           </p>
-          
-          <div style="text-align: center; margin: 30px 0;">
+          <div style="text-align:center;margin:0 0 22px 0;">
             <a href="${FRONTEND_URL}${RESET_PASSWORD_PATH}?token=${token}"
-               style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); color: ${EMAIL_COLORS.TEXT_WHITE}; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
-              Restablecer Contraseña
+               style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
+              ${escapeHtmlText(emailCtaLabel.resetPassword())}
             </a>
           </div>
-          
-          <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.95rem; text-align: center;">
-            Este enlace expirará en ${RESET_TOKEN_EXPIRATION_HOURS} hora${RESET_TOKEN_EXPIRATION_HOURS > 1 ? 's' : ''}.
+          <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;margin:0 0 8px 0;text-align:center;line-height:1.55;">
+            Este enlace expira en ${RESET_TOKEN_EXPIRATION_HOURS} hora${RESET_TOKEN_EXPIRATION_HOURS > 1 ? 's' : ''}.
           </p>
-          <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.95rem; text-align: center;">
-            Si no solicitaste restablecer tu contraseña, por favor ignora este correo.
+          <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;margin:0;text-align:center;line-height:1.55;">
+            Si no solicitaste restablecer tu contraseña, ignora este correo.
           </p>
         </div>
-
         ${getEmailFooter()}
       </div>
     `
   }),
 
   /**
-   * Plantilla para correo de bienvenida
+   * Plantilla para correo de bienvenida (tono cercano; sin sustituir aviso médico ni terapia presencial).
    */
-  welcomeEmail: (username) => ({
-    subject: `¡Bienvenido a ${APP_NAME}! 🎉`,
-    html: `
-      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: ${EMAIL_COLORS.BACKGROUND};">
-        ${getEmailHeader(`¡Bienvenido a ${APP_NAME}, ${username}! 🎉`)}
-        
-        <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); margin: -24px 24px 24px 24px; padding: 32px 24px; border-radius: 18px; box-shadow: 0 8px 32px rgba(31,38,135,0.10); border: 1px solid rgba(255,255,255,0.18);">
-          <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.1rem; line-height: 1.7; margin-bottom: 28px; text-align: center;">
-            ¡Gracias por unirte a nuestra comunidad! ${APP_NAME} es tu espacio seguro para conversar con una IA entrenada como psicólogo virtual, lista para escucharte y acompañarte en tu bienestar emocional.
+  welcomeEmail: (username) => {
+    const safeName = escapeHtmlText(username);
+    const appHref = buildEmailAppOpenHref(process.env);
+    const rawUser = String(username ?? '').trim();
+    const preheaderText = escapeHtmlText(
+      rawUser
+        ? `Gracias por registrarte, ${rawUser}. Abre ${APP_NAME} y revisa unos primeros pasos en este correo.`
+        : `Gracias por registrarte en ${APP_NAME}. Abre la app y revisa unos primeros pasos en este correo.`
+    );
+    const body = `color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 14px 0;text-align:left;`;
+    const small = `color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;line-height:1.55;margin:0;text-align:left;`;
+    return {
+      subject: `Bienvenido a ${APP_NAME}`,
+      html: `
+      <div style="${EMAIL_LAYOUT_OUTER}">
+        ${emailPreheaderHtml(preheaderText)}
+        ${getEmailHeader(`Bienvenido, ${safeName}`)}
+
+        <div style="${EMAIL_LAYOUT_CARD}">
+          <p style="${body}">
+            Gracias por registrarte. <strong>${APP_NAME}</strong> es un espacio para conversar con calma, ordenar lo que sientes y, si te encaja, usar tareas, hábitos o recordatorios sin una obligación fija.
           </p>
-          
-          <h2 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 20px; text-align: center;">¿Cómo aprovechar al máximo el chat con ${APP_NAME}?</h2>
-          <ul style="color: #333; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
-            <li><b>Exprésate libremente:</b> Cuéntale a ${APP_NAME} cómo te sientes, tus preocupaciones, logros o dudas. No hay juicios, solo escucha y acompañamiento.</li>
-            <li><b>Haz preguntas abiertas:</b> Si buscas reflexión, pide a ${APP_NAME} que te ayude a ver diferentes perspectivas o a profundizar en tus emociones.</li>
-            <li><b>Utiliza el chat en momentos de estrés o ansiedad:</b> ${APP_NAME} puede guiarte con ejercicios de respiración, mindfulness o ayudarte a organizar tus pensamientos.</li>
-            <li><b>Revisa tus conversaciones:</b> Volver a leer lo que has compartido puede ayudarte a identificar patrones y avances en tu bienestar.</li>
-            <li><b>Recuerda:</b> ${APP_NAME} no reemplaza a un profesional humano, pero es un gran apoyo para tu día a día emocional.</li>
+          <p style="${small}margin-bottom:18px;">
+            ${EMAIL_LEGAL_DISCLAIMER_ESCAPED}
+          </p>
+
+          <p style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:15px;font-weight:700;margin:0 0 12px 0;text-align:left;">
+            Primeros pasos
+          </p>
+          <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.55;margin:0 0 22px 0;padding-left:20px;text-align:left;">
+            <li style="margin:0 0 8px 0;"><strong>Abre el chat</strong> y escribe con naturalidad: no hace falta un “tema grande” para empezar.</li>
+            <li style="margin:0 0 8px 0;"><strong>Tareas, hábitos y pomodoros</strong> desde el chat, cuando te encajen: son un apoyo al día a día, no una obligación.</li>
+            <li style="margin:0 0 8px 0;"><strong>Resumen semanal y mensual</strong> en Perfil te da perspectiva sobre tu actividad cuando quieras mirar atrás sin presión.</li>
+            <li style="margin:0 0 0 0;">Si algo no te encaja en el tono o las sugerencias, <strong>corrige o cambia de tema</strong>: la conversación va a tu ritmo.</li>
           </ul>
 
-          <h2 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 20px; text-align: center;">Tips para un mejor beneficio:</h2>
-          <ol style="color: #333; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
-            <li>Habla con ${APP_NAME} de forma regular, incluso si no tienes un problema específico.</li>
-            <li>Prueba escribir tus emociones tal como las sientes, sin filtros.</li>
-            <li>Pide a ${APP_NAME} ejercicios de relajación o autoexploración cuando lo necesites.</li>
-            <li>Utiliza los recordatorios, hábitos y tareas como complemento para tu bienestar, pero recuerda que el corazón de ${APP_NAME} es el chat.</li>
-          </ol>
-
-          <div style="text-align: center; margin-top: 30px;">
-            <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 14px;">
-              Si tienes alguna pregunta o sugerencia, no dudes en contactarnos.<br>
-              ¡Estamos aquí para acompañarte en tu camino hacia una mejor salud emocional!
-            </p>
+          <div style="text-align:center;margin:8px 0 14px 0;">
+            <a href="${appHref}"
+               style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
+              ${escapeHtmlText(emailCtaLabel.openApp())}
+            </a>
           </div>
+          <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;line-height:1.5;margin:0 0 20px 0;text-align:center;">
+            Si el enlace no abre la app, ábrela manualmente e inicia sesión con esta cuenta.
+          </p>
+
+          <p style="${small}">
+            Dudas o feedback: puedes escribirnos por los canales que enlazamos abajo (Instagram). Este mensaje es automático; para hablar con ${APP_NAME}, usa la app.
+          </p>
         </div>
 
         ${getEmailFooter()}
       </div>
     `
-  }),
+    };
+  },
 
   /**
-   * Plantilla para correo de re-engagement (usuarios inactivos)
+   * Plantilla para correo de re-engagement (usuarios inactivos). Tip rotado de forma determinista por `daysInactive` (misma inactividad → mismo texto; estable en tests).
    */
   reEngagementEmail: (username, daysInactive) => {
+    const safeName = escapeHtmlText(String(username ?? '').trim() || 'Usuario');
+    const rawDays = Number(daysInactive);
+    const d = Number.isFinite(rawDays) && rawDays >= 1 ? Math.floor(rawDays) : 1;
+    const appHref = buildEmailAppOpenHref(process.env);
     const tips = [
-      '💬 Comparte cómo te sientes hoy, sin filtros ni juicios',
-      '🧘 Pide ejercicios de relajación o mindfulness',
-      '📝 Reflexiona sobre tus emociones y pensamientos',
-      '🎯 Establece pequeñas metas de bienestar diarias',
-      '💭 Revisa tus conversaciones anteriores para ver tu progreso'
+      'Escribe con naturalidad cómo te sientes hoy: no hace falta un tema grande para volver a empezar.',
+      'Pide una guía breve de relajación o mindfulness cuando necesites bajar la intensidad del día.',
+      'Reflexiona con calma sobre emociones y pensamientos; ordenar lo que pasa por la cabeza ya ayuda.',
+      'Establece una meta pequeña y realista para hoy; celebrar avances modestos también suma.',
+      'Si te sirve mirar atrás, revisa conversaciones anteriores con la misma cuenta.',
     ];
-    const randomTip = tips[Math.floor(Math.random() * tips.length)];
+    const tipIndex = d % tips.length;
+    const tipText = tips[tipIndex];
+    const preheaderText = escapeHtmlText(
+      `Hace ${d} día${d !== 1 ? 's' : ''} sin actividad en ${APP_NAME}. Recordatorio amable: puedes abrir la app cuando te venga bien.`
+    );
+    const body = `color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 14px 0;text-align:left;`;
+    const small = `color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;line-height:1.55;margin:0;text-align:left;`;
+    const sectionTitle = `color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:15px;font-weight:700;margin:0 0 10px 0;text-align:left;`;
 
     return {
-      subject: `Te extrañamos en ${APP_NAME} 💙`,
+      subject: `Hace tiempo que no abres ${APP_NAME}`,
       html: `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: ${EMAIL_COLORS.BACKGROUND};">
-          ${getEmailHeader(`¡Hola ${username}! 👋`)}
-          
-          <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); margin: -24px 24px 24px 24px; padding: 32px 24px; border-radius: 18px; box-shadow: 0 8px 32px rgba(31,38,135,0.10); border: 1px solid rgba(255,255,255,0.18);">
-            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.1rem; line-height: 1.7; margin-bottom: 28px; text-align: center;">
-              Hace ${daysInactive} día${daysInactive > 1 ? 's' : ''} que no nos vemos. Sabemos que la vida puede ser ajetreada, pero queremos recordarte que ${APP_NAME} está aquí para ti cuando lo necesites.
+        <div style="${EMAIL_LAYOUT_OUTER}">
+          ${emailPreheaderHtml(preheaderText)}
+          ${getEmailHeader(`Hola, ${safeName}`)}
+
+          <div style="${EMAIL_LAYOUT_CARD}">
+            <p style="${body}">
+              Hace <strong>${d}</strong> día${d !== 1 ? 's' : ''} que no registramos actividad con tu cuenta. No pasa nada: los ritmos cambian. Si te apetece, <strong>${APP_NAME}</strong> sigue aquí cuando quieras volver.
+            </p>
+            <p style="${small}margin-bottom:12px;">
+              ${EMAIL_LEGAL_DISCLAIMER_ESCAPED}
+            </p>
+            <p style="${small}margin-bottom:20px;">
+              Abrir este correo o la app <strong>no genera un cargo adicional</strong>: tu cuenta sigue igual hasta que elijas suscribirte, si en algún momento lo haces.
             </p>
 
-            <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM}15 0%, ${EMAIL_COLORS.ACCENT}15 100%); padding: 24px; border-radius: 12px; margin: 24px 0; border-left: 4px solid ${EMAIL_COLORS.ACCENT};">
-              <h3 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 0; text-align: center;">💡 Tip del día:</h3>
-              <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; text-align: center; margin-bottom: 0;">
-                ${randomTip}
+            <div style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM}12 0%,${EMAIL_COLORS.ACCENT}12 100%);padding:22px 18px;border-radius:12px;margin:0 0 22px 0;border-left:4px solid ${EMAIL_COLORS.ACCENT};">
+              <p style="${sectionTitle}margin-bottom:4px;">Idea para retomar</p>
+              <p style="${small}margin-bottom:10px;font-size:12px;line-height:1.45;">
+                Sugerencia general de una lista rotativa; no está ligada a tu actividad reciente en la app.
+              </p>
+              <p style="${body}margin-bottom:0;">
+                ${escapeHtmlText(tipText)}
               </p>
             </div>
 
-            <h2 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 20px; text-align: center;">¿Por qué volver a ${APP_NAME}?</h2>
-            <ul style="color: #333; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
-              <li><b>Espacio seguro:</b> Un lugar sin juicios donde puedes expresarte libremente</li>
-              <li><b>Disponible 24/7:</b> ${APP_NAME} está siempre disponible cuando lo necesites</li>
-              <li><b>Progreso continuo:</b> Cada conversación te ayuda a conocerte mejor</li>
-              <li><b>Herramientas prácticas:</b> Ejercicios, recordatorios y técnicas de bienestar</li>
+            <p style="${sectionTitle}">Qué puedes hacer en la app</p>
+            <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.55;margin:0 0 22px 0;padding-left:20px;text-align:left;">
+              <li style="margin:0 0 8px 0;">Chat cuando lo necesites, sin agenda.</li>
+              <li style="margin:0 0 8px 0;">Tareas, hábitos y recordatorios si te encajan en tu día a día.</li>
+              <li style="margin:0 0 0 0;">Resumen de actividad en Perfil cuando quieras perspectiva, sin presión.</li>
             </ul>
 
-            <div style="text-align: center; margin: 30px 0;">
-              <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; margin-bottom: 16px;">
-                <strong>¿Listo para continuar tu camino de bienestar?</strong>
-              </p>
-              <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.95rem;">
-                Abre la app y comparte cómo te sientes hoy. No importa si es algo grande o pequeño, ${APP_NAME} está aquí para escucharte.
-              </p>
+            <div style="text-align:center;margin:8px 0 14px 0;">
+              <a href="${appHref}"
+                 style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
+                ${escapeHtmlText(emailCtaLabel.openApp())}
+              </a>
             </div>
+            <p style="${small}text-align:center;margin:0 0 18px 0;">
+              Si el enlace no abre la app, ábrela manualmente e inicia sesión con esta cuenta.
+            </p>
 
-            <div style="text-align: center; margin-top: 30px;">
-              <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 14px;">
-                Recuerda: El bienestar emocional es un proceso continuo. Cada pequeño paso cuenta. 💙
-              </p>
-            </div>
+            <p style="${small}">
+              Dudas o feedback: canales enlazados al pie (Instagram). Este mensaje es automático.
+            </p>
           </div>
 
           ${getEmailFooter()}
@@ -535,15 +643,21 @@ const emailTemplates = {
   },
 
   /**
-   * Retención trial (~2.º día de prueba corta): español neutro (sin voseo) antes del fin del periodo gratuito.
+   * Retención trial (~2.º día de prueba corta): español neutro, sin presión; CTA a app / resumen.
    * @param {string} username
    * @param {Date|string} trialEndDate
    */
   trialRetentionEmail: (username, trialEndDate) => {
+    const safeName = escapeHtmlText(String(username ?? '').trim() || 'Usuario');
     const end = new Date(trialEndDate);
     const now = new Date();
     const msLeft = end.getTime() - now.getTime();
-    const hoursLeft = Math.max(1, Math.ceil(msLeft / (1000 * 60 * 60)));
+    const hoursLeft =
+      Number.isFinite(msLeft) && msLeft > 0
+        ? Math.max(1, Math.ceil(msLeft / (1000 * 60 * 60)))
+        : 1;
+    const daysApprox =
+      hoursLeft >= 24 ? Math.max(1, Math.round(hoursLeft / 24)) : null;
     const premiumHref = buildEmailAppOpenHref(process.env, { subscriptionThankYou: true });
     const summaryHref = getWeeklySummaryAppHref();
     const endFormatted = end.toLocaleDateString('es', {
@@ -552,56 +666,89 @@ const emailTemplates = {
       month: 'long',
       day: 'numeric',
     });
+    const endSafe = escapeHtmlText(endFormatted);
+    const fewHours = hoursLeft < 6;
+    let preheaderPlain;
+    if (fewHours) {
+      preheaderPlain =
+        daysApprox != null
+          ? `Te quedan pocas horas de prueba (aprox. ${daysApprox} día${daysApprox !== 1 ? 's' : ''}) en ${APP_NAME}. Puedes ver planes Premium o abrir tu resumen desde este correo.`
+          : `Te quedan pocas horas de prueba en ${APP_NAME}. Puedes ver planes Premium o abrir tu resumen desde este correo.`;
+    } else {
+      preheaderPlain =
+        daysApprox != null
+          ? `Te quedan unas ${hoursLeft} horas de prueba (aprox. ${daysApprox} día${daysApprox !== 1 ? 's' : ''}) en ${APP_NAME}. Puedes ver planes Premium o abrir tu resumen desde este correo.`
+          : `Te quedan unas ${hoursLeft} horas de prueba en ${APP_NAME}. Puedes ver planes Premium o abrir tu resumen desde este correo.`;
+    }
+    const preheaderText = escapeHtmlText(preheaderPlain);
+    const body = `color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 14px 0;text-align:left;`;
+    const small = `color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;line-height:1.55;margin:0;text-align:left;`;
+    const sectionTitle = `color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:15px;font-weight:700;margin:0 0 10px 0;text-align:left;`;
+
+    const timeBodyHtml = fewHours
+      ? `Te quedan <strong style="color:${EMAIL_COLORS.ACCENT};">pocas horas</strong> de prueba${
+          daysApprox != null
+            ? `, unos <strong>${daysApprox}</strong> día${daysApprox !== 1 ? 's' : ''} a modo orientativo`
+            : ''
+        }. Si te resulta útil, puedes pasarte a <strong>Premium</strong> y mantener el acceso completo cuando termine la prueba, sin obligación de decidir ya mismo.`
+      : `Te quedan aproximadamente <strong style="color:${EMAIL_COLORS.ACCENT};">${hoursLeft} hora${hoursLeft !== 1 ? 's' : ''}</strong> de prueba${
+          daysApprox != null
+            ? `, unos <strong>${daysApprox}</strong> día${daysApprox !== 1 ? 's' : ''} a modo orientativo`
+            : ''
+        }. Si te resulta útil, puedes pasarte a <strong>Premium</strong> y mantener el acceso completo cuando termine la prueba, sin obligación de decidir ya mismo.`;
 
     return {
-      subject: `Tu prueba en ${APP_NAME} está por finalizar — nos gustaría que continúes 💙`,
+      subject: `Tu prueba en ${APP_NAME} termina pronto`,
       html: `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: ${EMAIL_COLORS.BACKGROUND};">
-          ${getEmailHeader(`Hola ${username} 💙`)}
+        <div style="${EMAIL_LAYOUT_OUTER}">
+          ${emailPreheaderHtml(preheaderText)}
+          ${getEmailHeader(`Hola, ${safeName}`)}
 
-          <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); margin: -24px 24px 24px 24px; padding: 32px 24px; border-radius: 18px; box-shadow: 0 8px 32px rgba(31,38,135,0.10); border: 1px solid rgba(255,255,255,0.18);">
-            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.1rem; line-height: 1.7; margin-bottom: 24px; text-align: center;">
-              <strong>Continúa donde quedaste.</strong> Tu prueba termina pronto y este es un buen momento para mantener el impulso que ya empezaste.
+          <div style="${EMAIL_LAYOUT_CARD}">
+            <p style="${sectionTitle}margin-bottom:12px;">Prueba por terminar</p>
+            <p style="${body}">
+              Tu periodo gratuito sirve para conocer <strong>${APP_NAME}</strong> con calma.
             </p>
-            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; line-height: 1.7; margin-bottom: 28px; text-align: center;">
-              Te quedan aproximadamente <strong style="color: ${EMAIL_COLORS.ACCENT};">${hoursLeft} hora${hoursLeft !== 1 ? 's' : ''}</strong> de prueba gratuita. Si decides continuar con Premium ahora, mantienes el acceso completo sin interrupciones.
+            <p style="${small}margin-bottom:14px;">
+              ${EMAIL_LEGAL_DISCLAIMER_ESCAPED}
+            </p>
+            <p style="${body}margin-bottom:18px;">
+              ${timeBodyHtml}
             </p>
 
-            <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM}12 0%, ${EMAIL_COLORS.ACCENT}10 100%); padding: 22px 20px; border-radius: 14px; margin: 20px 0; border-left: 4px solid ${EMAIL_COLORS.ACCENT}; border: 1px solid rgba(29, 43, 95, 0.12);">
-              <h3 style="color: ${EMAIL_COLORS.ACCENT}; margin: 0 0 12px 0; font-size: 1.05rem; text-align: center;">Fin de tu prueba</h3>
-              <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.98rem; margin: 0; text-align: center; line-height: 1.6;">
-                <strong>Vence:</strong> ${endFormatted}<br>
-                <span style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem;">(fecha estimada según tu cuenta; la aplicación muestra el detalle exacto)</span>
-              </p>
-            </div>
+            <p style="${small}margin-bottom:20px;">
+              <strong>Fecha orientativa de fin:</strong> ${endSafe}.
+              <span> El detalle exacto lo ves en la app con tu sesión iniciada.</span>
+            </p>
 
-            <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM}15 0%, ${EMAIL_COLORS.ACCENT}15 100%); padding: 24px; border-radius: 12px; margin: 24px 0; border-left: 4px solid ${EMAIL_COLORS.ACCENT};">
-              <h3 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 0; text-align: center;">Si no renuevas, perderás</h3>
-              <ul style="color: #333; font-size: 16px; line-height: 1.65; margin: 0; padding-left: 20px;">
-                <li>Acceso ilimitado al chat y a las herramientas premium.</li>
-                <li>Seguimiento continuo de tu progreso sin cortes.</li>
-                <li>Historial guiado para retomar fácilmente donde quedaste.</li>
-              </ul>
-            </div>
+            <hr style="border:0;border-top:1px solid #e8edf4;margin:22px 0;height:0;" />
 
-            <div style="text-align: center; margin: 28px 0 10px 0;">
+            <p style="${sectionTitle}">Con Premium sigues teniendo</p>
+            <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.55;margin:0 0 22px 0;padding-left:20px;text-align:left;">
+              <li style="margin:0 0 8px 0;">Chat y herramientas sin el tope de la prueba.</li>
+              <li style="margin:0 0 8px 0;">Resumen de actividad y continuidad en tu proceso.</li>
+              <li style="margin:0 0 0 0;">El mismo espacio, con el ritmo que tú elijas.</li>
+            </ul>
+
+            <div style="text-align:center;margin:10px 0 10px 0;">
               <a href="${premiumHref}"
-                 style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); color: ${EMAIL_COLORS.TEXT_WHITE}; padding: 14px 28px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: 700; font-size: 1.05rem;">
-                Continuar con Premium
+                 style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
+                ${escapeHtmlText(emailCtaLabel.trialPremium())}
               </a>
-              <p style="margin: 12px 0 0 0;">
-                <a href="${summaryHref}"
-                   style="color: ${EMAIL_COLORS.PRIMARY_MEDIUM}; font-size: 0.95rem; text-decoration: underline;">
-                  Abrir mi resumen
-                </a>
-              </p>
             </div>
+            <p style="${small}text-align:center;margin:0 0 14px 0;">
+              Si el enlace no abre la app, ábrela manualmente e inicia sesión; revisa suscripción o pagos dentro de ${APP_NAME}.
+            </p>
+            <p style="text-align:center;margin:0;">
+              <a href="${summaryHref}"
+                 style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:14px;font-weight:600;text-decoration:underline;">
+                ${escapeHtmlText(emailCtaLabel.trialWeeklySummary())}
+              </a>
+            </p>
 
-            <div style="text-align: center; margin-top: 14px;">
-              <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.95rem; line-height: 1.5; margin: 0;">
-                Gracias por probar ${APP_NAME}. Si tienes dudas, estamos para ayudarte desde la app y nuestros canales de soporte.
-              </p>
-            </div>
+            <p style="${small}margin-top:22px;">
+              Gracias por probar ${APP_NAME}. Dudas o feedback: canales enlazados al pie (Instagram). Este mensaje es automático.
+            </p>
           </div>
 
           ${getEmailFooter()}
@@ -653,51 +800,53 @@ const emailTemplates = {
     ];
 
     const tip = weeklyTips[weekNumber % weeklyTips.length];
+    const safeTipUser = escapeHtmlText(String(username ?? '').trim() || 'Usuario');
+    const tipsAppHref = buildEmailAppOpenHref(process.env);
+    const smallTip = `color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;line-height:1.55;margin:0;text-align:left;`;
 
     return {
-      subject: `💡 Tip Semanal de ${APP_NAME} - Semana ${weekNumber}`,
+      subject: `Tip semanal de ${APP_NAME} — Semana ${weekNumber}`,
       html: `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: ${EMAIL_COLORS.BACKGROUND};">
-          ${getEmailHeader(`Tip Semanal - Semana ${weekNumber} 💡`)}
-          
-          <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); margin: -24px 24px 24px 24px; padding: 32px 24px; border-radius: 18px; box-shadow: 0 8px 32px rgba(31,38,135,0.10); border: 1px solid rgba(255,255,255,0.18);">
-            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.1rem; line-height: 1.7; margin-bottom: 28px; text-align: center;">
-              ¡Hola ${username}! 👋<br>
-              Esta semana queremos compartir contigo un tip especial para tu bienestar emocional.
+        <div style="${EMAIL_LAYOUT_OUTER}">
+          ${emailPreheaderHtml(escapeHtmlText(`Idea breve de bienestar y ${APP_NAME} (semana ${weekNumber}).`))}
+          ${getEmailHeader(`Tip semanal — Semana ${weekNumber}`)}
+          <div style="${EMAIL_LAYOUT_CARD}">
+            <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 20px 0;text-align:center;">
+              Hola, ${safeTipUser}. Esta semana compartimos un recordatorio sencillo.
             </p>
 
-            <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM}15 0%, ${EMAIL_COLORS.ACCENT}15 100%); padding: 28px; border-radius: 14px; margin: 24px 0; border-left: 5px solid ${EMAIL_COLORS.ACCENT};">
-              <h2 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 0; font-size: 1.5rem; text-align: center;">
+            <div style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM}12 0%,${EMAIL_COLORS.ACCENT}12 100%);padding:22px 18px;border-radius:12px;margin:0 0 22px 0;border-left:4px solid ${EMAIL_COLORS.ACCENT};">
+              <p style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:16px;font-weight:700;margin:0 0 12px 0;text-align:center;">
                 ${tip.title}
-              </h2>
-              <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; line-height: 1.7; text-align: center; margin-bottom: 20px;">
+              </p>
+              <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;text-align:center;margin:0 0 16px 0;">
                 ${tip.content}
               </p>
-              <div style="background: white; padding: 16px; border-radius: 8px; margin-top: 16px; border: 2px dashed ${EMAIL_COLORS.ACCENT}40;">
-                <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.95rem; margin: 0; text-align: center; font-style: italic;">
-                  <strong>💬 Prueba esto:</strong><br>
+              <div style="background:#ffffff;padding:14px 12px;border-radius:10px;border:1px dashed rgba(29,43,95,0.15);">
+                <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;margin:0;text-align:center;line-height:1.55;">
+                  <strong>Prueba en el chat:</strong><br>
                   ${tip.action}
                 </p>
               </div>
             </div>
 
-            <h3 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 28px; text-align: center;">✨ Recuerda</h3>
-            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1rem; line-height: 1.6; text-align: center;">
-              El bienestar emocional es un viaje, no un destino. Cada pequeño paso que das hacia tu bienestar es valioso. ${APP_NAME} está aquí para acompañarte en cada paso del camino.
+            <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.6;margin:0 0 18px 0;text-align:center;">
+              El bienestar emocional es un proceso; cada paso pequeño cuenta. ${APP_NAME} está disponible cuando quieras retomar.
             </p>
 
-            <div style="text-align: center; margin: 30px 0;">
-              <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.95rem;">
-                ¿Tienes preguntas o quieres profundizar en este tema?<br>
-                Abre la app y conversa con ${APP_NAME}. Estamos aquí para ti. 💙
-              </p>
-            </div>
+            <p style="${smallTip}margin-bottom:16px;text-align:center;">
+              ${EMAIL_LEGAL_DISCLAIMER_ESCAPED}
+            </p>
 
-            <div style="background: ${EMAIL_COLORS.PRIMARY_MEDIUM}10; padding: 20px; border-radius: 12px; margin-top: 24px; text-align: center;">
-              <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.9rem; margin: 0;">
-                <strong>📅 Próximo tip:</strong> Te enviaremos otro tip la próxima semana. ¡Mantente atento!
-              </p>
+            <div style="text-align:center;margin:0 0 12px 0;">
+              <a href="${tipsAppHref}"
+                 style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
+                ${escapeHtmlText(emailCtaLabel.openApp())}
+              </a>
             </div>
+            <p style="${smallTip}text-align:center;margin:0;">
+              Si el enlace no abre la app, ábrela manualmente e inicia sesión con tu cuenta.
+            </p>
           </div>
 
           ${getEmailFooter()}
@@ -729,27 +878,63 @@ const emailTemplates = {
           `<li style="margin:0 0 8px 0;padding-left:2px;">${escapeHtmlText(line)}</li>`
       )
       .join('');
-    const card = `background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;padding:28px 24px;margin:0 auto;max-width:560px;box-shadow:0 2px 12px rgba(29,43,95,0.06);`;
     const sectionTitle = `color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:15px;font-weight:700;margin:0 0 12px 0;line-height:1.3;`;
     const body = `color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 14px 0;text-align:left;`;
     const small = `color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;line-height:1.55;margin:0 0 12px 0;text-align:left;`;
-    const hr = `border:0;border-top:1px solid #e8edf4;margin:26px 0;height:0;`;
+    const hr = `border:0;border-top:1px solid #e8edf4;margin:22px 0;height:0;`;
 
     return {
       subject: context.subjectLine,
       html: `
-        <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;padding:16px 12px;background:${EMAIL_COLORS.BACKGROUND};">
-          <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:transparent;width:0;height:0;opacity:0;">
-            ${escapeHtmlText(context.preheaderText)}
-          </div>
+        <div style="${EMAIL_LAYOUT_OUTER}">
+          ${emailPreheaderHtml(escapeHtmlText(context.preheaderText))}
           ${getEmailHeader('Resumen semanal')}
-          <div style="${card}">
+          <div style="${EMAIL_LAYOUT_CARD}">
             <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;font-weight:600;margin:0 0 6px 0;text-align:left;letter-spacing:0.02em;">
               ${escapeHtmlText(context.weekLabel)}
             </p>
             <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:18px;font-weight:600;margin:0 0 16px 0;text-align:left;line-height:1.35;">
               ${greeting}
             </p>
+
+            <div style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM}16 0%,${EMAIL_COLORS.ACCENT}14 100%);border:2px solid ${EMAIL_COLORS.ACCENT};border-radius:14px;padding:22px 20px 20px;margin:0 0 18px 0;text-align:left;box-shadow:0 4px 18px rgba(29,43,95,0.08);">
+              <p style="color:${EMAIL_COLORS.ACCENT};font-size:12px;font-weight:800;margin:0 0 10px 0;letter-spacing:0.1em;text-transform:uppercase;">
+                ${escapeHtmlText(context.giftBadgeLabel)}
+              </p>
+              <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:20px;font-weight:800;margin:0 0 12px 0;line-height:1.25;">
+                ${escapeHtmlText(context.giftTitle)}
+              </p>
+              <p style="${body}margin-bottom:10px;">
+                ${escapeHtmlText(context.giftPrimary)}
+              </p>
+              <p style="${small}margin-bottom:0;line-height:1.55;">
+                ${escapeHtmlText(context.giftSecondary)}
+              </p>
+            </div>
+
+            <div style="background:#f4f7fb;border:1px solid #dbe4f0;border-radius:14px;padding:20px 18px 18px;margin:0 0 22px 0;border-left:5px solid ${EMAIL_COLORS.PRIMARY_MEDIUM};">
+              <p style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:16px;font-weight:800;margin:0 0 6px 0;line-height:1.25;">
+                ${escapeHtmlText(context.updatesSectionTitle)}
+              </p>
+              <p style="color:${EMAIL_COLORS.ACCENT};font-size:11px;font-weight:700;margin:0 0 12px 0;letter-spacing:0.08em;text-transform:uppercase;">
+                Destacado esta semana
+              </p>
+              <p style="${body}margin-bottom:12px;">
+                ${escapeHtmlText(context.updatesIntro)}
+              </p>
+              <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.6;margin:0;padding-left:20px;text-align:left;">
+                ${updatesListHtml}
+              </ul>
+              <p style="${small}margin-top:14px;margin-bottom:0;padding-top:14px;border-top:1px solid #dbe4f0;line-height:1.55;">
+                ${escapeHtmlText(context.postUpdatesActionLine)}
+              </p>
+            </div>
+
+            <hr style="${hr}" />
+            <p style="${body}margin-bottom:12px;">
+              ${escapeHtmlText(context.openingBenefitLine)}
+            </p>
+            <hr style="${hr}" />
             <p style="${body}">
               ${escapeHtmlText(context.leadParagraph)}
             </p>
@@ -757,27 +942,12 @@ const emailTemplates = {
             <div style="text-align:center;margin:22px 0 8px 0;">
               <a href="${appHref}"
                  style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
-                Ver mi resumen semanal
+                ${escapeHtmlText(emailCtaLabel.weeklySummary())}
               </a>
             </div>
             <p style="${small}text-align:center;margin-top:10px;">
               Si el enlace no abre la app: inicia sesión y ve a <strong>Perfil</strong> → «Resumen semanal y mensual».
             </p>
-
-            <hr style="${hr}" />
-
-            <p style="${sectionTitle}">${escapeHtmlText(context.updatesSectionTitle)}</p>
-            <p style="${body}margin-bottom:12px;">
-              ${escapeHtmlText(context.updatesIntro || '')}
-            </p>
-            <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.55;margin:0 0 8px 0;padding-left:20px;text-align:left;">
-              ${updatesListHtml}
-            </ul>
-            ${
-              context.trialGiftPremiumNote
-                ? `<p style="${small}font-style:italic;margin-top:4px;">${escapeHtmlText(context.trialGiftPremiumNote)}</p>`
-                : ''
-            }
 
             <hr style="${hr}" />
 
@@ -803,8 +973,12 @@ const emailTemplates = {
             <p style="${small}text-align:center;font-style:italic;margin-top:18px;margin-bottom:0;">
               ${escapeHtmlText(context.closingLine)}
             </p>
+            <hr style="${hr}" />
+            <p style="${small}text-align:center;margin:0;">
+              ${EMAIL_LEGAL_DISCLAIMER_ESCAPED}
+            </p>
           </div>
-          ${getEmailFooter()}
+          ${getEmailFooter({ weeklySummaryAllowReply: true })}
         </div>
       `
     };
@@ -825,19 +999,19 @@ const emailTemplates = {
    */
   subscriptionThankYouEmail: (username, plan, periodEnd, receipt = null) => {
     const appOpenHref = buildEmailAppOpenHref(process.env, { subscriptionThankYou: true });
-    const planNames = {
-      monthly: 'Mensual',
-      quarterly: 'Trimestral',
-      semestral: 'Semestral',
-      yearly: 'Anual',
-    };
+    const planNameRaw = subscriptionPlanDisplayName(plan);
+    const planName = escapeHtmlText(planNameRaw);
+    const safeName = escapeHtmlText(String(username ?? '').trim() || 'Usuario');
 
-    const planName = planNames[plan] || plan;
-    const periodEndDate = new Date(periodEnd).toLocaleDateString('es-CL', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    const end = new Date(periodEnd);
+    const periodEndDate = Number.isFinite(end.getTime())
+      ? end.toLocaleDateString('es-CL', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
+      : '—';
+    const periodEndSafe = escapeHtmlText(periodEndDate);
 
     const purchaseDateStr = receipt?.purchaseDate
       ? new Date(receipt.purchaseDate).toLocaleDateString('es-CL', {
@@ -848,98 +1022,191 @@ const emailTemplates = {
           minute: '2-digit',
         })
       : null;
+    const purchaseDateSafe = purchaseDateStr ? escapeHtmlText(purchaseDateStr) : null;
     const amountStr = formatPurchaseAmount(receipt?.amount, receipt?.currency);
+    const amountSafe = amountStr ? escapeHtmlText(amountStr) : null;
+    const providerSafe = escapeHtmlText(String(receipt?.providerLabel ?? '—'));
+    const referenceSafe = escapeHtmlText(String(receipt?.reference ?? '—'));
+    const productLineSafe = escapeHtmlText(`Suscripción premium — plan ${planNameRaw}`);
+
     const receiptBlock = receipt
       ? `
-            <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM}12 0%, ${EMAIL_COLORS.ACCENT}10 100%); padding: 22px 20px; border-radius: 14px; margin: 24px 0; text-align: left; border: 1px solid rgba(29, 43, 95, 0.12); border-left: 4px solid ${EMAIL_COLORS.ACCENT}; box-shadow: 0 4px 20px rgba(31, 38, 135, 0.08);">
-              <h3 style="color: ${EMAIL_COLORS.ACCENT}; margin: 0 0 16px 0; font-size: 1.15rem; text-align: center; text-shadow: 0 1px 0 rgba(255,255,255,0.4);">
+            <div style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM}10 0%,${EMAIL_COLORS.ACCENT}08 100%);padding:24px 18px 26px;border-radius:14px;margin:0 0 24px 0;text-align:left;border:1px solid rgba(29,43,95,0.12);border-left:4px solid ${EMAIL_COLORS.ACCENT};">
+              <p style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:15px;font-weight:700;margin:0 0 16px 0;text-align:center;">
                 Confirmación de compra
-              </h3>
-              <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); padding: 3px; border-radius: 12px;">
-                <div style="background: rgba(255,255,255,0.98); padding: 18px 16px; border-radius: 10px;">
-                  <table style="width: 100%; border-collapse: collapse; color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 0.95rem;">
-                    ${purchaseDateStr ? `<tr style="border-bottom: 1px solid rgba(29, 43, 95, 0.08);"><td style="padding: 8px 8px 8px 0; vertical-align: top; color: ${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Fecha</strong></td><td style="padding: 8px 0;">${purchaseDateStr}</td></tr>` : ''}
-                    <tr style="border-bottom: 1px solid rgba(29, 43, 95, 0.08);"><td style="padding: 8px 8px 8px 0; vertical-align: top; color: ${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Producto</strong></td><td style="padding: 8px 0;">Suscripción premium — plan ${planName}</td></tr>
-                    ${amountStr ? `<tr style="border-bottom: 1px solid rgba(29, 43, 95, 0.08);"><td style="padding: 8px 8px 8px 0; vertical-align: top; color: ${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Importe</strong></td><td style="padding: 8px 0;"><strong style="color: ${EMAIL_COLORS.PRIMARY_DARK};">${amountStr}</strong></td></tr>` : ''}
-                    <tr style="border-bottom: 1px solid rgba(29, 43, 95, 0.08);"><td style="padding: 8px 8px 8px 0; vertical-align: top; color: ${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Pago procesado por</strong></td><td style="padding: 8px 0;">${receipt.providerLabel}</td></tr>
-                    <tr style="border-bottom: 1px solid rgba(29, 43, 95, 0.08);"><td style="padding: 8px 8px 8px 0; vertical-align: top; color: ${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Referencia</strong></td><td style="padding: 8px 0; word-break: break-all; font-family: 'Segoe UI Mono', 'Menlo', 'Monaco', monospace; font-size: 0.88rem;">${String(receipt.reference || '—')}</td></tr>
-                    <tr><td style="padding: 8px 8px 0 0; vertical-align: top; color: ${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Vigencia hasta</strong></td><td style="padding: 8px 0 0 0;">${periodEndDate}</td></tr>
-                  </table>
-                </div>
+              </p>
+              <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:18px 14px 20px;">
+                <table style="width:100%;border-collapse:collapse;color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.5;">
+                  ${
+                    purchaseDateSafe
+                      ? `<tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};width:38%;"><strong>Fecha</strong></td><td style="padding:10px 0;">${purchaseDateSafe}</td></tr>`
+                      : ''
+                  }
+                  <tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Producto</strong></td><td style="padding:10px 0;">${productLineSafe}</td></tr>
+                  ${
+                    amountSafe
+                      ? `<tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Importe</strong></td><td style="padding:10px 0;"><strong style="color:${EMAIL_COLORS.PRIMARY_DARK};">${amountSafe}</strong></td></tr>`
+                      : ''
+                  }
+                  <tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Pago procesado por</strong></td><td style="padding:10px 0;">${providerSafe}</td></tr>
+                  <tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Referencia</strong></td><td style="padding:10px 0;word-break:break-word;font-family:'Segoe UI Mono','Menlo','Monaco',monospace;font-size:12px;line-height:1.45;">${referenceSafe}</td></tr>
+                  <tr><td style="padding:12px 10px 0 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Vigencia hasta</strong></td><td style="padding:12px 0 0 0;">${periodEndSafe}</td></tr>
+                </table>
               </div>
-              <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.85rem; margin: 18px 0 0 0; text-align: center; line-height: 1.5;">
+              <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:12px;margin:16px 0 0 0;text-align:center;line-height:1.55;">
                 Puedes conservar este correo como comprobante. Para facturación o soporte, indica la referencia y el correo de tu cuenta.
               </p>
             </div>
           `
       : '';
 
+    const preheaderPlain = receipt
+      ? `Confirmación de compra en ${APP_NAME}. Plan ${planNameRaw}. Abre la app desde este correo.`
+      : `Suscripción activada en ${APP_NAME}. Plan ${planNameRaw}. Abre la app cuando quieras.`;
+    const preheaderText = escapeHtmlText(preheaderPlain);
+
+    const body = `color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 14px 0;text-align:left;`;
+    const small = `color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;line-height:1.55;margin:0;text-align:left;`;
+    const sectionTitle = `color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:15px;font-weight:700;margin:0 0 10px 0;text-align:left;`;
+
     return {
       subject: receipt
-        ? `Confirmación de compra: suscripción ${planName} — ${APP_NAME}`
-        : `¡Gracias por tu suscripción a ${APP_NAME}! 🎉`,
+        ? `${APP_NAME}: confirmación de compra (plan ${planNameRaw})`
+        : `${APP_NAME}: suscripción activada (plan ${planNameRaw})`,
       html: `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: ${EMAIL_COLORS.BACKGROUND};">
-          ${getEmailHeader(`¡Gracias por tu suscripción, ${username}! 🎉`)}
-          
-          <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); margin: -24px 24px 24px 24px; padding: 32px 24px; border-radius: 18px; box-shadow: 0 8px 32px rgba(31,38,135,0.10); border: 1px solid rgba(255,255,255,0.18);">
-            <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.1rem; line-height: 1.7; margin-bottom: 28px; text-align: center;">
-              ¡Hola ${username}!<br><br>
-              Queremos agradecerte por confiar en ${APP_NAME} y por unirte a nuestra comunidad premium. Tu suscripción ha sido activada exitosamente y ahora tienes acceso completo a todas las funcionalidades de la app.
+        <div style="${EMAIL_LAYOUT_OUTER}">
+          ${emailPreheaderHtml(preheaderText)}
+          ${getEmailHeader(`Gracias, ${safeName}`)}
+
+          <div style="${EMAIL_LAYOUT_CARD}">
+            <p style="${body}">
+              Tu suscripción <strong>Premium</strong> (plan <strong>${planName}</strong>) quedó activa. Gracias por confiar en <strong>${APP_NAME}</strong>.
+            </p>
+            <p style="${body}margin-bottom:14px;">
+              Si acabas de pagar y la app aún no muestra Premium, <strong>cierra la app por completo</strong> y vuelve a entrar; a veces la tienda tarda unos minutos en sincronizar.
+            </p>
+            <p style="${small}margin-bottom:18px;">
+              ${EMAIL_LEGAL_DISCLAIMER_ESCAPED}
             </p>
 
             ${receiptBlock}
-            
-            <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); padding: 24px; border-radius: 14px; margin: 28px 0; text-align: center;">
-              <h2 style="color: white; margin: 0 0 12px 0; font-size: 1.5rem;">
-                ✨ Plan ${planName}
-              </h2>
-              <p style="color: rgba(255,255,255,0.95); font-size: 1rem; margin: 0;">
-                Tu suscripción es válida hasta el ${periodEndDate}
-              </p>
-            </div>
 
-            <h2 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 20px; text-align: center;">
-              🎁 ¿Qué incluye tu suscripción premium?
-            </h2>
-            <ul style="color: #333; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
-              <li><b>Chat ilimitado</b> con ${APP_NAME}, tu asistente terapéutico</li>
-              <li><b>Evaluaciones clínicas</b> automáticas (PHQ-9, GAD-7)</li>
-              <li><b>Detección de distorsiones cognitivas</b> en tus conversaciones</li>
-              <li><b>Protocolos terapéuticos estructurados</b> personalizados</li>
-              <li><b>Seguimiento de progreso</b> y métricas de bienestar</li>
-              <li><b>Análisis emocional avanzado</b> de tus conversaciones</li>
-              <li><b>Sin límites</b> en todas las funcionalidades</li>
+            <p style="${sectionTitle}">Vigencia actual</p>
+            <p style="${body}margin-bottom:18px;">
+              La suscripción asociada a esta compra está vigente hasta el <strong>${periodEndSafe}</strong>. La fecha exacta de renovación también la puedes revisar en la app con tu sesión iniciada.
+            </p>
+
+            <p style="${sectionTitle}">Qué incluye Premium</p>
+            <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.55;margin:0 0 22px 0;padding-left:20px;text-align:left;">
+              <li style="margin:0 0 8px 0;">Chat y herramientas sin los topes del periodo de prueba gratuito.</li>
+              <li style="margin:0 0 8px 0;">Escalas y recursos de autoevaluación disponibles en la app, cuando correspondan a tu perfil.</li>
+              <li style="margin:0 0 8px 0;">Seguimiento de actividad y continuidad en tu proceso, a tu ritmo.</li>
+              <li style="margin:0 0 0 0;">El detalle de funciones puede actualizarse; lo definitivo lo ves en la tienda y dentro de ${APP_NAME}.</li>
             </ul>
 
-            <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM}15 0%, ${EMAIL_COLORS.ACCENT}15 100%); padding: 24px; border-radius: 12px; margin: 24px 0; border-left: 4px solid ${EMAIL_COLORS.ACCENT};">
-              <h3 style="color: ${EMAIL_COLORS.ACCENT}; margin-top: 0; text-align: center;">💬 Comienza ahora</h3>
-              <p style="color: ${EMAIL_COLORS.TEXT_DARK}; font-size: 1.05rem; text-align: center; margin-bottom: 16px;">
-                Abre la app y comienza a conversar con ${APP_NAME}. Estamos aquí para acompañarte en tu camino hacia el bienestar emocional.
-              </p>
-              <div style="text-align: center; margin: 8px 0 12px 0;">
-                <a href="${appOpenHref}"
-                   style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); color: ${EMAIL_COLORS.TEXT_WHITE}; padding: 14px 28px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: 700; font-size: 1.05rem;">
-                  Abrir en la app
-                </a>
-              </div>
-              <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 0.9rem; line-height: 1.55; margin: 0; text-align: center;">
-                Si el enlace no abre ${APP_NAME} desde el correo, abre la app manualmente e inicia sesión con tu cuenta.
-              </p>
+            <div style="text-align:center;margin:8px 0 14px 0;">
+              <a href="${appOpenHref}"
+                 style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
+                ${escapeHtmlText(emailCtaLabel.openApp())}
+              </a>
             </div>
+            <p style="${small}text-align:center;margin:0 0 18px 0;">
+              Si el enlace no abre la app, ábrela manualmente e inicia sesión con esta cuenta.
+            </p>
 
-            <div style="text-align: center; margin-top: 30px;">
-              <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 14px;">
-                Si tienes alguna pregunta sobre tu suscripción o necesitas ayuda, no dudes en contactarnos.<br>
-                Estamos aquí para acompañarte en tu camino hacia una mejor salud emocional. 💙
-              </p>
-            </div>
+            <p style="${small}">
+              Dudas sobre tu suscripción: canales enlazados al pie (Instagram). Este mensaje es automático.
+            </p>
+          </div>
 
-            <div style="border-top: 1px solid rgba(0,0,0,0.1); padding-top: 20px; margin-top: 28px; text-align: center;">
-              <p style="color: ${EMAIL_COLORS.TEXT_GRAY}; font-size: 14px; margin: 0;">
-                <strong>Próxima renovación:</strong> ${periodEndDate}
-              </p>
+          ${getEmailFooter()}
+        </div>
+      `
+    };
+  },
+
+  /**
+   * Renovación automática de suscripción: agradecimiento + comprobante del cobro.
+   * @param {string} username
+   * @param {string} plan
+   * @param {Date|string} periodEnd
+   * @param {{
+   *   purchaseDate: Date|string,
+   *   amount?: number|null,
+   *   currency?: string,
+   *   providerLabel: string,
+   *   reference: string
+   * }} receipt
+   */
+  subscriptionRenewalEmail: (username, plan, periodEnd, receipt) => {
+    const appOpenHref = buildEmailAppOpenHref(process.env, { subscriptionThankYou: true });
+    const planNameRaw = subscriptionPlanDisplayName(plan);
+    const planName = escapeHtmlText(planNameRaw);
+    const safeName = escapeHtmlText(String(username ?? '').trim() || 'Usuario');
+
+    const end = new Date(periodEnd);
+    const periodEndDate = Number.isFinite(end.getTime())
+      ? end.toLocaleDateString('es-CL', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
+      : '—';
+    const periodEndSafe = escapeHtmlText(periodEndDate);
+
+    const receiptBlock = buildSubscriptionReceiptHtmlBlock(receipt, planNameRaw, periodEndSafe, {
+      title: 'Detalle del cobro',
+    });
+
+    const preheaderText = escapeHtmlText(
+      `Tu suscripción en ${APP_NAME} se renovó. Plan ${planNameRaw}. Detalles del pago abajo.`
+    );
+
+    const body = `color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 14px 0;text-align:left;`;
+    const small = `color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;line-height:1.55;margin:0;text-align:left;`;
+    const sectionTitle = `color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:15px;font-weight:700;margin:0 0 10px 0;text-align:left;`;
+
+    return {
+      subject: `${APP_NAME}: otro periodo contigo (plan ${planNameRaw})`,
+      html: `
+        <div style="${EMAIL_LAYOUT_OUTER}">
+          ${emailPreheaderHtml(preheaderText)}
+          ${getEmailHeader(`Gracias por seguir, ${safeName}`)}
+
+          <div style="${EMAIL_LAYOUT_CARD}">
+            <p style="${body}">
+              Se procesó la <strong>renovación</strong> de tu suscripción <strong>Premium</strong> (plan <strong>${planName}</strong>). Gracias por seguir un periodo más con <strong>${APP_NAME}</strong>.
+            </p>
+            <p style="${body}margin-bottom:14px;">
+              Tu acceso Premium queda vigente hasta el <strong>${periodEndSafe}</strong>. Si la app no refleja la fecha al instante, cierra la app por completo y vuelve a entrar.
+            </p>
+            <p style="${small}margin-bottom:18px;">
+              ${EMAIL_LEGAL_DISCLAIMER_ESCAPED}
+            </p>
+
+            ${receiptBlock}
+
+            <p style="${sectionTitle}">Qué incluye Premium</p>
+            <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.55;margin:0 0 22px 0;padding-left:20px;text-align:left;">
+              <li style="margin:0 0 8px 0;">Chat y herramientas sin los topes del periodo de prueba gratuito.</li>
+              <li style="margin:0 0 8px 0;">Escalas y recursos de autoevaluación disponibles en la app, cuando correspondan a tu perfil.</li>
+              <li style="margin:0 0 8px 0;">Seguimiento de actividad y continuidad en tu proceso, a tu ritmo.</li>
+              <li style="margin:0 0 0 0;">El detalle de funciones puede actualizarse; lo definitivo lo ves en la tienda y dentro de ${APP_NAME}.</li>
+            </ul>
+
+            <div style="text-align:center;margin:8px 0 14px 0;">
+              <a href="${appOpenHref}"
+                 style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
+                ${escapeHtmlText(emailCtaLabel.openApp())}
+              </a>
             </div>
+            <p style="${small}text-align:center;margin:0 0 18px 0;">
+              Si el enlace no abre la app, ábrela manualmente e inicia sesión con esta cuenta.
+            </p>
+
+            <p style="${small}">
+              Dudas sobre tu suscripción o este cobro: canales enlazados al pie (Instagram). Indica la referencia del comprobante. Este mensaje es automático.
+            </p>
           </div>
 
           ${getEmailFooter()}
@@ -1384,9 +1651,20 @@ const mailer = {
    * @returns {Promise<boolean>}
    */
   sendTrialRetentionEmail: async (email, username, trialEndDate) => {
+    const em = email != null ? String(email).trim() : '';
+    if (!em || !em.includes('@')) {
+      logger.warn('[Mailer] sendTrialRetentionEmail: destinatario inválido');
+      return false;
+    }
+    const end = trialEndDate != null ? new Date(trialEndDate) : new Date(NaN);
+    const nowMs = Date.now();
+    if (Number.isNaN(end.getTime()) || end.getTime() <= nowMs) {
+      logger.warn('[Mailer] sendTrialRetentionEmail: trialEndDate inválido o ya vencido');
+      return false;
+    }
     try {
       const template = emailTemplates.trialRetentionEmail(username, trialEndDate);
-      return await sendEmail(email, template, 'Correo retención trial');
+      return await sendEmail(em, template, 'Correo retención trial');
     } catch (error) {
       console.error('[Mailer] ❌ Error al enviar correo de retención trial (no crítico):', error.message);
       return false;
@@ -1448,6 +1726,30 @@ const mailer = {
       return await sendEmail(email, template, emailType);
     } catch (error) {
       logger.error('[Mailer] ❌ Error enviando confirmación de suscripción:', error.message);
+      return false;
+    }
+  },
+
+  /**
+   * Renovación automática: agradecimiento y datos del cobro (App Store, Mercado Pago, etc.).
+   */
+  sendSubscriptionRenewalEmail: async (
+    email,
+    username,
+    plan,
+    periodEnd,
+    receipt,
+    emailType = 'Renovación suscripción'
+  ) => {
+    try {
+      if (!receipt || typeof receipt !== 'object') {
+        logger.warn('[Mailer] sendSubscriptionRenewalEmail: receipt requerido');
+        return false;
+      }
+      const template = emailTemplates.subscriptionRenewalEmail(username, plan, periodEnd, receipt);
+      return await sendEmail(email, template, emailType);
+    } catch (error) {
+      logger.error('[Mailer] ❌ Error enviando correo de renovación de suscripción:', error.message);
       return false;
     }
   },

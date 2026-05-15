@@ -43,7 +43,13 @@ const SUBJECT_BUILDERS = [
   (weekLabel) => `${weekLabel} — Cierra la semana con calma en ${APP_NAME}`,
   (weekLabel) => `${weekLabel} — Mira tu semana cuando quieras en ${APP_NAME}`,
   (weekLabel) => `${weekLabel} — Tu semana, con perspectiva, en ${APP_NAME}`,
-  (weekLabel) => `${weekLabel} — Novedades en la app y tu resumen en ${APP_NAME}`
+  (weekLabel) => `${weekLabel} — Novedades en la app y tu resumen en ${APP_NAME}`,
+  (weekLabel) =>
+    `${weekLabel} — Resumen, novedades y posible +2 días de prueba (si tu cuenta califica) en ${APP_NAME}`,
+  (weekLabel) =>
+    `${weekLabel} — +2 días de prueba extra si aplica tu cuenta: resumen y novedades en ${APP_NAME}`,
+  (weekLabel) =>
+    `${weekLabel} — Regalo puntual (+2 días si procede), novedades y resumen en ${APP_NAME}`,
 ];
 
 /**
@@ -53,6 +59,11 @@ const SUBJECT_BUILDERS = [
  */
 export function weeklyEmailSubjectIndex(isoWeekYear, isoWeek) {
   return weeklyContentVariantIndex(isoWeekYear, isoWeek, SUBJECT_BUILDERS.length, 0);
+}
+
+/** Número de variantes de asunto del resumen semanal (para tests y rotación). */
+export function getWeeklySummarySubjectVariantCount() {
+  return SUBJECT_BUILDERS.length;
 }
 
 export function buildWeeklySummarySubjectLine(weekLabel, isoWeekYear, isoWeek) {
@@ -75,7 +86,7 @@ const PREHEADER_VARIANTS = [
   (name) =>
     `¿Hace rato que no miras cómo vienes? ${name} ofrece una vista clara, sin apuro. Tú eliges cuándo entrar.`,
   (name) =>
-    `Regalo de 2 días de prueba y ecosistema nuevo en ${name}: tareas, hábitos y pomodoros desde el chat. Mira tu resumen.`
+    `+2 días de prueba Premium al procesar este envío (si tu cuenta califica) y novedades de la app. Abre ${name} y revisa tu resumen.`,
 ];
 
 /** Párrafos de apertura (invitación + perspectiva). */
@@ -172,15 +183,20 @@ const CLOSING_LINE_VARIANTS = [
  *   subjectLine: string,
  *   preheaderText: string,
  *   leadParagraph: string,
+ *   openingBenefitLine: string,
  *   reflectionParagraph: string,
  *   privacyParagraph: string,
  *   whereParagraph: string,
  *   benefitSectionTitle: string,
  *   benefitLines: string[],
+ *   giftBadgeLabel: string,
+ *   giftTitle: string,
+ *   giftPrimary: string,
+ *   giftSecondary: string,
  *   updatesSectionTitle: string,
  *   updatesIntro: string,
  *   updatesLines: string[],
- *   trialGiftPremiumNote: string,
+ *   postUpdatesActionLine: string,
  *   downloadPrompt: string,
  *   closingLine: string,
  * }}
@@ -198,6 +214,14 @@ export function buildWeeklySummaryEmailContext(user, isoParts) {
 
   const leadParagraph = LEAD_PARAGRAPH_VARIANTS[weeklyContentVariantIndex(isoWeekYear, isoWeek, LEAD_PARAGRAPH_VARIANTS.length, 2)](APP_NAME);
 
+  const totalSessionsRaw = user?.stats?.totalSessions;
+  const totalSessionsN = Number(totalSessionsRaw);
+  const hasSomeActivity =
+    Number.isFinite(totalSessionsN) && totalSessionsN >= 1;
+  const openingBenefitLine = hasSomeActivity
+    ? `Ya tienes actividad registrada en ${APP_NAME}: este correo solo resume la invitación; el valor está en abrir la app y ver tu semana con perspectiva. Aquí va un vistazo antes de los detalles.`
+    : `Aunque lleves poco tiempo con ${APP_NAME}, el resumen sirve para ordenar cabeza y rutina cuando quieras mirar atrás. Aquí va un vistazo antes de los detalles en la app.`;
+
   const reflectionParagraph = REFLECTION_PARAGRAPH_VARIANTS[
     weeklyContentVariantIndex(isoWeekYear, isoWeek, REFLECTION_PARAGRAPH_VARIANTS.length, 3)
   ](APP_NAME);
@@ -209,17 +233,31 @@ export function buildWeeklySummaryEmailContext(user, isoParts) {
   const benefitSectionTitle = 'En tu resumen';
   const benefitLines = BENEFIT_BUNDLES[weeklyContentVariantIndex(isoWeekYear, isoWeek, BENEFIT_BUNDLES.length, 4)];
 
-  const updatesSectionTitle = 'Novedades de la semana';
-  const updatesIntro = `Regalo al enviar este correo: dos días extra de prueba premium en cuentas que califiquen (se aplican al procesar el envío). Si tienes suscripción de pago activa, tu plan no cambia. Lo nuevo de la app está resumido en la lista de abajo.`;
-
   const rawSubStatus = user?.subscription?.status;
   const subStatus = typeof rawSubStatus === 'string' ? rawSubStatus.trim() : '';
-  const trialGiftPremiumNote =
-    subStatus === 'premium'
-      ? `Tienes plan premium activo: el regalo de días extra de prueba no altera tu suscripción. Gracias por seguir en ${APP_NAME}.`
-      : '';
+  const isPremium = subStatus === 'premium';
+
+  const giftBadgeLabel = isPremium ? 'Tu plan' : 'Regalo';
+
+  const giftTitle = isPremium
+    ? 'Tu plan Premium'
+    : 'Regalo: +2 días de prueba Premium';
+
+  const giftPrimary = isPremium
+    ? `Tienes suscripción de pago activa: el regalo de 2 días extra de prueba no modifica tu plan ni genera cargos. Gracias por seguir en ${APP_NAME}.`
+    : `Si tu cuenta califica, sumamos 2 días de prueba Premium al procesar el envío de este correo desde nuestro sistema. No hace falta pulsar ningún enlace para “activarlo”: se aplica al despachar el mensaje.`;
+
+  const giftSecondary = isPremium
+    ? `Las novedades del producto van justo debajo; ábrelas en la app con tu sesión iniciada.`
+    : `Revisa en la app (Perfil o suscripción) si ya ves la prueba ampliada; a veces la tienda tarda unos minutos en reflejarlo.`;
+
+  const updatesSectionTitle = 'Novedades en la app';
+  const updatesIntro =
+    'Esto es lo que cambió o mejoró recientemente; el detalle completo está en la app cuando inicias sesión.';
 
   const updatesLines = [...WEEKLY_PRODUCT_NEWS_LINES];
+
+  const postUpdatesActionLine = `Si ya usas la app, abre Perfil para comprobar si tu prueba se amplió. Si no ves el cambio y crees que debería aplicarse, puedes responder a este correo solicitándolo; indica en el mensaje el mismo email con el que inicias sesión en ${APP_NAME}.`;
 
   const downloadPrompt = `Si todavía no tienes la app instalada, puedes descargarla y empezar a usar ${APP_NAME} hoy mismo.`;
 
@@ -231,15 +269,20 @@ export function buildWeeklySummaryEmailContext(user, isoParts) {
     subjectLine,
     preheaderText,
     leadParagraph,
+    openingBenefitLine,
     reflectionParagraph,
     privacyParagraph,
     whereParagraph,
     benefitSectionTitle,
     benefitLines,
+    giftBadgeLabel,
+    giftTitle,
+    giftPrimary,
+    giftSecondary,
     updatesSectionTitle,
     updatesIntro,
     updatesLines,
-    trialGiftPremiumNote,
+    postUpdatesActionLine,
     downloadPrompt,
     closingLine
   };

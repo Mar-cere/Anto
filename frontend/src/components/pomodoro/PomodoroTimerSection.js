@@ -6,11 +6,11 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import MeditationView from '../MeditationView';
-import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
 import {
   MODE_LABEL_FONT_SIZE,
   MODE_LABEL_MARGIN_BOTTOM,
+  POMODORO_INNER_INSET,
   PROGRESS_BAR_BORDER_RADIUS,
   PROGRESS_BAR_HEIGHT,
   PROGRESS_BAR_MARGIN_TOP,
@@ -51,7 +51,7 @@ export default function PomodoroTimerSection({
         modePill: {
           borderWidth: StyleSheet.hairlineWidth,
           borderRadius: 999,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingHorizontal: POMODORO_INNER_INSET,
           paddingVertical: 8,
           minHeight: 42,
           alignItems: 'center',

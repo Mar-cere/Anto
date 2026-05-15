@@ -27,6 +27,7 @@ import { api, ENDPOINTS } from '../config/api';
 import { getApiErrorMessage } from '../utils/apiErrorHandler';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING } from '../constants/ui';
+import { getEmergencyContactId } from '../utils/emergencyContactUtils';
 
 // Constantes de validación
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -199,22 +200,20 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const contactId = getEmergencyContactId(contact);
+
   // Cargar datos del contacto cuando se abre el modal
   useEffect(() => {
-    if (visible && contact && contact._id) {
-      setFormData({
-        name: contact.name || '',
-        email: contact.email || '',
-        phone: contact.phone || '',
-        relationship: contact.relationship || ''
-      });
-      setErrors({});
-      setIsSubmitting(false);
-    } else if (visible && !contact) {
-      // Si el modal está visible pero no hay contacto, cerrarlo
-      onClose?.();
-    }
-  }, [visible, contact, onClose]);
+    if (!visible || !contactId) return;
+    setFormData({
+      name: contact.name || '',
+      email: contact.email || '',
+      phone: contact.phone || '',
+      relationship: contact.relationship || '',
+    });
+    setErrors({});
+    setIsSubmitting(false);
+  }, [visible, contactId, contact]);
 
   // Validar formulario
   const validateForm = useCallback(() => {
@@ -261,7 +260,7 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
 
   // Guardar cambios
   const handleSave = useCallback(async () => {
-    if (!contact || !contact._id) {
+    if (!contact || !contactId) {
       Alert.alert('Error', 'No se puede editar el contacto. Por favor, intenta nuevamente.');
       onClose?.();
       return;
@@ -273,7 +272,7 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
 
     setIsSubmitting(true);
     try {
-      await api.put(ENDPOINTS.EMERGENCY_CONTACT_BY_ID(contact._id), {
+      await api.put(ENDPOINTS.EMERGENCY_CONTACT_BY_ID(contactId), {
         name: formData.name.trim(),
         email: formData.email.trim().toLowerCase(),
         phone: formData.phone.trim() || null,
@@ -292,10 +291,10 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [formData, validateForm, contact, onSave, onClose]);
+  }, [formData, validateForm, contact, contactId, onSave, onClose, showToast]);
 
   // No renderizar el modal si no hay contacto o si no está visible
-  if (!visible || !contact || !contact._id) {
+  if (!visible || !contact || !contactId) {
     return null;
   }
 

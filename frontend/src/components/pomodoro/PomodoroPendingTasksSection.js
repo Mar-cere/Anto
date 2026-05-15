@@ -16,13 +16,13 @@ import { useTheme } from '../../context/ThemeContext';
 import {
   createPomodoroColors,
   POMODORO_DISPLAY_BLOCK_MINUTES,
+  POMODORO_INNER_INSET,
   TASKS_SECTION_BORDER_RADIUS,
   TASKS_SECTION_PADDING,
   TITLE_FONT_SIZE,
   TEXTS,
 } from '../../screens/pomodoro/pomodoroScreenConstants';
 import { getFocusTheme } from '../../styles/focusCardTheme';
-import { SPACING } from '../../constants/ui';
 
 function formatDueShort(iso) {
   if (!iso) return '';
@@ -59,7 +59,7 @@ export default function PomodoroPendingTasksSection({
   }, [tasks.length]);
 
   return (
-    <View style={[styles.section, density === 'compact' && styles.sectionCompact]}>
+    <View style={styles.section}>
       <Text style={styles.kicker}>{TEXTS.PENDING_SECTION_KICKER}</Text>
       <View style={styles.headerRow}>
         <View style={styles.headerIconTitle}>
@@ -217,9 +217,6 @@ function createPendingTasksStyles(colors, t, PC) {
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.FOCUS_BORDER_SUBTLE,
     },
-    sectionCompact: {
-      padding: 12,
-    },
     kicker: {
       fontSize: 11,
       fontWeight: '600',
@@ -310,7 +307,7 @@ function createPendingTasksStyles(colors, t, PC) {
     retryBtn: {
       alignSelf: 'flex-start',
       paddingVertical: 8,
-      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+      paddingHorizontal: POMODORO_INNER_INSET,
       borderRadius: 10,
       backgroundColor: t.FOCUS_INNER_ROW.backgroundColor,
       borderWidth: StyleSheet.hairlineWidth,
@@ -373,7 +370,7 @@ function createPendingTasksStyles(colors, t, PC) {
       flex: 1,
       minWidth: 0,
       paddingVertical: 12,
-      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+      paddingHorizontal: POMODORO_INNER_INSET,
     },
     titleRow: {
       flexDirection: 'row',

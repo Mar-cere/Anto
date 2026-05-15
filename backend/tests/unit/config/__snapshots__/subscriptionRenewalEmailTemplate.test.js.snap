@@ -1,0 +1,14 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`subscriptionRenewalEmail plantilla asunto de renovación; comprobante y tono de otro periodo 1`] = `"Anto: otro periodo contigo (plan Mensual)"`;
+
+exports[`subscriptionRenewalEmail plantilla asunto de renovación; comprobante y tono de otro periodo 2`] = `
+{
+  "bloqueCobro": true,
+  "ctaAbrirApp": true,
+  "planMensual": true,
+  "preheaderOculto": true,
+  "referencia": true,
+  "renovacion": true,
+}
+`;

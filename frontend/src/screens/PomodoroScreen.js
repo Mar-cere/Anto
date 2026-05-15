@@ -35,12 +35,13 @@ import { usePomodoroScreen } from '../hooks/usePomodoroScreen';
 import {
   CONTAINER_PADDING_BOTTOM,
   CONTENT_PADDING,
+  createPomodoroColors,
+  POMODORO_INNER_INSET,
+  POMODORO_SCREEN_INSET,
   TEXTS,
 } from './pomodoro/pomodoroScreenConstants';
 import { useTheme } from '../context/ThemeContext';
 import { getFocusTheme } from '../styles/focusCardTheme';
-import { createPomodoroColors } from './pomodoro/pomodoroScreenConstants';
-import { SPACING } from '../constants/ui';
 
 export default function PomodoroScreen() {
   const navigation = useNavigation();
@@ -66,9 +67,9 @@ export default function PomodoroScreen() {
         goalCard: {
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: t.FOCUS_BORDER_SUBTLE,
-          borderRadius: 14,
+          borderRadius: 16,
           backgroundColor: colors.cardBackground ?? colors.surface,
-          padding: 12,
+          padding: POMODORO_INNER_INSET,
           marginBottom: 10,
         },
         goalHeader: {
@@ -102,7 +103,7 @@ export default function PomodoroScreen() {
           position: 'relative',
           justifyContent: 'center',
           alignItems: 'center',
-          padding: 24,
+          padding: POMODORO_SCREEN_INSET,
         },
         summaryBackdrop: {
           ...StyleSheet.absoluteFillObject,
@@ -115,7 +116,7 @@ export default function PomodoroScreen() {
           backgroundColor: colors.modalSurface,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: t.FOCUS_BORDER_SUBTLE,
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: POMODORO_INNER_INSET,
           zIndex: 1,
           shadowColor: colors.glassShadow ?? colors.shadowAmbient,
           shadowOffset: { width: 0, height: 12 },
@@ -125,7 +126,7 @@ export default function PomodoroScreen() {
         },
         summaryHero: {
           alignItems: 'center',
-          marginBottom: 16,
+          marginBottom: 12,
         },
         summaryIconWrap: {
           width: 64,
@@ -165,7 +166,7 @@ export default function PomodoroScreen() {
           flex: 1,
           borderRadius: 14,
           paddingVertical: 12,
-          paddingHorizontal: 10,
+          paddingHorizontal: POMODORO_INNER_INSET,
           backgroundColor: colors.glassFill,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: t.FOCUS_BORDER_SUBTLE,
@@ -188,7 +189,7 @@ export default function PomodoroScreen() {
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: t.FOCUS_BORDER_SUBTLE,
           paddingVertical: 10,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingHorizontal: POMODORO_INNER_INSET,
           marginBottom: 6,
           gap: 10,
         },
@@ -217,13 +218,13 @@ export default function PomodoroScreen() {
           marginTop: 6,
           backgroundColor: colors.primary,
           borderRadius: 14,
-          paddingVertical: 14,
+          paddingVertical: 12,
           alignItems: 'center',
         },
         summaryButtonSecondary: {
           borderRadius: 14,
-          paddingVertical: 14,
-          paddingHorizontal: 14,
+          paddingVertical: 12,
+          paddingHorizontal: POMODORO_INNER_INSET,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
@@ -239,8 +240,8 @@ export default function PomodoroScreen() {
         },
         summaryButtonSuccess: {
           borderRadius: 14,
-          paddingVertical: 14,
-          paddingHorizontal: 14,
+          paddingVertical: 12,
+          paddingHorizontal: POMODORO_INNER_INSET,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',

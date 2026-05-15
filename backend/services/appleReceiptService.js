@@ -12,6 +12,7 @@ import Transaction from '../models/Transaction.js';
 import paymentAuditService from './paymentAuditService.js';
 import logger from '../utils/logger.js';
 import { normalizeAppleReceiptPayload } from '../utils/appleReceiptNormalize.js';
+import { isSubscriptionRenewalPayment } from '../utils/subscriptionPaymentEmail.js';
 
 // URLs de verificación de Apple
 const APPLE_VERIFY_URL_SANDBOX = 'https://sandbox.itunes.apple.com/verifyReceipt';
@@ -575,85 +576,32 @@ class AppleReceiptService {
         );
       }
 
-      // Correo de agradecimiento: primera activación, o reintento en idempotencia si nunca se marcó envío
       if (isActive && user.email) {
-        const persistThankYouEmailFlag = async () => {
-          await Transaction.updateOne(
-            { userId, paymentProvider: 'apple', providerTransactionId: appleTransactionId },
-            { $set: { 'metadata.thankYouEmailSentAt': new Date() } }
-          );
+        const priceRaw = transaction.price;
+        const parsedPrice = priceRaw != null && priceRaw !== '' ? parseFloat(priceRaw) : NaN;
+        const receipt = {
+          purchaseDate,
+          amount: Number.isFinite(parsedPrice) ? parsedPrice : null,
+          currency: transaction.currency || 'USD',
+          providerLabel: 'App Store (Apple)',
+          reference: appleTransactionId,
         };
 
-        const sendThankYouEmail = async (reasonLabel) => {
-          const emailStartTime = Date.now();
-          logger.payment(`[AppleReceipt] 📧 ${reasonLabel}`, {
-            userId: userId.toString(),
-            userEmail: user.email,
+        const dispatchPaymentEmail = async (reasonLabel) => {
+          await this.sendSubscriptionPaymentNotificationEmail(user, {
             plan,
-            productId,
+            periodEnd: expiresDate,
+            receipt,
+            providerTransactionId: appleTransactionId,
+            paymentProvider: 'apple',
+            reasonLabel,
             idempotentReplay: skipDuplicateSideEffects,
-            timestamp: new Date().toISOString(),
+            productId,
           });
-
-          try {
-            const mailer = (await import('../config/mailer.js')).default;
-            const username = user.name || user.username || 'Usuario';
-            const priceRaw = transaction.price;
-            const parsedPrice =
-              priceRaw != null && priceRaw !== '' ? parseFloat(priceRaw) : NaN;
-            const receipt = {
-              purchaseDate,
-              amount: Number.isFinite(parsedPrice) ? parsedPrice : null,
-              currency: transaction.currency || 'USD',
-              providerLabel: 'App Store (Apple)',
-              reference: appleTransactionId,
-            };
-
-            const sent = await mailer.sendSubscriptionThankYouEmail(
-              user.email,
-              username,
-              plan,
-              expiresDate,
-              receipt,
-              'Confirmación de compra / suscripción (Apple)'
-            );
-
-            const emailDuration = Date.now() - emailStartTime;
-            if (sent) {
-              await persistThankYouEmailFlag();
-              logger.payment('[AppleReceipt] ✅ Correo de agradecimiento enviado', {
-                userId: userId.toString(),
-                userEmail: user.email,
-                plan,
-                productId,
-                emailDuration: `${emailDuration}ms`,
-              });
-            } else {
-              logger.warn('[AppleReceipt] ⚠️ Correo de agradecimiento no enviado (mailer devolvió false)', {
-                userId: userId.toString(),
-                userEmail: user.email,
-                plan,
-                productId,
-                emailDuration: `${emailDuration}ms`,
-              });
-            }
-          } catch (emailError) {
-            const emailDuration = Date.now() - emailStartTime;
-            logger.error('[AppleReceipt] ❌ Error enviando correo de agradecimiento', {
-              userId: userId.toString(),
-              userEmail: user.email,
-              plan,
-              productId,
-              error: emailError.message,
-              errorType: emailError.constructor?.name,
-              stack: emailError.stack,
-              emailDuration: `${emailDuration}ms`,
-            });
-          }
         };
 
         if (!skipDuplicateSideEffects) {
-          await sendThankYouEmail('Enviando correo de agradecimiento');
+          await dispatchPaymentEmail('Enviando correo post-pago (Apple)');
         } else {
           const txnForEmail = await Transaction.findOne({
             userId,
@@ -662,10 +610,13 @@ class AppleReceiptService {
           })
             .select('metadata')
             .lean();
-          const alreadySent = txnForEmail?.metadata?.thankYouEmailSentAt;
-          if (!alreadySent) {
-            await sendThankYouEmail(
-              'Reintento: correo de agradecimiento (activación previa sin constancia de envío)'
+          const isRenewal = await isSubscriptionRenewalPayment(userId, appleTransactionId);
+          const sentFlag = isRenewal
+            ? txnForEmail?.metadata?.renewalEmailSentAt
+            : txnForEmail?.metadata?.thankYouEmailSentAt;
+          if (!sentFlag) {
+            await dispatchPaymentEmail(
+              'Reintento: correo post-pago (activación previa sin constancia de envío)'
             );
           }
         }
@@ -890,6 +841,29 @@ class AppleReceiptService {
       appleTransactionId,
     });
 
+    if (transactionCreated && isActive && user.email && appleTransactionId) {
+      const priceMilli = tx.price;
+      const amount =
+        priceMilli != null && Number.isFinite(Number(priceMilli))
+          ? Number(priceMilli) / 1000
+          : null;
+      const receipt = {
+        purchaseDate,
+        amount,
+        currency: (tx.currency || 'USD').toUpperCase(),
+        providerLabel: 'App Store (Apple)',
+        reference: appleTransactionId,
+      };
+      await this.sendSubscriptionPaymentNotificationEmail(user, {
+        plan,
+        periodEnd: expiresDate,
+        receipt,
+        providerTransactionId: appleTransactionId,
+        paymentProvider: 'apple',
+        reasonLabel: `Correo post-pago StoreKit2 (${source})`,
+      });
+    }
+
     return {
       success: true,
       isActive,
@@ -897,6 +871,100 @@ class AppleReceiptService {
       subscriptionId: subscription._id,
       transactionCreated,
     };
+  }
+
+  /**
+   * Envía correo de primera compra o de renovación según historial de pagos del usuario.
+   * @param {import('../models/User.js').default} user
+   */
+  async sendSubscriptionPaymentNotificationEmail(
+    user,
+    {
+      plan,
+      periodEnd,
+      receipt,
+      providerTransactionId,
+      paymentProvider = 'apple',
+      reasonLabel = 'Correo post-pago',
+      idempotentReplay = false,
+      productId = null,
+    }
+  ) {
+    if (!user?.email) return false;
+
+    const userId = user._id;
+    const emailStartTime = Date.now();
+    logger.payment(`[AppleReceipt] 📧 ${reasonLabel}`, {
+      userId: userId.toString(),
+      userEmail: user.email,
+      plan,
+      productId,
+      idempotentReplay,
+      providerTransactionId,
+    });
+
+    try {
+      const isRenewal = await isSubscriptionRenewalPayment(userId, providerTransactionId);
+      const metaField = isRenewal ? 'renewalEmailSentAt' : 'thankYouEmailSentAt';
+      const mailer = (await import('../config/mailer.js')).default;
+      const username = user.name || user.username || 'Usuario';
+
+      const sent = isRenewal
+        ? await mailer.sendSubscriptionRenewalEmail(
+            user.email,
+            username,
+            plan,
+            periodEnd,
+            receipt,
+            'Renovación suscripción (Apple)'
+          )
+        : await mailer.sendSubscriptionThankYouEmail(
+            user.email,
+            username,
+            plan,
+            periodEnd,
+            receipt,
+            'Confirmación de compra / suscripción (Apple)'
+          );
+
+      const emailDuration = Date.now() - emailStartTime;
+      if (sent && providerTransactionId) {
+        await Transaction.updateOne(
+          { userId, paymentProvider, providerTransactionId: String(providerTransactionId) },
+          { $set: { [`metadata.${metaField}`]: new Date() } }
+        );
+        logger.payment(
+          `[AppleReceipt] ✅ Correo ${isRenewal ? 'de renovación' : 'de agradecimiento'} enviado`,
+          {
+            userId: userId.toString(),
+            userEmail: user.email,
+            plan,
+            productId,
+            emailDuration: `${emailDuration}ms`,
+          }
+        );
+      } else if (!sent) {
+        logger.warn('[AppleReceipt] ⚠️ Correo post-pago no enviado (mailer devolvió false)', {
+          userId: userId.toString(),
+          userEmail: user.email,
+          plan,
+          isRenewal,
+          emailDuration: `${emailDuration}ms`,
+        });
+      }
+      return sent;
+    } catch (emailError) {
+      const emailDuration = Date.now() - emailStartTime;
+      logger.error('[AppleReceipt] ❌ Error enviando correo post-pago', {
+        userId: userId.toString(),
+        userEmail: user.email,
+        plan,
+        error: emailError.message,
+        stack: emailError.stack,
+        emailDuration: `${emailDuration}ms`,
+      });
+      return false;
+    }
   }
 
   /**

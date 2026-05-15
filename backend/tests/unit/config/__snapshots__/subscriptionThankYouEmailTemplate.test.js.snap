@@ -1,0 +1,23 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`subscriptionThankYouEmail plantilla con comprobante: asunto distinto; tabla y referencia escapada 1`] = `"Anto: confirmación de compra (plan Anual)"`;
+
+exports[`subscriptionThankYouEmail plantilla con comprobante: asunto distinto; tabla y referencia escapada 2`] = `
+{
+  "bloqueComprobante": true,
+  "incluyeAnual": true,
+  "preheaderOculto": true,
+  "referenciaEscapada": true,
+}
+`;
+
+exports[`subscriptionThankYouEmail plantilla sin comprobante: asunto; preheader oculto; sin bloque confirmación (snapshot mínimo) 1`] = `"Anto: suscripción activada (plan Mensual)"`;
+
+exports[`subscriptionThankYouEmail plantilla sin comprobante: asunto; preheader oculto; sin bloque confirmación (snapshot mínimo) 2`] = `
+{
+  "ctaAbrirApp": true,
+  "incluyePlanMensual": true,
+  "preheaderOculto": true,
+  "sinTablaComprobante": true,
+}
+`;

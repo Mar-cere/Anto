@@ -7,6 +7,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useProfileScreenStyles } from './profileScreenStyles';
 import { TEXTS, ICON_SIZE } from './profileScreenConstants';
+import { getEmergencyContactId } from '../../utils/emergencyContactUtils';
 
 function hapticLight() {
   if (Platform.OS === 'ios') {
@@ -35,8 +36,11 @@ export function ProfileEmergencySection({
           <Text style={styles.emptyText}>{TEXTS.NO_CONTACTS}</Text>
         ) : (
           <View style={styles.contactsList}>
-            {emergencyContacts.map((contact) => (
-              <View key={contact._id} style={styles.contactItem}>
+            {emergencyContacts.map((contact, index) => (
+              <View
+                key={getEmergencyContactId(contact) || `contact-${index}`}
+                style={styles.contactItem}
+              >
                 <View style={styles.contactMainContent}>
                   <View style={styles.contactHeader}>
                     <View style={styles.contactHeaderLeft}>
@@ -59,7 +63,7 @@ export function ProfileEmergencySection({
                         <Ionicons name="pencil-outline" size={18} color={profileColors.PRIMARY} />
                       </TouchableOpacity>
                       <TouchableOpacity
-                        onPress={() => onDeleteContact(contact._id)}
+                        onPress={() => onDeleteContact(getEmergencyContactId(contact))}
                         style={[styles.contactActionButton, styles.contactActionButtonDelete]}
                         accessibilityLabel={TEXTS.DELETE_CONTACT}
                       >

@@ -13,6 +13,184 @@ import logger from '../utils/logger.js';
 import { enqueueEmail } from './emailQueueService.js';
 import { getUtcIsoWeekParts } from '../utils/isoWeek.js';
 
+const MS_PER_DAY = 86400000;
+
+function getWeeklySummaryTrialGiftDays() {
+  const n = parseInt(process.env.WEEKLY_SUMMARY_TRIAL_GIFT_DAYS || '2', 10);
+  return Number.isFinite(n) && n > 0 ? n : 2;
+}
+
+function isWeeklySummaryTrialGiftEnabled() {
+  return process.env.WEEKLY_SUMMARY_TRIAL_GIFT_ENABLED !== 'false';
+}
+
+/**
+ * Suma días de prueba premium tras un envío exitoso del resumen semanal (cuentas no premium).
+ * Desactivar: `WEEKLY_SUMMARY_TRIAL_GIFT_ENABLED=false`.
+ *
+ * @param {import('mongoose').Types.ObjectId} userId
+ * @returns {Promise<{ applied: boolean, reason?: string, trialEndDate?: Date }>}
+ */
+export async function applyWeeklySummaryTrialGift(userId) {
+  if (!isWeeklySummaryTrialGiftEnabled()) {
+    return { applied: false, reason: 'disabled' };
+  }
+
+  const days = getWeeklySummaryTrialGiftDays();
+  const user = await User.findById(userId).select('subscription');
+  if (!user?.subscription) {
+    return { applied: false, reason: 'no_user' };
+  }
+
+  const sub = user.subscription;
+  if (sub.status === 'premium') {
+    return { applied: false, reason: 'premium' };
+  }
+
+  const now = new Date();
+  const addMs = days * MS_PER_DAY;
+
+  let trialStartDate;
+  let trialEndDate;
+
+  if (sub.status === 'trial' && sub.trialEndDate) {
+    trialStartDate = sub.trialStartDate ? new Date(sub.trialStartDate) : now;
+    const end = new Date(sub.trialEndDate);
+    const baseMs = Math.max(now.getTime(), end.getTime());
+    trialEndDate = new Date(baseMs + addMs);
+    sub.trialEndDate = trialEndDate;
+    sub.status = 'trial';
+    if (!sub.trialStartDate) {
+      sub.trialStartDate = now;
+    }
+  } else if (sub.status === 'expired') {
+    trialStartDate = now;
+    trialEndDate = new Date(now.getTime() + addMs);
+    sub.status = 'trial';
+    sub.trialStartDate = trialStartDate;
+    sub.trialEndDate = trialEndDate;
+    if (!sub.trialGrantedAt) {
+      sub.trialGrantedAt = now;
+    }
+  } else if (sub.status === 'free') {
+    if (!sub.trialEndDate) {
+      return { applied: false, reason: 'free_no_trial_history' };
+    }
+    trialStartDate = now;
+    trialEndDate = new Date(now.getTime() + addMs);
+    sub.status = 'trial';
+    sub.trialStartDate = trialStartDate;
+    sub.trialEndDate = trialEndDate;
+    if (!sub.trialGrantedAt) {
+      sub.trialGrantedAt = now;
+    }
+  } else {
+    return { applied: false, reason: 'status_not_eligible' };
+  }
+
+  await user.save();
+
+  let subscription = await Subscription.findOne({ userId: user._id });
+  if (!subscription) {
+    subscription = new Subscription({
+      userId: user._id,
+      status: 'trialing',
+      plan: 'monthly',
+      currentPeriodStart: trialStartDate,
+      currentPeriodEnd: trialEndDate,
+      trialStart: trialStartDate,
+      trialEnd: trialEndDate
+    });
+  } else {
+    subscription.status = 'trialing';
+    subscription.plan = subscription.plan || 'monthly';
+    subscription.trialStart = subscription.trialStart || trialStartDate;
+    subscription.trialEnd = trialEndDate;
+    subscription.currentPeriodEnd = trialEndDate;
+    if (!subscription.currentPeriodStart) {
+      subscription.currentPeriodStart = trialStartDate;
+    }
+    subscription.cancelAtPeriodEnd = false;
+    subscription.canceledAt = null;
+    subscription.endedAt = null;
+  }
+  await subscription.save();
+
+  logger.info(`[EmailMarketing] Regalo trial correo semanal (+${days} días) aplicado a usuario ${user._id}`);
+  return { applied: true, trialEndDate };
+}
+
+/**
+ * Filtro Mongo para candidatos al correo de retención trial (misma semántica que `findOneAndUpdate` del job).
+ *
+ * @param {Date} now
+ * @param {number} afterHours — horas desde inicio del trial (p. ej. 48)
+ */
+export function buildTrialRetentionBaseFilter(now, afterHours) {
+  const hours =
+    Number.isFinite(Number(afterHours)) && Number(afterHours) > 0 ? Number(afterHours) : 48;
+  const trialStartDeadline = new Date(now.getTime() - hours * 60 * 60 * 1000);
+  return {
+    emailVerified: true,
+    isActive: true,
+    'subscription.status': 'trial',
+    'subscription.trialStartDate': { $exists: true, $ne: null, $lte: trialStartDeadline },
+    'subscription.trialEndDate': { $exists: true, $ne: null, $gt: now },
+    $or: [
+      { 'subscription.trialRetentionEmailSentAt': null },
+      { 'subscription.trialRetentionEmailSentAt': { $exists: false } }
+    ]
+  };
+}
+
+/**
+ * @param {unknown} trialStartDate
+ * @param {unknown} trialEndDate
+ * @returns {number|null} ms de duración o null si fechas inválidas
+ */
+export function computeTrialSpanMs(trialStartDate, trialEndDate) {
+  const start = trialStartDate ? new Date(trialStartDate).getTime() : NaN;
+  const end = trialEndDate ? new Date(trialEndDate).getTime() : NaN;
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+  return end - start;
+}
+
+/**
+ * @param {number|null} spanMs
+ * @param {number} maxTrialMs
+ */
+export function isTrialSpanEligibleForRetention(spanMs, maxTrialMs) {
+  if (spanMs == null || !Number.isFinite(spanMs) || !Number.isFinite(maxTrialMs) || maxTrialMs <= 0) {
+    return false;
+  }
+  return spanMs > 0 && spanMs <= maxTrialMs;
+}
+
+/**
+ * Valida datos mínimos antes de llamar al mailer (post-reclamo atómico).
+ *
+ * @param {object} user
+ * @param {Date} [now]
+ * @returns {{ ok: true, email: string, username: string, trialEndDate: Date } | { ok: false, reason: string }}
+ */
+export function validateUserForTrialRetentionSend(user, now = new Date()) {
+  const email = user?.email != null ? String(user.email).trim() : '';
+  if (!email || !email.includes('@')) {
+    return { ok: false, reason: 'invalid_email' };
+  }
+  const rawUser = user?.username != null ? String(user.username).trim() : '';
+  const username = rawUser || 'Usuario';
+  const trialEndRaw = user?.subscription?.trialEndDate;
+  const end = trialEndRaw ? new Date(trialEndRaw) : new Date(NaN);
+  if (Number.isNaN(end.getTime())) {
+    return { ok: false, reason: 'invalid_trial_end' };
+  }
+  if (end.getTime() <= now.getTime()) {
+    return { ok: false, reason: 'trial_already_ended' };
+  }
+  return { ok: true, email, username, trialEndDate: end };
+}
+
 /**
  * Filtro Mongo para candidatos al correo de resumen semanal (misma semántica que `findOneAndUpdate` del lote).
  * `requireMinSessions: false` omite `stats.totalSessions >= 1` (catch-up para usuarios que usan la app pero no suman sesión en ese campo).
@@ -221,32 +399,22 @@ class EmailMarketingService {
   /**
    * Correo de retención (prueba por terminar) para trials cortos (~48 h tras inicio, un solo envío por cuenta).
    * Usa findOneAndUpdate atómico para no duplicar si el job corre en paralelo.
-   * @returns {Promise<{ processed: number, sent: number, failed: number, skippedLongTrial: number }>}
+   * @returns {Promise<{ processed: number, sent: number, failed: number, skippedLongTrial: number, skippedInvalid: number }>}
    */
   async sendTrialRetentionEmails() {
     const afterHours = getTrialRetentionAfterHours();
     const maxTrialMs = getTrialRetentionMaxTrialHours() * 60 * 60 * 1000;
     const now = new Date();
-    const trialStartDeadline = new Date(now.getTime() - afterHours * 60 * 60 * 1000);
 
     const results = {
       processed: 0,
       sent: 0,
       failed: 0,
       skippedLongTrial: 0,
+      skippedInvalid: 0
     };
 
-    const baseFilter = {
-      emailVerified: true,
-      isActive: true,
-      'subscription.status': 'trial',
-      'subscription.trialStartDate': { $lte: trialStartDeadline },
-      'subscription.trialEndDate': { $gt: now },
-      $or: [
-        { 'subscription.trialRetentionEmailSentAt': null },
-        { 'subscription.trialRetentionEmailSentAt': { $exists: false } },
-      ],
-    };
+    const baseFilter = buildTrialRetentionBaseFilter(now, afterHours);
 
     try {
       const safetyCap = parseInt(process.env.TRIAL_RETENTION_EMAIL_MAX_PER_RUN || '500', 10);
@@ -256,39 +424,57 @@ class EmailMarketingService {
         const user = await User.findOneAndUpdate(
           baseFilter,
           { $set: { 'subscription.trialRetentionEmailSentAt': new Date() } },
-          { new: true, sort: { 'subscription.trialStartDate': 1 } }
+          {
+            new: true,
+            sort: { 'subscription.trialStartDate': 1 },
+            select: 'email username subscription'
+          }
         );
 
         if (!user) break;
 
         results.processed += 1;
         const sub = user.subscription;
-        const start = sub?.trialStartDate ? new Date(sub.trialStartDate).getTime() : 0;
-        const end = sub?.trialEndDate ? new Date(sub.trialEndDate).getTime() : 0;
-        const span = end - start;
 
         const releaseClaim = async () => {
           await User.updateOne({ _id: user._id }, { $unset: { 'subscription.trialRetentionEmailSentAt': '' } });
         };
 
-        if (span <= 0 || span > maxTrialMs) {
+        const span = computeTrialSpanMs(sub?.trialStartDate, sub?.trialEndDate);
+
+        if (span == null || span <= 0) {
+          await releaseClaim();
+          results.skippedInvalid += 1;
+          logger.warn(`[EmailMarketing] Retención trial: datos de trial inválidos, reclamo liberado (${user._id})`);
+          continue;
+        }
+
+        if (!isTrialSpanEligibleForRetention(span, maxTrialMs)) {
           await releaseClaim();
           results.skippedLongTrial += 1;
           continue;
         }
 
+        const validated = validateUserForTrialRetentionSend(user, now);
+        if (!validated.ok) {
+          await releaseClaim();
+          results.skippedInvalid += 1;
+          logger.warn(`[EmailMarketing] Retención trial omitida (${user._id}): ${validated.reason}`);
+          continue;
+        }
+
         try {
           const ok = await mailer.sendTrialRetentionEmail(
-            user.email,
-            user.username,
-            sub.trialEndDate
+            validated.email,
+            validated.username,
+            validated.trialEndDate
           );
           if (!ok) {
             await releaseClaim();
             results.failed += 1;
           } else {
             results.sent += 1;
-            logger.info(`[EmailMarketing] Retención trial enviada a ${user.email}`);
+            logger.info(`[EmailMarketing] Retención trial enviada a ${validated.email}`);
           }
         } catch (error) {
           await releaseClaim();
@@ -298,12 +484,12 @@ class EmailMarketingService {
       }
 
       logger.info(
-        `[EmailMarketing] Retención trial: enviados ${results.sent} (procesados ${results.processed}, fallos ${results.failed}, trial largo ${results.skippedLongTrial})`
+        `[EmailMarketing] Retención trial: enviados ${results.sent} (procesados ${results.processed}, fallos ${results.failed}, trial largo ${results.skippedLongTrial}, inválidos ${results.skippedInvalid})`
       );
       return results;
     } catch (error) {
       logger.error('[EmailMarketing] Error en sendTrialRetentionEmails:', error);
-      return { processed: 0, sent: 0, failed: 0, skippedLongTrial: 0 };
+      return { processed: 0, sent: 0, failed: 0, skippedLongTrial: 0, skippedInvalid: 0 };
     }
   }
 

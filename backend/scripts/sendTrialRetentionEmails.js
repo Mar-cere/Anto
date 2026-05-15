@@ -39,6 +39,7 @@ async function main() {
     console.log(`   ✅ Enviados: ${results.sent}`);
     console.log(`   ❌ Fallidos: ${results.failed}`);
     console.log(`   ⏭️  Trial largo / soltados: ${results.skippedLongTrial}`);
+    console.log(`   ⚠️  Inválidos / reclamo liberado: ${results.skippedInvalid ?? 0}`);
     console.log(`   📋 Procesados (claims): ${results.processed}`);
 
     await mongoose.disconnect();

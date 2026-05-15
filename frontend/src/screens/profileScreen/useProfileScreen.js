@@ -17,6 +17,7 @@ import {
 } from './profileScreenConstants';
 import { STORAGE_KEYS as CHAT_STORAGE_KEYS } from '../chat/chatScreenConstants';
 import { isValidMongoObjectId24 } from '../../utils/mongoId';
+import { normalizeEmergencyContactsList } from '../../utils/emergencyContactUtils';
 
 export function useProfileScreen(navigation) {
   const { showToast } = useToast();
@@ -73,7 +74,7 @@ export function useProfileScreen(navigation) {
     try {
       setLoadingContacts(true);
       const response = await api.get(ENDPOINTS.EMERGENCY_CONTACTS);
-      setEmergencyContacts(response.contacts || []);
+      setEmergencyContacts(normalizeEmergencyContactsList(response.contacts || []));
     } catch (error) {
       console.error('[ProfileScreen] Error cargando contactos:', error);
       setEmergencyContacts([]);

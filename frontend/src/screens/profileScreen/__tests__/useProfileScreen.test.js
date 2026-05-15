@@ -107,7 +107,7 @@ describe('useProfileScreen', () => {
     });
     expect(api.get).toHaveBeenCalledWith('/api/users/me/emergency-contacts');
     expect(paymentService.getSubscriptionStatus).toHaveBeenCalled();
-    expect(result.current.emergencyContacts).toEqual([{ id: '1', name: 'Contact' }]);
+    expect(result.current.emergencyContacts).toEqual([{ id: '1', _id: '1', name: 'Contact' }]);
     expect(result.current.subscriptionStatus).toMatchObject({ success: true });
     expect(result.current.loading).toBe(false);
   });
