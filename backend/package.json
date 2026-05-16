@@ -15,7 +15,8 @@
     "test:prompt-golden": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js tests/unit/golden --no-coverage",
     "test:integration": "NODE_ENV=test NODE_OPTIONS=--max-old-space-size=4096 node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern=integration --runInBand",
     "test:e2e": "NODE_ENV=test node tests/testEndToEndFlow.js",
-    "test:full": "NODE_ENV=test NODE_OPTIONS=--max-old-space-size=4096 node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --runInBand"
+    "test:full": "NODE_ENV=test NODE_OPTIONS=--max-old-space-size=4096 node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --runInBand",
+    "quality:conversations": "node scripts/evaluateConversationQuality.js"
   },
   "keywords": [
     "backend",

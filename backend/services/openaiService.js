@@ -323,6 +323,8 @@ class OpenAIService {
           depthPreference: contexto.depthPreference,
           inferredWritingStyle: contexto.inferredWritingStyle,
           preferredResponseLength: contexto.preferredResponseLength,
+          forceShortMode: contexto.forceShortMode,
+          forceFactualMode: contexto.forceFactualMode,
           crisis: contexto.crisis,
           isGuest,
           sessionRetention: contexto.sessionRetention,
@@ -581,7 +583,12 @@ class OpenAIService {
           emotional: analisisEmocional,
           contextual: analisisContextual,
           profile: perfilUsuario,
-          userMessage: contenidoNormalizado // Para validación de relevancia
+          userMessage: contenidoNormalizado, // Para validación de relevancia
+          forceShortMode: contexto.forceShortMode,
+          forceFactualMode: contexto.forceFactualMode,
+          crisis: contexto.crisis,
+          sessionRetention: contexto.sessionRetention,
+          conversationPattern: contexto.conversationPattern
         }
       );
 
@@ -599,6 +606,14 @@ class OpenAIService {
           }
         );
       }
+      respuestaConSeguridad = this.enforceStructuredCrisisProtocol(respuestaConSeguridad, {
+        crisis: contexto.crisis,
+        emotional: analisisEmocional,
+        contextual: analisisContextual,
+        profile: perfilUsuario,
+        userMessage: contenidoNormalizado,
+        conversationHistory: contexto.safetyHistory || []
+      });
 
       // 12. NUEVO: Agregar elecciones al final de la respuesta si es apropiado
       let respuestaConElecciones = respuestaConSeguridad;
@@ -754,6 +769,8 @@ class OpenAIService {
         depthPreference: contexto.depthPreference,
         inferredWritingStyle: contexto.inferredWritingStyle,
         preferredResponseLength: contexto.preferredResponseLength,
+        forceShortMode: contexto.forceShortMode,
+        forceFactualMode: contexto.forceFactualMode,
         crisis: contexto.crisis,
         isGuest: contexto.isGuest === true,
         sessionRetention: contexto.sessionRetention,
@@ -796,7 +813,12 @@ class OpenAIService {
           analisisContextual,
           perfilUsuario,
           registroTerapeutico,
-          conversationHistory: contexto.safetyHistory || []
+          conversationHistory: contexto.safetyHistory || [],
+          crisis: contexto.crisis,
+          forceShortMode: contexto.forceShortMode,
+          forceFactualMode: contexto.forceFactualMode,
+          sessionRetention: contexto.sessionRetention,
+          conversationPattern: contexto.conversationPattern
         });
         yield {
           type: 'done',
@@ -846,7 +868,12 @@ class OpenAIService {
         analisisContextual,
         perfilUsuario,
         registroTerapeutico,
-        conversationHistory: contexto.safetyHistory || []
+        conversationHistory: contexto.safetyHistory || [],
+        crisis: contexto.crisis,
+        forceShortMode: contexto.forceShortMode,
+        forceFactualMode: contexto.forceFactualMode,
+        sessionRetention: contexto.sessionRetention,
+        conversationPattern: contexto.conversationPattern
       });
       yield { type: 'done', content: result.content, context: { ...result.context, modelRouting } };
       return;
@@ -859,7 +886,12 @@ class OpenAIService {
       analisisContextual,
       perfilUsuario,
       registroTerapeutico,
-      conversationHistory: contexto.safetyHistory || []
+      conversationHistory: contexto.safetyHistory || [],
+      crisis: contexto.crisis,
+      forceShortMode: contexto.forceShortMode,
+      forceFactualMode: contexto.forceFactualMode,
+      sessionRetention: contexto.sessionRetention,
+      conversationPattern: contexto.conversationPattern
     });
     yield { type: 'done', content: result.content, context: { ...result.context, modelRouting } };
   }
@@ -875,7 +907,12 @@ class OpenAIService {
     analisisContextual,
     perfilUsuario,
     registroTerapeutico,
-    conversationHistory = []
+    conversationHistory = [],
+    crisis = null,
+    forceShortMode = false,
+    forceFactualMode = false,
+    sessionRetention = null,
+    conversationPattern = null
   }) {
     let activeProtocol = therapeuticProtocolService.getActiveProtocol(mensaje.userId);
     let currentIntervention = null;
@@ -930,7 +967,12 @@ class OpenAIService {
       emotional: analisisEmocional,
       contextual: analisisContextual,
       profile: perfilUsuario,
-      userMessage: contenidoNormalizado
+      userMessage: contenidoNormalizado,
+      forceShortMode,
+      forceFactualMode,
+      crisis,
+      sessionRetention,
+      conversationPattern
     });
 
     let respuestaConSeguridad = respuestaValidada;
@@ -946,6 +988,14 @@ class OpenAIService {
         }
       );
     }
+    respuestaConSeguridad = this.enforceStructuredCrisisProtocol(respuestaConSeguridad, {
+      crisis,
+      emotional: analisisEmocional,
+      contextual: analisisContextual,
+      profile: perfilUsuario,
+      userMessage: contenidoNormalizado,
+      conversationHistory
+    });
 
     let respuestaConElecciones = respuestaConSeguridad;
     if (this.shouldAddChoices(analisisEmocional, analisisContextual, activeProtocol)) {
@@ -978,6 +1028,75 @@ class OpenAIService {
     };
 
     return { content: respuestaFinal, context };
+  }
+
+  shouldRequireStructuredCrisisProtocol({ crisis, contextual, emotional }) {
+    const riskLevel = String(crisis?.riskLevel || '').toUpperCase();
+    if (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') return true;
+    const intent = contextual?.intencion?.tipo;
+    const intensity = Number(emotional?.intensity || 0);
+    return intent === MESSAGE_INTENTS.CRISIS && intensity >= 8;
+  }
+
+  hasCrisisElement(text, regex) {
+    if (!text) return false;
+    return regex.test(text);
+  }
+
+  enforceStructuredCrisisProtocol(
+    respuesta,
+    {
+      crisis = null,
+      contextual = null,
+      emotional = null,
+      profile = null,
+      userMessage = '',
+      conversationHistory = []
+    } = {}
+  ) {
+    if (!this.shouldRequireStructuredCrisisProtocol({ crisis, contextual, emotional })) {
+      return respuesta;
+    }
+
+    const riskLevel = String(crisis?.riskLevel || '').toUpperCase();
+    const response = String(respuesta || '').trim();
+    const additions = [];
+
+    if (!this.hasCrisisElement(response, /(?:a salvo|segur[oa]\s+en\s+este\s+momento|peligro\s+inmediato)/i)) {
+      additions.push('¿Estás a salvo en este momento?');
+    }
+
+    if (
+      riskLevel === 'HIGH' &&
+      !this.hasCrisisElement(response, /(?:hacerte daño|lastimarte|medio[s]?\s+de\s+daño|algo\s+cerca\s+con\s+lo\s+que)/i)
+    ) {
+      additions.push('¿Tienes cerca algo con lo que podrías hacerte daño ahora?');
+    }
+
+    if (!this.hasCrisisElement(response, /(?:alguien\s+de\s+confianza|no\s+te\s+quedes\s+sol[ao]|contacta\s+a\s+alguien)/i)) {
+      additions.push('Si puedes, contacta ahora mismo a alguien de confianza para no quedarte sola/o.');
+    }
+
+    if (!this.hasCrisisElement(response, /(?:pr[oó]ximos?\s+5\s+minutos|ahora\s+mismo|paso\s+inmediato|de\s+inmediato)/i)) {
+      additions.push('Paso inmediato (5 minutos): aléjate de cualquier medio de daño, toma agua y avisa por mensaje a tu contacto de apoyo.');
+    }
+
+    const skipHeavyPhones = shouldSkipEmergencyPhoneNumbersInSafetyAppend(userMessage);
+    const hasEmergencyResources = this.hasCrisisElement(
+      response,
+      /(?:recursos?\s+de\s+emergencia|l[ií]nea\s+de\s+ayuda|linea\s+de\s+ayuda|988|911|112|emergencias)/i
+    );
+    if ((riskLevel === 'MEDIUM' || riskLevel === 'HIGH') && !skipHeavyPhones && !hasEmergencyResources) {
+      const emergencyInfo = resolveEmergencyInfoFromPreferences(profile?.preferences, profile?.phone || null);
+      const emergencyLines = formatEmergencyNumbers(emergencyInfo);
+      additions.push(`Recursos de ayuda inmediata:\n${emergencyLines}`);
+    }
+
+    if (additions.length === 0) return response;
+
+    const blockTitle = riskLevel === 'HIGH' ? '🛟 Protocolo de seguridad urgente' : '🛟 Protocolo de seguridad';
+    const block = `${blockTitle}:\n- ${additions.join('\n- ')}`;
+    return response ? `${response}\n\n${block}` : block;
   }
 
   /**
@@ -1263,6 +1382,28 @@ class OpenAIService {
       respuestaMejorada = this.reducirRespuesta(respuestaMejorada);
     }
 
+    // Guardrail de calidad: evitar más de una pregunta por turno.
+    respuestaMejorada = this.enforceSingleQuestion(respuestaMejorada);
+
+    // Guardrail de brevedad explícita: 1-2 frases y límite de caracteres fuera de crisis.
+    const shouldForceShort =
+      contexto?.forceShortMode === true &&
+      !['MEDIUM', 'HIGH'].includes(String(contexto?.crisis?.riskLevel || '').toUpperCase());
+    if (shouldForceShort) {
+      respuestaMejorada = this.enforceShortResponseQuality(respuestaMejorada);
+    }
+
+    // Guardrail factual: si la consulta parece factual, agregar cautela explícita si falta.
+    if (contexto?.forceFactualMode === true) {
+      respuestaMejorada = this.enforceFactualCaution(respuestaMejorada);
+    }
+
+    // Guardrail de calidad: reducir densidad de frases empáticas repetitivas.
+    respuestaMejorada = this.reduceStockEmpathyDensity(respuestaMejorada);
+
+    // Refuerzo de cierres de sesión: cierre suave + puente de continuidad cuando aplique.
+    respuestaMejorada = this.enforceSessionClosureBridge(respuestaMejorada, contexto);
+
     // NUNCA reemplazar por mensaje genérico si tenemos contenido válido (evitar pérdida de información)
     if (!respuestaMejorada || respuestaMejorada.trim().length < 5) {
       const truncado = (respuesta || '').trim();
@@ -1278,6 +1419,132 @@ class OpenAIService {
     }
     
     return respuestaMejorada;
+  }
+
+  enforceSingleQuestion(respuesta = '') {
+    if (!respuesta) return respuesta;
+    const questionMatches = respuesta.match(/[?]/g) || [];
+    if (questionMatches.length <= 1) return respuesta;
+
+    let firstQuestionSeen = false;
+    let normalized = '';
+    for (const ch of respuesta) {
+      if (ch === '?') {
+        if (!firstQuestionSeen) {
+          firstQuestionSeen = true;
+          normalized += ch;
+        } else {
+          normalized += '.';
+        }
+      } else if (ch === '¿' && firstQuestionSeen) {
+        normalized += ' ';
+      } else {
+        normalized += ch;
+      }
+    }
+    return normalized.replace(/\s{2,}/g, ' ').trim();
+  }
+
+  enforceShortResponseQuality(respuesta = '') {
+    if (!respuesta) return respuesta;
+    const maxChars = Number(process.env.CHAT_SHORT_MODE_MAX_CHARS || 180);
+    const sentences = respuesta.split(/(?<=[.!?])\s+/).filter((s) => s.trim().length > 0);
+    let compact = sentences.slice(0, 2).join(' ').trim() || respuesta.trim();
+    if (compact.length > maxChars) {
+      const truncated = compact.slice(0, maxChars);
+      const lastSpace = truncated.lastIndexOf(' ');
+      compact = `${(lastSpace > 0 ? truncated.slice(0, lastSpace) : truncated).trim()}…`;
+    }
+    return compact;
+  }
+
+  enforceFactualCaution(respuesta = '') {
+    if (!respuesta) return respuesta;
+    const alreadyCautious =
+      /no\s+tengo\s+suficiente\s+certeza|no\s+estoy\s+segur[oa]|podr[ií]a\s+estar\s+equivocad[oa]|si\s+quieres,\s+lo\s+verifico|puedo\s+verificar/i.test(
+        respuesta
+      );
+    if (alreadyCautious) return respuesta;
+    const suffix = ' Si quieres, puedo verificar este dato para confirmarlo con más precisión.';
+    if (respuesta.length >= THRESHOLDS.MAX_CHARACTERS_RESPONSE - suffix.length) return respuesta;
+    return `${respuesta}${suffix}`;
+  }
+
+  reduceStockEmpathyDensity(respuesta = '') {
+    if (!respuesta) return respuesta;
+
+    const stockMarkers = [
+      'entiendo',
+      'comprendo',
+      'es válido',
+      'es normal que',
+      'lo siento',
+      'lamento',
+      'estoy aquí contigo'
+    ];
+
+    const lower = respuesta.toLowerCase();
+    const matches = stockMarkers.filter((marker) => lower.includes(marker)).length;
+    if (matches <= 1) return respuesta;
+
+    // Si hay muchas fórmulas de empatía en cadena, limpiamos la apertura
+    // para mantener contención sin sonar mecánico.
+    let cleaned = respuesta
+      .replace(/^(entiendo\.?\s*)+/i, '')
+      .replace(/^(comprendo\.?\s*)+/i, '')
+      .replace(/^(lo siento\.?\s*)+/i, '')
+      .replace(/^(lamento\.?\s*)+/i, '')
+      .trim();
+
+    // Evitar duplicación literal tipo "es válido, es válido..."
+    cleaned = cleaned
+      .replace(/(es válido[,.]?\s*){2,}/gi, 'Es válido. ')
+      .replace(/(estoy aquí contigo[,.]?\s*){2,}/gi, 'Estoy aquí contigo. ')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+
+    if (!cleaned) return respuesta;
+    return cleaned;
+  }
+
+  shouldApplySessionClosure(contexto = {}) {
+    const riskLevel = String(contexto?.crisis?.riskLevel || '').toUpperCase();
+    if (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') return false;
+    const retention = contexto?.sessionRetention || {};
+    const closureRisk = contexto?.conversationPattern?.closureRisk === true;
+    return (
+      closureRisk ||
+      retention.likelyFarewell === true ||
+      retention.suggestBridgeClosing === true ||
+      retention.suggestFatigueClosing === true ||
+      retention.suggestThematicMicroClosure === true ||
+      retention.suggestCheckpointPause === true
+    );
+  }
+
+  enforceSessionClosureBridge(respuesta = '', contexto = {}) {
+    if (!respuesta || !this.shouldApplySessionClosure(contexto)) return respuesta;
+    const lower = respuesta.toLowerCase();
+    const hasBridge =
+      /cuando\s+quieras\s+seguimos|si\s+quieres,\s+por\s+hoy|retomamos\s+desde|aquí\s+estar[eé]\s+cuando\s+vuelvas/i.test(
+        lower
+      );
+    if (hasBridge) return respuesta;
+
+    const likelyFarewell = contexto?.sessionRetention?.likelyFarewell === true;
+    const bridge = likelyFarewell
+      ? ' Si quieres, por hoy lo dejamos aquí; cuando vuelvas, retomamos desde este punto.'
+      : ' Si te sirve, podemos cerrar aquí este tramo y retomarlo cuando quieras desde este punto.';
+
+    // En cierre, evitar terminar con doble pregunta abierta.
+    let base = this.enforceSingleQuestion(respuesta);
+    if (likelyFarewell) {
+      base = base.replace(/[?]/g, '.').replace(/[¿]/g, '');
+    }
+    if (base.length >= THRESHOLDS.MAX_CHARACTERS_RESPONSE - bridge.length) {
+      return base;
+    }
+    return `${base}${bridge}`;
   }
 
   /**

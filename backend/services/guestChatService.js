@@ -33,6 +33,8 @@ import {
 } from '../routes/chat/chatContextAnalysis.js';
 import { HISTORIAL_LIMITE } from '../routes/chat/chatConstants.js';
 import { analyzeConversationPattern } from './chat/conversationPatternAnalyzer.js';
+import { detectFactualModeFromMessage } from './chat/factualQueryDetector.js';
+import { detectShortModeFromSession } from './chat/responseLengthPreference.js';
 import { buildSessionRetentionPayload, withThematicMicroClosureRetention } from './sessionRetentionHints.js';
 import { inferChatSessionPhase } from './chat/sessionPhaseHints.js';
 import { scheduleRollingSummaryRefresh } from './conversationRollingSummaryService.js';
@@ -356,6 +358,11 @@ export async function sendGuestMessage(guestSession, contentRaw) {
   });
 
   const conversationPattern = analyzeConversationPattern(conversationHistory, content);
+  const forceShortMode = detectShortModeFromSession({
+    currentMessage: content,
+    conversationHistoryNewestFirst: conversationHistory
+  });
+  const forceFactualMode = detectFactualModeFromMessage({ currentMessage: content });
 
   const conversationRoll = await Conversation.findById(conversationId)
     .select('rollingSummary sessionIntention')
@@ -397,6 +404,8 @@ export async function sendGuestMessage(guestSession, contentRaw) {
     depthPreference: depthAnalysis?.depthPreference,
     inferredWritingStyle: writingStyle?.style,
     preferredResponseLength: engagement?.preferredResponseLength,
+    forceShortMode,
+    forceFactualMode,
     _promptTelemetry: {
       userId: null,
       conversationId,

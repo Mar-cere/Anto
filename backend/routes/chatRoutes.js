@@ -14,6 +14,8 @@ import {
   encodeChatPreferencesKey
 } from '../services/chat/chatTemplateSignals.js';
 import { analyzeConversationPattern } from '../services/chat/conversationPatternAnalyzer.js';
+import { detectFactualModeFromMessage } from '../services/chat/factualQueryDetector.js';
+import { detectShortModeFromSession } from '../services/chat/responseLengthPreference.js';
 import { buildHistoryForPromptFromMessages } from '../services/openai/openaiPromptBuilder.js';
 import { authenticateToken as protect } from '../middleware/auth.js';
 import { requireActiveSubscription } from '../middleware/checkSubscription.js';
@@ -1132,6 +1134,11 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             : sessionIntentionSafe === 'plan'
               ? 'action_first_then_validation'
               : 'balanced';
+        const forceShortMode = detectShortModeFromSession({
+          currentMessage: content,
+          conversationHistoryNewestFirst: conversationHistory
+        });
+        const forceFactualMode = detectFactualModeFromMessage({ currentMessage: content });
         
         const openaiContext = {
           rollingSummary: conversation?.rollingSummary || null,
@@ -1150,6 +1157,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           depthPreference: depthAnalysis?.depthPreference,
           inferredWritingStyle: writingStyle?.style,
           preferredResponseLength: engagement?.preferredResponseLength,
+          forceShortMode,
+          forceFactualMode,
           _promptTelemetry: {
             userId: req.user._id,
             conversationId,

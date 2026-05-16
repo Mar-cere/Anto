@@ -1,19 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="5" failures="0" errors="0" time="1.875">
-  <testsuite name="subscriptionPaymentEmail" errors="0" failures="0" skipped="0" timestamp="2026-05-15T12:12:33" time="0.156" tests="2">
-    <testcase classname="subscriptionPaymentEmail sin pagos previos no es renovación" name="subscriptionPaymentEmail sin pagos previos no es renovación" time="0.007">
+<testsuites name="jest tests" tests="15" failures="0" errors="0" time="0.823">
+  <testsuite name="openaiPromptBuilder — guardrails de brevedad/factual/identidad clínica" errors="0" failures="0" skipped="0" timestamp="2026-05-16T01:48:09" time="0.407" tests="3">
+    <testcase classname="openaiPromptBuilder — guardrails de brevedad/factual/identidad clínica inyecta preferencia de sesión cuando forceShortMode está activo sin crisis" name="openaiPromptBuilder — guardrails de brevedad/factual/identidad clínica inyecta preferencia de sesión cuando forceShortMode está activo sin crisis" time="0.002">
     </testcase>
-    <testcase classname="subscriptionPaymentEmail con pago previo distinto es renovación" name="subscriptionPaymentEmail con pago previo distinto es renovación" time="0.001">
+    <testcase classname="openaiPromptBuilder — guardrails de brevedad/factual/identidad clínica no fuerza mensaje de brevedad cuando hay riesgo de crisis" name="openaiPromptBuilder — guardrails de brevedad/factual/identidad clínica no fuerza mensaje de brevedad cuando hay riesgo de crisis" time="0">
     </testcase>
-  </testsuite>
-  <testsuite name="subscriptionRenewalEmail plantilla" errors="0" failures="0" skipped="0" timestamp="2026-05-15T12:12:33" time="0.827" tests="1">
-    <testcase classname="subscriptionRenewalEmail plantilla asunto de renovación; comprobante y tono de otro periodo" name="subscriptionRenewalEmail plantilla asunto de renovación; comprobante y tono de otro periodo" time="0.043">
+    <testcase classname="openaiPromptBuilder — guardrails de brevedad/factual/identidad clínica mantiene prioridad clínica al activar modo factual con carga emocional alta" name="openaiPromptBuilder — guardrails de brevedad/factual/identidad clínica mantiene prioridad clínica al activar modo factual con carga emocional alta" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="AppleReceiptService processSubscription idempotencia" errors="0" failures="0" skipped="0" timestamp="2026-05-15T12:12:33" time="1.714" tests="2">
-    <testcase classname="AppleReceiptService processSubscription idempotencia dos llamadas con el mismo recibo no duplican Transaction" name="AppleReceiptService processSubscription idempotencia dos llamadas con el mismo recibo no duplican Transaction" time="0.701">
+  <testsuite name="prompt regression golden (#119)" errors="0" failures="0" skipped="0" timestamp="2026-05-16T01:48:09" time="0.174" tests="6">
+    <testcase classname="prompt regression golden (#119) BASE_ASSISTANT_PROMPT mantiene anclas de seguridad y anti-minimización en crisis" name="prompt regression golden (#119) BASE_ASSISTANT_PROMPT mantiene anclas de seguridad y anti-minimización en crisis" time="0.001">
     </testcase>
-    <testcase classname="AppleReceiptService processSubscription idempotencia con dos líneas del mismo product_id elige la que caduca más tarde (no solo la compra más reciente)" name="AppleReceiptService processSubscription idempotencia con dos líneas del mismo product_id elige la que caduca más tarde (no solo la compra más reciente)" time="0.025">
+    <testcase classname="prompt regression golden (#119) caso vnp_high_intensity" name="prompt regression golden (#119) caso vnp_high_intensity" time="0.001">
+    </testcase>
+    <testcase classname="prompt regression golden (#119) caso low_confidence_clarify" name="prompt regression golden (#119) caso low_confidence_clarify" time="0.001">
+    </testcase>
+    <testcase classname="prompt regression golden (#119) caso understanding_non_baseline" name="prompt regression golden (#119) caso understanding_non_baseline" time="0">
+    </testcase>
+    <testcase classname="prompt regression golden (#119) caso crisis_medium_prepended" name="prompt regression golden (#119) caso crisis_medium_prepended" time="0">
+    </testcase>
+    <testcase classname="prompt regression golden (#119) caso session_phase_acute_closure_policy" name="prompt regression golden (#119) caso session_phase_acute_closure_policy" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="openaiService — guardrails de calidad de respuesta" errors="0" failures="0" skipped="0" timestamp="2026-05-16T01:48:09" time="0.217" tests="6">
+    <testcase classname="openaiService — guardrails de calidad de respuesta enforceSingleQuestion deja solo una pregunta" name="openaiService — guardrails de calidad de respuesta enforceSingleQuestion deja solo una pregunta" time="0">
+    </testcase>
+    <testcase classname="openaiService — guardrails de calidad de respuesta enforceShortResponseQuality limita longitud y frases" name="openaiService — guardrails de calidad de respuesta enforceShortResponseQuality limita longitud y frases" time="0">
+    </testcase>
+    <testcase classname="openaiService — guardrails de calidad de respuesta enforceFactualCaution agrega cautela cuando falta" name="openaiService — guardrails de calidad de respuesta enforceFactualCaution agrega cautela cuando falta" time="0">
+    </testcase>
+    <testcase classname="openaiService — guardrails de calidad de respuesta reduceStockEmpathyDensity limpia repeticiones de empatía mecánica" name="openaiService — guardrails de calidad de respuesta reduceStockEmpathyDensity limpia repeticiones de empatía mecánica" time="0.001">
+    </testcase>
+    <testcase classname="openaiService — guardrails de calidad de respuesta enforceSessionClosureBridge agrega cierre suave cuando hay señal de cierre" name="openaiService — guardrails de calidad de respuesta enforceSessionClosureBridge agrega cierre suave cuando hay señal de cierre" time="0">
+    </testcase>
+    <testcase classname="openaiService — guardrails de calidad de respuesta enforceSessionClosureBridge no aplica en crisis MEDIUM/HIGH" name="openaiService — guardrails de calidad de respuesta enforceSessionClosureBridge no aplica en crisis MEDIUM/HIGH" time="0">
     </testcase>
   </testsuite>
 </testsuites>
