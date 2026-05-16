@@ -319,7 +319,11 @@ class EmailMarketingService {
         processed: 0,
         sent: 0,
         failed: 0,
-        requireMinSessions
+        requireMinSessions,
+        trialGiftDays: getWeeklySummaryTrialGiftDays(),
+        trialGiftApplied: 0,
+        trialGiftSkipped: 0,
+        trialGiftErrors: 0
       };
 
       const candidateFilter = buildWeeklySummaryCandidateFilter(yearWeekKey, requireMinSessions);
@@ -366,9 +370,13 @@ class EmailMarketingService {
             try {
               const gift = await applyWeeklySummaryTrialGift(user._id);
               if (gift.applied) {
+                results.trialGiftApplied += 1;
                 logger.info(`[EmailMarketing] Regalo trial post-correo aplicado a ${user.email}`);
+              } else {
+                results.trialGiftSkipped += 1;
               }
             } catch (giftErr) {
+              results.trialGiftErrors += 1;
               logger.error(`[EmailMarketing] Regalo trial post-correo falló (${user.email}):`, giftErr.message);
             }
           }
@@ -385,7 +393,16 @@ class EmailMarketingService {
       return results;
     } catch (error) {
       logger.error('[EmailMarketing] Error en sendWeeklySummaryEmails:', error);
-      return { yearWeekKey: null, processed: 0, sent: 0, failed: 0 };
+      return {
+        yearWeekKey: null,
+        processed: 0,
+        sent: 0,
+        failed: 0,
+        trialGiftDays: getWeeklySummaryTrialGiftDays(),
+        trialGiftApplied: 0,
+        trialGiftSkipped: 0,
+        trialGiftErrors: 0
+      };
     }
   }
 

@@ -44,6 +44,10 @@ async function main() {
     console.log(`   ✅ Enviados: ${results.sent}`);
     console.log(`   ❌ Fallidos: ${results.failed}`);
     console.log(`   🔄 Usuarios reclamados/enviados en este run: ${results.processed}`);
+    console.log(`   🎁 Regalo trial configurado: +${results.trialGiftDays ?? 2} día(s)`);
+    console.log(`   🎁 Regalo trial aplicado: ${results.trialGiftApplied ?? 0}`);
+    console.log(`   🎁 Regalo trial omitido (no elegibles): ${results.trialGiftSkipped ?? 0}`);
+    console.log(`   ⚠️ Regalo trial con error: ${results.trialGiftErrors ?? 0}`);
 
     await mongoose.disconnect();
     console.log('\n✅ Proceso completado');
