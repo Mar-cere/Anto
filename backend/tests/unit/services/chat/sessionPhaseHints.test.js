@@ -70,6 +70,21 @@ describe('inferChatSessionPhase', () => {
       })
     ).toBe('default');
   });
+
+  it('reconoce calma en inglés con al menos dos turnos de usuario', () => {
+    expect(
+      inferChatSessionPhase({
+        riskLevel: 'LOW',
+        contextualAnalysis: { intencion: baseCtx },
+        userContent: 'I feel good today',
+        conversationHistoryNewestFirst: [
+          { role: 'user', content: 'Hi' },
+          { role: 'assistant', content: 'Hello' },
+          { role: 'user', content: 'I feel good today' }
+        ]
+      })
+    ).toBe('settled');
+  });
 });
 
 describe('getSessionPhaseSystemSnippet', () => {

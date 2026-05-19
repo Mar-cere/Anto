@@ -59,7 +59,8 @@ import {
   stripPrematureSessionClosurePhrases,
   responseHasSessionClosureBridge,
   getSessionClosureBridge,
-  resolveLanguageFromContext
+  resolveLanguageFromContext,
+  shouldForceSessionClosureBridge
 } from './sessionRetentionHints.js';
 
 dotenv.config();
@@ -1521,15 +1522,19 @@ class OpenAIService {
   }
 
   shouldApplySessionClosure(contexto = {}) {
-    return shouldOrientSessionClosure(contexto);
+    return shouldForceSessionClosureBridge(contexto);
   }
 
   enforceSessionClosureBridge(respuesta = '', contexto = {}) {
     if (!respuesta || !this.shouldApplySessionClosure(contexto)) return respuesta;
     if (responseHasSessionClosureBridge(respuesta)) return respuesta;
 
-    const language = resolveLanguageFromContext(contexto);
     const likelyFarewell = contexto?.sessionRetention?.likelyFarewell === true;
+    if (!likelyFarewell && /\?/.test(respuesta)) {
+      return respuesta;
+    }
+
+    const language = resolveLanguageFromContext(contexto);
     const bridge = getSessionClosureBridge(language, likelyFarewell);
 
     // En cierre, evitar terminar con doble pregunta abierta.

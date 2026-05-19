@@ -94,6 +94,14 @@ export function useHabitsTexts() {
     () => ({
       ...TEXTS,
       ...(translated || {}),
+      DAILY:
+        translated?.DAILY ||
+        translated?.CREATE_MODAL_FREQUENCY_DAILY ||
+        TEXTS.DAILY,
+      WEEKLY:
+        translated?.WEEKLY ||
+        translated?.CREATE_MODAL_FREQUENCY_WEEKLY ||
+        TEXTS.WEEKLY,
       SEARCH_PLACEHOLDER:
         translated?.SEARCH_PLACEHOLDER || TEXTS.SEARCH_PLACEHOLDER,
       ARCHIVE_CONFIRM_MESSAGE_TEMPLATE:
@@ -102,6 +110,24 @@ export function useHabitsTexts() {
     }),
     [translated],
   );
+}
+
+/** Textos de sistema guardados en español al crear hábitos desde el chat. */
+const STORED_HABIT_COPY_KEYS = {
+  'Hábito acordado en el chat': 'CHAT_AGREED_HABIT_DESCRIPTION',
+};
+
+/**
+ * @param {string|undefined|null} value
+ * @param {Record<string, string>} texts
+ * @returns {string|undefined|null}
+ */
+export function localizeHabitDisplayText(value, texts) {
+  if (!value || typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  const key = STORED_HABIT_COPY_KEYS[trimmed];
+  if (key && texts[key]) return texts[key];
+  return value;
 }
 
 export const STATUS_BAR_STYLE = 'dark-content';
@@ -172,24 +198,27 @@ export const SESSION_EXPIRED_DELAY = 100;
 export function createHabitsColors(colors) {
   return {
     PRIMARY: colors.primary,
-    WHITE: colors.white,
+    WHITE: colors.textOnPrimary,
     BACKGROUND: colors.background,
     ACCENT: colors.primaryBright ?? colors.primary,
+    TEXT_PRIMARY: colors.text,
+    TEXT_SECONDARY: colors.textSecondary,
+    TEXT_MUTED: colors.textMuted,
     ERROR: colors.error,
     SUCCESS: colors.success,
     WARNING: colors.warning,
     INFO: colors.info,
-    ARCHIVE: 'rgba(255, 152, 0, 0.9)',
-    DELETE: 'rgba(244, 67, 54, 0.9)',
+    ARCHIVE: colors.warning ?? 'rgba(255, 152, 0, 0.9)',
+    DELETE: colors.error ?? 'rgba(244, 67, 54, 0.9)',
     CARD_BACKGROUND: colors.cardBackground ?? colors.surface,
-    CARD_ARCHIVED_BACKGROUND: 'rgba(36, 35, 79, 0.04)',
+    CARD_ARCHIVED_BACKGROUND: colors.glassFill ?? colors.accentLineSoft,
     CARD_BORDER: colors.border,
-    CARD_ARCHIVED_BORDER: 'rgba(36, 35, 79, 0.06)',
+    CARD_ARCHIVED_BORDER: colors.border,
     ICON_BACKGROUND: colors.accentLineSoft,
-    ICON_ARCHIVED_BACKGROUND: 'rgba(36, 35, 79, 0.06)',
-    COMPLETE_BUTTON_BACKGROUND: colors.accentLineSoft,
-    COMPLETE_BUTTON_COMPLETED_BACKGROUND: 'rgba(76, 175, 80, 0.12)',
-    PROGRESS_INDICATOR_BACKGROUND: colors.accentLineSoft,
+    ICON_ARCHIVED_BACKGROUND: colors.glassFill ?? colors.accentLineSoft,
+    COMPLETE_BUTTON_BACKGROUND: colors.glassFill ?? colors.accentLineSoft,
+    COMPLETE_BUTTON_COMPLETED_BACKGROUND: colors.successSoft ?? 'rgba(76, 175, 80, 0.12)',
+    PROGRESS_INDICATOR_BACKGROUND: colors.glassFillStrong ?? colors.accentLineSoft,
     PROGRESS_INDICATOR_BORDER: colors.accentLine ?? colors.border,
     FILTER_BACKGROUND: colors.glassFill ?? colors.accentLineSoft,
     HEADER_BACKGROUND: colors.chromeHeader ?? colors.background,

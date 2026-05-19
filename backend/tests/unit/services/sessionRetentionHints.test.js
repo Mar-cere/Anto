@@ -11,7 +11,9 @@ import {
   stripPrematureSessionClosurePhrases,
   responseHasSessionClosureBridge,
   isGreetingOrCheckInMessage,
-  getSessionClosureBridge
+  getSessionClosureBridge,
+  isOngoingEmotionalShareMessage,
+  shouldForceSessionClosureBridge
 } from '../../../services/sessionRetentionHints.js';
 
 describe('sessionRetentionHints', () => {
@@ -40,6 +42,14 @@ describe('sessionRetentionHints', () => {
     it('devuelve puente en el idioma pedido', () => {
       expect(getSessionClosureBridge('en', false)).toMatch(/close this segment/i);
       expect(getSessionClosureBridge('es', false)).toMatch(/cerrar aqu[ií] este tramo/i);
+    });
+  });
+
+  describe('isOngoingEmotionalShareMessage', () => {
+    it('detecta compartir estado sin despedida', () => {
+      expect(isOngoingEmotionalShareMessage('I feel good today')).toBe(true);
+      expect(isOngoingEmotionalShareMessage('Hoy me siento mejor')).toBe(true);
+      expect(isOngoingEmotionalShareMessage('chau gracias')).toBe(false);
     });
   });
 
@@ -131,7 +141,7 @@ describe('sessionRetentionHints', () => {
 
     it('checkpoint de pausa cuando hay racha de preguntas del asistente', () => {
       const history = [];
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 7; i++) {
         history.push({ role: 'user', content: `u${i}` });
         history.push({ role: 'assistant', content: `a${i} ¿sigue?` });
       }
@@ -142,7 +152,7 @@ describe('sessionRetentionHints', () => {
         threadMessageLimit: 100,
         conversationPattern: { questionStreakCount: 2 }
       });
-      expect(p.userTurnCount).toBe(5);
+      expect(p.userTurnCount).toBe(7);
       expect(p.suggestCheckpointPause).toBe(true);
     });
 
@@ -231,7 +241,11 @@ describe('sessionRetentionHints', () => {
         { role: 'user', content: 'uf', metadata: { context: { emotional: { intensity: 8 } } } },
         { role: 'assistant', content: 'd' },
         { role: 'user', content: 'antes peor', metadata: { context: { emotional: { intensity: 9 } } } },
-        { role: 'assistant', content: 'e' }
+        { role: 'assistant', content: 'e' },
+        { role: 'user', content: 'm6', metadata: { context: { emotional: { intensity: 7 } } } },
+        { role: 'assistant', content: 'f6' },
+        { role: 'user', content: 'm7', metadata: { context: { emotional: { intensity: 7 } } } },
+        { role: 'assistant', content: 'f7' }
       ];
       const base = buildSessionRetentionPayload({
         conversationHistoryNewestFirst: newestFirst,
@@ -257,7 +271,11 @@ describe('sessionRetentionHints', () => {
         { role: 'user', content: 'uf', metadata: { context: { emotional: { intensity: 8 } } } },
         { role: 'assistant', content: 'd' },
         { role: 'user', content: 'antes peor', metadata: { context: { emotional: { intensity: 9 } } } },
-        { role: 'assistant', content: 'e' }
+        { role: 'assistant', content: 'e' },
+        { role: 'user', content: 'm6', metadata: { context: { emotional: { intensity: 7 } } } },
+        { role: 'assistant', content: 'f6' },
+        { role: 'user', content: 'm7', metadata: { context: { emotional: { intensity: 7 } } } },
+        { role: 'assistant', content: 'f7' }
       ];
       const base = buildSessionRetentionPayload({
         conversationHistoryNewestFirst: newestFirst,
@@ -274,11 +292,11 @@ describe('sessionRetentionHints', () => {
 
     it('no activa si ya aplica cierre por fatiga (evita duplicar instrucciones)', () => {
       const chrono = [];
-      for (let t = 0; t < 9; t++) {
+      for (let t = 0; t < 12; t++) {
         chrono.push({
           role: 'user',
-          content: t === 8 ? 'por ahora estoy ok' : `m${t}`,
-          metadata: { context: { emotional: { intensity: t === 8 ? 5 : 9 } } }
+          content: t === 11 ? 'por ahora estoy ok' : `m${t}`,
+          metadata: { context: { emotional: { intensity: t === 11 ? 5 : 9 } } }
         });
         chrono.push({ role: 'assistant', content: 'ok' });
       }
@@ -338,36 +356,109 @@ describe('sessionRetentionHints', () => {
       ).toBe('opening');
     });
 
-    it('marca may_close con señales de retención tras mínimo orientativo de turnos', () => {
+    it('marca may_close con señales fuertes de cierre tras mínimo de turnos', () => {
       const r = evaluateConversationClosureReadiness({
-        sessionRetention: { userTurnCount: 5, suggestBridgeClosing: true },
+        sessionRetention: { userTurnCount: 12, suggestFatigueClosing: true },
         conversationPattern: {}
       });
       expect(r.phase).toBe('may_close');
-      expect(r.reasons).toContain('senal_retencion');
+      expect(r.reasons).toContain('senal_cierre');
     });
 
-    it('marca developing con 5+ turnos pero sin señal de cierre', () => {
+    it('suggestBridgeClosing solo mantiene developing, no may_close', () => {
+      const r = evaluateConversationClosureReadiness({
+        sessionRetention: { userTurnCount: 8, suggestBridgeClosing: true },
+        conversationPattern: {}
+      });
+      expect(r.phase).toBe('developing');
+    });
+
+    it('marca opening al compartir estado emocional breve', () => {
       expect(
         evaluateConversationClosureReadiness({
-          sessionRetention: { userTurnCount: 5 },
+          sessionRetention: { userTurnCount: 8, suggestBridgeClosing: true },
+          userMessage: 'I feel good today'
+        }).phase
+      ).toBe('opening');
+    });
+
+    it('marca developing con 7+ turnos pero sin señal de cierre', () => {
+      expect(
+        evaluateConversationClosureReadiness({
+          sessionRetention: { userTurnCount: 8 },
           conversationPattern: {},
           sessionPhase: 'default'
         }).phase
       ).toBe('developing');
     });
 
-    it('shouldOrientSessionClosure respeta crisis y fase may_close', () => {
+    it('shouldForceSessionClosureBridge solo con despedida, fatiga o closureRisk', () => {
+      expect(
+        shouldForceSessionClosureBridge({
+          userMessage: 'I feel good today',
+          sessionRetention: { suggestBridgeClosing: true, userTurnCount: 8 },
+          conversationPattern: { closureRisk: false },
+          crisis: { riskLevel: 'LOW' }
+        })
+      ).toBe(false);
+      expect(
+        shouldForceSessionClosureBridge({
+          userMessage: 'Hi',
+          sessionRetention: { suggestFatigueClosing: true, userTurnCount: 12 },
+          conversationPattern: { closureRisk: false },
+          crisis: { riskLevel: 'LOW' }
+        })
+      ).toBe(false);
+      expect(
+        shouldForceSessionClosureBridge({
+          userMessage: 'Thanks, bye for now',
+          sessionRetention: { likelyFarewell: true, userTurnCount: 4 },
+          conversationPattern: { closureRisk: false },
+          crisis: { riskLevel: 'LOW' }
+        })
+      ).toBe(true);
+      expect(
+        shouldForceSessionClosureBridge({
+          userMessage: 'Still thinking about it',
+          sessionRetention: { suggestFatigueClosing: true, userTurnCount: 12 },
+          conversationPattern: { closureRisk: false },
+          crisis: { riskLevel: 'LOW' }
+        })
+      ).toBe(true);
+      expect(
+        shouldForceSessionClosureBridge({
+          userMessage: 'Still thinking about it',
+          sessionRetention: { userTurnCount: 8 },
+          conversationPattern: { closureRisk: true },
+          crisis: { riskLevel: 'LOW' }
+        })
+      ).toBe(true);
+      expect(
+        shouldForceSessionClosureBridge({
+          userMessage: 'chau',
+          sessionRetention: { likelyFarewell: true },
+          crisis: { riskLevel: 'HIGH' }
+        })
+      ).toBe(false);
+    });
+
+    it('shouldOrientSessionClosure respeta crisis y no cierra solo por bridge suave', () => {
       expect(
         shouldOrientSessionClosure({
           crisis: { riskLevel: 'HIGH' },
-          sessionRetention: { userTurnCount: 6, suggestBridgeClosing: true }
+          sessionRetention: { userTurnCount: 8, suggestBridgeClosing: true }
         })
       ).toBe(false);
       expect(
         shouldOrientSessionClosure({
           crisis: { riskLevel: 'LOW' },
-          sessionRetention: { userTurnCount: 6, suggestBridgeClosing: true }
+          sessionRetention: { userTurnCount: 8, suggestBridgeClosing: true }
+        })
+      ).toBe(false);
+      expect(
+        shouldOrientSessionClosure({
+          crisis: { riskLevel: 'LOW' },
+          sessionRetention: { userTurnCount: 12, suggestFatigueClosing: true }
         })
       ).toBe(true);
     });
@@ -404,7 +495,7 @@ describe('sessionRetentionHints', () => {
     it('conserva puente cuando may_close aplica', () => {
       const raw = 'Gracias por compartir. Si te sirve, podemos cerrar aquí este tramo y retomarlo cuando quieras.';
       const out = stripPrematureSessionClosurePhrases(raw, {
-        sessionRetention: { userTurnCount: 6, suggestBridgeClosing: true },
+        sessionRetention: { userTurnCount: 12, suggestFatigueClosing: true },
         crisis: { riskLevel: 'LOW' }
       });
       expect(responseHasSessionClosureBridge(out)).toBe(true);
@@ -436,7 +527,7 @@ describe('sessionRetentionHints', () => {
 
     it('incluye checkpoint si aplica patrón de preguntas', () => {
       const history = [];
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 7; i++) {
         history.push({ role: 'user', content: `u${i}` });
         history.push({ role: 'assistant', content: `a${i}?` });
       }

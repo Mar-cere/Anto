@@ -12,6 +12,7 @@ import {
   TEXTS,
   getDefaultFormData,
   SWIPE_THRESHOLD,
+  localizeHabitDisplayText,
 } from '../habitsScreenConstants';
 
 describe('habitsScreenConstants', () => {
@@ -56,6 +57,19 @@ describe('habitsScreenConstants', () => {
   describe('SWIPE_THRESHOLD', () => {
     it('debe ser un número', () => {
       expect(typeof SWIPE_THRESHOLD).toBe('number');
+    });
+  });
+
+  describe('localizeHabitDisplayText', () => {
+    it('traduce textos de sistema guardados en español (título o descripción)', () => {
+      const texts = { CHAT_AGREED_HABIT_DESCRIPTION: 'Habit agreed in chat' };
+      expect(localizeHabitDisplayText('Hábito acordado en el chat', texts)).toBe(
+        'Habit agreed in chat',
+      );
+      expect(localizeHabitDisplayText('Tomar agua', texts)).toBe('Tomar agua');
+      expect(localizeHabitDisplayText('  Hábito acordado en el chat  ', texts)).toBe(
+        'Habit agreed in chat',
+      );
     });
   });
 });

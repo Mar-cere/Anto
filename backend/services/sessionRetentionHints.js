@@ -9,7 +9,7 @@ const SNIPPET_MAX_CHARS = 1250;
 const SNIPPET_COUNT_CAP = 500_000;
 
 /** Piso orientativo de turnos del usuario antes de orientar cierre de tramo (no regla rígida). */
-export const CLOSURE_MIN_USER_TURNS = 5;
+export const CLOSURE_MIN_USER_TURNS = 7;
 
 /** Frases de puente de cierre que no deben aparecer fuera de fase `may_close`. */
 export const PREMATURE_CLOSURE_PHRASE_RES = [
@@ -89,7 +89,8 @@ export function evaluateConversationClosureReadiness({
   if (
     intent === MESSAGE_INTENTS.GREETING ||
     retention.suggestReturningUserWarmOpen === true ||
-    isGreetingOrCheckInMessage(userMessage)
+    isGreetingOrCheckInMessage(userMessage) ||
+    isOngoingEmotionalShareMessage(userMessage)
   ) {
     return { phase: 'opening', reasons: ['saludo_o_apertura'] };
   }
@@ -108,6 +109,11 @@ export function evaluateConversationClosureReadiness({
     retention.suggestThematicMicroClosure === true ||
     retention.suggestCheckpointPause === true;
 
+  const hardCloseSignals =
+    retention.likelyFarewell === true ||
+    retention.suggestFatigueClosing === true ||
+    retention.suggestThematicMicroClosure === true;
+
   const substantiveThread =
     Number.isFinite(userTurnCount) && userTurnCount >= CLOSURE_MIN_USER_TURNS;
 
@@ -115,16 +121,16 @@ export function evaluateConversationClosureReadiness({
     return { phase: 'opening', reasons: ['hilo_reciente'] };
   }
 
-  if (retentionSignals) {
-    return { phase: 'may_close', reasons: ['senal_retencion'] };
-  }
-
-  if (phaseNorm === 'settled') {
-    return { phase: 'may_close', reasons: ['fase_aterrizada'] };
+  if (hardCloseSignals) {
+    return { phase: 'may_close', reasons: ['senal_cierre'] };
   }
 
   if (retention.nearThreadLimit === true) {
     return { phase: 'may_close', reasons: ['limite_tecnico_hilo'] };
+  }
+
+  if (retentionSignals) {
+    return { phase: 'developing', reasons: ['intercambio_en_curso'] };
   }
 
   return { phase: 'developing', reasons: ['intercambio_en_curso'] };
@@ -176,6 +182,7 @@ export function shouldOrientSessionClosure(contexto = {}) {
   if (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') return false;
 
   if (isGreetingOrCheckInMessage(contexto?.userMessage)) return false;
+  if (isOngoingEmotionalShareMessage(contexto?.userMessage)) return false;
 
   const intent = contexto?.contextual?.intencion?.tipo;
   if (intent === MESSAGE_INTENTS.GREETING) return false;
@@ -188,6 +195,28 @@ export function shouldOrientSessionClosure(contexto = {}) {
     userMessage: contexto?.userMessage
   });
   return phase === 'may_close';
+}
+
+/**
+ * Solo inyectar puente de cierre mecánico en salida clara o fatiga real (no en pistas suaves del prompt).
+ * @param {object} contexto
+ * @returns {boolean}
+ */
+export function shouldForceSessionClosureBridge(contexto = {}) {
+  const riskLevel = String(contexto?.crisis?.riskLevel || '').toUpperCase();
+  if (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') return false;
+
+  if (isGreetingOrCheckInMessage(contexto?.userMessage)) return false;
+  if (isOngoingEmotionalShareMessage(contexto?.userMessage)) return false;
+
+  const retention = contexto?.sessionRetention || {};
+  const pattern = contexto?.conversationPattern || {};
+
+  if (retention.likelyFarewell === true) return true;
+  if (retention.suggestFatigueClosing === true) return true;
+  if (pattern.closureRisk === true) return true;
+
+  return false;
 }
 
 /** @type {RegExp[]} */
@@ -207,6 +236,21 @@ export function detectLikelyFarewell(content) {
   const t = (content || '').trim();
   if (t.length < 2) return false;
   return LIKELY_FAREWELL_RES.some((re) => re.test(t));
+}
+
+/**
+ * Mensaje corto que comparte cómo está la persona (apertura o seguimiento), no cierre.
+ * @param {string} [content]
+ * @returns {boolean}
+ */
+export function isOngoingEmotionalShareMessage(content) {
+  const t = (content || '').trim();
+  if (!t || t.length > 140) return false;
+  if (isGreetingOrCheckInMessage(t)) return false;
+  if (detectLikelyFarewell(t)) return false;
+  return /\b(feel(?:ing)?|i'?m|me siento|estoy|hoy|today|good|well|okay|ok|bad|anxious|sad|happy|bien|mal|cansad|triste|ansios|contento|agotad|grateful|stressed|worried|calm|better|worse)\b/i.test(
+    t
+  );
 }
 
 /**
@@ -299,10 +343,10 @@ export function buildSessionRetentionPayload({
     !isGreeting &&
     !suggestFirstTimeExpectation &&
     userTurnCount >= CLOSURE_MIN_USER_TURNS &&
-    userTurnCount <= 8;
+    userTurnCount <= 10;
 
   const suggestFatigueClosing =
-    userTurnCount >= 9 && !likelyFarewell && !suggestFirstTimeExpectation;
+    userTurnCount >= 12 && !likelyFarewell && !suggestFirstTimeExpectation;
 
   const suggestCheckpointPause =
     !likelyFarewell &&

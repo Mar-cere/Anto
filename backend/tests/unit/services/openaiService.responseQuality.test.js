@@ -77,22 +77,36 @@ describe('openaiService — guardrails de calidad de respuesta', () => {
     expect(output).not.toMatch(/close this segment|cerrar aqu[ií] este tramo/i);
   });
 
-  it('enforceSessionClosureBridge agrega puente en inglés cuando aplica', () => {
+  it('enforceSessionClosureBridge agrega puente en inglés solo con señal fuerte', () => {
     const input = 'Thanks for sharing all of this with me.';
     const output = openaiService.enforceSessionClosureBridge(input, {
-      sessionRetention: { suggestBridgeClosing: true, userTurnCount: 6 },
+      sessionRetention: { suggestFatigueClosing: true, userTurnCount: 12 },
       conversationPattern: { closureRisk: false },
       profile: { preferences: { language: 'en' } },
       crisis: { riskLevel: 'LOW' }
     });
-    expect(output).toMatch(/close this segment|pick it up whenever/i);
+    expect(output).toMatch(/close this segment|pick it up whenever|leave it here for today/i);
     expect(output).not.toMatch(/cerrar aqu[ií] este tramo/i);
   });
 
-  it('enforceSessionClosureBridge sí aplica con señal de retención y hilo sustantivo', () => {
+  it('enforceSessionClosureBridge no aplica con suggestBridgeClosing ni pregunta abierta', () => {
+    const input =
+      'That is good to hear. What has been making today feel good for you?';
+    const output = openaiService.enforceSessionClosureBridge(input, {
+      userMessage: 'I feel good today',
+      sessionRetention: { suggestBridgeClosing: true, userTurnCount: 8 },
+      conversationPattern: { closureRisk: false },
+      profile: { preferences: { language: 'en' } },
+      crisis: { riskLevel: 'LOW' }
+    });
+    expect(output).toBe(input);
+    expect(output).not.toMatch(/close this segment/i);
+  });
+
+  it('enforceSessionClosureBridge sí aplica con señal de fatiga y hilo sustantivo', () => {
     const input = 'Gracias por contarme todo esto.';
     const output = openaiService.enforceSessionClosureBridge(input, {
-      sessionRetention: { suggestBridgeClosing: true, userTurnCount: 5 },
+      sessionRetention: { suggestFatigueClosing: true, userTurnCount: 12 },
       conversationPattern: { closureRisk: false },
       crisis: { riskLevel: 'LOW' }
     });
@@ -111,15 +125,15 @@ describe('openaiService — guardrails de calidad de respuesta', () => {
 
   it('stripPrematureSessionClosurePhrases quita cierre prematuro del modelo en saludo', () => {
     const input =
-      'Hola, ¿qué tal? Si te sirve, podemos cerrar aquí este tramo y retomarlo cuando quieras desde este punto.';
+      'That is good to hear. What has been making today feel good for you? If it helps, we can close this segment here and pick it up whenever you want from this point.';
     const ctx = {
-      sessionRetention: { userTurnCount: 1, suggestReturningUserWarmOpen: true },
-      contextual: { intencion: { tipo: 'GREETING' } },
+      userMessage: 'I feel good today',
+      sessionRetention: { userTurnCount: 8, suggestBridgeClosing: true },
       crisis: { riskLevel: 'LOW' }
     };
     const stripped = stripPrematureSessionClosurePhrases(input, ctx);
     const output = openaiService.enforceSessionClosureBridge(stripped, ctx);
-    expect(stripped).not.toMatch(/cerrar aqu[ií] este tramo/i);
-    expect(output).not.toMatch(/cerrar aqu[ií] este tramo/i);
+    expect(stripped).not.toMatch(/close this segment/i);
+    expect(output).not.toMatch(/close this segment/i);
   });
 });

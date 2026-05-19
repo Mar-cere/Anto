@@ -330,7 +330,7 @@ function createHabitsScreenStyles(colors, t, HC) {
       paddingHorizontal: 10,
     },
     summaryPillLabel: {
-      color: HC.ACCENT,
+      color: colors.textSecondary,
       fontSize: 11,
       fontWeight: '500',
     },
@@ -386,7 +386,7 @@ function createHabitsScreenStyles(colors, t, HC) {
       fontWeight: '600',
     },
     searchEmptyText: {
-      color: HC.ACCENT,
+      color: colors.textSecondary,
       fontSize: 13,
       textAlign: 'center',
     },

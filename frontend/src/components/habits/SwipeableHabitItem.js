@@ -62,6 +62,7 @@ import {
   SWIPE_THRESHOLD,
   useHabitsTexts,
   createHabitsColors,
+  localizeHabitDisplayText,
 } from '../../screens/habits/habitsScreenConstants';
 
 const ACTIVE_OPACITY = 0.7;
@@ -74,6 +75,8 @@ export default function SwipeableHabitItem({
   onArchive,
 }) {
   const TEXTS = useHabitsTexts();
+  const habitTitle = localizeHabitDisplayText(item.title, TEXTS);
+  const habitDescription = localizeHabitDisplayText(item.description, TEXTS);
   const translateX = useRef(new Animated.Value(0)).current;
   const deleteOpacity = useRef(new Animated.Value(ANIMATION_INITIAL_OPACITY)).current;
   const archiveOpacity = useRef(new Animated.Value(ANIMATION_INITIAL_OPACITY)).current;
@@ -212,12 +215,13 @@ export default function SwipeableHabitItem({
         habitTitle: {
           fontSize: 16,
           fontWeight: '600',
-          color: COLORS.WHITE,
+          color: COLORS.TEXT_PRIMARY,
           letterSpacing: -0.2,
         },
         habitDescription: {
           fontSize: 14,
-          color: COLORS.ACCENT,
+          color: COLORS.TEXT_SECONDARY,
+          lineHeight: 20,
         },
         habitFooter: { marginTop: CARD_FOOTER_MARGIN_TOP },
         habitStats: { flexDirection: 'row', gap: STAT_GAP },
@@ -228,7 +232,7 @@ export default function SwipeableHabitItem({
         },
         statText: {
           fontSize: 12,
-          color: COLORS.ACCENT,
+          color: COLORS.TEXT_SECONDARY,
         },
         completeButton: {
           width: COMPLETE_BUTTON_SIZE,
@@ -440,10 +444,10 @@ export default function SwipeableHabitItem({
                     />
                   </View>
                   <View style={styles.habitInfo}>
-                    <Text style={styles.habitTitle}>{item.title}</Text>
-                    {item.description ? (
+                    <Text style={styles.habitTitle}>{habitTitle}</Text>
+                    {habitDescription ? (
                       <Text style={styles.habitDescription} numberOfLines={2}>
-                        {item.description}
+                        {habitDescription}
                       </Text>
                     ) : null}
                   </View>
@@ -467,7 +471,7 @@ export default function SwipeableHabitItem({
                 <MaterialCommunityIcons
                   name={item.status?.completedToday ? 'check-circle' : 'circle-outline'}
                   size={28}
-                  color={item.status?.completedToday ? COLORS.SUCCESS : COLORS.ACCENT}
+                  color={item.status?.completedToday ? COLORS.SUCCESS : COLORS.TEXT_MUTED}
                 />
               </TouchableOpacity>
             </View>

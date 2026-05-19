@@ -5,7 +5,7 @@
 import { hasExplicitSuicidalOrSelfHarmLexicon } from '../../constants/crisis.js';
 
 const CALM_USER_PHRASE =
-  /\b(estoy bien|ahora estoy bien|mejor|más calm[oa]|solo (un )?poco de ansiedad|ya (estoy )?más tranquilo|por ahora estoy ok|no (es|está) tan mal)\b/i;
+  /\b(estoy bien|ahora estoy bien|mejor|más calm[oa]|solo (un )?poco de ansiedad|ya (estoy )?más tranquilo|por ahora estoy ok|no (es|está) tan mal|i feel good|i'?m feeling good|feeling (?:good|better|okay|ok|calm|fine)|i'?m (?:good|fine|okay|ok|better|calm)|today (?:i feel|feels?) good)\b/i;
 
 const IMMINENT_IN_MESSAGE =
   /\b(ahora mismo|en este momento voy|esta noche voy|ya no aguanto|voy a hacerlo|tal vez ahora|en un rato)\b/i;
