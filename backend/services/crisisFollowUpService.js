@@ -5,13 +5,13 @@
 import CrisisEvent from '../models/CrisisEvent.js';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
-import pushNotificationService from './pushNotificationService.js';
 import {
-  CHECK_INTERVAL_MS,
-  FOLLOW_UP_INTERVALS,
-  FIRST_FOLLOW_UP_HOURS_BY_RISK,
-  generateFollowUpMessage
+    CHECK_INTERVAL_MS,
+    FIRST_FOLLOW_UP_HOURS_BY_RISK,
+    FOLLOW_UP_INTERVALS,
+    generateFollowUpMessage
 } from './crisisFollowUp/index.js';
+import pushNotificationService from './pushNotificationService.js';
 
 class CrisisFollowUpService {
   constructor() {

@@ -1110,6 +1110,12 @@ export const TECHNIQUES = {
   GRATITUDE_TEMPLATE_INSERT_A11Y_PREFIX: 'Insert template:',
   GRATITUDE_TEMPLATE_INSERT_HINT:
     'Adds the phrase starter to the line currently focused',
+  GRATITUDE_TEMPLATE_CHIP_1_LABEL: 'Today I am grateful for…',
+  GRATITUDE_TEMPLATE_CHIP_1_PREFIX: 'Today I am grateful for ',
+  GRATITUDE_TEMPLATE_CHIP_2_LABEL: 'It helped me…',
+  GRATITUDE_TEMPLATE_CHIP_2_PREFIX: 'It helped me ',
+  GRATITUDE_TEMPLATE_CHIP_3_LABEL: 'I value…',
+  GRATITUDE_TEMPLATE_CHIP_3_PREFIX: 'I value ',
   GRATITUDE_LINE_1_PLACEHOLDER: 'Something that felt good today',
   GRATITUDE_LINE_2_PLACEHOLDER: 'A person or gesture you value',
   GRATITUDE_LINE_3_PLACEHOLDER: 'Something about yourself you recognize',

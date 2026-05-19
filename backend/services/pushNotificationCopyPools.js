@@ -2,6 +2,22 @@
  * Batería de textos para notificaciones push: variantes aleatorias sin nuevos tipos ni horarios.
  */
 
+import {
+  PUSH_NOTIFICATION_COPY_EN,
+  buildWeeklyProgressBodyEn,
+} from './pushNotificationCopyPools.en.js';
+
+export function normalizeNotificationLanguage(language) {
+  return language === 'en' ? 'en' : 'es';
+}
+
+/** @param {'es'|'en'|string} [language] */
+export function getPushNotificationCopy(language) {
+  return normalizeNotificationLanguage(language) === 'en'
+    ? PUSH_NOTIFICATION_COPY_EN
+    : PUSH_NOTIFICATION_COPY;
+}
+
 export function pickRandom(arr, fallback = '') {
   if (!Array.isArray(arr) || arr.length === 0) return fallback;
   const v = arr[Math.floor(Math.random() * arr.length)];
@@ -2654,7 +2670,15 @@ export const PUSH_NOTIFICATION_COPY = {
 /**
  * Cuerpo del resumen semanal con números variables + tendencia opcional.
  */
-export function buildWeeklyProgressBody(completedHabits, completedTasks, emotionalTrend) {
+export function buildWeeklyProgressBody(
+  completedHabits,
+  completedTasks,
+  emotionalTrend,
+  language = 'es',
+) {
+  if (normalizeNotificationLanguage(language) === 'en') {
+    return buildWeeklyProgressBodyEn(completedHabits, completedTasks, emotionalTrend);
+  }
   const hn = Number(completedHabits);
   const tn = Number(completedTasks);
   const h = Number.isFinite(hn) ? Math.max(0, Math.min(99999, Math.floor(hn))) : 0;

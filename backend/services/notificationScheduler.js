@@ -19,8 +19,15 @@ import NotificationEngagement from '../models/NotificationEngagement.js';
 import Task from '../models/Task.js';
 import User from '../models/User.js';
 import pushNotificationService from './pushNotificationService.js';
+import { resolveAppLanguage } from '../utils/resolveAppLanguage.js';
 
 class NotificationScheduler {
+  _userLanguage(user) {
+    return resolveAppLanguage({
+      preferenceLanguage: user?.preferences?.language,
+    });
+  }
+
   constructor() {
     // Intervalo para verificar notificaciones programadas (cada minuto)
     this.CHECK_INTERVAL_MS = 60 * 1000;
@@ -237,7 +244,7 @@ class NotificationScheduler {
       if (!mongoose.Types.ObjectId.isValid(userIdStr)) continue;
       try {
         const user = await User.findById(userIdStr)
-          .select('pushToken notificationPreferences')
+          .select('pushToken notificationPreferences preferences.language')
           .lean();
         if (!user?.pushToken || user.notificationPreferences?.enabled === false) continue;
         if (!this._taskRemindersEnabled(user)) continue;
@@ -255,13 +262,15 @@ class NotificationScheduler {
               .lean();
             if (dup) continue;
 
+            const lang = this._userLanguage(user);
             const rawTitle = String(task.title ?? '').trim();
-            const taskTitle = rawTitle.slice(0, 200) || 'Tarea';
+            const taskTitle = rawTitle.slice(0, 200) || (lang === 'en' ? 'Task' : 'Tarea');
 
             await this.sendScheduledNotification(task.userId, user.pushToken, types.TASK_DUE_SOON, {
               taskTitle,
               taskId: idStr,
-              dueIn: 'mañana',
+              dueIn: lang === 'en' ? 'tomorrow' : 'mañana',
+              language: lang,
             });
           } catch (taskErr) {
             console.error('[NotificationScheduler] Error aviso tarea para mañana:', taskErr);
@@ -357,7 +366,7 @@ class NotificationScheduler {
       const users = await User.find({
         'notificationPreferences.enabled': true,
         pushToken: { $exists: true, $ne: null }
-      }).select('notificationPreferences pushToken _id preferences.timezone');
+      }).select('notificationPreferences pushToken _id preferences.timezone preferences.language');
 
       const results = {
         checked: users.length,
@@ -383,7 +392,7 @@ class NotificationScheduler {
                 user._id,
                 user.pushToken,
                 T.MORNING_MOTIVATION,
-                { timeOfDay: 'morning' }
+                { timeOfDay: 'morning', language: this._userLanguage(user) },
               );
               if (sentOk) results.sent++;
             }
@@ -399,7 +408,7 @@ class NotificationScheduler {
                 user._id,
                 user.pushToken,
                 T.EVENING_REFLECTION,
-                { timeOfDay: 'evening' }
+                { timeOfDay: 'evening', language: this._userLanguage(user) },
               );
               if (sentOk) results.sent++;
             }
@@ -408,13 +417,15 @@ class NotificationScheduler {
           // Hasta 2 franjas fijas diarias de bienestar (antes 4 en ventana corta), además de mañana/tarde configurables
           if (this._wellnessTypesEnabled(user) && h === 14 && m === 0) {
             const sentOk = await this.sendScheduledNotification(user._id, user.pushToken, T.MIDDAY_MOTIVATION, {
-              timeOfDay: 'midday'
+              timeOfDay: 'midday',
+              language: this._userLanguage(user),
             });
             if (sentOk) results.sent++;
           }
           if (this._wellnessTypesEnabled(user) && h === 21 && m === 0) {
             const sentOk = await this.sendScheduledNotification(user._id, user.pushToken, T.SLEEP_ROUTINE_REMINDER, {
-              timeOfDay: 'night'
+              timeOfDay: 'night',
+              language: this._userLanguage(user),
             });
             if (sentOk) results.sent++;
           }
@@ -465,6 +476,13 @@ class NotificationScheduler {
    */
   async sendScheduledNotification(userId, pushToken, notificationType, options = {}) {
     try {
+      let language = options.language;
+      if (!language) {
+        const u = await User.findById(userId).select('preferences.language').lean();
+        language = resolveAppLanguage({ preferenceLanguage: u?.preferences?.language });
+      }
+      const opts = { ...options, language };
+
       const canSend = await this._canSendMoreToday(userId);
       if (!canSend) {
         return false;
@@ -482,56 +500,56 @@ class NotificationScheduler {
         case pushNotificationService.NOTIFICATION_TYPES.MORNING_MOTIVATION:
           result = await pushNotificationService.sendMotivationalMessage(pushToken, {
             timeOfDay: 'morning',
-            ...options
+            ...opts,
           });
           break;
         case pushNotificationService.NOTIFICATION_TYPES.EVENING_REFLECTION:
           result = await pushNotificationService.sendMotivationalMessage(pushToken, {
             timeOfDay: 'evening',
-            ...options
+            ...opts,
           });
           break;
         case pushNotificationService.NOTIFICATION_TYPES.DAILY_CHECKIN:
-          result = await pushNotificationService.sendDailyCheckIn(pushToken, options);
+          result = await pushNotificationService.sendDailyCheckIn(pushToken, opts);
           break;
         case pushNotificationService.NOTIFICATION_TYPES.BETWEEN_SESSIONS_NUDGE:
-          result = await pushNotificationService.sendBetweenSessionsNudge(pushToken, options);
+          result = await pushNotificationService.sendBetweenSessionsNudge(pushToken, opts);
           break;
         case pushNotificationService.NOTIFICATION_TYPES.HYDRATION_REMINDER:
-          result = await pushNotificationService.sendHydrationReminder(pushToken, options);
+          result = await pushNotificationService.sendHydrationReminder(pushToken, opts);
           break;
         case pushNotificationService.NOTIFICATION_TYPES.MIDDAY_MOTIVATION:
-          result = await pushNotificationService.sendMiddayMotivation(pushToken, options);
+          result = await pushNotificationService.sendMiddayMotivation(pushToken, opts);
           break;
         case pushNotificationService.NOTIFICATION_TYPES.GROUNDING_REMINDER:
-          result = await pushNotificationService.sendGroundingReminder(pushToken, options);
+          result = await pushNotificationService.sendGroundingReminder(pushToken, opts);
           break;
         case pushNotificationService.NOTIFICATION_TYPES.MOVEMENT_BREAK:
-          result = await pushNotificationService.sendMovementBreak(pushToken, options);
+          result = await pushNotificationService.sendMovementBreak(pushToken, opts);
           break;
         case pushNotificationService.NOTIFICATION_TYPES.WELLNESS_TIP:
-          result = await pushNotificationService.sendWellnessTip(pushToken, options);
+          result = await pushNotificationService.sendWellnessTip(pushToken, opts);
           break;
         case pushNotificationService.NOTIFICATION_TYPES.JOURNALING_PROMPT:
-          result = await pushNotificationService.sendJournalingPrompt(pushToken, options);
+          result = await pushNotificationService.sendJournalingPrompt(pushToken, opts);
           break;
         case pushNotificationService.NOTIFICATION_TYPES.SLEEP_ROUTINE_REMINDER:
-          result = await pushNotificationService.sendSleepRoutineReminder(pushToken, options);
+          result = await pushNotificationService.sendSleepRoutineReminder(pushToken, opts);
           break;
         case pushNotificationService.NOTIFICATION_TYPES.GRATITUDE_REMINDER:
-          result = await pushNotificationService.sendGratitudeReminder(pushToken, options);
+          result = await pushNotificationService.sendGratitudeReminder(pushToken, opts);
           break;
         case pushNotificationService.NOTIFICATION_TYPES.WEEKLY_REFLECTION:
-          result = await pushNotificationService.sendWeeklyReflection(pushToken, options);
+          result = await pushNotificationService.sendWeeklyReflection(pushToken, opts);
           break;
         case pushNotificationService.NOTIFICATION_TYPES.HABIT_REMINDER:
-          result = await pushNotificationService.sendHabitReminder(pushToken, options);
+          result = await pushNotificationService.sendHabitReminder(pushToken, opts);
           break;
         case pushNotificationService.NOTIFICATION_TYPES.TASK_REMINDER:
-          result = await pushNotificationService.sendTaskReminder(pushToken, options);
+          result = await pushNotificationService.sendTaskReminder(pushToken, opts);
           break;
         case pushNotificationService.NOTIFICATION_TYPES.TASK_DUE_SOON:
-          result = await pushNotificationService.sendTaskDueSoon(pushToken, options);
+          result = await pushNotificationService.sendTaskDueSoon(pushToken, opts);
           break;
         default:
           result = { success: false, error: 'Tipo de notificación no soportado' };
@@ -547,11 +565,11 @@ class NotificationScheduler {
           notificationData: {
             title: result.title || '',
             body: result.body || '',
-            data: options
+            data: opts
           },
           error: result.error || null,
           metadata: {
-            timeOfDay: options.timeOfDay || 'unknown'
+            timeOfDay: opts.timeOfDay || 'unknown'
           }
         });
       } catch (engagementErr) {
@@ -576,7 +594,9 @@ class NotificationScheduler {
    */
   async sendBehaviorBasedNotification(userId, behaviorData) {
     try {
-      const user = await User.findById(userId).select('pushToken notificationPreferences');
+      const user = await User.findById(userId).select(
+        'pushToken notificationPreferences preferences.language',
+      );
       
       if (!user || !user.pushToken) {
         return { success: false, reason: 'Usuario no encontrado o sin token push' };
@@ -587,29 +607,40 @@ class NotificationScheduler {
       }
 
       const { inactivity, emotionalState, progress, lastInteraction } = behaviorData;
+      const lang = this._userLanguage(user);
       let notificationType = null;
-      let options = {};
+      let options = { language: lang };
 
       // Notificación por inactividad
       if (inactivity && inactivity.hours > 48) {
         notificationType = pushNotificationService.NOTIFICATION_TYPES.BETWEEN_SESSIONS_NUDGE;
         options = {
-          message: 'Hace días que no pasas por acá. Si te ayuda, vuelve con una frase breve y seguimos desde ahí.'
+          language: lang,
+          message:
+            lang === 'en'
+              ? 'It has been a few days. If it helps, come back with one short line and we can pick up from there.'
+              : 'Hace días que no pasas por acá. Si te ayuda, vuelve con una frase breve y seguimos desde ahí.',
         };
       }
       // Notificación por progreso positivo
       else if (progress && progress.improvement) {
         notificationType = pushNotificationService.NOTIFICATION_TYPES.PROGRESS_POSITIVE;
         options = {
-          achievement: 'Progreso positivo',
-          message: 'Has estado mejorando. ¡Sigue así!'
+          language: lang,
+          achievement: lang === 'en' ? 'Positive progress' : 'Progreso positivo',
+          message:
+            lang === 'en' ? 'You have been improving. Keep it up!' : 'Has estado mejorando. ¡Sigue así!',
         };
       }
       // Notificación por estado emocional negativo persistente
       else if (emotionalState && emotionalState.negativeStreak > 3) {
         notificationType = pushNotificationService.NOTIFICATION_TYPES.EMOTIONAL_CHECKIN;
         options = {
-          message: 'Noto que has estado pasando por momentos difíciles. ¿Quieres hablar?'
+          language: lang,
+          message:
+            lang === 'en'
+              ? 'I notice you have been going through difficult moments. Would you like to talk?'
+              : 'Noto que has estado pasando por momentos difíciles. ¿Quieres hablar?',
         };
       }
 
@@ -818,23 +849,24 @@ class NotificationScheduler {
         { 'notificationPreferences.types.habitReminders': { $exists: false } },
       ],
     })
-      .select('_id pushToken notificationPreferences preferences.timezone')
+      .select('_id pushToken notificationPreferences preferences.timezone preferences.language')
       .lean();
 
     if (!users.length) {
       return { checked: 0, sent: 0 };
     }
 
-    const groups = new Map(); // tz -> { userIds: ObjectId[], pushByUserId: Map<string,string> }
+    const groups = new Map();
     for (const u of users) {
       if (!this._habitRemindersEnabled(u)) continue;
       const tz = this._getUserTimezone(u);
       if (!groups.has(tz)) {
-        groups.set(tz, { userIds: [], pushByUserId: new Map() });
+        groups.set(tz, { userIds: [], pushByUserId: new Map(), langByUserId: new Map() });
       }
       const g = groups.get(tz);
       g.userIds.push(u._id);
       g.pushByUserId.set(String(u._id), u.pushToken);
+      g.langByUserId.set(String(u._id), this._userLanguage(u));
     }
 
     let checked = 0;
@@ -882,6 +914,7 @@ class NotificationScheduler {
         const pushToken = g.pushByUserId.get(userIdStr);
         if (!pushToken) continue;
 
+        const lang = g.langByUserId.get(userIdStr) || 'es';
         const ok = await this.sendScheduledNotification(
           h.userId,
           pushToken,
@@ -889,8 +922,9 @@ class NotificationScheduler {
           {
             timeOfDay: 'habit',
             habitId: String(h._id),
-            habitName: String(h.title || 'Hábito').slice(0, 120),
-          }
+            habitName: String(h.title || (lang === 'en' ? 'Habit' : 'Hábito')).slice(0, 120),
+            language: lang,
+          },
         );
         if (ok) {
           sent++;

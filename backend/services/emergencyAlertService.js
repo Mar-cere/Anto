@@ -4,8 +4,8 @@
  */
 import EmergencyAlert from '../models/EmergencyAlert.js';
 import User from '../models/User.js';
-import whatsappService from './whatsappService.js';
 import pushNotificationService from './pushNotificationService.js';
+import whatsappService from './whatsappService.js';
 
 class EmergencyAlertService {
   constructor() {

@@ -19,6 +19,7 @@ import {
   pickNewSubtaskTitles,
   MAX_SUBTASKS_TOTAL
 } from '../services/taskSubtasksLlmService.js';
+import { resolveAppLanguage } from '../utils/resolveAppLanguage.js';
 
 const router = express.Router();
 
@@ -832,11 +833,21 @@ router.post('/:id/subtasks/generate', validateObjectId, patchTaskLimiter, async 
       });
     }
 
-    const rawTitles = await generateSubtaskTitlesWithLlm({
-      title: task.title,
-      description: task.description,
-      itemType: task.itemType
+    const language = resolveAppLanguage({
+      headerLanguage: req.headers['x-app-language'],
+      queryLanguage: req.query.language,
+      acceptLanguage: req.headers['accept-language'],
+      preferenceLanguage: req.user?.preferences?.language
     });
+
+    const rawTitles = await generateSubtaskTitlesWithLlm(
+      {
+        title: task.title,
+        description: task.description,
+        itemType: task.itemType
+      },
+      { language }
+    );
 
     const toAdd = pickNewSubtaskTitles(task.subtasks, rawTitles, {
       maxTotal: MAX_SUBTASKS_TOTAL

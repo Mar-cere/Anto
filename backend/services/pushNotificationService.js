@@ -10,7 +10,15 @@
 import { Expo } from 'expo-server-sdk';
 import { NOTIFICATION_ICON_URL } from '../constants/app.js';
 import NotificationEngagement from '../models/NotificationEngagement.js';
-import { PUSH_NOTIFICATION_COPY as C, buildWeeklyProgressBody, pickRandom } from './pushNotificationCopyPools.js';
+import {
+  getPushNotificationCopy,
+  buildWeeklyProgressBody,
+  pickRandom,
+} from './pushNotificationCopyPools.js';
+
+function poolFor(options = {}) {
+  return getPushNotificationCopy(options.language);
+}
 
 class PushNotificationService {
   constructor() {
@@ -230,8 +238,8 @@ class PushNotificationService {
     const { emotion, intensity } = options;
     return this.sendNotification(
       pushToken,
-      pickRandom(C.crisisWarning.titles),
-      pickRandom(C.crisisWarning.bodies),
+      pickRandom(poolFor(options).crisisWarning.titles),
+      pickRandom(poolFor(options).crisisWarning.bodies),
       {
         emotion,
         intensity,
@@ -250,8 +258,8 @@ class PushNotificationService {
   async sendCrisisMedium(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      pickRandom(C.crisisMedium.titles),
-      pickRandom(C.crisisMedium.bodies),
+      pickRandom(poolFor(options).crisisMedium.titles),
+      pickRandom(poolFor(options).crisisMedium.bodies),
       {
         action: 'open_chat',
         riskLevel: 'MEDIUM',
@@ -269,8 +277,8 @@ class PushNotificationService {
   async sendCrisisHigh(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      pickRandom(C.crisisHigh.titles),
-      pickRandom(C.crisisHigh.bodies),
+      pickRandom(poolFor(options).crisisHigh.titles),
+      pickRandom(poolFor(options).crisisHigh.bodies),
       {
         action: 'open_chat',
         riskLevel: 'HIGH',
@@ -291,14 +299,17 @@ class PushNotificationService {
     let body = message;
     if (!body) {
       if (hoursSinceCrisis != null && hoursSinceCrisis !== '') {
-        body = pickRandom(C.followUpWithHours(hoursSinceCrisis));
+        body = pickRandom(poolFor(options).followUpWithHours(hoursSinceCrisis));
       } else {
-        body = pickRandom(C.followUpNoHours);
+        body = pickRandom(poolFor(options).followUpNoHours);
       }
     }
     return this.sendNotification(
       pushToken,
-      pickRandom(C.followUpTitles, '💙 ¿Cómo te sientes ahora?'),
+      pickRandom(
+        poolFor(options).followUpTitles,
+        options.language === 'en' ? '💙 How are you feeling now?' : '💙 ¿Cómo te sientes ahora?',
+      ),
       body,
       {
         action: 'open_chat',
@@ -317,8 +328,8 @@ class PushNotificationService {
 
     return this.sendNotification(
       pushToken,
-      pickRandom(C.wellbeingCheckIn.titles),
-      pickRandom(C.wellbeingCheckIn.bodies),
+      pickRandom(poolFor(options).wellbeingCheckIn.titles),
+      pickRandom(poolFor(options).wellbeingCheckIn.bodies),
       {
         action: 'open_chat',
         wellbeingCheckIn: true,
@@ -344,9 +355,12 @@ class PushNotificationService {
       emotion != null && String(emotion).trim() !== '' ? String(emotion).trim().slice(0, 80) : '';
     return this.sendNotification(
       pushToken,
-      pickRandom(C.techniqueTitles, '🧘 Técnica de regulación'),
       pickRandom(
-        C.techniqueBodies(safeTechnique, safeEmotion),
+        poolFor(options).techniqueTitles,
+        options.language === 'en' ? '🧘 Regulation technique' : '🧘 Técnica de regulación',
+      ),
+      pickRandom(
+        poolFor(options).techniqueBodies(safeTechnique, safeEmotion),
         `Te proponemos un ejercicio breve de ${safeTechnique} para acompañarte hoy.`
       ),
       {
@@ -369,8 +383,8 @@ class PushNotificationService {
     const ach = achievement || 'un avance importante';
     return this.sendNotification(
       pushToken,
-      pickRandom(C.progressPositive.titles),
-      message || pickRandom(C.progressPositive.bodies(ach)),
+      pickRandom(poolFor(options).progressPositive.titles),
+      message || pickRandom(poolFor(options).progressPositive.bodies(ach)),
       {
         action: 'open_dashboard',
         achievement,
@@ -390,8 +404,8 @@ class PushNotificationService {
     const name = habitName || 'tu hábito';
     return this.sendNotification(
       pushToken,
-      pickRandom(C.habitReminder.titles),
-      pickRandom(C.habitReminder.bodies(name)),
+      pickRandom(poolFor(options).habitReminder.titles),
+      pickRandom(poolFor(options).habitReminder.bodies(name)),
       {
         action: 'open_habits',
         habitId,
@@ -412,8 +426,8 @@ class PushNotificationService {
     const name = habitName || 'tu hábito';
     return this.sendNotification(
       pushToken,
-      pickRandom(C.habitMissed.titles),
-      pickRandom(C.habitMissed.bodies(name, streak)),
+      pickRandom(poolFor(options).habitMissed.titles),
+      pickRandom(poolFor(options).habitMissed.bodies(name, streak)),
       {
         action: 'open_habits',
         habitName,
@@ -431,11 +445,11 @@ class PushNotificationService {
    */
   async sendTaskReminder(pushToken, options = {}) {
     const { taskTitle, taskId, dueDate } = options;
-    const title = taskTitle || 'Tarea';
+    const title = taskTitle || (options.language === 'en' ? 'Task' : 'Tarea');
     return this.sendNotification(
       pushToken,
-      pickRandom(C.taskReminder.titles),
-      pickRandom(C.taskReminder.bodies(title, dueDate)),
+      pickRandom(poolFor(options).taskReminder.titles),
+      pickRandom(poolFor(options).taskReminder.bodies(title, dueDate)),
       {
         action: 'open_tasks',
         taskId,
@@ -455,8 +469,13 @@ class PushNotificationService {
     const { taskTitle, taskId, daysOverdue } = options;
     return this.sendNotification(
       pushToken,
-      pickRandom(C.taskOverdue.titles),
-      pickRandom(C.taskOverdue.bodies(taskTitle || 'Tarea', daysOverdue)),
+      pickRandom(poolFor(options).taskOverdue.titles),
+      pickRandom(
+        poolFor(options).taskOverdue.bodies(
+          taskTitle || (options.language === 'en' ? 'Task' : 'Tarea'),
+          daysOverdue,
+        ),
+      ),
       {
         action: 'open_tasks',
         taskId,
@@ -481,11 +500,11 @@ class PushNotificationService {
       evening: 'Buenas noches',
     };
     const greeting = greetings[timeOfDay] || 'Hola';
-    const titlePool = C.dailyCheckIn.titles(greeting);
+    const titlePool = poolFor(options).dailyCheckIn.titles(greeting);
     return this.sendNotification(
       pushToken,
       pickRandom(titlePool),
-      pickRandom(C.dailyCheckIn.bodies),
+      pickRandom(poolFor(options).dailyCheckIn.bodies),
       {
         action: 'open_chat',
         checkIn: true,
@@ -499,8 +518,8 @@ class PushNotificationService {
     const { message } = options;
     return this.sendNotification(
       pushToken,
-      pickRandom(C.betweenSessionsNudge.titles),
-      message || pickRandom(C.betweenSessionsNudge.bodies),
+      pickRandom(poolFor(options).betweenSessionsNudge.titles),
+      message || pickRandom(poolFor(options).betweenSessionsNudge.bodies),
       {
         action: 'open_chat',
         betweenSessions: true,
@@ -518,8 +537,8 @@ class PushNotificationService {
   async sendBreathingReminder(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      pickRandom(C.breathing.titles),
-      pickRandom(C.breathing.bodies),
+      pickRandom(poolFor(options).breathing.titles),
+      pickRandom(poolFor(options).breathing.bodies),
       {
         action: 'open_technique',
         technique: 'breathing',
@@ -537,8 +556,8 @@ class PushNotificationService {
   async sendMindfulnessReminder(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      pickRandom(C.mindfulness.titles),
-      pickRandom(C.mindfulness.bodies),
+      pickRandom(poolFor(options).mindfulness.titles),
+      pickRandom(poolFor(options).mindfulness.bodies),
       {
         action: 'open_technique',
         technique: 'mindfulness',
@@ -558,8 +577,8 @@ class PushNotificationService {
     const name = achievementName || 'Logro';
     return this.sendNotification(
       pushToken,
-      pickRandom(C.achievement.titles),
-      pickRandom(C.achievement.bodies(name, description)),
+      pickRandom(poolFor(options).achievement.titles),
+      pickRandom(poolFor(options).achievement.bodies(name, description)),
       {
         action: 'open_dashboard',
         achievement: achievementName,
@@ -583,9 +602,12 @@ class PushNotificationService {
       : 0;
     return this.sendNotification(
       pushToken,
-      pickRandom(C.streak.titles, '🔥 ¡Racha impresionante!'),
       pickRandom(
-        C.streak.bodies(streakSafe, typeText),
+        poolFor(options).streak.titles,
+        options.language === 'en' ? '🔥 Impressive streak!' : '🔥 ¡Racha impresionante!',
+      ),
+      pickRandom(
+        poolFor(options).streak.bodies(streakSafe, typeText),
         `¡Llevas ${streakSafe} ${typeText} seguidos! Tu constancia cuenta.`
       ),
       {
@@ -605,10 +627,15 @@ class PushNotificationService {
    */
   async sendWeeklyProgress(pushToken, options = {}) {
     const { completedHabits, completedTasks, emotionalTrend } = options;
-    const body = buildWeeklyProgressBody(completedHabits, completedTasks, emotionalTrend);
+    const body = buildWeeklyProgressBody(
+      completedHabits,
+      completedTasks,
+      emotionalTrend,
+      options.language,
+    );
     return this.sendNotification(
       pushToken,
-      pickRandom(C.weeklyProgress.titles),
+      pickRandom(poolFor(options).weeklyProgress.titles),
       body,
       {
         action: 'open_dashboard',
@@ -626,11 +653,12 @@ class PushNotificationService {
    */
   async sendMotivationalMessage(pushToken, options = {}) {
     const { message, timeOfDay } = options;
-    const messagePool = C.motivational[timeOfDay] || C.motivational.morning;
+    const messagePool =
+      poolFor(options).motivational[timeOfDay] || poolFor(options).motivational.morning;
     const selectedMessage = message || pickRandom(messagePool);
     return this.sendNotification(
       pushToken,
-      pickRandom(C.motivationalTitles),
+      pickRandom(poolFor(options).motivationalTitles),
       selectedMessage,
       {
         action: 'open_dashboard',
@@ -649,8 +677,8 @@ class PushNotificationService {
   async sendGratitudeReminder(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      pickRandom(C.gratitude.titles),
-      pickRandom(C.gratitude.bodies),
+      pickRandom(poolFor(options).gratitude.titles),
+      pickRandom(poolFor(options).gratitude.bodies),
       {
         action: 'open_chat',
         gratitude: true,
@@ -667,7 +695,7 @@ class PushNotificationService {
    */
   async sendWellnessTip(pushToken, options = {}) {
     const { tip } = options;
-    const selectedTip = tip || pickRandom(C.wellnessTips);
+    const selectedTip = tip || pickRandom(poolFor(options).wellnessTips);
     return this.sendNotification(
       pushToken,
       '💡 Consejo de bienestar',
@@ -689,8 +717,8 @@ class PushNotificationService {
   async sendSelfCareReminder(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      pickRandom(C.selfCare.titles),
-      pickRandom(C.selfCare.bodies),
+      pickRandom(poolFor(options).selfCare.titles),
+      pickRandom(poolFor(options).selfCare.bodies),
       {
         action: 'open_dashboard',
         selfCare: true,
@@ -710,10 +738,15 @@ class PushNotificationService {
     const raw = Number(daysRemaining);
     const dr =
       Number.isFinite(raw) && raw > 0 ? Math.min(365, Math.floor(raw)) : 1;
-    const title = pickRandom(C.trialExpiringTitles(dr), '⏰ Tu trial');
+    const title = pickRandom(
+      poolFor(options).trialExpiringTitles(dr),
+      options.language === 'en' ? '⏰ Your trial' : '⏰ Tu trial',
+    );
     const body = pickRandom(
-      C.trialExpiringBodies(dr),
-      'Tu período de prueba está por terminar. Revisa los planes cuando puedas.'
+      poolFor(options).trialExpiringBodies(dr),
+      options.language === 'en'
+        ? 'Your trial period is ending soon. Review plans when you can.'
+        : 'Tu período de prueba está por terminar. Revisa los planes cuando puedas.',
     );
     return this.sendNotification(
       pushToken,
@@ -736,8 +769,8 @@ class PushNotificationService {
   async sendTrialExpired(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      pickRandom(C.trialExpired.titles),
-      pickRandom(C.trialExpired.bodies),
+      pickRandom(poolFor(options).trialExpired.titles),
+      pickRandom(poolFor(options).trialExpired.bodies),
       {
         action: 'open_subscription',
       },
@@ -755,8 +788,8 @@ class PushNotificationService {
     const { message } = options;
     return this.sendNotification(
       pushToken,
-      pickRandom(C.subscriptionReminder.titles),
-      message || pickRandom(C.subscriptionReminder.bodies),
+      pickRandom(poolFor(options).subscriptionReminder.titles),
+      message || pickRandom(poolFor(options).subscriptionReminder.bodies),
       {
         action: 'open_subscription',
       },
@@ -775,11 +808,11 @@ class PushNotificationService {
     const ok = successfulSends ?? 0;
     const total = totalContacts ?? 0;
     const title = isTest
-      ? pickRandom(C.emergencySent.testTitles)
-      : pickRandom(C.emergencySent.liveTitles);
+      ? pickRandom(poolFor(options).emergencySent.testTitles)
+      : pickRandom(poolFor(options).emergencySent.liveTitles);
     const body = isTest
-      ? pickRandom(C.emergencySent.testBodies(ok, total))
-      : pickRandom(C.emergencySent.liveBodies(ok, total));
+      ? pickRandom(poolFor(options).emergencySent.testBodies(ok, total))
+      : pickRandom(poolFor(options).emergencySent.liveBodies(ok, total));
     return this.sendNotification(
       pushToken,
       title,
@@ -802,8 +835,8 @@ class PushNotificationService {
     const { message } = options;
     return this.sendNotification(
       pushToken,
-      pickRandom(C.crisisResources.titles),
-      message || pickRandom(C.crisisResources.bodies),
+      pickRandom(poolFor(options).crisisResources.titles),
+      message || pickRandom(poolFor(options).crisisResources.bodies),
       { action: 'open_chat', resources: true },
       this.NOTIFICATION_TYPES.CRISIS_RESOURCES
     );
@@ -812,8 +845,8 @@ class PushNotificationService {
   async sendGroundingReminder(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      pickRandom(C.grounding.titles),
-      pickRandom(C.grounding.bodies),
+      pickRandom(poolFor(options).grounding.titles),
+      pickRandom(poolFor(options).grounding.bodies),
       { action: 'open_technique', technique: 'grounding' },
       this.NOTIFICATION_TYPES.GROUNDING_REMINDER
     );
@@ -822,8 +855,8 @@ class PushNotificationService {
   async sendProgressiveRelaxation(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      pickRandom(C.progressiveRelaxation.titles),
-      pickRandom(C.progressiveRelaxation.bodies),
+      pickRandom(poolFor(options).progressiveRelaxation.titles),
+      pickRandom(poolFor(options).progressiveRelaxation.bodies),
       { action: 'open_technique', technique: 'progressive_relaxation' },
       this.NOTIFICATION_TYPES.PROGRESSIVE_RELAXATION
     );
@@ -835,8 +868,16 @@ class PushNotificationService {
     const v = value ?? '¡sigue así!';
     return this.sendNotification(
       pushToken,
-      pickRandom(C.personalBest.titles, '⭐ Nuevo récord personal'),
-      pickRandom(C.personalBest.bodies(m, v), `Superaste tu mejor marca en ${m}: ${v}`.trim()),
+      pickRandom(
+        poolFor(options).personalBest.titles,
+        options.language === 'en' ? '⭐ New personal best' : '⭐ Nuevo récord personal',
+      ),
+      pickRandom(
+        poolFor(options).personalBest.bodies(m, v),
+        options.language === 'en'
+          ? `You beat your best in ${m}: ${v}`.trim()
+          : `Superaste tu mejor marca en ${m}: ${v}`.trim(),
+      ),
       { action: 'open_dashboard', personalBest: true },
       this.NOTIFICATION_TYPES.PERSONAL_BEST
     );
@@ -848,8 +889,8 @@ class PushNotificationService {
     const d = dueIn || 'pronto';
     return this.sendNotification(
       pushToken,
-      pickRandom(C.taskDueSoon.titles),
-      pickRandom(C.taskDueSoon.bodies(t, d)),
+      pickRandom(poolFor(options).taskDueSoon.titles),
+      pickRandom(poolFor(options).taskDueSoon.bodies(t, d)),
       { action: 'open_tasks', taskId, taskTitle, dueSoon: true },
       this.NOTIFICATION_TYPES.TASK_DUE_SOON
     );
@@ -859,8 +900,8 @@ class PushNotificationService {
     const { prompt } = options;
     return this.sendNotification(
       pushToken,
-      pickRandom(C.journaling.titles),
-      prompt || pickRandom(C.journaling.bodies),
+      pickRandom(poolFor(options).journaling.titles),
+      prompt || pickRandom(poolFor(options).journaling.bodies),
       { action: 'open_chat', journaling: true },
       this.NOTIFICATION_TYPES.JOURNALING_PROMPT
     );
@@ -870,8 +911,8 @@ class PushNotificationService {
     const { summary } = options;
     return this.sendNotification(
       pushToken,
-      pickRandom(C.weeklyReflection.titles),
-      summary || pickRandom(C.weeklyReflection.bodies),
+      pickRandom(poolFor(options).weeklyReflection.titles),
+      summary || pickRandom(poolFor(options).weeklyReflection.bodies),
       { action: 'open_dashboard', weeklyReflection: true },
       this.NOTIFICATION_TYPES.WEEKLY_REFLECTION
     );
@@ -881,8 +922,8 @@ class PushNotificationService {
     const { message } = options;
     return this.sendNotification(
       pushToken,
-      pickRandom(C.midday.titles),
-      message || pickRandom(C.midday.bodies),
+      pickRandom(poolFor(options).midday.titles),
+      message || pickRandom(poolFor(options).midday.bodies),
       { action: 'open_dashboard', midday: true },
       this.NOTIFICATION_TYPES.MIDDAY_MOTIVATION
     );
@@ -892,8 +933,8 @@ class PushNotificationService {
     const { message } = options;
     return this.sendNotification(
       pushToken,
-      pickRandom(C.weekend.titles),
-      message || pickRandom(C.weekend.bodies),
+      pickRandom(poolFor(options).weekend.titles),
+      message || pickRandom(poolFor(options).weekend.bodies),
       { action: 'open_dashboard', weekend: true },
       this.NOTIFICATION_TYPES.WEEKEND_REFLECTION
     );
@@ -902,8 +943,8 @@ class PushNotificationService {
   async sendHydrationReminder(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      pickRandom(C.hydration.titles),
-      pickRandom(C.hydration.bodies),
+      pickRandom(poolFor(options).hydration.titles),
+      pickRandom(poolFor(options).hydration.bodies),
       { action: 'open_dashboard', hydration: true },
       this.NOTIFICATION_TYPES.HYDRATION_REMINDER
     );
@@ -912,8 +953,8 @@ class PushNotificationService {
   async sendMovementBreak(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      pickRandom(C.movementBreak.titles),
-      pickRandom(C.movementBreak.bodies),
+      pickRandom(poolFor(options).movementBreak.titles),
+      pickRandom(poolFor(options).movementBreak.bodies),
       { action: 'open_dashboard', movementBreak: true },
       this.NOTIFICATION_TYPES.MOVEMENT_BREAK
     );
@@ -922,8 +963,8 @@ class PushNotificationService {
   async sendSleepRoutineReminder(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      pickRandom(C.sleepRoutine.titles),
-      pickRandom(C.sleepRoutine.bodies),
+      pickRandom(poolFor(options).sleepRoutine.titles),
+      pickRandom(poolFor(options).sleepRoutine.bodies),
       { action: 'open_dashboard', sleepRoutine: true },
       this.NOTIFICATION_TYPES.SLEEP_ROUTINE_REMINDER
     );
@@ -932,8 +973,8 @@ class PushNotificationService {
   async sendTrialWelcome(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      pickRandom(C.trialWelcome.titles),
-      pickRandom(C.trialWelcome.bodies),
+      pickRandom(poolFor(options).trialWelcome.titles),
+      pickRandom(poolFor(options).trialWelcome.bodies),
       { action: 'open_dashboard', trialWelcome: true },
       this.NOTIFICATION_TYPES.TRIAL_WELCOME
     );
@@ -943,8 +984,8 @@ class PushNotificationService {
     const { message } = options;
     return this.sendNotification(
       pushToken,
-      pickRandom(C.renewalHint.titles),
-      message || pickRandom(C.renewalHint.bodies),
+      pickRandom(poolFor(options).renewalHint.titles),
+      message || pickRandom(poolFor(options).renewalHint.bodies),
       { action: 'open_subscription', renewalHint: true },
       this.NOTIFICATION_TYPES.SUBSCRIPTION_RENEWAL_HINT
     );
@@ -953,11 +994,11 @@ class PushNotificationService {
   async sendEmergencyContactUpdated(pushToken, options = {}) {
     const { contactName } = options;
     const body = contactName
-      ? pickRandom(C.emergencyContactUpdated.bodiesWithName(contactName))
-      : pickRandom(C.emergencyContactUpdated.bodiesGeneric);
+      ? pickRandom(poolFor(options).emergencyContactUpdated.bodiesWithName(contactName))
+      : pickRandom(poolFor(options).emergencyContactUpdated.bodiesGeneric);
     return this.sendNotification(
       pushToken,
-      pickRandom(C.emergencyContactUpdated.titles),
+      pickRandom(poolFor(options).emergencyContactUpdated.titles),
       body,
       { action: 'open_emergency_alerts', contactUpdated: true },
       this.NOTIFICATION_TYPES.EMERGENCY_CONTACT_UPDATED
@@ -967,8 +1008,8 @@ class PushNotificationService {
   async sendEmergencyTestReminder(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      pickRandom(C.emergencyTestReminder.titles),
-      pickRandom(C.emergencyTestReminder.bodies),
+      pickRandom(poolFor(options).emergencyTestReminder.titles),
+      pickRandom(poolFor(options).emergencyTestReminder.bodies),
       { action: 'open_emergency_alerts', testReminder: true },
       this.NOTIFICATION_TYPES.EMERGENCY_TEST_REMINDER
     );
@@ -977,8 +1018,8 @@ class PushNotificationService {
   async sendEmergencySafetyReview(pushToken, options = {}) {
     return this.sendNotification(
       pushToken,
-      pickRandom(C.emergencySafetyReview.titles),
-      pickRandom(C.emergencySafetyReview.bodies),
+      pickRandom(poolFor(options).emergencySafetyReview.titles),
+      pickRandom(poolFor(options).emergencySafetyReview.bodies),
       { action: 'open_emergency_alerts', safetyReview: true },
       this.NOTIFICATION_TYPES.EMERGENCY_SAFETY_REVIEW
     );
@@ -988,8 +1029,8 @@ class PushNotificationService {
     const { snippet } = options;
     return this.sendNotification(
       pushToken,
-      pickRandom(C.emergencyInfoDigest.titles),
-      snippet || pickRandom(C.emergencyInfoDigest.bodies),
+      pickRandom(poolFor(options).emergencyInfoDigest.titles),
+      snippet || pickRandom(poolFor(options).emergencyInfoDigest.bodies),
       { action: 'open_emergency_alerts', infoDigest: true },
       this.NOTIFICATION_TYPES.EMERGENCY_INFO_DIGEST
     );

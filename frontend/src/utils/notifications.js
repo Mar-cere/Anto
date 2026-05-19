@@ -1,6 +1,9 @@
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
-import notifications from '../data/notifications';
+import notificationsEs from '../data/notifications';
+import notificationsEn from '../data/notifications.en';
+import { getLocalNotificationCopy } from '../data/notificationLocalCopy';
+import { getAppLanguage } from '../config/api';
 import { lightColors } from '../styles/themePalettes';
 
 /** Color de acento en Android (canal); alineado con marca / primary de paleta clara. */
@@ -66,8 +69,13 @@ export const sendImmediateNotification = async (title, body) => {
   });
 };
 
+function getNotificationsData(language) {
+  return language === 'en' ? notificationsEn : notificationsEs;
+}
+
 // Aplana mañana / tarde / noche / genéricas para mayor batería de textos sin repetir siempre el mismo pool
-const getAllLocalNotificationVariants = () => {
+const getAllLocalNotificationVariants = (language = 'es') => {
+  const notifications = getNotificationsData(language);
   if (Array.isArray(notifications)) return notifications;
   const n = notifications || {};
   return [
@@ -78,16 +86,20 @@ const getAllLocalNotificationVariants = () => {
   ];
 };
 
-const getRandomNotification = () => {
-  const pool = getAllLocalNotificationVariants();
-  if (!pool.length) return { title: 'Anto', body: 'Tienes un recordatorio.' };
+const getRandomNotification = async () => {
+  const language = await getAppLanguage();
+  const copy = getLocalNotificationCopy(language);
+  const pool = getAllLocalNotificationVariants(language);
+  if (!pool.length) {
+    return { title: copy.defaultTitle, body: copy.defaultBody };
+  }
   return pool[Math.floor(Math.random() * pool.length)];
 };
 
 // Función para programar notificaciones diarias
 export const scheduleDailyNotification = async (hour, minute) => {
   await Notifications.cancelAllScheduledNotificationsAsync();
-  const notification = getRandomNotification();
+  const notification = await getRandomNotification();
   await Notifications.scheduleNotificationAsync({
     content: {
       title: notification.title,
@@ -135,7 +147,7 @@ export const scheduleDailyNotification = async (hour, minute) => {
 export const scheduleAlternateNotifications = async () => {
   await Notifications.cancelAllScheduledNotificationsAsync();
 
-  const notification = getRandomNotification();
+  const notification = await getRandomNotification();
 
   const tomorrowAt10 = new Date();
   tomorrowAt10.setDate(tomorrowAt10.getDate() + 1);
@@ -154,7 +166,7 @@ export const scheduleAlternateNotifications = async () => {
     },
   });
 
-  const nextNotification = getRandomNotification();
+  const nextNotification = await getRandomNotification();
   const dayAfterAt10 = new Date();
   dayAfterAt10.setDate(dayAfterAt10.getDate() + 2);
   dayAfterAt10.setHours(10, 0, 0, 0);
@@ -178,7 +190,7 @@ export const scheduleMultipleDailyNotifications = async (times) => {
   await Notifications.cancelAllScheduledNotificationsAsync();
 
   for (const time of times) {
-    const notification = getRandomNotification();
+    const notification = await getRandomNotification();
 
     await Notifications.scheduleNotificationAsync({
       content: {
@@ -210,6 +222,7 @@ export const checkNotificationStatus = async () => {
 // Programar una notificación local para una tarea
 export const scheduleTaskNotification = async (task) => {
   if (!Device.isDevice) return;
+  const copy = getLocalNotificationCopy(await getAppLanguage());
 
   if (Array.isArray(task.notifications)) {
     for (const notif of task.notifications) {
@@ -219,7 +232,7 @@ export const scheduleTaskNotification = async (task) => {
         await Notifications.scheduleNotificationAsync({
           content: {
             title: task.title,
-            body: task.description || 'Tienes una tarea pendiente en Anto',
+            body: task.description || copy.taskPendingBody,
             sound: true,
             data: { taskId: task._id },
           },
@@ -246,6 +259,7 @@ export const cancelTaskNotifications = async (taskId) => {
 // Programar notificación para un hábito
 export const scheduleHabitNotification = async (habit) => {
   try {
+    const copy = getLocalNotificationCopy(await getAppLanguage());
     if (!habit.reminder || !habit.reminder.enabled) return;
 
     const reminderTime = habit.reminder.time || habit.reminder;
@@ -285,8 +299,8 @@ export const scheduleHabitNotification = async (habit) => {
 
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: `¡No olvides tu hábito!`,
-        body: `Recuerda: ${habit.title}`,
+        title: copy.habitTitle,
+        body: copy.habitBody(habit.title),
         sound: true,
         data: { habitId: habit._id },
         android: {
@@ -311,8 +325,8 @@ export const scheduleHabitNotification = async (habit) => {
     try {
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: `¡No olvides tu hábito!`,
-          body: `Recuerda: ${habit.title}`,
+          title: copy.habitTitle,
+          body: copy.habitBody(habit.title),
           sound: true,
           data: { habitId: habit._id },
         },

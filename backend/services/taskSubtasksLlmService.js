@@ -74,11 +74,44 @@ export function pickNewSubtaskTitles(existingSubtasks, rawTitles, opts = {}) {
   return out;
 }
 
+export function normalizeSubtaskLanguage(language) {
+  return language === 'en' ? 'en' : 'es';
+}
+
+/**
+ * @param {'es'|'en'} language
+ * @param {number} [maxGenerate]
+ * @returns {string}
+ */
+export function buildSubtaskLlmSystemPrompt(language, maxGenerate = MAX_GENERATE_PER_CALL) {
+  const lang = normalizeSubtaskLanguage(language);
+  if (lang === 'en') {
+    return `You are a productivity assistant. The user has a main task (title and description may be in any language).
+You must propose between 1 and ${maxGenerate} concrete, actionable subtasks that break down the work to complete that task.
+Rules:
+- Short titles (max ~80 characters each), in neutral English, without numbering in the text if possible.
+- Logical execution order (start with what unblocks the rest).
+- Do not repeat the main task title or be redundant.
+- Do not include empty generic subtasks ("do the task").
+Respond ONLY with valid JSON: {"subtasks":["...","..."]}`;
+  }
+
+  return `Eres un asistente de productividad. El usuario tiene una tarea principal (título y descripción pueden estar en cualquier idioma).
+Debes proponer entre 1 y ${maxGenerate} subtareas concretas y accionables que desglosen el trabajo para completar esa tarea.
+Reglas:
+- Títulos cortos (máximo ~80 caracteres cada uno), en español neutro, sin numeración en el texto si puedes evitarla.
+- Orden lógico de ejecución (primero lo que desbloquea el resto).
+- No repetir el título de la tarea principal ni ser redundante.
+- No incluir subtareas genéricas vacías ("hacer la tarea").
+Responde SOLO con un JSON válido: {"subtasks":["...","..."]}`;
+}
+
 /**
  * @param {{ title?: string, description?: string, itemType?: string }} task
+ * @param {{ language?: 'es'|'en' }} [options]
  * @returns {Promise<string[]>}
  */
-export async function generateSubtaskTitlesWithLlm(task) {
+export async function generateSubtaskTitlesWithLlm(task, options = {}) {
   if (process.env.TASK_SUBTASKS_LLM_ENABLED === 'false') {
     throw new Error('SUBTASKS_LLM_DISABLED');
   }
@@ -95,14 +128,8 @@ export async function generateSubtaskTitlesWithLlm(task) {
   const model =
     (process.env.TASK_SUBTASKS_LLM_MODEL || '').trim() || OPENAI_MODEL;
 
-  const system = `Eres un asistente de productividad. El usuario tiene una tarea principal en español.
-Debes proponer entre 1 y ${MAX_GENERATE_PER_CALL} subtareas concretas y accionables que desglosen el trabajo para completar esa tarea.
-Reglas:
-- Títulos cortos (máximo ~80 caracteres cada uno), en español, sin numeración en el texto si puedes evitarla.
-- Orden lógico de ejecución (primero lo que desbloquea el resto).
-- No repetir el título de la tarea principal ni ser redundante.
-- No incluir subtareas genéricas vacías ("hacer la tarea").
-Responde SOLO con un JSON válido: {"subtasks":["...","..."]}`;
+  const language = normalizeSubtaskLanguage(options.language);
+  const system = buildSubtaskLlmSystemPrompt(language);
 
   const user = JSON.stringify({
     taskTitle: title,

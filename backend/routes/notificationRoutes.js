@@ -7,10 +7,10 @@
  */
 
 import express from 'express';
-import { createRateLimiter } from '../utils/createRateLimiter.js';
 import { authenticateToken } from '../middleware/auth.js';
 import User from '../models/User.js';
 import pushNotificationService from '../services/pushNotificationService.js';
+import { createRateLimiter } from '../utils/createRateLimiter.js';
 
 const router = express.Router();
 

@@ -4,86 +4,84 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import {
-  buildCrisisActionDecision,
-  evaluateSuicideRisk,
-  normalizeStoredCrisisRiskLevel,
-  shouldAttachCrisisContextToPrompt
+    buildCrisisActionDecision,
+    evaluateSuicideRisk,
+    normalizeStoredCrisisRiskLevel,
+    shouldAttachCrisisContextToPrompt
 } from '../constants/crisis.js';
 import {
-  analyzeAssistantResponseTemplateSignals,
-  encodeChatPreferencesKey
+    normalizeSessionIntention,
+    sanitizeSessionIntentionForClient,
+    wasSessionIntentionProvided
+} from '../constants/sessionIntention.js';
+import { authenticateToken as protect } from '../middleware/auth.js';
+import { requireActiveSubscription } from '../middleware/checkSubscription.js';
+import ClinicalScaleResult from '../models/ClinicalScaleResult.js';
+import CognitiveDistortionReport from '../models/CognitiveDistortionReport.js';
+import CrisisEvent from '../models/CrisisEvent.js';
+import {
+    Conversation,
+    Message,
+    TherapeuticRecord
+} from '../models/index.js';
+import User from '../models/User.js';
+import actionSuggestionService from '../services/actionSuggestionService.js';
+import {
+    analyzeAssistantResponseTemplateSignals,
+    encodeChatPreferencesKey
 } from '../services/chat/chatTemplateSignals.js';
 import { analyzeConversationPattern } from '../services/chat/conversationPatternAnalyzer.js';
 import { detectFactualModeFromMessage } from '../services/chat/factualQueryDetector.js';
 import { detectShortModeFromSession } from '../services/chat/responseLengthPreference.js';
-import { buildHistoryForPromptFromMessages } from '../services/openai/openaiPromptBuilder.js';
-import { authenticateToken as protect } from '../middleware/auth.js';
-import { requireActiveSubscription } from '../middleware/checkSubscription.js';
-import CrisisEvent from '../models/CrisisEvent.js';
-import EmergencyAlert from '../models/EmergencyAlert.js';
-import {
-  Conversation,
-  Message,
-  TherapeuticRecord
-} from '../models/index.js';
-import User from '../models/User.js';
-import actionSuggestionService from '../services/actionSuggestionService.js';
-import chatProductActionProposalService from '../services/chatProductActionProposalService.js';
+import { inferChatSessionPhase } from '../services/chat/sessionPhaseHints.js';
 import chatProductActionLlmService from '../services/chatProductActionLlmService.js';
-import conversationProductProposalCapService from '../services/conversationProductProposalCapService.js';
+import chatProductActionProposalService from '../services/chatProductActionProposalService.js';
 import clinicalScalesService from '../services/clinicalScalesService.js';
-import CognitiveDistortionReport from '../models/CognitiveDistortionReport.js';
-import ClinicalScaleResult from '../models/ClinicalScaleResult.js';
+import conversationProductProposalCapService from '../services/conversationProductProposalCapService.js';
+import { scheduleRollingSummaryRefresh } from '../services/conversationRollingSummaryService.js';
 import crisisFollowUpService from '../services/crisisFollowUpService.js';
 import crisisTrendAnalyzer from '../services/crisisTrendAnalyzer.js';
 import emergencyAlertService from '../services/emergencyAlertService.js';
 import {
-  contextAnalyzer,
-  conversationDepthAnalyzer,
-  emotionalAnalyzer,
-  engagementTracker,
-  intenseChatCheckInService,
-  memoryService,
-  openaiService,
-  progressTracker,
-  userProfileService,
-  writingStyleDetector
+    contextAnalyzer,
+    conversationDepthAnalyzer,
+    emotionalAnalyzer,
+    engagementTracker,
+    intenseChatCheckInService,
+    memoryService,
+    openaiService,
+    progressTracker,
+    userProfileService,
+    writingStyleDetector
 } from '../services/index.js';
+import { scheduleLastSessionSummary } from '../services/lastSessionSummaryService.js';
 import metricsService from '../services/metricsService.js';
+import { buildHistoryForPromptFromMessages } from '../services/openai/openaiPromptBuilder.js';
 import paymentAuditService from '../services/paymentAuditService.js';
 import pushNotificationService from '../services/pushNotificationService.js';
 import sessionEmotionalMemory from '../services/sessionEmotionalMemory.js';
 import { buildSessionRetentionPayload, withThematicMicroClosureRetention } from '../services/sessionRetentionHints.js';
-import therapeuticProtocolService from '../services/therapeuticProtocolService.js';
 import { cursorPaginate } from '../utils/pagination.js';
-import { inferChatSessionPhase } from '../services/chat/sessionPhaseHints.js';
 import {
-  normalizeSessionIntention,
-  sanitizeSessionIntentionForClient,
-  wasSessionIntentionProvided
-} from '../constants/sessionIntention.js';
-import { scheduleRollingSummaryRefresh } from '../services/conversationRollingSummaryService.js';
-import { scheduleLastSessionSummary } from '../services/lastSessionSummaryService.js';
-import {
-  LIMITE_MENSAJES,
-  HISTORIAL_LIMITE,
-  deleteConversationLimiter,
-  patchMessageLimiter,
-  messageFeedbackLimiter,
-  sendMessageLimiter,
-  scheduleSessionSummaryLimiter,
-  isValidObjectId,
-  validarConversationId,
-  validarConversacion,
-  detectEmotionalEscalation,
-  detectHelpRejection,
-  detectAbruptToneChange,
-  analyzeMessageFrequency,
-  detectSilenceAfterNegative,
-  shouldShowActionSuggestions,
-  calculateRiskScore,
-  extractRiskFactors,
-  extractProtectiveFactors
+    HISTORIAL_LIMITE,
+    LIMITE_MENSAJES,
+    analyzeMessageFrequency,
+    calculateRiskScore,
+    deleteConversationLimiter,
+    detectAbruptToneChange,
+    detectEmotionalEscalation,
+    detectHelpRejection,
+    detectSilenceAfterNegative,
+    extractProtectiveFactors,
+    extractRiskFactors,
+    isValidObjectId,
+    messageFeedbackLimiter,
+    patchMessageLimiter,
+    scheduleSessionSummaryLimiter,
+    sendMessageLimiter,
+    shouldShowActionSuggestions,
+    validarConversacion,
+    validarConversationId
 } from './chat/index.js';
 
 import { resolveAppLanguage } from '../utils/resolveAppLanguage.js';

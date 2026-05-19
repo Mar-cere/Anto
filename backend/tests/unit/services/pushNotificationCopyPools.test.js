@@ -3,12 +3,27 @@
  */
 
 import {
-  pickRandom,
   PUSH_NOTIFICATION_COPY as C,
   buildWeeklyProgressBody,
+  pickRandom,
+  getPushNotificationCopy,
+  normalizeNotificationLanguage,
 } from '../../../services/pushNotificationCopyPools.js';
 
 describe('pushNotificationCopyPools', () => {
+  describe('getPushNotificationCopy', () => {
+    it('devuelve copy en inglés cuando language es en', () => {
+      const en = getPushNotificationCopy('en');
+      expect(en.crisisWarning.titles[0]).toMatch(/wellbeing|care/i);
+      expect(en.crisisWarning.titles[0]).not.toMatch(/bienestar/i);
+    });
+
+    it('normaliza idiomas desconocidos a español', () => {
+      expect(normalizeNotificationLanguage('fr')).toBe('es');
+      expect(normalizeNotificationLanguage('en')).toBe('en');
+    });
+  });
+
   describe('pickRandom', () => {
     it('devuelve fallback si el arreglo está vacío o no es arreglo', () => {
       expect(pickRandom([], 'x')).toBe('x');
@@ -39,6 +54,13 @@ describe('pushNotificationCopyPools', () => {
       const body = buildWeeklyProgressBody('x', {}, 'stable');
       expect(body).toMatch(/0 hábitos/);
       expect(body).toMatch(/0 tareas/);
+    });
+
+    it('genera resumen semanal en inglés', () => {
+      const body = buildWeeklyProgressBody(2, 3, 'stable', 'en');
+      expect(body).toMatch(/2 habits/i);
+      expect(body).toMatch(/3 tasks/i);
+      expect(body).not.toMatch(/hábitos/);
     });
 
     it('añade texto de tendencia emocional variado', () => {

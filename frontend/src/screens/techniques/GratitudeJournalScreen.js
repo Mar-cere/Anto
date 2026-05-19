@@ -50,6 +50,12 @@ const DEFAULT_TEXTS = {
   CLEAR_LINES_A11Y: 'Limpiar las tres lineas',
   TEMPLATE_INSERT_A11Y_PREFIX: 'Insertar plantilla:',
   TEMPLATE_INSERT_HINT: 'Anade el inicio de frase en la linea que tienes enfocada',
+  TEMPLATE_CHIP_1_LABEL: 'Hoy agradezco…',
+  TEMPLATE_CHIP_1_PREFIX: 'Hoy agradezco ',
+  TEMPLATE_CHIP_2_LABEL: 'Me ayudó…',
+  TEMPLATE_CHIP_2_PREFIX: 'Me ayudó ',
+  TEMPLATE_CHIP_3_LABEL: 'Valoro…',
+  TEMPLATE_CHIP_3_PREFIX: 'Valoro ',
   LINE_1_PLACEHOLDER: 'Algo que te hizo bien hoy',
   LINE_2_PLACEHOLDER: 'Una persona o gesto que valoras',
   LINE_3_PLACEHOLDER: 'Algo de ti que reconoces',
@@ -75,11 +81,25 @@ const DEFAULT_TEXTS = {
   EXAMPLE_3: 'Ejemplo: "Valoro el descanso que pude tomar hoy."',
 };
 
-const TEMPLATE_CHIPS = [
-  { id: 'c1', label: 'Hoy agradezco…', prefix: 'Hoy agradezco ' },
-  { id: 'c2', label: 'Me ayudó…', prefix: 'Me ayudó ' },
-  { id: 'c3', label: 'Valoro…', prefix: 'Valoro ' },
-];
+function buildGratitudeTemplateChips(texts) {
+  return [
+    {
+      id: 'c1',
+      label: texts.TEMPLATE_CHIP_1_LABEL,
+      prefix: texts.TEMPLATE_CHIP_1_PREFIX,
+    },
+    {
+      id: 'c2',
+      label: texts.TEMPLATE_CHIP_2_LABEL,
+      prefix: texts.TEMPLATE_CHIP_2_PREFIX,
+    },
+    {
+      id: 'c3',
+      label: texts.TEMPLATE_CHIP_3_LABEL,
+      prefix: texts.TEMPLATE_CHIP_3_PREFIX,
+    },
+  ];
+}
 
 function createStyles(colors, t) {
   return StyleSheet.create({
@@ -322,6 +342,18 @@ const GratitudeJournalScreen = () => {
         DEFAULT_TEXTS.TEMPLATE_INSERT_A11Y_PREFIX,
       TEMPLATE_INSERT_HINT:
         translated?.GRATITUDE_TEMPLATE_INSERT_HINT ?? DEFAULT_TEXTS.TEMPLATE_INSERT_HINT,
+      TEMPLATE_CHIP_1_LABEL:
+        translated?.GRATITUDE_TEMPLATE_CHIP_1_LABEL ?? DEFAULT_TEXTS.TEMPLATE_CHIP_1_LABEL,
+      TEMPLATE_CHIP_1_PREFIX:
+        translated?.GRATITUDE_TEMPLATE_CHIP_1_PREFIX ?? DEFAULT_TEXTS.TEMPLATE_CHIP_1_PREFIX,
+      TEMPLATE_CHIP_2_LABEL:
+        translated?.GRATITUDE_TEMPLATE_CHIP_2_LABEL ?? DEFAULT_TEXTS.TEMPLATE_CHIP_2_LABEL,
+      TEMPLATE_CHIP_2_PREFIX:
+        translated?.GRATITUDE_TEMPLATE_CHIP_2_PREFIX ?? DEFAULT_TEXTS.TEMPLATE_CHIP_2_PREFIX,
+      TEMPLATE_CHIP_3_LABEL:
+        translated?.GRATITUDE_TEMPLATE_CHIP_3_LABEL ?? DEFAULT_TEXTS.TEMPLATE_CHIP_3_LABEL,
+      TEMPLATE_CHIP_3_PREFIX:
+        translated?.GRATITUDE_TEMPLATE_CHIP_3_PREFIX ?? DEFAULT_TEXTS.TEMPLATE_CHIP_3_PREFIX,
       LINE_1_PLACEHOLDER:
         translated?.GRATITUDE_LINE_1_PLACEHOLDER ?? DEFAULT_TEXTS.LINE_1_PLACEHOLDER,
       LINE_2_PLACEHOLDER:
@@ -359,6 +391,7 @@ const GratitudeJournalScreen = () => {
     }),
     [translated]
   );
+  const templateChips = useMemo(() => buildGratitudeTemplateChips(T), [T]);
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
@@ -597,7 +630,7 @@ const GratitudeJournalScreen = () => {
               contentContainerStyle={styles.templatesRow}
               keyboardShouldPersistTaps="handled"
             >
-              {TEMPLATE_CHIPS.map((chip) => (
+              {templateChips.map((chip) => (
                 <TouchableOpacity
                   key={chip.id}
                   style={styles.templateChip}

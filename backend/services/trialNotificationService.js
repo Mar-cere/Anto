@@ -9,8 +9,8 @@
  * @author AntoApp Team
  */
 
-import User from '../models/User.js';
 import Subscription from '../models/Subscription.js';
+import User from '../models/User.js';
 import pushNotificationService from './pushNotificationService.js';
 
 class TrialNotificationService {

@@ -3,8 +3,31 @@
  */
 import {
   pickNewSubtaskTitles,
+  buildSubtaskLlmSystemPrompt,
+  normalizeSubtaskLanguage,
   MAX_SUBTASKS_TOTAL
 } from '../../../services/taskSubtasksLlmService.js';
+
+describe('taskSubtasksLlmService language', () => {
+  it('normaliza idioma a es o en', () => {
+    expect(normalizeSubtaskLanguage('en')).toBe('en');
+    expect(normalizeSubtaskLanguage('es')).toBe('es');
+    expect(normalizeSubtaskLanguage('fr')).toBe('es');
+    expect(normalizeSubtaskLanguage(undefined)).toBe('es');
+  });
+
+  it('buildSubtaskLlmSystemPrompt pide salida en inglés cuando language es en', () => {
+    const prompt = buildSubtaskLlmSystemPrompt('en');
+    expect(prompt).toMatch(/neutral English/i);
+    expect(prompt).not.toMatch(/español neutro/i);
+  });
+
+  it('buildSubtaskLlmSystemPrompt pide salida en español por defecto', () => {
+    const prompt = buildSubtaskLlmSystemPrompt('es');
+    expect(prompt).toMatch(/español neutro/i);
+    expect(prompt).not.toMatch(/neutral English/i);
+  });
+});
 
 describe('taskSubtasksLlmService.pickNewSubtaskTitles', () => {
   it('deduplica respecto a subtareas existentes y respeta el máximo por llamada', () => {

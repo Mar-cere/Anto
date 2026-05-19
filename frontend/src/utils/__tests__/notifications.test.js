@@ -49,13 +49,28 @@ jest.mock('react-native/Libraries/Utilities/Platform', () => ({
   OS: 'ios'
 }));
 
-// Mock notifications data
-jest.mock('../../data/notifications', () => {
-  return [
+jest.mock('../../config/api', () => ({
+  getAppLanguage: jest.fn().mockResolvedValue('es'),
+}));
+
+// Mock notifications data (es + en pools)
+jest.mock('../../data/notifications', () => ({
+  __esModule: true,
+  default: [
     { title: 'Test Notification 1', body: 'Body 1' },
-    { title: 'Test Notification 2', body: 'Body 2' }
-  ];
-}, { virtual: true });
+    { title: 'Test Notification 2', body: 'Body 2' },
+  ],
+}));
+
+jest.mock('../../data/notifications.en', () => ({
+  __esModule: true,
+  default: {
+    morning: [{ title: 'EN Morning', body: 'EN Body' }],
+    afternoon: [],
+    evening: [],
+    any: [],
+  },
+}));
 
 describe('notifications', () => {
   beforeEach(() => {

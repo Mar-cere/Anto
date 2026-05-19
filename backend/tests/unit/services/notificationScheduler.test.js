@@ -5,12 +5,12 @@
  */
 
 import { jest } from '@jest/globals';
-import NotificationEngagement from '../../../models/NotificationEngagement.js';
-import User from '../../../models/User.js';
 import mongoose from 'mongoose';
 import Habit from '../../../models/Habit.js';
+import NotificationEngagement from '../../../models/NotificationEngagement.js';
+import User from '../../../models/User.js';
 import notificationScheduler, {
-  computeNextRoutinePushSlot,
+    computeNextRoutinePushSlot,
 } from '../../../services/notificationScheduler.js';
 import pushNotificationService from '../../../services/pushNotificationService.js';
 
@@ -43,7 +43,7 @@ describe('NotificationScheduler Service', () => {
         '507f1f77bcf86cd799439011',
         'ExponentPushToken[test]',
         pushNotificationService.NOTIFICATION_TYPES.DAILY_CHECKIN,
-        { timeOfDay: 'morning' }
+        { timeOfDay: 'morning', language: 'es' }
       );
 
       expect(result).toBe(false);
@@ -73,7 +73,7 @@ describe('NotificationScheduler Service', () => {
         '507f1f77bcf86cd799439011',
         'ExponentPushToken[test]',
         pushNotificationService.NOTIFICATION_TYPES.DAILY_CHECKIN,
-        { timeOfDay: 'morning' }
+        { timeOfDay: 'morning', language: 'es' }
       );
 
       expect(result).toBe(true);
@@ -255,7 +255,7 @@ describe('NotificationScheduler Service', () => {
         uid,
         mockUser.pushToken,
         pushNotificationService.NOTIFICATION_TYPES.MORNING_MOTIVATION,
-        { timeOfDay: 'morning' }
+        { timeOfDay: 'morning', language: 'es' }
       );
     });
   });

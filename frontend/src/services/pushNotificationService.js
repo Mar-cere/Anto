@@ -7,12 +7,29 @@
  * @author AntoApp Team
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import { api, ENDPOINTS } from '../config/api';
+import { api, ENDPOINTS, getAppLanguage } from '../config/api';
 import { lightColors } from '../styles/themePalettes';
+
+const ANDROID_CHANNEL_LABELS = {
+  es: {
+    crisis: 'Alertas de Crisis',
+    followup: 'Seguimientos',
+    reminders: 'Recordatorios',
+    general: 'Notificaciones Generales',
+    trial: 'Trial y Suscripciones',
+  },
+  en: {
+    crisis: 'Crisis Alerts',
+    followup: 'Follow-ups',
+    reminders: 'Reminders',
+    general: 'General Notifications',
+    trial: 'Trial and Subscriptions',
+  },
+};
 
 // Constantes
 const STORAGE_KEYS = {
@@ -27,9 +44,11 @@ let notificationsInitialized = false;
  */
 const setupNotificationChannels = async () => {
   if (Platform.OS === 'android') {
+    const language = await getAppLanguage();
+    const labels = ANDROID_CHANNEL_LABELS[language === 'en' ? 'en' : 'es'];
     // Canal para crisis (máxima prioridad)
     await Notifications.setNotificationChannelAsync('anto-crisis', {
-      name: 'Alertas de Crisis',
+      name: labels.crisis,
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 500, 200, 500],
       lightColor: lightColors.error,
@@ -39,7 +58,7 @@ const setupNotificationChannels = async () => {
 
     // Canal para seguimientos
     await Notifications.setNotificationChannelAsync('anto-followup', {
-      name: 'Seguimientos',
+      name: labels.followup,
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: lightColors.success,
@@ -48,7 +67,7 @@ const setupNotificationChannels = async () => {
 
     // Canal para recordatorios y progreso
     await Notifications.setNotificationChannelAsync('anto-reminders', {
-      name: 'Recordatorios',
+      name: labels.reminders,
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250],
       lightColor: lightColors.primary,
@@ -57,7 +76,7 @@ const setupNotificationChannels = async () => {
 
     // Canal general para notificaciones
     await Notifications.setNotificationChannelAsync('anto-notifications', {
-      name: 'Notificaciones Generales',
+      name: labels.general,
       importance: Notifications.AndroidImportance.DEFAULT,
       vibrationPattern: [0, 200],
       lightColor: lightColors.primary,
@@ -66,7 +85,7 @@ const setupNotificationChannels = async () => {
 
     // Canal para notificaciones de trial y suscripciones
     await Notifications.setNotificationChannelAsync('anto-trial', {
-      name: 'Trial y Suscripciones',
+      name: labels.trial,
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: lightColors.warning,

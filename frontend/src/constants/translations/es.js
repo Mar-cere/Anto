@@ -1113,6 +1113,12 @@ export const TECHNIQUES = {
   GRATITUDE_TEMPLATE_INSERT_A11Y_PREFIX: 'Insertar plantilla:',
   GRATITUDE_TEMPLATE_INSERT_HINT:
     'Anade el inicio de frase en la linea que tienes enfocada',
+  GRATITUDE_TEMPLATE_CHIP_1_LABEL: 'Hoy agradezco…',
+  GRATITUDE_TEMPLATE_CHIP_1_PREFIX: 'Hoy agradezco ',
+  GRATITUDE_TEMPLATE_CHIP_2_LABEL: 'Me ayudó…',
+  GRATITUDE_TEMPLATE_CHIP_2_PREFIX: 'Me ayudó ',
+  GRATITUDE_TEMPLATE_CHIP_3_LABEL: 'Valoro…',
+  GRATITUDE_TEMPLATE_CHIP_3_PREFIX: 'Valoro ',
   GRATITUDE_LINE_1_PLACEHOLDER: 'Algo que te hizo bien hoy',
   GRATITUDE_LINE_2_PLACEHOLDER: 'Una persona o gesto que valoras',
   GRATITUDE_LINE_3_PLACEHOLDER: 'Algo de ti que reconoces',
