@@ -9,7 +9,9 @@ import {
   evaluateConversationClosureReadiness,
   shouldOrientSessionClosure,
   stripPrematureSessionClosurePhrases,
-  responseHasSessionClosureBridge
+  responseHasSessionClosureBridge,
+  isGreetingOrCheckInMessage,
+  getSessionClosureBridge
 } from '../../../services/sessionRetentionHints.js';
 
 describe('sessionRetentionHints', () => {
@@ -25,7 +27,39 @@ describe('sessionRetentionHints', () => {
     });
   });
 
+  describe('isGreetingOrCheckInMessage', () => {
+    it('detecta saludos breves en es y en', () => {
+      expect(isGreetingOrCheckInMessage('Hi')).toBe(true);
+      expect(isGreetingOrCheckInMessage('Hello!')).toBe(true);
+      expect(isGreetingOrCheckInMessage('Hola')).toBe(true);
+      expect(isGreetingOrCheckInMessage('Estoy muy cansada hoy')).toBe(false);
+    });
+  });
+
+  describe('getSessionClosureBridge', () => {
+    it('devuelve puente en el idioma pedido', () => {
+      expect(getSessionClosureBridge('en', false)).toMatch(/close this segment/i);
+      expect(getSessionClosureBridge('es', false)).toMatch(/cerrar aqu[ií] este tramo/i);
+    });
+  });
+
   describe('buildSessionRetentionPayload', () => {
+    it('no sugiere cierre por puente en saludo aunque el hilo sea largo', () => {
+      const history = [];
+      for (let i = 0; i < 5; i++) {
+        history.push({ role: 'user', content: `u${i}` });
+        history.push({ role: 'assistant', content: `a${i}` });
+      }
+      const p = buildSessionRetentionPayload({
+        conversationHistoryNewestFirst: history,
+        userContent: 'Hi',
+        priorConversationCount: 2,
+        threadMessageLimit: 100
+      });
+      expect(p.userTurnCount).toBe(5);
+      expect(p.suggestBridgeClosing).toBe(false);
+    });
+
     it('primera conversación en la app: solo tras varios turnos y hilo sustantivo', () => {
       const history = [];
       for (let i = 0; i < 5; i++) {
@@ -499,6 +533,18 @@ describe('sessionRetentionHints', () => {
       expect(s).toContain('bienvenida de vuelta');
       expect(s).not.toContain('sentir que el tramo tuvo una conclusión');
       expect(s).toMatch(/No\*\*\s*invites a cerrar el tramo/i);
+    });
+
+    it('cabecera en inglés cuando language es en', () => {
+      const p = buildSessionRetentionPayload({
+        conversationHistoryNewestFirst: [{ role: 'user', content: 'hello' }],
+        userContent: 'Thanks, bye for now',
+        priorConversationCount: 2,
+        threadMessageLimit: 100
+      });
+      const s = buildSessionRetentionSystemSnippet(p, { language: 'en' });
+      expect(s).toContain('Session and return');
+      expect(s).toMatch(/goodbye or wrap-up/i);
     });
   });
 });

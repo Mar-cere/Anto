@@ -387,11 +387,17 @@ function buildProgressiveClosureSnippet(
   conversationPattern = {},
   sessionIntention = 'vent',
   sessionPhase = 'default',
-  contexto = {}
+  contexto = {},
+  language = 'es'
 ) {
+  const en = language === 'en';
   const phaseNorm = typeof sessionPhase === 'string' ? sessionPhase.trim() : '';
   if (phaseNorm === 'acute') {
-    return `\n\n### Cierre con avance (fase de seguridad)
+    return en
+      ? `\n\n### Closure with progress (safety phase)
+- With active risk or crisis, "progress" means **safety and brief clarity**, not segment-closure synthesis or pause invitations until the context is stable.
+- Do not use option (d) "landing" from the standard variant; follow the crisis section if it applies.`
+      : `\n\n### Cierre con avance (fase de seguridad)
 - Con riesgo o crisis activa, el “avance” es **seguridad y claridad breve**, no síntesis de cierre de tramo ni invitación a pausar hasta que el contexto sea estable.
 - No uses la opción (d) de “aterrizaje” de la variante estándar; sigue la sección de crisis si aplica.`;
   }
@@ -400,11 +406,21 @@ function buildProgressiveClosureSnippet(
     sessionRetention: contexto.sessionRetention,
     conversationPattern,
     sessionPhase,
-    contextual: contexto.contextual
+    contextual: contexto.contextual,
+    userMessage:
+      contexto.userMessage ??
+      (typeof contexto.currentMessage === 'string'
+        ? contexto.currentMessage
+        : contexto.currentMessage?.content)
   });
 
   if (closurePhase === 'opening') {
-    return `\n\n### Ritmo del turno (inicio de hilo)
+    return en
+      ? `\n\n### Turn rhythm (thread start)
+- Prioritize welcome and **one** natural invitation to share; read tone, meaning, and emotional state of the current message.
+- **Do not** invite closing the segment, pausing the session, or "picking up from this point" unless the user clearly says goodbye.
+- Current session intention: ${sessionIntention}.`
+      : `\n\n### Ritmo del turno (inicio de hilo)
 - Prioriza acogida y **una** invitación natural a contar; lee tono, sentido y estado emocional del mensaje actual.
 - **No** invites a cerrar el tramo, pausar la sesión ni “retomar desde este punto” salvo despedida clara del usuario.
 - Intención de sesión actual: ${sessionIntention}.`;
@@ -414,18 +430,33 @@ function buildProgressiveClosureSnippet(
   const qStreak = Number(conversationPattern?.questionStreakCount || 0);
   const questionFatigueLine =
     qStreak >= 2
-      ? '\n- **Racha de preguntas:** este turno puede priorizar **síntesis breve** o **pausa opcional** en lugar de otra pregunta amplia.'
+      ? en
+        ? '\n- **Question streak:** this turn may prioritize **brief synthesis** or an **optional pause** instead of another broad question.'
+        : '\n- **Racha de preguntas:** este turno puede priorizar **síntesis breve** o **pausa opcional** en lugar de otra pregunta amplia.'
       : '';
 
   if (closurePhase === 'developing') {
-    return `\n\n### Ritmo del turno (conversación en curso)
+    return en
+      ? `\n\n### Turn rhythm (conversation in progress)
+- Follow the thread by **tone, meaning, and state** of the moment; move forward with one focused question or a single useful nuance.
+- Still **do not** orient segment closure or pause unless the user asks or says goodbye.
+- If the system marks return signals or "Session and return" below, **only** follow them when they fit what was just said.
+- Current session intention: ${sessionIntention}.${questionFatigueLine}`
+      : `\n\n### Ritmo del turno (conversación en curso)
 - Sigue el hilo por **tono, sentido y estado** del momento; avanza con una pregunta focal o un matiz útil.
 - Aún **no** orientes cierre de tramo ni pausa salvo que el usuario lo pida o se despida.
 - Si el sistema marca señales de retorno o «Sesión y retorno» más abajo, **solo** síguelas cuando encajen con lo que acaba de decir.
 - Intención de sesión actual: ${sessionIntention}.${questionFatigueLine}`;
   }
 
-  return `\n\n### Cierre con avance (cuando el tramo ya aterrizó)
+  return en
+    ? `\n\n### Closure with progress (when the segment has landed)
+- Only if the topic **already feels concluded** (venting complete, topic resolved, goodbye, or clear fatigue): (a) focused question, (b) non-body micro-action, (c) mini-summary + confirmation, or (d) brief synthesis + temporal bridge.
+- If the thread is still open or it is a greeting/check-in, **do not** use (d) or invite closing the segment.
+- Evaluate each turn by tone and state; do not close out of inertia or a fixed message count.
+- Exit signal (${closureRisk ? 'yes' : 'no'}): leave useful continuity for return without guilt or pressure.
+- Current session intention: ${sessionIntention}. Adjust closure to that intention.${questionFatigueLine}`
+    : `\n\n### Cierre con avance (cuando el tramo ya aterrizó)
 - Solo si el tema **ya tiene sentido de conclusión** (desahogo cumplido, tema resuelto, despedida o fatiga clara): (a) pregunta focal, (b) micro-acción no corporal, (c) mini-resumen + confirmación, o (d) síntesis breve + puente temporal.
 - Si el hilo sigue abierto o es saludo/check-in, **no** uses (d) ni invites a cerrar el tramo.
 - Evalúa cada turno por tono y estado; no cierres por inercia ni por número fijo de mensajes.
@@ -926,7 +957,8 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     conversationPattern,
     sessionIntention,
     contexto.sessionPhase || 'default',
-    contexto
+    contexto,
+    language
   );
   systemMessage += buildPhaseRouterSnippet(contexto);
   systemMessage += buildAntiRobotRewriteSnippet();
@@ -982,7 +1014,8 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   }
 
   const retentionSnippet = buildSessionRetentionSystemSnippet(contexto.sessionRetention, {
-    sessionPhase: contexto.sessionPhase || 'default'
+    sessionPhase: contexto.sessionPhase || 'default',
+    language
   });
   if (retentionSnippet) {
     systemMessage += retentionSnippet;

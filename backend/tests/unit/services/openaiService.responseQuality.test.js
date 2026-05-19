@@ -64,6 +64,31 @@ describe('openaiService — guardrails de calidad de respuesta', () => {
     expect(output).toBe(input);
   });
 
+  it('enforceSessionClosureBridge no aplica en "Hi" aunque el hilo sea largo', () => {
+    const input = 'Hi. How are you feeling right now?';
+    const output = openaiService.enforceSessionClosureBridge(input, {
+      userMessage: 'Hi',
+      sessionRetention: { suggestBridgeClosing: true, userTurnCount: 6 },
+      conversationPattern: { closureRisk: false },
+      profile: { preferences: { language: 'en' } },
+      crisis: { riskLevel: 'LOW' }
+    });
+    expect(output).toBe(input);
+    expect(output).not.toMatch(/close this segment|cerrar aqu[ií] este tramo/i);
+  });
+
+  it('enforceSessionClosureBridge agrega puente en inglés cuando aplica', () => {
+    const input = 'Thanks for sharing all of this with me.';
+    const output = openaiService.enforceSessionClosureBridge(input, {
+      sessionRetention: { suggestBridgeClosing: true, userTurnCount: 6 },
+      conversationPattern: { closureRisk: false },
+      profile: { preferences: { language: 'en' } },
+      crisis: { riskLevel: 'LOW' }
+    });
+    expect(output).toMatch(/close this segment|pick it up whenever/i);
+    expect(output).not.toMatch(/cerrar aqu[ií] este tramo/i);
+  });
+
   it('enforceSessionClosureBridge sí aplica con señal de retención y hilo sustantivo', () => {
     const input = 'Gracias por contarme todo esto.';
     const output = openaiService.enforceSessionClosureBridge(input, {

@@ -17,6 +17,12 @@ import openaiService from './openaiService.js';
 import { computeNextRoutinePushSlot } from './notificationScheduler.js';
 import { getLastSessionSummaryForUser } from './lastSessionSummaryService.js';
 import { buildUserSummary } from './userSummaryService.js';
+import {
+  focusCopy,
+  focusLocale,
+  localizeLastSessionSummaryForDisplay,
+  normalizeFocusLanguage
+} from '../utils/focusDashboardCopy.js';
 
 function cacheTtlSecondsUntilUtcEndOfDay() {
   const now = Date.now();
@@ -141,13 +147,14 @@ async function loadNextHabitReminder(userId) {
   return best;
 }
 
-async function loadTherapeuticProtocolHint(userId) {
+async function loadTherapeuticProtocolHint(userId, language = 'es') {
   const doc = await TherapeuticRecord.findOne({
     userId: new mongoose.Types.ObjectId(userId)
   })
     .select('activeTools therapeuticGoals')
     .lean();
   if (!doc) return { line: null, source: null };
+  const c = focusCopy(language);
   const goals = doc.therapeuticGoals || [];
   const inProg = goals.find((g) => g.status === 'en_progreso');
   const pend = goals.find((g) => g.status === 'pendiente');
@@ -159,7 +166,7 @@ async function loadTherapeuticProtocolHint(userId) {
   const tools = doc.activeTools || [];
   if (tools.length) {
     const t0 = String(tools[0]).replace(/_/g, ' ');
-    return { line: `Seguimiento activo: ${t0}`.slice(0, 220), source: 'therapeutic_record' };
+    return { line: c.activeFollowUp(t0).slice(0, 220), source: 'therapeutic_record' };
   }
   return { line: null, source: null };
 }
@@ -170,15 +177,16 @@ async function loadUserNotificationPrefs(userId) {
 }
 
 /** Subtítulo genérico para “retomar chat” sin mostrar contenido del hilo. */
-function chatResumeSubtitle(lastConv, now = new Date()) {
+function chatResumeSubtitle(lastConv, now = new Date(), language = 'es') {
+  const c = focusCopy(language);
   if (!lastConv?.updatedAt) {
-    return 'Tu conversación sigue en el chat, en privado.';
+    return c.chatResumeDefault;
   }
   const hours = (now.getTime() - new Date(lastConv.updatedAt).getTime()) / 3600000;
-  if (hours < 24) return 'Hubo actividad reciente en el chat.';
+  if (hours < 24) return c.chatResumeRecent;
   const days = Math.floor(hours / 24);
-  if (days === 1) return 'Última actividad en el chat: hace un día.';
-  return `Última actividad en el chat: hace ${days} días.`;
+  if (days === 1) return c.chatResumeOneDay;
+  return c.chatResumeDays(days);
 }
 
 /**
@@ -191,8 +199,11 @@ export function buildReminderCandidates({
   upcomingTasks = [],
   habitReminder = null,
   nextPushSlot = null,
-  now = new Date()
+  now = new Date(),
+  language = 'es'
 }) {
+  const c = focusCopy(language);
+  const locale = focusLocale(language);
   const userMsgs = summary?.chat?.userMessages ?? 0;
   const lastConv = recentConversations[0];
   const candidates = [];
@@ -208,15 +219,15 @@ export function buildReminderCandidates({
   if (lastConv && chatRelevantWithConv) {
     candidates.push({
       kind: 'chat',
-      title: 'Retoma tu última conversación',
-      subtitle: chatResumeSubtitle(lastConv, now),
+      title: c.resumeLastChat,
+      subtitle: chatResumeSubtitle(lastConv, now, language),
       conversationId: lastConv.conversationId
     });
   } else if (!lastConv && userMsgs === 0) {
     candidates.push({
       kind: 'chat',
-      title: 'Empieza una conversación',
-      subtitle: 'Un mensaje corto ya es un buen primer paso.',
+      title: c.startConversation,
+      subtitle: c.startConversationSub,
       conversationId: null
     });
   }
@@ -225,9 +236,9 @@ export function buildReminderCandidates({
     const t = upcomingTasks[0];
     candidates.push({
       kind: 'task',
-      title: `Próxima tarea: ${String(t.title).slice(0, 72)}`,
+      title: c.nextTask(String(t.title).slice(0, 72)),
       subtitle: t.dueDate
-        ? `Vence el ${new Date(t.dueDate).toLocaleDateString('es', { day: 'numeric', month: 'short' })}`
+        ? c.dueOn(new Date(t.dueDate).toLocaleDateString(locale, { day: 'numeric', month: 'short' }))
         : null,
       taskId: String(t._id)
     });
@@ -236,18 +247,18 @@ export function buildReminderCandidates({
   if (habitReminder) {
     const at = habitReminder.nextAt;
     const timeStr = at
-      ? at.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })
+      ? at.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
       : '';
     candidates.push({
       kind: 'habit',
-      title: `Hábito: ${String(habitReminder.title).slice(0, 64)}`,
-      subtitle: timeStr ? `Recordatorio hacia las ${timeStr}` : null,
+      title: c.habit(String(habitReminder.title).slice(0, 64)),
+      subtitle: timeStr ? c.reminderAround(timeStr) : null,
       habitId: habitReminder.id
     });
   }
 
   if (nextPushSlot?.at) {
-    const when = nextPushSlot.at.toLocaleString('es', {
+    const when = nextPushSlot.at.toLocaleString(locale, {
       weekday: 'short',
       day: 'numeric',
       month: 'short',
@@ -256,7 +267,7 @@ export function buildReminderCandidates({
     });
     candidates.push({
       kind: 'push',
-      title: nextPushSlot.label || 'Recordatorio programado',
+      title: nextPushSlot.label || c.scheduledReminder,
       subtitle: when,
       pushKind: nextPushSlot.kind
     });
@@ -285,11 +296,13 @@ export function buildDeterministicFocusCaption({
   upcomingTasks = [],
   commitmentsList = [],
   recentConversations = [],
-  protocolLine = null
+  protocolLine = null,
+  language = 'es'
 }) {
+  const c = focusCopy(language);
   if (protocolLine) {
     const p = String(protocolLine).slice(0, 140);
-    return `Con lo que has estado trabajando: ${p} ¿Qué micro-paso encaja hoy?`;
+    return c.focusProtocol(p);
   }
   const userMsgs = summary?.chat?.userMessages ?? 0;
   const activeDays = summary?.chat?.distinctActiveDays ?? 0;
@@ -297,23 +310,21 @@ export function buildDeterministicFocusCaption({
   const firstCommitment = commitmentsList[0];
 
   if (userMsgs === 0) {
-    return 'Esta semana aún no escribiste en el chat. Un mensaje corto ya es un buen primer paso.';
+    return c.focusNoChatWeek;
   }
   if (activeDays <= 1 && userMsgs < 6) {
-    return 'Hay poca actividad esta semana: volver al chat unos minutos suele ayudar a mantener el ritmo.';
+    return c.focusSparseActivity;
   }
   if (nextTask?.title) {
-    const t = String(nextTask.title).slice(0, 80);
-    return `Próximo foco práctico: “${t}”. Puedes avanzar un poco hoy o ajustar la fecha si hace falta.`;
+    return c.focusNextTask(String(nextTask.title).slice(0, 80));
   }
   if (firstCommitment) {
-    const c = String(firstCommitment).slice(0, 120);
-    return `Recordatorio suave de tu foco: “${c}”. ¿Qué micro-paso encaja hoy?`;
+    return c.focusCommitment(String(firstCommitment).slice(0, 120));
   }
   if (recentConversations.length > 0) {
-    return 'Puedes retomar tu última conversación o contar en una frase cómo llegas hoy.';
+    return c.focusResumeOrCheckIn;
   }
-  return 'Hoy puedes elegir: una línea en el chat, un avance pequeño en tareas o registrar un hábito.';
+  return c.focusDefaultChoice;
 }
 
 function buildLlmUserPayload({
@@ -360,16 +371,19 @@ function buildLlmUserPayload({
   });
 }
 
-async function maybeLlmFocusLine(userId, bundle) {
+async function maybeLlmFocusLine(userId, bundle, language = 'es') {
+  const lang = normalizeFocusLanguage(language);
+  const c = focusCopy(lang);
   const enabled = process.env.DASHBOARD_FOCUS_LLM_ENABLED === 'true';
   if (!enabled || !process.env.OPENAI_API_KEY) {
     return { mode: 'deterministic', text: bundle.deterministicCaption };
   }
 
   const dayKey = new Date().toISOString().slice(0, 10);
-  const cacheKey = cacheService.generateKey('dashboard_focus_llm_v2', {
+  const cacheKey = cacheService.generateKey('dashboard_focus_llm_v3', {
     userId: String(userId),
-    day: dayKey
+    day: dayKey,
+    language: lang
   });
 
   const cached = await cacheService.get(cacheKey);
@@ -380,16 +394,8 @@ async function maybeLlmFocusLine(userId, bundle) {
   const model = process.env.DASHBOARD_FOCUS_LLM_MODEL || 'gpt-4o-mini';
   const userContent = buildLlmUserPayload(bundle);
 
-  const sparseHint = bundle.isSparseActivity
-    ? ' Actividad muy baja: una o dos frases cortas, invitación sin culpa; puede mencionar empezar o retomar el chat y una razón humana y no comercial (ordenar ideas, sentirse acompañado o acompañada), sin prometer curación ni diagnosticar.'
-    : '';
-
-  const protocolHint = bundle.protocolHintFromRecord
-    ? ' Si hay protocolHintFromRecord, intégralo como micro-paso en lenguaje natural y neutro; si no hay, sugiere un siguiente paso suave sin inventar historial clínico.'
-    : '';
-
-  const styleBlock =
-    'Redacta en español neutro y natural: tono cotidiano y amable, comprensible en cualquier país hispanohablante; sin voseo ni localismos marcados, sin jerga clínica ni tono publicitario, sin imperativos duros ni listas. Suena a persona, no a anuncio ni informe.';
+  const sparseHint = bundle.isSparseActivity ? c.llmFocusSparseHint : '';
+  const protocolHint = bundle.protocolHintFromRecord ? c.llmFocusProtocolHint : '';
 
   try {
     const completion = await openaiService.createChatCompletionResilient({
@@ -397,11 +403,11 @@ async function maybeLlmFocusLine(userId, bundle) {
       messages: [
         {
           role: 'system',
-          content: `Eres guía de producto para bienestar. ${styleBlock} Devuelve UNA sola línea (máx. 260 caracteres), cálida, sin diagnosticar, sin mencionar PHQ/GAD como enfermedad. Prioriza retorno al chat si hay baja actividad; si hay tarea próxima, menciónala sin presión. No cites texto del usuario ni extractos del chat. No cierres con pregunta. No uses emojis.${sparseHint}${protocolHint}`
+          content: `${c.llmFocusSystem}${sparseHint}${protocolHint}`
         },
         {
           role: 'user',
-          content: `Datos JSON del usuario hoy:\n${userContent}\n\nEscribe solo la línea final, sin prefijos ni comillas: debe sonar humana, breve y con registro neutro.`
+          content: `Datos JSON del usuario hoy:\n${userContent}\n\n${c.llmFocusUserSuffix}`
         }
       ],
       max_completion_tokens: 140,
@@ -421,8 +427,10 @@ async function maybeLlmFocusLine(userId, bundle) {
 
 /**
  * @param {string} userId
+ * @param {{ language?: 'es'|'en' }} [opts]
  */
-export async function buildDashboardFocus(userId) {
+export async function buildDashboardFocus(userId, opts = {}) {
+  const language = normalizeFocusLanguage(opts.language);
   const [
     summary,
     upcomingTasks,
@@ -432,15 +440,15 @@ export async function buildDashboardFocus(userId) {
     habitReminder,
     protocolNext,
     notificationPreferences,
-    lastSessionSummary
+    lastSessionSummaryRaw
   ] = await Promise.all([
-    buildUserSummary(userId, { period: 'week' }),
+    buildUserSummary(userId, { period: 'week', language }),
     loadUpcomingTasks(userId, 5),
     loadRecentConversations(userId, 3),
     loadCommitments(userId),
     loadLatestScales(userId),
     loadNextHabitReminder(userId),
-    loadTherapeuticProtocolHint(userId),
+    loadTherapeuticProtocolHint(userId, language),
     loadUserNotificationPrefs(userId),
     getLastSessionSummaryForUser(userId)
   ]);
@@ -453,7 +461,8 @@ export async function buildDashboardFocus(userId) {
     upcomingTasks,
     habitReminder,
     nextPushSlot,
-    now: new Date()
+    now: new Date(),
+    language
   });
 
   const userMsgs = summary?.chat?.userMessages ?? 0;
@@ -467,19 +476,26 @@ export async function buildDashboardFocus(userId) {
     upcomingTasks,
     commitmentsList: commitments.list,
     recentConversations,
-    protocolLine: protocolNext.line
+    protocolLine: protocolNext.line,
+    language
   });
 
-  const focusLine = await maybeLlmFocusLine(userId, {
-    summary,
-    upcomingTasks,
-    commitments,
-    recentConversations,
-    scales,
-    deterministicCaption,
-    protocolHintFromRecord: protocolNext.line,
-    isSparseActivity
-  });
+  const focusLine = await maybeLlmFocusLine(
+    userId,
+    {
+      summary,
+      upcomingTasks,
+      commitments,
+      recentConversations,
+      scales,
+      deterministicCaption,
+      protocolHintFromRecord: protocolNext.line,
+      isSparseActivity
+    },
+    language
+  );
+
+  const lastSessionSummary = localizeLastSessionSummaryForDisplay(lastSessionSummaryRaw, language);
 
   const firstTask = upcomingTasks[0];
   return {
@@ -490,7 +506,7 @@ export async function buildDashboardFocus(userId) {
           conversationId: lastSessionSummary.conversationId,
           generatedAt: lastSessionSummary.generatedAt,
           placeholder: lastSessionSummary.placeholder,
-          headline: 'Continuidad del chat'
+          headline: lastSessionSummary.headline
         }
       : null,
     focus: {

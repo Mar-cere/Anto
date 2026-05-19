@@ -56,7 +56,10 @@ import therapeuticProtocolService from './therapeuticProtocolService.js';
 import therapeuticTemplateService from './therapeuticTemplateService.js';
 import {
   shouldOrientSessionClosure,
-  stripPrematureSessionClosurePhrases
+  stripPrematureSessionClosurePhrases,
+  responseHasSessionClosureBridge,
+  getSessionClosureBridge,
+  resolveLanguageFromContext
 } from './sessionRetentionHints.js';
 
 dotenv.config();
@@ -1523,17 +1526,11 @@ class OpenAIService {
 
   enforceSessionClosureBridge(respuesta = '', contexto = {}) {
     if (!respuesta || !this.shouldApplySessionClosure(contexto)) return respuesta;
-    const lower = respuesta.toLowerCase();
-    const hasBridge =
-      /cerrar aqu[ií] este tramo|retomarlo cuando quieras|cuando\s+quieras\s+seguimos|si\s+quieres,\s+por\s+hoy|retomamos\s+desde|aquí\s+estar[eé]\s+cuando\s+vuelvas/i.test(
-        lower
-      );
-    if (hasBridge) return respuesta;
+    if (responseHasSessionClosureBridge(respuesta)) return respuesta;
 
+    const language = resolveLanguageFromContext(contexto);
     const likelyFarewell = contexto?.sessionRetention?.likelyFarewell === true;
-    const bridge = likelyFarewell
-      ? ' Si quieres, por hoy lo dejamos aquí; cuando vuelvas, retomamos desde este punto.'
-      : ' Si te sirve, podemos cerrar aquí este tramo y retomarlo cuando quieras desde este punto.';
+    const bridge = getSessionClosureBridge(language, likelyFarewell);
 
     // En cierre, evitar terminar con doble pregunta abierta.
     let base = this.enforceSingleQuestion(respuesta);

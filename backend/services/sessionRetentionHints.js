@@ -17,8 +17,47 @@ export const PREMATURE_CLOSURE_PHRASE_RES = [
   /\s*si quieres,?\s*por hoy lo dejamos aqu[ií][^.?!]*[.?!]?/giu,
   /\s*podemos cerrar aqu[ií] este tramo y retomarlo[^.?!]*[.?!]?/giu,
   /\s*retomarlo cuando quieras desde este punto[^.?!]*[.?!]?/giu,
-  /\s*dejamos esto por hoy y retomamos[^.?!]*[.?!]?/giu
+  /\s*dejamos esto por hoy y retomamos[^.?!]*[.?!]?/giu,
+  /\s*if it helps,?\s*we can close this segment here[^.?!]*[.?!]?/giu,
+  /\s*if you want,?\s*we can leave it here for today[^.?!]*[.?!]?/giu,
+  /\s*pick (?:it|this) up whenever you want from here[^.?!]*[.?!]?/giu,
+  /\s*when you(?:'re| are) ready,?\s*we can continue from here[^.?!]*[.?!]?/giu,
 ];
+
+const GREETING_CHECKIN_RES =
+  /^(?:hi|hello|hey|hola|buenos?\s+d[ií]as|buenas?\s+tardes|buenas?\s+noches|good\s+(?:morning|afternoon|evening|night)|howdy|yo|what(?:'s| is) up)[\s!.?]*$/iu;
+
+/**
+ * Saludo o check-in breve: no debe orientar cierre de tramo.
+ * @param {string} [content]
+ * @returns {boolean}
+ */
+export function isGreetingOrCheckInMessage(content) {
+  const t = (content || '').trim();
+  if (!t || t.length > 48) return false;
+  return GREETING_CHECKIN_RES.test(t);
+}
+
+/**
+ * @param {'es'|'en'} language
+ * @param {boolean} likelyFarewell
+ * @returns {string}
+ */
+export function getSessionClosureBridge(language = 'es', likelyFarewell = false) {
+  if (language === 'en') {
+    return likelyFarewell
+      ? ' If you want, we can leave it here for today; when you come back, we can pick up from this point.'
+      : ' If it helps, we can close this segment here and pick it up whenever you want from this point.';
+  }
+  return likelyFarewell
+    ? ' Si quieres, por hoy lo dejamos aquí; cuando vuelvas, retomamos desde este punto.'
+    : ' Si te sirve, podemos cerrar aquí este tramo y retomarlo cuando quieras desde este punto.';
+}
+
+export function resolveLanguageFromContext(contexto = {}) {
+  const raw = contexto?.profile?.preferences?.language ?? contexto?.language;
+  return raw === 'en' ? 'en' : 'es';
+}
 
 /**
  * @typedef {'opening' | 'developing' | 'may_close'} ConversationClosurePhase
@@ -37,7 +76,8 @@ export function evaluateConversationClosureReadiness({
   sessionRetention = null,
   conversationPattern = null,
   sessionPhase = 'default',
-  contextual = null
+  contextual = null,
+  userMessage = null
 } = {}) {
   const retention = sessionRetention && typeof sessionRetention === 'object' ? sessionRetention : {};
   const pattern = conversationPattern && typeof conversationPattern === 'object' ? conversationPattern : {};
@@ -46,7 +86,11 @@ export function evaluateConversationClosureReadiness({
   const intent = contextual?.intencion?.tipo;
   const phaseNorm = typeof sessionPhase === 'string' ? sessionPhase.trim() : '';
 
-  if (intent === MESSAGE_INTENTS.GREETING || retention.suggestReturningUserWarmOpen === true) {
+  if (
+    intent === MESSAGE_INTENTS.GREETING ||
+    retention.suggestReturningUserWarmOpen === true ||
+    isGreetingOrCheckInMessage(userMessage)
+  ) {
     return { phase: 'opening', reasons: ['saludo_o_apertura'] };
   }
 
@@ -116,7 +160,10 @@ export function responseHasSessionClosureBridge(respuesta) {
   return (
     /cerrar aqu[ií] este tramo/.test(lower) ||
     /retomarlo cuando quieras/.test(lower) ||
-    /por hoy lo dejamos aqu[ií]/.test(lower)
+    /por hoy lo dejamos aqu[ií]/.test(lower) ||
+    /close this segment here/.test(lower) ||
+    /pick (?:it|this) up whenever you want/.test(lower) ||
+    /leave it here for today/.test(lower)
   );
 }
 
@@ -128,11 +175,17 @@ export function shouldOrientSessionClosure(contexto = {}) {
   const riskLevel = String(contexto?.crisis?.riskLevel || '').toUpperCase();
   if (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') return false;
 
+  if (isGreetingOrCheckInMessage(contexto?.userMessage)) return false;
+
+  const intent = contexto?.contextual?.intencion?.tipo;
+  if (intent === MESSAGE_INTENTS.GREETING) return false;
+
   const { phase } = evaluateConversationClosureReadiness({
     sessionRetention: contexto?.sessionRetention,
     conversationPattern: contexto?.conversationPattern,
     sessionPhase: contexto?.sessionPhase,
-    contextual: contexto?.contextual
+    contextual: contexto?.contextual,
+    userMessage: contexto?.userMessage
   });
   return phase === 'may_close';
 }
@@ -219,6 +272,7 @@ export function buildSessionRetentionPayload({
   const userTurnCount = msgs.filter((m) => m.role === 'user').length;
   const totalMessages = msgs.length;
   const likelyFarewell = detectLikelyFarewell(userContent);
+  const isGreeting = isGreetingOrCheckInMessage(userContent);
   const limitNum = Number(threadMessageLimit);
   const threadLimitSafe =
     Number.isFinite(limitNum) && limitNum >= 1 ? Math.min(Math.floor(limitNum), SNIPPET_COUNT_CAP) : 100;
@@ -242,6 +296,7 @@ export function buildSessionRetentionPayload({
   const suggestBridgeClosing =
     longSession &&
     !likelyFarewell &&
+    !isGreeting &&
     !suggestFirstTimeExpectation &&
     userTurnCount >= CLOSURE_MIN_USER_TURNS &&
     userTurnCount <= 8;
@@ -251,6 +306,7 @@ export function buildSessionRetentionPayload({
 
   const suggestCheckpointPause =
     !likelyFarewell &&
+    !isGreeting &&
     !suggestFirstTimeExpectation &&
     userTurnCount >= CLOSURE_MIN_USER_TURNS &&
     totalMessages >= 10 &&
@@ -355,13 +411,14 @@ export function withThematicMicroClosureRetention(payload, { sessionPhase, conve
 /**
  * Texto a añadir al system prompt (vacío si no aplica nada).
  * @param {object|null|undefined} payload - resultado de buildSessionRetentionPayload
- * @param {{ sessionPhase?: string }} [options] - en fase `acute` se omiten cierres reflexivos (seguridad primero).
+ * @param {{ sessionPhase?: string, language?: 'es'|'en' }} [options] - en fase `acute` se omiten cierres reflexivos (seguridad primero).
  * @returns {string}
  */
 export function buildSessionRetentionSystemSnippet(payload, options = {}) {
   if (!payload) return '';
   const phaseNorm = typeof options.sessionPhase === 'string' ? options.sessionPhase.trim() : '';
   const acute = phaseNorm === 'acute';
+  const en = options.language === 'en';
 
   const effective = acute
     ? {
@@ -379,7 +436,9 @@ export function buildSessionRetentionSystemSnippet(payload, options = {}) {
 
   if (effective.likelyFarewell) {
     lines.push(
-      '- **Este mensaje suena a despedida o cierre.** Responde con calidez breve. No abras menú de opciones nuevas ni insistas en ejercicios. Puedes agradecer lo compartido, opcionalmente una frase que recoja lo central, y un **puente** natural ("cuando quieras seguimos con…", "aquí estaré cuando vuelvas"). Sin culpa por no escribir antes.'
+      en
+        ? '- **This message sounds like a goodbye or wrap-up.** Reply with brief warmth. Do not open a new menu of options or push exercises. You may thank them for sharing, optionally one line that captures what mattered, and a **natural bridge** ("whenever you want we can pick up with…", "I\'ll be here when you come back"). No guilt for not writing sooner.'
+        : '- **Este mensaje suena a despedida o cierre.** Responde con calidez breve. No abras menú de opciones nuevas ni insistas en ejercicios. Puedes agradecer lo compartido, opcionalmente una frase que recoja lo central, y un **puente** natural ("cuando quieras seguimos con…", "aquí estaré cuando vuelvas"). Sin culpa por no escribir antes.'
     );
   }
 
@@ -417,7 +476,9 @@ export function buildSessionRetentionSystemSnippet(payload, options = {}) {
 
   if (effective.suggestBridgeClosing) {
     lines.push(
-      '- **Varios turnos ya compartidos:** si encaja, orienta **cierre suave con sensación de “esto avanzó”**: validación breve, **una frase que una lo central**, y puente para retomar (“cuando quieras seguimos con…”). Puede ser **conclusión del tramo sin pregunta final** si el mensaje del usuario ya cerró el giro. No menú de opciones ni lista de tareas.'
+      en
+        ? '- **Several turns already shared:** if it fits, orient a **soft close with a sense of "this moved forward"**: brief validation, **one line tying together what mattered**, and a bridge to pick up ("whenever you want we can continue with…"). It can be **segment conclusion without a final question** if the user\'s message already closed the turn. No option menus or task lists.'
+        : '- **Varios turnos ya compartidos:** si encaja, orienta **cierre suave con sensación de “esto avanzó”**: validación breve, **una frase que una lo central**, y puente para retomar (“cuando quieras seguimos con…”). Puede ser **conclusión del tramo sin pregunta final** si el mensaje del usuario ya cerró el giro. No menú de opciones ni lista de tareas.'
     );
   }
 
@@ -440,20 +501,29 @@ export function buildSessionRetentionSystemSnippet(payload, options = {}) {
 
   let header;
   if (acute) {
-    header =
-      '\n\n### Sesión y retorno (breve)\n' +
-      '- **Prioridad de seguridad:** no orientes aquí cierre reflexivo del tramo, pausas terapéuticas ni “aterrizaje” salvo **despedida clara** del usuario o **límite técnico** del hilo en la viñeta correspondiente.\n';
+    header = en
+      ? '\n\n### Session and return (brief)\n' +
+        '- **Safety priority:** do not orient reflective segment closure, therapeutic pauses, or "landing" here except for a **clear user goodbye** or the **technical thread limit** in the corresponding bullet.\n'
+      : '\n\n### Sesión y retorno (breve)\n' +
+        '- **Prioridad de seguridad:** no orientes aquí cierre reflexivo del tramo, pausas terapéuticas ni “aterrizaje” salvo **despedida clara** del usuario o **límite técnico** del hilo en la viñeta correspondiente.\n';
   } else if (hasClosureOrientedHint) {
-    header =
-      '\n\n### Sesión y retorno\n' +
-      '- El chat **sigue disponible**; tú no decides que la persona deba irse.\n' +
-      '- Muchas personas necesitan **sentir que el tramo tuvo una conclusión** (aunque sea breve) para volver con claridad; un hilo que solo “sigue abierto” sin ningún aterrizaje puede cansar y **desincentivar** una nueva conversación. Cuando encaje, ayuda a **aterrizar**: síntesis mínima, qué quedó claro, y **permite pausa** o “seguimos cuando quieras” **sin** otra pregunta amplia solo por hábito.\n' +
-      '- Las viñetas siguientes marcan **cuándo** ese cierre natural encaja; si no aplica, sigue como hasta ahora.';
+    header = en
+      ? '\n\n### Session and return\n' +
+        '- Chat **stays available**; you do not decide the person should leave.\n' +
+        '- Many people need to **feel the segment reached a conclusion** (even briefly) to return with clarity; a thread that only "stays open" without any landing can tire and **discourage** a new conversation. When it fits, help **land**: minimal synthesis, what became clear, and **allow a pause** or "we can continue whenever you want" **without** another broad question out of habit.\n' +
+        '- The bullets below mark **when** that natural closure fits; if it does not apply, continue as before.'
+      : '\n\n### Sesión y retorno\n' +
+        '- El chat **sigue disponible**; tú no decides que la persona deba irse.\n' +
+        '- Muchas personas necesitan **sentir que el tramo tuvo una conclusión** (aunque sea breve) para volver con claridad; un hilo que solo “sigue abierto” sin ningún aterrizaje puede cansar y **desincentivar** una nueva conversación. Cuando encaje, ayuda a **aterrizar**: síntesis mínima, qué quedó claro, y **permite pausa** o “seguimos cuando quieras” **sin** otra pregunta amplia solo por hábito.\n' +
+        '- Las viñetas siguientes marcan **cuándo** ese cierre natural encaja; si no aplica, sigue como hasta ahora.';
   } else {
-    header =
-      '\n\n### Sesión y retorno (apertura)\n' +
-      '- El chat **sigue disponible**; en un hilo recién empezado prioriza **acogida** y seguir la conversación.\n' +
-      '- **No** invites a cerrar el tramo, pausar la sesión ni “retomar desde este punto” salvo que la persona lo pida o se despida.\n';
+    header = en
+      ? '\n\n### Session and return (opening)\n' +
+        '- Chat **stays available**; in a thread that just started, prioritize **welcome** and following the conversation.\n' +
+        '- **Do not** invite closing the segment, pausing the session, or "picking up from this point" unless the person asks or says goodbye.\n'
+      : '\n\n### Sesión y retorno (apertura)\n' +
+        '- El chat **sigue disponible**; en un hilo recién empezado prioriza **acogida** y seguir la conversación.\n' +
+        '- **No** invites a cerrar el tramo, pausar la sesión ni “retomar desde este punto” salvo que la persona lo pida o se despida.\n';
   }
 
   const out = header + '\n' + lines.join('\n');

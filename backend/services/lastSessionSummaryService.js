@@ -9,6 +9,7 @@ import SessionSummaryJob from '../models/SessionSummaryJob.js';
 import User from '../models/User.js';
 import openaiService from './openaiService.js';
 import logger from '../utils/logger.js';
+import { focusCopy, normalizeFocusLanguage } from '../utils/focusDashboardCopy.js';
 
 const RISK_RANK = { LOW: 0, WARNING: 1, MEDIUM: 2, HIGH: 3, unknown: -1 };
 
@@ -115,10 +116,11 @@ export function sanitizeContinuationText(s, maxLen) {
   return t.length > maxLen ? t.slice(0, maxLen) : t;
 }
 
-function buildSnippet(bullets, bridge) {
+function buildSnippet(bullets, bridge, language = 'es') {
   const first = bullets[0] ? String(bullets[0]).replace(/\s+/g, ' ').trim() : '';
   const b = bridge ? String(bridge).replace(/\s+/g, ' ').trim() : '';
-  const raw = first || b || 'Podés retomar el hilo en el chat cuando quieras.';
+  const fallback = focusCopy(language).lastSessionSnippetFallback;
+  const raw = first || b || fallback;
   return raw.length > 220 ? `${raw.slice(0, 217)}…` : raw;
 }
 
@@ -231,12 +233,11 @@ export async function scheduleLastSessionSummary(userId, conversationId, opts = 
   };
 }
 
-async function savePlaceholderSummary(userId, conversationId, { userTurns, riskTier }) {
-  const bridge = sanitizeContinuationText(
-    'Esta charla fue breve. Cuando quieras podés seguir en el chat; no hace falta guardar mucho detalle.',
-    600
-  );
-  const snippet = sanitizeContinuationText('Charla breve — seguí cuando quieras.', 280);
+async function savePlaceholderSummary(userId, conversationId, { userTurns, riskTier, language = 'es' }) {
+  const lang = normalizeFocusLanguage(language);
+  const c = focusCopy(lang);
+  const bridge = sanitizeContinuationText(c.lastSessionPlaceholderBridge, 600);
+  const snippet = sanitizeContinuationText(c.lastSessionPlaceholderSnippet, 280);
   await User.updateOne(
     { _id: userId },
     {
@@ -249,6 +250,7 @@ async function savePlaceholderSummary(userId, conversationId, { userTurns, riskT
           riskTier,
           placeholder: true,
           userTurnCount: userTurns,
+          language: lang,
           generatedAt: new Date()
         }
       }
@@ -274,6 +276,9 @@ async function processOneJob(job) {
   const userId = job.userId;
   const conversationId = job.conversationId;
 
+  const userDoc = await User.findById(userId).select('preferences.language').lean();
+  const language = normalizeFocusLanguage(userDoc?.preferences?.language);
+
   const newer = await Message.exists({
     conversationId,
     createdAt: { $gt: job.baselineLastMessageAt }
@@ -295,7 +300,7 @@ async function processOneJob(job) {
 
   if (userTurns < MIN_USER_TURNS_FOR_LLM || userChars < MIN_USER_CHARS_FOR_LLM) {
     await persistAndCompleteJob(job._id, () =>
-      savePlaceholderSummary(userId, conversationId, { userTurns, riskTier })
+      savePlaceholderSummary(userId, conversationId, { userTurns, riskTier, language })
     );
     return;
   }
@@ -303,7 +308,7 @@ async function processOneJob(job) {
   if (!process.env.OPENAI_API_KEY) {
     logger.warn('[lastSessionSummary] OPENAI_API_KEY ausente; placeholder');
     await persistAndCompleteJob(job._id, () =>
-      savePlaceholderSummary(userId, conversationId, { userTurns, riskTier })
+      savePlaceholderSummary(userId, conversationId, { userTurns, riskTier, language })
     );
     return;
   }
@@ -317,8 +322,22 @@ async function processOneJob(job) {
     .slice(0, 24000);
 
   const model = process.env.LAST_SESSION_SUMMARY_MODEL || 'gpt-4o-mini';
+  const langDirective =
+    language === 'en'
+      ? 'Neutral English; no numbered lists inside strings; do not diagnose; do not invent facts not stated.'
+      : 'Español neutro; sin listas numeradas dentro de strings; no diagnosticar; no inventar hechos no dichos.';
 
-  const userPrompt = `Transcript (orden cronológico, truncado si hace falta):\n${transcript}\n\nDevuelve SOLO un JSON con forma exacta:\n{"bullets":["..."],"bridge":"..."}\n- bullets: como mucho ${limits.maxBullets} strings, cada una máximo ${limits.bulletMaxChars} caracteres.\n- bridge: 1-2 frases cortas para la próxima vez, máximo ${limits.bridgeMaxChars} caracteres en total.\n- Español neutro; sin listas numeradas dentro de strings; no diagnosticar; no inventar hechos no dichos.`;
+  const userPrompt = `Transcript (chronological order, truncated if needed):\n${transcript}\n\nReturn ONLY JSON with exact shape:\n{"bullets":["..."],"bridge":"..."}\n- bullets: at most ${limits.maxBullets} strings, each max ${limits.bulletMaxChars} characters.\n- bridge: 1-2 short sentences for next time, max ${limits.bridgeMaxChars} characters total.\n- ${langDirective}`;
+
+  const systemLang =
+    language === 'en'
+      ? 'You write a brief continuity summary for emotional wellbeing conversations in an app (not a clinical report or weekly activity summary).'
+      : 'Eres un asistente que redacta una síntesis breve de continuidad para conversaciones de bienestar emocional en una app (no es un informe clínico ni un resumen de actividad semanal).';
+
+  const systemTail =
+    language === 'en'
+      ? 'Goal: help the person remember the thread without rumination. Output: valid JSON only, no markdown.'
+      : 'Objetivo: ayudar a la persona a recordar el hilo sin rumiación. Salida: solo JSON válido, sin markdown.';
 
   try {
     const completion = await openaiService.createChatCompletionResilient({
@@ -326,7 +345,7 @@ async function processOneJob(job) {
       messages: [
         {
           role: 'system',
-          content: `Eres un asistente que redacta una síntesis breve de continuidad para conversaciones de bienestar emocional en una app (no es un informe clínico ni un resumen de actividad semanal). ${limits.systemExtra} Objetivo: ayudar a la persona a recordar el hilo sin rumiación. Salida: solo JSON válido, sin markdown.`
+          content: `${systemLang} ${limits.systemExtra} ${systemTail}`
         },
         { role: 'user', content: userPrompt }
       ],
@@ -350,10 +369,10 @@ async function processOneJob(job) {
 
     if (!bullets.length && !bridge) {
       await persistAndCompleteJob(job._id, () =>
-        savePlaceholderSummary(userId, conversationId, { userTurns, riskTier })
+        savePlaceholderSummary(userId, conversationId, { userTurns, riskTier, language })
       );
     } else {
-      const snippet = buildSnippet(bullets, bridge);
+      const snippet = buildSnippet(bullets, bridge, language);
       const safeSnippet = sanitizeContinuationText(snippet, 280);
       const safeBridge = sanitizeContinuationText(bridge || snippet, 600);
       const safeBullets = bullets.map((b) => sanitizeContinuationText(b, 400)).filter(Boolean);
@@ -370,6 +389,7 @@ async function processOneJob(job) {
                 riskTier,
                 placeholder: false,
                 userTurnCount: userTurns,
+                language,
                 generatedAt: new Date()
               }
             }
@@ -485,6 +505,7 @@ export async function getLastSessionSummaryForUser(userId) {
     riskTier,
     placeholder: s.placeholder === true,
     userTurnCount: Number.isFinite(s.userTurnCount) ? s.userTurnCount : 0,
+    language: s.language === 'en' ? 'en' : 'es',
     generatedAt: s.generatedAt instanceof Date ? s.generatedAt.toISOString() : s.generatedAt
   };
 }

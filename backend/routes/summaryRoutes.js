@@ -6,6 +6,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import { buildDashboardFocus } from '../services/dashboardFocusService.js';
 import { getLastSessionSummaryForUser } from '../services/lastSessionSummaryService.js';
 import { buildUserSummary } from '../services/userSummaryService.js';
+import { localizeLastSessionSummaryForDisplay } from '../utils/focusDashboardCopy.js';
 import { resolveAppLanguage } from '../utils/resolveAppLanguage.js';
 
 const router = express.Router();
@@ -25,7 +26,14 @@ const router = express.Router();
  */
 router.get('/last-session', authenticateToken, async (req, res) => {
   try {
-    const data = await getLastSessionSummaryForUser(req.user._id);
+    const language = resolveAppLanguage({
+      headerLanguage: req.headers['x-app-language'],
+      queryLanguage: req.query.language,
+      acceptLanguage: req.headers['accept-language'],
+      userPreference: req.user?.preferences?.language
+    });
+    const raw = await getLastSessionSummaryForUser(req.user._id);
+    const data = localizeLastSessionSummaryForDisplay(raw, language);
     return res.json({ success: true, data });
   } catch (err) {
     console.error('[summaryRoutes] Error /last-session:', err);
@@ -38,7 +46,13 @@ router.get('/last-session', authenticateToken, async (req, res) => {
 
 router.get('/focus', authenticateToken, async (req, res) => {
   try {
-    const data = await buildDashboardFocus(req.user._id);
+    const language = resolveAppLanguage({
+      headerLanguage: req.headers['x-app-language'],
+      queryLanguage: req.query.language,
+      acceptLanguage: req.headers['accept-language'],
+      userPreference: req.user?.preferences?.language
+    });
+    const data = await buildDashboardFocus(req.user._id, { language });
     return res.json({ success: true, data });
   } catch (err) {
     console.error('[summaryRoutes] Error /focus:', err);

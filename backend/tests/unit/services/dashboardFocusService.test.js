@@ -50,6 +50,18 @@ describe('dashboardFocusService', () => {
       expect(text).toContain('Practicar exposición');
       expect(text).not.toContain('Ignorada');
     });
+
+    it('devuelve textos en inglés cuando language es en', () => {
+      const text = buildDeterministicFocusCaption({
+        summary: { chat: { userMessages: 2, distinctActiveDays: 1 } },
+        upcomingTasks: [],
+        commitmentsList: [],
+        recentConversations: [],
+        language: 'en'
+      });
+      expect(text).toMatch(/little activity this week/i);
+      expect(text).not.toMatch(/poca actividad/i);
+    });
   });
 
   describe('buildReminderCandidates', () => {
@@ -101,6 +113,27 @@ describe('dashboardFocusService', () => {
       });
       expect(list.find((c) => c.kind === 'habit')).toBeTruthy();
       expect(list.find((c) => c.kind === 'push')).toBeTruthy();
+    });
+
+    it('etiqueta hábito en inglés cuando language es en', () => {
+      const habitReminder = {
+        id: 'h1',
+        title: 'Tomar agua',
+        nextAt: new Date('2026-04-30T18:00:00.000Z')
+      };
+      const list = buildReminderCandidates({
+        summary: { chat: { userMessages: 20, distinctActiveDays: 5 } },
+        recentConversations: [],
+        upcomingTasks: [],
+        habitReminder,
+        nextPushSlot: null,
+        now,
+        language: 'en'
+      });
+      const habit = list.find((c) => c.kind === 'habit');
+      expect(habit.title).toMatch(/^Habit:/);
+      expect(habit.title).toContain('Tomar agua');
+      expect(habit.subtitle).toMatch(/Reminder around/i);
     });
   });
 
