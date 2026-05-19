@@ -12,14 +12,48 @@ import {
   DEFAULT_USER_DATA,
   DEFAULT_DETAILED_STATS,
   STORAGE_KEYS,
-  TEXTS,
   REFRESH_ANIMATION_DURATION,
+  useProfileTexts,
 } from './profileScreenConstants';
 import { STORAGE_KEYS as CHAT_STORAGE_KEYS } from '../chat/chatScreenConstants';
 import { isValidMongoObjectId24 } from '../../utils/mongoId';
 import { normalizeEmergencyContactsList } from '../../utils/emergencyContactUtils';
 
+function resolveSubscriptionStatusErrorMessage(errorCode, texts) {
+  const code = String(errorCode || '').toUpperCase();
+  if (code === 'NETWORK_ERROR') {
+    return (
+      texts.SUBSCRIPTION_STATUS_NETWORK_ERROR ||
+      texts.SUBSCRIPTION_STATUS_ERROR ||
+      texts.ERROR_LOAD_MESSAGE
+    );
+  }
+  if (code === 'TIMEOUT' || code === 'ETIMEDOUT') {
+    return (
+      texts.SUBSCRIPTION_STATUS_TIMEOUT_ERROR ||
+      texts.SUBSCRIPTION_STATUS_ERROR ||
+      texts.ERROR_LOAD_MESSAGE
+    );
+  }
+  if (code === 'RATE_LIMIT') {
+    return (
+      texts.SUBSCRIPTION_STATUS_RATE_LIMIT_ERROR ||
+      texts.SUBSCRIPTION_STATUS_ERROR ||
+      texts.ERROR_LOAD_MESSAGE
+    );
+  }
+  return texts.SUBSCRIPTION_STATUS_ERROR || texts.ERROR_LOAD_MESSAGE;
+}
+
 export function useProfileScreen(navigation) {
+  const TEXTS = useProfileTexts();
+  const {
+    ERROR_LOAD_MESSAGE,
+    SUBSCRIPTION_STATUS_ERROR,
+    SUBSCRIPTION_STATUS_NETWORK_ERROR,
+    SUBSCRIPTION_STATUS_TIMEOUT_ERROR,
+    SUBSCRIPTION_STATUS_RATE_LIMIT_ERROR,
+  } = TEXTS;
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -68,7 +102,7 @@ export function useProfileScreen(navigation) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [showToast]);
+  }, [showToast, TEXTS.ERROR_LOAD_MESSAGE]);
 
   const loadEmergencyContacts = useCallback(async () => {
     try {
@@ -86,11 +120,43 @@ export function useProfileScreen(navigation) {
   const loadSubscriptionStatus = useCallback(async () => {
     try {
       const response = await paymentService.getSubscriptionStatus();
-      if (response?.success) setSubscriptionStatus(response);
+      if (response?.success) {
+        setSubscriptionStatus(response);
+      } else {
+        setSubscriptionStatus(null);
+        showToast({
+          message: resolveSubscriptionStatusErrorMessage(response?.errorCode, {
+            ERROR_LOAD_MESSAGE,
+            SUBSCRIPTION_STATUS_ERROR,
+            SUBSCRIPTION_STATUS_NETWORK_ERROR,
+            SUBSCRIPTION_STATUS_TIMEOUT_ERROR,
+            SUBSCRIPTION_STATUS_RATE_LIMIT_ERROR,
+          }),
+          type: 'warning',
+        });
+      }
     } catch (error) {
       console.error('[ProfileScreen] Error cargando suscripción:', error);
+      setSubscriptionStatus(null);
+      showToast({
+        message: resolveSubscriptionStatusErrorMessage(error?.code, {
+          ERROR_LOAD_MESSAGE,
+          SUBSCRIPTION_STATUS_ERROR,
+          SUBSCRIPTION_STATUS_NETWORK_ERROR,
+          SUBSCRIPTION_STATUS_TIMEOUT_ERROR,
+          SUBSCRIPTION_STATUS_RATE_LIMIT_ERROR,
+        }),
+        type: 'warning',
+      });
     }
-  }, []);
+  }, [
+    showToast,
+    ERROR_LOAD_MESSAGE,
+    SUBSCRIPTION_STATUS_ERROR,
+    SUBSCRIPTION_STATUS_NETWORK_ERROR,
+    SUBSCRIPTION_STATUS_TIMEOUT_ERROR,
+    SUBSCRIPTION_STATUS_RATE_LIMIT_ERROR,
+  ]);
 
   const loadLastSessionSummary = useCallback(async () => {
     try {
@@ -170,7 +236,16 @@ export function useProfileScreen(navigation) {
         },
       ]);
     },
-    [loadEmergencyContacts, showToast]
+    [
+      loadEmergencyContacts,
+      showToast,
+      TEXTS.DELETE_CONTACT,
+      TEXTS.DELETE_CONTACT_CONFIRM,
+      TEXTS.CANCEL,
+      TEXTS.DELETE,
+      TEXTS.CONTACT_DELETED,
+      TEXTS.CONTACT_DELETE_ERROR,
+    ]
   );
 
   const handleEmergencyContactsSaved = useCallback(() => {
@@ -206,7 +281,15 @@ export function useProfileScreen(navigation) {
         },
       },
     ]);
-  }, [navigation, showToast]);
+  }, [
+    navigation,
+    showToast,
+    TEXTS.LOGOUT_TITLE,
+    TEXTS.LOGOUT_MESSAGE,
+    TEXTS.CANCEL,
+    TEXTS.LOGOUT,
+    TEXTS.ERROR_LOGOUT_MESSAGE,
+  ]);
 
   const openEditContact = useCallback((contact) => {
     setSelectedContact(contact);

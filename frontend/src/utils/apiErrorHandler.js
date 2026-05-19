@@ -6,7 +6,7 @@
  *   import { getApiErrorMessage, isNetworkError, isAuthError } from '../utils/apiErrorHandler';
  *   catch (err) {
  *     const message = getApiErrorMessage(err, { isOffline });
- *     Alert.alert('Error', message);
+ *     Alert.alert(title, message);
  *   }
  */
 

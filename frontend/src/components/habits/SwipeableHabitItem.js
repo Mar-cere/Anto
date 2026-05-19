@@ -60,7 +60,7 @@ import {
   SWIPE_ANIMATION_DURATION,
   SWIPE_DISTANCE,
   SWIPE_THRESHOLD,
-  TEXTS,
+  useHabitsTexts,
   createHabitsColors,
 } from '../../screens/habits/habitsScreenConstants';
 
@@ -73,6 +73,7 @@ export default function SwipeableHabitItem({
   onDelete,
   onArchive,
 }) {
+  const TEXTS = useHabitsTexts();
   const translateX = useRef(new Animated.Value(0)).current;
   const deleteOpacity = useRef(new Animated.Value(ANIMATION_INITIAL_OPACITY)).current;
   const archiveOpacity = useRef(new Animated.Value(ANIMATION_INITIAL_OPACITY)).current;
@@ -347,7 +348,7 @@ export default function SwipeableHabitItem({
     const confirmTitle = isArchived ? TEXTS.UNARCHIVE_CONFIRM : TEXTS.ARCHIVE_CONFIRM;
     Alert.alert(
       confirmTitle,
-      `¿Estás seguro de que deseas ${action} este hábito?`,
+      TEXTS.ARCHIVE_CONFIRM_MESSAGE_TEMPLATE.replace('{action}', action),
       [
         { text: TEXTS.CANCEL, style: 'cancel', onPress: resetPosition },
         {

@@ -1,7 +1,9 @@
 /**
  * Constantes para ProfileScreen y subcomponentes
  */
+import { useMemo } from 'react';
 import { SPACING } from '../../constants/ui';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { lightColors } from '../../styles/themePalettes';
 
 const G = SPACING.SCREEN_EDGE_INSET;
@@ -10,6 +12,14 @@ export const TEXTS = {
   LOADING: 'Cargando perfil...',
   ERROR_LOAD: 'Error',
   ERROR_LOAD_MESSAGE: 'No se pudieron cargar los datos del perfil',
+  SUBSCRIPTION_STATUS_ERROR:
+    'No se pudo actualizar el estado de la suscripción.',
+  SUBSCRIPTION_STATUS_NETWORK_ERROR:
+    'No se pudo conectar para actualizar la suscripción. Verifica tu internet.',
+  SUBSCRIPTION_STATUS_TIMEOUT_ERROR:
+    'La actualización de suscripción tardó demasiado. Intenta nuevamente.',
+  SUBSCRIPTION_STATUS_RATE_LIMIT_ERROR:
+    'Demasiados intentos al actualizar la suscripción. Espera un momento.',
   LOGOUT_TITLE: 'Cerrar Sesión',
   LOGOUT_MESSAGE: '¿Estás seguro que deseas cerrar sesión?',
   CANCEL: 'Cancelar',
@@ -37,6 +47,7 @@ export const TEXTS = {
   EMERGENCY_CONTACTS: 'Contactos de Emergencia',
   NO_CONTACTS: 'No hay contactos configurados',
   ADD_CONTACTS: 'Agregar contactos',
+  EDIT_CONTACT: 'Editar contacto',
   DELETE_CONTACT: 'Eliminar contacto',
   DELETE_CONTACT_CONFIRM: '¿Estás seguro de que deseas eliminar este contacto?',
   CONTACT_DELETED: 'Contacto eliminado exitosamente',
@@ -54,6 +65,11 @@ export const TEXTS = {
   CHAT_CONTINUITY_QUICK_BADGE: 'Vista rápida',
   CHAT_CONTINUITY_OPEN_CHAT: 'Abrir chat',
 };
+
+export function useProfileTexts() {
+  const translated = useSectionTranslations('PROFILE');
+  return useMemo(() => ({ ...TEXTS, ...(translated || {}) }), [translated]);
+}
 
 export const BACKGROUND_OPACITY = 0.1;
 export const REFRESH_ANIMATION_DURATION = 300;

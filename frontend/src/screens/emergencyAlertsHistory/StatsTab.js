@@ -4,11 +4,11 @@ import { BarChart, LineChart, PieChart } from 'react-native-chart-kit';
 import { useTheme } from '../../context/ThemeContext';
 import { useEmergencyAlertsHistoryStyles } from './emergencyAlertsHistoryStyles';
 import {
-  TEXTS,
   CHART_HEIGHT,
   CHART_WIDTH,
   createEmergencyChartConfig,
   createEmergencyPieChartConfig,
+  useEmergencyAlertsHistoryTexts,
 } from './emergencyAlertsHistoryConstants';
 import { safeNonNegativeInt } from './emergencyAlertsHistoryUtils';
 
@@ -21,6 +21,7 @@ export function StatsTab({
 }) {
   const { colors } = useTheme();
   const styles = useEmergencyAlertsHistoryStyles();
+  const TEXTS = useEmergencyAlertsHistoryTexts();
   const chartConfig = useMemo(() => createEmergencyChartConfig(colors), [colors]);
   const pieChartConfig = useMemo(() => createEmergencyPieChartConfig(colors), [colors]);
 

@@ -5,7 +5,11 @@ import React from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
 import { useCrisisDashboardStyles } from './crisisDashboardStyles';
-import { TEXTS, CHART_HEIGHT, createChartConfig } from './crisisDashboardConstants';
+import {
+  CHART_HEIGHT,
+  createChartConfig,
+  useCrisisDashboardTexts,
+} from './crisisDashboardConstants';
 import { useTheme } from '../../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
@@ -13,6 +17,7 @@ const { width } = Dimensions.get('window');
 export function CrisisDashboardMonthlyChart({ crisisByMonth, formatMonthlyData }) {
   const styles = useCrisisDashboardStyles();
   const { colors } = useTheme();
+  const TEXTS = useCrisisDashboardTexts();
   const chartConfig = createChartConfig(colors);
   const hasBars =
     Array.isArray(crisisByMonth) &&

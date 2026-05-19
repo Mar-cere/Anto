@@ -3,11 +3,13 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useNavigationTexts } from '../hooks/useNavigationTexts';
 import { SPACING } from '../constants/ui';
 
 const Header = memo(({ greeting, userName, title, showBackButton, onBackPress }) => {
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const NAV = useNavigationTexts();
 
   const styles = useMemo(
     () =>
@@ -102,8 +104,8 @@ const Header = memo(({ greeting, userName, title, showBackButton, onBackPress })
             style={styles.backButton}
             activeOpacity={0.7}
             accessibilityRole="button"
-            accessibilityLabel="Volver atrás"
-            accessibilityHint="Doble toque para volver a la pantalla anterior"
+            accessibilityLabel={NAV.HEADER_BACK_LABEL}
+            accessibilityHint={NAV.HEADER_BACK_HINT}
           >
             <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
           </TouchableOpacity>
@@ -119,7 +121,7 @@ const Header = memo(({ greeting, userName, title, showBackButton, onBackPress })
     <View style={styles.headerContainer} accessibilityRole="header">
       <View style={styles.headerLeft}>
         <Text style={styles.greeting} accessibilityRole="header">
-          {greeting || 'Bienvenido'}
+          {greeting || NAV.HEADER_DEFAULT_GREETING}
         </Text>
       </View>
 
@@ -128,8 +130,8 @@ const Header = memo(({ greeting, userName, title, showBackButton, onBackPress })
           onPress={handleProfilePress}
           style={styles.profileButton}
           accessibilityRole="button"
-          accessibilityLabel="Ir a perfil"
-          accessibilityHint="Doble toque para abrir tu perfil"
+          accessibilityLabel={NAV.HEADER_PROFILE_LABEL}
+          accessibilityHint={NAV.HEADER_PROFILE_HINT}
         >
           <MaterialCommunityIcons name="account" size={24} color={colors.primary} />
         </TouchableOpacity>

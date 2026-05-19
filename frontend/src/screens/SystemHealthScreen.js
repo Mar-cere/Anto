@@ -15,12 +15,102 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { api, ENDPOINTS } from '../config/api';
+import { api } from '../config/api';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
+
+const DEFAULT_TEXTS = {
+  LOADING: 'Cargando métricas...',
+  LOAD_ERROR: 'Error al cargar métricas del sistema',
+  RETRY: 'Reintentar',
+  TITLE_STATUS: 'Estado de Salud del Sistema',
+  STATUS_HEALTHY: 'Saludable',
+  STATUS_DEGRADED: 'Degradado',
+  STATUS_UNHEALTHY: 'No Saludable',
+  METRIC_ERROR_RATE: 'Tasa de Error:',
+  METRIC_AVG_RESPONSE_TIME: 'Tiempo Promedio de Respuesta:',
+  METRIC_TOTAL_REQUESTS: 'Total de Peticiones:',
+  METRIC_ACTIVE_SESSIONS: 'Sesiones Activas:',
+  TITLE_EMOTIONAL_ANALYSIS: 'Análisis Emocional',
+  METRIC_TOTAL_ANALYSIS: 'Total de Análisis:',
+  METRIC_AVG_INTENSITY: 'Intensidad Promedio:',
+  METRIC_AVG_CONFIDENCE: 'Confianza Promedio:',
+  NOT_AVAILABLE: 'N/A',
+  SUBTITLE_TOP_EMOTIONS: 'Emociones Más Frecuentes:',
+  TITLE_PROTOCOLS: 'Protocolos Terapéuticos',
+  METRIC_PROTOCOLS_STARTED: 'Protocolos Iniciados:',
+  METRIC_PROTOCOLS_COMPLETED: 'Protocolos Completados:',
+  METRIC_COMPLETION_RATE: 'Tasa de Completación:',
+  TITLE_ACTION_SUGGESTIONS: 'Sugerencias de Acciones',
+  METRIC_SUGGESTIONS_GENERATED: 'Sugerencias Generadas:',
+  METRIC_SUGGESTIONS_CLICKED: 'Sugerencias Clickeadas:',
+  METRIC_CLICK_RATE: 'Tasa de Click:',
+};
 
 const SystemHealthScreen = () => {
   const { colors } = useTheme();
+  const translated = useSectionTranslations('SETTINGS');
+  const TEXTS = useMemo(
+    () => ({
+      LOADING: translated?.SYSTEM_HEALTH_LOADING || DEFAULT_TEXTS.LOADING,
+      LOAD_ERROR:
+        translated?.SYSTEM_HEALTH_LOAD_ERROR ||
+        DEFAULT_TEXTS.LOAD_ERROR,
+      RETRY: translated?.SYSTEM_HEALTH_RETRY || DEFAULT_TEXTS.RETRY,
+      TITLE_STATUS:
+        translated?.SYSTEM_HEALTH_TITLE_STATUS || DEFAULT_TEXTS.TITLE_STATUS,
+      STATUS_HEALTHY:
+        translated?.SYSTEM_HEALTH_STATUS_HEALTHY || DEFAULT_TEXTS.STATUS_HEALTHY,
+      STATUS_DEGRADED:
+        translated?.SYSTEM_HEALTH_STATUS_DEGRADED || DEFAULT_TEXTS.STATUS_DEGRADED,
+      STATUS_UNHEALTHY:
+        translated?.SYSTEM_HEALTH_STATUS_UNHEALTHY || DEFAULT_TEXTS.STATUS_UNHEALTHY,
+      METRIC_ERROR_RATE:
+        translated?.SYSTEM_HEALTH_METRIC_ERROR_RATE || DEFAULT_TEXTS.METRIC_ERROR_RATE,
+      METRIC_AVG_RESPONSE_TIME:
+        translated?.SYSTEM_HEALTH_METRIC_AVG_RESPONSE_TIME ||
+        DEFAULT_TEXTS.METRIC_AVG_RESPONSE_TIME,
+      METRIC_TOTAL_REQUESTS:
+        translated?.SYSTEM_HEALTH_METRIC_TOTAL_REQUESTS || DEFAULT_TEXTS.METRIC_TOTAL_REQUESTS,
+      METRIC_ACTIVE_SESSIONS:
+        translated?.SYSTEM_HEALTH_METRIC_ACTIVE_SESSIONS || DEFAULT_TEXTS.METRIC_ACTIVE_SESSIONS,
+      TITLE_EMOTIONAL_ANALYSIS:
+        translated?.SYSTEM_HEALTH_TITLE_EMOTIONAL_ANALYSIS || DEFAULT_TEXTS.TITLE_EMOTIONAL_ANALYSIS,
+      METRIC_TOTAL_ANALYSIS:
+        translated?.SYSTEM_HEALTH_METRIC_TOTAL_ANALYSIS || DEFAULT_TEXTS.METRIC_TOTAL_ANALYSIS,
+      METRIC_AVG_INTENSITY:
+        translated?.SYSTEM_HEALTH_METRIC_AVG_INTENSITY || DEFAULT_TEXTS.METRIC_AVG_INTENSITY,
+      METRIC_AVG_CONFIDENCE:
+        translated?.SYSTEM_HEALTH_METRIC_AVG_CONFIDENCE || DEFAULT_TEXTS.METRIC_AVG_CONFIDENCE,
+      NOT_AVAILABLE:
+        translated?.SYSTEM_HEALTH_NOT_AVAILABLE || DEFAULT_TEXTS.NOT_AVAILABLE,
+      SUBTITLE_TOP_EMOTIONS:
+        translated?.SYSTEM_HEALTH_SUBTITLE_TOP_EMOTIONS ||
+        DEFAULT_TEXTS.SUBTITLE_TOP_EMOTIONS,
+      TITLE_PROTOCOLS:
+        translated?.SYSTEM_HEALTH_TITLE_PROTOCOLS || DEFAULT_TEXTS.TITLE_PROTOCOLS,
+      METRIC_PROTOCOLS_STARTED:
+        translated?.SYSTEM_HEALTH_METRIC_PROTOCOLS_STARTED || DEFAULT_TEXTS.METRIC_PROTOCOLS_STARTED,
+      METRIC_PROTOCOLS_COMPLETED:
+        translated?.SYSTEM_HEALTH_METRIC_PROTOCOLS_COMPLETED ||
+        DEFAULT_TEXTS.METRIC_PROTOCOLS_COMPLETED,
+      METRIC_COMPLETION_RATE:
+        translated?.SYSTEM_HEALTH_METRIC_COMPLETION_RATE || DEFAULT_TEXTS.METRIC_COMPLETION_RATE,
+      TITLE_ACTION_SUGGESTIONS:
+        translated?.SYSTEM_HEALTH_TITLE_ACTION_SUGGESTIONS ||
+        DEFAULT_TEXTS.TITLE_ACTION_SUGGESTIONS,
+      METRIC_SUGGESTIONS_GENERATED:
+        translated?.SYSTEM_HEALTH_METRIC_SUGGESTIONS_GENERATED ||
+        DEFAULT_TEXTS.METRIC_SUGGESTIONS_GENERATED,
+      METRIC_SUGGESTIONS_CLICKED:
+        translated?.SYSTEM_HEALTH_METRIC_SUGGESTIONS_CLICKED ||
+        DEFAULT_TEXTS.METRIC_SUGGESTIONS_CLICKED,
+      METRIC_CLICK_RATE:
+        translated?.SYSTEM_HEALTH_METRIC_CLICK_RATE || DEFAULT_TEXTS.METRIC_CLICK_RATE,
+    }),
+    [translated],
+  );
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [healthStats, setHealthStats] = useState(null);
@@ -153,12 +243,12 @@ const SystemHealthScreen = () => {
       }
     } catch (err) {
       console.error('Error cargando métricas:', err);
-      setError('Error al cargar métricas del sistema');
+      setError(TEXTS.LOAD_ERROR);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [TEXTS.LOAD_ERROR]);
 
   useFocusEffect(
     useCallback(() => {
@@ -202,7 +292,7 @@ const SystemHealthScreen = () => {
       <View style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Cargando métricas...</Text>
+          <Text style={styles.loadingText}>{TEXTS.LOADING}</Text>
         </View>
       </View>
     );
@@ -215,7 +305,7 @@ const SystemHealthScreen = () => {
           <Ionicons name="alert-circle" size={48} color={colors.error} />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={loadData}>
-            <Text style={styles.retryButtonText}>Reintentar</Text>
+            <Text style={styles.retryButtonText}>{TEXTS.RETRY}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -233,7 +323,7 @@ const SystemHealthScreen = () => {
         {/* Estado de Salud */}
         {healthStats && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Estado de Salud del Sistema</Text>
+            <Text style={styles.sectionTitle}>{TEXTS.TITLE_STATUS}</Text>
             <View style={[styles.statusCard, { borderLeftColor: getStatusColor(healthStats.status) }]}>
               <View style={styles.statusHeader}>
                 <Ionicons
@@ -242,24 +332,27 @@ const SystemHealthScreen = () => {
                   color={getStatusColor(healthStats.status)}
                 />
                 <Text style={[styles.statusText, { color: getStatusColor(healthStats.status) }]}>
-                  {healthStats.status === 'healthy' ? 'Saludable' :
-                   healthStats.status === 'degraded' ? 'Degradado' : 'No Saludable'}
+                  {healthStats.status === 'healthy'
+                    ? TEXTS.STATUS_HEALTHY
+                    : healthStats.status === 'degraded'
+                      ? TEXTS.STATUS_DEGRADED
+                      : TEXTS.STATUS_UNHEALTHY}
                 </Text>
               </View>
               <View style={styles.metricRow}>
-                <Text style={styles.metricLabel}>Tasa de Error:</Text>
+                <Text style={styles.metricLabel}>{TEXTS.METRIC_ERROR_RATE}</Text>
                 <Text style={styles.metricValue}>{healthStats.errorRate}%</Text>
               </View>
               <View style={styles.metricRow}>
-                <Text style={styles.metricLabel}>Tiempo Promedio de Respuesta:</Text>
+                <Text style={styles.metricLabel}>{TEXTS.METRIC_AVG_RESPONSE_TIME}</Text>
                 <Text style={styles.metricValue}>{healthStats.averageResponseTime}ms</Text>
               </View>
               <View style={styles.metricRow}>
-                <Text style={styles.metricLabel}>Total de Peticiones:</Text>
+                <Text style={styles.metricLabel}>{TEXTS.METRIC_TOTAL_REQUESTS}</Text>
                 <Text style={styles.metricValue}>{healthStats.totalRequests}</Text>
               </View>
               <View style={styles.metricRow}>
-                <Text style={styles.metricLabel}>Sesiones Activas:</Text>
+                <Text style={styles.metricLabel}>{TEXTS.METRIC_ACTIVE_SESSIONS}</Text>
                 <Text style={styles.metricValue}>{healthStats.activeSessions}</Text>
               </View>
             </View>
@@ -269,29 +362,33 @@ const SystemHealthScreen = () => {
         {/* Métricas de Análisis Emocional */}
         {systemMetrics?.emotionalAnalysis && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Análisis Emocional</Text>
+            <Text style={styles.sectionTitle}>{TEXTS.TITLE_EMOTIONAL_ANALYSIS}</Text>
             <View style={styles.card}>
               <View style={styles.metricRow}>
-                <Text style={styles.metricLabel}>Total de Análisis:</Text>
+                <Text style={styles.metricLabel}>{TEXTS.METRIC_TOTAL_ANALYSIS}</Text>
                 <Text style={styles.metricValue}>{systemMetrics.emotionalAnalysis.total}</Text>
               </View>
               <View style={styles.metricRow}>
-                <Text style={styles.metricLabel}>Intensidad Promedio:</Text>
+                <Text style={styles.metricLabel}>{TEXTS.METRIC_AVG_INTENSITY}</Text>
                 <Text style={styles.metricValue}>
-                  {systemMetrics.emotionalAnalysis.averageIntensity?.toFixed(2) || 'N/A'}
+                  {Number.isFinite(systemMetrics.emotionalAnalysis.averageIntensity)
+                    ? systemMetrics.emotionalAnalysis.averageIntensity.toFixed(2)
+                    : TEXTS.NOT_AVAILABLE}
                 </Text>
               </View>
               <View style={styles.metricRow}>
-                <Text style={styles.metricLabel}>Confianza Promedio:</Text>
+                <Text style={styles.metricLabel}>{TEXTS.METRIC_AVG_CONFIDENCE}</Text>
                 <Text style={styles.metricValue}>
-                  {(systemMetrics.emotionalAnalysis.averageConfidence * 100)?.toFixed(1) || 'N/A'}%
+                  {Number.isFinite(systemMetrics.emotionalAnalysis.averageConfidence)
+                    ? `${(systemMetrics.emotionalAnalysis.averageConfidence * 100).toFixed(1)}%`
+                    : TEXTS.NOT_AVAILABLE}
                 </Text>
               </View>
               
               {/* Emociones más frecuentes */}
               {systemMetrics.emotionalAnalysis.byEmotion && Object.keys(systemMetrics.emotionalAnalysis.byEmotion).length > 0 && (
                 <View style={styles.subsection}>
-                  <Text style={styles.subsectionTitle}>Emociones Más Frecuentes:</Text>
+                  <Text style={styles.subsectionTitle}>{TEXTS.SUBTITLE_TOP_EMOTIONS}</Text>
                   {Object.entries(systemMetrics.emotionalAnalysis.byEmotion)
                     .sort((a, b) => b[1] - a[1])
                     .slice(0, 5)
@@ -310,19 +407,19 @@ const SystemHealthScreen = () => {
         {/* Métricas de Protocolos */}
         {systemMetrics?.protocols && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Protocolos Terapéuticos</Text>
+            <Text style={styles.sectionTitle}>{TEXTS.TITLE_PROTOCOLS}</Text>
             <View style={styles.card}>
               <View style={styles.metricRow}>
-                <Text style={styles.metricLabel}>Protocolos Iniciados:</Text>
+                <Text style={styles.metricLabel}>{TEXTS.METRIC_PROTOCOLS_STARTED}</Text>
                 <Text style={styles.metricValue}>{systemMetrics.protocols.started}</Text>
               </View>
               <View style={styles.metricRow}>
-                <Text style={styles.metricLabel}>Protocolos Completados:</Text>
+                <Text style={styles.metricLabel}>{TEXTS.METRIC_PROTOCOLS_COMPLETED}</Text>
                 <Text style={styles.metricValue}>{systemMetrics.protocols.completed}</Text>
               </View>
               {systemMetrics.protocols.completed > 0 && (
                 <View style={styles.metricRow}>
-                  <Text style={styles.metricLabel}>Tasa de Completación:</Text>
+                  <Text style={styles.metricLabel}>{TEXTS.METRIC_COMPLETION_RATE}</Text>
                   <Text style={styles.metricValue}>
                     {((systemMetrics.protocols.completed / systemMetrics.protocols.started) * 100).toFixed(1)}%
                   </Text>
@@ -335,19 +432,19 @@ const SystemHealthScreen = () => {
         {/* Métricas de Sugerencias */}
         {systemMetrics?.actionSuggestions && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Sugerencias de Acciones</Text>
+            <Text style={styles.sectionTitle}>{TEXTS.TITLE_ACTION_SUGGESTIONS}</Text>
             <View style={styles.card}>
               <View style={styles.metricRow}>
-                <Text style={styles.metricLabel}>Sugerencias Generadas:</Text>
+                <Text style={styles.metricLabel}>{TEXTS.METRIC_SUGGESTIONS_GENERATED}</Text>
                 <Text style={styles.metricValue}>{systemMetrics.actionSuggestions.generated}</Text>
               </View>
               <View style={styles.metricRow}>
-                <Text style={styles.metricLabel}>Sugerencias Clickeadas:</Text>
+                <Text style={styles.metricLabel}>{TEXTS.METRIC_SUGGESTIONS_CLICKED}</Text>
                 <Text style={styles.metricValue}>{systemMetrics.actionSuggestions.clicked}</Text>
               </View>
               {systemMetrics.actionSuggestions.generated > 0 && (
                 <View style={styles.metricRow}>
-                  <Text style={styles.metricLabel}>Tasa de Click:</Text>
+                  <Text style={styles.metricLabel}>{TEXTS.METRIC_CLICK_RATE}</Text>
                   <Text style={styles.metricValue}>
                     {((systemMetrics.actionSuggestions.clicked / systemMetrics.actionSuggestions.generated) * 100).toFixed(1)}%
                   </Text>

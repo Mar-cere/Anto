@@ -26,6 +26,7 @@ import SwipeableHabitItem from '../components/habits/SwipeableHabitItem';
 import FloatingNavBar from '../components/FloatingNavBar';
 import { SkeletonCard } from '../components/Skeleton';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { useHabitsScreen } from '../hooks/useHabitsScreen';
 import { SPACING } from '../constants/ui';
 import { getFocusTheme } from '../styles/focusCardTheme';
@@ -43,10 +44,42 @@ import {
 
 let lastHabitsSearchQuery = '';
 let lastHabitsFilterType = 'active';
+const DEFAULT_TEXTS = {
+  SECTION_PENDING: 'Pendientes',
+  SECTION_COMPLETED_TODAY: 'Completados hoy',
+  SECTION_ARCHIVED: 'Archivados',
+  SEARCH_EMPTY_TITLE: 'Sin resultados',
+  SEARCH_EMPTY_HINT: 'Prueba con otra palabra o limpia la búsqueda.',
+  COUNT_ACTIVE_SUFFIX: 'activos',
+  COUNT_ARCHIVED_SUFFIX: 'archivados',
+  SUMMARY_PENDING: 'Pendientes',
+  SUMMARY_COMPLETED_TODAY: 'Completados hoy',
+};
 
 export default function HabitsScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const { colors, resolvedScheme } = useTheme();
+  const translated = useSectionTranslations('HABITS');
+  const T = useMemo(
+    () => ({
+      SECTION_PENDING: translated?.SECTION_PENDING || DEFAULT_TEXTS.SECTION_PENDING,
+      SECTION_COMPLETED_TODAY:
+        translated?.SECTION_COMPLETED_TODAY || DEFAULT_TEXTS.SECTION_COMPLETED_TODAY,
+      SECTION_ARCHIVED: translated?.ARCHIVED || DEFAULT_TEXTS.SECTION_ARCHIVED,
+      SEARCH_EMPTY_TITLE: translated?.SEARCH_EMPTY_TITLE || DEFAULT_TEXTS.SEARCH_EMPTY_TITLE,
+      SEARCH_EMPTY_HINT:
+        translated?.SEARCH_EMPTY_HINT ||
+        DEFAULT_TEXTS.SEARCH_EMPTY_HINT,
+      COUNT_ACTIVE_SUFFIX:
+        translated?.COUNT_ACTIVE_SUFFIX || DEFAULT_TEXTS.COUNT_ACTIVE_SUFFIX,
+      COUNT_ARCHIVED_SUFFIX:
+        translated?.COUNT_ARCHIVED_SUFFIX || DEFAULT_TEXTS.COUNT_ARCHIVED_SUFFIX,
+      SUMMARY_PENDING: translated?.SUMMARY_PENDING || DEFAULT_TEXTS.SUMMARY_PENDING,
+      SUMMARY_COMPLETED_TODAY:
+        translated?.SUMMARY_COMPLETED_TODAY || DEFAULT_TEXTS.SUMMARY_COMPLETED_TODAY,
+    }),
+    [translated],
+  );
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
   const HC = useMemo(() => createHabitsColors(colors), [colors]);
   const styles = useMemo(() => createHabitsScreenStyles(colors, t, HC), [colors, t, HC]);
@@ -101,12 +134,12 @@ export default function HabitsScreen({ route, navigation }) {
       const pending = filteredHabits.filter((h) => !h?.status?.completedToday);
       const completed = filteredHabits.filter((h) => h?.status?.completedToday);
       return [
-        { key: 'pending', title: 'Pendientes', data: pending },
-        { key: 'completed', title: 'Completados hoy', data: completed },
+        { key: 'pending', title: T.SECTION_PENDING, data: pending },
+        { key: 'completed', title: T.SECTION_COMPLETED_TODAY, data: completed },
       ].filter((s) => s.data.length > 0);
     }
-    return [{ key: 'archived', title: 'Archivados', data: filteredHabits }];
-  }, [showSkeleton, filterType, filteredHabits]);
+    return [{ key: 'archived', title: T.SECTION_ARCHIVED, data: filteredHabits }];
+  }, [showSkeleton, filterType, filteredHabits, T]);
   const habitsCount = {
     active: filterType === 'active' ? filteredHabits.length : 0,
     archived: filterType === 'archived' ? filteredHabits.length : 0,
@@ -181,8 +214,8 @@ export default function HabitsScreen({ route, navigation }) {
         !loading && searchQuery.trim() ? (
           <View style={styles.searchEmpty}>
             <MaterialCommunityIcons name="magnify-close" size={36} color={HC.ACCENT} />
-            <Text style={styles.searchEmptyTitle}>Sin resultados</Text>
-            <Text style={styles.searchEmptyText}>Prueba con otra palabra o limpia la búsqueda.</Text>
+            <Text style={styles.searchEmptyTitle}>{T.SEARCH_EMPTY_TITLE}</Text>
+            <Text style={styles.searchEmptyText}>{T.SEARCH_EMPTY_HINT}</Text>
           </View>
         ) : !loading ? (
           <HabitsEmptyView filterType={filterType} onCreateFirst={openModal} />
@@ -194,18 +227,18 @@ export default function HabitsScreen({ route, navigation }) {
             <View style={styles.countRow}>
               <Text style={styles.countText}>
                 {filterType === 'active'
-                  ? `${habitsCount.active} activos`
-                  : `${habitsCount.archived} archivados`}
+                  ? `${habitsCount.active} ${T.COUNT_ACTIVE_SUFFIX}`
+                  : `${habitsCount.archived} ${T.COUNT_ARCHIVED_SUFFIX}`}
               </Text>
             </View>
             {filterType === 'active' ? (
               <View style={styles.summaryRow}>
                 <View style={styles.summaryPill}>
-                  <Text style={styles.summaryPillLabel}>Pendientes</Text>
+                  <Text style={styles.summaryPillLabel}>{T.SUMMARY_PENDING}</Text>
                   <Text style={styles.summaryPillValue}>{pendingTodayCount}</Text>
                 </View>
                 <View style={styles.summaryPill}>
-                  <Text style={styles.summaryPillLabel}>Completados hoy</Text>
+                  <Text style={styles.summaryPillLabel}>{T.SUMMARY_COMPLETED_TODAY}</Text>
                   <Text style={styles.summaryPillValue}>{completedTodayCount}</Text>
                 </View>
               </View>

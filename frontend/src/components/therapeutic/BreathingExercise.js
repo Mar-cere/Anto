@@ -15,19 +15,19 @@ import {
   View
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 import { SPACING } from '../../constants/ui';
 
 const { width } = Dimensions.get('window');
 
 // Constantes de animación
-const BREATH_CYCLE_DURATION = 8000; // 8 segundos por ciclo completo
 const INHALE_DURATION = 4000; // 4 segundos inhalar
 const HOLD_DURATION = 2000; // 2 segundos mantener
 const EXHALE_DURATION = 6000; // 6 segundos exhalar
 
 // Constantes de textos
-const TEXTS = {
+const DEFAULT_TEXTS = {
   INHALE: 'Inhala',
   HOLD: 'Mantén',
   EXHALE: 'Exhala',
@@ -46,6 +46,30 @@ const BreathingExercise = ({
   holdDuration = HOLD_DURATION,
   exhaleDuration = EXHALE_DURATION,
 }) => {
+  const translated = useSectionTranslations('TECHNIQUES');
+  const TEXTS = useMemo(
+    () => ({
+      ...DEFAULT_TEXTS,
+      INHALE:
+        translated?.BREATHING_EXERCISE_INHALE || DEFAULT_TEXTS.INHALE,
+      HOLD: translated?.BREATHING_EXERCISE_HOLD || DEFAULT_TEXTS.HOLD,
+      EXHALE:
+        translated?.BREATHING_EXERCISE_EXHALE || DEFAULT_TEXTS.EXHALE,
+      START:
+        translated?.BREATHING_EXERCISE_START || DEFAULT_TEXTS.START,
+      PAUSE:
+        translated?.BREATHING_EXERCISE_PAUSE || DEFAULT_TEXTS.PAUSE,
+      RESUME:
+        translated?.BREATHING_EXERCISE_RESUME || DEFAULT_TEXTS.RESUME,
+      RESET:
+        translated?.BREATHING_EXERCISE_RESET || DEFAULT_TEXTS.RESET,
+      COMPLETE:
+        translated?.BREATHING_EXERCISE_COMPLETE || DEFAULT_TEXTS.COMPLETE,
+      CYCLES:
+        translated?.BREATHING_EXERCISE_CYCLES || DEFAULT_TEXTS.CYCLES,
+    }),
+    [translated],
+  );
   const { colors, resolvedScheme } = useTheme();
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
 
@@ -213,7 +237,18 @@ const BreathingExercise = ({
       clearTimeout(phaseTimer);
       clearInterval(countdownInterval);
     };
-  }, [isActive, isPaused, completedCycles, cycles, inhaleDuration, holdDuration, exhaleDuration]);
+  }, [
+    isActive,
+    isPaused,
+    completedCycles,
+    cycles,
+    inhaleDuration,
+    holdDuration,
+    exhaleDuration,
+    onComplete,
+    opacityAnim,
+    scaleAnim,
+  ]);
 
   // Manejar inicio/pausa
   const handleToggle = () => {

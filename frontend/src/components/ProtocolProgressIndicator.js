@@ -14,7 +14,15 @@ import {
   View
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
+
+const DEFAULT_TEXTS = {
+  ACTIVE_PROTOCOL: 'Protocolo Activo',
+  THERAPEUTIC_PROTOCOL_FALLBACK: 'Protocolo Terapéutico',
+  PROGRESS_TEMPLATE: 'Paso {current} de {total}',
+  SKIP_PROTOCOL: 'Saltar Protocolo',
+};
 
 const ProtocolProgressIndicator = ({ 
   protocol, 
@@ -24,6 +32,20 @@ const ProtocolProgressIndicator = ({
   onPause 
 }) => {
   const { colors } = useTheme();
+  const translated = useSectionTranslations('DASH');
+  const TEXTS = useMemo(
+    () => ({
+      ACTIVE_PROTOCOL:
+        translated?.PROTOCOL_ACTIVE || DEFAULT_TEXTS.ACTIVE_PROTOCOL,
+      THERAPEUTIC_PROTOCOL_FALLBACK:
+        translated?.PROTOCOL_NAME_FALLBACK || DEFAULT_TEXTS.THERAPEUTIC_PROTOCOL_FALLBACK,
+      PROGRESS_TEMPLATE:
+        translated?.PROTOCOL_PROGRESS_TEMPLATE || DEFAULT_TEXTS.PROGRESS_TEMPLATE,
+      SKIP_PROTOCOL:
+        translated?.PROTOCOL_SKIP || DEFAULT_TEXTS.SKIP_PROTOCOL,
+    }),
+    [translated],
+  );
   const progress = currentStep / totalSteps;
   const progressAnim = React.useRef(new Animated.Value(progress)).current;
 
@@ -33,7 +55,7 @@ const ProtocolProgressIndicator = ({
       duration: 300,
       useNativeDriver: false,
     }).start();
-  }, [progress]);
+  }, [progress, progressAnim]);
 
   const progressWidth = progressAnim.interpolate({
     inputRange: [0, 1],
@@ -124,7 +146,7 @@ const ProtocolProgressIndicator = ({
             size={20}
             color={colors.primary}
           />
-          <Text style={styles.title}>Protocolo Activo</Text>
+          <Text style={styles.title}>{TEXTS.ACTIVE_PROTOCOL}</Text>
         </View>
         {onPause && (
           <TouchableOpacity
@@ -143,7 +165,9 @@ const ProtocolProgressIndicator = ({
         )}
       </View>
 
-      <Text style={styles.protocolName}>{protocol?.name || 'Protocolo Terapéutico'}</Text>
+      <Text style={styles.protocolName}>
+        {protocol?.name || TEXTS.THERAPEUTIC_PROTOCOL_FALLBACK}
+      </Text>
       
       <View style={styles.progressContainer}>
         <View style={styles.progressBar}>
@@ -155,7 +179,9 @@ const ProtocolProgressIndicator = ({
           />
         </View>
         <Text style={styles.progressText}>
-          Paso {currentStep} de {totalSteps}
+          {TEXTS.PROGRESS_TEMPLATE
+            .replace('{current}', String(currentStep))
+            .replace('{total}', String(totalSteps))}
         </Text>
       </View>
 
@@ -167,7 +193,7 @@ const ProtocolProgressIndicator = ({
             onSkip();
           }}
         >
-          <Text style={styles.skipButtonText}>Saltar Protocolo</Text>
+          <Text style={styles.skipButtonText}>{TEXTS.SKIP_PROTOCOL}</Text>
         </TouchableOpacity>
       )}
     </View>

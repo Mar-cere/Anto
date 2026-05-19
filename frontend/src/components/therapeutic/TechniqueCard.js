@@ -12,6 +12,7 @@ import {
   View
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 
 // Constantes de estilos
@@ -21,6 +22,15 @@ const CARD_MARGIN_BOTTOM = 12;
 const ICON_SIZE = 24;
 const TITLE_FONT_SIZE = 16;
 const DESCRIPTION_FONT_SIZE = 14;
+const DEFAULT_TEXTS = {
+  DEFAULT_NAME: 'Técnica',
+  A11Y_HINT: 'Doble toque para abrir la técnica',
+  A11Y_PREFIX: 'Técnica',
+  A11Y_TYPE_PREFIX: 'Tipo',
+  STEPS_SINGULAR: 'paso',
+  STEPS_PLURAL: 'pasos',
+  WITHOUT_NAME: 'sin nombre',
+};
 
 // Mapeo de tipos a iconos
 const TYPE_ICONS = {
@@ -43,11 +53,25 @@ function resolveTechniqueType(technique) {
 }
 
 const TechniqueCard = ({ technique, onPress, variant = 'default' }) => {
-  if (technique == null || typeof technique !== 'object') {
-    return null;
-  }
-
   const { colors, resolvedScheme } = useTheme();
+  const translated = useSectionTranslations('TECHNIQUES');
+  const T = useMemo(
+    () => ({
+      DEFAULT_NAME:
+        translated?.TECHNIQUE_CARD_DEFAULT_NAME || DEFAULT_TEXTS.DEFAULT_NAME,
+      A11Y_HINT:
+        translated?.TECHNIQUE_CARD_A11Y_HINT ||
+        DEFAULT_TEXTS.A11Y_HINT,
+      A11Y_PREFIX: translated?.TECHNIQUE_CARD_A11Y_PREFIX || DEFAULT_TEXTS.A11Y_PREFIX,
+      A11Y_TYPE_PREFIX:
+        translated?.TECHNIQUE_CARD_A11Y_TYPE_PREFIX || DEFAULT_TEXTS.A11Y_TYPE_PREFIX,
+      STEPS_SINGULAR:
+        translated?.TECHNIQUE_CARD_STEPS_SINGULAR || DEFAULT_TEXTS.STEPS_SINGULAR,
+      STEPS_PLURAL: translated?.TECHNIQUE_CARD_STEPS_PLURAL || DEFAULT_TEXTS.STEPS_PLURAL,
+      WITHOUT_NAME: translated?.TECHNIQUE_CARD_WITHOUT_NAME || DEFAULT_TEXTS.WITHOUT_NAME,
+    }),
+    [translated]
+  );
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
   const typeAccent = useMemo(
     () => ({
@@ -159,6 +183,10 @@ const TechniqueCard = ({ technique, onPress, variant = 'default' }) => {
     [colors, t],
   );
 
+  if (technique == null || typeof technique !== 'object') {
+    return null;
+  }
+
   const compact = variant === 'compact';
   const type = resolveTechniqueType(technique);
   const icon = TYPE_ICONS[type] || 'book-open-variant';
@@ -175,8 +203,8 @@ const TechniqueCard = ({ technique, onPress, variant = 'default' }) => {
       disabled={typeof onPress !== 'function'}
       activeOpacity={0.7}
       accessibilityRole="button"
-      accessibilityLabel={`Técnica ${technique.name != null ? String(technique.name) : 'sin nombre'}. Tipo ${type}. ${technique.description != null ? String(technique.description) : ''}`}
-      accessibilityHint="Doble toque para abrir la técnica"
+      accessibilityLabel={`${T.A11Y_PREFIX} ${technique.name != null ? String(technique.name) : T.WITHOUT_NAME}. ${T.A11Y_TYPE_PREFIX} ${type}. ${technique.description != null ? String(technique.description) : ''}`}
+      accessibilityHint={T.A11Y_HINT}
     >
       <View style={[styles.header, compact && styles.headerCompact]}>
         <View style={[styles.iconContainer, { backgroundColor: `${color}20` }]}>
@@ -186,7 +214,7 @@ const TechniqueCard = ({ technique, onPress, variant = 'default' }) => {
           <Text style={styles.title}>
             {technique.name != null && String(technique.name).trim() !== ''
               ? String(technique.name)
-              : 'Técnica'}
+              : T.DEFAULT_NAME}
           </Text>
           {!compact ? (
             <View style={styles.typeContainer}>
@@ -229,7 +257,7 @@ const TechniqueCard = ({ technique, onPress, variant = 'default' }) => {
             color={colors.textSecondary}
           />
           <Text style={styles.stepsText}>
-            {technique.steps.length} {technique.steps.length === 1 ? 'paso' : 'pasos'}
+            {technique.steps.length} {technique.steps.length === 1 ? T.STEPS_SINGULAR : T.STEPS_PLURAL}
           </Text>
         </View>
       ) : null}

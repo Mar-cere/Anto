@@ -48,7 +48,13 @@ export function inferChatSessionPhase({
     .filter(Boolean);
 
   const recentCalm = userTextsChrono.slice(-4).some((t) => CALM_USER_PHRASE.test(t));
-  if (recentCalm && (riskLevel === 'LOW' || riskLevel === 'WARNING') && !IMMINENT_IN_MESSAGE.test(content)) {
+  // No marcar "settled" en el primer mensaje del hilo: "estoy bien" al saludar no es cierre de crisis.
+  if (
+    recentCalm &&
+    userTextsChrono.length >= 2 &&
+    (riskLevel === 'LOW' || riskLevel === 'WARNING') &&
+    !IMMINENT_IN_MESSAGE.test(content)
+  ) {
     return 'settled';
   }
 

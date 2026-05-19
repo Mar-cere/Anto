@@ -3,8 +3,139 @@
  * No sustituye análisis clínico; orienta el tono del system prompt.
  */
 
+import { MESSAGE_INTENTS } from '../constants/openai.js';
+
 const SNIPPET_MAX_CHARS = 1250;
 const SNIPPET_COUNT_CAP = 500_000;
+
+/** Piso orientativo de turnos del usuario antes de orientar cierre de tramo (no regla rígida). */
+export const CLOSURE_MIN_USER_TURNS = 5;
+
+/** Frases de puente de cierre que no deben aparecer fuera de fase `may_close`. */
+export const PREMATURE_CLOSURE_PHRASE_RES = [
+  /\s*si te sirve,?\s*podemos cerrar aqu[ií] este tramo[^.?!]*[.?!]?/giu,
+  /\s*si quieres,?\s*por hoy lo dejamos aqu[ií][^.?!]*[.?!]?/giu,
+  /\s*podemos cerrar aqu[ií] este tramo y retomarlo[^.?!]*[.?!]?/giu,
+  /\s*retomarlo cuando quieras desde este punto[^.?!]*[.?!]?/giu,
+  /\s*dejamos esto por hoy y retomamos[^.?!]*[.?!]?/giu
+];
+
+/**
+ * @typedef {'opening' | 'developing' | 'may_close'} ConversationClosurePhase
+ */
+
+/**
+ * Evalúa tono y estado del hilo para cierre de tramo (heurística continua, no solo contar mensajes).
+ * @param {object} [params]
+ * @param {object|null} [params.sessionRetention]
+ * @param {object|null} [params.conversationPattern]
+ * @param {string} [params.sessionPhase]
+ * @param {object|null} [params.contextual]
+ * @returns {{ phase: ConversationClosurePhase, reasons: string[] }}
+ */
+export function evaluateConversationClosureReadiness({
+  sessionRetention = null,
+  conversationPattern = null,
+  sessionPhase = 'default',
+  contextual = null
+} = {}) {
+  const retention = sessionRetention && typeof sessionRetention === 'object' ? sessionRetention : {};
+  const pattern = conversationPattern && typeof conversationPattern === 'object' ? conversationPattern : {};
+  const userTurnCount = Math.floor(Number(retention.userTurnCount ?? 0));
+  const explicitExit = pattern.closureRisk === true || retention.likelyFarewell === true;
+  const intent = contextual?.intencion?.tipo;
+  const phaseNorm = typeof sessionPhase === 'string' ? sessionPhase.trim() : '';
+
+  if (intent === MESSAGE_INTENTS.GREETING || retention.suggestReturningUserWarmOpen === true) {
+    return { phase: 'opening', reasons: ['saludo_o_apertura'] };
+  }
+
+  if (phaseNorm === 'acute' && !explicitExit) {
+    return { phase: 'opening', reasons: ['fase_seguridad'] };
+  }
+
+  if (explicitExit) {
+    return { phase: 'may_close', reasons: ['salida_explicita'] };
+  }
+
+  const retentionSignals =
+    retention.suggestBridgeClosing === true ||
+    retention.suggestFatigueClosing === true ||
+    retention.suggestThematicMicroClosure === true ||
+    retention.suggestCheckpointPause === true;
+
+  const substantiveThread =
+    Number.isFinite(userTurnCount) && userTurnCount >= CLOSURE_MIN_USER_TURNS;
+
+  if (!substantiveThread) {
+    return { phase: 'opening', reasons: ['hilo_reciente'] };
+  }
+
+  if (retentionSignals) {
+    return { phase: 'may_close', reasons: ['senal_retencion'] };
+  }
+
+  if (phaseNorm === 'settled') {
+    return { phase: 'may_close', reasons: ['fase_aterrizada'] };
+  }
+
+  if (retention.nearThreadLimit === true) {
+    return { phase: 'may_close', reasons: ['limite_tecnico_hilo'] };
+  }
+
+  return { phase: 'developing', reasons: ['intercambio_en_curso'] };
+}
+
+/**
+ * Quita puentes de cierre que el modelo añadió cuando el hilo aún no está en fase `may_close`.
+ * @param {string} respuesta
+ * @param {object} [contexto]
+ * @returns {string}
+ */
+export function stripPrematureSessionClosurePhrases(respuesta, contexto = {}) {
+  if (!respuesta || typeof respuesta !== 'string') return respuesta;
+  if (shouldOrientSessionClosure(contexto)) return respuesta;
+
+  let out = respuesta;
+  for (const re of PREMATURE_CLOSURE_PHRASE_RES) {
+    out = out.replace(re, '');
+  }
+  return out
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([.!?])/g, '$1')
+    .trim();
+}
+
+/**
+ * @param {string} respuesta
+ * @returns {boolean}
+ */
+export function responseHasSessionClosureBridge(respuesta) {
+  if (!respuesta || typeof respuesta !== 'string') return false;
+  const lower = respuesta.toLowerCase();
+  return (
+    /cerrar aqu[ií] este tramo/.test(lower) ||
+    /retomarlo cuando quieras/.test(lower) ||
+    /por hoy lo dejamos aqu[ií]/.test(lower)
+  );
+}
+
+/**
+ * @param {object} contexto - contexto de openaiService (sessionRetention, conversationPattern, sessionPhase, contextual, crisis)
+ * @returns {boolean}
+ */
+export function shouldOrientSessionClosure(contexto = {}) {
+  const riskLevel = String(contexto?.crisis?.riskLevel || '').toUpperCase();
+  if (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') return false;
+
+  const { phase } = evaluateConversationClosureReadiness({
+    sessionRetention: contexto?.sessionRetention,
+    conversationPattern: contexto?.conversationPattern,
+    sessionPhase: contexto?.sessionPhase,
+    contextual: contexto?.contextual
+  });
+  return phase === 'may_close';
+}
 
 /** @type {RegExp[]} */
 const LIKELY_FAREWELL_RES = [
@@ -112,7 +243,7 @@ export function buildSessionRetentionPayload({
     longSession &&
     !likelyFarewell &&
     !suggestFirstTimeExpectation &&
-    userTurnCount >= 4 &&
+    userTurnCount >= CLOSURE_MIN_USER_TURNS &&
     userTurnCount <= 8;
 
   const suggestFatigueClosing =
@@ -121,8 +252,8 @@ export function buildSessionRetentionPayload({
   const suggestCheckpointPause =
     !likelyFarewell &&
     !suggestFirstTimeExpectation &&
-    userTurnCount >= 4 &&
-    totalMessages >= 8 &&
+    userTurnCount >= CLOSURE_MIN_USER_TURNS &&
+    totalMessages >= 10 &&
     questionStreak >= 2;
 
   const isReturningUser =
@@ -205,7 +336,12 @@ export function withThematicMicroClosureRetention(payload, { sessionPhase, conve
   }
   const userTurnCount = Math.floor(Number(base.userTurnCount ?? 0));
   const totalMessages = Math.floor(Number(base.totalMessages ?? 0));
-  if (!Number.isFinite(userTurnCount) || !Number.isFinite(totalMessages) || userTurnCount < 4 || totalMessages < 8) {
+  if (
+    !Number.isFinite(userTurnCount) ||
+    !Number.isFinite(totalMessages) ||
+    userTurnCount < CLOSURE_MIN_USER_TURNS ||
+    totalMessages < 10
+  ) {
     return { ...base, suggestThematicMicroClosure: false };
   }
   const windDown = detectEmotionalIntensityWindDown(conversationHistoryNewestFirst);
@@ -293,13 +429,32 @@ export function buildSessionRetentionSystemSnippet(payload, options = {}) {
 
   if (lines.length === 0) return '';
 
-  const header = acute
-    ? '\n\n### Sesión y retorno (breve)\n' +
-      '- **Prioridad de seguridad:** no orientes aquí cierre reflexivo del tramo, pausas terapéuticas ni “aterrizaje” salvo **despedida clara** del usuario o **límite técnico** del hilo en la viñeta correspondiente.\n'
-    : '\n\n### Sesión y retorno\n' +
+  const hasClosureOrientedHint =
+    effective.likelyFarewell === true ||
+    effective.nearThreadLimit === true ||
+    effective.suggestFirstTimeExpectation === true ||
+    effective.suggestCheckpointPause === true ||
+    effective.suggestThematicMicroClosure === true ||
+    effective.suggestBridgeClosing === true ||
+    effective.suggestFatigueClosing === true;
+
+  let header;
+  if (acute) {
+    header =
+      '\n\n### Sesión y retorno (breve)\n' +
+      '- **Prioridad de seguridad:** no orientes aquí cierre reflexivo del tramo, pausas terapéuticas ni “aterrizaje” salvo **despedida clara** del usuario o **límite técnico** del hilo en la viñeta correspondiente.\n';
+  } else if (hasClosureOrientedHint) {
+    header =
+      '\n\n### Sesión y retorno\n' +
       '- El chat **sigue disponible**; tú no decides que la persona deba irse.\n' +
       '- Muchas personas necesitan **sentir que el tramo tuvo una conclusión** (aunque sea breve) para volver con claridad; un hilo que solo “sigue abierto” sin ningún aterrizaje puede cansar y **desincentivar** una nueva conversación. Cuando encaje, ayuda a **aterrizar**: síntesis mínima, qué quedó claro, y **permite pausa** o “seguimos cuando quieras” **sin** otra pregunta amplia solo por hábito.\n' +
       '- Las viñetas siguientes marcan **cuándo** ese cierre natural encaja; si no aplica, sigue como hasta ahora.';
+  } else {
+    header =
+      '\n\n### Sesión y retorno (apertura)\n' +
+      '- El chat **sigue disponible**; en un hilo recién empezado prioriza **acogida** y seguir la conversación.\n' +
+      '- **No** invites a cerrar el tramo, pausar la sesión ni “retomar desde este punto” salvo que la persona lo pida o se despida.\n';
+  }
 
   const out = header + '\n' + lines.join('\n');
   return truncateRetentionSnippet(out, SNIPPET_MAX_CHARS);

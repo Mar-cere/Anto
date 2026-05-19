@@ -24,27 +24,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { useTheme } from '../../context/ThemeContext';
 import { SPACING } from '../../constants/ui';
+import { useSubscriptionTexts } from '../../screens/subscription/subscriptionScreenConstants';
 
 // Verificar que WebView esté disponible
 if (!WebView) {
   console.error('WebView no está disponible. Asegúrate de que react-native-webview esté instalado correctamente.');
 }
 
-// Constantes
-const TEXTS = {
-  CLOSE: 'Cerrar',
-  LOADING: 'Cargando página de pago...',
-  LOADING_PAYMENT: 'Procesando tu pago de forma segura...',
-  ERROR: 'Error al cargar el pago',
-  RETRY: 'Reintentar',
-  OPEN_BROWSER: 'Abrir en navegador',
-  SECURE_PAYMENT: 'Pago seguro con Mercado Pago',
-  PROCESSING: 'Procesando...',
-  BROWSER_FALLBACK_TITLE: 'Abrir en navegador',
-  BROWSER_FALLBACK_MESSAGE: 'Si el pago no carga correctamente, puedes abrirlo en tu navegador.',
-};
-
 const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
+  const TEXTS = useSubscriptionTexts();
   const insets = useSafeAreaInsets();
   const webViewRef = useRef(null);
   const { colors, statusBarStyle } = useTheme();
@@ -200,9 +188,9 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
   // Validar URL antes de cargar
   React.useEffect(() => {
     if (!url) {
-      setError('No se proporcionó una URL válida');
+      setError(TEXTS.PAYMENT_ERROR_NO_VALID_URL);
       setLoading(false);
-      onError?.('No se proporcionó una URL válida');
+      onError?.(TEXTS.PAYMENT_ERROR_NO_VALID_URL);
       return;
     }
 
@@ -210,16 +198,16 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
     try {
       const urlObj = new URL(url);
       if (!urlObj.protocol.startsWith('http')) {
-        setError('URL inválida. Debe comenzar con http:// o https://');
+        setError(TEXTS.PAYMENT_ERROR_INVALID_URL_PROTOCOL);
         setLoading(false);
-        onError?.('URL inválida');
+        onError?.(TEXTS.PAYMENT_ERROR_INVALID_URL);
       }
-    } catch (e) {
-      setError('URL inválida');
+    } catch {
+      setError(TEXTS.PAYMENT_ERROR_INVALID_URL);
       setLoading(false);
-      onError?.('URL inválida');
+      onError?.(TEXTS.PAYMENT_ERROR_INVALID_URL);
     }
-  }, [url, onError]);
+  }, [url, onError, TEXTS]);
 
   React.useEffect(() => {
     if (!loading || isProcessing) {
@@ -272,8 +260,8 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
 
     // Detectar errores en la URL
     if (currentUrl.includes('error') || currentUrl.includes('failure')) {
-      setError('Error en el proceso de pago');
-      finishFlowOnce(() => onError?.('Error en el proceso de pago'));
+      setError(TEXTS.PAYMENT_ERROR_PROCESS);
+      finishFlowOnce(() => onError?.(TEXTS.PAYMENT_ERROR_PROCESS));
     }
   };
 
@@ -281,6 +269,7 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
   const handleError = (syntheticEvent) => {
     const { nativeEvent } = syntheticEvent;
     console.error('Error en WebView:', nativeEvent);
+    const description = String(nativeEvent?.description || '').toLowerCase();
     
     // Ignorar errores de "about:srcdoc" que pueden ocurrir con iframes
     if (nativeEvent.url && (nativeEvent.url.includes('about:srcdoc') || nativeEvent.url.includes('about:blank'))) {
@@ -297,17 +286,24 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
     }
     
     // Determinar tipo de error
-    let errorMessage = TEXTS.ERROR;
-    if (nativeEvent.description) {
-      if (nativeEvent.description.includes('network') || nativeEvent.description.includes('internet') || nativeEvent.description.includes('servidor')) {
-        errorMessage = 'Error de conexión. Verifica tu conexión a internet.';
-      } else if (nativeEvent.description.includes('timeout')) {
-        errorMessage = 'Tiempo de espera agotado. Por favor, intenta nuevamente.';
-      } else if (nativeEvent.description.includes('No se encontró ningún servidor')) {
+    let errorMessage = TEXTS.PAYMENT_ERROR;
+    if (description) {
+      if (
+        description.includes('network') ||
+        description.includes('internet') ||
+        description.includes('servidor') ||
+        description.includes('server')
+      ) {
+        errorMessage = TEXTS.PAYMENT_ERROR_CONNECTION;
+      } else if (description.includes('timeout') || description.includes('timed out')) {
+        errorMessage = TEXTS.PAYMENT_ERROR_TIMEOUT;
+      } else if (
+        description.includes('no se encontró ningún servidor') ||
+        description.includes('could not find server') ||
+        description.includes('could not connect to the server')
+      ) {
         // Para errores de DNS con Mercado Pago, sugerir usar navegador externo
-        errorMessage = 'No se pudo conectar con Mercado Pago en la app. Te recomendamos usar el navegador externo.';
-      } else {
-        errorMessage = nativeEvent.description;
+        errorMessage = TEXTS.PAYMENT_ERROR_MERCADOPAGO_APP;
       }
     }
     
@@ -353,11 +349,11 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
         await Linking.openURL(url);
         onClose?.();
       } else {
-        Alert.alert('Error', 'No se pudo abrir el navegador');
+        Alert.alert(TEXTS.PAYMENT_ERROR_TITLE, TEXTS.PAYMENT_ERROR_BROWSER_OPEN);
       }
     } catch (error) {
       console.error('Error abriendo URL en navegador:', error);
-      Alert.alert('Error', 'No se pudo abrir el navegador');
+      Alert.alert(TEXTS.PAYMENT_ERROR_TITLE, TEXTS.PAYMENT_ERROR_BROWSER_OPEN);
     }
   };
 
@@ -373,11 +369,11 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             onClose?.();
           }}
-          accessibilityLabel={TEXTS.CLOSE}
+          accessibilityLabel={TEXTS.PAYMENT_CLOSE_A11Y}
         >
           <MaterialCommunityIcons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Pago con Mercado Pago</Text>
+        <Text style={styles.headerTitle}>{TEXTS.PAYMENT_HEADER_TITLE}</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -393,14 +389,14 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>
-            {isProcessing ? TEXTS.LOADING_PAYMENT : TEXTS.LOADING}
+            {isProcessing ? TEXTS.PAYMENT_LOADING_SECURE : TEXTS.PAYMENT_LOADING}
           </Text>
           {isProcessing && (
-            <Text style={styles.secureText}>{TEXTS.SECURE_PAYMENT}</Text>
+            <Text style={styles.secureText}>{TEXTS.PAYMENT_SECURE_LABEL}</Text>
           )}
           {loadTimedOut && !isProcessing && (
             <TouchableOpacity style={styles.browserFallbackButton} onPress={handleOpenInBrowser}>
-              <Text style={styles.browserFallbackButtonText}>{TEXTS.OPEN_BROWSER}</Text>
+              <Text style={styles.browserFallbackButtonText}>{TEXTS.PAYMENT_OPEN_BROWSER}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -410,7 +406,7 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
       {isProcessing && !loading && (
         <View style={styles.processingContainer}>
           <ActivityIndicator size="small" color={colors.primary} />
-          <Text style={styles.processingText}>{TEXTS.PROCESSING}</Text>
+          <Text style={styles.processingText}>{TEXTS.PAYMENT_PROCESSING}</Text>
         </View>
       )}
 
@@ -427,7 +423,7 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
               style={[styles.retryButton, styles.browserButton]} 
               onPress={handleOpenInBrowser}
             >
-              <Text style={styles.retryButtonText}>{TEXTS.OPEN_BROWSER}</Text>
+              <Text style={styles.retryButtonText}>{TEXTS.PAYMENT_OPEN_BROWSER}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -449,9 +445,13 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
             console.error('Error HTTP en WebView:', nativeEvent);
             // Solo mostrar error si es un error crítico (4xx, 5xx)
             if (nativeEvent.statusCode >= 400) {
-              setError(`Error al cargar la página (${nativeEvent.statusCode})`);
+              const errorHttpMessage = TEXTS.PAYMENT_ERROR_HTTP_PAGE.replace(
+                '{statusCode}',
+                String(nativeEvent.statusCode),
+              );
+              setError(errorHttpMessage);
               setLoading(false);
-              finishFlowOnce(() => onError?.(`Error al cargar la página (${nativeEvent.statusCode})`));
+              finishFlowOnce(() => onError?.(errorHttpMessage));
             }
           }}
           onShouldStartLoadWithRequest={(request) => {

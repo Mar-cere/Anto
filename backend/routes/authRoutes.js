@@ -40,6 +40,15 @@ const passwordResetLimiter = createRateLimiter({
   legacyHeaders: false
 });
 
+const changePasswordLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5,
+  message: 'Demasiados intentos de cambio de contraseña. Por favor, intente más tarde.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+});
+
 // Esquemas de validación Joi (normalizan email y username a lowercase)
 const registerSchema = Joi.object({
   email: Joi.string()
@@ -698,6 +707,71 @@ router.post('/reset-password', passwordResetLimiter, async (req, res) => {
   } catch (error) {
     console.error('Error al restablecer contraseña:', error);
     res.status(500).json({ message: 'Error al restablecer la contraseña' });
+  }
+});
+
+// Cambiar contraseña (usuario autenticado)
+const changePasswordSchema = Joi.object({
+  currentPassword: Joi.string().required().messages({
+    'any.required': 'La contraseña actual es obligatoria',
+    'string.empty': 'La contraseña actual es obligatoria',
+  }),
+  newPassword: Joi.string().min(6).required().messages({
+    'any.required': 'La nueva contraseña es obligatoria',
+    'string.empty': 'La nueva contraseña es obligatoria',
+    'string.min': 'La nueva contraseña debe tener al menos 6 caracteres',
+  }),
+});
+
+router.put('/change-password', changePasswordLimiter, authenticateToken, async (req, res) => {
+  try {
+    const { error, value } = changePasswordSchema.validate(req.body, { stripUnknown: true });
+    if (error) {
+      return res.status(400).json({
+        message: 'Datos inválidos',
+        errorCode: 'VALIDATION_ERROR',
+        errors: error.details.map(detail => detail.message),
+      });
+    }
+
+    const { currentPassword, newPassword } = value;
+    const userId = req.user._id || req.user.userId;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        message: 'Usuario no encontrado',
+        errorCode: 'USER_NOT_FOUND',
+      });
+    }
+
+    if (!user.comparePassword(currentPassword)) {
+      return res.status(401).json({
+        message: 'La contraseña actual es incorrecta',
+        errorCode: 'WRONG_CURRENT_PASSWORD',
+      });
+    }
+
+    if (user.comparePassword(newPassword)) {
+      return res.status(400).json({
+        message: 'La nueva contraseña debe ser diferente a la actual',
+        errorCode: 'PASSWORD_SAME_AS_CURRENT',
+      });
+    }
+
+    const { salt, hash } = hashPassword(newPassword);
+    user.password = hash;
+    user.salt = salt;
+    user.lastPasswordChange = new Date();
+    await user.save();
+
+    res.json({ message: 'Contraseña actualizada correctamente' });
+  } catch (error) {
+    console.error('Error al cambiar contraseña:', error);
+    res.status(500).json({
+      message: 'Error al cambiar la contraseña',
+      errorCode: 'CHANGE_PASSWORD_FAILED',
+    });
   }
 });
 

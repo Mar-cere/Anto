@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+import axios, { create } from 'axios';
 import { User } from '../models/User';
-import { API_URL, ENDPOINTS, fetchWithToken } from '../config/api';
+import { ENDPOINTS } from '../config/api';
 
 // URL base de la API
 export const API_BASE_URL = 'https://antobackend.onrender.com';
@@ -20,7 +20,7 @@ export const ROUTES = {
 };
 
 // Crear cliente axios con interceptores
-const apiClient = axios.create({
+const apiClient = create({
   baseURL: API_BASE_URL,
   timeout: 30000,
   headers: {

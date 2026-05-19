@@ -23,10 +23,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import ParticleBackground from '../components/ParticleBackground';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING } from '../constants/ui';
+import { useSectionTranslations } from '../hooks/useTranslations';
 
 // Constantes
 const ICON_SIZE = 24;
-const TEXTS = {
+const DEFAULT_TEXTS = {
   TITLE: 'Sobre Anto',
   BACK: 'Volver',
   MISSION_TITLE: 'Nuestra Misión',
@@ -68,11 +69,16 @@ const TEXTS = {
   LEGAL_TITLE: 'Legal',
   TERMS_LINK: 'Términos de Servicio',
   PRIVACY_LINK: 'Política de Privacidad',
+  VERSION_LABEL: 'Versión',
 };
 
-const APP_VERSION_LABEL = `Versión ${Constants.expoConfig?.version ?? '—'}`;
-
 const AboutScreen = () => {
+  const INFO = useSectionTranslations('INFO');
+  const TEXTS = useMemo(
+    () => ({ ...DEFAULT_TEXTS, ...(INFO?.ABOUT || {}) }),
+    [INFO],
+  );
+  const APP_VERSION_LABEL = `${TEXTS.VERSION_LABEL} ${Constants.expoConfig?.version ?? '-'}`;
   const navigation = useNavigation();
   const { colors } = useTheme();
 

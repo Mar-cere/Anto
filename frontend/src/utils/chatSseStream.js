@@ -5,6 +5,16 @@
 
 const DEFAULT_STREAM_TIMEOUT_MS = 120_000;
 
+function deriveErrorCodeFromResponse(status, data) {
+  const backendCode = typeof data?.code === 'string' ? data.code.trim() : '';
+  if (backendCode) return backendCode.toUpperCase();
+  if (status === 401) return 'UNAUTHORIZED';
+  if (status === 403) return data?.requiresSubscription ? 'SUBSCRIPTION_REQUIRED' : 'FORBIDDEN';
+  if (status === 429) return 'RATE_LIMIT';
+  if (status >= 500) return 'SERVER_ERROR';
+  return 'HTTP_ERROR';
+}
+
 /**
  * Heurística defensiva para aceptar cierres sin evento `done` solo si el texto
  * parece completo (evita guardar respuestas truncadas por corte de stream).
@@ -60,7 +70,11 @@ export function dispatchSsePayloads(payloads, { onChunk, onDone }) {
   for (const payload of payloads) {
     if (payload?.error) {
       const msg = typeof payload.error === 'string' ? payload.error : 'Error en el stream';
-      throw new Error(msg);
+      const err = new Error(msg);
+      if (typeof payload.code === 'string' && payload.code.trim()) {
+        err.code = payload.code.trim().toUpperCase();
+      }
+      throw err;
     }
     if (payload?.done === true) {
       if (onDone) onDone(payload);
@@ -170,7 +184,7 @@ export function postChatSseWithXHR({
       fail(Object.assign(new Error('Tiempo de espera agotado (stream)'), { code: 'ETIMEDOUT' }));
     };
     xhr.onerror = () => {
-      fail(new Error('Error de red (stream)'));
+      fail(Object.assign(new Error('Error de red (stream)'), { code: 'NETWORK_ERROR' }));
     };
     xhr.onabort = () => {
       fail(Object.assign(new Error('Cancelado'), { code: 'ABORTED' }));
@@ -195,6 +209,7 @@ export function postChatSseWithXHR({
           /* usar statusText */
         }
         const err = new Error(msg);
+        err.code = deriveErrorCodeFromResponse(xhr.status, data);
         err.response = { status: xhr.status, data };
         fail(err);
         return;
@@ -253,7 +268,9 @@ export async function streamChatSseWithFetch({
       err.code = 'ETIMEDOUT';
       throw err;
     }
-    throw e;
+    const err = e instanceof Error ? e : new Error(String(e || 'Error de red'));
+    if (!err.code) err.code = 'NETWORK_ERROR';
+    throw err;
   } finally {
     clearTimeout(tid);
   }
@@ -280,6 +297,7 @@ export async function streamChatSseWithFetch({
       }
     }
     const err = new Error(errMsg);
+    err.code = deriveErrorCodeFromResponse(response.status, data);
     err.response = { status: response.status, data };
     throw err;
   }

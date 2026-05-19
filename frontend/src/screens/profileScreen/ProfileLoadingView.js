@@ -4,9 +4,10 @@
 import React from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { useProfileScreenStyles } from './profileScreenStyles';
-import { TEXTS } from './profileScreenConstants';
+import { useProfileTexts } from './profileScreenConstants';
 
 export function ProfileLoadingView() {
+  const TEXTS = useProfileTexts();
   const { styles, profileColors } = useProfileScreenStyles();
   return (
     <View style={styles.loadingContainer}>

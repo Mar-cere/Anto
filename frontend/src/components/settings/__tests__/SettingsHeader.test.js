@@ -7,6 +7,7 @@ jest.mock('../../../screens/settings/settingsScreenConstants', () => ({
   COLORS: { WHITE: '#fff' },
   ICON_SIZE: 24,
   TEXTS: { TITLE: 'Configuración', BACK: 'Volver' },
+  useSettingsTexts: () => ({ TITLE: 'Configuración', BACK: 'Volver' }),
 }));
 jest.mock('@expo/vector-icons', () => ({ MaterialCommunityIcons: () => null }));
 

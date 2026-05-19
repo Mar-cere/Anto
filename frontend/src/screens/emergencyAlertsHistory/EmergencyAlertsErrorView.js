@@ -1,9 +1,11 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { SafeAreaView, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEmergencyAlertsHistoryStyles } from './emergencyAlertsHistoryStyles';
-import { TEXTS, EMERGENCY_ERROR_DETAIL_MAX_LEN } from './emergencyAlertsHistoryConstants';
+import {
+  EMERGENCY_ERROR_DETAIL_MAX_LEN,
+  useEmergencyAlertsHistoryTexts,
+} from './emergencyAlertsHistoryConstants';
 import { useTheme } from '../../context/ThemeContext';
 
 function sanitizeDetail(raw) {
@@ -16,6 +18,7 @@ function sanitizeDetail(raw) {
 export function EmergencyAlertsErrorView({ onRetry, detail }) {
   const styles = useEmergencyAlertsHistoryStyles();
   const { colors, statusBarStyle } = useTheme();
+  const TEXTS = useEmergencyAlertsHistoryTexts();
   const detailLine = sanitizeDetail(detail);
 
   return (

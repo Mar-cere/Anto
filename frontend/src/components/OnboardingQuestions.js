@@ -12,10 +12,10 @@ import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacit
 import { api, ENDPOINTS } from '../config/api';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
-import { getApiErrorMessage } from '../utils/apiErrorHandler';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
 
-const TEXTS = {
+const DEFAULT_TEXTS = {
   TITLE: 'Para adaptarte mejor',
   SUBTITLE: 'Tres preguntas cortas. Si no te encaja ninguna opción, puedes omitir.',
   Q1_LABEL: '¿Qué buscas aquí?',
@@ -24,20 +24,97 @@ const TEXTS = {
   SKIP: 'Omitir',
   SUBMIT: 'Listo',
   EXPLORE_APP: 'Ver recorrido de la app',
-};
-
-const OPTIONS = {
-  whatExpectFromApp: ['Apoyo emocional', 'Ansiedad o estrés', 'Hábitos y rutinas'],
-  whatToImproveOrWorkOn: ['Sueño y descanso', 'Autoestima', 'Enfoque y organización'],
-  typeOfSpecialist: ['Paso a paso', 'Escucha y compañía', 'Ideas prácticas'],
+  SAVE_SUCCESS: 'Listo, gracias',
+  SAVE_ERROR:
+    'No se pudieron guardar las respuestas. Puedes omitir y seguir.',
+  TOO_MANY_ATTEMPTS:
+    'Demasiados intentos. Espera un momento y vuelve a intentar.',
+  CONNECTION_ERROR:
+    'No hay conexión. Verifica tu internet e inténtalo de nuevo.',
+  OPTIONS_WHAT_EXPECT_FROM_APP: [
+    'Apoyo emocional',
+    'Ansiedad o estrés',
+    'Hábitos y rutinas',
+  ],
+  OPTIONS_WHAT_TO_IMPROVE_OR_WORK_ON: [
+    'Sueño y descanso',
+    'Autoestima',
+    'Enfoque y organización',
+  ],
+  OPTIONS_TYPE_OF_SPECIALIST: [
+    'Paso a paso',
+    'Escucha y compañía',
+    'Ideas prácticas',
+  ],
 };
 
 const UI = {
   OVERLAY: 'rgba(0,0,0,0.6)',
 };
 
+const resolveOnboardingErrorMessage = (error, texts) => {
+  const status = error?.response?.status;
+  const rawMessage = String(
+    error?.response?.data?.message ?? error?.message ?? '',
+  ).toLowerCase();
+
+  const isNetworkIssue =
+    !error?.response ||
+    rawMessage.includes('network') ||
+    rawMessage.includes('econnrefused') ||
+    rawMessage.includes('timeout') ||
+    rawMessage.includes('timed out');
+  if (isNetworkIssue) {
+    return texts.CONNECTION_ERROR;
+  }
+
+  if (
+    status === 429 ||
+    rawMessage.includes('too many') ||
+    rawMessage.includes('demasiados intentos')
+  ) {
+    return texts.TOO_MANY_ATTEMPTS;
+  }
+
+  return texts.SAVE_ERROR;
+};
+
 const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) => {
   const { showToast } = useToast();
+  const translated = useSectionTranslations('ONBOARDING');
+  const TEXTS = useMemo(
+    () => ({
+      ...DEFAULT_TEXTS,
+      TITLE: translated?.QUESTIONS_TITLE || DEFAULT_TEXTS.TITLE,
+      SUBTITLE: translated?.QUESTIONS_SUBTITLE || DEFAULT_TEXTS.SUBTITLE,
+      Q1_LABEL: translated?.QUESTIONS_Q1_LABEL || DEFAULT_TEXTS.Q1_LABEL,
+      Q2_LABEL: translated?.QUESTIONS_Q2_LABEL || DEFAULT_TEXTS.Q2_LABEL,
+      Q3_LABEL: translated?.QUESTIONS_Q3_LABEL || DEFAULT_TEXTS.Q3_LABEL,
+      SKIP: translated?.SKIP || DEFAULT_TEXTS.SKIP,
+      SUBMIT: translated?.QUESTIONS_SUBMIT || DEFAULT_TEXTS.SUBMIT,
+      EXPLORE_APP:
+        translated?.QUESTIONS_EXPLORE_APP || DEFAULT_TEXTS.EXPLORE_APP,
+      SAVE_SUCCESS:
+        translated?.QUESTIONS_SAVE_SUCCESS || DEFAULT_TEXTS.SAVE_SUCCESS,
+      SAVE_ERROR: translated?.QUESTIONS_SAVE_ERROR || DEFAULT_TEXTS.SAVE_ERROR,
+      TOO_MANY_ATTEMPTS:
+        translated?.QUESTIONS_TOO_MANY_ATTEMPTS ||
+        DEFAULT_TEXTS.TOO_MANY_ATTEMPTS,
+      CONNECTION_ERROR:
+        translated?.QUESTIONS_CONNECTION_ERROR ||
+        DEFAULT_TEXTS.CONNECTION_ERROR,
+      OPTIONS_WHAT_EXPECT_FROM_APP:
+        translated?.QUESTIONS_OPTIONS_WHAT_EXPECT_FROM_APP ||
+        DEFAULT_TEXTS.OPTIONS_WHAT_EXPECT_FROM_APP,
+      OPTIONS_WHAT_TO_IMPROVE_OR_WORK_ON:
+        translated?.QUESTIONS_OPTIONS_WHAT_TO_IMPROVE_OR_WORK_ON ||
+        DEFAULT_TEXTS.OPTIONS_WHAT_TO_IMPROVE_OR_WORK_ON,
+      OPTIONS_TYPE_OF_SPECIALIST:
+        translated?.QUESTIONS_OPTIONS_TYPE_OF_SPECIALIST ||
+        DEFAULT_TEXTS.OPTIONS_TYPE_OF_SPECIALIST,
+    }),
+    [translated],
+  );
   const { colors } = useTheme();
   const [whatExpectFromApp, setWhatExpectFromApp] = useState('');
   const [whatToImproveOrWorkOn, setWhatToImproveOrWorkOn] = useState('');
@@ -203,7 +280,7 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
         whatToImproveOrWorkOn: whatToImproveOrWorkOn.trim() || null,
         typeOfSpecialist: typeOfSpecialist.trim() || null,
       });
-      showToast({ message: 'Listo, gracias', type: 'success' });
+      showToast({ message: TEXTS.SAVE_SUCCESS, type: 'success' });
       try {
         await onCompleted?.();
       } catch (err) {
@@ -212,7 +289,7 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
         onDismiss?.();
       }
     } catch (err) {
-      setError(getApiErrorMessage(err) || 'No se pudieron guardar las respuestas. Puedes omitir y seguir.');
+      setError(resolveOnboardingErrorMessage(err, TEXTS));
     } finally {
       setLoading(false);
     }
@@ -285,19 +362,19 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
               TEXTS.Q1_LABEL,
               whatExpectFromApp,
               setWhatExpectFromApp,
-              OPTIONS.whatExpectFromApp
+              TEXTS.OPTIONS_WHAT_EXPECT_FROM_APP
             )}
             {renderOptionGroup(
               TEXTS.Q2_LABEL,
               whatToImproveOrWorkOn,
               setWhatToImproveOrWorkOn,
-              OPTIONS.whatToImproveOrWorkOn
+              TEXTS.OPTIONS_WHAT_TO_IMPROVE_OR_WORK_ON
             )}
             {renderOptionGroup(
               TEXTS.Q3_LABEL,
               typeOfSpecialist,
               setTypeOfSpecialist,
-              OPTIONS.typeOfSpecialist
+              TEXTS.OPTIONS_TYPE_OF_SPECIALIST
             )}
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}

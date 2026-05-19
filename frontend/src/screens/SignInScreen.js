@@ -40,7 +40,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
-import { getApiErrorMessage } from '../utils/apiErrorHandler';
+import { useSectionTranslations } from '../hooks/useTranslations';
 
 // Constantes de animación
 const ANIMATION_INITIAL_DELAY = 500; // ms
@@ -70,7 +70,7 @@ const STORAGE_KEYS = {
 };
 
 // Constantes de mensajes de error
-const ERROR_MESSAGES = {
+const DEFAULT_ERROR_MESSAGES = {
   EMAIL_REQUIRED: 'El correo es obligatorio',
   EMAIL_INVALID: 'Introduce un correo válido',
   PASSWORD_REQUIRED: 'La contraseña es obligatoria',
@@ -84,7 +84,7 @@ const ERROR_MESSAGES = {
 };
 
 // Constantes de textos
-const TEXTS = {
+const DEFAULT_TEXTS = {
   TITLE: 'Iniciar Sesión',
   SUBTITLE: 'Accede a tu cuenta',
   EMAIL_PLACEHOLDER: 'Correo Electrónico',
@@ -92,7 +92,24 @@ const TEXTS = {
   LOGIN_BUTTON: 'Ingresar',
   REGISTER_BUTTON: 'Crear Cuenta',
   FORGOT_PASSWORD: '¿Olvidaste tu contraseña?',
-  BACK_BUTTON: 'Volver'
+  BACK_BUTTON: 'Volver',
+  EMAIL_FIELD_HINT: 'Campo de correo electrónico',
+  PASSWORD_VISIBLE_HINT: 'Contraseña visible',
+  PASSWORD_HIDDEN_HINT: 'Contraseña oculta',
+  HIDE_PASSWORD: 'Ocultar contraseña',
+  SHOW_PASSWORD: 'Mostrar contraseña',
+  LOGIN_LOADING: 'Ingresando...',
+  LOGIN_HINT: 'Doble toque para iniciar sesión',
+  REGISTER_HINT: 'Doble toque para crear una cuenta',
+  RECOVER_HINT: 'Doble toque para recuperar contraseña',
+  BACK_HINT: 'Volver a la pantalla anterior',
+  OFFLINE_WARNING:
+    'No hay conexión a internet. Por favor, verifica tu conexión e intenta nuevamente.',
+  EMAIL_NOT_VERIFIED_TITLE: 'Email no verificado',
+  EMAIL_NOT_VERIFIED_MESSAGE:
+    'Por favor verifica tu email antes de iniciar sesión.',
+  VERIFY_NOW: 'Verificar ahora',
+  CANCEL: 'Cancelar',
 };
 
 // Constantes de estilos
@@ -103,7 +120,6 @@ const LOADING_SCALE = 1.5;
 const MAX_FORM_WIDTH = 400;
 
 // Constantes de opacidad
-const DISABLED_OPACITY = 0.5;
 const BUTTON_OPACITY = 0.9;
 const BUTTON_DISABLED_OPACITY = 0.5;
 const ACTIVE_OPACITY = 0.8;
@@ -115,19 +131,77 @@ const validateEmail = (email) => {
 };
 
 // Helper: validar campo individual
-const validateField = (field, value) => {
+const validateField = (field, value, errorMessages) => {
   switch (field) {
     case 'email':
-      if (!value) return ERROR_MESSAGES.EMAIL_REQUIRED;
-      if (!validateEmail(value)) return ERROR_MESSAGES.EMAIL_INVALID;
+      if (!value) return errorMessages.EMAIL_REQUIRED;
+      if (!validateEmail(value)) return errorMessages.EMAIL_INVALID;
       return '';
     case 'password':
-      if (!value) return ERROR_MESSAGES.PASSWORD_REQUIRED;
-      if (value.length < MIN_PASSWORD_LENGTH) return ERROR_MESSAGES.PASSWORD_TOO_SHORT;
+      if (!value) return errorMessages.PASSWORD_REQUIRED;
+      if (value.length < MIN_PASSWORD_LENGTH) return errorMessages.PASSWORD_TOO_SHORT;
       return '';
     default:
       return '';
   }
+};
+
+const resolveSignInErrorMessage = (error, errorMessages) => {
+  const status = error?.response?.status;
+  const rawMessage = String(
+    error?.response?.data?.message ?? error?.message ?? '',
+  ).toLowerCase();
+
+  const isNetworkIssue =
+    !error?.response ||
+    rawMessage.includes('network') ||
+    rawMessage.includes('econnrefused') ||
+    rawMessage.includes('timeout') ||
+    rawMessage.includes('timed out');
+
+  if (isNetworkIssue) {
+    return errorMessages.CONNECTION_ERROR;
+  }
+
+  if (status === 401) {
+    return errorMessages.INVALID_CREDENTIALS;
+  }
+  if (status === 403) {
+    return errorMessages.ACCOUNT_DISABLED;
+  }
+  if (status === 429) {
+    return errorMessages.TOO_MANY_ATTEMPTS;
+  }
+
+  if (
+    rawMessage.includes('invalid credentials') ||
+    rawMessage.includes('incorrect password') ||
+    rawMessage.includes('correo o contraseña') ||
+    rawMessage.includes('credenciales')
+  ) {
+    return errorMessages.INVALID_CREDENTIALS;
+  }
+
+  if (
+    rawMessage.includes('account disabled') ||
+    rawMessage.includes('cuenta desactivada') ||
+    rawMessage.includes('forbidden')
+  ) {
+    return errorMessages.ACCOUNT_DISABLED;
+  }
+
+  if (
+    rawMessage.includes('too many') ||
+    rawMessage.includes('demasiados intentos')
+  ) {
+    return errorMessages.TOO_MANY_ATTEMPTS;
+  }
+
+  if (status >= 500) {
+    return errorMessages.GENERIC_ERROR;
+  }
+
+  return errorMessages.LOGIN_FAILED;
 };
 
 const hexToRgba = (hex, alpha) => {
@@ -162,6 +236,15 @@ const saveAuthData = async (tokens, user, email) => {
 };
 
 const SignInScreen = () => {
+  const AUTH = useSectionTranslations('AUTH');
+  const TEXTS = useMemo(
+    () => ({ ...DEFAULT_TEXTS, ...(AUTH?.SIGN_IN || {}) }),
+    [AUTH],
+  );
+  const ERROR_MESSAGES = useMemo(
+    () => ({ ...DEFAULT_ERROR_MESSAGES, ...(AUTH?.SIGN_IN_ERRORS || {}) }),
+    [AUTH],
+  );
   const navigation = useNavigation();
   const { refreshSession } = useAuth();
   const { showToast } = useToast();
@@ -357,13 +440,13 @@ const SignInScreen = () => {
   // Validación del formulario completo
   const validateForm = useCallback(() => {
     const newErrors = {
-      email: validateField('email', formData.email),
-      password: validateField('password', formData.password)
+      email: validateField('email', formData.email, ERROR_MESSAGES),
+      password: validateField('password', formData.password, ERROR_MESSAGES),
     };
     
     setErrors(newErrors);
     return !newErrors.email && !newErrors.password;
-  }, [formData]);
+  }, [formData, ERROR_MESSAGES]);
 
   // Manejo de cambios en los inputs
   const handleInputChange = useCallback((field, value) => {
@@ -375,9 +458,9 @@ const SignInScreen = () => {
     setFormData((prevData) => ({ ...prevData, [field]: value }));
     
     // Validación en tiempo real
-    const error = validateField(field, value);
+    const error = validateField(field, value, ERROR_MESSAGES);
     setErrors(prev => ({ ...prev, [field]: error }));
-  }, []);
+  }, [ERROR_MESSAGES]);
 
   // Función para manejar el inicio de sesión
   const handleLogin = async () => {
@@ -392,7 +475,7 @@ const SignInScreen = () => {
       // Verificar si está offline antes de intentar login
       if (isOffline) {
         showToast({
-          message: 'No hay conexión a internet. Por favor, verifica tu conexión e intenta nuevamente.',
+          message: TEXTS.OFFLINE_WARNING,
           type: 'warning',
         });
         setIsSubmitting(false);
@@ -407,11 +490,11 @@ const SignInScreen = () => {
       // Verificar si requiere verificación de email
       if (response.requiresVerification) {
         Alert.alert(
-          'Email no verificado',
-          response.message || 'Por favor verifica tu email antes de iniciar sesión.',
+          TEXTS.EMAIL_NOT_VERIFIED_TITLE,
+          TEXTS.EMAIL_NOT_VERIFIED_MESSAGE,
           [
             {
-              text: 'Verificar ahora',
+              text: TEXTS.VERIFY_NOW,
               onPress: () => {
                 navigation.navigate(ROUTES.VERIFY_EMAIL, {
                   email: response.email || formData.email,
@@ -419,7 +502,7 @@ const SignInScreen = () => {
               },
             },
             {
-              text: 'Cancelar',
+              text: TEXTS.CANCEL,
               style: 'cancel',
             },
           ]
@@ -471,7 +554,7 @@ const SignInScreen = () => {
       }
     } catch (error) {
       console.error('Error en login:', error);
-      const errorMessage = getApiErrorMessage(error, { isOffline });
+      const errorMessage = resolveSignInErrorMessage(error, ERROR_MESSAGES);
       showToast({
         message: errorMessage,
         type: 'error',
@@ -562,7 +645,7 @@ const SignInScreen = () => {
                         onBlur={() => setFocusedField(null)}
                         value={formData.email}
                         accessibilityLabel={TEXTS.EMAIL_PLACEHOLDER}
-                        accessibilityHint={errors.email ? errors.email : 'Campo de correo electrónico'}
+                        accessibilityHint={errors.email ? errors.email : TEXTS.EMAIL_FIELD_HINT}
                         accessibilityState={{ invalid: Boolean(errors.email) }}
                       />
                     </View>
@@ -591,15 +674,25 @@ const SignInScreen = () => {
                         onBlur={() => setFocusedField(null)}
                         value={formData.password}
                         accessibilityLabel={TEXTS.PASSWORD_PLACEHOLDER}
-                        accessibilityHint={errors.password ? errors.password : (isPasswordVisible ? 'Contraseña visible' : 'Contraseña oculta')}
+                        accessibilityHint={
+                          errors.password
+                            ? errors.password
+                            : (isPasswordVisible
+                              ? TEXTS.PASSWORD_VISIBLE_HINT
+                              : TEXTS.PASSWORD_HIDDEN_HINT)
+                        }
                         accessibilityState={{ invalid: Boolean(errors.password) }}
                       />
                       <TouchableOpacity 
                         onPress={() => setPasswordVisible(!isPasswordVisible)} 
                         style={gs.inputIcon}
                         accessibilityRole="button"
-                        accessibilityLabel={isPasswordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                        accessibilityHint="Doble toque para alternar visibilidad"
+                        accessibilityLabel={
+                          isPasswordVisible
+                            ? TEXTS.HIDE_PASSWORD
+                            : TEXTS.SHOW_PASSWORD
+                        }
+                        accessibilityHint={TEXTS.SHOW_PASSWORD}
                       >
                         <Ionicons 
                           name={isPasswordVisible ? "eye-off" : "eye"} 
@@ -628,9 +721,9 @@ const SignInScreen = () => {
                       ]}
                       activeOpacity={ACTIVE_OPACITY}
                       accessibilityRole="button"
-                      accessibilityLabel={isSubmitting ? 'Ingresando…' : TEXTS.LOGIN_BUTTON}
+                      accessibilityLabel={isSubmitting ? TEXTS.LOGIN_LOADING : TEXTS.LOGIN_BUTTON}
                       accessibilityState={{ disabled: isButtonDisabled, busy: isSubmitting }}
-                      accessibilityHint="Doble toque para iniciar sesión"
+                      accessibilityHint={TEXTS.LOGIN_HINT}
                     >
                       {isSubmitting ? (
                         <ActivityIndicator size="small" color={colors.white} />
@@ -649,7 +742,7 @@ const SignInScreen = () => {
                       activeOpacity={ACTIVE_OPACITY}
                       accessibilityRole="button"
                       accessibilityLabel={TEXTS.REGISTER_BUTTON}
-                      accessibilityHint="Doble toque para crear una cuenta"
+                      accessibilityHint={TEXTS.REGISTER_HINT}
                     >
                       <Text style={styles.secondaryButtonText}>{TEXTS.REGISTER_BUTTON}</Text>
                     </TouchableOpacity>
@@ -660,7 +753,7 @@ const SignInScreen = () => {
                     activeOpacity={TOUCH_OPACITY}
                     accessibilityRole="button"
                     accessibilityLabel={TEXTS.FORGOT_PASSWORD}
-                    accessibilityHint="Doble toque para recuperar contraseña"
+                    accessibilityHint={TEXTS.RECOVER_HINT}
                   >
                     <Text style={styles.forgotPasswordText}>
                       {TEXTS.FORGOT_PASSWORD}
@@ -673,7 +766,7 @@ const SignInScreen = () => {
                     activeOpacity={TOUCH_OPACITY}
                     accessibilityRole="button"
                     accessibilityLabel={TEXTS.BACK_BUTTON}
-                    accessibilityHint="Volver a la pantalla anterior"
+                    accessibilityHint={TEXTS.BACK_HINT}
                   >
                     <Ionicons name="arrow-back" size={24} color={colors.primary} />
                     <Text style={styles.backButtonText}>{TEXTS.BACK_BUTTON}</Text>

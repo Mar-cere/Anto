@@ -17,10 +17,11 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
 
 // Constantes
-const TEXTS = {
+const DEFAULT_TEXTS = {
   TITLE: 'Oops! Algo salió mal',
   MESSAGE: 'Lo sentimos, ha ocurrido un error inesperado.',
   RETRY: 'Reintentar',
@@ -103,6 +104,20 @@ class ErrorBoundary extends React.Component {
 }
 
 function ErrorBoundaryView({ boundaryProps }) {
+  const translated = useSectionTranslations('DASH');
+  const TEXTS = React.useMemo(
+    () => ({
+      ...DEFAULT_TEXTS,
+      TITLE: translated?.ERROR_BOUNDARY_TITLE || DEFAULT_TEXTS.TITLE,
+      MESSAGE: translated?.ERROR_BOUNDARY_MESSAGE || DEFAULT_TEXTS.MESSAGE,
+      RETRY: translated?.ERROR_BOUNDARY_RETRY || DEFAULT_TEXTS.RETRY,
+      RELOAD: translated?.ERROR_BOUNDARY_RELOAD || DEFAULT_TEXTS.RELOAD,
+      DETAILS: translated?.ERROR_BOUNDARY_DETAILS || DEFAULT_TEXTS.DETAILS,
+      HIDE_DETAILS:
+        translated?.ERROR_BOUNDARY_HIDE_DETAILS || DEFAULT_TEXTS.HIDE_DETAILS,
+    }),
+    [translated],
+  );
   const { colors } = useTheme();
   const styles = React.useMemo(
     () =>

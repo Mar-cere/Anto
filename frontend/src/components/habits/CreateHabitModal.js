@@ -16,8 +16,10 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { getFocusTheme } from '../../styles/focusCardTheme';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
 
 const HABIT_ICONS = [
@@ -31,6 +33,23 @@ const HABIT_ICONS = [
   { key: 'coding', icon: 'code-tags' },
 ];
 
+const DEFAULT_TEXTS = {
+  TITLE: 'Nuevo Hábito',
+  DONE: 'Listo',
+  TITLE_PLACEHOLDER: 'Título del hábito',
+  DESCRIPTION_PLACEHOLDER: 'Descripción (opcional)',
+  ERROR_TITLE: 'Error',
+  ERROR_MISSING_TITLE: 'Por favor ingresa un título',
+  ERROR_SHORT_TITLE: 'El título debe tener al menos 3 caracteres',
+  CREATE_BUTTON: 'Crear Hábito',
+  TIME_PICKER_TITLE: 'Seleccionar hora',
+  ICON_SECTION: 'Icono',
+  FREQUENCY_SECTION: 'Frecuencia',
+  REMINDER_SECTION: 'Recordatorio',
+  FREQUENCY_DAILY: 'Diario',
+  FREQUENCY_WEEKLY: 'Semanal',
+};
+
 const CreateHabitModal = ({
   visible,
   onClose,
@@ -39,6 +58,41 @@ const CreateHabitModal = ({
   setFormData,
   initialReminderIso = null,
 }) => {
+  const { language } = useLanguage();
+  const translated = useSectionTranslations('HABITS');
+  const T = useMemo(
+    () => ({
+      TITLE: translated?.CREATE_MODAL_TITLE || DEFAULT_TEXTS.TITLE,
+      DONE: translated?.CREATE_MODAL_DONE || DEFAULT_TEXTS.DONE,
+      TITLE_PLACEHOLDER:
+        translated?.CREATE_MODAL_TITLE_PLACEHOLDER || DEFAULT_TEXTS.TITLE_PLACEHOLDER,
+      DESCRIPTION_PLACEHOLDER:
+        translated?.CREATE_MODAL_DESCRIPTION_PLACEHOLDER ||
+        DEFAULT_TEXTS.DESCRIPTION_PLACEHOLDER,
+      ERROR_TITLE: translated?.CREATE_MODAL_ERROR_TITLE || DEFAULT_TEXTS.ERROR_TITLE,
+      ERROR_MISSING_TITLE:
+        translated?.CREATE_MODAL_ERROR_MISSING_TITLE ||
+        DEFAULT_TEXTS.ERROR_MISSING_TITLE,
+      ERROR_SHORT_TITLE:
+        translated?.CREATE_MODAL_ERROR_SHORT_TITLE ||
+        DEFAULT_TEXTS.ERROR_SHORT_TITLE,
+      CREATE_BUTTON:
+        translated?.CREATE_MODAL_CREATE_BUTTON || DEFAULT_TEXTS.CREATE_BUTTON,
+      TIME_PICKER_TITLE:
+        translated?.CREATE_MODAL_TIME_PICKER_TITLE || DEFAULT_TEXTS.TIME_PICKER_TITLE,
+      ICON_SECTION:
+        translated?.CREATE_MODAL_ICON_SECTION || DEFAULT_TEXTS.ICON_SECTION,
+      FREQUENCY_SECTION:
+        translated?.CREATE_MODAL_FREQUENCY_SECTION || DEFAULT_TEXTS.FREQUENCY_SECTION,
+      REMINDER_SECTION:
+        translated?.CREATE_MODAL_REMINDER_SECTION || DEFAULT_TEXTS.REMINDER_SECTION,
+      FREQUENCY_DAILY:
+        translated?.CREATE_MODAL_FREQUENCY_DAILY || DEFAULT_TEXTS.FREQUENCY_DAILY,
+      FREQUENCY_WEEKLY:
+        translated?.CREATE_MODAL_FREQUENCY_WEEKLY || DEFAULT_TEXTS.FREQUENCY_WEEKLY,
+    }),
+    [translated]
+  );
   const { colors, resolvedScheme } = useTheme();
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
 
@@ -320,12 +374,12 @@ const CreateHabitModal = ({
 
   const handleSubmit = () => {
     if (!formData.title.trim()) {
-      Alert.alert('Error', 'Por favor ingresa un título');
+      Alert.alert(T.ERROR_TITLE, T.ERROR_MISSING_TITLE);
       return;
     }
 
     if (formData.title.trim().length < 3) {
-      Alert.alert('Error', 'El título debe tener al menos 3 caracteres');
+      Alert.alert(T.ERROR_TITLE, T.ERROR_SHORT_TITLE);
       return;
     }
 
@@ -365,11 +419,11 @@ const CreateHabitModal = ({
         <View style={styles.modalContent}>
           <View style={styles.sheetGrabber} />
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Nuevo Hábito</Text>
+            <Text style={styles.modalTitle}>{T.TITLE}</Text>
             <View style={styles.headerActions}>
               {keyboardVisible ? (
                 <TouchableOpacity style={styles.keyboardDismissBtn} onPress={() => Keyboard.dismiss()}>
-                  <Text style={styles.keyboardDismissText}>Listo</Text>
+                  <Text style={styles.keyboardDismissText}>{T.DONE}</Text>
                 </TouchableOpacity>
               ) : null}
               <TouchableOpacity
@@ -389,7 +443,7 @@ const CreateHabitModal = ({
           <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <TextInput
               style={styles.input}
-              placeholder="Título del hábito"
+              placeholder={T.TITLE_PLACEHOLDER}
               placeholderTextColor={colors.textSecondary}
               value={formData.title}
               onChangeText={(text) => setFormData({...formData, title: text})}
@@ -398,7 +452,7 @@ const CreateHabitModal = ({
 
             <TextInput
               style={[styles.input, styles.textArea]}
-              placeholder="Descripción (opcional)"
+              placeholder={T.DESCRIPTION_PLACEHOLDER}
               placeholderTextColor={colors.textSecondary}
               value={formData.description}
               onChangeText={(text) => setFormData({...formData, description: text})}
@@ -408,7 +462,7 @@ const CreateHabitModal = ({
             />
 
             <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Icono</Text>
+              <Text style={styles.sectionTitle}>{T.ICON_SECTION}</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -434,7 +488,7 @@ const CreateHabitModal = ({
             </View>
 
             <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Frecuencia</Text>
+              <Text style={styles.sectionTitle}>{T.FREQUENCY_SECTION}</Text>
               <View style={styles.frequencySelector}>
                 <TouchableOpacity
                   style={[
@@ -451,7 +505,7 @@ const CreateHabitModal = ({
                   <Text style={[
                     styles.frequencyButtonText,
                     formData.frequency === 'daily' && styles.frequencyButtonTextSelected
-                  ]}>Diario</Text>
+                  ]}>{T.FREQUENCY_DAILY}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
@@ -468,13 +522,13 @@ const CreateHabitModal = ({
                   <Text style={[
                     styles.frequencyButtonText,
                     formData.frequency === 'weekly' && styles.frequencyButtonTextSelected
-                  ]}>Semanal</Text>
+                  ]}>{T.FREQUENCY_WEEKLY}</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
             <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Recordatorio</Text>
+              <Text style={styles.sectionTitle}>{T.REMINDER_SECTION}</Text>
               <TouchableOpacity
                 style={styles.timeSelector}
                 onPress={() => setShowTimePicker(true)}
@@ -485,7 +539,7 @@ const CreateHabitModal = ({
                   color={colors.primary} 
                 />
                 <Text style={styles.timeSelectorText}>
-                  {reminderTime.toLocaleTimeString('es-ES', { 
+                  {reminderTime.toLocaleTimeString(language === 'en' ? 'en-US' : 'es-ES', {
                     hour: '2-digit', 
                     minute: '2-digit' 
                   })}
@@ -502,7 +556,7 @@ const CreateHabitModal = ({
               style={styles.submitButton}
               onPress={handleSubmit}
             >
-              <Text style={styles.submitButtonText}>Crear Hábito</Text>
+              <Text style={styles.submitButtonText}>{T.CREATE_BUTTON}</Text>
             </TouchableOpacity>
           </ScrollView>
           </KeyboardAvoidingView>
@@ -518,7 +572,7 @@ const CreateHabitModal = ({
           />
           <View style={styles.timePickerContainer}>
             <View style={styles.timePickerHeader}>
-              <Text style={styles.timePickerTitle}>Seleccionar hora</Text>
+              <Text style={styles.timePickerTitle}>{T.TIME_PICKER_TITLE}</Text>
             </View>
             <DateTimePicker
               value={reminderTime}
@@ -532,7 +586,7 @@ const CreateHabitModal = ({
               style={styles.timePickerDoneButton}
               onPress={() => setShowTimePicker(false)}
             >
-              <Text style={styles.timePickerDoneText}>Listo</Text>
+              <Text style={styles.timePickerDoneText}>{T.DONE}</Text>
             </TouchableOpacity>
           </View>
         </>

@@ -24,17 +24,15 @@ export function normalizeTechniqueCategory(raw) {
  * Interpreta la respuesta GET /api/therapeutic-techniques.
  * Acepta array en `data` aunque falte `success: true` (tolerancia a cambios del backend).
  */
-export function parseTherapeuticTechniquesResponse(res) {
+export function parseTherapeuticTechniquesResponse(res, texts = TEXTS) {
   if (!res || typeof res !== 'object' || res.notModified) {
-    return { ok: false, error: TEXTS.ERROR, data: [] };
+    return { ok: false, error: texts.ERROR, data: [] };
   }
   if (res.success === false) {
-    const msg =
-      typeof res.message === 'string' && res.message.trim() !== '' ? res.message : TEXTS.ERROR;
-    return { ok: false, error: msg, data: [] };
+    return { ok: false, error: texts.ERROR, data: [] };
   }
   if (Array.isArray(res.data)) {
     return { ok: true, data: res.data };
   }
-  return { ok: false, error: TEXTS.ERROR, data: [] };
+  return { ok: false, error: texts.ERROR, data: [] };
 }

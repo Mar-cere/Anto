@@ -8,18 +8,48 @@
  * @author AntoApp Team
  */
 
-import es, { DASH, HOME, REGISTER } from './es';
+import es from './es';
+import en from './en';
 
-// Idioma por defecto
-const DEFAULT_LANGUAGE = 'es';
+export const DEFAULT_LANGUAGE = 'es';
 
-// Mapa de idiomas disponibles
+export const SUPPORTED_LANGUAGES = ['es', 'en'];
+
 const translations = {
   es,
+  en,
 };
 
-// Re-exportar traducciones específicas para facilitar el uso
-export { DASH, HOME, REGISTER };
+export const LANGUAGE_LABELS = {
+  es: { es: 'Español', en: 'Spanish' },
+  en: { es: 'Inglés', en: 'English' },
+};
+
+function isObject(value) {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function deepMerge(base, override) {
+  if (!isObject(base) || !isObject(override)) return override ?? base;
+  const merged = { ...base };
+  Object.keys(override).forEach((key) => {
+    merged[key] = deepMerge(base[key], override[key]);
+  });
+  return merged;
+}
+
+export const getSupportedLanguage = (language) =>
+  SUPPORTED_LANGUAGES.includes(language) ? language : DEFAULT_LANGUAGE;
+
+export const getLanguageLabel = (languageCode, displayLanguage = DEFAULT_LANGUAGE) => {
+  const safeLanguageCode = getSupportedLanguage(languageCode);
+  const safeDisplayLanguage = getSupportedLanguage(displayLanguage);
+  return (
+    LANGUAGE_LABELS[safeLanguageCode]?.[safeDisplayLanguage] ||
+    LANGUAGE_LABELS[safeLanguageCode]?.[DEFAULT_LANGUAGE] ||
+    safeLanguageCode
+  );
+};
 
 /**
  * Obtiene las traducciones para un idioma específico
@@ -27,7 +57,9 @@ export { DASH, HOME, REGISTER };
  * @returns {object} Objeto con las traducciones del idioma
  */
 export const getTranslations = (language = DEFAULT_LANGUAGE) => {
-  return translations[language] || translations[DEFAULT_LANGUAGE];
+  const safeLanguage = getSupportedLanguage(language);
+  if (safeLanguage === DEFAULT_LANGUAGE) return translations[DEFAULT_LANGUAGE];
+  return deepMerge(translations[DEFAULT_LANGUAGE], translations[safeLanguage]);
 };
 
 /**
@@ -37,10 +69,10 @@ export const getTranslations = (language = DEFAULT_LANGUAGE) => {
  * @returns {string} Texto traducido
  */
 export const t = (key, language = DEFAULT_LANGUAGE) => {
-  const translations = getTranslations(language);
+  const dictionary = getTranslations(language);
   const keys = key.split('.');
-  let value = translations;
-  
+  let value = dictionary;
+
   for (const k of keys) {
     value = value?.[k];
     if (value === undefined) {
@@ -52,6 +84,5 @@ export const t = (key, language = DEFAULT_LANGUAGE) => {
   return value;
 };
 
-// Exportar traducciones por defecto
 export default getTranslations(DEFAULT_LANGUAGE);
 

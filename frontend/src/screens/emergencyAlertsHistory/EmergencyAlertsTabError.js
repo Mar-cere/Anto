@@ -4,10 +4,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useEmergencyAlertsHistoryStyles } from './emergencyAlertsHistoryStyles';
-import { TEXTS } from './emergencyAlertsHistoryConstants';
+import { useEmergencyAlertsHistoryTexts } from './emergencyAlertsHistoryConstants';
 
 export function EmergencyAlertsTabError({ message, onRetry }) {
   const styles = useEmergencyAlertsHistoryStyles();
+  const TEXTS = useEmergencyAlertsHistoryTexts();
   return (
     <View style={styles.tabErrorContainer}>
       <Text style={styles.tabErrorText}>{message}</Text>

@@ -3,8 +3,10 @@
  * @author AntoApp Team
  */
 
+import { useMemo } from 'react';
 import { StatusBar } from 'react-native';
 import { SPACING } from '../../constants/ui';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { lightColors } from '../../styles/themePalettes';
 
 // Animación
@@ -75,7 +77,32 @@ export const TEXTS = {
   ERROR_DELETE_MESSAGE: 'No se pudo eliminar el hábito',
   ERROR_ARCHIVE_MESSAGE: 'No se pudo archivar el hábito',
   NO_TOKEN: 'No se encontró token de autenticación',
+  HABIT_COMPLETED: 'Hábito completado',
+  HABIT_MARKED_PENDING: 'Hábito marcado pendiente',
+  HABIT_ARCHIVED: 'Hábito archivado',
+  HABIT_UNARCHIVED: 'Hábito desarchivado',
+  HABIT_DELETED: 'Hábito eliminado',
+  TOAST_UNDO: 'Deshacer',
+  SEARCH_PLACEHOLDER: 'Buscar hábito…',
+  ARCHIVE_CONFIRM_MESSAGE_TEMPLATE:
+    '¿Estás seguro de que deseas {action} este hábito?',
 };
+
+export function useHabitsTexts() {
+  const translated = useSectionTranslations('HABITS');
+  return useMemo(
+    () => ({
+      ...TEXTS,
+      ...(translated || {}),
+      SEARCH_PLACEHOLDER:
+        translated?.SEARCH_PLACEHOLDER || TEXTS.SEARCH_PLACEHOLDER,
+      ARCHIVE_CONFIRM_MESSAGE_TEMPLATE:
+        translated?.ARCHIVE_CONFIRM_MESSAGE_TEMPLATE ||
+        TEXTS.ARCHIVE_CONFIRM_MESSAGE_TEMPLATE,
+    }),
+    [translated],
+  );
+}
 
 export const STATUS_BAR_STYLE = 'dark-content';
 export const STATUS_BAR_BACKGROUND = lightColors.background;

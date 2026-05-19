@@ -16,9 +16,10 @@ import SettingsContent from '../components/settings/SettingsContent';
 import SettingsHeader from '../components/settings/SettingsHeader';
 import { useTheme } from '../context/ThemeContext';
 import { useSettingsScreen } from '../hooks/useSettingsScreen';
-import { TEXTS } from './settings/settingsScreenConstants';
+import { useSettingsTexts } from './settings/settingsScreenConstants';
 
 export default function SettingsScreen() {
+  const TEXTS = useSettingsTexts();
   const navigation = useNavigation();
   const route = useRoute();
   const insets = useSafeAreaInsets();
@@ -35,6 +36,7 @@ export default function SettingsScreen() {
   );
   const {
     user,
+    language,
     showLogoutModal,
     setShowLogoutModal,
     showDeleteModal,
@@ -48,6 +50,7 @@ export default function SettingsScreen() {
     handleChatPreferenceChange,
     handleTestNotification,
     handleSetThemePreference,
+    handleSetLanguagePreference,
   } = useSettingsScreen({ navigation });
 
   return (
@@ -68,6 +71,8 @@ export default function SettingsScreen() {
         onShowDeleteModal={() => setShowDeleteModal(true)}
         onTestNotification={handleTestNotification}
         onSetThemePreference={handleSetThemePreference}
+        language={language}
+        onSetLanguagePreference={handleSetLanguagePreference}
       />
       <SettingsConfirmModal
         visible={showLogoutModal}

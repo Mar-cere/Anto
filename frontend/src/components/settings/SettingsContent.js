@@ -28,6 +28,10 @@ import {
   View,
 } from 'react-native';
 import { SPACING, TYPOGRAPHY } from '../../constants/ui';
+import {
+  SUPPORTED_LANGUAGES,
+  getLanguageLabel,
+} from '../../constants/translations';
 import { useToast } from '../../context/ToastContext';
 import { useTheme } from '../../context/ThemeContext';
 import {
@@ -38,7 +42,7 @@ import {
   normalizeResponseStyle,
   SCROLL_PADDING_BOTTOM,
   DEFAULT_RESPONSE_STYLE,
-  TEXTS,
+  useSettingsTexts,
 } from '../../screens/settings/settingsScreenConstants';
 import SettingsResponseStyleModal from './SettingsResponseStyleModal';
 
@@ -71,7 +75,10 @@ export default function SettingsContent({
   onShowDeleteModal,
   onTestNotification,
   onSetThemePreference,
+  language = 'es',
+  onSetLanguagePreference,
 }) {
+  const TEXTS = useSettingsTexts();
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
   const { colors: themePalette, preference, resolvedScheme } = useTheme();
@@ -82,7 +89,9 @@ export default function SettingsContent({
     user?.preferences?.responseStyle,
   );
   const responseStyleLabel =
+    TEXTS[`RESPONSE_STYLE_LABEL_${currentResponseStyle.toUpperCase()}`] ||
     RESPONSE_STYLE_LABELS[currentResponseStyle] ||
+    TEXTS[`RESPONSE_STYLE_LABEL_${DEFAULT_RESPONSE_STYLE.toUpperCase()}`] ||
     RESPONSE_STYLE_LABELS[DEFAULT_RESPONSE_STYLE];
   const chatPrefs = {
     ...DEFAULT_CHAT_PREFS,
@@ -97,12 +106,15 @@ export default function SettingsContent({
   const [chatCustomizationExpanded, setChatCustomizationExpanded] =
     useState(false);
   const [themePickerVisible, setThemePickerVisible] = useState(false);
+  const [languagePickerVisible, setLanguagePickerVisible] = useState(false);
   const [pickerTarget, setPickerTarget] = useState(null); // 'morning' | 'evening' | null
   const [notificationPrefsSaving, setNotificationPrefsSaving] = useState(false);
   const [notificationPrefsSavedFlash, setNotificationPrefsSavedFlash] =
     useState(false);
   const savedFlashTimerRef = useRef(null);
   const savedOpacity = useRef(new Animated.Value(0)).current;
+  const languageFadeAnim = useRef(new Animated.Value(1)).current;
+  const hasAnimatedLanguageChangeRef = useRef(false);
 
   useEffect(() => {
     Animated.timing(savedOpacity, {
@@ -117,6 +129,26 @@ export default function SettingsContent({
       if (savedFlashTimerRef.current) clearTimeout(savedFlashTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    // Evita animar en el primer render; solo al cambiar idioma en runtime.
+    if (!hasAnimatedLanguageChangeRef.current) {
+      hasAnimatedLanguageChangeRef.current = true;
+      return;
+    }
+    Animated.sequence([
+      Animated.timing(languageFadeAnim, {
+        toValue: 0.88,
+        duration: 90,
+        useNativeDriver: true,
+      }),
+      Animated.timing(languageFadeAnim, {
+        toValue: 1,
+        duration: 140,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [language, languageFadeAnim]);
 
   useEffect(() => {
     if (expandChatCustomizationRequest <= 0) return;
@@ -224,7 +256,7 @@ export default function SettingsContent({
     if (preference === 'dark') return TEXTS.THEME_DARK;
     if (preference === 'system') return TEXTS.THEME_SYSTEM;
     return TEXTS.THEME_LIGHT;
-  }, [preference]);
+  }, [preference, TEXTS]);
 
   const openThemePicker = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -234,6 +266,33 @@ export default function SettingsContent({
   const closeThemePicker = useCallback(() => {
     setThemePickerVisible(false);
   }, []);
+
+  const currentLanguageLabel = useMemo(
+    () => getLanguageLabel(language, language),
+    [language],
+  );
+
+  const openLanguagePicker = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setLanguagePickerVisible(true);
+  }, []);
+
+  const closeLanguagePicker = useCallback(() => {
+    setLanguagePickerVisible(false);
+  }, []);
+
+  const selectLanguagePreference = useCallback(
+    (nextLanguage) => {
+      // Cerrar de inmediato para feedback instantáneo; la sync remota sigue en segundo plano.
+      setLanguagePickerVisible(false);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const pending = onSetLanguagePreference?.(nextLanguage);
+      if (pending && typeof pending.catch === 'function') {
+        pending.catch(() => {});
+      }
+    },
+    [onSetLanguagePreference],
+  );
 
   const selectThemePreference = useCallback(
     (key) => {
@@ -285,11 +344,12 @@ export default function SettingsContent({
     const d = new Date();
     d.setHours(hour);
     d.setMinutes(minute);
-    return d.toLocaleTimeString('es-ES', {
+    const locale = language === 'en' ? 'en-US' : 'es-ES';
+    return d.toLocaleTimeString(locale, {
       hour: '2-digit',
       minute: '2-digit',
     });
-  }, []);
+  }, [language]);
 
   const handleTimeChange = useCallback(
     async (event, selectedTime) => {
@@ -320,7 +380,7 @@ export default function SettingsContent({
         return;
       }
       await Linking.openURL(INSTAGRAM_URL);
-    } catch (error) {
+    } catch (_error) {
       showToast({ message: TEXTS.LINK_OPEN_ERROR, type: 'default' });
     }
   };
@@ -708,11 +768,12 @@ export default function SettingsContent({
 
   return (
     <>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps='handled'
-      >
+      <Animated.View style={{ flex: 1, opacity: languageFadeAnim }}>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps='handled'
+        >
         <View style={styles.settingsBlock}>
           <Text style={styles.sectionTitle} accessibilityRole='header'>
             {TEXTS.SECTION_SYSTEM}
@@ -739,6 +800,35 @@ export default function SettingsContent({
             </View>
             <View style={styles.rowTrailing}>
               <Text style={styles.languageText}>{currentThemeLabel}</Text>
+              <MaterialCommunityIcons
+                name='chevron-right'
+                size={22}
+                color={COLORS.ACCENT}
+              />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={LIST_PRESS_OPACITY}
+            style={styles.item}
+            onPress={openLanguagePicker}
+            accessibilityRole='button'
+            accessibilityLabel={`${TEXTS.LANGUAGE}, ${currentLanguageLabel}`}
+            accessibilityHint={TEXTS.LANGUAGE_HINT}
+          >
+            <MaterialCommunityIcons
+              name='translate'
+              size={ICON_SIZE}
+              color={COLORS.PRIMARY}
+            />
+            <View style={styles.itemTextContainer}>
+              <Text style={styles.itemTextNested}>{TEXTS.LANGUAGE}</Text>
+              <Text style={styles.itemSubtext} numberOfLines={1}>
+                {TEXTS.LANGUAGE_ROW_SUB}
+              </Text>
+            </View>
+            <View style={styles.rowTrailing}>
+              <Text style={styles.languageText}>{currentLanguageLabel}</Text>
               <MaterialCommunityIcons
                 name='chevron-right'
                 size={22}
@@ -1397,7 +1487,7 @@ export default function SettingsContent({
               onPress={() =>
                 navigation.navigate(NAVIGATION_ROUTES.CHANGE_PASSWORD)
               }
-              accessibilityLabel='Cambiar contraseña'
+              accessibilityLabel={TEXTS.CHANGE_PASSWORD}
               testID='button-change-password'
             >
               <MaterialCommunityIcons
@@ -1412,7 +1502,7 @@ export default function SettingsContent({
             <TouchableOpacity activeOpacity={LIST_PRESS_OPACITY}
               style={styles.settingsLinkRow}
               onPress={onShowLogoutModal}
-              accessibilityLabel='Cerrar sesión'
+              accessibilityLabel={TEXTS.LOGOUT}
               testID='button-logout'
             >
               <MaterialCommunityIcons
@@ -1427,7 +1517,7 @@ export default function SettingsContent({
             <TouchableOpacity activeOpacity={LIST_PRESS_OPACITY}
               style={[styles.settingsLinkRow, styles.settingsLinkRowLast]}
               onPress={onShowDeleteModal}
-              accessibilityLabel='Eliminar cuenta'
+              accessibilityLabel={TEXTS.DELETE_ACCOUNT}
               testID='button-delete-account'
             >
               <MaterialCommunityIcons
@@ -1450,7 +1540,7 @@ export default function SettingsContent({
             <TouchableOpacity activeOpacity={LIST_PRESS_OPACITY}
               style={styles.settingsLinkRow}
               onPress={() => navigation.navigate(NAVIGATION_ROUTES.FAQ_ALT)}
-              accessibilityLabel='Preguntas frecuentes'
+              accessibilityLabel={TEXTS.FAQ}
               testID='button-faq'
             >
               <MaterialCommunityIcons
@@ -1472,7 +1562,7 @@ export default function SettingsContent({
             <TouchableOpacity activeOpacity={LIST_PRESS_OPACITY}
               style={styles.settingsLinkRow}
               onPress={handleOpenInstagram}
-              accessibilityLabel='Instagram'
+              accessibilityLabel={TEXTS.INSTAGRAM}
               testID='button-instagram'
             >
               <MaterialCommunityIcons
@@ -1524,7 +1614,7 @@ export default function SettingsContent({
             <TouchableOpacity activeOpacity={LIST_PRESS_OPACITY}
               style={[styles.settingsLinkRow, styles.settingsLinkRowLast]}
               onPress={() => navigation.navigate(NAVIGATION_ROUTES.ABOUT)}
-              accessibilityLabel='Información de la aplicación'
+              accessibilityLabel={TEXTS.APP_INFO}
               testID='button-about'
             >
               <MaterialCommunityIcons
@@ -1545,7 +1635,8 @@ export default function SettingsContent({
             </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
+        </ScrollView>
+      </Animated.View>
       <Modal
         visible={themePickerVisible}
         transparent
@@ -1598,6 +1689,63 @@ export default function SettingsContent({
             <TouchableOpacity activeOpacity={LIST_PRESS_OPACITY}
               style={styles.themeModalClose}
               onPress={closeThemePicker}
+            >
+              <Text style={styles.themeModalCloseText}>{TEXTS.CLOSE}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={languagePickerVisible}
+        transparent
+        animationType='slide'
+        onRequestClose={closeLanguagePicker}
+      >
+        <View style={styles.themeModalRoot}>
+          <TouchableOpacity
+            activeOpacity={1}
+            style={{ flex: 1 }}
+            onPress={closeLanguagePicker}
+            accessibilityRole='button'
+            accessibilityLabel={TEXTS.CLOSE}
+          />
+          <View
+            style={[
+              styles.themeModalSheet,
+              { paddingBottom: 20 + insets.bottom },
+            ]}
+          >
+            <Text style={styles.themeModalTitle}>{TEXTS.LANGUAGE_MODAL_TITLE}</Text>
+            <Text style={styles.themeModalHint}>{TEXTS.LANGUAGE_HINT}</Text>
+            {SUPPORTED_LANGUAGES.map((key) => {
+              const selected = language === key;
+              const label = getLanguageLabel(key, language);
+              return (
+                <TouchableOpacity
+                  activeOpacity={LIST_PRESS_OPACITY}
+                  key={key}
+                  style={styles.themeModalOption}
+                  onPress={() => selectLanguagePreference(key)}
+                  accessibilityRole='radio'
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={styles.themeModalOptionLabel}>{label}</Text>
+                  {selected ? (
+                    <MaterialCommunityIcons
+                      name='check'
+                      size={22}
+                      color={COLORS.PRIMARY}
+                    />
+                  ) : (
+                    <View style={{ width: 22 }} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+            <TouchableOpacity
+              activeOpacity={LIST_PRESS_OPACITY}
+              style={styles.themeModalClose}
+              onPress={closeLanguagePicker}
             >
               <Text style={styles.themeModalCloseText}>{TEXTS.CLOSE}</Text>
             </TouchableOpacity>

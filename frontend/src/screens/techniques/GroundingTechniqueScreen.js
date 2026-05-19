@@ -17,8 +17,20 @@ import GroundingExercise from '../../components/therapeutic/GroundingExercise';
 import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
 import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
+
+const DEFAULT_TEXTS = {
+  TITLE: 'Tecnica de Grounding',
+};
 
 const GroundingTechniqueScreen = () => {
+  const translated = useSectionTranslations('TECHNIQUES');
+  const TEXTS = useMemo(
+    () => ({
+      TITLE: translated?.GROUNDING_TITLE || DEFAULT_TEXTS.TITLE,
+    }),
+    [translated]
+  );
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle } = useTheme();
@@ -50,7 +62,7 @@ const GroundingTechniqueScreen = () => {
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header
-        title="Técnica de Grounding"
+        title={TEXTS.TITLE}
         showBackButton
         onBackPress={() => navigation.goBack()}
       />

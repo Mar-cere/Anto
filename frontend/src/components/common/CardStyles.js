@@ -1,10 +1,14 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 import { lightColors } from '../../styles/themePalettes';
+
+const DEFAULT_TEXTS = {
+  VIEW_ALL: 'Ver todos',
+};
 
 export function createCardStyles(colors, resolvedScheme = 'light') {
   const t = getFocusTheme(colors, resolvedScheme);
@@ -155,10 +159,12 @@ export const commonStyles = _legacy.commonStyles;
 
 export const CardHeader = ({ icon, title, onViewAll }) => {
   const { colors, resolvedScheme } = useTheme();
+  const translated = useSectionTranslations('DASH');
   const { cardColors, commonStyles, t } = useMemo(
     () => createCardStyles(colors, resolvedScheme),
     [colors, resolvedScheme],
   );
+  const viewAllText = translated?.VIEW_ALL || DEFAULT_TEXTS.VIEW_ALL;
   return (
     <View style={commonStyles.cardHeader}>
       <View style={commonStyles.titleContainer}>
@@ -170,7 +176,7 @@ export const CardHeader = ({ icon, title, onViewAll }) => {
         </Text>
       </View>
       <TouchableOpacity style={commonStyles.viewAllButton} onPress={onViewAll} activeOpacity={0.7}>
-        <Text style={commonStyles.viewAllText}>Ver todos</Text>
+        <Text style={commonStyles.viewAllText}>{viewAllText}</Text>
         <MaterialCommunityIcons name="chevron-right" size={18} color={t.FOCUS_CHEVRON_MUTED} />
       </TouchableOpacity>
     </View>

@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import TaskItem from './TaskItem';
 import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 
 const SWIPE_THRESHOLD = -14;
 const SWIPE_OPEN = -132;
@@ -17,8 +18,27 @@ const ACTIVE_OFFSET_Y = [-80, 80];
 const OP_HIDDEN = 0;
 const OP_VISIBLE = 1;
 
+const DEFAULT_TEXTS = {
+  SWIPE_DELETE_CONFIRM_TITLE: 'Confirmar eliminación',
+  SWIPE_DELETE_CONFIRM_MESSAGE: '¿Eliminar este {type}?',
+  TYPE_TASK_LOWER: 'tarea',
+  TYPE_GOAL_LOWER: 'meta',
+  TYPE_REMINDER_LOWER: 'recordatorio',
+  SWIPE_COMPLETE_A11Y: 'Completar tarea',
+  SWIPE_COMPLETE_LABEL: 'Completar',
+  SWIPE_DELETE_A11Y: 'Eliminar',
+  SWIPE_DELETE_LABEL: 'Eliminar',
+  CANCEL: 'Cancelar',
+  DELETE: 'Eliminar',
+};
+
 export default function SwipeableTaskItem({ item, onPress, onToggleComplete, onDelete, density = 'comfortable' }) {
   const { colors } = useTheme();
+  const translated = useSectionTranslations('TASKS');
+  const TEXTS = useMemo(
+    () => ({ ...DEFAULT_TEXTS, ...(translated || {}) }),
+    [translated]
+  );
   const styles = useMemo(
     () =>
       StyleSheet.create({
@@ -82,7 +102,8 @@ export default function SwipeableTaskItem({ item, onPress, onToggleComplete, onD
   const deleteOpacity = useRef(new Animated.Value(OP_HIDDEN)).current;
 
   const isTask = item.itemType === 'task';
-  const showComplete = isTask && !item.completed;
+  const isGoal = item.itemType === 'goal';
+  const showComplete = (isTask || isGoal) && !item.completed;
 
   const resetPosition = useCallback(() => {
     Animated.parallel([
@@ -153,12 +174,15 @@ export default function SwipeableTaskItem({ item, onPress, onToggleComplete, onD
 
   const handleSwipeDelete = useCallback(() => {
     Alert.alert(
-      'Confirmar eliminación',
-      `¿Eliminar este ${isTask ? 'tarea' : 'recordatorio'}?`,
+      TEXTS.SWIPE_DELETE_CONFIRM_TITLE,
+      TEXTS.SWIPE_DELETE_CONFIRM_MESSAGE.replace(
+        '{type}',
+        isTask ? TEXTS.TYPE_TASK_LOWER : isGoal ? TEXTS.TYPE_GOAL_LOWER : TEXTS.TYPE_REMINDER_LOWER
+      ),
       [
-        { text: 'Cancelar', style: 'cancel', onPress: resetPosition },
+        { text: TEXTS.CANCEL, style: 'cancel', onPress: resetPosition },
         {
-          text: 'Eliminar',
+          text: TEXTS.DELETE,
           style: 'destructive',
           onPress: () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -168,7 +192,7 @@ export default function SwipeableTaskItem({ item, onPress, onToggleComplete, onD
         },
       ]
     );
-  }, [isTask, item._id, onDelete, resetPosition]);
+  }, [isTask, isGoal, item._id, onDelete, resetPosition, TEXTS]);
 
   const handleSwipeComplete = useCallback(() => {
     if (!showComplete) return;
@@ -198,11 +222,11 @@ export default function SwipeableTaskItem({ item, onPress, onToggleComplete, onD
               style={[styles.actionBtn, styles.completeBg]}
               onPress={handleSwipeComplete}
               activeOpacity={0.85}
-              accessibilityLabel="Completar tarea"
+              accessibilityLabel={TEXTS.SWIPE_COMPLETE_A11Y}
               accessibilityRole="button"
             >
               <Ionicons name="checkmark-done" size={26} color={colors.textOnPrimary} />
-              <Text style={styles.actionLabel}>Completar</Text>
+              <Text style={styles.actionLabel}>{TEXTS.SWIPE_COMPLETE_LABEL}</Text>
             </TouchableOpacity>
           </Animated.View>
         ) : null}
@@ -211,11 +235,11 @@ export default function SwipeableTaskItem({ item, onPress, onToggleComplete, onD
             style={[styles.actionBtn, styles.deleteBg]}
             onPress={handleSwipeDelete}
             activeOpacity={0.85}
-            accessibilityLabel="Eliminar"
+            accessibilityLabel={TEXTS.SWIPE_DELETE_A11Y}
             accessibilityRole="button"
           >
             <Ionicons name="trash-outline" size={24} color={colors.textOnPrimary} />
-            <Text style={styles.actionLabel}>Eliminar</Text>
+            <Text style={styles.actionLabel}>{TEXTS.SWIPE_DELETE_LABEL}</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>

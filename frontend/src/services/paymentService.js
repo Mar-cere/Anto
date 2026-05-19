@@ -7,15 +7,143 @@
  * @author AntoApp Team
  */
 
-import { Platform } from 'react-native';
+import { Platform, Linking } from 'react-native';
 import { api, ENDPOINTS } from '../config/api';
-import { Linking } from 'react-native';
 import {
   normalizeClientAppleReceipt,
   isPlausibleAppleReceiptBase64,
   MIN_APP_STORE_RECEIPT_BASE64_LENGTH,
 } from '../utils/appleReceiptNormalize';
 import storeKitService from './storeKitService';
+
+function classifyStoreKitError(result) {
+  if (!result || typeof result !== 'object') return 'GENERIC_ERROR';
+  if (result.cancelled) return 'PURCHASE_CANCELLED';
+
+  const rawCode = String(result.code || '').toUpperCase();
+  const codeMap = {
+    VALIDATION_NETWORK: 'VALIDATION_NETWORK',
+    VALIDATION_ERROR: 'VALIDATION_ERROR',
+    PRODUCT_UNAVAILABLE: 'PRODUCT_UNAVAILABLE',
+    APPSTORE_UNAVAILABLE: 'APPSTORE_UNAVAILABLE',
+    TECHNICAL_ERROR: 'TECHNICAL_ERROR',
+    PURCHASE_CANCELLED: 'PURCHASE_CANCELLED',
+    PURCHASE_IN_PROGRESS: 'APPSTORE_UNAVAILABLE',
+    MODULE_UNAVAILABLE: 'APPSTORE_UNAVAILABLE',
+    PURCHASE_FN_UNAVAILABLE: 'APPSTORE_UNAVAILABLE',
+    PURCHASE_CONFIG_UNAVAILABLE: 'APPSTORE_UNAVAILABLE',
+    STOREKIT_UNAVAILABLE: 'APPSTORE_UNAVAILABLE',
+    INITIALIZATION_FAILED: 'APPSTORE_UNAVAILABLE',
+    PRODUCTS_NOT_READY: 'PRODUCT_UNAVAILABLE',
+    PRODUCTS_FETCH_FAILED: 'PRODUCT_UNAVAILABLE',
+    PRODUCTS_LOAD_ERROR: 'PRODUCT_UNAVAILABLE',
+    PRODUCT_IDS_INVALID: 'PRODUCT_UNAVAILABLE',
+    APPSTORE_NO_RESPONSE: 'APPSTORE_UNAVAILABLE',
+    APPSTORE_INVALID_RESPONSE: 'APPSTORE_UNAVAILABLE',
+    PURCHASE_FAILED: 'GENERIC_ERROR',
+    PURCHASE_EXCEPTION: 'GENERIC_ERROR',
+    INVALID_PLAN: 'GENERIC_ERROR',
+  };
+  if (rawCode && codeMap[rawCode]) {
+    return codeMap[rawCode];
+  }
+
+  const rawMessage =
+    typeof result.error === 'string' ? result.error : String(result.error || '');
+  const normalized = rawMessage.toLowerCase();
+
+  if (result.validationError) {
+    if (
+      normalized.includes('conectar') ||
+      normalized.includes('servidor') ||
+      normalized.includes('network')
+    ) {
+      return 'VALIDATION_NETWORK';
+    }
+    return 'VALIDATION_ERROR';
+  }
+
+  if (
+    normalized.includes('producto') ||
+    normalized.includes('no está disponible') ||
+    rawCode.includes('PRODUCT')
+  ) {
+    return 'PRODUCT_UNAVAILABLE';
+  }
+
+  if (
+    normalized.includes('app store') ||
+    normalized.includes('storekit') ||
+    rawCode.includes('CONNECTION')
+  ) {
+    return 'APPSTORE_UNAVAILABLE';
+  }
+
+  if (normalized.includes('undefined is not a function')) {
+    return 'TECHNICAL_ERROR';
+  }
+
+  return 'GENERIC_ERROR';
+}
+
+function classifyRestoreError(result) {
+  if (!result || typeof result !== 'object') return 'RESTORE_GENERIC_ERROR';
+  const rawCode = String(result.code || '').toUpperCase();
+  if (rawCode === 'RESTORE_CANCELLED') return 'RESTORE_CANCELLED';
+  if (
+    rawCode === 'STOREKIT_UNAVAILABLE' ||
+    rawCode === 'MODULE_UNAVAILABLE' ||
+    rawCode === 'INITIALIZATION_FAILED'
+  ) {
+    return 'RESTORE_UNAVAILABLE';
+  }
+  if (
+    rawCode === 'APPSTORE_NO_RESPONSE' ||
+    rawCode === 'APPSTORE_INVALID_RESPONSE' ||
+    rawCode === 'RESTORE_FAILED' ||
+    rawCode === 'RESTORE_EXCEPTION'
+  ) {
+    return 'RESTORE_FAILED';
+  }
+  if (rawCode === 'RESTORE_NO_VALID_RECEIPT') {
+    return 'RESTORE_NO_VALID_RECEIPT';
+  }
+  if (rawCode === 'RESTORE_VALIDATION_FAILED') {
+    return 'RESTORE_VALIDATION_FAILED';
+  }
+  if (rawCode === 'RESTORE_VALIDATION_EXCEPTION') {
+    return 'RESTORE_VALIDATION_EXCEPTION';
+  }
+  return 'RESTORE_GENERIC_ERROR';
+}
+
+function resolveServiceErrorCode(error, fallbackCode) {
+  const backendCode =
+    typeof error?.response?.data?.code === 'string'
+      ? error.response.data.code.trim()
+      : '';
+  if (backendCode) return backendCode.toUpperCase();
+
+  const rawCode = typeof error?.code === 'string' ? error.code.trim().toUpperCase() : '';
+  if (rawCode === 'ECONNABORTED' || rawCode === 'ETIMEDOUT') return 'TIMEOUT';
+  if (rawCode) return rawCode;
+
+  const status = Number(error?.response?.status);
+  if (status === 401) return 'UNAUTHORIZED';
+  if (status === 403) return 'FORBIDDEN';
+  if (status === 404) return 'NOT_FOUND';
+  if (status === 409) return 'CONFLICT';
+  if (status === 429) return 'RATE_LIMIT';
+  if (Number.isFinite(status) && status >= 500) return 'SERVER_ERROR';
+
+  const normalizedMessage = String(error?.message || '').toLowerCase();
+  if (normalizedMessage.includes('timeout')) return 'TIMEOUT';
+  if (normalizedMessage.includes('network') || normalizedMessage.includes('red')) {
+    return 'NETWORK_ERROR';
+  }
+
+  return fallbackCode;
+}
 
 class PaymentService {
   /**
@@ -35,6 +163,7 @@ class PaymentService {
       return {
         success: false,
         error: error.message || 'Error al obtener planes',
+        errorCode: resolveServiceErrorCode(error, 'PLANS_FETCH_ERROR'),
       };
     }
   }
@@ -80,6 +209,7 @@ class PaymentService {
       return {
         success: false,
         error: error.message || 'Error al crear sesión de checkout',
+        errorCode: resolveServiceErrorCode(error, 'CHECKOUT_CREATE_ERROR'),
       };
     }
   }
@@ -94,6 +224,7 @@ class PaymentService {
       return {
         success: false,
         error: 'StoreKit no está disponible en esta plataforma',
+        errorCode: 'APPSTORE_UNAVAILABLE',
       };
     }
 
@@ -274,7 +405,19 @@ class PaymentService {
       }
     };
 
-    return await storeKitService.purchaseSubscription(plan, validateReceipt);
+    const result = await storeKitService.purchaseSubscription(plan, validateReceipt);
+    if (!result || typeof result !== 'object') {
+      return {
+        success: false,
+        error: 'Respuesta inválida de StoreKit',
+        errorCode: 'GENERIC_ERROR',
+      };
+    }
+    if (result.success) return result;
+    return {
+      ...result,
+      errorCode: classifyStoreKitError(result),
+    };
   }
 
   /**
@@ -286,11 +429,26 @@ class PaymentService {
       return {
         success: false,
         error: 'StoreKit no está disponible en esta plataforma',
+        errorCode: 'RESTORE_UNAVAILABLE',
         purchases: [],
       };
     }
 
     const result = await storeKitService.restorePurchases();
+    if (!result || typeof result !== 'object') {
+      return {
+        success: false,
+        error: 'Respuesta inválida de StoreKit',
+        errorCode: 'RESTORE_GENERIC_ERROR',
+        purchases: [],
+      };
+    }
+    if (!result.success) {
+      return {
+        ...result,
+        errorCode: classifyRestoreError(result),
+      };
+    }
     
     if (result.success && result.purchases && result.purchases.length > 0) {
       const withPayload = result.purchases
@@ -311,6 +469,7 @@ class PaymentService {
           success: false,
           error:
             'No hay ningún recibo de la app válido entre las compras restauradas. En el simulador suele faltar el archivo de recibo (utilice un dispositivo físico o un archivo .storekit). En dispositivo físico, intente reiniciar la aplicación o ejecutar de nuevo «Restaurar compras».',
+          errorCode: 'RESTORE_NO_VALID_RECEIPT',
           purchases: result.purchases,
         };
       }
@@ -344,6 +503,7 @@ class PaymentService {
           return {
             success: false,
             error: msg,
+            errorCode: 'RESTORE_VALIDATION_FAILED',
             purchases: result.purchases,
             validationErrors: [msg],
           };
@@ -366,6 +526,7 @@ class PaymentService {
         return {
           success: false,
           error: msg,
+          errorCode: 'RESTORE_VALIDATION_EXCEPTION',
           purchases: result.purchases,
           validationErrors: [msg],
         };
@@ -410,6 +571,7 @@ class PaymentService {
       return {
         success: false,
         error: error.message || 'Error al obtener información del trial',
+        errorCode: resolveServiceErrorCode(error, 'TRIAL_INFO_ERROR'),
         isInTrial: false,
         daysRemaining: 0,
       };
@@ -468,6 +630,7 @@ class PaymentService {
       return {
         success: false,
         error: error.message || 'Error al obtener estado de suscripción',
+        errorCode: resolveServiceErrorCode(error, 'SUBSCRIPTION_STATUS_ERROR'),
       };
     }
   }
@@ -491,6 +654,7 @@ class PaymentService {
       return {
         success: false,
         error: error.message || 'Error al cancelar suscripción',
+        errorCode: resolveServiceErrorCode(error, 'SUBSCRIPTION_CANCEL_ERROR'),
       };
     }
   }
@@ -514,6 +678,7 @@ class PaymentService {
       return {
         success: false,
         error: error.message || 'Error al actualizar método de pago',
+        errorCode: resolveServiceErrorCode(error, 'PAYMENT_METHOD_UPDATE_ERROR'),
       };
     }
   }
@@ -543,6 +708,7 @@ class PaymentService {
       return {
         success: false,
         error: error.message || 'Error al obtener transacciones',
+        errorCode: resolveServiceErrorCode(error, 'TRANSACTIONS_FETCH_ERROR'),
         transactions: [],
       };
     }
@@ -569,6 +735,7 @@ class PaymentService {
       return {
         success: false,
         error: error.message || 'Error al obtener estadísticas',
+        errorCode: resolveServiceErrorCode(error, 'TRANSACTION_STATS_FETCH_ERROR'),
         stats: {},
       };
     }

@@ -17,7 +17,7 @@ export const isFirstSessionHintDismissed = async (userId) => {
     const key = getFirstSessionHintDismissedKey(userId);
     const value = await AsyncStorage.getItem(key);
     return value === 'true';
-  } catch (e) {
+  } catch {
     return false;
   }
 };
@@ -26,7 +26,7 @@ export const setFirstSessionHintDismissed = async (userId) => {
   try {
     const key = getFirstSessionHintDismissedKey(userId);
     await AsyncStorage.setItem(key, 'true');
-  } catch (e) {
-    console.warn('FirstSessionHint: error persistiendo estado', e);
+  } catch (error) {
+    console.warn('FirstSessionHint: error persistiendo estado', error);
   }
 };

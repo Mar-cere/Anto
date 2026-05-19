@@ -1,9 +1,31 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
 
+const DEFAULT_TEXTS = {
+  EMERGENCY_CHAT_ENTRY: 'Ingresa al chat de emergencia',
+  EMERGENCY_CHAT_ENTRY_A11Y: 'Abrir chat de emergencia',
+  EMERGENCY_CHAT_ENTRY_HINT:
+    'Abre el chat de forma limitada sin iniciar sesión (útil en una emergencia)',
+};
+
 const EmotionBanner = ({ emotions, onPress }) => {
+  const translated = useSectionTranslations('HOME');
+  const TEXTS = useMemo(
+    () => ({
+      EMERGENCY_CHAT_ENTRY:
+        translated?.EMERGENCY_CHAT_ENTRY || DEFAULT_TEXTS.EMERGENCY_CHAT_ENTRY,
+      EMERGENCY_CHAT_ENTRY_A11Y:
+        translated?.EMERGENCY_CHAT_ENTRY_A11Y ||
+        DEFAULT_TEXTS.EMERGENCY_CHAT_ENTRY_A11Y,
+      EMERGENCY_CHAT_ENTRY_HINT:
+        translated?.EMERGENCY_CHAT_ENTRY_HINT ||
+        DEFAULT_TEXTS.EMERGENCY_CHAT_ENTRY_HINT,
+    }),
+    [translated],
+  );
   const { colors } = useTheme();
   const styles = useMemo(
     () =>
@@ -125,12 +147,13 @@ const EmotionBanner = ({ emotions, onPress }) => {
     
     // Limpiar el intervalo cuando el componente se desmonte
     return () => clearInterval(interval);
-  }, [getNextEmotion, emotions]);
+  }, [getNextEmotion, emotions, emotionOpacity, emotionTranslateX]);
 
   return (
     <TouchableOpacity
       testID="emergency-chat-entry"
-      accessibilityLabel="emergency-chat-entry"
+      accessibilityLabel={TEXTS.EMERGENCY_CHAT_ENTRY_A11Y}
+      accessibilityHint={TEXTS.EMERGENCY_CHAT_ENTRY_HINT}
       style={styles.emergencyContainer}
       onPress={onPress}
       activeOpacity={0.7}
@@ -152,7 +175,7 @@ const EmotionBanner = ({ emotions, onPress }) => {
           </Animated.Text>
         </View>
         <Text style={styles.emergencyText} numberOfLines={1}>
-          {" Ingresa al chat de emergencia"}
+          {` ${TEXTS.EMERGENCY_CHAT_ENTRY}`}
         </Text>
       </View>
     </TouchableOpacity>

@@ -18,7 +18,10 @@ import {
   TIME_PERIODS
 } from '../../constants/openai.js';
 import { countIntensityGe, emitPromptHistoryTelemetry } from './promptHistoryTelemetry.js';
-import { buildSessionRetentionSystemSnippet } from '../sessionRetentionHints.js';
+import {
+  buildSessionRetentionSystemSnippet,
+  evaluateConversationClosureReadiness
+} from '../sessionRetentionHints.js';
 import {
   buildRecentThreadSummarySnippet,
   getSessionPhaseSystemSnippet
@@ -380,24 +383,53 @@ function buildTurnPolicySnippet(conversationPattern = {}, contextual = {}) {
 - Señal actual de preguntas previas del asistente: ${questionStreak}.`;
 }
 
-function buildProgressiveClosureSnippet(conversationPattern = {}, sessionIntention = 'vent', sessionPhase = 'default') {
+function buildProgressiveClosureSnippet(
+  conversationPattern = {},
+  sessionIntention = 'vent',
+  sessionPhase = 'default',
+  contexto = {}
+) {
   const phaseNorm = typeof sessionPhase === 'string' ? sessionPhase.trim() : '';
   if (phaseNorm === 'acute') {
     return `\n\n### Cierre con avance (fase de seguridad)
 - Con riesgo o crisis activa, el “avance” es **seguridad y claridad breve**, no síntesis de cierre de tramo ni invitación a pausar hasta que el contexto sea estable.
 - No uses la opción (d) de “aterrizaje” de la variante estándar; sigue la sección de crisis si aplica.`;
   }
+
+  const { phase: closurePhase } = evaluateConversationClosureReadiness({
+    sessionRetention: contexto.sessionRetention,
+    conversationPattern,
+    sessionPhase,
+    contextual: contexto.contextual
+  });
+
+  if (closurePhase === 'opening') {
+    return `\n\n### Ritmo del turno (inicio de hilo)
+- Prioriza acogida y **una** invitación natural a contar; lee tono, sentido y estado emocional del mensaje actual.
+- **No** invites a cerrar el tramo, pausar la sesión ni “retomar desde este punto” salvo despedida clara del usuario.
+- Intención de sesión actual: ${sessionIntention}.`;
+  }
+
   const closureRisk = conversationPattern?.closureRisk === true;
   const qStreak = Number(conversationPattern?.questionStreakCount || 0);
   const questionFatigueLine =
     qStreak >= 2
       ? '\n- **Racha de preguntas:** este turno puede priorizar **síntesis breve** o **pausa opcional** en lugar de otra pregunta amplia.'
       : '';
-  return `\n\n### Cierre con avance (anti-abandono)
-- Cada turno debe cerrar con avance: (a) pregunta focal, (b) micro-acción no corporal, (c) mini-resumen + confirmación, o (d) síntesis breve + puente temporal sin pregunta amplia cuando aplique.
-- Evita cierres vacíos: debe quedar sentido de movimiento o de conclusión del tramo.
+
+  if (closurePhase === 'developing') {
+    return `\n\n### Ritmo del turno (conversación en curso)
+- Sigue el hilo por **tono, sentido y estado** del momento; avanza con una pregunta focal o un matiz útil.
+- Aún **no** orientes cierre de tramo ni pausa salvo que el usuario lo pida o se despida.
+- Si el sistema marca señales de retorno o «Sesión y retorno» más abajo, **solo** síguelas cuando encajen con lo que acaba de decir.
+- Intención de sesión actual: ${sessionIntention}.${questionFatigueLine}`;
+  }
+
+  return `\n\n### Cierre con avance (cuando el tramo ya aterrizó)
+- Solo si el tema **ya tiene sentido de conclusión** (desahogo cumplido, tema resuelto, despedida o fatiga clara): (a) pregunta focal, (b) micro-acción no corporal, (c) mini-resumen + confirmación, o (d) síntesis breve + puente temporal.
+- Si el hilo sigue abierto o es saludo/check-in, **no** uses (d) ni invites a cerrar el tramo.
+- Evalúa cada turno por tono y estado; no cierres por inercia ni por número fijo de mensajes.
 - Si hay señal de salida (${closureRisk ? 'sí' : 'no'}), deja continuidad útil para retorno sin culpa ni presión.
-- Si hay señal de salida positiva, puedes cerrar sin pregunta final; prioriza síntesis breve + puente.
 - Intención de sesión actual: ${sessionIntention}. Ajusta el cierre a esa intención.${questionFatigueLine}`;
 }
 
@@ -622,6 +654,45 @@ export function generarMensajesContexto(contexto) {
   return messages;
 }
 
+/** Idioma de respuesta del chat: preferencia de usuario (es/en). */
+export function resolveChatLanguage(contexto) {
+  const raw =
+    contexto?.profile?.preferences?.language ??
+    contexto?.language ??
+    contexto?.profile?.language;
+  return raw === 'en' ? 'en' : 'es';
+}
+
+function buildResponseLanguageDirective(language) {
+  if (language === 'en') {
+    return `### RESPONSE LANGUAGE (HIGHEST PRIORITY — overrides any conflicting rule below)
+- The user's app interface is set to **English**.
+- You MUST write **every word** of your reply to the user in **neutral international English**.
+- Internal instructions below may be in Spanish; they are rules for you, not text to show the user.
+- Ignore any instruction that says "Idioma: español" or requires Spanish output.
+- Do not reply in Spanish unless the user explicitly writes in Spanish and asks for a Spanish reply.
+- Use clear, professional-accessible tone; avoid slang and regionalisms.`;
+  }
+  return `### IDIOMA DE RESPUESTA (PRIORIDAD MÁXIMA — prevalece sobre reglas contradictorias)
+- La interfaz del usuario está en **español**.
+- Debes escribir **cada palabra** de tu respuesta al usuario en **español neutro** (latinoamericano).
+- No respondas en inglés salvo que el usuario escriba explícitamente en inglés y pida respuesta en inglés.
+- Usa **tú** con formas estándar: "tienes", "quieres", "puedes" (nunca voseo).`;
+}
+
+function buildClinicalIdentitySnippet(language) {
+  if (language === 'en') {
+    return `\n\nIDENTITY AND CLINICAL PRIORITY:
+- You are an assistant focused on mental health and emotional well-being.
+- Never respond as a generic chatbot: even for factual queries, keep a human, caring tone.
+- If you detect relevant emotional distress, prioritize containment and safety over accessory data.`;
+  }
+  return `\n\nIDENTIDAD Y PRIORIDAD CLÍNICA:
+- Eres un asistente centrado en salud mental y bienestar emocional.
+- Nunca respondas como chatbot genérico: incluso cuando la consulta sea factual, conserva tono de cuidado humano y contexto emocional.
+- Si detectas malestar emocional relevante, prioriza contención y seguridad por encima de datos accesorios.`;
+}
+
 export const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emocional dentro de una app. Tu objetivo es combinar **claridad útil** con un tono **profesional y accesible**: como un buen orientador en salud mental, no como un chat informal ni como un terapeuta clínico.
 
 ### Jerarquía de decisiones (si hay conflicto)
@@ -731,6 +802,7 @@ export const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emoci
  * @returns {Promise<{ systemMessage: string, contextMessages: Array }>}
  */
 export async function buildContextualizedPrompt(mensaje, contexto) {
+  const language = resolveChatLanguage(contexto);
   const timeOfDay = getTimeOfDay();
   const emotion = contexto.emotional?.mainEmotion || DEFAULT_VALUES.EMOTION;
   const intensity = contexto.emotional?.intensity || DEFAULT_VALUES.INTENSITY;
@@ -808,16 +880,25 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
 
   // Prompt base de comportamiento (reglas de estilo, seguridad y UX conversacional).
   // Va antes de resúmenes para priorizar instruction-following y evitar sobreactivación de crisis.
-  systemMessage = `${BASE_ASSISTANT_PROMPT}\n\n---\n\n${systemMessage}`;
-  systemMessage += `\n\nIDENTIDAD Y PRIORIDAD CLÍNICA:
-- Eres un asistente centrado en salud mental y bienestar emocional.
-- Nunca respondas como chatbot genérico: incluso cuando la consulta sea factual, conserva tono de cuidado humano y contexto emocional.
-- Si detectas malestar emocional relevante, prioriza contención y seguridad por encima de datos accesorios.`;
+  systemMessage = `${buildResponseLanguageDirective(language)}\n\n---\n\n${BASE_ASSISTANT_PROMPT}\n\n---\n\n${systemMessage}`;
+  systemMessage += buildClinicalIdentitySnippet(language);
   if (forceShortMode && !hasCrisisRisk) {
-    systemMessage += '\n\nPREFERENCIA DE SESIÓN: El usuario pidió brevedad explícita. Responde en formato corto y directo, evitando párrafos largos.';
+    systemMessage +=
+      language === 'en'
+        ? '\n\nSESSION PREFERENCE: The user asked for brevity. Reply in a short, direct format; avoid long paragraphs.'
+        : '\n\nPREFERENCIA DE SESIÓN: El usuario pidió brevedad explícita. Responde en formato corto y directo, evitando párrafos largos.';
   }
   if (forceFactualMode) {
-    systemMessage += `\n\nMODO FACTUAL (prioridad alta):
+    systemMessage +=
+      language === 'en'
+        ? `\n\nFACTUAL MODE (high priority):
+- Prioritize accuracy over speed.
+- Do not invent dates, names, lists, or concrete details.
+- If you are not confident, say so explicitly ("I don't have enough certainty to state that").
+- If certainty is missing, offer a safe alternative: answer generally or ask permission to verify.
+- Avoid categorical tone when there is doubt.
+- Keep a supportive tone; do not lose the mental-health framing.`
+        : `\n\nMODO FACTUAL (prioridad alta):
 - Prioriza exactitud por sobre velocidad.
 - No inventes fechas, nombres, listas ni detalles concretos.
 - Si no tienes alta certeza, dilo de forma explícita ("no tengo suficiente certeza para afirmarlo").
@@ -825,7 +906,10 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
 - Evita tono categórico cuando haya duda.
 - Mantén tono de acompañamiento; no pierdas el encuadre de salud mental.`;
     if (highEmotionalLoad) {
-      systemMessage += `\n- Dado el nivel emocional actual, responde lo factual en breve y vuelve a sostén emocional útil en el mismo turno.`;
+      systemMessage +=
+        language === 'en'
+          ? `\n- Given the current emotional level, keep factual content brief and return to useful emotional support in the same turn.`
+          : `\n- Dado el nivel emocional actual, responde lo factual en breve y vuelve a sostén emocional útil en el mismo turno.`;
     }
   }
   systemMessage += buildUnderstandingPipelineSnippet(contexto);
@@ -841,7 +925,8 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   systemMessage += buildProgressiveClosureSnippet(
     conversationPattern,
     sessionIntention,
-    contexto.sessionPhase || 'default'
+    contexto.sessionPhase || 'default',
+    contexto
   );
   systemMessage += buildPhaseRouterSnippet(contexto);
   systemMessage += buildAntiRobotRewriteSnippet();
@@ -860,8 +945,13 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   if (contextMessages.length > 0) {
     const conversationSummary = generateConversationSummary(contextMessages, contexto);
     const conciseSummary = conversationSummary.length > 100 ? conversationSummary.substring(0, 97) + '...' : conversationSummary;
-    systemMessage += `\n\nCONTEXTO: ${conciseSummary}`;
-    if (contextMessages.length >= 2) systemMessage += '\nRef: Usa referencias naturales cuando sea relevante.';
+    systemMessage += language === 'en' ? `\n\nCONTEXT: ${conciseSummary}` : `\n\nCONTEXTO: ${conciseSummary}`;
+    if (contextMessages.length >= 2) {
+      systemMessage +=
+        language === 'en'
+          ? '\nNote: Use natural references when relevant.'
+          : '\nRef: Usa referencias naturales cuando sea relevante.';
+    }
   }
 
   const antiEchoHint = buildAntiEchoHint(contexto.history);
@@ -879,7 +969,7 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
         });
   if (longTermContext && longTermContext.length > 0) {
     const conciseLongTerm = longTermContext.length > 200 ? longTermContext.substring(0, 197) + '...' : longTermContext;
-    systemMessage += `\nMEMORIA: ${conciseLongTerm}`;
+    systemMessage += language === 'en' ? `\nMEMORY: ${conciseLongTerm}` : `\nMEMORIA: ${conciseLongTerm}`;
   }
 
   const onboarding = contexto.profile?.onboardingAnswers;

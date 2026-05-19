@@ -19,8 +19,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { api, ENDPOINTS } from '../../config/api';
-import { getApiErrorMessage } from '../../utils/apiErrorHandler';
+import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 import { SPACING } from '../../constants/ui';
 
@@ -29,6 +30,71 @@ function taskPayloadFromApi(body) {
   if (body.data && typeof body.data === 'object' && body.data._id) return body.data;
   if (body._id) return body;
   return null;
+}
+
+const DEFAULT_TEXTS = {
+  KICKER_TASK: 'Tarea',
+  KICKER_GOAL: 'Meta',
+  KICKER_REMINDER: 'Recordatorio',
+  META_DATE: 'Fecha',
+  META_TIME: 'Hora',
+  OVERDUE_TASK: 'Caducada',
+  OVERDUE_GOAL: 'Caducada',
+  OVERDUE_REMINDER: 'Pasado',
+  SUBTASKS_KICKER: 'Subtareas',
+  SUBTASKS_HINT: 'Hasta cinco pasos sugeridos según el título y la descripción.',
+  SUBTASKS_GENERATE_A11Y: 'Sugerir subtareas con inteligencia artificial',
+  SUBTASKS_GENERATING: 'Generando...',
+  SUBTASKS_SUGGEST_CTA: 'Sugerir pasos (IA)',
+  SUBTASKS_EMPTY: 'Aún no hay subtareas.',
+  SUBTASK_DELETE_A11Y_PREFIX: 'Eliminar subtarea:',
+  SUBTASKS_CLEAR_A11Y: 'Eliminar todas las subtareas',
+  SUBTASKS_CLEAR_CTA: 'Eliminar todas',
+  MARK_COMPLETE_CTA: 'Marcar completada',
+  DELETE_CTA: 'Eliminar',
+  SUBTASKS_GENERATE_ERROR_TITLE: 'No se pudieron generar subtareas',
+  SUBTASKS_GENERATE_ERROR_MESSAGE: 'Intenta de nuevo más tarde.',
+  SUBTASK_ERROR_TITLE: 'Subtarea',
+  SUBTASK_UPDATE_ERROR: 'No se pudo actualizar.',
+  SUBTASK_DELETE_CONFIRM_TITLE: 'Eliminar subtarea',
+  SUBTASK_DELETE_CONFIRM_MESSAGE: '¿Eliminar "{title}"?',
+  SUBTASK_DELETE_ERROR: 'No se pudo eliminar.',
+  SUBTASKS_CLEAR_CONFIRM_TITLE: 'Eliminar subtareas',
+  SUBTASKS_CLEAR_CONFIRM_MESSAGE:
+    'Esto eliminará todas las subtareas de esta tarea. Podrás agregar nuevas manualmente.',
+  SUBTASKS_CLEAR_ERROR: 'No se pudieron eliminar.',
+  ERROR_CONNECTION: 'No hay conexión. Verifica tu internet e inténtalo de nuevo.',
+  ERROR_TOO_MANY_REQUESTS:
+    'Demasiados intentos. Espera un momento y vuelve a intentar.',
+  CANCEL: 'Cancelar',
+  DELETE: 'Eliminar',
+};
+
+function resolveTaskDetailErrorMessage(error, texts, fallbackKey) {
+  const status = error?.response?.status;
+  const rawMessage = String(
+    error?.response?.data?.message ?? error?.message ?? '',
+  ).toLowerCase();
+
+  const isNetworkIssue =
+    !error?.response ||
+    rawMessage.includes('network') ||
+    rawMessage.includes('econnrefused') ||
+    rawMessage.includes('timeout') ||
+    rawMessage.includes('timed out');
+  if (isNetworkIssue) {
+    return texts.ERROR_CONNECTION || texts[fallbackKey];
+  }
+
+  if (
+    status === 429 ||
+    rawMessage.includes('too many') ||
+    rawMessage.includes('demasiados intentos')
+  ) {
+    return texts.ERROR_TOO_MANY_REQUESTS || texts[fallbackKey];
+  }
+
+  return texts[fallbackKey];
 }
 
 const TaskDetailModal = ({
@@ -40,7 +106,13 @@ const TaskDetailModal = ({
   onTaskUpdated,
   isOffline = false,
 }) => {
+  const { language } = useLanguage();
   const { colors, resolvedScheme } = useTheme();
+  const translated = useSectionTranslations('TASKS');
+  const TEXTS = useMemo(
+    () => ({ ...DEFAULT_TEXTS, ...(translated || {}) }),
+    [translated]
+  );
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
 
   const styles = useMemo(
@@ -349,7 +421,7 @@ const TaskDetailModal = ({
       interaction.cancel?.();
       clearAll();
     };
-  }, [visible, item?._id]);
+  }, [visible, item]);
 
   useEffect(() => {
     if (!visible) {
@@ -375,14 +447,14 @@ const TaskDetailModal = ({
       }
     } catch (e) {
       Alert.alert(
-        'No se pudieron generar subtareas',
-        getApiErrorMessage(e, { isOffline }) || 'Intenta de nuevo más tarde.'
+        TEXTS.SUBTASKS_GENERATE_ERROR_TITLE,
+        resolveTaskDetailErrorMessage(e, TEXTS, 'SUBTASKS_GENERATE_ERROR_MESSAGE')
       );
     } finally {
       generateSubtasksInFlightRef.current = false;
       setGeneratingSubtasks(false);
     }
-  }, [item?._id, onTaskUpdated, isOffline]);
+  }, [item?._id, onTaskUpdated, TEXTS]);
 
   const handleToggleSubtask = useCallback(
     async (index) => {
@@ -415,14 +487,14 @@ const TaskDetailModal = ({
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       } catch (e) {
         Alert.alert(
-          'Subtarea',
-          getApiErrorMessage(e, { isOffline }) || 'No se pudo actualizar.'
+          TEXTS.SUBTASK_ERROR_TITLE,
+          resolveTaskDetailErrorMessage(e, TEXTS, 'SUBTASK_UPDATE_ERROR')
         );
       } finally {
         setSubtaskBusyIndex(null);
       }
     },
-    [item, subtaskBusyIndex, onTaskUpdated, isOffline]
+    [item, subtaskBusyIndex, onTaskUpdated, TEXTS]
   );
 
   const handleDeleteSubtask = useCallback(
@@ -430,10 +502,13 @@ const TaskDetailModal = ({
       if (subtaskBusyIndex !== null || !item?._id) return;
       const st = Array.isArray(item.subtasks) ? item.subtasks[index] : null;
       if (!st) return;
-      Alert.alert('Eliminar subtarea', `¿Eliminar "${st.title}"?`, [
-        { text: 'Cancelar', style: 'cancel' },
+      Alert.alert(
+        TEXTS.SUBTASK_DELETE_CONFIRM_TITLE,
+        TEXTS.SUBTASK_DELETE_CONFIRM_MESSAGE.replace('{title}', String(st.title || '')),
+        [
+        { text: TEXTS.CANCEL, style: 'cancel' },
         {
-          text: 'Eliminar',
+          text: TEXTS.DELETE,
           style: 'destructive',
           onPress: async () => {
             try {
@@ -444,8 +519,8 @@ const TaskDetailModal = ({
               await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             } catch (e) {
               Alert.alert(
-                'Subtarea',
-                getApiErrorMessage(e, { isOffline }) || 'No se pudo eliminar.'
+                TEXTS.SUBTASK_ERROR_TITLE,
+                resolveTaskDetailErrorMessage(e, TEXTS, 'SUBTASK_DELETE_ERROR')
               );
             } finally {
               setSubtaskBusyIndex(null);
@@ -454,19 +529,19 @@ const TaskDetailModal = ({
         }
       ]);
     },
-    [item, subtaskBusyIndex, onTaskUpdated, isOffline]
+    [item, subtaskBusyIndex, onTaskUpdated, TEXTS]
   );
 
   const handleClearSubtasks = useCallback(() => {
     if (subtaskBusyIndex !== null || !item?._id) return;
     if (!Array.isArray(item.subtasks) || item.subtasks.length === 0) return;
     Alert.alert(
-      'Eliminar subtareas',
-      'Esto eliminará todas las subtareas de esta tarea. Podrás agregar nuevas manualmente.',
+      TEXTS.SUBTASKS_CLEAR_CONFIRM_TITLE,
+      TEXTS.SUBTASKS_CLEAR_CONFIRM_MESSAGE,
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: TEXTS.CANCEL, style: 'cancel' },
         {
-          text: 'Eliminar',
+          text: TEXTS.DELETE,
           style: 'destructive',
           onPress: async () => {
             try {
@@ -477,8 +552,8 @@ const TaskDetailModal = ({
               await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             } catch (e) {
               Alert.alert(
-                'Subtareas',
-                getApiErrorMessage(e, { isOffline }) || 'No se pudieron eliminar.'
+                TEXTS.SUBTASKS_KICKER,
+                resolveTaskDetailErrorMessage(e, TEXTS, 'SUBTASKS_CLEAR_ERROR')
               );
             } finally {
               setSubtaskBusyIndex(null);
@@ -487,7 +562,7 @@ const TaskDetailModal = ({
         }
       ]
     );
-  }, [item, subtaskBusyIndex, onTaskUpdated, isOffline]);
+  }, [item, subtaskBusyIndex, onTaskUpdated, TEXTS]);
 
   if (!item) return null;
 
@@ -499,10 +574,11 @@ const TaskDetailModal = ({
   const isOverdue = new Date(item.dueDate) < new Date() && !taskDone;
   const canGenerateSubtasks = canUseSubtasks && subtasks.length === 0;
 
+  const locale = language === 'en' ? 'en-US' : 'es-ES';
   const formatDate = (d) =>
-    new Date(d).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+    new Date(d).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
   const formatTime = (d) =>
-    new Date(d).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true });
+    new Date(d).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: true });
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
@@ -512,7 +588,7 @@ const TaskDetailModal = ({
           <View style={styles.grabber} />
           <View style={styles.header}>
             <Text style={styles.kicker}>
-              {isTask ? 'Tarea' : isGoal ? 'Meta' : 'Recordatorio'}
+              {isTask ? TEXTS.KICKER_TASK : isGoal ? TEXTS.KICKER_GOAL : TEXTS.KICKER_REMINDER}
             </Text>
             <TouchableOpacity style={styles.closeBtn} onPress={handleClose} hitSlop={12}>
               <Ionicons name="close" size={22} color={t.FOCUS_CHEVRON_MUTED} />
@@ -546,23 +622,25 @@ const TaskDetailModal = ({
             </View>
 
             <View style={styles.metaBlock}>
-              <Text style={styles.metaLabel}>Fecha</Text>
+              <Text style={styles.metaLabel}>{TEXTS.META_DATE}</Text>
               <Text style={styles.metaValue}>{formatDate(item.dueDate)}</Text>
-              <Text style={styles.metaLabel}>Hora</Text>
+              <Text style={styles.metaLabel}>{TEXTS.META_TIME}</Text>
               <Text style={styles.metaValue}>{formatTime(item.dueDate)}</Text>
               {isOverdue ? (
                 <View style={styles.overduePill}>
                   <Ionicons name="alert-circle" size={14} color={colors.error} />
-                  <Text style={styles.overduePillText}>{isTask ? 'Caducada' : 'Pasado'}</Text>
+                  <Text style={styles.overduePillText}>
+                    {isTask ? TEXTS.OVERDUE_TASK : isGoal ? TEXTS.OVERDUE_GOAL : TEXTS.OVERDUE_REMINDER}
+                  </Text>
                 </View>
               ) : null}
             </View>
 
             {canUseSubtasks ? (
               <View style={styles.subtasksSection}>
-                <Text style={styles.subtasksKicker}>Subtareas</Text>
+                <Text style={styles.subtasksKicker}>{TEXTS.SUBTASKS_KICKER}</Text>
                 <Text style={styles.subtasksHint}>
-                  Hasta cinco pasos sugeridos según el título y la descripción.
+                  {TEXTS.SUBTASKS_HINT}
                 </Text>
                 {canGenerateSubtasks ? (
                   <TouchableOpacity
@@ -574,7 +652,7 @@ const TaskDetailModal = ({
                     disabled={generatingSubtasks || taskDone}
                     activeOpacity={0.85}
                     accessibilityRole="button"
-                    accessibilityLabel="Sugerir subtareas con inteligencia artificial"
+                    accessibilityLabel={TEXTS.SUBTASKS_GENERATE_A11Y}
                   >
                     {generatingSubtasks ? (
                       <ActivityIndicator color={colors.background} size="small" />
@@ -582,12 +660,12 @@ const TaskDetailModal = ({
                       <Ionicons name="sparkles" size={18} color={colors.background} />
                     )}
                     <Text style={styles.generateSubtasksBtnText}>
-                      {generatingSubtasks ? 'Generando…' : 'Sugerir pasos (IA)'}
+                      {generatingSubtasks ? TEXTS.SUBTASKS_GENERATING : TEXTS.SUBTASKS_SUGGEST_CTA}
                     </Text>
                   </TouchableOpacity>
                 ) : null}
                 {subtasks.length === 0 ? (
-                  <Text style={styles.subtasksEmpty}>Aún no hay subtareas.</Text>
+                  <Text style={styles.subtasksEmpty}>{TEXTS.SUBTASKS_EMPTY}</Text>
                 ) : (
                   <View style={styles.subtasksList}>
                     {subtasks.map((st, idx) => {
@@ -627,7 +705,7 @@ const TaskDetailModal = ({
                             onPress={() => handleDeleteSubtask(idx)}
                             disabled={taskDone || subtaskBusyIndex !== null}
                             accessibilityRole="button"
-                            accessibilityLabel={`Eliminar subtarea: ${st.title}`}
+                            accessibilityLabel={`${TEXTS.SUBTASK_DELETE_A11Y_PREFIX} ${st.title}`}
                             hitSlop={10}
                           >
                             <Ionicons name="close" size={18} color={t.FOCUS_META} />
@@ -640,12 +718,12 @@ const TaskDetailModal = ({
                       onPress={handleClearSubtasks}
                       activeOpacity={0.85}
                       accessibilityRole="button"
-                      accessibilityLabel="Eliminar todas las subtareas"
+                      accessibilityLabel={TEXTS.SUBTASKS_CLEAR_A11Y}
                       disabled={taskDone || subtaskBusyIndex !== null}
                     >
                       <Ionicons name="trash-outline" size={16} color={colors.error} />
                       <Text style={styles.clearSubtasksBtnText}>
-                        {`Eliminar todas (${subtasks.length})`}
+                        {`${TEXTS.SUBTASKS_CLEAR_CTA} (${subtasks.length})`}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -666,7 +744,7 @@ const TaskDetailModal = ({
                 activeOpacity={0.85}
               >
                 <Ionicons name="checkmark-circle" size={20} color={colors.background} />
-                <Text style={styles.primaryCtaText}>Marcar completada</Text>
+                <Text style={styles.primaryCtaText}>{TEXTS.MARK_COMPLETE_CTA}</Text>
               </TouchableOpacity>
             ) : null}
             <TouchableOpacity
@@ -679,7 +757,7 @@ const TaskDetailModal = ({
               activeOpacity={0.85}
             >
               <Ionicons name="trash-outline" size={20} color={colors.error} />
-              <Text style={styles.dangerText}>Eliminar</Text>
+              <Text style={styles.dangerText}>{TEXTS.DELETE_CTA}</Text>
             </TouchableOpacity>
           </View>
           {Platform.OS === 'ios' ? <View style={styles.homeIndicatorSpacer} /> : null}

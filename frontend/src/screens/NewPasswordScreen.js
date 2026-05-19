@@ -23,13 +23,13 @@ import {
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import ParticleBackground from '../components/ParticleBackground';
-import { handleApiError } from '../config/api';
 import { ROUTES } from '../constants/routes';
 import { userService } from '../services/userService';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 
 // Constantes de textos
-const TEXTS = {
+const DEFAULT_TEXTS = {
   TITLE: 'Nueva Contraseña',
   SUBTITLE: 'Crea una nueva contraseña segura para tu cuenta.',
   PASSWORD_PLACEHOLDER: 'Nueva contraseña',
@@ -47,6 +47,47 @@ const TEXTS = {
   CONFIRM_PASSWORD_REQUIRED: 'Debes confirmar la contraseña',
   PASSWORDS_NOT_MATCH: 'Las contraseñas no coinciden',
   BACK: 'Volver',
+  TOO_MANY_ATTEMPTS: 'Demasiados intentos. Espera un momento y vuelve a intentar.',
+  CONNECTION_ERROR: 'No hay conexión. Verifica tu internet e inténtalo de nuevo.',
+  CODE_EXPIRED: 'El código de recuperación expiró. Solicita uno nuevo.',
+};
+
+const resolveNewPasswordErrorMessage = (error, texts) => {
+  const status = error?.response?.status;
+  const rawMessage = String(
+    error?.response?.data?.message ?? error?.message ?? '',
+  ).toLowerCase();
+
+  const isNetworkIssue =
+    !error?.response ||
+    rawMessage.includes('network') ||
+    rawMessage.includes('econnrefused') ||
+    rawMessage.includes('timeout') ||
+    rawMessage.includes('timed out');
+  if (isNetworkIssue) {
+    return texts.CONNECTION_ERROR;
+  }
+
+  if (
+    status === 429 ||
+    rawMessage.includes('too many') ||
+    rawMessage.includes('demasiados intentos')
+  ) {
+    return texts.TOO_MANY_ATTEMPTS;
+  }
+
+  if (
+    rawMessage.includes('expired') ||
+    rawMessage.includes('expir') ||
+    rawMessage.includes('vencid') ||
+    rawMessage.includes('invalid code') ||
+    rawMessage.includes('codigo') ||
+    rawMessage.includes('código')
+  ) {
+    return texts.CODE_EXPIRED;
+  }
+
+  return texts.ERROR_RESET_PASSWORD;
 };
 
 // Constantes de validación
@@ -121,6 +162,11 @@ const SUCCESS_ICON_SIZE = 60;
 const EYE_ICON_SIZE = 24;
 
 const NewPasswordScreen = ({ navigation, route }) => {
+  const AUTH = useSectionTranslations('AUTH');
+  const TEXTS = useMemo(
+    () => ({ ...DEFAULT_TEXTS, ...(AUTH?.NEW_PASSWORD || {}) }),
+    [AUTH],
+  );
   const { colors, statusBarStyle } = useTheme();
 
   const styles = useMemo(
@@ -391,15 +437,18 @@ const NewPasswordScreen = ({ navigation, route }) => {
     }
     
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return {
+      isValid: Object.keys(newErrors).length === 0,
+      firstError: Object.values(newErrors)[0] || null,
+    };
   };
 
   // Manejo del cambio de contraseña
   const handleResetPassword = async () => {
-    if (!validateForm()) {
-      const errorKeys = Object.keys(errors);
-      if (errorKeys.length > 0) {
-        Alert.alert(TEXTS.VALIDATION_ERROR, errors[errorKeys[0]]);
+    const { isValid, firstError } = validateForm();
+    if (!isValid) {
+      if (firstError) {
+        Alert.alert(TEXTS.VALIDATION_ERROR, firstError);
       }
       return;
     }
@@ -409,7 +458,7 @@ const NewPasswordScreen = ({ navigation, route }) => {
       await userService.resetPassword(email, code, formData.password);
       setSuccess(true);
     } catch (error) {
-      Alert.alert(TEXTS.ERROR, handleApiError(error) || TEXTS.ERROR_RESET_PASSWORD);
+      Alert.alert(TEXTS.ERROR, resolveNewPasswordErrorMessage(error, TEXTS));
     } finally {
       setIsSubmitting(false);
     }

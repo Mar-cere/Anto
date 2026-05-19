@@ -13,12 +13,12 @@ import {
   LAYOUT,
   MESSAGE_ROLES,
   MESSAGE_TYPES,
-  TEXTS,
   TYPING_ANIMATION_DELAYS,
   TYPING_ANIMATION_DURATION,
   TYPING_ANIMATION_TO_VALUE,
   TYPING_TRANSLATE_Y,
   useChatColors,
+  useChatTexts,
 } from '../../screens/chat/chatScreenConstants';
 
 function AnimatedDot({ delay, dotStyle, styles }) {
@@ -330,6 +330,7 @@ function ChatMessageItem({
   onMessageFeedback,
   feedbackSubmittingId,
 }) {
+  const TEXTS = useChatTexts();
   const { colors } = useTheme();
   const chatColors = useChatColors();
   const styles = useMemo(() => createStyles(colors, chatColors), [colors, chatColors]);
@@ -366,15 +367,15 @@ function ChatMessageItem({
       const sec = Number(status.cooldownSecondsRemaining || 0);
       if (sec > 0) {
         const min = Math.max(1, Math.ceil(sec / 60));
-        return `Sugerencias en pausa unos minutos (${min} min) para no saturar la conversación.`;
+        return TEXTS.PRODUCT_STATUS_COOLDOWN_WITH_MIN.replace('{minutes}', String(min));
       }
-      return 'Sugerencias en pausa un momento para no saturar la conversación.';
+      return TEXTS.PRODUCT_STATUS_COOLDOWN;
     }
     if (status.reason === 'cap') {
-      return 'En esta conversación ya alcanzamos el límite de sugerencias por ahora.';
+      return TEXTS.PRODUCT_STATUS_CAP;
     }
     if (status.reason === 'user_reject_streak') {
-      return 'Reducimos la intensidad de las sugerencias porque no parecían útiles.';
+      return TEXTS.PRODUCT_STATUS_REJECT_STREAK;
     }
     return null;
   };
@@ -406,16 +407,22 @@ function ChatMessageItem({
             <View style={styles.productProposalTopRow}>
               <View style={styles.productProposalChip}>
                 <Text style={styles.productProposalChipText}>
-                  {action.type === 'propose_habit' ? 'Hábito' : 'Tarea'}
+                  {action.type === 'propose_habit'
+                    ? TEXTS.PRODUCT_PROPOSAL_TYPE_HABIT
+                    : TEXTS.PRODUCT_PROPOSAL_TYPE_TASK}
                 </Text>
               </View>
-              <Text style={styles.productProposalHint}>Editar rápido</Text>
+              <Text style={styles.productProposalHint}>{TEXTS.PRODUCT_PROPOSAL_HINT_EDIT}</Text>
             </View>
             <Text style={styles.productProposalLabel}>
-              {action.type === 'propose_habit' ? 'Sugerencia de hábito' : 'Sugerencia de tarea'}
+              {action.type === 'propose_habit'
+                ? TEXTS.PRODUCT_PROPOSAL_LABEL_HABIT
+                : TEXTS.PRODUCT_PROPOSAL_LABEL_TASK}
             </Text>
             {action.rationaleShort ? (
-              <Text style={styles.productProposalWhy}>Contexto: {action.rationaleShort}</Text>
+              <Text style={styles.productProposalWhy}>
+                {TEXTS.PRODUCT_PROPOSAL_CONTEXT_PREFIX} {action.rationaleShort}
+              </Text>
             ) : null}
             {action.draft?.title ? (
               <Text style={styles.productProposalTitle} numberOfLines={2}>
@@ -425,7 +432,7 @@ function ChatMessageItem({
             <View style={styles.proposalDivider} />
             <TextInput
               style={styles.proposalEditInput}
-              placeholder="Título (verbo + objeto + contexto)"
+              placeholder={TEXTS.PRODUCT_PROPOSAL_TITLE_PLACEHOLDER}
               placeholderTextColor="rgba(92, 90, 120, 0.62)"
               value={proposalDraftEdits[action.id]?.title ?? action.draft?.title ?? ''}
               onChangeText={(value) =>
@@ -440,7 +447,7 @@ function ChatMessageItem({
             />
             <TextInput
               style={styles.proposalEditInput}
-              placeholder="Fecha/hora opcional (YYYY-MM-DD HH:mm)"
+              placeholder={TEXTS.PRODUCT_PROPOSAL_WHEN_PLACEHOLDER}
               placeholderTextColor="rgba(92, 90, 120, 0.62)"
               value={proposalDraftEdits[action.id]?.when ?? ''}
               onChangeText={(value) =>
@@ -481,14 +488,18 @@ function ChatMessageItem({
                 }}
                 accessibilityRole="button"
               >
-                <Text style={styles.proposalPrimaryBtnText}>Crear</Text>
+                <Text style={styles.proposalPrimaryBtnText}>
+                  {TEXTS.PRODUCT_PROPOSAL_CREATE}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.proposalGhostBtn}
                 onPress={() => onProductProposalReject?.(message)}
                 accessibilityRole="button"
               >
-                <Text style={styles.proposalGhostBtnText}>No aplica</Text>
+                <Text style={styles.proposalGhostBtnText}>
+                  {TEXTS.PRODUCT_PROPOSAL_DISMISS}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -17,7 +17,11 @@ import { EmergencyAlertsTabError } from './emergencyAlertsHistory/EmergencyAlert
 import { StatsTab } from './emergencyAlertsHistory/StatsTab';
 import { PatternsTab } from './emergencyAlertsHistory/PatternsTab';
 import { useEmergencyAlertsHistoryStyles } from './emergencyAlertsHistory/emergencyAlertsHistoryStyles';
-import { TEXTS, TABS, FLATLIST } from './emergencyAlertsHistory/emergencyAlertsHistoryConstants';
+import {
+  TABS,
+  FLATLIST,
+  useEmergencyAlertsHistoryTexts,
+} from './emergencyAlertsHistory/emergencyAlertsHistoryConstants';
 import { crisisSafeGoBack, crisisSafeNavigate } from './crisisDashboard/crisisDashboardNavigate';
 import {
   countPatternPeriodAlerts,
@@ -29,6 +33,7 @@ const EmergencyAlertsHistoryScreen = () => {
   const navigation = useNavigation();
   const { colors, statusBarStyle } = useTheme();
   const styles = useEmergencyAlertsHistoryStyles();
+  const TEXTS = useEmergencyAlertsHistoryTexts();
   const {
     activeTab,
     setActiveTab,

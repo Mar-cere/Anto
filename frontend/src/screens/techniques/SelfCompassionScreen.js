@@ -25,12 +25,48 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
 import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 import { SPACING } from '../../constants/ui';
 
 const BACKGROUND_IMAGE = require('../../images/back.png');
 const BACKGROUND_OPACITY = 0.1;
+const DEFAULT_TEXTS = {
+  TITLE: 'Ejercicio de Autocompasion',
+  COMPLETED_TITLE: 'Ejercicio completado',
+  COMPLETED_BODY:
+    'Has practicado la autocompasion. Recuerda ser amable contigo mismo.',
+  BACK: 'Atras',
+  NEXT: 'Siguiente',
+  COMPLETE: 'Completar',
+  STEP_1_TITLE: 'Reconocimiento',
+  STEP_1_DESC:
+    'Reconoce que estas pasando por un momento dificil. Es importante ser consciente de tus emociones sin juzgarlas.',
+  STEP_1_PLACEHOLDER: 'Describe lo que estas sintiendo en este momento...',
+  STEP_1_TIPS:
+    'No necesitas tener todas las respuestas. Solo se honesto contigo mismo.',
+  STEP_2_TITLE: 'Humanidad Comun',
+  STEP_2_DESC:
+    'Recuerda que todos pasamos por momentos dificiles. No estas solo en esto. El sufrimiento es parte de la experiencia humana.',
+  STEP_2_PLACEHOLDER:
+    'Escribe sobre como otros tambien pasan por momentos similares...',
+  STEP_2_TIPS:
+    'Piensa en personas que admiras y como tambien enfrentan desafios.',
+  STEP_3_TITLE: 'Amabilidad',
+  STEP_3_DESC:
+    'Trata te con la misma amabilidad, cuidado y comprension que tratarias a un buen amigo o ser querido.',
+  STEP_3_PLACEHOLDER:
+    '¿Que le dirias a un amigo querido que esta pasando por esto?',
+  STEP_3_TIPS:
+    'Imagina que estas hablando con alguien que realmente te importa.',
+  STEP_4_TITLE: 'Reflexion y Compromiso',
+  STEP_4_DESC:
+    'Reflexiona sobre lo que has escrito y como puedes aplicar la autocompasion en tu vida diaria.',
+  STEP_4_PLACEHOLDER:
+    'Reflexiona sobre lo que has aprendido y como puedes ser mas compasivo contigo mismo...',
+  STEP_4_TIPS: 'La autocompasion es una practica continua, no un destino.',
+};
 
 function createStyles(colors, t) {
   return StyleSheet.create({
@@ -188,6 +224,65 @@ function createStyles(colors, t) {
 }
 
 const SelfCompassionScreen = () => {
+  const translated = useSectionTranslations('TECHNIQUES');
+  const TEXTS = useMemo(
+    () => ({
+      TITLE: translated?.SELF_COMPASSION_TITLE || DEFAULT_TEXTS.TITLE,
+      COMPLETED_TITLE:
+        translated?.SELF_COMPASSION_COMPLETED_TITLE || DEFAULT_TEXTS.COMPLETED_TITLE,
+      COMPLETED_BODY:
+        translated?.SELF_COMPASSION_COMPLETED_BODY ||
+        DEFAULT_TEXTS.COMPLETED_BODY,
+      BACK: translated?.SELF_COMPASSION_BACK || DEFAULT_TEXTS.BACK,
+      NEXT: translated?.SELF_COMPASSION_NEXT || DEFAULT_TEXTS.NEXT,
+      COMPLETE: translated?.SELF_COMPASSION_COMPLETE || DEFAULT_TEXTS.COMPLETE,
+      STEP_1_TITLE:
+        translated?.SELF_COMPASSION_STEP_1_TITLE || DEFAULT_TEXTS.STEP_1_TITLE,
+      STEP_1_DESC:
+        translated?.SELF_COMPASSION_STEP_1_DESC ||
+        DEFAULT_TEXTS.STEP_1_DESC,
+      STEP_1_PLACEHOLDER:
+        translated?.SELF_COMPASSION_STEP_1_PLACEHOLDER ||
+        DEFAULT_TEXTS.STEP_1_PLACEHOLDER,
+      STEP_1_TIPS:
+        translated?.SELF_COMPASSION_STEP_1_TIPS ||
+        DEFAULT_TEXTS.STEP_1_TIPS,
+      STEP_2_TITLE:
+        translated?.SELF_COMPASSION_STEP_2_TITLE || DEFAULT_TEXTS.STEP_2_TITLE,
+      STEP_2_DESC:
+        translated?.SELF_COMPASSION_STEP_2_DESC ||
+        DEFAULT_TEXTS.STEP_2_DESC,
+      STEP_2_PLACEHOLDER:
+        translated?.SELF_COMPASSION_STEP_2_PLACEHOLDER ||
+        DEFAULT_TEXTS.STEP_2_PLACEHOLDER,
+      STEP_2_TIPS:
+        translated?.SELF_COMPASSION_STEP_2_TIPS ||
+        DEFAULT_TEXTS.STEP_2_TIPS,
+      STEP_3_TITLE:
+        translated?.SELF_COMPASSION_STEP_3_TITLE || DEFAULT_TEXTS.STEP_3_TITLE,
+      STEP_3_DESC:
+        translated?.SELF_COMPASSION_STEP_3_DESC ||
+        DEFAULT_TEXTS.STEP_3_DESC,
+      STEP_3_PLACEHOLDER:
+        translated?.SELF_COMPASSION_STEP_3_PLACEHOLDER ||
+        DEFAULT_TEXTS.STEP_3_PLACEHOLDER,
+      STEP_3_TIPS:
+        translated?.SELF_COMPASSION_STEP_3_TIPS ||
+        DEFAULT_TEXTS.STEP_3_TIPS,
+      STEP_4_TITLE:
+        translated?.SELF_COMPASSION_STEP_4_TITLE || DEFAULT_TEXTS.STEP_4_TITLE,
+      STEP_4_DESC:
+        translated?.SELF_COMPASSION_STEP_4_DESC ||
+        DEFAULT_TEXTS.STEP_4_DESC,
+      STEP_4_PLACEHOLDER:
+        translated?.SELF_COMPASSION_STEP_4_PLACEHOLDER ||
+        DEFAULT_TEXTS.STEP_4_PLACEHOLDER,
+      STEP_4_TIPS:
+        translated?.SELF_COMPASSION_STEP_4_TIPS ||
+        DEFAULT_TEXTS.STEP_4_TIPS,
+    }),
+    [translated]
+  );
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { colors, resolvedScheme, statusBarStyle } = useTheme();
@@ -207,47 +302,42 @@ const SelfCompassionScreen = () => {
     () => [
       {
         id: 1,
-        title: 'Reconocimiento',
-        description:
-          'Reconoce que estás pasando por un momento difícil. Es importante ser consciente de tus emociones sin juzgarlas.',
-        placeholder: 'Describe lo que estás sintiendo en este momento...',
+        title: TEXTS.STEP_1_TITLE,
+        description: TEXTS.STEP_1_DESC,
+        placeholder: TEXTS.STEP_1_PLACEHOLDER,
         icon: 'heart',
         color: colors.primary,
-        tips: 'No necesitas tener todas las respuestas. Solo sé honesto contigo mismo.',
+        tips: TEXTS.STEP_1_TIPS,
       },
       {
         id: 2,
-        title: 'Humanidad Común',
-        description:
-          'Recuerda que todos pasamos por momentos difíciles. No estás solo en esto. El sufrimiento es parte de la experiencia humana.',
-        placeholder: 'Escribe sobre cómo otros también pasan por momentos similares...',
+        title: TEXTS.STEP_2_TITLE,
+        description: TEXTS.STEP_2_DESC,
+        placeholder: TEXTS.STEP_2_PLACEHOLDER,
         icon: 'account-group',
         color: colors.textSecondary,
-        tips: 'Piensa en personas que admiras y cómo también enfrentan desafíos.',
+        tips: TEXTS.STEP_2_TIPS,
       },
       {
         id: 3,
-        title: 'Amabilidad',
-        description:
-          'Trátate con la misma amabilidad, cuidado y comprensión que tratarías a un buen amigo o ser querido.',
-        placeholder: '¿Qué le dirías a un amigo querido que está pasando por esto?',
+        title: TEXTS.STEP_3_TITLE,
+        description: TEXTS.STEP_3_DESC,
+        placeholder: TEXTS.STEP_3_PLACEHOLDER,
         icon: 'hand-heart',
         color: colors.primary,
-        tips: 'Imagina que estás hablando con alguien que realmente te importa.',
+        tips: TEXTS.STEP_3_TIPS,
       },
       {
         id: 4,
-        title: 'Reflexión y Compromiso',
-        description:
-          'Reflexiona sobre lo que has escrito y cómo puedes aplicar la autocompasión en tu vida diaria.',
-        placeholder:
-          'Reflexiona sobre lo que has aprendido y cómo puedes ser más compasivo contigo mismo...',
+        title: TEXTS.STEP_4_TITLE,
+        description: TEXTS.STEP_4_DESC,
+        placeholder: TEXTS.STEP_4_PLACEHOLDER,
         icon: 'lightbulb-on',
         color: colors.primary,
-        tips: 'La autocompasión es una práctica continua, no un destino.',
+        tips: TEXTS.STEP_4_TIPS,
       },
     ],
-    [colors],
+    [colors, TEXTS],
   );
 
   const step = steps[currentStep];
@@ -266,7 +356,7 @@ const SelfCompassionScreen = () => {
         useNativeDriver: true,
       }),
     ]).start();
-  }, [currentStep]);
+  }, [currentStep, fadeAnim, slideAnim]);
 
   const handleNext = () => {
     if (currentResponse.trim()) {
@@ -323,10 +413,8 @@ const SelfCompassionScreen = () => {
               size={80}
               color={colors.primary}
             />
-            <Text style={styles.completedTitle}>Ejercicio completado</Text>
-            <Text style={styles.completedText}>
-              Has practicado la autocompasión. Recuerda ser amable contigo mismo.
-            </Text>
+            <Text style={styles.completedTitle}>{TEXTS.COMPLETED_TITLE}</Text>
+            <Text style={styles.completedText}>{TEXTS.COMPLETED_BODY}</Text>
           </View>
         </ImageBackground>
       </SafeAreaView>
@@ -343,7 +431,7 @@ const SelfCompassionScreen = () => {
       >
         <ParticleBackground />
         <Header
-          title="Ejercicio de Autocompasión"
+          title={TEXTS.TITLE}
           showBackButton
           onBackPress={() => navigation.goBack()}
         />
@@ -436,7 +524,7 @@ const SelfCompassionScreen = () => {
                       size={20}
                       color={colors.primary}
                     />
-                    <Text style={techniqueScreenStyles.secondaryButtonText}>Atrás</Text>
+                    <Text style={techniqueScreenStyles.secondaryButtonText}>{TEXTS.BACK}</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
@@ -450,7 +538,7 @@ const SelfCompassionScreen = () => {
                   disabled={!currentResponse.trim()}
                 >
                   <Text style={techniqueScreenStyles.navButtonText}>
-                    {isLastStep ? 'Completar' : 'Siguiente'}
+                    {isLastStep ? TEXTS.COMPLETE : TEXTS.NEXT}
                   </Text>
                   {!isLastStep && (
                     <MaterialCommunityIcons

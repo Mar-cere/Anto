@@ -16,15 +16,29 @@ import {
   View
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { getFocusTheme } from '../styles/focusCardTheme';
 import { SPACING } from '../constants/ui';
 
 const CARD_MARGIN_BOTTOM = 8;
 const ICON_SIZE = 20;
 const ICON_MARGIN_RIGHT = 10;
+const DEFAULT_TEXTS = {
+  PREVIEW_HINT: 'Toca para abrir esta acción',
+  OPEN_BUTTON: 'Abrir',
+};
 
 const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
   const { colors, resolvedScheme } = useTheme();
+  const translated = useSectionTranslations('DASH');
+  const TEXTS = useMemo(
+    () => ({
+      PREVIEW_HINT:
+        translated?.ACTION_SUGGESTION_PREVIEW_HINT || DEFAULT_TEXTS.PREVIEW_HINT,
+      OPEN_BUTTON: translated?.ACTION_SUGGESTION_OPEN || DEFAULT_TEXTS.OPEN_BUTTON,
+    }),
+    [translated],
+  );
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
   const styles = useMemo(
     () =>
@@ -147,7 +161,7 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [fadeAnim, scaleAnim]);
 
   // Pan responder para gesto de deslizar
   const panResponder = useRef(
@@ -276,7 +290,7 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
                 </Text>
               )}
               <Text style={styles.previewHint}>
-                Toca para abrir esta acción
+                {TEXTS.PREVIEW_HINT}
               </Text>
               <TouchableOpacity
                 style={styles.previewButton}
@@ -285,7 +299,7 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
                   handlePress();
                 }}
               >
-                <Text style={styles.previewButtonText}>Abrir</Text>
+                <Text style={styles.previewButtonText}>{TEXTS.OPEN_BUTTON}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.previewCloseButton}

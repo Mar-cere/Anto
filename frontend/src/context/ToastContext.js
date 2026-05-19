@@ -2,7 +2,7 @@
  * Contexto de Toast / Snackbar
  *
  * Proporciona un sistema global de feedback no intrusivo.
- * Uso: const { showToast } = useToast(); showToast({ message: 'Guardado', type: 'success' });
+ * Uso: const { showToast } = useToast(); showToast({ message: texts.SUCCESS, type: 'success' });
  *
  * @author AntoApp Team
  */

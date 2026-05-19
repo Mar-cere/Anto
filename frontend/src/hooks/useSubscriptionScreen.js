@@ -5,17 +5,88 @@
 
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, Platform } from 'react-native';
 import paymentService from '../services/paymentService';
 import storeKitService from '../services/storeKitService';
-import { getApiErrorMessage } from '../utils/apiErrorHandler';
-import { HARDCODED_PLANS, TEXTS } from '../screens/subscription/subscriptionScreenConstants';
+import {
+  HARDCODED_PLANS,
+  useSubscriptionTexts,
+} from '../screens/subscription/subscriptionScreenConstants';
 import { API_URL } from '../config/api';
 import { useToast } from '../context/ToastContext';
 import { subscriptionLooksCurrentlyUsable } from '../utils/subscriptionAccess';
 
+function extractErrorCode(errorLike) {
+  const directErrorCode = String(errorLike?.errorCode || '').trim();
+  if (directErrorCode) return directErrorCode.toUpperCase();
+
+  const backendCode = String(errorLike?.response?.data?.code || '').trim();
+  if (backendCode) return backendCode.toUpperCase();
+
+  const directCode = String(errorLike?.code || '').trim();
+  if (directCode) return directCode.toUpperCase();
+
+  return '';
+}
+
+function resolveCheckoutErrorMessageByCode(errorLike, texts) {
+  const code = extractErrorCode(errorLike);
+  if (code === 'NETWORK_ERROR') {
+    return texts.PAYMENT_ERROR_CONNECTION || texts.CHECKOUT_SESSION_ERROR;
+  }
+  if (code === 'TIMEOUT' || code === 'ETIMEDOUT') {
+    return texts.PAYMENT_ERROR_TIMEOUT || texts.CHECKOUT_SESSION_ERROR;
+  }
+  return texts.CHECKOUT_SESSION_ERROR;
+}
+
+function resolveCancelErrorMessageByCode(errorLike, texts) {
+  const code = extractErrorCode(errorLike);
+  if (code === 'NETWORK_ERROR') {
+    return texts.PAYMENT_ERROR_CONNECTION || texts.CANCEL_ERROR;
+  }
+  if (code === 'TIMEOUT' || code === 'ETIMEDOUT') {
+    return texts.PAYMENT_ERROR_TIMEOUT || texts.CANCEL_ERROR;
+  }
+  return texts.CANCEL_ERROR;
+}
+
+function resolvePurchaseErrorMessageByCode(errorLike, texts, fallbackMessage) {
+  const code = extractErrorCode(errorLike);
+  switch (code) {
+    case 'VALIDATION_NETWORK':
+      return texts.SUBSCRIPTION_VALIDATION_NETWORK;
+    case 'VALIDATION_ERROR':
+      return texts.SUBSCRIPTION_VALIDATION_ERROR;
+    case 'PRODUCT_UNAVAILABLE':
+      return texts.SUBSCRIPTION_PRODUCT_UNAVAILABLE;
+    case 'APPSTORE_UNAVAILABLE':
+      return texts.SUBSCRIPTION_APPSTORE_UNAVAILABLE;
+    case 'TECHNICAL_ERROR':
+      return texts.SUBSCRIPTION_TECH_ERROR;
+    default:
+      return fallbackMessage;
+  }
+}
+
+function localizePlanName(planId, texts, fallbackName) {
+  switch (String(planId || '').toLowerCase()) {
+    case 'monthly':
+      return texts.PLAN_NAME_MONTHLY || fallbackName;
+    case 'quarterly':
+      return texts.PLAN_NAME_QUARTERLY || fallbackName;
+    case 'semestral':
+      return texts.PLAN_NAME_SEMESTRAL || fallbackName;
+    case 'yearly':
+      return texts.PLAN_NAME_YEARLY || fallbackName;
+    default:
+      return fallbackName;
+  }
+}
+
 export function useSubscriptionScreen() {
+  const TEXTS = useSubscriptionTexts();
   const navigation = useNavigation();
   const { showToast } = useToast();
   const [plans, setPlans] = useState([]);
@@ -36,7 +107,12 @@ export function useSubscriptionScreen() {
     try {
       setError(null);
       setLoading(true);
-      setPlans(HARDCODED_PLANS);
+      setPlans(
+        HARDCODED_PLANS.map((plan) => ({
+          ...plan,
+          name: localizePlanName(plan.id, TEXTS, plan.name),
+        })),
+      );
       try {
         const statusResponse = await paymentService.getSubscriptionStatus();
         if (statusResponse.success) {
@@ -44,15 +120,15 @@ export function useSubscriptionScreen() {
         } else {
           setSubscriptionStatus(null);
         }
-      } catch (statusError) {
+      } catch {
         setSubscriptionStatus(null);
       }
-    } catch (err) {
+    } catch {
       setError(TEXTS.ERROR);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [TEXTS]);
 
   useEffect(() => {
     loadData();
@@ -104,7 +180,7 @@ export function useSubscriptionScreen() {
             setPendingPaymentVerification(false);
             await loadData();
             showToast({
-              message: 'Tu suscripción fue validada y activada.',
+                message: TEXTS.PAYMENT_VERIFIED_ACTIVE,
               type: 'success',
             });
             return;
@@ -116,7 +192,7 @@ export function useSubscriptionScreen() {
         }
       }
       showToast({
-        message: 'Detectamos el retorno de pago. Estamos validando tu suscripción; revisa de nuevo en unos segundos.',
+        message: TEXTS.PAYMENT_RETURN_VALIDATING,
         type: 'default',
         duration: 4500,
       });
@@ -134,7 +210,7 @@ export function useSubscriptionScreen() {
         setShowPaymentWebView(false);
         setPaymentUrl(null);
         showToast({
-          message: 'Cancelaste el pago. Puedes intentarlo nuevamente cuando quieras.',
+          message: TEXTS.PAYMENT_CANCELLED_RETRY,
           type: 'info',
         });
       }
@@ -154,7 +230,7 @@ export function useSubscriptionScreen() {
       cancelled = true;
       subscription.remove();
     };
-  }, [loadData, showToast]);
+  }, [loadData, showToast, TEXTS]);
 
   const handleSubscribe = useCallback(
     async (planIdOrPlan) => {
@@ -164,15 +240,18 @@ export function useSubscriptionScreen() {
           : planIdOrPlan;
       if (subscribing) return;
       if (!plan || !plan.id) {
-        showToast({ message: 'Plan no válido. Vuelve a elegir un plan.', type: 'warning' });
+        showToast({ message: TEXTS.INVALID_PLAN, type: 'warning' });
         return;
       }
       if (subscriptionStatus?.hasSubscription && subscriptionLooksCurrentlyUsable(subscriptionStatus)) {
-        const currentPlan = subscriptionStatus.plan || 'desconocido';
+        const currentPlan = subscriptionStatus.plan || TEXTS.PLAN_UNKNOWN;
         const daysRemaining = subscriptionStatus.daysRemaining;
         const message = daysRemaining
-          ? `Ya tienes ${currentPlan} activa (${daysRemaining} día(s)). Puedes elegir otro plan o volver atrás.`
-          : `Ya tienes ${currentPlan} activa. Puedes elegir otro plan si lo necesitas.`;
+          ? TEXTS.ALREADY_ACTIVE_WITH_DAYS.replace('{plan}', String(currentPlan)).replace(
+              '{days}',
+              String(daysRemaining),
+            )
+          : TEXTS.ALREADY_ACTIVE_NO_DAYS.replace('{plan}', String(currentPlan));
         showToast({ message, type: 'info', duration: 4500 });
       }
       try {
@@ -185,8 +264,8 @@ export function useSubscriptionScreen() {
             if (!initResult.success) {
               setSubscribing(false);
               setSelectedPlan(null);
-              const msg = initResult.error || 'No se pudo conectar con App Store.';
-              const hint = 'Usa un build nativo (no Expo Go) e inicia sesión con una cuenta Sandbox en Ajustes > App Store.';
+              const msg = TEXTS.APPSTORE_CONNECT_ERROR;
+              const hint = TEXTS.APPSTORE_BUILD_HINT;
               showToast({ message: `${msg} ${hint}`, type: 'error', duration: 6000 });
               return;
             }
@@ -197,7 +276,7 @@ export function useSubscriptionScreen() {
                 setSubscribing(false);
                 setSelectedPlan(null);
                 showToast({
-                  message: loadResult.error || 'No se pudieron cargar los productos de la tienda.',
+                  message: TEXTS.STORE_PRODUCTS_LOAD_ERROR,
                   type: 'error',
                 });
                 return;
@@ -205,7 +284,7 @@ export function useSubscriptionScreen() {
             }
             const purchaseResult = await paymentService.purchaseWithStoreKit(plan.id);
             if (!purchaseResult) {
-              throw new Error('No se recibió respuesta de la compra');
+              throw new Error(TEXTS.SUBSCRIPTION_UNEXPECTED_ERROR);
             }
             if (purchaseResult.success) {
               await new Promise((r) => setTimeout(r, 1500));
@@ -220,7 +299,7 @@ export function useSubscriptionScreen() {
                 } catch (_) {}
                 retries--;
               }
-              showToast({ message: '¡Suscripción activada correctamente!', type: 'success' });
+              showToast({ message: TEXTS.SUBSCRIPTION_ACTIVATED, type: 'success' });
               await loadData();
               navigation.goBack();
             } else if (!purchaseResult.cancelled) {
@@ -231,7 +310,7 @@ export function useSubscriptionScreen() {
                 const newStatus = await paymentService.getSubscriptionStatus();
                 if (subscriptionLooksCurrentlyUsable(newStatus)) {
                   showToast({
-                    message: 'Tu suscripción ya estaba activa. Estado actualizado.',
+                    message: TEXTS.SUBSCRIPTION_ALREADY_ACTIVE,
                     type: 'default',
                     duration: 4000,
                   });
@@ -243,26 +322,21 @@ export function useSubscriptionScreen() {
                 // Si falla la consulta de estado, seguimos con el flujo de error normal
               }
 
-              let errorMessage = purchaseResult.error || 'Ocurrió un error al procesar tu suscripción';
-              if (purchaseResult.validationError) {
-                if (errorMessage.includes('conectar') || errorMessage.includes('servidor') || errorMessage.includes('Network')) {
-                  errorMessage = 'No se pudo conectar con el servidor para validar tu compra. Verifica tu conexión e intenta de nuevo.';
-                } else if (errorMessage.includes('recibo') || errorMessage.includes('validar')) {
-                  errorMessage = 'Hubo un problema al validar tu compra. Intenta de nuevo o contacta soporte.';
-                }
-              } else if (errorMessage.includes('producto') || errorMessage.includes('no está disponible')) {
-                errorMessage = 'El producto no está disponible en este momento. Intenta más tarde.';
-              } else if (errorMessage.includes('App Store')) {
-                errorMessage = 'No se pudo conectar con App Store. Verifica tu conexión e intenta de nuevo.';
-              } else if (errorMessage.includes('undefined is not a function')) {
-                errorMessage = 'Error técnico. Reinicia la app e intenta de nuevo.';
-              }
+              const errorMessage = resolvePurchaseErrorMessageByCode(
+                purchaseResult,
+                TEXTS,
+                TEXTS.SUBSCRIPTION_GENERIC_ERROR,
+              );
               if (purchaseResult.purchase) setTimeout(() => loadData(), 2000);
               showToast({ message: errorMessage, type: 'error', duration: 5000 });
             }
           } catch (error) {
             showToast({
-              message: error?.message || 'Ocurrió un error inesperado al suscribirte.',
+              message: resolvePurchaseErrorMessageByCode(
+                error,
+                TEXTS,
+                TEXTS.SUBSCRIPTION_UNEXPECTED_ERROR,
+              ),
               type: 'error',
             });
           } finally {
@@ -273,8 +347,7 @@ export function useSubscriptionScreen() {
         }
         if (Platform.OS === 'ios' && !storeKitService.isAvailable()) {
           showToast({
-            message:
-              'En iOS las suscripciones se pagan con App Store. Esta instalación no tiene compras in-app (por ejemplo Expo Go o un binario sin IAP). Instala desde TestFlight o recompila con expo-in-app-purchases. En Android se usa Mercado Pago.',
+            message: TEXTS.IOS_NO_IAP_BUILD,
             type: 'error',
             duration: 10000,
           });
@@ -283,13 +356,13 @@ export function useSubscriptionScreen() {
         const checkoutResponse = await paymentService.createCheckoutSession(plan.id, PAYMENT_SUCCESS_RETURN_URL, null);
         if (!checkoutResponse?.success) {
           showToast({
-            message: checkoutResponse?.error || 'No se pudo crear la sesión de pago.',
+            message: resolveCheckoutErrorMessageByCode(checkoutResponse, TEXTS),
             type: 'error',
           });
           return;
         }
         if (!checkoutResponse.url) {
-          showToast({ message: 'No se recibió una URL válida para el pago.', type: 'error' });
+          showToast({ message: TEXTS.CHECKOUT_URL_INVALID, type: 'error' });
           return;
         }
         const canOpen = await Linking.canOpenURL(checkoutResponse.url);
@@ -298,10 +371,10 @@ export function useSubscriptionScreen() {
             await Linking.openURL(checkoutResponse.url);
             setPendingPaymentVerification(true);
             showToast({
-              message: 'Se abrió Mercado Pago en tu navegador. Cuando termines, vuelve a la app.',
+              message: TEXTS.MERCADOPAGO_OPENED_BROWSER,
               type: 'info',
             });
-          } catch (e) {
+          } catch {
             setPaymentUrl(checkoutResponse.url);
             setShowPaymentWebView(true);
             setPendingPaymentVerification(true);
@@ -313,7 +386,7 @@ export function useSubscriptionScreen() {
         }
       } catch (err) {
         showToast({
-          message: err.message || 'Ocurrió un error al procesar tu suscripción.',
+          message: resolveCheckoutErrorMessageByCode(err, TEXTS),
           type: 'error',
         });
       } finally {
@@ -321,7 +394,16 @@ export function useSubscriptionScreen() {
         setSelectedPlan(null);
       }
     },
-    [subscribing, loadData, plans, subscriptionStatus, navigation, showToast]
+    [
+      subscribing,
+      loadData,
+      plans,
+      subscriptionStatus,
+      navigation,
+      showToast,
+      TEXTS,
+      PAYMENT_SUCCESS_RETURN_URL,
+    ]
   );
 
   const getCheaperPlans = useCallback((currentPlanId) => {
@@ -336,11 +418,11 @@ export function useSubscriptionScreen() {
   const confirmCancelSubscription = useCallback(async () => {
     Alert.alert(
       TEXTS.CANCEL_SUBSCRIPTION,
-      TEXTS.CANCEL_CONFIRM + '\n\nTu suscripción seguirá activa hasta el final del período actual.',
+      TEXTS.CANCEL_CONFIRM + TEXTS.CANCEL_CONFIRM_SUFFIX,
       [
-        { text: 'No', style: 'cancel' },
+        { text: TEXTS.CANCEL_NO, style: 'cancel' },
         {
-          text: 'Sí, cancelar',
+          text: TEXTS.CANCEL_YES,
           style: 'destructive',
           onPress: async () => {
             try {
@@ -348,15 +430,21 @@ export function useSubscriptionScreen() {
               const response = await paymentService.cancelSubscription(false);
               if (response.success) {
                 showToast({
-                  message: 'Suscripción cancelada. Seguirás teniendo acceso hasta el final del período actual.',
+                  message: TEXTS.CANCELLED_PERIOD_END,
                   type: 'success',
                 });
                 await loadData();
               } else {
-                showToast({ message: response.error || TEXTS.CANCEL_ERROR, type: 'error' });
+                showToast({
+                  message: resolveCancelErrorMessageByCode(response, TEXTS),
+                  type: 'error',
+                });
               }
             } catch (err) {
-              showToast({ message: getApiErrorMessage(err) || TEXTS.CANCEL_ERROR, type: 'error' });
+              showToast({
+                message: resolveCancelErrorMessageByCode(err, TEXTS),
+                type: 'error',
+              });
             } finally {
               setSubscribing(false);
             }
@@ -364,7 +452,7 @@ export function useSubscriptionScreen() {
         },
       ]
     );
-  }, [loadData, showToast]);
+  }, [loadData, showToast, TEXTS]);
 
   const handleCancelSubscription = useCallback(() => {
     const currentPlanId = subscriptionStatus?.plan;
@@ -372,36 +460,48 @@ export function useSubscriptionScreen() {
     if (cheaperPlans.length > 0) {
       const text = cheaperPlans.map((p) => `• ${p.name} - ${p.formattedAmount}`).join('\n');
       Alert.alert(
-        '¿Cambiar a un plan más económico?',
-        `Antes de cancelar, ¿te gustaría cambiar a uno de estos planes?\n\n${text}\n\nO puedes cancelar completamente.`,
+        TEXTS.CHEAPER_PLAN_TITLE,
+        `${TEXTS.CHEAPER_PLAN_MESSAGE_PREFIX}\n\n${text}\n\n${TEXTS.CHEAPER_PLAN_MESSAGE_SUFFIX}`,
         [
           {
-            text: 'Ver planes más baratos',
+            text: TEXTS.CHEAPER_PLAN_VIEW,
             onPress: () => {
               const options = cheaperPlans.map((p) => ({
                 text: `${p.name} - ${p.formattedAmount}`,
                 onPress: () => handleSubscribe(p.id),
               }));
               Alert.alert(
-                'Planes más económicos',
-                'Selecciona el plan:',
-                [...options, { text: 'Cancelar suscripción', style: 'destructive', onPress: confirmCancelSubscription }, { text: 'Volver', style: 'cancel' }]
+                TEXTS.CHEAPER_PLAN_PICK_TITLE,
+                TEXTS.CHEAPER_PLAN_PICK_MESSAGE,
+                [
+                  ...options,
+                  {
+                    text: TEXTS.CANCEL_SUBSCRIPTION_ACTION,
+                    style: 'destructive',
+                    onPress: confirmCancelSubscription,
+                  },
+                  { text: TEXTS.BACK, style: 'cancel' },
+                ]
               );
             },
           },
-          { text: 'Cancelar suscripción', style: 'destructive', onPress: confirmCancelSubscription },
-          { text: 'Volver', style: 'cancel' },
+          {
+            text: TEXTS.CANCEL_SUBSCRIPTION_ACTION,
+            style: 'destructive',
+            onPress: confirmCancelSubscription,
+          },
+          { text: TEXTS.BACK, style: 'cancel' },
         ]
       );
     } else {
       confirmCancelSubscription();
     }
-  }, [subscriptionStatus, getCheaperPlans, handleSubscribe, confirmCancelSubscription]);
+  }, [subscriptionStatus, getCheaperPlans, handleSubscribe, confirmCancelSubscription, TEXTS]);
 
   const handleRestorePurchases = useCallback(async () => {
     if (Platform.OS !== 'ios' || !storeKitService.isAvailable()) {
       showToast({
-        message: 'La restauración de compras solo está disponible en iOS con la app instalada desde la tienda.',
+        message: TEXTS.RESTORE_IOS_ONLY,
         type: 'info',
         duration: 4500,
       });
@@ -414,57 +514,65 @@ export function useSubscriptionScreen() {
       if (result.success) {
         if (result.purchases?.length > 0) {
           showToast({
-            message: `Se restauraron ${result.purchases.length} compra(s).`,
+            message: TEXTS.RESTORE_SUCCESS_COUNT.replace(
+              '{count}',
+              String(result.purchases.length),
+            ),
             type: 'success',
           });
           await loadData();
         } else {
           showToast({
-            message: 'No se encontraron compras de esta cuenta para restaurar.',
+            message: TEXTS.RESTORE_NONE,
             type: 'default',
             duration: 4000,
           });
         }
       } else {
-        showToast({ message: result.error || 'No se pudieron restaurar las compras.', type: 'error' });
+        const restoreErrorCode = extractErrorCode(result);
+        if (restoreErrorCode === 'RESTORE_CANCELLED') {
+          showToast({ message: TEXTS.RESTORE_CANCELLED, type: 'info' });
+        } else {
+          showToast({ message: TEXTS.RESTORE_ERROR, type: 'error' });
+        }
       }
-    } catch (err) {
-      showToast({ message: 'Ocurrió un error al restaurar las compras.', type: 'error' });
+    } catch {
+      showToast({ message: TEXTS.RESTORE_GENERIC_ERROR, type: 'error' });
     } finally {
       setSubscribing(false);
     }
-  }, [loadData, showToast]);
+  }, [loadData, showToast, TEXTS]);
 
   const handlePaymentSuccess = useCallback(() => {
     setShowPaymentWebView(false);
     setPaymentUrl(null);
     setPendingPaymentVerification(false);
     showToast({
-      message: 'Tu suscripción ha sido activada correctamente.',
+      message: TEXTS.PAYMENT_SUCCESS_TOAST,
       type: 'success',
     });
     loadData();
-  }, [loadData, showToast]);
+  }, [loadData, showToast, TEXTS]);
 
   const handlePaymentCancel = useCallback(() => {
     setShowPaymentWebView(false);
     setPaymentUrl(null);
     setPendingPaymentVerification(false);
     showToast({
-      message: 'El pago fue cancelado. Puedes intentar nuevamente cuando lo desees.',
+      message: TEXTS.PAYMENT_CANCEL_TOAST,
       type: 'info',
     });
-  }, [showToast]);
+  }, [showToast, TEXTS]);
 
   const handlePaymentError = useCallback((errorMessage) => {
     setShowPaymentWebView(false);
     setPaymentUrl(null);
     setPendingPaymentVerification(false);
     showToast({
-      message: errorMessage || 'Ocurrió un error durante el proceso de pago.',
+      message: errorMessage || TEXTS.PAYMENT_ERROR_TOAST,
       type: 'error',
     });
-  }, [showToast]);
+  }, [showToast, TEXTS]);
 
   return {
     plans,

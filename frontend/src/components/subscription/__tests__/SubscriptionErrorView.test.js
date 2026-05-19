@@ -4,7 +4,18 @@
  */
 
 jest.mock('../../../styles/globalStyles', () => ({ colors: { error: '#f00', primary: '#0f0', background: '#000' } }));
-jest.mock('../../../screens/subscription/subscriptionScreenConstants', () => ({ TEXTS: { RETRY: 'Reintentar' } }));
+jest.mock('../../../screens/subscription/subscriptionScreenConstants', () => ({
+  useSubscriptionTexts: () => ({ RETRY: 'Reintentar' }),
+}));
+jest.mock('../../../context/ThemeContext', () => ({
+  useTheme: () => ({
+    colors: {
+      error: '#f00',
+      primary: '#0f0',
+      textOnPrimary: '#fff',
+    },
+  }),
+}));
 jest.mock('@expo/vector-icons', () => ({ MaterialCommunityIcons: () => null }));
 
 import React from 'react';

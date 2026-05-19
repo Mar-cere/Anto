@@ -59,7 +59,7 @@ describe('userService', () => {
       try {
         await userService.getCurrentUser();
         expect(global.mockApiClient.get).toHaveBeenCalledWith('/api/users/me');
-      } catch (error) {
+      } catch {
         // Puede fallar si no hay token, pero el método existe
       }
     });

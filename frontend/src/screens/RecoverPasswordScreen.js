@@ -23,13 +23,13 @@ import {
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import ParticleBackground from '../components/ParticleBackground';
-import { handleApiError } from '../config/api';
 import { ROUTES } from '../constants/routes';
 import { userService } from '../services/userService';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 
 // Constantes de textos
-const TEXTS = {
+const DEFAULT_TEXTS = {
   TITLE: 'Recuperar Contraseña',
   SUBTITLE: 'Introduce tu correo electrónico y te enviaremos un código de verificación para recuperar tu contraseña.',
   EMAIL_PLACEHOLDER: 'Correo Electrónico',
@@ -41,6 +41,35 @@ const TEXTS = {
   EMAIL_REQUIRED: 'Por favor, introduce tu correo electrónico',
   EMAIL_INVALID: 'Por favor, introduce un correo electrónico válido',
   ERROR_SEND_CODE: 'Error al enviar el código de recuperación',
+  TOO_MANY_ATTEMPTS: 'Demasiados intentos. Espera un momento y vuelve a intentar.',
+  CONNECTION_ERROR: 'No hay conexión. Verifica tu internet e inténtalo de nuevo.',
+};
+
+const resolveRecoverPasswordErrorMessage = (error, texts) => {
+  const status = error?.response?.status;
+  const rawMessage = String(
+    error?.response?.data?.message ?? error?.message ?? '',
+  ).toLowerCase();
+
+  const isNetworkIssue =
+    !error?.response ||
+    rawMessage.includes('network') ||
+    rawMessage.includes('econnrefused') ||
+    rawMessage.includes('timeout') ||
+    rawMessage.includes('timed out');
+  if (isNetworkIssue) {
+    return texts.CONNECTION_ERROR;
+  }
+
+  if (
+    status === 429 ||
+    rawMessage.includes('too many') ||
+    rawMessage.includes('demasiados intentos')
+  ) {
+    return texts.TOO_MANY_ATTEMPTS;
+  }
+
+  return texts.ERROR_SEND_CODE;
 };
 
 // Constantes de validación
@@ -85,6 +114,11 @@ const TEXT_SHADOW = 'rgba(0, 0, 0, 0.75)';
 const BACKGROUND_IMAGE = require('../images/back.png');
 
 const RecoverPasswordScreen = ({ navigation }) => {
+  const AUTH = useSectionTranslations('AUTH');
+  const TEXTS = useMemo(
+    () => ({ ...DEFAULT_TEXTS, ...(AUTH?.RECOVER_PASSWORD || {}) }),
+    [AUTH],
+  );
   const { colors, globalStyles: gs, statusBarStyle } = useTheme();
 
   const styles = useMemo(
@@ -227,7 +261,7 @@ const RecoverPasswordScreen = ({ navigation }) => {
       // Navegar a la pantalla de verificación de código
       navigation.navigate(VERIFY_CODE_ROUTE, { email: normalizedEmail });
     } catch (error) {
-      setError(handleApiError(error) || TEXTS.ERROR_SEND_CODE);
+      setError(resolveRecoverPasswordErrorMessage(error, TEXTS));
     } finally {
       setIsSubmitting(false);
     }

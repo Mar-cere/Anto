@@ -1,11 +1,12 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { ICON_SIZE, TEXTS } from '../../screens/settings/settingsScreenConstants';
+import { ICON_SIZE, useSettingsTexts } from '../../screens/settings/settingsScreenConstants';
 import { useTheme } from '../../context/ThemeContext';
 import { SPACING } from '../../constants/ui';
 
 export default function SettingsHeader({ onBack }) {
+  const TEXTS = useSettingsTexts();
   const { colors } = useTheme();
   const styles = useMemo(
     () =>

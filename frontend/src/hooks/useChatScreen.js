@@ -6,14 +6,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CommonActions, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Animated, AppState, InteractionManager, Platform, Vibration } from 'react-native';
 import chatService from '../services/chatService';
 import paymentService from '../services/paymentService';
 import websocketService from '../services/websocketService';
 import { useNetworkStatus } from './useNetworkStatus';
 import { ROUTES } from '../constants/routes';
-import { getApiErrorMessage } from '../utils/apiErrorHandler';
 import {
   FADE_ANIMATION_DURATION,
   FADE_ANIMATION_TO_VALUE,
@@ -23,7 +22,7 @@ import {
   MESSAGE_TYPES,
   SCROLL_THRESHOLD,
   STORAGE_KEYS,
-  TEXTS,
+  useChatTexts,
 } from '../screens/chat/chatScreenConstants';
 import { getResetToMainTabsWithInicioState } from '../navigation/navigationHelpers';
 import {
@@ -33,7 +32,7 @@ import {
 import {
   clearOfflinePendingMessage,
   getOfflinePendingMessage,
-  setOfflinePendingMessage,
+  setOfflinePendingMessage as setOfflinePendingMessageStorage,
 } from '../services/chatOfflinePending';
 import { useToast } from '../context/ToastContext';
 import { isValidSessionIntentionId } from '../constants/sessionIntention';
@@ -67,7 +66,22 @@ function hapticAssistantMessageReceived() {
   }
 }
 
+function extractErrorCode(errorLike) {
+  const directErrorCode = String(errorLike?.errorCode || '').trim();
+  if (directErrorCode) return directErrorCode.toUpperCase();
+
+  const backendCode = String(errorLike?.response?.data?.code || '').trim();
+  if (backendCode) return backendCode.toUpperCase();
+
+  const directCode = String(errorLike?.code || '').trim();
+  if (directCode) return directCode.toUpperCase();
+
+  return '';
+}
+
 export function useChatScreen() {
+  const TEXTS = useChatTexts();
+  const textsRef = useRef(TEXTS);
   const navigation = useNavigation();
   const route = useRoute();
   const { showToast } = useToast();
@@ -122,6 +136,10 @@ export function useChatScreen() {
   /** Ref estable para callbacks (socket / init) que no deben depender del cierre sobre `scrollToBottom`. */
   const scrollToBottomStableRef = useRef(null);
   const contentSizeScrollTimerRef = useRef(null);
+
+  useEffect(() => {
+    textsRef.current = TEXTS;
+  }, [TEXTS]);
 
   const scrollToBottom = useCallback((animated = true, options = {}) => {
     const force = options.force === true;
@@ -220,6 +238,7 @@ export function useChatScreen() {
   }, []);
 
   const initializeConversation = useCallback(async () => {
+    const texts = textsRef.current;
     const dedupeAndSetMessages = (serverMessages, sessionIntentionMeta, flags) => {
       const isRegistered = flags?.isRegistered === true;
       if (!serverMessages || serverMessages.length === 0) return false;
@@ -283,7 +302,7 @@ export function useChatScreen() {
         }
         const welcomeMessage = {
           id: `${MESSAGE_ID_PREFIXES.WELCOME}-${Date.now()}`,
-          content: TEXTS.WELCOME,
+          content: texts.WELCOME,
           role: MESSAGE_ROLES.ASSISTANT,
           type: MESSAGE_TYPES.TEXT,
           metadata: { timestamp: new Date().toISOString(), type: MESSAGE_TYPES.WELCOME },
@@ -307,10 +326,10 @@ export function useChatScreen() {
             ),
           });
         } catch (e) {
-          if (e.code === 'RATE_LIMIT') {
-            Alert.alert(TEXTS.GUEST_RATE_LIMIT_TITLE, e.message || '', [
+          if (extractErrorCode(e) === 'RATE_LIMIT') {
+            Alert.alert(texts.GUEST_RATE_LIMIT_TITLE, texts.GUEST_RATE_LIMIT_MESSAGE, [
               {
-                text: 'OK',
+                text: texts.COMMON_OK,
                 onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }),
               },
             ]);
@@ -339,7 +358,7 @@ export function useChatScreen() {
         setGuestQuota({ max: GUEST_MAX_USER_MESSAGES, remaining: GUEST_MAX_USER_MESSAGES });
         const welcomeMessage = {
           id: `${MESSAGE_ID_PREFIXES.WELCOME}-${Date.now()}`,
-          content: TEXTS.WELCOME,
+          content: texts.WELCOME,
           role: MESSAGE_ROLES.ASSISTANT,
           type: MESSAGE_TYPES.TEXT,
           metadata: { timestamp: new Date().toISOString(), type: MESSAGE_TYPES.WELCOME },
@@ -356,9 +375,9 @@ export function useChatScreen() {
       if (err.guestAuthFailed) {
         setError(null);
         setGuestQuota(null);
-        Alert.alert(TEXTS.GUEST_SESSION_EXPIRED_TITLE, TEXTS.GUEST_SESSION_EXPIRED_MESSAGE, [
+        Alert.alert(texts.GUEST_SESSION_EXPIRED_TITLE, texts.GUEST_SESSION_EXPIRED_MESSAGE, [
           {
-            text: 'OK',
+            text: texts.COMMON_OK,
             onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }),
           },
         ]);
@@ -366,11 +385,11 @@ export function useChatScreen() {
         setShowSessionIntentionPrompt(false);
         return;
       }
-      if (err.code === 'RATE_LIMIT') {
+      if (extractErrorCode(err) === 'RATE_LIMIT') {
         setError(null);
-        Alert.alert(TEXTS.GUEST_RATE_LIMIT_TITLE, err.message || '', [
+        Alert.alert(texts.GUEST_RATE_LIMIT_TITLE, texts.GUEST_RATE_LIMIT_MESSAGE, [
           {
-            text: 'OK',
+            text: texts.COMMON_OK,
             onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }),
           },
         ]);
@@ -379,7 +398,7 @@ export function useChatScreen() {
         return;
       }
       console.error('[ChatScreen] Error al inicializar chat:', err.message);
-      setError(TEXTS.ERROR_LOAD);
+      setError(texts.NETWORK_ERROR_INIT);
     } finally {
       setIsLoading(false);
       stickToBottomRef.current = true;
@@ -395,11 +414,12 @@ export function useChatScreen() {
 
   const selectSessionIntention = useCallback(
     async (intentionId) => {
+      const texts = textsRef.current;
       if (!isValidSessionIntentionId(intentionId)) return;
       if (sessionIntentionSubmitting) return;
       if (await chatService.isGuestChatMode()) return;
       if (isOffline) {
-        showToast({ message: TEXTS.NETWORK_ERROR, type: 'warning' });
+        showToast({ message: texts.NETWORK_ERROR, type: 'warning' });
         return;
       }
       setSessionIntentionSubmitting(true);
@@ -439,7 +459,7 @@ export function useChatScreen() {
       } catch (e) {
         console.warn('[useChatScreen] sessionIntention:', e?.message || e);
         showToast({
-          message: TEXTS.CONVERSATION_ERROR,
+          message: texts.CONVERSATION_ERROR,
           type: 'error',
         });
       } finally {
@@ -451,11 +471,12 @@ export function useChatScreen() {
 
   const handleMessageFeedback = useCallback(
     async (messageId, helpful) => {
+      const texts = textsRef.current;
       const id = String(messageId ?? '').trim();
       if (!/^[\da-f]{24}$/i.test(id)) return;
       if (isOffline) {
         showToast({
-          message: TEXTS.FEEDBACK_OFFLINE,
+          message: texts.FEEDBACK_OFFLINE,
           type: 'warning',
         });
         return;
@@ -482,7 +503,7 @@ export function useChatScreen() {
       } catch (e) {
         console.warn('[useChatScreen] Error enviando feedback:', e?.message || e);
         showToast({
-          message: TEXTS.FEEDBACK_ERROR,
+          message: texts.FEEDBACK_ERROR,
           type: 'error',
         });
       } finally {
@@ -562,6 +583,7 @@ export function useChatScreen() {
   }, []);
 
   const handleSend = useCallback(async (presetText) => {
+    const texts = textsRef.current;
     const messageText =
       typeof presetText === 'string' && presetText.trim() !== ''
         ? presetText.trim()
@@ -571,7 +593,7 @@ export function useChatScreen() {
 
     if (isOffline) {
       try {
-        await setOfflinePendingMessage(messageText);
+        await setOfflinePendingMessageStorage(messageText);
         setOfflinePendingMessage(messageText);
       } catch (_) {}
       setInputText('');
@@ -587,10 +609,10 @@ export function useChatScreen() {
 
       if (await chatService.isGuestChatMode()) {
         if (guestQuota !== null && guestQuota.remaining <= 0) {
-          Alert.alert(TEXTS.GUEST_LIMIT_TITLE, TEXTS.GUEST_LIMIT_MESSAGE, [
-            { text: 'Cancelar', style: 'cancel' },
+          Alert.alert(texts.GUEST_LIMIT_TITLE, texts.GUEST_LIMIT_MESSAGE, [
+            { text: texts.COMMON_CANCEL, style: 'cancel' },
             {
-              text: 'Crear cuenta',
+              text: texts.COMMON_CREATE_ACCOUNT,
               onPress: async () => {
                 try {
                   await chatService.clearGuestChat();
@@ -599,7 +621,7 @@ export function useChatScreen() {
               },
             },
             {
-              text: 'Iniciar sesión',
+              text: texts.COMMON_SIGN_IN,
               onPress: async () => {
                 try {
                   await chatService.clearGuestChat();
@@ -766,7 +788,10 @@ export function useChatScreen() {
       // Quitar mensajes temporales en error
       setMessages((prev) => prev.filter((msg) => msg.id !== tempUserMessage.id && msg.id !== tempAssistantId));
 
+      const backendCode = extractErrorCode(err);
       const isNetworkError =
+        backendCode === 'NETWORK_ERROR' ||
+        backendCode === 'ECONNREFUSED' ||
         err.message?.includes('Network request failed') ||
         err.message?.includes('network') ||
         err.message?.includes('ECONNREFUSED') ||
@@ -776,16 +801,16 @@ export function useChatScreen() {
 
       if (isNetworkError) {
         try {
-          await setOfflinePendingMessage(messageText);
+          await setOfflinePendingMessageStorage(messageText);
           setOfflinePendingMessage(messageText);
         } catch (_) {}
         setIsTyping(false);
         return;
       }
 
-      if (err.response?.status === 429 && err.response?.data?.code === 'MESSAGE_IN_FLIGHT') {
+      if (backendCode === 'MESSAGE_IN_FLIGHT') {
         showToast({
-          message: err.response?.data?.message || 'Este mensaje ya se está enviando.',
+          message: texts.MESSAGE_IN_FLIGHT_DEFAULT,
           type: 'warning',
         });
         setInputText(messageText);
@@ -793,7 +818,7 @@ export function useChatScreen() {
         return;
       }
 
-      if (err.code === 'STREAM_INCOMPLETE') {
+      if (backendCode === 'STREAM_INCOMPLETE') {
         let recoveredFromServer = false;
         // Recuperación silenciosa: evitar avisos de stream incompleto.
         // Intentamos reconciliar estado con el servidor para obtener la respuesta final persistida.
@@ -883,9 +908,9 @@ export function useChatScreen() {
         return;
       }
 
-      if (err.code === 'ETIMEDOUT') {
+      if (backendCode === 'ETIMEDOUT' || backendCode === 'TIMEOUT') {
         showToast({
-          message: err.message || 'La respuesta tardó demasiado. Intenta de nuevo.',
+          message: texts.SEND_TIMEOUT_DEFAULT,
           type: 'warning',
         });
         setIsTyping(false);
@@ -894,9 +919,9 @@ export function useChatScreen() {
 
       if (err.guestAuthFailed) {
         setGuestQuota(null);
-        Alert.alert(TEXTS.GUEST_SESSION_EXPIRED_TITLE, TEXTS.GUEST_SESSION_EXPIRED_MESSAGE, [
+        Alert.alert(texts.GUEST_SESSION_EXPIRED_TITLE, texts.GUEST_SESSION_EXPIRED_MESSAGE, [
           {
-            text: 'OK',
+            text: texts.COMMON_OK,
             onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }),
           },
         ]);
@@ -904,29 +929,29 @@ export function useChatScreen() {
         return;
       }
 
-      if (err.code === 'RATE_LIMIT') {
+      if (backendCode === 'RATE_LIMIT') {
         showToast({
-          message: err.message || TEXTS.GUEST_RATE_LIMIT_TITLE,
+          message: texts.GUEST_RATE_LIMIT_TITLE,
           type: 'warning',
         });
         setIsTyping(false);
         return;
       }
 
-      if (err.response?.status === 400 && err.response?.data?.code === 'GUEST_CONTENT_TOO_LONG') {
+      if (backendCode === 'GUEST_CONTENT_TOO_LONG') {
         showToast({
-          message: err.message || TEXTS.ERROR_SEND,
+          message: texts.GUEST_CONTENT_TOO_LONG_TITLE,
           type: 'warning',
         });
         setIsTyping(false);
         return;
       }
 
-      if (err.code === 'GUEST_LIMIT_REACHED' || err.requiresAccount) {
-        Alert.alert(TEXTS.GUEST_LIMIT_TITLE, TEXTS.GUEST_LIMIT_MESSAGE, [
-          { text: 'Cancelar', style: 'cancel' },
+      if (backendCode === 'GUEST_LIMIT_REACHED' || err.requiresAccount) {
+        Alert.alert(texts.GUEST_LIMIT_TITLE, texts.GUEST_LIMIT_MESSAGE, [
+          { text: texts.COMMON_CANCEL, style: 'cancel' },
           {
-            text: 'Crear cuenta',
+            text: texts.COMMON_CREATE_ACCOUNT,
             onPress: async () => {
               try {
                 await chatService.clearGuestChat();
@@ -935,7 +960,7 @@ export function useChatScreen() {
             },
           },
           {
-            text: 'Iniciar sesión',
+            text: texts.COMMON_SIGN_IN,
             onPress: async () => {
               try {
                 await chatService.clearGuestChat();
@@ -949,6 +974,7 @@ export function useChatScreen() {
       }
 
       const isSubscriptionError =
+        backendCode === 'SUBSCRIPTION_REQUIRED' ||
         err.message?.includes('suscripción') ||
         err.message?.includes('subscription') ||
         err.message?.includes('trial') ||
@@ -956,27 +982,23 @@ export function useChatScreen() {
         (err.response?.status === 403 && err.response?.data?.requiresSubscription);
 
       if (isSubscriptionError) {
-        const errorMessage =
-          err.response?.data?.message ||
-          getApiErrorMessage(err, { isOffline }) ||
-          'Necesitas una suscripción activa para usar el chat. Tu período de prueba ha expirado.';
-        Alert.alert('Suscripción requerida', errorMessage, [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Ver planes', onPress: () => navigation.navigate('Subscription') },
+        Alert.alert(texts.SUBSCRIPTION_REQUIRED_TITLE, texts.SUBSCRIPTION_REQUIRED_DEFAULT, [
+          { text: texts.COMMON_CANCEL, style: 'cancel' },
+          { text: texts.SUBSCRIPTION_VIEW_PLANS, onPress: () => navigation.navigate('Subscription') },
         ]);
         setIsTyping(false);
         return;
       }
 
       if (
-        err.message?.includes('No se pudo crear') ||
+        backendCode === 'CONVERSATION_CREATE_FAILED' ||
         (err.message?.includes('conversación') && !isSubscriptionError)
       ) {
         setMessages((prev) => [
           ...prev,
           {
             id: `${MESSAGE_ID_PREFIXES.ERROR}-${Date.now()}`,
-            content: TEXTS.CONVERSATION_ERROR,
+            content: texts.CONVERSATION_ERROR,
             role: MESSAGE_ROLES.ASSISTANT,
             type: MESSAGE_TYPES.ERROR,
             metadata: { timestamp: new Date().toISOString(), error: true },
@@ -991,7 +1013,7 @@ export function useChatScreen() {
         ...prev,
         {
           id: `${MESSAGE_ID_PREFIXES.ERROR}-${Date.now()}`,
-          content: TEXTS.ERROR_SEND,
+          content: texts.ERROR_SEND,
           role: MESSAGE_ROLES.ASSISTANT,
           type: MESSAGE_TYPES.ERROR,
           metadata: { timestamp: new Date().toISOString(), error: true },
@@ -1004,7 +1026,7 @@ export function useChatScreen() {
     } finally {
       sendRequestInFlightRef.current = false;
     }
-  }, [inputText, scrollToBottom, isConnected, isOffline, navigation, guestQuota]);
+  }, [inputText, scrollToBottom, isConnected, isOffline, navigation, guestQuota, showToast]);
 
   handleSendRef.current = handleSend;
 
@@ -1059,6 +1081,7 @@ export function useChatScreen() {
   }, []);
 
   const clearConversation = useCallback(async () => {
+    const texts = textsRef.current;
     try {
       await clearOfflinePendingMessage();
       setOfflinePendingMessage(null);
@@ -1070,7 +1093,7 @@ export function useChatScreen() {
       } catch (_) {}
     } catch (err) {
       console.error('Error al borrar la conversación:', err);
-      setError(TEXTS.ERROR_CLEAR);
+      setError(texts.ERROR_CLEAR);
     }
   }, [initializeConversation]);
 
@@ -1178,9 +1201,10 @@ export function useChatScreen() {
   }, []);
 
   const guestHandoffUseSummary = useCallback(async () => {
+    const texts = textsRef.current;
     const summaryText = guestHandoffModal?.summaryText;
     if (!summaryText) return;
-    const prefill = `Continuando desde el chat sin cuenta (puedes editar esto antes de enviar):\n\n${summaryText}`;
+    const prefill = `${texts.GUEST_HANDOFF_PREFILL_PREFIX}\n\n${summaryText}`;
     setInputText(prefill);
     try {
       await chatService.clearGuestHandoff();
@@ -1255,7 +1279,7 @@ export function useChatScreen() {
     });
     const errorUnsubscribe = chatService.onError((err) => {
       console.error('[ChatScreen] Error en el chat:', err.message || err);
-      setError(TEXTS.ERROR_COMMUNICATION);
+      setError(textsRef.current.ERROR_COMMUNICATION);
     });
     return () => {
       messageUnsubscribe();
@@ -1277,11 +1301,14 @@ export function useChatScreen() {
     };
     connectWebSocket();
     const unsubscribeAlert = websocketService.on('emergency:alert:sent', (data) => {
+      const texts = textsRef.current;
       if (data && !data.isTest) {
         Alert.alert(
-          '🚨 Alerta de Emergencia Enviada',
-          `Hemos notificado a ${data.successfulSends} de ${data.totalContacts} contacto(s) de emergencia.`,
-          [{ text: 'OK' }]
+          `🚨 ${texts.EMERGENCY_ALERT_SENT_TITLE}`,
+          texts.EMERGENCY_ALERT_SENT_BODY
+            .replace('{successful}', String(data.successfulSends))
+            .replace('{total}', String(data.totalContacts)),
+          [{ text: texts.COMMON_OK }]
         );
       }
     });

@@ -8,7 +8,7 @@
  */
 
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Alert, SafeAreaView, StatusBar, View } from 'react-native';
+import { Alert, SafeAreaView, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../components/Header';
 import PaymentWebView from '../components/payments/PaymentWebView';
@@ -17,10 +17,11 @@ import SubscriptionContent from '../components/subscription/SubscriptionContent'
 import SubscriptionErrorView from '../components/subscription/SubscriptionErrorView';
 import SubscriptionLoadingView from '../components/subscription/SubscriptionLoadingView';
 import { useSubscriptionScreen } from '../hooks/useSubscriptionScreen';
-import { TEXTS } from './subscription/subscriptionScreenConstants';
+import { useSubscriptionTexts } from './subscription/subscriptionScreenConstants';
 import { useTheme } from '../context/ThemeContext';
 
 export default function SubscriptionScreen() {
+  const TEXTS = useSubscriptionTexts();
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle } = useTheme();
   const {
@@ -49,13 +50,13 @@ export default function SubscriptionScreen() {
     try {
       const urlObj = new URL(paymentUrl);
       if (!urlObj.protocol.startsWith('http')) {
-        return 'La URL de pago no es válida.';
+        return TEXTS.INVALID_PAYMENT_URL;
       }
       return null;
     } catch (_) {
-      return 'La URL de pago no es válida.';
+      return TEXTS.INVALID_PAYMENT_URL;
     }
-  }, [showPaymentWebView, paymentUrl]);
+  }, [showPaymentWebView, paymentUrl, TEXTS]);
 
   useEffect(() => {
     if (!paymentUrlValidationError) {
@@ -67,8 +68,8 @@ export default function SubscriptionScreen() {
     invalidUrlHandledRef.current = true;
     setShowPaymentWebView(false);
     setPaymentUrl(null);
-    Alert.alert('Error', paymentUrlValidationError);
-  }, [paymentUrlValidationError, setPaymentUrl, setShowPaymentWebView]);
+    Alert.alert(TEXTS.ERROR, paymentUrlValidationError);
+  }, [paymentUrlValidationError, setPaymentUrl, setShowPaymentWebView, TEXTS]);
 
   if (showPaymentWebView && paymentUrl) {
     if (paymentUrlValidationError) {

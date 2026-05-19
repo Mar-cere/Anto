@@ -67,5 +67,14 @@
   "overrides": {
     "get-symbol-description": "1.0.2"
   },
+  "expo": {
+    "autolinking": {
+      "android": {
+        "exclude": [
+          "expo-in-app-purchases"
+        ]
+      }
+    }
+  },
   "private": true
 }

@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { REGISTER as TEXTS } from '../../constants/translations';
 import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { useRegisterScreenStyles } from './registerScreenStyles';
 import { EYE_ICON_SIZE, BUTTON_ICON_SIZE, BUTTON_ICON_MARGIN, ACTIVE_OPACITY, BUTTON_ACTIVE_OPACITY, CHECKBOX_ICON_SIZE } from './registerScreenConstants';
 
@@ -31,6 +31,7 @@ export function RegisterForm({
   translateYAnim,
   AnimatedView,
 }) {
+  const TEXTS = useSectionTranslations('REGISTER');
   const { colors, globalStyles: gs } = useTheme();
   const styles = useRegisterScreenStyles();
 
@@ -112,7 +113,7 @@ export function RegisterForm({
             value={formData.password}
             accessibilityLabel={TEXTS.PASSWORD_PLACEHOLDER}
           />
-          <TouchableOpacity onPress={() => setPasswordVisible(!isPasswordVisible)} style={gs.inputIcon} accessibilityLabel={isPasswordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+          <TouchableOpacity onPress={() => setPasswordVisible(!isPasswordVisible)} style={gs.inputIcon} accessibilityLabel={isPasswordVisible ? TEXTS.HIDE_PASSWORD : TEXTS.SHOW_PASSWORD}>
             <Ionicons name={isPasswordVisible ? 'eye-off' : 'eye'} size={EYE_ICON_SIZE} color={colors.primary} />
           </TouchableOpacity>
         </View>
@@ -131,7 +132,7 @@ export function RegisterForm({
             value={formData.confirmPassword}
             accessibilityLabel={TEXTS.CONFIRM_PASSWORD_PLACEHOLDER}
           />
-          <TouchableOpacity onPress={() => setConfirmPasswordVisible(!isConfirmPasswordVisible)} style={gs.inputIcon} accessibilityLabel={isConfirmPasswordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+          <TouchableOpacity onPress={() => setConfirmPasswordVisible(!isConfirmPasswordVisible)} style={gs.inputIcon} accessibilityLabel={isConfirmPasswordVisible ? TEXTS.HIDE_PASSWORD : TEXTS.SHOW_PASSWORD}>
             <Ionicons name={isConfirmPasswordVisible ? 'eye-off' : 'eye'} size={EYE_ICON_SIZE} color={colors.primary} />
           </TouchableOpacity>
         </View>
@@ -179,7 +180,7 @@ export function RegisterForm({
           </View>
         </TouchableOpacity>
         <Text style={[styles.termsText, styles.termsTextFlex]}>
-          Acepto la{' '}
+          {TEXTS.PRIVACY_ACCEPT_PREFIX}
           <Text style={styles.termsLink} onPress={onOpenPrivacy}>
             {TEXTS.PRIVACY_LINK}
           </Text>

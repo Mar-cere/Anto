@@ -11,28 +11,44 @@ import { CardHeader, useCardStylesDynamic } from './common/CardStyles';
 import Svg, { Circle } from 'react-native-svg';
 import { useTheme } from '../context/ThemeContext';
 import { getFocusTheme } from '../styles/focusCardTheme';
+import { useSectionTranslations } from '../hooks/useTranslations';
 
 const { width } = Dimensions.get('window');
 const TIMER_SIZE = width * 0.4;
 
 const WORK_DURATION_SEC = 25 * 60;
 const BREAK_DURATION_SEC = 5 * 60;
+const DEFAULT_TEXTS = {
+  CARD_MODE_WORK_LABEL: 'Tiempo de Trabajo',
+  CARD_MODE_WORK_DESCRIPTION: 'Mantén el foco',
+  CARD_MODE_BREAK_LABEL: 'Descanso',
+  CARD_MODE_BREAK_DESCRIPTION: 'Toma un respiro',
+  STATUS_IN_PROGRESS: 'En progreso',
+  STATUS_PAUSED: 'Pausado',
+  CARD_OPEN_A11Y: 'Abrir Pomodoro',
+  CARD_COLLAPSE_A11Y: 'Contraer Pomodoro',
+  CARD_PAUSE_A11Y: 'Pausar Pomodoro',
+  CARD_START_A11Y: 'Iniciar Pomodoro',
+  CARD_COLLAPSE_TEXT: 'Contraer',
+  CARD_SESSIONS_LABEL: 'Sesiones',
+  CARD_MINUTES_LABEL: 'Minutos',
+};
 
-function buildPomodoroModes(colors) {
+function buildPomodoroModes(colors, texts) {
   return {
     work: {
       time: WORK_DURATION_SEC,
       color: colors.error,
       icon: 'brain',
-      label: 'Tiempo de Trabajo',
-      description: 'Mantén el foco',
+      label: texts.CARD_MODE_WORK_LABEL,
+      description: texts.CARD_MODE_WORK_DESCRIPTION,
     },
     break: {
       time: BREAK_DURATION_SEC,
       color: colors.success,
       icon: 'coffee',
-      label: 'Descanso',
-      description: 'Toma un respiro',
+      label: texts.CARD_MODE_BREAK_LABEL,
+      description: texts.CARD_MODE_BREAK_DESCRIPTION,
     },
   };
 }
@@ -68,7 +84,7 @@ const TimerDisplay = memo(({ timeLeft, totalTime, isActive, color, styles, track
         })
       ]).start();
     }
-  }, [timeLeft, isActive]);
+  }, [timeLeft, isActive, totalTime, progressAnim, scaleAnim]);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -121,6 +137,7 @@ const TimerDisplay = memo(({ timeLeft, totalTime, isActive, color, styles, track
     </Animated.View>
   );
 });
+TimerDisplay.displayName = 'TimerDisplay';
 
 const ControlButton = memo(({ icon, onPress, color, size = 50, styles, iconColor }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -153,14 +170,43 @@ const ControlButton = memo(({ icon, onPress, color, size = 50, styles, iconColor
     </Animated.View>
   );
 });
+ControlButton.displayName = 'ControlButton';
 
 const PomodoroCard = memo(({ collapsible = false, defaultExpanded = false }) => {
+  const translated = useSectionTranslations('POMODORO');
+  const TEXTS = useMemo(
+    () => ({
+      CARD_MODE_WORK_LABEL:
+        translated?.CARD_MODE_WORK_LABEL || DEFAULT_TEXTS.CARD_MODE_WORK_LABEL,
+      CARD_MODE_WORK_DESCRIPTION:
+        translated?.CARD_MODE_WORK_DESCRIPTION || DEFAULT_TEXTS.CARD_MODE_WORK_DESCRIPTION,
+      CARD_MODE_BREAK_LABEL:
+        translated?.CARD_MODE_BREAK_LABEL || DEFAULT_TEXTS.CARD_MODE_BREAK_LABEL,
+      CARD_MODE_BREAK_DESCRIPTION:
+        translated?.CARD_MODE_BREAK_DESCRIPTION || DEFAULT_TEXTS.CARD_MODE_BREAK_DESCRIPTION,
+      STATUS_IN_PROGRESS:
+        translated?.CARD_STATUS_IN_PROGRESS || DEFAULT_TEXTS.STATUS_IN_PROGRESS,
+      STATUS_PAUSED: translated?.CARD_STATUS_PAUSED || DEFAULT_TEXTS.STATUS_PAUSED,
+      CARD_OPEN_A11Y: translated?.CARD_OPEN_A11Y || DEFAULT_TEXTS.CARD_OPEN_A11Y,
+      CARD_COLLAPSE_A11Y:
+        translated?.CARD_COLLAPSE_A11Y || DEFAULT_TEXTS.CARD_COLLAPSE_A11Y,
+      CARD_PAUSE_A11Y: translated?.CARD_PAUSE_A11Y || DEFAULT_TEXTS.CARD_PAUSE_A11Y,
+      CARD_START_A11Y: translated?.CARD_START_A11Y || DEFAULT_TEXTS.CARD_START_A11Y,
+      CARD_COLLAPSE_TEXT:
+        translated?.CARD_COLLAPSE_TEXT || DEFAULT_TEXTS.CARD_COLLAPSE_TEXT,
+      CARD_SESSIONS_LABEL:
+        translated?.CARD_SESSIONS_LABEL || DEFAULT_TEXTS.CARD_SESSIONS_LABEL,
+      CARD_MINUTES_LABEL:
+        translated?.CARD_MINUTES_LABEL || DEFAULT_TEXTS.CARD_MINUTES_LABEL,
+    }),
+    [translated]
+  );
   const navigation = useNavigation();
   const { colors, resolvedScheme } = useTheme();
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
   const { cardColors, commonStyles } = useCardStylesDynamic();
   const styles = useMemo(() => createStyles(colors, t), [colors, t]);
-  const modes = useMemo(() => buildPomodoroModes(colors), [colors]);
+  const modes = useMemo(() => buildPomodoroModes(colors, TEXTS), [colors, TEXTS]);
   const [isActive, setIsActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(WORK_DURATION_SEC);
   const [mode, setMode] = useState('work');
@@ -271,7 +317,7 @@ const PomodoroCard = memo(({ collapsible = false, defaultExpanded = false }) => 
           onPress={() => setExpanded(true)}
           activeOpacity={0.8}
           accessibilityRole="button"
-          accessibilityLabel="Abrir Pomodoro"
+          accessibilityLabel={TEXTS.CARD_OPEN_A11Y}
         >
           <View style={styles.compactLeft}>
             <View style={styles.compactChip}>
@@ -280,7 +326,9 @@ const PomodoroCard = memo(({ collapsible = false, defaultExpanded = false }) => 
                 size={14}
                 color={t.FOCUS_KICKER_COLOR}
               />
-              <Text style={styles.compactChipText}>{isActive ? 'En progreso' : 'Pausado'}</Text>
+              <Text style={styles.compactChipText}>
+                {isActive ? TEXTS.STATUS_IN_PROGRESS : TEXTS.STATUS_PAUSED}
+              </Text>
             </View>
             <Text style={styles.compactTime}>{formatTimeShort(timeLeft)}</Text>
           </View>
@@ -293,7 +341,7 @@ const PomodoroCard = memo(({ collapsible = false, defaultExpanded = false }) => 
               }}
               activeOpacity={0.85}
               accessibilityRole="button"
-              accessibilityLabel={isActive ? 'Pausar Pomodoro' : 'Iniciar Pomodoro'}
+              accessibilityLabel={isActive ? TEXTS.CARD_PAUSE_A11Y : TEXTS.CARD_START_A11Y}
             >
               <MaterialCommunityIcons name={isActive ? 'pause' : 'play'} size={18} color={colors.textOnPrimary} />
             </TouchableOpacity>
@@ -323,9 +371,9 @@ const PomodoroCard = memo(({ collapsible = false, defaultExpanded = false }) => 
               onPress={() => setExpanded(false)}
               activeOpacity={0.8}
               accessibilityRole="button"
-              accessibilityLabel="Contraer Pomodoro"
+              accessibilityLabel={TEXTS.CARD_COLLAPSE_A11Y}
             >
-              <Text style={styles.collapseHandleText}>Contraer</Text>
+              <Text style={styles.collapseHandleText}>{TEXTS.CARD_COLLAPSE_TEXT}</Text>
               <MaterialCommunityIcons name="chevron-up" size={18} color={t.FOCUS_META} />
             </TouchableOpacity>
           ) : null}
@@ -337,7 +385,9 @@ const PomodoroCard = memo(({ collapsible = false, defaultExpanded = false }) => 
                 size={14}
                 color={t.FOCUS_KICKER_COLOR}
               />
-              <Text style={styles.metaChipText}>{isActive ? 'En progreso' : 'Pausado'}</Text>
+              <Text style={styles.metaChipText}>
+                {isActive ? TEXTS.STATUS_IN_PROGRESS : TEXTS.STATUS_PAUSED}
+              </Text>
             </View>
             <Text style={styles.descriptionText}>{modes[mode].description}</Text>
           </View>
@@ -394,7 +444,7 @@ const PomodoroCard = memo(({ collapsible = false, defaultExpanded = false }) => 
                 color={cardColors.success} 
               />
               <Text style={styles.statValue}>{sessionsCompleted}</Text>
-              <Text style={styles.statLabel}>Sesiones</Text>
+              <Text style={styles.statLabel}>{TEXTS.CARD_SESSIONS_LABEL}</Text>
             </View>
             <View style={styles.statItem}>
               <MaterialCommunityIcons 
@@ -405,7 +455,7 @@ const PomodoroCard = memo(({ collapsible = false, defaultExpanded = false }) => 
               <Text style={styles.statValue}>
                 {Math.floor((modes[mode].time - timeLeft) / 60)}
               </Text>
-              <Text style={styles.statLabel}>Minutos</Text>
+              <Text style={styles.statLabel}>{TEXTS.CARD_MINUTES_LABEL}</Text>
             </View>
           </View>
         </Animated.View>

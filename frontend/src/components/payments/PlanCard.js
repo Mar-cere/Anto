@@ -11,7 +11,21 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
+
+const DEFAULT_TEXTS = {
+  RECOMMENDED: 'Recomendado',
+  CURRENT_PLAN: 'Plan Actual',
+  INTERVAL_WEEK: '/semana',
+  INTERVAL_MONTH: '/mes',
+  INTERVAL_QUARTER: '/trimestre',
+  INTERVAL_SEMESTER: '/semestre',
+  INTERVAL_YEAR: '/año',
+  FEATURE_FALLBACK: 'Servicio completo incluido',
+  SELECTED: 'Seleccionado',
+  SUBSCRIBE: 'Suscribirse',
+};
 
 const PlanCard = ({ 
   plan, 
@@ -22,6 +36,25 @@ const PlanCard = ({
   disabled = false,
 }) => {
   const { colors } = useTheme();
+  const translated = useSectionTranslations('SUBSCRIPTION');
+  const T = useMemo(
+    () => ({
+      RECOMMENDED: translated?.PLAN_CARD_RECOMMENDED || DEFAULT_TEXTS.RECOMMENDED,
+      CURRENT_PLAN: translated?.PLAN_CARD_CURRENT_PLAN || DEFAULT_TEXTS.CURRENT_PLAN,
+      INTERVAL_WEEK: translated?.PLAN_CARD_INTERVAL_WEEK || DEFAULT_TEXTS.INTERVAL_WEEK,
+      INTERVAL_MONTH: translated?.PLAN_CARD_INTERVAL_MONTH || DEFAULT_TEXTS.INTERVAL_MONTH,
+      INTERVAL_QUARTER:
+        translated?.PLAN_CARD_INTERVAL_QUARTER || DEFAULT_TEXTS.INTERVAL_QUARTER,
+      INTERVAL_SEMESTER:
+        translated?.PLAN_CARD_INTERVAL_SEMESTER || DEFAULT_TEXTS.INTERVAL_SEMESTER,
+      INTERVAL_YEAR: translated?.PLAN_CARD_INTERVAL_YEAR || DEFAULT_TEXTS.INTERVAL_YEAR,
+      FEATURE_FALLBACK:
+        translated?.PLAN_CARD_FEATURE_FALLBACK || DEFAULT_TEXTS.FEATURE_FALLBACK,
+      SELECTED: translated?.PLAN_CARD_SELECTED || DEFAULT_TEXTS.SELECTED,
+      SUBSCRIBE: translated?.PLAN_CARD_SUBSCRIBE || DEFAULT_TEXTS.SUBSCRIBE,
+    }),
+    [translated],
+  );
 
   const styles = useMemo(
     () =>
@@ -169,14 +202,14 @@ const PlanCard = ({
     >
       {isRecommended && (
         <View style={styles.recommendedBadge}>
-          <Text style={styles.recommendedText}>Recomendado</Text>
+          <Text style={styles.recommendedText}>{T.RECOMMENDED}</Text>
         </View>
       )}
 
       {isCurrentPlan && (
         <View style={styles.currentBadge}>
           <MaterialCommunityIcons name="check-circle" size={20} color={colors.success} />
-          <Text style={styles.currentText}>Plan Actual</Text>
+          <Text style={styles.currentText}>{T.CURRENT_PLAN}</Text>
         </View>
       )}
 
@@ -185,11 +218,11 @@ const PlanCard = ({
         <View style={styles.priceContainer}>
           <Text style={styles.price}>{plan.formattedAmount}</Text>
           <Text style={styles.interval}>
-            {plan.interval === 'week' ? '/semana' :
-             plan.interval === 'month' ? '/mes' :
-             plan.interval === 'quarter' ? '/trimestre' :
-             plan.interval === 'semester' ? '/semestre' :
-             plan.interval === 'year' ? '/año' : `/${plan.interval}`}
+            {plan.interval === 'week' ? T.INTERVAL_WEEK :
+             plan.interval === 'month' ? T.INTERVAL_MONTH :
+             plan.interval === 'quarter' ? T.INTERVAL_QUARTER :
+             plan.interval === 'semester' ? T.INTERVAL_SEMESTER :
+             plan.interval === 'year' ? T.INTERVAL_YEAR : `/${plan.interval}`}
           </Text>
         </View>
       </View>
@@ -203,7 +236,7 @@ const PlanCard = ({
             style={styles.featureIcon}
           />
           <Text style={styles.featureText}>
-            {plan.features && plan.features[0] ? plan.features[0] : 'Servicio completo incluido'}
+            {plan.features && plan.features[0] ? plan.features[0] : T.FEATURE_FALLBACK}
           </Text>
         </View>
       </View>
@@ -221,7 +254,7 @@ const PlanCard = ({
             isSelected && styles.buttonTextSelected,
             disabled && styles.buttonTextDisabled,
           ]}>
-            {isSelected ? 'Seleccionado' : 'Suscribirse'}
+            {isSelected ? T.SELECTED : T.SUBSCRIBE}
           </Text>
         </View>
       )}

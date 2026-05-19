@@ -258,6 +258,15 @@ class StoreKitService {
     this._iapPurchaseListenerBound = false;
   }
 
+  fail(error, code, extra = {}) {
+    return {
+      success: false,
+      error,
+      code,
+      ...extra,
+    };
+  }
+
   /**
    * Verificar si StoreKit está disponible (solo iOS y módulo nativo disponible)
    */
@@ -285,20 +294,17 @@ class StoreKitService {
 
     if (!this.isAvailable()) {
       console.log('[StoreKit] No disponible en esta plataforma');
-      return { 
-        success: false, 
-        error: 'StoreKit solo está disponible en iOS' 
-      };
+      return this.fail('StoreKit solo está disponible en iOS', 'STOREKIT_UNAVAILABLE');
     }
 
     // Obtener módulo primero para verificar disponibilidad
     let module = this.module || getInAppPurchasesModule();
     if (!module) {
       console.error('[StoreKit] ❌ initialize: Módulo no disponible');
-      return {
-        success: false,
-        error: 'Módulo nativo no disponible. Necesitas hacer prebuild o usar un build nativo.',
-      };
+      return this.fail(
+        'Módulo nativo no disponible. Necesitas hacer prebuild o usar un build nativo.',
+        'MODULE_UNAVAILABLE',
+      );
     }
     
     console.log('[StoreKit] ✅ initialize: Módulo obtenido', {
@@ -727,21 +733,17 @@ class StoreKitService {
           if (this.isInitialized) break;
         }
         if (!this.isInitialized) {
-          return {
-            success: false,
-            error: 'No se pudo inicializar StoreKit',
+          return this.fail('No se pudo inicializar StoreKit', 'INITIALIZATION_FAILED', {
             products: [],
-          };
+          });
         }
       }
 
       let module = this.module || getInAppPurchasesModule();
       if (!module) {
-        return {
-          success: false,
-          error: 'Módulo nativo no disponible',
+        return this.fail('Módulo nativo no disponible', 'MODULE_UNAVAILABLE', {
           products: [],
-        };
+        });
       }
       this.module = module;
 
@@ -751,11 +753,9 @@ class StoreKitService {
         // Validar que productIds sea un array válido
         if (!Array.isArray(productIds) || productIds.length === 0) {
           console.error('[StoreKit] productIds inválido:', productIds);
-          return {
-            success: false,
-            error: 'No se pudieron obtener los IDs de productos',
+          return this.fail('No se pudieron obtener los IDs de productos', 'PRODUCT_IDS_INVALID', {
             products: [],
-          };
+          });
         }
 
         console.log('[StoreKit] Solicitando productos:', productIds);
@@ -763,21 +763,17 @@ class StoreKitService {
         
         if (!productsResult) {
           console.error('[StoreKit] getProductsAsync retornó undefined');
-          return {
-            success: false,
-            error: 'No se recibió respuesta de App Store',
+          return this.fail('No se recibió respuesta de App Store', 'APPSTORE_NO_RESPONSE', {
             products: [],
-          };
+          });
         }
 
         // Validar que productsResult tenga la estructura esperada
         if (typeof productsResult !== 'object') {
           console.error('[StoreKit] getProductsAsync retornó tipo inválido:', typeof productsResult);
-          return {
-            success: false,
-            error: 'Respuesta inválida de App Store',
+          return this.fail('Respuesta inválida de App Store', 'APPSTORE_INVALID_RESPONSE', {
             products: [],
-          };
+          });
         }
         
         const responseCode = productsResult.responseCode;
@@ -786,11 +782,11 @@ class StoreKitService {
         // Validar que responseCode exista
         if (responseCode === undefined || responseCode === null) {
           console.error('[StoreKit] responseCode no encontrado en productsResult:', productsResult);
-          return {
-            success: false,
-            error: 'Respuesta inválida de App Store: falta responseCode',
-            products: [],
-          };
+          return this.fail(
+            'Respuesta inválida de App Store: falta responseCode',
+            'APPSTORE_INVALID_RESPONSE',
+            { products: [] },
+          );
         }
         
         if (responseCode === module.IAPResponseCode.OK) {
@@ -815,19 +811,15 @@ class StoreKitService {
           };
         } else {
           console.warn('[StoreKit] Error obteniendo productos:', responseCode);
-          return {
-            success: false,
-            error: `Error al obtener productos: ${responseCode}`,
+          return this.fail(`Error al obtener productos: ${responseCode}`, 'PRODUCTS_FETCH_FAILED', {
             products: [],
-          };
+          });
         }
       } catch (error) {
         console.error('[StoreKit] Error cargando productos:', error);
-        return {
-          success: false,
-          error: error.message || 'Error al cargar productos',
+        return this.fail(error.message || 'Error al cargar productos', 'PRODUCTS_LOAD_ERROR', {
           products: [],
-        };
+        });
       }
     })();
 
@@ -867,10 +859,10 @@ class StoreKitService {
    */
   async purchaseSubscription(plan, onValidateReceipt) {
     if (this.purchaseInProgress) {
-      return {
-        success: false,
-        error: 'Ya hay una compra en curso. Espera unos segundos e intenta nuevamente.',
-      };
+      return this.fail(
+        'Ya hay una compra en curso. Espera unos segundos e intenta nuevamente.',
+        'PURCHASE_IN_PROGRESS',
+      );
     }
     // CRÍTICO: tomar el mutex antes de cualquier await para evitar race (doble tap)
     this.purchaseInProgress = true;
@@ -886,10 +878,10 @@ class StoreKitService {
     let module = this.module || getInAppPurchasesModule();
     if (!module) {
       console.error('[StoreKit] ❌ purchaseSubscription: Módulo no disponible al inicio');
-      return {
-        success: false,
-        error: 'Módulo nativo no disponible. Por favor, reinicia la app.',
-      };
+      return this.fail(
+        'Módulo nativo no disponible. Por favor, reinicia la app.',
+        'MODULE_UNAVAILABLE',
+      );
     }
     this.module = module;
     console.log('[StoreKit] ✅ purchaseSubscription: Módulo obtenido', {
@@ -928,10 +920,10 @@ class StoreKitService {
     // Verificar que el módulo esté disponible después de la inicialización
     module = this.module || getInAppPurchasesModule();
     if (!module) {
-      return {
-        success: false,
-        error: 'Módulo nativo no disponible. Por favor, reinicia la app.',
-      };
+      return this.fail(
+        'Módulo nativo no disponible. Por favor, reinicia la app.',
+        'MODULE_UNAVAILABLE',
+      );
     }
     this.module = module;
 
@@ -942,27 +934,24 @@ class StoreKitService {
       if (!module || typeof module.purchaseItemAsync !== 'function') {
         this.module = null;
         this.isInitialized = false;
-        return {
-          success: false,
-          error: 'Función de compra no disponible. Por favor, reinicia la app.',
-        };
+        return this.fail(
+          'Función de compra no disponible. Por favor, reinicia la app.',
+          'PURCHASE_FN_UNAVAILABLE',
+        );
       }
       this.module = module;
     }
 
     if (!module.IAPResponseCode) {
-      return {
-        success: false,
-        error: 'Configuración de compras no disponible. Por favor, reinicia la app.',
-      };
+      return this.fail(
+        'Configuración de compras no disponible. Por favor, reinicia la app.',
+        'PURCHASE_CONFIG_UNAVAILABLE',
+      );
     }
 
     const productId = PRODUCT_IDS[plan];
     if (!productId) {
-      return {
-        success: false,
-        error: `Plan no válido: ${plan}`,
-      };
+      return this.fail(`Plan no válido: ${plan}`, 'INVALID_PLAN');
     }
 
     // CRÍTICO: Verificar que los productos estén cargados antes de comprar
@@ -971,10 +960,10 @@ class StoreKitService {
       console.log('[StoreKit] Productos no cargados, cargando ahora...');
       const loadResult = await this.loadProducts();
       if (!loadResult.success || !loadResult.products || loadResult.products.length === 0) {
-        return {
-          success: false,
-          error: loadResult.error || 'No se pudieron cargar los productos. Por favor, intenta de nuevo.',
-        };
+        return this.fail(
+          loadResult.error || 'No se pudieron cargar los productos. Por favor, intenta de nuevo.',
+          'PRODUCTS_NOT_READY',
+        );
       }
     }
 
@@ -982,18 +971,18 @@ class StoreKitService {
     const productAvailable = this.products.some(p => p && p.productId === productId);
     if (!productAvailable) {
       console.log('[StoreKit] Producto no encontrado en lista, recargando productos...');
-      const loadResult = await this.loadProducts();
+      await this.loadProducts();
       const stillNotAvailable = !this.products.some(p => p && p.productId === productId);
       if (stillNotAvailable) {
         // Intentar una vez más después de un breve delay
         await new Promise(resolve => setTimeout(resolve, 1000));
-        const retryLoadResult = await this.loadProducts();
+        await this.loadProducts();
         const finalCheck = !this.products.some(p => p && p.productId === productId);
         if (finalCheck) {
-          return {
-            success: false,
-            error: `El producto ${productId} no está disponible en App Store. Verifica que esté configurado correctamente en App Store Connect.`,
-          };
+          return this.fail(
+            `El producto ${productId} no está disponible en App Store. Verifica que esté configurado correctamente en App Store Connect.`,
+            'PRODUCT_UNAVAILABLE',
+          );
         }
       }
     }
@@ -1017,11 +1006,9 @@ class StoreKitService {
       } catch (purchaseError) {
         const msg = purchaseError?.message || String(purchaseError || '');
         if (msg === 'CANCELLED') {
-          return {
-            success: false,
+          return this.fail('Compra cancelada por el usuario.', 'PURCHASE_CANCELLED', {
             cancelled: true,
-            error: 'Compra cancelada por el usuario.',
-          };
+          });
         }
         console.error('[StoreKit] ❌ Error esperando actualización de compra (listener)', {
           productId,
@@ -1030,16 +1017,12 @@ class StoreKitService {
           stack: purchaseError?.stack,
         });
         if (msg.includes('Must wait for promise to resolve')) {
-          return {
-            success: false,
-            error:
-              'La compra anterior todavía se está procesando. Espera unos segundos y vuelve a intentar.',
-          };
+          return this.fail(
+            'La compra anterior todavía se está procesando. Espera unos segundos y vuelve a intentar.',
+            'PURCHASE_IN_PROGRESS',
+          );
         }
-        return {
-          success: false,
-          error: msg || 'Error al procesar la compra. Por favor, intenta de nuevo.',
-        };
+        return this.fail(msg || 'Error al procesar la compra. Por favor, intenta de nuevo.', 'PURCHASE_FAILED');
       }
       const purchaseRequestDuration = Date.now() - purchaseRequestTime;
 
@@ -1059,11 +1042,10 @@ class StoreKitService {
           plan,
           totalDuration: Date.now() - purchaseStartTime,
         });
-        return {
-          success: false,
-          error:
-            'App Store no devolvió confirmación de la compra. Espera unos segundos, usa «Restaurar compras» o revisa si ya tienes la suscripción activa.',
-        };
+        return this.fail(
+          'App Store no devolvió confirmación de la compra. Espera unos segundos, usa «Restaurar compras» o revisa si ya tienes la suscripción activa.',
+          'APPSTORE_NO_RESPONSE',
+        );
       }
       const { responseCode, results } = purchaseResult;
       
@@ -1115,7 +1097,7 @@ class StoreKitService {
               if (purchase && purchase.productId && module && typeof module.finishTransactionAsync === 'function') {
                 try {
                   await module.finishTransactionAsync(purchase, false);
-                } catch (finishError) {
+                } catch {
                   // Ignorar error de finalización si los datos están incompletos
                 }
               }
@@ -1304,7 +1286,6 @@ class StoreKitService {
         // incluso si la finalización falla (la suscripción ya está activa)
         let finalizationSuccess = false;
         try {
-          const finishStartTime = Date.now();
           console.log('[StoreKit] 🏁 FINALIZANDO TRANSACCIÓN', {
             productId,
             plan,
@@ -1437,16 +1418,11 @@ class StoreKitService {
           plan: mappedPlan,
         };
       } else if (responseCode === module.IAPResponseCode.USER_CANCELED) {
-        return {
-          success: false,
-          error: 'Compra cancelada por el usuario',
+        return this.fail('Compra cancelada por el usuario', 'PURCHASE_CANCELLED', {
           cancelled: true,
-        };
+        });
       } else {
-        return {
-          success: false,
-          error: `Error en la compra: ${responseCode}`,
-        };
+        return this.fail(`Error en la compra: ${responseCode}`, 'PURCHASE_FAILED');
       }
     } catch (error) {
       console.error('[StoreKit] Error en compra:', error);
@@ -1650,10 +1626,7 @@ class StoreKitService {
         };
       }
       
-      return {
-        success: false,
-        error: errorMessage,
-      };
+      return this.fail(errorMessage, 'PURCHASE_EXCEPTION');
     } finally {
       this.purchaseInProgress = false;
       if (this._purchaseUpdateWaiter) {
@@ -1683,11 +1656,9 @@ class StoreKitService {
       if (!this.isInitialized && !this.initializing) {
         const initResult = await this.initialize();
         if (!initResult.success) {
-          return {
-            success: false,
-            error: initResult.error || 'No se pudo inicializar StoreKit',
+          return this.fail(initResult.error || 'No se pudo inicializar StoreKit', 'INITIALIZATION_FAILED', {
             purchases: [],
-          };
+          });
         }
       } else if (this.initializing) {
         let attempts = 0;
@@ -1697,21 +1668,17 @@ class StoreKitService {
           if (this.isInitialized) break;
         }
         if (!this.isInitialized) {
-          return {
-            success: false,
-            error: 'No se pudo inicializar StoreKit. Por favor, intenta de nuevo.',
+          return this.fail('No se pudo inicializar StoreKit. Por favor, intenta de nuevo.', 'INITIALIZATION_FAILED', {
             purchases: [],
-          };
+          });
         }
       }
 
       let module = this.module || getInAppPurchasesModule();
       if (!module) {
-        return {
-          success: false,
-          error: 'Módulo nativo no disponible',
+        return this.fail('Módulo nativo no disponible', 'MODULE_UNAVAILABLE', {
           purchases: [],
-        };
+        });
       }
       this.module = module;
 
@@ -1722,20 +1689,16 @@ class StoreKitService {
 
         if (!historyResult) {
           console.error('[StoreKit] getPurchaseHistoryAsync retornó undefined');
-          return {
-            success: false,
-            error: 'No se recibió respuesta de App Store',
+          return this.fail('No se recibió respuesta de App Store', 'APPSTORE_NO_RESPONSE', {
             purchases: [],
-          };
+          });
         }
 
         if (typeof historyResult !== 'object') {
           console.error('[StoreKit] getPurchaseHistoryAsync retornó tipo inválido:', typeof historyResult);
-          return {
-            success: false,
-            error: 'Respuesta inválida de App Store',
+          return this.fail('Respuesta inválida de App Store', 'APPSTORE_INVALID_RESPONSE', {
             purchases: [],
-          };
+          });
         }
 
         const responseCode = historyResult.responseCode;
@@ -1795,26 +1758,20 @@ class StoreKitService {
         }
 
         if (responseCode === module.IAPResponseCode.USER_CANCELED) {
-          return {
-            success: false,
-            error: 'Restauración cancelada por el usuario',
+          return this.fail('Restauración cancelada por el usuario', 'RESTORE_CANCELLED', {
             purchases: [],
             cancelled: true,
-          };
+          });
         }
 
-        return {
-          success: false,
-          error: `Error restaurando compras: ${responseCode}`,
+        return this.fail(`Error restaurando compras: ${responseCode}`, 'RESTORE_FAILED', {
           purchases: [],
-        };
+        });
       } catch (error) {
         console.error('[StoreKit] Error restaurando compras:', error);
-        return {
-          success: false,
-          error: error?.message || 'Error al restaurar compras',
+        return this.fail(error?.message || 'Error al restaurar compras', 'RESTORE_EXCEPTION', {
           purchases: [],
-        };
+        });
       }
     };
 
@@ -1834,11 +1791,9 @@ class StoreKitService {
 
     let module = this.module || getInAppPurchasesModule();
     if (!module) {
-      return {
-        success: false,
-        error: 'Módulo nativo no disponible',
+      return this.fail('Módulo nativo no disponible', 'MODULE_UNAVAILABLE', {
         subscriptions: [],
-      };
+      });
     }
     this.module = module;
 
@@ -1846,11 +1801,9 @@ class StoreKitService {
       const historyResult = await module.getPurchaseHistoryAsync();
       
       if (!historyResult) {
-        return {
-          success: false,
-          error: 'No se recibió respuesta de App Store',
+        return this.fail('No se recibió respuesta de App Store', 'APPSTORE_NO_RESPONSE', {
           subscriptions: [],
-        };
+        });
       }
       
       const { responseCode, results } = historyResult;
@@ -1872,19 +1825,15 @@ class StoreKitService {
           })),
         };
       } else {
-        return {
-          success: false,
-          error: `Error obteniendo historial: ${responseCode}`,
+        return this.fail(`Error obteniendo historial: ${responseCode}`, 'HISTORY_FETCH_FAILED', {
           subscriptions: [],
-        };
+        });
       }
     } catch (error) {
       console.error('[StoreKit] Error obteniendo suscripciones activas:', error);
-      return {
-        success: false,
-        error: error.message || 'Error al obtener suscripciones activas',
+      return this.fail(error.message || 'Error al obtener suscripciones activas', 'HISTORY_FETCH_EXCEPTION', {
         subscriptions: [],
-      };
+      });
     }
   }
 
@@ -1914,7 +1863,7 @@ class StoreKitService {
         this.isInitialized = false;
         this.module = null;
         this._iapPurchaseListenerBound = false;
-      } catch (error) {
+      } catch {
         // Ignorar error al desconectar
       }
     }

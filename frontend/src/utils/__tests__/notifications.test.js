@@ -10,8 +10,6 @@ import {
   scheduleLocalNotification,
   sendImmediateNotification,
   scheduleDailyNotification,
-  scheduleAlternateNotifications,
-  scheduleMultipleDailyNotifications,
   cancelAllNotifications,
   checkNotificationStatus,
   scheduleTaskNotification,

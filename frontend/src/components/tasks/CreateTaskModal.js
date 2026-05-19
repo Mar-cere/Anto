@@ -18,11 +18,69 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
-import { getApiErrorMessage } from '../../utils/apiErrorHandler';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 import { SPACING } from '../../constants/ui';
+
+const DEFAULT_TEXTS = {
+  NEW_TASK_TITLE: 'Nueva Tarea',
+  NEW_REMINDER_TITLE: 'Nuevo Recordatorio',
+  KEYBOARD_DONE: 'Listo',
+  TYPE_TASK: 'Tarea',
+  TYPE_REMINDER: 'Recordatorio',
+  FIELD_TITLE: 'Titulo *',
+  FIELD_TITLE_PLACEHOLDER: 'Ingresa el titulo',
+  FIELD_DESCRIPTION: 'Descripcion (opcional)',
+  FIELD_DESCRIPTION_PLACEHOLDER: 'Describe tu tarea...',
+  FIELD_DATE_TIME: 'Fecha y Hora *',
+  FIELD_PRIORITY: 'Prioridad',
+  PRIORITY_HIGH: 'Alta',
+  PRIORITY_MEDIUM: 'Media',
+  PRIORITY_LOW: 'Baja',
+  NOTIFICATION_LABEL: 'Notificacion',
+  CREATING: 'Creando...',
+  CREATE_TASK_CTA: 'Crear Tarea',
+  CREATE_REMINDER_CTA: 'Crear Recordatorio',
+  VALIDATION_TITLE_REQUIRED: 'El titulo es requerido',
+  VALIDATION_TITLE_MIN: 'El titulo debe tener al menos 3 caracteres',
+  VALIDATION_DATE_PAST: 'La fecha no puede ser anterior a la actual',
+  VALIDATION_TIME_PAST: 'La hora no puede ser anterior a la actual',
+  VALIDATION_DESCRIPTION_MAX: 'La descripcion no puede exceder 500 caracteres',
+  ERROR_CREATE_TASK_GENERIC: 'Error al crear la tarea.',
+  ERROR_CONNECTION: 'No hay conexión. Verifica tu internet e inténtalo de nuevo.',
+  ERROR_TOO_MANY_REQUESTS:
+    'Demasiados intentos. Espera un momento y vuelve a intentar.',
+};
+
+const resolveCreateTaskErrorMessage = (error, texts) => {
+  const status = error?.response?.status;
+  const rawMessage = String(
+    error?.response?.data?.message ?? error?.message ?? '',
+  ).toLowerCase();
+
+  const isNetworkIssue =
+    !error?.response ||
+    rawMessage.includes('network') ||
+    rawMessage.includes('econnrefused') ||
+    rawMessage.includes('timeout') ||
+    rawMessage.includes('timed out');
+  if (isNetworkIssue) {
+    return texts.ERROR_CONNECTION || texts.ERROR_CREATE_TASK_GENERIC;
+  }
+
+  if (
+    status === 429 ||
+    rawMessage.includes('too many') ||
+    rawMessage.includes('demasiados intentos')
+  ) {
+    return texts.ERROR_TOO_MANY_REQUESTS || texts.ERROR_CREATE_TASK_GENERIC;
+  }
+
+  return texts.ERROR_CREATE_TASK_GENERIC;
+};
 
 const CreateTaskModal = ({
   visible,
@@ -32,7 +90,13 @@ const CreateTaskModal = ({
   setFormData
 }) => {
   const { showToast } = useToast();
+  const { language } = useLanguage();
   const { colors, resolvedScheme } = useTheme();
+  const translated = useSectionTranslations('TASKS');
+  const TEXTS = useMemo(
+    () => ({ ...DEFAULT_TEXTS, ...(translated || {}) }),
+    [translated]
+  );
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
 
   const styles = useMemo(
@@ -375,7 +439,7 @@ const CreateTaskModal = ({
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const slideAnim = new Animated.Value(0);
+  const slideAnim = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef(null);
   const scrollHintTimeouts = useRef([]);
 
@@ -444,44 +508,46 @@ const CreateTaskModal = ({
         useNativeDriver: true,
       }).start();
     }
-  }, [visible]);
+  }, [visible, slideAnim]);
 
   const formatTime = useCallback((date) => {
-    return date.toLocaleTimeString('es-ES', { 
+    const locale = language === 'en' ? 'en-US' : 'es-ES';
+    return date.toLocaleTimeString(locale, {
       hour: '2-digit', 
       minute: '2-digit',
       hour12: true 
     });
-  }, []);
+  }, [language]);
 
   const formatDate = useCallback((date) => {
-    return date.toLocaleDateString('es-ES', {
+    const locale = language === 'en' ? 'en-US' : 'es-ES';
+    return date.toLocaleDateString(locale, {
       day: '2-digit',
       month: 'short',
       year: 'numeric'
     });
-  }, []);
+  }, [language]);
 
   const validateForm = useCallback(() => {
     const newErrors = {};
 
     if (!formData.title.trim()) {
-      newErrors.title = 'El título es requerido';
+      newErrors.title = TEXTS.VALIDATION_TITLE_REQUIRED;
     } else if (formData.title.trim().length < 3) {
-      newErrors.title = 'El título debe tener al menos 3 caracteres';
+      newErrors.title = TEXTS.VALIDATION_TITLE_MIN;
     }
 
     if (formData.dueDate < new Date()) {
-      newErrors.dueDate = 'La fecha no puede ser anterior a la actual';
+      newErrors.dueDate = TEXTS.VALIDATION_DATE_PAST;
     }
 
     if (isTask && formData.description && formData.description.trim().length > 500) {
-      newErrors.description = 'La descripción no puede exceder 500 caracteres';
+      newErrors.description = TEXTS.VALIDATION_DESCRIPTION_MAX;
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formData, isTask]);
+  }, [formData, isTask, TEXTS]);
 
   const handleDateChange = useCallback((event, selectedDate) => {
     setPickerMode(null);
@@ -492,14 +558,14 @@ const CreateTaskModal = ({
       
       // Validar que la fecha no sea anterior a la actual
       if (selectedDate < new Date()) {
-        setErrors(prev => ({ ...prev, dueDate: 'La fecha no puede ser anterior a la actual' }));
+        setErrors(prev => ({ ...prev, dueDate: TEXTS.VALIDATION_DATE_PAST }));
         return;
       }
       
       setFormData({...formData, dueDate: selectedDate});
       setErrors(prev => ({ ...prev, dueDate: null }));
     }
-  }, [formData, setFormData]);
+  }, [formData, setFormData, TEXTS.VALIDATION_DATE_PAST]);
 
   const handleTimeChange = useCallback((event, selectedTime) => {
     setPickerMode(null);
@@ -517,14 +583,14 @@ const CreateTaskModal = ({
         selectedTime.getFullYear() === now.getFullYear() &&
         selectedTime < now
       ) {
-        setErrors(prev => ({ ...prev, dueDate: 'La hora no puede ser anterior a la actual' }));
+        setErrors(prev => ({ ...prev, dueDate: TEXTS.VALIDATION_TIME_PAST }));
         return;
       }
       
       setFormData({...formData, dueDate: selectedTime});
       setErrors(prev => ({ ...prev, dueDate: null }));
     }
-  }, [formData, setFormData]);
+  }, [formData, setFormData, TEXTS.VALIDATION_TIME_PAST]);
 
   const handleSubmit = useCallback(async () => {
     if (!validateForm()) {
@@ -556,13 +622,13 @@ const CreateTaskModal = ({
     } catch (error) {
       console.error('Error en handleSubmit:', error);
       showToast({
-        message: getApiErrorMessage(error) || 'Error al crear la tarea.',
+        message: resolveCreateTaskErrorMessage(error, TEXTS),
         type: 'error',
       });
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateForm, formData, notificationEnabled, isTask, onSubmit, showToast]);
+  }, [validateForm, formData, notificationEnabled, isTask, onSubmit, showToast, TEXTS]);
 
   const handleTypeChange = useCallback((type) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -609,7 +675,7 @@ const CreateTaskModal = ({
           <View style={styles.sheetGrabber} />
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
-              {isTask ? 'Nueva Tarea' : 'Nuevo Recordatorio'}
+              {isTask ? TEXTS.NEW_TASK_TITLE : TEXTS.NEW_REMINDER_TITLE}
             </Text>
             <View style={styles.headerActions}>
               {keyboardVisible ? (
@@ -619,7 +685,7 @@ const CreateTaskModal = ({
                   activeOpacity={0.7}
                   hitSlop={10}
                 >
-                  <Text style={styles.keyboardDismissText}>Listo</Text>
+                  <Text style={styles.keyboardDismissText}>{TEXTS.KEYBOARD_DONE}</Text>
                 </TouchableOpacity>
               ) : null}
               <TouchableOpacity
@@ -662,7 +728,7 @@ const CreateTaskModal = ({
                 <Text style={[
                   styles.typeButtonText,
                   isTask && styles.typeButtonTextActive
-                ]}>Tarea</Text>
+                ]}>{TEXTS.TYPE_TASK}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -681,19 +747,19 @@ const CreateTaskModal = ({
                 <Text style={[
                   styles.typeButtonText,
                   !isTask && styles.reminderTypeButtonTextActive
-                ]}>Recordatorio</Text>
+                ]}>{TEXTS.TYPE_REMINDER}</Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Título *</Text>
+              <Text style={styles.inputLabel}>{TEXTS.FIELD_TITLE}</Text>
               <TextInput
                 style={[
                   styles.input, 
                   !isTask && styles.reminderInput,
                   errors.title && styles.inputError
                 ]}
-                placeholder="Ingresa el título"
+                placeholder={TEXTS.FIELD_TITLE_PLACEHOLDER}
                 placeholderTextColor={colors.textSecondary}
                 value={formData.title}
                 onChangeText={(text) => {
@@ -709,14 +775,14 @@ const CreateTaskModal = ({
 
             {isTask && (
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Descripción (opcional)</Text>
+                <Text style={styles.inputLabel}>{TEXTS.FIELD_DESCRIPTION}</Text>
                 <TextInput
                   style={[
                     styles.input, 
                     styles.textArea,
                     errors.description && styles.inputError
                   ]}
-                  placeholder="Describe tu tarea..."
+                  placeholder={TEXTS.FIELD_DESCRIPTION_PLACEHOLDER}
                   placeholderTextColor={colors.textSecondary}
                   value={formData.description}
                   onChangeText={(text) => {
@@ -737,7 +803,7 @@ const CreateTaskModal = ({
             )}
 
             <View style={styles.dateTimeContainer}>
-              <Text style={styles.inputLabel}>Fecha y Hora *</Text>
+              <Text style={styles.inputLabel}>{TEXTS.FIELD_DATE_TIME}</Text>
               <View style={styles.dateTimeButtons}>
                 <TouchableOpacity
                   style={[
@@ -807,12 +873,12 @@ const CreateTaskModal = ({
 
             {isTask && (
               <View style={styles.prioritySelector}>
-                <Text style={styles.sectionTitle}>Prioridad</Text>
+                <Text style={styles.sectionTitle}>{TEXTS.FIELD_PRIORITY}</Text>
                 <View style={styles.priorityButtons}>
                   {[
-                    { value: 'high', label: 'Alta', color: colors.error, icon: 'alert-circle' },
-                    { value: 'medium', label: 'Media', color: colors.warning, icon: 'alert' },
-                    { value: 'low', label: 'Baja', color: colors.success, icon: 'checkmark-circle' },
+                    { value: 'high', label: TEXTS.PRIORITY_HIGH, color: colors.error, icon: 'alert-circle' },
+                    { value: 'medium', label: TEXTS.PRIORITY_MEDIUM, color: colors.warning, icon: 'alert' },
+                    { value: 'low', label: TEXTS.PRIORITY_LOW, color: colors.success, icon: 'checkmark-circle' },
                   ].map((priority) => {
                     const selected = formData.priority === priority.value;
                     return (
@@ -850,7 +916,7 @@ const CreateTaskModal = ({
             <View style={styles.notificationContainer}>
               <View style={styles.notificationHeader}>
                 <Ionicons name="notifications-outline" size={20} color={colors.textSecondary} />
-                <Text style={styles.notificationLabel}>Notificación</Text>
+                <Text style={styles.notificationLabel}>{TEXTS.NOTIFICATION_LABEL}</Text>
               </View>
               <Switch
                 value={notificationEnabled}
@@ -874,11 +940,11 @@ const CreateTaskModal = ({
                 {isSubmitting ? (
                   <View style={styles.loadingContainer}>
                     <Ionicons name="hourglass-outline" size={20} color={colors.textOnPrimary} />
-                    <Text style={styles.submitButtonText}>Creando...</Text>
+                    <Text style={styles.submitButtonText}>{TEXTS.CREATING}</Text>
                   </View>
                 ) : (
                   <Text style={styles.submitButtonText}>
-                    {isTask ? 'Crear Tarea' : 'Crear Recordatorio'}
+                    {isTask ? TEXTS.CREATE_TASK_CTA : TEXTS.CREATE_REMINDER_CTA}
                   </Text>
                 )}
               </TouchableOpacity>

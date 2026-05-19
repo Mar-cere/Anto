@@ -34,11 +34,12 @@ import { scheduleTaskNotification, cancelTaskNotifications } from '../utils/noti
 import { useToast } from '../context/ToastContext';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getApiErrorMessage, isAuthError } from '../utils/apiErrorHandler';
+import { isAuthError } from '../utils/apiErrorHandler';
 import { isValidClientRequestId } from '../utils/clientRequestId';
 import { postProductActionTelemetry } from '../utils/productActionTelemetry';
 import { buildTaskSections } from '../utils/taskDateSections';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
 
 // Constantes de prioridad
@@ -63,7 +64,7 @@ const FILTER_TYPES = {
 };
 
 // Constantes de textos
-const TEXTS = {
+const DEFAULT_TEXTS = {
   NO_TOKEN: 'No se encontró token de autenticación',
   ERROR_LOAD: 'Error al obtener las tareas',
   SESSION_EXPIRED: 'Sesión expirada',
@@ -96,6 +97,42 @@ const TEXTS = {
   RETRY: 'Reintentar',
   LOAD_ERROR_HINT: 'Revisa tu conexión e intenta de nuevo.',
   SEARCH_NO_RESULTS: 'No hay resultados para tu búsqueda',
+  SEARCH_EMPTY_HINT: 'Prueba con otras palabras o borra el filtro de búsqueda.',
+  SEARCH_CLEAR: 'Limpiar búsqueda',
+  DATA_OFFLINE_TITLE: 'Sin conexión a los datos',
+  ERROR_CONNECTION: 'No hay conexión. Verifica tu internet e inténtalo de nuevo.',
+  ERROR_TOO_MANY_REQUESTS:
+    'Demasiados intentos. Espera un momento y vuelve a intentar.',
+  COUNT_PENDING_SINGULAR: 'pendiente',
+  COUNT_PENDING_PLURAL: 'pendientes',
+};
+
+const resolveTaskScreenErrorMessage = (error, texts, fallbackKey, isOffline) => {
+  const status = error?.response?.status;
+  const rawMessage = String(
+    error?.response?.data?.message ?? error?.message ?? '',
+  ).toLowerCase();
+
+  const isNetworkIssue =
+    isOffline ||
+    !error?.response ||
+    rawMessage.includes('network') ||
+    rawMessage.includes('econnrefused') ||
+    rawMessage.includes('timeout') ||
+    rawMessage.includes('timed out');
+  if (isNetworkIssue) {
+    return texts.ERROR_CONNECTION || texts[fallbackKey];
+  }
+
+  if (
+    status === 429 ||
+    rawMessage.includes('too many') ||
+    rawMessage.includes('demasiados intentos')
+  ) {
+    return texts.ERROR_TOO_MANY_REQUESTS || texts[fallbackKey];
+  }
+
+  return texts[fallbackKey];
 };
 
 // Constantes de estilos
@@ -122,9 +159,9 @@ const FLATLIST_MAX_TO_RENDER = 10;
 const FLATLIST_WINDOW_SIZE = 10;
 const FLATLIST_INITIAL_NUM_TO_RENDER = 10;
 const FILTER_META = {
-  all: { label: 'Todo', icon: 'layers-outline' },
-  task: { label: 'Tareas', icon: 'checkbox-outline' },
-  reminder: { label: 'Recordatorios', icon: 'alarm-outline' },
+  all: { icon: 'layers-outline' },
+  task: { icon: 'checkbox-outline' },
+  reminder: { icon: 'alarm-outline' },
 };
 
 // Constantes de valores por defecto
@@ -162,8 +199,12 @@ const TaskScreen = ({ route }) => {
   const pendingChatOriginRef = useRef(null);
   const pendingClientRequestIdRef = useRef(null);
   const { showToast } = useToast();
+  const translated = useSectionTranslations('TASKS');
+  const TEXTS = useMemo(
+    () => ({ ...DEFAULT_TEXTS, ...(translated || {}) }),
+    [translated]
+  );
   const [searchQuery, setSearchQuery] = useState('');
-  const [density, setDensity] = useState('comfortable');
   const itemsRef = useRef([]);
   const pendingCompleteRef = useRef({ timeoutId: null, itemId: null });
 
@@ -393,7 +434,7 @@ const TaskScreen = ({ route }) => {
         ...prev,
         loading: false,
         refreshing: false,
-        error: getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_LOAD
+        error: resolveTaskScreenErrorMessage(error, TEXTS, 'ERROR_LOAD', isOffline)
       }));
       if (isAuthError(error)) {
         Alert.alert(TEXTS.SESSION_EXPIRED, TEXTS.SESSION_EXPIRED_MESSAGE);
@@ -404,7 +445,7 @@ const TaskScreen = ({ route }) => {
         });
       }
     }
-  }, [navigation, isOffline]);
+  }, [navigation, isOffline, TEXTS]);
 
   // Recargar cuando la pantalla se enfoca
   useFocusEffect(
@@ -508,7 +549,7 @@ const TaskScreen = ({ route }) => {
       }
       const errorMessage = error.errors?.length > 0
         ? `${TEXTS.INVALID_DATA} ${error.errors.join(', ')}`
-        : getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_CREATE_TASK;
+        : resolveTaskScreenErrorMessage(error, TEXTS, 'ERROR_CREATE_TASK', isOffline);
       showToast({
         message: errorMessage,
         type: 'error',
@@ -549,7 +590,7 @@ const TaskScreen = ({ route }) => {
             } catch (error) {
               console.error('Error al eliminar item completado:', error);
               showToast({
-                message: getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_DELETE_MESSAGE,
+                message: resolveTaskScreenErrorMessage(error, TEXTS, 'ERROR_DELETE_MESSAGE', isOffline),
                 type: 'error',
               });
             }
@@ -579,7 +620,7 @@ const TaskScreen = ({ route }) => {
                 } catch (err) {
                   console.error('Error al deshacer completado:', err);
                   showToast({
-                    message: getApiErrorMessage(err, { isOffline }) || TEXTS.ERROR_UPDATE_MESSAGE,
+                    message: resolveTaskScreenErrorMessage(err, TEXTS, 'ERROR_UPDATE_MESSAGE', isOffline),
                     type: 'error',
                   });
                   loadItems(true);
@@ -593,12 +634,12 @@ const TaskScreen = ({ route }) => {
       } catch (error) {
         console.error('Error al completar item:', error);
         showToast({
-          message: getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_UPDATE_MESSAGE,
+          message: resolveTaskScreenErrorMessage(error, TEXTS, 'ERROR_UPDATE_MESSAGE', isOffline),
           type: 'error',
         });
       }
     },
-    [clearPendingComplete, isOffline, showToast, loadItems]
+    [clearPendingComplete, isOffline, showToast, loadItems, TEXTS]
   );
 
   // Eliminar tarea o recordatorio
@@ -625,7 +666,7 @@ const TaskScreen = ({ route }) => {
             } catch (error) {
               console.error('Error eliminando tarea:', error);
               showToast({
-                message: getApiErrorMessage(error, { isOffline }) || TEXTS.ERROR_DELETE_TASK,
+                message: resolveTaskScreenErrorMessage(error, TEXTS, 'ERROR_DELETE_TASK', isOffline),
                 type: 'error',
               });
             }
@@ -633,7 +674,7 @@ const TaskScreen = ({ route }) => {
         }
       ]
     );
-  }, [isOffline, showToast]);
+  }, [isOffline, showToast, TEXTS]);
 
   // Pull to refresh
   const onRefresh = useCallback(() => {
@@ -729,7 +770,7 @@ const TaskScreen = ({ route }) => {
         </View>
       </View>
     );
-  }, []);
+  }, [styles.sectionCountPill, styles.sectionCountText, styles.sectionHeader, styles.sectionHeaderText]);
 
   const renderDefaultEmpty = useCallback(() => {
     const getEmptyText = () => {
@@ -762,7 +803,7 @@ const TaskScreen = ({ route }) => {
         </TouchableOpacity>
       </View>
     );
-  }, [state.filterType]);
+  }, [state.filterType, TEXTS, styles, colors.primary]);
 
   const renderListEmpty = useCallback(() => {
     if (state.loading) return null;
@@ -785,11 +826,11 @@ const TaskScreen = ({ route }) => {
           <Ionicons name="search-outline" size={EMPTY_ICON_SIZE} color={colors.primary} />
           <Text style={styles.emptyText}>{TEXTS.SEARCH_NO_RESULTS}</Text>
           <Text style={styles.emptySubtext}>
-            Prueba con otras palabras o borra el filtro de búsqueda.
+            {TEXTS.SEARCH_EMPTY_HINT}
           </Text>
           <TouchableOpacity style={styles.addFirstButton} onPress={() => setSearchQuery('')}>
             <Ionicons name="close-circle-outline" size={ADD_FIRST_ICON_SIZE} color={colors.primary} />
-            <Text style={styles.addFirstButtonText}>Limpiar búsqueda</Text>
+            <Text style={styles.addFirstButtonText}>{TEXTS.SEARCH_CLEAR}</Text>
           </TouchableOpacity>
         </View>
       );
@@ -804,6 +845,9 @@ const TaskScreen = ({ route }) => {
     typeFilteredItems.length,
     loadItems,
     renderDefaultEmpty,
+    TEXTS,
+    styles,
+    colors.primary,
   ]);
 
   const renderErrorBanner = useCallback(() => {
@@ -812,7 +856,7 @@ const TaskScreen = ({ route }) => {
       <View style={styles.errorBanner}>
         <Ionicons name="warning-outline" size={22} color={colors.warning} style={styles.errorBannerIcon} />
         <View style={styles.errorBannerTextWrap}>
-          <Text style={styles.errorBannerTitle}>Sin conexión a los datos</Text>
+          <Text style={styles.errorBannerTitle}>{TEXTS.DATA_OFFLINE_TITLE}</Text>
           <Text style={styles.errorBannerMeta} numberOfLines={2}>
             {state.error}
           </Text>
@@ -822,7 +866,7 @@ const TaskScreen = ({ route }) => {
         </TouchableOpacity>
       </View>
     );
-  }, [state.error, state.items.length, loadItems]);
+  }, [state.error, state.items.length, loadItems, TEXTS, styles, colors.warning]);
 
   const renderListHeader = useCallback(() => {
     return (
@@ -830,14 +874,15 @@ const TaskScreen = ({ route }) => {
         {!showSkeleton && pendingCount > 0 ? (
           <View style={styles.countRow}>
             <Text style={styles.countText}>
-              {pendingCount} {pendingCount === 1 ? 'pendiente' : 'pendientes'}
+              {pendingCount}{' '}
+              {pendingCount === 1 ? TEXTS.COUNT_PENDING_SINGULAR : TEXTS.COUNT_PENDING_PLURAL}
             </Text>
           </View>
         ) : null}
         {renderErrorBanner()}
       </View>
     );
-  }, [showSkeleton, pendingCount, renderErrorBanner]);
+  }, [showSkeleton, pendingCount, renderErrorBanner, TEXTS, styles]);
 
   // Key extractor optimizado
   const keyExtractor = useCallback((item) => item._id, []);

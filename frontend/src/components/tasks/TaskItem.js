@@ -2,11 +2,48 @@ import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
 
+const DEFAULT_TEXTS = {
+  TYPE_TASK_UPPER: 'TAREA',
+  TYPE_GOAL_UPPER: 'META',
+  TYPE_REMINDER_UPPER: 'RECORDATORIO',
+  STATUS_COMPLETED: 'Completada',
+  STATUS_OVERDUE: 'Atrasada',
+  STATUS_DUE_TODAY: 'Vence hoy',
+  STATUS_TOMORROW: 'Mañana',
+  STATUS_IN_DAYS: 'En {days} dias',
+  STATUS_PLANNED_TASK: 'Planificada',
+  STATUS_PLANNED_GOAL: 'Planificada',
+  STATUS_PLANNED_REMINDER: 'Programado',
+  DELETE_CONFIRM_TITLE: 'Confirmar eliminación',
+  DELETE_CONFIRM_MESSAGE: '¿Estás seguro de que deseas eliminar este {type}?',
+  TYPE_TASK_LOWER: 'tarea',
+  TYPE_GOAL_LOWER: 'meta',
+  TYPE_REMINDER_LOWER: 'recordatorio',
+  PRIORITY_HIGH_LABEL: 'Alta',
+  PRIORITY_MEDIUM_LABEL: 'Media',
+  PRIORITY_LOW_LABEL: 'Baja',
+  PRIORITY_NORMAL_LABEL: 'Normal',
+  OVERDUE_TASK: 'Caducada',
+  OVERDUE_GOAL: 'Caducada',
+  OVERDUE_REMINDER: 'Pasado',
+  SUBTASKS_PREVIEW: 'Subtareas · {done}/{total}',
+  CANCEL: 'Cancelar',
+  DELETE: 'Eliminar',
+};
+
 const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPressIn = 0, density = 'comfortable' }) => {
+  const { language } = useLanguage();
   const { colors } = useTheme();
+  const translated = useSectionTranslations('TASKS');
+  const TEXTS = useMemo(
+    () => ({ ...DEFAULT_TEXTS, ...(translated || {}) }),
+    [translated]
+  );
   const getPriorityColor = useCallback((priority) => {
     switch (priority) {
       case 'high': return colors.error;
@@ -376,21 +413,33 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
           : styles.cardToneReminder;
 
   const getTemporalLabel = useCallback(() => {
-    if (itemState === 'completed') return 'Completada';
+    if (itemState === 'completed') return TEXTS.STATUS_COMPLETED;
     const due = new Date(item.dueDate);
-    if (Number.isNaN(due.getTime())) return isTask ? 'Tarea' : 'Recordatorio';
+    if (Number.isNaN(due.getTime())) {
+      return isTask
+        ? TEXTS.TYPE_TASK_UPPER
+        : isGoal
+          ? TEXTS.TYPE_GOAL_UPPER
+          : TEXTS.TYPE_REMINDER_UPPER;
+    }
     const now = new Date();
     const startToday = new Date(now);
     startToday.setHours(0, 0, 0, 0);
     const startDue = new Date(due);
     startDue.setHours(0, 0, 0, 0);
     const diffDays = Math.round((startDue - startToday) / 86400000);
-    if (itemState === 'overdue') return 'Atrasada';
-    if (diffDays === 0) return 'Vence hoy';
-    if (diffDays === 1) return 'Mañana';
-    if (diffDays > 1 && diffDays <= 7) return `En ${diffDays} días`;
-    return isTask ? 'Planificada' : 'Programado';
-  }, [itemState, item.dueDate, isTask]);
+    if (itemState === 'overdue') return TEXTS.STATUS_OVERDUE;
+    if (diffDays === 0) return TEXTS.STATUS_DUE_TODAY;
+    if (diffDays === 1) return TEXTS.STATUS_TOMORROW;
+    if (diffDays > 1 && diffDays <= 7) {
+      return TEXTS.STATUS_IN_DAYS.replace('{days}', String(diffDays));
+    }
+    return isTask
+      ? TEXTS.STATUS_PLANNED_TASK
+      : isGoal
+        ? TEXTS.STATUS_PLANNED_GOAL
+        : TEXTS.STATUS_PLANNED_REMINDER;
+  }, [itemState, item.dueDate, isTask, isGoal, TEXTS]);
 
   // Animación de entrada
   useEffect(() => {
@@ -463,12 +512,15 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
 
   const handleDelete = useCallback(() => {
     Alert.alert(
-      'Confirmar eliminación',
-      `¿Estás seguro de que deseas eliminar este ${isTask ? 'tarea' : 'recordatorio'}?`,
+      TEXTS.DELETE_CONFIRM_TITLE,
+      TEXTS.DELETE_CONFIRM_MESSAGE.replace(
+        '{type}',
+        isTask ? TEXTS.TYPE_TASK_LOWER : isGoal ? TEXTS.TYPE_GOAL_LOWER : TEXTS.TYPE_REMINDER_LOWER
+      ),
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: TEXTS.CANCEL, style: 'cancel' },
         {
-          text: 'Eliminar',
+          text: TEXTS.DELETE,
           style: 'destructive',
           onPress: () => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -477,7 +529,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
         }
       ]
     );
-  }, [onDelete, item._id, isTask]);
+  }, [onDelete, item._id, isTask, isGoal, TEXTS]);
 
   const handlePressIn = useCallback(() => {
     Animated.spring(scaleAnim, {
@@ -570,16 +622,16 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
               }
             ]}>
               <Ionicons 
-                name={isTask ? 'checkbox-outline' : 'alarm-outline'} 
+                name={isTask ? 'checkbox-outline' : isGoal ? 'flag-outline' : 'alarm-outline'} 
                 size={20} 
-                color={itemState === 'overdue' ? colors.error : isTask ? colors.primary : colors.error} 
+                color={itemState === 'overdue' ? colors.error : isTask || isGoal ? colors.primary : colors.error} 
               />
             </View>
             <View style={styles.titleContainer}>
               <View style={styles.contextRow}>
-                <View style={[styles.typePill, isTask ? styles.typePillTask : styles.typePillReminder]}>
-                  <Text style={[styles.typePillText, isTask ? styles.typePillTextTask : styles.typePillTextReminder]}>
-                    {isTask ? 'TAREA' : 'RECORDATORIO'}
+                <View style={[styles.typePill, isTask || isGoal ? styles.typePillTask : styles.typePillReminder]}>
+                  <Text style={[styles.typePillText, isTask || isGoal ? styles.typePillTextTask : styles.typePillTextReminder]}>
+                    {isTask ? TEXTS.TYPE_TASK_UPPER : isGoal ? TEXTS.TYPE_GOAL_UPPER : TEXTS.TYPE_REMINDER_UPPER}
                   </Text>
                 </View>
                 <View
@@ -621,7 +673,9 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
               {canShowSubtasks ? (
                 <View style={styles.subtasksPreviewRow}>
                   <Text style={styles.subtasksPreviewText} numberOfLines={1}>
-                    {`Subtareas · ${subtaskDoneCount.current}/${item.subtasks.length}`}
+                    {TEXTS.SUBTASKS_PREVIEW
+                      .replace('{done}', String(subtaskDoneCount.current))
+                      .replace('{total}', String(item.subtasks.length))}
                   </Text>
                   <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
                 </View>
@@ -672,7 +726,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
                 density === 'compact' && styles.itemDateCompact,
                 itemState === 'overdue' && styles.overdueDate
               ]}>
-                {new Date(item.dueDate).toLocaleDateString('es-ES', {
+                {new Date(item.dueDate).toLocaleDateString(language === 'en' ? 'en-US' : 'es-ES', {
                   day: '2-digit',
                   month: 'short'
                 })}
@@ -693,7 +747,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
                 density === 'compact' && styles.itemDateCompact,
                 itemState === 'overdue' && styles.overdueDate
               ]}>
-                {new Date(item.dueDate).toLocaleTimeString('es-ES', { 
+                {new Date(item.dueDate).toLocaleTimeString(language === 'en' ? 'en-US' : 'es-ES', {
                   hour: '2-digit', 
                   minute: '2-digit',
                   hour12: true 
@@ -713,7 +767,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
                   color={colors.textOnPrimary} 
                 />
                 <Text style={styles.priorityText}>
-                  {getPriorityText(item.priority)}
+                  {getPriorityText(item.priority, TEXTS)}
                 </Text>
               </View>
             )}
@@ -721,7 +775,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
               <View style={styles.overdueBadge}>
                 <Ionicons name="alert-circle" size={12} color={colors.error} />
                 <Text style={styles.overdueText}>
-                  {isTask ? 'Caducada' : 'Pasado'}
+                  {isTask ? TEXTS.OVERDUE_TASK : isGoal ? TEXTS.OVERDUE_GOAL : TEXTS.OVERDUE_REMINDER}
                 </Text>
               </View>
             )}
@@ -741,12 +795,12 @@ const getPriorityIcon = (priority) => {
   }
 };
 
-const getPriorityText = (priority) => {
+const getPriorityText = (priority, texts = DEFAULT_TEXTS) => {
   switch (priority) {
-    case 'high': return 'Alta';
-    case 'medium': return 'Media';
-    case 'low': return 'Baja';
-    default: return 'Normal';
+    case 'high': return texts.PRIORITY_HIGH_LABEL;
+    case 'medium': return texts.PRIORITY_MEDIUM_LABEL;
+    case 'low': return texts.PRIORITY_LOW_LABEL;
+    default: return texts.PRIORITY_NORMAL_LABEL;
   }
 };
 

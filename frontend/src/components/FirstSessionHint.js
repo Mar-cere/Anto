@@ -24,12 +24,13 @@ import {
   setFirstSessionHintDismissed,
 } from '../utils/firstSessionHintStorage';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { getFocusTheme } from '../styles/focusCardTheme';
 import { SPACING } from '../constants/ui';
 
 export { getFirstSessionHintDismissedKey, isFirstSessionHintDismissed, setFirstSessionHintDismissed };
 
-const TEXTS = {
+const DEFAULT_TEXTS = {
   TITLE: 'Tu objetivo por ahora',
   MESSAGE: 'Empezar el chat con Anto. Ahí podrás contarle cómo estás y recibir apoyo.',
   GO_TO_CHAT: 'Empezar chat',
@@ -37,6 +38,20 @@ const TEXTS = {
 };
 
 const FirstSessionHint = ({ visible, onDismiss, userId = null }) => {
+  const translated = useSectionTranslations('DASH');
+  const TEXTS = useMemo(
+    () => ({
+      ...DEFAULT_TEXTS,
+      TITLE:
+        translated?.FIRST_SESSION_HINT_TITLE || DEFAULT_TEXTS.TITLE,
+      MESSAGE:
+        translated?.FIRST_SESSION_HINT_MESSAGE || DEFAULT_TEXTS.MESSAGE,
+      GO_TO_CHAT:
+        translated?.FIRST_SESSION_HINT_GO_TO_CHAT || DEFAULT_TEXTS.GO_TO_CHAT,
+      GOT_IT: translated?.FIRST_SESSION_HINT_GOT_IT || DEFAULT_TEXTS.GOT_IT,
+    }),
+    [translated],
+  );
   const navigation = useNavigation();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const { colors, resolvedScheme } = useTheme();

@@ -3,14 +3,18 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, ENDPOINTS } from '../../config/api';
-import { getApiErrorMessage } from '../../utils/apiErrorHandler';
-import { CATEGORIES, EMOTION_KEYS } from './therapeuticTechniquesConstants';
+import {
+  CATEGORIES,
+  EMOTION_KEYS,
+  useTherapeuticTechniquesTexts,
+} from './therapeuticTechniquesConstants';
 import {
   normalizeTechniqueCategory,
   parseTherapeuticTechniquesResponse,
 } from './therapeuticTechniquesUtils';
 
 export function useTherapeuticTechniquesScreen() {
+  const TEXTS = useTherapeuticTechniquesTexts();
   const isMountedRef = useRef(true);
   useEffect(() => {
     isMountedRef.current = true;
@@ -40,7 +44,7 @@ export function useTherapeuticTechniquesScreen() {
       const response = await api.get(ENDPOINTS.THERAPEUTIC_TECHNIQUES);
       if (!isMountedRef.current) return;
 
-      const parsed = parseTherapeuticTechniquesResponse(response);
+      const parsed = parseTherapeuticTechniquesResponse(response, TEXTS);
       if (!parsed.ok) {
         setTechniques([]);
         setError(parsed.error);
@@ -53,14 +57,14 @@ export function useTherapeuticTechniquesScreen() {
       if (!isMountedRef.current) return;
       console.error('Error cargando técnicas:', err);
       setTechniques([]);
-      setError(getApiErrorMessage(err));
+      setError(TEXTS.ERROR);
     } finally {
       if (isMountedRef.current) {
         setLoading(false);
         setRefreshing(false);
       }
     }
-  }, []);
+  }, [TEXTS]);
 
   useEffect(() => {
     loadTechniques({ isRefresh: false });

@@ -54,6 +54,10 @@ import progressTracker from './progressTracker.js';
 import sessionEmotionalMemory from './sessionEmotionalMemory.js';
 import therapeuticProtocolService from './therapeuticProtocolService.js';
 import therapeuticTemplateService from './therapeuticTemplateService.js';
+import {
+  shouldOrientSessionClosure,
+  stripPrematureSessionClosurePhrases
+} from './sessionRetentionHints.js';
 
 dotenv.config();
 
@@ -347,7 +351,12 @@ class OpenAIService {
       /** Misma clave para get/set; debe vivir en este ámbito (antes estaba solo dentro del `if` y rompía el `set`). */
       let responseCacheKey = null;
       if (!isGuest) {
-        responseCacheKey = generateResponseCacheKey(contenidoNormalizado, analisisEmocional, analisisContextual);
+        responseCacheKey = generateResponseCacheKey(
+          contenidoNormalizado,
+          analisisEmocional,
+          analisisContextual,
+          perfilUsuario?.preferences?.language === 'en' ? 'en' : 'es',
+        );
         try {
           cachedResponse = await cacheService.get(responseCacheKey);
           if (cachedResponse && isCachedResponseValid(cachedResponse, analisisContextual)) {
@@ -1401,7 +1410,8 @@ class OpenAIService {
     // Guardrail de calidad: reducir densidad de frases empáticas repetitivas.
     respuestaMejorada = this.reduceStockEmpathyDensity(respuestaMejorada);
 
-    // Refuerzo de cierres de sesión: cierre suave + puente de continuidad cuando aplique.
+    // Cierre de tramo: quitar puentes prematuros y solo reforzar cuando el hilo lo permite.
+    respuestaMejorada = stripPrematureSessionClosurePhrases(respuestaMejorada, contexto);
     respuestaMejorada = this.enforceSessionClosureBridge(respuestaMejorada, contexto);
 
     // NUNCA reemplazar por mensaje genérico si tenemos contenido válido (evitar pérdida de información)
@@ -1508,25 +1518,14 @@ class OpenAIService {
   }
 
   shouldApplySessionClosure(contexto = {}) {
-    const riskLevel = String(contexto?.crisis?.riskLevel || '').toUpperCase();
-    if (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') return false;
-    const retention = contexto?.sessionRetention || {};
-    const closureRisk = contexto?.conversationPattern?.closureRisk === true;
-    return (
-      closureRisk ||
-      retention.likelyFarewell === true ||
-      retention.suggestBridgeClosing === true ||
-      retention.suggestFatigueClosing === true ||
-      retention.suggestThematicMicroClosure === true ||
-      retention.suggestCheckpointPause === true
-    );
+    return shouldOrientSessionClosure(contexto);
   }
 
   enforceSessionClosureBridge(respuesta = '', contexto = {}) {
     if (!respuesta || !this.shouldApplySessionClosure(contexto)) return respuesta;
     const lower = respuesta.toLowerCase();
     const hasBridge =
-      /cuando\s+quieras\s+seguimos|si\s+quieres,\s+por\s+hoy|retomamos\s+desde|aquí\s+estar[eé]\s+cuando\s+vuelvas/i.test(
+      /cerrar aqu[ií] este tramo|retomarlo cuando quieras|cuando\s+quieras\s+seguimos|si\s+quieres,\s+por\s+hoy|retomamos\s+desde|aquí\s+estar[eé]\s+cuando\s+vuelvas/i.test(
         lower
       );
     if (hasBridge) return respuesta;

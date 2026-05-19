@@ -128,6 +128,41 @@ jest.mock('../../screens/chat/chatScreenConstants', () => ({
     OFFLINE_PENDING_ONE: 'Pendiente',
     OFFLINE_PENDING_RETRY: 'Reintentar',
   },
+  useChatTexts: () => ({
+    WELCOME: 'Bienvenido',
+    ERROR_LOAD: 'Error load',
+    ERROR_SEND: 'Error send',
+    ERROR_CLEAR: 'Error clear',
+    ERROR_COMMUNICATION: 'Error communication',
+    CONVERSATION_ERROR: 'Conversation error',
+    NETWORK_ERROR: 'Network error',
+    GUEST_LIMIT_TITLE: 'Límite',
+    GUEST_LIMIT_MESSAGE: 'Mensaje límite',
+    GUEST_SESSION_EXPIRED_TITLE: 'Sesión',
+    GUEST_SESSION_EXPIRED_MESSAGE: 'Expiró',
+    GUEST_RATE_LIMIT_TITLE: 'Rate',
+    GUEST_CONTENT_TOO_LONG_TITLE: 'Largo',
+    GUEST_HANDOFF_TITLE: 'Handoff',
+    GUEST_HANDOFF_BODY: 'Body',
+    GUEST_HANDOFF_PRIVACY: 'Privacidad',
+    GUEST_HANDOFF_USE_SUMMARY: 'Usar',
+    GUEST_HANDOFF_START_FRESH: 'Limpio',
+    GUEST_HANDOFF_PREFILL_PREFIX: 'Continuando',
+    OFFLINE_PENDING_ONE: 'Pendiente',
+    OFFLINE_PENDING_RETRY: 'Reintentar',
+    COMMON_OK: 'OK',
+    COMMON_CANCEL: 'Cancelar',
+    COMMON_CREATE_ACCOUNT: 'Crear cuenta',
+    COMMON_SIGN_IN: 'Iniciar sesión',
+    MESSAGE_IN_FLIGHT_DEFAULT: 'En vuelo',
+    SEND_TIMEOUT_DEFAULT: 'Timeout',
+    NETWORK_ERROR_INIT: 'Error init',
+    SUBSCRIPTION_REQUIRED_DEFAULT: 'Suscripción requerida',
+    SUBSCRIPTION_REQUIRED_TITLE: 'Suscripción requerida',
+    SUBSCRIPTION_VIEW_PLANS: 'Ver planes',
+    EMERGENCY_ALERT_SENT_TITLE: 'Alerta',
+    EMERGENCY_ALERT_SENT_BODY: '{successful}/{total}',
+  }),
 }));
 
 jest.mock('../../services/chatOfflinePending', () => ({
@@ -150,13 +185,17 @@ jest.mock('expo-haptics', () => ({
   NotificationFeedbackType: { Success: 1 },
 }));
 
-/* eslint-disable import/first -- mocks Jest antes de imports del SUT */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { renderHook, act } from '@testing-library/react-native';
 import { useChatScreen } from '../useChatScreen';
-/* eslint-enable import/first */
 
 describe('useChatScreen', () => {
+  const flushInitialEffects = async () => {
+    await act(async () => {
+      await Promise.resolve();
+    });
+  };
+
   beforeAll(() => {
     global.requestAnimationFrame = jest.fn((cb) => {
       if (typeof cb === 'function') cb();
@@ -179,6 +218,7 @@ describe('useChatScreen', () => {
 
   it('debe retornar las claves esperadas', async () => {
     const { result } = renderHook(() => useChatScreen());
+    await flushInitialEffects();
     await act(async () => {
       await result.current.initializeConversation();
     });
@@ -205,8 +245,9 @@ describe('useChatScreen', () => {
     expect(typeof result.current.guestHandoffUseSummary).toBe('function');
   });
 
-  it('setInputText debe actualizar inputText', () => {
+  it('setInputText debe actualizar inputText', async () => {
     const { result } = renderHook(() => useChatScreen());
+    await flushInitialEffects();
     expect(result.current.inputText).toBe('');
     act(() => {
       result.current.setInputText('Hola');
@@ -214,8 +255,9 @@ describe('useChatScreen', () => {
     expect(result.current.inputText).toBe('Hola');
   });
 
-  it('handleTrialBannerDismiss debe poner trialBannerDismissed en true', () => {
+  it('handleTrialBannerDismiss debe poner trialBannerDismissed en true', async () => {
     const { result } = renderHook(() => useChatScreen());
+    await flushInitialEffects();
     expect(result.current.trialBannerDismissed).toBe(false);
     act(() => {
       result.current.handleTrialBannerDismiss();
@@ -223,8 +265,9 @@ describe('useChatScreen', () => {
     expect(result.current.trialBannerDismissed).toBe(true);
   });
 
-  it('setShowClearModal debe actualizar showClearModal', () => {
+  it('setShowClearModal debe actualizar showClearModal', async () => {
     const { result } = renderHook(() => useChatScreen());
+    await flushInitialEffects();
     expect(result.current.showClearModal).toBe(false);
     act(() => {
       result.current.setShowClearModal(true);

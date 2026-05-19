@@ -18,7 +18,13 @@ jest.mock('../../../context/ThemeContext', () => ({
 jest.mock('../../../styles/globalStyles', () => ({ colors: { primary: '#0f0', white: '#fff', textSecondary: '#888' } }));
 jest.mock('../../../screens/subscription/subscriptionScreenConstants', () => ({
   LEGAL_URLS: { TERMS_EULA: 'https://terms.test', PRIVACY: 'https://privacy.test' },
-  TEXTS: { LEGAL_TITLE: 'Legal', TERMS_EULA_LABEL: 'Términos', PRIVACY_LABEL: 'Privacidad' },
+  useSubscriptionTexts: () => ({
+    ERROR: 'Error',
+    LINK_OPEN_ERROR: 'No se pudo abrir el enlace',
+    LEGAL_TITLE: 'Legal',
+    TERMS_EULA_LABEL: 'Términos',
+    PRIVACY_LABEL: 'Privacidad',
+  }),
 }));
 jest.mock('@expo/vector-icons', () => ({ MaterialCommunityIcons: () => null }));
 jest.mock('react-native/Libraries/Linking/Linking', () => ({ openURL: jest.fn().mockResolvedValue(undefined) }));

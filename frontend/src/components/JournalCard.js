@@ -14,7 +14,9 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCardStylesDynamic, CardHeader } from './common/CardStyles';
+import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { getFocusTheme } from '../styles/focusCardTheme';
 import {
   getGratitudeEntryPreviewLine,
@@ -22,8 +24,35 @@ import {
 } from '../utils/gratitudeJournalEntry';
 
 const GRATITUDE_ENTRIES_KEY = 'gratitudeJournalEntries';
+const DEFAULT_TEXTS = {
+  CARD_TITLE: 'Diario de Gratitud',
+  OPEN_A11Y: 'Abrir diario de gratitud',
+  LAST_PREFIX: 'Última',
+  TODAY: 'Hoy',
+  LAST_ENTRY: 'Última entrada',
+  EMPTY_TITLE: 'Escribe sobre lo que agradeces',
+  EMPTY_BODY: 'Practica la gratitud y mejora tu bienestar emocional',
+};
 
 const JournalCard = () => {
+  const translated = useSectionTranslations('TECHNIQUES');
+  const { language } = useLanguage();
+  const T = useMemo(
+    () => ({
+      OPEN_A11Y:
+        translated?.JOURNAL_CARD_OPEN_A11Y || DEFAULT_TEXTS.OPEN_A11Y,
+      CARD_TITLE: translated?.JOURNAL_CARD_TITLE || DEFAULT_TEXTS.CARD_TITLE,
+      LAST_PREFIX: translated?.JOURNAL_CARD_LAST_PREFIX || DEFAULT_TEXTS.LAST_PREFIX,
+      TODAY: translated?.JOURNAL_CARD_TODAY || DEFAULT_TEXTS.TODAY,
+      LAST_ENTRY: translated?.JOURNAL_CARD_LAST_ENTRY || DEFAULT_TEXTS.LAST_ENTRY,
+      EMPTY_TITLE:
+        translated?.JOURNAL_CARD_EMPTY_TITLE || DEFAULT_TEXTS.EMPTY_TITLE,
+      EMPTY_BODY:
+        translated?.JOURNAL_CARD_EMPTY_BODY ||
+        DEFAULT_TEXTS.EMPTY_BODY,
+    }),
+    [translated]
+  );
   const navigation = useNavigation();
   const { colors, resolvedScheme } = useTheme();
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
@@ -126,14 +155,15 @@ const JournalCard = () => {
   const lastDateLabel = useMemo(() => {
     if (!lastEntryDate) return null;
     try {
-      return new Date(lastEntryDate).toLocaleDateString('es-ES', {
+      const locale = language === 'en' ? 'en-US' : 'es-ES';
+      return new Date(lastEntryDate).toLocaleDateString(locale, {
         day: '2-digit',
         month: 'short',
       });
     } catch {
       return null;
     }
-  }, [lastEntryDate]);
+  }, [lastEntryDate, language]);
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -184,14 +214,14 @@ const JournalCard = () => {
         },
       ]}
     >
-      <CardHeader icon="book-heart" title="Diario de Gratitud" onViewAll={handleViewAll} />
+      <CardHeader icon="book-heart" title={T.CARD_TITLE} onViewAll={handleViewAll} />
       <TouchableOpacity
         onPress={handlePress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         activeOpacity={0.7}
         accessibilityRole="button"
-        accessibilityLabel="Abrir diario de gratitud"
+        accessibilityLabel={T.OPEN_A11Y}
       >
         <View style={styles.row}>
           <View style={styles.textBlock}>
@@ -199,18 +229,18 @@ const JournalCard = () => {
               <View style={styles.metaChip}>
                 <MaterialCommunityIcons name="calendar" size={12} color={t.FOCUS_KICKER_COLOR} />
                 <Text style={styles.metaChipText}>
-                  {lastDateLabel ? `Última: ${lastDateLabel}` : 'Hoy'}
+                  {lastDateLabel ? `${T.LAST_PREFIX}: ${lastDateLabel}` : T.TODAY}
                 </Text>
               </View>
               <Text style={styles.countText}>{entriesCount ? `${entriesCount}` : ''}</Text>
             </View>
             <Text style={styles.rowTitle}>
-              {lastEntryText ? 'Última entrada' : 'Escribe sobre lo que agradeces'}
+              {lastEntryText ? T.LAST_ENTRY : T.EMPTY_TITLE}
             </Text>
             <Text style={styles.rowMeta} numberOfLines={2}>
               {lastEntryText
                 ? lastEntryText
-                : 'Practica la gratitud y mejora tu bienestar emocional'}
+                : T.EMPTY_BODY}
             </Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={18} color={t.FOCUS_CHEVRON_MUTED} />

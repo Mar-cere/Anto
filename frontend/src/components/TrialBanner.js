@@ -19,16 +19,37 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
 
-const TEXTS = {
+const DEFAULT_TEXTS = {
   TRIAL_ACTIVE: 'Trial activo',
-  DAYS_REMAINING: (days) => (days === 1 ? '1 día restante' : `${days} días restantes`),
   SUBSCRIBE: 'Suscribirse',
   TRIAL_EXPIRING_SOON: 'Tu trial expira pronto',
+  TRIAL_DAY_REMAINING: 'día restante',
+  TRIAL_DAYS_REMAINING: 'días restantes',
+  TRIAL_BANNER_CLOSE_A11Y: 'Cerrar aviso de trial',
 };
 
 const TrialBanner = ({ daysRemaining, onDismiss, dismissed = false }) => {
+  const translated = useSectionTranslations('SETTINGS');
+  const TEXTS = useMemo(
+    () => ({
+      TRIAL_ACTIVE:
+        translated?.TRIAL_BANNER_ACTIVE || DEFAULT_TEXTS.TRIAL_ACTIVE,
+      SUBSCRIBE: translated?.TRIAL_BANNER_SUBSCRIBE || DEFAULT_TEXTS.SUBSCRIBE,
+      TRIAL_EXPIRING_SOON:
+        translated?.TRIAL_BANNER_EXPIRING_SOON ||
+        DEFAULT_TEXTS.TRIAL_EXPIRING_SOON,
+      TRIAL_DAY_REMAINING:
+        translated?.TRIAL_BANNER_DAY_REMAINING || DEFAULT_TEXTS.TRIAL_DAY_REMAINING,
+      TRIAL_DAYS_REMAINING:
+        translated?.TRIAL_BANNER_DAYS_REMAINING || DEFAULT_TEXTS.TRIAL_DAYS_REMAINING,
+      CLOSE_A11Y:
+        translated?.TRIAL_BANNER_CLOSE_A11Y || DEFAULT_TEXTS.TRIAL_BANNER_CLOSE_A11Y,
+    }),
+    [translated],
+  );
   const navigation = useNavigation();
   const { colors } = useTheme();
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -143,6 +164,8 @@ const TrialBanner = ({ daysRemaining, onDismiss, dismissed = false }) => {
   const accentColor = isExpiringSoon ? colors.warning : colors.primary;
   const surfaceBg = isExpiringSoon ? hexToRgba(colors.warning, 0.12) : hexToRgba(colors.primary, 0.1);
   const borderColor = isExpiringSoon ? hexToRgba(colors.warning, 0.4) : colors.accentLine;
+  const daysLabel =
+    daysRemaining === 1 ? TEXTS.TRIAL_DAY_REMAINING : TEXTS.TRIAL_DAYS_REMAINING;
 
   return (
     <Animated.View
@@ -168,7 +191,9 @@ const TrialBanner = ({ daysRemaining, onDismiss, dismissed = false }) => {
           <Text style={[styles.title, { color: accentColor }]}>
             {isExpiringSoon ? TEXTS.TRIAL_EXPIRING_SOON : TEXTS.TRIAL_ACTIVE}
           </Text>
-          <Text style={styles.subtitle}>{TEXTS.DAYS_REMAINING(daysRemaining)}</Text>
+          <Text style={styles.subtitle}>
+            {daysRemaining} {daysLabel}
+          </Text>
         </View>
       </View>
       <View style={styles.actions}>
@@ -184,7 +209,7 @@ const TrialBanner = ({ daysRemaining, onDismiss, dismissed = false }) => {
           style={styles.dismissButton}
           onPress={handleDismiss}
           accessibilityRole="button"
-          accessibilityLabel="Cerrar aviso de trial"
+          accessibilityLabel={TEXTS.CLOSE_A11Y}
         >
           <MaterialCommunityIcons name="close" size={20} color={colors.textSecondary} />
         </TouchableOpacity>

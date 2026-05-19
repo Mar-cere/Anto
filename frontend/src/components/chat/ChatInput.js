@@ -11,18 +11,24 @@ import {
   TextInput,
   TouchableOpacity,
 } from 'react-native';
-import { ICON_SIZES, LAYOUT, TEXTS, useChatColors } from '../../screens/chat/chatScreenConstants';
+import {
+  ICON_SIZES,
+  LAYOUT,
+  useChatColors,
+  useChatTexts,
+} from '../../screens/chat/chatScreenConstants';
 
 export default function ChatInput({
   value,
   onChangeText,
   onSend,
   inputRef,
-  placeholder = TEXTS.PLACEHOLDER,
+  placeholder,
   maxLength = LAYOUT.MAX_MESSAGE_LENGTH,
   /** p. ej. invitado sin mensajes restantes */
   sendDisabled = false,
 }) {
+  const TEXTS = useChatTexts();
   const chatColors = useChatColors();
   const styles = useMemo(
     () =>
@@ -85,21 +91,21 @@ export default function ChatInput({
       <TextInput
         ref={inputRef}
         style={styles.input}
-        placeholder={placeholder}
+        placeholder={placeholder || TEXTS.PLACEHOLDER}
         placeholderTextColor={chatColors.INPUT_PLACEHOLDER}
         value={value}
         onChangeText={onChangeText}
         multiline
         maxLength={maxLength}
-        accessibilityLabel="Mensaje para Anto"
-        accessibilityHint="Escribe tu mensaje y usa el botón enviar"
+        accessibilityLabel={TEXTS.INPUT_A11Y_LABEL}
+        accessibilityHint={TEXTS.INPUT_A11Y_HINT}
       />
       <TouchableOpacity
         style={[styles.sendButton, cannotSend && styles.sendButtonDisabled]}
         onPress={onSend}
         disabled={cannotSend}
         accessibilityRole="button"
-        accessibilityLabel="Enviar mensaje"
+        accessibilityLabel={TEXTS.INPUT_SEND_A11Y_LABEL}
         accessibilityState={{ disabled: cannotSend }}
       >
         <Ionicons

@@ -61,12 +61,13 @@ function parseYmdLocal(ymd) {
   return dt;
 }
 
-function formatPeriodLabelEs(start, end, type) {
+export function formatPeriodLabel(start, end, type, language = 'es') {
+  const locale = language === 'en' ? 'en-US' : 'es-ES';
   const opts = { day: 'numeric', month: 'short', year: 'numeric' };
   if (type === 'week') {
-    return `${start.toLocaleDateString('es', opts)} – ${end.toLocaleDateString('es', opts)}`;
+    return `${start.toLocaleDateString(locale, opts)} – ${end.toLocaleDateString(locale, opts)}`;
   }
-  return start.toLocaleDateString('es', { month: 'long', year: 'numeric' });
+  return start.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
 }
 
 function topEmotionCounts(rows, limit = 8) {
@@ -108,36 +109,60 @@ export function isWithinWeeklyNarrativeLlmWindow(lastWeeklyTipsEmailAt, now = ne
   return diffMs <= windowHours * 60 * 60 * 1000;
 }
 
-function buildDeterministicNarrative(summary) {
-  const topTopic = summary?.emotions?.progressTopicsTop?.[0]?.topic || 'tu proceso personal';
+export function buildDeterministicNarrative(summary, language = 'es') {
+  const topTopic = summary?.emotions?.progressTopicsTop?.[0]?.topic || (language === 'en' ? 'your personal process' : 'tu proceso personal');
   const topEmotion = summary?.emotions?.insightsEmotionsTop?.[0]?.emotion || null;
   const tasksDone = summary?.tasks?.completedInPeriod ?? 0;
   const habitCompletions = summary?.habits?.completionsInPeriod ?? 0;
   const activeDays = summary?.chat?.distinctActiveDays ?? 0;
   const userMessages = summary?.chat?.userMessages ?? 0;
 
-  const themes = topEmotion
-    ? `Se repitieron temas ligados a ${topTopic} y aparecieron señales emocionales de tipo ${topEmotion}.`
-    : `Se repitieron temas ligados a ${topTopic}, con foco en sostener tu proceso paso a paso.`;
+  let themes;
+  let microWins;
+  let nextQuestion;
 
-  let microWins = 'Sostuviste presencia en la app, aunque fuera en micro-momentos.';
-  if (tasksDone > 0 || habitCompletions > 0) {
-    microWins = `Completaste ${tasksDone} tarea${tasksDone === 1 ? '' : 's'} y registraste ${habitCompletions} avance${habitCompletions === 1 ? '' : 's'} en hábitos.`;
-  } else if (activeDays > 0 || userMessages > 0) {
-    microWins = `Tuviste actividad ${activeDays} día${activeDays === 1 ? '' : 's'} y abriste ${userMessages} mensaje${userMessages === 1 ? '' : 's'} en el chat.`;
-  }
+  if (language === 'en') {
+    themes = topEmotion
+      ? `Recurring themes around ${topTopic} with emotional signals of type ${topEmotion}.`
+      : `Recurring themes around ${topTopic}, focused on sustaining your process step by step.`;
 
-  let nextQuestion = '¿Qué pequeño paso realista te gustaría priorizar esta semana para cuidarte mejor?';
-  if (tasksDone >= 3 || habitCompletions >= 4) {
-    nextQuestion = '¿Qué condición te ayudó a sostener estos avances y cómo la puedes repetir esta semana?';
-  } else if (activeDays <= 1) {
-    nextQuestion = '¿Qué micro-hábito de 2 minutos podrías retomar primero para volver a tomar ritmo?';
+    microWins = 'You stayed present in the app, even in micro-moments.';
+    if (tasksDone > 0 || habitCompletions > 0) {
+      microWins = `You completed ${tasksDone} task${tasksDone === 1 ? '' : 's'} and logged ${habitCompletions} habit advance${habitCompletions === 1 ? '' : 's'}.`;
+    } else if (activeDays > 0 || userMessages > 0) {
+      microWins = `You were active ${activeDays} day${activeDays === 1 ? '' : 's'} and sent ${userMessages} message${userMessages === 1 ? '' : 's'} in the chat.`;
+    }
+
+    nextQuestion = 'What small realistic step would you like to prioritize this week to take better care of yourself?';
+    if (tasksDone >= 3 || habitCompletions >= 4) {
+      nextQuestion = 'What helped you sustain these advances and how can you repeat it this week?';
+    } else if (activeDays <= 1) {
+      nextQuestion = 'What 2-minute micro-habit could you pick up first to get back into rhythm?';
+    }
+  } else {
+    themes = topEmotion
+      ? `Se repitieron temas ligados a ${topTopic} y aparecieron señales emocionales de tipo ${topEmotion}.`
+      : `Se repitieron temas ligados a ${topTopic}, con foco en sostener tu proceso paso a paso.`;
+
+    microWins = 'Sostuviste presencia en la app, aunque fuera en micro-momentos.';
+    if (tasksDone > 0 || habitCompletions > 0) {
+      microWins = `Completaste ${tasksDone} tarea${tasksDone === 1 ? '' : 's'} y registraste ${habitCompletions} avance${habitCompletions === 1 ? '' : 's'} en hábitos.`;
+    } else if (activeDays > 0 || userMessages > 0) {
+      microWins = `Tuviste actividad ${activeDays} día${activeDays === 1 ? '' : 's'} y enviaste ${userMessages} mensaje${userMessages === 1 ? '' : 's'} en el chat.`;
+    }
+
+    nextQuestion = '¿Qué pequeño paso realista te gustaría priorizar esta semana para cuidarte mejor?';
+    if (tasksDone >= 3 || habitCompletions >= 4) {
+      nextQuestion = '¿Qué condición te ayudó a sostener estos avances y cómo la puedes repetir esta semana?';
+    } else if (activeDays <= 1) {
+      nextQuestion = '¿Qué micro-hábito de 2 minutos podrías retomar primero para volver a tomar ritmo?';
+    }
   }
 
   return { themes, microWins, nextQuestion };
 }
 
-function parseLlmNarrative(rawText) {
+function parseLlmNarrative(rawText, language = 'es') {
   const raw = String(rawText || '').trim();
   if (!raw) return null;
 
@@ -148,15 +173,15 @@ function parseLlmNarrative(rawText) {
   const take = (prefix) =>
     lines.find((l) => l.toUpperCase().startsWith(prefix))?.replace(/^[^:]+:\s*/i, '').trim();
 
-  const themes = take('TEMAS:');
-  const microWins = take('LOGROS:');
-  const nextQuestion = take('PREGUNTA:');
+  const themes = take(language === 'en' ? 'THEMES:' : 'TEMAS:');
+  const microWins = take(language === 'en' ? 'WINS:' : 'LOGROS:');
+  const nextQuestion = take(language === 'en' ? 'QUESTION:' : 'PREGUNTA:');
   if (!themes || !microWins || !nextQuestion) return null;
   return { themes, microWins, nextQuestion };
 }
 
-async function buildNarrative(summary, user) {
-  const fallback = buildDeterministicNarrative(summary);
+async function buildNarrative(summary, user, language = 'es') {
+  const fallback = buildDeterministicNarrative(summary, language);
   const llmEnabled = process.env.WEEKLY_SUMMARY_LLM_ENABLED === 'true';
   const isWeek = summary?.period?.type === 'week';
   const insideWindow = isWithinWeeklyNarrativeLlmWindow(user?.stats?.lastWeeklyTipsEmailAt);
@@ -178,7 +203,8 @@ async function buildNarrative(summary, user) {
       userId: String(user?._id || ''),
       periodStart: summary?.period?.start || '',
       periodEnd: summary?.period?.end || '',
-      mode: 'week'
+      mode: 'week',
+      language,
     });
 
     const cached = await cacheService.get(cacheKey);
@@ -197,8 +223,9 @@ async function buildNarrative(summary, user) {
       messages: [
         {
           role: 'system',
-          content:
-            'Eres redactor de resúmenes semanales en español para bienestar emocional. Tono cálido, concreto, no clínico. Sin diagnóstico. Responde EXACTAMENTE en 3 líneas con este formato: TEMAS: ...\\nLOGROS: ...\\nPREGUNTA: ...'
+          content: language === 'en'
+            ? 'You write weekly summaries in English for emotional well-being. Warm, concrete, non-clinical tone. No diagnosis. Reply EXACTLY in 3 lines with this format: THEMES: ...\\nWINS: ...\\nQUESTION: ...'
+            : 'Eres redactor de resúmenes semanales en español para bienestar emocional. Tono cálido, concreto, no clínico. Sin diagnóstico. Responde EXACTAMENTE en 3 líneas con este formato: TEMAS: ...\\nLOGROS: ...\\nPREGUNTA: ...'
         },
         {
           role: 'user',
@@ -221,7 +248,7 @@ async function buildNarrative(summary, user) {
     });
 
     const raw = completion?.choices?.[0]?.message?.content || '';
-    const parsed = parseLlmNarrative(raw);
+    const parsed = parseLlmNarrative(raw, language);
     if (!parsed) throw new Error('LLM_NARRATIVE_PARSE_FAILED');
 
     await cacheService.set(cacheKey, parsed, ttlSeconds);
@@ -321,7 +348,7 @@ function habitCompletionsForCalendarMonth(habits, month0, year) {
  * @param {{ period: 'week'|'month', date?: string, year?: number, month?: number }} opts
  */
 export async function buildUserSummary(userId, opts) {
-  const { period } = opts;
+  const { period, language = 'es' } = opts;
   let start;
   let end;
   let label;
@@ -334,7 +361,7 @@ export async function buildUserSummary(userId, opts) {
       throw err;
     }
     ({ start, end } = calendarWeekRangeFromAnchor(anchor));
-    label = formatPeriodLabelEs(start, end, 'week');
+    label = formatPeriodLabel(start, end, 'week', language);
   } else {
     const now = new Date();
     const y = opts.year != null ? Number(opts.year) : now.getFullYear();
@@ -345,7 +372,7 @@ export async function buildUserSummary(userId, opts) {
       throw err;
     }
     ({ start, end } = calendarMonthRange(y, m));
-    label = formatPeriodLabelEs(start, end, 'month');
+    label = formatPeriodLabel(start, end, 'month', language);
   }
 
   const uid = new mongoose.Types.ObjectId(userId);
@@ -473,7 +500,7 @@ export async function buildUserSummary(userId, opts) {
     }
   };
 
-  const narrative = await buildNarrative(summaryPayload, userDoc);
+  const narrative = await buildNarrative(summaryPayload, userDoc, language);
 
   return {
     ...summaryPayload,

@@ -6,7 +6,7 @@ import { View, Text, TextInput } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEditProfileScreenStyles } from './editProfileScreenStyles';
 import {
-  TEXTS,
+  useEditProfileTexts,
   EMAIL_ICON_SIZE,
   EMAIL_ICON_MARGIN_RIGHT,
 } from './editProfileScreenConstants';
@@ -18,6 +18,7 @@ export function EditProfileForm({
   onFormChange,
 }) {
   const { styles, editProfileColors } = useEditProfileScreenStyles();
+  const TEXTS = useEditProfileTexts();
   return (
     <>
       <View style={styles.profileHeader}>

@@ -28,10 +28,7 @@ export function LastSessionSummaryCard({ summary, onOpenChat, flushWithParentGut
     if (s) return s;
     return String(summary.bridge || '').trim();
   }, [summary]);
-
-  if (!summary || !text) return null;
-
-  const dateLabel = formatGeneratedAt(summary.generatedAt);
+  const dateLabel = formatGeneratedAt(summary?.generatedAt);
   const card = useMemo(
     () => ({
       bg: colors.chromeCard,
@@ -110,6 +107,8 @@ export function LastSessionSummaryCard({ summary, onOpenChat, flushWithParentGut
       }),
     [card, colors.text, flushWithParentGutter],
   );
+
+  if (!summary || !text) return null;
 
   return (
     <View style={styles.container}>

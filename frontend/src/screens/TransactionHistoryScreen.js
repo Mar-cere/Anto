@@ -29,10 +29,12 @@ import FloatingNavBar from '../components/FloatingNavBar';
 import { SkeletonCard } from '../components/Skeleton';
 import api, { ENDPOINTS } from '../config/api';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
 
 // Constantes
-const TEXTS = {
+const DEFAULT_TEXTS = {
   TITLE: 'Historial de Transacciones',
   LOADING: 'Cargando transacciones...',
   ERROR: 'Error al cargar las transacciones',
@@ -53,6 +55,51 @@ const TEXTS = {
   ALL_STATUSES: 'Todos los estados',
   ALL_TYPES: 'Todos los tipos',
   VIEW_PLANS: 'Ver planes',
+  APPLY: 'Aplicar',
+  SUBSCRIPTION_TYPE: 'Suscripción',
+  ONE_TIME_TYPE: 'Pago único',
+  STATUS_COMPLETED: 'Completado',
+  STATUS_PENDING: 'Pendiente',
+  STATUS_PROCESSING: 'Procesando',
+  STATUS_FAILED: 'Fallido',
+  STATUS_CANCELED: 'Cancelado',
+  STATUS_REFUNDED: 'Reembolsado',
+  FILTER_COUNT: '{filtered} de {total} transacciones',
+  ERROR_CONNECTION: 'Error de conexión. Verifica internet e inténtalo de nuevo.',
+  ERROR_TOO_MANY_REQUESTS: 'Demasiados intentos. Espera un momento e inténtalo nuevamente.',
+};
+
+const resolveTransactionHistoryErrorMessage = (
+  error,
+  texts,
+  fallbackKey = 'ERROR',
+) => {
+  const normalizedMessage = String(
+    error?.response?.data?.message ?? error?.message ?? '',
+  ).toLowerCase();
+  const status = error?.response?.status;
+
+  const isNetwork =
+    normalizedMessage.includes('network') ||
+    normalizedMessage.includes('econnrefused') ||
+    normalizedMessage.includes('timeout') ||
+    normalizedMessage.includes('timed out') ||
+    normalizedMessage.includes('failed to fetch');
+
+  if (isNetwork) {
+    return texts.ERROR_CONNECTION || texts[fallbackKey] || texts.ERROR;
+  }
+
+  const isTooManyRequests =
+    status === 429 ||
+    normalizedMessage.includes('too many') ||
+    normalizedMessage.includes('demasiados intentos');
+
+  if (isTooManyRequests) {
+    return texts.ERROR_TOO_MANY_REQUESTS || texts[fallbackKey] || texts.ERROR;
+  }
+
+  return texts[fallbackKey] || texts.ERROR;
 };
 
 const STATUS_ICONS = {
@@ -70,6 +117,67 @@ const FLATLIST_WINDOW_SIZE = 10;
 const FLATLIST_MAX_TO_RENDER_PER_BATCH = 10;
 
 const TransactionHistoryScreen = () => {
+  const translated = useSectionTranslations('PROFILE');
+  const { language } = useLanguage();
+  const TEXTS = useMemo(
+    () => ({
+      ...DEFAULT_TEXTS,
+      TITLE:
+        translated?.TRANSACTIONS_TITLE || DEFAULT_TEXTS.TITLE,
+      LOADING:
+        translated?.TRANSACTIONS_LOADING || DEFAULT_TEXTS.LOADING,
+      ERROR: translated?.TRANSACTIONS_ERROR || DEFAULT_TEXTS.ERROR,
+      RETRY: translated?.RETRY || DEFAULT_TEXTS.RETRY,
+      NO_TRANSACTIONS:
+        translated?.TRANSACTIONS_EMPTY_TITLE || DEFAULT_TEXTS.NO_TRANSACTIONS,
+      NO_TRANSACTIONS_DESC:
+        translated?.TRANSACTIONS_EMPTY_DESC || DEFAULT_TEXTS.NO_TRANSACTIONS_DESC,
+      NO_FILTERED_TRANSACTIONS:
+        translated?.TRANSACTIONS_EMPTY_FILTERED ||
+        DEFAULT_TEXTS.NO_FILTERED_TRANSACTIONS,
+      SEARCH_PLACEHOLDER:
+        translated?.TRANSACTIONS_SEARCH_PLACEHOLDER ||
+        DEFAULT_TEXTS.SEARCH_PLACEHOLDER,
+      FILTER: translated?.TRANSACTIONS_FILTER || DEFAULT_TEXTS.FILTER,
+      CLEAR_FILTERS:
+        translated?.TRANSACTIONS_CLEAR_FILTERS || DEFAULT_TEXTS.CLEAR_FILTERS,
+      FILTER_BY_STATUS:
+        translated?.TRANSACTIONS_FILTER_BY_STATUS || DEFAULT_TEXTS.FILTER_BY_STATUS,
+      FILTER_BY_TYPE:
+        translated?.TRANSACTIONS_FILTER_BY_TYPE || DEFAULT_TEXTS.FILTER_BY_TYPE,
+      ALL_STATUSES:
+        translated?.TRANSACTIONS_ALL_STATUSES || DEFAULT_TEXTS.ALL_STATUSES,
+      ALL_TYPES: translated?.TRANSACTIONS_ALL_TYPES || DEFAULT_TEXTS.ALL_TYPES,
+      VIEW_PLANS:
+        translated?.TRANSACTIONS_VIEW_PLANS || DEFAULT_TEXTS.VIEW_PLANS,
+      APPLY: translated?.APPLY || DEFAULT_TEXTS.APPLY,
+      SUBSCRIPTION_TYPE:
+        translated?.TRANSACTIONS_TYPE_SUBSCRIPTION ||
+        DEFAULT_TEXTS.SUBSCRIPTION_TYPE,
+      ONE_TIME_TYPE:
+        translated?.TRANSACTIONS_TYPE_ONE_TIME || DEFAULT_TEXTS.ONE_TIME_TYPE,
+      STATUS_COMPLETED:
+        translated?.TRANSACTIONS_STATUS_COMPLETED || DEFAULT_TEXTS.STATUS_COMPLETED,
+      STATUS_PENDING:
+        translated?.TRANSACTIONS_STATUS_PENDING || DEFAULT_TEXTS.STATUS_PENDING,
+      STATUS_PROCESSING:
+        translated?.TRANSACTIONS_STATUS_PROCESSING || DEFAULT_TEXTS.STATUS_PROCESSING,
+      STATUS_FAILED:
+        translated?.TRANSACTIONS_STATUS_FAILED || DEFAULT_TEXTS.STATUS_FAILED,
+      STATUS_CANCELED:
+        translated?.TRANSACTIONS_STATUS_CANCELED || DEFAULT_TEXTS.STATUS_CANCELED,
+      STATUS_REFUNDED:
+        translated?.TRANSACTIONS_STATUS_REFUNDED || DEFAULT_TEXTS.STATUS_REFUNDED,
+      FILTER_COUNT:
+        translated?.TRANSACTIONS_FILTER_COUNT || DEFAULT_TEXTS.FILTER_COUNT,
+      ERROR_CONNECTION:
+        translated?.ERROR_CONNECTION || DEFAULT_TEXTS.ERROR_CONNECTION,
+      ERROR_TOO_MANY_REQUESTS:
+        translated?.ERROR_TOO_MANY_REQUESTS ||
+        DEFAULT_TEXTS.ERROR_TOO_MANY_REQUESTS,
+    }),
+    [translated],
+  );
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle, resolvedScheme } = useTheme();
@@ -433,16 +541,16 @@ const TransactionHistoryScreen = () => {
       if (response.success) {
         setTransactions(response.transactions || []);
       } else {
-        setError(response.error || TEXTS.ERROR);
+        setError(TEXTS.ERROR);
       }
     } catch (err) {
       console.error('Error cargando transacciones:', err);
-      setError(TEXTS.ERROR);
+      setError(resolveTransactionHistoryErrorMessage(err, TEXTS, 'ERROR'));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [TEXTS]);
 
   // Cargar al montar
   useEffect(() => {
@@ -459,7 +567,8 @@ const TransactionHistoryScreen = () => {
   // Formatear fecha
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('es-CL', {
+    const locale = language === 'en' ? 'en-US' : 'es-CL';
+    return date.toLocaleDateString(locale, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -470,7 +579,8 @@ const TransactionHistoryScreen = () => {
 
   // Formatear monto
   const formatAmount = (amount, currency = 'CLP') => {
-    return new Intl.NumberFormat('es-CL', {
+    const locale = language === 'en' ? 'en-US' : 'es-CL';
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency,
       minimumFractionDigits: 0,
@@ -478,17 +588,17 @@ const TransactionHistoryScreen = () => {
   };
 
   // Formatear estado
-  const formatStatus = (status) => {
+  const formatStatus = useCallback((status) => {
     const statusMap = {
-      completed: 'Completado',
-      pending: 'Pendiente',
-      processing: 'Procesando',
-      failed: 'Fallido',
-      canceled: 'Cancelado',
-      refunded: 'Reembolsado',
+      completed: TEXTS.STATUS_COMPLETED,
+      pending: TEXTS.STATUS_PENDING,
+      processing: TEXTS.STATUS_PROCESSING,
+      failed: TEXTS.STATUS_FAILED,
+      canceled: TEXTS.STATUS_CANCELED,
+      refunded: TEXTS.STATUS_REFUNDED,
     };
     return statusMap[status] || status;
-  };
+  }, [TEXTS]);
 
   // Filtrar y buscar transacciones
   const filteredTransactions = useMemo(() => {
@@ -502,7 +612,11 @@ const TransactionHistoryScreen = () => {
         const amount = transaction.amount?.toString() || '';
         const plan = (transaction.plan || '').toLowerCase();
         const status = formatStatus(transaction.status).toLowerCase();
-        const type = (transaction.type === 'subscription' ? 'suscripción' : 'pago único').toLowerCase();
+        const type = (
+          transaction.type === 'subscription'
+            ? TEXTS.SUBSCRIPTION_TYPE
+            : TEXTS.ONE_TIME_TYPE
+        ).toLowerCase();
         
         return (
           description.includes(query) ||
@@ -525,7 +639,7 @@ const TransactionHistoryScreen = () => {
     }
 
     return filtered;
-  }, [transactions, searchQuery, filterStatus, filterType]);
+  }, [transactions, searchQuery, filterStatus, filterType, formatStatus, TEXTS]);
 
   // Limpiar filtros
   const clearFilters = () => {
@@ -569,7 +683,9 @@ const TransactionHistoryScreen = () => {
           <Text style={styles.amount}>{formatAmount(item.amount, item.currency)}</Text>
           {item.type && (
             <Text style={styles.type}>
-              {item.type === 'subscription' ? 'Suscripción' : 'Pago único'}
+              {item.type === 'subscription'
+                ? TEXTS.SUBSCRIPTION_TYPE
+                : TEXTS.ONE_TIME_TYPE}
             </Text>
           )}
         </View>
@@ -685,7 +801,10 @@ const TransactionHistoryScreen = () => {
             {hasActiveFilters && (
               <View style={styles.activeFiltersContainer}>
                 <Text style={styles.activeFiltersText}>
-                  {filteredTransactions.length} de {transactions.length} transacciones
+                  {TEXTS.FILTER_COUNT.replace(
+                    '{filtered}',
+                    String(filteredTransactions.length),
+                  ).replace('{total}', String(transactions.length))}
                 </Text>
                 <TouchableOpacity onPress={clearFilters}>
                   <Text style={styles.clearFiltersText}>{TEXTS.CLEAR_FILTERS}</Text>
@@ -781,7 +900,7 @@ const TransactionHistoryScreen = () => {
                     onPress={() => setFilterType('subscription')}
                   >
                     <Text style={[styles.filterOptionText, filterType === 'subscription' && styles.filterOptionTextActive]}>
-                      Suscripción
+                      {TEXTS.SUBSCRIPTION_TYPE}
                     </Text>
                     {filterType === 'subscription' && <MaterialCommunityIcons name="check" size={20} color={colors.primary} />}
                   </TouchableOpacity>
@@ -790,7 +909,7 @@ const TransactionHistoryScreen = () => {
                     onPress={() => setFilterType('one-time')}
                   >
                     <Text style={[styles.filterOptionText, filterType === 'one-time' && styles.filterOptionTextActive]}>
-                      Pago único
+                      {TEXTS.ONE_TIME_TYPE}
                     </Text>
                     {filterType === 'one-time' && <MaterialCommunityIcons name="check" size={20} color={colors.primary} />}
                   </TouchableOpacity>
@@ -811,7 +930,9 @@ const TransactionHistoryScreen = () => {
                   style={[styles.modalButton, styles.modalButtonPrimary]}
                   onPress={() => setShowFilterModal(false)}
                 >
-                  <Text style={[styles.modalButtonText, styles.modalButtonTextPrimary]}>Aplicar</Text>
+                  <Text style={[styles.modalButtonText, styles.modalButtonTextPrimary]}>
+                    {TEXTS.APPLY}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>

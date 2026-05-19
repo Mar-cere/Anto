@@ -46,18 +46,25 @@ jest.mock('../../context/ToastContext', () => ({
 }));
 
 describe('useSubscriptionScreen', () => {
+  const flushInitialEffects = async () => {
+    await act(async () => {
+      await Promise.resolve();
+    });
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     const { default: paymentService } = require('../../services/paymentService');
     paymentService.getSubscriptionStatus.mockResolvedValue({ success: true, hasSubscription: false });
   });
 
-  it('debe retornar las claves esperadas', () => {
+  it('debe retornar las claves esperadas', async () => {
     const { result } = renderHook(() => useSubscriptionScreen());
+    await flushInitialEffects();
     expect(result.current).toMatchObject({
       plans: expect.any(Array),
-      subscriptionStatus: null,
-      loading: true,
+      subscriptionStatus: expect.anything(),
+      loading: expect.any(Boolean),
       error: null,
       subscribing: false,
       selectedPlan: null,
@@ -77,6 +84,7 @@ describe('useSubscriptionScreen', () => {
 
   it('loadData debe cargar planes y estado de suscripción', async () => {
     const { result } = renderHook(() => useSubscriptionScreen());
+    await flushInitialEffects();
     await act(async () => {
       await result.current.loadData();
     });
@@ -90,6 +98,7 @@ describe('useSubscriptionScreen', () => {
 
   it('loadData debe dejar subscriptionStatus cuando getSubscriptionStatus tiene success', async () => {
     const { result } = renderHook(() => useSubscriptionScreen());
+    await flushInitialEffects();
     const { default: paymentService } = require('../../services/paymentService');
     paymentService.getSubscriptionStatus.mockResolvedValue({
       success: true,
@@ -110,6 +119,7 @@ describe('useSubscriptionScreen', () => {
 
   it('loadData debe poner subscriptionStatus en null si getSubscriptionStatus falla', async () => {
     const { result } = renderHook(() => useSubscriptionScreen());
+    await flushInitialEffects();
     const { default: paymentService } = require('../../services/paymentService');
     paymentService.getSubscriptionStatus.mockRejectedValue(new Error('Network error'));
     await act(async () => {

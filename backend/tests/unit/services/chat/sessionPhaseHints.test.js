@@ -59,6 +59,17 @@ describe('inferChatSessionPhase', () => {
       })
     ).toBe('default');
   });
+
+  it('no marca settled en el primer mensaje aunque diga estar bien', () => {
+    expect(
+      inferChatSessionPhase({
+        riskLevel: 'LOW',
+        contextualAnalysis: { intencion: baseCtx },
+        userContent: 'Hoy estoy bien',
+        conversationHistoryNewestFirst: [{ role: 'user', content: 'Hoy estoy bien' }]
+      })
+    ).toBe('default');
+  });
 });
 
 describe('getSessionPhaseSystemSnippet', () => {

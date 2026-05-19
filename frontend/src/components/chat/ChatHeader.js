@@ -6,11 +6,17 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
-import { ICON_SIZES, LAYOUT, TEXTS, useChatColors } from '../../screens/chat/chatScreenConstants';
+import {
+  ICON_SIZES,
+  LAYOUT,
+  useChatColors,
+  useChatTexts,
+} from '../../screens/chat/chatScreenConstants';
 
 const ANTO_AVATAR = require('../../images/Anto.png');
 
 export default function ChatHeader({ onBack, onOpenMenu }) {
+  const TEXTS = useChatTexts();
   const { colors } = useTheme();
   const chatColors = useChatColors();
 
@@ -64,8 +70,8 @@ export default function ChatHeader({ onBack, onOpenMenu }) {
       <TouchableOpacity
         testID="chat-header-back"
         accessibilityRole="button"
-        accessibilityLabel="Volver"
-        accessibilityHint="Doble toque para salir del chat"
+        accessibilityLabel={TEXTS.HEADER_BACK_LABEL}
+        accessibilityHint={TEXTS.HEADER_BACK_HINT}
         style={styles.backButton}
         onPress={onBack}
       >

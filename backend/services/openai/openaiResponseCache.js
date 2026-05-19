@@ -14,7 +14,7 @@ const CACHE_MAX_AGE_MS = 30 * 60 * 1000; // 30 minutos
  * @param {Object} contextualAnalysis - Análisis contextual
  * @returns {string} Clave de caché
  */
-export function generateResponseCacheKey(messageContent, emotionalAnalysis, contextualAnalysis) {
+export function generateResponseCacheKey(messageContent, emotionalAnalysis, contextualAnalysis, language = 'es') {
   const normalizedMessage = messageContent.toLowerCase().trim().replace(/\s+/g, ' ');
   const emotion = emotionalAnalysis?.mainEmotion || 'neutral';
   const intent = contextualAnalysis?.intencion?.tipo || 'EMOTIONAL_SUPPORT';
@@ -23,7 +23,8 @@ export function generateResponseCacheKey(messageContent, emotionalAnalysis, cont
     message: normalizedMessage.substring(0, 100),
     emotion,
     intent,
-    topic
+    topic,
+    language: language === 'en' ? 'en' : 'es',
   };
   return cacheService.generateKey('response', cacheData);
 }

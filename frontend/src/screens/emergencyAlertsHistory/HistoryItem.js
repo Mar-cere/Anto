@@ -3,13 +3,18 @@ import { View, Text } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useEmergencyAlertsHistoryStyles } from './emergencyAlertsHistoryStyles';
-import { TEXTS, createRiskColors, createStatusColors } from './emergencyAlertsHistoryConstants';
+import {
+  createRiskColors,
+  createStatusColors,
+  useEmergencyAlertsHistoryTexts,
+} from './emergencyAlertsHistoryConstants';
 
 const WHATSAPP_BRAND_GREEN = '#25D366';
 
 export function HistoryItem({ item, formatDate }) {
   const { colors } = useTheme();
   const styles = useEmergencyAlertsHistoryStyles();
+  const TEXTS = useEmergencyAlertsHistoryTexts();
   const statusColors = useMemo(() => createStatusColors(colors), [colors]);
   const riskColors = useMemo(() => createRiskColors(colors), [colors]);
   if (item == null || typeof item !== 'object') return null;

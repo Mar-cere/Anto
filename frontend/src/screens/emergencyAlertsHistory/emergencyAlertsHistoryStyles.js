@@ -5,9 +5,8 @@
 import { useMemo } from 'react';
 import { StyleSheet } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
-import { TYPOGRAPHY } from '../../constants/ui';
+import { SPACING, TYPOGRAPHY } from '../../constants/ui';
 import { lightColors } from '../../styles/themePalettes';
-import { SPACING } from '../../constants/ui';
 
 export function createEmergencyAlertsHistoryStyles(colors) {
   const CARD_SURFACE = colors.cardBackground;

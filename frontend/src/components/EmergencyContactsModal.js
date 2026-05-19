@@ -24,10 +24,10 @@ import {
   View
 } from 'react-native';
 import { api, ENDPOINTS } from '../config/api';
-import { getApiErrorMessage } from '../utils/apiErrorHandler';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING } from '../constants/ui';
+import { useSectionTranslations } from '../hooks/useTranslations';
 
 // Constantes de validación
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -38,7 +38,7 @@ const MAX_PHONE_LENGTH = 20;
 const MAX_RELATIONSHIP_LENGTH = 50;
 
 // Constantes de textos
-const TEXTS = {
+const DEFAULT_TEXTS = {
   TITLE: 'Contactos de Emergencia',
   SUBTITLE: 'Agrega hasta 2 contactos que recibirán alertas por WhatsApp si detectamos situaciones de riesgo',
   SUBTITLE_FIRST_TIME: '¡Bienvenido! Para tu seguridad, te recomendamos agregar contactos de emergencia con teléfono para alertas por WhatsApp',
@@ -65,12 +65,128 @@ const TEXTS = {
   RELATIONSHIP_TOO_LONG: `La relación no puede exceder ${MAX_RELATIONSHIP_LENGTH} caracteres`,
   ADD_SUCCESS: 'Contacto agregado exitosamente',
   ADD_ERROR: 'Error al agregar contacto',
+  ALERT_SUCCESS_TITLE: 'Éxito',
+  ALERT_ATTENTION_TITLE: 'Atención',
+  ALERT_OK: 'OK',
+  ALERT_CANCEL: 'Cancelar',
   MAX_CONTACTS_REACHED: 'Ya has alcanzado el límite de 2 contactos',
   DUPLICATE_EMAIL: 'Ya existe un contacto con ese correo',
-  ALERT_CHANNEL_NOTE: 'Canal de alerta: WhatsApp al número indicado'
+  ALERT_CHANNEL_NOTE: 'Canal de alerta: WhatsApp al número indicado',
+  REQUIRE_ONE_CONTACT: 'Debes agregar al menos un contacto de emergencia',
+  CONTACTS_SAVED_SUMMARY: '{count} contacto(s) agregado(s) exitosamente',
+  CONTACTS_SAVED_WHATSAPP_NOTE:
+    'Las alertas se enviarán por WhatsApp a los números configurados.',
+  SKIP_CONFIRM_MESSAGE:
+    'Los contactos de emergencia son importantes para tu seguridad. ¿Estás seguro de que quieres omitir esta configuración?',
+  CONTACT_LABEL: 'Contacto',
+};
+
+const classifyEmergencySaveError = (error) => {
+  const normalizedMessage = String(
+    error?.response?.data?.message ?? error?.message ?? '',
+  ).toLowerCase();
+
+  const isMaxContacts =
+    normalizedMessage.includes('límite') ||
+    normalizedMessage.includes('limite') ||
+    normalizedMessage.includes('máximo') ||
+    normalizedMessage.includes('maximo') ||
+    normalizedMessage.includes('limit') ||
+    normalizedMessage.includes('maximum');
+
+  if (isMaxContacts) return 'max';
+
+  const isDuplicate =
+    error?.response?.status === 409 ||
+    normalizedMessage.includes('email') ||
+    normalizedMessage.includes('duplicado') ||
+    normalizedMessage.includes('duplicate');
+
+  if (isDuplicate) return 'duplicate';
+
+  return 'generic';
 };
 
 const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [], isFirstTime = false }) => {
+  const translated = useSectionTranslations('PROFILE');
+  const TEXTS = useMemo(
+    () => ({
+      ...DEFAULT_TEXTS,
+      TITLE: translated?.EMERGENCY_CONTACTS || DEFAULT_TEXTS.TITLE,
+      SUBTITLE:
+        translated?.EMERGENCY_MODAL_SUBTITLE || DEFAULT_TEXTS.SUBTITLE,
+      SUBTITLE_FIRST_TIME:
+        translated?.EMERGENCY_MODAL_SUBTITLE_FIRST_TIME ||
+        DEFAULT_TEXTS.SUBTITLE_FIRST_TIME,
+      NAME_LABEL: translated?.EMERGENCY_NAME_LABEL || DEFAULT_TEXTS.NAME_LABEL,
+      NAME_PLACEHOLDER:
+        translated?.EMERGENCY_NAME_PLACEHOLDER || DEFAULT_TEXTS.NAME_PLACEHOLDER,
+      EMAIL_LABEL:
+        translated?.EMERGENCY_EMAIL_LABEL || DEFAULT_TEXTS.EMAIL_LABEL,
+      EMAIL_PLACEHOLDER:
+        translated?.EMERGENCY_EMAIL_PLACEHOLDER || DEFAULT_TEXTS.EMAIL_PLACEHOLDER,
+      PHONE_LABEL:
+        translated?.EMERGENCY_PHONE_LABEL || DEFAULT_TEXTS.PHONE_LABEL,
+      PHONE_PLACEHOLDER:
+        translated?.EMERGENCY_PHONE_PLACEHOLDER || DEFAULT_TEXTS.PHONE_PLACEHOLDER,
+      RELATIONSHIP_LABEL:
+        translated?.EMERGENCY_RELATION_LABEL || DEFAULT_TEXTS.RELATIONSHIP_LABEL,
+      RELATIONSHIP_PLACEHOLDER:
+        translated?.EMERGENCY_RELATION_PLACEHOLDER ||
+        DEFAULT_TEXTS.RELATIONSHIP_PLACEHOLDER,
+      ADD_CONTACT:
+        translated?.EMERGENCY_ADD_CONTACT || DEFAULT_TEXTS.ADD_CONTACT,
+      SAVE: translated?.EMERGENCY_SAVE || DEFAULT_TEXTS.SAVE,
+      CANCEL: translated?.CANCEL || DEFAULT_TEXTS.CANCEL,
+      SKIP: translated?.EMERGENCY_SKIP || DEFAULT_TEXTS.SKIP,
+      ADD_ERROR:
+        translated?.EMERGENCY_ADD_ERROR || DEFAULT_TEXTS.ADD_ERROR,
+      MAX_CONTACTS_REACHED:
+        translated?.EMERGENCY_MAX_CONTACTS || DEFAULT_TEXTS.MAX_CONTACTS_REACHED,
+      DUPLICATE_EMAIL:
+        translated?.EMERGENCY_DUPLICATE_EMAIL || DEFAULT_TEXTS.DUPLICATE_EMAIL,
+      ALERT_CHANNEL_NOTE:
+        translated?.EMERGENCY_ALERT_CHANNEL_NOTE || DEFAULT_TEXTS.ALERT_CHANNEL_NOTE,
+      REQUIRE_ONE_CONTACT:
+        translated?.EMERGENCY_REQUIRE_ONE_CONTACT || DEFAULT_TEXTS.REQUIRE_ONE_CONTACT,
+      CONTACTS_SAVED_SUMMARY:
+        translated?.EMERGENCY_CONTACTS_SAVED_SUMMARY ||
+        DEFAULT_TEXTS.CONTACTS_SAVED_SUMMARY,
+      CONTACTS_SAVED_WHATSAPP_NOTE:
+        translated?.EMERGENCY_CONTACTS_SAVED_WHATSAPP_NOTE ||
+        DEFAULT_TEXTS.CONTACTS_SAVED_WHATSAPP_NOTE,
+      SKIP_CONFIRM_MESSAGE:
+        translated?.EMERGENCY_SKIP_CONFIRM_MESSAGE ||
+        DEFAULT_TEXTS.SKIP_CONFIRM_MESSAGE,
+      ALERT_SUCCESS_TITLE: translated?.SUCCESS || DEFAULT_TEXTS.ALERT_SUCCESS_TITLE,
+      ALERT_ATTENTION_TITLE:
+        translated?.EMERGENCY_ATTENTION_TITLE || DEFAULT_TEXTS.ALERT_ATTENTION_TITLE,
+      ALERT_OK: translated?.COMMON_OK || DEFAULT_TEXTS.ALERT_OK,
+      ALERT_CANCEL: translated?.CANCEL || DEFAULT_TEXTS.ALERT_CANCEL,
+      REQUIRED_FIELD:
+        translated?.EMERGENCY_REQUIRED_FIELD || DEFAULT_TEXTS.REQUIRED_FIELD,
+      INVALID_EMAIL:
+        translated?.EMERGENCY_INVALID_EMAIL || DEFAULT_TEXTS.INVALID_EMAIL,
+      PHONE_REQUIRED:
+        translated?.EMERGENCY_PHONE_REQUIRED || DEFAULT_TEXTS.PHONE_REQUIRED,
+      INVALID_PHONE:
+        translated?.EMERGENCY_INVALID_PHONE || DEFAULT_TEXTS.INVALID_PHONE,
+      NAME_TOO_SHORT:
+        translated?.EMERGENCY_NAME_TOO_SHORT || DEFAULT_TEXTS.NAME_TOO_SHORT,
+      NAME_TOO_LONG:
+        translated?.EMERGENCY_NAME_TOO_LONG || DEFAULT_TEXTS.NAME_TOO_LONG,
+      EMAIL_TOO_LONG:
+        translated?.EMERGENCY_EMAIL_TOO_LONG || DEFAULT_TEXTS.EMAIL_TOO_LONG,
+      PHONE_TOO_LONG:
+        translated?.EMERGENCY_PHONE_TOO_LONG || DEFAULT_TEXTS.PHONE_TOO_LONG,
+      RELATIONSHIP_TOO_LONG:
+        translated?.EMERGENCY_RELATIONSHIP_TOO_LONG ||
+        DEFAULT_TEXTS.RELATIONSHIP_TOO_LONG,
+      CONTACT_LABEL:
+        translated?.EMERGENCY_CONTACT_LABEL || DEFAULT_TEXTS.CONTACT_LABEL,
+    }),
+    [translated],
+  );
   const { showToast } = useToast();
   const { colors } = useTheme();
   const styles = useMemo(
@@ -295,7 +411,7 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
     }
     
     return contactErrors;
-  }, []);
+  }, [TEXTS]);
 
   // Validar todos los contactos
   const validateAllContacts = useCallback(() => {
@@ -328,7 +444,7 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
     }
     
     return !hasErrors;
-  }, [contacts, existingContacts, validateContact, showToast]);
+  }, [TEXTS, contacts, existingContacts, validateContact, showToast]);
 
   // Manejar cambio en un campo
   const handleFieldChange = useCallback((contactIndex, field, value) => {
@@ -361,7 +477,7 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
     
     setContacts(prev => [...prev, { name: '', email: '', phone: '', relationship: '' }]);
     setErrors(prev => [...prev, {}]);
-  }, [contacts, existingContacts, showToast]);
+  }, [TEXTS, contacts, existingContacts, showToast]);
 
   // Eliminar un contacto del formulario
   const handleRemoveContact = useCallback((index) => {
@@ -383,7 +499,7 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
       
       if (contactsToSave.length === 0) {
         showToast({
-          message: 'Debes agregar al menos un contacto de emergencia',
+          message: TEXTS.REQUIRE_ONE_CONTACT,
           type: 'warning',
         });
         setIsSubmitting(false);
@@ -402,49 +518,48 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
 
       await Promise.all(savePromises);
       
-      let message = `${contactsToSave.length} contacto(s) agregado(s) exitosamente`;
-      message += '\n\nLas alertas se enviarán por WhatsApp a los números configurados.';
+      let message = TEXTS.CONTACTS_SAVED_SUMMARY.replace('{count}', String(contactsToSave.length));
+      message += `\n\n${TEXTS.CONTACTS_SAVED_WHATSAPP_NOTE}`;
       
-      Alert.alert('Éxito', message, [
-        { text: 'OK', onPress: () => {
+      Alert.alert(TEXTS.ALERT_SUCCESS_TITLE, message, [
+        { text: TEXTS.ALERT_OK, onPress: () => {
           onSave?.();
           onClose();
         }}
       ]);
     } catch (error) {
       console.error('Error guardando contactos:', error);
-      const errorMessage = getApiErrorMessage(error) || TEXTS.ADD_ERROR;
-      const msg = (errorMessage || '').toLowerCase();
-      if (msg.includes('límite') || msg.includes('máximo')) {
+      const errorType = classifyEmergencySaveError(error);
+      if (errorType === 'max') {
         showToast({
           message: TEXTS.MAX_CONTACTS_REACHED,
           type: 'error',
         });
-      } else if (msg.includes('email') || msg.includes('duplicado')) {
+      } else if (errorType === 'duplicate') {
         showToast({
           message: TEXTS.DUPLICATE_EMAIL,
           type: 'error',
         });
       } else {
         showToast({
-          message: errorMessage,
+          message: TEXTS.ADD_ERROR,
           type: 'error',
         });
       }
     } finally {
       setIsSubmitting(false);
     }
-  }, [contacts, validateAllContacts, onSave, onClose, showToast]);
+  }, [TEXTS, contacts, validateAllContacts, onSave, onClose, showToast]);
 
   // Omitir (cerrar sin guardar)
   const handleSkip = useCallback(async () => {
     Alert.alert(
-      'Atención',
-      'Los contactos de emergencia son importantes para tu seguridad. ¿Estás seguro de que quieres omitir esta configuración?',
+      TEXTS.ALERT_ATTENTION_TITLE,
+      TEXTS.SKIP_CONFIRM_MESSAGE,
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: TEXTS.ALERT_CANCEL, style: 'cancel' },
         { 
-          text: 'Omitir', 
+          text: TEXTS.SKIP, 
           style: 'destructive',
           onPress: async () => {
             // Guardar en AsyncStorage que el usuario omitió
@@ -461,10 +576,10 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
         }
       ]
     );
-  }, [onClose]);
+  }, [TEXTS, onClose]);
 
   // Renderizar formulario de un contacto
-  const renderContactForm = useCallback((contact, index) => {
+  const renderContactForm = (contact, index) => {
     const contactErrors = errors[index] || {};
     const canRemove = contacts.length > 1;
     
@@ -472,7 +587,9 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
       <View key={index} style={styles.contactForm}>
         {contacts.length > 1 && (
           <View style={styles.contactHeader}>
-            <Text style={styles.contactNumber}>Contacto {index + 1}</Text>
+            <Text style={styles.contactNumber}>
+              {TEXTS.CONTACT_LABEL} {index + 1}
+            </Text>
             {canRemove && (
               <TouchableOpacity
                 onPress={() => handleRemoveContact(index)}
@@ -560,7 +677,7 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
 
       </View>
     );
-  }, [contacts, errors, handleFieldChange, handleRemoveContact]);
+  };
 
   return (
     <Modal

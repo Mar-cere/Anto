@@ -176,23 +176,23 @@ describe('useCrisisDashboardScreen', () => {
     expect(result.current.formatDate('')).toBe('—');
   });
 
-  it('formatTrendData sin datos retorna Sin datos', async () => {
+  it('formatTrendData sin datos retorna placeholder', async () => {
     const { result } = renderHook(() => useCrisisDashboardScreen());
     await act(async () => {
       await new Promise((r) => setTimeout(r, 50));
     });
     const data = result.current.formatTrendData();
-    expect(data.labels).toEqual(['Sin datos']);
+    expect(data.labels).toEqual(['—']);
     expect(data.datasets).toEqual([{ data: [0] }]);
   });
 
-  it('formatMonthlyData sin crisisByMonth retorna Sin datos', async () => {
+  it('formatMonthlyData sin crisisByMonth retorna placeholder', async () => {
     const { result } = renderHook(() => useCrisisDashboardScreen());
     await act(async () => {
       await new Promise((r) => setTimeout(r, 50));
     });
     const data = result.current.formatMonthlyData();
-    expect(data.labels).toEqual(['Sin datos']);
+    expect(data.labels).toEqual(['—']);
     expect(data.datasets).toEqual([{ data: [0] }]);
   });
 
@@ -211,7 +211,9 @@ describe('useCrisisDashboardScreen', () => {
       await new Promise((r) => setTimeout(r, 100));
     });
     expect(result.current.loading).toBe(false);
-    expect(result.current.error).toBe('Network error');
+    expect(result.current.error).toBe(
+      'Error desconocido. Comprueba la conexión e inténtalo de nuevo.',
+    );
   });
 
   it('si el resumen carga pero otro endpoint falla, no hay error global', async () => {

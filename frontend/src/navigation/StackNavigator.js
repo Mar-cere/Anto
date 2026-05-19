@@ -49,6 +49,7 @@ import ConnectionExerciseScreen from '../screens/techniques/ConnectionExerciseSc
 import SocialActivityScreen from '../screens/techniques/SocialActivityScreen';
 import AboutScreen from '../screens/AboutScreen';
 import AIPrivacyScreen from '../screens/AIPrivacyScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import SummaryScreen from '../screens/SummaryScreen';
 import { useTheme } from '../context/ThemeContext';
 import TabNavigator from './TabNavigator';
@@ -77,6 +78,7 @@ const ROUTE_NAMES = {
   ABOUT: 'About',
   AI_PRIVACY: 'AIPrivacy',
   ACTIVITY_SUMMARY: 'ActivitySummary',
+  CHANGE_PASSWORD: 'ChangePassword',
 };
 
 /**
@@ -318,6 +320,11 @@ const StackNavigator = () => {
       <Stack.Screen
         name={ROUTE_NAMES.AI_PRIVACY}
         component={AIPrivacyScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name={ROUTE_NAMES.CHANGE_PASSWORD}
+        component={ChangePasswordScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

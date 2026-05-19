@@ -2,6 +2,8 @@
  * Constantes para EmergencyAlertsHistoryScreen
  */
 import { Dimensions } from 'react-native';
+import { useMemo } from 'react';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { lightColors } from '../../styles/themePalettes';
 
 const { width } = Dimensions.get('window');
@@ -48,6 +50,10 @@ export const TEXTS = {
   TAB_STATS: 'Estadísticas',
   TAB_PATTERNS: 'Patrones',
   TAB_ERROR_HINT: 'Esta sección no cargó. Ábrela y pulsa reintentar.',
+  TAB_A11Y_MORE_THAN_99_ALERTS: 'más de 99 alertas',
+  TAB_A11Y_ONE_ALERT: 'una alerta',
+  TAB_A11Y_ZERO_ALERTS: 'sin alertas',
+  TAB_A11Y_ALERTS_SUFFIX: '{count} alertas',
   TOTAL_ALERTS: 'Total de Alertas',
   BY_RISK_LEVEL: 'Por Nivel de Riesgo',
   BY_STATUS: 'Por Estado',
@@ -86,6 +92,7 @@ export const TEXTS = {
   TOTAL: 'Total',
   SUCCESSFUL: 'Exitosas',
   FAILED_LABEL: 'Fallidas',
+  ALERTS_LABEL: 'alertas',
   NO_CHANNELS: 'Ningún canal exitoso',
   /** Pestaña Estadísticas: mismo periodo que el endpoint (30 días). */
   STATS_TAB_SUMMARY_HINT:
@@ -102,6 +109,145 @@ export const TEXTS = {
     'Se necesitan al menos 2 alertas en este periodo para comparar tendencias (frecuencia, riesgo y horarios). Si aparece un aviso abajo, también te orienta.',
   PATTERNS_WEEKEND_VS_WEEKDAY: 'Fin de semana vs días laborables',
 };
+
+export function useEmergencyAlertsHistoryTexts() {
+  const translated = useSectionTranslations('PROFILE');
+  return useMemo(
+    () => ({
+      ...TEXTS,
+      TITLE: translated?.EMERGENCY_ALERTS_TITLE || TEXTS.TITLE,
+      LOADING: translated?.EMERGENCY_ALERTS_LOADING || TEXTS.LOADING,
+      ERROR: translated?.EMERGENCY_ALERTS_ERROR || TEXTS.ERROR,
+      ERROR_UNKNOWN:
+        translated?.EMERGENCY_ALERTS_ERROR_UNKNOWN || TEXTS.ERROR_UNKNOWN,
+      DATE_UNAVAILABLE:
+        translated?.EMERGENCY_ALERTS_DATE_UNAVAILABLE || TEXTS.DATE_UNAVAILABLE,
+      TAB_STATS_FAILED:
+        translated?.EMERGENCY_ALERTS_TAB_STATS_FAILED || TEXTS.TAB_STATS_FAILED,
+      TAB_PATTERNS_FAILED:
+        translated?.EMERGENCY_ALERTS_TAB_PATTERNS_FAILED ||
+        TEXTS.TAB_PATTERNS_FAILED,
+      RETRY_SECTION:
+        translated?.EMERGENCY_ALERTS_RETRY_SECTION || TEXTS.RETRY_SECTION,
+      SUMMARY_HINT_WITH_STATS:
+        translated?.EMERGENCY_ALERTS_SUMMARY_HINT_WITH_STATS ||
+        TEXTS.SUMMARY_HINT_WITH_STATS,
+      SUMMARY_HINT_LIST_ONLY:
+        translated?.EMERGENCY_ALERTS_SUMMARY_HINT_LIST_ONLY ||
+        TEXTS.SUMMARY_HINT_LIST_ONLY,
+      RETRY: translated?.EMERGENCY_ALERTS_RETRY || TEXTS.RETRY,
+      NO_ALERTS: translated?.EMERGENCY_ALERTS_EMPTY_TITLE || TEXTS.NO_ALERTS,
+      NO_ALERTS_MESSAGE:
+        translated?.EMERGENCY_ALERTS_EMPTY_MESSAGE || TEXTS.NO_ALERTS_MESSAGE,
+      CONFIGURE_CONTACTS:
+        translated?.EMERGENCY_ALERTS_CONFIGURE_CONTACTS ||
+        TEXTS.CONFIGURE_CONTACTS,
+      TAB_HISTORY:
+        translated?.EMERGENCY_ALERTS_TAB_HISTORY || TEXTS.TAB_HISTORY,
+      TAB_STATS: translated?.EMERGENCY_ALERTS_TAB_STATS || TEXTS.TAB_STATS,
+      TAB_PATTERNS:
+        translated?.EMERGENCY_ALERTS_TAB_PATTERNS || TEXTS.TAB_PATTERNS,
+      TAB_ERROR_HINT:
+        translated?.EMERGENCY_ALERTS_TAB_ERROR_HINT || TEXTS.TAB_ERROR_HINT,
+      TAB_A11Y_MORE_THAN_99_ALERTS:
+        translated?.EMERGENCY_ALERTS_TAB_A11Y_MORE_THAN_99_ALERTS ||
+        TEXTS.TAB_A11Y_MORE_THAN_99_ALERTS,
+      TAB_A11Y_ONE_ALERT:
+        translated?.EMERGENCY_ALERTS_TAB_A11Y_ONE_ALERT ||
+        TEXTS.TAB_A11Y_ONE_ALERT,
+      TAB_A11Y_ZERO_ALERTS:
+        translated?.EMERGENCY_ALERTS_TAB_A11Y_ZERO_ALERTS ||
+        TEXTS.TAB_A11Y_ZERO_ALERTS,
+      TAB_A11Y_ALERTS_SUFFIX:
+        translated?.EMERGENCY_ALERTS_TAB_A11Y_ALERTS_SUFFIX ||
+        TEXTS.TAB_A11Y_ALERTS_SUFFIX,
+      TOTAL_ALERTS:
+        translated?.EMERGENCY_ALERTS_TOTAL_ALERTS || TEXTS.TOTAL_ALERTS,
+      BY_RISK_LEVEL:
+        translated?.EMERGENCY_ALERTS_BY_RISK_LEVEL || TEXTS.BY_RISK_LEVEL,
+      BY_STATUS: translated?.EMERGENCY_ALERTS_BY_STATUS || TEXTS.BY_STATUS,
+      BY_CHANNEL: translated?.EMERGENCY_ALERTS_BY_CHANNEL || TEXTS.BY_CHANNEL,
+      BY_CONTACT: translated?.EMERGENCY_ALERTS_BY_CONTACT || TEXTS.BY_CONTACT,
+      BY_DAY: translated?.EMERGENCY_ALERTS_BY_DAY || TEXTS.BY_DAY,
+      MEDIUM: translated?.EMERGENCY_ALERTS_MEDIUM || TEXTS.MEDIUM,
+      HIGH: translated?.EMERGENCY_ALERTS_HIGH || TEXTS.HIGH,
+      SENT: translated?.EMERGENCY_ALERTS_SENT || TEXTS.SENT,
+      PARTIAL: translated?.EMERGENCY_ALERTS_PARTIAL || TEXTS.PARTIAL,
+      FAILED: translated?.EMERGENCY_ALERTS_FAILED || TEXTS.FAILED,
+      EMAIL: translated?.EMERGENCY_ALERTS_EMAIL || TEXTS.EMAIL,
+      WHATSAPP: translated?.EMERGENCY_ALERTS_WHATSAPP || TEXTS.WHATSAPP,
+      CONTACT: translated?.EMERGENCY_ALERTS_CONTACT || TEXTS.CONTACT,
+      RISK_LEVEL:
+        translated?.EMERGENCY_ALERTS_RISK_LEVEL || TEXTS.RISK_LEVEL,
+      CHANNELS: translated?.EMERGENCY_ALERTS_CHANNELS || TEXTS.CHANNELS,
+      TEST_ALERT:
+        translated?.EMERGENCY_ALERTS_TEST_ALERT || TEXTS.TEST_ALERT,
+      FREQUENCY: translated?.EMERGENCY_ALERTS_FREQUENCY || TEXTS.FREQUENCY,
+      RISK_TREND:
+        translated?.EMERGENCY_ALERTS_RISK_TREND || TEXTS.RISK_TREND,
+      TIME_PATTERNS:
+        translated?.EMERGENCY_ALERTS_TIME_PATTERNS || TEXTS.TIME_PATTERNS,
+      CONTACT_RELIABILITY:
+        translated?.EMERGENCY_ALERTS_CONTACT_RELIABILITY ||
+        TEXTS.CONTACT_RELIABILITY,
+      RECOMMENDATIONS:
+        translated?.EMERGENCY_ALERTS_RECOMMENDATIONS || TEXTS.RECOMMENDATIONS,
+      INCREASING:
+        translated?.EMERGENCY_ALERTS_INCREASING || TEXTS.INCREASING,
+      DECREASING:
+        translated?.EMERGENCY_ALERTS_DECREASING || TEXTS.DECREASING,
+      STABLE: translated?.EMERGENCY_ALERTS_STABLE || TEXTS.STABLE,
+      ESCALATING:
+        translated?.EMERGENCY_ALERTS_ESCALATING || TEXTS.ESCALATING,
+      IMPROVING:
+        translated?.EMERGENCY_ALERTS_IMPROVING || TEXTS.IMPROVING,
+      MOST_COMMON_DAYS:
+        translated?.EMERGENCY_ALERTS_MOST_COMMON_DAYS ||
+        TEXTS.MOST_COMMON_DAYS,
+      MOST_COMMON_HOURS:
+        translated?.EMERGENCY_ALERTS_MOST_COMMON_HOURS ||
+        TEXTS.MOST_COMMON_HOURS,
+      WEEKEND: translated?.EMERGENCY_ALERTS_WEEKEND || TEXTS.WEEKEND,
+      WEEKDAY: translated?.EMERGENCY_ALERTS_WEEKDAY || TEXTS.WEEKDAY,
+      SUCCESS_RATE:
+        translated?.EMERGENCY_ALERTS_SUCCESS_RATE || TEXTS.SUCCESS_RATE,
+      TOTAL: translated?.EMERGENCY_ALERTS_TOTAL || TEXTS.TOTAL,
+      SUCCESSFUL:
+        translated?.EMERGENCY_ALERTS_SUCCESSFUL || TEXTS.SUCCESSFUL,
+      FAILED_LABEL:
+        translated?.EMERGENCY_ALERTS_FAILED_LABEL || TEXTS.FAILED_LABEL,
+      ALERTS_LABEL:
+        translated?.EMERGENCY_ALERTS_ALERTS_LABEL || TEXTS.ALERTS_LABEL,
+      NO_CHANNELS:
+        translated?.EMERGENCY_ALERTS_NO_CHANNELS || TEXTS.NO_CHANNELS,
+      STATS_TAB_SUMMARY_HINT:
+        translated?.EMERGENCY_ALERTS_STATS_SUMMARY_HINT ||
+        TEXTS.STATS_TAB_SUMMARY_HINT,
+      STATS_TAB_EMPTY_TITLE:
+        translated?.EMERGENCY_ALERTS_STATS_EMPTY_TITLE ||
+        TEXTS.STATS_TAB_EMPTY_TITLE,
+      STATS_TAB_EMPTY_MESSAGE:
+        translated?.EMERGENCY_ALERTS_STATS_EMPTY_MESSAGE ||
+        TEXTS.STATS_TAB_EMPTY_MESSAGE,
+      PATTERNS_TAB_SUMMARY_TITLE:
+        translated?.EMERGENCY_ALERTS_PATTERNS_SUMMARY_TITLE ||
+        TEXTS.PATTERNS_TAB_SUMMARY_TITLE,
+      PATTERNS_TAB_SUMMARY_HINT:
+        translated?.EMERGENCY_ALERTS_PATTERNS_SUMMARY_HINT ||
+        TEXTS.PATTERNS_TAB_SUMMARY_HINT,
+      PATTERNS_TAB_EMPTY_TITLE:
+        translated?.EMERGENCY_ALERTS_PATTERNS_EMPTY_TITLE ||
+        TEXTS.PATTERNS_TAB_EMPTY_TITLE,
+      PATTERNS_TAB_EMPTY_MESSAGE:
+        translated?.EMERGENCY_ALERTS_PATTERNS_EMPTY_MESSAGE ||
+        TEXTS.PATTERNS_TAB_EMPTY_MESSAGE,
+      PATTERNS_WEEKEND_VS_WEEKDAY:
+        translated?.EMERGENCY_ALERTS_PATTERNS_WEEKEND_VS_WEEKDAY ||
+        TEXTS.PATTERNS_WEEKEND_VS_WEEKDAY,
+    }),
+    [translated],
+  );
+}
 
 export function createEmergencyChartConfig(colors) {
   const surface = colors.surface ?? colors.cardBackground ?? colors.background;

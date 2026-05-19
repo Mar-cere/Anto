@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Animated } from 'react-native';
+import { Animated } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 
 // Componente de esqueleto para carga
@@ -26,7 +26,7 @@ const SkeletonLoader = ({ width, height, style }) => {
     animation.start();
     
     return () => animation.stop();
-  }, []);
+  }, [opacity]);
   
   return (
     <Animated.View

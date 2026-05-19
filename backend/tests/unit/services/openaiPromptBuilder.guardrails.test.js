@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from '@jest/globals';
-import { buildContextualizedPrompt } from '../../../services/openai/openaiPromptBuilder.js';
+import { buildContextualizedPrompt, resolveChatLanguage } from '../../../services/openai/openaiPromptBuilder.js';
 
 beforeAll(() => {
   process.env.ENABLE_PROMPT_HISTORY_TELEMETRY = 'false';
@@ -53,5 +53,25 @@ describe('openaiPromptBuilder — guardrails de brevedad/factual/identidad clín
     expect(systemMessage).toContain('IDENTIDAD Y PRIORIDAD CLÍNICA');
     expect(systemMessage).toContain('MODO FACTUAL (prioridad alta)');
     expect(systemMessage).toContain('responde lo factual en breve y vuelve a sostén emocional útil');
+  });
+
+  it('resolveChatLanguage usa preferences.language del perfil', () => {
+    expect(resolveChatLanguage({ profile: { preferences: { language: 'en' } } })).toBe('en');
+    expect(resolveChatLanguage({ profile: { preferences: { language: 'es' } } })).toBe('es');
+    expect(resolveChatLanguage({ language: 'en' })).toBe('en');
+    expect(resolveChatLanguage({})).toBe('es');
+  });
+
+  it('inyecta directiva de respuesta en inglés cuando language=en', async () => {
+    const { systemMessage } = await buildContextualizedPrompt(
+      { content: 'hello' },
+      {
+        ...baseContext,
+        profile: { preferences: { language: 'en' } },
+      },
+    );
+    expect(systemMessage).toContain('RESPONSE LANGUAGE (HIGHEST PRIORITY');
+    expect(systemMessage).toContain('IDENTITY AND CLINICAL PRIORITY');
+    expect(systemMessage).not.toContain('IDENTIDAD Y PRIORIDAD CLÍNICA');
   });
 });

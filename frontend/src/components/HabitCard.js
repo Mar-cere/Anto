@@ -9,11 +9,32 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCardStylesDynamic, CardHeader, EmptyState } from './common/CardStyles';
 import * as Haptics from 'expo-haptics';
 import { api, ENDPOINTS } from '../config/api';
-import { getApiErrorMessage, isAuthError } from '../utils/apiErrorHandler';
+import { isAuthError } from '../utils/apiErrorHandler';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
 
-const HabitItem = memo(({ habit, onPress, styles, commonStyles }) => {
+const DEFAULT_TEXTS = {
+  STREAK_LABEL: 'Racha',
+  BEST_STREAK_LABEL: 'Mejor',
+  DAYS_LABEL: 'días',
+  STATUS_COMPLETED: '¡Completado hoy!',
+  STATUS_PENDING: 'Pendiente',
+  STATUS_COMPLETED_A11Y: 'Completado hoy.',
+  STATUS_PENDING_A11Y: 'Pendiente.',
+  HABIT_A11Y_PREFIX: 'Hábito',
+  HABIT_A11Y_HINT: 'Doble toque para ver o marcar',
+  SESSION_EXPIRED: 'Sesión expirada',
+  SESSION_EXPIRED_MESSAGE: 'Por favor, inicia sesión nuevamente',
+  ERROR_RETRY_MESSAGE: 'No se pudo cargar. Revisa tu conexión e intenta de nuevo.',
+  RETRY: 'Reintentar',
+  EMPTY_ACTIVE: 'No hay hábitos activos',
+  CREATE_BUTTON: 'Crear hábito',
+  NEW_HABIT: 'Nuevo hábito',
+  CARD_TITLE: 'Mis Hábitos',
+};
+
+const HabitItem = memo(({ habit, onPress, styles, commonStyles, texts }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const { colors } = useTheme();
@@ -53,8 +74,8 @@ const HabitItem = memo(({ habit, onPress, styles, commonStyles }) => {
         onPressOut={handlePressOut}
         activeOpacity={0.7}
         accessibilityRole="button"
-        accessibilityLabel={`Hábito ${habit.title}. Racha ${habit.progress?.streak || 0} días. ${habit.status?.completedToday ? 'Completado hoy.' : 'Pendiente.'}`}
-        accessibilityHint="Doble toque para ver o marcar"
+        accessibilityLabel={`${texts.HABIT_A11Y_PREFIX} ${habit.title}. ${texts.STREAK_LABEL} ${habit.progress?.streak || 0} ${texts.DAYS_LABEL}. ${habit.status?.completedToday ? texts.STATUS_COMPLETED_A11Y : texts.STATUS_PENDING_A11Y}`}
+        accessibilityHint={texts.HABIT_A11Y_HINT}
       >
         <View style={styles.habitContent}>
           {/* Icono y título */}
@@ -77,11 +98,11 @@ const HabitItem = memo(({ habit, onPress, styles, commonStyles }) => {
                   color={accentColor} 
                 />
                 <Text style={[styles.streakText, { color: accentColor }]}>
-                  {habit.progress?.streak || 0} días
+                  {habit.progress?.streak || 0} {texts.DAYS_LABEL}
                 </Text>
                 {habit.progress?.bestStreak > (habit.progress?.streak || 0) && (
                   <Text style={styles.bestStreakText}>
-                    (Mejor: {habit.progress.bestStreak})
+                    ({texts.BEST_STREAK_LABEL}: {habit.progress.bestStreak})
                   </Text>
                 )}
               </View>
@@ -95,7 +116,7 @@ const HabitItem = memo(({ habit, onPress, styles, commonStyles }) => {
                 styles.statusText,
                 habit.status?.completedToday && styles.completedText
               ]}>
-                {habit.status?.completedToday ? '¡Completado hoy!' : 'Pendiente'}
+                {habit.status?.completedToday ? texts.STATUS_COMPLETED : texts.STATUS_PENDING}
               </Text>
               <Text style={styles.progressText}>
                 {`${habit.progress?.completedDays || 0}/${habit.progress?.totalDays || 0}`}
@@ -124,6 +145,16 @@ const HabitItem = memo(({ habit, onPress, styles, commonStyles }) => {
 HabitItem.displayName = 'HabitItem';
 
 const HabitCard = memo(() => {
+  const translated = useSectionTranslations('HABITS');
+  const TEXTS = useMemo(
+    () => ({
+      ...DEFAULT_TEXTS,
+      ...translated,
+      ERROR_RETRY_MESSAGE:
+        translated?.CARD_ERROR_RETRY_MESSAGE || DEFAULT_TEXTS.ERROR_RETRY_MESSAGE,
+    }),
+    [translated]
+  );
   const navigation = useNavigation();
   const { colors } = useTheme();
   const { commonStyles } = useCardStylesDynamic();
@@ -153,9 +184,9 @@ const HabitCard = memo(() => {
       setHabits(topHabits);
     } catch (error) {
       console.error('Error cargando hábitos:', error);
-      setError(getApiErrorMessage(error));
+      setError(TEXTS.ERROR_RETRY_MESSAGE);
       if (isAuthError(error)) {
-        Alert.alert('Sesión expirada', 'Por favor, inicia sesión nuevamente');
+        Alert.alert(TEXTS.SESSION_EXPIRED, TEXTS.SESSION_EXPIRED_MESSAGE);
         await AsyncStorage.removeItem('userToken');
         navigation.reset({
           index: 0,
@@ -166,7 +197,7 @@ const HabitCard = memo(() => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [navigation]);
+  }, [navigation, TEXTS.ERROR_RETRY_MESSAGE, TEXTS.SESSION_EXPIRED, TEXTS.SESSION_EXPIRED_MESSAGE]);
 
   // Pull to refresh
   const onRefresh = useCallback(() => {
@@ -190,14 +221,14 @@ const HabitCard = memo(() => {
             size={24} 
             color={colors.error} 
           />
-          <Text style={styles.errorText}>No se pudo cargar. Revisa tu conexión e intenta de nuevo.</Text>
+          <Text style={styles.errorText}>{error || TEXTS.ERROR_RETRY_MESSAGE}</Text>
           <TouchableOpacity 
             style={styles.retryButton}
             onPress={() => loadHabits()}
             accessibilityRole="button"
-            accessibilityLabel="Reintentar"
+            accessibilityLabel={TEXTS.RETRY}
           >
-            <Text style={styles.retryText}>Reintentar</Text>
+            <Text style={styles.retryText}>{TEXTS.RETRY}</Text>
           </TouchableOpacity>
         </View>
       );
@@ -207,9 +238,9 @@ const HabitCard = memo(() => {
       return (
         <EmptyState 
           icon="lightning-bolt"
-          message="No hay hábitos activos"
+          message={TEXTS.EMPTY_ACTIVE}
           onAdd={() => navigation.navigate('Habits', { openModal: true })}
-          addButtonText="Crear hábito"
+          addButtonText={TEXTS.CREATE_BUTTON}
           compact
           showIcon={false}
         />
@@ -236,6 +267,7 @@ const HabitCard = memo(() => {
               onPress={() => navigation.navigate('Habits', { habitId: habit._id })}
               styles={styles}
               commonStyles={commonStyles}
+              texts={TEXTS}
             />
           ))}
           <TouchableOpacity 
@@ -247,7 +279,7 @@ const HabitCard = memo(() => {
               size={20} 
               color={colors.primary} 
             />
-            <Text style={styles.addHabitText}>Nuevo hábito</Text>
+            <Text style={styles.addHabitText}>{TEXTS.NEW_HABIT}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -258,7 +290,7 @@ const HabitCard = memo(() => {
     <View style={commonStyles.cardContainer}>
       <CardHeader 
         icon="lightning-bolt"
-        title="Mis Hábitos"
+        title={TEXTS.CARD_TITLE}
         onViewAll={() => navigation.navigate('Habits')}
       />
 

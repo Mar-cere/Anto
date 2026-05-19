@@ -86,6 +86,8 @@ import {
   extractProtectiveFactors
 } from './chat/index.js';
 
+import { resolveAppLanguage } from '../utils/resolveAppLanguage.js';
+
 const router = express.Router();
 
 // Obtener mensajes de una conversación (paginado)
@@ -1107,7 +1109,14 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           phone: user?.phone,
           preferences: {
             ...userProfile?.preferences,
-            ...user?.preferences // Incluir responseStyle de User
+            ...user?.preferences, // Incluir responseStyle de User
+            language: resolveAppLanguage({
+              headerLanguage: req.headers['x-app-language'],
+              preferenceLanguage: {
+                ...userProfile?.preferences,
+                ...user?.preferences,
+              }?.language,
+            }),
           }
         };
 

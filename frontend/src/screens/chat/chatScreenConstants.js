@@ -8,6 +8,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { GUEST_CHAT_STORAGE_KEYS } from '../../constants/guestChatStorageKeys';
 import { SESSION_INTENTION_VALUES } from '../../constants/sessionIntention';
 import { SPACING } from '../../constants/ui';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 import { lightColors } from '../../styles/themePalettes';
 
@@ -64,6 +65,8 @@ export const TEXTS = {
   GUEST_SESSION_EXPIRED_MESSAGE:
     'Tu sesión sin cuenta ha caducado o ya no es válida. Puedes crear una cuenta o iniciar sesión para seguir.',
   GUEST_RATE_LIMIT_TITLE: 'Demasiadas peticiones',
+  GUEST_RATE_LIMIT_MESSAGE:
+    'Llegaste al límite temporal de solicitudes. Espera un momento e intenta de nuevo.',
   GUEST_CONTENT_TOO_LONG_TITLE: 'Mensaje demasiado largo',
   GUEST_HANDOFF_TITLE: 'Resumen del chat sin cuenta',
   GUEST_HANDOFF_BODY:
@@ -81,20 +84,93 @@ export const TEXTS = {
   SESSION_INTENTION_TITLE: '¿Qué necesitas de esta sesión?',
   SESSION_INTENTION_KICKER: 'Tu sesión',
   SESSION_INTENTION_SKIP: 'Omitir',
+  SESSION_INTENTION_SKIP_HINT: 'Continúa el chat sin elegir un enfoque',
+  SESSION_INTENTION_VENT_LABEL: 'Desahogar',
+  SESSION_INTENTION_VENT_HINT: 'Más escucha, menos consejos',
+  SESSION_INTENTION_ORGANIZE_LABEL: 'Ordenar pensamiento',
+  SESSION_INTENTION_ORGANIZE_HINT: 'Aclarar y nombrar lo que pasa',
+  SESSION_INTENTION_TECHNIQUE_LABEL: 'Técnica o regulación',
+  SESSION_INTENTION_TECHNIQUE_HINT: 'Pasos breves para calmarte',
+  SESSION_INTENTION_PLAN_LABEL: 'Planificar',
+  SESSION_INTENTION_PLAN_HINT: 'Pasos concretos para avanzar',
+  HEADER_BACK_LABEL: 'Volver',
+  HEADER_BACK_HINT: 'Doble toque para salir del chat',
+  INPUT_A11Y_LABEL: 'Mensaje para Anto',
+  INPUT_A11Y_HINT: 'Escribe tu mensaje y usa el botón enviar',
+  INPUT_SEND_A11Y_LABEL: 'Enviar mensaje',
+  SCROLL_TO_BOTTOM_LABEL: 'Ir al final de la conversación',
+  AI_DISCLOSURE_READ_WARN: 'No se pudo leer estado de disclosure IA:',
+  AI_DISCLOSURE_SAVE_WARN: 'No se pudo guardar aceptación de disclosure IA:',
+  PRIVACY_OPEN_WARN: 'No se pudo abrir política de privacidad:',
+  PRIVACY_SCREEN_WARN: 'No se pudo abrir pantalla de Privacidad e IA:',
+  SETTINGS_OPEN_WARN: 'No se pudo abrir Ajustes desde el chat:',
+  NAVIGATION_ERROR_WARN: 'Error navegando a pantalla:',
+  GUEST_MODE_BANNER: 'Modo sin cuenta',
+  GUEST_MESSAGES_REMAINING: 'mensajes restantes',
+  GUEST_QUOTA_BANNER_TEMPLATE: '{banner} · {remaining} de {max} {label}',
+  COMMON_OK: 'OK',
+  COMMON_CANCEL: 'Cancelar',
+  COMMON_CREATE_ACCOUNT: 'Crear cuenta',
+  COMMON_SIGN_IN: 'Iniciar sesión',
+  SUBSCRIPTION_REQUIRED_TITLE: 'Suscripción requerida',
+  SUBSCRIPTION_REQUIRED_DEFAULT:
+    'Necesitas una suscripción activa para usar el chat. Tu período de prueba ha expirado.',
+  SUBSCRIPTION_VIEW_PLANS: 'Ver planes',
+  MESSAGE_IN_FLIGHT_DEFAULT: 'Este mensaje ya se está enviando.',
+  SEND_TIMEOUT_DEFAULT: 'La respuesta tardó demasiado. Intenta de nuevo.',
+  NETWORK_ERROR_INIT: 'Error al cargar el chat',
+  EMERGENCY_ALERT_SENT_TITLE: 'Alerta de Emergencia Enviada',
+  EMERGENCY_ALERT_SENT_BODY:
+    'Hemos notificado a {successful} de {total} contacto(s) de emergencia.',
+  PRODUCT_PROPOSAL_TYPE_HABIT: 'Hábito',
+  PRODUCT_PROPOSAL_TYPE_TASK: 'Tarea',
+  PRODUCT_PROPOSAL_HINT_EDIT: 'Editar rápido',
+  PRODUCT_PROPOSAL_LABEL_HABIT: 'Sugerencia de hábito',
+  PRODUCT_PROPOSAL_LABEL_TASK: 'Sugerencia de tarea',
+  PRODUCT_PROPOSAL_CONTEXT_PREFIX: 'Contexto:',
+  PRODUCT_PROPOSAL_TITLE_PLACEHOLDER: 'Título (verbo + objeto + contexto)',
+  PRODUCT_PROPOSAL_WHEN_PLACEHOLDER: 'Fecha/hora opcional (YYYY-MM-DD HH:mm)',
+  PRODUCT_PROPOSAL_CREATE: 'Crear',
+  PRODUCT_PROPOSAL_DISMISS: 'No aplica',
+  PRODUCT_STATUS_COOLDOWN_WITH_MIN:
+    'Sugerencias en pausa unos minutos ({minutes} min) para no saturar la conversación.',
+  PRODUCT_STATUS_COOLDOWN:
+    'Sugerencias en pausa un momento para no saturar la conversación.',
+  PRODUCT_STATUS_CAP:
+    'En esta conversación ya alcanzamos el límite de sugerencias por ahora.',
+  PRODUCT_STATUS_REJECT_STREAK:
+    'Reducimos la intensidad de las sugerencias porque no parecían útiles.',
+  SUGGESTION_TRY_PREFIX: 'Quiero probar: ',
+  GUEST_HANDOFF_PREFILL_PREFIX:
+    'Continuando desde el chat sin cuenta (puedes editar esto antes de enviar):',
 };
 
-const SESSION_INTENTION_UI = {
-  vent: { label: 'Desahogar', hint: 'Más escucha, menos consejos' },
-  organize: { label: 'Ordenar pensamiento', hint: 'Aclarar y nombrar lo que pasa' },
-  technique: { label: 'Técnica o regulación', hint: 'Pasos breves para calmarte' },
-  plan: { label: 'Planificar', hint: 'Pasos concretos para avanzar' },
-};
+export function useChatTexts() {
+  const translated = useSectionTranslations('CHAT');
+  return useMemo(() => ({ ...TEXTS, ...(translated || {}) }), [translated]);
+}
 
 /** Opciones de intención de sesión (ids alineados a `SESSION_INTENTION_VALUES` en API) */
 export const SESSION_INTENTION_OPTIONS = SESSION_INTENTION_VALUES.map((id) => ({
   id,
-  ...SESSION_INTENTION_UI[id],
+  label: TEXTS[`SESSION_INTENTION_${id.toUpperCase()}_LABEL`] || id,
+  hint: TEXTS[`SESSION_INTENTION_${id.toUpperCase()}_HINT`] || '',
 }));
+
+export function useSessionIntentionOptions() {
+  const T = useChatTexts();
+  return SESSION_INTENTION_VALUES.map((id) => ({
+    id,
+    label:
+      T[`SESSION_INTENTION_${id.toUpperCase()}_LABEL`] ||
+      TEXTS[`SESSION_INTENTION_${id.toUpperCase()}_LABEL`] ||
+      id,
+    hint:
+      T[`SESSION_INTENTION_${id.toUpperCase()}_HINT`] ||
+      TEXTS[`SESSION_INTENTION_${id.toUpperCase()}_HINT`] ||
+      '',
+  }));
+}
 
 // AsyncStorage (claves invitado: `constants/guestChatStorageKeys.js` — compartidas con chatService)
 export const STORAGE_KEYS = {
@@ -197,8 +273,15 @@ export const LAYOUT = {
 /** Debe coincidir con `GUEST_MAX_USER_MESSAGES` en el backend */
 export const GUEST_MAX_USER_MESSAGES = 5;
 
-export function formatGuestQuotaBanner(remaining, max) {
-  return `Modo sin cuenta · ${remaining} de ${max} mensajes restantes`;
+export function formatGuestQuotaBanner(remaining, max, texts = TEXTS) {
+  const template =
+    texts.GUEST_QUOTA_BANNER_TEMPLATE ||
+    '{banner} · {remaining} de {max} {label}';
+  return template
+    .replace('{banner}', texts.GUEST_MODE_BANNER)
+    .replace('{remaining}', String(remaining))
+    .replace('{max}', String(max))
+    .replace('{label}', texts.GUEST_MESSAGES_REMAINING);
 }
 
 export function createChatColors(colors, resolvedScheme = 'light') {

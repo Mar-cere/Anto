@@ -5,7 +5,11 @@ import React from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
 import { useCrisisDashboardStyles } from './crisisDashboardStyles';
-import { TEXTS, CHART_HEIGHT, createPieChartConfig } from './crisisDashboardConstants';
+import {
+  CHART_HEIGHT,
+  createPieChartConfig,
+  useCrisisDashboardTexts,
+} from './crisisDashboardConstants';
 import { useTheme } from '../../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
@@ -13,6 +17,7 @@ const { width } = Dimensions.get('window');
 export function CrisisDashboardEmotionPie({ emotionDistribution, formatEmotionDistribution }) {
   const styles = useCrisisDashboardStyles();
   const { colors } = useTheme();
+  const TEXTS = useCrisisDashboardTexts();
   const chartConfig = createPieChartConfig(colors);
   const data = formatEmotionDistribution();
   const hasPie =

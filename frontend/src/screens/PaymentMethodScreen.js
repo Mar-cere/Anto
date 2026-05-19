@@ -25,12 +25,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../components/Header';
 import FloatingNavBar from '../components/FloatingNavBar';
 import paymentService from '../services/paymentService';
-import { getApiErrorMessage } from '../utils/apiErrorHandler';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
 
 // Constantes
-const TEXTS = {
+const DEFAULT_TEXTS = {
   TITLE: 'Método de Pago',
   CURRENT_METHOD: 'Método de Pago Actual',
   UPDATE_METHOD: 'Actualizar Método de Pago',
@@ -48,9 +48,125 @@ const TEXTS = {
   CARD: 'Tarjeta de Crédito/Débito',
   BANK_TRANSFER: 'Transferencia Bancaria',
   OTHER: 'Otros métodos',
+  CANCEL: 'Cancelar',
+  UPDATE: 'Actualizar',
+  REDIRECT_TITLE: 'Actualizar Método de Pago',
+  REDIRECT_MESSAGE:
+    'Serás redirigido a la pantalla de suscripción donde podrás actualizar tu método de pago.',
+  COMMON_OK: 'OK',
+  UPDATE_ERROR_FALLBACK:
+    'Ocurrió un error al intentar actualizar el método de pago',
+  VIEW_PLANS: 'Ver Planes',
+  DEFAULT_METHOD: 'Mercado Pago',
+  CARD_DESCRIPTION: 'Visa, Mastercard, Amex',
+  BANK_TRANSFER_DESCRIPTION: 'Transferencia bancaria',
+  OTHER_DESCRIPTION: 'Mercado Pago, otros',
+  ERROR_CONNECTION: 'Error de conexión. Verifica internet e inténtalo de nuevo.',
+  ERROR_TOO_MANY_REQUESTS: 'Demasiados intentos. Espera un momento e inténtalo nuevamente.',
+};
+
+const resolvePaymentMethodErrorMessage = (error, texts, fallbackKey = 'ERROR') => {
+  const normalizedMessage = String(
+    error?.response?.data?.message ?? error?.message ?? '',
+  ).toLowerCase();
+  const status = error?.response?.status;
+
+  const isNetwork =
+    normalizedMessage.includes('network') ||
+    normalizedMessage.includes('econnrefused') ||
+    normalizedMessage.includes('timeout') ||
+    normalizedMessage.includes('timed out') ||
+    normalizedMessage.includes('failed to fetch');
+
+  if (isNetwork) {
+    return texts.ERROR_CONNECTION || texts[fallbackKey] || texts.ERROR;
+  }
+
+  const isTooManyRequests =
+    status === 429 ||
+    normalizedMessage.includes('too many') ||
+    normalizedMessage.includes('demasiados intentos');
+
+  if (isTooManyRequests) {
+    return texts.ERROR_TOO_MANY_REQUESTS || texts[fallbackKey] || texts.ERROR;
+  }
+
+  return texts[fallbackKey] || texts.ERROR;
+};
+
+const resolvePaymentMethodResultErrorMessage = (result, texts, fallbackKey = 'ERROR') => {
+  const code = String(result?.errorCode || '').toUpperCase();
+  if (code === 'NETWORK_ERROR' || code === 'TIMEOUT') {
+    return texts.ERROR_CONNECTION || texts[fallbackKey] || texts.ERROR;
+  }
+  if (code === 'RATE_LIMIT') {
+    return texts.ERROR_TOO_MANY_REQUESTS || texts[fallbackKey] || texts.ERROR;
+  }
+  return texts[fallbackKey] || texts.ERROR;
 };
 
 const PaymentMethodScreen = () => {
+  const translated = useSectionTranslations('PROFILE');
+  const TEXTS = useMemo(
+    () => ({
+      ...DEFAULT_TEXTS,
+      TITLE: translated?.PAYMENT_METHOD_TITLE || DEFAULT_TEXTS.TITLE,
+      CURRENT_METHOD:
+        translated?.PAYMENT_METHOD_CURRENT_METHOD || DEFAULT_TEXTS.CURRENT_METHOD,
+      UPDATE_METHOD:
+        translated?.PAYMENT_METHOD_UPDATE_METHOD || DEFAULT_TEXTS.UPDATE_METHOD,
+      LOADING: translated?.PAYMENT_METHOD_LOADING || DEFAULT_TEXTS.LOADING,
+      ERROR: translated?.PAYMENT_METHOD_ERROR || DEFAULT_TEXTS.ERROR,
+      RETRY: translated?.RETRY || DEFAULT_TEXTS.RETRY,
+      NO_METHOD:
+        translated?.PAYMENT_METHOD_NO_METHOD || DEFAULT_TEXTS.NO_METHOD,
+      NO_METHOD_DESC:
+        translated?.PAYMENT_METHOD_NO_METHOD_DESC || DEFAULT_TEXTS.NO_METHOD_DESC,
+      UPDATE_ERROR:
+        translated?.PAYMENT_METHOD_UPDATE_ERROR || DEFAULT_TEXTS.UPDATE_ERROR,
+      UPDATE_CONFIRM:
+        translated?.PAYMENT_METHOD_UPDATE_CONFIRM || DEFAULT_TEXTS.UPDATE_CONFIRM,
+      MERCADOPAGO_INFO:
+        translated?.PAYMENT_METHOD_PROVIDER_INFO || DEFAULT_TEXTS.MERCADOPAGO_INFO,
+      MERCADOPAGO_DESC:
+        translated?.PAYMENT_METHOD_PROVIDER_DESC || DEFAULT_TEXTS.MERCADOPAGO_DESC,
+      SUPPORTED_METHODS:
+        translated?.PAYMENT_METHOD_SUPPORTED_METHODS ||
+        DEFAULT_TEXTS.SUPPORTED_METHODS,
+      CARD: translated?.PAYMENT_METHOD_CARD || DEFAULT_TEXTS.CARD,
+      BANK_TRANSFER:
+        translated?.PAYMENT_METHOD_BANK_TRANSFER || DEFAULT_TEXTS.BANK_TRANSFER,
+      OTHER: translated?.PAYMENT_METHOD_OTHER || DEFAULT_TEXTS.OTHER,
+      CANCEL: translated?.CANCEL || DEFAULT_TEXTS.CANCEL,
+      UPDATE: translated?.PAYMENT_METHOD_UPDATE_ACTION || DEFAULT_TEXTS.UPDATE,
+      REDIRECT_TITLE:
+        translated?.PAYMENT_METHOD_REDIRECT_TITLE || DEFAULT_TEXTS.REDIRECT_TITLE,
+      REDIRECT_MESSAGE:
+        translated?.PAYMENT_METHOD_REDIRECT_MESSAGE ||
+        DEFAULT_TEXTS.REDIRECT_MESSAGE,
+      COMMON_OK: translated?.COMMON_OK || DEFAULT_TEXTS.COMMON_OK,
+      UPDATE_ERROR_FALLBACK:
+        translated?.PAYMENT_METHOD_UPDATE_ERROR_FALLBACK ||
+        DEFAULT_TEXTS.UPDATE_ERROR_FALLBACK,
+      VIEW_PLANS:
+        translated?.PAYMENT_METHOD_VIEW_PLANS || DEFAULT_TEXTS.VIEW_PLANS,
+      DEFAULT_METHOD:
+        translated?.PAYMENT_METHOD_DEFAULT_METHOD || DEFAULT_TEXTS.DEFAULT_METHOD,
+      CARD_DESCRIPTION:
+        translated?.PAYMENT_METHOD_CARD_DESC || DEFAULT_TEXTS.CARD_DESCRIPTION,
+      BANK_TRANSFER_DESCRIPTION:
+        translated?.PAYMENT_METHOD_BANK_TRANSFER_DESC ||
+        DEFAULT_TEXTS.BANK_TRANSFER_DESCRIPTION,
+      OTHER_DESCRIPTION:
+        translated?.PAYMENT_METHOD_OTHER_DESC || DEFAULT_TEXTS.OTHER_DESCRIPTION,
+      ERROR_CONNECTION:
+        translated?.ERROR_CONNECTION || DEFAULT_TEXTS.ERROR_CONNECTION,
+      ERROR_TOO_MANY_REQUESTS:
+        translated?.ERROR_TOO_MANY_REQUESTS ||
+        DEFAULT_TEXTS.ERROR_TOO_MANY_REQUESTS,
+    }),
+    [translated],
+  );
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle } = useTheme();
@@ -197,15 +313,15 @@ const PaymentMethodScreen = () => {
       if (response.success) {
         setSubscriptionStatus(response);
       } else {
-        setError(response.error || TEXTS.ERROR);
+        setError(resolvePaymentMethodResultErrorMessage(response, TEXTS, 'ERROR'));
       }
     } catch (err) {
       console.error('Error cargando estado de suscripción:', err);
-      setError(TEXTS.ERROR);
+      setError(resolvePaymentMethodErrorMessage(err, TEXTS, 'ERROR'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [TEXTS]);
 
   // Cargar al montar
   useEffect(() => {
@@ -226,11 +342,11 @@ const PaymentMethodScreen = () => {
       TEXTS.UPDATE_CONFIRM + '\n\n' + TEXTS.MERCADOPAGO_DESC,
       [
         {
-          text: 'Cancelar',
+          text: TEXTS.CANCEL,
           style: 'cancel',
         },
         {
-          text: 'Actualizar',
+          text: TEXTS.UPDATE,
           onPress: async () => {
             try {
               setUpdating(true);
@@ -240,13 +356,20 @@ const PaymentMethodScreen = () => {
               navigation.navigate('Subscription');
               
               Alert.alert(
-                'Actualizar Método de Pago',
-                'Serás redirigido a la pantalla de suscripción donde podrás actualizar tu método de pago.',
-                [{ text: 'OK' }]
+                TEXTS.REDIRECT_TITLE,
+                TEXTS.REDIRECT_MESSAGE,
+                [{ text: TEXTS.COMMON_OK }]
               );
             } catch (err) {
               console.error('Error actualizando método de pago:', err);
-              Alert.alert(TEXTS.UPDATE_ERROR, getApiErrorMessage(err) || 'Ocurrió un error al intentar actualizar el método de pago');
+              Alert.alert(
+                TEXTS.UPDATE_ERROR,
+                resolvePaymentMethodErrorMessage(
+                  err,
+                  TEXTS,
+                  'UPDATE_ERROR_FALLBACK',
+                ),
+              );
             } finally {
               setUpdating(false);
             }
@@ -254,7 +377,7 @@ const PaymentMethodScreen = () => {
         },
       ]
     );
-  }, [navigation]);
+  }, [navigation, TEXTS]);
 
   // Renderizar método de pago actual
   const renderCurrentMethod = () => {
@@ -268,7 +391,7 @@ const PaymentMethodScreen = () => {
             style={styles.primaryButton}
             onPress={() => navigation.navigate('Subscription')}
           >
-            <Text style={styles.primaryButtonText}>Ver Planes</Text>
+            <Text style={styles.primaryButtonText}>{TEXTS.VIEW_PLANS}</Text>
           </TouchableOpacity>
         </View>
       );
@@ -279,7 +402,7 @@ const PaymentMethodScreen = () => {
         <MaterialCommunityIcons name="credit-card" size={48} color={colors.primary} />
         <Text style={styles.infoTitle}>{TEXTS.CURRENT_METHOD}</Text>
         <Text style={styles.infoText}>
-          {subscriptionStatus.paymentMethod || 'Mercado Pago'}
+          {subscriptionStatus.paymentMethod || TEXTS.DEFAULT_METHOD}
         </Text>
         {subscriptionStatus.hasActiveSubscription && (
           <TouchableOpacity
@@ -304,9 +427,21 @@ const PaymentMethodScreen = () => {
   // Renderizar métodos soportados
   const renderSupportedMethods = () => {
     const methods = [
-      { icon: 'credit-card', name: TEXTS.CARD, description: 'Visa, Mastercard, Amex' },
-      { icon: 'bank', name: TEXTS.BANK_TRANSFER, description: 'Transferencia bancaria' },
-      { icon: 'wallet', name: TEXTS.OTHER, description: 'Mercado Pago, otros' },
+      {
+        icon: 'credit-card',
+        name: TEXTS.CARD,
+        description: TEXTS.CARD_DESCRIPTION,
+      },
+      {
+        icon: 'bank',
+        name: TEXTS.BANK_TRANSFER,
+        description: TEXTS.BANK_TRANSFER_DESCRIPTION,
+      },
+      {
+        icon: 'wallet',
+        name: TEXTS.OTHER,
+        description: TEXTS.OTHER_DESCRIPTION,
+      },
     ];
 
     return (

@@ -2,17 +2,19 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEmergencyAlertsHistoryStyles } from './emergencyAlertsHistoryStyles';
-import { TEXTS } from './emergencyAlertsHistoryConstants';
+import { useEmergencyAlertsHistoryTexts } from './emergencyAlertsHistoryConstants';
 import { useTheme } from '../../context/ThemeContext';
 import { countPatternPeriodAlerts } from './emergencyAlertsHistoryUtils';
 
 export function PatternsTab({ patterns }) {
+  const { colors } = useTheme();
+  const styles = useEmergencyAlertsHistoryStyles();
+  const TEXTS = useEmergencyAlertsHistoryTexts();
+
   if (patterns == null || typeof patterns !== 'object' || Array.isArray(patterns)) {
     return null;
   }
 
-  const { colors } = useTheme();
-  const styles = useEmergencyAlertsHistoryStyles();
   const totalInPeriod = countPatternPeriodAlerts(patterns);
   const insufficient = totalInPeriod < 2;
 
@@ -107,7 +109,9 @@ export function PatternsTab({ patterns }) {
               <Text style={styles.patternSubtitle}>{TEXTS.MOST_COMMON_DAYS}</Text>
               {patterns.timePatterns.mostCommonDays.map((day, index) => (
                 <View key={index} style={styles.patternItem}>
-                  <Text style={styles.patternItemText}>{day.day}: {day.count} alertas</Text>
+                  <Text style={styles.patternItemText}>
+                    {day.day}: {day.count} {TEXTS.ALERTS_LABEL}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -117,7 +121,9 @@ export function PatternsTab({ patterns }) {
               <Text style={styles.patternSubtitle}>{TEXTS.MOST_COMMON_HOURS}</Text>
               {patterns.timePatterns.mostCommonHours.map((hour, index) => (
                 <View key={index} style={styles.patternItem}>
-                  <Text style={styles.patternItemText}>{hour.hour}:00 - {hour.count} alertas</Text>
+                  <Text style={styles.patternItemText}>
+                    {hour.hour}:00 - {hour.count} {TEXTS.ALERTS_LABEL}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -129,12 +135,14 @@ export function PatternsTab({ patterns }) {
               <Text style={styles.patternSubtitle}>{TEXTS.PATTERNS_WEEKEND_VS_WEEKDAY}</Text>
               <View style={styles.patternItem}>
                 <Text style={styles.patternItemText}>
-                  {TEXTS.WEEKEND}: {patterns.timePatterns.weekendVsWeekday.weekend} alertas
+                  {TEXTS.WEEKEND}: {patterns.timePatterns.weekendVsWeekday.weekend}{' '}
+                  {TEXTS.ALERTS_LABEL}
                 </Text>
               </View>
               <View style={styles.patternItem}>
                 <Text style={styles.patternItemText}>
-                  {TEXTS.WEEKDAY}: {patterns.timePatterns.weekendVsWeekday.weekday} alertas
+                  {TEXTS.WEEKDAY}: {patterns.timePatterns.weekendVsWeekday.weekday}{' '}
+                  {TEXTS.ALERTS_LABEL}
                 </Text>
               </View>
             </View>

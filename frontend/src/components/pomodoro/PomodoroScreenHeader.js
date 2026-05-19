@@ -10,10 +10,24 @@ import {
   HEADER_GAP,
   HEADER_ICON_SIZE,
   HEADER_PADDING,
-  TEXTS,
+  usePomodoroTexts,
 } from '../../screens/pomodoro/pomodoroScreenConstants';
 import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { getFocusTheme } from '../../styles/focusCardTheme';
+
+const DEFAULT_POMODORO_TEXTS = {
+  MODE_WORK: 'Trabajo',
+  MODE_BREAK: 'Descanso',
+  MODE_LONG_BREAK: 'Descanso largo',
+  MODE_MEDITATION: 'Meditacion',
+  MODE_CUSTOM: 'Personalizado',
+  STATUS_ACTIVE: 'En progreso',
+  STATUS_PAUSED: 'Pausado',
+  FOCUS_PREFIX: 'Enfoque',
+  PENDING_SINGULAR: 'pendiente',
+  PENDING_PLURAL: 'pendientes',
+};
 
 function shorten(text, maxLen) {
   if (!text || text.length <= maxLen) return text || '';
@@ -27,6 +41,12 @@ export default function PomodoroScreenHeader({
   pendingTasksCount = 0,
 }) {
   const { colors, resolvedScheme, statusBarStyle } = useTheme();
+  const TEXTS = usePomodoroTexts();
+  const translated = useSectionTranslations('POMODORO');
+  const I18N = useMemo(
+    () => ({ ...DEFAULT_POMODORO_TEXTS, ...(translated || {}) }),
+    [translated]
+  );
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
   const styles = useMemo(
     () =>
@@ -87,16 +107,16 @@ export default function PomodoroScreenHeader({
   );
 
   const modeLabelMap = {
-    work: 'Trabajo',
-    break: 'Descanso',
-    longBreak: 'Descanso largo',
-    meditation: 'Meditación',
-    custom: 'Personalizado',
+    work: I18N.MODE_WORK,
+    break: I18N.MODE_BREAK,
+    longBreak: I18N.MODE_LONG_BREAK,
+    meditation: I18N.MODE_MEDITATION,
+    custom: I18N.MODE_CUSTOM,
   };
-  const modeLine = `${isActive ? 'En progreso' : 'Pausado'} · ${modeLabelMap[mode] || 'Trabajo'}`;
+  const modeLine = `${isActive ? I18N.STATUS_ACTIVE : I18N.STATUS_PAUSED} · ${modeLabelMap[mode] || I18N.MODE_WORK}`;
   const focusLine = focusTaskTitle
-    ? `Enfoque · ${shorten(focusTaskTitle, 34)}`
-    : `${pendingTasksCount} pendiente${pendingTasksCount === 1 ? '' : 's'}`;
+    ? `${I18N.FOCUS_PREFIX} · ${shorten(focusTaskTitle, 34)}`
+    : `${pendingTasksCount} ${pendingTasksCount === 1 ? I18N.PENDING_SINGULAR : I18N.PENDING_PLURAL}`;
   return (
     <View style={styles.headerContainer}>
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />

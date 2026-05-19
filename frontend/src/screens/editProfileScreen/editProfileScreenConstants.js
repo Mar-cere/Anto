@@ -1,6 +1,8 @@
 /**
  * Constantes para EditProfileScreen y subcomponentes
  */
+import { useMemo } from 'react';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { lightColors } from '../../styles/themePalettes';
 
 export const TEXTS = {
@@ -29,7 +31,7 @@ export const TEXTS = {
   EMAIL: 'Correo Electrónico',
   ADD_NAME: 'Agregar nombre',
   EMAIL_PLACEHOLDER: 'Correo electrónico',
-  SAVED: '¡Guardado!',
+  SAVED: 'Guardado',
   PERMISSION_REQUIRED: 'Permiso requerido',
   SESSION_EXPIRED: 'Sesión Expirada',
   SESSION_EXPIRED_MESSAGE: 'Por favor, inicia sesión nuevamente',
@@ -41,6 +43,77 @@ export const TEXTS = {
   EMAIL_REQUIRED: 'El correo es requerido',
   EMAIL_INVALID: 'Correo inválido',
 };
+
+export function useEditProfileTexts() {
+  const translated = useSectionTranslations('PROFILE');
+  return useMemo(
+    () => ({
+      ...TEXTS,
+      LOADING: translated?.EDIT_PROFILE_LOADING || TEXTS.LOADING,
+      ERROR: translated?.EDIT_PROFILE_ERROR || TEXTS.ERROR,
+      ERROR_DEFAULT:
+        translated?.EDIT_PROFILE_ERROR_DEFAULT || TEXTS.ERROR_DEFAULT,
+      ERROR_NETWORK:
+        translated?.EDIT_PROFILE_ERROR_NETWORK || TEXTS.ERROR_NETWORK,
+      ERROR_TIMEOUT:
+        translated?.EDIT_PROFILE_ERROR_TIMEOUT || TEXTS.ERROR_TIMEOUT,
+      RETRY: translated?.EDIT_PROFILE_RETRY || TEXTS.RETRY,
+      OK: translated?.EDIT_PROFILE_OK || TEXTS.OK,
+      VALIDATION_ERRORS:
+        translated?.EDIT_PROFILE_VALIDATION_ERRORS || TEXTS.VALIDATION_ERRORS,
+      SUCCESS: translated?.EDIT_PROFILE_SUCCESS || TEXTS.SUCCESS,
+      PROFILE_UPDATED:
+        translated?.EDIT_PROFILE_PROFILE_UPDATED || TEXTS.PROFILE_UPDATED,
+      UNSAVED_CHANGES:
+        translated?.EDIT_PROFILE_UNSAVED_CHANGES || TEXTS.UNSAVED_CHANGES,
+      UNSAVED_CHANGES_MESSAGE:
+        translated?.EDIT_PROFILE_UNSAVED_CHANGES_MESSAGE ||
+        TEXTS.UNSAVED_CHANGES_MESSAGE,
+      CANCEL: translated?.EDIT_PROFILE_CANCEL || TEXTS.CANCEL,
+      DISCARD: translated?.EDIT_PROFILE_DISCARD || TEXTS.DISCARD,
+      PROFILE_TITLE:
+        translated?.EDIT_PROFILE_PROFILE_TITLE || TEXTS.PROFILE_TITLE,
+      BACK: translated?.EDIT_PROFILE_BACK || TEXTS.BACK,
+      SAVE_CHANGES:
+        translated?.EDIT_PROFILE_SAVE_CHANGES || TEXTS.SAVE_CHANGES,
+      EDIT_PROFILE:
+        translated?.EDIT_PROFILE_EDIT_LABEL || TEXTS.EDIT_PROFILE,
+      PERSONAL_INFO:
+        translated?.EDIT_PROFILE_PERSONAL_INFO || TEXTS.PERSONAL_INFO,
+      NAME: translated?.EDIT_PROFILE_NAME || TEXTS.NAME,
+      USERNAME: translated?.EDIT_PROFILE_USERNAME || TEXTS.USERNAME,
+      USERNAME_HELPER:
+        translated?.EDIT_PROFILE_USERNAME_HELPER || TEXTS.USERNAME_HELPER,
+      EMAIL: translated?.EDIT_PROFILE_EMAIL || TEXTS.EMAIL,
+      ADD_NAME: translated?.EDIT_PROFILE_ADD_NAME || TEXTS.ADD_NAME,
+      EMAIL_PLACEHOLDER:
+        translated?.EDIT_PROFILE_EMAIL_PLACEHOLDER || TEXTS.EMAIL_PLACEHOLDER,
+      SAVED: translated?.EDIT_PROFILE_SAVED || TEXTS.SAVED,
+      PERMISSION_REQUIRED:
+        translated?.EDIT_PROFILE_PERMISSION_REQUIRED || TEXTS.PERMISSION_REQUIRED,
+      SESSION_EXPIRED:
+        translated?.EDIT_PROFILE_SESSION_EXPIRED || TEXTS.SESSION_EXPIRED,
+      SESSION_EXPIRED_MESSAGE:
+        translated?.EDIT_PROFILE_SESSION_EXPIRED_MESSAGE ||
+        TEXTS.SESSION_EXPIRED_MESSAGE,
+      NO_SESSION: translated?.EDIT_PROFILE_NO_SESSION || TEXTS.NO_SESSION,
+      ERROR_LOAD_USER:
+        translated?.EDIT_PROFILE_ERROR_LOAD_USER || TEXTS.ERROR_LOAD_USER,
+      ERROR_UPDATE_PROFILE:
+        translated?.EDIT_PROFILE_ERROR_UPDATE_PROFILE ||
+        TEXTS.ERROR_UPDATE_PROFILE,
+      ERROR_UPLOAD_IMAGE:
+        translated?.EDIT_PROFILE_ERROR_UPLOAD_IMAGE || TEXTS.ERROR_UPLOAD_IMAGE,
+      NAME_MIN_LENGTH:
+        translated?.EDIT_PROFILE_NAME_MIN_LENGTH || TEXTS.NAME_MIN_LENGTH,
+      EMAIL_REQUIRED:
+        translated?.EDIT_PROFILE_EMAIL_REQUIRED || TEXTS.EMAIL_REQUIRED,
+      EMAIL_INVALID:
+        translated?.EDIT_PROFILE_EMAIL_INVALID || TEXTS.EMAIL_INVALID,
+    }),
+    [translated],
+  );
+}
 
 export const MIN_NAME_LENGTH = 3;
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

@@ -5,7 +5,10 @@ import React from 'react';
 import { SafeAreaView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCrisisDashboardStyles } from './crisisDashboardStyles';
-import { TEXTS, CRISIS_ERROR_DETAIL_MAX_LEN } from './crisisDashboardConstants';
+import {
+  CRISIS_ERROR_DETAIL_MAX_LEN,
+  useCrisisDashboardTexts,
+} from './crisisDashboardConstants';
 import { useTheme } from '../../context/ThemeContext';
 
 function sanitizeErrorDetail(raw) {
@@ -18,6 +21,7 @@ function sanitizeErrorDetail(raw) {
 export function CrisisDashboardErrorView({ error, onRetry }) {
   const styles = useCrisisDashboardStyles();
   const { colors, statusBarStyle } = useTheme();
+  const TEXTS = useCrisisDashboardTexts();
   const detail = sanitizeErrorDetail(error);
 
   return (

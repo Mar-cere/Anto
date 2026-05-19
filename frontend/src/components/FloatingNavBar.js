@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CHAT_BACK_TARGET } from '../navigation/navigationHelpers';
 import { setChatEntryBackTarget } from '../utils/chatEntryContext';
 import { useTheme } from '../context/ThemeContext';
+import { useNavigationTexts } from '../hooks/useNavigationTexts';
 import { SPACING } from '../constants/ui';
 const BAR_BLUR = Platform.OS === 'ios' ? 76 : 48;
 
@@ -31,6 +32,7 @@ const FloatingNavBar = ({
   const { translateY = new Animated.Value(0), opacity = new Animated.Value(1) } = animValues;
   const navigation = useNavigation();
   const { colors, resolvedScheme } = useTheme();
+  const NAV = useNavigationTexts();
   const rawBottomInset = Number(insets?.bottom);
   const safeBottomInset =
     Number.isFinite(rawBottomInset) && rawBottomInset >= 0 ? rawBottomInset : 0;
@@ -256,7 +258,7 @@ const FloatingNavBar = ({
           },
         ]}
         accessibilityRole="tablist"
-        accessibilityLabel={barAccessibilityLabel || 'Navegación principal'}
+        accessibilityLabel={barAccessibilityLabel || NAV.MAIN_TABLIST_A11Y}
       >
         <View style={styles.barBackgroundClip} pointerEvents="none">
           <BlurView
@@ -271,8 +273,8 @@ const FloatingNavBar = ({
           <NavTab
             active={activeTab === 'home'}
             onPress={() => onNavPress('Dash', 'home')}
-            accessibilityLabel="Inicio"
-            accessibilityHint="Ir al inicio"
+            accessibilityLabel={NAV.TAB_HOME_LABEL}
+            accessibilityHint={NAV.TAB_HOME_HINT}
             iconOutline="home-outline"
             iconFilled="home"
             styles={styles}
@@ -283,8 +285,8 @@ const FloatingNavBar = ({
           <NavTab
             active={activeTab === 'calendar'}
             onPress={() => onNavPress('Tasks', 'tasks')}
-            accessibilityLabel="Recordatorios"
-            accessibilityHint="Ver tareas y recordatorios"
+            accessibilityLabel={NAV.TAB_TASKS_LABEL}
+            accessibilityHint={NAV.TAB_TASKS_HINT}
             iconOutline="clipboard-outline"
             iconFilled="clipboard"
             styles={styles}
@@ -302,9 +304,9 @@ const FloatingNavBar = ({
               ]}
               onPress={() => onNavPress('Chat')}
               accessibilityRole="tab"
-              accessibilityLabel="floating-nav-open-chat"
+              accessibilityLabel={NAV.TAB_CHAT_LABEL}
               accessibilityState={{ selected: activeTab === 'chat' }}
-              accessibilityHint="Abrir el chat"
+              accessibilityHint={NAV.TAB_CHAT_HINT}
               android_ripple={{ color: rippleColor, borderless: false }}
             >
               <Image
@@ -320,8 +322,8 @@ const FloatingNavBar = ({
           <NavTab
             active={activeTab === 'pomodoro'}
             onPress={() => onNavPress('Pomodoro', 'pomodoro')}
-            accessibilityLabel="Pomodoro"
-            accessibilityHint="Abrir temporizador Pomodoro"
+            accessibilityLabel={NAV.TAB_POMODORO_LABEL}
+            accessibilityHint={NAV.TAB_POMODORO_HINT}
             iconOutline="timer-outline"
             iconFilled="timer"
             styles={styles}
@@ -332,8 +334,8 @@ const FloatingNavBar = ({
           <NavTab
             active={activeTab === 'settings'}
             onPress={() => onNavPress('Settings', 'settings')}
-            accessibilityLabel="Ajustes"
-            accessibilityHint="Abrir ajustes"
+            accessibilityLabel={NAV.TAB_SETTINGS_LABEL}
+            accessibilityHint={NAV.TAB_SETTINGS_HINT}
             iconOutline="settings-outline"
             iconFilled="settings"
             styles={styles}

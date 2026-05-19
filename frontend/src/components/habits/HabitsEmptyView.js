@@ -19,11 +19,12 @@ import {
   EMPTY_CONTAINER_PADDING,
   EMPTY_ICON_SIZE,
   FILTER_TYPES,
-  TEXTS,
+  useHabitsTexts,
 } from '../../screens/habits/habitsScreenConstants';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 
 export default function HabitsEmptyView({ filterType, onCreateFirst }) {
+  const TEXTS = useHabitsTexts();
   const { colors, resolvedScheme } = useTheme();
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
   const HC = useMemo(() => createHabitsColors(colors), [colors]);

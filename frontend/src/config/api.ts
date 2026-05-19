@@ -13,15 +13,6 @@ import type {
   ApiError,
   ApiGetResponse,
 } from '../types/api.types';
-import {
-  getApiErrorMessage,
-  isNetworkError,
-  isAuthError,
-  isRateLimitError,
-  isServerError,
-  API_ERROR_MESSAGES,
-  HTTP_STATUS,
-} from '../utils/apiErrorHandler';
 
 const getApiUrl = (): string => {
   if (process.env.EXPO_PUBLIC_API_URL) {
@@ -52,6 +43,7 @@ export const ENDPOINTS = {
   REGISTER: '/api/auth/register',
   VERIFY_EMAIL: '/api/auth/verify-email',
   RESEND_VERIFICATION_CODE: '/api/auth/resend-verification-code',
+  CHANGE_PASSWORD: '/api/auth/change-password',
   HEALTH: '/health',
   ME: '/api/users/me',
   /** Telemetría §8 contrato chat → tarea/hábito (dismiss / fallo cliente). */
@@ -127,10 +119,23 @@ export const ENDPOINTS = {
   THERAPEUTIC_TECHNIQUES_STATS: '/api/therapeutic-techniques/stats',
 } as const;
 
-const REQUEST_TIMEOUT = typeof __DEV__ !== 'undefined' && __DEV__ ? 30000 : 15000;
+const APP_LANGUAGE_STORAGE_KEY = 'preferences:language';
+
+export async function getAppLanguage(): Promise<'es' | 'en'> {
+  try {
+    const storedLanguage = await AsyncStorage.getItem(APP_LANGUAGE_STORAGE_KEY);
+    if (storedLanguage === 'en' || storedLanguage === 'es') {
+      return storedLanguage;
+    }
+  } catch {
+    // noop
+  }
+  return 'es';
+}
 
 const getAuthHeaders = async (): Promise<Record<string, string>> => {
   const token = await AsyncStorage.getItem('userToken');
+  const appLanguage = await getAppLanguage();
   if (typeof __DEV__ !== 'undefined' && __DEV__) {
     console.log('Token de autenticación:', token ? 'Presente' : 'No presente');
   }
@@ -138,6 +143,7 @@ const getAuthHeaders = async (): Promise<Record<string, string>> => {
     'Content-Type': 'application/json',
     Accept: 'application/json',
     Authorization: token ? `Bearer ${token}` : '',
+    'X-App-Language': appLanguage,
   };
 };
 

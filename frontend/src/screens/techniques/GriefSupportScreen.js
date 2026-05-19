@@ -23,36 +23,114 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
 import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
-const GRIEF_RESOURCES = [
-  {
-    id: 1,
-    title: 'Permítete sentir',
-    description: 'El duelo es un proceso natural. Permítete sentir todas las emociones que surgen, sin juzgarlas.',
-    icon: 'heart',
-  },
-  {
-    id: 2,
-    title: 'Habla sobre tus sentimientos',
-    description: 'Compartir tus sentimientos con alguien de confianza puede ser muy sanador.',
-    icon: 'account-group',
-  },
-  {
-    id: 3,
-    title: 'Crea rituales de recuerdo',
-    description: 'Crea rituales que te ayuden a honrar la memoria de quien perdiste.',
-    icon: 'candle',
-  },
-  {
-    id: 4,
-    title: 'Busca apoyo profesional',
-    description: 'No dudes en buscar ayuda profesional si sientes que el duelo te está abrumando.',
-    icon: 'medical-bag',
-  },
-];
+const DEFAULT_TEXTS = {
+  TITLE: 'Apoyo en Duelo',
+  INTRO_KICKER: 'Duelo',
+  INTRO_TITLE: 'Apoyo en el proceso',
+  INTRO_BODY:
+    'El duelo es unico para cada persona. No hay una forma correcta de sentirlo. Tomate el tiempo que necesites.',
+  RESOURCE_1_TITLE: 'Permitete sentir',
+  RESOURCE_1_DESC:
+    'El duelo es un proceso natural. Permitete sentir todas las emociones que surgen, sin juzgarlas.',
+  RESOURCE_2_TITLE: 'Habla sobre tus sentimientos',
+  RESOURCE_2_DESC:
+    'Compartir tus sentimientos con alguien de confianza puede ser muy sanador.',
+  RESOURCE_3_TITLE: 'Crea rituales de recuerdo',
+  RESOURCE_3_DESC:
+    'Crea rituales que te ayuden a honrar la memoria de quien perdiste.',
+  RESOURCE_4_TITLE: 'Busca apoyo profesional',
+  RESOURCE_4_DESC:
+    'No dudes en buscar ayuda profesional si sientes que el duelo te esta abrumando.',
+  PRACTICE_TITLE: 'Ejercicio: escribe un recuerdo',
+  PRACTICE_HINT:
+    'Escribir sobre los recuerdos que tienes puede ayudarte a procesar el duelo.',
+  INPUT_PLACEHOLDER: 'Escribe un recuerdo especial que quieras preservar...',
+  SAVE_MEMORY: 'Guardar recuerdo',
+};
 
 const GriefSupportScreen = () => {
+  const translated = useSectionTranslations('TECHNIQUES');
+  const TEXTS = useMemo(
+    () => ({
+      TITLE: translated?.GRIEF_TITLE || DEFAULT_TEXTS.TITLE,
+      INTRO_KICKER: translated?.GRIEF_INTRO_KICKER || DEFAULT_TEXTS.INTRO_KICKER,
+      INTRO_TITLE: translated?.GRIEF_INTRO_TITLE || DEFAULT_TEXTS.INTRO_TITLE,
+      INTRO_BODY:
+        translated?.GRIEF_INTRO_BODY ||
+        DEFAULT_TEXTS.INTRO_BODY,
+      RESOURCE_1_TITLE:
+        translated?.GRIEF_RESOURCE_1_TITLE || DEFAULT_TEXTS.RESOURCE_1_TITLE,
+      RESOURCE_1_DESC:
+        translated?.GRIEF_RESOURCE_1_DESC ||
+        DEFAULT_TEXTS.RESOURCE_1_DESC,
+      RESOURCE_2_TITLE:
+        translated?.GRIEF_RESOURCE_2_TITLE || DEFAULT_TEXTS.RESOURCE_2_TITLE,
+      RESOURCE_2_DESC:
+        translated?.GRIEF_RESOURCE_2_DESC ||
+        DEFAULT_TEXTS.RESOURCE_2_DESC,
+      RESOURCE_3_TITLE:
+        translated?.GRIEF_RESOURCE_3_TITLE || DEFAULT_TEXTS.RESOURCE_3_TITLE,
+      RESOURCE_3_DESC:
+        translated?.GRIEF_RESOURCE_3_DESC ||
+        DEFAULT_TEXTS.RESOURCE_3_DESC,
+      RESOURCE_4_TITLE:
+        translated?.GRIEF_RESOURCE_4_TITLE || DEFAULT_TEXTS.RESOURCE_4_TITLE,
+      RESOURCE_4_DESC:
+        translated?.GRIEF_RESOURCE_4_DESC ||
+        DEFAULT_TEXTS.RESOURCE_4_DESC,
+      PRACTICE_TITLE:
+        translated?.GRIEF_PRACTICE_TITLE || DEFAULT_TEXTS.PRACTICE_TITLE,
+      PRACTICE_HINT:
+        translated?.GRIEF_PRACTICE_HINT ||
+        DEFAULT_TEXTS.PRACTICE_HINT,
+      INPUT_PLACEHOLDER:
+        translated?.GRIEF_INPUT_PLACEHOLDER ||
+        DEFAULT_TEXTS.INPUT_PLACEHOLDER,
+      SAVE_MEMORY: translated?.GRIEF_SAVE_MEMORY || DEFAULT_TEXTS.SAVE_MEMORY,
+    }),
+    [translated]
+  );
+  const GRIEF_RESOURCES = useMemo(
+    () => [
+      {
+        id: 1,
+        title: TEXTS.RESOURCE_1_TITLE,
+        description: TEXTS.RESOURCE_1_DESC,
+        icon: 'heart',
+      },
+      {
+        id: 2,
+        title: TEXTS.RESOURCE_2_TITLE,
+        description: TEXTS.RESOURCE_2_DESC,
+        icon: 'account-group',
+      },
+      {
+        id: 3,
+        title: TEXTS.RESOURCE_3_TITLE,
+        description: TEXTS.RESOURCE_3_DESC,
+        icon: 'candle',
+      },
+      {
+        id: 4,
+        title: TEXTS.RESOURCE_4_TITLE,
+        description: TEXTS.RESOURCE_4_DESC,
+        icon: 'medical-bag',
+      },
+    ],
+    [
+      TEXTS.RESOURCE_1_TITLE,
+      TEXTS.RESOURCE_1_DESC,
+      TEXTS.RESOURCE_2_TITLE,
+      TEXTS.RESOURCE_2_DESC,
+      TEXTS.RESOURCE_3_TITLE,
+      TEXTS.RESOURCE_3_DESC,
+      TEXTS.RESOURCE_4_TITLE,
+      TEXTS.RESOURCE_4_DESC,
+    ]
+  );
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle } = useTheme();
@@ -88,7 +166,7 @@ const GriefSupportScreen = () => {
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header
-        title="Apoyo en Duelo"
+        title={TEXTS.TITLE}
         showBackButton
         onBackPress={() => navigation.goBack()}
       />
@@ -98,12 +176,9 @@ const GriefSupportScreen = () => {
       >
         <ScrollView style={styles.scrollView} contentContainerStyle={techniqueScreenStyles.scrollContent}>
           <View style={techniqueScreenStyles.introPanel}>
-            <Text style={techniqueScreenStyles.introKicker}>Duelo</Text>
-            <Text style={techniqueScreenStyles.introTitle}>Apoyo en el proceso</Text>
-            <Text style={techniqueScreenStyles.introText}>
-              El duelo es único para cada persona. No hay una forma correcta de sentirlo.
-              Tómate el tiempo que necesites.
-            </Text>
+            <Text style={techniqueScreenStyles.introKicker}>{TEXTS.INTRO_KICKER}</Text>
+            <Text style={techniqueScreenStyles.introTitle}>{TEXTS.INTRO_TITLE}</Text>
+            <Text style={techniqueScreenStyles.introText}>{TEXTS.INTRO_BODY}</Text>
           </View>
 
           {GRIEF_RESOURCES.map(resource => (
@@ -125,13 +200,11 @@ const GriefSupportScreen = () => {
           ))}
 
           <View style={techniqueScreenStyles.formBlock}>
-            <Text style={techniqueScreenStyles.formSectionHeading}>Ejercicio: escribe un recuerdo</Text>
-            <Text style={techniqueScreenStyles.formHint}>
-              Escribir sobre los recuerdos que tienes puede ayudarte a procesar el duelo.
-            </Text>
+            <Text style={techniqueScreenStyles.formSectionHeading}>{TEXTS.PRACTICE_TITLE}</Text>
+            <Text style={techniqueScreenStyles.formHint}>{TEXTS.PRACTICE_HINT}</Text>
             <TextInput
               style={[techniqueScreenStyles.textInput, techniqueScreenStyles.textInputTall]}
-              placeholder="Escribe un recuerdo especial que quieras preservar..."
+              placeholder={TEXTS.INPUT_PLACEHOLDER}
               placeholderTextColor={colors.textSecondary}
               value={memoryText}
               onChangeText={setMemoryText}
@@ -147,7 +220,7 @@ const GriefSupportScreen = () => {
               onPress={handleSaveMemory}
               disabled={!memoryText.trim()}
             >
-              <Text style={techniqueScreenStyles.saveButtonText}>Guardar recuerdo</Text>
+              <Text style={techniqueScreenStyles.saveButtonText}>{TEXTS.SAVE_MEMORY}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

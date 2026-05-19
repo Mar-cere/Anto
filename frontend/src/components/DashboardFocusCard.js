@@ -5,8 +5,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { memo, useCallback, useMemo } from 'react';
 import { Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import { DASH } from '../constants/translations';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { createDashboardFocusStyles } from '../styles/focusCardTheme';
 
 const COMPACT_WIDTH = 400;
@@ -18,11 +19,12 @@ function pickDisplayedReminder(candidates, compact) {
   return nonHabit || candidates[0];
 }
 
-function formatDue(d) {
+function formatDue(d, language) {
   if (!d) return '';
   try {
     const dt = new Date(d);
-    return dt.toLocaleDateString('es', { day: 'numeric', month: 'short' });
+    const locale = language === 'en' ? 'en-US' : 'es-ES';
+    return dt.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
   } catch {
     return '';
   }
@@ -43,7 +45,46 @@ function reminderIcon(kind) {
   }
 }
 
+function normalizePreloadedChatCopy(reminder, language, DASH) {
+  if (!reminder || reminder.kind !== 'chat') return reminder;
+  const originalTitle = String(reminder.title || '').trim();
+  const originalSubtitle = String(reminder.subtitle || '').trim();
+  if (!originalTitle && !originalSubtitle) return reminder;
+
+  const isEnglish = language === 'en';
+  const titleLooksSpanish = /retoma tu ultima conversacion|retoma tu última conversación/i.test(originalTitle);
+  const titleLooksEnglish = /resume your last conversation/i.test(originalTitle);
+  const subtitleSpanishMatch = originalSubtitle.match(/ultima actividad en el chat:\s*hace\s*(\d+)\s*d[ii]as?\.?/i);
+  const subtitleEnglishMatch = originalSubtitle.match(/last chat activity:\s*(\d+)\s*days?\s*ago\.?/i);
+
+  if (isEnglish) {
+    if (titleLooksSpanish) {
+      return {
+        ...reminder,
+        title: DASH.FOCUS_PRELOADED_LAST_CHAT_TITLE_EN,
+        subtitle: subtitleSpanishMatch
+          ? DASH.FOCUS_PRELOADED_LAST_CHAT_SUBTITLE_EN.replace('{days}', subtitleSpanishMatch[1])
+          : DASH.FOCUS_PRELOADED_LAST_CHAT_SUBTITLE_FALLBACK_EN,
+      };
+    }
+    return reminder;
+  }
+
+  if (titleLooksEnglish) {
+    return {
+      ...reminder,
+      title: DASH.FOCUS_PRELOADED_LAST_CHAT_TITLE_ES,
+      subtitle: subtitleEnglishMatch
+        ? DASH.FOCUS_PRELOADED_LAST_CHAT_SUBTITLE_ES.replace('{days}', subtitleEnglishMatch[1])
+        : DASH.FOCUS_PRELOADED_LAST_CHAT_SUBTITLE_FALLBACK_ES,
+    };
+  }
+  return reminder;
+}
+
 const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation }) => {
+  const DASH = useSectionTranslations('DASH');
+  const { language } = useLanguage();
   const { width } = useWindowDimensions();
   const { colors, resolvedScheme } = useTheme();
   const styles = useMemo(
@@ -65,10 +106,10 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation }) => {
   const protocolNext = data?.protocolNext;
   const nextTask = data?.nextTask;
 
-  const displayedReminder = useMemo(
-    () => pickDisplayedReminder(reminder?.candidates, isCompact),
-    [reminder?.candidates, isCompact],
-  );
+  const displayedReminder = useMemo(() => {
+    const picked = pickDisplayedReminder(reminder?.candidates, isCompact);
+    return normalizePreloadedChatCopy(picked, language, DASH);
+  }, [reminder?.candidates, isCompact, language, DASH]);
 
   const lastSessionText = useMemo(() => {
     if (!lastSession) return '';
@@ -212,7 +253,7 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation }) => {
             {nextTask.title}
           </Text>
           {nextTask.dueDate ? (
-            <Text style={styles.nextTaskDue}>{formatDue(nextTask.dueDate)}</Text>
+            <Text style={styles.nextTaskDue}>{formatDue(nextTask.dueDate, language)}</Text>
           ) : null}
         </View>
       ) : null}

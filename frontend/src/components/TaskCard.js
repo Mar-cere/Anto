@@ -8,15 +8,38 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CardHeader, EmptyState, useCardStylesDynamic } from './common/CardStyles';
 import * as Haptics from 'expo-haptics';
 import { api, ENDPOINTS } from '../config/api';
-import { getApiErrorMessage, isAuthError } from '../utils/apiErrorHandler';
+import { isAuthError } from '../utils/apiErrorHandler';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { getFocusTheme } from '../styles/focusCardTheme';
 import { SPACING } from '../constants/ui';
 
-const TaskItem = memo(({ item, onPress }) => {
+const DEFAULT_TASKS_TEXTS = {
+  TASK_CARD_TITLE: 'Mis Pendientes',
+  TYPE_TASK: 'Tarea',
+  TYPE_REMINDER: 'Recordatorio',
+  OVERDUE_TASK: 'Caducada',
+  OVERDUE_REMINDER: 'Pasado',
+  PRIORITY_HIGH_LABEL: 'Alta',
+  PRIORITY_MEDIUM_LABEL: 'Media',
+  PRIORITY_LOW_LABEL: 'Baja',
+  PRIORITY_PREFIX: 'Prioridad',
+  A11Y_OPEN_DETAILS_HINT: 'Doble toque para ver detalles',
+  SESSION_EXPIRED: 'Sesion expirada',
+  SESSION_EXPIRED_MESSAGE: 'Por favor, inicia sesion nuevamente',
+  ERROR_LOAD_ITEMS: 'No se pudieron cargar los items',
+  LOAD_ERROR_HINT: 'Revisa tu conexion e intenta de nuevo.',
+  RETRY: 'Reintentar',
+  EMPTY_TASK: 'No tienes tareas pendientes',
+  ADD_TASK: 'Agregar tarea',
+};
+
+const TaskItem = memo(({ item, onPress, texts, language }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const isTask = item.itemType === 'task';
   const isOverdue = new Date(item.dueDate) < new Date();
+  const locale = language === 'en' ? 'en-US' : 'es-ES';
   const { colors, resolvedScheme } = useTheme();
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
 
@@ -37,14 +60,24 @@ const TaskItem = memo(({ item, onPress }) => {
 
   const getPriorityData = useCallback((priority) => {
     const priorities = {
-      high: { color: colors.error, icon: 'alert-circle', label: 'Alta' },
-      medium: { color: colors.warning, icon: 'alert', label: 'Media' },
-      low: { color: colors.success, icon: 'check-circle', label: 'Baja' },
+      high: { color: colors.error, icon: 'alert-circle', label: texts.PRIORITY_HIGH_LABEL },
+      medium: { color: colors.warning, icon: 'alert', label: texts.PRIORITY_MEDIUM_LABEL },
+      low: { color: colors.success, icon: 'check-circle', label: texts.PRIORITY_LOW_LABEL },
     };
     return priorities[priority] || priorities.medium;
-  }, [colors]);
+  }, [colors, texts]);
 
   const priorityData = getPriorityData(item.priority);
+  const typeLabel = isTask ? texts.TYPE_TASK : texts.TYPE_REMINDER;
+  const overdueLabel = isTask ? texts.OVERDUE_TASK : texts.OVERDUE_REMINDER;
+  const formattedDate = new Date(item.dueDate).toLocaleDateString(locale, {
+    day: '2-digit',
+    month: 'short',
+  });
+  const formattedTime = new Date(item.dueDate).toLocaleTimeString(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
   const styles = useMemo(
     () =>
@@ -182,8 +215,8 @@ const TaskItem = memo(({ item, onPress }) => {
         onPressOut={handlePressOut}
         activeOpacity={0.7}
         accessibilityRole="button"
-        accessibilityLabel={`${isTask ? 'Tarea' : 'Recordatorio'}: ${item.title}. ${isOverdue ? 'Caducada.' : ''} ${new Date(item.dueDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}. Prioridad ${priorityData.label}.`}
-        accessibilityHint="Doble toque para ver detalles"
+        accessibilityLabel={`${typeLabel}: ${item.title}. ${isOverdue ? `${overdueLabel}. ` : ''}${formattedDate}. ${texts.PRIORITY_PREFIX} ${priorityData.label}.`}
+        accessibilityHint={texts.A11Y_OPEN_DETAILS_HINT}
       >
         <View style={styles.taskContent}>
           {/* Icono y tipo */}
@@ -206,12 +239,12 @@ const TaskItem = memo(({ item, onPress }) => {
             </View>
             <View style={styles.typeContainer}>
             <Text style={[styles.typeText, { color: t.FOCUS_KICKER_COLOR }]}>
-                {isTask ? 'Tarea' : 'Recordatorio'}
+                {typeLabel}
               </Text>
               {isOverdue && (
                 <View style={styles.overdueBadge}>
                   <Text style={styles.overdueText}>
-                    {isTask ? 'Caducada' : 'Pasado'}
+                    {overdueLabel}
                   </Text>
                 </View>
               )}
@@ -260,10 +293,7 @@ const TaskItem = memo(({ item, onPress }) => {
                     isOverdue && styles.overdueText,
                   ]}
                 >
-                  {new Date(item.dueDate).toLocaleDateString('es-ES', {
-                    day: '2-digit',
-                    month: 'short'
-                  })}
+                  {formattedDate}
                 </Text>
               </View>
               <View style={styles.timeContainer}>
@@ -279,11 +309,7 @@ const TaskItem = memo(({ item, onPress }) => {
                     isOverdue && styles.overdueText,
                   ]}
                 >
-                  {new Date(item.dueDate).toLocaleTimeString('es-ES', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true
-                  })}
+                  {formattedTime}
                 </Text>
               </View>
             </View>
@@ -303,6 +329,9 @@ TaskItem.displayName = 'TaskItem';
 const TaskCard = memo(() => {
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const { language } = useLanguage();
+  const translated = useSectionTranslations('TASKS');
+  const TEXTS = useMemo(() => ({ ...DEFAULT_TASKS_TEXTS, ...(translated || {}) }), [translated]);
   const { cardColors, commonStyles } = useCardStylesDynamic();
   const listStyles = useMemo(
     () =>
@@ -365,9 +394,9 @@ const TaskCard = memo(() => {
       setItems(sortedItems);
     } catch (error) {
       console.error('Error cargando tareas:', error);
-      setError(getApiErrorMessage(error));
+      setError(TEXTS.ERROR_LOAD_ITEMS);
       if (isAuthError(error)) {
-        Alert.alert('Sesión expirada', 'Por favor, inicia sesión nuevamente');
+        Alert.alert(TEXTS.SESSION_EXPIRED, TEXTS.SESSION_EXPIRED_MESSAGE);
         await AsyncStorage.removeItem('userToken');
         navigation.reset({
           index: 0,
@@ -378,7 +407,7 @@ const TaskCard = memo(() => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [navigation]);
+  }, [TEXTS.SESSION_EXPIRED, TEXTS.SESSION_EXPIRED_MESSAGE, TEXTS.ERROR_LOAD_ITEMS, navigation]);
 
   // Pull to refresh
   const onRefresh = useCallback(() => {
@@ -410,9 +439,9 @@ const TaskCard = memo(() => {
       return (
         <View style={listStyles.errorContainer}>
           <MaterialCommunityIcons name="alert-circle" size={40} color={cardColors.error} />
-          <Text style={listStyles.errorText}>No se pudo cargar. Revisa tu conexión e intenta de nuevo.</Text>
-          <TouchableOpacity style={listStyles.retryButton} onPress={() => loadItems()} accessibilityRole="button" accessibilityLabel="Reintentar">
-            <Text style={listStyles.retryButtonText}>Reintentar</Text>
+          <Text style={listStyles.errorText}>{`${TEXTS.ERROR_LOAD_ITEMS}. ${TEXTS.LOAD_ERROR_HINT}`}</Text>
+          <TouchableOpacity style={listStyles.retryButton} onPress={() => loadItems()} accessibilityRole="button" accessibilityLabel={TEXTS.RETRY}>
+            <Text style={listStyles.retryButtonText}>{TEXTS.RETRY}</Text>
           </TouchableOpacity>
         </View>
       );
@@ -422,9 +451,9 @@ const TaskCard = memo(() => {
       return (
         <EmptyState 
           icon="clipboard-text-outline"
-          message="No hay tareas pendientes"
+          message={TEXTS.EMPTY_TASK}
           onAdd={() => navigation.navigate('Tasks', { mode: 'create', openModal: true })}
-          addButtonText="Agregar tarea"
+          addButtonText={TEXTS.ADD_TASK}
           compact
           showIcon={false}
         />
@@ -449,6 +478,8 @@ const TaskCard = memo(() => {
               key={item._id}
               item={item}
               onPress={() => handleItemPress(item)}
+              texts={TEXTS}
+              language={language}
             />
           ))}
         </View>
@@ -460,7 +491,7 @@ const TaskCard = memo(() => {
     <View style={commonStyles.cardContainer}>
       <CardHeader 
         icon="format-list-checks"
-        title="Mis Pendientes"
+        title={TEXTS.TASK_CARD_TITLE}
         onViewAll={() => navigation.navigate('Tasks', { mode: 'list' })}
       />
       {renderContent()}

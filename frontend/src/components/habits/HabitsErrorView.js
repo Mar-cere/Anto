@@ -14,12 +14,13 @@ import {
   RETRY_BUTTON_BORDER_RADIUS,
   RETRY_BUTTON_PADDING_HORIZONTAL,
   RETRY_BUTTON_PADDING_VERTICAL,
-  TEXTS,
+  useHabitsTexts,
 } from '../../screens/habits/habitsScreenConstants';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 import { SPACING } from '../../constants/ui';
 
 export default function HabitsErrorView({ errorMessage, onRetry }) {
+  const TEXTS = useHabitsTexts();
   const { colors, resolvedScheme } = useTheme();
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
   const HC = useMemo(() => createHabitsColors(colors), [colors]);

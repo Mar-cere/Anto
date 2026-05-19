@@ -36,12 +36,85 @@ import { useAuth } from '../context/AuthContext';
 import { clearPersistedChatSession } from '../utils/chatSessionStorage';
 import { useToast } from '../context/ToastContext';
 import { SPACING } from '../constants/ui';
+import { useSectionTranslations } from '../hooks/useTranslations';
 
 // Constantes
 const CODE_LENGTH = 6;
 const CODE_EXPIRATION_MINUTES = 10;
+const DEFAULT_TEXTS = {
+  TITLE: 'Verifica tu Email',
+  SUBTITLE: 'Ingresa el código de 6 dígitos que enviamos a:',
+  CODE_INCOMPLETE: 'Por favor ingresa el código completo de 6 dígitos',
+  EMAIL_MISSING: 'No se encontró el email. Por favor, regístrate nuevamente.',
+  VERIFIED_TITLE: '¡Email verificado!',
+  VERIFIED_MESSAGE: 'Tu cuenta ha sido verificada exitosamente.',
+  CONTINUE: 'Continuar',
+  TOKENS_MISSING: 'No se recibieron los tokens de autenticación',
+  VERIFY_ERROR:
+    'Error al verificar el código. Por favor, intenta nuevamente.',
+  RESENT_OK: 'Se ha enviado un nuevo código de verificación a tu correo.',
+  RESEND_ERROR: 'Error al reenviar el código. Por favor, intenta nuevamente.',
+  EXPIRES_IN: 'El código expira en:',
+  VERIFY: 'Verificar',
+  RESEND: 'Reenviar código',
+  INFO:
+    'Si no recibiste el código, revisa tu carpeta de spam o solicita un nuevo código.',
+  BACK: 'Volver',
+  INVALID_CODE: 'El código ingresado no es válido.',
+  CODE_EXPIRED: 'El código expiró. Solicita uno nuevo.',
+  TOO_MANY_ATTEMPTS: 'Demasiados intentos. Espera un momento y vuelve a intentar.',
+  RESEND_RATE_LIMIT: 'Espera unos segundos antes de reenviar un nuevo código.',
+  CONNECTION_ERROR: 'No hay conexión. Verifica tu internet e inténtalo de nuevo.',
+};
+
+const resolveVerifyEmailErrorMessage = (error, texts, fallbackKey) => {
+  const status = error?.response?.status;
+  const rawMessage = String(
+    error?.response?.data?.message ?? error?.message ?? '',
+  ).toLowerCase();
+
+  const isNetworkIssue =
+    !error?.response ||
+    rawMessage.includes('network') ||
+    rawMessage.includes('econnrefused') ||
+    rawMessage.includes('timeout') ||
+    rawMessage.includes('timed out');
+  if (isNetworkIssue) {
+    return texts.CONNECTION_ERROR || texts[fallbackKey];
+  }
+
+  if (status === 429 || rawMessage.includes('too many')) {
+    return texts.TOO_MANY_ATTEMPTS;
+  }
+
+  if (
+    rawMessage.includes('expired') ||
+    rawMessage.includes('expir') ||
+    rawMessage.includes('vencid')
+  ) {
+    return texts.CODE_EXPIRED;
+  }
+
+  if (
+    rawMessage.includes('invalid code') ||
+    rawMessage.includes('invalid verification') ||
+    rawMessage.includes('invalid token') ||
+    rawMessage.includes('código inválido') ||
+    rawMessage.includes('codigo invalido') ||
+    rawMessage.includes('incorrect')
+  ) {
+    return texts.INVALID_CODE;
+  }
+
+  return texts[fallbackKey];
+};
 
 const VerifyEmailScreen = () => {
+  const AUTH = useSectionTranslations('AUTH');
+  const TEXTS = useMemo(
+    () => ({ ...DEFAULT_TEXTS, ...(AUTH?.VERIFY_EMAIL || {}) }),
+    [AUTH],
+  );
   const navigation = useNavigation();
   const route = useRoute();
   const { refreshSession } = useAuth();
@@ -185,7 +258,7 @@ const VerifyEmailScreen = () => {
       duration: 500,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [fadeAnim]);
 
   // Timer para mostrar tiempo restante
   useEffect(() => {
@@ -243,7 +316,7 @@ const VerifyEmailScreen = () => {
     
     if (codeToVerify.length !== CODE_LENGTH) {
       showToast({
-        message: 'Por favor ingresa el código completo de 6 dígitos',
+        message: TEXTS.CODE_INCOMPLETE,
         type: 'warning',
       });
       return;
@@ -251,7 +324,7 @@ const VerifyEmailScreen = () => {
 
     if (!email) {
       showToast({
-        message: 'No se encontró el email. Por favor, regístrate nuevamente.',
+        message: TEXTS.EMAIL_MISSING,
         type: 'error',
       });
       navigation.navigate(ROUTES.REGISTER);
@@ -281,11 +354,11 @@ const VerifyEmailScreen = () => {
 
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Alert.alert(
-          '¡Email verificado!',
-          'Tu cuenta ha sido verificada exitosamente.',
+          TEXTS.VERIFIED_TITLE,
+          TEXTS.VERIFIED_MESSAGE,
           [
             {
-              text: 'Continuar',
+              text: TEXTS.CONTINUE,
               onPress: () => {
                 navigation.reset({
                   index: 0,
@@ -296,16 +369,18 @@ const VerifyEmailScreen = () => {
           ]
         );
       } else {
-        throw new Error('No se recibieron los tokens de autenticación');
+        throw new Error(TEXTS.TOKENS_MISSING);
       }
     } catch (error) {
       console.error('Error verificando email:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      
-      const errorMessage = error.response?.data?.message || 
-                          error.message || 
-                          'Error al verificar el código. Por favor, intenta nuevamente.';
-      
+
+      const errorMessage = resolveVerifyEmailErrorMessage(
+        error,
+        TEXTS,
+        'VERIFY_ERROR',
+      );
+
       showToast({
         message: errorMessage,
         type: 'error',
@@ -322,7 +397,7 @@ const VerifyEmailScreen = () => {
   const handleResendCode = async () => {
     if (!email) {
       showToast({
-        message: 'No se encontró el email. Por favor, regístrate nuevamente.',
+        message: TEXTS.EMAIL_MISSING,
         type: 'error',
       });
       navigation.navigate(ROUTES.REGISTER);
@@ -344,17 +419,22 @@ const VerifyEmailScreen = () => {
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast({
-        message: 'Se ha enviado un nuevo código de verificación a tu correo.',
+        message: TEXTS.RESENT_OK,
         type: 'success',
       });
     } catch (error) {
       console.error('Error reenviando código:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      
-      const errorMessage = error.response?.data?.message || 
-                          error.message || 
-                          'Error al reenviar el código. Por favor, intenta nuevamente.';
-      
+
+      const errorMessage = resolveVerifyEmailErrorMessage(
+        error,
+        {
+          ...TEXTS,
+          TOO_MANY_ATTEMPTS: TEXTS.RESEND_RATE_LIMIT || TEXTS.TOO_MANY_ATTEMPTS,
+        },
+        'RESEND_ERROR',
+      );
+
       showToast({
         message: errorMessage,
         type: 'error',
@@ -388,16 +468,15 @@ const VerifyEmailScreen = () => {
             <TouchableOpacity
               style={styles.backButton}
               onPress={() => navigation.goBack()}
+              accessibilityLabel={TEXTS.BACK}
             >
               <Ionicons name="arrow-back" size={24} color={colors.white} />
             </TouchableOpacity>
 
             <View style={styles.header}>
               <Ionicons name="mail" size={64} color={colors.primary} />
-              <Text style={styles.title}>Verifica tu Email</Text>
-              <Text style={styles.subtitle}>
-                Ingresa el código de 6 dígitos que enviamos a:
-              </Text>
+              <Text style={styles.title}>{TEXTS.TITLE}</Text>
+              <Text style={styles.subtitle}>{TEXTS.SUBTITLE}</Text>
               <Text style={styles.email}>{email}</Text>
             </View>
 
@@ -425,7 +504,7 @@ const VerifyEmailScreen = () => {
             {/* Timer */}
             {timeRemaining > 0 && (
               <Text style={styles.timer}>
-                El código expira en: {formatTime(timeRemaining)}
+                {TEXTS.EXPIRES_IN} {formatTime(timeRemaining)}
               </Text>
             )}
 
@@ -441,7 +520,7 @@ const VerifyEmailScreen = () => {
               {isSubmitting ? (
                 <ActivityIndicator size="small" color={colors.white} />
               ) : (
-                <Text style={styles.verifyButtonText}>Verificar</Text>
+                <Text style={styles.verifyButtonText}>{TEXTS.VERIFY}</Text>
               )}
             </TouchableOpacity>
 
@@ -456,8 +535,8 @@ const VerifyEmailScreen = () => {
               ) : (
                 <Text style={styles.resendButtonText}>
                   {timeRemaining > 0 
-                    ? `Reenviar código (${formatTime(timeRemaining)})`
-                    : 'Reenviar código'}
+                    ? `${TEXTS.RESEND} (${formatTime(timeRemaining)})`
+                    : TEXTS.RESEND}
                 </Text>
               )}
             </TouchableOpacity>
@@ -466,7 +545,7 @@ const VerifyEmailScreen = () => {
             <View style={styles.infoContainer}>
               <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
               <Text style={styles.infoText}>
-                Si no recibiste el código, revisa tu carpeta de spam o solicita un nuevo código.
+                {TEXTS.INFO}
               </Text>
             </View>
           </Animated.View>

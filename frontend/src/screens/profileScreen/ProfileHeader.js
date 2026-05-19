@@ -5,9 +5,10 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useProfileScreenStyles } from './profileScreenStyles';
-import { TEXTS, ICON_SIZE } from './profileScreenConstants';
+import { ICON_SIZE, useProfileTexts } from './profileScreenConstants';
 
 export function ProfileHeader({ navigation }) {
+  const TEXTS = useProfileTexts();
   const { styles, profileColors } = useProfileScreenStyles();
   return (
     <View style={styles.header}>

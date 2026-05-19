@@ -27,11 +27,10 @@ import {
   POMODORO_TASK_FOCUS_MIN_MINUTES,
   PROGRESS_ANIMATION_DURATION,
   QUICK_PRESETS,
-  TEXTS,
   VIBRATION_PATTERN,
   WARNING_TIME,
+  usePomodoroTexts,
 } from '../screens/pomodoro/pomodoroScreenConstants';
-import { getApiErrorMessage } from '../utils/apiErrorHandler';
 import { cancelTaskNotifications, sendImmediateNotification } from '../utils/notifications';
 
 const getTodayKey = () => new Date().toISOString().slice(0, 10);
@@ -72,8 +71,18 @@ export function sortPomodoroPendingTasks(list) {
 }
 
 export function usePomodoroScreen() {
-  const modesRef = useRef(getModes());
+  const TEXTS = usePomodoroTexts();
+  const modesRef = useRef(getModes(TEXTS));
   const modes = modesRef.current;
+
+  useEffect(() => {
+    const localizedModes = getModes(TEXTS);
+    Object.keys(localizedModes).forEach((modeKey) => {
+      if (modesRef.current[modeKey]) {
+        modesRef.current[modeKey].label = localizedModes[modeKey].label;
+      }
+    });
+  }, [TEXTS]);
 
   const [isActive, setIsActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(modes.work.time);
@@ -164,7 +173,7 @@ export function usePomodoroScreen() {
   }, [mode, isPreparationPhase, modes]);
 
   const primaryActionLabel = (() => {
-    if (isActive) return 'Pausar';
+    if (isActive) return TEXTS.PAUSE;
     if (mode === 'break' || mode === 'longBreak') return TEXTS.TAKE_BREAK;
     if (timeLeft < getCurrentModeTime()) return TEXTS.CONTINUE;
     return TEXTS.START;
@@ -337,6 +346,8 @@ export function usePomodoroScreen() {
     toggleMode,
     focusTask,
     logFocusTimeToTask,
+    TEXTS.POMODORO_COMPLETED,
+    TEXTS.POMODORO_COMPLETED_MESSAGE,
   ]);
 
   // Warning blink effect
@@ -377,13 +388,13 @@ export function usePomodoroScreen() {
       console.error('Pomodoro: completar tarea desde resumen:', e);
       Alert.alert(
         TEXTS.ERROR_COMPLETE_TASK_TITLE,
-        getApiErrorMessage(e) || TEXTS.ERROR_COMPLETE_TASK_MESSAGE
+        TEXTS.ERROR_COMPLETE_TASK_MESSAGE
       );
     } finally {
       summaryActionBusyRef.current = false;
       setSummaryActionBusy(false);
     }
-  }, []);
+  }, [TEXTS.ERROR_COMPLETE_TASK_TITLE, TEXTS.ERROR_COMPLETE_TASK_MESSAGE]);
 
   const loadPendingTasks = useCallback(async () => {
     const gen = ++pendingTasksLoadGenRef.current;
@@ -409,14 +420,14 @@ export function usePomodoroScreen() {
     } catch (e) {
       console.error('Error cargando tareas pendientes (Pomodoro):', e);
       if (gen === pendingTasksLoadGenRef.current) {
-        setPendingTasksError(getApiErrorMessage(e) || TEXTS.PENDING_LOAD_ERROR);
+        setPendingTasksError(TEXTS.PENDING_LOAD_ERROR);
       }
     } finally {
       if (gen === pendingTasksLoadGenRef.current) {
         setPendingTasksLoading(false);
       }
     }
-  }, []);
+  }, [TEXTS.PENDING_LOAD_ERROR]);
 
   const startFocusFromPendingTask = useCallback(
     async (task) => {
@@ -429,7 +440,7 @@ export function usePomodoroScreen() {
         console.error('Error al marcar tarea en curso (Pomodoro):', e);
         Alert.alert(
           TEXTS.ERROR_FOCUS_TITLE,
-          getApiErrorMessage(e) || TEXTS.ERROR_FOCUS_MESSAGE
+          TEXTS.ERROR_FOCUS_MESSAGE
         );
         return;
       } finally {
@@ -465,7 +476,7 @@ export function usePomodoroScreen() {
       setCustomTimeModalVisible(false);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     },
-    [progressAnimation]
+    [progressAnimation, TEXTS.ERROR_FOCUS_TITLE, TEXTS.ERROR_FOCUS_MESSAGE]
   );
 
   useEffect(() => {

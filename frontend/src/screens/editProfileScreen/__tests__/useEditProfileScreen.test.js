@@ -107,7 +107,7 @@ describe('useEditProfileScreen', () => {
 
   it('sin token debe mostrar alert y navegar a SignIn', async () => {
     await AsyncStorage.removeItem('userToken');
-    const { result } = renderHook(() => useEditProfileScreen(mockNavigation));
+    renderHook(() => useEditProfileScreen(mockNavigation));
     await act(async () => {
       await new Promise((r) => setTimeout(r, 100));
     });
@@ -155,7 +155,7 @@ describe('useEditProfileScreen', () => {
   });
 
   it('registra listener beforeRemove cuando hay hasChanges', async () => {
-    const { result } = renderHook(() => useEditProfileScreen(mockNavigation));
+    renderHook(() => useEditProfileScreen(mockNavigation));
     await act(async () => {
       await new Promise((r) => setTimeout(r, 100));
     });

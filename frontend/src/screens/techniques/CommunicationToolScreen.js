@@ -23,46 +23,147 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
 import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
-const TECHNIQUES = [
-  {
-    id: 1,
-    title: 'Mensajes "Yo"',
-    description: 'Expresa tus sentimientos usando "Yo siento..." en lugar de "Tú haces..."',
-    example: 'Ejemplo: "Yo me siento herido cuando..." en lugar de "Tú siempre haces..."',
-    icon: 'account',
-  },
-  {
-    id: 2,
-    title: 'Escucha Activa',
-    description: 'Practica escuchar sin interrumpir y reflejar lo que escuchas.',
-    example: 'Ejemplo: "Entiendo que te sientes... ¿Es correcto?"',
-    icon: 'ear-hearing',
-  },
-  {
-    id: 3,
-    title: 'Validación',
-    description: 'Reconoce y valida los sentimientos de la otra persona.',
-    example: 'Ejemplo: "Tiene sentido que te sientas así..."',
-    icon: 'check-circle',
-  },
-  {
-    id: 4,
-    title: 'Preguntas Abiertas',
-    description: 'Haz preguntas que inviten a la reflexión y el diálogo.',
-    example: 'Ejemplo: "¿Cómo te gustaría que fuera diferente?"',
-    icon: 'help-circle',
-  },
-];
+const DEFAULT_TEXTS = {
+  TITLE: 'Herramienta de Comunicacion',
+  INTRO_KICKER: 'Comunicacion',
+  INTRO_TITLE: 'Herramientas empaticas',
+  INTRO_BODY:
+    'Estas tecnicas te ayudaran a comunicarte de manera mas efectiva y empatica.',
+  BACK: 'Volver',
+  TECH_1_TITLE: 'Mensajes "Yo"',
+  TECH_1_DESC:
+    'Expresa tus sentimientos usando "Yo siento..." en lugar de "Tu haces..."',
+  TECH_1_EXAMPLE:
+    'Ejemplo: "Yo me siento herido cuando..." en lugar de "Tu siempre haces..."',
+  TECH_2_TITLE: 'Escucha Activa',
+  TECH_2_DESC:
+    'Practica escuchar sin interrumpir y reflejar lo que escuchas.',
+  TECH_2_EXAMPLE:
+    'Ejemplo: "Entiendo que te sientes... ¿Es correcto?"',
+  TECH_3_TITLE: 'Validacion',
+  TECH_3_DESC:
+    'Reconoce y valida los sentimientos de la otra persona.',
+  TECH_3_EXAMPLE: 'Ejemplo: "Tiene sentido que te sientas asi..."',
+  TECH_4_TITLE: 'Preguntas Abiertas',
+  TECH_4_DESC:
+    'Haz preguntas que inviten a la reflexion y el dialogo.',
+  TECH_4_EXAMPLE: 'Ejemplo: "¿Como te gustaria que fuera diferente?"',
+  PRACTICE_PROMPT: 'Practica escribiendo un mensaje usando esta tecnica:',
+  INPUT_PLACEHOLDER: 'Escribe tu mensaje aqui...',
+  SAVE_PRACTICE: 'Guardar practica',
+};
 
 const CommunicationToolScreen = () => {
+  const translated = useSectionTranslations('TECHNIQUES');
+  const TEXTS = useMemo(
+    () => ({
+      TITLE: translated?.COMMUNICATION_TITLE || DEFAULT_TEXTS.TITLE,
+      INTRO_KICKER:
+        translated?.COMMUNICATION_INTRO_KICKER || DEFAULT_TEXTS.INTRO_KICKER,
+      INTRO_TITLE:
+        translated?.COMMUNICATION_INTRO_TITLE || DEFAULT_TEXTS.INTRO_TITLE,
+      INTRO_BODY:
+        translated?.COMMUNICATION_INTRO_BODY ||
+        DEFAULT_TEXTS.INTRO_BODY,
+      BACK: translated?.COMMUNICATION_BACK || DEFAULT_TEXTS.BACK,
+      TECH_1_TITLE:
+        translated?.COMMUNICATION_TECH_1_TITLE || DEFAULT_TEXTS.TECH_1_TITLE,
+      TECH_1_DESC:
+        translated?.COMMUNICATION_TECH_1_DESC ||
+        DEFAULT_TEXTS.TECH_1_DESC,
+      TECH_1_EXAMPLE:
+        translated?.COMMUNICATION_TECH_1_EXAMPLE ||
+        DEFAULT_TEXTS.TECH_1_EXAMPLE,
+      TECH_2_TITLE:
+        translated?.COMMUNICATION_TECH_2_TITLE || DEFAULT_TEXTS.TECH_2_TITLE,
+      TECH_2_DESC:
+        translated?.COMMUNICATION_TECH_2_DESC ||
+        DEFAULT_TEXTS.TECH_2_DESC,
+      TECH_2_EXAMPLE:
+        translated?.COMMUNICATION_TECH_2_EXAMPLE ||
+        DEFAULT_TEXTS.TECH_2_EXAMPLE,
+      TECH_3_TITLE:
+        translated?.COMMUNICATION_TECH_3_TITLE || DEFAULT_TEXTS.TECH_3_TITLE,
+      TECH_3_DESC:
+        translated?.COMMUNICATION_TECH_3_DESC ||
+        DEFAULT_TEXTS.TECH_3_DESC,
+      TECH_3_EXAMPLE:
+        translated?.COMMUNICATION_TECH_3_EXAMPLE ||
+        DEFAULT_TEXTS.TECH_3_EXAMPLE,
+      TECH_4_TITLE:
+        translated?.COMMUNICATION_TECH_4_TITLE || DEFAULT_TEXTS.TECH_4_TITLE,
+      TECH_4_DESC:
+        translated?.COMMUNICATION_TECH_4_DESC ||
+        DEFAULT_TEXTS.TECH_4_DESC,
+      TECH_4_EXAMPLE:
+        translated?.COMMUNICATION_TECH_4_EXAMPLE ||
+        DEFAULT_TEXTS.TECH_4_EXAMPLE,
+      PRACTICE_PROMPT:
+        translated?.COMMUNICATION_PRACTICE_PROMPT ||
+        DEFAULT_TEXTS.PRACTICE_PROMPT,
+      INPUT_PLACEHOLDER:
+        translated?.COMMUNICATION_INPUT_PLACEHOLDER ||
+        DEFAULT_TEXTS.INPUT_PLACEHOLDER,
+      SAVE_PRACTICE:
+        translated?.COMMUNICATION_SAVE_PRACTICE || DEFAULT_TEXTS.SAVE_PRACTICE,
+    }),
+    [translated]
+  );
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle } = useTheme();
   const techniqueScreenStyles = useTechniqueScreenStyles();
   const [selectedTechnique, setSelectedTechnique] = useState(null);
   const [practiceText, setPracticeText] = useState('');
+  const TECHNIQUES = useMemo(
+    () => [
+      {
+        id: 1,
+        title: TEXTS.TECH_1_TITLE,
+        description: TEXTS.TECH_1_DESC,
+        example: TEXTS.TECH_1_EXAMPLE,
+        icon: 'account',
+      },
+      {
+        id: 2,
+        title: TEXTS.TECH_2_TITLE,
+        description: TEXTS.TECH_2_DESC,
+        example: TEXTS.TECH_2_EXAMPLE,
+        icon: 'ear-hearing',
+      },
+      {
+        id: 3,
+        title: TEXTS.TECH_3_TITLE,
+        description: TEXTS.TECH_3_DESC,
+        example: TEXTS.TECH_3_EXAMPLE,
+        icon: 'check-circle',
+      },
+      {
+        id: 4,
+        title: TEXTS.TECH_4_TITLE,
+        description: TEXTS.TECH_4_DESC,
+        example: TEXTS.TECH_4_EXAMPLE,
+        icon: 'help-circle',
+      },
+    ],
+    [
+      TEXTS.TECH_1_TITLE,
+      TEXTS.TECH_1_DESC,
+      TEXTS.TECH_1_EXAMPLE,
+      TEXTS.TECH_2_TITLE,
+      TEXTS.TECH_2_DESC,
+      TEXTS.TECH_2_EXAMPLE,
+      TEXTS.TECH_3_TITLE,
+      TEXTS.TECH_3_DESC,
+      TEXTS.TECH_3_EXAMPLE,
+      TEXTS.TECH_4_TITLE,
+      TEXTS.TECH_4_DESC,
+      TEXTS.TECH_4_EXAMPLE,
+    ]
+  );
 
   const styles = useMemo(
     () =>
@@ -108,7 +209,7 @@ const CommunicationToolScreen = () => {
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header
-        title="Herramienta de Comunicación"
+        title={TEXTS.TITLE}
         showBackButton
         onBackPress={() => navigation.goBack()}
       />
@@ -122,10 +223,10 @@ const CommunicationToolScreen = () => {
           showsVerticalScrollIndicator={false}
         >
           <View style={techniqueScreenStyles.introPanel}>
-            <Text style={techniqueScreenStyles.introKicker}>Comunicación</Text>
-            <Text style={techniqueScreenStyles.introTitle}>Herramientas empáticas</Text>
+            <Text style={techniqueScreenStyles.introKicker}>{TEXTS.INTRO_KICKER}</Text>
+            <Text style={techniqueScreenStyles.introTitle}>{TEXTS.INTRO_TITLE}</Text>
             <Text style={[techniqueScreenStyles.introText, styles.introCenter]}>
-              Estas técnicas te ayudarán a comunicarte de manera más efectiva y empática.
+              {TEXTS.INTRO_BODY}
             </Text>
           </View>
 
@@ -167,7 +268,7 @@ const CommunicationToolScreen = () => {
                   size={22}
                   color={colors.primary}
                 />
-                <Text style={techniqueScreenStyles.inlineBackLabel}>Volver</Text>
+                <Text style={techniqueScreenStyles.inlineBackLabel}>{TEXTS.BACK}</Text>
               </TouchableOpacity>
 
               <MaterialCommunityIcons
@@ -187,11 +288,11 @@ const CommunicationToolScreen = () => {
               </Text>
 
               <Text style={techniqueScreenStyles.formHint}>
-                Practica escribiendo un mensaje usando esta técnica:
+                {TEXTS.PRACTICE_PROMPT}
               </Text>
               <TextInput
                 style={[techniqueScreenStyles.textInput, techniqueScreenStyles.textInputTall]}
-                placeholder="Escribe tu mensaje aquí..."
+                placeholder={TEXTS.INPUT_PLACEHOLDER}
                 placeholderTextColor={colors.textSecondary}
                 value={practiceText}
                 onChangeText={setPracticeText}
@@ -208,7 +309,7 @@ const CommunicationToolScreen = () => {
                 onPress={handleSave}
                 disabled={!practiceText.trim()}
               >
-                <Text style={techniqueScreenStyles.saveButtonText}>Guardar práctica</Text>
+                <Text style={techniqueScreenStyles.saveButtonText}>{TEXTS.SAVE_PRACTICE}</Text>
               </TouchableOpacity>
             </View>
           )}

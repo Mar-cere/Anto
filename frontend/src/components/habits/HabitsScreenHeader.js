@@ -17,7 +17,7 @@ import {
   FILTER_TYPES,
   HEADER_PADDING,
   HEADER_TITLE_MARGIN_BOTTOM,
-  TEXTS,
+  useHabitsTexts,
 } from '../../screens/habits/habitsScreenConstants';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 import { SPACING } from '../../constants/ui';
@@ -29,6 +29,7 @@ export default function HabitsScreenHeader({
   searchQuery = '',
   onSearch,
 }) {
+  const H = useHabitsTexts();
   const { colors, resolvedScheme } = useTheme();
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
   const HC = useMemo(() => createHabitsColors(colors), [colors]);
@@ -113,11 +114,11 @@ export default function HabitsScreenHeader({
     <View style={styles.headerContainer}>
       <View style={styles.header}>
         <View style={styles.titleWrap}>
-          <Text style={styles.headerTitle}>{TEXTS.TITLE}</Text>
+          <Text style={styles.headerTitle}>{H.TITLE}</Text>
           <Text style={styles.headerMeta}>
             {filterType === FILTER_TYPES.ACTIVE
-              ? `${counts.active || 0} activos`
-              : `${counts.archived || 0} archivados`}
+              ? `${counts.active || 0} ${H.COUNT_ACTIVE_SUFFIX}`
+              : `${counts.archived || 0} ${H.COUNT_ARCHIVED_SUFFIX}`}
           </Text>
         </View>
         <View style={styles.filterButtons}>
@@ -139,7 +140,7 @@ export default function HabitsScreenHeader({
                 filterType === FILTER_TYPES.ACTIVE && styles.filterButtonTextActive,
               ]}
             >
-              {TEXTS.ACTIVE}
+              {H.ACTIVE}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -160,7 +161,7 @@ export default function HabitsScreenHeader({
                 filterType === FILTER_TYPES.ARCHIVED && styles.filterButtonTextActive,
               ]}
             >
-              {TEXTS.ARCHIVED}
+              {H.ARCHIVED}
             </Text>
           </TouchableOpacity>
         </View>
@@ -168,7 +169,7 @@ export default function HabitsScreenHeader({
           <MaterialCommunityIcons name="magnify" size={20} color={t.FOCUS_KICKER_COLOR} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Buscar hábito…"
+            placeholder={H.SEARCH_PLACEHOLDER}
             placeholderTextColor={t.FOCUS_META}
             value={searchQuery}
             onChangeText={onSearch}

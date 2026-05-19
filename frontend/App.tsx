@@ -11,13 +11,8 @@
 import React from 'react';
 import { StatusBar, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
-
-// Fallback cuando initialWindowMetrics es null (web, SSR, o módulo nativo no listo)
-const DEFAULT_SAFE_AREA_METRICS = {
-  frame: { x: 0, y: 0, width: 0, height: 0 },
-  insets: { top: 0, left: 0, right: 0, bottom: 0 },
-};
 import { AuthProvider } from './src/context/AuthContext';
+import { LanguageProvider } from './src/context/LanguageContext';
 import {
   ThemePreferenceSync,
   ThemeProvider,
@@ -28,6 +23,12 @@ import AppNavigator from './src/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import Toast from './src/components/Toast';
 import ConnectionRestoredListener from './src/components/ConnectionRestoredListener';
+
+// Fallback cuando initialWindowMetrics es null (web, SSR, o módulo nativo no listo)
+const DEFAULT_SAFE_AREA_METRICS = {
+  frame: { x: 0, y: 0, width: 0, height: 0 },
+  insets: { top: 0, left: 0, right: 0, bottom: 0 },
+};
 
 const STATUS_BAR_BACKGROUND = 'transparent';
 const STATUS_BAR_TRANSLUCENT = true;
@@ -59,16 +60,18 @@ function AppContent() {
 export default function App() {
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics ?? DEFAULT_SAFE_AREA_METRICS}>
-      <ThemeProvider>
-        <ErrorBoundary>
-          <AuthProvider>
-            <ThemePreferenceSync />
-            <ToastProvider>
-              <AppContent />
-            </ToastProvider>
-          </AuthProvider>
-        </ErrorBoundary>
-      </ThemeProvider>
+      <LanguageProvider>
+        <ThemeProvider>
+          <ErrorBoundary>
+            <AuthProvider>
+              <ThemePreferenceSync />
+              <ToastProvider>
+                <AppContent />
+              </ToastProvider>
+            </AuthProvider>
+          </ErrorBoundary>
+        </ThemeProvider>
+      </LanguageProvider>
     </SafeAreaProvider>
   );
 }

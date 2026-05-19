@@ -25,11 +25,12 @@ import {
 } from 'react-native';
 import { BarChart, LineChart, PieChart } from 'react-native-chart-kit';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 
 const { width } = Dimensions.get('window');
 
 // Constantes de textos
-const TEXTS = {
+const DEFAULT_TEXTS = {
   TITLE: 'Estadísticas',
   LOADING: 'Cargando estadísticas...',
   ERROR: 'No pudimos cargar tus estadísticas. Por favor, intenta de nuevo.',
@@ -60,6 +61,27 @@ const TEXTS = {
   TREND_HABITS: 'Tu progreso en hábitos ha mejorado un 8% respecto al período anterior.',
   SUGGESTION_TASKS: 'Intenta distribuir mejor tus tareas durante la semana para evitar sobrecarga.',
   SUGGESTION_HABITS: 'Mantén la consistencia en tus hábitos de salud para mejorar tu progreso general.',
+  DAY_LABELS: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+  WEEK_LABELS: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
+  MONTH_LABELS: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+  LEGEND_TASKS_DAILY: 'Tareas completadas',
+  LEGEND_TASKS_WEEKLY: 'Tareas completadas por semana',
+  LEGEND_TASKS_MONTHLY: 'Tareas completadas por mes',
+  LEGEND_HABITS_DAILY: 'Progreso de hábitos',
+  LEGEND_HABITS_WEEKLY: 'Progreso promedio semanal',
+  LEGEND_HABITS_MONTHLY: 'Progreso promedio mensual',
+  PIE_COMPLETED: 'Completadas',
+  PIE_PENDING: 'Pendientes',
+  CATEGORY_WORK: 'Trabajo',
+  CATEGORY_HEALTH: 'Salud',
+  CATEGORY_HOME: 'Hogar',
+  CATEGORY_STUDY: 'Estudio',
+  BEST_TASKS_DAILY: 'Viernes',
+  BEST_TASKS_WEEKLY: 'Semana 4',
+  BEST_TASKS_MONTHLY: 'Mayo',
+  BEST_HABITS_DAILY: 'Jueves',
+  BEST_HABITS_WEEKLY: 'Semana 3',
+  BEST_HABITS_MONTHLY: 'Junio',
 };
 
 // Constantes de tipos de datos y períodos
@@ -85,10 +107,10 @@ function rgbaFromHex(hex, alpha = 1) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-function buildInitialTaskStats(cc) {
+function buildInitialTaskStats(cc, texts) {
   return {
     daily: {
-      labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+      labels: texts.DAY_LABELS,
       datasets: [
         {
           data: [3, 5, 2, 4, 6, 3, 4],
@@ -96,10 +118,10 @@ function buildInitialTaskStats(cc) {
           strokeWidth: 2,
         },
       ],
-      legend: ['Tareas completadas'],
+      legend: [texts.LEGEND_TASKS_DAILY],
     },
     weekly: {
-      labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
+      labels: texts.WEEK_LABELS,
       datasets: [
         {
           data: [12, 18, 15, 20],
@@ -107,10 +129,10 @@ function buildInitialTaskStats(cc) {
           strokeWidth: 2,
         },
       ],
-      legend: ['Tareas completadas por semana'],
+      legend: [texts.LEGEND_TASKS_WEEKLY],
     },
     monthly: {
-      labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+      labels: texts.MONTH_LABELS,
       datasets: [
         {
           data: [45, 52, 38, 60, 55, 48],
@@ -118,15 +140,15 @@ function buildInitialTaskStats(cc) {
           strokeWidth: 2,
         },
       ],
-      legend: ['Tareas completadas por mes'],
+      legend: [texts.LEGEND_TASKS_MONTHLY],
     },
   };
 }
 
-function buildInitialHabitStats(cc) {
+function buildInitialHabitStats(cc, texts) {
   return {
     daily: {
-      labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+      labels: texts.DAY_LABELS,
       datasets: [
         {
           data: [0.7, 0.8, 0.5, 0.9, 0.6, 0.7, 0.8],
@@ -134,10 +156,10 @@ function buildInitialHabitStats(cc) {
           strokeWidth: 2,
         },
       ],
-      legend: ['Progreso de hábitos'],
+      legend: [texts.LEGEND_HABITS_DAILY],
     },
     weekly: {
-      labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
+      labels: texts.WEEK_LABELS,
       datasets: [
         {
           data: [0.65, 0.75, 0.8, 0.85],
@@ -145,10 +167,10 @@ function buildInitialHabitStats(cc) {
           strokeWidth: 2,
         },
       ],
-      legend: ['Progreso promedio semanal'],
+      legend: [texts.LEGEND_HABITS_WEEKLY],
     },
     monthly: {
-      labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+      labels: texts.MONTH_LABELS,
       datasets: [
         {
           data: [0.6, 0.65, 0.7, 0.75, 0.8, 0.85],
@@ -156,9 +178,25 @@ function buildInitialHabitStats(cc) {
           strokeWidth: 2,
         },
       ],
-      legend: ['Progreso promedio mensual'],
+      legend: [texts.LEGEND_HABITS_MONTHLY],
     },
   };
+}
+
+function buildInitialPieData(texts) {
+  return [
+    { name: texts.PIE_COMPLETED, population: 75, legendFontSize: 15 },
+    { name: texts.PIE_PENDING, population: 25, legendFontSize: 15 },
+  ];
+}
+
+function buildInitialCategoryData(texts) {
+  return [
+    { name: texts.CATEGORY_WORK, tasks: 12, legendFontSize: 15 },
+    { name: texts.CATEGORY_HEALTH, tasks: 8, legendFontSize: 15 },
+    { name: texts.CATEGORY_HOME, tasks: 6, legendFontSize: 15 },
+    { name: texts.CATEGORY_STUDY, tasks: 4, legendFontSize: 15 },
+  ];
 }
 
 // Constantes de gráficos
@@ -216,6 +254,116 @@ const LOADING_INDICATOR_MARGIN_BOTTOM = 20;
 const LOADING_TEXT_MARGIN_TOP = 20;
 
 const StadisticsScreen = () => {
+  const translated = useSectionTranslations('PROFILE');
+  const TEXTS = useMemo(
+    () => ({
+      ...DEFAULT_TEXTS,
+      TITLE: translated?.STATS_SCREEN_TITLE || DEFAULT_TEXTS.TITLE,
+      LOADING: translated?.STATS_SCREEN_LOADING || DEFAULT_TEXTS.LOADING,
+      ERROR: translated?.STATS_SCREEN_ERROR || DEFAULT_TEXTS.ERROR,
+      RETRY: translated?.RETRY || DEFAULT_TEXTS.RETRY,
+      REFRESHING:
+        translated?.STATS_SCREEN_REFRESHING || DEFAULT_TEXTS.REFRESHING,
+      TASKS: translated?.STATS_SCREEN_TASKS || DEFAULT_TEXTS.TASKS,
+      HABITS: translated?.STATS_SCREEN_HABITS || DEFAULT_TEXTS.HABITS,
+      DAILY: translated?.STATS_SCREEN_DAILY || DEFAULT_TEXTS.DAILY,
+      WEEKLY: translated?.STATS_SCREEN_WEEKLY || DEFAULT_TEXTS.WEEKLY,
+      MONTHLY: translated?.STATS_SCREEN_MONTHLY || DEFAULT_TEXTS.MONTHLY,
+      SUMMARY: translated?.STATS_SCREEN_SUMMARY || DEFAULT_TEXTS.SUMMARY,
+      TOTAL: translated?.STATS_SCREEN_TOTAL || DEFAULT_TEXTS.TOTAL,
+      AVERAGE: translated?.STATS_SCREEN_AVERAGE || DEFAULT_TEXTS.AVERAGE,
+      MAX: translated?.STATS_SCREEN_MAX || DEFAULT_TEXTS.MAX,
+      MIN: translated?.STATS_SCREEN_MIN || DEFAULT_TEXTS.MIN,
+      TASKS_COMPLETED:
+        translated?.STATS_SCREEN_TASKS_COMPLETED || DEFAULT_TEXTS.TASKS_COMPLETED,
+      HABITS_PROGRESS:
+        translated?.STATS_SCREEN_HABITS_PROGRESS || DEFAULT_TEXTS.HABITS_PROGRESS,
+      LAST_7_DAYS:
+        translated?.STATS_SCREEN_LAST_7_DAYS || DEFAULT_TEXTS.LAST_7_DAYS,
+      LAST_4_WEEKS:
+        translated?.STATS_SCREEN_LAST_4_WEEKS || DEFAULT_TEXTS.LAST_4_WEEKS,
+      LAST_6_MONTHS:
+        translated?.STATS_SCREEN_LAST_6_MONTHS || DEFAULT_TEXTS.LAST_6_MONTHS,
+      TASKS_DISTRIBUTION:
+        translated?.STATS_SCREEN_TASKS_DISTRIBUTION ||
+        DEFAULT_TEXTS.TASKS_DISTRIBUTION,
+      PROGRESS_BY_CATEGORY:
+        translated?.STATS_SCREEN_PROGRESS_BY_CATEGORY ||
+        DEFAULT_TEXTS.PROGRESS_BY_CATEGORY,
+      ANALYSIS: translated?.STATS_SCREEN_ANALYSIS || DEFAULT_TEXTS.ANALYSIS,
+      TREND: translated?.STATS_SCREEN_TREND || DEFAULT_TEXTS.TREND,
+      BEST_PERFORMANCE:
+        translated?.STATS_SCREEN_BEST_PERFORMANCE ||
+        DEFAULT_TEXTS.BEST_PERFORMANCE,
+      SUGGESTION:
+        translated?.STATS_SCREEN_SUGGESTION || DEFAULT_TEXTS.SUGGESTION,
+      TREND_TASKS:
+        translated?.STATS_SCREEN_TREND_TASKS || DEFAULT_TEXTS.TREND_TASKS,
+      TREND_HABITS:
+        translated?.STATS_SCREEN_TREND_HABITS || DEFAULT_TEXTS.TREND_HABITS,
+      SUGGESTION_TASKS:
+        translated?.STATS_SCREEN_SUGGESTION_TASKS ||
+        DEFAULT_TEXTS.SUGGESTION_TASKS,
+      SUGGESTION_HABITS:
+        translated?.STATS_SCREEN_SUGGESTION_HABITS ||
+        DEFAULT_TEXTS.SUGGESTION_HABITS,
+      DAY_LABELS:
+        translated?.STATS_SCREEN_DAY_LABELS || DEFAULT_TEXTS.DAY_LABELS,
+      WEEK_LABELS:
+        translated?.STATS_SCREEN_WEEK_LABELS || DEFAULT_TEXTS.WEEK_LABELS,
+      MONTH_LABELS:
+        translated?.STATS_SCREEN_MONTH_LABELS || DEFAULT_TEXTS.MONTH_LABELS,
+      LEGEND_TASKS_DAILY:
+        translated?.STATS_SCREEN_LEGEND_TASKS_DAILY ||
+        DEFAULT_TEXTS.LEGEND_TASKS_DAILY,
+      LEGEND_TASKS_WEEKLY:
+        translated?.STATS_SCREEN_LEGEND_TASKS_WEEKLY ||
+        DEFAULT_TEXTS.LEGEND_TASKS_WEEKLY,
+      LEGEND_TASKS_MONTHLY:
+        translated?.STATS_SCREEN_LEGEND_TASKS_MONTHLY ||
+        DEFAULT_TEXTS.LEGEND_TASKS_MONTHLY,
+      LEGEND_HABITS_DAILY:
+        translated?.STATS_SCREEN_LEGEND_HABITS_DAILY ||
+        DEFAULT_TEXTS.LEGEND_HABITS_DAILY,
+      LEGEND_HABITS_WEEKLY:
+        translated?.STATS_SCREEN_LEGEND_HABITS_WEEKLY ||
+        DEFAULT_TEXTS.LEGEND_HABITS_WEEKLY,
+      LEGEND_HABITS_MONTHLY:
+        translated?.STATS_SCREEN_LEGEND_HABITS_MONTHLY ||
+        DEFAULT_TEXTS.LEGEND_HABITS_MONTHLY,
+      PIE_COMPLETED:
+        translated?.STATS_SCREEN_PIE_COMPLETED || DEFAULT_TEXTS.PIE_COMPLETED,
+      PIE_PENDING:
+        translated?.STATS_SCREEN_PIE_PENDING || DEFAULT_TEXTS.PIE_PENDING,
+      CATEGORY_WORK:
+        translated?.STATS_SCREEN_CATEGORY_WORK || DEFAULT_TEXTS.CATEGORY_WORK,
+      CATEGORY_HEALTH:
+        translated?.STATS_SCREEN_CATEGORY_HEALTH || DEFAULT_TEXTS.CATEGORY_HEALTH,
+      CATEGORY_HOME:
+        translated?.STATS_SCREEN_CATEGORY_HOME || DEFAULT_TEXTS.CATEGORY_HOME,
+      CATEGORY_STUDY:
+        translated?.STATS_SCREEN_CATEGORY_STUDY || DEFAULT_TEXTS.CATEGORY_STUDY,
+      BEST_TASKS_DAILY:
+        translated?.STATS_SCREEN_BEST_TASKS_DAILY ||
+        DEFAULT_TEXTS.BEST_TASKS_DAILY,
+      BEST_TASKS_WEEKLY:
+        translated?.STATS_SCREEN_BEST_TASKS_WEEKLY ||
+        DEFAULT_TEXTS.BEST_TASKS_WEEKLY,
+      BEST_TASKS_MONTHLY:
+        translated?.STATS_SCREEN_BEST_TASKS_MONTHLY ||
+        DEFAULT_TEXTS.BEST_TASKS_MONTHLY,
+      BEST_HABITS_DAILY:
+        translated?.STATS_SCREEN_BEST_HABITS_DAILY ||
+        DEFAULT_TEXTS.BEST_HABITS_DAILY,
+      BEST_HABITS_WEEKLY:
+        translated?.STATS_SCREEN_BEST_HABITS_WEEKLY ||
+        DEFAULT_TEXTS.BEST_HABITS_WEEKLY,
+      BEST_HABITS_MONTHLY:
+        translated?.STATS_SCREEN_BEST_HABITS_MONTHLY ||
+        DEFAULT_TEXTS.BEST_HABITS_MONTHLY,
+    }),
+    [translated],
+  );
   const navigation = useNavigation();
   const { colors, statusBarStyle } = useTheme();
 
@@ -501,20 +649,25 @@ const StadisticsScreen = () => {
   const [error, setError] = useState(null);
   
   // Datos de ejemplo para las gráficas (colores de series vía chartColors; pie/categoría en useMemo)
-  const [taskStats, setTaskStats] = useState(() => buildInitialTaskStats(chartColors));
-  const [habitStats, setHabitStats] = useState(() => buildInitialHabitStats(chartColors));
+  const [taskStats, setTaskStats] = useState(() =>
+    buildInitialTaskStats(chartColors, TEXTS),
+  );
+  const [habitStats, setHabitStats] = useState(() =>
+    buildInitialHabitStats(chartColors, TEXTS),
+  );
 
-  const [pieData, setPieData] = useState([
-    { name: 'Completadas', population: 75, legendFontSize: 15 },
-    { name: 'Pendientes', population: 25, legendFontSize: 15 },
-  ]);
+  const [pieData, setPieData] = useState(() => buildInitialPieData(TEXTS));
 
-  const [categoryData, setCategoryData] = useState([
-    { name: 'Trabajo', tasks: 12, legendFontSize: 15 },
-    { name: 'Salud', tasks: 8, legendFontSize: 15 },
-    { name: 'Hogar', tasks: 6, legendFontSize: 15 },
-    { name: 'Estudio', tasks: 4, legendFontSize: 15 },
-  ]);
+  const [categoryData, setCategoryData] = useState(() =>
+    buildInitialCategoryData(TEXTS),
+  );
+
+  useEffect(() => {
+    setTaskStats(buildInitialTaskStats(chartColors, TEXTS));
+    setHabitStats(buildInitialHabitStats(chartColors, TEXTS));
+    setPieData(buildInitialPieData(TEXTS));
+    setCategoryData(buildInitialCategoryData(TEXTS));
+  }, [chartColors, TEXTS]);
 
   const pieDataForChart = useMemo(
     () =>
@@ -618,7 +771,7 @@ const StadisticsScreen = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [chartColors]);
+  }, [chartColors, TEXTS]);
 
   useEffect(() => {
     loadData();
@@ -642,22 +795,7 @@ const StadisticsScreen = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setActiveDataType(type);
   }, []);
-  
-  // Renderizar pantalla de carga
-  if (loading && !refreshing) {
-    return (
-      <View style={[styles.container, styles.loadingContainer]}>
-        <StatusBar barStyle={statusBarStyle} />
-        <ActivityIndicator 
-          size="large" 
-          color={colors.primary} 
-          style={{ marginBottom: LOADING_INDICATOR_MARGIN_BOTTOM }} 
-        />
-        <Text style={styles.loadingText}>{TEXTS.LOADING}</Text>
-      </View>
-    );
-  }
-  
+
   // Obtener datos según la pestaña y tipo activos
   const getActiveData = useCallback(() => {
     if (activeDataType === DATA_TYPES.TASKS) {
@@ -666,7 +804,7 @@ const StadisticsScreen = () => {
       return habitStats[activeTab];
     }
   }, [activeDataType, activeTab, taskStats, habitStats]);
-  
+
   // Renderizar gráfico según la pestaña activa
   const renderChart = useCallback(() => {
     const data = getActiveData();
@@ -697,7 +835,22 @@ const StadisticsScreen = () => {
         />
       );
     }
-  }, [activeTab, getActiveData, chartConfig]);
+  }, [activeTab, getActiveData, chartConfig, styles.chart]);
+  
+  // Renderizar pantalla de carga
+  if (loading && !refreshing) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <StatusBar barStyle={statusBarStyle} />
+        <ActivityIndicator 
+          size="large" 
+          color={colors.primary} 
+          style={{ marginBottom: LOADING_INDICATOR_MARGIN_BOTTOM }} 
+        />
+        <Text style={styles.loadingText}>{TEXTS.LOADING}</Text>
+      </View>
+    );
+  }
   
   return (
     <SafeAreaView style={styles.container}>
@@ -887,8 +1040,16 @@ const StadisticsScreen = () => {
               <Text style={styles.analysisTitle}>{TEXTS.BEST_PERFORMANCE}</Text>
               <Text style={styles.analysisDescription}>
                 {activeDataType === DATA_TYPES.TASKS
-                  ? activeTab === PERIODS.DAILY ? 'Viernes' : activeTab === PERIODS.WEEKLY ? 'Semana 4' : 'Mayo'
-                  : activeTab === PERIODS.DAILY ? 'Jueves' : activeTab === PERIODS.WEEKLY ? 'Semana 3' : 'Junio'}
+                  ? activeTab === PERIODS.DAILY
+                    ? TEXTS.BEST_TASKS_DAILY
+                    : activeTab === PERIODS.WEEKLY
+                    ? TEXTS.BEST_TASKS_WEEKLY
+                    : TEXTS.BEST_TASKS_MONTHLY
+                  : activeTab === PERIODS.DAILY
+                  ? TEXTS.BEST_HABITS_DAILY
+                  : activeTab === PERIODS.WEEKLY
+                  ? TEXTS.BEST_HABITS_WEEKLY
+                  : TEXTS.BEST_HABITS_MONTHLY}
               </Text>
             </View>
           </View>

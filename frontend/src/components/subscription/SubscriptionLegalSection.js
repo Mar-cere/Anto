@@ -1,20 +1,25 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Alert, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { LEGAL_URLS, TEXTS } from '../../screens/subscription/subscriptionScreenConstants';
+import {
+  LEGAL_URLS,
+  useSubscriptionTexts,
+} from '../../screens/subscription/subscriptionScreenConstants';
 import { useTheme } from '../../context/ThemeContext';
 import { SPACING } from '../../constants/ui';
 
-const openUrl = (url, fallbackMessage = 'No se pudo abrir el enlace') => {
-  Linking.openURL(url).catch(() => Alert.alert('Error', fallbackMessage));
+const openUrl = (url, texts, fallbackMessage = texts.LINK_OPEN_ERROR) => {
+  Linking.openURL(url).catch(() => Alert.alert(texts.ERROR, fallbackMessage));
 };
 
 export default function SubscriptionLegalSection({
-  title = TEXTS.LEGAL_TITLE,
+  title,
   compact = false,
   /** Dentro de un contenedor con fondo settingsSectionSurface (p. ej. SubscriptionContent). */
   inShell = false,
 }) {
+  const TEXTS = useSubscriptionTexts();
+  const resolvedTitle = title || TEXTS.LEGAL_TITLE;
   const { colors } = useTheme();
   const iconSize = compact ? 18 : 20;
   const linkIconSize = compact ? 16 : 18;
@@ -63,10 +68,10 @@ export default function SubscriptionLegalSection({
 
   return (
     <View style={[styles.section, compact && styles.sectionCompact]}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={styles.sectionTitle}>{resolvedTitle}</Text>
       <TouchableOpacity
         style={styles.legalLink}
-        onPress={() => openUrl(LEGAL_URLS.TERMS_EULA)}
+        onPress={() => openUrl(LEGAL_URLS.TERMS_EULA, TEXTS)}
         activeOpacity={0.7}
       >
         <MaterialCommunityIcons name="file-document-outline" size={iconSize} color={colors.primary} />
@@ -75,7 +80,7 @@ export default function SubscriptionLegalSection({
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.legalLink}
-        onPress={() => openUrl(LEGAL_URLS.PRIVACY)}
+        onPress={() => openUrl(LEGAL_URLS.PRIVACY, TEXTS)}
         activeOpacity={0.7}
       >
         <MaterialCommunityIcons name="shield-lock-outline" size={iconSize} color={colors.primary} />

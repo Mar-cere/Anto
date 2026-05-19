@@ -24,10 +24,10 @@ import {
 } from 'react-native';
 import { useToast } from '../context/ToastContext';
 import { api, ENDPOINTS } from '../config/api';
-import { getApiErrorMessage } from '../utils/apiErrorHandler';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING } from '../constants/ui';
 import { getEmergencyContactId } from '../utils/emergencyContactUtils';
+import { useSectionTranslations } from '../hooks/useTranslations';
 
 // Constantes de validación
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -38,7 +38,7 @@ const MAX_PHONE_LENGTH = 20;
 const MAX_RELATIONSHIP_LENGTH = 50;
 
 // Constantes de textos
-const TEXTS = {
+const DEFAULT_TEXTS = {
   TITLE: 'Editar Contacto de Emergencia',
   NAME_LABEL: 'Nombre completo',
   NAME_PLACEHOLDER: 'Ej: María García',
@@ -61,11 +61,82 @@ const TEXTS = {
   RELATIONSHIP_TOO_LONG: `La relación no puede exceder ${MAX_RELATIONSHIP_LENGTH} caracteres`,
   UPDATE_SUCCESS: 'Contacto actualizado exitosamente',
   UPDATE_ERROR: 'Error al actualizar contacto',
+  ALERT_ERROR_TITLE: 'Error',
+  CONTACT_NOT_EDITABLE: 'No se puede editar el contacto. Por favor, intenta nuevamente.',
   DUPLICATE_EMAIL: 'Ya existe un contacto con ese correo',
   ALERT_CHANNEL_NOTE: 'Canal de alerta: WhatsApp al número indicado',
 };
 
+const isDuplicateEmailError = (error) => {
+  const normalizedMessage = String(
+    error?.response?.data?.message ?? error?.message ?? '',
+  ).toLowerCase();
+  return (
+    error?.response?.status === 409 ||
+    normalizedMessage.includes('email') ||
+    normalizedMessage.includes('duplicado') ||
+    normalizedMessage.includes('duplicate')
+  );
+};
+
 const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
+  const translated = useSectionTranslations('PROFILE');
+  const TEXTS = useMemo(
+    () => ({
+      ...DEFAULT_TEXTS,
+      TITLE: translated?.EMERGENCY_EDIT_TITLE || DEFAULT_TEXTS.TITLE,
+      NAME_LABEL: translated?.EMERGENCY_NAME_LABEL || DEFAULT_TEXTS.NAME_LABEL,
+      NAME_PLACEHOLDER:
+        translated?.EMERGENCY_NAME_PLACEHOLDER || DEFAULT_TEXTS.NAME_PLACEHOLDER,
+      EMAIL_LABEL:
+        translated?.EMERGENCY_EMAIL_LABEL || DEFAULT_TEXTS.EMAIL_LABEL,
+      EMAIL_PLACEHOLDER:
+        translated?.EMERGENCY_EMAIL_PLACEHOLDER || DEFAULT_TEXTS.EMAIL_PLACEHOLDER,
+      PHONE_LABEL:
+        translated?.EMERGENCY_PHONE_LABEL || DEFAULT_TEXTS.PHONE_LABEL,
+      PHONE_PLACEHOLDER:
+        translated?.EMERGENCY_PHONE_PLACEHOLDER || DEFAULT_TEXTS.PHONE_PLACEHOLDER,
+      RELATIONSHIP_LABEL:
+        translated?.EMERGENCY_RELATION_LABEL || DEFAULT_TEXTS.RELATIONSHIP_LABEL,
+      RELATIONSHIP_PLACEHOLDER:
+        translated?.EMERGENCY_RELATION_PLACEHOLDER ||
+        DEFAULT_TEXTS.RELATIONSHIP_PLACEHOLDER,
+      SAVE: translated?.EMERGENCY_SAVE || DEFAULT_TEXTS.SAVE,
+      CANCEL: translated?.CANCEL || DEFAULT_TEXTS.CANCEL,
+      UPDATE_SUCCESS:
+        translated?.EMERGENCY_UPDATE_SUCCESS || DEFAULT_TEXTS.UPDATE_SUCCESS,
+      UPDATE_ERROR:
+        translated?.EMERGENCY_UPDATE_ERROR || DEFAULT_TEXTS.UPDATE_ERROR,
+      DUPLICATE_EMAIL:
+        translated?.EMERGENCY_DUPLICATE_EMAIL || DEFAULT_TEXTS.DUPLICATE_EMAIL,
+      ALERT_CHANNEL_NOTE:
+        translated?.EMERGENCY_ALERT_CHANNEL_NOTE || DEFAULT_TEXTS.ALERT_CHANNEL_NOTE,
+      CONTACT_NOT_EDITABLE:
+        translated?.EMERGENCY_CONTACT_NOT_EDITABLE ||
+        DEFAULT_TEXTS.CONTACT_NOT_EDITABLE,
+      ALERT_ERROR_TITLE: translated?.ERROR || DEFAULT_TEXTS.ALERT_ERROR_TITLE,
+      REQUIRED_FIELD:
+        translated?.EMERGENCY_REQUIRED_FIELD || DEFAULT_TEXTS.REQUIRED_FIELD,
+      INVALID_EMAIL:
+        translated?.EMERGENCY_INVALID_EMAIL || DEFAULT_TEXTS.INVALID_EMAIL,
+      PHONE_REQUIRED:
+        translated?.EMERGENCY_PHONE_REQUIRED || DEFAULT_TEXTS.PHONE_REQUIRED,
+      INVALID_PHONE:
+        translated?.EMERGENCY_INVALID_PHONE || DEFAULT_TEXTS.INVALID_PHONE,
+      NAME_TOO_SHORT:
+        translated?.EMERGENCY_NAME_TOO_SHORT || DEFAULT_TEXTS.NAME_TOO_SHORT,
+      NAME_TOO_LONG:
+        translated?.EMERGENCY_NAME_TOO_LONG || DEFAULT_TEXTS.NAME_TOO_LONG,
+      EMAIL_TOO_LONG:
+        translated?.EMERGENCY_EMAIL_TOO_LONG || DEFAULT_TEXTS.EMAIL_TOO_LONG,
+      PHONE_TOO_LONG:
+        translated?.EMERGENCY_PHONE_TOO_LONG || DEFAULT_TEXTS.PHONE_TOO_LONG,
+      RELATIONSHIP_TOO_LONG:
+        translated?.EMERGENCY_RELATIONSHIP_TOO_LONG ||
+        DEFAULT_TEXTS.RELATIONSHIP_TOO_LONG,
+    }),
+    [translated],
+  );
   const { showToast } = useToast();
   const { colors } = useTheme();
   const styles = useMemo(
@@ -256,12 +327,12 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formData]);
+  }, [formData, TEXTS]);
 
   // Guardar cambios
   const handleSave = useCallback(async () => {
     if (!contact || !contactId) {
-      Alert.alert('Error', 'No se puede editar el contacto. Por favor, intenta nuevamente.');
+      Alert.alert(TEXTS.ALERT_ERROR_TITLE, TEXTS.CONTACT_NOT_EDITABLE);
       onClose?.();
       return;
     }
@@ -284,14 +355,24 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
       onClose?.();
     } catch (error) {
       console.error('Error actualizando contacto:', error);
-      const errorMessage = getApiErrorMessage(error) || TEXTS.UPDATE_ERROR;
-      const isDuplicate = error.response?.status === 409
-        || (errorMessage && (errorMessage.toLowerCase().includes('email') || errorMessage.toLowerCase().includes('duplicado')));
-      Alert.alert('Error', isDuplicate ? TEXTS.DUPLICATE_EMAIL : errorMessage);
+      const isDuplicate = isDuplicateEmailError(error);
+      Alert.alert(
+        TEXTS.ALERT_ERROR_TITLE,
+        isDuplicate ? TEXTS.DUPLICATE_EMAIL : TEXTS.UPDATE_ERROR,
+      );
     } finally {
       setIsSubmitting(false);
     }
-  }, [formData, validateForm, contact, contactId, onSave, onClose, showToast]);
+  }, [
+    TEXTS,
+    formData,
+    validateForm,
+    contact,
+    contactId,
+    onSave,
+    onClose,
+    showToast,
+  ]);
 
   // No renderizar el modal si no hay contacto o si no está visible
   if (!visible || !contact || !contactId) {

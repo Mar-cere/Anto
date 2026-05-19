@@ -20,7 +20,7 @@ import {
   RESPONSE_STYLE_LABELS,
   RESPONSE_STYLE_PREVIEW,
   RESPONSE_STYLES,
-  TEXTS,
+  useSettingsTexts,
 } from '../../screens/settings/settingsScreenConstants';
 
 function fireHaptics(fn) {
@@ -40,6 +40,7 @@ export default function SettingsResponseStyleModal({
   onClose,
   onApply,
 }) {
+  const TEXTS = useSettingsTexts();
   const insets = useSafeAreaInsets();
   const [submitting, setSubmitting] = useState(false);
   const { colors: palette } = useTheme();
@@ -240,8 +241,14 @@ export default function SettingsResponseStyleModal({
             >
               {RESPONSE_STYLES.map((key) => {
                 const selected = currentStyle === key;
-                const preview = RESPONSE_STYLE_PREVIEW[key] || '';
-                const title = RESPONSE_STYLE_LABELS[key] ?? key;
+                const preview =
+                  TEXTS[`RESPONSE_STYLE_PREVIEW_${key.toUpperCase()}`] ||
+                  RESPONSE_STYLE_PREVIEW[key] ||
+                  '';
+                const title =
+                  TEXTS[`RESPONSE_STYLE_LABEL_${key.toUpperCase()}`] ||
+                  RESPONSE_STYLE_LABELS[key] ||
+                  key;
                 return (
                   <TouchableOpacity
                     key={key}

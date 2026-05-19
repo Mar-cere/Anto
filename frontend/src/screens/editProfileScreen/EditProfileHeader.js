@@ -5,7 +5,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEditProfileScreenStyles } from './editProfileScreenStyles';
-import { TEXTS, ICON_SIZE } from './editProfileScreenConstants';
+import { useEditProfileTexts, ICON_SIZE } from './editProfileScreenConstants';
 
 export function EditProfileHeader({
   navigation,
@@ -15,6 +15,7 @@ export function EditProfileHeader({
   onEdit,
 }) {
   const { styles, editProfileColors } = useEditProfileScreenStyles();
+  const TEXTS = useEditProfileTexts();
   return (
     <View style={styles.header}>
       <TouchableOpacity

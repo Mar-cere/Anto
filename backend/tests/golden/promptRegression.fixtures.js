@@ -117,6 +117,42 @@ export const PROMPT_GOLDEN_CASES = [
       allOf: ['### Cierre con avance (fase de seguridad)', 'no síntesis de cierre de tramo'],
       noneOf: ['Varios turnos ya compartidos', 'Hilo ya largo:']
     }
+  },
+  {
+    id: 'early_greeting_no_closure_pressure',
+    message: { content: 'Hoy estoy bien' },
+    context: {
+      emotional: { mainEmotion: 'neutral', intensity: 4 },
+      contextual: {
+        intencion: { tipo: 'GREETING', confianza: 0.85 },
+        urgencia: 'NORMAL',
+        tema: { categoria: 'GENERAL' }
+      },
+      sessionPhase: 'default',
+      sessionRetention: {
+        userTurnCount: 1,
+        totalMessages: 2,
+        priorConversationCount: 3,
+        suggestReturningUserWarmOpen: true,
+        suggestBridgeClosing: false,
+        suggestFatigueClosing: false,
+        suggestThematicMicroClosure: false,
+        suggestCheckpointPause: false,
+        likelyFarewell: false
+      },
+      conversationPattern: { closureRisk: false, questionStreakCount: 0 },
+      currentMessage: 'Hoy estoy bien',
+      history: [{ role: 'assistant', content: 'Hola, ¿qué tal estás hoy?' }],
+      memory: {}
+    },
+    expect: {
+      allOf: ['### Ritmo del turno (inicio de hilo)', 'Sesión y retorno (apertura)'],
+      noneOf: [
+        '### Cierre con avance (cuando el tramo ya aterrizó)',
+        'sentir que el tramo tuvo una conclusión',
+        'podemos cerrar aquí este tramo'
+      ]
+    }
   }
 ];
 

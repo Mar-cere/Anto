@@ -1,10 +1,11 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { TEXTS } from '../../screens/subscription/subscriptionScreenConstants';
+import { useSubscriptionTexts } from '../../screens/subscription/subscriptionScreenConstants';
 import { useTheme } from '../../context/ThemeContext';
 import { SPACING } from '../../constants/ui';
 
 export default function SubscriptionLoadingView() {
+  const TEXTS = useSubscriptionTexts();
   const { colors } = useTheme();
   const styles = React.useMemo(
     () =>

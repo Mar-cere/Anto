@@ -20,10 +20,11 @@ import {
   getFocusTheme,
 } from '../../styles/focusCardTheme';
 import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
 
 // Constantes de textos
-const TEXTS = {
+const DEFAULT_TEXTS = {
   TITLE: 'Ejercicio de Grounding 5-4-3-2-1',
   DESCRIPTION: 'Este ejercicio te ayuda a conectarte con el presente usando tus sentidos. Identifica elementos de tu entorno para cada categoría.',
   INSTRUCTION: 'Escribe lo que identificas para cada categoría:',
@@ -32,20 +33,69 @@ const TEXTS = {
   COMPLETED: '¡Ejercicio completado!',
   NEXT: 'Siguiente',
   PLACEHOLDER: 'Escribe aquí...',
+  COMPLETED_SUMMARY_PREFIX: 'Has identificado',
+  COMPLETED_SUMMARY_SUFFIX: 'elementos usando tus sentidos.',
+  CATEGORY_SEE: '5 cosas que puedes VER',
+  CATEGORY_TOUCH: '4 cosas que puedes TOCAR',
+  CATEGORY_HEAR: '3 cosas que puedes OÍR',
+  CATEGORY_SMELL: '2 cosas que puedes OLER',
+  CATEGORY_TASTE: '1 cosa que puedes SABOREAR',
 };
 
 const GroundingExercise = ({ onComplete }) => {
+  const translated = useSectionTranslations('TECHNIQUES');
+  const TEXTS = useMemo(
+    () => ({
+      ...DEFAULT_TEXTS,
+      TITLE:
+        translated?.GROUNDING_EXERCISE_TITLE || DEFAULT_TEXTS.TITLE,
+      DESCRIPTION:
+        translated?.GROUNDING_EXERCISE_DESCRIPTION || DEFAULT_TEXTS.DESCRIPTION,
+      INSTRUCTION:
+        translated?.GROUNDING_EXERCISE_INSTRUCTION || DEFAULT_TEXTS.INSTRUCTION,
+      COMPLETE:
+        translated?.GROUNDING_EXERCISE_COMPLETE || DEFAULT_TEXTS.COMPLETE,
+      RESET: translated?.GROUNDING_EXERCISE_RESET || DEFAULT_TEXTS.RESET,
+      COMPLETED:
+        translated?.GROUNDING_EXERCISE_COMPLETED || DEFAULT_TEXTS.COMPLETED,
+      NEXT: translated?.GROUNDING_EXERCISE_NEXT || DEFAULT_TEXTS.NEXT,
+      PLACEHOLDER:
+        translated?.GROUNDING_EXERCISE_PLACEHOLDER || DEFAULT_TEXTS.PLACEHOLDER,
+      COMPLETED_SUMMARY_PREFIX:
+        translated?.GROUNDING_EXERCISE_COMPLETED_SUMMARY_PREFIX ||
+        DEFAULT_TEXTS.COMPLETED_SUMMARY_PREFIX,
+      COMPLETED_SUMMARY_SUFFIX:
+        translated?.GROUNDING_EXERCISE_COMPLETED_SUMMARY_SUFFIX ||
+        DEFAULT_TEXTS.COMPLETED_SUMMARY_SUFFIX,
+      CATEGORY_SEE:
+        translated?.GROUNDING_EXERCISE_CATEGORY_SEE ||
+        DEFAULT_TEXTS.CATEGORY_SEE,
+      CATEGORY_TOUCH:
+        translated?.GROUNDING_EXERCISE_CATEGORY_TOUCH ||
+        DEFAULT_TEXTS.CATEGORY_TOUCH,
+      CATEGORY_HEAR:
+        translated?.GROUNDING_EXERCISE_CATEGORY_HEAR ||
+        DEFAULT_TEXTS.CATEGORY_HEAR,
+      CATEGORY_SMELL:
+        translated?.GROUNDING_EXERCISE_CATEGORY_SMELL ||
+        DEFAULT_TEXTS.CATEGORY_SMELL,
+      CATEGORY_TASTE:
+        translated?.GROUNDING_EXERCISE_CATEGORY_TASTE ||
+        DEFAULT_TEXTS.CATEGORY_TASTE,
+    }),
+    [translated],
+  );
   const { colors, resolvedScheme } = useTheme();
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
   const CATEGORIES = useMemo(
     () => [
-      { key: 'see', label: '5 cosas que puedes VER', icon: 'eye', color: colors.primary },
-      { key: 'touch', label: '4 cosas que puedes TOCAR', icon: 'hand-back-left', color: colors.success },
-      { key: 'hear', label: '3 cosas que puedes OÍR', icon: 'ear-hearing', color: colors.warning },
-      { key: 'smell', label: '2 cosas que puedes OLER', icon: 'nose', color: colors.error },
-      { key: 'taste', label: '1 cosa que puedes SABOREAR', icon: 'food', color: colors.accent },
+      { key: 'see', label: TEXTS.CATEGORY_SEE, icon: 'eye', color: colors.primary },
+      { key: 'touch', label: TEXTS.CATEGORY_TOUCH, icon: 'hand-back-left', color: colors.success },
+      { key: 'hear', label: TEXTS.CATEGORY_HEAR, icon: 'ear-hearing', color: colors.warning },
+      { key: 'smell', label: TEXTS.CATEGORY_SMELL, icon: 'nose', color: colors.error },
+      { key: 'taste', label: TEXTS.CATEGORY_TASTE, icon: 'food', color: colors.accent },
     ],
-    [colors],
+    [TEXTS, colors],
   );
 
   const styles = useMemo(
@@ -228,11 +278,6 @@ const GroundingExercise = ({ onComplete }) => {
   // Verificar si la categoría está completa
   const isCategoryComplete = currentResponses.length >= requiredCount;
 
-  // Verificar si todo está completo
-  const isAllComplete = CATEGORIES.every(cat => 
-    responses[cat.key].length >= parseInt(cat.label.split(' ')[0])
-  );
-
   // Agregar respuesta
   const handleAddResponse = () => {
     if (!currentInput.trim()) return;
@@ -310,7 +355,8 @@ const GroundingExercise = ({ onComplete }) => {
         />
         <Text style={styles.completedTitle}>{TEXTS.COMPLETED}</Text>
         <Text style={styles.completedText}>
-          Has identificado {Object.values(responses).flat().length} elementos usando tus sentidos.
+          {TEXTS.COMPLETED_SUMMARY_PREFIX} {Object.values(responses).flat().length}{' '}
+          {TEXTS.COMPLETED_SUMMARY_SUFFIX}
         </Text>
         <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
           <Text style={styles.resetButtonText}>{TEXTS.RESET}</Text>

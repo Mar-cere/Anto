@@ -3,7 +3,7 @@ import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import {
   buildSettingsCOLORS,
   MODAL_WIDTH,
-  TEXTS,
+  useSettingsTexts,
 } from '../../screens/settings/settingsScreenConstants';
 import { useTheme } from '../../context/ThemeContext';
 import { SPACING } from '../../constants/ui';
@@ -13,12 +13,15 @@ export default function SettingsConfirmModal({
   onRequestClose,
   title,
   message,
-  confirmText = TEXTS.CONFIRM,
-  cancelText = TEXTS.CANCEL,
+  confirmText,
+  cancelText,
   onConfirm,
   onCancel,
   destructive = false,
 }) {
+  const TEXTS = useSettingsTexts();
+  const safeConfirmText = confirmText || TEXTS.CONFIRM;
+  const safeCancelText = cancelText || TEXTS.CANCEL;
   const { colors: palette } = useTheme();
   const COLORS = useMemo(() => buildSettingsCOLORS(palette), [palette]);
   const styles = useMemo(
@@ -80,7 +83,7 @@ export default function SettingsConfirmModal({
           <Text style={styles.modalText}>{message}</Text>
           <View style={styles.modalButtons}>
             <TouchableOpacity style={[styles.modalButton, styles.modalButtonCancel]} onPress={onCancel}>
-              <Text style={{ color: palette.text, fontSize: 16 }}>{cancelText}</Text>
+              <Text style={{ color: palette.text, fontSize: 16 }}>{safeCancelText}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.modalButton, destructive ? styles.modalButtonDelete : styles.modalButtonConfirm]}
@@ -92,7 +95,7 @@ export default function SettingsConfirmModal({
                   color: destructive ? palette.error : palette.textOnPrimary,
                 }}
               >
-                {confirmText}
+                {safeConfirmText}
               </Text>
             </TouchableOpacity>
           </View>

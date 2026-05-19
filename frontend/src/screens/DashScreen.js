@@ -43,7 +43,6 @@ import TaskCard from '../components/TaskCard';
 import { SkeletonBlock, SkeletonCard } from '../components/Skeleton';
 import { api, ENDPOINTS } from '../config/api';
 import { ANIMATION_DURATIONS, ANIMATION_OPACITIES, ANIMATION_SCALES } from '../constants/animations';
-import { DASH } from '../constants/translations';
 import { BORDERS, OPACITIES, SPACING, STATUS_BAR } from '../constants/ui';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getGreetingByHourAndDayAndName } from '../utils/greetings';
@@ -53,6 +52,7 @@ import TrialBanner from '../components/TrialBanner';
 import OfflineBanner from '../components/OfflineBanner';
 import NotificationsPromptBanner from '../components/NotificationsPromptBanner';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import {
   computeNextPromptAt,
   getNotificationsPromptNextAtKey,
@@ -60,10 +60,10 @@ import {
   shouldShowNotificationsPrompt,
 } from '../utils/notificationsPromptPolicy';
 import { setChatEntryBackTarget } from '../utils/chatEntryContext';
-import { isValidMongoObjectId24 } from '../utils/mongoId';
 import { STORAGE_KEYS as CHAT_STORAGE_KEYS } from './chat/chatScreenConstants';
 import { setFirstSessionHintDismissed } from '../utils/firstSessionHintStorage';
 import { markTutorialCompleted } from '../utils/tutorialStorage';
+import { useSectionTranslations } from '../hooks/useTranslations';
 
 // Constantes de AsyncStorage
 const STORAGE_KEYS = {
@@ -72,9 +72,11 @@ const STORAGE_KEYS = {
 };
 
 const DashScreen = () => {
+  const DASH = useSectionTranslations('DASH');
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { colors, statusBarStyle } = useTheme();
+  const { language } = useLanguage();
   const styles = useMemo(
     () =>
       StyleSheet.create({
@@ -186,7 +188,7 @@ const DashScreen = () => {
         </View>
       </View>
     ),
-    [styles],
+    [styles, DASH],
   );
 
   const [loading, setLoading] = useState(true);
@@ -295,7 +297,8 @@ const DashScreen = () => {
       setGreeting(getGreetingByHourAndDayAndName({
         hour: now.getHours(),
         dayIndex: now.getDay(),
-        userName: userData?.username || ""
+        userName: userData?.username || "",
+        language,
       }));
 
       // Verificar si debe mostrarse el tutorial (solo una vez)
@@ -380,7 +383,7 @@ const DashScreen = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [navigation, refreshing, hasCheckedEmergencyContacts, hasCheckedTutorial, checkEmergencyContacts]);
+  }, [navigation, refreshing, hasCheckedEmergencyContacts, hasCheckedTutorial, checkEmergencyContacts, DASH, language]);
 
   const getNotificationsPromptKey = useCallback(() => {
     const userId = userData?._id || userData?.id || 'anon';
@@ -505,12 +508,12 @@ const DashScreen = () => {
       }
 
       Alert.alert(
-        'Notificaciones desactivadas',
-        'Puedes activarlas desde Ajustes para recibir recordatorios y alertas.',
+        DASH.NOTIFICATIONS_DISABLED_TITLE,
+        DASH.NOTIFICATIONS_DISABLED_MESSAGE,
         [
-          { text: 'Ahora no', style: 'cancel' },
+          { text: DASH.NOTIFICATIONS_DISABLED_CANCEL, style: 'cancel' },
           {
-            text: 'Ir a Ajustes',
+            text: DASH.NOTIFICATIONS_DISABLED_OPEN_SETTINGS,
             onPress: async () => {
               try {
                 await Linking.openSettings();
@@ -524,7 +527,7 @@ const DashScreen = () => {
     } finally {
       setEnablingNotifications(false);
     }
-  }, [enablingNotifications]);
+  }, [enablingNotifications, DASH]);
 
   // Verificar contactos de emergencia
   const checkEmergencyContacts = useCallback(async (currentUserData = null) => {
@@ -702,9 +705,11 @@ const DashScreen = () => {
       // Mostrar notificación local
       if (data && !data.isTest) {
         Alert.alert(
-          '🚨 Alerta de Emergencia Enviada',
-          `Hemos notificado a ${data.successfulSends} de ${data.totalContacts} contacto(s) de emergencia.`,
-          [{ text: 'OK' }]
+          `🚨 ${DASH.EMERGENCY_ALERT_SENT_TITLE}`,
+          DASH.EMERGENCY_ALERT_SENT_BODY
+            .replace('{successful}', String(data.successfulSends))
+            .replace('{total}', String(data.totalContacts)),
+          [{ text: DASH.EMERGENCY_ALERT_SENT_OK }]
         );
       }
     });
@@ -718,7 +723,7 @@ const DashScreen = () => {
       unsubscribeAlert();
       unsubscribeError();
     };
-  }, []);
+  }, [DASH]);
 
   // Limpiar conexión al desmontar
   useEffect(() => {

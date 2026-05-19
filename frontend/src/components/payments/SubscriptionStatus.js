@@ -9,11 +9,76 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
+
+const DEFAULT_TEXTS = {
+  LABEL_FREE: 'Plan Gratuito',
+  DESCRIPTION_FREE: 'Actualiza a Premium para acceder a todas las funciones',
+  LABEL_TRIAL: 'Periodo de Prueba',
+  DESCRIPTION_TRIAL_TEMPLATE: 'Trial activo - {days} días restantes',
+  LABEL_PREMIUM: 'Premium Activo',
+  DESCRIPTION_PREMIUM_FALLBACK: 'Plan Premium',
+  LABEL_EXPIRED: 'Suscripción Expirada',
+  DESCRIPTION_EXPIRED: 'Tu suscripción ha expirado o fue cancelada',
+  LABEL_UNKNOWN: 'Estado Desconocido',
+  DESCRIPTION_UNKNOWN: 'No se pudo determinar el estado',
+  PLAN_MONTHLY: 'Plan Mensual',
+  PLAN_QUARTERLY: 'Plan Trimestral',
+  PLAN_SEMESTRAL: 'Plan Semestral',
+  PLAN_YEARLY: 'Plan Anual',
+  DATE_TRIAL_END: 'Fin del Trial:',
+  DATE_NEXT_RENEWAL: 'Próxima Renovación:',
+  DATE_VALID_UNTIL: 'Vigencia hasta:',
+};
 
 const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscriptionEndDate, isActive }) => {
   const { colors } = useTheme();
+  const { language } = useLanguage();
+  const translated = useSectionTranslations('SUBSCRIPTION');
+  const T = useMemo(
+    () => ({
+      LABEL_FREE: translated?.SUBSCRIPTION_STATUS_LABEL_FREE || DEFAULT_TEXTS.LABEL_FREE,
+      DESCRIPTION_FREE:
+        translated?.SUBSCRIPTION_STATUS_DESCRIPTION_FREE ||
+        DEFAULT_TEXTS.DESCRIPTION_FREE,
+      LABEL_TRIAL: translated?.SUBSCRIPTION_STATUS_LABEL_TRIAL || DEFAULT_TEXTS.LABEL_TRIAL,
+      DESCRIPTION_TRIAL_TEMPLATE:
+        translated?.SUBSCRIPTION_STATUS_DESCRIPTION_TRIAL_TEMPLATE ||
+        DEFAULT_TEXTS.DESCRIPTION_TRIAL_TEMPLATE,
+      LABEL_PREMIUM: translated?.SUBSCRIPTION_STATUS_LABEL_PREMIUM || DEFAULT_TEXTS.LABEL_PREMIUM,
+      DESCRIPTION_PREMIUM_FALLBACK:
+        translated?.SUBSCRIPTION_STATUS_DESCRIPTION_PREMIUM_FALLBACK ||
+        DEFAULT_TEXTS.DESCRIPTION_PREMIUM_FALLBACK,
+      LABEL_EXPIRED:
+        translated?.SUBSCRIPTION_STATUS_LABEL_EXPIRED || DEFAULT_TEXTS.LABEL_EXPIRED,
+      DESCRIPTION_EXPIRED:
+        translated?.SUBSCRIPTION_STATUS_DESCRIPTION_EXPIRED ||
+        DEFAULT_TEXTS.DESCRIPTION_EXPIRED,
+      LABEL_UNKNOWN:
+        translated?.SUBSCRIPTION_STATUS_LABEL_UNKNOWN || DEFAULT_TEXTS.LABEL_UNKNOWN,
+      DESCRIPTION_UNKNOWN:
+        translated?.SUBSCRIPTION_STATUS_DESCRIPTION_UNKNOWN ||
+        DEFAULT_TEXTS.DESCRIPTION_UNKNOWN,
+      PLAN_MONTHLY:
+        translated?.SUBSCRIPTION_STATUS_PLAN_MONTHLY || DEFAULT_TEXTS.PLAN_MONTHLY,
+      PLAN_QUARTERLY:
+        translated?.SUBSCRIPTION_STATUS_PLAN_QUARTERLY || DEFAULT_TEXTS.PLAN_QUARTERLY,
+      PLAN_SEMESTRAL:
+        translated?.SUBSCRIPTION_STATUS_PLAN_SEMESTRAL || DEFAULT_TEXTS.PLAN_SEMESTRAL,
+      PLAN_YEARLY:
+        translated?.SUBSCRIPTION_STATUS_PLAN_YEARLY || DEFAULT_TEXTS.PLAN_YEARLY,
+      DATE_TRIAL_END:
+        translated?.SUBSCRIPTION_STATUS_DATE_TRIAL_END || DEFAULT_TEXTS.DATE_TRIAL_END,
+      DATE_NEXT_RENEWAL:
+        translated?.SUBSCRIPTION_STATUS_DATE_NEXT_RENEWAL || DEFAULT_TEXTS.DATE_NEXT_RENEWAL,
+      DATE_VALID_UNTIL:
+        translated?.SUBSCRIPTION_STATUS_DATE_VALID_UNTIL || DEFAULT_TEXTS.DATE_VALID_UNTIL,
+    }),
+    [translated],
+  );
   const normalizedStatus = (status || 'free').toLowerCase();
 
   const nowMs = Date.now();
@@ -44,30 +109,37 @@ const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscri
         return {
           icon: 'account-outline',
           color: colors.textSecondary,
-          label: 'Plan Gratuito',
-          description: 'Actualiza a Premium para acceder a todas las funciones',
+          label: T.LABEL_FREE,
+          description: T.DESCRIPTION_FREE,
         };
       case 'trialing':
       case 'trial':
         return {
           icon: 'clock-outline',
           color: colors.warning,
-          label: 'Periodo de Prueba',
-          description: `Trial activo - ${daysRemaining ?? 0} días restantes`,
+          label: T.LABEL_TRIAL,
+          description: T.DESCRIPTION_TRIAL_TEMPLATE.replace(
+            '{days}',
+            String(daysRemaining ?? 0),
+          ),
         };
       case 'premium':
       case 'active':
+        const normalizedPlan = String(plan || '').toLowerCase();
         const planNames = {
-          monthly: 'Plan Mensual',
-          quarterly: 'Plan Trimestral',
-          semestral: 'Plan Semestral',
-          yearly: 'Plan Anual',
+          monthly: T.PLAN_MONTHLY,
+          quarterly: T.PLAN_QUARTERLY,
+          semestral: T.PLAN_SEMESTRAL,
+          semester: T.PLAN_SEMESTRAL,
+          yearly: T.PLAN_YEARLY,
+          annual: T.PLAN_YEARLY,
+          year: T.PLAN_YEARLY,
         };
         return {
           icon: 'crown',
           color: colors.primary,
-          label: 'Premium Activo',
-          description: planNames[plan] || 'Plan Premium',
+          label: T.LABEL_PREMIUM,
+          description: planNames[normalizedPlan] || T.DESCRIPTION_PREMIUM_FALLBACK,
         };
       case 'expired':
       case 'canceled':
@@ -78,15 +150,15 @@ const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscri
         return {
           icon: 'alert-circle-outline',
           color: colors.error,
-          label: 'Suscripción Expirada',
-          description: 'Tu suscripción ha expirado o fue cancelada',
+          label: T.LABEL_EXPIRED,
+          description: T.DESCRIPTION_EXPIRED,
         };
       default:
         return {
           icon: 'help-circle-outline',
           color: colors.textSecondary,
-          label: 'Estado Desconocido',
-          description: 'No se pudo determinar el estado',
+          label: T.LABEL_UNKNOWN,
+          description: T.DESCRIPTION_UNKNOWN,
         };
     }
   };
@@ -96,7 +168,7 @@ const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscri
   const formatDate = (dateString) => {
     if (!dateString) return null;
     const date = new Date(dateString);
-    return date.toLocaleDateString('es-CL', {
+    return date.toLocaleDateString(language === 'en' ? 'en-US' : 'es-CL', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -175,7 +247,7 @@ const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscri
         <View style={styles.datesContainer}>
           {trialEndDate && (effectiveStatus === 'trialing' || effectiveStatus === 'trial') && (
             <View style={styles.dateItem}>
-              <Text style={styles.dateLabel}>Fin del Trial:</Text>
+              <Text style={styles.dateLabel}>{T.DATE_TRIAL_END}</Text>
               <Text style={styles.dateValue}>{formatDate(trialEndDate)}</Text>
             </View>
           )}
@@ -183,13 +255,13 @@ const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscri
             (effectiveStatus === 'premium' || effectiveStatus === 'active') &&
             !subscriptionPeriodEnded && (
             <View style={styles.dateItem}>
-              <Text style={styles.dateLabel}>Próxima Renovación:</Text>
+              <Text style={styles.dateLabel}>{T.DATE_NEXT_RENEWAL}</Text>
               <Text style={styles.dateValue}>{formatDate(subscriptionEndDate)}</Text>
             </View>
           )}
           {subscriptionEndDate && effectiveStatus === 'expired' && subscriptionPeriodEnded && (
             <View style={styles.dateItem}>
-              <Text style={styles.dateLabel}>Vigencia hasta:</Text>
+              <Text style={styles.dateLabel}>{T.DATE_VALID_UNTIL}</Text>
               <Text style={styles.dateValue}>{formatDate(subscriptionEndDate)}</Text>
             </View>
           )}

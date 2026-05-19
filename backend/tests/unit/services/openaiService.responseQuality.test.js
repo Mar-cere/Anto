@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import openaiService from '../../../services/openaiService.js';
+import { stripPrematureSessionClosurePhrases } from '../../../services/sessionRetentionHints.js';
 
 describe('openaiService — guardrails de calidad de respuesta', () => {
   it('enforceSingleQuestion deja solo una pregunta', () => {
@@ -33,10 +34,10 @@ describe('openaiService — guardrails de calidad de respuesta', () => {
     expect(output).toContain('¿Qué pasó hoy?');
   });
 
-  it('enforceSessionClosureBridge agrega cierre suave cuando hay señal de cierre', () => {
+  it('enforceSessionClosureBridge agrega cierre suave en despedida explícita', () => {
     const input = 'Gracias por contarme todo esto.';
     const output = openaiService.enforceSessionClosureBridge(input, {
-      sessionRetention: { suggestBridgeClosing: true },
+      sessionRetention: { userTurnCount: 2, likelyFarewell: false },
       conversationPattern: { closureRisk: true },
       crisis: { riskLevel: 'LOW' }
     });
@@ -50,5 +51,50 @@ describe('openaiService — guardrails de calidad de respuesta', () => {
       crisis: { riskLevel: 'HIGH' }
     });
     expect(output).toBe(input);
+  });
+
+  it('enforceSessionClosureBridge no aplica en saludo ni primeros turnos', () => {
+    const input = 'Hola, ¿qué tal estás hoy?';
+    const output = openaiService.enforceSessionClosureBridge(input, {
+      sessionRetention: { suggestBridgeClosing: true, userTurnCount: 1 },
+      conversationPattern: { closureRisk: false },
+      contextual: { intencion: { tipo: 'GREETING' } },
+      crisis: { riskLevel: 'LOW' }
+    });
+    expect(output).toBe(input);
+  });
+
+  it('enforceSessionClosureBridge sí aplica con señal de retención y hilo sustantivo', () => {
+    const input = 'Gracias por contarme todo esto.';
+    const output = openaiService.enforceSessionClosureBridge(input, {
+      sessionRetention: { suggestBridgeClosing: true, userTurnCount: 5 },
+      conversationPattern: { closureRisk: false },
+      crisis: { riskLevel: 'LOW' }
+    });
+    expect(output).toContain('retom');
+  });
+
+  it('enforceSessionClosureBridge no aplica solo por flag sin hilo sustantivo', () => {
+    const input = 'Gracias por contarme todo esto.';
+    const output = openaiService.enforceSessionClosureBridge(input, {
+      sessionRetention: { suggestBridgeClosing: true, userTurnCount: 3 },
+      conversationPattern: { closureRisk: false },
+      crisis: { riskLevel: 'LOW' }
+    });
+    expect(output).toBe(input);
+  });
+
+  it('stripPrematureSessionClosurePhrases quita cierre prematuro del modelo en saludo', () => {
+    const input =
+      'Hola, ¿qué tal? Si te sirve, podemos cerrar aquí este tramo y retomarlo cuando quieras desde este punto.';
+    const ctx = {
+      sessionRetention: { userTurnCount: 1, suggestReturningUserWarmOpen: true },
+      contextual: { intencion: { tipo: 'GREETING' } },
+      crisis: { riskLevel: 'LOW' }
+    };
+    const stripped = stripPrematureSessionClosurePhrases(input, ctx);
+    const output = openaiService.enforceSessionClosureBridge(stripped, ctx);
+    expect(stripped).not.toMatch(/cerrar aqu[ií] este tramo/i);
+    expect(output).not.toMatch(/cerrar aqu[ií] este tramo/i);
   });
 });

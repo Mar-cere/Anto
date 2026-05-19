@@ -3,7 +3,9 @@
  * @author AntoApp Team
  */
 
+import { useMemo } from 'react';
 import { SPACING } from '../../constants/ui';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { lightColors as legacyColors } from '../../styles/themePalettes';
 
 // Tiempo (segundos)
@@ -128,6 +130,13 @@ export const TEXTS = {
   ERROR_COMPLETE_TASK_MESSAGE: 'Inténtalo de nuevo cuando tengas conexión.',
   CONTINUE: 'Continuar',
   TAKE_BREAK: 'Tomar descanso',
+  PAUSE: 'Pausar',
+  DAILY_POMODOROS_SUFFIX: 'pomodoros',
+  SUMMARY_STREAK_DAYS_SUFFIX: 'd',
+  OPEN_TASK_A11Y_PREFIX: 'Abrir tarea',
+  FOCUS_TASK_A11Y_PREFIX: 'Enfocar tarea',
+  TASK_COUNT_SINGLE: '1 tarea',
+  TASK_COUNT_MANY: '{n} tareas',
 };
 
 export const MOTIVATIONAL_MESSAGES = [
@@ -229,38 +238,43 @@ export const MEDITATION_BUTTON_BORDER_WIDTH = 1;
 export const HEADER_GAP = 12;
 export const HEADER_BORDER_WIDTH = 1;
 
-export function getModes() {
+export function getModes(texts = TEXTS) {
   return {
     work: {
       time: WORK_TIME,
       color: COLORS.WORK,
       icon: 'brain',
-      label: TEXTS.WORK,
+      label: texts.WORK,
     },
     break: {
       time: BREAK_TIME,
       color: COLORS.BREAK,
       icon: 'coffee',
-      label: TEXTS.BREAK,
+      label: texts.BREAK,
     },
     longBreak: {
       time: LONG_BREAK_TIME,
       color: COLORS.LONG_BREAK,
       icon: 'beach',
-      label: TEXTS.LONG_BREAK,
+      label: texts.LONG_BREAK,
     },
     meditation: {
       time: MEDITATION_TIME,
       color: COLORS.MEDITATION,
       icon: 'meditation',
-      label: TEXTS.MEDITATION,
+      label: texts.MEDITATION,
       breathCycle: BREATH_CYCLE,
     },
     custom: {
       time: DEFAULT_CUSTOM_TIME,
       color: COLORS.CUSTOM,
       icon: 'clock-edit',
-      label: TEXTS.CUSTOM,
+      label: texts.CUSTOM,
     },
   };
+}
+
+export function usePomodoroTexts() {
+  const translated = useSectionTranslations('POMODORO');
+  return useMemo(() => ({ ...TEXTS, ...(translated || {}) }), [translated]);
 }

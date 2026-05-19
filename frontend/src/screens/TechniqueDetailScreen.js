@@ -24,11 +24,12 @@ import BreathingExercise from '../components/therapeutic/BreathingExercise';
 import GroundingExercise from '../components/therapeutic/GroundingExercise';
 import { api, ENDPOINTS } from '../config/api';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { getFocusTheme } from '../styles/focusCardTheme';
 import { SPACING } from '../constants/ui';
 
 // Constantes de textos
-const TEXTS = {
+const DEFAULT_TEXTS = {
   START_EXERCISE: 'Comenzar Ejercicio',
   COMPLETE_EXERCISE: 'Ejercicio Completado',
   STEPS: 'Pasos',
@@ -37,6 +38,12 @@ const TEXTS = {
   TYPE: 'Tipo',
   PRACTICE: 'Practicar',
   MARK_COMPLETE: 'Marcar como completado',
+  DEFAULT_HEADER_TITLE: 'Técnica',
+  NOT_FOUND: 'Técnica no encontrada',
+  BACK: 'Volver',
+  THERAPEUTIC: 'Terapéutica',
+  TECHNIQUES: 'Técnicas',
+  PRACTICE_AGAIN: 'Practicar de nuevo',
 };
 
 // Técnicas que tienen ejercicios interactivos
@@ -47,6 +54,34 @@ const INTERACTIVE_TECHNIQUES = {
 };
 
 const TechniqueDetailScreen = () => {
+  const translated = useSectionTranslations('TECHNIQUES');
+  const TEXTS = useMemo(
+    () => ({
+      ...DEFAULT_TEXTS,
+      START_EXERCISE:
+        translated?.DETAIL_START_EXERCISE || DEFAULT_TEXTS.START_EXERCISE,
+      COMPLETE_EXERCISE:
+        translated?.DETAIL_COMPLETE_EXERCISE || DEFAULT_TEXTS.COMPLETE_EXERCISE,
+      STEPS: translated?.DETAIL_STEPS || DEFAULT_TEXTS.STEPS,
+      WHEN_TO_USE: translated?.DETAIL_WHEN_TO_USE || DEFAULT_TEXTS.WHEN_TO_USE,
+      DESCRIPTION:
+        translated?.DETAIL_DESCRIPTION || DEFAULT_TEXTS.DESCRIPTION,
+      TYPE: translated?.DETAIL_TYPE || DEFAULT_TEXTS.TYPE,
+      PRACTICE: translated?.DETAIL_PRACTICE || DEFAULT_TEXTS.PRACTICE,
+      MARK_COMPLETE:
+        translated?.DETAIL_MARK_COMPLETE || DEFAULT_TEXTS.MARK_COMPLETE,
+      DEFAULT_HEADER_TITLE:
+        translated?.DETAIL_DEFAULT_HEADER_TITLE || DEFAULT_TEXTS.DEFAULT_HEADER_TITLE,
+      NOT_FOUND: translated?.DETAIL_NOT_FOUND || DEFAULT_TEXTS.NOT_FOUND,
+      BACK: translated?.DETAIL_BACK || DEFAULT_TEXTS.BACK,
+      THERAPEUTIC:
+        translated?.DETAIL_THERAPEUTIC || DEFAULT_TEXTS.THERAPEUTIC,
+      TECHNIQUES: translated?.DETAIL_TECHNIQUES || DEFAULT_TEXTS.TECHNIQUES,
+      PRACTICE_AGAIN:
+        translated?.DETAIL_PRACTICE_AGAIN || DEFAULT_TEXTS.PRACTICE_AGAIN,
+    }),
+    [translated],
+  );
   const navigation = useNavigation();
   const route = useRoute();
   const insets = useSafeAreaInsets();
@@ -230,15 +265,15 @@ const TechniqueDetailScreen = () => {
       <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
         <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
         <ParticleBackground />
-        <Header title="Técnica" showBackButton />
+        <Header title={TEXTS.DEFAULT_HEADER_TITLE} showBackButton />
         <View style={styles.errorContainer}>
           <MaterialCommunityIcons name="alert-circle" size={48} color={colors.error} />
-          <Text style={styles.errorText}>Técnica no encontrada</Text>
+          <Text style={styles.errorText}>{TEXTS.NOT_FOUND}</Text>
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.retryButtonText}>Volver</Text>
+            <Text style={styles.retryButtonText}>{TEXTS.BACK}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -325,7 +360,7 @@ const TechniqueDetailScreen = () => {
         <View style={styles.header}>
           <View style={[styles.typeBadge, { backgroundColor: `${colors.primary}20` }]}>
             <Text style={[styles.typeText, { color: colors.primary }]}>
-              {technique.type || technique.category || 'Terapéutica'}
+              {technique.type || technique.category || TEXTS.THERAPEUTIC}
             </Text>
           </View>
           <Text style={styles.title}>{technique.name}</Text>
@@ -372,7 +407,7 @@ const TechniqueDetailScreen = () => {
         {/* Técnicas DBT con sub-técnicas */}
         {technique.techniques && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Técnicas</Text>
+            <Text style={styles.sectionTitle}>{TEXTS.TECHNIQUES}</Text>
             {Object.entries(technique.techniques).map(([key, subTechnique]) => (
               <View key={key} style={styles.subTechnique}>
                 <Text style={styles.subTechniqueTitle}>{subTechnique.name}</Text>
@@ -420,7 +455,7 @@ const TechniqueDetailScreen = () => {
                 setExerciseCompleted(false);
               }}
             >
-              <Text style={styles.retryButtonText}>Practicar de nuevo</Text>
+              <Text style={styles.retryButtonText}>{TEXTS.PRACTICE_AGAIN}</Text>
             </TouchableOpacity>
           </View>
         )}

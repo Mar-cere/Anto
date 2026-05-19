@@ -30,17 +30,28 @@ import { ROUTES } from '../constants/routes';
 import { CHAT_BACK_TARGET } from '../navigation/navigationHelpers';
 import { setChatEntryBackTarget } from '../utils/chatEntryContext';
 import faqData from '../data/FaQScreen';
+import faqDataEn from '../data/FaQScreen.en';
 import { SPACING } from '../constants/ui';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 
 // Constantes de textos
-const TEXTS = {
+const DEFAULT_TEXTS = {
   TITLE: 'Preguntas Frecuentes',
   INTRO: 'Aquí encontrarás respuestas a las preguntas más comunes sobre cómo usar la aplicación y aprovechar todas sus funciones.',
   CONTACT_TITLE: '¿No encontraste lo que buscabas?',
   CONTACT_SUBTITLE: 'Anto está aquí para ayudarte',
   CONTACT_BUTTON: 'Hablar con Anto',
   BACK: 'Volver',
+  LOGIN_REQUIRED_TITLE: 'Iniciar sesión requerido',
+  LOGIN_REQUIRED_MESSAGE:
+    'Necesitas iniciar sesión para acceder al chat. ¿Deseas iniciar sesión ahora?',
+  LOGIN_BUTTON: 'Iniciar sesión',
+  CANCEL: 'Cancelar',
+  ERROR_TITLE: 'Error',
+  ERROR_SESSION:
+    'Hubo un problema al verificar tu sesión. Por favor, intenta iniciar sesión.',
 };
 
 // Constantes de estilos
@@ -86,11 +97,7 @@ const ANIMATION_DURATION = 300;
 const BACKGROUND_IMAGE = require('../images/back.png');
 const ANTO_IMAGE = require('../images/Anto.png');
 
-// Constantes de navegación
-const CHAT_ROUTE = 'Chat';
-
 // Constantes de animación
-const CHEVRON_UP = 'chevron-up';
 const CHEVRON_DOWN = 'chevron-down';
 
 /**
@@ -180,6 +187,16 @@ const FaqItem = ({ question, answer, colors, styles }) => {
   );
 };
 const FaQScreen = () => {
+  const INFO = useSectionTranslations('INFO');
+  const { language } = useLanguage();
+  const TEXTS = useMemo(
+    () => ({ ...DEFAULT_TEXTS, ...(INFO?.FAQ || {}) }),
+    [INFO],
+  );
+  const faqSections = useMemo(
+    () => (language === 'en' ? faqDataEn : faqData),
+    [language],
+  );
   const navigation = useNavigation();
   const { colors, statusBarStyle } = useTheme();
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -434,19 +451,19 @@ const FaQScreen = () => {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [fadeAnim, slideAnim]);
   
   const handleChatNavigation = async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
       if (!token) {
         Alert.alert(
-          'Iniciar sesión requerido',
-          'Necesitas iniciar sesión para acceder al chat. ¿Deseas iniciar sesión ahora?',
+          TEXTS.LOGIN_REQUIRED_TITLE,
+          TEXTS.LOGIN_REQUIRED_MESSAGE,
           [
-            { text: 'Cancelar', style: 'cancel' },
+            { text: TEXTS.CANCEL, style: 'cancel' },
             {
-              text: 'Iniciar sesión',
+              text: TEXTS.LOGIN_BUTTON,
               onPress: () => navigation.navigate(ROUTES.SIGN_IN)
             }
           ]
@@ -460,7 +477,7 @@ const FaQScreen = () => {
       });
     } catch (error) {
       console.error('[FaQScreen] Error verificando autenticación:', error);
-      Alert.alert('Error', 'Hubo un problema al verificar tu sesión. Por favor, intenta iniciar sesión.');
+      Alert.alert(TEXTS.ERROR_TITLE, TEXTS.ERROR_SESSION);
     }
   };
   
@@ -528,7 +545,7 @@ const FaQScreen = () => {
             </Text>
             
             {/* Secciones de preguntas frecuentes */}
-            {faqData.map((section, index) => (
+            {faqSections.map((section, index) => (
               <View key={index} style={styles.section}>
                 <View style={styles.sectionTitleContainer}>
                   <Text style={styles.sectionTitle}>{section.category}</Text>

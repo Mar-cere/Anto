@@ -4,9 +4,15 @@
 
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { LAYOUT, MODAL_WIDTH_REF, TEXTS, useChatColors } from '../../screens/chat/chatScreenConstants';
+import {
+  LAYOUT,
+  MODAL_WIDTH_REF,
+  useChatColors,
+  useChatTexts,
+} from '../../screens/chat/chatScreenConstants';
 
 export default function ClearConversationModal({ visible, onConfirm, onCancel }) {
+  const TEXTS = useChatTexts();
   const chatColors = useChatColors();
 
   const styles = useMemo(

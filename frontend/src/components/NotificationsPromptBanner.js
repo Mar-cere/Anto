@@ -10,12 +10,14 @@ import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
 
-const TEXTS = {
+const DEFAULT_TEXTS = {
   TITLE: 'Activa las notificaciones',
   SUBTITLE: 'Para recordatorios y alertas importantes.',
   ENABLE: 'Activar',
+  CLOSE_A11Y: 'Cerrar banner',
 };
 
 const NotificationsPromptBanner = ({
@@ -24,6 +26,20 @@ const NotificationsPromptBanner = ({
   onDismiss,
   enabling = false,
 }) => {
+  const translated = useSectionTranslations('SETTINGS');
+  const T = React.useMemo(
+    () => ({
+      TITLE:
+        translated?.NOTIFICATIONS_PROMPT_TITLE || DEFAULT_TEXTS.TITLE,
+      SUBTITLE:
+        translated?.NOTIFICATIONS_PROMPT_SUBTITLE || DEFAULT_TEXTS.SUBTITLE,
+      ENABLE:
+        translated?.NOTIFICATIONS_PROMPT_ENABLE || DEFAULT_TEXTS.ENABLE,
+      CLOSE_A11Y:
+        translated?.NOTIFICATIONS_PROMPT_CLOSE_A11Y || DEFAULT_TEXTS.CLOSE_A11Y,
+    }),
+    [translated]
+  );
   const { colors } = useTheme();
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -120,8 +136,8 @@ const NotificationsPromptBanner = ({
       <View style={styles.content}>
         <MaterialCommunityIcons name="bell-outline" size={20} color={colors.primary} />
         <View style={styles.textContainer}>
-          <Text style={styles.title}>{TEXTS.TITLE}</Text>
-          <Text style={styles.subtitle}>{TEXTS.SUBTITLE}</Text>
+          <Text style={styles.title}>{T.TITLE}</Text>
+          <Text style={styles.subtitle}>{T.SUBTITLE}</Text>
         </View>
       </View>
       <View style={styles.actions}>
@@ -130,9 +146,9 @@ const NotificationsPromptBanner = ({
           onPress={handleEnable}
           disabled={enabling}
         >
-          <Text style={styles.enableButtonText}>{TEXTS.ENABLE}</Text>
+          <Text style={styles.enableButtonText}>{T.ENABLE}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.dismissButton} onPress={handleDismiss} accessibilityLabel="Cerrar banner">
+        <TouchableOpacity style={styles.dismissButton} onPress={handleDismiss} accessibilityLabel={T.CLOSE_A11Y}>
           <MaterialCommunityIcons name="close" size={18} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>

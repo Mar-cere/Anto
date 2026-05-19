@@ -1,4 +1,5 @@
-const quotes = [
+const quotesByLanguage = {
+  es: [
   // Frases originales
   "El único modo de hacer un gran trabajo es amar lo que haces.",
   "No cuentes los días, haz que los días cuenten.",
@@ -126,6 +127,44 @@ const quotes = [
   "La esperanza es la única cosa más fuerte que el miedo.",
   "La esperanza es el ancla del alma.",
   "La esperanza es la capacidad de ver la luz a pesar de la oscuridad."
-];
+  ],
+  en: [
+    'The only way to do great work is to love what you do.',
+    'Do not count the days, make the days count.',
+    'Success is the sum of small efforts repeated day after day.',
+    'The best way to predict the future is to create it.',
+    'It is never too late to be what you might have been.',
+    'Failure is simply the opportunity to begin again, this time more intelligently.',
+    'Challenges make life interesting; overcoming them makes life meaningful.',
+    'It does not matter how slowly you go, as long as you do not stop.',
+    'Your attitude, not your aptitude, determines your altitude.',
+    'Happiness is not something ready made. It comes from your own actions.',
+    'Every day is a new chance to change your life.',
+    'Taking care of yourself is not a luxury, it is a necessity.',
+    'Breathe deeply. Everything will be okay.',
+    'Self-care is not selfish. You cannot serve from an empty cup.',
+    'You are stronger than you think, braver than you seem, and smarter than you believe.',
+    'Growth begins at the end of your comfort zone.',
+    'Turn your wounds into wisdom.',
+    'Resilience is not what happens to you, but how you respond and recover.',
+    'Difficulties prepare ordinary people for extraordinary destinies.',
+    'Life is not about waiting for the storm to pass; it is about learning to dance in the rain.',
+    'The present is a gift, that is why it is called the present.',
+    'Live the moment. Breathe the moment.',
+    'The purpose of life is a life with purpose.',
+    'What you do makes a difference, and you have to decide what kind of difference you want to make.',
+    'Be yourself; everyone else is already taken.',
+    'Your time is limited, do not waste it living someone else’s life.',
+    'Self-confidence is the first secret of success.',
+    'Believe in yourself and everything will be possible.',
+    'Perseverance transforms failure into extraordinary achievement.',
+    'Gratitude turns what we have into enough.',
+    'Change is inevitable, growth is optional.',
+    'Dreams do not work unless you do.',
+    'Balance is not something you find, it is something you create.',
+    'Every day is a chance to learn something new.',
+    'Where there is hope, there is life.',
+  ],
+};
 
-export default quotes;
+export default quotesByLanguage;

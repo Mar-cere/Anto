@@ -1,4 +1,4 @@
-import { CATEGORIES } from '../therapeuticTechniquesConstants';
+import { CATEGORIES, TEXTS } from '../therapeuticTechniquesConstants';
 import {
   normalizeTechniqueCategory,
   parseTherapeuticTechniquesResponse,
@@ -19,13 +19,13 @@ describe('parseTherapeuticTechniquesResponse', () => {
     expect(r.data).toEqual([{ id: '1' }]);
   });
 
-  it('rechaza success: false con mensaje', () => {
+  it('rechaza success: false con mensaje controlado', () => {
     const r = parseTherapeuticTechniquesResponse({
       success: false,
       message: 'Token inválido',
     });
     expect(r.ok).toBe(false);
-    expect(r.error).toBe('Token inválido');
+    expect(r.error).toBe(TEXTS.ERROR);
     expect(r.data).toEqual([]);
   });
 

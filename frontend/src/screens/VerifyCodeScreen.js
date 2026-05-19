@@ -24,13 +24,13 @@ import {
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import ParticleBackground from '../components/ParticleBackground';
-import { handleApiError } from '../config/api';
 import { ROUTES } from '../constants/routes';
 import { userService } from '../services/userService';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 
 // Constantes de textos
-const TEXTS = {
+const DEFAULT_TEXTS = {
   TITLE: 'Verificar Código',
   SUBTITLE: 'Ingresa el código de 6 dígitos que hemos enviado a:',
   BUTTON_VERIFY: 'Verificar Código',
@@ -43,6 +43,34 @@ const TEXTS = {
   CODE_RESENT_MESSAGE: 'Se ha enviado un nuevo código a tu correo electrónico',
   ERROR: 'Error',
   RESEND_ERROR: 'Error al reenviar el código',
+  BACK: 'Volver',
+  TOO_MANY_ATTEMPTS: 'Demasiados intentos. Espera un momento y vuelve a intentar.',
+  CODE_EXPIRED: 'El código expiró. Solicita uno nuevo.',
+};
+
+const resolveVerifyCodeErrorMessage = (error, texts, fallbackKey) => {
+  const status = error?.response?.status;
+  const rawMessage = String(
+    error?.response?.data?.message ?? error?.message ?? '',
+  ).toLowerCase();
+
+  if (
+    status === 429 ||
+    rawMessage.includes('too many') ||
+    rawMessage.includes('demasiados intentos')
+  ) {
+    return texts.TOO_MANY_ATTEMPTS;
+  }
+
+  if (
+    rawMessage.includes('expired') ||
+    rawMessage.includes('expir') ||
+    rawMessage.includes('vencid')
+  ) {
+    return texts.CODE_EXPIRED;
+  }
+
+  return texts[fallbackKey];
 };
 
 // Constantes de validación
@@ -119,6 +147,11 @@ const BACKGROUND_IMAGE = require('../images/back.png');
 const NAVIGATION_ROUTE_NEW_PASSWORD = 'NewPassword';
 
 const VerifyCodeScreen = ({ navigation, route }) => {
+  const AUTH = useSectionTranslations('AUTH');
+  const TEXTS = useMemo(
+    () => ({ ...DEFAULT_TEXTS, ...(AUTH?.VERIFY_CODE || {}) }),
+    [AUTH],
+  );
   const { email } = route.params || {};
   const { colors, statusBarStyle } = useTheme();
 
@@ -268,7 +301,9 @@ const VerifyCodeScreen = ({ navigation, route }) => {
   const translateYAnim = useRef(new Animated.Value(TRANSLATE_Y_ANIMATION_INITIAL)).current;
 
   // Referencias para inputs de código
-  const inputRefs = Array(CODE_INPUTS_COUNT).fill(0).map(() => useRef(null));
+  const inputRefs = useRef(
+    Array.from({ length: CODE_INPUTS_COUNT }, () => React.createRef()),
+  ).current;
 
   // Estados
   const [code, setCode] = useState(Array(CODE_INPUTS_COUNT).fill(''));
@@ -383,11 +418,16 @@ const VerifyCodeScreen = ({ navigation, route }) => {
       // Si el código es válido, navegar a la pantalla de nueva contraseña
       navigation.navigate(NAVIGATION_ROUTE_NEW_PASSWORD, { email, code: completeCode });
     } catch (error) {
-      setError(handleApiError(error) || TEXTS.CODE_INVALID);
+      setError(resolveVerifyCodeErrorMessage(error, TEXTS, 'CODE_INVALID'));
     } finally {
       setIsSubmitting(false);
     }
-  }, [code, email, navigation]);
+  }, [
+    code,
+    email,
+    navigation,
+    TEXTS,
+  ]);
 
   // Reenviar código
   const handleResendCode = useCallback(async () => {
@@ -397,9 +437,15 @@ const VerifyCodeScreen = ({ navigation, route }) => {
       setCanResend(false);
       Alert.alert(TEXTS.CODE_RESENT, TEXTS.CODE_RESENT_MESSAGE);
     } catch (error) {
-      Alert.alert(TEXTS.ERROR, handleApiError(error) || TEXTS.RESEND_ERROR);
+      Alert.alert(
+        TEXTS.ERROR,
+        resolveVerifyCodeErrorMessage(error, TEXTS, 'RESEND_ERROR'),
+      );
     }
-  }, [email]);
+  }, [
+    email,
+    TEXTS,
+  ]);
 
   return (
     <KeyboardAwareScrollView 
@@ -433,6 +479,7 @@ const VerifyCodeScreen = ({ navigation, route }) => {
             <TouchableOpacity 
               style={styles.backButton} 
               onPress={() => navigation.goBack()}
+              accessibilityLabel={TEXTS.BACK}
             >
               <Ionicons name="arrow-back" size={BACK_ICON_SIZE} color={colors.white} />
             </TouchableOpacity>

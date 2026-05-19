@@ -83,3 +83,17 @@ jest.mock('axios', () => {
 global.__DEV__ = true;
 global.fetch = jest.fn();
 
+// Silenciar solo el warning conocido de deprecación del renderer usado por RTL RN.
+// No ocultar otros console.error reales.
+const originalConsoleError = console.error;
+console.error = (...args) => {
+  const firstArg = args[0];
+  if (
+    typeof firstArg === 'string' &&
+    firstArg.includes('react-test-renderer is deprecated')
+  ) {
+    return;
+  }
+  originalConsoleError(...args);
+};
+

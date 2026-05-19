@@ -1,23 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { sanitizeProposedProductActions } from '../utils/sanitizeProposedProductActions';
 import { parseChatMessagesArrayFromStorage } from '../utils/safeStorageJson';
-import api, { API_URL } from '../config/api';
+import apiClient, { API_URL, getAppLanguage } from '../config/api';
 import { isValidSessionIntentionId } from '../constants/sessionIntention';
 import { clearPersistedChatSession } from '../utils/chatSessionStorage';
 import { postChatSseWithXHR, streamChatSseWithFetch } from '../utils/chatSseStream';
 import { Platform } from 'react-native';
 import { GUEST_CHAT_STORAGE_KEYS as GUEST_KEYS } from '../constants/guestChatStorageKeys';
 
-const API_BASE_URL = 'https://antobackend.onrender.com';
-
 // Mantener los callbacks para compatibilidad
 let messageCallbacks = [];
 let errorCallbacks = [];
-
-// Función para manejar mensajes
-const handleMessage = (message) => {
-  messageCallbacks.forEach(callback => callback(message));
-};
 
 // Función para manejar errores
 const handleError = (error) => {
@@ -79,7 +72,9 @@ export const sendMessage = async (text) => {
           // Preservar el error de suscripción para que se maneje correctamente
           throw createError;
         }
-        throw new Error('No se pudo crear una conversación. Por favor, intenta de nuevo.');
+        const e = new Error('No se pudo crear una conversación. Por favor, intenta de nuevo.');
+        e.code = 'CONVERSATION_CREATE_FAILED';
+        throw e;
       }
     }
 
@@ -94,7 +89,7 @@ export const sendMessage = async (text) => {
       }
     };
 
-    const response = await api.post('/api/chat/messages', userMessage);
+    const response = await apiClient.post('/api/chat/messages', userMessage);
     console.log('Respuesta del servidor:', response);
 
     // La respuesta ya incluye userMessage y assistantMessage
@@ -279,7 +274,9 @@ export const sendMessageStream = async (text, { onChunk, onDone }) => {
     const conversationId = await AsyncStorage.getItem(GUEST_KEYS.GUEST_CONVERSATION_ID);
     const token = await AsyncStorage.getItem(GUEST_KEYS.GUEST_TOKEN);
     if (!conversationId || !token) {
-      throw new Error('Sesión de invitado no válida');
+      const e = new Error('Sesión de invitado no válida');
+      e.code = 'GUEST_SESSION_INVALID';
+      throw e;
     }
     const data = await postGuestMessage(text, conversationId, token);
     if (data?.assistantMessage?.content && onChunk) onChunk(data.assistantMessage.content);
@@ -304,13 +301,19 @@ export const sendMessageStream = async (text, { onChunk, onDone }) => {
   }
 
   const token = await AsyncStorage.getItem('userToken');
-  if (!token) throw new Error('No hay token de autenticación');
+  if (!token) {
+    const e = new Error('No hay token de autenticación');
+    e.code = 'NO_AUTH';
+    throw e;
+  }
 
+  const appLanguage = await getAppLanguage();
   const url = `${API_URL}/api/chat/messages?stream=true`;
   const headers = {
     'Content-Type': 'application/json',
     Accept: 'text/event-stream',
     Authorization: `Bearer ${token}`,
+    'X-App-Language': appLanguage,
   };
   const body = JSON.stringify({
     content: text,
@@ -402,7 +405,7 @@ export const clearMessages = async () => {
       const convId = await AsyncStorage.getItem('currentConversationId');
       if (token && convId) {
         try {
-          await api.delete(`/api/chat/conversations/${encodeURIComponent(convId)}`);
+          await apiClient.delete(`/api/chat/conversations/${encodeURIComponent(convId)}`);
         } catch (err) {
           const status = err?.response?.status;
           if (status !== 404) throw err;
@@ -451,14 +454,16 @@ export const createConversation = async (options = {}) => {
         ? { sessionIntention: String(sessionIntention).trim() }
         : {})
     };
-    const response = await api.post('/api/chat/conversations', body);
+    const response = await apiClient.post('/api/chat/conversations', body);
 
     if (response && response.conversationId) {
       await AsyncStorage.setItem('currentConversationId', response.conversationId);
       return response.conversationId;
     }
 
-    throw new Error('No se pudo crear la conversación');
+    const e = new Error('No se pudo crear la conversación');
+    e.code = 'CONVERSATION_CREATE_FAILED';
+    throw e;
   } catch (error) {
     console.error('Error al crear conversación:', error);
     throw error;
@@ -472,7 +477,11 @@ export const createConversation = async (options = {}) => {
  */
 export const setSessionIntention = async (conversationId, sessionIntention) => {
   const token = await AsyncStorage.getItem('userToken');
-  if (!token) throw new Error('Sesión requerida');
+  if (!token) {
+    const e = new Error('Sesión requerida');
+    e.code = 'NO_AUTH';
+    throw e;
+  }
   const cid = String(conversationId ?? '').trim();
   if (!/^[\da-f]{24}$/i.test(cid)) {
     const e = new Error('ID de conversación inválido');
@@ -484,7 +493,7 @@ export const setSessionIntention = async (conversationId, sessionIntention) => {
     e.code = 'INVALID_SESSION_INTENTION';
     throw e;
   }
-  return api.patch(`/api/chat/conversations/${cid}/session-intention`, {
+  return apiClient.patch(`/api/chat/conversations/${cid}/session-intention`, {
     sessionIntention: String(sessionIntention).trim()
   });
 };
@@ -513,7 +522,7 @@ export const submitMessageFeedback = async (messageId, helpful) => {
     e.code = 'INVALID_HELPFUL';
     throw e;
   }
-  return api.patch(`/api/chat/messages/${id}/feedback`, { helpful });
+  return apiClient.patch(`/api/chat/messages/${id}/feedback`, { helpful });
 };
 
 export const submitProductProposalFeedback = async (conversationId, action) => {
@@ -534,7 +543,7 @@ export const submitProductProposalFeedback = async (conversationId, action) => {
     e.code = 'INVALID_ACTION';
     throw e;
   }
-  return api.post(`/api/chat/conversations/${cid}/product-proposal-feedback`, { action });
+  return apiClient.post(`/api/chat/conversations/${cid}/product-proposal-feedback`, { action });
 };
 
 /**
@@ -556,7 +565,7 @@ export const scheduleLastSessionSummary = async (conversationId, options = {}) =
       const n = Number(options.delayMinutes);
       if (Number.isFinite(n)) body.delayMinutes = n;
     }
-    return await api.post(`/api/chat/conversations/${cid}/session-summary/schedule`, body);
+    return await apiClient.post(`/api/chat/conversations/${cid}/session-summary/schedule`, body);
   } catch (e) {
     if (typeof __DEV__ !== 'undefined' && __DEV__) {
       console.warn('[chatService] scheduleLastSessionSummary:', e?.message || e);
@@ -568,7 +577,7 @@ export const scheduleLastSessionSummary = async (conversationId, options = {}) =
 /** Obtiene mensajes y meta de conversación. */
 export const getMessages = async (conversationId) => {
   try {
-    const response = await api.get(`/api/chat/conversations/${conversationId}`);
+    const response = await apiClient.get(`/api/chat/conversations/${conversationId}`);
     const rawIntention = response.sessionIntention ?? null;
     return {
       messages: response.messages ?? [],

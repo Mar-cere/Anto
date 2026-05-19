@@ -6,7 +6,7 @@ import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useProfileScreenStyles } from './profileScreenStyles';
-import { TEXTS, ICON_SIZE } from './profileScreenConstants';
+import { ICON_SIZE, useProfileTexts } from './profileScreenConstants';
 import { getEmergencyContactId } from '../../utils/emergencyContactUtils';
 
 function hapticLight() {
@@ -25,6 +25,7 @@ export function ProfileEmergencySection({
   onOpenAlertsHistory,
   onOpenEmergencyModal,
 }) {
+  const TEXTS = useProfileTexts();
   const { styles, profileColors } = useProfileScreenStyles();
   return (
     <View style={styles.optionsContainer}>
@@ -58,7 +59,7 @@ export function ProfileEmergencySection({
                           onEditContact(contact);
                         }}
                         style={styles.contactActionButton}
-                        accessibilityLabel="Editar contacto"
+                        accessibilityLabel={TEXTS.EDIT_CONTACT}
                       >
                         <Ionicons name="pencil-outline" size={18} color={profileColors.PRIMARY} />
                       </TouchableOpacity>
@@ -93,7 +94,7 @@ export function ProfileEmergencySection({
                           color={profileColors.ERROR}
                         />
                         <Text style={styles.contactDetailText}>
-                          Falta teléfono para alertas por WhatsApp
+                          {TEXTS.MISSING_PHONE_ALERTS}
                         </Text>
                       </View>
                     )}

@@ -22,8 +22,8 @@ import {
   MEDITATION_BUTTON_PADDING_HORIZONTAL,
   MEDITATION_BUTTON_PADDING_VERTICAL,
   MEDITATION_BUTTON_WIDTH_PERCENT,
-  TEXTS,
   createPomodoroColors,
+  usePomodoroTexts,
 } from '../../screens/pomodoro/pomodoroScreenConstants';
 
 export default function PomodoroControls({
@@ -44,6 +44,7 @@ export default function PomodoroControls({
   currentBreakSeconds,
   density = 'comfortable',
 }) {
+  const TEXTS = usePomodoroTexts();
   const { colors } = useTheme();
   const PC = useMemo(() => createPomodoroColors(colors), [colors]);
   const styles = useMemo(

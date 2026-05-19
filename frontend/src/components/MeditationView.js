@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { View, Text, Animated, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -51,7 +51,7 @@ const MeditationView = () => {
   );
 
   // Función para manejar la animación con tiempos ajustados
-  const handleAnimation = () => {
+  const handleAnimation = useCallback(() => {
     Animated.sequence([
       // Inhalar (4 segundos)
       Animated.timing(animation, {
@@ -78,7 +78,7 @@ const MeditationView = () => {
         useNativeDriver: true,
       })
     ]).start(() => handleAnimation());
-  };
+  }, [animation]);
 
   // Función para cambiar el texto sincronizado con la animación
   useEffect(() => {
@@ -104,7 +104,7 @@ const MeditationView = () => {
       clearInterval(interval);
       animation.stopAnimation();
     };
-  }, []);
+  }, [animation, handleAnimation]);
 
   return (
     <View style={styles.container}>

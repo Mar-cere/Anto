@@ -24,14 +24,14 @@ import TechniqueCard from '../components/therapeutic/TechniqueCard';
 import { useTheme } from '../context/ThemeContext';
 import {
   CATEGORIES,
-  CATEGORY_FULL_LABEL,
-  CATEGORY_HINT,
   CATEGORY_ORDER,
-  CATEGORY_SHORT_LABEL,
+  createCategoryFullLabel,
+  createCategoryHint,
+  createCategoryShortLabel,
   createCategoryAccent,
-  EMOTIONS,
+  createEmotionOptions,
   SECTION_KEYS,
-  TEXTS,
+  useTherapeuticTechniquesTexts,
 } from './therapeuticTechniques/therapeuticTechniquesConstants';
 import { therapeuticSafeNavigate } from './therapeuticTechniques/therapeuticTechniquesNavigate';
 import { SPACING } from '../constants/ui';
@@ -49,6 +49,7 @@ const TherapeuticTechniquesScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle } = useTheme();
+  const TEXTS = useTherapeuticTechniquesTexts();
   const styles = useTherapeuticTechniquesStyles();
   const {
     selectedEmotion,
@@ -65,11 +66,21 @@ const TherapeuticTechniquesScreen = () => {
 
   const [expandedSections, setExpandedSections] = useState(initialExpanded);
   const [emotionFilterOpen, setEmotionFilterOpen] = useState(false);
+  const EMOTIONS = useMemo(() => createEmotionOptions(TEXTS), [TEXTS]);
+  const CATEGORY_SHORT_LABEL = useMemo(
+    () => createCategoryShortLabel(TEXTS),
+    [TEXTS],
+  );
+  const CATEGORY_FULL_LABEL = useMemo(
+    () => createCategoryFullLabel(TEXTS),
+    [TEXTS],
+  );
+  const CATEGORY_HINT = useMemo(() => createCategoryHint(TEXTS), [TEXTS]);
 
   const selectedEmotionLabel = useMemo(() => {
     const found = EMOTIONS.find((e) => e.key === selectedEmotion);
     return found?.label ?? EMOTIONS[0].label;
-  }, [selectedEmotion]);
+  }, [selectedEmotion, EMOTIONS]);
 
   const categoryAccent = useMemo(() => createCategoryAccent(colors), [colors]);
 

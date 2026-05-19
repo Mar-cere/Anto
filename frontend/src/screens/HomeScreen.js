@@ -29,7 +29,6 @@ import {
   ANIMATION_VALUES
 } from '../constants/animations';
 import { ROUTES } from '../constants/routes';
-import { HOME as TEXTS } from '../constants/translations';
 import { OPACITIES, SCALES, SPACING } from '../constants/ui';
 import {
   NAV_STORAGE_OPEN_CHAT_AFTER_LOGIN,
@@ -37,6 +36,7 @@ import {
 } from '../navigation/navigationHelpers';
 import { createGlobalStyles } from '../styles/globalStyles';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 
 // Constantes específicas de esta pantalla
 const ANIMATION_INITIAL_DELAY = ANIMATION_DELAYS.SCREEN_ENTRY;
@@ -62,8 +62,52 @@ const ROUTE_MAP = {
   [ROUTES.CHAT]: ROUTES.CHAT,
   'FaQ': 'FaQ'
 };
+const DEFAULT_TEXTS = {
+  WELCOME: '¡Bienvenido!',
+  SUBTITLE: 'Nos alegra verte aquí.',
+  SIGN_IN: 'Iniciar Sesión',
+  REGISTER: 'Registrarse',
+  FAQ: 'Preguntas frecuentes',
+  SIGN_IN_HINT: 'Toca para ir a la pantalla de inicio de sesión',
+  REGISTER_HINT: 'Toca para ir a la pantalla de registro',
+  CONTINUE_WITHOUT_ACCOUNT_HINT:
+    'Abre el chat de forma limitada sin iniciar sesión (útil en una emergencia)',
+  EMERGENCY_CHAT_ENTRY: 'Ingresa al chat de emergencia',
+  EMERGENCY_CHAT_ENTRY_A11Y: 'Abrir chat de emergencia',
+  CHAT_LOGIN_REQUIRED_TITLE: 'Iniciar sesión requerido',
+  CHAT_LOGIN_REQUIRED_MESSAGE:
+    'Necesitas iniciar sesión para acceder al chat. ¿Deseas iniciar sesión ahora?',
+  CANCEL: 'Cancelar',
+  SIGN_IN_CTA: 'Iniciar sesión',
+  ERROR_TITLE: 'Error',
+  CHAT_SESSION_CHECK_ERROR:
+    'Hubo un problema al verificar tu sesión. Por favor, intenta iniciar sesión.',
+};
 
 const HomeScreen = () => {
+  const translated = useSectionTranslations('HOME');
+  const TEXTS = useMemo(
+    () => ({
+      ...DEFAULT_TEXTS,
+      ...(translated || {}),
+      EMERGENCY_CHAT_ENTRY:
+        translated?.EMERGENCY_CHAT_ENTRY || DEFAULT_TEXTS.EMERGENCY_CHAT_ENTRY,
+      EMERGENCY_CHAT_ENTRY_A11Y:
+        translated?.EMERGENCY_CHAT_ENTRY_A11Y || DEFAULT_TEXTS.EMERGENCY_CHAT_ENTRY_A11Y,
+      CHAT_LOGIN_REQUIRED_TITLE:
+        translated?.CHAT_LOGIN_REQUIRED_TITLE || DEFAULT_TEXTS.CHAT_LOGIN_REQUIRED_TITLE,
+      CHAT_LOGIN_REQUIRED_MESSAGE:
+        translated?.CHAT_LOGIN_REQUIRED_MESSAGE ||
+        DEFAULT_TEXTS.CHAT_LOGIN_REQUIRED_MESSAGE,
+      CANCEL: translated?.CANCEL || DEFAULT_TEXTS.CANCEL,
+      SIGN_IN_CTA: translated?.SIGN_IN || DEFAULT_TEXTS.SIGN_IN_CTA,
+      ERROR_TITLE: translated?.ERROR_TITLE || DEFAULT_TEXTS.ERROR_TITLE,
+      CHAT_SESSION_CHECK_ERROR:
+        translated?.CHAT_SESSION_CHECK_ERROR ||
+        DEFAULT_TEXTS.CHAT_SESSION_CHECK_ERROR,
+    }),
+    [translated],
+  );
   const navigation = useNavigation();
   const { colors, statusBarStyle } = useTheme();
   const styles = useMemo(() => {
@@ -156,12 +200,12 @@ const HomeScreen = () => {
         const token = await AsyncStorage.getItem('userToken');
         if (!token) {
           Alert.alert(
-            'Iniciar sesión requerido',
-            'Necesitas iniciar sesión para acceder al chat. ¿Deseas iniciar sesión ahora?',
+            TEXTS.CHAT_LOGIN_REQUIRED_TITLE,
+            TEXTS.CHAT_LOGIN_REQUIRED_MESSAGE,
             [
-              { text: 'Cancelar', style: 'cancel' },
+              { text: TEXTS.CANCEL, style: 'cancel' },
               {
-                text: 'Iniciar sesión',
+                text: TEXTS.SIGN_IN_CTA,
                 onPress: async () => {
                   try {
                     await AsyncStorage.setItem(NAV_STORAGE_OPEN_CHAT_AFTER_LOGIN, '1');
@@ -176,7 +220,7 @@ const HomeScreen = () => {
         await openEmergencyChatFromHome(navigation);
       } catch (error) {
         console.error('Error verificando autenticación:', error);
-        Alert.alert('Error', 'Hubo un problema al verificar tu sesión. Por favor, intenta iniciar sesión.');
+        Alert.alert(TEXTS.ERROR_TITLE, TEXTS.CHAT_SESSION_CHECK_ERROR);
       }
     } else {
       navigation.navigate(route);
@@ -248,12 +292,13 @@ const HomeScreen = () => {
               <View style={styles.footerContainer}>
                 <TouchableOpacity
                   testID="emergency-chat-entry"
-                  accessibilityLabel="emergency-chat-entry"
+                  accessibilityLabel={TEXTS.EMERGENCY_CHAT_ENTRY_A11Y}
+                  accessibilityHint={TEXTS.CONTINUE_WITHOUT_ACCOUNT_HINT}
                   style={styles.emergencyContainer}
                   onPress={() => handleNavigation(ROUTES.CHAT)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.emergencyText}>Ingresa al chat de emergencia</Text>
+                  <Text style={styles.emergencyText}>{TEXTS.EMERGENCY_CHAT_ENTRY}</Text>
                 </TouchableOpacity>
                 <Text 
                   style={styles.FQText} 

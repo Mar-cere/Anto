@@ -5,14 +5,13 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api, ENDPOINTS } from '../config/api';
+import { getSupportedLanguage } from '../constants/translations';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { preferenceToApiTheme, useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
-
-/** Misma clave que AuthContext: sesión persistida tras PUT /api/users/me */
-const STORAGE_USER_DATA = 'userData';
 import {
   registerForPushNotifications,
   areNotificationsEnabled,
@@ -20,16 +19,62 @@ import {
   getStoredPushToken,
   removePushToken,
 } from '../services/pushNotificationService';
-import { getApiErrorMessage } from '../utils/apiErrorHandler';
 import {
   NAVIGATION_ROUTES,
   RESPONSE_STYLE_LABELS,
   RESPONSE_STYLES,
-  TEXTS,
+  useSettingsTexts,
 } from '../screens/settings/settingsScreenConstants';
 
+/** Misma clave que AuthContext: sesión persistida tras PUT /api/users/me */
+const STORAGE_USER_DATA = 'userData';
+
+const DEFAULT_NOTIFICATION_PREFERENCES = {
+  enabled: true,
+  morning: { enabled: false, hour: 9, minute: 0 },
+  evening: { enabled: false, hour: 20, minute: 0 },
+  types: {
+    dailyReminders: true,
+    habitReminders: true,
+    taskReminders: true,
+    motivationalMessages: true,
+    betweenSessionsMessages: true,
+  },
+};
+
+const DEFAULT_CHAT_PREFS = {
+  reduceStockEmpathy: false,
+  avoidApologyOpenings: false,
+  preferQuestions: false,
+};
+
+const resolveSettingsErrorMessage = (error, fallbackMessage) => {
+  const normalizedMessage = String(
+    error?.response?.data?.message ?? error?.message ?? '',
+  ).toLowerCase();
+  const status = error?.response?.status;
+
+  const isNetwork =
+    normalizedMessage.includes('network') ||
+    normalizedMessage.includes('econnrefused') ||
+    normalizedMessage.includes('timeout') ||
+    normalizedMessage.includes('timed out') ||
+    normalizedMessage.includes('failed to fetch');
+  if (isNetwork) return fallbackMessage;
+
+  const isTooManyRequests =
+    status === 429 ||
+    normalizedMessage.includes('too many') ||
+    normalizedMessage.includes('demasiados intentos');
+  if (isTooManyRequests) return fallbackMessage;
+
+  return fallbackMessage;
+};
+
 export function useSettingsScreen({ navigation }) {
+  const TEXTS = useSettingsTexts();
   const { user, logout: authLogout, refreshSession } = useAuth();
+  const { language, setLanguage } = useLanguage();
   const { showToast } = useToast();
   const { setPreference } = useTheme();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -37,19 +82,6 @@ export function useSettingsScreen({ navigation }) {
   const [pushNotificationsEnabled, setPushNotificationsEnabled] =
     useState(false);
   const [timezoneSynced, setTimezoneSynced] = useState(false);
-
-  const DEFAULT_NOTIFICATION_PREFERENCES = {
-    enabled: true,
-    morning: { enabled: false, hour: 9, minute: 0 },
-    evening: { enabled: false, hour: 20, minute: 0 },
-    types: {
-      dailyReminders: true,
-      habitReminders: true,
-      taskReminders: true,
-      motivationalMessages: true,
-      betweenSessionsMessages: true,
-    },
-  };
 
   const persistUserFromMeResponse = useCallback(
     async (putResult) => {
@@ -132,17 +164,17 @@ export function useSettingsScreen({ navigation }) {
         const ok = await persistUserFromMeResponse(result);
         if (!ok) {
           showToast({
-            message:
-              'No se pudo actualizar la sesión tras guardar los ajustes de notificaciones.',
+            message: TEXTS.NOTIFICATIONS_SESSION_SYNC_WARNING,
             type: 'warning',
           });
         }
         return ok;
       } catch (error) {
         showToast({
-          message:
-            getApiErrorMessage(error) ||
-            'No se pudieron guardar los ajustes de notificaciones.',
+          message: resolveSettingsErrorMessage(
+            error,
+            TEXTS.PREFERENCES_ERROR,
+          ),
           type: 'error',
         });
         return false;
@@ -153,16 +185,10 @@ export function useSettingsScreen({ navigation }) {
       persistUserFromMeResponse,
       showToast,
       user,
+      TEXTS.PREFERENCES_ERROR,
+      TEXTS.NOTIFICATIONS_SESSION_SYNC_WARNING,
     ],
   );
-
-  const savePreference = useCallback(async (key, value) => {
-    try {
-      await AsyncStorage.setItem(key, JSON.stringify(value));
-    } catch (e) {
-      console.log('Error guardando preferencia:', e);
-    }
-  }, []);
 
   const guessTimezone = useCallback(() => {
     try {
@@ -202,10 +228,10 @@ export function useSettingsScreen({ navigation }) {
     try {
       await authLogout();
       navigation.replace(NAVIGATION_ROUTES.SIGN_IN);
-    } catch (e) {
+    } catch (_error) {
       showToast({ message: TEXTS.LOGOUT_ERROR, type: 'error' });
     }
-  }, [navigation, authLogout, showToast]);
+  }, [navigation, authLogout, showToast, TEXTS.LOGOUT_ERROR]);
 
   const handleDeleteAccount = useCallback(async () => {
     setShowDeleteModal(false);
@@ -215,16 +241,21 @@ export function useSettingsScreen({ navigation }) {
       await authLogout();
       navigation.replace(NAVIGATION_ROUTES.SIGN_IN);
       showToast({
-        message:
-          'Tu cuenta ha sido eliminada. Las suscripciones activas quedaron canceladas.',
+        message: TEXTS.ACCOUNT_DELETED_SUCCESS,
         type: 'success',
         duration: 5000,
       });
     } catch (e) {
       console.error('Error eliminando cuenta:', e);
-      showToast({ message: e.message || TEXTS.DELETE_ERROR, type: 'error' });
+      showToast({ message: TEXTS.DELETE_ERROR, type: 'error' });
     }
-  }, [navigation, authLogout, showToast]);
+  }, [
+    navigation,
+    authLogout,
+    showToast,
+    TEXTS.DELETE_ERROR,
+    TEXTS.ACCOUNT_DELETED_SUCCESS,
+  ]);
 
   const checkPushNotificationStatus = useCallback(async () => {
     try {
@@ -254,30 +285,28 @@ export function useSettingsScreen({ navigation }) {
                 const ok = await persistNotificationPreferences(true);
                 if (!ok) {
                   showToast({
-                    message:
-                      'Notificaciones habilitadas, pero no se pudo actualizar la sesión.',
+                    message: TEXTS.PUSH_ENABLED_SYNC_WARNING,
                     type: 'warning',
                   });
                 }
               } catch (prefErr) {
                 showToast({
-                  message:
-                    getApiErrorMessage(prefErr) ||
-                    'Notificaciones habilitadas, pero no se pudo guardar la preferencia.',
+                  message: resolveSettingsErrorMessage(
+                    prefErr,
+                    TEXTS.PREFERENCES_ERROR,
+                  ),
                   type: 'warning',
                 });
               }
               setPushNotificationsEnabled(true);
               showToast({
-                message:
-                  'Notificaciones push habilitadas. Recibirás alertas sobre crisis y seguimientos.',
+                message: TEXTS.PUSH_ENABLED_SUCCESS,
                 type: 'success',
               });
             } else {
               setPushNotificationsEnabled(false);
               showToast({
-                message:
-                  'No se pudo registrar el dispositivo para notificaciones push.',
+                message: TEXTS.PUSH_REGISTER_ERROR,
                 type: 'error',
               });
             }
@@ -296,36 +325,44 @@ export function useSettingsScreen({ navigation }) {
             const ok = await persistNotificationPreferences(false);
             if (!ok) {
               showToast({
-                message:
-                  'Notificaciones deshabilitadas, pero no se pudo actualizar la sesión.',
+                message: TEXTS.PUSH_DISABLED_SYNC_WARNING,
                 type: 'warning',
               });
             }
           } catch (prefErr) {
             showToast({
-              message:
-                getApiErrorMessage(prefErr) ||
-                'Notificaciones deshabilitadas, pero no se pudo guardar la preferencia.',
+              message: resolveSettingsErrorMessage(
+                prefErr,
+                TEXTS.PREFERENCES_ERROR,
+              ),
               type: 'warning',
             });
           }
           setPushNotificationsEnabled(false);
           showToast({
-            message:
-              'Notificaciones deshabilitadas. No recibirás alertas sobre crisis.',
+            message: TEXTS.PUSH_DISABLED_SUCCESS,
             type: 'warning',
           });
         }
       } catch (error) {
         showToast({
-          message:
-            getApiErrorMessage(error) ||
-            'Error configurando notificaciones push.',
+          message: resolveSettingsErrorMessage(error, TEXTS.PREFERENCES_ERROR),
           type: 'error',
         });
       }
     },
-    [persistNotificationPreferences, showToast],
+    [
+      persistNotificationPreferences,
+      showToast,
+      TEXTS.PERMISSIONS_NEEDED,
+      TEXTS.PERMISSIONS_MESSAGE,
+      TEXTS.PREFERENCES_ERROR,
+      TEXTS.PUSH_ENABLED_SYNC_WARNING,
+      TEXTS.PUSH_ENABLED_SUCCESS,
+      TEXTS.PUSH_REGISTER_ERROR,
+      TEXTS.PUSH_DISABLED_SYNC_WARNING,
+      TEXTS.PUSH_DISABLED_SUCCESS,
+    ],
   );
 
   useEffect(() => {
@@ -338,41 +375,39 @@ export function useSettingsScreen({ navigation }) {
         await api.post(ENDPOINTS[endpointKey]);
         const byKey = {
           TEST_NOTIFICATION_WARNING: {
-            message: 'Notificación WARNING de prueba enviada al dispositivo.',
+            message: TEXTS.TEST_NOTIFICATION_WARNING_SENT,
             type: 'success',
           },
           TEST_NOTIFICATION_MEDIUM: {
-            message: 'Notificación MEDIUM de prueba enviada al dispositivo.',
+            message: TEXTS.TEST_NOTIFICATION_MEDIUM_SENT,
             type: 'info',
           },
           TEST_NOTIFICATION_FOLLOWUP: {
-            message:
-              'Notificación de seguimiento de prueba enviada al dispositivo.',
+            message: TEXTS.TEST_NOTIFICATION_FOLLOWUP_SENT,
             type: 'default',
           },
         };
         const payload = byKey[endpointKey] || {
-          message: 'Notificación de prueba enviada.',
+          message: TEXTS.TEST_NOTIFICATION_SENT,
           type: 'success',
         };
         showToast(payload);
       } catch (error) {
         showToast({
-          message:
-            getApiErrorMessage(error) ||
-            'Error enviando notificación de prueba.',
+          message: resolveSettingsErrorMessage(error, TEXTS.PREFERENCES_ERROR),
           type: 'error',
         });
       }
     },
-    [showToast],
+    [
+      showToast,
+      TEXTS.PREFERENCES_ERROR,
+      TEXTS.TEST_NOTIFICATION_WARNING_SENT,
+      TEXTS.TEST_NOTIFICATION_MEDIUM_SENT,
+      TEXTS.TEST_NOTIFICATION_FOLLOWUP_SENT,
+      TEXTS.TEST_NOTIFICATION_SENT,
+    ],
   );
-
-  const DEFAULT_CHAT_PREFS = {
-    reduceStockEmpathy: false,
-    avoidApologyOpenings: false,
-    preferQuestions: false,
-  };
 
   const handleChatPreferenceChange = useCallback(
     async (key, nextValue) => {
@@ -386,8 +421,7 @@ export function useSettingsScreen({ navigation }) {
         const ok = await persistUserFromMeResponse(result);
         if (!ok) {
           showToast({
-            message:
-              'No se pudo actualizar la sesión. Intenta cerrar sesión y volver a entrar.',
+            message: TEXTS.CHAT_PREF_SYNC_WARNING,
             type: 'warning',
           });
         } else {
@@ -395,12 +429,18 @@ export function useSettingsScreen({ navigation }) {
         }
       } catch (error) {
         showToast({
-          message: getApiErrorMessage(error) || TEXTS.PREFERENCES_ERROR,
+          message: resolveSettingsErrorMessage(error, TEXTS.PREFERENCES_ERROR),
           type: 'error',
         });
       }
     },
-    [user, persistUserFromMeResponse, showToast],
+    [
+      user,
+      persistUserFromMeResponse,
+      showToast,
+      TEXTS.PREFERENCES_ERROR,
+      TEXTS.CHAT_PREF_SYNC_WARNING,
+    ],
   );
 
   const handleSetResponseStyle = useCallback(
@@ -416,27 +456,30 @@ export function useSettingsScreen({ navigation }) {
         const ok = await persistUserFromMeResponse(result);
         if (!ok) {
           showToast({
-            message: 'No se pudo actualizar la sesión tras cambiar el estilo.',
+            message: TEXTS.RESPONSE_STYLE_SYNC_WARNING,
             type: 'warning',
           });
           return false;
         }
         showToast({
-          message: `Estilo de respuesta: ${RESPONSE_STYLE_LABELS[key] || key}`,
+          message: `${TEXTS.RESPONSE_STYLE_UPDATED_PREFIX}: ${TEXTS[`RESPONSE_STYLE_LABEL_${key.toUpperCase()}`] || RESPONSE_STYLE_LABELS[key] || key}`,
           type: 'success',
         });
         return true;
       } catch (error) {
         showToast({
-          message:
-            getApiErrorMessage(error) ||
-            'No se pudo actualizar el estilo de respuesta.',
+          message: resolveSettingsErrorMessage(error, TEXTS.PREFERENCES_ERROR),
           type: 'error',
         });
         return false;
       }
     },
-    [user, persistUserFromMeResponse, showToast],
+    [
+      user,
+      persistUserFromMeResponse,
+      showToast,
+      TEXTS,
+    ],
   );
 
   const handleSetThemePreference = useCallback(
@@ -454,27 +497,79 @@ export function useSettingsScreen({ navigation }) {
         const ok = await persistUserFromMeResponse(result);
         if (!ok) {
           showToast({
-            message:
-              'El tema se aplicó en este dispositivo, pero no se pudo sincronizar con la cuenta.',
+            message: TEXTS.THEME_SYNC_WARNING,
             type: 'warning',
           });
         }
         return ok;
       } catch (error) {
         showToast({
-          message:
-            getApiErrorMessage(error) ||
-            TEXTS.PREFERENCES_ERROR,
+          message: resolveSettingsErrorMessage(error, TEXTS.PREFERENCES_ERROR),
           type: 'error',
         });
         return false;
       }
     },
-    [user, setPreference, persistUserFromMeResponse, showToast],
+    [
+      user,
+      setPreference,
+      persistUserFromMeResponse,
+      showToast,
+      TEXTS.PREFERENCES_ERROR,
+      TEXTS.THEME_SYNC_WARNING,
+    ],
+  );
+
+  const handleSetLanguagePreference = useCallback(
+    async (nextLanguage) => {
+      const normalizedLanguage = getSupportedLanguage(nextLanguage);
+      await setLanguage(normalizedLanguage);
+
+      if (!user) return true;
+      const currentPreferences = user?.preferences || {};
+
+      try {
+        const result = await api.put(ENDPOINTS.UPDATE_PROFILE, {
+          preferences: {
+            ...currentPreferences,
+            language: normalizedLanguage,
+          },
+        });
+        const ok = await persistUserFromMeResponse(result);
+        if (!ok) {
+          showToast({
+            message: TEXTS.LANGUAGE_CHANGED_SYNC_WARNING,
+            type: 'warning',
+          });
+        } else {
+          showToast({
+            message: TEXTS.LANGUAGE_CHANGED_OK,
+            type: 'success',
+          });
+        }
+        return ok;
+      } catch (error) {
+        showToast({
+          message: resolveSettingsErrorMessage(error, TEXTS.PREFERENCES_ERROR),
+          type: 'error',
+        });
+        return false;
+      }
+    },
+    [
+      user,
+      setLanguage,
+      persistUserFromMeResponse,
+      showToast,
+      TEXTS.LANGUAGE_CHANGED_SYNC_WARNING,
+      TEXTS.LANGUAGE_CHANGED_OK,
+      TEXTS.PREFERENCES_ERROR,
+    ],
   );
 
   return {
     user,
+    language,
     showLogoutModal,
     setShowLogoutModal,
     showDeleteModal,
@@ -486,6 +581,7 @@ export function useSettingsScreen({ navigation }) {
     handleUpdateNotificationPreferences,
     handleSetResponseStyle,
     handleSetThemePreference,
+    handleSetLanguagePreference,
     handleChatPreferenceChange,
     checkPushNotificationStatus,
     handleTestNotification,

@@ -5,12 +5,13 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCrisisDashboardStyles } from './crisisDashboardStyles';
-import { TEXTS } from './crisisDashboardConstants';
+import { useCrisisDashboardTexts } from './crisisDashboardConstants';
 import { useTheme } from '../../context/ThemeContext';
 
 export function CrisisDashboardSummary({ summary, getRiskLevelColor, getRiskLevelText }) {
   const styles = useCrisisDashboardStyles();
   const { colors } = useTheme();
+  const TEXTS = useCrisisDashboardTexts();
   if (!summary) return null;
 
   const totalCrises = Number(summary.totalCrises) || 0;

@@ -68,6 +68,11 @@ coverage/
 
 app-example
 
+# Obsidian — notas generadas (vault real está fuera del repo; ver docs/obsidian-propuestas/README.md)
+docs/obsidian-propuestas/*
+!docs/obsidian-propuestas/README.md
+.anto-obsidian-export.json
+
 # generated native folders
 /ios
 /android

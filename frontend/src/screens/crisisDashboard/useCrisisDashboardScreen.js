@@ -3,13 +3,14 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, ENDPOINTS } from '../../config/api';
+import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import {
-  TEXTS,
+  createRiskLevelTexts,
   createEmotionColors,
   createRiskLevelColors,
-  RISK_LEVEL_TEXTS,
   TREND_PERIODS,
+  useCrisisDashboardTexts,
 } from './crisisDashboardConstants';
 
 function normalizeSummary(raw) {
@@ -25,28 +26,24 @@ function normalizeSummary(raw) {
   };
 }
 
-function reasonToMessage(reason) {
-  if (reason instanceof Error) return reason.message || TEXTS.ERROR_UNKNOWN;
-  if (reason && typeof reason === 'object' && reason.message != null) {
-    return String(reason.message);
-  }
-  return TEXTS.ERROR_UNKNOWN;
+function reasonToMessage(reason, texts) {
+  if (reason instanceof Error) return texts.ERROR_UNKNOWN;
+  if (reason && typeof reason === 'object' && reason.message != null) return texts.ERROR_UNKNOWN;
+  return texts.ERROR_UNKNOWN;
 }
 
-function pickSummaryFailureMessage(settledSummary) {
+function pickSummaryFailureMessage(settledSummary, texts) {
   if (settledSummary.status === 'rejected') {
-    return reasonToMessage(settledSummary.reason);
+    return reasonToMessage(settledSummary.reason, texts);
   }
-  const v = settledSummary.value;
-  if (v && typeof v === 'object') {
-    if (typeof v.message === 'string' && v.message.length > 0) return v.message;
-    if (typeof v.error === 'string' && v.error.length > 0) return v.error;
-  }
-  return TEXTS.ERROR;
+  return texts.ERROR;
 }
 
 export function useCrisisDashboardScreen() {
+  const TEXTS = useCrisisDashboardTexts();
+  const { language } = useLanguage();
   const { colors } = useTheme();
+  const riskLevelTexts = useMemo(() => createRiskLevelTexts(TEXTS), [TEXTS]);
   const emotionColorMap = useMemo(() => createEmotionColors(colors), [colors]);
   const riskLevelColorMap = useMemo(() => createRiskLevelColors(colors), [colors]);
 
@@ -148,7 +145,7 @@ export function useCrisisDashboardScreen() {
       }
 
       if (!summaryOk) {
-        setError(pickSummaryFailureMessage(s0));
+        setError(pickSummaryFailureMessage(s0, TEXTS));
       }
     } catch (err) {
       console.error('Error cargando métricas:', err);
@@ -157,7 +154,7 @@ export function useCrisisDashboardScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [trendPeriod]);
+  }, [trendPeriod, TEXTS]);
 
   useEffect(() => {
     loadData();
@@ -178,7 +175,7 @@ export function useCrisisDashboardScreen() {
 
   const formatTrendData = useCallback(() => {
     if (!trends?.dataPoints || trends.dataPoints.length === 0) {
-      return { labels: ['Sin datos'], datasets: [{ data: [0] }] };
+      return { labels: [TEXTS.DATE_UNAVAILABLE], datasets: [{ data: [0] }] };
     }
     const labels = trends.dataPoints.map((point) => {
       const date = new Date(point?.date);
@@ -193,11 +190,11 @@ export function useCrisisDashboardScreen() {
       labels: labels.length > 10 ? labels.filter((_, i) => i % 2 === 0) : labels,
       datasets: [{ data }],
     };
-  }, [trends]);
+  }, [trends, TEXTS]);
 
   const formatMonthlyData = useCallback(() => {
     if (!crisisByMonth || crisisByMonth.length === 0) {
-      return { labels: ['Sin datos'], datasets: [{ data: [0] }] };
+      return { labels: [TEXTS.DATE_UNAVAILABLE], datasets: [{ data: [0] }] };
     }
     const labels = crisisByMonth.map((item) =>
       item != null && item.month != null ? String(item.month) : TEXTS.DATE_UNAVAILABLE
@@ -207,7 +204,7 @@ export function useCrisisDashboardScreen() {
       return Number.isFinite(n) ? n : 0;
     });
     return { labels, datasets: [{ data }] };
-  }, [crisisByMonth]);
+  }, [crisisByMonth, TEXTS]);
 
   const formatEmotionDistribution = useCallback(() => {
     if (!emotionDistribution?.distribution) return [];
@@ -228,22 +225,22 @@ export function useCrisisDashboardScreen() {
   );
 
   const getRiskLevelText = useCallback((level) => {
-    if (level != null && RISK_LEVEL_TEXTS[level]) return RISK_LEVEL_TEXTS[level];
-    return level != null && level !== '' ? String(level) : '—';
-  }, []);
+    if (level != null && riskLevelTexts[level]) return riskLevelTexts[level];
+    return level != null && level !== '' ? String(level) : TEXTS.DATE_UNAVAILABLE;
+  }, [riskLevelTexts, TEXTS.DATE_UNAVAILABLE]);
 
   const formatDate = useCallback((dateString) => {
     if (dateString == null || dateString === '') return TEXTS.DATE_UNAVAILABLE;
     const date = new Date(dateString);
     if (Number.isNaN(date.getTime())) return TEXTS.DATE_UNAVAILABLE;
-    return date.toLocaleDateString('es-ES', {
+    return date.toLocaleDateString(language === 'en' ? 'en-US' : 'es-ES', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
     });
-  }, []);
+  }, [language, TEXTS.DATE_UNAVAILABLE]);
 
   const getTrendLabel = useCallback(() => {
     if (!trends?.trend) return null;
@@ -252,7 +249,7 @@ export function useCrisisDashboardScreen() {
       declining: TEXTS.TREND_DECLINING,
     };
     return TEXTS.TREND_LABEL + (trendLabels[trends.trend] || TEXTS.TREND_STABLE);
-  }, [trends]);
+  }, [trends, TEXTS.TREND_IMPROVING, TEXTS.TREND_DECLINING, TEXTS.TREND_LABEL, TEXTS.TREND_STABLE]);
 
   const getTrendIcon = useCallback(() => {
     if (!trends?.trend) return null;

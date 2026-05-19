@@ -10,10 +10,10 @@
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import * as Haptics from 'expo-haptics';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Dimensions,
   RefreshControl,
   SafeAreaView,
   ScrollView,
@@ -25,18 +25,18 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarChart, LineChart, PieChart } from 'react-native-chart-kit';
-import { Dimensions } from 'react-native';
 import FloatingNavBar from '../components/FloatingNavBar';
 import Header from '../components/Header';
 import ParticleBackground from '../components/ParticleBackground';
 import { api, ENDPOINTS } from '../config/api';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING } from '../constants/ui';
+import { useSectionTranslations } from '../hooks/useTranslations';
 
 const { width } = Dimensions.get('window');
 
 // Constantes de textos
-const TEXTS = {
+const DEFAULT_TEXTS = {
   TITLE: 'Estadísticas de Técnicas',
   LOADING: 'Cargando estadísticas...',
   ERROR: 'Error al cargar estadísticas',
@@ -56,9 +56,62 @@ const TEXTS = {
   MINUTES: 'min',
   SECONDS: 'seg',
   NO_DATA: 'No hay datos disponibles',
+  NA: 'N/A',
+  USE_SINGULAR: 'uso',
+  USE_PLURAL: 'usos',
 };
 
 const TherapeuticTechniquesStatsScreen = () => {
+  const translated = useSectionTranslations('TECHNIQUES');
+  const TEXTS = useMemo(
+    () => ({
+      ...DEFAULT_TEXTS,
+      TITLE: translated?.THERAPEUTIC_STATS_TITLE || DEFAULT_TEXTS.TITLE,
+      LOADING: translated?.THERAPEUTIC_STATS_LOADING || DEFAULT_TEXTS.LOADING,
+      ERROR: translated?.THERAPEUTIC_STATS_ERROR || DEFAULT_TEXTS.ERROR,
+      RETRY: translated?.THERAPEUTIC_STATS_RETRY || DEFAULT_TEXTS.RETRY,
+      GENERAL_STATS:
+        translated?.THERAPEUTIC_STATS_GENERAL_STATS || DEFAULT_TEXTS.GENERAL_STATS,
+      MOST_USED:
+        translated?.THERAPEUTIC_STATS_MOST_USED || DEFAULT_TEXTS.MOST_USED,
+      BY_EMOTION:
+        translated?.THERAPEUTIC_STATS_BY_EMOTION || DEFAULT_TEXTS.BY_EMOTION,
+      BY_TYPE: translated?.THERAPEUTIC_STATS_BY_TYPE || DEFAULT_TEXTS.BY_TYPE,
+      USAGE_TREND:
+        translated?.THERAPEUTIC_STATS_USAGE_TREND || DEFAULT_TEXTS.USAGE_TREND,
+      TOTAL_USES:
+        translated?.THERAPEUTIC_STATS_TOTAL_USES || DEFAULT_TEXTS.TOTAL_USES,
+      COMPLETED:
+        translated?.THERAPEUTIC_STATS_COMPLETED || DEFAULT_TEXTS.COMPLETED,
+      COMPLETION_RATE:
+        translated?.THERAPEUTIC_STATS_COMPLETION_RATE ||
+        DEFAULT_TEXTS.COMPLETION_RATE,
+      AVERAGE_DURATION:
+        translated?.THERAPEUTIC_STATS_AVERAGE_DURATION ||
+        DEFAULT_TEXTS.AVERAGE_DURATION,
+      AVERAGE_EFFECTIVENESS:
+        translated?.THERAPEUTIC_STATS_AVERAGE_EFFECTIVENESS ||
+        DEFAULT_TEXTS.AVERAGE_EFFECTIVENESS,
+      UNIQUE_TECHNIQUES:
+        translated?.THERAPEUTIC_STATS_UNIQUE_TECHNIQUES ||
+        DEFAULT_TEXTS.UNIQUE_TECHNIQUES,
+      UNIQUE_EMOTIONS:
+        translated?.THERAPEUTIC_STATS_UNIQUE_EMOTIONS ||
+        DEFAULT_TEXTS.UNIQUE_EMOTIONS,
+      MINUTES:
+        translated?.THERAPEUTIC_STATS_MINUTES || DEFAULT_TEXTS.MINUTES,
+      SECONDS:
+        translated?.THERAPEUTIC_STATS_SECONDS || DEFAULT_TEXTS.SECONDS,
+      NO_DATA:
+        translated?.THERAPEUTIC_STATS_NO_DATA || DEFAULT_TEXTS.NO_DATA,
+      NA: translated?.THERAPEUTIC_STATS_NA || DEFAULT_TEXTS.NA,
+      USE_SINGULAR:
+        translated?.THERAPEUTIC_STATS_USE_SINGULAR || DEFAULT_TEXTS.USE_SINGULAR,
+      USE_PLURAL:
+        translated?.THERAPEUTIC_STATS_USE_PLURAL || DEFAULT_TEXTS.USE_PLURAL,
+    }),
+    [translated],
+  );
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle, resolvedScheme } = useTheme();
   const styles = useMemo(
@@ -218,7 +271,7 @@ const TherapeuticTechniquesStatsScreen = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [TEXTS.ERROR]);
 
   // Cargar al enfocar la pantalla
   useFocusEffect(
@@ -235,7 +288,7 @@ const TherapeuticTechniquesStatsScreen = () => {
 
   // Formatear duración
   const formatDuration = (seconds) => {
-    if (!seconds) return 'N/A';
+    if (!seconds) return TEXTS.NA;
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     if (mins > 0) {
@@ -246,7 +299,7 @@ const TherapeuticTechniquesStatsScreen = () => {
 
   // Formatear porcentaje
   const formatPercentage = (value) => {
-    if (value === null || value === undefined) return 'N/A';
+    if (value === null || value === undefined) return TEXTS.NA;
     return `${(value * 100).toFixed(1)}%`;
   };
 
@@ -288,7 +341,7 @@ const TherapeuticTechniquesStatsScreen = () => {
             <View style={styles.statCard}>
               <MaterialCommunityIcons name="star" size={32} color={colors.warning} />
               <Text style={styles.statValue}>
-                {general.averageEffectiveness?.toFixed(1) || 'N/A'}
+                {general.averageEffectiveness?.toFixed(1) || TEXTS.NA}
               </Text>
               <Text style={styles.statLabel}>{TEXTS.AVERAGE_EFFECTIVENESS}</Text>
             </View>
@@ -316,7 +369,8 @@ const TherapeuticTechniquesStatsScreen = () => {
               <View style={styles.listItemContent}>
                 <Text style={styles.listItemTitle}>{item.techniqueName}</Text>
                 <Text style={styles.listItemSubtitle}>
-                  {item.techniqueType} • {item.count} {item.count === 1 ? 'uso' : 'usos'}
+                  {item.techniqueType} • {item.count}{' '}
+                  {item.count === 1 ? TEXTS.USE_SINGULAR : TEXTS.USE_PLURAL}
                 </Text>
               </View>
               {item.averageEffectiveness !== null && (

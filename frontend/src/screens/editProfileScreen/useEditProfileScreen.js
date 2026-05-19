@@ -9,7 +9,7 @@ import { api, ENDPOINTS } from '../../config/api';
 import { ROUTES } from '../../constants/routes';
 import { useToast } from '../../context/ToastContext';
 import {
-  TEXTS,
+  useEditProfileTexts,
   MIN_NAME_LENGTH,
   EMAIL_REGEX,
   DEFAULT_FORM_DATA,
@@ -20,6 +20,7 @@ import {
 } from './editProfileScreenConstants';
 
 export function useEditProfileScreen(navigation) {
+  const TEXTS = useEditProfileTexts();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -38,7 +39,7 @@ export function useEditProfileScreen(navigation) {
       return null;
     }
     return token;
-  }, [navigation]);
+  }, [navigation, TEXTS.SESSION_EXPIRED, TEXTS.SESSION_EXPIRED_MESSAGE]);
 
   const handleError = useCallback((error, onRetry) => {
     console.error('Error:', error);
@@ -54,7 +55,7 @@ export function useEditProfileScreen(navigation) {
       ...(typeof onRetry === 'function' ? [{ text: TEXTS.RETRY, onPress: onRetry }] : []),
       { text: TEXTS.OK, style: 'cancel' },
     ]);
-  }, []);
+  }, [TEXTS.ERROR_DEFAULT, TEXTS.ERROR_NETWORK, TEXTS.ERROR_TIMEOUT, TEXTS.ERROR, TEXTS.RETRY, TEXTS.OK]);
 
   const loadUserData = useCallback(async () => {
     try {
@@ -105,7 +106,7 @@ export function useEditProfileScreen(navigation) {
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formData.name, formData.email, showToast]);
+  }, [formData.name, formData.email, showToast, TEXTS.NAME_MIN_LENGTH, TEXTS.EMAIL_REQUIRED, TEXTS.EMAIL_INVALID]);
 
   const handleSave = useCallback(async () => {
     if (!validateForm()) return;
@@ -133,7 +134,7 @@ export function useEditProfileScreen(navigation) {
     } finally {
       setSaving(false);
     }
-  }, [validateForm, formData.name, formData.email, handleError, showToast]);
+  }, [validateForm, formData.name, formData.email, handleError, showToast, TEXTS.PROFILE_UPDATED]);
 
   const handleFormChange = useCallback((field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -154,7 +155,7 @@ export function useEditProfileScreen(navigation) {
       ]);
     });
     return unsubscribe;
-  }, [hasChanges, navigation]);
+  }, [hasChanges, navigation, TEXTS.UNSAVED_CHANGES, TEXTS.UNSAVED_CHANGES_MESSAGE, TEXTS.CANCEL, TEXTS.DISCARD]);
 
   return {
     loading,

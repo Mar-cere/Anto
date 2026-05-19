@@ -38,12 +38,13 @@ import {
   createPomodoroColors,
   POMODORO_INNER_INSET,
   POMODORO_SCREEN_INSET,
-  TEXTS,
+  usePomodoroTexts,
 } from './pomodoro/pomodoroScreenConstants';
 import { useTheme } from '../context/ThemeContext';
 import { getFocusTheme } from '../styles/focusCardTheme';
 
 export default function PomodoroScreen() {
+  const TEXTS = usePomodoroTexts();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { colors, resolvedScheme } = useTheme();
@@ -345,7 +346,7 @@ export default function PomodoroScreen() {
     ]);
     anim.start();
     return () => anim.stop();
-  }, [summaryVisible]);
+  }, [summaryVisible, summaryBackdropOp, summaryCardScale, summaryCardTranslateY]);
 
   const handleRefreshList = useCallback(async () => {
     setListRefreshing(true);
@@ -423,7 +424,15 @@ export default function PomodoroScreen() {
       ]);
     });
     return unsubscribe;
-  }, [navigation, isActive, exitGuardEnabled]);
+  }, [
+    navigation,
+    isActive,
+    exitGuardEnabled,
+    TEXTS.EXIT_GUARD_TITLE,
+    TEXTS.EXIT_GUARD_MESSAGE,
+    TEXTS.EXIT_GUARD_STAY,
+    TEXTS.EXIT_GUARD_LEAVE,
+  ]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -450,7 +459,7 @@ export default function PomodoroScreen() {
           <View style={styles.goalCard}>
             <View style={styles.goalHeader}>
               <Text style={styles.goalTitle}>
-                {TEXTS.DAILY_GOAL}: {sessionsToday}/{dailyGoal} pomodoros
+                {TEXTS.DAILY_GOAL}: {sessionsToday}/{dailyGoal} {TEXTS.DAILY_POMODOROS_SUFFIX}
               </Text>
               <Text style={styles.goalPct}>
                 {Math.min(100, Math.round((sessionsToday / dailyGoal) * 100))}%
@@ -578,7 +587,7 @@ export default function PomodoroScreen() {
                 <View style={styles.streakInnerRow}>
                   <MaterialCommunityIcons name="fire" size={16} color={t.FOCUS_KICKER_COLOR} />
                   <Text style={styles.summaryLine}>
-                    {TEXTS.SUMMARY_STREAK}: {summaryData.streakDays} d
+                    {TEXTS.SUMMARY_STREAK}: {summaryData.streakDays} {TEXTS.SUMMARY_STREAK_DAYS_SUFFIX}
                   </Text>
                 </View>
                 {summaryData.linkedTaskId && summaryData.sessionBlockMinutes > 0 ? (

@@ -6,10 +6,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import ParticleBackground from '../components/ParticleBackground';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING } from '../constants/ui';
+import { useSectionTranslations } from '../hooks/useTranslations';
 
 const PRIVACY_URL = 'https://www.antoapps.com/privacidad';
 
-const TEXTS = {
+const DEFAULT_TEXTS = {
   TITLE: 'Privacidad e IA',
   BACK: 'Volver',
   INTRO:
@@ -39,6 +40,11 @@ const TEXTS = {
 const ICON_SIZE = 24;
 
 export default function AIPrivacyScreen() {
+  const INFO = useSectionTranslations('INFO');
+  const TEXTS = useMemo(
+    () => ({ ...DEFAULT_TEXTS, ...(INFO?.AI_PRIVACY || {}) }),
+    [INFO],
+  );
   const navigation = useNavigation();
   const { colors } = useTheme();
 

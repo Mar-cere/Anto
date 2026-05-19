@@ -15,7 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
-import { TEXTS, useChatColors } from '../../screens/chat/chatScreenConstants';
+import { useChatColors, useChatTexts } from '../../screens/chat/chatScreenConstants';
 
 function fireLightHaptics() {
   try {
@@ -35,6 +35,7 @@ export default function ChatOptionsSheet({
   onOpenAiInfo,
   onRequestClearConversation,
 }) {
+  const TEXTS = useChatTexts();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const chatColors = useChatColors();
@@ -115,7 +116,7 @@ export default function ChatOptionsSheet({
           color: chatColors.BOT_TEXT,
         },
       }),
-    [chatColors, colors.accentLineSoft, colors.error, colors.dangerSoft],
+    [chatColors, colors.accentLineSoft, colors.error],
   );
 
   const wrap = (fn) => () => {

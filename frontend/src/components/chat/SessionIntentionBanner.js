@@ -3,7 +3,10 @@
  */
 import React, { useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SESSION_INTENTION_OPTIONS, TEXTS } from '../../screens/chat/chatScreenConstants';
+import {
+  useChatTexts,
+  useSessionIntentionOptions,
+} from '../../screens/chat/chatScreenConstants';
 import { useTheme } from '../../context/ThemeContext';
 import { SPACING } from '../../constants/ui';
 
@@ -13,7 +16,8 @@ export default function SessionIntentionBanner({
   onSelect,
   onSkip,
 }) {
-  if (!visible) return null;
+  const TEXTS = useChatTexts();
+  const SESSION_INTENTION_OPTIONS = useSessionIntentionOptions();
   const { colors } = useTheme();
 
   const styles = useMemo(
@@ -99,6 +103,8 @@ export default function SessionIntentionBanner({
     [colors],
   );
 
+  if (!visible) return null;
+
   return (
     <View style={styles.wrap} accessibilityRole="summary">
       <Text style={styles.kicker}>{TEXTS.SESSION_INTENTION_KICKER}</Text>
@@ -132,7 +138,7 @@ export default function SessionIntentionBanner({
           onPress={onSkip}
           accessibilityRole="button"
           accessibilityLabel={TEXTS.SESSION_INTENTION_SKIP}
-          accessibilityHint="Continúa el chat sin elegir un enfoque"
+          accessibilityHint={TEXTS.SESSION_INTENTION_SKIP_HINT}
         >
           <Text style={styles.skipText}>{TEXTS.SESSION_INTENTION_SKIP}</Text>
         </Pressable>

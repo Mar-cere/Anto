@@ -17,8 +17,20 @@ import BreathingExercise from '../../components/therapeutic/BreathingExercise';
 import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
 import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
+
+const DEFAULT_TEXTS = {
+  TITLE: 'Ejercicio de Respiracion',
+};
 
 const BreathingExerciseScreen = () => {
+  const translated = useSectionTranslations('TECHNIQUES');
+  const TEXTS = useMemo(
+    () => ({
+      TITLE: translated?.BREATHING_TITLE || DEFAULT_TEXTS.TITLE,
+    }),
+    [translated]
+  );
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle } = useTheme();
@@ -50,7 +62,7 @@ const BreathingExerciseScreen = () => {
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header
-        title="Ejercicio de Respiración"
+        title={TEXTS.TITLE}
         showBackButton
         onBackPress={() => navigation.goBack()}
       />

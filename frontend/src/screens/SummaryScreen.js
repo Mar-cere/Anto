@@ -20,10 +20,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../components/Header';
 import ParticleBackground from '../components/ParticleBackground';
 import { api, ENDPOINTS } from '../config/api';
+import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
 
-const TEXTS = {
+const DEFAULT_TEXTS = {
   TITLE: 'Tu resumen',
   WEEK: 'Semana',
   MONTH: 'Mes',
@@ -47,10 +49,47 @@ const TEXTS = {
   PULSE_EMPTY: 'Sin registros emocionales este período.',
   EMPTY_TITLE: 'Semana tranquila en la app',
   EMPTY_SUB:
-    'No pasa nada. Cuando quieras retomar, aquí tienes un par de pasos sin presión.',
+    'Cuando quieras retomar, aquí tienes un par de pasos sin presión.',
   CTA_CHAT: 'Hablar con Anto',
   CTA_GRATITUDE: 'Escribir gratitud',
   CTA_TECHNIQUES: 'Ver técnicas',
+  NARRATIVE_TITLE: 'Resumen',
+  NARRATIVE_THEMES: 'Temas',
+  NARRATIVE_MICRO_WINS: 'Micro-logros',
+  PERIOD_FALLBACK: '…',
+  TIMES_SINGULAR: 'vez',
+  TIMES_PLURAL: 'veces',
+  ERROR_CONNECTION: 'Error de conexión. Verifica internet e inténtalo de nuevo.',
+  ERROR_TOO_MANY_REQUESTS: 'Demasiados intentos. Espera un momento e inténtalo nuevamente.',
+};
+
+const resolveSummaryErrorMessage = (error, texts, fallbackKey = 'ERROR') => {
+  const normalizedMessage = String(
+    error?.response?.data?.message ?? error?.message ?? '',
+  ).toLowerCase();
+  const status = error?.response?.status;
+
+  const isNetwork =
+    normalizedMessage.includes('network') ||
+    normalizedMessage.includes('econnrefused') ||
+    normalizedMessage.includes('timeout') ||
+    normalizedMessage.includes('timed out') ||
+    normalizedMessage.includes('failed to fetch');
+
+  if (isNetwork) {
+    return texts.ERROR_CONNECTION || texts[fallbackKey] || texts.ERROR;
+  }
+
+  const isTooManyRequests =
+    status === 429 ||
+    normalizedMessage.includes('too many') ||
+    normalizedMessage.includes('demasiados intentos');
+
+  if (isTooManyRequests) {
+    return texts.ERROR_TOO_MANY_REQUESTS || texts[fallbackKey] || texts.ERROR;
+  }
+
+  return texts[fallbackKey] || texts.ERROR;
 };
 
 function formatYmd(d) {
@@ -60,9 +99,9 @@ function formatYmd(d) {
   return `${y}-${m}-${day}`;
 }
 
-function monthTitleEs(year, month1to12) {
+function monthTitle(year, month1to12, locale) {
   const d = new Date(year, month1to12 - 1, 1);
-  return d.toLocaleDateString('es', { month: 'long', year: 'numeric' });
+  return d.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
 }
 
 function isSummaryEmpty(p) {
@@ -88,17 +127,17 @@ function MetricTile({ icon, value, label, colors, sx }) {
   );
 }
 
-function NarrativeCard({ narrative, sx }) {
+function NarrativeCard({ narrative, sx, texts }) {
   if (!narrative) return null;
   return (
     <View style={sx.narrativeCard}>
-      <Text style={sx.narrativeTitle}>Resumen</Text>
+      <Text style={sx.narrativeTitle}>{texts.NARRATIVE_TITLE}</Text>
       <Text style={sx.narrativeLine}>
-        <Text style={sx.narrativeLabel}>Temas: </Text>
+        <Text style={sx.narrativeLabel}>{texts.NARRATIVE_THEMES}: </Text>
         {narrative.themes}
       </Text>
       <Text style={sx.narrativeLine}>
-        <Text style={sx.narrativeLabel}>Micro-logros: </Text>
+        <Text style={sx.narrativeLabel}>{texts.NARRATIVE_MICRO_WINS}: </Text>
         {narrative.microWins}
       </Text>
       <Text style={sx.narrativeQuestion}>{narrative.nextQuestion}</Text>
@@ -120,19 +159,19 @@ function SkeletonGrid({ sx }) {
   );
 }
 
-function EmptyState({ navigation, colors, sx }) {
+function EmptyState({ navigation, colors, sx, texts }) {
   return (
     <View style={sx.emptyWrap}>
       <MaterialCommunityIcons name="sleep" size={40} color={colors.textSecondary} style={sx.emptyIcon} />
-      <Text style={sx.emptyTitle}>{TEXTS.EMPTY_TITLE}</Text>
-      <Text style={sx.emptySub}>{TEXTS.EMPTY_SUB}</Text>
+      <Text style={sx.emptyTitle}>{texts.EMPTY_TITLE}</Text>
+      <Text style={sx.emptySub}>{texts.EMPTY_SUB}</Text>
       <TouchableOpacity
         style={sx.ctaPrimary}
         onPress={() => navigation.navigate('MainTabs', { screen: 'Chat' })}
         activeOpacity={0.85}
       >
         <MaterialCommunityIcons name="chat-outline" size={20} color={colors.textOnPrimary} style={sx.ctaIcon} />
-        <Text style={sx.ctaPrimaryText}>{TEXTS.CTA_CHAT}</Text>
+        <Text style={sx.ctaPrimaryText}>{texts.CTA_CHAT}</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={sx.ctaSecondary}
@@ -140,7 +179,7 @@ function EmptyState({ navigation, colors, sx }) {
         activeOpacity={0.85}
       >
         <MaterialCommunityIcons name="notebook-outline" size={20} color={colors.primary} style={sx.ctaIcon} />
-        <Text style={sx.ctaSecondaryText}>{TEXTS.CTA_GRATITUDE}</Text>
+        <Text style={sx.ctaSecondaryText}>{texts.CTA_GRATITUDE}</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={sx.ctaSecondary}
@@ -148,21 +187,21 @@ function EmptyState({ navigation, colors, sx }) {
         activeOpacity={0.85}
       >
         <MaterialCommunityIcons name="head-heart-outline" size={20} color={colors.primary} style={sx.ctaIcon} />
-        <Text style={sx.ctaSecondaryText}>{TEXTS.CTA_TECHNIQUES}</Text>
+        <Text style={sx.ctaSecondaryText}>{texts.CTA_TECHNIQUES}</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
-function HowWeCountModal({ visible, onClose, sx }) {
+function HowWeCountModal({ visible, onClose, sx, texts }) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={sx.modalBackdrop} onPress={onClose} accessibilityRole="button">
         <View style={sx.modalCard}>
-          <Text style={sx.modalTitle}>{TEXTS.TOOLTIP_TITLE}</Text>
-          <Text style={sx.modalBody}>{TEXTS.TOOLTIP_BODY}</Text>
+          <Text style={sx.modalTitle}>{texts.TOOLTIP_TITLE}</Text>
+          <Text style={sx.modalBody}>{texts.TOOLTIP_BODY}</Text>
           <TouchableOpacity style={sx.modalBtn} onPress={onClose} activeOpacity={0.85}>
-            <Text style={sx.modalBtnText}>{TEXTS.TOOLTIP_CLOSE}</Text>
+            <Text style={sx.modalBtnText}>{texts.TOOLTIP_CLOSE}</Text>
           </TouchableOpacity>
         </View>
       </Pressable>
@@ -171,6 +210,69 @@ function HowWeCountModal({ visible, onClose, sx }) {
 }
 
 export default function SummaryScreen() {
+  const translated = useSectionTranslations('PROFILE');
+  const { language } = useLanguage();
+  const TEXTS = useMemo(
+    () => ({
+      ...DEFAULT_TEXTS,
+      TITLE: translated?.SUMMARY_TITLE || DEFAULT_TEXTS.TITLE,
+      WEEK: translated?.SUMMARY_WEEK || DEFAULT_TEXTS.WEEK,
+      MONTH: translated?.SUMMARY_MONTH || DEFAULT_TEXTS.MONTH,
+      LOADING: translated?.SUMMARY_LOADING || DEFAULT_TEXTS.LOADING,
+      ERROR: translated?.SUMMARY_ERROR || DEFAULT_TEXTS.ERROR,
+      RETRY: translated?.RETRY || DEFAULT_TEXTS.RETRY,
+      PREV: translated?.SUMMARY_PREV || DEFAULT_TEXTS.PREV,
+      NEXT: translated?.SUMMARY_NEXT || DEFAULT_TEXTS.NEXT,
+      FOOTER_HINT: translated?.SUMMARY_FOOTER_HINT || DEFAULT_TEXTS.FOOTER_HINT,
+      HOW_WE_COUNT:
+        translated?.SUMMARY_HOW_WE_COUNT || DEFAULT_TEXTS.HOW_WE_COUNT,
+      TOOLTIP_TITLE:
+        translated?.SUMMARY_TOOLTIP_TITLE || DEFAULT_TEXTS.TOOLTIP_TITLE,
+      TOOLTIP_CLOSE:
+        translated?.COMMON_OK || DEFAULT_TEXTS.TOOLTIP_CLOSE,
+      TOOLTIP_BODY:
+        translated?.SUMMARY_TOOLTIP_BODY || DEFAULT_TEXTS.TOOLTIP_BODY,
+      TILE_CHAT: translated?.SUMMARY_TILE_CHAT || DEFAULT_TEXTS.TILE_CHAT,
+      TILE_DAYS: translated?.SUMMARY_TILE_DAYS || DEFAULT_TEXTS.TILE_DAYS,
+      TILE_TECHNIQUES:
+        translated?.SUMMARY_TILE_TECHNIQUES || DEFAULT_TEXTS.TILE_TECHNIQUES,
+      TILE_TASKS: translated?.SUMMARY_TILE_TASKS || DEFAULT_TEXTS.TILE_TASKS,
+      TILE_HABITS:
+        translated?.SUMMARY_TILE_HABITS || DEFAULT_TEXTS.TILE_HABITS,
+      TILE_JOURNAL:
+        translated?.SUMMARY_TILE_JOURNAL || DEFAULT_TEXTS.TILE_JOURNAL,
+      PULSE: translated?.SUMMARY_PULSE || DEFAULT_TEXTS.PULSE,
+      PULSE_EMPTY:
+        translated?.SUMMARY_PULSE_EMPTY || DEFAULT_TEXTS.PULSE_EMPTY,
+      EMPTY_TITLE:
+        translated?.SUMMARY_EMPTY_TITLE || DEFAULT_TEXTS.EMPTY_TITLE,
+      EMPTY_SUB: translated?.SUMMARY_EMPTY_SUB || DEFAULT_TEXTS.EMPTY_SUB,
+      CTA_CHAT: translated?.SUMMARY_CTA_CHAT || DEFAULT_TEXTS.CTA_CHAT,
+      CTA_GRATITUDE:
+        translated?.SUMMARY_CTA_GRATITUDE || DEFAULT_TEXTS.CTA_GRATITUDE,
+      CTA_TECHNIQUES:
+        translated?.SUMMARY_CTA_TECHNIQUES || DEFAULT_TEXTS.CTA_TECHNIQUES,
+      NARRATIVE_TITLE:
+        translated?.SUMMARY_NARRATIVE_TITLE || DEFAULT_TEXTS.NARRATIVE_TITLE,
+      NARRATIVE_THEMES:
+        translated?.SUMMARY_NARRATIVE_THEMES || DEFAULT_TEXTS.NARRATIVE_THEMES,
+      NARRATIVE_MICRO_WINS:
+        translated?.SUMMARY_NARRATIVE_MICRO_WINS ||
+        DEFAULT_TEXTS.NARRATIVE_MICRO_WINS,
+      PERIOD_FALLBACK:
+        translated?.SUMMARY_PERIOD_FALLBACK || DEFAULT_TEXTS.PERIOD_FALLBACK,
+      TIMES_SINGULAR:
+        translated?.SUMMARY_TIMES_SINGULAR || DEFAULT_TEXTS.TIMES_SINGULAR,
+      TIMES_PLURAL:
+        translated?.SUMMARY_TIMES_PLURAL || DEFAULT_TEXTS.TIMES_PLURAL,
+      ERROR_CONNECTION:
+        translated?.ERROR_CONNECTION || DEFAULT_TEXTS.ERROR_CONNECTION,
+      ERROR_TOO_MANY_REQUESTS:
+        translated?.ERROR_TOO_MANY_REQUESTS ||
+        DEFAULT_TEXTS.ERROR_TOO_MANY_REQUESTS,
+    }),
+    [translated],
+  );
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { colors, statusBarStyle } = useTheme();
@@ -545,14 +647,15 @@ export default function SummaryScreen() {
 
   const queryParams = useMemo(() => {
     if (granularity === 'week') {
-      return { period: 'week', date: formatYmd(weekAnchor) };
+      return { period: 'week', date: formatYmd(weekAnchor), language };
     }
     return {
       period: 'month',
       year: String(monthYear.year),
       month: String(monthYear.month),
+      language,
     };
-  }, [granularity, weekAnchor, monthYear]);
+  }, [granularity, weekAnchor, monthYear, language]);
 
   const load = useCallback(
     async (fromPull = false) => {
@@ -585,7 +688,7 @@ export default function SummaryScreen() {
         if (e?.name === 'AbortError') return;
         if (seq !== summaryReqSeqRef.current) return;
         console.error('[SummaryScreen]', e);
-        setError(TEXTS.ERROR);
+        setError(resolveSummaryErrorMessage(e, TEXTS, 'ERROR'));
         setPayload(null);
         hasShownPayloadRef.current = false;
       } finally {
@@ -595,7 +698,7 @@ export default function SummaryScreen() {
         if (fromPull) setRefreshing(false);
       }
     },
-    [queryParams]
+    [queryParams, TEXTS]
   );
 
   useEffect(() => {
@@ -638,22 +741,31 @@ export default function SummaryScreen() {
     if (!top?.emotion) return null;
     const n = top.count;
     const name = top.emotion;
-    return `${name} · ${n} ${n === 1 ? 'vez' : 'veces'}`;
-  }, [payload]);
+    return `${name} · ${n} ${n === 1 ? TEXTS.TIMES_SINGULAR : TEXTS.TIMES_PLURAL}`;
+  }, [payload, TEXTS]);
 
   const periodEmpty = useMemo(() => isSummaryEmpty(payload), [payload]);
 
   const periodTitle =
     granularity === 'week'
-      ? payload?.period?.label || '…'
-      : monthTitleEs(monthYear.year, monthYear.month);
+      ? payload?.period?.label || TEXTS.PERIOD_FALLBACK
+      : monthTitle(
+          monthYear.year,
+          monthYear.month,
+          language === 'en' ? 'en-US' : 'es-ES',
+        );
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <StatusBar barStyle={statusBarStyle} />
       <ParticleBackground />
       <Header title={TEXTS.TITLE} showBackButton />
-      <HowWeCountModal visible={infoOpen} onClose={() => setInfoOpen(false)} sx={styles} />
+      <HowWeCountModal
+        visible={infoOpen}
+        onClose={() => setInfoOpen(false)}
+        sx={styles}
+        texts={TEXTS}
+      />
 
       <View style={styles.topBar}>
         <View style={styles.segment}>
@@ -719,10 +831,10 @@ export default function SummaryScreen() {
           <View style={styles.sheetWrap}>
             <View style={[styles.sheet, dataStale && styles.sheetDimmed]}>
               {periodEmpty ? (
-                <EmptyState navigation={navigation} colors={colors} sx={styles} />
+                <EmptyState navigation={navigation} colors={colors} sx={styles} texts={TEXTS} />
               ) : (
                 <View>
-                  <NarrativeCard narrative={payload?.narrative} sx={styles} />
+                  <NarrativeCard narrative={payload?.narrative} sx={styles} texts={TEXTS} />
                   <View style={styles.grid}>
                     <MetricTile
                       icon="message-text-outline"

@@ -1,13 +1,13 @@
 import React from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
-import { StatusBar } from 'react-native';
+import { View, Text, ActivityIndicator, StatusBar } from 'react-native';
 import { useEmergencyAlertsHistoryStyles } from './emergencyAlertsHistoryStyles';
-import { TEXTS } from './emergencyAlertsHistoryConstants';
+import { useEmergencyAlertsHistoryTexts } from './emergencyAlertsHistoryConstants';
 import { useTheme } from '../../context/ThemeContext';
 
 export function EmergencyAlertsLoadingView() {
   const styles = useEmergencyAlertsHistoryStyles();
   const { colors, statusBarStyle } = useTheme();
+  const TEXTS = useEmergencyAlertsHistoryTexts();
   return (
     <View style={[styles.container, styles.loadingContainer]}>
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />

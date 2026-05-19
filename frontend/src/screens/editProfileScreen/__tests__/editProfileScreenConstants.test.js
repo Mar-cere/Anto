@@ -41,7 +41,7 @@ describe('editProfileScreenConstants', () => {
       expect(TEXTS.NAME).toBe('Nombre');
       expect(TEXTS.USERNAME).toBe('Nombre de Usuario');
       expect(TEXTS.EMAIL).toBe('Correo Electrónico');
-      expect(TEXTS.SAVED).toBe('¡Guardado!');
+      expect(TEXTS.SAVED).toBe('Guardado');
     });
     it('debe tener textos de cambios sin guardar y sesión', () => {
       expect(TEXTS.UNSAVED_CHANGES).toBe('Cambios sin guardar');

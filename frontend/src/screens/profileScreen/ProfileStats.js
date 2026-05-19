@@ -5,9 +5,10 @@ import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useProfileScreenStyles } from './profileScreenStyles';
-import { TEXTS, STAT_ICON_SIZE } from './profileScreenConstants';
+import { STAT_ICON_SIZE, useProfileTexts } from './profileScreenConstants';
 
 export function ProfileStats({ userData, detailedStats }) {
+  const TEXTS = useProfileTexts();
   const { styles, profileColors } = useProfileScreenStyles();
 
   return (

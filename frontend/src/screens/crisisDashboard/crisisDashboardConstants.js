@@ -1,6 +1,8 @@
 /**
  * Constantes para CrisisDashboardScreen y subcomponentes
  */
+import { useMemo } from 'react';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { lightColors } from '../../styles/themePalettes';
 
 function rgbaFromHex(hex, alpha = 1) {
@@ -64,6 +66,88 @@ export const TEXTS = {
   TREND_STABLE: 'Estable',
   TREND_LABEL: 'Tendencia: ',
 };
+
+export function useCrisisDashboardTexts() {
+  const translated = useSectionTranslations('PROFILE');
+  return useMemo(
+    () => ({
+      ...TEXTS,
+      TITLE: translated?.CRISIS_TITLE || TEXTS.TITLE,
+      SUPPORT_TITLE: translated?.CRISIS_SUPPORT_TITLE || TEXTS.SUPPORT_TITLE,
+      SUPPORT_SUBTITLE:
+        translated?.CRISIS_SUPPORT_SUBTITLE || TEXTS.SUPPORT_SUBTITLE,
+      SUPPORT_CONTACTS_CTA:
+        translated?.CRISIS_SUPPORT_CONTACTS_CTA || TEXTS.SUPPORT_CONTACTS_CTA,
+      SUPPORT_CONTACTS_HINT:
+        translated?.CRISIS_SUPPORT_CONTACTS_HINT || TEXTS.SUPPORT_CONTACTS_HINT,
+      SUPPORT_CHAT_CTA:
+        translated?.CRISIS_SUPPORT_CHAT_CTA || TEXTS.SUPPORT_CHAT_CTA,
+      SUPPORT_CHAT_HINT:
+        translated?.CRISIS_SUPPORT_CHAT_HINT || TEXTS.SUPPORT_CHAT_HINT,
+      LOADING: translated?.CRISIS_LOADING || TEXTS.LOADING,
+      ERROR: translated?.CRISIS_ERROR || TEXTS.ERROR,
+      ERROR_UNKNOWN: translated?.CRISIS_ERROR_UNKNOWN || TEXTS.ERROR_UNKNOWN,
+      DATE_UNAVAILABLE:
+        translated?.CRISIS_DATE_UNAVAILABLE || TEXTS.DATE_UNAVAILABLE,
+      RETRY: translated?.CRISIS_RETRY || TEXTS.RETRY,
+      REFRESHING: translated?.CRISIS_REFRESHING || TEXTS.REFRESHING,
+      SUMMARY: translated?.CRISIS_SUMMARY || TEXTS.SUMMARY,
+      SUMMARY_PERIOD_NOTE:
+        translated?.CRISIS_SUMMARY_PERIOD_NOTE || TEXTS.SUMMARY_PERIOD_NOTE,
+      TRENDS: translated?.CRISIS_TRENDS || TEXTS.TRENDS,
+      TRENDS_PERIOD_HINT:
+        translated?.CRISIS_TRENDS_PERIOD_HINT || TEXTS.TRENDS_PERIOD_HINT,
+      CRISIS_BY_MONTH:
+        translated?.CRISIS_BY_MONTH_TITLE || TEXTS.CRISIS_BY_MONTH,
+      CRISIS_BY_MONTH_PERIOD:
+        translated?.CRISIS_BY_MONTH_PERIOD || TEXTS.CRISIS_BY_MONTH_PERIOD,
+      EMOTION_DISTRIBUTION:
+        translated?.CRISIS_EMOTION_DISTRIBUTION ||
+        TEXTS.EMOTION_DISTRIBUTION,
+      EMOTION_DISTRIBUTION_PERIOD:
+        translated?.CRISIS_EMOTION_DISTRIBUTION_PERIOD ||
+        TEXTS.EMOTION_DISTRIBUTION_PERIOD,
+      HISTORY: translated?.CRISIS_HISTORY || TEXTS.HISTORY,
+      HISTORY_RECENT_NOTE:
+        translated?.CRISIS_HISTORY_RECENT_NOTE || TEXTS.HISTORY_RECENT_NOTE,
+      TOTAL_CRISES: translated?.CRISIS_TOTAL || TEXTS.TOTAL_CRISES,
+      THIS_MONTH: translated?.CRISIS_THIS_MONTH || TEXTS.THIS_MONTH,
+      RECENT: translated?.CRISIS_RECENT || TEXTS.RECENT,
+      RESOLUTION_RATE:
+        translated?.CRISIS_RESOLUTION_RATE || TEXTS.RESOLUTION_RATE,
+      ALERTS_SENT: translated?.CRISIS_ALERTS_SENT || TEXTS.ALERTS_SENT,
+      FOLLOWUPS_COMPLETED:
+        translated?.CRISIS_FOLLOWUPS_COMPLETED || TEXTS.FOLLOWUPS_COMPLETED,
+      AVERAGE_RISK: translated?.CRISIS_AVERAGE_RISK || TEXTS.AVERAGE_RISK,
+      PERIOD_7D: translated?.CRISIS_PERIOD_7D || TEXTS.PERIOD_7D,
+      PERIOD_30D: translated?.CRISIS_PERIOD_30D || TEXTS.PERIOD_30D,
+      PERIOD_90D: translated?.CRISIS_PERIOD_90D || TEXTS.PERIOD_90D,
+      VIEW_ALL: translated?.CRISIS_VIEW_ALL || TEXTS.VIEW_ALL,
+      NO_CRISIS: translated?.CRISIS_NO_DATA_TITLE || TEXTS.NO_CRISIS,
+      NO_CRISIS_MESSAGE:
+        translated?.CRISIS_NO_DATA_MESSAGE || TEXTS.NO_CRISIS_MESSAGE,
+      EMPTY_TRENDS: translated?.CRISIS_EMPTY_TRENDS || TEXTS.EMPTY_TRENDS,
+      EMPTY_MONTHLY_CHART:
+        translated?.CRISIS_EMPTY_MONTHLY || TEXTS.EMPTY_MONTHLY_CHART,
+      EMPTY_EMOTION_DISTRIBUTION:
+        translated?.CRISIS_EMPTY_EMOTION_DISTRIBUTION ||
+        TEXTS.EMPTY_EMOTION_DISTRIBUTION,
+      EMPTY_HISTORY_RECENT:
+        translated?.CRISIS_EMPTY_HISTORY_RECENT || TEXTS.EMPTY_HISTORY_RECENT,
+      LOW: translated?.CRISIS_RISK_LOW || TEXTS.LOW,
+      WARNING: translated?.CRISIS_RISK_WARNING || TEXTS.WARNING,
+      MEDIUM: translated?.CRISIS_RISK_MEDIUM || TEXTS.MEDIUM,
+      HIGH: translated?.CRISIS_RISK_HIGH || TEXTS.HIGH,
+      TREND_IMPROVING:
+        translated?.CRISIS_TREND_IMPROVING || TEXTS.TREND_IMPROVING,
+      TREND_DECLINING:
+        translated?.CRISIS_TREND_DECLINING || TEXTS.TREND_DECLINING,
+      TREND_STABLE: translated?.CRISIS_TREND_STABLE || TEXTS.TREND_STABLE,
+      TREND_LABEL: translated?.CRISIS_TREND_LABEL || TEXTS.TREND_LABEL,
+    }),
+    [translated],
+  );
+}
 
 export const CHART_HEIGHT = 220;
 
@@ -133,6 +217,15 @@ export const RISK_LEVEL_TEXTS = {
   MEDIUM: TEXTS.MEDIUM,
   HIGH: TEXTS.HIGH,
 };
+
+export function createRiskLevelTexts(texts) {
+  return {
+    LOW: texts.LOW,
+    WARNING: texts.WARNING,
+    MEDIUM: texts.MEDIUM,
+    HIGH: texts.HIGH,
+  };
+}
 
 export const TREND_PERIODS = ['7d', '30d', '90d'];
 

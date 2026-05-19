@@ -9,7 +9,6 @@
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import React, { useMemo, useRef, useState } from 'react';
 import {
@@ -26,19 +25,20 @@ import {
 } from 'react-native';
 import { SPACING } from '../constants/ui';
 import { useTheme } from '../context/ThemeContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import {
   getTutorialStorageKey,
   isTutorialCompleted as isTutorialCompletedStorage,
   resetTutorial as resetTutorialStorage,
 } from '../utils/tutorialStorage';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 export const isTutorialCompleted = isTutorialCompletedStorage;
 export const resetTutorial = resetTutorialStorage;
 
 // Constantes de textos
-const TEXTS = {
+const DEFAULT_TEXTS = {
   WELCOME: '¡Bienvenido a Anto!',
   WELCOME_SUBTITLE: 'Tu compañero de bienestar emocional',
   WELCOME_DESCRIPTION: 'Te guiaremos por las funcionalidades principales en solo unos segundos.',
@@ -48,10 +48,27 @@ const TEXTS = {
   GET_STARTED: 'Comenzar',
   FINISH: 'Finalizar',
   SWIPE_TO_SKIP: 'Desliza hacia abajo para omitir',
+  ARROW_HINT: 'Mira abajo',
+  STEP_1_TITLE: 'Dashboard Principal',
+  STEP_1_DESCRIPTION:
+    'Tu centro de control con resumen de tareas, hábitos y bienestar emocional.',
+  STEP_2_TITLE: 'Chat de Apoyo',
+  STEP_2_DESCRIPTION:
+    'Conversa con nuestro asistente de IA. Recibe apoyo emocional personalizado 24/7.',
+  STEP_3_TITLE: 'Tareas y Hábitos',
+  STEP_3_DESCRIPTION:
+    'Organiza tu día y construye hábitos saludables con seguimiento constante.',
+  STEP_4_TITLE: 'Contactos de Emergencia',
+  STEP_4_DESCRIPTION:
+    'Configura contactos de confianza que recibirán alertas en situaciones de riesgo.',
 };
 
 const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHighlightChange, userId = null }) => {
-  const navigation = useNavigation();
+  const translated = useSectionTranslations('ONBOARDING');
+  const TEXTS = useMemo(
+    () => ({ ...DEFAULT_TEXTS, ...translated }),
+    [translated],
+  );
   const { colors } = useTheme();
   const [currentStep, setCurrentStep] = useState(-1); // -1 = pantalla de bienvenida
   const [fadeAnim] = useState(new Animated.Value(1));
@@ -63,37 +80,37 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
       {
         id: 1,
         icon: 'home',
-        title: 'Dashboard Principal',
-        description: 'Tu centro de control con resumen de tareas, hábitos y bienestar emocional.',
+        title: TEXTS.STEP_1_TITLE,
+        description: TEXTS.STEP_1_DESCRIPTION,
         color: colors.primary,
         highlightElement: null,
       },
       {
         id: 2,
         icon: 'message-text',
-        title: 'Chat de Apoyo',
-        description: 'Conversa con nuestro asistente de IA. Recibe apoyo emocional personalizado 24/7.',
+        title: TEXTS.STEP_2_TITLE,
+        description: TEXTS.STEP_2_DESCRIPTION,
         color: colors.secondary ?? colors.accentLine,
         highlightElement: 'chat',
       },
       {
         id: 3,
         icon: 'check-circle',
-        title: 'Tareas y Hábitos',
-        description: 'Organiza tu día y construye hábitos saludables con seguimiento constante.',
+        title: TEXTS.STEP_3_TITLE,
+        description: TEXTS.STEP_3_DESCRIPTION,
         color: colors.warning,
         highlightElement: 'tasks-habits',
       },
       {
         id: 4,
         icon: 'alert-circle',
-        title: 'Contactos de Emergencia',
-        description: 'Configura contactos de confianza que recibirán alertas en situaciones de riesgo.',
+        title: TEXTS.STEP_4_TITLE,
+        description: TEXTS.STEP_4_DESCRIPTION,
         color: colors.error,
         highlightElement: 'settings',
       },
     ],
-    [colors],
+    [TEXTS, colors],
   );
 
   const styles = useMemo(
@@ -485,7 +502,7 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
         onHighlightChange(null);
       }
     }
-  }, [visible, onHighlightChange]);
+  }, [visible, onHighlightChange, fadeAnim, scaleAnim, slideAnim]);
 
   // Efecto para animar el icono cuando cambia el paso
   React.useEffect(() => {
@@ -503,7 +520,7 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
         }),
       ]).start();
     }
-  }, [currentStep, isWelcomeScreen]);
+  }, [currentStep, isWelcomeScreen, currentStepData, scaleAnim]);
 
   return (
     <Modal
@@ -615,7 +632,7 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
                         color={currentStepData.color}
                       />
                       <Text style={[styles.arrowText, { color: currentStepData.color }]}>
-                        Mira abajo
+                        {TEXTS.ARROW_HINT}
                       </Text>
                     </View>
                   )}

@@ -2,7 +2,10 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useEmergencyAlertsHistoryStyles } from './emergencyAlertsHistoryStyles';
-import { TEXTS, TABS } from './emergencyAlertsHistoryConstants';
+import {
+  TABS,
+  useEmergencyAlertsHistoryTexts,
+} from './emergencyAlertsHistoryConstants';
 
 /** null = sin badge; número finito >= 0 para pill y a11y */
 function normalizeTabCount(count) {
@@ -26,6 +29,7 @@ export function EmergencyAlertsTabs({
   patternsCount,
 }) {
   const styles = useEmergencyAlertsHistoryStyles();
+  const TEXTS = useEmergencyAlertsHistoryTexts();
   const onPress = (tab) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     if (typeof onTabChange === 'function') {
@@ -40,10 +44,18 @@ export function EmergencyAlertsTabs({
 
     let a11ySuffix = '';
     if (normalized != null) {
-      if (normalized > 99) a11ySuffix = ', más de 99 alertas';
-      else if (normalized === 1) a11ySuffix = ', una alerta';
-      else if (normalized === 0) a11ySuffix = ', sin alertas';
-      else a11ySuffix = `, ${normalized} alertas`;
+      if (normalized > 99) {
+        a11ySuffix = `, ${TEXTS.TAB_A11Y_MORE_THAN_99_ALERTS}`;
+      } else if (normalized === 1) {
+        a11ySuffix = `, ${TEXTS.TAB_A11Y_ONE_ALERT}`;
+      } else if (normalized === 0) {
+        a11ySuffix = `, ${TEXTS.TAB_A11Y_ZERO_ALERTS}`;
+      } else {
+        a11ySuffix = `, ${TEXTS.TAB_A11Y_ALERTS_SUFFIX.replace(
+          '{count}',
+          String(normalized),
+        )}`;
+      }
     }
     const a11yLabel = `${label}${a11ySuffix}`;
 

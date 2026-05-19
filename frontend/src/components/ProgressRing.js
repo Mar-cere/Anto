@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Animated, StyleSheet } from 'react-native';
-import Svg, { Circle, Text as SvgText, G, Line } from 'react-native-svg';
+import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 import { useTheme } from '../context/ThemeContext';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -12,7 +12,6 @@ const ProgressRing = ({ radius, strokeWidth, progress, color }) => {
   const labelFill = useMemo(() => colors.text, [colors]);
   const normalizedRadius = radius - strokeWidth / 2;
   const circumference = normalizedRadius * 2 * Math.PI;
-  const strokeDashoffset = circumference - (progress * circumference);
   
   const [animatedProgress] = useState(new Animated.Value(0));
   
@@ -22,7 +21,7 @@ const ProgressRing = ({ radius, strokeWidth, progress, color }) => {
       duration: 1000,
       useNativeDriver: false,
     }).start();
-  }, [progress]);
+  }, [progress, animatedProgress]);
   
   const animatedStrokeDashoffset = animatedProgress.interpolate({
     inputRange: [0, 1],

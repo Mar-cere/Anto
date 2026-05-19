@@ -6,11 +6,12 @@ import { View, Text } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useCrisisDashboardStyles } from './crisisDashboardStyles';
-import { TEXTS } from './crisisDashboardConstants';
+import { useCrisisDashboardTexts } from './crisisDashboardConstants';
 
 export function CrisisDashboardEmpty() {
   const { colors } = useTheme();
   const styles = useCrisisDashboardStyles();
+  const TEXTS = useCrisisDashboardTexts();
   return (
     <View style={styles.emptyContainer}>
       <MaterialCommunityIcons name="check-circle" size={64} color={colors.success} />

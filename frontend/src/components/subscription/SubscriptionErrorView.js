@@ -1,11 +1,12 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { TEXTS } from '../../screens/subscription/subscriptionScreenConstants';
+import { useSubscriptionTexts } from '../../screens/subscription/subscriptionScreenConstants';
 import { useTheme } from '../../context/ThemeContext';
 import { SPACING } from '../../constants/ui';
 
 export default function SubscriptionErrorView({ error, onRetry }) {
+  const TEXTS = useSubscriptionTexts();
   const { colors } = useTheme();
   const styles = React.useMemo(
     () =>

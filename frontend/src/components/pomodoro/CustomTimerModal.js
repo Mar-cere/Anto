@@ -39,7 +39,7 @@ import {
   TIME_INPUT_FONT_SIZE,
   TIME_INPUT_PADDING,
   TIME_INPUT_WIDTH,
-  TEXTS,
+  usePomodoroTexts,
 } from '../../screens/pomodoro/pomodoroScreenConstants';
 
 export default function CustomTimerModal({
@@ -53,6 +53,7 @@ export default function CustomTimerModal({
   setPrepTime,
   onConfirm,
 }) {
+  const TEXTS = usePomodoroTexts();
   const { colors } = useTheme();
   const { PC, styles } = useMemo(() => {
     const pomodoro = createPomodoroColors(colors);

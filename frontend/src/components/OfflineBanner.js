@@ -1,12 +1,20 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
 /**
  * Componente que muestra un banner cuando el dispositivo está offline.
  * Mensaje en lenguaje claro y accesible para VoiceOver/TalkBack.
  */
 const OfflineBanner = () => {
+  const translated = useSectionTranslations('DASH');
+  const a11yText =
+    translated?.OFFLINE_BANNER_A11Y ||
+    'Sin conexión a internet. Algunas funciones pueden no estar disponibles. Revisa tu conexión.';
+  const visibleText =
+    translated?.OFFLINE_BANNER_TEXT ||
+    'No se pudo conectar. Revisa tu internet y vuelve a intentar.';
   const { isConnected, isInternetReachable } = useNetworkStatus();
 
   const isOffline = !isConnected || isInternetReachable === false;
@@ -19,10 +27,10 @@ const OfflineBanner = () => {
     <View
       style={styles.container}
       accessibilityRole="alert"
-      accessibilityLabel="Sin conexión a internet. Algunas funciones pueden no estar disponibles. Revisa tu conexión."
+      accessibilityLabel={a11yText}
     >
       <Text style={styles.text}>
-        No se pudo conectar. Revisa tu internet y vuelve a intentar.
+        {visibleText}
       </Text>
     </View>
   );

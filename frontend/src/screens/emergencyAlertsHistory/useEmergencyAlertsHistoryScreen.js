@@ -3,8 +3,12 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, ENDPOINTS } from '../../config/api';
+import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
-import { TEXTS, TABS } from './emergencyAlertsHistoryConstants';
+import {
+  TABS,
+  useEmergencyAlertsHistoryTexts,
+} from './emergencyAlertsHistoryConstants';
 import { safeNonNegativeInt } from './emergencyAlertsHistoryUtils';
 
 function rgbaFromHex(hex, alpha = 1) {
@@ -15,39 +19,41 @@ function rgbaFromHex(hex, alpha = 1) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-function reasonToMessage(reason) {
-  if (reason instanceof Error) return reason.message || TEXTS.ERROR_UNKNOWN;
-  if (reason && typeof reason === 'object' && reason.message != null) return String(reason.message);
-  return TEXTS.ERROR_UNKNOWN;
+function reasonToMessage(reason, texts) {
+  if (reason instanceof Error) return texts.ERROR_UNKNOWN;
+  if (reason && typeof reason === 'object' && reason.message != null) return texts.ERROR_UNKNOWN;
+  return texts.ERROR_UNKNOWN;
 }
 
-function parseHistoryResponse(res) {
+function parseHistoryResponse(res, texts) {
   if (!res || typeof res !== 'object' || res.notModified) {
-    return { ok: false, error: TEXTS.ERROR };
+    return { ok: false, error: texts.ERROR };
   }
   if (res.success === false) {
-    return { ok: false, error: typeof res.message === 'string' && res.message ? res.message : TEXTS.ERROR };
+    return { ok: false, error: texts.ERROR };
   }
   if (!res.success || !Array.isArray(res.data)) {
-    return { ok: false, error: TEXTS.ERROR };
+    return { ok: false, error: texts.ERROR };
   }
   return { ok: true, data: res.data };
 }
 
-function parseObjectDataResponse(res) {
+function parseObjectDataResponse(res, texts) {
   if (!res || typeof res !== 'object' || res.notModified) {
-    return { ok: false, error: TEXTS.ERROR };
+    return { ok: false, error: texts.ERROR };
   }
   if (res.success === false) {
-    return { ok: false, error: typeof res.message === 'string' && res.message ? res.message : TEXTS.ERROR };
+    return { ok: false, error: texts.ERROR };
   }
   if (!res.success || res.data == null || typeof res.data !== 'object' || Array.isArray(res.data)) {
-    return { ok: false, error: TEXTS.ERROR };
+    return { ok: false, error: texts.ERROR };
   }
   return { ok: true, data: res.data };
 }
 
 export function useEmergencyAlertsHistoryScreen() {
+  const TEXTS = useEmergencyAlertsHistoryTexts();
+  const { language } = useLanguage();
   const { colors } = useTheme();
   const isMountedRef = useRef(true);
   useEffect(() => {
@@ -93,8 +99,8 @@ export function useEmergencyAlertsHistoryScreen() {
       const h0 = settled[0];
       const historyParsed =
         h0.status === 'fulfilled'
-          ? parseHistoryResponse(h0.value)
-          : { ok: false, error: reasonToMessage(h0.reason) };
+          ? parseHistoryResponse(h0.value, TEXTS)
+          : { ok: false, error: reasonToMessage(h0.reason, TEXTS) };
 
       if (!historyParsed.ok) {
         setHistory([]);
@@ -111,8 +117,8 @@ export function useEmergencyAlertsHistoryScreen() {
       const s1 = settled[1];
       const statsParsed =
         s1.status === 'fulfilled'
-          ? parseObjectDataResponse(s1.value)
-          : { ok: false, error: reasonToMessage(s1.reason) };
+          ? parseObjectDataResponse(s1.value, TEXTS)
+          : { ok: false, error: reasonToMessage(s1.reason, TEXTS) };
       if (statsParsed.ok) {
         setStats(statsParsed.data);
         setStatsError(null);
@@ -128,8 +134,8 @@ export function useEmergencyAlertsHistoryScreen() {
       const p2 = settled[2];
       const patternsParsed =
         p2.status === 'fulfilled'
-          ? parseObjectDataResponse(p2.value)
-          : { ok: false, error: reasonToMessage(p2.reason) };
+          ? parseObjectDataResponse(p2.value, TEXTS)
+          : { ok: false, error: reasonToMessage(p2.reason, TEXTS) };
       if (patternsParsed.ok) {
         setPatterns(patternsParsed.data);
         setPatternsError(null);
@@ -153,14 +159,14 @@ export function useEmergencyAlertsHistoryScreen() {
         setRefreshing(false);
       }
     }
-  }, []);
+  }, [TEXTS]);
 
   const retryStats = useCallback(async () => {
     setStatsError(null);
     try {
       const response = await api.get(ENDPOINTS.EMERGENCY_ALERTS_STATS, { days: '30' });
       if (!isMountedRef.current) return;
-      const parsed = parseObjectDataResponse(response);
+      const parsed = parseObjectDataResponse(response, TEXTS);
       if (parsed.ok) {
         setStats(parsed.data);
       } else {
@@ -168,18 +174,18 @@ export function useEmergencyAlertsHistoryScreen() {
           parsed.error && parsed.error !== TEXTS.ERROR ? parsed.error : TEXTS.TAB_STATS_FAILED
         );
       }
-    } catch (e) {
+    } catch {
       if (!isMountedRef.current) return;
-      setStatsError(e?.message != null ? String(e.message) : TEXTS.ERROR_UNKNOWN);
+      setStatsError(TEXTS.TAB_STATS_FAILED);
     }
-  }, []);
+  }, [TEXTS]);
 
   const retryPatterns = useCallback(async () => {
     setPatternsError(null);
     try {
       const response = await api.get(ENDPOINTS.EMERGENCY_ALERTS_PATTERNS, { days: '90' });
       if (!isMountedRef.current) return;
-      const parsed = parseObjectDataResponse(response);
+      const parsed = parseObjectDataResponse(response, TEXTS);
       if (parsed.ok) {
         setPatterns(parsed.data);
       } else {
@@ -187,11 +193,11 @@ export function useEmergencyAlertsHistoryScreen() {
           parsed.error && parsed.error !== TEXTS.ERROR ? parsed.error : TEXTS.TAB_PATTERNS_FAILED
         );
       }
-    } catch (e) {
+    } catch {
       if (!isMountedRef.current) return;
-      setPatternsError(e?.message != null ? String(e.message) : TEXTS.ERROR_UNKNOWN);
+      setPatternsError(TEXTS.TAB_PATTERNS_FAILED);
     }
-  }, []);
+  }, [TEXTS]);
 
   useEffect(() => {
     loadData({ isRefresh: false });
@@ -206,19 +212,19 @@ export function useEmergencyAlertsHistoryScreen() {
     if (dateString == null || dateString === '') return TEXTS.DATE_UNAVAILABLE;
     const date = new Date(dateString);
     if (Number.isNaN(date.getTime())) return TEXTS.DATE_UNAVAILABLE;
-    return date.toLocaleDateString('es-ES', {
+    return date.toLocaleDateString(language === 'en' ? 'en-US' : 'es-ES', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
     });
-  }, []);
+  }, [language, TEXTS.DATE_UNAVAILABLE]);
 
   const formatRiskLevelData = useCallback(() => {
     if (!stats?.byRiskLevel || typeof stats.byRiskLevel !== 'object') return null;
     return {
-      labels: ['MEDIO', 'ALTO'],
+      labels: [TEXTS.MEDIUM.toUpperCase(), TEXTS.HIGH.toUpperCase()],
       datasets: [{
         data: [
           safeNonNegativeInt(stats.byRiskLevel.MEDIUM, 0),
@@ -226,7 +232,7 @@ export function useEmergencyAlertsHistoryScreen() {
         ],
       }],
     };
-  }, [stats]);
+  }, [stats, TEXTS.MEDIUM, TEXTS.HIGH]);
 
   const formatStatusData = useCallback(() => {
     if (!stats?.byStatus || typeof stats.byStatus !== 'object') return null;
@@ -250,7 +256,7 @@ export function useEmergencyAlertsHistoryScreen() {
         legendFontColor: colors.textOnPrimary,
       },
     ].filter((item) => item.population > 0);
-  }, [stats, colors]);
+  }, [stats, colors, TEXTS.SENT, TEXTS.PARTIAL, TEXTS.FAILED]);
 
   const formatChannelData = useCallback(() => {
     if (!stats?.byChannel || typeof stats.byChannel !== 'object') return null;
@@ -275,7 +281,7 @@ export function useEmergencyAlertsHistoryScreen() {
         },
       ],
     };
-  }, [stats, colors]);
+  }, [stats, colors, TEXTS.EMAIL, TEXTS.WHATSAPP]);
 
   const formatDayData = useCallback(() => {
     if (!stats?.byDay || typeof stats.byDay !== 'object' || Array.isArray(stats.byDay)) return null;
@@ -286,11 +292,14 @@ export function useEmergencyAlertsHistoryScreen() {
       labels: entries.map(([dateStr]) => {
         const d = new Date(dateStr);
         if (Number.isNaN(d.getTime())) return TEXTS.DATE_UNAVAILABLE;
-        return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+        return d.toLocaleDateString(language === 'en' ? 'en-US' : 'es-ES', {
+          day: '2-digit',
+          month: '2-digit',
+        });
       }),
       datasets: [{ data: entries.map(([, count]) => safeNonNegativeInt(count, 0)) }],
     };
-  }, [stats]);
+  }, [stats, TEXTS.DATE_UNAVAILABLE, language]);
 
   return {
     activeTab,

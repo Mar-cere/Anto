@@ -112,6 +112,19 @@ describe('useProfileScreen', () => {
     expect(result.current.loading).toBe(false);
   });
 
+  it('cuando getSubscriptionStatus responde success false deja subscriptionStatus en null', async () => {
+    paymentService.getSubscriptionStatus.mockResolvedValue({
+      success: false,
+      errorCode: 'UNAUTHORIZED',
+    });
+    const { result } = renderHook(() => useProfileScreen(mockNavigation), hookOptions);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 100));
+    });
+    expect(paymentService.getSubscriptionStatus).toHaveBeenCalled();
+    expect(result.current.subscriptionStatus).toBeNull();
+  });
+
   it('loadUserData rellena userData y detailedStats desde AsyncStorage', async () => {
     const stored = {
       username: 'user',

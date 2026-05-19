@@ -131,7 +131,7 @@ const TutorialHighlight = ({ highlightElement, visible }) => {
       pulseAnim.setValue(1);
       glowAnim.setValue(0.5);
     }
-  }, [visible, highlightElement]);
+  }, [visible, highlightElement, glowAnim, pulseAnim]);
 
   if (!visible || !highlightElement || !ELEMENT_POSITIONS[highlightElement]) {
     return null;

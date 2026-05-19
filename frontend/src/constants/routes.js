@@ -5,6 +5,7 @@ export const ROUTES = {
   VERIFY_CODE: 'VerifyCode',
   VERIFY_EMAIL: 'VerifyEmail',
   NEW_PASSWORD: 'NewPassword',
+  CHANGE_PASSWORD: 'ChangePassword',
   DASHBOARD: 'Dash',
   MAIN_TABS: 'MainTabs',
   CHAT: 'Chat',

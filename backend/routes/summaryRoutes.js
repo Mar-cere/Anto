@@ -6,6 +6,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import { buildDashboardFocus } from '../services/dashboardFocusService.js';
 import { getLastSessionSummaryForUser } from '../services/lastSessionSummaryService.js';
 import { buildUserSummary } from '../services/userSummaryService.js';
+import { resolveAppLanguage } from '../utils/resolveAppLanguage.js';
 
 const router = express.Router();
 
@@ -58,11 +59,17 @@ router.get('/', authenticateToken, async (req, res) => {
       });
     }
 
+    const language = resolveAppLanguage({
+      headerLanguage: req.headers['x-app-language'],
+      queryLanguage: req.query.language,
+      acceptLanguage: req.headers['accept-language'],
+    });
     const payload = {
       period,
       date: req.query.date,
       year: req.query.year != null ? Number(req.query.year) : undefined,
-      month: req.query.month != null ? Number(req.query.month) : undefined
+      month: req.query.month != null ? Number(req.query.month) : undefined,
+      language,
     };
 
     const data = await buildUserSummary(req.user._id, payload);

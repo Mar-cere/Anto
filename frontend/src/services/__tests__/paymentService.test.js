@@ -4,12 +4,6 @@
  * @author AntoApp Team
  */
 
-// Mock api antes de importar
-const mockApi = {
-  get: jest.fn(),
-  post: jest.fn()
-};
-
 jest.mock('../../config/api', () => {
   const mockApiObj = {
     get: jest.fn(),
@@ -110,6 +104,7 @@ describe('PaymentService', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
+      expect(result.errorCode).toBe('NETWORK_ERROR');
     });
   });
 
@@ -166,6 +161,7 @@ describe('PaymentService', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
+      expect(result.errorCode).toBe('CHECKOUT_CREATE_ERROR');
     });
 
     it('en iOS con StoreKit disponible debe retornar useStoreKit sin llamar al backend', async () => {
@@ -243,6 +239,7 @@ describe('PaymentService', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
+      expect(result.errorCode).toBe('NETWORK_ERROR');
     });
   });
 
@@ -425,6 +422,7 @@ describe('PaymentService', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
+      expect(result.errorCode).toBe('NETWORK_ERROR');
     });
   });
 
@@ -549,6 +547,7 @@ describe('PaymentService', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
+      expect(result.errorCode).toBe('SUBSCRIPTION_CANCEL_ERROR');
     });
   });
 
@@ -578,6 +577,7 @@ describe('PaymentService', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
+      expect(result.errorCode).toBe('PAYMENT_METHOD_UPDATE_ERROR');
     });
   });
 
@@ -639,6 +639,7 @@ describe('PaymentService', () => {
       expect(result.success).toBe(false);
       expect(result.transactions).toEqual([]);
       expect(result.error).toBeDefined();
+      expect(result.errorCode).toBe('NETWORK_ERROR');
     });
   });
 
@@ -689,6 +690,7 @@ describe('PaymentService', () => {
       expect(result.success).toBe(false);
       expect(result.stats).toEqual({});
       expect(result.error).toBeDefined();
+      expect(result.errorCode).toBe('TRANSACTION_STATS_FETCH_ERROR');
     });
   });
 });

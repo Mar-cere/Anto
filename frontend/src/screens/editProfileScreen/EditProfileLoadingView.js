@@ -4,10 +4,11 @@
 import React from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { useEditProfileScreenStyles } from './editProfileScreenStyles';
-import { TEXTS } from './editProfileScreenConstants';
+import { useEditProfileTexts } from './editProfileScreenConstants';
 
 export function EditProfileLoadingView() {
   const { styles, editProfileColors } = useEditProfileScreenStyles();
+  const TEXTS = useEditProfileTexts();
   return (
     <View style={styles.loadingContainer}>
       <ActivityIndicator size="large" color={editProfileColors.PRIMARY} />

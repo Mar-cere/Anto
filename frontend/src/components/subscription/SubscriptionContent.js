@@ -16,7 +16,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PlanCard from '../payments/PlanCard';
 import SubscriptionStatus from '../payments/SubscriptionStatus';
 import storeKitService from '../../services/storeKitService';
-import { LEGAL_URLS, TEXTS } from '../../screens/subscription/subscriptionScreenConstants';
+import {
+  LEGAL_URLS,
+  useSubscriptionTexts,
+} from '../../screens/subscription/subscriptionScreenConstants';
 import SubscriptionLegalSection from './SubscriptionLegalSection';
 import { useTheme } from '../../context/ThemeContext';
 import { SPACING } from '../../constants/ui';
@@ -33,6 +36,7 @@ export default function SubscriptionContent({
   onCancelSubscription,
   onRestorePurchases,
 }) {
+  const TEXTS = useSubscriptionTexts();
   const insets = useSafeAreaInsets();
   const { colors, resolvedScheme } = useTheme();
   const hasActiveSubscription = subscriptionLooksCurrentlyUsable(subscriptionStatus);
@@ -197,7 +201,7 @@ export default function SubscriptionContent({
           >
             <MaterialCommunityIcons name="restore" size={20} color={colors.primary} />
             <Text style={styles.restoreButtonText}>
-              {subscribing ? 'Restaurando...' : 'Restaurar Compras'}
+              {subscribing ? TEXTS.RESTORING_PURCHASES : TEXTS.RESTORE_PURCHASES}
             </Text>
           </TouchableOpacity>
         )}
@@ -208,8 +212,8 @@ export default function SubscriptionContent({
           <MaterialCommunityIcons name="information" size={20} color={colors.textSecondary} />
           <Text style={styles.infoText}>
             {Platform.OS === 'ios'
-              ? 'Los pagos se procesan de forma segura a través de App Store. Puedes cancelar tu suscripción en cualquier momento desde Configuración de Apple.'
-              : 'Todos los pagos son procesados de forma segura por Mercado Pago. Puedes cancelar tu suscripción en cualquier momento.'}
+              ? TEXTS.INFO_TEXT_IOS
+              : TEXTS.INFO_TEXT_ANDROID}
           </Text>
         </View>
       </View>

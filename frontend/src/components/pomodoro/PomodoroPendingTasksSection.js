@@ -20,16 +20,18 @@ import {
   TASKS_SECTION_BORDER_RADIUS,
   TASKS_SECTION_PADDING,
   TITLE_FONT_SIZE,
-  TEXTS,
+  usePomodoroTexts,
 } from '../../screens/pomodoro/pomodoroScreenConstants';
+import { useLanguage } from '../../context/LanguageContext';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 
-function formatDueShort(iso) {
+function formatDueShort(iso, language) {
   if (!iso) return '';
   try {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return '';
-    return d.toLocaleDateString('es', { day: 'numeric', month: 'short' });
+    const locale = language === 'en' ? 'en-US' : 'es-ES';
+    return d.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
   } catch {
     return '';
   }
@@ -47,6 +49,8 @@ export default function PomodoroPendingTasksSection({
   focusingTaskId,
   density = 'comfortable',
 }) {
+  const TEXTS = usePomodoroTexts();
+  const { language } = useLanguage();
   const { colors, resolvedScheme } = useTheme();
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
   const PC = useMemo(() => createPomodoroColors(colors), [colors]);
@@ -55,8 +59,9 @@ export default function PomodoroPendingTasksSection({
   const taskCountLabel = useMemo(() => {
     const n = tasks.length;
     if (n === 0) return null;
-    return n === 1 ? '1 tarea' : `${n} tareas`;
-  }, [tasks.length]);
+    if (n === 1) return TEXTS.TASK_COUNT_SINGLE;
+    return TEXTS.TASK_COUNT_MANY.replace('{n}', String(n));
+  }, [tasks.length, TEXTS]);
 
   return (
     <View style={styles.section}>
@@ -128,7 +133,7 @@ export default function PomodoroPendingTasksSection({
           const isFocused = focusTaskId && item._id === focusTaskId;
           const isBusy = focusingTaskId && item._id === focusingTaskId;
           const inProgress = item.status === 'in_progress';
-          const dueStr = formatDueShort(item.dueDate);
+          const dueStr = formatDueShort(item.dueDate, language);
           return (
             <View
               key={item._id}
@@ -139,7 +144,7 @@ export default function PomodoroPendingTasksSection({
                 onPress={() => onOpenTask(item)}
                 activeOpacity={0.75}
                 accessibilityRole="button"
-                accessibilityLabel={`Abrir tarea ${item.title}`}
+                accessibilityLabel={`${TEXTS.OPEN_TASK_A11Y_PREFIX} ${item.title}`}
               >
                 <View style={styles.titleRow}>
                   <Text style={styles.rowTitle} numberOfLines={2}>
@@ -189,7 +194,7 @@ export default function PomodoroPendingTasksSection({
                 activeOpacity={0.85}
                 disabled={Boolean(focusingTaskId)}
                 accessibilityRole="button"
-                accessibilityLabel={`Enfocar tarea ${item.title}`}
+                accessibilityLabel={`${TEXTS.FOCUS_TASK_A11Y_PREFIX} ${item.title}`}
               >
                 {isBusy ? (
                   <ActivityIndicator color={colors.textOnPrimary} size="small" />

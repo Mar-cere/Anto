@@ -20,40 +20,83 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
 import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
-const MINDFULNESS_EXERCISES = [
-  {
-    id: 1,
-    title: 'Respiración Consciente',
-    description: 'Enfócate en tu respiración. Inhala por 4 segundos, mantén por 4, exhala por 4.',
-    duration: '5 minutos',
-    icon: 'breathing',
-  },
-  {
-    id: 2,
-    title: 'Escaneo Corporal',
-    description: 'Lleva tu atención a cada parte de tu cuerpo, desde los dedos de los pies hasta la cabeza.',
-    duration: '10 minutos',
-    icon: 'body',
-  },
-  {
-    id: 3,
-    title: 'Observación de Pensamientos',
-    description: 'Observa tus pensamientos sin juzgarlos, como nubes pasando por el cielo.',
-    duration: '5 minutos',
-    icon: 'thought-bubble',
-  },
-  {
-    id: 4,
-    title: 'Caminata Consciente',
-    description: 'Camina lentamente, prestando atención a cada paso y a las sensaciones de tu cuerpo.',
-    duration: '10 minutos',
-    icon: 'walk',
-  },
-];
+const DEFAULT_TEXTS = {
+  TITLE: 'Mindfulness',
+  INTRO_KICKER: 'Mindfulness',
+  INTRO_TITLE: 'Practica la atencion plena',
+  INTRO_BODY:
+    'El mindfulness puede ayudarte a reducir el estres y mejorar tu bienestar mental.',
+  TIMER_REMAINING: 'Tiempo restante',
+  STOP: 'Detener',
+  START: 'Comenzar',
+  EXERCISE_1_TITLE: 'Respiracion Consciente',
+  EXERCISE_1_DESC:
+    'Enfocate en tu respiracion. Inhala por 4 segundos, manten por 4, exhala por 4.',
+  EXERCISE_1_DURATION: '5 minutos',
+  EXERCISE_2_TITLE: 'Escaneo Corporal',
+  EXERCISE_2_DESC:
+    'Lleva tu atencion a cada parte de tu cuerpo, desde los dedos de los pies hasta la cabeza.',
+  EXERCISE_2_DURATION: '10 minutos',
+  EXERCISE_3_TITLE: 'Observacion de Pensamientos',
+  EXERCISE_3_DESC:
+    'Observa tus pensamientos sin juzgarlos, como nubes pasando por el cielo.',
+  EXERCISE_3_DURATION: '5 minutos',
+  EXERCISE_4_TITLE: 'Caminata Consciente',
+  EXERCISE_4_DESC:
+    'Camina lentamente, prestando atencion a cada paso y a las sensaciones de tu cuerpo.',
+  EXERCISE_4_DURATION: '10 minutos',
+};
 
 const MindfulnessScreen = () => {
+  const translated = useSectionTranslations('TECHNIQUES');
+  const TEXTS = useMemo(
+    () => ({
+      TITLE: translated?.MINDFULNESS_TITLE || DEFAULT_TEXTS.TITLE,
+      INTRO_KICKER:
+        translated?.MINDFULNESS_INTRO_KICKER || DEFAULT_TEXTS.INTRO_KICKER,
+      INTRO_TITLE:
+        translated?.MINDFULNESS_INTRO_TITLE || DEFAULT_TEXTS.INTRO_TITLE,
+      INTRO_BODY:
+        translated?.MINDFULNESS_INTRO_BODY ||
+        DEFAULT_TEXTS.INTRO_BODY,
+      TIMER_REMAINING:
+        translated?.MINDFULNESS_TIMER_REMAINING || DEFAULT_TEXTS.TIMER_REMAINING,
+      STOP: translated?.MINDFULNESS_STOP || DEFAULT_TEXTS.STOP,
+      START: translated?.MINDFULNESS_START || DEFAULT_TEXTS.START,
+      EXERCISE_1_TITLE:
+        translated?.MINDFULNESS_EXERCISE_1_TITLE || DEFAULT_TEXTS.EXERCISE_1_TITLE,
+      EXERCISE_1_DESC:
+        translated?.MINDFULNESS_EXERCISE_1_DESC ||
+        DEFAULT_TEXTS.EXERCISE_1_DESC,
+      EXERCISE_1_DURATION:
+        translated?.MINDFULNESS_EXERCISE_1_DURATION || DEFAULT_TEXTS.EXERCISE_1_DURATION,
+      EXERCISE_2_TITLE:
+        translated?.MINDFULNESS_EXERCISE_2_TITLE || DEFAULT_TEXTS.EXERCISE_2_TITLE,
+      EXERCISE_2_DESC:
+        translated?.MINDFULNESS_EXERCISE_2_DESC ||
+        DEFAULT_TEXTS.EXERCISE_2_DESC,
+      EXERCISE_2_DURATION:
+        translated?.MINDFULNESS_EXERCISE_2_DURATION || DEFAULT_TEXTS.EXERCISE_2_DURATION,
+      EXERCISE_3_TITLE:
+        translated?.MINDFULNESS_EXERCISE_3_TITLE || DEFAULT_TEXTS.EXERCISE_3_TITLE,
+      EXERCISE_3_DESC:
+        translated?.MINDFULNESS_EXERCISE_3_DESC ||
+        DEFAULT_TEXTS.EXERCISE_3_DESC,
+      EXERCISE_3_DURATION:
+        translated?.MINDFULNESS_EXERCISE_3_DURATION || DEFAULT_TEXTS.EXERCISE_3_DURATION,
+      EXERCISE_4_TITLE:
+        translated?.MINDFULNESS_EXERCISE_4_TITLE || DEFAULT_TEXTS.EXERCISE_4_TITLE,
+      EXERCISE_4_DESC:
+        translated?.MINDFULNESS_EXERCISE_4_DESC ||
+        DEFAULT_TEXTS.EXERCISE_4_DESC,
+      EXERCISE_4_DURATION:
+        translated?.MINDFULNESS_EXERCISE_4_DURATION || DEFAULT_TEXTS.EXERCISE_4_DURATION,
+    }),
+    [translated]
+  );
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle } = useTheme();
@@ -61,6 +104,52 @@ const MindfulnessScreen = () => {
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [isActive, setIsActive] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
+  const MINDFULNESS_EXERCISES = useMemo(
+    () => [
+      {
+        id: 1,
+        title: TEXTS.EXERCISE_1_TITLE,
+        description: TEXTS.EXERCISE_1_DESC,
+        duration: TEXTS.EXERCISE_1_DURATION,
+        icon: 'breathing',
+      },
+      {
+        id: 2,
+        title: TEXTS.EXERCISE_2_TITLE,
+        description: TEXTS.EXERCISE_2_DESC,
+        duration: TEXTS.EXERCISE_2_DURATION,
+        icon: 'body',
+      },
+      {
+        id: 3,
+        title: TEXTS.EXERCISE_3_TITLE,
+        description: TEXTS.EXERCISE_3_DESC,
+        duration: TEXTS.EXERCISE_3_DURATION,
+        icon: 'thought-bubble',
+      },
+      {
+        id: 4,
+        title: TEXTS.EXERCISE_4_TITLE,
+        description: TEXTS.EXERCISE_4_DESC,
+        duration: TEXTS.EXERCISE_4_DURATION,
+        icon: 'walk',
+      },
+    ],
+    [
+      TEXTS.EXERCISE_1_TITLE,
+      TEXTS.EXERCISE_1_DESC,
+      TEXTS.EXERCISE_1_DURATION,
+      TEXTS.EXERCISE_2_TITLE,
+      TEXTS.EXERCISE_2_DESC,
+      TEXTS.EXERCISE_2_DURATION,
+      TEXTS.EXERCISE_3_TITLE,
+      TEXTS.EXERCISE_3_DESC,
+      TEXTS.EXERCISE_3_DURATION,
+      TEXTS.EXERCISE_4_TITLE,
+      TEXTS.EXERCISE_4_DESC,
+      TEXTS.EXERCISE_4_DURATION,
+    ]
+  );
 
   const styles = useMemo(
     () =>
@@ -137,24 +226,22 @@ const MindfulnessScreen = () => {
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header
-        title="Mindfulness"
+        title={TEXTS.TITLE}
         showBackButton
         onBackPress={() => navigation.goBack()}
       />
       <ScrollView style={styles.scrollView} contentContainerStyle={techniqueScreenStyles.scrollContent}>
         <View style={techniqueScreenStyles.introPanel}>
-          <Text style={techniqueScreenStyles.introKicker}>Mindfulness</Text>
-          <Text style={techniqueScreenStyles.introTitle}>Practica la atención plena</Text>
-          <Text style={techniqueScreenStyles.introText}>
-            El mindfulness puede ayudarte a reducir el estrés y mejorar tu bienestar mental.
-          </Text>
+          <Text style={techniqueScreenStyles.introKicker}>{TEXTS.INTRO_KICKER}</Text>
+          <Text style={techniqueScreenStyles.introTitle}>{TEXTS.INTRO_TITLE}</Text>
+          <Text style={techniqueScreenStyles.introText}>{TEXTS.INTRO_BODY}</Text>
         </View>
 
         {isActive && selectedExercise ? (
           <View style={[techniqueScreenStyles.card, styles.activeCard]}>
             <View style={styles.timerBlock}>
               <Text style={techniqueScreenStyles.timerText}>{formatTime(timeRemaining)}</Text>
-              <Text style={techniqueScreenStyles.timerLabel}>Tiempo restante</Text>
+              <Text style={techniqueScreenStyles.timerLabel}>{TEXTS.TIMER_REMAINING}</Text>
             </View>
             <View style={styles.activeCopy}>
               <Text style={[techniqueScreenStyles.cardTitle, styles.activeTitle]}>
@@ -165,7 +252,7 @@ const MindfulnessScreen = () => {
               </Text>
             </View>
             <TouchableOpacity style={techniqueScreenStyles.stopButton} onPress={handleStop}>
-              <Text style={techniqueScreenStyles.stopButtonText}>Detener</Text>
+              <Text style={techniqueScreenStyles.stopButtonText}>{TEXTS.STOP}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -190,7 +277,7 @@ const MindfulnessScreen = () => {
               </View>
               <Text style={techniqueScreenStyles.cardBody}>{exercise.description}</Text>
               <View style={techniqueScreenStyles.primaryButton}>
-                <Text style={techniqueScreenStyles.primaryButtonText}>Comenzar</Text>
+                <Text style={techniqueScreenStyles.primaryButtonText}>{TEXTS.START}</Text>
               </View>
             </TouchableOpacity>
           ))

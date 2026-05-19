@@ -16,6 +16,12 @@ jest.mock('../editProfileScreenConstants', () => ({
     SAVE_CHANGES: 'Guardar cambios',
     EDIT_PROFILE: 'Editar perfil',
   },
+  useEditProfileTexts: () => ({
+    BACK: 'Volver',
+    PROFILE_TITLE: 'Mi Perfil',
+    SAVE_CHANGES: 'Guardar cambios',
+    EDIT_PROFILE: 'Editar perfil',
+  }),
   ICON_SIZE: 24,
 }));
 jest.mock('@expo/vector-icons', () => ({ MaterialCommunityIcons: () => null }));

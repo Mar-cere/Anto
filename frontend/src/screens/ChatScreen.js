@@ -47,8 +47,8 @@ import {
   LAYOUT,
   MESSAGE_ID_PREFIXES,
   STORAGE_KEYS,
-  TEXTS,
   useChatColors,
+  useChatTexts,
 } from './chat/chatScreenConstants';
 
 const BACKGROUND_IMAGE = require('../images/back.png');
@@ -248,6 +248,7 @@ function createChatScreenStyles(c, themeColors) {
 }
 
 const ChatScreen = () => {
+  const TEXTS = useChatTexts();
   const { colors: themeColors, statusBarStyle } = useTheme();
   const chatColors = useChatColors();
   const styles = useMemo(
@@ -314,24 +315,24 @@ const ChatScreen = () => {
           setShowAIDisclosure(true);
         }
       } catch (error) {
-        console.warn('No se pudo leer estado de disclosure IA:', error);
+        console.warn(TEXTS.AI_DISCLOSURE_READ_WARN, error);
       }
     };
     checkDisclosure();
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [TEXTS.AI_DISCLOSURE_READ_WARN]);
 
   const handleAIDisclosureAcknowledge = useCallback(async () => {
     try {
       await AsyncStorage.setItem(STORAGE_KEYS.AI_DISCLOSURE_ACK, 'true');
     } catch (error) {
-      console.warn('No se pudo guardar aceptación de disclosure IA:', error);
+      console.warn(TEXTS.AI_DISCLOSURE_SAVE_WARN, error);
     } finally {
       setShowAIDisclosure(false);
     }
-  }, []);
+  }, [TEXTS.AI_DISCLOSURE_SAVE_WARN]);
 
   const handleOpenPrivacyPolicy = useCallback(async () => {
     try {
@@ -340,25 +341,25 @@ const ChatScreen = () => {
         await Linking.openURL(PRIVACY_URL);
       }
     } catch (error) {
-      console.warn('No se pudo abrir política de privacidad:', error);
+      console.warn(TEXTS.PRIVACY_OPEN_WARN, error);
     }
-  }, []);
+  }, [TEXTS.PRIVACY_OPEN_WARN]);
 
   const handleOpenAIDetails = useCallback(() => {
     try {
       navigation.navigate('AIPrivacy');
     } catch (error) {
-      console.warn('No se pudo abrir pantalla de Privacidad e IA:', error);
+      console.warn(TEXTS.PRIVACY_SCREEN_WARN, error);
     }
-  }, [navigation]);
+  }, [navigation, TEXTS.PRIVACY_SCREEN_WARN]);
 
   const handleOpenChatCustomization = useCallback(() => {
     try {
       navigation.navigate('Ajustes', { expandChatCustomization: true });
     } catch (error) {
-      console.warn('No se pudo abrir Ajustes desde el chat:', error);
+      console.warn(TEXTS.SETTINGS_OPEN_WARN, error);
     }
-  }, [navigation]);
+  }, [navigation, TEXTS.SETTINGS_OPEN_WARN]);
 
   const handleSuggestionPress = useCallback(
     (suggestion) => {
@@ -366,14 +367,14 @@ const ChatScreen = () => {
         try {
           navigation.navigate(suggestion.screen);
         } catch (err) {
-          console.warn('Error navegando a pantalla:', suggestion.screen, err);
-          setInputText(`Quiero probar: ${suggestion.label || ''}`);
+          console.warn(TEXTS.NAVIGATION_ERROR_WARN, suggestion.screen, err);
+          setInputText(`${TEXTS.SUGGESTION_TRY_PREFIX}${suggestion.label || ''}`);
         }
       } else {
-        setInputText(`Quiero probar: ${suggestion?.label || ''}`);
+        setInputText(`${TEXTS.SUGGESTION_TRY_PREFIX}${suggestion?.label || ''}`);
       }
     },
-    [navigation, setInputText]
+    [navigation, setInputText, TEXTS.NAVIGATION_ERROR_WARN, TEXTS.SUGGESTION_TRY_PREFIX]
   );
 
   const handleSuggestionDismiss = useCallback((message, index) => {
@@ -443,7 +444,7 @@ const ChatScreen = () => {
         <Text style={styles.emptySubtext}>{TEXTS.EMPTY_SUBTITLE}</Text>
       </View>
     ),
-    [chatColors.PRIMARY, styles],
+    [chatColors.PRIMARY, styles, TEXTS.EMPTY, TEXTS.EMPTY_KICKER, TEXTS.EMPTY_SUBTITLE],
   );
 
   return (
@@ -493,7 +494,7 @@ const ChatScreen = () => {
       {guestQuota !== null && (
         <View style={styles.guestBanner} accessibilityRole="text">
           <Text style={styles.guestBannerText}>
-            {formatGuestQuotaBanner(guestQuota.remaining, guestQuota.max)}
+            {formatGuestQuotaBanner(guestQuota.remaining, guestQuota.max, TEXTS)}
           </Text>
         </View>
       )}
@@ -580,7 +581,7 @@ const ChatScreen = () => {
           style={styles.scrollToBottomButton}
           onPress={() => scrollToBottom(true, { force: true })}
           accessibilityRole="button"
-          accessibilityLabel="Ir al final de la conversación"
+          accessibilityLabel={TEXTS.SCROLL_TO_BOTTOM_LABEL}
         >
           <Ionicons name="chevron-down" size={ICON_SIZES.SCROLL} color={chatColors.PRIMARY} />
         </TouchableOpacity>

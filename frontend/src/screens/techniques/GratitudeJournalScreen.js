@@ -25,8 +25,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
+import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 import { SPACING } from '../../constants/ui';
@@ -37,16 +39,46 @@ import {
 
 const GRATITUDE_ENTRIES_KEY = 'gratitudeJournalEntries';
 
+const DEFAULT_TEXTS = {
+  TITLE: 'Diario de Gratitud',
+  INTRO_KICKER: 'Gratitud',
+  INTRO_TITLE: 'Tres lineas, aqui y ahora',
+  INTRO_BODY: 'Tres respuestas cortas. No busques perfeccion: busca presencia.',
+  PRIVACY_LOCAL_ONLY: 'Solo en tu dispositivo',
+  ENTRY_TITLE: 'Tu entrada',
+  CLEAR_LINES: 'Limpiar',
+  CLEAR_LINES_A11Y: 'Limpiar las tres lineas',
+  TEMPLATE_INSERT_A11Y_PREFIX: 'Insertar plantilla:',
+  TEMPLATE_INSERT_HINT: 'Anade el inicio de frase en la linea que tienes enfocada',
+  LINE_1_PLACEHOLDER: 'Algo que te hizo bien hoy',
+  LINE_2_PLACEHOLDER: 'Una persona o gesto que valoras',
+  LINE_3_PLACEHOLDER: 'Algo de ti que reconoces',
+  HIDE_KEYBOARD_A11Y: 'Ocultar teclado',
+  DONE: 'Listo',
+  SAVE_ENTRY_A11Y: 'Guardar entrada de gratitud',
+  SAVE_ENTRY: 'Guardar',
+  TOAST_SAVED: 'Quedo registrado',
+  TOAST_DELETED: 'Entrada eliminada',
+  UNDO: 'Deshacer',
+  ENTRIES_TITLE: 'Entradas',
+  ENTRIES_TODAY_TITLE: 'Hoy',
+  FILTER_SHOW_ALL_A11Y: 'Mostrar todas las entradas',
+  FILTER_SHOW_TODAY_A11Y: 'Mostrar solo entradas de hoy',
+  FILTER_HINT: 'Filtra la lista por el dia actual',
+  FILTER_TODAY_ONLY: 'Solo hoy',
+  FILTER_EMPTY: 'No hay entradas hoy. Puedes escribir arriba o quitar el filtro.',
+  DELETE_ENTRY_A11Y_PREFIX: 'Eliminar entrada del',
+  DELETE_ENTRY_HINT: 'Elimina esta entrada. Puedes deshacer con el aviso que aparece despues.',
+  EMPTY_TITLE: 'Cuando quieras, tres lineas bastan',
+  EXAMPLE_1: 'Ejemplo: "Hoy agradezco el silencio de la manana."',
+  EXAMPLE_2: 'Ejemplo: "Me ayudo que alguien me escuchara sin juzgar."',
+  EXAMPLE_3: 'Ejemplo: "Valoro el descanso que pude tomar hoy."',
+};
+
 const TEMPLATE_CHIPS = [
   { id: 'c1', label: 'Hoy agradezco…', prefix: 'Hoy agradezco ' },
   { id: 'c2', label: 'Me ayudó…', prefix: 'Me ayudó ' },
   { id: 'c3', label: 'Valoro…', prefix: 'Valoro ' },
-];
-
-const ROTATING_EXAMPLES = [
-  'Ejemplo: “Hoy agradezco el silencio de la mañana.”',
-  'Ejemplo: “Me ayudó que alguien me escuchara sin juzgar.”',
-  'Ejemplo: “Valoro el descanso que pude tomar hoy.”',
 ];
 
 function createStyles(colors, t) {
@@ -270,6 +302,63 @@ function isSameLocalDay(isoDate, refDate = new Date()) {
 }
 
 const GratitudeJournalScreen = () => {
+  const { language } = useLanguage();
+  const translated = useSectionTranslations('TECHNIQUES');
+  const T = useMemo(
+    () => ({
+      ...DEFAULT_TEXTS,
+      TITLE: translated?.GRATITUDE_TITLE ?? DEFAULT_TEXTS.TITLE,
+      INTRO_KICKER: translated?.GRATITUDE_INTRO_KICKER ?? DEFAULT_TEXTS.INTRO_KICKER,
+      INTRO_TITLE: translated?.GRATITUDE_INTRO_TITLE ?? DEFAULT_TEXTS.INTRO_TITLE,
+      INTRO_BODY: translated?.GRATITUDE_INTRO_BODY ?? DEFAULT_TEXTS.INTRO_BODY,
+      PRIVACY_LOCAL_ONLY:
+        translated?.GRATITUDE_PRIVACY_LOCAL_ONLY ?? DEFAULT_TEXTS.PRIVACY_LOCAL_ONLY,
+      ENTRY_TITLE: translated?.GRATITUDE_ENTRY_TITLE ?? DEFAULT_TEXTS.ENTRY_TITLE,
+      CLEAR_LINES: translated?.GRATITUDE_CLEAR_LINES ?? DEFAULT_TEXTS.CLEAR_LINES,
+      CLEAR_LINES_A11Y:
+        translated?.GRATITUDE_CLEAR_LINES_A11Y ?? DEFAULT_TEXTS.CLEAR_LINES_A11Y,
+      TEMPLATE_INSERT_A11Y_PREFIX:
+        translated?.GRATITUDE_TEMPLATE_INSERT_A11Y_PREFIX ??
+        DEFAULT_TEXTS.TEMPLATE_INSERT_A11Y_PREFIX,
+      TEMPLATE_INSERT_HINT:
+        translated?.GRATITUDE_TEMPLATE_INSERT_HINT ?? DEFAULT_TEXTS.TEMPLATE_INSERT_HINT,
+      LINE_1_PLACEHOLDER:
+        translated?.GRATITUDE_LINE_1_PLACEHOLDER ?? DEFAULT_TEXTS.LINE_1_PLACEHOLDER,
+      LINE_2_PLACEHOLDER:
+        translated?.GRATITUDE_LINE_2_PLACEHOLDER ?? DEFAULT_TEXTS.LINE_2_PLACEHOLDER,
+      LINE_3_PLACEHOLDER:
+        translated?.GRATITUDE_LINE_3_PLACEHOLDER ?? DEFAULT_TEXTS.LINE_3_PLACEHOLDER,
+      HIDE_KEYBOARD_A11Y:
+        translated?.GRATITUDE_HIDE_KEYBOARD_A11Y ?? DEFAULT_TEXTS.HIDE_KEYBOARD_A11Y,
+      DONE: translated?.GRATITUDE_DONE ?? DEFAULT_TEXTS.DONE,
+      SAVE_ENTRY_A11Y:
+        translated?.GRATITUDE_SAVE_ENTRY_A11Y ?? DEFAULT_TEXTS.SAVE_ENTRY_A11Y,
+      SAVE_ENTRY: translated?.GRATITUDE_SAVE_ENTRY ?? DEFAULT_TEXTS.SAVE_ENTRY,
+      TOAST_SAVED: translated?.GRATITUDE_TOAST_SAVED ?? DEFAULT_TEXTS.TOAST_SAVED,
+      TOAST_DELETED: translated?.GRATITUDE_TOAST_DELETED ?? DEFAULT_TEXTS.TOAST_DELETED,
+      UNDO: translated?.GRATITUDE_UNDO ?? DEFAULT_TEXTS.UNDO,
+      ENTRIES_TITLE: translated?.GRATITUDE_ENTRIES_TITLE ?? DEFAULT_TEXTS.ENTRIES_TITLE,
+      ENTRIES_TODAY_TITLE:
+        translated?.GRATITUDE_ENTRIES_TODAY_TITLE ?? DEFAULT_TEXTS.ENTRIES_TODAY_TITLE,
+      FILTER_SHOW_ALL_A11Y:
+        translated?.GRATITUDE_FILTER_SHOW_ALL_A11Y ?? DEFAULT_TEXTS.FILTER_SHOW_ALL_A11Y,
+      FILTER_SHOW_TODAY_A11Y:
+        translated?.GRATITUDE_FILTER_SHOW_TODAY_A11Y ?? DEFAULT_TEXTS.FILTER_SHOW_TODAY_A11Y,
+      FILTER_HINT: translated?.GRATITUDE_FILTER_HINT ?? DEFAULT_TEXTS.FILTER_HINT,
+      FILTER_TODAY_ONLY:
+        translated?.GRATITUDE_FILTER_TODAY_ONLY ?? DEFAULT_TEXTS.FILTER_TODAY_ONLY,
+      FILTER_EMPTY: translated?.GRATITUDE_FILTER_EMPTY ?? DEFAULT_TEXTS.FILTER_EMPTY,
+      DELETE_ENTRY_A11Y_PREFIX:
+        translated?.GRATITUDE_DELETE_ENTRY_A11Y_PREFIX ?? DEFAULT_TEXTS.DELETE_ENTRY_A11Y_PREFIX,
+      DELETE_ENTRY_HINT:
+        translated?.GRATITUDE_DELETE_ENTRY_HINT ?? DEFAULT_TEXTS.DELETE_ENTRY_HINT,
+      EMPTY_TITLE: translated?.GRATITUDE_EMPTY_TITLE ?? DEFAULT_TEXTS.EMPTY_TITLE,
+      EXAMPLE_1: translated?.GRATITUDE_EXAMPLE_1 ?? DEFAULT_TEXTS.EXAMPLE_1,
+      EXAMPLE_2: translated?.GRATITUDE_EXAMPLE_2 ?? DEFAULT_TEXTS.EXAMPLE_2,
+      EXAMPLE_3: translated?.GRATITUDE_EXAMPLE_3 ?? DEFAULT_TEXTS.EXAMPLE_3,
+    }),
+    [translated]
+  );
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
@@ -287,17 +376,23 @@ const GratitudeJournalScreen = () => {
   const pendingDeleteRef = useRef(null);
   const saveBtnScale = useRef(new Animated.Value(1)).current;
 
+  const ROTATING_EXAMPLES = useMemo(
+    () => [T.EXAMPLE_1, T.EXAMPLE_2, T.EXAMPLE_3],
+    [T.EXAMPLE_1, T.EXAMPLE_2, T.EXAMPLE_3]
+  );
+
   const input1Ref = useRef(null);
   const input2Ref = useRef(null);
   const input3Ref = useRef(null);
 
   const todayLabel = useMemo(() => {
-    return new Date().toLocaleDateString('es-ES', {
+    const locale = language === 'en' ? 'en-US' : 'es-ES';
+    return new Date().toLocaleDateString(locale, {
       weekday: 'long',
       day: '2-digit',
       month: 'short',
     });
-  }, []);
+  }, [language]);
 
   const hasAnyLine = line1.trim() || line2.trim() || line3.trim();
 
@@ -311,7 +406,7 @@ const GratitudeJournalScreen = () => {
       setExampleIndex((i) => (i + 1) % ROTATING_EXAMPLES.length);
     }, 4500);
     return () => clearInterval(id);
-  }, []);
+  }, [ROTATING_EXAMPLES.length]);
 
   const insertTemplate = useCallback(
     (prefix) => {
@@ -355,7 +450,7 @@ const GratitudeJournalScreen = () => {
     setLine3('');
     Keyboard.dismiss();
 
-    showToast({ message: 'Quedó registrado', type: 'success', duration: 2500 });
+    showToast({ message: T.TOAST_SAVED, type: 'success', duration: 2500 });
 
     Animated.sequence([
       Animated.spring(saveBtnScale, {
@@ -387,10 +482,10 @@ const GratitudeJournalScreen = () => {
     };
 
     showToast({
-      message: 'Entrada eliminada',
+      message: T.TOAST_DELETED,
       type: 'info',
       action: {
-        label: 'Deshacer',
+        label: T.UNDO,
         onPress: () => {
           const pending = pendingDeleteRef.current;
           if (!pending) return;
@@ -456,11 +551,7 @@ const GratitudeJournalScreen = () => {
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
-      <Header
-        title="Diario de Gratitud"
-        showBackButton
-        onBackPress={() => navigation.goBack()}
-      />
+      <Header title={T.TITLE} showBackButton onBackPress={() => navigation.goBack()} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -475,29 +566,27 @@ const GratitudeJournalScreen = () => {
           showsVerticalScrollIndicator={false}
         >
           <View style={techniqueScreenStyles.introPanel}>
-            <Text style={techniqueScreenStyles.introKicker}>Gratitud</Text>
-            <Text style={techniqueScreenStyles.introTitle}>Tres líneas, aquí y ahora</Text>
+            <Text style={techniqueScreenStyles.introKicker}>{T.INTRO_KICKER}</Text>
+            <Text style={techniqueScreenStyles.introTitle}>{T.INTRO_TITLE}</Text>
             <Text style={styles.todayMeta}>{todayLabel}</Text>
-            <Text style={techniqueScreenStyles.introText}>
-              Tres respuestas cortas. No busques perfección: busca presencia.
-            </Text>
+            <Text style={techniqueScreenStyles.introText}>{T.INTRO_BODY}</Text>
           </View>
 
           <View style={styles.composerCard}>
             <View style={styles.privacyRow}>
               <MaterialCommunityIcons name="lock-outline" size={14} color={t.FOCUS_KICKER_COLOR} />
-              <Text style={styles.privacyText}>Solo en tu dispositivo</Text>
+              <Text style={styles.privacyText}>{T.PRIVACY_LOCAL_ONLY}</Text>
             </View>
 
             <View style={styles.composerHeader}>
-              <Text style={styles.composerTitle}>Tu entrada</Text>
+              <Text style={styles.composerTitle}>{T.ENTRY_TITLE}</Text>
               {!!hasAnyLine && (
                 <TouchableOpacity
                   onPress={clearLines}
                   accessibilityRole="button"
-                  accessibilityLabel="Limpiar las tres líneas"
+                  accessibilityLabel={T.CLEAR_LINES_A11Y}
                 >
-                  <Text style={styles.clearText}>Limpiar</Text>
+                  <Text style={styles.clearText}>{T.CLEAR_LINES}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -514,8 +603,8 @@ const GratitudeJournalScreen = () => {
                   style={styles.templateChip}
                   onPress={() => insertTemplate(chip.prefix)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Insertar plantilla: ${chip.label}`}
-                  accessibilityHint="Añade el inicio de frase en la línea que tienes enfocada"
+                  accessibilityLabel={`${T.TEMPLATE_INSERT_A11Y_PREFIX} ${chip.label}`}
+                  accessibilityHint={T.TEMPLATE_INSERT_HINT}
                 >
                   <Text style={styles.templateChipText}>{chip.label}</Text>
                 </TouchableOpacity>
@@ -527,21 +616,21 @@ const GratitudeJournalScreen = () => {
                 0,
                 line1,
                 setLine1,
-                'Algo que te hizo bien hoy',
+                T.LINE_1_PLACEHOLDER,
                 input1Ref
               )}
               {renderLineField(
                 1,
                 line2,
                 setLine2,
-                'Una persona o gesto que valoras',
+                T.LINE_2_PLACEHOLDER,
                 input2Ref
               )}
               {renderLineField(
                 2,
                 line3,
                 setLine3,
-                'Algo de ti que reconoces',
+                T.LINE_3_PLACEHOLDER,
                 input3Ref
               )}
             </View>
@@ -551,10 +640,10 @@ const GratitudeJournalScreen = () => {
                 style={styles.keyboardChip}
                 onPress={() => Keyboard.dismiss()}
                 accessibilityRole="button"
-                accessibilityLabel="Ocultar teclado"
+                accessibilityLabel={T.HIDE_KEYBOARD_A11Y}
               >
                 <MaterialCommunityIcons name="keyboard-close" size={16} color={t.FOCUS_KICKER_COLOR} />
-                <Text style={styles.keyboardChipText}>Listo</Text>
+                <Text style={styles.keyboardChipText}>{T.DONE}</Text>
               </TouchableOpacity>
               <Animated.View style={{ flex: 1, transform: [{ scale: saveBtnScale }] }}>
                 <TouchableOpacity
@@ -566,9 +655,9 @@ const GratitudeJournalScreen = () => {
                   onPress={handleSave}
                   disabled={!hasAnyLine}
                   accessibilityRole="button"
-                  accessibilityLabel="Guardar entrada de gratitud"
+                  accessibilityLabel={T.SAVE_ENTRY_A11Y}
                 >
-                  <Text style={techniqueScreenStyles.saveButtonText}>Guardar</Text>
+                  <Text style={techniqueScreenStyles.saveButtonText}>{T.SAVE_ENTRY}</Text>
                 </TouchableOpacity>
               </Animated.View>
             </View>
@@ -577,7 +666,9 @@ const GratitudeJournalScreen = () => {
           {entries.length > 0 && (
             <View style={styles.entriesContainer}>
               <View style={styles.entriesHeader}>
-                <Text style={styles.entriesTitle}>{todayOnly ? 'Hoy' : 'Entradas'}</Text>
+                <Text style={styles.entriesTitle}>
+                  {todayOnly ? T.ENTRIES_TODAY_TITLE : T.ENTRIES_TITLE}
+                </Text>
                 <View style={styles.entriesHeaderRight}>
                   <TouchableOpacity
                     style={[styles.filterChip, todayOnly && styles.filterChipActive]}
@@ -586,23 +677,24 @@ const GratitudeJournalScreen = () => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     }}
                     accessibilityRole="button"
-                    accessibilityLabel={todayOnly ? 'Mostrar todas las entradas' : 'Mostrar solo entradas de hoy'}
-                    accessibilityHint="Filtra la lista por el día actual"
+                    accessibilityLabel={
+                      todayOnly ? T.FILTER_SHOW_ALL_A11Y : T.FILTER_SHOW_TODAY_A11Y
+                    }
+                    accessibilityHint={T.FILTER_HINT}
                   >
                     <Text style={[styles.filterChipText, todayOnly && styles.filterChipTextActive]}>
-                      Solo hoy
+                      {T.FILTER_TODAY_ONLY}
                     </Text>
                   </TouchableOpacity>
                   <Text style={styles.entriesCount}>{visibleEntries.length}</Text>
                 </View>
               </View>
               {visibleEntries.length === 0 && todayOnly ? (
-                <Text style={styles.filterEmptyText}>
-                  No hay entradas hoy. Puedes escribir arriba o quitar el filtro.
-                </Text>
+                <Text style={styles.filterEmptyText}>{T.FILTER_EMPTY}</Text>
               ) : (
                 visibleEntries.map((entry, index) => {
-                  const dateStr = new Date(entry.date).toLocaleDateString('es-ES', {
+                  const locale = language === 'en' ? 'en-US' : 'es-ES';
+                  const dateStr = new Date(entry.date).toLocaleDateString(locale, {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric',
@@ -617,8 +709,8 @@ const GratitudeJournalScreen = () => {
                             onPress={() => handleDeleteEntry(entry)}
                             style={styles.deleteIconButton}
                             accessibilityRole="button"
-                            accessibilityLabel={`Eliminar entrada del ${dateStr}`}
-                            accessibilityHint="Elimina esta entrada. Puedes deshacer con el aviso que aparece después."
+                            accessibilityLabel={`${T.DELETE_ENTRY_A11Y_PREFIX} ${dateStr}`}
+                            accessibilityHint={T.DELETE_ENTRY_HINT}
                           >
                             <MaterialCommunityIcons
                               name="trash-can-outline"
@@ -641,7 +733,7 @@ const GratitudeJournalScreen = () => {
 
           {entries.length === 0 && (
             <View style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>Cuando quieras, tres líneas bastan</Text>
+              <Text style={styles.emptyTitle}>{T.EMPTY_TITLE}</Text>
               <Text style={styles.emptyBody}>{ROTATING_EXAMPLES[exampleIndex]}</Text>
             </View>
           )}

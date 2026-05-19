@@ -11,7 +11,22 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
+
+const DEFAULT_TASKS_TEXTS = {
+  HEADER_TITLE: 'Mis tareas',
+  SEARCH_PLACEHOLDER: 'Buscar...',
+  FILTER_ALL: 'Todos',
+  FILTER_TASKS: 'Tareas',
+  FILTER_REMINDERS: 'Recordatorios',
+  TASK_SINGULAR: 'tarea',
+  TASK_PLURAL: 'tareas',
+  REMINDER_SINGULAR: 'recordatorio',
+  REMINDER_PLURAL: 'recordatorios',
+  ITEM_SINGULAR: 'elemento',
+  ITEM_PLURAL: 'elementos',
+};
 
 const TaskHeader = ({
   filterType,
@@ -21,6 +36,11 @@ const TaskHeader = ({
   counts = { all: 0, task: 0, reminder: 0 },
 }) => {
   const { colors, statusBarStyle } = useTheme();
+  const translated = useSectionTranslations('TASKS');
+  const TEXTS = useMemo(
+    () => ({ ...DEFAULT_TASKS_TEXTS, ...(translated || {}) }),
+    [translated]
+  );
   const handleSearchChange = useCallback(
     (text) => {
       onSearch?.(text);
@@ -48,10 +68,17 @@ const TaskHeader = ({
   );
 
   const activeCountText = useMemo(() => {
-    if (filterType === 'task') return `${counts.task || 0} tareas`;
-    if (filterType === 'reminder') return `${counts.reminder || 0} recordatorios`;
-    return `${counts.all || 0} elementos`;
-  }, [filterType, counts]);
+    if (filterType === 'task') {
+      const n = counts.task || 0;
+      return `${n} ${n === 1 ? TEXTS.TASK_SINGULAR : TEXTS.TASK_PLURAL}`;
+    }
+    if (filterType === 'reminder') {
+      const n = counts.reminder || 0;
+      return `${n} ${n === 1 ? TEXTS.REMINDER_SINGULAR : TEXTS.REMINDER_PLURAL}`;
+    }
+    const n = counts.all || 0;
+    return `${n} ${n === 1 ? TEXTS.ITEM_SINGULAR : TEXTS.ITEM_PLURAL}`;
+  }, [filterType, counts, TEXTS]);
 
   const styles = useMemo(
     () =>
@@ -163,7 +190,7 @@ const TaskHeader = ({
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.headerTitle}>Mis tareas</Text>
+            <Text style={styles.headerTitle}>{TEXTS.HEADER_TITLE}</Text>
             <Text style={styles.headerMeta}>{activeCountText}</Text>
           </View>
           <TouchableOpacity style={styles.searchButton} onPress={toggleSearch} activeOpacity={0.7}>
@@ -191,7 +218,7 @@ const TaskHeader = ({
             <MaterialCommunityIcons name="magnify" size={20} color={colors.primary} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Buscar…"
+              placeholder={TEXTS.SEARCH_PLACEHOLDER}
               placeholderTextColor={colors.textSecondary}
               value={searchQuery}
               onChangeText={handleSearchChange}
@@ -206,9 +233,9 @@ const TaskHeader = ({
 
         <View style={styles.filterButtons}>
           {[
-            { type: 'all', label: 'Todos', icon: 'format-list-bulleted' },
-            { type: 'task', label: 'Tareas', icon: 'checkbox-blank-outline' },
-            { type: 'reminder', label: 'Recordatorios', icon: 'clock-outline' },
+            { type: 'all', label: TEXTS.FILTER_ALL, icon: 'format-list-bulleted' },
+            { type: 'task', label: TEXTS.FILTER_TASKS, icon: 'checkbox-blank-outline' },
+            { type: 'reminder', label: TEXTS.FILTER_REMINDERS, icon: 'clock-outline' },
           ].map((filter) => (
             <TouchableOpacity
               key={filter.type}

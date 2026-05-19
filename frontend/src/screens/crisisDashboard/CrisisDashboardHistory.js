@@ -6,11 +6,12 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useCrisisDashboardStyles } from './crisisDashboardStyles';
-import { TEXTS } from './crisisDashboardConstants';
+import { useCrisisDashboardTexts } from './crisisDashboardConstants';
 
 export function CrisisDashboardHistory({ history, formatDate, getRiskLevelColor, getRiskLevelText, onViewAll }) {
   const { colors } = useTheme();
   const styles = useCrisisDashboardStyles();
+  const TEXTS = useCrisisDashboardTexts();
   const items = Array.isArray(history) ? history : [];
   const hasItems = items.length > 0;
 

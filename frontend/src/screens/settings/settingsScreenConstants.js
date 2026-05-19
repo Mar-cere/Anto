@@ -2,6 +2,9 @@
  * Constantes de la pantalla Configuración (SettingsScreen y subcomponentes).
  * @author AntoApp Team
  */
+import { useMemo } from 'react';
+import { useSectionTranslations } from '../../hooks/useTranslations';
+import { ROUTES } from '../../constants/routes';
 
 export const TEXTS = {
   TITLE: 'Configuración',
@@ -88,10 +91,38 @@ export const TEXTS = {
   OK: 'OK',
   SUCCESS: 'Éxito',
   PREFERENCES_SAVED: 'Preferencias de notificaciones guardadas',
+  NOTIFICATIONS_SESSION_SYNC_WARNING:
+    'No se pudo actualizar la sesión tras guardar los ajustes de notificaciones.',
+  PUSH_ENABLED_SYNC_WARNING:
+    'Notificaciones habilitadas, pero no se pudo actualizar la sesión.',
+  PUSH_ENABLED_SUCCESS:
+    'Notificaciones push habilitadas. Recibirás alertas sobre crisis y seguimientos.',
+  PUSH_REGISTER_ERROR:
+    'No se pudo registrar el dispositivo para notificaciones push.',
+  PUSH_DISABLED_SYNC_WARNING:
+    'Notificaciones deshabilitadas, pero no se pudo actualizar la sesión.',
+  PUSH_DISABLED_SUCCESS:
+    'Notificaciones deshabilitadas. No recibirás alertas sobre crisis.',
+  TEST_NOTIFICATION_WARNING_SENT:
+    'Notificación WARNING de prueba enviada al dispositivo.',
+  TEST_NOTIFICATION_MEDIUM_SENT:
+    'Notificación MEDIUM de prueba enviada al dispositivo.',
+  TEST_NOTIFICATION_FOLLOWUP_SENT:
+    'Notificación de seguimiento de prueba enviada al dispositivo.',
+  TEST_NOTIFICATION_SENT: 'Notificación de prueba enviada.',
   ERROR: 'Error',
   LOGOUT_ERROR: 'No se pudo cerrar sesión',
   DELETE_ERROR: 'No se pudo eliminar la cuenta',
+  ACCOUNT_DELETED_SUCCESS:
+    'Tu cuenta ha sido eliminada. Las suscripciones activas quedaron canceladas.',
   PREFERENCES_ERROR: 'No se pudieron guardar las preferencias',
+  CHAT_PREF_SYNC_WARNING:
+    'No se pudo actualizar la sesión. Intenta cerrar sesión y volver a entrar.',
+  RESPONSE_STYLE_SYNC_WARNING:
+    'No se pudo actualizar la sesión tras cambiar el estilo.',
+  RESPONSE_STYLE_UPDATED_PREFIX: 'Estilo de respuesta',
+  THEME_SYNC_WARNING:
+    'El tema se aplicó en este dispositivo, pero no se pudo sincronizar con la cuenta.',
   PERMISSIONS_ERROR: 'No se pudo verificar los permisos de notificación',
   THERAPEUTIC_TECHNIQUES: 'Técnicas Terapéuticas',
   THERAPEUTIC_TECHNIQUES_DESC:
@@ -130,6 +161,13 @@ export const TEXTS = {
     'Se aplican en las próximas respuestas del chat; no modifican mensajes que ya envió Anto.',
   APPEARANCE: 'Apariencia',
   APPEARANCE_ROW_SUB: 'Claro, oscuro o según el sistema',
+  LANGUAGE: 'Idioma',
+  LANGUAGE_ROW_SUB: 'Idioma de la interfaz',
+  LANGUAGE_MODAL_TITLE: 'Idioma de la aplicación',
+  LANGUAGE_HINT: 'Puedes cambiar el idioma cuando quieras.',
+  LANGUAGE_CHANGED_OK: 'Idioma actualizado',
+  LANGUAGE_CHANGED_SYNC_WARNING:
+    'Idioma aplicado en este dispositivo, pero no se pudo sincronizar con la cuenta.',
   THEME_MODAL_TITLE: 'Tema de la interfaz',
   THEME_LIGHT: 'Claro',
   THEME_DARK: 'Oscuro',
@@ -138,11 +176,16 @@ export const TEXTS = {
     '“Sistema” sigue el modo claro u oscuro del teléfono. También se guarda en tu cuenta cuando inicias sesión.',
 };
 
+export function useSettingsTexts() {
+  const translated = useSectionTranslations('SETTINGS');
+  return useMemo(() => ({ ...TEXTS, ...(translated || {}) }), [translated]);
+}
+
 export const STORAGE_KEYS = { NOTIFICATIONS: 'notifications' };
 
 export const NAVIGATION_ROUTES = {
-  SIGN_IN: 'SignIn',
-  CHANGE_PASSWORD: 'ChangePassword',
+  SIGN_IN: ROUTES.SIGN_IN,
+  CHANGE_PASSWORD: ROUTES.CHANGE_PASSWORD,
   FAQ: 'FAQ',
   FAQ_ALT: 'FaQ',
   ABOUT: 'About',

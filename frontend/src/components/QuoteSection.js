@@ -1,19 +1,29 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import quotes from '../data/quotes';
-import { DASH } from '../constants/translations';
+import quotesByLanguage from '../data/quotes';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useSectionTranslations } from '../hooks/useTranslations';
 
 const QuoteSection = () => {
+  const DASH = useSectionTranslations('DASH');
+  const { language } = useLanguage();
   const { colors } = useTheme();
   const [currentQuote, setCurrentQuote] = useState('');
   const [fadeAnim] = useState(new Animated.Value(1));
+  const localizedQuotes = useMemo(
+    () => (language === 'en' ? quotesByLanguage.en : quotesByLanguage.es),
+    [language],
+  );
 
   const getRandomQuote = useCallback(() => {
-    const randomIndex = Math.floor(Math.random() * quotes.length);
-    return quotes[randomIndex];
-  }, []);
+    const source = Array.isArray(localizedQuotes) && localizedQuotes.length > 0
+      ? localizedQuotes
+      : quotesByLanguage.es;
+    const randomIndex = Math.floor(Math.random() * source.length);
+    return source[randomIndex];
+  }, [localizedQuotes]);
 
   const changeQuote = useCallback(() => {
     // Animación de fade out
@@ -133,7 +143,7 @@ const QuoteSection = () => {
             </Text>
           </View>
           <View style={styles.headerRight}>
-            <Text style={styles.headerAction}>Otra</Text>
+            <Text style={styles.headerAction}>{DASH.QUOTE_ACTION}</Text>
             <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textSecondary} />
           </View>
         </View>

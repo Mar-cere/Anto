@@ -5,7 +5,11 @@ import {
   buildSessionRetentionSystemSnippet,
   detectEmotionalIntensityWindDown,
   withThematicMicroClosureRetention,
-  coerceEmotionalIntensity01to10
+  coerceEmotionalIntensity01to10,
+  evaluateConversationClosureReadiness,
+  shouldOrientSessionClosure,
+  stripPrematureSessionClosurePhrases,
+  responseHasSessionClosureBridge
 } from '../../../services/sessionRetentionHints.js';
 
 describe('sessionRetentionHints', () => {
@@ -93,7 +97,7 @@ describe('sessionRetentionHints', () => {
 
     it('checkpoint de pausa cuando hay racha de preguntas del asistente', () => {
       const history = [];
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 5; i++) {
         history.push({ role: 'user', content: `u${i}` });
         history.push({ role: 'assistant', content: `a${i} ¿sigue?` });
       }
@@ -104,7 +108,7 @@ describe('sessionRetentionHints', () => {
         threadMessageLimit: 100,
         conversationPattern: { questionStreakCount: 2 }
       });
-      expect(p.userTurnCount).toBe(4);
+      expect(p.userTurnCount).toBe(5);
       expect(p.suggestCheckpointPause).toBe(true);
     });
 
@@ -191,7 +195,9 @@ describe('sessionRetentionHints', () => {
         { role: 'user', content: 'peor', metadata: { context: { emotional: { intensity: 9 } } } },
         { role: 'assistant', content: 'c' },
         { role: 'user', content: 'uf', metadata: { context: { emotional: { intensity: 8 } } } },
-        { role: 'assistant', content: 'd' }
+        { role: 'assistant', content: 'd' },
+        { role: 'user', content: 'antes peor', metadata: { context: { emotional: { intensity: 9 } } } },
+        { role: 'assistant', content: 'e' }
       ];
       const base = buildSessionRetentionPayload({
         conversationHistoryNewestFirst: newestFirst,
@@ -215,7 +221,9 @@ describe('sessionRetentionHints', () => {
         { role: 'user', content: 'peor', metadata: { context: { emotional: { intensity: 9 } } } },
         { role: 'assistant', content: 'c' },
         { role: 'user', content: 'uf', metadata: { context: { emotional: { intensity: 8 } } } },
-        { role: 'assistant', content: 'd' }
+        { role: 'assistant', content: 'd' },
+        { role: 'user', content: 'antes peor', metadata: { context: { emotional: { intensity: 9 } } } },
+        { role: 'assistant', content: 'e' }
       ];
       const base = buildSessionRetentionPayload({
         conversationHistoryNewestFirst: newestFirst,
@@ -280,6 +288,95 @@ describe('sessionRetentionHints', () => {
     });
   });
 
+  describe('evaluateConversationClosureReadiness', () => {
+    it('marca opening en saludo o hilo reciente', () => {
+      expect(
+        evaluateConversationClosureReadiness({
+          sessionRetention: { userTurnCount: 2, suggestReturningUserWarmOpen: true },
+          contextual: { intencion: { tipo: 'CONVERSACION_GENERAL' } }
+        }).phase
+      ).toBe('opening');
+      expect(
+        evaluateConversationClosureReadiness({
+          sessionRetention: { userTurnCount: 3 },
+          conversationPattern: {}
+        }).phase
+      ).toBe('opening');
+    });
+
+    it('marca may_close con señales de retención tras mínimo orientativo de turnos', () => {
+      const r = evaluateConversationClosureReadiness({
+        sessionRetention: { userTurnCount: 5, suggestBridgeClosing: true },
+        conversationPattern: {}
+      });
+      expect(r.phase).toBe('may_close');
+      expect(r.reasons).toContain('senal_retencion');
+    });
+
+    it('marca developing con 5+ turnos pero sin señal de cierre', () => {
+      expect(
+        evaluateConversationClosureReadiness({
+          sessionRetention: { userTurnCount: 5 },
+          conversationPattern: {},
+          sessionPhase: 'default'
+        }).phase
+      ).toBe('developing');
+    });
+
+    it('shouldOrientSessionClosure respeta crisis y fase may_close', () => {
+      expect(
+        shouldOrientSessionClosure({
+          crisis: { riskLevel: 'HIGH' },
+          sessionRetention: { userTurnCount: 6, suggestBridgeClosing: true }
+        })
+      ).toBe(false);
+      expect(
+        shouldOrientSessionClosure({
+          crisis: { riskLevel: 'LOW' },
+          sessionRetention: { userTurnCount: 6, suggestBridgeClosing: true }
+        })
+      ).toBe(true);
+    });
+
+    it('fase acute bloquea cierre salvo despedida explícita', () => {
+      expect(
+        evaluateConversationClosureReadiness({
+          sessionRetention: { userTurnCount: 8, suggestBridgeClosing: true },
+          sessionPhase: 'acute'
+        }).phase
+      ).toBe('opening');
+      expect(
+        evaluateConversationClosureReadiness({
+          sessionRetention: { userTurnCount: 2, likelyFarewell: true },
+          conversationPattern: {},
+          sessionPhase: 'acute'
+        }).phase
+      ).toBe('may_close');
+    });
+  });
+
+  describe('stripPrematureSessionClosurePhrases', () => {
+    it('elimina puente de cierre en hilo reciente', () => {
+      const raw =
+        'Me alegra leerte. Si te sirve, podemos cerrar aquí este tramo y retomarlo cuando quieras desde este punto.';
+      const out = stripPrematureSessionClosurePhrases(raw, {
+        sessionRetention: { userTurnCount: 2 },
+        contextual: { intencion: { tipo: 'GREETING' } }
+      });
+      expect(out).not.toMatch(/cerrar aqu[ií] este tramo/i);
+      expect(responseHasSessionClosureBridge(out)).toBe(false);
+    });
+
+    it('conserva puente cuando may_close aplica', () => {
+      const raw = 'Gracias por compartir. Si te sirve, podemos cerrar aquí este tramo y retomarlo cuando quieras.';
+      const out = stripPrematureSessionClosurePhrases(raw, {
+        sessionRetention: { userTurnCount: 6, suggestBridgeClosing: true },
+        crisis: { riskLevel: 'LOW' }
+      });
+      expect(responseHasSessionClosureBridge(out)).toBe(true);
+    });
+  });
+
   describe('buildSessionRetentionSystemSnippet', () => {
     it('vacío si no hay banderas', () => {
       const p = buildSessionRetentionPayload({
@@ -305,7 +402,7 @@ describe('sessionRetentionHints', () => {
 
     it('incluye checkpoint si aplica patrón de preguntas', () => {
       const history = [];
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 5; i++) {
         history.push({ role: 'user', content: `u${i}` });
         history.push({ role: 'assistant', content: `a${i}?` });
       }
@@ -316,6 +413,7 @@ describe('sessionRetentionHints', () => {
         threadMessageLimit: 100,
         conversationPattern: { questionStreakCount: 2 }
       });
+      expect(p.suggestCheckpointPause).toBe(true);
       const s = buildSessionRetentionSystemSnippet(p);
       expect(s).toContain('preguntas seguidas');
     });
@@ -386,6 +484,21 @@ describe('sessionRetentionHints', () => {
       const s = buildSessionRetentionSystemSnippet(p);
       expect(s).toContain('500000');
       expect(s).toMatch(/límite del chat es ~0\)/);
+    });
+
+    it('usuario que vuelve: cabecera de apertura sin presión de cierre de tramo', () => {
+      const p = buildSessionRetentionPayload({
+        conversationHistoryNewestFirst: [{ role: 'user', content: 'hola' }],
+        userContent: 'Hoy estoy bien',
+        priorConversationCount: 3,
+        threadMessageLimit: 100
+      });
+      expect(p.suggestReturningUserWarmOpen).toBe(true);
+      const s = buildSessionRetentionSystemSnippet(p);
+      expect(s).toContain('Sesión y retorno (apertura)');
+      expect(s).toContain('bienvenida de vuelta');
+      expect(s).not.toContain('sentir que el tramo tuvo una conclusión');
+      expect(s).toMatch(/No\*\*\s*invites a cerrar el tramo/i);
     });
   });
 });
