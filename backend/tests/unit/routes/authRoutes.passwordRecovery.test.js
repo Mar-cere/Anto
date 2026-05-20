@@ -11,6 +11,8 @@ const NEW_PASSWORD = 'newpassword8';
 
 const mockSendVerificationCode = jest.fn().mockResolvedValue(undefined);
 
+const OLD_PASSWORD = 'oldpassword8';
+
 const createMockUser = (overrides = {}) => {
   const expiresAt = Date.now() + 15 * 60 * 1000;
   const base = {
@@ -20,6 +22,7 @@ const createMockUser = (overrides = {}) => {
     preferences: { language: 'en' },
     password: 'oldhash',
     salt: 'oldsalt',
+    comparePassword: jest.fn((candidate) => candidate === OLD_PASSWORD),
     save: jest.fn().mockResolvedValue(undefined),
     ...overrides,
   };
@@ -126,6 +129,19 @@ describe('Auth routes password recovery', () => {
     expect(mockUser.save).toHaveBeenCalled();
     expect(mockUser.resetPasswordCode).toBeUndefined();
     expect(mockUser.resetPasswordExpires).toBeUndefined();
+  });
+
+  it('POST reset-password rechaza contraseña igual a la actual', async () => {
+    const response = await request(app)
+      .post('/api/auth/reset-password')
+      .send({
+        email: TEST_EMAIL,
+        code: TEST_CODE,
+        newPassword: OLD_PASSWORD,
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe('PASSWORD_SAME_AS_CURRENT');
   });
 
   it('POST reset-password rechaza contraseña menor a 8 caracteres', async () => {

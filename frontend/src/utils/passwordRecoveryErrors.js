@@ -44,6 +44,14 @@ export function resolvePasswordRecoveryErrorMessage(error, texts, fallbackKey) {
   }
 
   if (
+    errorCode === 'PASSWORD_SAME_AS_CURRENT' ||
+    rawMessage.includes('diferente a la actual') ||
+    rawMessage.includes('different from the current')
+  ) {
+    return texts.PASSWORD_SAME_AS_CURRENT || apiMessage || texts[fallbackKey];
+  }
+
+  if (
     rawMessage.includes('código activo') ||
     rawMessage.includes('active recovery code') ||
     rawMessage.includes('code still active')

@@ -563,14 +563,23 @@ router.post('/reset-password', passwordResetSubmitLimiter, async (req, res) => {
 
     const { email, code, newPassword } = value;
 
-    // Buscar usuario (Joi ya normaliza email a lowercase)
-    const user = await User.findOne({ email });
+    // Incluir campos de recuperación (select: false en el modelo)
+    const user = await User.findOne({ email }).select(
+      '+resetPasswordCode +resetPasswordExpires +password +salt',
+    );
     if (!user) {
       return res.status(404).json({ message: copy.emailNotFound });
     }
 
     if (!isResetCodeValid(user, code)) {
       return respondInvalidResetCode(res, copy, user);
+    }
+
+    if (user.salt && user.password && user.comparePassword(newPassword)) {
+      return res.status(400).json({
+        message: copy.passwordSameAsCurrent,
+        code: 'PASSWORD_SAME_AS_CURRENT',
+      });
     }
 
     // Hashear la nueva contraseña

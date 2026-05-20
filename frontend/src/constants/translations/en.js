@@ -562,6 +562,8 @@ export const AUTH = {
     CONNECTION_ERROR:
       'No connection. Please check your internet and try again.',
     CODE_EXPIRED: 'The recovery code has expired. Request a new one.',
+    PASSWORD_SAME_AS_CURRENT:
+      'New password must be different from the current one.',
   },
   VERIFY_EMAIL: {
     TITLE: 'Verify your Email',

@@ -51,6 +51,8 @@ const DEFAULT_TEXTS = {
   TOO_MANY_ATTEMPTS: 'Demasiados intentos. Espera un momento y vuelve a intentar.',
   CONNECTION_ERROR: 'No hay conexión. Verifica tu internet e inténtalo de nuevo.',
   CODE_EXPIRED: 'El código de recuperación expiró. Solicita uno nuevo.',
+  PASSWORD_SAME_AS_CURRENT:
+    'La nueva contraseña debe ser diferente a la actual.',
 };
 
 // Constantes de validación
