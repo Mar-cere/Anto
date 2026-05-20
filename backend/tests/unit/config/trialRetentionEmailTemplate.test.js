@@ -37,4 +37,33 @@ describe('trialRetentionEmail plantilla', () => {
       sinCincoHorasTexto: !t.html.includes('5 horas') && !t.html.includes('5 hora'),
     }).toMatchSnapshot();
   });
+
+  describe('language en', () => {
+    it('asunto; preheader con aprox. días en inglés', () => {
+      const trialEnd = new Date('2026-06-03T18:00:00.000Z');
+      const t = mailer.emailTemplates.trialRetentionEmail('ana', trialEnd, 'en');
+
+      expect(t.subject).toMatch(/trial.*ends soon/i);
+      expect(t.subject).toMatchSnapshot();
+
+      expect({
+        preheaderMencionaAprox2Dias: t.html.includes('about 2 day'),
+        preheaderMenciona54Horas: t.html.includes('54'),
+        cuerpoRoughGuide: t.html.includes('rough guide'),
+        trialEndingSection: t.html.includes('Trial ending soon'),
+      }).toMatchSnapshot();
+    });
+
+    it('pocas horas en inglés; sin rough guide en cuerpo', () => {
+      const trialEnd = new Date('2026-06-01T17:00:00.000Z');
+      const t = mailer.emailTemplates.trialRetentionEmail('ana', trialEnd, 'en');
+
+      expect({
+        subject: t.subject,
+        pocasHorasEnPreheader: t.html.includes('few trial hours'),
+        pocasHorasEnCuerpo: t.html.includes('few hours'),
+        sinRoughGuide: !t.html.includes('rough guide'),
+      }).toMatchSnapshot();
+    });
+  });
 });

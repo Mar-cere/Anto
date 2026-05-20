@@ -12,3 +12,16 @@ exports[`subscriptionRenewalEmail plantilla asunto de renovación; comprobante y
   "renovacion": true,
 }
 `;
+
+exports[`subscriptionRenewalEmail plantilla language en asunto, comprobante y renovación en inglés 1`] = `"Anto: another period with you (Monthly plan)"`;
+
+exports[`subscriptionRenewalEmail plantilla language en asunto, comprobante y renovación en inglés 2`] = `
+{
+  "bloqueCobro": true,
+  "ctaOpenApp": true,
+  "planMonthly": true,
+  "referencia": true,
+  "renovacion": true,
+  "thanksForStaying": true,
+}
+`;

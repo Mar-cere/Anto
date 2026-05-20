@@ -1,5 +1,5 @@
-# Regresión de prompts sensibles (#119): golden tests sin OpenAI ni Mongo.
-name: Backend prompt golden tests
+# Backend: golden prompts (#119) + blindaje i18n push/email.
+name: Backend tests
 
 on:
   pull_request:
@@ -13,6 +13,30 @@ on:
       - '.github/workflows/backend-test.yml'
 
 jobs:
+  i18n-blindaje:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Auditoría i18n (push, email, técnicas)
+        run: npm run audit:i18n
+
+      - name: Tests i18n (push + mailer + tono)
+        env:
+          NODE_ENV: test
+        run: npm run test:i18n && NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js tests/unit/utils/copyToneGuards.test.js --coverage=false
+
   prompt-golden:
     runs-on: ubuntu-latest
     defaults:

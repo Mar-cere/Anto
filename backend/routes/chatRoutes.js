@@ -84,9 +84,18 @@ import {
     validarConversationId
 } from './chat/index.js';
 
-import { resolveAppLanguage } from '../utils/resolveAppLanguage.js';
+import { resolveRequestLanguage } from '../utils/apiLanguage.js';
+import { chatApiCopy } from '../utils/chatApiCopy.js';
+import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
 
 const router = express.Router();
+
+router.use((req, res, next) => {
+  const language = resolveRequestLanguage(req);
+  req.appLanguage = language;
+  req.apiCopy = chatApiCopy(language);
+  next();
+});
 
 // Obtener mensajes de una conversación (paginado)
 router.get('/conversations/:conversationId', protect, validarConversationId, validarConversacion, async (req, res) => {
@@ -232,7 +241,7 @@ router.get('/conversations/:conversationId', protect, validarConversationId, val
       surface: 'registered'
     });
     res.status(500).json({
-      message: 'Error al obtener el historial de mensajes',
+      message: req.apiCopy.historyError,
       error: error.message
     });
   }
@@ -255,7 +264,7 @@ router.patch(
           surface: 'registered'
         });
         return res.status(400).json({
-          message: 'sessionIntention inválido o vacío. Valores: vent, organize, technique, plan'
+          message: req.apiCopy.sessionIntentionInvalid
         });
       }
       const userMsgCount = await Message.countDocuments({
@@ -269,8 +278,7 @@ router.patch(
           surface: 'registered'
         });
         return res.status(409).json({
-          message:
-            'La intención de sesión solo puede fijarse antes del primer mensaje tuyo en esta conversación.'
+          message: req.apiCopy.sessionIntentionTooLate,
         });
       }
       const updated = await Conversation.findOneAndUpdate(
@@ -281,13 +289,13 @@ router.patch(
         .select('sessionIntention')
         .lean();
       if (!updated) {
-        return res.status(404).json({ message: 'Conversación no encontrada' });
+        return res.status(404).json({ message: req.apiCopy.conversationNotFound });
       }
       res.json({ sessionIntention: sanitizeSessionIntentionForClient(updated.sessionIntention) });
     } catch (error) {
       console.error('Error al actualizar intención de sesión:', error);
       res.status(500).json({
-        message: 'Error al guardar la intención de sesión',
+        message: req.apiCopy.sessionIntentionSaveError,
         error: error.message
       });
     }
@@ -306,7 +314,7 @@ router.post(
       const { conversationId } = req.params;
       const action = String(req.body?.action || '').trim();
       if (action !== 'accepted' && action !== 'rejected') {
-        return res.status(400).json({ message: 'action inválida. Valores: accepted|rejected' });
+        return res.status(400).json({ message: req.apiCopy.proposalActionInvalid });
       }
       await conversationProductProposalCapService.registerProductProposalFeedback(
         conversationId,
@@ -323,7 +331,7 @@ router.post(
       return res.status(204).end();
     } catch (error) {
       console.error('Error guardando feedback de propuesta productiva:', error);
-      return res.status(500).json({ message: 'No se pudo guardar feedback de propuesta' });
+      return res.status(500).json({ message: req.apiCopy.proposalFeedbackError });
     }
   }
 );
@@ -340,7 +348,7 @@ router.post('/conversations', protect, requireActiveSubscription(true), async (r
         surface: 'registered'
       });
       return res.status(400).json({
-        message: 'sessionIntention inválido. Valores: vent, organize, technique, plan'
+        message: req.apiCopy.sessionIntentionInvalidShort
       });
     }
 
@@ -388,7 +396,7 @@ router.post('/conversations', protect, requireActiveSubscription(true), async (r
       surface: 'registered'
     });
     res.status(500).json({
-      message: 'Error al crear la conversación',
+      message: req.apiCopy.createConversationError,
       error: error.message
     });
   }
@@ -421,7 +429,7 @@ router.post(
       ) {
         return res.status(400).json({
           success: false,
-          message: 'delayMinutes debe ser un número entre 5 y 12'
+          message: req.apiCopy.delayMinutesInvalid
         });
       }
       const data = await scheduleLastSessionSummary(req.user._id, req.params.conversationId, {
@@ -430,15 +438,15 @@ router.post(
       return res.status(202).json({ success: true, data });
     } catch (error) {
       if (error?.code === 'INVALID_IDS') {
-        return res.status(400).json({ success: false, message: 'Identificadores inválidos' });
+        return res.status(400).json({ success: false, message: req.apiCopy.invalidIds });
       }
       if (error?.code === 'CONVERSATION_NOT_FOUND') {
-        return res.status(404).json({ success: false, message: 'Conversación no encontrada' });
+        return res.status(404).json({ success: false, message: req.apiCopy.conversationNotFound });
       }
       console.error('[chatRoutes] session-summary/schedule:', error);
       return res.status(500).json({
         success: false,
-        message: 'No se pudo programar la continuidad del chat'
+        message: req.apiCopy.scheduleContinuityError
       });
     }
   }
@@ -461,7 +469,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         surface: 'registered'
       });
       return res.status(400).json({
-        message: 'ID de conversación requerido'
+        message: req.apiCopy.conversationIdRequired
       });
     }
 
@@ -481,7 +489,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
       });
       
       return res.status(400).json({
-        message: 'ID de conversación inválido'
+        message: req.apiCopy.conversationIdInvalid
       });
     }
 
@@ -509,7 +517,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
       });
       
       return res.status(403).json({
-        message: 'No tienes permiso para acceder a esta conversación'
+        message: req.apiCopy.conversationForbidden
       });
     }
 
@@ -537,7 +545,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
       
       return res.status(403).json({
         success: false,
-        error: 'Se requiere suscripción activa o trial válido para usar el chat',
+        error: req.apiCopy.subscriptionRequired,
         requiresSubscription: true
       });
     }
@@ -548,7 +556,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         surface: 'registered'
       });
       return res.status(400).json({
-        message: 'El contenido del mensaje es requerido'
+        message: req.apiCopy.contentRequired
       });
     }
 
@@ -561,7 +569,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         surface: 'registered'
       });
       return res.status(400).json({ 
-        message: `Límite de mensajes alcanzado (${LIMITE_MENSAJES} mensajes por conversación). Por favor, crea una nueva conversación para continuar.`,
+        message: req.apiCopy.messageLimit(LIMITE_MENSAJES),
         limit: LIMITE_MENSAJES,
         currentCount: messageCount
       });
@@ -623,7 +631,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           surface: 'registered'
         });
         return res.status(429).json({
-          message: 'Este mensaje ya se está procesando. Espera un momento.',
+          message: req.apiCopy.messageProcessing,
           code: 'MESSAGE_IN_FLIGHT'
         });
       }
@@ -1108,13 +1116,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           preferences: {
             ...userProfile?.preferences,
             ...user?.preferences, // Incluir responseStyle de User
-            language: resolveAppLanguage({
-              headerLanguage: req.headers['x-app-language'],
-              preferenceLanguage: {
-                ...userProfile?.preferences,
-                ...user?.preferences,
-              }?.language,
-            }),
+            language: req.appLanguage || resolveRequestLanguage(req),
           }
         };
 
@@ -1485,7 +1487,13 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                 { conversationId: String(conversationId), streaming: true }
               )
               .catch(() => {});
-            res.write('data: ' + JSON.stringify({ error: streamErr.message || 'Error en streaming' }) + '\n\n');
+            res.write(
+              'data: ' +
+                JSON.stringify({
+                  error: streamErr.message || req.apiCopy.streamError,
+                }) +
+                '\n\n',
+            );
             res.end();
             return;
           }
@@ -1930,7 +1938,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         if (userMessage._id) {
           assistantMessage = new Message({
             userId: req.user._id,
-            content: "Lo siento, ha ocurrido un error al procesar tu mensaje. ¿Podrías intentarlo de nuevo?",
+            content: req.apiCopy.assistantProcessingFallback,
             role: 'assistant',
             conversationId,
             metadata: {
@@ -1944,7 +1952,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         }
 
         return res.status(500).json({
-          message: 'Error procesando el mensaje',
+          message: req.apiCopy.processMessageError,
           error: error.message,
           userMessage: userMessage._id ? userMessage : null,
           errorMessage: assistantMessage,
@@ -1984,7 +1992,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
     });
 
     return res.status(500).json({
-      message: 'Error crítico al procesar el mensaje',
+      message: req.apiCopy.criticalProcessError,
       error: error.message,
       logs
     });
@@ -2002,7 +2010,7 @@ router.patch('/messages/:messageId/feedback', protect, messageFeedbackLimiter, a
         httpStatus: 400,
         surface: 'registered'
       });
-      return res.status(400).json({ message: 'ID de mensaje inválido' });
+      return res.status(400).json({ message: req.apiCopy.messageIdInvalid });
     }
 
     if (!Object.prototype.hasOwnProperty.call(req.body, 'helpful')) {
@@ -2010,7 +2018,7 @@ router.patch('/messages/:messageId/feedback', protect, messageFeedbackLimiter, a
         httpStatus: 400,
         surface: 'registered'
       });
-      return res.status(400).json({ message: 'Se requiere el campo helpful' });
+      return res.status(400).json({ message: req.apiCopy.helpfulRequired });
     }
 
     if (helpful !== null && helpful !== 'up' && helpful !== 'down') {
@@ -2018,7 +2026,7 @@ router.patch('/messages/:messageId/feedback', protect, messageFeedbackLimiter, a
         httpStatus: 400,
         surface: 'registered'
       });
-      return res.status(400).json({ message: 'helpful debe ser "up", "down" o null' });
+      return res.status(400).json({ message: req.apiCopy.helpfulInvalid });
     }
 
     const oid = new mongoose.Types.ObjectId(messageId);
@@ -2045,7 +2053,7 @@ router.patch('/messages/:messageId/feedback', protect, messageFeedbackLimiter, a
         httpStatus: 404,
         surface: 'registered'
       });
-      return res.status(404).json({ message: 'Mensaje no encontrado o no es un mensaje del asistente' });
+      return res.status(404).json({ message: req.apiCopy.assistantMessageNotFound });
     }
 
     metricsService
@@ -2078,7 +2086,7 @@ router.patch('/messages/:messageId/feedback', protect, messageFeedbackLimiter, a
       surface: 'registered'
     });
     res.status(500).json({
-      message: 'Error al guardar la valoración',
+      message: req.apiCopy.ratingSaveError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -2205,7 +2213,7 @@ router.get('/conversations', protect, async (req, res) => {
       surface: 'registered'
     });
     res.status(500).json({
-      message: 'Error al obtener las conversaciones',
+      message: req.apiCopy.listConversationsError,
       error: error.message
     });
   }
@@ -2222,7 +2230,7 @@ router.patch('/messages/status', protect, patchMessageLimiter, async (req, res) 
         surface: 'registered'
       });
       return res.status(400).json({
-        message: 'Se requiere al menos un ID de mensaje'
+        message: req.apiCopy.messageIdsRequired
       });
     }
 
@@ -2233,7 +2241,7 @@ router.patch('/messages/status', protect, patchMessageLimiter, async (req, res) 
         surface: 'registered'
       });
       return res.status(400).json({
-        message: 'Estado de mensaje inválido'
+        message: req.apiCopy.messageStatusInvalid
       });
     }
 
@@ -2245,7 +2253,7 @@ router.patch('/messages/status', protect, patchMessageLimiter, async (req, res) 
         surface: 'registered'
       });
       return res.status(400).json({ 
-        message: 'Algunos IDs de mensaje son inválidos' 
+        message: req.apiCopy.messageIdsInvalid 
       });
     }
 
@@ -2261,7 +2269,7 @@ router.patch('/messages/status', protect, patchMessageLimiter, async (req, res) 
         surface: 'registered'
       });
       return res.status(400).json({ 
-        message: 'Algunos mensajes no existen o no pertenecen al usuario' 
+        message: req.apiCopy.messagesNotOwned 
       });
     }
 
@@ -2280,14 +2288,14 @@ router.patch('/messages/status', protect, patchMessageLimiter, async (req, res) 
     );
 
     res.json({
-      message: `${result.modifiedCount} mensajes actualizados`,
+      message: req.apiCopy.messagesUpdated(result.modifiedCount),
       status,
       timestamp: new Date()
     });
   } catch (error) {
     console.error('Error al actualizar estado de mensajes:', error);
     res.status(500).json({
-      message: 'Error al actualizar el estado de los mensajes',
+      message: req.apiCopy.updateStatusError,
       error: error.message
     });
   }
@@ -2308,13 +2316,13 @@ router.delete('/conversations/:conversationId', protect, validarConversationId, 
     const result = await Message.deleteMany(query);
 
     res.json({
-      message: 'Mensajes eliminados exitosamente',
+      message: req.apiCopy.messagesDeletedSuccess,
       deletedCount: result.deletedCount
     });
   } catch (error) {
     console.error('Error al eliminar mensajes:', error);
     res.status(500).json({
-      message: 'Error al eliminar los mensajes',
+      message: req.apiCopy.deleteMessagesError,
       error: error.message
     });
   }
@@ -2365,7 +2373,7 @@ router.get('/messages/search', protect, async (req, res) => {
   } catch (error) {
     console.error('Error en búsqueda de mensajes:', error);
     res.status(500).json({
-      message: 'Error al buscar mensajes',
+      message: req.apiCopy.searchMessagesError,
       error: error.message
     });
   }

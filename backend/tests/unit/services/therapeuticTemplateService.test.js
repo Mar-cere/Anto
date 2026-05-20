@@ -124,6 +124,22 @@ describe('TherapeuticTemplateService', () => {
     });
   });
 
+  describe('idioma en', () => {
+    it('buildTherapeuticBase devuelve texto en inglés', () => {
+      const response = therapeuticTemplateService.buildTherapeuticBase('tristeza', 'soledad', {
+        style: 'deep',
+        language: 'en',
+      });
+      expect(response).toMatch(/loneliness|alone|connection/i);
+      expect(response).not.toMatch(/La soledad puede ser muy dolorosa/);
+    });
+
+    it('getTemplate en devuelve arrays en inglés', () => {
+      const template = therapeuticTemplateService.getTemplate('ansiedad', 'social', 'en');
+      expect(template.validation[0]).toMatch(/social|anxiety/i);
+    });
+  });
+
   describe('buildTherapeuticHint', () => {
     it('debe retornar hint breve para emoción/subtipo válidos', () => {
       const hint = therapeuticTemplateService.buildTherapeuticHint('tristeza', 'soledad');

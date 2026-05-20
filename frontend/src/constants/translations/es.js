@@ -55,6 +55,13 @@ export const REGISTER = {
   MODAL_CLOSE_LABEL: 'Cerrar',
   TERMS_MODAL_CLOSE: 'Cerrar',
   TERMS_MODAL_ACCEPT: 'Aceptar términos',
+  LINK_UNAVAILABLE_TITLE: 'No disponible',
+  PRIVACY_OPEN_UNAVAILABLE:
+    'No se pudo abrir el enlace en este dispositivo.',
+  PRIVACY_OPEN_FALLBACK_ALERT:
+    'No se pudo abrir el enlace. Puedes visitar antoapps.com desde el navegador.',
+  PRIVACY_OPEN_FALLBACK_TOAST:
+    'No se pudo abrir el enlace. Visita antoapps.com desde el navegador.',
   PRIVACY_ACCEPT_PREFIX: 'Acepto la ',
   SHOW_PASSWORD: 'Mostrar contraseña',
   HIDE_PASSWORD: 'Ocultar contraseña',
@@ -77,7 +84,7 @@ export const REGISTER = {
     CONNECTION_ERROR: 'No se pudo conectar con el servidor. Por favor, verifica tu conexión a internet.',
     SERVER_ERROR: 'No se pudo establecer conexión con el servidor. Por favor:\n\n1. Verifica tu conexión a internet\n2. Espera unos minutos y vuelve a intentar\n3. Si el problema persiste, contacta al soporte',
     NETWORK_ERROR: 'Error de conexión. Por favor:\n\n1. Verifica tu conexión a internet\n2. Intenta nuevamente en unos momentos\n3. Si el problema persiste, contacta al soporte',
-    ALREADY_EXISTS: 'El email o nombre de usuario ya está registrado',
+    ALREADY_EXISTS: 'El email o nombre de usuario ya está en uso',
     INVALID_DATA: 'Por favor, verifica que todos los campos sean correctos',
     TOO_MANY_ATTEMPTS: 'Demasiados intentos de registro. Por favor, espera un momento',
     NO_TOKEN: 'No se recibió token de autenticación',
@@ -110,35 +117,24 @@ export const ONBOARDING = {
   STEP_4_TITLE: 'Contactos de Emergencia',
   STEP_4_DESCRIPTION:
     'Configura contactos de confianza que recibirán alertas en situaciones de riesgo.',
-  QUESTIONS_TITLE: 'Para adaptarte mejor',
-  QUESTIONS_SUBTITLE:
-    'Tres preguntas cortas. Si no te encaja ninguna opción, puedes omitir.',
-  QUESTIONS_Q1_LABEL: '¿Qué buscas aquí?',
-  QUESTIONS_Q2_LABEL: '¿En qué te gustaría avanzar?',
-  QUESTIONS_Q3_LABEL: '¿Cómo te gustaría que te acompañe?',
-  QUESTIONS_SUBMIT: 'Listo',
-  QUESTIONS_EXPLORE_APP: 'Ver recorrido de la app',
+  QUESTIONS_TITLE: 'Cuéntame en qué enfocarnos',
+  QUESTIONS_SUBTITLE: 'Opcional. Elige una opción o omite.',
+  QUESTIONS_MAIN_LABEL: 'Ahora mismo me interesa más…',
+  QUESTIONS_SUBMIT: 'Continuar',
+  QUESTIONS_EXPLORE_APP: 'Ver recorrido',
   QUESTIONS_SAVE_SUCCESS: 'Listo, gracias',
   QUESTIONS_SAVE_ERROR:
-    'No se pudieron guardar las respuestas. Puedes omitir y seguir.',
+    'No se pudo guardar tu elección. Puedes omitir y seguir.',
   QUESTIONS_TOO_MANY_ATTEMPTS:
     'Demasiados intentos. Espera un momento y vuelve a intentar.',
   QUESTIONS_CONNECTION_ERROR:
     'No hay conexión. Verifica tu internet e inténtalo de nuevo.',
-  QUESTIONS_OPTIONS_WHAT_EXPECT_FROM_APP: [
+  QUESTIONS_FOCUS_OPTIONS: [
     'Apoyo emocional',
     'Ansiedad o estrés',
-    'Hábitos y rutinas',
-  ],
-  QUESTIONS_OPTIONS_WHAT_TO_IMPROVE_OR_WORK_ON: [
     'Sueño y descanso',
-    'Autoestima',
+    'Hábitos y rutinas',
     'Enfoque y organización',
-  ],
-  QUESTIONS_OPTIONS_TYPE_OF_SPECIALIST: [
-    'Paso a paso',
-    'Escucha y compañía',
-    'Ideas prácticas',
   ],
 };
 
@@ -196,6 +192,12 @@ export const DASH = {
     'Última actividad en el chat: hace {days} días.',
   FOCUS_PRELOADED_LAST_CHAT_SUBTITLE_FALLBACK_ES:
     'Última actividad en el chat reciente.',
+  FOCUS_PUSH_SCHEDULED_MORNING: 'Recordatorio programado (mañana)',
+  FOCUS_PUSH_SCHEDULED_EVENING: 'Recordatorio programado (tarde-noche)',
+  FOCUS_PUSH_SCHEDULED_GENERIC: 'Recordatorio programado',
+  FOCUS_REMINDER_NEXT_TASK_PREFIX: 'Próxima tarea:',
+  FOCUS_REMINDER_HABIT_PREFIX: 'Hábito:',
+  FOCUS_REMINDER_AROUND_PREFIX: 'Recordatorio hacia las',
   QUOTE_KICKER: 'Momento para ti',
   QUOTE_A11Y_LABEL: 'Frase inspiradora',
   QUOTE_A11Y_HINT: 'Doble toque para mostrar otra frase al azar',
@@ -300,10 +302,10 @@ export const SETTINGS = {
   AI_PRIVACY: 'Privacidad e IA',
   AI_PRIVACY_DESC: 'Qué datos se procesan con IA y con qué proveedor',
   LOGOUT_TITLE: 'Cerrar sesión',
-  LOGOUT_MESSAGE: '¿Estás seguro que deseas cerrar sesión?',
+  LOGOUT_MESSAGE: '¿Estás seguro de que deseas cerrar sesión?',
   DELETE_TITLE: 'Eliminar cuenta',
   DELETE_MESSAGE:
-    '¿Estás seguro que deseas eliminar tu cuenta? Esta acción no se puede deshacer. Si tu plan fue contratado por Apple, también debes cancelar la suscripción desde App Store (Configuración > Apple ID > Suscripciones).',
+    '¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer. Si tu plan fue contratado por Apple, también debes cancelar la suscripción desde App Store (Configuración > Apple ID > Suscripciones).',
   CANCEL: 'Cancelar',
   CONFIRM: 'Confirmar',
   DELETE: 'Eliminar',
@@ -800,6 +802,19 @@ export const CHAT = {
   SUGGESTION_TRY_PREFIX: 'Quiero probar: ',
   GUEST_HANDOFF_PREFILL_PREFIX:
     'Continuando desde el chat sin cuenta (puedes editar esto antes de enviar):',
+  GUEST_HANDOFF_ROLE_USER: 'Yo',
+  GUEST_HANDOFF_ROLE_ANTO: 'Anto',
+  SERVICE_CREATE_CONVERSATION_RETRY:
+    'No se pudo crear una conversación. Por favor, intenta de nuevo.',
+  SERVICE_CREATE_CONVERSATION_FAILED: 'No se pudo crear la conversación',
+  SERVICE_GUEST_START_FAILED: 'No se pudo iniciar el chat de invitado',
+  SERVICE_CLEAR_CONVERSATION_FAILED: 'No se pudo borrar la conversación',
+  SERVICE_SESSION_REQUIRED: 'Sesión requerida',
+  SERVICE_INVALID_CONVERSATION_ID: 'ID de conversación inválido',
+  SERVICE_INVALID_SESSION_INTENTION: 'Intención de sesión no válida',
+  SERVICE_INVALID_MESSAGE_ID: 'ID de mensaje inválido',
+  SERVICE_INVALID_HELPFUL: 'Valor de valoración no válido',
+  SERVICE_INVALID_ACTION: 'Acción no válida',
 };
 
 export const NAV = {
@@ -1628,7 +1643,7 @@ export const PROFILE = {
   SUBSCRIPTION_STATUS_RATE_LIMIT_ERROR:
     'Demasiados intentos al actualizar la suscripción. Espera un momento.',
   LOGOUT_TITLE: 'Cerrar Sesión',
-  LOGOUT_MESSAGE: '¿Estás seguro que deseas cerrar sesión?',
+  LOGOUT_MESSAGE: '¿Estás seguro de que deseas cerrar sesión?',
   CANCEL: 'Cancelar',
   LOGOUT: 'Cerrar Sesión',
   ERROR_LOGOUT: 'Error',
@@ -1645,7 +1660,7 @@ export const PROFILE = {
   DAYS: 'días',
   EDIT_PROFILE: 'Editar Perfil',
   EDIT_PROFILE_LOADING: 'Cargando perfil...',
-  EDIT_PROFILE_ERROR: 'Error',
+  EDIT_PROFILE_ERROR: 'Algo salió mal',
   EDIT_PROFILE_ERROR_DEFAULT: 'Ha ocurrido un error',
   EDIT_PROFILE_ERROR_NETWORK:
     'Error de conexión. Por favor, verifica tu internet.',
@@ -1657,7 +1672,7 @@ export const PROFILE = {
   EDIT_PROFILE_SUCCESS: 'Éxito',
   EDIT_PROFILE_PROFILE_UPDATED: 'Perfil actualizado correctamente',
   EDIT_PROFILE_UNSAVED_CHANGES: 'Cambios sin guardar',
-  EDIT_PROFILE_UNSAVED_CHANGES_MESSAGE: '¿Deseas descartar los cambios?',
+  EDIT_PROFILE_UNSAVED_CHANGES_MESSAGE: '¿Quieres descartar los cambios?',
   EDIT_PROFILE_CANCEL: 'Cancelar',
   EDIT_PROFILE_DISCARD: 'Descartar',
   EDIT_PROFILE_PROFILE_TITLE: 'Mi Perfil',
@@ -2038,6 +2053,9 @@ export const PROFILE = {
   TRANSACTIONS_STATUS_CANCELED: 'Cancelado',
   TRANSACTIONS_STATUS_REFUNDED: 'Reembolsado',
   TRANSACTIONS_FILTER_COUNT: '{filtered} de {total} transacciones',
+  ERROR_CONNECTION: 'No hay conexión. Verifica tu internet e inténtalo de nuevo.',
+  ERROR_TOO_MANY_REQUESTS:
+    'Demasiados intentos. Espera un momento e inténtalo nuevamente.',
   SYSTEM_HEALTH_LOADING: 'Cargando métricas...',
   SYSTEM_HEALTH_LOAD_ERROR: 'Error al cargar métricas del sistema',
   SYSTEM_HEALTH_RETRY: 'Reintentar',
@@ -2227,6 +2245,18 @@ export const SUBSCRIPTION = {
   SUBSCRIPTION_STATUS_DATE_VALID_UNTIL: 'Vigencia hasta:',
 };
 
+export const API_ERRORS = {
+  NETWORK: 'No hay conexión. Revisa tu internet e inténtalo de nuevo.',
+  TIMEOUT: 'La solicitud tardó demasiado. Inténtalo de nuevo.',
+  SERVER: 'Error del servidor. Inténtalo más tarde.',
+  UNAUTHORIZED: 'Correo o contraseña incorrectos.',
+  FORBIDDEN: 'Tu cuenta está desactivada. Contacta a soporte si crees que es un error.',
+  NOT_FOUND: 'No encontrado. Puede que el enlace haya expirado.',
+  TOO_MANY_REQUESTS: 'Demasiados intentos. Espera un momento e inténtalo de nuevo.',
+  BAD_REQUEST: 'Revisa los datos e inténtalo de nuevo.',
+  GENERIC: 'Algo ha fallado. Inténtalo de nuevo.',
+};
+
 // Exportar todas las traducciones agrupadas
 export default {
   HOME,
@@ -2244,5 +2274,6 @@ export default {
   TECHNIQUES,
   PROFILE,
   SUBSCRIPTION,
+  API_ERRORS,
 };
 

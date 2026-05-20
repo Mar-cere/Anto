@@ -11,6 +11,26 @@ exports[`trialRetentionEmail plantilla asunto; preheader oculto; aprox. días si
 }
 `;
 
+exports[`trialRetentionEmail plantilla language en asunto; preheader con aprox. días en inglés 1`] = `"Your trial in Anto ends soon"`;
+
+exports[`trialRetentionEmail plantilla language en asunto; preheader con aprox. días en inglés 2`] = `
+{
+  "cuerpoRoughGuide": true,
+  "preheaderMenciona54Horas": true,
+  "preheaderMencionaAprox2Dias": true,
+  "trialEndingSection": true,
+}
+`;
+
+exports[`trialRetentionEmail plantilla language en pocas horas en inglés; sin rough guide en cuerpo 1`] = `
+{
+  "pocasHorasEnCuerpo": true,
+  "pocasHorasEnPreheader": true,
+  "sinRoughGuide": true,
+  "subject": "Your trial in Anto ends soon",
+}
+`;
+
 exports[`trialRetentionEmail plantilla pocas horas si quedan &lt;6 h; sin cifra exacta de horas en cuerpo ni preheader 1`] = `
 {
   "pocasHorasEnCuerpo": true,

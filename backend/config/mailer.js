@@ -19,8 +19,14 @@ import {
   RESET_PASSWORD_PATH,
   RESET_TOKEN_EXPIRATION_HOURS
 } from '../constants/email.js';
-import { emailCtaLabel, getEmailLegalMedicalDisclaimerPlain } from '../constants/emailProductCopy.js';
+import {
+  getDisclaimerPlainForLang,
+  getEmailCtaForLang,
+  getMailerStrings,
+  subscriptionPlanDisplayName,
+} from '../constants/emailMailerStrings.js';
 import { getUtcIsoWeekParts } from '../utils/isoWeek.js';
+import { emailDateLocale, normalizeEmailLanguage, resolveUserEmailLanguage } from '../utils/emailLanguage.js';
 import logger from '../utils/logger.js';
 import {
   buildWeeklySummaryEmailContext,
@@ -142,7 +148,16 @@ function emailPreheaderHtml(escapedText) {
   return `<div style="${EMAIL_PREHEADER_HIDDEN}">${escapedText}</div>`;
 }
 
-const EMAIL_LEGAL_DISCLAIMER_ESCAPED = escapeHtmlText(getEmailLegalMedicalDisclaimerPlain());
+function disclaimerEscaped(language = 'es') {
+  return escapeHtmlText(getDisclaimerPlainForLang(language));
+}
+
+function emailCtaFor(language = 'es') {
+  return getEmailCtaForLang(language);
+}
+
+/** @deprecated Usar disclaimerEscaped(language) en plantillas nuevas */
+const EMAIL_LEGAL_DISCLAIMER_ESCAPED = disclaimerEscaped('es');
 
 /**
  * Formatea importe para comprobantes por correo (confirmación de compra).
@@ -150,26 +165,16 @@ const EMAIL_LEGAL_DISCLAIMER_ESCAPED = escapeHtmlText(getEmailLegalMedicalDiscla
  * @param {string} [currency]
  * @returns {string|null}
  */
-function formatPurchaseAmount(amount, currency) {
+function formatPurchaseAmount(amount, currency, language = 'es') {
   if (amount == null || Number.isNaN(Number(amount))) return null;
   const n = Number(amount);
   const code = (currency || 'CLP').toUpperCase();
+  const locale = emailDateLocale(language);
   try {
-    return new Intl.NumberFormat('es-CL', { style: 'currency', currency: code }).format(n);
+    return new Intl.NumberFormat(locale, { style: 'currency', currency: code }).format(n);
   } catch {
-    return `${n.toLocaleString('es-CL')} ${code}`;
+    return `${n.toLocaleString(locale)} ${code}`;
   }
-}
-
-const SUBSCRIPTION_PLAN_LABELS = {
-  monthly: 'Mensual',
-  quarterly: 'Trimestral',
-  semestral: 'Semestral',
-  yearly: 'Anual',
-};
-
-function subscriptionPlanDisplayName(plan) {
-  return SUBSCRIPTION_PLAN_LABELS[plan] != null ? SUBSCRIPTION_PLAN_LABELS[plan] : String(plan ?? '');
 }
 
 /**
@@ -181,29 +186,34 @@ function subscriptionPlanDisplayName(plan) {
  */
 function buildSubscriptionReceiptHtmlBlock(receipt, planNameRaw, periodEndSafe, options = {}) {
   if (!receipt) return '';
-  const title = escapeHtmlText(options.title ?? 'Confirmación de compra');
+  const language = normalizeEmailLanguage(options.language);
+  const sub = getMailerStrings(language).subscription;
+  const tbl = sub.table;
+  const title = escapeHtmlText(options.title ?? sub.receiptTitle);
+  const locale = emailDateLocale(language);
+  const dateOpts = {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  };
 
   const purchaseDateStr = receipt.purchaseDate
-    ? new Date(receipt.purchaseDate).toLocaleDateString('es-CL', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
+    ? new Date(receipt.purchaseDate).toLocaleDateString(locale, dateOpts)
     : null;
   const purchaseDateSafe = purchaseDateStr ? escapeHtmlText(purchaseDateStr) : null;
-  const amountStr = formatPurchaseAmount(receipt.amount, receipt.currency);
+  const amountStr = formatPurchaseAmount(receipt.amount, receipt.currency, language);
   const amountSafe = amountStr ? escapeHtmlText(amountStr) : null;
   const providerSafe = escapeHtmlText(String(receipt.providerLabel ?? '—'));
   const referenceSafe = escapeHtmlText(String(receipt.reference ?? '—'));
-  const productLineSafe = escapeHtmlText(`Suscripción premium — plan ${planNameRaw}`);
+  const productLineSafe = escapeHtmlText(sub.productLine(planNameRaw));
 
   const dateRow = purchaseDateSafe
-    ? `<tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};width:38%;"><strong>Fecha</strong></td><td style="padding:10px 0;">${purchaseDateSafe}</td></tr>`
+    ? `<tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};width:38%;"><strong>${tbl.date}</strong></td><td style="padding:10px 0;">${purchaseDateSafe}</td></tr>`
     : '';
   const amountRow = amountSafe
-    ? `<tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Importe</strong></td><td style="padding:10px 0;"><strong style="color:${EMAIL_COLORS.PRIMARY_DARK};">${amountSafe}</strong></td></tr>`
+    ? `<tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>${tbl.amount}</strong></td><td style="padding:10px 0;"><strong style="color:${EMAIL_COLORS.PRIMARY_DARK};">${amountSafe}</strong></td></tr>`
     : '';
 
   return `
@@ -214,15 +224,15 @@ function buildSubscriptionReceiptHtmlBlock(receipt, planNameRaw, periodEndSafe, 
               <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:18px 14px 20px;">
                 <table style="width:100%;border-collapse:collapse;color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.5;">
                   ${dateRow}
-                  <tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Producto</strong></td><td style="padding:10px 0;">${productLineSafe}</td></tr>
+                  <tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>${tbl.product}</strong></td><td style="padding:10px 0;">${productLineSafe}</td></tr>
                   ${amountRow}
-                  <tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Pago procesado por</strong></td><td style="padding:10px 0;">${providerSafe}</td></tr>
-                  <tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Referencia</strong></td><td style="padding:10px 0;word-break:break-word;font-family:'Segoe UI Mono','Menlo','Monaco',monospace;font-size:12px;line-height:1.45;">${referenceSafe}</td></tr>
-                  <tr><td style="padding:12px 10px 0 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Vigencia hasta</strong></td><td style="padding:12px 0 0 0;">${periodEndSafe}</td></tr>
+                  <tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>${tbl.provider}</strong></td><td style="padding:10px 0;">${providerSafe}</td></tr>
+                  <tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>${tbl.reference}</strong></td><td style="padding:10px 0;word-break:break-word;font-family:'Segoe UI Mono','Menlo','Monaco',monospace;font-size:12px;line-height:1.45;">${referenceSafe}</td></tr>
+                  <tr><td style="padding:12px 10px 0 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>${tbl.validUntil}</strong></td><td style="padding:12px 0 0 0;">${periodEndSafe}</td></tr>
                 </table>
               </div>
               <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:12px;margin:16px 0 0 0;text-align:center;line-height:1.55;">
-                Puedes conservar este correo como comprobante. Para facturación o soporte, indica la referencia y el correo de tu cuenta.
+                ${sub.receiptNote}
               </p>
             </div>
           `;
@@ -270,11 +280,11 @@ const createTransporter = () => {
 
 // Helper: generar footer común para emails
 const getEmailFooter = (options = {}) => {
+  const language = normalizeEmailLanguage(options.language);
+  const s = getMailerStrings(language).footer;
   const currentYear = new Date().getFullYear();
   const weeklyReply = options.weeklySummaryAllowReply === true;
-  const replyHtml = weeklyReply
-    ? '¿Dudas sobre la ampliación de prueba? Puedes responder a este correo indicando el email con el que inicias sesión en la app. Para otro tipo de consultas, te recomendamos Instagram (enlace arriba).<br>'
-    : 'Este es un correo automático, por favor no respondas a este mensaje.<br>';
+  const replyHtml = weeklyReply ? s.weeklyReply : s.noReply;
   return `
     <div style="text-align: center; margin: 0 24px 24px 24px;">
       <div style="margin: 10px 0 14px 0;">
@@ -292,12 +302,12 @@ const getEmailFooter = (options = {}) => {
           Instagram
         </a>
         <div style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 0.9rem; margin-top: 8px;">
-          Feedback rápido, novedades y soporte.
+          ${s.instagramHint}
         </div>
       </div>
       <p style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 0.95rem; margin: 0;">
         ${replyHtml}
-        © ${currentYear} <span style="color: ${EMAIL_COLORS.ACCENT};">${APP_NAME}</span>. Todos los derechos reservados.
+        © ${currentYear} <span style="color: ${EMAIL_COLORS.ACCENT};">${APP_NAME}</span>. ${s.rights}
       </p>
     </div>
   `;
@@ -404,15 +414,17 @@ const emailTemplates = {
   /**
    * Plantilla para código de verificación (recuperación de contraseña)
    */
-  verificationCode: (code) => ({
-    subject: `Código de Verificación - ${APP_NAME_FULL}`,
+  verificationCode: (code, language = 'es') => {
+    const s = getMailerStrings(language).verification;
+    return {
+    subject: s.subject,
     html: `
       <div style="${EMAIL_LAYOUT_OUTER}">
-        ${emailPreheaderHtml(escapeHtmlText(`Tu código para restablecer acceso en ${APP_NAME}.`))}
-        ${getEmailHeader('Código de verificación')}
+        ${emailPreheaderHtml(escapeHtmlText(s.preheader))}
+        ${getEmailHeader(s.header)}
         <div style="${EMAIL_LAYOUT_CARD}">
           <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 20px 0;text-align:center;">
-            Usa este código para recuperar tu contraseña:
+            ${s.intro}
           </p>
           <div style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);padding:3px;border-radius:12px;margin:0 0 22px 0;">
             <div style="background:#ffffff;padding:20px 0;border-radius:10px;">
@@ -422,31 +434,33 @@ const emailTemplates = {
             </div>
           </div>
           <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:14px;margin:0 0 8px 0;text-align:center;line-height:1.55;">
-            Este código expira en <strong>${CODE_EXPIRATION_MINUTES} minutos</strong>.
+            ${s.expires} <strong>${CODE_EXPIRATION_MINUTES} ${s.minutes}</strong>.
           </p>
           <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;margin:0;text-align:center;line-height:1.55;">
-            Si no solicitaste este código, puedes ignorar este correo.
+            ${s.ignore}
           </p>
         </div>
-        ${getEmailFooter()}
+        ${getEmailFooter({ language })}
       </div>
-    `
-  }),
+    `,
+    };
+  },
 
   /**
    * Plantilla para código de verificación de email (registro)
    */
-  emailVerificationCode: (code, username) => {
-    const safeUser = escapeHtmlText(String(username ?? '').trim() || 'Usuario');
+  emailVerificationCode: (code, username, language = 'es') => {
+    const s = getMailerStrings(language).emailVerification;
+    const safeUser = escapeHtmlText(String(username ?? '').trim() || getMailerStrings(language).defaultUser);
     return {
-    subject: `Verifica tu Email - ${APP_NAME_FULL}`,
+    subject: s.subject,
     html: `
       <div style="${EMAIL_LAYOUT_OUTER}">
-        ${emailPreheaderHtml(escapeHtmlText(`Código para verificar tu correo en ${APP_NAME}.`))}
-        ${getEmailHeader('Verifica tu email')}
+        ${emailPreheaderHtml(escapeHtmlText(s.preheader))}
+        ${getEmailHeader(s.header)}
         <div style="${EMAIL_LAYOUT_CARD}">
           <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 20px 0;text-align:center;">
-            Hola, ${safeUser}. Para completar el registro, introduce este código:
+            ${escapeHtmlText(s.intro(String(username ?? '').trim() || getMailerStrings(language).defaultUser))}
           </p>
 
           <div style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);padding:3px;border-radius:12px;margin:0 0 22px 0;">
@@ -458,14 +472,14 @@ const emailTemplates = {
           </div>
 
           <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:14px;margin:0 0 8px 0;text-align:center;line-height:1.55;">
-            Este código expira en <strong>${CODE_EXPIRATION_MINUTES} minutos</strong>.
+            ${getMailerStrings(language).verification.expires} <strong>${CODE_EXPIRATION_MINUTES} ${getMailerStrings(language).verification.minutes}</strong>.
           </p>
           <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;margin:0;text-align:center;line-height:1.55;">
-            Si no creaste esta cuenta, puedes ignorar este correo.
+            ${s.ignore}
           </p>
         </div>
 
-        ${getEmailFooter()}
+        ${getEmailFooter({ language })}
       </div>
     `
     };
@@ -474,89 +488,91 @@ const emailTemplates = {
   /**
    * Plantilla para restablecimiento de contraseña
    */
-  resetPassword: (token) => ({
-    subject: `Restablecer Contraseña - ${APP_NAME_FULL}`,
+  resetPassword: (token, language = 'es') => {
+    const s = getMailerStrings(language).resetPassword;
+    const cta = emailCtaFor(language);
+    return {
+    subject: s.subject,
     html: `
       <div style="${EMAIL_LAYOUT_OUTER}">
-        ${emailPreheaderHtml(escapeHtmlText(`Enlace para restablecer contraseña en ${APP_NAME}.`))}
-        ${getEmailHeader('Restablecer contraseña')}
+        ${emailPreheaderHtml(escapeHtmlText(s.preheader))}
+        ${getEmailHeader(s.header)}
         <div style="${EMAIL_LAYOUT_CARD}">
           <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 22px 0;text-align:center;">
-            Solicitaste restablecer tu contraseña. Pulsa el botón para continuar:
+            ${s.intro}
           </p>
           <div style="text-align:center;margin:0 0 22px 0;">
             <a href="${FRONTEND_URL}${RESET_PASSWORD_PATH}?token=${token}"
                style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
-              ${escapeHtmlText(emailCtaLabel.resetPassword())}
+              ${escapeHtmlText(cta.resetPassword())}
             </a>
           </div>
           <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;margin:0 0 8px 0;text-align:center;line-height:1.55;">
-            Este enlace expira en ${RESET_TOKEN_EXPIRATION_HOURS} hora${RESET_TOKEN_EXPIRATION_HOURS > 1 ? 's' : ''}.
+            ${s.expiresHours(RESET_TOKEN_EXPIRATION_HOURS)}
           </p>
           <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;margin:0;text-align:center;line-height:1.55;">
-            Si no solicitaste restablecer tu contraseña, ignora este correo.
+            ${s.ignore}
           </p>
         </div>
-        ${getEmailFooter()}
+        ${getEmailFooter({ language })}
       </div>
-    `
-  }),
+    `,
+    };
+  },
 
   /**
    * Plantilla para correo de bienvenida (tono cercano; sin sustituir aviso médico ni terapia presencial).
    */
-  welcomeEmail: (username) => {
+  welcomeEmail: (username, language = 'es') => {
+    const w = getMailerStrings(language).welcome;
+    const cta = emailCtaFor(language);
     const safeName = escapeHtmlText(username);
     const appHref = buildEmailAppOpenHref(process.env);
     const rawUser = String(username ?? '').trim();
-    const preheaderText = escapeHtmlText(
-      rawUser
-        ? `Gracias por registrarte, ${rawUser}. Abre ${APP_NAME} y revisa unos primeros pasos en este correo.`
-        : `Gracias por registrarte en ${APP_NAME}. Abre la app y revisa unos primeros pasos en este correo.`
-    );
+    const preheaderText = escapeHtmlText(w.preheader(rawUser));
     const body = `color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 14px 0;text-align:left;`;
     const small = `color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;line-height:1.55;margin:0;text-align:left;`;
     return {
-      subject: `Bienvenido a ${APP_NAME}`,
+      subject: w.subject,
       html: `
       <div style="${EMAIL_LAYOUT_OUTER}">
         ${emailPreheaderHtml(preheaderText)}
-        ${getEmailHeader(`Bienvenido, ${safeName}`)}
+        ${getEmailHeader(w.header(safeName))}
 
         <div style="${EMAIL_LAYOUT_CARD}">
           <p style="${body}">
-            Gracias por registrarte. <strong>${APP_NAME}</strong> es un espacio para conversar con calma, ordenar lo que sientes y, si te encaja, usar tareas, hábitos o recordatorios sin una obligación fija.
+            ${w.body1(APP_NAME)}
           </p>
           <p style="${small}margin-bottom:18px;">
-            ${EMAIL_LEGAL_DISCLAIMER_ESCAPED}
+            ${disclaimerEscaped(language)}
           </p>
 
           <p style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:15px;font-weight:700;margin:0 0 12px 0;text-align:left;">
-            Primeros pasos
+            ${w.stepsTitle}
           </p>
           <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.55;margin:0 0 22px 0;padding-left:20px;text-align:left;">
-            <li style="margin:0 0 8px 0;"><strong>Abre el chat</strong> y escribe con naturalidad: no hace falta un “tema grande” para empezar.</li>
-            <li style="margin:0 0 8px 0;"><strong>Tareas, hábitos y pomodoros</strong> desde el chat, cuando te encajen: son un apoyo al día a día, no una obligación.</li>
-            <li style="margin:0 0 8px 0;"><strong>Resumen semanal y mensual</strong> en Perfil te da perspectiva sobre tu actividad cuando quieras mirar atrás sin presión.</li>
-            <li style="margin:0 0 0 0;">Si algo no te encaja en el tono o las sugerencias, <strong>corrige o cambia de tema</strong>: la conversación va a tu ritmo.</li>
+            <li style="margin:0 0 8px 0;">${w.step1}</li>
+            <li style="margin:0 0 8px 0;">${w.step2}</li>
+            <li style="margin:0 0 8px 0;">${w.step3}</li>
+            <li style="margin:0 0 0 0;">${w.step4}</li>
           </ul>
 
           <div style="text-align:center;margin:8px 0 14px 0;">
             <a href="${appHref}"
                style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
-              ${escapeHtmlText(emailCtaLabel.openApp())}
+              ${escapeHtmlText(cta.openApp())}
             </a>
           </div>
           <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;line-height:1.5;margin:0 0 20px 0;text-align:center;">
-            Si el enlace no abre la app, ábrela manualmente e inicia sesión con esta cuenta.
+            ${w.linkFallback}
           </p>
 
           <p style="${small}">
-            Dudas o feedback: puedes escribirnos por los canales que enlazamos abajo (Instagram). Este mensaje es automático; para hablar con ${APP_NAME}, usa la app.
+            ${w.closing(APP_NAME)}
           </p>
         </div>
 
-        ${getEmailFooter()}
+        ${getEmailFooter({ language })}
       </div>
     `
     };
@@ -565,78 +581,70 @@ const emailTemplates = {
   /**
    * Plantilla para correo de re-engagement (usuarios inactivos). Tip rotado de forma determinista por `daysInactive` (misma inactividad → mismo texto; estable en tests).
    */
-  reEngagementEmail: (username, daysInactive) => {
-    const safeName = escapeHtmlText(String(username ?? '').trim() || 'Usuario');
+  reEngagementEmail: (username, daysInactive, language = 'es') => {
+    const r = getMailerStrings(language).reEngagement;
+    const cta = emailCtaFor(language);
+    const safeName = escapeHtmlText(String(username ?? '').trim() || getMailerStrings(language).defaultUser);
     const rawDays = Number(daysInactive);
     const d = Number.isFinite(rawDays) && rawDays >= 1 ? Math.floor(rawDays) : 1;
     const appHref = buildEmailAppOpenHref(process.env);
-    const tips = [
-      'Escribe con naturalidad cómo te sientes hoy: no hace falta un tema grande para volver a empezar.',
-      'Pide una guía breve de relajación o mindfulness cuando necesites bajar la intensidad del día.',
-      'Reflexiona con calma sobre emociones y pensamientos; ordenar lo que pasa por la cabeza ya ayuda.',
-      'Establece una meta pequeña y realista para hoy; celebrar avances modestos también suma.',
-      'Si te sirve mirar atrás, revisa conversaciones anteriores con la misma cuenta.',
-    ];
+    const tips = r.tips;
     const tipIndex = d % tips.length;
     const tipText = tips[tipIndex];
-    const preheaderText = escapeHtmlText(
-      `Hace ${d} día${d !== 1 ? 's' : ''} sin actividad en ${APP_NAME}. Recordatorio amable: puedes abrir la app cuando te venga bien.`
-    );
+    const preheaderText = escapeHtmlText(r.preheader(d, APP_NAME));
     const body = `color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 14px 0;text-align:left;`;
     const small = `color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;line-height:1.55;margin:0;text-align:left;`;
     const sectionTitle = `color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:15px;font-weight:700;margin:0 0 10px 0;text-align:left;`;
 
     return {
-      subject: `Hace tiempo que no abres ${APP_NAME}`,
+      subject: r.subject(APP_NAME),
       html: `
         <div style="${EMAIL_LAYOUT_OUTER}">
           ${emailPreheaderHtml(preheaderText)}
-          ${getEmailHeader(`Hola, ${safeName}`)}
+          ${getEmailHeader(r.header(safeName))}
 
           <div style="${EMAIL_LAYOUT_CARD}">
             <p style="${body}">
-              Hace <strong>${d}</strong> día${d !== 1 ? 's' : ''} que no registramos actividad con tu cuenta. No pasa nada: los ritmos cambian. Si te apetece, <strong>${APP_NAME}</strong> sigue aquí cuando quieras volver.
+              ${r.body(d, APP_NAME)}
             </p>
             <p style="${small}margin-bottom:12px;">
-              ${EMAIL_LEGAL_DISCLAIMER_ESCAPED}
+              ${disclaimerEscaped(language)}
             </p>
             <p style="${small}margin-bottom:20px;">
-              Abrir este correo o la app <strong>no genera un cargo adicional</strong>: tu cuenta sigue igual hasta que elijas suscribirte, si en algún momento lo haces.
+              ${r.noChargeNote}
             </p>
 
             <div style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM}12 0%,${EMAIL_COLORS.ACCENT}12 100%);padding:22px 18px;border-radius:12px;margin:0 0 22px 0;border-left:4px solid ${EMAIL_COLORS.ACCENT};">
-              <p style="${sectionTitle}margin-bottom:4px;">Idea para retomar</p>
+              <p style="${sectionTitle}margin-bottom:4px;">${r.tipsTitle}</p>
               <p style="${small}margin-bottom:10px;font-size:12px;line-height:1.45;">
-                Sugerencia general de una lista rotativa; no está ligada a tu actividad reciente en la app.
+                ${r.tipsHint}
               </p>
               <p style="${body}margin-bottom:0;">
                 ${escapeHtmlText(tipText)}
               </p>
             </div>
 
-            <p style="${sectionTitle}">Qué puedes hacer en la app</p>
+            <p style="${sectionTitle}">${r.appActionsTitle}</p>
             <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.55;margin:0 0 22px 0;padding-left:20px;text-align:left;">
-              <li style="margin:0 0 8px 0;">Chat cuando lo necesites, sin agenda.</li>
-              <li style="margin:0 0 8px 0;">Tareas, hábitos y recordatorios si te encajan en tu día a día.</li>
-              <li style="margin:0 0 0 0;">Resumen de actividad en Perfil cuando quieras perspectiva, sin presión.</li>
+              ${r.appActions.map((line) => `<li style="margin:0 0 8px 0;">${line}</li>`).join('')}
             </ul>
 
             <div style="text-align:center;margin:8px 0 14px 0;">
               <a href="${appHref}"
                  style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
-                ${escapeHtmlText(emailCtaLabel.openApp())}
+                ${escapeHtmlText(cta.openApp())}
               </a>
             </div>
             <p style="${small}text-align:center;margin:0 0 18px 0;">
-              Si el enlace no abre la app, ábrela manualmente e inicia sesión con esta cuenta.
+              ${r.linkFallback}
             </p>
 
             <p style="${small}">
-              Dudas o feedback: canales enlazados al pie (Instagram). Este mensaje es automático.
+              ${r.closing(APP_NAME)}
             </p>
           </div>
 
-          ${getEmailFooter()}
+          ${getEmailFooter({ language })}
         </div>
       `
     };
@@ -647,8 +655,10 @@ const emailTemplates = {
    * @param {string} username
    * @param {Date|string} trialEndDate
    */
-  trialRetentionEmail: (username, trialEndDate) => {
-    const safeName = escapeHtmlText(String(username ?? '').trim() || 'Usuario');
+  trialRetentionEmail: (username, trialEndDate, language = 'es') => {
+    const tr = getMailerStrings(language).trialRetention;
+    const cta = emailCtaFor(language);
+    const safeName = escapeHtmlText(String(username ?? '').trim() || getMailerStrings(language).defaultUser);
     const end = new Date(trialEndDate);
     const now = new Date();
     const msLeft = end.getTime() - now.getTime();
@@ -660,7 +670,8 @@ const emailTemplates = {
       hoursLeft >= 24 ? Math.max(1, Math.round(hoursLeft / 24)) : null;
     const premiumHref = buildEmailAppOpenHref(process.env, { subscriptionThankYou: true });
     const summaryHref = getWeeklySummaryAppHref();
-    const endFormatted = end.toLocaleDateString('es', {
+    const locale = emailDateLocale(language);
+    const endFormatted = end.toLocaleDateString(locale, {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -668,90 +679,66 @@ const emailTemplates = {
     });
     const endSafe = escapeHtmlText(endFormatted);
     const fewHours = hoursLeft < 6;
-    let preheaderPlain;
-    if (fewHours) {
-      preheaderPlain =
-        daysApprox != null
-          ? `Te quedan pocas horas de prueba (aprox. ${daysApprox} día${daysApprox !== 1 ? 's' : ''}) en ${APP_NAME}. Puedes ver planes Premium o abrir tu resumen desde este correo.`
-          : `Te quedan pocas horas de prueba en ${APP_NAME}. Puedes ver planes Premium o abrir tu resumen desde este correo.`;
-    } else {
-      preheaderPlain =
-        daysApprox != null
-          ? `Te quedan unas ${hoursLeft} horas de prueba (aprox. ${daysApprox} día${daysApprox !== 1 ? 's' : ''}) en ${APP_NAME}. Puedes ver planes Premium o abrir tu resumen desde este correo.`
-          : `Te quedan unas ${hoursLeft} horas de prueba en ${APP_NAME}. Puedes ver planes Premium o abrir tu resumen desde este correo.`;
-    }
-    const preheaderText = escapeHtmlText(preheaderPlain);
+    const preheaderText = escapeHtmlText(tr.preheader(APP_NAME, fewHours, hoursLeft, daysApprox));
     const body = `color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 14px 0;text-align:left;`;
     const small = `color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;line-height:1.55;margin:0;text-align:left;`;
     const sectionTitle = `color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:15px;font-weight:700;margin:0 0 10px 0;text-align:left;`;
 
-    const timeBodyHtml = fewHours
-      ? `Te quedan <strong style="color:${EMAIL_COLORS.ACCENT};">pocas horas</strong> de prueba${
-          daysApprox != null
-            ? `, unos <strong>${daysApprox}</strong> día${daysApprox !== 1 ? 's' : ''} a modo orientativo`
-            : ''
-        }. Si te resulta útil, puedes pasarte a <strong>Premium</strong> y mantener el acceso completo cuando termine la prueba, sin obligación de decidir ya mismo.`
-      : `Te quedan aproximadamente <strong style="color:${EMAIL_COLORS.ACCENT};">${hoursLeft} hora${hoursLeft !== 1 ? 's' : ''}</strong> de prueba${
-          daysApprox != null
-            ? `, unos <strong>${daysApprox}</strong> día${daysApprox !== 1 ? 's' : ''} a modo orientativo`
-            : ''
-        }. Si te resulta útil, puedes pasarte a <strong>Premium</strong> y mantener el acceso completo cuando termine la prueba, sin obligación de decidir ya mismo.`;
+    const timeBodyHtml = tr.timeBodyHtml(fewHours, hoursLeft, daysApprox);
 
     return {
-      subject: `Tu prueba en ${APP_NAME} termina pronto`,
+      subject: tr.subject(APP_NAME),
       html: `
         <div style="${EMAIL_LAYOUT_OUTER}">
           ${emailPreheaderHtml(preheaderText)}
-          ${getEmailHeader(`Hola, ${safeName}`)}
+          ${getEmailHeader(tr.header(safeName))}
 
           <div style="${EMAIL_LAYOUT_CARD}">
-            <p style="${sectionTitle}margin-bottom:12px;">Prueba por terminar</p>
+            <p style="${sectionTitle}margin-bottom:12px;">${tr.sectionEnding}</p>
             <p style="${body}">
-              Tu periodo gratuito sirve para conocer <strong>${APP_NAME}</strong> con calma.
+              ${tr.bodyIntro(APP_NAME)}
             </p>
             <p style="${small}margin-bottom:14px;">
-              ${EMAIL_LEGAL_DISCLAIMER_ESCAPED}
+              ${disclaimerEscaped(language)}
             </p>
             <p style="${body}margin-bottom:18px;">
               ${timeBodyHtml}
             </p>
 
             <p style="${small}margin-bottom:20px;">
-              <strong>Fecha orientativa de fin:</strong> ${endSafe}.
-              <span> El detalle exacto lo ves en la app con tu sesión iniciada.</span>
+              <strong>${tr.endDateLabel}</strong> ${endSafe}.
+              <span>${tr.endDateNote}</span>
             </p>
 
             <hr style="border:0;border-top:1px solid #e8edf4;margin:22px 0;height:0;" />
 
-            <p style="${sectionTitle}">Con Premium sigues teniendo</p>
+            <p style="${sectionTitle}">${tr.premiumTitle}</p>
             <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.55;margin:0 0 22px 0;padding-left:20px;text-align:left;">
-              <li style="margin:0 0 8px 0;">Chat y herramientas sin el tope de la prueba.</li>
-              <li style="margin:0 0 8px 0;">Resumen de actividad y continuidad en tu proceso.</li>
-              <li style="margin:0 0 0 0;">El mismo espacio, con el ritmo que tú elijas.</li>
+              ${tr.premiumBullets.map((line) => `<li style="margin:0 0 8px 0;">${line}</li>`).join('')}
             </ul>
 
             <div style="text-align:center;margin:10px 0 10px 0;">
               <a href="${premiumHref}"
                  style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
-                ${escapeHtmlText(emailCtaLabel.trialPremium())}
+                ${escapeHtmlText(cta.trialPremium())}
               </a>
             </div>
             <p style="${small}text-align:center;margin:0 0 14px 0;">
-              Si el enlace no abre la app, ábrela manualmente e inicia sesión; revisa suscripción o pagos dentro de ${APP_NAME}.
+              ${tr.linkFallback(APP_NAME)}
             </p>
             <p style="text-align:center;margin:0;">
               <a href="${summaryHref}"
                  style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:14px;font-weight:600;text-decoration:underline;">
-                ${escapeHtmlText(emailCtaLabel.trialWeeklySummary())}
+                ${escapeHtmlText(cta.trialWeeklySummary())}
               </a>
             </p>
 
             <p style="${small}margin-top:22px;">
-              Gracias por probar ${APP_NAME}. Dudas o feedback: canales enlazados al pie (Instagram). Este mensaje es automático.
+              ${tr.closing(APP_NAME)}
             </p>
           </div>
 
-          ${getEmailFooter()}
+          ${getEmailFooter({ language })}
         </div>
       `
     };
@@ -760,59 +747,24 @@ const emailTemplates = {
   /**
    * Plantilla para correo de tips semanales
    */
-  weeklyTipsEmail: (username, weekNumber) => {
-    const weeklyTips = [
-      {
-        title: '🌱 Practica la Gratitud',
-        content: 'Cada día, antes de dormir, escribe 3 cosas por las que estás agradecido. Esto ayuda a entrenar tu mente para enfocarse en lo positivo.',
-        action: 'Pregúntale a Anto: "¿Cómo puedo practicar la gratitud diariamente?"'
-      },
-      {
-        title: '🧘 Técnica de Respiración 4-7-8',
-        content: 'Inhala por 4 segundos, mantén por 7, exhala por 8. Repite 4 veces. Esta técnica ayuda a reducir la ansiedad y mejorar el sueño.',
-        action: 'Pregúntale a Anto: "Enséñame ejercicios de respiración para relajarme"'
-      },
-      {
-        title: '💭 Diario de Emociones',
-        content: 'Escribe cómo te sientes cada día. Identificar tus emociones es el primer paso para gestionarlas mejor.',
-        action: 'Pregúntale a Anto: "¿Cómo puedo llevar un diario de emociones?"'
-      },
-      {
-        title: '🌿 Mindfulness de 5 Minutos',
-        content: 'Dedica 5 minutos al día a estar presente. Observa tu respiración, los sonidos alrededor, las sensaciones de tu cuerpo.',
-        action: 'Pregúntale a Anto: "Guíame en una meditación de 5 minutos"'
-      },
-      {
-        title: '🤝 Autocompasión',
-        content: 'Trátate con la misma amabilidad que tratarías a un buen amigo. Recuerda que está bien no estar bien todo el tiempo.',
-        action: 'Pregúntale a Anto: "¿Cómo puedo practicar la autocompasión?"'
-      },
-      {
-        title: '🎯 Pequeñas Metas',
-        content: 'Establece metas pequeñas y alcanzables. Celebrar pequeños logros construye confianza y motivación.',
-        action: 'Pregúntale a Anto: "Ayúdame a establecer metas realistas de bienestar"'
-      },
-      {
-        title: '🌙 Higiene del Sueño',
-        content: 'Mantén un horario regular de sueño. Evita pantallas 1 hora antes de dormir y crea una rutina relajante.',
-        action: 'Pregúntale a Anto: "¿Cómo puedo mejorar mi calidad de sueño?"'
-      }
-    ];
-
+  weeklyTipsEmail: (username, weekNumber, language = 'es') => {
+    const wt = getMailerStrings(language).weeklyTips;
+    const cta = emailCtaFor(language);
+    const weeklyTips = wt.tips;
     const tip = weeklyTips[weekNumber % weeklyTips.length];
-    const safeTipUser = escapeHtmlText(String(username ?? '').trim() || 'Usuario');
+    const safeTipUser = escapeHtmlText(String(username ?? '').trim() || getMailerStrings(language).defaultUser);
     const tipsAppHref = buildEmailAppOpenHref(process.env);
     const smallTip = `color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;line-height:1.55;margin:0;text-align:left;`;
 
     return {
-      subject: `Tip semanal de ${APP_NAME} — Semana ${weekNumber}`,
+      subject: wt.subject(APP_NAME, weekNumber),
       html: `
         <div style="${EMAIL_LAYOUT_OUTER}">
-          ${emailPreheaderHtml(escapeHtmlText(`Idea breve de bienestar y ${APP_NAME} (semana ${weekNumber}).`))}
-          ${getEmailHeader(`Tip semanal — Semana ${weekNumber}`)}
+          ${emailPreheaderHtml(escapeHtmlText(wt.preheader(APP_NAME, weekNumber)))}
+          ${getEmailHeader(wt.header(weekNumber))}
           <div style="${EMAIL_LAYOUT_CARD}">
             <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 20px 0;text-align:center;">
-              Hola, ${safeTipUser}. Esta semana compartimos un recordatorio sencillo.
+              ${escapeHtmlText(wt.intro(safeTipUser))}
             </p>
 
             <div style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM}12 0%,${EMAIL_COLORS.ACCENT}12 100%);padding:22px 18px;border-radius:12px;margin:0 0 22px 0;border-left:4px solid ${EMAIL_COLORS.ACCENT};">
@@ -824,32 +776,32 @@ const emailTemplates = {
               </p>
               <div style="background:#ffffff;padding:14px 12px;border-radius:10px;border:1px dashed rgba(29,43,95,0.15);">
                 <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;margin:0;text-align:center;line-height:1.55;">
-                  <strong>Prueba en el chat:</strong><br>
-                  ${tip.action}
+                  <strong>${wt.tryInChat}</strong><br>
+                  ${escapeHtmlText(tip.action)}
                 </p>
               </div>
             </div>
 
             <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.6;margin:0 0 18px 0;text-align:center;">
-              El bienestar emocional es un proceso; cada paso pequeño cuenta. ${APP_NAME} está disponible cuando quieras retomar.
+              ${wt.wellbeing}
             </p>
 
             <p style="${smallTip}margin-bottom:16px;text-align:center;">
-              ${EMAIL_LEGAL_DISCLAIMER_ESCAPED}
+              ${disclaimerEscaped(language)}
             </p>
 
             <div style="text-align:center;margin:0 0 12px 0;">
               <a href="${tipsAppHref}"
                  style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
-                ${escapeHtmlText(emailCtaLabel.openApp())}
+                ${escapeHtmlText(cta.openApp())}
               </a>
             </div>
             <p style="${smallTip}text-align:center;margin:0;">
-              Si el enlace no abre la app, ábrela manualmente e inicia sesión con tu cuenta.
+              ${wt.linkFallback}
             </p>
           </div>
 
-          ${getEmailFooter()}
+          ${getEmailFooter({ language })}
         </div>
       `
     };
@@ -860,12 +812,14 @@ const emailTemplates = {
    * no incluye cifras ni métricas sensibles (crisis, etc.) ni contenido del chat.
    * @param {object} context — resultado de `buildWeeklySummaryEmailContext`
    */
-  weeklySummaryEmail: (context) => {
+  weeklySummaryEmail: (context, language = 'es') => {
+    const ws = getMailerStrings(language).weeklySummary;
+    const cta = emailCtaFor(language);
     const appHref = getWeeklySummaryAppHref();
     const appStoreHref = getWeeklySummaryAppStoreHref();
     const greeting = context.displayName
-      ? `Hola, <strong>${context.displayName}</strong>.`
-      : `Hola.`;
+      ? ws.greeting(context.displayName)
+      : `${ws.greetingPlain}.`;
     const benefitListHtml = (context.benefitLines || [])
       .map(
         (line) =>
@@ -888,7 +842,7 @@ const emailTemplates = {
       html: `
         <div style="${EMAIL_LAYOUT_OUTER}">
           ${emailPreheaderHtml(escapeHtmlText(context.preheaderText))}
-          ${getEmailHeader('Resumen semanal')}
+          ${getEmailHeader(ws.header)}
           <div style="${EMAIL_LAYOUT_CARD}">
             <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;font-weight:600;margin:0 0 6px 0;text-align:left;letter-spacing:0.02em;">
               ${escapeHtmlText(context.weekLabel)}
@@ -917,7 +871,7 @@ const emailTemplates = {
                 ${escapeHtmlText(context.updatesSectionTitle)}
               </p>
               <p style="color:${EMAIL_COLORS.ACCENT};font-size:11px;font-weight:700;margin:0 0 12px 0;letter-spacing:0.08em;text-transform:uppercase;">
-                Destacado esta semana
+                ${ws.highlight}
               </p>
               <p style="${body}margin-bottom:12px;">
                 ${escapeHtmlText(context.updatesIntro)}
@@ -942,11 +896,11 @@ const emailTemplates = {
             <div style="text-align:center;margin:22px 0 8px 0;">
               <a href="${appHref}"
                  style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
-                ${escapeHtmlText(emailCtaLabel.weeklySummary())}
+                ${escapeHtmlText(cta.weeklySummary())}
               </a>
             </div>
             <p style="${small}text-align:center;margin-top:10px;">
-              Si el enlace no abre la app: inicia sesión y ve a <strong>Perfil</strong> → «Resumen semanal y mensual».
+              ${ws.linkFallback}
             </p>
 
             <hr style="${hr}" />
@@ -967,7 +921,7 @@ const emailTemplates = {
             <div style="text-align:center;margin:0 0 8px 0;">
               <a href="${appStoreHref}"
                  style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:14px;font-weight:600;text-decoration:underline;">
-                Descargar en App Store
+                ${ws.appStore}
               </a>
             </div>
             <p style="${small}text-align:center;font-style:italic;margin-top:18px;margin-bottom:0;">
@@ -975,10 +929,10 @@ const emailTemplates = {
             </p>
             <hr style="${hr}" />
             <p style="${small}text-align:center;margin:0;">
-              ${EMAIL_LEGAL_DISCLAIMER_ESCAPED}
+              ${disclaimerEscaped(language)}
             </p>
           </div>
-          ${getEmailFooter({ weeklySummaryAllowReply: true })}
+          ${getEmailFooter({ weeklySummaryAllowReply: true, language })}
         </div>
       `
     };
@@ -997,15 +951,18 @@ const emailTemplates = {
    *   reference: string
    * }} [receipt] - Si viene informado, se muestra resumen tipo comprobante.
    */
-  subscriptionThankYouEmail: (username, plan, periodEnd, receipt = null) => {
+  subscriptionThankYouEmail: (username, plan, periodEnd, receipt = null, language = 'es') => {
+    const sub = getMailerStrings(language).subscription;
+    const cta = emailCtaFor(language);
     const appOpenHref = buildEmailAppOpenHref(process.env, { subscriptionThankYou: true });
-    const planNameRaw = subscriptionPlanDisplayName(plan);
+    const planNameRaw = subscriptionPlanDisplayName(plan, language);
     const planName = escapeHtmlText(planNameRaw);
-    const safeName = escapeHtmlText(String(username ?? '').trim() || 'Usuario');
+    const safeName = escapeHtmlText(String(username ?? '').trim() || getMailerStrings(language).defaultUser);
+    const locale = emailDateLocale(language);
 
     const end = new Date(periodEnd);
     const periodEndDate = Number.isFinite(end.getTime())
-      ? end.toLocaleDateString('es-CL', {
+      ? end.toLocaleDateString(locale, {
           year: 'numeric',
           month: 'long',
           day: 'numeric',
@@ -1013,57 +970,17 @@ const emailTemplates = {
       : '—';
     const periodEndSafe = escapeHtmlText(periodEndDate);
 
-    const purchaseDateStr = receipt?.purchaseDate
-      ? new Date(receipt.purchaseDate).toLocaleDateString('es-CL', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-      : null;
-    const purchaseDateSafe = purchaseDateStr ? escapeHtmlText(purchaseDateStr) : null;
-    const amountStr = formatPurchaseAmount(receipt?.amount, receipt?.currency);
-    const amountSafe = amountStr ? escapeHtmlText(amountStr) : null;
-    const providerSafe = escapeHtmlText(String(receipt?.providerLabel ?? '—'));
-    const referenceSafe = escapeHtmlText(String(receipt?.reference ?? '—'));
-    const productLineSafe = escapeHtmlText(`Suscripción premium — plan ${planNameRaw}`);
+    const receiptBlock = buildSubscriptionReceiptHtmlBlock(receipt, planNameRaw, periodEndSafe, {
+      language,
+      title: sub.receiptTitle,
+    });
 
-    const receiptBlock = receipt
-      ? `
-            <div style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM}10 0%,${EMAIL_COLORS.ACCENT}08 100%);padding:24px 18px 26px;border-radius:14px;margin:0 0 24px 0;text-align:left;border:1px solid rgba(29,43,95,0.12);border-left:4px solid ${EMAIL_COLORS.ACCENT};">
-              <p style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:15px;font-weight:700;margin:0 0 16px 0;text-align:center;">
-                Confirmación de compra
-              </p>
-              <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:18px 14px 20px;">
-                <table style="width:100%;border-collapse:collapse;color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.5;">
-                  ${
-                    purchaseDateSafe
-                      ? `<tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};width:38%;"><strong>Fecha</strong></td><td style="padding:10px 0;">${purchaseDateSafe}</td></tr>`
-                      : ''
-                  }
-                  <tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Producto</strong></td><td style="padding:10px 0;">${productLineSafe}</td></tr>
-                  ${
-                    amountSafe
-                      ? `<tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Importe</strong></td><td style="padding:10px 0;"><strong style="color:${EMAIL_COLORS.PRIMARY_DARK};">${amountSafe}</strong></td></tr>`
-                      : ''
-                  }
-                  <tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Pago procesado por</strong></td><td style="padding:10px 0;">${providerSafe}</td></tr>
-                  <tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Referencia</strong></td><td style="padding:10px 0;word-break:break-word;font-family:'Segoe UI Mono','Menlo','Monaco',monospace;font-size:12px;line-height:1.45;">${referenceSafe}</td></tr>
-                  <tr><td style="padding:12px 10px 0 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>Vigencia hasta</strong></td><td style="padding:12px 0 0 0;">${periodEndSafe}</td></tr>
-                </table>
-              </div>
-              <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:12px;margin:16px 0 0 0;text-align:center;line-height:1.55;">
-                Puedes conservar este correo como comprobante. Para facturación o soporte, indica la referencia y el correo de tu cuenta.
-              </p>
-            </div>
-          `
-      : '';
 
-    const preheaderPlain = receipt
-      ? `Confirmación de compra en ${APP_NAME}. Plan ${planNameRaw}. Abre la app desde este correo.`
-      : `Suscripción activada en ${APP_NAME}. Plan ${planNameRaw}. Abre la app cuando quieras.`;
-    const preheaderText = escapeHtmlText(preheaderPlain);
+    const preheaderText = escapeHtmlText(
+      receipt
+        ? sub.thankYouPreheaderReceipt(APP_NAME, planNameRaw)
+        : sub.thankYouPreheader(APP_NAME, planNameRaw),
+    );
 
     const body = `color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 14px 0;text-align:left;`;
     const small = `color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;line-height:1.55;margin:0;text-align:left;`;
@@ -1071,55 +988,52 @@ const emailTemplates = {
 
     return {
       subject: receipt
-        ? `${APP_NAME}: confirmación de compra (plan ${planNameRaw})`
-        : `${APP_NAME}: suscripción activada (plan ${planNameRaw})`,
+        ? sub.thankYouSubjectReceipt(APP_NAME, planNameRaw)
+        : sub.thankYouSubject(APP_NAME, planNameRaw),
       html: `
         <div style="${EMAIL_LAYOUT_OUTER}">
           ${emailPreheaderHtml(preheaderText)}
-          ${getEmailHeader(`Gracias, ${safeName}`)}
+          ${getEmailHeader(sub.thankYouHeader(safeName))}
 
           <div style="${EMAIL_LAYOUT_CARD}">
             <p style="${body}">
-              Tu suscripción <strong>Premium</strong> (plan <strong>${planName}</strong>) quedó activa. Gracias por confiar en <strong>${APP_NAME}</strong>.
+              ${sub.thankYouBody(APP_NAME, planName)}
             </p>
             <p style="${body}margin-bottom:14px;">
-              Si acabas de pagar y la app aún no muestra Premium, <strong>cierra la app por completo</strong> y vuelve a entrar; a veces la tienda tarda unos minutos en sincronizar.
+              ${sub.syncNote}
             </p>
             <p style="${small}margin-bottom:18px;">
-              ${EMAIL_LEGAL_DISCLAIMER_ESCAPED}
+              ${disclaimerEscaped(language)}
             </p>
 
             ${receiptBlock}
 
-            <p style="${sectionTitle}">Vigencia actual</p>
+            <p style="${sectionTitle}">${sub.validityTitle}</p>
             <p style="${body}margin-bottom:18px;">
-              La suscripción asociada a esta compra está vigente hasta el <strong>${periodEndSafe}</strong>. La fecha exacta de renovación también la puedes revisar en la app con tu sesión iniciada.
+              ${sub.validityBody(periodEndSafe)}
             </p>
 
-            <p style="${sectionTitle}">Qué incluye Premium</p>
+            <p style="${sectionTitle}">${sub.featuresTitle}</p>
             <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.55;margin:0 0 22px 0;padding-left:20px;text-align:left;">
-              <li style="margin:0 0 8px 0;">Chat y herramientas sin los topes del periodo de prueba gratuito.</li>
-              <li style="margin:0 0 8px 0;">Escalas y recursos de autoevaluación disponibles en la app, cuando correspondan a tu perfil.</li>
-              <li style="margin:0 0 8px 0;">Seguimiento de actividad y continuidad en tu proceso, a tu ritmo.</li>
-              <li style="margin:0 0 0 0;">El detalle de funciones puede actualizarse; lo definitivo lo ves en la tienda y dentro de ${APP_NAME}.</li>
+              ${sub.featureBullets.map((line) => `<li style="margin:0 0 8px 0;">${line}</li>`).join('')}
             </ul>
 
             <div style="text-align:center;margin:8px 0 14px 0;">
               <a href="${appOpenHref}"
                  style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
-                ${escapeHtmlText(emailCtaLabel.openApp())}
+                ${escapeHtmlText(cta.openApp())}
               </a>
             </div>
             <p style="${small}text-align:center;margin:0 0 18px 0;">
-              Si el enlace no abre la app, ábrela manualmente e inicia sesión con esta cuenta.
+              ${sub.linkFallback}
             </p>
 
             <p style="${small}">
-              Dudas sobre tu suscripción: canales enlazados al pie (Instagram). Este mensaje es automático.
+              ${sub.supportNote}
             </p>
           </div>
 
-          ${getEmailFooter()}
+          ${getEmailFooter({ language })}
         </div>
       `
     };
@@ -1138,15 +1052,18 @@ const emailTemplates = {
    *   reference: string
    * }} receipt
    */
-  subscriptionRenewalEmail: (username, plan, periodEnd, receipt) => {
+  subscriptionRenewalEmail: (username, plan, periodEnd, receipt, language = 'es') => {
+    const sub = getMailerStrings(language).subscription;
+    const cta = emailCtaFor(language);
     const appOpenHref = buildEmailAppOpenHref(process.env, { subscriptionThankYou: true });
-    const planNameRaw = subscriptionPlanDisplayName(plan);
+    const planNameRaw = subscriptionPlanDisplayName(plan, language);
     const planName = escapeHtmlText(planNameRaw);
-    const safeName = escapeHtmlText(String(username ?? '').trim() || 'Usuario');
+    const safeName = escapeHtmlText(String(username ?? '').trim() || getMailerStrings(language).defaultUser);
+    const locale = emailDateLocale(language);
 
     const end = new Date(periodEnd);
     const periodEndDate = Number.isFinite(end.getTime())
-      ? end.toLocaleDateString('es-CL', {
+      ? end.toLocaleDateString(locale, {
           year: 'numeric',
           month: 'long',
           day: 'numeric',
@@ -1155,61 +1072,57 @@ const emailTemplates = {
     const periodEndSafe = escapeHtmlText(periodEndDate);
 
     const receiptBlock = buildSubscriptionReceiptHtmlBlock(receipt, planNameRaw, periodEndSafe, {
-      title: 'Detalle del cobro',
+      language,
+      title: sub.receiptTitleRenewal,
     });
 
-    const preheaderText = escapeHtmlText(
-      `Tu suscripción en ${APP_NAME} se renovó. Plan ${planNameRaw}. Detalles del pago abajo.`
-    );
+    const preheaderText = escapeHtmlText(sub.renewalPreheader(APP_NAME, planNameRaw));
 
     const body = `color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 14px 0;text-align:left;`;
     const small = `color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;line-height:1.55;margin:0;text-align:left;`;
     const sectionTitle = `color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:15px;font-weight:700;margin:0 0 10px 0;text-align:left;`;
 
     return {
-      subject: `${APP_NAME}: otro periodo contigo (plan ${planNameRaw})`,
+      subject: sub.renewalSubject(APP_NAME, planNameRaw),
       html: `
         <div style="${EMAIL_LAYOUT_OUTER}">
           ${emailPreheaderHtml(preheaderText)}
-          ${getEmailHeader(`Gracias por seguir, ${safeName}`)}
+          ${getEmailHeader(sub.renewalHeader(safeName))}
 
           <div style="${EMAIL_LAYOUT_CARD}">
             <p style="${body}">
-              Se procesó la <strong>renovación</strong> de tu suscripción <strong>Premium</strong> (plan <strong>${planName}</strong>). Gracias por seguir un periodo más con <strong>${APP_NAME}</strong>.
+              ${sub.renewalBody(APP_NAME, planName)}
             </p>
             <p style="${body}margin-bottom:14px;">
-              Tu acceso Premium queda vigente hasta el <strong>${periodEndSafe}</strong>. Si la app no refleja la fecha al instante, cierra la app por completo y vuelve a entrar.
+              ${sub.renewalValidityBody(periodEndSafe)}
             </p>
             <p style="${small}margin-bottom:18px;">
-              ${EMAIL_LEGAL_DISCLAIMER_ESCAPED}
+              ${disclaimerEscaped(language)}
             </p>
 
             ${receiptBlock}
 
-            <p style="${sectionTitle}">Qué incluye Premium</p>
+            <p style="${sectionTitle}">${sub.featuresTitle}</p>
             <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.55;margin:0 0 22px 0;padding-left:20px;text-align:left;">
-              <li style="margin:0 0 8px 0;">Chat y herramientas sin los topes del periodo de prueba gratuito.</li>
-              <li style="margin:0 0 8px 0;">Escalas y recursos de autoevaluación disponibles en la app, cuando correspondan a tu perfil.</li>
-              <li style="margin:0 0 8px 0;">Seguimiento de actividad y continuidad en tu proceso, a tu ritmo.</li>
-              <li style="margin:0 0 0 0;">El detalle de funciones puede actualizarse; lo definitivo lo ves en la tienda y dentro de ${APP_NAME}.</li>
+              ${sub.featureBullets.map((line) => `<li style="margin:0 0 8px 0;">${line}</li>`).join('')}
             </ul>
 
             <div style="text-align:center;margin:8px 0 14px 0;">
               <a href="${appOpenHref}"
                  style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
-                ${escapeHtmlText(emailCtaLabel.openApp())}
+                ${escapeHtmlText(cta.openApp())}
               </a>
             </div>
             <p style="${small}text-align:center;margin:0 0 18px 0;">
-              Si el enlace no abre la app, ábrela manualmente e inicia sesión con esta cuenta.
+              ${sub.linkFallback}
             </p>
 
             <p style="${small}">
-              Dudas sobre tu suscripción o este cobro: canales enlazados al pie (Instagram). Indica la referencia del comprobante. Este mensaje es automático.
+              ${sub.renewalSupportNote}
             </p>
           </div>
 
-          ${getEmailFooter()}
+          ${getEmailFooter({ language })}
         </div>
       `
     };
@@ -1498,9 +1411,10 @@ const mailer = {
    * @param {string} code - Código de verificación
    * @returns {Promise<boolean>} true si se envió correctamente
    */
-  sendVerificationCode: async (email, code) => {
+  sendVerificationCode: async (email, code, options = {}) => {
     try {
-      const template = emailTemplates.verificationCode(code);
+      const language = normalizeEmailLanguage(options.language);
+      const template = emailTemplates.verificationCode(code, language);
       return await sendEmail(email, template, 'Código de verificación');
     } catch (error) {
       throw new Error('Error al enviar el correo de verificación');
@@ -1514,9 +1428,10 @@ const mailer = {
    * @param {string} username - Nombre de usuario
    * @returns {Promise<boolean>} true si se envió correctamente
    */
-  sendEmailVerificationCode: async (email, code, username) => {
+  sendEmailVerificationCode: async (email, code, username, options = {}) => {
     try {
-      const template = emailTemplates.emailVerificationCode(code, username);
+      const language = normalizeEmailLanguage(options.language);
+      const template = emailTemplates.emailVerificationCode(code, username, language);
       return await sendEmail(email, template, 'Código de verificación de email');
     } catch (error) {
       throw new Error('Error al enviar el correo de verificación de email');
@@ -1529,9 +1444,10 @@ const mailer = {
    * @param {string} token - Token de restablecimiento
    * @returns {Promise<boolean>} true si se envió correctamente
    */
-  sendPasswordReset: async (email, token) => {
+  sendPasswordReset: async (email, token, options = {}) => {
     try {
-      const template = emailTemplates.resetPassword(token);
+      const language = normalizeEmailLanguage(options.language);
+      const template = emailTemplates.resetPassword(token, language);
       return await sendEmail(email, template, 'Correo de restablecimiento');
     } catch (error) {
       throw new Error('Error al enviar el correo de restablecimiento');
@@ -1544,9 +1460,10 @@ const mailer = {
    * @param {string} username - Nombre de usuario
    * @returns {Promise<boolean>} true si se envió correctamente, false si falla (no afecta el flujo)
    */
-  sendWelcomeEmail: async (email, username) => {
+  sendWelcomeEmail: async (email, username, options = {}) => {
     try {
-      const template = emailTemplates.welcomeEmail(username);
+      const language = normalizeEmailLanguage(options.language);
+      const template = emailTemplates.welcomeEmail(username, language);
       return await sendEmail(email, template, 'Correo de bienvenida');
     } catch (error) {
       // No lanzamos el error para que no afecte el flujo de registro
@@ -1590,9 +1507,10 @@ const mailer = {
    * @param {number} daysInactive - Días de inactividad
    * @returns {Promise<boolean>} true si se envió correctamente, false si falla (no crítico)
    */
-  sendReEngagementEmail: async (email, username, daysInactive) => {
+  sendReEngagementEmail: async (email, username, daysInactive, options = {}) => {
     try {
-      const template = emailTemplates.reEngagementEmail(username, daysInactive);
+      const language = normalizeEmailLanguage(options.language);
+      const template = emailTemplates.reEngagementEmail(username, daysInactive, language);
       return await sendEmail(email, template, 'Correo de re-engagement');
     } catch (error) {
       // No lanzamos el error para que no afecte otros procesos
@@ -1608,9 +1526,13 @@ const mailer = {
    * @param {number} weekNumber - Número de semana (para rotar tips)
    * @returns {Promise<boolean>} true si se envió correctamente, false si falla (no crítico)
    */
-  sendWeeklyTipsEmail: async (email, username, weekNumber = 1) => {
+  sendWeeklyTipsEmail: async (email, username, weekNumber = 1, options = {}) => {
     try {
-      const template = emailTemplates.weeklyTipsEmail(username, weekNumber);
+      const language = resolveUserEmailLanguage(
+        typeof options.user === 'object' ? options.user : null,
+        options.language,
+      );
+      const template = emailTemplates.weeklyTipsEmail(username, weekNumber, language);
       return await sendEmail(email, template, 'Correo de tips semanales');
     } catch (error) {
       // No lanzamos el error para que no afecte otros procesos
@@ -1625,7 +1547,7 @@ const mailer = {
    * @param {string|object} userOrUsername — `username` (string) para pruebas mínimas, o documento/lean user con `username`, `name`, `stats`, `subscription`, `createdAt`
    * @returns {Promise<boolean>}
    */
-  sendWeeklySummaryEmail: async (email, userOrUsername) => {
+  sendWeeklySummaryEmail: async (email, userOrUsername, options = {}) => {
     try {
       const isoParts = getUtcIsoWeekParts();
       const lean =
@@ -1634,8 +1556,9 @@ const mailer = {
           : userOrUsername && typeof userOrUsername === 'object'
             ? userOrUsername
             : { username: '' };
-      const context = buildWeeklySummaryEmailContext(lean, isoParts);
-      const template = emailTemplates.weeklySummaryEmail(context);
+      const language = resolveUserEmailLanguage(lean, options.language);
+      const context = buildWeeklySummaryEmailContext(lean, isoParts, language);
+      const template = emailTemplates.weeklySummaryEmail(context, language);
       return await sendEmail(email, template, 'Correo resumen semanal');
     } catch (error) {
       console.error('[Mailer] ❌ Error al enviar resumen semanal (no crítico):', error.message);
@@ -1650,7 +1573,7 @@ const mailer = {
    * @param {Date|string} trialEndDate
    * @returns {Promise<boolean>}
    */
-  sendTrialRetentionEmail: async (email, username, trialEndDate) => {
+  sendTrialRetentionEmail: async (email, username, trialEndDate, options = {}) => {
     const em = email != null ? String(email).trim() : '';
     if (!em || !em.includes('@')) {
       logger.warn('[Mailer] sendTrialRetentionEmail: destinatario inválido');
@@ -1663,7 +1586,11 @@ const mailer = {
       return false;
     }
     try {
-      const template = emailTemplates.trialRetentionEmail(username, trialEndDate);
+      const language = resolveUserEmailLanguage(
+        typeof options.user === 'object' ? options.user : null,
+        options.language,
+      );
+      const template = emailTemplates.trialRetentionEmail(username, trialEndDate, language);
       return await sendEmail(em, template, 'Correo retención trial');
     } catch (error) {
       console.error('[Mailer] ❌ Error al enviar correo de retención trial (no crítico):', error.message);
@@ -1719,10 +1646,21 @@ const mailer = {
     plan,
     periodEnd,
     receipt = null,
-    emailType = 'Confirmación suscripción'
+    emailType = 'Confirmación suscripción',
+    options = {},
   ) => {
     try {
-      const template = emailTemplates.subscriptionThankYouEmail(username, plan, periodEnd, receipt);
+      const language = resolveUserEmailLanguage(
+        typeof options.user === 'object' ? options.user : null,
+        options.language,
+      );
+      const template = emailTemplates.subscriptionThankYouEmail(
+        username,
+        plan,
+        periodEnd,
+        receipt,
+        language,
+      );
       return await sendEmail(email, template, emailType);
     } catch (error) {
       logger.error('[Mailer] ❌ Error enviando confirmación de suscripción:', error.message);
@@ -1739,14 +1677,25 @@ const mailer = {
     plan,
     periodEnd,
     receipt,
-    emailType = 'Renovación suscripción'
+    emailType = 'Renovación suscripción',
+    options = {},
   ) => {
     try {
       if (!receipt || typeof receipt !== 'object') {
         logger.warn('[Mailer] sendSubscriptionRenewalEmail: receipt requerido');
         return false;
       }
-      const template = emailTemplates.subscriptionRenewalEmail(username, plan, periodEnd, receipt);
+      const language = resolveUserEmailLanguage(
+        typeof options.user === 'object' ? options.user : null,
+        options.language,
+      );
+      const template = emailTemplates.subscriptionRenewalEmail(
+        username,
+        plan,
+        periodEnd,
+        receipt,
+        language,
+      );
       return await sendEmail(email, template, emailType);
     } catch (error) {
       logger.error('[Mailer] ❌ Error enviando correo de renovación de suscripción:', error.message);

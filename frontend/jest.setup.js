@@ -83,6 +83,18 @@ jest.mock('axios', () => {
 global.__DEV__ = true;
 global.fetch = jest.fn();
 
+// Idioma estable en tests (evita fallos según locale del dispositivo CI/local).
+jest.mock('./src/utils/appLanguage', () => {
+  const actual = jest.requireActual('./src/utils/appLanguage');
+  return {
+    ...actual,
+    detectDeviceLanguage: () => 'es',
+    getCachedAppLanguage: () => 'es',
+    getAppLanguage: jest.fn(() => Promise.resolve('es')),
+    ensureAppLanguageInitialized: jest.fn(() => Promise.resolve('es')),
+  };
+});
+
 // Silenciar solo el warning conocido de deprecación del renderer usado por RTL RN.
 // No ocultar otros console.error reales.
 const originalConsoleError = console.error;

@@ -31,6 +31,7 @@ import { buildSensitiveVnpSystemSnippet } from '../chat/sensitiveResponseTemplat
 import { buildUnderstandingPipelineSnippet } from '../chat/understandingPipeline.js';
 import { buildLowConfidenceClarifySnippet } from '../chat/lowConfidenceClarifyTemplate.js';
 import { normalizeSessionIntention } from '../../constants/sessionIntention.js';
+import { buildOnboardingAnswersSystemSnippet } from '../chat/onboardingPromptSnippet.js';
 
 function getTimeOfDay() {
   const hour = new Date().getHours();
@@ -1004,13 +1005,12 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     systemMessage += language === 'en' ? `\nMEMORY: ${conciseLongTerm}` : `\nMEMORIA: ${conciseLongTerm}`;
   }
 
-  const onboarding = contexto.profile?.onboardingAnswers;
-  if (onboarding && (onboarding.whatExpectFromApp || onboarding.whatToImproveOrWorkOn || onboarding.typeOfSpecialist)) {
-    const parts = [];
-    if (onboarding.whatExpectFromApp) parts.push(`Qué espera de la app: ${onboarding.whatExpectFromApp}`);
-    if (onboarding.whatToImproveOrWorkOn) parts.push(`Qué le gustaría mejorar o trabajar: ${onboarding.whatToImproveOrWorkOn}`);
-    if (onboarding.typeOfSpecialist) parts.push(`Tipo de apoyo que busca: ${onboarding.typeOfSpecialist}`);
-    if (parts.length > 0) systemMessage += `\n\nINFORMACIÓN QUE EL USUARIO COMPARTIÓ AL INICIO (úsala para personalizar tu tono y enfoque):\n${parts.join('\n')}`;
+  const onboardingSnippet = buildOnboardingAnswersSystemSnippet(
+    contexto.profile?.onboardingAnswers,
+    language,
+  );
+  if (onboardingSnippet) {
+    systemMessage += onboardingSnippet;
   }
 
   const retentionSnippet = buildSessionRetentionSystemSnippet(contexto.sessionRetention, {

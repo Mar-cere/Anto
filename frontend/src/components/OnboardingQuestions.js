@@ -1,14 +1,18 @@
 /**
- * Preguntas iniciales de onboarding para personalizar el chat.
- * Modo sin teclado: selección por opciones para hacerlo más intuitivo.
- *
- * @author AntoApp Team
+ * Preferencia inicial de onboarding (una sola elección opcional).
+ * Se persiste en UserProfile.onboardingAnswers.whatExpectFromApp y el chat
+ * la inyecta en el system prompt (buildOnboardingAnswersSystemSnippet).
  */
-
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { api, ENDPOINTS } from '../config/api';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
@@ -16,35 +20,24 @@ import { useSectionTranslations } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
 
 const DEFAULT_TEXTS = {
-  TITLE: 'Para adaptarte mejor',
-  SUBTITLE: 'Tres preguntas cortas. Si no te encaja ninguna opción, puedes omitir.',
-  Q1_LABEL: '¿Qué buscas aquí?',
-  Q2_LABEL: '¿En qué te gustaría avanzar?',
-  Q3_LABEL: '¿Cómo te gustaría que te acompañe?',
+  TITLE: 'Cuéntame en qué enfocarnos',
+  SUBTITLE: 'Opcional. Elige una opción o omite.',
+  MAIN_LABEL: 'Ahora mismo me interesa más…',
   SKIP: 'Omitir',
-  SUBMIT: 'Listo',
-  EXPLORE_APP: 'Ver recorrido de la app',
+  SUBMIT: 'Continuar',
+  EXPLORE_APP: 'Ver recorrido',
   SAVE_SUCCESS: 'Listo, gracias',
-  SAVE_ERROR:
-    'No se pudieron guardar las respuestas. Puedes omitir y seguir.',
+  SAVE_ERROR: 'No se pudo guardar tu elección. Puedes omitir y seguir.',
   TOO_MANY_ATTEMPTS:
     'Demasiados intentos. Espera un momento y vuelve a intentar.',
   CONNECTION_ERROR:
     'No hay conexión. Verifica tu internet e inténtalo de nuevo.',
-  OPTIONS_WHAT_EXPECT_FROM_APP: [
+  FOCUS_OPTIONS: [
     'Apoyo emocional',
     'Ansiedad o estrés',
-    'Hábitos y rutinas',
-  ],
-  OPTIONS_WHAT_TO_IMPROVE_OR_WORK_ON: [
     'Sueño y descanso',
-    'Autoestima',
+    'Hábitos y rutinas',
     'Enfoque y organización',
-  ],
-  OPTIONS_TYPE_OF_SPECIALIST: [
-    'Paso a paso',
-    'Escucha y compañía',
-    'Ideas prácticas',
   ],
 };
 
@@ -87,9 +80,7 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
       ...DEFAULT_TEXTS,
       TITLE: translated?.QUESTIONS_TITLE || DEFAULT_TEXTS.TITLE,
       SUBTITLE: translated?.QUESTIONS_SUBTITLE || DEFAULT_TEXTS.SUBTITLE,
-      Q1_LABEL: translated?.QUESTIONS_Q1_LABEL || DEFAULT_TEXTS.Q1_LABEL,
-      Q2_LABEL: translated?.QUESTIONS_Q2_LABEL || DEFAULT_TEXTS.Q2_LABEL,
-      Q3_LABEL: translated?.QUESTIONS_Q3_LABEL || DEFAULT_TEXTS.Q3_LABEL,
+      MAIN_LABEL: translated?.QUESTIONS_MAIN_LABEL || DEFAULT_TEXTS.MAIN_LABEL,
       SKIP: translated?.SKIP || DEFAULT_TEXTS.SKIP,
       SUBMIT: translated?.QUESTIONS_SUBMIT || DEFAULT_TEXTS.SUBMIT,
       EXPLORE_APP:
@@ -103,22 +94,13 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
       CONNECTION_ERROR:
         translated?.QUESTIONS_CONNECTION_ERROR ||
         DEFAULT_TEXTS.CONNECTION_ERROR,
-      OPTIONS_WHAT_EXPECT_FROM_APP:
-        translated?.QUESTIONS_OPTIONS_WHAT_EXPECT_FROM_APP ||
-        DEFAULT_TEXTS.OPTIONS_WHAT_EXPECT_FROM_APP,
-      OPTIONS_WHAT_TO_IMPROVE_OR_WORK_ON:
-        translated?.QUESTIONS_OPTIONS_WHAT_TO_IMPROVE_OR_WORK_ON ||
-        DEFAULT_TEXTS.OPTIONS_WHAT_TO_IMPROVE_OR_WORK_ON,
-      OPTIONS_TYPE_OF_SPECIALIST:
-        translated?.QUESTIONS_OPTIONS_TYPE_OF_SPECIALIST ||
-        DEFAULT_TEXTS.OPTIONS_TYPE_OF_SPECIALIST,
+      FOCUS_OPTIONS:
+        translated?.QUESTIONS_FOCUS_OPTIONS || DEFAULT_TEXTS.FOCUS_OPTIONS,
     }),
     [translated],
   );
   const { colors } = useTheme();
-  const [whatExpectFromApp, setWhatExpectFromApp] = useState('');
-  const [whatToImproveOrWorkOn, setWhatToImproveOrWorkOn] = useState('');
-  const [typeOfSpecialist, setTypeOfSpecialist] = useState('');
+  const [focusChoice, setFocusChoice] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -137,85 +119,85 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
           borderColor: colors.accentLine,
           borderRadius: 16,
           padding: SPACING.SCREEN_EDGE_INSET,
-          maxHeight: '92%',
         },
         header: {
-          alignItems: 'center',
-          marginBottom: 16,
-        },
-        iconCircle: {
-          width: 52,
-          height: 52,
-          borderRadius: 26,
-          backgroundColor: colors.accentLineSoft,
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginBottom: 12,
+          marginBottom: 18,
         },
         title: {
-          fontSize: 19,
+          fontSize: 20,
           fontWeight: '700',
           color: colors.text,
           textAlign: 'center',
           marginBottom: 6,
         },
         subtitle: {
-          fontSize: 13,
+          fontSize: 14,
           color: colors.textSecondary,
           textAlign: 'center',
-          lineHeight: 19,
-        },
-        scroll: {
-          maxHeight: 380,
-        },
-        scrollContent: {
-          paddingBottom: 12,
-        },
-        field: {
-          marginBottom: 14,
+          lineHeight: 20,
         },
         label: {
-          color: colors.text,
+          color: colors.textSecondary,
           fontSize: 13,
-          fontWeight: '700',
+          fontWeight: '600',
           marginBottom: 10,
         },
         optionList: {
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          gap: 10,
+          gap: 8,
         },
-        optionChip: {
-          borderRadius: 999,
+        optionRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          borderRadius: 12,
           borderWidth: 1,
           borderColor: colors.border,
           backgroundColor: colors.glassFill,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingVertical: 10,
+          paddingVertical: 12,
+          paddingHorizontal: 14,
         },
-        optionChipSelected: {
+        optionRowSelected: {
           borderColor: colors.primary,
           backgroundColor: colors.accentLineSoft,
         },
-        optionChipText: {
-          color: colors.text,
-          fontSize: 13,
-          fontWeight: '600',
+        optionRadio: {
+          width: 20,
+          height: 20,
+          borderRadius: 10,
+          borderWidth: 2,
+          borderColor: colors.border,
+          marginRight: 12,
+          alignItems: 'center',
+          justifyContent: 'center',
         },
-        optionChipTextSelected: {
+        optionRadioSelected: {
+          borderColor: colors.primary,
+        },
+        optionRadioDot: {
+          width: 10,
+          height: 10,
+          borderRadius: 5,
+          backgroundColor: colors.primary,
+        },
+        optionText: {
+          flex: 1,
+          color: colors.text,
+          fontSize: 15,
+          fontWeight: '500',
+        },
+        optionTextSelected: {
           color: colors.primary,
+          fontWeight: '600',
         },
         errorText: {
           color: colors.error,
-          marginTop: 8,
-          marginBottom: 6,
+          marginTop: 10,
           textAlign: 'center',
           fontSize: 13,
           lineHeight: 18,
         },
         actions: {
-          marginTop: 16,
-          gap: 10,
+          marginTop: 20,
+          gap: 12,
         },
         primaryButton: {
           backgroundColor: colors.primary,
@@ -225,69 +207,66 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
         },
         primaryButtonText: {
           color: colors.textOnPrimary,
-          fontSize: 14,
-          fontWeight: '800',
-          letterSpacing: 0.3,
+          fontSize: 15,
+          fontWeight: '700',
         },
-        skipButton: {
-          borderRadius: 14,
-          paddingVertical: 13,
+        footerLinks: {
+          flexDirection: 'row',
+          justifyContent: 'center',
           alignItems: 'center',
-          backgroundColor: colors.glassFill,
-          borderWidth: 1,
-          borderColor: colors.border,
+          flexWrap: 'wrap',
+          gap: 8,
         },
-        skipButtonText: {
+        footerLink: {
+          paddingVertical: 4,
+          paddingHorizontal: 6,
+        },
+        footerLinkText: {
+          color: colors.textSecondary,
+          fontSize: 14,
+          fontWeight: '600',
+        },
+        footerDivider: {
           color: colors.textSecondary,
           fontSize: 13,
-          fontWeight: '700',
         },
       }),
     [colors],
   );
 
+  const finishFlow = async () => {
+    try {
+      await onCompleted?.();
+    } catch (err) {
+      console.warn('[OnboardingQuestions] No se pudo marcar onboarding completado:', err);
+    } finally {
+      onDismiss?.();
+    }
+  };
+
   const handleSkip = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Promise.resolve(onCompleted?.())
-      .catch((err) => {
-        console.warn('[OnboardingQuestions] No se pudo marcar onboarding completado:', err);
-      })
-      .finally(() => {
-        onDismiss?.();
-      });
+    finishFlow();
   };
 
   const handleSubmit = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setError(null);
-    const hasAny =
-      whatExpectFromApp.trim() || whatToImproveOrWorkOn.trim() || typeOfSpecialist.trim();
-    if (!hasAny) {
-      try {
-        await onCompleted?.();
-      } catch (err) {
-        console.warn('[OnboardingQuestions] No se pudo marcar onboarding completado:', err);
-      } finally {
-        onDismiss?.();
-      }
+
+    if (!focusChoice.trim()) {
+      finishFlow();
       return;
     }
 
     setLoading(true);
     try {
       await api.patch(ENDPOINTS.ONBOARDING_PREFERENCES, {
-        whatExpectFromApp: whatExpectFromApp.trim() || null,
-        whatToImproveOrWorkOn: whatToImproveOrWorkOn.trim() || null,
-        typeOfSpecialist: typeOfSpecialist.trim() || null,
+        whatExpectFromApp: focusChoice.trim(),
+        whatToImproveOrWorkOn: null,
+        typeOfSpecialist: null,
       });
       showToast({ message: TEXTS.SAVE_SUCCESS, type: 'success' });
-      try {
-        await onCompleted?.();
-      } catch (err) {
-        console.warn('[OnboardingQuestions] No se pudo marcar onboarding completado:', err);
-      } finally {
-        onDismiss?.();
-      }
+      await finishFlow();
     } catch (err) {
       setError(resolveOnboardingErrorMessage(err, TEXTS));
     } finally {
@@ -306,30 +285,34 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
     }
   };
 
-  const renderOptionGroup = (label, value, setValue, options) => (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
-      <View style={styles.optionList}>
-        {options.map((option) => {
-          const isSelected = value === option;
-          return (
-            <TouchableOpacity
-              key={option}
-              style={[styles.optionChip, isSelected && styles.optionChipSelected]}
-              onPress={() => {
-                Haptics.selectionAsync().catch(() => {});
-                setValue(isSelected ? '' : option);
-              }}
-              activeOpacity={0.85}
-              disabled={loading}
+  const renderOptions = () => (
+    <View style={styles.optionList}>
+      {TEXTS.FOCUS_OPTIONS.map((option) => {
+        const isSelected = focusChoice === option;
+        return (
+          <TouchableOpacity
+            key={option}
+            style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+            onPress={() => {
+              Haptics.selectionAsync().catch(() => {});
+              setFocusChoice(isSelected ? '' : option);
+            }}
+            activeOpacity={0.85}
+            disabled={loading}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: isSelected }}
+          >
+            <View
+              style={[styles.optionRadio, isSelected && styles.optionRadioSelected]}
             >
-              <Text style={[styles.optionChipText, isSelected && styles.optionChipTextSelected]}>
-                {option}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+              {isSelected ? <View style={styles.optionRadioDot} /> : null}
+            </View>
+            <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+              {option}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 
@@ -346,76 +329,57 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
       <View style={styles.overlay}>
         <View style={styles.card}>
           <View style={styles.header}>
-            <View style={styles.iconCircle}>
-              <MaterialCommunityIcons name="heart-outline" size={28} color={colors.primary} />
-            </View>
             <Text style={styles.title}>{TEXTS.TITLE}</Text>
             <Text style={styles.subtitle}>{TEXTS.SUBTITLE}</Text>
           </View>
 
-          <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {renderOptionGroup(
-              TEXTS.Q1_LABEL,
-              whatExpectFromApp,
-              setWhatExpectFromApp,
-              TEXTS.OPTIONS_WHAT_EXPECT_FROM_APP
-            )}
-            {renderOptionGroup(
-              TEXTS.Q2_LABEL,
-              whatToImproveOrWorkOn,
-              setWhatToImproveOrWorkOn,
-              TEXTS.OPTIONS_WHAT_TO_IMPROVE_OR_WORK_ON
-            )}
-            {renderOptionGroup(
-              TEXTS.Q3_LABEL,
-              typeOfSpecialist,
-              setTypeOfSpecialist,
-              TEXTS.OPTIONS_TYPE_OF_SPECIALIST
-            )}
+          <Text style={styles.label}>{TEXTS.MAIN_LABEL}</Text>
+          {renderOptions()}
 
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-            <View style={styles.actions}>
+          <View style={styles.actions}>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={handleSubmit}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.textOnPrimary} size="small" />
+              ) : (
+                <Text style={styles.primaryButtonText}>{TEXTS.SUBMIT}</Text>
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.footerLinks}>
               <TouchableOpacity
-                style={styles.primaryButton}
-                onPress={handleSubmit}
-                disabled={loading}
-                activeOpacity={0.8}
-              >
-                {loading ? (
-                  <ActivityIndicator color={colors.textOnPrimary} size="small" />
-                ) : (
-                  <Text style={styles.primaryButtonText}>{TEXTS.SUBMIT}</Text>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.skipButton}
+                style={styles.footerLink}
                 onPress={handleSkip}
                 disabled={loading}
-                activeOpacity={0.8}
+                activeOpacity={0.7}
               >
-                <Text style={styles.skipButtonText}>{TEXTS.SKIP}</Text>
+                <Text style={styles.footerLinkText}>{TEXTS.SKIP}</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.skipButton}
-                onPress={handleExploreApp}
-                disabled={loading}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.skipButtonText}>{TEXTS.EXPLORE_APP}</Text>
-              </TouchableOpacity>
+              {onExploreApp ? (
+                <>
+                  <Text style={styles.footerDivider}>·</Text>
+                  <TouchableOpacity
+                    style={styles.footerLink}
+                    onPress={handleExploreApp}
+                    disabled={loading}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.footerLinkText}>{TEXTS.EXPLORE_APP}</Text>
+                  </TouchableOpacity>
+                </>
+              ) : null}
             </View>
-          </ScrollView>
+          </View>
         </View>
       </View>
     </Modal>
   );
 };
-
-// `styles` se deriva del tema dentro del componente.
 
 export default OnboardingQuestions;

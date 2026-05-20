@@ -22,7 +22,7 @@
         "NSCameraUsageDescription": "Necesitamos acceso a la cámara para que puedas tomar fotos para tu perfil.",
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDevelopmentRegion": "es",
-        "CFBundleLocalizations": ["es"]
+        "CFBundleLocalizations": ["es", "en"]
       }
     },
     "android": {

@@ -52,6 +52,23 @@ describe('Auth Routes', () => {
       expect(response.body).toHaveProperty('message');
       expect(response.body).toHaveProperty('errors');
     });
+
+    it('debe rechazar language no soportado en registro', async () => {
+      const response = await request(app)
+        .post('/api/auth/register')
+        .set('X-App-Language', 'en')
+        .send({
+          email: 'lang@example.com',
+          password: 'password123',
+          username: 'languser',
+          termsAccepted: true,
+          privacyAccepted: true,
+          language: 'fr',
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('errors');
+    });
   });
 
   describe('POST /api/auth/login', () => {

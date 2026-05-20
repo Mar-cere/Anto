@@ -22,7 +22,7 @@ import ParticleBackground from '../components/ParticleBackground';
 import { api, ENDPOINTS } from '../config/api';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
-import { useSectionTranslations } from '../hooks/useTranslations';
+import { useMappedSectionTexts } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
 
 const DEFAULT_TEXTS = {
@@ -61,6 +61,43 @@ const DEFAULT_TEXTS = {
   TIMES_PLURAL: 'veces',
   ERROR_CONNECTION: 'Error de conexión. Verifica internet e inténtalo de nuevo.',
   ERROR_TOO_MANY_REQUESTS: 'Demasiados intentos. Espera un momento e inténtalo nuevamente.',
+};
+
+const SUMMARY_TEXT_MAP = {
+  TITLE: 'SUMMARY_TITLE',
+  WEEK: 'SUMMARY_WEEK',
+  MONTH: 'SUMMARY_MONTH',
+  LOADING: 'SUMMARY_LOADING',
+  ERROR: 'SUMMARY_ERROR',
+  RETRY: 'RETRY',
+  PREV: 'SUMMARY_PREV',
+  NEXT: 'SUMMARY_NEXT',
+  FOOTER_HINT: 'SUMMARY_FOOTER_HINT',
+  HOW_WE_COUNT: 'SUMMARY_HOW_WE_COUNT',
+  TOOLTIP_TITLE: 'SUMMARY_TOOLTIP_TITLE',
+  TOOLTIP_CLOSE: 'COMMON_OK',
+  TOOLTIP_BODY: 'SUMMARY_TOOLTIP_BODY',
+  TILE_CHAT: 'SUMMARY_TILE_CHAT',
+  TILE_DAYS: 'SUMMARY_TILE_DAYS',
+  TILE_TECHNIQUES: 'SUMMARY_TILE_TECHNIQUES',
+  TILE_TASKS: 'SUMMARY_TILE_TASKS',
+  TILE_HABITS: 'SUMMARY_TILE_HABITS',
+  TILE_JOURNAL: 'SUMMARY_TILE_JOURNAL',
+  PULSE: 'SUMMARY_PULSE',
+  PULSE_EMPTY: 'SUMMARY_PULSE_EMPTY',
+  EMPTY_TITLE: 'SUMMARY_EMPTY_TITLE',
+  EMPTY_SUB: 'SUMMARY_EMPTY_SUB',
+  CTA_CHAT: 'SUMMARY_CTA_CHAT',
+  CTA_GRATITUDE: 'SUMMARY_CTA_GRATITUDE',
+  CTA_TECHNIQUES: 'SUMMARY_CTA_TECHNIQUES',
+  NARRATIVE_TITLE: 'SUMMARY_NARRATIVE_TITLE',
+  NARRATIVE_THEMES: 'SUMMARY_NARRATIVE_THEMES',
+  NARRATIVE_MICRO_WINS: 'SUMMARY_NARRATIVE_MICRO_WINS',
+  PERIOD_FALLBACK: 'SUMMARY_PERIOD_FALLBACK',
+  TIMES_SINGULAR: 'SUMMARY_TIMES_SINGULAR',
+  TIMES_PLURAL: 'SUMMARY_TIMES_PLURAL',
+  ERROR_CONNECTION: 'ERROR_CONNECTION',
+  ERROR_TOO_MANY_REQUESTS: 'ERROR_TOO_MANY_REQUESTS',
 };
 
 const resolveSummaryErrorMessage = (error, texts, fallbackKey = 'ERROR') => {
@@ -210,69 +247,8 @@ function HowWeCountModal({ visible, onClose, sx, texts }) {
 }
 
 export default function SummaryScreen() {
-  const translated = useSectionTranslations('PROFILE');
   const { language } = useLanguage();
-  const TEXTS = useMemo(
-    () => ({
-      ...DEFAULT_TEXTS,
-      TITLE: translated?.SUMMARY_TITLE || DEFAULT_TEXTS.TITLE,
-      WEEK: translated?.SUMMARY_WEEK || DEFAULT_TEXTS.WEEK,
-      MONTH: translated?.SUMMARY_MONTH || DEFAULT_TEXTS.MONTH,
-      LOADING: translated?.SUMMARY_LOADING || DEFAULT_TEXTS.LOADING,
-      ERROR: translated?.SUMMARY_ERROR || DEFAULT_TEXTS.ERROR,
-      RETRY: translated?.RETRY || DEFAULT_TEXTS.RETRY,
-      PREV: translated?.SUMMARY_PREV || DEFAULT_TEXTS.PREV,
-      NEXT: translated?.SUMMARY_NEXT || DEFAULT_TEXTS.NEXT,
-      FOOTER_HINT: translated?.SUMMARY_FOOTER_HINT || DEFAULT_TEXTS.FOOTER_HINT,
-      HOW_WE_COUNT:
-        translated?.SUMMARY_HOW_WE_COUNT || DEFAULT_TEXTS.HOW_WE_COUNT,
-      TOOLTIP_TITLE:
-        translated?.SUMMARY_TOOLTIP_TITLE || DEFAULT_TEXTS.TOOLTIP_TITLE,
-      TOOLTIP_CLOSE:
-        translated?.COMMON_OK || DEFAULT_TEXTS.TOOLTIP_CLOSE,
-      TOOLTIP_BODY:
-        translated?.SUMMARY_TOOLTIP_BODY || DEFAULT_TEXTS.TOOLTIP_BODY,
-      TILE_CHAT: translated?.SUMMARY_TILE_CHAT || DEFAULT_TEXTS.TILE_CHAT,
-      TILE_DAYS: translated?.SUMMARY_TILE_DAYS || DEFAULT_TEXTS.TILE_DAYS,
-      TILE_TECHNIQUES:
-        translated?.SUMMARY_TILE_TECHNIQUES || DEFAULT_TEXTS.TILE_TECHNIQUES,
-      TILE_TASKS: translated?.SUMMARY_TILE_TASKS || DEFAULT_TEXTS.TILE_TASKS,
-      TILE_HABITS:
-        translated?.SUMMARY_TILE_HABITS || DEFAULT_TEXTS.TILE_HABITS,
-      TILE_JOURNAL:
-        translated?.SUMMARY_TILE_JOURNAL || DEFAULT_TEXTS.TILE_JOURNAL,
-      PULSE: translated?.SUMMARY_PULSE || DEFAULT_TEXTS.PULSE,
-      PULSE_EMPTY:
-        translated?.SUMMARY_PULSE_EMPTY || DEFAULT_TEXTS.PULSE_EMPTY,
-      EMPTY_TITLE:
-        translated?.SUMMARY_EMPTY_TITLE || DEFAULT_TEXTS.EMPTY_TITLE,
-      EMPTY_SUB: translated?.SUMMARY_EMPTY_SUB || DEFAULT_TEXTS.EMPTY_SUB,
-      CTA_CHAT: translated?.SUMMARY_CTA_CHAT || DEFAULT_TEXTS.CTA_CHAT,
-      CTA_GRATITUDE:
-        translated?.SUMMARY_CTA_GRATITUDE || DEFAULT_TEXTS.CTA_GRATITUDE,
-      CTA_TECHNIQUES:
-        translated?.SUMMARY_CTA_TECHNIQUES || DEFAULT_TEXTS.CTA_TECHNIQUES,
-      NARRATIVE_TITLE:
-        translated?.SUMMARY_NARRATIVE_TITLE || DEFAULT_TEXTS.NARRATIVE_TITLE,
-      NARRATIVE_THEMES:
-        translated?.SUMMARY_NARRATIVE_THEMES || DEFAULT_TEXTS.NARRATIVE_THEMES,
-      NARRATIVE_MICRO_WINS:
-        translated?.SUMMARY_NARRATIVE_MICRO_WINS ||
-        DEFAULT_TEXTS.NARRATIVE_MICRO_WINS,
-      PERIOD_FALLBACK:
-        translated?.SUMMARY_PERIOD_FALLBACK || DEFAULT_TEXTS.PERIOD_FALLBACK,
-      TIMES_SINGULAR:
-        translated?.SUMMARY_TIMES_SINGULAR || DEFAULT_TEXTS.TIMES_SINGULAR,
-      TIMES_PLURAL:
-        translated?.SUMMARY_TIMES_PLURAL || DEFAULT_TEXTS.TIMES_PLURAL,
-      ERROR_CONNECTION:
-        translated?.ERROR_CONNECTION || DEFAULT_TEXTS.ERROR_CONNECTION,
-      ERROR_TOO_MANY_REQUESTS:
-        translated?.ERROR_TOO_MANY_REQUESTS ||
-        DEFAULT_TEXTS.ERROR_TOO_MANY_REQUESTS,
-    }),
-    [translated],
-  );
+  const TEXTS = useMappedSectionTexts('PROFILE', DEFAULT_TEXTS, SUMMARY_TEXT_MAP);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { colors, statusBarStyle } = useTheme();

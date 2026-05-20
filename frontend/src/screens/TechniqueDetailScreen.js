@@ -27,6 +27,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import { getFocusTheme } from '../styles/focusCardTheme';
 import { SPACING } from '../constants/ui';
+import { resolveInteractiveExerciseType } from './therapeuticTechniques/therapeuticTechniquesUtils';
 
 // Constantes de textos
 const DEFAULT_TEXTS = {
@@ -44,13 +45,6 @@ const DEFAULT_TEXTS = {
   THERAPEUTIC: 'Terapéutica',
   TECHNIQUES: 'Técnicas',
   PRACTICE_AGAIN: 'Practicar de nuevo',
-};
-
-// Técnicas que tienen ejercicios interactivos
-const INTERACTIVE_TECHNIQUES = {
-  'Respiración Consciente': 'breathing',
-  'Grounding 5-4-3-2-1': 'grounding',
-  'Respiración de Calma': 'breathing',
 };
 
 const TechniqueDetailScreen = () => {
@@ -280,7 +274,7 @@ const TechniqueDetailScreen = () => {
     );
   }
 
-  const exerciseType = INTERACTIVE_TECHNIQUES[technique.name];
+  const exerciseType = resolveInteractiveExerciseType(technique);
   const hasInteractiveExercise = !!exerciseType;
 
   // Manejar inicio de ejercicio

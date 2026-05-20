@@ -8,6 +8,33 @@
  * 
  * Organizadas por emoción y tipo (inmediatas vs. a largo plazo)
  */
+import {
+  IMMEDIATE_TECHNIQUES_EN,
+  CBT_TECHNIQUES_EN,
+  DBT_TECHNIQUES_EN,
+  ACT_TECHNIQUES_EN,
+} from './therapeuticTechniques.en.js';
+
+function techniqueCatalogForLanguage(language = 'es') {
+  if (language === 'en') {
+    return {
+      immediate: IMMEDIATE_TECHNIQUES_EN,
+      cbt: CBT_TECHNIQUES_EN,
+      dbt: DBT_TECHNIQUES_EN,
+      act: ACT_TECHNIQUES_EN,
+    };
+  }
+  return {
+    immediate: IMMEDIATE_TECHNIQUES,
+    cbt: CBT_TECHNIQUES,
+    dbt: DBT_TECHNIQUES,
+    act: ACT_TECHNIQUES,
+  };
+}
+
+function isHighIntensityRegulation(technique) {
+  return technique.type === 'DBT' || technique.regulationPriority === true;
+}
 
 // ========== TÉCNICAS INMEDIATAS POR EMOCIÓN ==========
 // Técnicas que se pueden aplicar en el momento para regular emociones intensas
@@ -48,7 +75,8 @@ export const IMMEDIATE_TECHNIQUES = {
         'Repite 5-10 veces, enfocándote solo en la respiración'
       ],
       description: 'La respiración consciente activa el sistema nervioso parasimpático, ayudando a calmar el cuerpo.',
-      whenToUse: 'Cuando la tristeza viene acompañada de tensión física o sensación de opresión.'
+      whenToUse: 'Cuando la tristeza viene acompañada de tensión física o sensación de opresión.',
+      interactiveExercise: 'breathing',
     }
   ],
 
@@ -56,6 +84,7 @@ export const IMMEDIATE_TECHNIQUES = {
     {
       name: 'Grounding 5-4-3-2-1',
       type: 'DBT',
+      interactiveExercise: 'grounding',
       steps: [
         'Identifica 5 cosas que puedes VER a tu alrededor',
         'Identifica 4 cosas que puedes TOCAR',
@@ -64,7 +93,7 @@ export const IMMEDIATE_TECHNIQUES = {
         'Identifica 1 cosa que puedes SABOREAR'
       ],
       description: 'Esta técnica te ayuda a conectarte con el presente y reducir la ansiedad sobre el futuro.',
-      whenToUse: 'Cuando la ansiedad te hace sentir desconectado o abrumado por pensamientos acelerados.'
+      whenToUse: 'Cuando la ansiedad te hace sentir desconectado o abrumado por pensamientos acelerados.',
     },
     {
       name: 'Grounding Sensorial - Temperatura',
@@ -203,7 +232,8 @@ export const IMMEDIATE_TECHNIQUES = {
         'Repite durante 5-10 minutos'
       ],
       description: 'La respiración profunda activa la respuesta de relajación del cuerpo.',
-      whenToUse: 'Cuando el miedo viene con síntomas físicos como palpitaciones o tensión.'
+      whenToUse: 'Cuando el miedo viene con síntomas físicos como palpitaciones o tensión.',
+      interactiveExercise: 'breathing',
     }
   ],
 
@@ -598,19 +628,14 @@ export const ACT_TECHNIQUES = {
  * @param {number} intensity - Intensidad emocional (1-10)
  * @returns {Array} Array de técnicas inmediatas
  */
-export const getImmediateTechniques = (emotion, intensity = 5) => {
-  const techniques = IMMEDIATE_TECHNIQUES[emotion] || [];
-  
-  // Si la intensidad es muy alta (8+), priorizar técnicas de regulación
+export const getImmediateTechniques = (emotion, intensity = 5, language = 'es') => {
+  const { immediate } = techniqueCatalogForLanguage(language);
+  const techniques = immediate[emotion] || [];
+
   if (intensity >= 8) {
-    return techniques.filter(t => 
-      t.type === 'DBT' || 
-      t.name.includes('Respiración') || 
-      t.name.includes('Grounding') ||
-      t.name.includes('Tiempo Fuera')
-    );
+    return techniques.filter(isHighIntensityRegulation);
   }
-  
+
   return techniques;
 };
 
@@ -619,9 +644,10 @@ export const getImmediateTechniques = (emotion, intensity = 5) => {
  * @param {string} emotion - Emoción detectada
  * @returns {Array} Array de técnicas de TCC
  */
-export const getCBTTechniques = (emotion) => {
-  return Object.values(CBT_TECHNIQUES).filter(technique => 
-    technique.emotions && technique.emotions.includes(emotion)
+export const getCBTTechniques = (emotion, language = 'es') => {
+  const { cbt } = techniqueCatalogForLanguage(language);
+  return Object.values(cbt).filter(
+    (technique) => technique.emotions && technique.emotions.includes(emotion),
   );
 };
 
@@ -630,9 +656,10 @@ export const getCBTTechniques = (emotion) => {
  * @param {string} emotion - Emoción detectada
  * @returns {Array} Array de técnicas de DBT
  */
-export const getDBTTechniques = (emotion) => {
-  return Object.values(DBT_TECHNIQUES).filter(technique => 
-    technique.emotions && technique.emotions.includes(emotion)
+export const getDBTTechniques = (emotion, language = 'es') => {
+  const { dbt } = techniqueCatalogForLanguage(language);
+  return Object.values(dbt).filter(
+    (technique) => technique.emotions && technique.emotions.includes(emotion),
   );
 };
 
@@ -641,9 +668,10 @@ export const getDBTTechniques = (emotion) => {
  * @param {string} emotion - Emoción detectada
  * @returns {Array} Array de técnicas de ACT
  */
-export const getACTTechniques = (emotion) => {
-  return Object.values(ACT_TECHNIQUES).filter(technique => 
-    technique.emotions && technique.emotions.includes(emotion)
+export const getACTTechniques = (emotion, language = 'es') => {
+  const { act } = techniqueCatalogForLanguage(language);
+  return Object.values(act).filter(
+    (technique) => technique.emotions && technique.emotions.includes(emotion),
   );
 };
 
@@ -655,10 +683,16 @@ export const getACTTechniques = (emotion) => {
  * @param {string} intent - Intención del mensaje
  * @returns {Object|null} Técnica seleccionada o null
  */
-export const selectAppropriateTechnique = (emotion, intensity = 5, phase = 'inicial', intent = null) => {
+export const selectAppropriateTechnique = (
+  emotion,
+  intensity = 5,
+  phase = 'inicial',
+  intent = null,
+  language = 'es',
+) => {
   // Para intensidades muy altas (8+), priorizar técnicas inmediatas de regulación
   if (intensity >= 8) {
-    const immediate = getImmediateTechniques(emotion, intensity);
+    const immediate = getImmediateTechniques(emotion, intensity, language);
     if (immediate.length > 0) {
       return {
         ...immediate[0],
@@ -670,7 +704,7 @@ export const selectAppropriateTechnique = (emotion, intensity = 5, phase = 'inic
 
   // Para fase inicial, usar técnicas más simples y accesibles
   if (phase === 'inicial') {
-    const immediate = getImmediateTechniques(emotion, intensity);
+    const immediate = getImmediateTechniques(emotion, intensity, language);
     if (immediate.length > 0) {
       return {
         ...immediate[0],
@@ -684,10 +718,10 @@ export const selectAppropriateTechnique = (emotion, intensity = 5, phase = 'inic
   if (phase === 'intermedia' || phase === 'avanzada') {
     // Combinar técnicas inmediatas con técnicas estructuradas
     const allTechniques = [
-      ...getImmediateTechniques(emotion, intensity),
-      ...getCBTTechniques(emotion),
-      ...getDBTTechniques(emotion),
-      ...getACTTechniques(emotion)
+      ...getImmediateTechniques(emotion, intensity, language),
+      ...getCBTTechniques(emotion, language),
+      ...getDBTTechniques(emotion, language),
+      ...getACTTechniques(emotion, language),
     ];
     
     if (allTechniques.length > 0) {
@@ -709,7 +743,7 @@ export const selectAppropriateTechnique = (emotion, intensity = 5, phase = 'inic
   }
 
   // Fallback: técnica inmediata genérica
-  const immediate = getImmediateTechniques(emotion, intensity);
+  const immediate = getImmediateTechniques(emotion, intensity, language);
   if (immediate.length > 0) {
     return {
       ...immediate[0],
@@ -730,54 +764,59 @@ export const selectAppropriateTechnique = (emotion, intensity = 5, phase = 'inic
 export const formatTechniqueForResponse = (technique, options = {}) => {
   if (!technique) return '';
 
-  const { compact = false, maxSteps = 4 } = options;
+  const { compact = false, maxSteps = 4, language = 'es' } = options;
+  const en = language === 'en';
+  const typeLabel = technique.type || (en ? 'Therapeutic' : 'Terapéutica');
 
-  // Formato compacto para cuando hay limitaciones de espacio
   if (compact) {
-    let text = `\n\n💡 ${technique.name} (${technique.type || 'Terapéutica'})\n\n`;
-    
+    let text = `\n\n💡 ${technique.name} (${typeLabel})\n\n`;
+
     if (technique.description) {
       text += `${technique.description}\n\n`;
     }
 
-    // En formato compacto, mostrar solo los primeros 2-3 pasos
     if (technique.steps && Array.isArray(technique.steps) && technique.steps.length > 0) {
       const stepsToShow = Math.min(2, technique.steps.length);
-      text += 'Pasos principales:\n';
+      text += en ? 'Main steps:\n' : 'Pasos principales:\n';
       for (let i = 0; i < stepsToShow; i++) {
         text += `${i + 1}. ${technique.steps[i]}\n`;
       }
       if (technique.steps.length > stepsToShow) {
-        text += `\nPuedes preguntarme por los pasos completos si te interesa.\n`;
+        text += en
+          ? '\nAsk me for the full steps if you would like them.\n'
+          : '\nPuedes preguntarme por los pasos completos si te interesa.\n';
       }
     }
 
     return text;
   }
 
-  // Formato completo
-  let text = `\n\n💡 Técnica sugerida: ${technique.name}\n`;
-  text += `${technique.type || 'Terapéutica'}\n\n`;
-  
+  let text = en
+    ? `\n\n💡 Suggested technique: ${technique.name}\n`
+    : `\n\n💡 Técnica sugerida: ${technique.name}\n`;
+  text += `${typeLabel}\n\n`;
+
   if (technique.description) {
     text += `${technique.description}\n\n`;
   }
 
   if (technique.steps && Array.isArray(technique.steps) && technique.steps.length > 0) {
-    text += 'Pasos:\n';
+    text += en ? 'Steps:\n' : 'Pasos:\n';
     const stepsToShow = Math.min(maxSteps, technique.steps.length);
     technique.steps.slice(0, stepsToShow).forEach((step, index) => {
       text += `${index + 1}. ${step}\n`;
     });
-    
-    // Si hay más pasos, mencionarlo
+
     if (technique.steps.length > stepsToShow) {
-      text += `\nHay ${technique.steps.length - stepsToShow} paso(s) adicional(es). Puedes preguntarme por los pasos completos.\n`;
+      const extra = technique.steps.length - stepsToShow;
+      text += en
+        ? `\nThere ${extra === 1 ? 'is' : 'are'} ${extra} more step(s). Ask me for the full steps.\n`
+        : `\nHay ${extra} paso(s) adicional(es). Puedes preguntarme por los pasos completos.\n`;
     }
   }
 
   if (technique.whenToUse) {
-    text += `\nCuándo usar: ${technique.whenToUse}\n`;
+    text += en ? `\nWhen to use: ${technique.whenToUse}\n` : `\nCuándo usar: ${technique.whenToUse}\n`;
   }
 
   return text;

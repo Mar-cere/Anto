@@ -11,6 +11,28 @@ exports[`subscriptionThankYouEmail plantilla con comprobante: asunto distinto; t
 }
 `;
 
+exports[`subscriptionThankYouEmail plantilla language en con comprobante: bloque Purchase confirmation y referencia escapada 1`] = `"Anto: purchase confirmation (Annual plan)"`;
+
+exports[`subscriptionThankYouEmail plantilla language en con comprobante: bloque Purchase confirmation y referencia escapada 2`] = `
+{
+  "bloqueComprobante": true,
+  "incluyeAnnual": true,
+  "referenciaEscapada": true,
+  "tablaAmount": true,
+}
+`;
+
+exports[`subscriptionThankYouEmail plantilla language en sin comprobante: asunto y cuerpo en inglés 1`] = `"Anto: subscription activated (Monthly plan)"`;
+
+exports[`subscriptionThankYouEmail plantilla language en sin comprobante: asunto y cuerpo en inglés 2`] = `
+{
+  "ctaOpenApp": true,
+  "incluyePlanMonthly": true,
+  "premiumActive": true,
+  "sinTablaComprobante": true,
+}
+`;
+
 exports[`subscriptionThankYouEmail plantilla sin comprobante: asunto; preheader oculto; sin bloque confirmación (snapshot mínimo) 1`] = `"Anto: suscripción activada (plan Mensual)"`;
 
 exports[`subscriptionThankYouEmail plantilla sin comprobante: asunto; preheader oculto; sin bloque confirmación (snapshot mínimo) 2`] = `

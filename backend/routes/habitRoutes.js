@@ -14,6 +14,9 @@ import {
   recordProductActionCreatedFromDoc,
   recordProductActionCreateFailed
 } from '../utils/metricsProductActions.js';
+import { resolveRequestLanguage } from '../utils/apiLanguage.js';
+import { habitApiCopy } from '../utils/habitApiCopy.js';
+import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
 
 const router = express.Router();
 
@@ -34,7 +37,7 @@ const MAX_MONTH = 12;
 const createHabitLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 10,
-  message: 'Demasiados hábitos creados. Por favor, intente más tarde.',
+  message: (req) => habitApiCopy(resolveRequestLanguage(req)).rateLimitCreate,
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -42,7 +45,7 @@ const createHabitLimiter = createRateLimiter({
 const updateHabitLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 30,
-  message: 'Demasiadas actualizaciones. Por favor, intente más tarde.',
+  message: (req) => habitApiCopy(resolveRequestLanguage(req)).rateLimitUpdate,
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -50,7 +53,7 @@ const updateHabitLimiter = createRateLimiter({
 const deleteHabitLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 10,
-  message: 'Demasiadas eliminaciones. Por favor, intente más tarde.',
+  message: (req) => habitApiCopy(resolveRequestLanguage(req)).rateLimitDelete,
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -58,13 +61,14 @@ const deleteHabitLimiter = createRateLimiter({
 const patchHabitLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 20,
-  message: 'Demasiadas modificaciones. Por favor, intente más tarde.',
+  message: (req) => habitApiCopy(resolveRequestLanguage(req)).rateLimitPatch,
   standardHeaders: true,
   legacyHeaders: false
 });
 
 // Middleware de autenticación para todas las rutas
 router.use(authenticateToken);
+router.use(attachApiCopy(habitApiCopy));
 
 // Helper: buscar hábito por ID y validar propiedad
 const findHabitById = async (habitId, userId) => {
@@ -370,14 +374,14 @@ router.get('/', async (req, res) => {
     )) {
       return res.status(503).json({ 
         success: false,
-        message: 'Servicio temporalmente no disponible. La base de datos no está conectada.',
+        message: req.apiCopy.dbUnavailable,
         error: 'DATABASE_CONNECTION_ERROR'
       });
     }
     
     res.status(500).json({ 
       success: false,
-      message: 'Error al obtener los hábitos', 
+      message: req.apiCopy.listError, 
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -397,7 +401,7 @@ router.get('/active', async (req, res) => {
     console.error('Error al obtener hábitos activos:', error);
     res.status(500).json({ 
       success: false,
-      message: 'Error al obtener los hábitos activos',
+      message: req.apiCopy.activeError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -415,7 +419,7 @@ router.get('/overdue', async (req, res) => {
     console.error('Error al obtener hábitos vencidos:', error);
     res.status(500).json({ 
       success: false,
-      message: 'Error al obtener los hábitos vencidos',
+      message: req.apiCopy.overdueError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -433,7 +437,7 @@ router.get('/stats', async (req, res) => {
     console.error('Error al obtener estadísticas:', error);
     res.status(500).json({ 
       success: false,
-      message: 'Error al obtener las estadísticas',
+      message: req.apiCopy.statsError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -447,7 +451,7 @@ router.get('/weekly-progress', async (req, res) => {
     if (!validateYear(year) || !validateWeek(week)) {
       return res.status(400).json({
         success: false,
-        message: 'Año o semana inválidos'
+        message: req.apiCopy.invalidYearWeek
       });
     }
     
@@ -460,7 +464,7 @@ router.get('/weekly-progress', async (req, res) => {
     console.error('Error al obtener progreso semanal:', error);
     res.status(500).json({ 
       success: false,
-      message: 'Error al obtener el progreso semanal',
+      message: req.apiCopy.weeklyProgressError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -474,7 +478,7 @@ router.get('/monthly-progress', async (req, res) => {
     if (!validateYear(year) || !validateMonth(month)) {
       return res.status(400).json({
         success: false,
-        message: 'Año o mes inválidos'
+        message: req.apiCopy.invalidYearMonth
       });
     }
     
@@ -487,7 +491,7 @@ router.get('/monthly-progress', async (req, res) => {
     console.error('Error al obtener progreso mensual:', error);
     res.status(500).json({ 
       success: false,
-      message: 'Error al obtener el progreso mensual',
+      message: req.apiCopy.monthlyProgressError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -505,7 +509,7 @@ router.post('/', createHabitLimiter, async (req, res) => {
     if (error) {
       return res.status(400).json({ 
         success: false,
-        message: 'Datos inválidos', 
+        message: req.apiCopy.invalidData, 
         errors: error.details.map(detail => detail.message)
       });
     }
@@ -525,7 +529,7 @@ router.post('/', createHabitLimiter, async (req, res) => {
         await recordProductActionCreateFailed(req.user._id, 'habit');
         return res.status(400).json({
           success: false,
-          message: 'Origen de chat inválido: la conversación o el mensaje no existe o no pertenece al usuario'
+          message: req.apiCopy.invalidChatOrigin
         });
       }
     }
@@ -540,7 +544,7 @@ router.post('/', createHabitLimiter, async (req, res) => {
         await recordProductActionCreatedFromDoc(req.user._id, 'habit', existingHabit, true);
         return res.status(200).json({
           success: true,
-          message: 'Hábito ya registrado (reintento idempotente)',
+          message: req.apiCopy.idempotentRetry,
           data: existingHabit,
           idempotentReplay: true
         });
@@ -587,7 +591,7 @@ router.post('/', createHabitLimiter, async (req, res) => {
           await recordProductActionCreatedFromDoc(req.user._id, 'habit', replay, true);
           return res.status(200).json({
             success: true,
-            message: 'Hábito ya registrado (reintento idempotente)',
+            message: req.apiCopy.idempotentRetry,
             data: replay,
             idempotentReplay: true
           });
@@ -599,7 +603,7 @@ router.post('/', createHabitLimiter, async (req, res) => {
     res.status(201).json({ 
       success: true, 
       data: habit,
-      message: 'Hábito creado exitosamente'
+      message: req.apiCopy.createdSuccess
     });
   } catch (error) {
     console.error('Error al crear hábito:', error);
@@ -608,7 +612,7 @@ router.post('/', createHabitLimiter, async (req, res) => {
     }
     res.status(400).json({ 
       success: false,
-      message: 'Error al crear el hábito', 
+      message: req.apiCopy.createError, 
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -622,7 +626,7 @@ router.put('/:id', validateObjectId, updateHabitLimiter, async (req, res) => {
     if (error) {
       return res.status(400).json({ 
         success: false,
-        message: 'Datos inválidos', 
+        message: req.apiCopy.invalidData, 
         errors: error.details.map(detail => detail.message)
       });
     }
@@ -632,7 +636,7 @@ router.put('/:id', validateObjectId, updateHabitLimiter, async (req, res) => {
       if (!originOk) {
         return res.status(400).json({
           success: false,
-          message: 'Origen de chat inválido: la conversación o el mensaje no existe o no pertenece al usuario'
+          message: req.apiCopy.invalidChatOrigin
         });
       }
       value.chatOrigin = {
@@ -658,20 +662,20 @@ router.put('/:id', validateObjectId, updateHabitLimiter, async (req, res) => {
     if (!habit) {
       return res.status(404).json({ 
         success: false,
-        message: 'Hábito no encontrado' 
+        message: req.apiCopy.notFound 
       });
     }
 
     res.json({ 
       success: true, 
       data: habit,
-      message: 'Hábito actualizado exitosamente'
+      message: req.apiCopy.updatedSuccess
     });
   } catch (error) {
     console.error('Error al actualizar hábito:', error);
     res.status(400).json({ 
       success: false,
-      message: 'Error al actualizar el hábito', 
+      message: req.apiCopy.updateError, 
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -685,7 +689,7 @@ router.patch('/:id/archive', validateObjectId, patchHabitLimiter, async (req, re
     if (!habit) {
       return res.status(404).json({ 
         success: false,
-        message: 'Hábito no encontrado' 
+        message: req.apiCopy.notFound 
       });
     }
 
@@ -693,13 +697,13 @@ router.patch('/:id/archive', validateObjectId, patchHabitLimiter, async (req, re
     res.json({ 
       success: true,
       data: habit,
-      message: habit.status.archived ? 'Hábito archivado' : 'Hábito desarchivado'
+      message: req.apiCopy.archivedSuccess(habit.status.archived)
     });
   } catch (error) {
     console.error('Error al archivar hábito:', error);
     res.status(400).json({ 
       success: false,
-      message: 'Error al archivar el hábito',
+      message: req.apiCopy.archiveError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -713,21 +717,21 @@ router.delete('/:id', validateObjectId, deleteHabitLimiter, async (req, res) => 
     if (!habit) {
       return res.status(404).json({ 
         success: false,
-        message: 'Hábito no encontrado' 
+        message: req.apiCopy.notFound 
       });
     }
 
     await habit.softDelete();
     res.json({ 
       success: true,
-      message: 'Hábito eliminado correctamente',
+      message: req.apiCopy.deletedSuccess,
       data: { id: habit._id }
     });
   } catch (error) {
     console.error('Error al eliminar hábito:', error);
     res.status(500).json({ 
       success: false,
-      message: 'Error al eliminar el hábito', 
+      message: req.apiCopy.deleteError, 
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -741,14 +745,14 @@ router.patch('/:id/toggle', validateObjectId, patchHabitLimiter, async (req, res
     if (!habit) {
       return res.status(404).json({ 
         success: false,
-        message: 'Hábito no encontrado' 
+        message: req.apiCopy.notFound 
       });
     }
 
     if (habit.status.archived) {
       return res.status(400).json({ 
         success: false,
-        message: 'No se puede modificar un hábito archivado' 
+        message: req.apiCopy.cannotModifyArchived 
       });
     }
 
@@ -774,13 +778,13 @@ router.patch('/:id/toggle', validateObjectId, patchHabitLimiter, async (req, res
     res.json({ 
       success: true, 
       data: habit,
-      message: 'Estado del hábito actualizado exitosamente'
+      message: req.apiCopy.statusUpdatedSuccess
     });
   } catch (error) {
     console.error('Error al actualizar estado del hábito:', error);
     res.status(400).json({ 
       success: false,
-      message: 'Error al actualizar el hábito', 
+      message: req.apiCopy.updateError, 
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -793,7 +797,7 @@ router.patch('/:id/reminder', validateObjectId, patchHabitLimiter, async (req, r
     if (error) {
       return res.status(400).json({ 
         success: false,
-        message: 'Datos inválidos',
+        message: req.apiCopy.invalidData,
         errors: error.details.map(detail => detail.message)
       });
     }
@@ -803,7 +807,7 @@ router.patch('/:id/reminder', validateObjectId, patchHabitLimiter, async (req, r
     if (!habit) {
       return res.status(404).json({ 
         success: false,
-        message: 'Hábito no encontrado' 
+        message: req.apiCopy.notFound 
       });
     }
 
@@ -817,13 +821,13 @@ router.patch('/:id/reminder', validateObjectId, patchHabitLimiter, async (req, r
     res.json({ 
       success: true, 
       data: habit,
-      message: 'Recordatorio actualizado exitosamente'
+      message: req.apiCopy.reminderUpdatedSuccess
     });
   } catch (error) {
     console.error('Error al actualizar recordatorio:', error);
     res.status(400).json({ 
       success: false,
-      message: 'Error al actualizar el recordatorio', 
+      message: req.apiCopy.reminderUpdateError, 
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

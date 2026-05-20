@@ -8,6 +8,8 @@
 
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
+import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
+import { paymentApiCopy } from '../utils/paymentApiCopy.js';
 import Transaction from '../models/Transaction.js';
 import Subscription from '../models/Subscription.js';
 import User from '../models/User.js';
@@ -15,19 +17,21 @@ import paymentAuditService from '../services/paymentAuditService.js';
 
 const router = express.Router();
 
+router.use(attachApiCopy(paymentApiCopy));
+
 // Middleware: Solo administradores pueden acceder a métricas de pagos
 const isAdmin = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
       success: false,
-      message: 'Usuario no autenticado'
+      message: req.apiCopy.notAuthenticated
     });
   }
 
   if (req.user.role !== 'admin') {
     return res.status(403).json({
       success: false,
-      message: 'Acceso denegado. Se requiere rol de administrador.',
+      message: req.apiCopy.adminDenied,
       required: 'admin',
       current: req.user.role || 'user'
     });
@@ -303,7 +307,7 @@ router.get('/metrics/overview', authenticateToken, isAdmin, async (req, res) => 
     console.error('Error obteniendo métricas de pagos:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al obtener métricas de pagos',
+      error: req.apiCopy.paymentMetricsError,
     });
   }
 });
@@ -326,7 +330,7 @@ router.get('/metrics/unactivated', authenticateToken, isAdmin, async (req, res) 
     console.error('Error obteniendo pagos no activados:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al obtener pagos no activados',
+      error: req.apiCopy.unactivatedPaymentsError,
     });
   }
 });
@@ -364,7 +368,7 @@ router.get('/metrics/health', authenticateToken, isAdmin, async (req, res) => {
       issues.push({
         type: 'unactivated_payments',
         count: recentUnactivated.length,
-        message: `${recentUnactivated.length} pago(s) completado(s) en las últimas 24h sin activar suscripción`,
+        message: req.apiCopy.recentUnactivatedIssue(recentUnactivated.length),
       });
     }
 
@@ -372,7 +376,7 @@ router.get('/metrics/health', authenticateToken, isAdmin, async (req, res) => {
       healthStatus = 'warning';
       issues.push({
         type: 'no_activity',
-        message: 'No hay actividad reciente en el sistema de pagos',
+        message: req.apiCopy.noPaymentActivity,
       });
     }
 
@@ -393,7 +397,7 @@ router.get('/metrics/health', authenticateToken, isAdmin, async (req, res) => {
     console.error('Error verificando salud del sistema de pagos:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al verificar salud del sistema',
+      error: req.apiCopy.paymentHealthCheckError,
       health: {
         status: 'error',
         message: error.message,
@@ -494,7 +498,7 @@ router.get('/metrics/integrity', authenticateToken, isAdmin, async (req, res) =>
     console.error('Error en métricas de integridad de pagos:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al obtener integridad de pagos',
+      error: req.apiCopy.paymentIntegrityError,
     });
   }
 });

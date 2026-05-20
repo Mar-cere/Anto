@@ -25,6 +25,8 @@ const COPY = {
     habit: (title) => `Hábito: ${title}`,
     reminderAround: (time) => `Recordatorio hacia las ${time}`,
     scheduledReminder: 'Recordatorio programado',
+    scheduledReminderMorning: 'Recordatorio programado (mañana)',
+    scheduledReminderEvening: 'Recordatorio programado (tarde-noche)',
     activeFollowUp: (tool) => `Seguimiento activo: ${tool}`,
     focusProtocol: (line) =>
       `Con lo que has estado trabajando: ${line} ¿Qué micro-paso encaja hoy?`,
@@ -40,10 +42,10 @@ const COPY = {
       'Puedes retomar tu última conversación o contar en una frase cómo llegas hoy.',
     focusDefaultChoice:
       'Hoy puedes elegir: una línea en el chat, un avance pequeño en tareas o registrar un hábito.',
-    lastSessionSnippetFallback: 'Podés retomar el hilo en el chat cuando quieras.',
+    lastSessionSnippetFallback: 'Puedes retomar el hilo en el chat cuando quieras.',
     lastSessionPlaceholderBridge:
-      'Esta charla fue breve. Cuando quieras podés seguir en el chat; no hace falta guardar mucho detalle.',
-    lastSessionPlaceholderSnippet: 'Charla breve — seguí cuando quieras.',
+      'Esta charla fue breve. Cuando quieras puedes seguir en el chat; no hace falta guardar mucho detalle.',
+    lastSessionPlaceholderSnippet: 'Charla breve — sigue cuando quieras.',
     lastSessionMismatchFallback:
       'Abre tu última conversación para retomar donde lo dejaste.',
     llmFocusSystem:
@@ -69,9 +71,11 @@ const COPY = {
     habit: (title) => `Habit: ${title}`,
     reminderAround: (time) => `Reminder around ${time}`,
     scheduledReminder: 'Scheduled reminder',
+    scheduledReminderMorning: 'Scheduled reminder (morning)',
+    scheduledReminderEvening: 'Scheduled reminder (evening)',
     activeFollowUp: (tool) => `Active follow-up: ${tool}`,
     focusProtocol: (line) =>
-      `With what you have been working on: ${line} What small step fits today?`,
+      `With what you have been working on: ${line}. What small step fits today?`,
     focusNoChatWeek:
       'You have not written in chat this week yet. A short message is a good first step.',
     focusSparseActivity:
@@ -81,7 +85,7 @@ const COPY = {
     focusCommitment: (c) =>
       `A gentle reminder of your focus: “${c}”. What small step fits today?`,
     focusResumeOrCheckIn:
-      'You can pick up your last conversation or share in one line how you are arriving today.',
+      'You can pick up your last conversation or share in one line how you are feeling today.',
     focusDefaultChoice:
       'Today you can choose: one line in chat, a small step on tasks, or logging a habit.',
     lastSessionSnippetFallback: 'You can pick up the thread in chat whenever you want.',
@@ -89,7 +93,7 @@ const COPY = {
       'This chat was brief. You can continue in chat whenever you want; no need to hold on to every detail.',
     lastSessionPlaceholderSnippet: 'Brief chat — continue whenever you want.',
     lastSessionMismatchFallback:
-      'Open your last conversation to pick up where you left off.',
+      'Open your last conversation to continue where you left off.',
     llmFocusSystem:
       'You are a wellbeing product guide. Write in neutral, natural English: everyday, friendly tone; no heavy clinical jargon or marketing voice; no harsh imperatives or bullet lists. Sound human, not like an ad or report. Return ONE line only (max 260 characters), warm, no diagnosing, do not mention PHQ/GAD as illness. Prioritize returning to chat when activity is low; if there is an upcoming task, mention it without pressure. Do not quote user text or chat excerpts. Do not end with a question. No emojis.',
     llmFocusUserSuffix:
@@ -103,6 +107,14 @@ const COPY = {
 
 export function focusCopy(language) {
   return COPY[normalizeFocusLanguage(language)];
+}
+
+/** Etiqueta del slot de push rutinario (mañana / tarde-noche) según idioma. */
+export function routinePushSlotLabel(kind, language = 'es') {
+  const c = focusCopy(language);
+  if (kind === 'morning') return c.scheduledReminderMorning;
+  if (kind === 'evening') return c.scheduledReminderEvening;
+  return c.scheduledReminder;
 }
 
 /** Heurística ligera: texto guardado en español cuando el usuario pide inglés. */

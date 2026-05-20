@@ -200,5 +200,19 @@ describe('apiErrorHandler', () => {
       err.response = { status: 400, data: { message: '  Mensaje con espacios  ' } };
       expect(getApiErrorMessage(err)).toBe('Mensaje con espacios');
     });
+
+    it('debe devolver mensajes en inglés cuando language es en', () => {
+      const err = new Error('Unauthorized');
+      err.response = { status: 401, data: {} };
+      expect(getApiErrorMessage(err, { language: 'en' })).toBe(
+        'Incorrect email or password.'
+      );
+    });
+
+    it('debe devolver mensaje de red en inglés con isOffline', () => {
+      expect(
+        getApiErrorMessage(new Error('Any'), { isOffline: true, language: 'en' })
+      ).toBe('No connection. Check your internet and try again.');
+    });
   });
 });

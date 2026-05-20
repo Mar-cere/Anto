@@ -317,6 +317,11 @@ class CacheService {
       totalDeleted += 1;
     }
 
+    const profileKey = this.generateKey('profile', userId);
+    if (await this.delete(profileKey)) {
+      totalDeleted += 1;
+    }
+
     return totalDeleted;
   }
 

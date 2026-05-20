@@ -3,6 +3,8 @@
  * Extraído de chatRoutes para mantener el archivo principal manejable.
  */
 import { createRateLimiter } from '../../utils/createRateLimiter.js';
+import { resolveRequestLanguage } from '../../utils/apiLanguage.js';
+import { chatApiCopy } from '../../utils/chatApiCopy.js';
 
 // Límites de mensajes y contexto
 export const LIMITE_MENSAJES = 100;
@@ -14,44 +16,46 @@ export const HISTORIAL_LIMITE = 24;
 export const deleteConversationLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 10,
-  message: 'Demasiadas eliminaciones de conversaciones. Por favor, intente más tarde.',
+  message: (req) =>
+    chatApiCopy(resolveRequestLanguage(req)).rateLimitDeleteConversation,
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 
 export const patchMessageLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 30,
-  message: 'Demasiadas actualizaciones de mensajes. Por favor, intente más tarde.',
+  message: (req) => chatApiCopy(resolveRequestLanguage(req)).rateLimitPatchMessages,
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 
 /** Valoraciones pulgar arriba/abajo (independiente del PATCH de estado de entrega). */
 export const messageFeedbackLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 120,
-  message: 'Demasiadas valoraciones seguidas. Espera un momento e inténtalo de nuevo.',
+  message: (req) => chatApiCopy(resolveRequestLanguage(req)).rateLimitFeedback,
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 
 export const sendMessageLimiter = createRateLimiter({
   windowMs: 1 * 60 * 1000,
   max: 20,
-  message: 'Demasiados mensajes enviados. Por favor, espera un momento antes de intentar de nuevo.',
+  message: (req) => chatApiCopy(resolveRequestLanguage(req)).rateLimitSendMessage,
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: false,
-  skipFailedRequests: false
+  skipFailedRequests: false,
 });
 
 /** Programación best-effort de continuidad del chat (#4 + #47); límite por usuario autenticado. */
 export const scheduleSessionSummaryLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 60,
-  message: 'Demasiadas peticiones de programación. Intenta más tarde.',
+  message: (req) =>
+    chatApiCopy(resolveRequestLanguage(req)).rateLimitScheduleContinuity,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => (req.user?._id ? String(req.user._id) : req.ip ?? 'unknown')
+  keyGenerator: (req) => (req.user?._id ? String(req.user._id) : req.ip ?? 'unknown'),
 });

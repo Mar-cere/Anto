@@ -35,4 +35,53 @@ describe('subscriptionThankYouEmail plantilla', () => {
       incluyeAnual: t.html.includes('Anual'),
     }).toMatchSnapshot();
   });
+
+  describe('language en', () => {
+    it('sin comprobante: asunto y cuerpo en inglés', () => {
+      const t = mailer.emailTemplates.subscriptionThankYouEmail(
+        'ana',
+        'monthly',
+        periodEnd,
+        null,
+        'en',
+      );
+
+      expect(t.subject).toMatch(/subscription activated/i);
+      expect(t.subject).toMatch(/Monthly/i);
+      expect(t.subject).toMatchSnapshot();
+
+      expect({
+        sinTablaComprobante: !t.html.includes('Purchase confirmation'),
+        incluyePlanMonthly: t.html.includes('Monthly'),
+        ctaOpenApp: t.html.includes('Open Anto'),
+        premiumActive: t.html.includes('subscription') && t.html.includes('active'),
+      }).toMatchSnapshot();
+    });
+
+    it('con comprobante: bloque Purchase confirmation y referencia escapada', () => {
+      const t = mailer.emailTemplates.subscriptionThankYouEmail(
+        'ana',
+        'yearly',
+        periodEnd,
+        {
+          purchaseDate: '2026-06-10T14:30:00.000Z',
+          amount: 10000,
+          currency: 'CLP',
+          providerLabel: 'Mercado Pago',
+          reference: 'REF-&-1',
+        },
+        'en',
+      );
+
+      expect(t.subject).toMatch(/purchase confirmation/i);
+      expect(t.subject).toMatchSnapshot();
+
+      expect({
+        bloqueComprobante: t.html.includes('Purchase confirmation'),
+        referenciaEscapada: t.html.includes('REF-&amp;-1'),
+        incluyeAnnual: t.html.includes('Annual'),
+        tablaAmount: t.html.includes('Amount'),
+      }).toMatchSnapshot();
+    });
+  });
 });

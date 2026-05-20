@@ -159,12 +159,38 @@ describe('OnboardingQuestions (UI)', () => {
     );
 
     await act(async () => {
-      pressByText(tree.root, 'Ver recorrido de la app');
+      pressByText(tree.root, 'Ver recorrido');
       await Promise.resolve();
     });
 
     expect(onCompleted).toHaveBeenCalledTimes(1);
     expect(onExploreApp).toHaveBeenCalledTimes(1);
+  });
+
+  it('al enviar con opción persiste en onboarding-preferences', async () => {
+    const onCompleted = jest.fn().mockResolvedValue(undefined);
+    const onDismiss = jest.fn();
+    const tree = await createTree(
+      <OnboardingQuestions visible onCompleted={onCompleted} onDismiss={onDismiss} />,
+    );
+
+    await act(async () => {
+      pressByText(tree.root, 'Apoyo emocional');
+    });
+    await act(async () => {
+      pressByText(tree.root, 'Continuar');
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockPatch).toHaveBeenCalledWith('/api/users/me/onboarding-preferences', {
+      whatExpectFromApp: 'Apoyo emocional',
+      whatToImproveOrWorkOn: null,
+      typeOfSpecialist: null,
+    });
+    expect(mockShowToast).toHaveBeenCalled();
+    expect(onCompleted).toHaveBeenCalled();
+    expect(onDismiss).toHaveBeenCalled();
   });
 
   it('al enviar sin respuestas no persiste y cierra flujo', async () => {
@@ -179,7 +205,7 @@ describe('OnboardingQuestions (UI)', () => {
     );
 
     await act(async () => {
-      pressByText(tree.root, 'Listo');
+      pressByText(tree.root, 'Continuar');
       await Promise.resolve();
     });
 

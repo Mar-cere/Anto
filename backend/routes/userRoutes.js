@@ -5,16 +5,26 @@ import cloudinary from 'cloudinary';
 import crypto from 'crypto';
 import express from 'express';
 import { createRateLimiter } from '../utils/createRateLimiter.js';
-import Joi from 'joi';
 import mongoose from 'mongoose';
 import { CURRENT_TERMS_VERSION } from '../constants/app.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
 import { validateUserObjectId } from '../middleware/validation.js';
 import User from '../models/User.js';
 import UserProfile from '../models/UserProfile.js';
 import cacheService from '../services/cacheService.js';
 import userProfileService from '../services/userProfileService.js';
+import { resolveRequestLanguage } from '../utils/apiLanguage.js';
+import { validationErrorBody, validateBody } from '../utils/apiValidation.js';
 import logger from '../utils/logger.js';
+import { userApiCopy } from '../utils/userApiCopy.js';
+import {
+  getEmergencyContactSchema,
+  getOnboardingPreferencesSchema,
+  getReacceptTermsSchema,
+  getUpdatePasswordSchema,
+  getUpdateProfileSchema,
+} from '../utils/userSchemas.js';
 
 // Helper para validar ObjectId
 const isValidObjectId = (id) => {
@@ -23,6 +33,8 @@ const isValidObjectId = (id) => {
 
 const router = express.Router();
 
+router.use(attachApiCopy(userApiCopy));
+
 // Constantes de configuración
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -30,7 +42,7 @@ const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 const updateProfileLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 10,
-  message: 'Demasiadas actualizaciones de perfil. Por favor, intente más tarde.',
+  message: (req) => userApiCopy(resolveRequestLanguage(req)).rateLimitUpdateProfile,
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -39,7 +51,7 @@ const updateProfileLimiter = createRateLimiter({
 const deleteUserLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hora
   max: 3,
-  message: 'Demasiados intentos de eliminación de cuenta. Por favor, intente más tarde.',
+  message: (req) => userApiCopy(resolveRequestLanguage(req)).rateLimitDeleteUser,
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -47,7 +59,7 @@ const deleteUserLimiter = createRateLimiter({
 const deleteContactLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 10,
-  message: 'Demasiadas eliminaciones de contactos. Por favor, intente más tarde.',
+  message: (req) => userApiCopy(resolveRequestLanguage(req)).rateLimitDeleteContact,
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -55,7 +67,7 @@ const deleteContactLimiter = createRateLimiter({
 const patchContactLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 20,
-  message: 'Demasiadas modificaciones de contactos. Por favor, intente más tarde.',
+  message: (req) => userApiCopy(resolveRequestLanguage(req)).rateLimitPatchContact,
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -110,74 +122,6 @@ const hashPassword = (password) => {
   return { salt, hash };
 };
 
-// Esquemas de validación Joi
-const updateProfileSchema = Joi.object({
-  name: Joi.string()
-    .min(2)
-    .max(50)
-    .trim()
-    .optional()
-    .messages({
-      'string.min': 'El nombre debe tener al menos 2 caracteres',
-      'string.max': 'El nombre debe tener máximo 50 caracteres'
-    }),
-  username: Joi.string()
-    .min(3)
-    .max(20)
-    .pattern(/^[a-z0-9_]+$/)
-    .trim()
-    .lowercase()
-    .optional()
-    .messages({
-      'string.min': 'El nombre de usuario debe tener al menos 3 caracteres',
-      'string.max': 'El nombre de usuario debe tener máximo 20 caracteres',
-      'string.pattern.base': 'El nombre de usuario solo puede contener letras minúsculas, números y guiones bajos'
-    }),
-  email: Joi.string()
-    .email({ tlds: { allow: false } })
-    .trim()
-    .lowercase()
-    .optional()
-    .messages({
-      'string.email': 'Por favor ingresa un email válido'
-    }),
-  preferences: Joi.object({
-    theme: Joi.string().valid('light', 'dark', 'auto'),
-    notifications: Joi.boolean(),
-    language: Joi.string().valid('es', 'en'),
-    timezone: Joi.string().trim().max(64),
-    responseStyle: Joi.string().valid('brief', 'balanced', 'deep', 'empatico', 'estructurado'),
-    privacy: Joi.object({
-      profileVisibility: Joi.string().valid('public', 'private', 'friends')
-    }),
-    chatPreferences: Joi.object({
-      reduceStockEmpathy: Joi.boolean(),
-      avoidApologyOpenings: Joi.boolean(),
-      preferQuestions: Joi.boolean()
-    })
-  }).optional(),
-  notificationPreferences: Joi.object({
-    enabled: Joi.boolean(),
-    morning: Joi.object({
-      enabled: Joi.boolean(),
-      hour: Joi.number().min(0).max(23),
-      minute: Joi.number().min(0).max(59)
-    }),
-    evening: Joi.object({
-      enabled: Joi.boolean(),
-      hour: Joi.number().min(0).max(23),
-      minute: Joi.number().min(0).max(59)
-    }),
-    types: Joi.object({
-      dailyReminders: Joi.boolean(),
-      habitReminders: Joi.boolean(),
-      taskReminders: Joi.boolean(),
-      motivationalMessages: Joi.boolean(),
-      betweenSessionsMessages: Joi.boolean()
-    })
-  }).optional(),
-});
-
 const DEFAULT_CHAT_PREFERENCES = {
   reduceStockEmpathy: false,
   avoidApologyOpenings: false,
@@ -199,19 +143,6 @@ async function attachChatPreferencesToUserPayload(userId, payload) {
   };
 }
 
-const updatePasswordSchema = Joi.object({
-  currentPassword: Joi.string().required().messages({
-    'any.required': 'La contraseña actual es requerida'
-  }),
-  newPassword: Joi.string()
-    .min(8)
-    .required()
-    .messages({
-      'string.min': 'La nueva contraseña debe tener al menos 8 caracteres',
-      'any.required': 'La nueva contraseña es requerida'
-    })
-});
-
 // Obtener datos del usuario actual
 router.get('/me', authenticateToken, validateUserObjectId, async (req, res) => {
   try {
@@ -219,7 +150,7 @@ router.get('/me', authenticateToken, validateUserObjectId, async (req, res) => {
     const userId = req.user?._id || req.user?.userId;
     
     if (!userId) {
-      return res.status(401).json({ message: 'Usuario no autenticado' });
+      return res.status(401).json({ message: req.apiCopy.notAuthenticated });
     }
 
     // Intentar obtener del caché primero
@@ -234,11 +165,11 @@ router.get('/me', authenticateToken, validateUserObjectId, async (req, res) => {
     const user = await findUserById(userId, '-password -salt -__v -resetPasswordCode -resetPasswordExpires', true);
     
     if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+      return res.status(404).json({ message: req.apiCopy.userNotFound });
     }
 
     if (!user.isActive) {
-      return res.status(403).json({ message: 'Tu cuenta ha sido desactivada' });
+      return res.status(403).json({ message: req.apiCopy.accountDeactivated });
     }
 
     // Calcular tiempo desde último login (en segundos)
@@ -275,14 +206,14 @@ router.get('/me', authenticateToken, validateUserObjectId, async (req, res) => {
     )) {
       return res.status(503).json({ 
         success: false,
-        message: 'Servicio temporalmente no disponible. La base de datos no está conectada.',
+        message: req.apiCopy.serviceUnavailable,
         error: 'DATABASE_CONNECTION_ERROR'
       });
     }
     
     res.status(500).json({ 
       success: false,
-      message: 'Error al obtener datos del usuario',
+      message: req.apiCopy.getUserError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -294,7 +225,7 @@ router.get('/me/stats', authenticateToken, validateUserObjectId, async (req, res
     const user = await findUserById(req.user._id, 'stats subscription createdAt', true);
     
     if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+      return res.status(404).json({ message: req.apiCopy.userNotFound });
     }
 
     const daysSinceRegistration = calculateDaysSince(user.createdAt);
@@ -317,7 +248,7 @@ router.get('/me/stats', authenticateToken, validateUserObjectId, async (req, res
   } catch (error) {
     logger.error('Error al obtener estadísticas', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
-      message: 'Error al obtener estadísticas',
+      message: req.apiCopy.statsError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -329,25 +260,22 @@ router.put('/me', authenticateToken, validateUserObjectId, updateProfileLimiter,
     const userId = req.user?._id || req.user?.userId;
     
     if (!userId) {
-      return res.status(401).json({ message: 'Usuario no autenticado' });
+      return res.status(401).json({ message: req.apiCopy.notAuthenticated });
     }
 
     // Validar datos de entrada
-    const { error, value } = updateProfileSchema.validate(req.body, { stripUnknown: true });
+    const { error, value } = validateBody(getUpdateProfileSchema(req.apiCopy), req.body);
     if (error) {
-      return res.status(400).json({ 
-        message: 'Datos inválidos',
-        errors: error.details.map(detail => detail.message)
-      });
+      return res.status(400).json(validationErrorBody(req.apiCopy, error));
     }
 
     const user = await findUserById(userId);
     if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+      return res.status(404).json({ message: req.apiCopy.userNotFound });
     }
 
     if (!user.isActive) {
-      return res.status(403).json({ message: 'Tu cuenta ha sido desactivada' });
+      return res.status(403).json({ message: req.apiCopy.accountDeactivated });
     }
 
     // Verificar unicidad de email y username si se están actualizando
@@ -356,7 +284,7 @@ router.put('/me', authenticateToken, validateUserObjectId, updateProfileLimiter,
         .select('_id')
         .lean();
       if (existingEmail) {
-        return res.status(400).json({ message: 'El email ya está en uso' });
+        return res.status(400).json({ message: req.apiCopy.emailInUse });
       }
     }
 
@@ -365,7 +293,7 @@ router.put('/me', authenticateToken, validateUserObjectId, updateProfileLimiter,
         .select('_id')
         .lean();
       if (existingUsername) {
-        return res.status(400).json({ message: 'El nombre de usuario ya está en uso' });
+        return res.status(400).json({ message: req.apiCopy.usernameInUse });
       }
     }
 
@@ -434,13 +362,13 @@ router.put('/me', authenticateToken, validateUserObjectId, updateProfileLimiter,
     const userWithChatPrefs = await attachChatPreferencesToUserPayload(userId, userJson);
 
     res.json({
-      message: 'Perfil actualizado correctamente',
+      message: req.apiCopy.profileUpdated,
       user: userWithChatPrefs
     });
   } catch (error) {
     logger.error('Error al actualizar usuario', { error: error.message, userId: req.user._id });
     res.status(400).json({ 
-      message: 'Error al actualizar el perfil',
+      message: req.apiCopy.profileUpdateError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -452,32 +380,29 @@ router.put('/me/password', authenticateToken, validateUserObjectId, updateProfil
     const userId = req.user?._id || req.user?.userId;
     
     if (!userId) {
-      return res.status(401).json({ message: 'Usuario no autenticado' });
+      return res.status(401).json({ message: req.apiCopy.notAuthenticated });
     }
 
-    const { error, value } = updatePasswordSchema.validate(req.body, { stripUnknown: true });
+    const { error, value } = validateBody(getUpdatePasswordSchema(req.apiCopy), req.body);
     if (error) {
-      return res.status(400).json({
-        message: 'Datos inválidos',
-        errors: error.details.map(detail => detail.message)
-      });
+      return res.status(400).json(validationErrorBody(req.apiCopy, error));
     }
 
     const { currentPassword, newPassword } = value;
 
     const user = await findUserById(userId);
     if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+      return res.status(404).json({ message: req.apiCopy.userNotFound });
     }
 
     // Verificar contraseña actual
     if (!user.comparePassword(currentPassword)) {
-      return res.status(400).json({ message: 'La contraseña actual es incorrecta' });
+      return res.status(400).json({ message: req.apiCopy.wrongCurrentPassword });
     }
 
     // Verificar que la nueva contraseña sea diferente
     if (user.comparePassword(newPassword)) {
-      return res.status(400).json({ message: 'La nueva contraseña debe ser diferente a la actual' });
+      return res.status(400).json({ message: req.apiCopy.passwordSameAsCurrent });
     }
 
     // Hashear nueva contraseña
@@ -488,11 +413,11 @@ router.put('/me/password', authenticateToken, validateUserObjectId, updateProfil
     user.lastPasswordChange = new Date();
     await user.save();
 
-    res.json({ message: 'Contraseña actualizada correctamente' });
+    res.json({ message: req.apiCopy.passwordUpdated });
   } catch (error) {
     logger.error('Error al cambiar contraseña', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
-      message: 'Error al cambiar la contraseña',
+      message: req.apiCopy.changePasswordError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -503,7 +428,7 @@ router.delete('/me', authenticateToken, validateUserObjectId, deleteUserLimiter,
   try {
     const user = await findUserById(req.user._id);
     if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+      return res.status(404).json({ message: req.apiCopy.userNotFound });
     }
 
     const userId = req.user._id;
@@ -625,49 +550,27 @@ router.delete('/me', authenticateToken, validateUserObjectId, deleteUserLimiter,
     await user.save();
 
     res.json({ 
-      message: 'Cuenta eliminada correctamente',
+      message: req.apiCopy.accountDeleted,
       deletedAt: user.deletedAt
     });
   } catch (error) {
     logger.error('Error al eliminar cuenta', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
-      message: 'Error al eliminar la cuenta',
+      message: req.apiCopy.deleteAccountError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
 
-// Re-aceptar términos y condiciones (cuando cambian)
-const reacceptTermsSchema = Joi.object({
-  termsAccepted: Joi.boolean().valid(true).required().messages({
-    'any.only': 'Debes aceptar los términos y condiciones',
-    'any.required': 'Debes aceptar los términos y condiciones'
-  }),
-  privacyAccepted: Joi.boolean().valid(true).required().messages({
-    'any.only': 'Debes aceptar la política de privacidad',
-    'any.required': 'Debes aceptar la política de privacidad'
-  })
-});
-
-// Esquema para preferencias de onboarding (preguntas iniciales para personalización del chat)
-const onboardingPreferencesSchema = Joi.object({
-  whatExpectFromApp: Joi.string().trim().max(500).allow('', null),
-  whatToImproveOrWorkOn: Joi.string().trim().max(500).allow('', null),
-  typeOfSpecialist: Joi.string().trim().max(500).allow('', null)
-}).min(1);
-
 router.patch('/me/onboarding-preferences', authenticateToken, validateUserObjectId, updateProfileLimiter, async (req, res) => {
   try {
     const userId = req.user._id || req.user.userId;
     if (!userId) {
-      return res.status(401).json({ message: 'Usuario no autenticado' });
+      return res.status(401).json({ message: req.apiCopy.notAuthenticated });
     }
-    const { error, value } = onboardingPreferencesSchema.validate(req.body, { stripUnknown: true });
+    const { error, value } = validateBody(getOnboardingPreferencesSchema(), req.body);
     if (error) {
-      return res.status(400).json({
-        message: 'Datos inválidos',
-        errors: error.details.map(detail => detail.message)
-      });
+      return res.status(400).json(validationErrorBody(req.apiCopy, error));
     }
     const update = {};
     if (value.whatExpectFromApp !== undefined) update['onboardingAnswers.whatExpectFromApp'] = value.whatExpectFromApp || null;
@@ -679,14 +582,15 @@ router.patch('/me/onboarding-preferences', authenticateToken, validateUserObject
       { $set: update },
       { new: true }
     ).lean();
+    await cacheService.invalidateUserCache(userId.toString());
     return res.json({
-      message: 'Preferencias de onboarding guardadas',
+      message: req.apiCopy.onboardingSaved,
       onboardingAnswers: profile?.onboardingAnswers || {}
     });
   } catch (err) {
     logger.error('Error al guardar preferencias de onboarding', { error: err.message, userId: req.user?._id });
     return res.status(500).json({
-      message: 'Error al guardar preferencias',
+      message: req.apiCopy.onboardingSaveError,
       error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
@@ -697,24 +601,21 @@ router.post('/me/accept-terms', authenticateToken, validateUserObjectId, async (
     const userId = req.user._id || req.user.userId;
     
     if (!userId) {
-      return res.status(401).json({ message: 'Usuario no autenticado' });
+      return res.status(401).json({ message: req.apiCopy.notAuthenticated });
     }
 
-    const { error, value } = reacceptTermsSchema.validate(req.body, { stripUnknown: true });
+    const { error, value } = validateBody(getReacceptTermsSchema(req.apiCopy), req.body);
     if (error) {
-      return res.status(400).json({
-        message: 'Datos inválidos',
-        errors: error.details.map(detail => detail.message)
-      });
+      return res.status(400).json(validationErrorBody(req.apiCopy, error));
     }
 
     const user = await findUserById(userId);
     if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+      return res.status(404).json({ message: req.apiCopy.userNotFound });
     }
 
     if (!user.isActive) {
-      return res.status(403).json({ message: 'Tu cuenta ha sido desactivada' });
+      return res.status(403).json({ message: req.apiCopy.accountDeactivated });
     }
 
     // Actualizar aceptación de términos y privacidad
@@ -730,14 +631,14 @@ router.post('/me/accept-terms', authenticateToken, validateUserObjectId, async (
     await cacheService.invalidateUserCache(userId);
 
     res.json({
-      message: 'Términos y política de privacidad aceptados correctamente',
+      message: req.apiCopy.termsAccepted,
       termsVersion: CURRENT_TERMS_VERSION,
       acceptedAt: new Date()
     });
   } catch (error) {
     logger.error('Error al re-aceptar términos', { error: error.message, userId: req.user._id });
     res.status(500).json({
-      message: 'Error al actualizar aceptación de términos',
+      message: req.apiCopy.termsAcceptError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -749,7 +650,7 @@ router.get('/me/subscription', authenticateToken, validateUserObjectId, async (r
     const user = await findUserById(req.user._id, 'subscription', true);
     
     if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+      return res.status(404).json({ message: req.apiCopy.userNotFound });
     }
 
     const subscription = user.subscription;
@@ -766,7 +667,7 @@ router.get('/me/subscription', authenticateToken, validateUserObjectId, async (r
   } catch (error) {
     logger.error('Error al obtener información de suscripción', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
-      message: 'Error al obtener información de suscripción',
+      message: req.apiCopy.subscriptionError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -774,33 +675,13 @@ router.get('/me/subscription', authenticateToken, validateUserObjectId, async (r
 
 // ========== RUTAS DE CONTACTOS DE EMERGENCIA ==========
 
-// Esquema de validación para contactos de emergencia
-const emergencyContactSchema = Joi.object({
-  name: Joi.string().required().trim().min(2).max(100).messages({
-    'string.empty': 'El nombre del contacto es requerido',
-    'string.min': 'El nombre debe tener al menos 2 caracteres',
-    'string.max': 'El nombre no puede exceder 100 caracteres'
-  }),
-  email: Joi.string().required().email().trim().lowercase().messages({
-    'string.empty': 'El email del contacto es requerido',
-    'string.email': 'Por favor ingresa un email válido'
-  }),
-  phone: Joi.string().required().trim().min(8).max(20).messages({
-    'string.empty': 'El teléfono del contacto es requerido para alertas por WhatsApp',
-    'string.min': 'El teléfono debe tener al menos 8 caracteres',
-    'string.max': 'El teléfono no puede exceder 20 caracteres',
-    'any.required': 'El teléfono del contacto es requerido para alertas por WhatsApp'
-  }),
-  relationship: Joi.string().allow(null, '').trim().max(50).optional()
-});
-
 // Obtener contactos de emergencia del usuario
 router.get('/me/emergency-contacts', authenticateToken, validateUserObjectId, async (req, res) => {
   try {
     const userId = req.user?._id || req.user?.userId;
     
     if (!userId) {
-      return res.status(401).json({ message: 'Usuario no autenticado' });
+      return res.status(401).json({ message: req.apiCopy.notAuthenticated });
     }
     
     // Asegurar que req.user._id sea un ObjectId válido
@@ -812,7 +693,7 @@ router.get('/me/emergency-contacts', authenticateToken, validateUserObjectId, as
       .select('emergencyContacts')
       .lean();
     if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+      return res.status(404).json({ message: req.apiCopy.userNotFound });
     }
 
     res.json({
@@ -823,7 +704,7 @@ router.get('/me/emergency-contacts', authenticateToken, validateUserObjectId, as
   } catch (error) {
     logger.error('Error al obtener contactos de emergencia', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
-      message: 'Error al obtener contactos de emergencia',
+      message: req.apiCopy.emergencyContactsError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -832,16 +713,11 @@ router.get('/me/emergency-contacts', authenticateToken, validateUserObjectId, as
 // Agregar un contacto de emergencia
 router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, async (req, res) => {
   try {
-    const { error, value } = emergencyContactSchema.validate(req.body, { 
-      allowUnknown: false // No permitir campos desconocidos
-    });
+    const { error, value } = validateBody(getEmergencyContactSchema(req.apiCopy), req.body, { allowUnknown: false });
     
     if (error) {
       logger.warn('Error de validación en contacto de emergencia', { errors: error.details.map(d => d.message), userId: req.user._id });
-      return res.status(400).json({ 
-        message: 'Datos inválidos',
-        errors: error.details.map(d => d.message)
-      });
+      return res.status(400).json(validationErrorBody(req.apiCopy, error));
     }
 
     // Asegurar que req.user._id sea un ObjectId válido
@@ -853,20 +729,20 @@ router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, a
       .select('emergencyContacts name')
       .lean();
     if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+      return res.status(404).json({ message: req.apiCopy.userNotFound });
     }
 
     // Verificar límite de contactos
     if (user.emergencyContacts && user.emergencyContacts.length >= 2) {
       return res.status(400).json({ 
-        message: 'Ya has alcanzado el límite de 2 contactos de emergencia'
+        message: req.apiCopy.emergencyContactsLimit
       });
     }
 
     // Verificar que no exista un contacto con el mismo email
     if (user.emergencyContacts && user.emergencyContacts.some(c => c.email === value.email.toLowerCase())) {
       return res.status(400).json({ 
-        message: 'Ya existe un contacto de emergencia con ese email'
+        message: req.apiCopy.emergencyContactEmailExists
       });
     }
 
@@ -874,7 +750,7 @@ router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, a
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(value.email.toLowerCase())) {
       return res.status(400).json({ 
-        message: 'El formato del email no es válido'
+        message: req.apiCopy.invalidEmailFormat
       });
     }
 
@@ -894,11 +770,11 @@ router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, a
     );
     
     if (!updatedUser) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+      return res.status(404).json({ message: req.apiCopy.userNotFound });
     }
 
     const response = {
-      message: 'Contacto de emergencia agregado exitosamente',
+      message: req.apiCopy.emergencyContactAdded,
       contact: updatedUser.emergencyContacts[updatedUser.emergencyContacts.length - 1]
     };
 
@@ -906,7 +782,7 @@ router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, a
   } catch (error) {
     logger.error('Error al agregar contacto de emergencia', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
-      message: 'Error al agregar contacto de emergencia',
+      message: req.apiCopy.emergencyContactAddError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -916,17 +792,14 @@ router.post('/me/emergency-contacts', authenticateToken, validateUserObjectId, a
 router.put('/me/emergency-contacts/:contactId', authenticateToken, validateUserObjectId, async (req, res) => {
   try {
     const { contactId } = req.params;
-    const { error, value } = emergencyContactSchema.validate(req.body);
+    const { error, value } = validateBody(getEmergencyContactSchema(req.apiCopy), req.body);
     
     if (error) {
-      return res.status(400).json({ 
-        message: 'Datos inválidos',
-        errors: error.details.map(d => d.message)
-      });
+      return res.status(400).json(validationErrorBody(req.apiCopy, error));
     }
 
     if (!isValidObjectId(contactId)) {
-      return res.status(400).json({ message: 'ID de contacto inválido' });
+      return res.status(400).json({ message: req.apiCopy.invalidContactId });
     }
 
     // Asegurar que req.user._id sea un ObjectId válido
@@ -937,7 +810,7 @@ router.put('/me/emergency-contacts/:contactId', authenticateToken, validateUserO
     const user = await User.findById(userId).select('emergencyContacts');
     
     if (!user || !user.emergencyContacts) {
-      return res.status(404).json({ message: 'Usuario o contacto no encontrado' });
+      return res.status(404).json({ message: req.apiCopy.userOrContactNotFound });
     }
 
     const contactIndex = user.emergencyContacts.findIndex(
@@ -945,7 +818,7 @@ router.put('/me/emergency-contacts/:contactId', authenticateToken, validateUserO
     );
 
     if (contactIndex === -1) {
-      return res.status(404).json({ message: 'Contacto de emergencia no encontrado' });
+      return res.status(404).json({ message: req.apiCopy.emergencyContactNotFound });
     }
 
     // Verificar que el nuevo email no esté en uso por otro contacto
@@ -955,7 +828,7 @@ router.put('/me/emergency-contacts/:contactId', authenticateToken, validateUserO
 
     if (emailInUse) {
       return res.status(400).json({ 
-        message: 'Ya existe otro contacto de emergencia con ese email'
+        message: req.apiCopy.emergencyContactEmailDuplicate
       });
     }
 
@@ -971,13 +844,13 @@ router.put('/me/emergency-contacts/:contactId', authenticateToken, validateUserO
     await user.save();
 
     res.json({
-      message: 'Contacto de emergencia actualizado exitosamente',
+      message: req.apiCopy.emergencyContactUpdated,
       contact: user.emergencyContacts[contactIndex]
     });
   } catch (error) {
     logger.error('Error al actualizar contacto de emergencia', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
-      message: 'Error al actualizar contacto de emergencia',
+      message: req.apiCopy.emergencyContactUpdateError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -989,7 +862,7 @@ router.delete('/me/emergency-contacts/:contactId', authenticateToken, validateUs
     const { contactId } = req.params;
 
     if (!isValidObjectId(contactId)) {
-      return res.status(400).json({ message: 'ID de contacto inválido' });
+      return res.status(400).json({ message: req.apiCopy.invalidContactId });
     }
 
     // Asegurar que req.user._id sea un ObjectId válido
@@ -1000,7 +873,7 @@ router.delete('/me/emergency-contacts/:contactId', authenticateToken, validateUs
     const user = await User.findById(userId).select('emergencyContacts');
     
     if (!user || !user.emergencyContacts) {
-      return res.status(404).json({ message: 'Usuario o contacto no encontrado' });
+      return res.status(404).json({ message: req.apiCopy.userOrContactNotFound });
     }
 
     const contactIndex = user.emergencyContacts.findIndex(
@@ -1008,19 +881,19 @@ router.delete('/me/emergency-contacts/:contactId', authenticateToken, validateUs
     );
 
     if (contactIndex === -1) {
-      return res.status(404).json({ message: 'Contacto de emergencia no encontrado' });
+      return res.status(404).json({ message: req.apiCopy.emergencyContactNotFound });
     }
 
     user.emergencyContacts.splice(contactIndex, 1);
     await user.save();
 
     res.json({
-      message: 'Contacto de emergencia eliminado exitosamente'
+      message: req.apiCopy.emergencyContactDeleted
     });
   } catch (error) {
     logger.error('Error al eliminar contacto de emergencia', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
-      message: 'Error al eliminar contacto de emergencia',
+      message: req.apiCopy.emergencyContactDeleteError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -1032,7 +905,7 @@ router.patch('/me/emergency-contacts/:contactId/toggle', authenticateToken, vali
     const { contactId } = req.params;
 
     if (!isValidObjectId(contactId)) {
-      return res.status(400).json({ message: 'ID de contacto inválido' });
+      return res.status(400).json({ message: req.apiCopy.invalidContactId });
     }
 
     // Asegurar que req.user._id sea un ObjectId válido
@@ -1043,7 +916,7 @@ router.patch('/me/emergency-contacts/:contactId/toggle', authenticateToken, vali
     const user = await User.findById(userId).select('emergencyContacts');
     
     if (!user || !user.emergencyContacts) {
-      return res.status(404).json({ message: 'Usuario o contacto no encontrado' });
+      return res.status(404).json({ message: req.apiCopy.userOrContactNotFound });
     }
 
     const contact = user.emergencyContacts.find(
@@ -1051,14 +924,14 @@ router.patch('/me/emergency-contacts/:contactId/toggle', authenticateToken, vali
     );
 
     if (!contact) {
-      return res.status(404).json({ message: 'Contacto de emergencia no encontrado' });
+      return res.status(404).json({ message: req.apiCopy.emergencyContactNotFound });
     }
 
     contact.enabled = !contact.enabled;
     await user.save();
 
     res.json({
-      message: `Contacto ${contact.enabled ? 'habilitado' : 'deshabilitado'} exitosamente`,
+      message: contact.enabled ? req.apiCopy.contactToggleEnabled : req.apiCopy.contactToggleDisabled,
       contact: {
         _id: contact._id,
         name: contact.name,
@@ -1069,7 +942,7 @@ router.patch('/me/emergency-contacts/:contactId/toggle', authenticateToken, vali
   } catch (error) {
     logger.error('Error al cambiar estado del contacto', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
-      message: 'Error al cambiar estado del contacto',
+      message: req.apiCopy.emergencyContactToggleError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -1078,8 +951,7 @@ router.patch('/me/emergency-contacts/:contactId/toggle', authenticateToken, vali
 // Endpoint legado de email de prueba (deshabilitado para evitar confusión de canales)
 router.post('/me/emergency-contacts/:contactId/test', authenticateToken, validateUserObjectId, async (req, res) => {
   return res.status(410).json({
-    message:
-      'Las alertas por email fueron deshabilitadas. Usa /api/users/me/emergency-contacts/:contactId/test-whatsapp para pruebas.'
+    message: req.apiCopy.emailTestDisabled
   });
 });
 
@@ -1092,15 +964,12 @@ router.post('/me/emergency-contacts/test-alert', authenticateToken, validateUser
     const result = await emergencyAlertService.sendEmergencyAlerts(
       req.user._id,
       'MEDIUM', // Nivel de riesgo simulado para prueba
-      '[PRUEBA] Este es un mensaje de prueba del sistema de alertas de emergencia. No hay ninguna situación real de riesgo.',
+      req.apiCopy.emergencyTestAlertBody,
       { isTest: true } // Marcar como prueba
     );
 
     if (result.sent) {
-      let message = `Alerta de prueba enviada a ${result.successfulSends}/${result.totalContacts} contacto(s)`;
-      if (result.successfulWhatsApp > 0) {
-        message += ` (${result.successfulWhatsApp} WhatsApp(s))`;
-      }
+      const message = req.apiCopy.testAlertSent(result.successfulSends, result.totalContacts, result.successfulWhatsApp || 0)
 
       res.json({
         message,
@@ -1113,14 +982,14 @@ router.post('/me/emergency-contacts/test-alert', authenticateToken, validateUser
       });
     } else {
       res.status(400).json({
-        message: result.reason || 'No se pudo enviar la alerta de prueba',
+        message: result.reason || req.apiCopy.testAlertFailed,
         result
       });
     }
   } catch (error) {
     logger.error('Error al enviar alerta de prueba', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
-      message: 'Error al enviar alerta de prueba',
+      message: req.apiCopy.testAlertError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -1132,7 +1001,7 @@ router.post('/me/emergency-contacts/:contactId/test-whatsapp', authenticateToken
     const { contactId } = req.params;
 
     if (!isValidObjectId(contactId)) {
-      return res.status(400).json({ message: 'ID de contacto inválido' });
+      return res.status(400).json({ message: req.apiCopy.invalidContactId });
     }
 
     // Asegurar que req.user._id sea un ObjectId válido
@@ -1144,17 +1013,17 @@ router.post('/me/emergency-contacts/:contactId/test-whatsapp', authenticateToken
       .select('emergencyContacts name username email preferences.language')
       .lean();
     if (!user || !user.emergencyContacts) {
-      return res.status(404).json({ message: 'Usuario o contacto no encontrado' });
+      return res.status(404).json({ message: req.apiCopy.userOrContactNotFound });
     }
     const contact = user.emergencyContacts.find(
       c => c._id.toString() === contactId
     );
     if (!contact) {
-      return res.status(404).json({ message: 'Contacto de emergencia no encontrado' });
+      return res.status(404).json({ message: req.apiCopy.emergencyContactNotFound });
     }
 
     if (!contact.phone) {
-      return res.status(400).json({ message: 'El contacto no tiene número de teléfono configurado' });
+      return res.status(400).json({ message: req.apiCopy.contactNoPhone });
     }
 
     // Importar servicio de WhatsApp (Twilio)
@@ -1162,7 +1031,7 @@ router.post('/me/emergency-contacts/:contactId/test-whatsapp', authenticateToken
     
     if (!whatsappService.isConfigured()) {
       return res.status(400).json({
-        message: 'WhatsApp no está configurado',
+        message: req.apiCopy.whatsappNotConfigured,
         details: {
           twilio: 'No configurado',
           required: [
@@ -1183,7 +1052,7 @@ router.post('/me/emergency-contacts/:contactId/test-whatsapp', authenticateToken
 
     if (result && result.success) {
       const response = {
-        message: 'Mensaje de prueba de WhatsApp enviado exitosamente',
+        message: req.apiCopy.whatsappTestSent,
         service: 'Twilio WhatsApp',
         contact: {
           _id: contact._id,
@@ -1198,7 +1067,7 @@ router.post('/me/emergency-contacts/:contactId/test-whatsapp', authenticateToken
       if (result.warning) {
         response.warning = result.warning;
         response.help = {
-          message: 'El mensaje está en cola. Si no llega, puede ser porque:',
+          message: req.apiCopy.whatsappQueueHelp,
           reasons: [
             'El número no está verificado en Twilio Sandbox',
             'El número no tiene WhatsApp activo',
@@ -1212,22 +1081,22 @@ router.post('/me/emergency-contacts/:contactId/test-whatsapp', authenticateToken
       res.json(response);
     } else {
       res.status(400).json({
-        message: result?.error || 'No se pudo enviar el mensaje de WhatsApp',
+        message: result?.error || req.apiCopy.whatsappSendFailed,
         service: 'Twilio WhatsApp',
         contact: {
           _id: contact._id,
           name: contact.name,
           phone: contact.phone
         },
-        error: result?.error || 'Error desconocido',
-        details: result || 'No se recibió respuesta del servicio'
+        error: result?.error || req.apiCopy.unknownError,
+        details: result || req.apiCopy.noServiceResponse
       });
     }
   } catch (error) {
     logger.error('Error al enviar mensaje de prueba de WhatsApp', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
-      message: 'Error al enviar mensaje de prueba de WhatsApp',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Error interno del servidor',
+      message: req.apiCopy.whatsappTestError,
+      error: process.env.NODE_ENV === 'development' ? error.message : req.apiCopy.internalServerError,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
@@ -1240,7 +1109,7 @@ router.get('/me/whatsapp-message-status/:messageSid', authenticateToken, validat
 
     if (!messageSid || !messageSid.startsWith('SM')) {
       return res.status(400).json({ 
-        message: 'SID de mensaje inválido. Debe empezar con "SM"' 
+        message: req.apiCopy.invalidMessageSid 
       });
     }
 
@@ -1248,7 +1117,7 @@ router.get('/me/whatsapp-message-status/:messageSid', authenticateToken, validat
     
     if (!whatsappService.isConfigured()) {
       return res.status(400).json({
-        message: 'WhatsApp no está configurado'
+        message: req.apiCopy.whatsappNotConfigured
       });
     }
 
@@ -1256,7 +1125,7 @@ router.get('/me/whatsapp-message-status/:messageSid', authenticateToken, validat
 
     if (status.success) {
       res.json({
-        message: 'Estado del mensaje obtenido exitosamente',
+        message: req.apiCopy.messageStatusSuccess,
         status: status.status,
         messageId: status.sid,
         details: {
@@ -1272,24 +1141,13 @@ router.get('/me/whatsapp-message-status/:messageSid', authenticateToken, validat
           ...status.details
         },
         help: {
-          statusMeanings: {
-            queued: 'Mensaje en cola esperando ser enviado',
-            sending: 'Mensaje siendo enviado',
-            sent: 'Mensaje enviado exitosamente',
-            delivered: 'Mensaje entregado al destinatario',
-            read: 'Mensaje leído por el destinatario',
-            failed: 'Mensaje falló al enviar',
-            undelivered: 'Mensaje no entregado'
-          },
-          commonIssues: {
-            queued: 'Si el mensaje permanece en "queued", verifica que el número esté verificado en Twilio Sandbox',
-            failed: 'Si el mensaje falló, revisa errorCode y errorMessage para más detalles'
-          }
+          statusMeanings: req.apiCopy.whatsappStatusMeanings,
+          commonIssues: req.apiCopy.whatsappCommonIssues,
         }
       });
     } else {
       res.status(400).json({
-        message: 'No se pudo obtener el estado del mensaje',
+        message: req.apiCopy.messageStatusFailed,
         error: status.error,
         code: status.code
       });
@@ -1297,8 +1155,8 @@ router.get('/me/whatsapp-message-status/:messageSid', authenticateToken, validat
   } catch (error) {
     logger.error('Error al obtener estado del mensaje de WhatsApp', { error: error.message, userId: req.user._id });
     res.status(500).json({ 
-      message: 'Error al obtener estado del mensaje',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Error interno del servidor'
+      message: req.apiCopy.messageStatusError,
+      error: process.env.NODE_ENV === 'development' ? error.message : req.apiCopy.internalServerError
     });
   }
 });
@@ -1339,7 +1197,7 @@ router.get('/me/emergency-alerts', authenticateToken, validateUserObjectId, asyn
   } catch (error) {
     logger.error('Error obteniendo historial de alertas', { error: error.message, userId: req.user._id });
     res.status(500).json({
-      message: 'Error al obtener historial de alertas',
+      message: req.apiCopy.alertsHistoryError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -1360,7 +1218,7 @@ router.get('/me/emergency-alerts/stats', authenticateToken, validateUserObjectId
   } catch (error) {
     logger.error('Error obteniendo estadísticas de alertas', { error: error.message, userId: req.user._id });
     res.status(500).json({
-      message: 'Error al obtener estadísticas de alertas',
+      message: req.apiCopy.alertsStatsError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -1381,7 +1239,7 @@ router.get('/me/emergency-alerts/patterns', authenticateToken, validateUserObjec
   } catch (error) {
     logger.error('Error detectando patrones de alertas', { error: error.message, userId: req.user._id });
     res.status(500).json({
-      message: 'Error al detectar patrones de alertas',
+      message: req.apiCopy.alertsPatternsError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

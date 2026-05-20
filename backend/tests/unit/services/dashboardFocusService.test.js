@@ -115,6 +115,26 @@ describe('dashboardFocusService', () => {
       expect(list.find((c) => c.kind === 'push')).toBeTruthy();
     });
 
+    it('etiqueta push en inglés cuando language es en', () => {
+      const push = {
+        kind: 'morning',
+        at: new Date('2026-05-01T08:00:00.000Z'),
+        label: 'Scheduled reminder (morning)'
+      };
+      const list = buildReminderCandidates({
+        summary: { chat: { userMessages: 20, distinctActiveDays: 5 } },
+        recentConversations: [],
+        upcomingTasks: [],
+        habitReminder: null,
+        nextPushSlot: push,
+        now,
+        language: 'en'
+      });
+      const slot = list.find((c) => c.kind === 'push');
+      expect(slot.title).toMatch(/Scheduled reminder \(morning\)/i);
+      expect(slot.title).not.toMatch(/mañana/i);
+    });
+
     it('etiqueta hábito en inglés cuando language es en', () => {
       const habitReminder = {
         id: 'h1',

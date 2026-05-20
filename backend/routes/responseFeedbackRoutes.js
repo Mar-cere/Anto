@@ -9,8 +9,13 @@ import ResponseFeedback from '../models/ResponseFeedback.js';
 import Message from '../models/Message.js';
 import effectivenessFeedbackService from '../services/effectivenessFeedbackService.js';
 import Joi from 'joi';
+import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
+import { validationErrorBody, validateBody } from '../utils/apiValidation.js';
+import { responseFeedbackApiCopy } from '../utils/responseFeedbackApiCopy.js';
 
 const router = express.Router();
+
+router.use(attachApiCopy(responseFeedbackApiCopy));
 
 // Esquema de validación para crear feedback
 const createFeedbackSchema = Joi.object({
@@ -24,12 +29,9 @@ const createFeedbackSchema = Joi.object({
 // Crear feedback
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { error, value } = createFeedbackSchema.validate(req.body);
+    const { error, value } = validateBody(createFeedbackSchema, req.body);
     if (error) {
-      return res.status(400).json({
-        message: 'Datos inválidos',
-        errors: error.details.map(d => d.message),
-      });
+      return res.status(400).json(validationErrorBody(req.apiCopy, error));
     }
 
     const { messageId, feedbackType, rating, comment, metadata } = value;
@@ -45,7 +47,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
     if (!message) {
       return res.status(404).json({
-        message: 'Mensaje no encontrado',
+        message: req.apiCopy.messageNotFound,
       });
     }
 
@@ -72,7 +74,7 @@ router.post('/', authenticateToken, async (req, res) => {
       ).catch(err => console.warn('[ResponseFeedback] Error actualizando copingStrategy:', err.message));
 
       return res.json({
-        message: 'Feedback actualizado',
+        message: req.apiCopy.feedbackUpdated,
         feedback: existingFeedback,
       });
     }
@@ -99,13 +101,13 @@ router.post('/', authenticateToken, async (req, res) => {
     ).catch(err => console.warn('[ResponseFeedback] Error actualizando copingStrategy:', err.message));
 
     res.status(201).json({
-      message: 'Feedback guardado',
+      message: req.apiCopy.feedbackSaved,
       feedback,
     });
   } catch (error) {
     console.error('[ResponseFeedbackRoutes] Error creando feedback:', error);
     res.status(500).json({
-      message: 'Error al guardar feedback',
+      message: req.apiCopy.saveError,
       error: error.message,
     });
   }
@@ -121,7 +123,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('[ResponseFeedbackRoutes] Error obteniendo estadísticas:', error);
     res.status(500).json({
-      message: 'Error al obtener estadísticas',
+      message: req.apiCopy.statsError,
       error: error.message,
     });
   }
@@ -140,7 +142,7 @@ router.get('/message/:messageId', authenticateToken, async (req, res) => {
 
     if (!feedback) {
       return res.status(404).json({
-        message: 'No se encontró feedback para este mensaje',
+        message: req.apiCopy.feedbackNotFound,
       });
     }
 
@@ -148,7 +150,7 @@ router.get('/message/:messageId', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('[ResponseFeedbackRoutes] Error obteniendo feedback:', error);
     res.status(500).json({
-      message: 'Error al obtener feedback',
+      message: req.apiCopy.getError,
       error: error.message,
     });
   }

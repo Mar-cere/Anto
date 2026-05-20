@@ -19,7 +19,9 @@ import {
   pickNewSubtaskTitles,
   MAX_SUBTASKS_TOTAL
 } from '../services/taskSubtasksLlmService.js';
-import { resolveAppLanguage } from '../utils/resolveAppLanguage.js';
+import { resolveRequestLanguage } from '../utils/apiLanguage.js';
+import { taskApiCopy } from '../utils/taskApiCopy.js';
+import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
 
 const router = express.Router();
 
@@ -49,7 +51,7 @@ const MAX_REMINDER_INTERVAL = 1440; // 24 horas en minutos
 const createTaskLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 20,
-  message: 'Demasiadas tareas creadas. Por favor, intente más tarde.',
+  message: (req) => taskApiCopy(resolveRequestLanguage(req)).rateLimitCreate,
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -57,7 +59,7 @@ const createTaskLimiter = createRateLimiter({
 const updateTaskLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 50,
-  message: 'Demasiadas actualizaciones. Por favor, intente más tarde.',
+  message: (req) => taskApiCopy(resolveRequestLanguage(req)).rateLimitUpdate,
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -65,7 +67,7 @@ const updateTaskLimiter = createRateLimiter({
 const deleteTaskLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 20,
-  message: 'Demasiadas eliminaciones. Por favor, intente más tarde.',
+  message: (req) => taskApiCopy(resolveRequestLanguage(req)).rateLimitDelete,
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -73,13 +75,14 @@ const deleteTaskLimiter = createRateLimiter({
 const patchTaskLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 30,
-  message: 'Demasiadas modificaciones. Por favor, intente más tarde.',
+  message: (req) => taskApiCopy(resolveRequestLanguage(req)).rateLimitPatch,
   standardHeaders: true,
   legacyHeaders: false
 });
 
 // Middleware de autenticación para todas las rutas
 router.use(authenticateToken);
+router.use(attachApiCopy(taskApiCopy));
 
 // Helper: buscar tarea por ID y validar propiedad
 const findTaskById = async (taskId, userId, populate = false) => {
@@ -362,14 +365,14 @@ router.get('/', async (req, res) => {
     )) {
       return res.status(503).json({ 
         success: false,
-        message: 'Servicio temporalmente no disponible. La base de datos no está conectada.',
+        message: req.apiCopy.dbUnavailable,
         error: 'DATABASE_CONNECTION_ERROR'
       });
     }
     
     res.status(500).json({ 
       success: false,
-      message: 'Error al obtener las tareas',
+      message: req.apiCopy.listError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -386,7 +389,7 @@ router.post('/', createTaskLimiter, async (req, res) => {
     const { error, value } = taskSchema.validate(req.body, { stripUnknown: true });
     if (error) {
       return res.status(400).json({ 
-        message: 'Datos inválidos',
+        message: req.apiCopy.invalidData,
         errors: error.details.map(detail => detail.message)
       });
     }
@@ -396,7 +399,7 @@ router.post('/', createTaskLimiter, async (req, res) => {
       if (!originOk) {
         await recordProductActionCreateFailed(req.user._id, 'task');
         return res.status(400).json({
-          message: 'Origen de chat inválido: la conversación o el mensaje no existe o no pertenece al usuario'
+          message: req.apiCopy.invalidChatOrigin
         });
       }
     }
@@ -413,7 +416,7 @@ router.post('/', createTaskLimiter, async (req, res) => {
         await recordProductActionCreatedFromDoc(req.user._id, 'task', existingTask, true);
         return res.status(200).json({
           success: true,
-          message: 'Tarea ya registrada (reintento idempotente)',
+          message: req.apiCopy.idempotentRetry,
           data: existingTask,
           idempotentReplay: true
         });
@@ -443,7 +446,7 @@ router.post('/', createTaskLimiter, async (req, res) => {
     if (itemData.parentTask) {
       const parentTask = await findTaskById(itemData.parentTask, req.user._id);
       if (!parentTask) {
-        return res.status(400).json({ message: 'Tarea padre no encontrada' });
+        return res.status(400).json({ message: req.apiCopy.parentNotFound });
       }
     }
 
@@ -461,7 +464,7 @@ router.post('/', createTaskLimiter, async (req, res) => {
           await recordProductActionCreatedFromDoc(req.user._id, 'task', replay, true);
           return res.status(200).json({
             success: true,
-            message: 'Tarea ya registrada (reintento idempotente)',
+            message: req.apiCopy.idempotentRetry,
             data: replay,
             idempotentReplay: true
           });
@@ -473,7 +476,7 @@ router.post('/', createTaskLimiter, async (req, res) => {
     await recordProductActionCreatedFromDoc(req.user._id, 'task', task, false);
     res.status(201).json({ 
       success: true, 
-      message: 'Tarea creada exitosamente',
+      message: req.apiCopy.createdSuccess,
       data: task 
     });
   } catch (error) {
@@ -482,7 +485,7 @@ router.post('/', createTaskLimiter, async (req, res) => {
       await recordProductActionCreateFailed(req.user._id, 'task');
     }
     res.status(400).json({ 
-      message: 'Error al crear la tarea',
+      message: req.apiCopy.createError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -504,7 +507,7 @@ router.get('/pending', async (req, res) => {
   } catch (error) {
     console.error('Error al obtener tareas pendientes:', error);
     res.status(500).json({ 
-      message: 'Error al obtener las tareas pendientes',
+      message: req.apiCopy.pendingError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -518,7 +521,7 @@ router.get('/overdue', async (req, res) => {
   } catch (error) {
     console.error('Error al obtener tareas vencidas:', error);
     res.status(500).json({ 
-      message: 'Error al obtener las tareas vencidas',
+      message: req.apiCopy.overdueError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -533,7 +536,7 @@ router.get('/reminders/upcoming', async (req, res) => {
   } catch (error) {
     console.error('Error al obtener recordatorios próximos:', error);
     res.status(500).json({ 
-      message: 'Error al obtener los recordatorios próximos',
+      message: req.apiCopy.remindersError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -547,7 +550,7 @@ router.get('/stats', async (req, res) => {
   } catch (error) {
     console.error('Error al obtener estadísticas:', error);
     res.status(500).json({ 
-      message: 'Error al obtener estadísticas',
+      message: req.apiCopy.statsError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -560,7 +563,7 @@ router.get('/date/:date', async (req, res) => {
     const date = new Date(req.params.date);
     
     if (isNaN(date.getTime())) {
-      return res.status(400).json({ message: 'Fecha inválida' });
+      return res.status(400).json({ message: req.apiCopy.invalidDate });
     }
     
     const items = await Task.getItemsByDate(req.user._id, date, type);
@@ -568,7 +571,7 @@ router.get('/date/:date', async (req, res) => {
   } catch (error) {
     console.error('Error al obtener items por fecha:', error);
     res.status(500).json({ 
-      message: 'Error al obtener items por fecha',
+      message: req.apiCopy.byDateError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -605,7 +608,7 @@ router.get('/search/:query', async (req, res) => {
   } catch (error) {
     console.error('Error al buscar tareas:', error);
     res.status(500).json({ 
-      message: 'Error al buscar tareas',
+      message: req.apiCopy.searchError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -617,14 +620,14 @@ router.get('/:id', validateObjectId, async (req, res) => {
     const task = await findTaskById(req.params.id, req.user._id, true);
 
     if (!task) {
-      return res.status(404).json({ message: 'Tarea no encontrada' });
+      return res.status(404).json({ message: req.apiCopy.notFound });
     }
 
     res.json({ success: true, data: task });
   } catch (error) {
     console.error('Error al obtener tarea:', error);
     res.status(500).json({ 
-      message: 'Error al obtener la tarea',
+      message: req.apiCopy.getError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -637,7 +640,7 @@ router.put('/:id', validateObjectId, updateTaskLimiter, async (req, res) => {
     const { error, value } = updateTaskSchema.validate(req.body, { stripUnknown: true });
     if (error) {
       return res.status(400).json({ 
-        message: 'Datos inválidos',
+        message: req.apiCopy.invalidData,
         errors: error.details.map(detail => detail.message)
       });
     }
@@ -646,7 +649,7 @@ router.put('/:id', validateObjectId, updateTaskLimiter, async (req, res) => {
       const originOk = await validateChatOriginForUser(value.chatOrigin, req.user._id);
       if (!originOk) {
         return res.status(400).json({
-          message: 'Origen de chat inválido: la conversación o el mensaje no existe o no pertenece al usuario'
+          message: req.apiCopy.invalidChatOrigin
         });
       }
       value.chatOrigin = {
@@ -663,7 +666,7 @@ router.put('/:id', validateObjectId, updateTaskLimiter, async (req, res) => {
     const task = await findTaskById(req.params.id, req.user._id);
 
     if (!task) {
-      return res.status(404).json({ message: 'Tarea no encontrada' });
+      return res.status(404).json({ message: req.apiCopy.notFound });
     }
 
     const previousStatus = task.status;
@@ -690,13 +693,13 @@ router.put('/:id', validateObjectId, updateTaskLimiter, async (req, res) => {
 
     res.json({ 
       success: true, 
-      message: 'Tarea actualizada exitosamente',
+      message: req.apiCopy.updatedSuccess,
       data: task 
     });
   } catch (error) {
     console.error('Error al actualizar tarea:', error);
     res.status(400).json({ 
-      message: 'Error al actualizar la tarea',
+      message: req.apiCopy.updateError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -708,19 +711,19 @@ router.delete('/:id', validateObjectId, deleteTaskLimiter, async (req, res) => {
     const task = await findTaskById(req.params.id, req.user._id);
     
     if (!task) {
-      return res.status(404).json({ message: 'Tarea no encontrada' });
+      return res.status(404).json({ message: req.apiCopy.notFound });
     }
 
     await task.softDelete();
     
     res.json({ 
       success: true,
-      message: 'Tarea eliminada correctamente' 
+      message: req.apiCopy.deletedSuccess 
     });
   } catch (error) {
     console.error('Error al eliminar tarea:', error);
     res.status(500).json({ 
-      message: 'Error al eliminar la tarea',
+      message: req.apiCopy.deleteError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -732,7 +735,7 @@ router.patch('/:id/complete', validateObjectId, patchTaskLimiter, async (req, re
     const task = await findTaskById(req.params.id, req.user._id);
     
     if (!task) {
-      return res.status(404).json({ message: 'Tarea no encontrada' });
+      return res.status(404).json({ message: req.apiCopy.notFound });
     }
 
     const previousStatus = task.status;
@@ -742,13 +745,13 @@ router.patch('/:id/complete', validateObjectId, patchTaskLimiter, async (req, re
 
     res.json({ 
       success: true, 
-      message: 'Tarea marcada como completada',
+      message: req.apiCopy.completedSuccess,
       data: task 
     });
   } catch (error) {
     console.error('Error al completar tarea:', error);
     res.status(400).json({ 
-      message: error.message || 'Error al completar la tarea',
+      message: req.apiCopy.completeError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -760,20 +763,20 @@ router.patch('/:id/in-progress', validateObjectId, patchTaskLimiter, async (req,
     const task = await findTaskById(req.params.id, req.user._id);
     
     if (!task) {
-      return res.status(404).json({ message: 'Tarea no encontrada' });
+      return res.status(404).json({ message: req.apiCopy.notFound });
     }
     
     await task.markAsInProgress();
     
     res.json({ 
       success: true, 
-      message: 'Tarea marcada como en progreso',
+      message: req.apiCopy.inProgressSuccess,
       data: task 
     });
   } catch (error) {
     console.error('Error al marcar tarea en progreso:', error);
     res.status(400).json({ 
-      message: error.message || 'Error al marcar la tarea en progreso',
+      message: req.apiCopy.inProgressError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -785,20 +788,20 @@ router.patch('/:id/cancel', validateObjectId, patchTaskLimiter, async (req, res)
     const task = await findTaskById(req.params.id, req.user._id);
     
     if (!task) {
-      return res.status(404).json({ message: 'Tarea no encontrada' });
+      return res.status(404).json({ message: req.apiCopy.notFound });
     }
     
     await task.cancel();
     
     res.json({ 
       success: true, 
-      message: 'Tarea cancelada',
+      message: req.apiCopy.cancelledSuccess,
       data: task 
     });
   } catch (error) {
     console.error('Error al cancelar tarea:', error);
     res.status(400).json({ 
-      message: 'Error al cancelar la tarea',
+      message: req.apiCopy.cancelError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -810,18 +813,18 @@ router.post('/:id/subtasks/generate', validateObjectId, patchTaskLimiter, async 
     const task = await findTaskById(req.params.id, req.user._id);
 
     if (!task) {
-      return res.status(404).json({ message: 'Tarea no encontrada' });
+      return res.status(404).json({ message: req.apiCopy.notFound });
     }
 
     if (task.itemType !== 'task' && task.itemType !== 'goal') {
       return res.status(400).json({
-        message: 'Solo tareas y metas admiten generación de subtareas'
+        message: req.apiCopy.subtasksOnlyTasksGoals
       });
     }
 
     if (task.status === 'completed' || task.status === 'cancelled') {
       return res.status(400).json({
-        message: 'No se pueden sugerir subtareas en una tarea completada o cancelada'
+        message: req.apiCopy.subtasksNotOnClosed
       });
     }
 
@@ -829,16 +832,11 @@ router.post('/:id/subtasks/generate', validateObjectId, patchTaskLimiter, async 
     if (Array.isArray(task.subtasks) && task.subtasks.length > 0) {
       return res.status(409).json({
         success: false,
-        message: 'Esta tarea ya tiene subtareas. Edita el detalle si necesitas ajustes.'
+        message: req.apiCopy.subtasksAlreadyExist
       });
     }
 
-    const language = resolveAppLanguage({
-      headerLanguage: req.headers['x-app-language'],
-      queryLanguage: req.query.language,
-      acceptLanguage: req.headers['accept-language'],
-      preferenceLanguage: req.user?.preferences?.language
-    });
+    const language = req.appLanguage || resolveRequestLanguage(req);
 
     const rawTitles = await generateSubtaskTitlesWithLlm(
       {
@@ -856,7 +854,7 @@ router.post('/:id/subtasks/generate', validateObjectId, patchTaskLimiter, async 
     if (toAdd.length === 0) {
       return res.json({
         success: true,
-        message: 'No se añadieron subtareas nuevas (límite alcanzado o ya existían)',
+        message: req.apiCopy.subtasksNoneAdded,
         addedCount: 0,
         data: task
       });
@@ -869,7 +867,7 @@ router.post('/:id/subtasks/generate', validateObjectId, patchTaskLimiter, async 
 
     res.json({
       success: true,
-      message: `${toAdd.length} subtarea(s) añadida(s)`,
+      message: req.apiCopy.subtasksAdded(toAdd.length),
       addedCount: toAdd.length,
       data: task
     });
@@ -877,37 +875,37 @@ router.post('/:id/subtasks/generate', validateObjectId, patchTaskLimiter, async 
     console.error('Error generando subtareas (LLM):', error);
     if (error?.name === 'ValidationError') {
       return res.status(400).json({
-        message: 'No se pudo guardar las subtareas. Revisa los datos de la tarea.',
+        message: req.apiCopy.subtasksSaveError,
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
     const code = error?.message;
     if (code === 'SUBTASKS_LLM_DISABLED') {
       return res.status(503).json({
-        message: 'Generación de subtareas desactivada en el servidor'
+        message: req.apiCopy.subtasksDisabled
       });
     }
     if (code === 'OPENAI_NOT_CONFIGURED') {
       return res.status(503).json({
-        message: 'Asistente no disponible (falta configuración en el servidor)'
+        message: req.apiCopy.assistantUnavailable
       });
     }
     if (code === 'LLM_PARSE_FAILED') {
       return res.status(502).json({
-        message: 'No se pudo interpretar la respuesta del asistente. Intenta de nuevo.'
+        message: req.apiCopy.assistantParseError
       });
     }
     if (code === 'TASK_TITLE_REQUIRED') {
-      return res.status(400).json({ message: 'La tarea no tiene un título válido' });
+      return res.status(400).json({ message: req.apiCopy.invalidTitle });
     }
     const status = error?.status ?? error?.statusCode;
     if (status === 408 || /timeout|timed out|ETIMEDOUT/i.test(String(error?.message || ''))) {
       return res.status(504).json({
-        message: 'El asistente tardó demasiado. Intenta de nuevo.'
+        message: req.apiCopy.assistantTimeout
       });
     }
     res.status(500).json({
-      message: 'Error al generar subtareas',
+      message: req.apiCopy.subtasksGenerateError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -919,26 +917,26 @@ router.post('/:id/subtasks', validateObjectId, async (req, res) => {
     const { title } = req.body;
     
     if (!title || !title.trim()) {
-      return res.status(400).json({ message: 'El título de la subtarea es requerido' });
+      return res.status(400).json({ message: req.apiCopy.subtaskTitleRequired });
     }
 
     const task = await findTaskById(req.params.id, req.user._id);
     
     if (!task) {
-      return res.status(404).json({ message: 'Tarea no encontrada' });
+      return res.status(404).json({ message: req.apiCopy.notFound });
     }
     
     await task.addSubtask(title.trim());
     
     res.json({ 
       success: true, 
-      message: 'Subtarea agregada exitosamente',
+      message: req.apiCopy.subtaskAddedSuccess,
       data: task 
     });
   } catch (error) {
     console.error('Error al agregar subtarea:', error);
     res.status(400).json({ 
-      message: 'Error al agregar la subtarea',
+      message: req.apiCopy.subtaskAddError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -950,30 +948,30 @@ router.patch('/:id/subtasks/:subtaskIndex/complete', validateObjectId, patchTask
     const subtaskIndex = parseInt(req.params.subtaskIndex);
     
     if (isNaN(subtaskIndex) || subtaskIndex < 0) {
-      return res.status(400).json({ message: 'Índice de subtarea inválido' });
+      return res.status(400).json({ message: req.apiCopy.subtaskIndexInvalid });
     }
 
     const task = await findTaskById(req.params.id, req.user._id);
     
     if (!task) {
-      return res.status(404).json({ message: 'Tarea no encontrada' });
+      return res.status(404).json({ message: req.apiCopy.notFound });
     }
 
     if (subtaskIndex >= task.subtasks.length) {
-      return res.status(400).json({ message: 'Índice de subtarea fuera de rango' });
+      return res.status(400).json({ message: req.apiCopy.subtaskIndexOutOfRange });
     }
 
     await task.completeSubtask(subtaskIndex);
     
     res.json({ 
       success: true, 
-      message: 'Subtarea completada exitosamente',
+      message: req.apiCopy.subtaskCompletedSuccess,
       data: task 
     });
   } catch (error) {
     console.error('Error al completar subtarea:', error);
     res.status(400).json({ 
-      message: error.message || 'Error al completar la subtarea',
+      message: req.apiCopy.subtaskCompleteError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -984,26 +982,26 @@ router.delete('/:id/subtasks/:subtaskIndex', validateObjectId, patchTaskLimiter,
   try {
     const subtaskIndex = parseInt(req.params.subtaskIndex);
     if (isNaN(subtaskIndex) || subtaskIndex < 0) {
-      return res.status(400).json({ message: 'Índice de subtarea inválido' });
+      return res.status(400).json({ message: req.apiCopy.subtaskIndexInvalid });
     }
     const task = await findTaskById(req.params.id, req.user._id);
     if (!task) {
-      return res.status(404).json({ message: 'Tarea no encontrada' });
+      return res.status(404).json({ message: req.apiCopy.notFound });
     }
     if (subtaskIndex >= task.subtasks.length) {
-      return res.status(400).json({ message: 'Índice de subtarea fuera de rango' });
+      return res.status(400).json({ message: req.apiCopy.subtaskIndexOutOfRange });
     }
     task.subtasks.splice(subtaskIndex, 1);
     await task.save({ validateModifiedOnly: true });
     return res.json({
       success: true,
-      message: 'Subtarea eliminada',
+      message: req.apiCopy.subtaskDeletedSuccess,
       data: task
     });
   } catch (error) {
     console.error('Error al eliminar subtarea:', error);
     return res.status(400).json({
-      message: error.message || 'Error al eliminar la subtarea',
+      message: req.apiCopy.subtaskDeleteError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -1014,19 +1012,19 @@ router.delete('/:id/subtasks', validateObjectId, patchTaskLimiter, async (req, r
   try {
     const task = await findTaskById(req.params.id, req.user._id);
     if (!task) {
-      return res.status(404).json({ message: 'Tarea no encontrada' });
+      return res.status(404).json({ message: req.apiCopy.notFound });
     }
     task.subtasks = [];
     await task.save({ validateModifiedOnly: true });
     return res.json({
       success: true,
-      message: 'Subtareas eliminadas',
+      message: req.apiCopy.subtasksClearedSuccess,
       data: task
     });
   } catch (error) {
     console.error('Error al limpiar subtareas:', error);
     return res.status(400).json({
-      message: error.message || 'Error al eliminar las subtareas',
+      message: req.apiCopy.subtasksClearError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

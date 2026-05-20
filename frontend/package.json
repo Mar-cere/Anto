@@ -8,6 +8,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "test": "jest",
+    "test:i18n": "jest --testPathPattern='translationsParity|translationsTone|registerErrorUtils|registerAuthCopyParity|onboardingFocusParity|OnboardingQuestions' --coverage=false",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "check:imports": "node scripts/check-duplicate-imports.js",

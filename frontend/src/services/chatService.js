@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { sanitizeProposedProductActions } from '../utils/sanitizeProposedProductActions';
 import { parseChatMessagesArrayFromStorage } from '../utils/safeStorageJson';
 import apiClient, { API_URL, getAppLanguage } from '../config/api';
+import { getChatCopy } from '../utils/serviceCopy';
 import { isValidSessionIntentionId } from '../constants/sessionIntention';
 import { clearPersistedChatSession } from '../utils/chatSessionStorage';
 import { postChatSseWithXHR, streamChatSseWithFetch } from '../utils/chatSseStream';
@@ -72,7 +73,8 @@ export const sendMessage = async (text) => {
           // Preservar el error de suscripción para que se maneje correctamente
           throw createError;
         }
-        const e = new Error('No se pudo crear una conversación. Por favor, intenta de nuevo.');
+        const lang = await getAppLanguage();
+        const e = new Error(getChatCopy('SERVICE_CREATE_CONVERSATION_RETRY', lang));
         e.code = 'CONVERSATION_CREATE_FAILED';
         throw e;
       }
@@ -115,23 +117,25 @@ export const isGuestChatMode = async () => {
 
 /** Crea sesión invitada en el servidor y guarda token + conversación localmente. */
 export const startGuestChatSession = async () => {
+  const appLanguage = await getAppLanguage();
   const response = await fetch(`${API_URL}/api/chat/guest/session`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-App-Language': appLanguage,
+    },
   });
   let data = {};
   try {
     data = await response.json();
   } catch (_) {}
   if (response.status === 429) {
-    const err = new Error(
-      data.message || 'Demasiados intentos. Espera un poco o crea una cuenta.'
-    );
+    const err = new Error(data.message || getChatCopy('GUEST_RATE_LIMIT_MESSAGE', appLanguage));
     err.code = 'RATE_LIMIT';
     throw err;
   }
   if (!response.ok) {
-    throw new Error(data.message || 'No se pudo iniciar el chat de invitado');
+    throw new Error(data.message || getChatCopy('SERVICE_GUEST_START_FAILED', appLanguage));
   }
   await AsyncStorage.multiSet([
     [GUEST_KEYS.CHAT_MODE, 'guest'],
@@ -151,7 +155,7 @@ export const clearGuestChat = async () => {
 
 const HANDOFF_MAX_LEN = 1500;
 
-function buildGuestHandoffSummary(messages) {
+function buildGuestHandoffSummary(messages, language) {
   if (!messages?.length) return '';
   const sorted = [...messages].sort((a, b) => {
     const ta = new Date(a.createdAt || a.metadata?.timestamp || 0).getTime();
@@ -159,8 +163,10 @@ function buildGuestHandoffSummary(messages) {
     return ta - tb;
   });
   const slice = sorted.slice(-12);
+  const userLabel = getChatCopy('GUEST_HANDOFF_ROLE_USER', language);
+  const antoLabel = getChatCopy('GUEST_HANDOFF_ROLE_ANTO', language);
   const lines = slice.map((m) => {
-    const role = m.role === 'user' ? 'Yo' : 'Anto';
+    const role = m.role === 'user' ? userLabel : antoLabel;
     const content = (m.content || '').trim().replace(/\s+/g, ' ');
     const short = content.length > 220 ? `${content.slice(0, 217)}…` : content;
     return `${role}: ${short}`;
@@ -183,7 +189,8 @@ export async function prepareGuestHandoffBeforeClear() {
     if (!convId) return;
     const messages = await getGuestMessages(convId);
     if (!messages.length) return;
-    const summaryText = buildGuestHandoffSummary(messages);
+    const lang = await getAppLanguage();
+    const summaryText = buildGuestHandoffSummary(messages, lang);
     await AsyncStorage.setItem(
       GUEST_KEYS.GUEST_HANDOFF_PENDING,
       JSON.stringify({
@@ -204,6 +211,7 @@ export async function clearGuestHandoff() {
 }
 
 export const getGuestMessages = async (conversationId) => {
+  const lang = await getAppLanguage();
   const token = await AsyncStorage.getItem(GUEST_KEYS.GUEST_TOKEN);
   if (!token || !conversationId) return [];
   const response = await fetch(
@@ -212,14 +220,14 @@ export const getGuestMessages = async (conversationId) => {
   );
   if (response.status === 401) {
     await clearGuestChat();
-    const err = new Error('Sesión de invitado expirada o no válida');
+    const err = new Error(getChatCopy('GUEST_SESSION_EXPIRED_MESSAGE', lang));
     err.guestAuthFailed = true;
     err.code = 'GUEST_AUTH_FAILED';
     throw err;
   }
   if (response.status === 429) {
     const data = await response.json().catch(() => ({}));
-    const err = new Error(data.message || 'Demasiadas peticiones. Espera un momento.');
+    const err = new Error(data.message || getChatCopy('GUEST_RATE_LIMIT_MESSAGE', lang));
     err.code = 'RATE_LIMIT';
     throw err;
   }
@@ -228,7 +236,7 @@ export const getGuestMessages = async (conversationId) => {
   return data.messages || [];
 };
 
-async function postGuestMessage(text, conversationId, token) {
+async function postGuestMessage(text, conversationId, token, language) {
   const response = await fetch(`${API_URL}/api/chat/guest/messages`, {
     method: 'POST',
     headers: {
@@ -243,18 +251,18 @@ async function postGuestMessage(text, conversationId, token) {
   } catch (_) {}
   if (response.status === 401) {
     await clearGuestChat();
-    const err = new Error(data.message || 'Sesión de invitado expirada o no válida');
+    const err = new Error(data.message || getChatCopy('GUEST_SESSION_EXPIRED_MESSAGE', language));
     err.guestAuthFailed = true;
     err.code = data.code || 'GUEST_AUTH_FAILED';
     throw err;
   }
   if (response.status === 429) {
-    const err = new Error(data.message || 'Demasiados mensajes. Espera un momento.');
+    const err = new Error(data.message || getChatCopy('GUEST_RATE_LIMIT_MESSAGE', language));
     err.code = 'RATE_LIMIT';
     throw err;
   }
   if (response.status === 403 && data.code === 'GUEST_LIMIT_REACHED') {
-    const err = new Error(data.message || 'Límite de mensajes de invitado');
+    const err = new Error(data.message || getChatCopy('GUEST_LIMIT_MESSAGE', language));
     err.code = 'GUEST_LIMIT_REACHED';
     err.maxUserMessages = data.maxUserMessages;
     err.requiresAccount = true;
@@ -262,7 +270,7 @@ async function postGuestMessage(text, conversationId, token) {
     throw err;
   }
   if (!response.ok) {
-    const e = new Error(data.message || 'Error al enviar el mensaje');
+    const e = new Error(data.message || getChatCopy('ERROR_SEND', language));
     e.response = { status: response.status, data };
     throw e;
   }
@@ -271,14 +279,15 @@ async function postGuestMessage(text, conversationId, token) {
 
 export const sendMessageStream = async (text, { onChunk, onDone }) => {
   if (await isGuestChatMode()) {
+    const guestLang = await getAppLanguage();
     const conversationId = await AsyncStorage.getItem(GUEST_KEYS.GUEST_CONVERSATION_ID);
     const token = await AsyncStorage.getItem(GUEST_KEYS.GUEST_TOKEN);
     if (!conversationId || !token) {
-      const e = new Error('Sesión de invitado no válida');
+      const e = new Error(getChatCopy('GUEST_SESSION_EXPIRED_MESSAGE', guestLang));
       e.code = 'GUEST_SESSION_INVALID';
       throw e;
     }
-    const data = await postGuestMessage(text, conversationId, token);
+    const data = await postGuestMessage(text, conversationId, token, guestLang);
     if (data?.assistantMessage?.content && onChunk) onChunk(data.assistantMessage.content);
     if (onDone) {
       onDone({
@@ -300,14 +309,13 @@ export const sendMessageStream = async (text, { onChunk, onDone }) => {
     conversationId = await createConversation();
   }
 
+  const appLanguage = await getAppLanguage();
   const token = await AsyncStorage.getItem('userToken');
   if (!token) {
-    const e = new Error('No hay token de autenticación');
+    const e = new Error(getChatCopy('SERVICE_SESSION_REQUIRED', appLanguage));
     e.code = 'NO_AUTH';
     throw e;
   }
-
-  const appLanguage = await getAppLanguage();
   const url = `${API_URL}/api/chat/messages?stream=true`;
   const headers = {
     'Content-Type': 'application/json',
@@ -390,7 +398,8 @@ export const clearMessages = async () => {
         if (response.status === 401) {
           await clearGuestChat();
         } else if (!response.ok) {
-          let message = 'No se pudo borrar la conversación';
+          const lang = await getAppLanguage();
+          let message = getChatCopy('SERVICE_CLEAR_CONVERSATION_FAILED', lang);
           try {
             const data = await response.json();
             if (data.message) message = data.message;
@@ -435,11 +444,12 @@ export const closeSocket = () => {
  */
 export const createConversation = async (options = {}) => {
   try {
+    const lang = await getAppLanguage();
     const sessionIntention =
       typeof options === 'string' ? options : options?.sessionIntention;
     if (sessionIntention != null && String(sessionIntention).trim() !== '') {
       if (!isValidSessionIntentionId(sessionIntention)) {
-        const e = new Error('sessionIntention inválido');
+        const e = new Error(getChatCopy('SERVICE_INVALID_SESSION_INTENTION', lang));
         e.code = 'INVALID_SESSION_INTENTION';
         throw e;
       }
@@ -461,7 +471,7 @@ export const createConversation = async (options = {}) => {
       return response.conversationId;
     }
 
-    const e = new Error('No se pudo crear la conversación');
+    const e = new Error(getChatCopy('SERVICE_CREATE_CONVERSATION_FAILED', lang));
     e.code = 'CONVERSATION_CREATE_FAILED';
     throw e;
   } catch (error) {
@@ -476,20 +486,21 @@ export const createConversation = async (options = {}) => {
  * @param {'vent'|'organize'|'technique'|'plan'} sessionIntention
  */
 export const setSessionIntention = async (conversationId, sessionIntention) => {
+  const lang = await getAppLanguage();
   const token = await AsyncStorage.getItem('userToken');
   if (!token) {
-    const e = new Error('Sesión requerida');
+    const e = new Error(getChatCopy('SERVICE_SESSION_REQUIRED', lang));
     e.code = 'NO_AUTH';
     throw e;
   }
   const cid = String(conversationId ?? '').trim();
   if (!/^[\da-f]{24}$/i.test(cid)) {
-    const e = new Error('ID de conversación inválido');
+    const e = new Error(getChatCopy('SERVICE_INVALID_CONVERSATION_ID', lang));
     e.code = 'INVALID_CONVERSATION_ID';
     throw e;
   }
   if (!isValidSessionIntentionId(sessionIntention)) {
-    const e = new Error('sessionIntention inválido');
+    const e = new Error(getChatCopy('SERVICE_INVALID_SESSION_INTENTION', lang));
     e.code = 'INVALID_SESSION_INTENTION';
     throw e;
   }
@@ -505,20 +516,21 @@ export const setSessionIntention = async (conversationId, sessionIntention) => {
  * @throws {Error} code NO_AUTH | INVALID_ID | INVALID_HELPFUL o error de red/API
  */
 export const submitMessageFeedback = async (messageId, helpful) => {
+  const lang = await getAppLanguage();
   const token = await AsyncStorage.getItem('userToken');
   if (!token) {
-    const e = new Error('Sesión requerida');
+    const e = new Error(getChatCopy('SERVICE_SESSION_REQUIRED', lang));
     e.code = 'NO_AUTH';
     throw e;
   }
   const id = String(messageId ?? '').trim();
   if (!/^[\da-f]{24}$/i.test(id)) {
-    const e = new Error('ID de mensaje inválido');
+    const e = new Error(getChatCopy('SERVICE_INVALID_MESSAGE_ID', lang));
     e.code = 'INVALID_ID';
     throw e;
   }
   if (helpful !== null && helpful !== 'up' && helpful !== 'down') {
-    const e = new Error('Valor de helpful inválido');
+    const e = new Error(getChatCopy('SERVICE_INVALID_HELPFUL', lang));
     e.code = 'INVALID_HELPFUL';
     throw e;
   }
@@ -526,20 +538,21 @@ export const submitMessageFeedback = async (messageId, helpful) => {
 };
 
 export const submitProductProposalFeedback = async (conversationId, action) => {
+  const lang = await getAppLanguage();
   const token = await AsyncStorage.getItem('userToken');
   if (!token) {
-    const e = new Error('Sesión requerida');
+    const e = new Error(getChatCopy('SERVICE_SESSION_REQUIRED', lang));
     e.code = 'NO_AUTH';
     throw e;
   }
   const cid = String(conversationId ?? '').trim();
   if (!/^[\da-f]{24}$/i.test(cid)) {
-    const e = new Error('ID de conversación inválido');
+    const e = new Error(getChatCopy('SERVICE_INVALID_CONVERSATION_ID', lang));
     e.code = 'INVALID_CONVERSATION_ID';
     throw e;
   }
   if (action !== 'accepted' && action !== 'rejected') {
-    const e = new Error('action inválida');
+    const e = new Error(getChatCopy('SERVICE_INVALID_ACTION', lang));
     e.code = 'INVALID_ACTION';
     throw e;
   }

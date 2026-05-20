@@ -9,14 +9,19 @@ import { requireActiveSubscription } from '../middleware/checkSubscription.js';
 import ClinicalScaleResult from '../models/ClinicalScaleResult.js';
 import clinicalScalesService from '../services/clinicalScalesService.js';
 import logger from '../utils/logger.js';
+import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
+import { resolveRequestLanguage } from '../utils/apiLanguage.js';
+import { clinicalScalesApiCopy } from '../utils/clinicalScalesApiCopy.js';
 
 const router = express.Router();
+
+router.use(attachApiCopy(clinicalScalesApiCopy));
 
 // Rate limiting para escalas clínicas
 const scalesLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 50, // Máximo 50 requests por 15 minutos
-  message: 'Demasiadas solicitudes. Por favor, espera un momento.',
+  message: (req) => clinicalScalesApiCopy(resolveRequestLanguage(req)).rateLimit,
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -54,8 +59,8 @@ router.get('/available', async (req, res) => {
   } catch (error) {
     logger.error('[ClinicalScalesRoutes] Error obteniendo escalas:', error);
     res.status(500).json({
-      message: 'Error al obtener escalas disponibles',
-      error: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : error.message
+      message: req.apiCopy.availableError,
+      error: process.env.NODE_ENV === 'production' ? req.apiCopy.internalError : error.message
     });
   }
 });
@@ -72,7 +77,7 @@ router.get('/:scaleType/definition', async (req, res) => {
     const normalizedScaleType = scaleType?.toUpperCase()?.trim();
     if (!normalizedScaleType || !['PHQ9', 'GAD7'].includes(normalizedScaleType)) {
       return res.status(400).json({
-        message: 'Tipo de escala inválido. Debe ser PHQ9 o GAD7'
+        message: req.apiCopy.invalidScaleType
       });
     }
     
@@ -80,7 +85,7 @@ router.get('/:scaleType/definition', async (req, res) => {
     
     if (!definition) {
       return res.status(404).json({
-        message: 'Escala no encontrada'
+        message: req.apiCopy.scaleNotFound
       });
     }
     
@@ -88,8 +93,8 @@ router.get('/:scaleType/definition', async (req, res) => {
   } catch (error) {
     logger.error('[ClinicalScalesRoutes] Error obteniendo definición:', error);
     res.status(500).json({
-      message: 'Error al obtener definición de escala',
-      error: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : error.message
+      message: req.apiCopy.definitionError,
+      error: process.env.NODE_ENV === 'production' ? req.apiCopy.internalError : error.message
     });
   }
 });
@@ -108,7 +113,7 @@ router.post('/:scaleType/submit', async (req, res) => {
     const normalizedScaleType = scaleType?.toUpperCase()?.trim();
     if (!normalizedScaleType || !['PHQ9', 'GAD7'].includes(normalizedScaleType)) {
       return res.status(400).json({
-        message: 'Tipo de escala inválido. Debe ser PHQ9 o GAD7'
+        message: req.apiCopy.invalidScaleType
       });
     }
     
@@ -116,21 +121,21 @@ router.post('/:scaleType/submit', async (req, res) => {
     const definition = clinicalScalesService.getScaleDefinition(normalizedScaleType);
     if (!definition) {
       return res.status(404).json({
-        message: 'Escala no encontrada'
+        message: req.apiCopy.scaleNotFound
       });
     }
     
     // SEGURIDAD: Validar itemScores
     if (!itemScores || !Array.isArray(itemScores)) {
       return res.status(400).json({
-        message: 'itemScores debe ser un array'
+        message: req.apiCopy.itemScoresMustBeArray
       });
     }
     
     // SEGURIDAD: Validar límite de ítems
     if (itemScores.length > definition.items.length) {
       return res.status(400).json({
-        message: `Demasiados ítems. La escala ${normalizedScaleType} tiene ${definition.items.length} ítems`
+        message: req.apiCopy.tooManyItems(normalizedScaleType, definition.items.length)
       });
     }
     
@@ -139,7 +144,7 @@ router.post('/:scaleType/submit', async (req, res) => {
     const uniqueItemIds = new Set(itemIds);
     if (itemIds.length !== uniqueItemIds.size) {
       return res.status(400).json({
-        message: 'No se permiten ítems duplicados'
+        message: req.apiCopy.duplicateItems
       });
     }
     
@@ -151,20 +156,20 @@ router.post('/:scaleType/submit', async (req, res) => {
       // SEGURIDAD: Validar tipos y valores
       if (typeof itemScore.itemId !== 'number' || typeof itemScore.score !== 'number') {
         return res.status(400).json({
-          message: `Ítem inválido: itemId y score deben ser números`
+          message: req.apiCopy.invalidItemFormat
         });
       }
       
       if (itemScore.score < 0 || itemScore.score > 3 || !Number.isInteger(itemScore.score)) {
         return res.status(400).json({
-          message: `Puntuación inválida para ítem ${itemScore.itemId}: debe ser un entero entre 0 y 3`
+          message: req.apiCopy.invalidItemScore(itemScore.itemId)
         });
       }
       
       const item = definition.items.find(i => i.id === itemScore.itemId);
       if (!item) {
         return res.status(400).json({
-          message: `Ítem ${itemScore.itemId} no encontrado en la escala`
+          message: req.apiCopy.itemNotFound(itemScore.itemId)
         });
       }
       
@@ -180,7 +185,7 @@ router.post('/:scaleType/submit', async (req, res) => {
     const maxScore = normalizedScaleType === 'PHQ9' ? 27 : 21;
     if (totalScore > maxScore) {
       return res.status(400).json({
-        message: `Puntuación total inválida: ${totalScore}. El máximo para ${normalizedScaleType} es ${maxScore}`
+        message: req.apiCopy.invalidTotalScore(totalScore, normalizedScaleType, maxScore)
       });
     }
     
@@ -219,13 +224,13 @@ router.post('/:scaleType/submit', async (req, res) => {
         interpretation: result.interpretation,
         createdAt: result.createdAt
       },
-      message: 'Escala completada exitosamente'
+      message: req.apiCopy.submitSuccess
     });
   } catch (error) {
     logger.error('[ClinicalScalesRoutes] Error guardando resultado:', error);
     res.status(500).json({
-      message: 'Error al guardar resultado de escala',
-      error: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : error.message
+      message: req.apiCopy.submitError,
+      error: process.env.NODE_ENV === 'production' ? req.apiCopy.internalError : error.message
     });
   }
 });
@@ -250,7 +255,7 @@ router.get('/results', async (req, res) => {
         query.scaleType = normalizedScaleType;
       } else {
         return res.status(400).json({
-          message: 'Tipo de escala inválido'
+          message: req.apiCopy.invalidScaleTypeShort
         });
       }
     }
@@ -278,8 +283,8 @@ router.get('/results', async (req, res) => {
   } catch (error) {
     logger.error('[ClinicalScalesRoutes] Error obteniendo resultados:', error);
     res.status(500).json({
-      message: 'Error al obtener resultados',
-      error: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : error.message
+      message: req.apiCopy.resultsError,
+      error: process.env.NODE_ENV === 'production' ? req.apiCopy.internalError : error.message
     });
   }
 });
@@ -298,7 +303,7 @@ router.get('/:scaleType/progress', async (req, res) => {
     const normalizedScaleType = scaleType?.toUpperCase()?.trim();
     if (!normalizedScaleType || !['PHQ9', 'GAD7'].includes(normalizedScaleType)) {
       return res.status(400).json({
-        message: 'Tipo de escala inválido'
+        message: req.apiCopy.invalidScaleTypeShort
       });
     }
     
@@ -315,8 +320,8 @@ router.get('/:scaleType/progress', async (req, res) => {
   } catch (error) {
     logger.error('[ClinicalScalesRoutes] Error obteniendo progreso:', error);
     res.status(500).json({
-      message: 'Error al obtener progreso',
-      error: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : error.message
+      message: req.apiCopy.progressError,
+      error: process.env.NODE_ENV === 'production' ? req.apiCopy.internalError : error.message
     });
   }
 });
@@ -351,8 +356,8 @@ router.get('/summary', async (req, res) => {
   } catch (error) {
     logger.error('[ClinicalScalesRoutes] Error obteniendo resumen:', error);
     res.status(500).json({
-      message: 'Error al obtener resumen',
-      error: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : error.message
+      message: req.apiCopy.summaryError,
+      error: process.env.NODE_ENV === 'production' ? req.apiCopy.internalError : error.message
     });
   }
 });

@@ -218,7 +218,9 @@ class PaymentServiceMercadoPago {
       }
 
       const userIdString = userId.toString();
-      const user = await User.findById(userIdString).select('email username name subscription');
+      const user = await User.findById(userIdString).select(
+        'email username name subscription preferences.language',
+      );
       if (!user) {
         await paymentAuditService.logEvent('CHECKOUT_CREATION_FAILED', {
           reason: 'user_not_found',
@@ -1292,7 +1294,9 @@ class PaymentServiceMercadoPago {
       });
 
       // Validar que el usuario existe
-      const user = await User.findById(userIdString).select('email username name subscription');
+      const user = await User.findById(userIdString).select(
+        'email username name subscription preferences.language',
+      );
       if (!user) {
         logger.error('activateSubscriptionFromPayment: Usuario no encontrado', {
           transactionId: transaction._id.toString(),
@@ -1506,6 +1510,7 @@ class PaymentServiceMercadoPago {
           providerLabel: 'Mercado Pago',
           reference: txRef,
         };
+        const mailOptions = { user };
         const mpMailSent = isNewSubscription
           ? await mailer.sendSubscriptionThankYouEmail(
               user.email,
@@ -1513,7 +1518,8 @@ class PaymentServiceMercadoPago {
               plan,
               periodEnd,
               receipt,
-              'Confirmación de compra / suscripción (Mercado Pago)'
+              'Confirmación de compra / suscripción (Mercado Pago)',
+              mailOptions,
             )
           : await mailer.sendSubscriptionRenewalEmail(
               user.email,
@@ -1521,7 +1527,8 @@ class PaymentServiceMercadoPago {
               plan,
               periodEnd,
               receipt,
-              'Renovación suscripción (Mercado Pago)'
+              'Renovación suscripción (Mercado Pago)',
+              mailOptions,
             );
 
         if (mpMailSent) {

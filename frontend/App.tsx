@@ -23,6 +23,7 @@ import AppNavigator from './src/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import Toast from './src/components/Toast';
 import ConnectionRestoredListener from './src/components/ConnectionRestoredListener';
+import LanguageAuthSync from './src/components/LanguageAuthSync';
 
 // Fallback cuando initialWindowMetrics es null (web, SSR, o módulo nativo no listo)
 const DEFAULT_SAFE_AREA_METRICS = {
@@ -64,6 +65,7 @@ export default function App() {
         <ThemeProvider>
           <ErrorBoundary>
             <AuthProvider>
+              <LanguageAuthSync />
               <ThemePreferenceSync />
               <ToastProvider>
                 <AppContent />

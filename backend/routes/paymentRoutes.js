@@ -25,8 +25,18 @@ import {
   extractMercadoPagoWebhookResourceId,
   verifyMercadoPagoWebhookSignature
 } from '../utils/mercadopagoWebhookSignature.js';
+import { resolveRequestLanguage } from '../utils/apiLanguage.js';
+import { paymentApiCopy } from '../utils/paymentApiCopy.js';
+import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
 
 const router = express.Router();
+
+router.use((req, res, next) => {
+  const language = resolveRequestLanguage(req);
+  req.appLanguage = language;
+  req.apiCopy = paymentApiCopy(language);
+  next();
+});
 
 /** Deep links de la app (Android/iOS) tras pago Mercado Pago vía navegador. */
 const PAYMENT_RETURN_APP_SUCCESS = 'anto://payments/success';
@@ -98,7 +108,7 @@ router.get('/return/cancel', (req, res) => {
 const checkoutLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 5, // Máximo 5 intentos de checkout por 15 minutos
-  message: 'Demasiados intentos de checkout. Por favor, intente más tarde.',
+  message: (req) => paymentApiCopy(resolveRequestLanguage(req)).rateLimitCheckout,
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
@@ -110,7 +120,7 @@ const checkoutLimiter = createRateLimiter({
 const paymentLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hora
   max: 20, // Máximo 20 operaciones de pago por hora
-  message: 'Demasiadas operaciones de pago. Por favor, intente más tarde.',
+  message: (req) => paymentApiCopy(resolveRequestLanguage(req)).rateLimitPayment,
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
@@ -122,7 +132,7 @@ const paymentLimiter = createRateLimiter({
 const webhookLimiter = createRateLimiter({
   windowMs: 1 * 60 * 1000,
   max: 100,
-  message: 'Demasiadas solicitudes de webhook',
+  message: (req) => paymentApiCopy(resolveRequestLanguage(req)).rateLimitWebhook,
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => process.env.NODE_ENV === 'development',
@@ -228,7 +238,7 @@ router.get('/plans', async (req, res) => {
     console.error('Error obteniendo planes:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al obtener planes',
+      error: req.apiCopy.plansError,
     });
   }
 });
@@ -249,7 +259,7 @@ router.post(
         console.error('Error de validación en create-checkout-session:', error.details);
         return res.status(400).json({
           success: false,
-          error: 'Datos inválidos',
+          error: req.apiCopy.invalidData,
           message: error.details.map(d => d.message).join(', '),
           details: error.details.map(d => ({
             field: d.path.join('.'),
@@ -276,7 +286,7 @@ router.post(
       console.error('Error creando sesión de checkout:', error);
       res.status(500).json({
         success: false,
-        error: error.message || 'Error al crear sesión de checkout',
+        error: error.message || req.apiCopy.checkoutError,
       });
     }
   }
@@ -312,7 +322,7 @@ router.get(
       console.error('Error obteniendo info de trial:', error);
       res.status(500).json({
         success: false,
-        error: 'Error al obtener información del trial',
+        error: req.apiCopy.trialError,
       });
     }
   }
@@ -448,7 +458,7 @@ router.get(
       
       res.status(500).json({
         success: false,
-        error: error.message || 'Error al obtener estado de suscripción',
+        error: error.message || req.apiCopy.subscriptionStatusError,
       });
     }
   }
@@ -469,7 +479,7 @@ router.post(
       if (error) {
         return res.status(400).json({
           success: false,
-          error: 'Datos inválidos',
+          error: req.apiCopy.invalidData,
           details: error.details.map(d => d.message),
         });
       }
@@ -494,7 +504,7 @@ router.post(
       console.error('Error cancelando suscripción:', error);
       res.status(500).json({
         success: false,
-        error: error.message || 'Error al cancelar suscripción',
+        error: error.message || req.apiCopy.cancelError,
       });
     }
   }
@@ -515,7 +525,7 @@ router.post(
       if (error) {
         return res.status(400).json({
           success: false,
-          error: 'Datos inválidos',
+          error: req.apiCopy.invalidData,
           details: error.details.map(d => d.message),
         });
       }
@@ -533,7 +543,7 @@ router.post(
       console.error('Error actualizando método de pago:', error);
       res.status(500).json({
         success: false,
-        error: error.message || 'Error al actualizar método de pago',
+        error: error.message || req.apiCopy.paymentMethodError,
       });
     }
   }
@@ -577,7 +587,7 @@ router.get(
       console.error('Error obteniendo transacciones:', error);
       res.status(500).json({
         success: false,
-        error: 'Error al obtener transacciones',
+        error: req.apiCopy.transactionsError,
       });
     }
   }
@@ -615,7 +625,7 @@ router.get(
       console.error('Error obteniendo estadísticas:', error);
       res.status(500).json({
         success: false,
-        error: 'Error al obtener estadísticas',
+        error: req.apiCopy.statsError,
       });
     }
   }
@@ -660,7 +670,7 @@ router.post(
         });
         return res.status(400).json({
           success: false,
-          error: 'Datos inválidos',
+          error: req.apiCopy.invalidData,
           details: error.details.map(d => d.message),
         });
       }
@@ -772,7 +782,7 @@ router.post(
 
         res.json({
           success: true,
-          message: restore ? 'Compras restauradas correctamente' : 'Suscripción activada correctamente',
+          message: restore ? req.apiCopy.receiptRestored : req.apiCopy.receiptActivated,
           subscription: result.subscription,
         });
       } else {
@@ -817,7 +827,7 @@ router.post(
       
       res.status(500).json({
         success: false,
-        error: error.message || 'Error al validar el recibo',
+        error: error.message || req.apiCopy.validateReceiptError,
       });
     }
   }
@@ -875,7 +885,7 @@ router.post(
       ) {
         return res.status(400).json({ received: false, error: msg });
       }
-      return res.status(500).json({ received: false, error: 'Error interno' });
+      return res.status(500).json({ received: false, error: req.apiCopy.webhookInternalError });
     }
   }
 );

@@ -7,7 +7,7 @@ import { buildDashboardFocus } from '../services/dashboardFocusService.js';
 import { getLastSessionSummaryForUser } from '../services/lastSessionSummaryService.js';
 import { buildUserSummary } from '../services/userSummaryService.js';
 import { localizeLastSessionSummaryForDisplay } from '../utils/focusDashboardCopy.js';
-import { resolveAppLanguage } from '../utils/resolveAppLanguage.js';
+import { resolveSummaryRequestLanguage, summaryApiCopy } from '../utils/summaryApiCopy.js';
 
 const router = express.Router();
 
@@ -25,59 +25,47 @@ const router = express.Router();
  * Continuidad del último chat (#4 + #47), persistida; null si aún no hay. (Ruta histórica; no es el resumen semanal/mensual.)
  */
 router.get('/last-session', authenticateToken, async (req, res) => {
+  const language = resolveSummaryRequestLanguage(req);
+  const copy = summaryApiCopy(language);
   try {
-    const language = resolveAppLanguage({
-      headerLanguage: req.headers['x-app-language'],
-      queryLanguage: req.query.language,
-      acceptLanguage: req.headers['accept-language'],
-      userPreference: req.user?.preferences?.language
-    });
     const raw = await getLastSessionSummaryForUser(req.user._id);
     const data = localizeLastSessionSummaryForDisplay(raw, language);
-    return res.json({ success: true, data });
+    return res.json({ success: true, data, language });
   } catch (err) {
     console.error('[summaryRoutes] Error /last-session:', err);
     return res.status(500).json({
       success: false,
-      message: 'Error al obtener la continuidad del chat'
+      message: copy.lastSessionError,
     });
   }
 });
 
 router.get('/focus', authenticateToken, async (req, res) => {
+  const language = resolveSummaryRequestLanguage(req);
+  const copy = summaryApiCopy(language);
   try {
-    const language = resolveAppLanguage({
-      headerLanguage: req.headers['x-app-language'],
-      queryLanguage: req.query.language,
-      acceptLanguage: req.headers['accept-language'],
-      userPreference: req.user?.preferences?.language
-    });
     const data = await buildDashboardFocus(req.user._id, { language });
-    return res.json({ success: true, data });
+    return res.json({ success: true, data, language });
   } catch (err) {
     console.error('[summaryRoutes] Error /focus:', err);
     return res.status(500).json({
       success: false,
-      message: 'Error al generar el foco del panel'
+      message: copy.focusError,
     });
   }
 });
 
 router.get('/', authenticateToken, async (req, res) => {
+  const language = resolveSummaryRequestLanguage(req);
+  const copy = summaryApiCopy(language);
   try {
     const period = String(req.query.period || '').toLowerCase();
     if (period !== 'week' && period !== 'month') {
       return res.status(400).json({
         success: false,
-        message: 'Query period es requerido: week o month'
+        message: copy.periodRequired,
       });
     }
-
-    const language = resolveAppLanguage({
-      headerLanguage: req.headers['x-app-language'],
-      queryLanguage: req.query.language,
-      acceptLanguage: req.headers['accept-language'],
-    });
     const payload = {
       period,
       date: req.query.date,
@@ -92,19 +80,19 @@ router.get('/', authenticateToken, async (req, res) => {
     if (err.code === 'INVALID_DATE') {
       return res.status(400).json({
         success: false,
-        message: 'Parámetro date inválido; use YYYY-MM-DD'
+        message: copy.invalidDate,
       });
     }
     if (err.code === 'INVALID_MONTH') {
       return res.status(400).json({
         success: false,
-        message: 'Parámetros year (2000–2100) y month (1–12) inválidos'
+        message: copy.invalidMonth,
       });
     }
     console.error('[summaryRoutes] Error:', err);
     return res.status(500).json({
       success: false,
-      message: 'Error al generar el resumen'
+      message: copy.summaryError,
     });
   }
 });

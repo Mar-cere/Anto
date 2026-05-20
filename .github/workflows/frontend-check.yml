@@ -34,6 +34,9 @@ jobs:
       - name: Static checks (imports, SafeArea)
         run: npm run check
 
+      - name: i18n (paridad y tono)
+        run: npm run test:i18n
+
       - name: Unit tests
         env:
           CI: 'true'

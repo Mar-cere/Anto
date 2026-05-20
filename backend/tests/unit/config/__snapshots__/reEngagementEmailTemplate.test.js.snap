@@ -10,6 +10,24 @@ exports[`reEngagementEmail plantilla asunto; preheader oculto; tip determinista 
 }
 `;
 
+exports[`reEngagementEmail plantilla language en asunto; tip determinista para 7 días en inglés 1`] = `"It has been a while since you opened Anto"`;
+
+exports[`reEngagementEmail plantilla language en asunto; tip determinista para 7 días en inglés 2`] = `
+{
+  "mencionaSieteDias": true,
+  "openAppCta": true,
+  "tipIndice2": true,
+}
+`;
+
+exports[`reEngagementEmail plantilla language en normaliza días inválidos a 1 y rota tip en inglés 1`] = `
+{
+  "subject": "It has been a while since you opened Anto",
+  "tipIndice1": true,
+  "unDiaEnCuerpo": true,
+}
+`;
+
 exports[`reEngagementEmail plantilla normaliza días inválidos a 1 y rota tip (índice 1) 1`] = `
 {
   "subject": "Hace tiempo que no abres Anto",

@@ -16,7 +16,21 @@
     "test:integration": "NODE_ENV=test NODE_OPTIONS=--max-old-space-size=4096 node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern=integration --runInBand",
     "test:e2e": "NODE_ENV=test node tests/testEndToEndFlow.js",
     "test:full": "NODE_ENV=test NODE_OPTIONS=--max-old-space-size=4096 node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --runInBand",
-    "quality:conversations": "node scripts/evaluateConversationQuality.js"
+    "quality:conversations": "node scripts/evaluateConversationQuality.js",
+    "audit:push-en": "node scripts/audit-push-copy-en.mjs",
+    "audit:email-en": "node scripts/audit-email-en.mjs",
+    "audit:therapeutic-en": "node scripts/audit-therapeutic-techniques-en.mjs",
+    "audit:psychoeducation-en": "node scripts/audit-psychoeducation-en.mjs",
+    "audit:therapeutic-templates-en": "node scripts/audit-therapeutic-templates-en.mjs",
+    "audit:api-routes": "node scripts/audit-api-routes-i18n.mjs",
+    "audit:i18n": "npm run audit:api-routes && npm run audit:push-en && npm run audit:email-en && npm run audit:therapeutic-en && npm run audit:psychoeducation-en && npm run audit:therapeutic-templates-en",
+    "generate:therapeutic-templates-en": "node scripts/generate-therapeutic-templates-en.mjs",
+    "generate:psychoeducation-en": "node scripts/generate-psychoeducation-en.mjs",
+    "test:i18n": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern='apiRoutesI18nAudit|apiCopyParity|pushCopyEnAudit|emailEnAudit|EmailTemplate|emailLanguage|therapeuticTechniquesLocale|therapeuticTechniquesEnAudit|therapeuticApiCopy|therapeuticTechniquesRoutes.i18n|crisisRoutes.i18n|chatRoutes.i18n|authRoutes.i18n|authRoutes.registerDuplicate|authApiCopy|authErrorCodes|onboardingPromptSnippet|openaiPromptBuilder.onboarding|onboardingFocus|userApiCopy|journalApiCopy|journalRoutes.i18n|notificationApiCopy|cognitiveDistortionsApiCopy|responseFeedbackApiCopy|clinicalScalesApiCopy|metricsApiCopy|cloudinaryApiCopy|testNotificationApiCopy|notificationEngagementApiCopy|summaryApiCopy|productApiCopy|crisisApiCopy|guestChatApiCopy|apiLanguage|psychoeducation|therapeuticTemplate|therapeuticTemplatesEn' --coverage=false",
+    "generate:therapeutic-en": "node scripts/generate-therapeutic-techniques-en.mjs",
+    "generate:mindfulness-en": "node scripts/generate-mindfulness-techniques-en.mjs",
+    "fix:push-en": "node scripts/fix-push-en-templates.mjs",
+    "fix:push-en:fallbacks": "ONLY=progressPositive,taskDueSoon,achievement,taskReminder node scripts/fix-push-en-templates.mjs"
   },
   "keywords": [
     "backend",

@@ -20,6 +20,7 @@ import Task from '../models/Task.js';
 import User from '../models/User.js';
 import pushNotificationService from './pushNotificationService.js';
 import { resolveAppLanguage } from '../utils/resolveAppLanguage.js';
+import { routinePushSlotLabel } from '../utils/focusDashboardCopy.js';
 
 class NotificationScheduler {
   _userLanguage(user) {
@@ -951,9 +952,14 @@ class NotificationScheduler {
  * No contempla notificaciones comportamentales ni tareas.
  * @param {object} notificationPreferences - prefs del usuario
  * @param {Date} [now]
+ * @param {'es'|'en'} [language]
  * @returns {{ kind: 'morning'|'evening', at: Date, label: string }|null}
  */
-export function computeNextRoutinePushSlot(notificationPreferences, now = new Date()) {
+export function computeNextRoutinePushSlot(
+  notificationPreferences,
+  now = new Date(),
+  language = 'es'
+) {
   if (!notificationPreferences?.enabled) return null;
   const slots = [];
   if (notificationPreferences.morning?.enabled) {
@@ -967,7 +973,7 @@ export function computeNextRoutinePushSlot(notificationPreferences, now = new Da
     slots.push({
       kind: 'morning',
       at: morningTime,
-      label: 'Recordatorio programado (mañana)'
+      label: routinePushSlotLabel('morning', language)
     });
   }
   if (notificationPreferences.evening?.enabled) {
@@ -981,7 +987,7 @@ export function computeNextRoutinePushSlot(notificationPreferences, now = new Da
     slots.push({
       kind: 'evening',
       at: eveningTime,
-      label: 'Recordatorio programado (tarde-noche)'
+      label: routinePushSlotLabel('evening', language)
     });
   }
   if (!slots.length) return null;

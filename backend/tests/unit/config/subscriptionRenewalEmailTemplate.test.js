@@ -26,4 +26,29 @@ describe('subscriptionRenewalEmail plantilla', () => {
       ctaAbrirApp: t.html.includes('Abrir ') && t.html.includes('</a>'),
     }).toMatchSnapshot();
   });
+
+  describe('language en', () => {
+    it('asunto, comprobante y renovación en inglés', () => {
+      const t = mailer.emailTemplates.subscriptionRenewalEmail(
+        'ana',
+        'monthly',
+        periodEnd,
+        receipt,
+        'en',
+      );
+
+      expect(t.subject).toMatch(/another period with you/i);
+      expect(t.subject).toMatch(/Monthly/i);
+      expect(t.subject).toMatchSnapshot();
+
+      expect({
+        bloqueCobro: t.html.includes('Payment details'),
+        renovacion: t.html.includes('renewed'),
+        referencia: t.html.includes('TXN-RENEW-1'),
+        planMonthly: t.html.includes('Monthly'),
+        ctaOpenApp: t.html.includes('Open Anto'),
+        thanksForStaying: t.html.includes('Thanks for staying'),
+      }).toMatchSnapshot();
+    });
+  });
 });

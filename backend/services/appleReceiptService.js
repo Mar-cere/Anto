@@ -909,6 +909,7 @@ class AppleReceiptService {
       const mailer = (await import('../config/mailer.js')).default;
       const username = user.name || user.username || 'Usuario';
 
+      const mailOptions = { user };
       const sent = isRenewal
         ? await mailer.sendSubscriptionRenewalEmail(
             user.email,
@@ -916,7 +917,8 @@ class AppleReceiptService {
             plan,
             periodEnd,
             receipt,
-            'Renovación suscripción (Apple)'
+            'Renovación suscripción (Apple)',
+            mailOptions,
           )
         : await mailer.sendSubscriptionThankYouEmail(
             user.email,
@@ -924,7 +926,8 @@ class AppleReceiptService {
             plan,
             periodEnd,
             receipt,
-            'Confirmación de compra / suscripción (Apple)'
+            'Confirmación de compra / suscripción (Apple)',
+            mailOptions,
           );
 
       const emailDuration = Date.now() - emailStartTime;

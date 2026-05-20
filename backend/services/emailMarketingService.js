@@ -251,7 +251,7 @@ class EmailMarketingService {
           { lastLogin: { $lt: thresholdDate } },
           { 'stats.lastActive': { $lt: thresholdDate } }
         ]
-      }).select('email username lastLogin stats');
+      }).select('email username lastLogin stats preferences.language');
 
       const results = {
         checked: inactiveUsers.length,
@@ -275,7 +275,10 @@ class EmailMarketingService {
 
           // Enviar correo de re-engagement
           const enq = enqueueEmail(
-            () => mailer.sendReEngagementEmail(user.email, user.username, daysSinceActive),
+            () =>
+              mailer.sendReEngagementEmail(user.email, user.username, daysSinceActive, {
+                language: user.preferences?.language,
+              }),
             { type: 're_engagement', to: user.email }
           );
           if (enq.accepted) {
@@ -341,7 +344,7 @@ class EmailMarketingService {
             new: true,
             sort: { _id: 1 },
             select:
-              'email username name createdAt stats.tasksCompleted stats.habitsStreak stats.totalSessions stats.lastActive subscription.status subscription.trialStartDate subscription.trialEndDate subscription.trialGrantedAt'
+              'email username name createdAt preferences.language stats.tasksCompleted stats.habitsStreak stats.totalSessions stats.lastActive subscription.status subscription.trialStartDate subscription.trialEndDate subscription.trialGrantedAt'
           }
         );
 
@@ -444,7 +447,7 @@ class EmailMarketingService {
           {
             new: true,
             sort: { 'subscription.trialStartDate': 1 },
-            select: 'email username subscription'
+            select: 'email username subscription preferences.language'
           }
         );
 
@@ -484,7 +487,8 @@ class EmailMarketingService {
           const ok = await mailer.sendTrialRetentionEmail(
             validated.email,
             validated.username,
-            validated.trialEndDate
+            validated.trialEndDate,
+            { user },
           );
           if (!ok) {
             await releaseClaim();
@@ -521,7 +525,7 @@ class EmailMarketingService {
         _id: { $in: userIds },
         emailVerified: true,
         isActive: true
-      }).select('email username lastLogin stats');
+      }).select('email username lastLogin stats preferences.language');
 
       const results = {
         checked: users.length,
@@ -537,7 +541,10 @@ class EmailMarketingService {
           );
 
           const enq = enqueueEmail(
-            () => mailer.sendReEngagementEmail(user.email, user.username, daysSinceActive),
+            () =>
+              mailer.sendReEngagementEmail(user.email, user.username, daysSinceActive, {
+                language: user.preferences?.language,
+              }),
             { type: 're_engagement', to: user.email }
           );
           if (enq.accepted) {

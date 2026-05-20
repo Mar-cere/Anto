@@ -81,4 +81,52 @@ describe('pushNotificationCopyPools', () => {
       expect(C.motivational.midday.length).toBeGreaterThanOrEqual(25);
     });
   });
+
+  describe('pool EN (plantillas paramétricas)', () => {
+    const EN = getPushNotificationCopy('en');
+
+    it('followUpWithHours conserva ${h} en el fuente', () => {
+      const src = EN.followUpWithHours.toString();
+      expect(src).toMatch(/\$\{h\}/);
+      expect(src).not.toMatch(/\b4 hours\b/);
+    });
+
+    it('trialExpiring usa ${days} y rama de 1 día', () => {
+      const src = EN.trialExpiringTitles.toString();
+      expect(src).toMatch(/days === 1/);
+      const multi = EN.trialExpiringTitles(5).join(' ');
+      expect(multi).toMatch(/5/);
+      expect(multi).not.toMatch(/\b3 days\b/);
+    });
+
+    it('taskReminder y emergency usan variables, no Sample', () => {
+      const tr = EN.taskReminder.bodies('Task A', 'Friday').join(' ');
+      expect(tr).toContain('Task A');
+      expect(tr).not.toMatch(/\bSample\b/);
+      const live = EN.emergencySent.liveBodies(2, 5).join(' ');
+      expect(live).toMatch(/2/);
+      expect(live).toMatch(/5/);
+      expect(live).not.toMatch(/\bSample\b/);
+    });
+
+    it('buildWeeklyProgressBody en inglés sin español', () => {
+      const body = buildWeeklyProgressBody(1, 2, 'stable', 'en');
+      expect(body).toMatch(/1 habits?/i);
+      expect(body).not.toMatch(/hábitos/i);
+    });
+
+    it('incluye wellbeingCheckIn y techniqueTitles', () => {
+      expect(Array.isArray(EN.wellbeingCheckIn?.titles)).toBe(true);
+      expect(EN.wellbeingCheckIn.titles.length).toBeGreaterThan(10);
+      expect(Array.isArray(EN.techniqueTitles)).toBe(true);
+      expect(EN.techniqueTitles[0]).toMatch(/technique|regulation|exercise/i);
+    });
+
+    it('taskReminder EN sin Vence ni fallbacks ES', () => {
+      const text = EN.taskReminder.bodies('Task A', 'Friday').join(' ');
+      expect(text).toContain('Task A');
+      expect(text).not.toMatch(/\bVence\b/);
+      expect(text).not.toMatch(/olvides completarla/i);
+    });
+  });
 });

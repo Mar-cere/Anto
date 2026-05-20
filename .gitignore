@@ -76,3 +76,11 @@ docs/obsidian-propuestas/*
 # generated native folders
 /ios
 /android
+
+# Script temporal al regenerar pushNotificationCopyPools.en.js
+backend/services/.push-pools-es-temp.mjs
+backend/scripts/push-copy-translation-cache.json
+backend/scripts/therapeutic-techniques-translation-cache.json
+backend/scripts/mindfulness-techniques-translation-cache.json
+backend/scripts/psychoeducation-translation-cache.json
+backend/scripts/therapeutic-templates-translation-cache.json

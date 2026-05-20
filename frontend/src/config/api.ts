@@ -13,6 +13,7 @@ import type {
   ApiError,
   ApiGetResponse,
 } from '../types/api.types';
+import { getAppLanguage } from '../utils/appLanguage';
 
 const getApiUrl = (): string => {
   if (process.env.EXPO_PUBLIC_API_URL) {
@@ -119,19 +120,7 @@ export const ENDPOINTS = {
   THERAPEUTIC_TECHNIQUES_STATS: '/api/therapeutic-techniques/stats',
 } as const;
 
-const APP_LANGUAGE_STORAGE_KEY = 'preferences:language';
-
-export async function getAppLanguage(): Promise<'es' | 'en'> {
-  try {
-    const storedLanguage = await AsyncStorage.getItem(APP_LANGUAGE_STORAGE_KEY);
-    if (storedLanguage === 'en' || storedLanguage === 'es') {
-      return storedLanguage;
-    }
-  } catch {
-    // noop
-  }
-  return 'es';
-}
+export { getAppLanguage };
 
 const getAuthHeaders = async (): Promise<Record<string, string>> => {
   const token = await AsyncStorage.getItem('userToken');

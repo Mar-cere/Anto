@@ -26,6 +26,18 @@ describe('weeklyEmailSubjectIndex / buildWeeklySummarySubjectLine', () => {
     expect(s).not.toMatch(/\d+ mensajes|\d+ tareas/i);
   });
 
+  it('buildWeeklySummaryEmailContext en inglés usa weekLabel y asunto EN', () => {
+    const ctx = buildWeeklySummaryEmailContext(
+      { username: 'alex', subscription: { status: 'trial' } },
+      { isoWeekYear: 2026, isoWeek: 16, yearWeekKey: '2026-W16' },
+      'en',
+    );
+    expect(ctx.weekLabel).toBe('Week 16 · 2026');
+    expect(ctx.updatesSectionTitle).toBe('What is new in the app');
+    expect(ctx.subjectLine).toMatch(/Week 16 · 2026/);
+    expect(ctx.subjectLine).toMatch(/Anto/);
+  });
+
   it('algunas rotaciones mencionan el regalo con condición (sin prometer a todos)', () => {
     const w = 'Semana 9 · 2026';
     expect(weeklyEmailSubjectIndex(2026, 9)).toBe(7);

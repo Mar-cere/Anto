@@ -194,6 +194,20 @@ describe('NotificationScheduler Service', () => {
       expect(slot.at.getTime()).toBeGreaterThan(now.getTime());
       expect(slot.label).toMatch(/mañana/i);
     });
+
+    it('etiqueta en inglés cuando language es en', () => {
+      const now = new Date('2026-05-07T12:00:00.000Z');
+      const slot = computeNextRoutinePushSlot(
+        {
+          enabled: true,
+          morning: { enabled: true, hour: 8, minute: 0 },
+        },
+        now,
+        'en'
+      );
+      expect(slot.label).toMatch(/Scheduled reminder \(morning\)/i);
+      expect(slot.label).not.toMatch(/mañana/i);
+    });
   });
 
   describe('processScheduledNotifications', () => {

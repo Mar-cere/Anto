@@ -453,7 +453,7 @@ export async function buildDashboardFocus(userId, opts = {}) {
     getLastSessionSummaryForUser(userId)
   ]);
 
-  const nextPushSlot = computeNextRoutinePushSlot(notificationPreferences);
+  const nextPushSlot = computeNextRoutinePushSlot(notificationPreferences, new Date(), language);
 
   const reminderCandidates = buildReminderCandidates({
     summary,
@@ -503,6 +503,7 @@ export async function buildDashboardFocus(userId, opts = {}) {
     lastSessionSummary: lastSessionSummary
       ? {
           snippet: lastSessionSummary.snippet,
+          bridge: lastSessionSummary.bridge,
           conversationId: lastSessionSummary.conversationId,
           generatedAt: lastSessionSummary.generatedAt,
           placeholder: lastSessionSummary.placeholder,

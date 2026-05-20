@@ -24,6 +24,28 @@ export function normalizeTechniqueCategory(raw) {
  * Interpreta la respuesta GET /api/therapeutic-techniques.
  * Acepta array en `data` aunque falte `success: true` (tolerancia a cambios del backend).
  */
+/** Tipo de ejercicio interactivo (breathing | grounding) desde API o nombre legacy. */
+export function resolveInteractiveExerciseType(technique) {
+  if (!technique || typeof technique !== 'object') return null;
+  if (
+    technique.interactiveExercise === 'breathing' ||
+    technique.interactiveExercise === 'grounding'
+  ) {
+    return technique.interactiveExercise;
+  }
+  const name = String(technique.name || '').toLowerCase();
+  if (/grounding.*5-4-3-2-1|5-4-3-2-1.*grounding/.test(name)) return 'grounding';
+  if (/respir|breathing|breath of calm|conscious breathing/.test(name)) {
+    return 'breathing';
+  }
+  const legacy = {
+    'Respiración Consciente': 'breathing',
+    'Grounding 5-4-3-2-1': 'grounding',
+    'Respiración de Calma': 'breathing',
+  };
+  return legacy[technique.name] || null;
+}
+
 export function parseTherapeuticTechniquesResponse(res, texts = TEXTS) {
   if (!res || typeof res !== 'object' || res.notModified) {
     return { ok: false, error: texts.ERROR, data: [] };

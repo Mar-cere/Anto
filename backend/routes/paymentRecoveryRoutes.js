@@ -8,24 +8,28 @@
 
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
+import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
+import { paymentApiCopy } from '../utils/paymentApiCopy.js';
 import paymentRecoveryService from '../services/paymentRecoveryService.js';
 import paymentAuditService from '../services/paymentAuditService.js';
 
 const router = express.Router();
+
+router.use(attachApiCopy(paymentApiCopy));
 
 // Middleware: Solo administradores pueden acceder a rutas de recuperación
 const isAdmin = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
       success: false,
-      message: 'Usuario no autenticado'
+      message: req.apiCopy.notAuthenticated
     });
   }
 
   if (req.user.role !== 'admin') {
     return res.status(403).json({
       success: false,
-      message: 'Acceso denegado. Se requiere rol de administrador.',
+      message: req.apiCopy.adminDenied,
       required: 'admin',
       current: req.user.role || 'user'
     });
@@ -52,7 +56,7 @@ router.get('/recovery/unactivated', authenticateToken, isAdmin, async (req, res)
     console.error('Error obteniendo pagos no activados:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al obtener pagos no activados',
+      error: req.apiCopy.unactivatedPaymentsError,
     });
   }
 });
@@ -84,7 +88,7 @@ router.post('/recovery/activate/:transactionId', authenticateToken, isAdmin, asy
     console.error('Error activando suscripción:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al activar suscripción',
+      error: req.apiCopy.activateSubscriptionError,
     });
   }
 });
@@ -106,7 +110,7 @@ router.post('/recovery/process-all', authenticateToken, isAdmin, async (req, res
     console.error('Error procesando pagos no activados:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al procesar pagos no activados',
+      error: req.apiCopy.processUnactivatedError,
     });
   }
 });

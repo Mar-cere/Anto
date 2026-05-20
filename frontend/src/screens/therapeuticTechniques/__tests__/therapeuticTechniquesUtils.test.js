@@ -2,6 +2,7 @@ import { CATEGORIES, TEXTS } from '../therapeuticTechniquesConstants';
 import {
   normalizeTechniqueCategory,
   parseTherapeuticTechniquesResponse,
+  resolveInteractiveExerciseType,
 } from '../therapeuticTechniquesUtils';
 
 describe('normalizeTechniqueCategory', () => {
@@ -33,5 +34,28 @@ describe('parseTherapeuticTechniquesResponse', () => {
     expect(parseTherapeuticTechniquesResponse({ notModified: true }).ok).toBe(false);
     expect(parseTherapeuticTechniquesResponse({ success: true, data: {} }).ok).toBe(false);
     expect(parseTherapeuticTechniquesResponse(null).ok).toBe(false);
+  });
+});
+
+describe('resolveInteractiveExerciseType', () => {
+  it('usa interactiveExercise del API', () => {
+    expect(
+      resolveInteractiveExerciseType({
+        name: 'Grounding 5-4-3-2-1',
+        interactiveExercise: 'grounding',
+      }),
+    ).toBe('grounding');
+  });
+
+  it('resuelve nombres en inglés sin campo API', () => {
+    expect(
+      resolveInteractiveExerciseType({ name: 'Conscious Breathing' }),
+    ).toBe('breathing');
+  });
+
+  it('mantiene compatibilidad con nombres en español', () => {
+    expect(
+      resolveInteractiveExerciseType({ name: 'Respiración Consciente' }),
+    ).toBe('breathing');
   });
 });

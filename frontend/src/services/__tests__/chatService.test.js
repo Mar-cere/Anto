@@ -43,7 +43,9 @@ jest.mock('../../config/api', () => {
   return {
     __esModule: true,
     default: mockApiObj,
-    api: mockApiObj
+    api: mockApiObj,
+    API_URL: 'http://test.local',
+    getAppLanguage: jest.fn(() => Promise.resolve('es')),
   };
 }, { virtual: false });
 

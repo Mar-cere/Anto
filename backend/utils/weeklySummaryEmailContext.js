@@ -6,6 +6,8 @@
  * Tono: español neutro y natural (sin voseo ni marcas fuertemente regionales).
  */
 import { APP_NAME } from '../constants/app.js';
+import { buildWeeklySummaryEmailContextEn } from './weeklySummaryEmailContext.en.js';
+import { normalizeEmailLanguage } from './emailLanguage.js';
 
 /**
  * @param {unknown} value
@@ -201,7 +203,16 @@ const CLOSING_LINE_VARIANTS = [
  *   closingLine: string,
  * }}
  */
-export function buildWeeklySummaryEmailContext(user, isoParts) {
+/**
+ * @param {object} user
+ * @param {{ isoWeekYear: number, isoWeek: number, yearWeekKey: string }} isoParts
+ * @param {string} [language='es']
+ */
+export function buildWeeklySummaryEmailContext(user, isoParts, language = 'es') {
+  if (normalizeEmailLanguage(language) === 'en') {
+    return buildWeeklySummaryEmailContextEn(user, isoParts);
+  }
+
   const rawName = user?.name && String(user.name).trim();
   const rawUser = user?.username && String(user.username).trim();
   const displayName = escapeHtmlText(rawName || rawUser || '');

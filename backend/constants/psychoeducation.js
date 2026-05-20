@@ -4,6 +4,14 @@
  * Información educativa sobre condiciones de salud mental,
  * síntomas, causas y tratamiento
  */
+import { PSYCHOEDUCATION_MODULES_EN } from './psychoeducation.en.js';
+import { normalizeApiLanguage } from '../utils/apiLanguage.js';
+
+function psychoeducationCatalogForLanguage(language = 'es') {
+  return normalizeApiLanguage(language) === 'en'
+    ? PSYCHOEDUCATION_MODULES_EN
+    : PSYCHOEDUCATION_MODULES;
+}
 
 export const PSYCHOEDUCATION_MODULES = {
   // Ansiedad
@@ -148,18 +156,21 @@ export const PSYCHOEDUCATION_MODULES = {
 /**
  * Obtiene información psicoeducativa sobre un tema
  * @param {string} topic - Tema sobre el cual obtener información
+ * @param {string} [language='es'] - Idioma (es|en)
  * @returns {Object|null} Módulo de psicoeducación o null
  */
-export const getPsychoeducationModule = (topic) => {
-  const normalizedTopic = topic.toLowerCase().trim();
-  return PSYCHOEDUCATION_MODULES[normalizedTopic] || null;
+export const getPsychoeducationModule = (topic, language = 'es') => {
+  const normalizedTopic = String(topic || '').toLowerCase().trim();
+  const catalog = psychoeducationCatalogForLanguage(language);
+  return catalog[normalizedTopic] || null;
 };
 
 /**
  * Obtiene todos los temas disponibles de psicoeducación
+ * @param {string} [language='es']
  * @returns {Array} Lista de temas disponibles
  */
-export const getAvailableTopics = () => {
-  return Object.keys(PSYCHOEDUCATION_MODULES);
+export const getAvailableTopics = (language = 'es') => {
+  return Object.keys(psychoeducationCatalogForLanguage(language));
 };
 

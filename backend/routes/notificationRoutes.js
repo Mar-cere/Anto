@@ -1,32 +1,30 @@
 /**
  * Rutas de Notificaciones Push
- * 
- * Maneja el registro y gestión de tokens push para notificaciones
- * 
- * @author AntoApp Team
  */
-
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
+import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
 import User from '../models/User.js';
 import pushNotificationService from '../services/pushNotificationService.js';
 import { createRateLimiter } from '../utils/createRateLimiter.js';
+import { resolveRequestLanguage } from '../utils/apiLanguage.js';
+import { notificationApiCopy } from '../utils/notificationApiCopy.js';
 
 const router = express.Router();
 
+router.use(attachApiCopy(notificationApiCopy));
+
 const deletePushTokenLimiter = createRateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 minutos
+  windowMs: 15 * 60 * 1000,
   max: 5,
-  message: 'Demasiadas eliminaciones de tokens. Por favor, intente más tarde.',
+  message: (req) =>
+    notificationApiCopy(resolveRequestLanguage(req)).rateLimitDeleteToken,
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 
-/**
- * POST /api/notifications/push-token
- * Registra o actualiza el token push del usuario
- */
 router.post('/push-token', authenticateToken, async (req, res) => {
+  const copy = req.apiCopy;
   try {
     const { pushToken } = req.body;
     const userId = req.user._id;
@@ -34,15 +32,14 @@ router.post('/push-token', authenticateToken, async (req, res) => {
     if (!pushToken) {
       return res.status(400).json({
         success: false,
-        message: 'Token push es requerido'
+        message: copy.pushTokenRequired,
       });
     }
 
-    // Validar formato básico del token Expo
     if (!pushToken.startsWith('ExponentPushToken[') && !pushToken.startsWith('ExpoPushToken[')) {
       return res.status(400).json({
         success: false,
-        message: 'Formato de token push inválido'
+        message: copy.invalidPushTokenFormat,
       });
     }
 
@@ -53,22 +50,25 @@ router.post('/push-token', authenticateToken, async (req, res) => {
     if (!prevUser) {
       return res.status(404).json({
         success: false,
-        message: 'Usuario no encontrado'
+        message: copy.userNotFound,
       });
     }
 
-    const hadToken = !!(prevUser?.pushToken);
+    const hadToken = !!prevUser?.pushToken;
     const now = new Date();
     const inTrial =
       prevUser?.subscription?.status === 'trial' &&
       prevUser?.subscription?.trialEndDate &&
       new Date(prevUser.subscription.trialEndDate) > now;
 
-    // Actualizar token en el usuario
-    await User.findByIdAndUpdate(userId, {
-      pushToken,
-      pushTokenUpdatedAt: new Date()
-    }, { select: '+pushToken' }); // Forzar incluir el campo
+    await User.findByIdAndUpdate(
+      userId,
+      {
+        pushToken,
+        pushTokenUpdatedAt: new Date(),
+      },
+      { select: '+pushToken' }
+    );
 
     console.log(`[NotificationRoutes] ✅ Token push actualizado para usuario ${userId}`);
 
@@ -87,52 +87,49 @@ router.post('/push-token', authenticateToken, async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Token push registrado exitosamente'
+      message: copy.registerSuccess,
     });
   } catch (error) {
     console.error('[NotificationRoutes] ❌ Error registrando token push:', error);
     res.status(500).json({
       success: false,
-      message: 'Error registrando token push',
-      error: error.message
+      message: copy.registerError,
+      error: error.message,
     });
   }
 });
 
-/**
- * DELETE /api/notifications/push-token
- * Elimina el token push del usuario (útil para logout)
- */
 router.delete('/push-token', authenticateToken, deletePushTokenLimiter, async (req, res) => {
+  const copy = req.apiCopy;
   try {
     const userId = req.user._id;
 
-    // Eliminar token
-    await User.findByIdAndUpdate(userId, {
-      $unset: { pushToken: '', pushTokenUpdatedAt: '' }
-    }, { select: '+pushToken' });
+    await User.findByIdAndUpdate(
+      userId,
+      {
+        $unset: { pushToken: '', pushTokenUpdatedAt: '' },
+      },
+      { select: '+pushToken' }
+    );
 
     console.log(`[NotificationRoutes] ✅ Token push eliminado para usuario ${userId}`);
 
     res.json({
       success: true,
-      message: 'Token push eliminado exitosamente'
+      message: copy.deleteSuccess,
     });
   } catch (error) {
     console.error('[NotificationRoutes] ❌ Error eliminando token push:', error);
     res.status(500).json({
       success: false,
-      message: 'Error eliminando token push',
-      error: error.message
+      message: copy.deleteError,
+      error: error.message,
     });
   }
 });
 
-/**
- * GET /api/notifications/push-token
- * Obtiene el estado del token push del usuario
- */
 router.get('/push-token', authenticateToken, async (req, res) => {
+  const copy = req.apiCopy;
   try {
     const userId = req.user._id;
 
@@ -141,17 +138,16 @@ router.get('/push-token', authenticateToken, async (req, res) => {
     res.json({
       success: true,
       hasToken: !!user.pushToken,
-      tokenUpdatedAt: user.pushTokenUpdatedAt || null
+      tokenUpdatedAt: user.pushTokenUpdatedAt || null,
     });
   } catch (error) {
     console.error('[NotificationRoutes] ❌ Error obteniendo estado del token:', error);
     res.status(500).json({
       success: false,
-      message: 'Error obteniendo estado del token',
-      error: error.message
+      message: copy.getStatusError,
+      error: error.message,
     });
   }
 });
 
 export default router;
-

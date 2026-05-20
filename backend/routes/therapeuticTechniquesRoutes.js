@@ -10,17 +10,19 @@ import { authenticateToken } from '../middleware/auth.js';
 import TherapeuticTechniqueUsage from '../models/TherapeuticTechniqueUsage.js';
 import userProfileService from '../services/userProfileService.js';
 import {
-  CBT_TECHNIQUES,
-  DBT_TECHNIQUES,
-  ACT_TECHNIQUES,
-  IMMEDIATE_TECHNIQUES,
-  getImmediateTechniques,
-  getCBTTechniques,
-  getDBTTechniques,
-  getACTTechniques,
-} from '../constants/therapeuticTechniques.js';
-import { getMindfulnessTechniques, getAllGroundingTechniques } from '../constants/mindfulnessTechniques.js';
-import { getPsychoeducationModule, getAvailableTopics } from '../constants/psychoeducation.js';
+  buildAllTechniquesList,
+  buildTechniquesForEmotion,
+} from '../constants/therapeuticTechniquesLocale.js';
+import {
+  getMindfulnessTechniquesForLanguage,
+  getAllGroundingTechniquesForLanguage,
+} from '../constants/mindfulnessTechniquesLocale.js';
+import {
+  getPsychoeducationModule,
+  getAvailableTopics,
+} from '../constants/psychoeducation.js';
+import { resolveRequestLanguage } from '../utils/apiLanguage.js';
+import { therapeuticApiCopy } from '../utils/therapeuticApiCopy.js';
 
 const router = express.Router();
 
@@ -29,61 +31,22 @@ const router = express.Router();
  * Obtiene todas las técnicas terapéuticas disponibles
  */
 router.get('/', authenticateToken, (req, res) => {
+  const language = resolveRequestLanguage(req);
+  const copy = therapeuticApiCopy(language);
   try {
-    const allTechniques = [];
-
-    // Agregar técnicas inmediatas
-    Object.entries(IMMEDIATE_TECHNIQUES).forEach(([emotion, techniques]) => {
-      techniques.forEach(technique => {
-        allTechniques.push({
-          ...technique,
-          category: 'immediate',
-          emotion,
-          emotions: [emotion],
-        });
-      });
-    });
-
-    // Agregar técnicas CBT
-    Object.entries(CBT_TECHNIQUES).forEach(([key, technique]) => {
-      allTechniques.push({
-        ...technique,
-        id: `cbt-${key}`,
-        category: 'CBT',
-        type: 'CBT',
-      });
-    });
-
-    // Agregar técnicas DBT
-    Object.entries(DBT_TECHNIQUES).forEach(([key, technique]) => {
-      allTechniques.push({
-        ...technique,
-        id: `dbt-${key}`,
-        category: 'DBT',
-        type: 'DBT',
-      });
-    });
-
-    // Agregar técnicas ACT
-    Object.entries(ACT_TECHNIQUES).forEach(([key, technique]) => {
-      allTechniques.push({
-        ...technique,
-        id: `act-${key}`,
-        category: 'ACT',
-        type: 'ACT',
-      });
-    });
+    const allTechniques = buildAllTechniquesList(language);
 
     res.json({
       success: true,
       data: allTechniques,
       count: allTechniques.length,
+      language,
     });
   } catch (error) {
     console.error('Error obteniendo técnicas terapéuticas:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al obtener técnicas terapéuticas',
+      error: copy.listError,
     });
   }
 });
@@ -93,65 +56,24 @@ router.get('/', authenticateToken, (req, res) => {
  * Obtiene técnicas terapéuticas filtradas por emoción
  */
 router.get('/emotion/:emotion', authenticateToken, (req, res) => {
+  const language = resolveRequestLanguage(req);
+  const copy = therapeuticApiCopy(language);
   try {
     const { emotion } = req.params;
-    const techniques = [];
-
-    // Técnicas inmediatas para la emoción
-    const immediate = getImmediateTechniques(emotion);
-    immediate.forEach(technique => {
-      techniques.push({
-        ...technique,
-        category: 'immediate',
-        emotion,
-        emotions: [emotion],
-      });
-    });
-
-    // Técnicas CBT para la emoción
-    const cbt = getCBTTechniques(emotion);
-    cbt.forEach((technique, index) => {
-      techniques.push({
-        ...technique,
-        id: `cbt-${emotion}-${index}`,
-        category: 'CBT',
-        type: 'CBT',
-      });
-    });
-
-    // Técnicas DBT para la emoción
-    const dbt = getDBTTechniques(emotion);
-    dbt.forEach((technique, index) => {
-      techniques.push({
-        ...technique,
-        id: `dbt-${emotion}-${index}`,
-        category: 'DBT',
-        type: 'DBT',
-      });
-    });
-
-    // Técnicas ACT para la emoción
-    const act = getACTTechniques(emotion);
-    act.forEach((technique, index) => {
-      techniques.push({
-        ...technique,
-        id: `act-${emotion}-${index}`,
-        category: 'ACT',
-        type: 'ACT',
-      });
-    });
+    const techniques = buildTechniquesForEmotion(emotion, language);
 
     res.json({
       success: true,
       data: techniques,
       count: techniques.length,
       emotion,
+      language,
     });
   } catch (error) {
     console.error('Error obteniendo técnicas por emoción:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al obtener técnicas terapéuticas',
+      error: copy.emotionError,
     });
   }
 });
@@ -161,30 +83,37 @@ router.get('/emotion/:emotion', authenticateToken, (req, res) => {
  * Obtiene técnicas de mindfulness por emoción
  */
 router.get('/mindfulness/:emotion?', authenticateToken, (req, res) => {
+  const language = resolveRequestLanguage(req);
+  const copy = therapeuticApiCopy(language);
   try {
     const { emotion } = req.params;
-    
+
     if (emotion) {
-      const techniques = getMindfulnessTechniques(emotion);
+      const techniques = getMindfulnessTechniquesForLanguage(emotion, language);
       res.json({
         success: true,
         data: techniques,
         count: techniques.length,
-        emotion
+        emotion,
+        language,
       });
     } else {
-      const allTechniques = getAllGroundingTechniques();
+      const allTechniques = getAllGroundingTechniquesForLanguage(language);
       res.json({
         success: true,
         data: allTechniques,
-        count: Object.keys(allTechniques).reduce((sum, key) => sum + Object.keys(allTechniques[key]).length, 0)
+        count: Object.keys(allTechniques).reduce(
+          (sum, key) => sum + Object.keys(allTechniques[key]).length,
+          0,
+        ),
+        language,
       });
     }
   } catch (error) {
     console.error('Error obteniendo técnicas de mindfulness:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al obtener técnicas de mindfulness'
+      error: copy.mindfulnessError,
     });
   }
 });
@@ -194,29 +123,32 @@ router.get('/mindfulness/:emotion?', authenticateToken, (req, res) => {
  * Obtiene información psicoeducativa sobre un tema
  */
 router.get('/psychoeducation/:topic', authenticateToken, (req, res) => {
+  const language = resolveRequestLanguage(req);
+  const copy = therapeuticApiCopy(language);
   try {
     const { topic } = req.params;
-    const module = getPsychoeducationModule(topic);
-    
+    const module = getPsychoeducationModule(topic, language);
+
     if (!module) {
-      const availableTopics = getAvailableTopics();
+      const availableTopics = getAvailableTopics(language);
       return res.status(404).json({
         success: false,
-        error: `Tema no encontrado: ${topic}`,
-        availableTopics
+        error: copy.psychoeducationNotFound(topic),
+        availableTopics,
       });
     }
-    
+
     res.json({
       success: true,
       data: module,
-      topic
+      topic,
+      language,
     });
   } catch (error) {
     console.error('Error obteniendo psicoeducación:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al obtener información psicoeducativa'
+      error: copy.psychoeducationError,
     });
   }
 });
@@ -226,18 +158,21 @@ router.get('/psychoeducation/:topic', authenticateToken, (req, res) => {
  * Obtiene lista de temas disponibles de psicoeducación
  */
 router.get('/psychoeducation', authenticateToken, (req, res) => {
+  const language = resolveRequestLanguage(req);
+  const copy = therapeuticApiCopy(language);
   try {
-    const topics = getAvailableTopics();
+    const topics = getAvailableTopics(language);
     res.json({
       success: true,
       data: topics,
-      count: topics.length
+      count: topics.length,
+      language,
     });
   } catch (error) {
     console.error('Error obteniendo temas de psicoeducación:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al obtener temas de psicoeducación'
+      error: copy.psychoeducationTopicsError,
     });
   }
 });
@@ -247,6 +182,8 @@ router.get('/psychoeducation', authenticateToken, (req, res) => {
  * Registra el uso de una técnica terapéutica
  */
 router.post('/use', authenticateToken, async (req, res) => {
+  const language = resolveRequestLanguage(req);
+  const copy = therapeuticApiCopy(language);
   try {
     const {
       techniqueId,
@@ -268,7 +205,7 @@ router.post('/use', authenticateToken, async (req, res) => {
     if (!techniqueId || !techniqueName || !techniqueType) {
       return res.status(400).json({
         success: false,
-        error: 'Faltan campos requeridos: techniqueId, techniqueName, techniqueType',
+        error: copy.useMissingFields,
       });
     }
 
@@ -302,7 +239,7 @@ router.post('/use', authenticateToken, async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Uso de técnica registrado',
+      message: copy.useSuccess,
       data: {
         id: usage._id,
         userId,
@@ -315,7 +252,7 @@ router.post('/use', authenticateToken, async (req, res) => {
     console.error('Error registrando uso de técnica:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al registrar uso de técnica',
+      error: copy.useError,
       details: error.message,
     });
   }
@@ -326,6 +263,8 @@ router.post('/use', authenticateToken, async (req, res) => {
  * Obtiene el historial de técnicas utilizadas por el usuario
  */
 router.get('/history', authenticateToken, async (req, res) => {
+  const language = resolveRequestLanguage(req);
+  const copy = therapeuticApiCopy(language);
   try {
     const userId = req.user._id;
     const { limit = 50, skip = 0, techniqueId, emotion, completed } = req.query;
@@ -358,7 +297,7 @@ router.get('/history', authenticateToken, async (req, res) => {
     console.error('Error obteniendo historial de técnicas:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al obtener historial de técnicas',
+      error: copy.historyError,
     });
   }
 });
@@ -368,6 +307,8 @@ router.get('/history', authenticateToken, async (req, res) => {
  * Obtiene estadísticas de uso de técnicas del usuario
  */
 router.get('/stats', authenticateToken, async (req, res) => {
+  const language = resolveRequestLanguage(req);
+  const copy = therapeuticApiCopy(language);
   try {
     const userId = req.user._id;
     const { startDate, endDate } = req.query;
@@ -406,7 +347,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
     console.error('Error obteniendo estadísticas de técnicas:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al obtener estadísticas de técnicas',
+      error: copy.statsError,
     });
   }
 });

@@ -533,18 +533,19 @@ class OpenAIService {
       }
 
       // 6. NUEVO: Obtener plantilla terapéutica si hay subtipo
+      const appLanguage = resolveLanguageFromContext({ profile: perfilUsuario });
       const responseStyle = perfilUsuario?.preferences?.responseStyle || 'balanced';
       const therapeuticBase = therapeuticTemplateService.buildTherapeuticBase(
         analisisEmocional?.mainEmotion,
         analisisEmocional?.subtype,
-        { style: responseStyle }
+        { style: responseStyle, language: appLanguage },
       );
       const therapeuticHint = therapeuticTemplateService.buildTherapeuticHint(
         analisisEmocional?.mainEmotion,
         analisisEmocional?.subtype,
-        { maxLength: 180 }
+        { maxLength: 180, language: appLanguage },
       );
-      
+
       // NUEVO: Registrar métrica de uso de plantilla terapéutica
       if (therapeuticBase && analisisEmocional?.subtype) {
         metricsService.recordMetric('therapeutic_template', {
@@ -561,7 +562,8 @@ class OpenAIService {
           analisisEmocional?.mainEmotion || DEFAULT_VALUES.EMOTION,
           analisisEmocional?.intensity || DEFAULT_VALUES.INTENSITY,
           registroTerapeutico?.currentPhase || DEFAULT_VALUES.PHASE,
-          analisisContextual?.intencion?.tipo || null
+          analisisContextual?.intencion?.tipo || null,
+          appLanguage,
         );
       }
 
@@ -663,7 +665,8 @@ class OpenAIService {
         if (respuestaFinal.length > THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
           const veryCompactText = formatTechniqueForResponse(selectedTechnique, {
             compact: true,
-            maxSteps: 1
+            maxSteps: 1,
+            language: appLanguage,
           });
           respuestaFinal = `${respuestaValidada}${veryCompactText}`;
           
@@ -940,25 +943,26 @@ class OpenAIService {
       currentIntervention = therapeuticProtocolService.getCurrentIntervention(mensaje.userId);
     }
 
+    const appLanguage = resolveLanguageFromContext({ profile: perfilUsuario });
     const responseStyle = perfilUsuario?.preferences?.responseStyle || 'balanced';
     const therapeuticBase = therapeuticTemplateService.buildTherapeuticBase(
       analisisEmocional?.mainEmotion,
       analisisEmocional?.subtype,
-      { style: responseStyle }
+      { style: responseStyle, language: appLanguage },
     );
     const therapeuticHint = therapeuticTemplateService.buildTherapeuticHint(
       analisisEmocional?.mainEmotion,
       analisisEmocional?.subtype,
-      { maxLength: 180 }
+      { maxLength: 180, language: appLanguage },
     );
-
     let selectedTechnique = null;
     if (!activeProtocol) {
       selectedTechnique = selectAppropriateTechnique(
         analisisEmocional?.mainEmotion || DEFAULT_VALUES.EMOTION,
         analisisEmocional?.intensity || DEFAULT_VALUES.INTENSITY,
         registroTerapeutico?.currentPhase || DEFAULT_VALUES.PHASE,
-        analisisContextual?.intencion?.tipo || null
+        analisisContextual?.intencion?.tipo || null,
+        appLanguage,
       );
     }
 
@@ -1020,11 +1024,16 @@ class OpenAIService {
       const espacioDisponible = THRESHOLDS.MAX_CHARACTERS_RESPONSE - respuestaValidada.length;
       const techniqueText = formatTechniqueForResponse(selectedTechnique, {
         compact: espacioDisponible < 300,
-        maxSteps: espacioDisponible < 300 ? 2 : 4
+        maxSteps: espacioDisponible < 300 ? 2 : 4,
+        language: appLanguage,
       });
       respuestaFinal = `${respuestaValidada}${techniqueText}`;
       if (respuestaFinal.length > THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
-        const veryCompact = formatTechniqueForResponse(selectedTechnique, { compact: true, maxSteps: 1 });
+        const veryCompact = formatTechniqueForResponse(selectedTechnique, {
+          compact: true,
+          maxSteps: 1,
+          language: appLanguage,
+        });
         respuestaFinal = `${respuestaValidada}${veryCompact}`;
       }
     }

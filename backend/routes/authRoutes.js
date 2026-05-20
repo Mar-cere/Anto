@@ -4,21 +4,38 @@
 import crypto from 'crypto';
 import express from 'express';
 import { createRateLimiter } from '../utils/createRateLimiter.js';
-import Joi from 'joi';
 import jwt from 'jsonwebtoken';
 import mailer from '../config/mailer.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
 import User from '../models/User.js';
 import { CURRENT_TERMS_VERSION } from '../constants/app.js';
 import { enqueueEmail } from '../services/emailQueueService.js';
+import { resolveRequestLanguage } from '../utils/apiLanguage.js';
+import { authApiCopy } from '../utils/authApiCopy.js';
+import {
+  getChangePasswordSchema,
+  getLoginSchema,
+  getPasswordResetSchema,
+  getRegisterSchema,
+  getResetPasswordSchema,
+  getVerifyCodeSchema,
+  getVerifyEmailSchema,
+} from '../utils/authSchemas.js';
+import { validationErrorBody, validateBody } from '../utils/apiValidation.js';
+import { resolveAppLanguage } from '../utils/resolveAppLanguage.js';
+import { resolveEmailLanguageFromRequest, resolveUserEmailLanguage } from '../utils/emailLanguage.js';
+import { buildDuplicateRegisterBody } from '../utils/authErrorCodes.js';
 
 const router = express.Router();
+
+router.use(attachApiCopy(authApiCopy));
 
 // Rate limiters: control de frecuencia de peticiones
 const loginLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 5,
-  message: 'Demasiados intentos de inicio de sesión. Por favor, intente más tarde.',
+  message: (req) => authApiCopy(resolveRequestLanguage(req)).rateLimitLogin,
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true
@@ -27,7 +44,7 @@ const loginLimiter = createRateLimiter({
 const registerLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hora
   max: 3,
-  message: 'Demasiados intentos de registro. Por favor, intente más tarde.',
+  message: (req) => authApiCopy(resolveRequestLanguage(req)).rateLimitRegister,
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -35,7 +52,7 @@ const registerLimiter = createRateLimiter({
 const passwordResetLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hora
   max: 3,
-  message: 'Demasiados intentos de recuperación de contraseña. Por favor, intente más tarde.',
+  message: (req) => authApiCopy(resolveRequestLanguage(req)).rateLimitPasswordReset,
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -43,161 +60,10 @@ const passwordResetLimiter = createRateLimiter({
 const changePasswordLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 5,
-  message: 'Demasiados intentos de cambio de contraseña. Por favor, intente más tarde.',
+  message: (req) => authApiCopy(resolveRequestLanguage(req)).rateLimitChangePassword,
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true,
-});
-
-// Esquemas de validación Joi (normalizan email y username a lowercase)
-const registerSchema = Joi.object({
-  email: Joi.string()
-    .email({ tlds: { allow: false } })
-    .required()
-    .trim()
-    .lowercase()
-    .messages({
-      'string.email': 'Por favor ingresa un email válido',
-      'any.required': 'El email es requerido'
-    }),
-  password: Joi.string()
-    .min(8)
-    .required()
-    .messages({
-      'string.min': 'La contraseña debe tener al menos 8 caracteres',
-      'any.required': 'La contraseña es requerida'
-    }),
-  username: Joi.string()
-    .min(3)
-    .max(20)
-    .pattern(/^[a-z0-9_]+$/)
-    .required()
-    .trim()
-    .lowercase()
-    .messages({
-      'string.min': 'El nombre de usuario debe tener al menos 3 caracteres',
-      'string.max': 'El nombre de usuario debe tener máximo 20 caracteres',
-      'string.pattern.base': 'El nombre de usuario solo puede contener letras minúsculas, números y guiones bajos',
-      'any.required': 'El nombre de usuario es requerido'
-    }),
-  name: Joi.string()
-    .min(2)
-    .max(50)
-    .trim()
-    .optional()
-    .messages({
-      'string.min': 'El nombre debe tener al menos 2 caracteres',
-      'string.max': 'El nombre debe tener máximo 50 caracteres'
-    }),
-  termsAccepted: Joi.boolean()
-    .valid(true)
-    .required()
-    .messages({
-      'any.only': 'Debes aceptar los términos y condiciones',
-      'any.required': 'Debes aceptar los términos y condiciones'
-    }),
-  termsAcceptedAt: Joi.string()
-    .isoDate()
-    .optional(),
-  privacyAccepted: Joi.boolean()
-    .valid(true)
-    .required()
-    .messages({
-      'any.only': 'Debes aceptar la política de privacidad',
-      'any.required': 'Debes aceptar la política de privacidad'
-    }),
-  privacyAcceptedAt: Joi.string()
-    .isoDate()
-    .optional(),
-  termsVersion: Joi.string()
-    .optional()
-});
-
-const loginSchema = Joi.object({
-  email: Joi.string()
-    .email({ tlds: { allow: false } })
-    .required()
-    .trim()
-    .lowercase()
-    .messages({
-      'string.email': 'Por favor ingresa un email válido',
-      'any.required': 'El email es requerido'
-    }),
-  password: Joi.string()
-    .required()
-    .messages({
-      'any.required': 'La contraseña es requerida'
-    })
-});
-
-const passwordResetSchema = Joi.object({
-  email: Joi.string()
-    .email({ tlds: { allow: false } })
-    .required()
-    .trim()
-    .lowercase()
-    .messages({
-      'string.email': 'Por favor ingresa un email válido',
-      'any.required': 'El email es requerido'
-    })
-});
-
-const verifyCodeSchema = Joi.object({
-  email: Joi.string()
-    .email({ tlds: { allow: false } })
-    .required()
-    .trim()
-    .lowercase(),
-  code: Joi.string()
-    .length(6)
-    .pattern(/^[0-9]+$/)
-    .required()
-    .messages({
-      'string.length': 'El código debe tener 6 dígitos',
-      'string.pattern.base': 'El código debe contener solo números',
-      'any.required': 'El código es requerido'
-    })
-});
-
-const verifyEmailSchema = Joi.object({
-  email: Joi.string()
-    .email({ tlds: { allow: false } })
-    .required()
-    .trim()
-    .lowercase(),
-  code: Joi.string()
-    .length(6)
-    .pattern(/^[0-9]+$/)
-    .required()
-    .messages({
-      'string.length': 'El código debe tener 6 dígitos',
-      'string.pattern.base': 'El código debe contener solo números',
-      'any.required': 'El código es requerido'
-    })
-});
-
-const resetPasswordSchema = Joi.object({
-  email: Joi.string()
-    .email({ tlds: { allow: false } })
-    .required()
-    .trim()
-    .lowercase(),
-  code: Joi.string()
-    .length(6)
-    .pattern(/^[0-9]+$/)
-    .required()
-    .messages({
-      'string.length': 'El código debe tener 6 dígitos',
-      'string.pattern.base': 'El código debe contener solo números',
-      'any.required': 'El código es requerido'
-    }),
-  newPassword: Joi.string()
-    .min(8)
-    .required()
-    .messages({
-      'string.min': 'La nueva contraseña debe tener al menos 8 caracteres',
-      'any.required': 'La nueva contraseña es requerida'
-    })
 });
 
 // Funciones helper
@@ -248,17 +114,30 @@ router.get('/health', (req, res) => {
 
 // Registro de usuario
 router.post('/register', registerLimiter, async (req, res) => {
+  const copy = req.apiCopy;
   try {
-    // Validar datos de entrada (Joi normaliza email y username a lowercase)
-    const { error, value } = registerSchema.validate(req.body, { stripUnknown: true });
+    const { error, value } = validateBody(getRegisterSchema(copy), req.body);
     if (error) {
-      return res.status(400).json({ 
-        message: 'Datos inválidos',
-        errors: error.details.map(detail => detail.message)
-      });
+      return res.status(400).json(validationErrorBody(copy, error));
     }
 
-    const { email, password, username, name, termsAccepted, termsAcceptedAt, privacyAccepted, privacyAcceptedAt, termsVersion } = value;
+    const {
+      email,
+      password,
+      username,
+      name,
+      termsAccepted,
+      termsAcceptedAt,
+      privacyAccepted,
+      privacyAcceptedAt,
+      termsVersion,
+      language: registerLanguage,
+    } = value;
+
+    const initialLanguage = resolveAppLanguage({
+      headerLanguage: req.get('X-App-Language'),
+      preferenceLanguage: registerLanguage,
+    });
 
     // Verificar si el usuario ya existe
     const existingUser = await User.findOne({
@@ -269,9 +148,7 @@ router.post('/register', registerLimiter, async (req, res) => {
       .maxTimeMS(5000);
 
     if (existingUser) {
-      return res.status(400).json({ 
-        message: 'El email o nombre de usuario ya está en uso' 
-      });
+      return res.status(400).json(buildDuplicateRegisterBody(copy));
     }
 
     // Generar hash de contraseña
@@ -293,7 +170,7 @@ router.post('/register', registerLimiter, async (req, res) => {
       preferences: {
         theme: 'light',
         notifications: true,
-        language: 'es'
+        language: initialLanguage,
       },
       stats: {
         tasksCompleted: 0,
@@ -320,7 +197,9 @@ router.post('/register', registerLimiter, async (req, res) => {
 
     // Enviar código de verificación por email
     try {
-      await mailer.sendEmailVerificationCode(email, verificationCode, username);
+      await mailer.sendEmailVerificationCode(email, verificationCode, username, {
+        language: initialLanguage,
+      });
       console.log(`✅ Código de verificación enviado a: ${email}`);
     } catch (err) {
       console.error('❌ Error enviando código de verificación:', err.message);
@@ -331,7 +210,7 @@ router.post('/register', registerLimiter, async (req, res) => {
     // NO generar tokens todavía - el usuario debe verificar su email primero
     // Retornar información de que necesita verificar email
     res.status(201).json({
-      message: 'Usuario registrado exitosamente. Por favor verifica tu email.',
+      message: copy.registerSuccess,
       requiresVerification: true,
       email: email, // Enviar email para la pantalla de verificación
       user: {
@@ -348,19 +227,17 @@ router.post('/register', registerLimiter, async (req, res) => {
     // Manejar errores específicos
     if (error.name === 'ValidationError') {
       return res.status(400).json({
-        message: 'Error de validación',
+        message: copy.validationError,
         errors: Object.values(error.errors).map(err => err.message)
       });
     }
 
     if (error.code === 11000) {
-      return res.status(400).json({
-        message: 'El email o nombre de usuario ya está en uso'
-      });
+      return res.status(400).json(buildDuplicateRegisterBody(copy));
     }
 
     res.status(500).json({ 
-      message: 'Error al registrar usuario',
+      message: copy.registerError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -368,13 +245,11 @@ router.post('/register', registerLimiter, async (req, res) => {
 
 // Verificar email después del registro
 router.post('/verify-email', registerLimiter, async (req, res) => {
+  const copy = req.apiCopy;
   try {
-    const { error, value } = verifyEmailSchema.validate(req.body, { stripUnknown: true });
+    const { error, value } = validateBody(getVerifyEmailSchema(copy), req.body);
     if (error) {
-      return res.status(400).json({
-        message: 'Datos inválidos',
-        errors: error.details.map(detail => detail.message)
-      });
+      return res.status(400).json(validationErrorBody(copy, error));
     }
 
     const { email, code } = value;
@@ -382,12 +257,12 @@ router.post('/verify-email', registerLimiter, async (req, res) => {
     // Buscar usuario
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: 'No existe una cuenta con este correo electrónico' });
+      return res.status(404).json({ message: copy.emailNotFound });
     }
 
     // Verificar si ya está verificado
     if (user.emailVerified) {
-      return res.status(400).json({ message: 'El email ya está verificado' });
+      return res.status(400).json({ message: copy.emailAlreadyVerified });
     }
 
     // Validar código
@@ -395,7 +270,7 @@ router.post('/verify-email', registerLimiter, async (req, res) => {
         !user.emailVerificationCodeExpires ||
         user.emailVerificationCode !== code ||
         user.emailVerificationCodeExpires < Date.now()) {
-      return res.status(400).json({ message: 'Código inválido o expirado' });
+      return res.status(400).json({ message: copy.invalidOrExpiredCode });
     }
 
     // Marcar email como verificado y limpiar código
@@ -406,7 +281,10 @@ router.post('/verify-email', registerLimiter, async (req, res) => {
 
     // Enviar correo de bienvenida ahora que el email está verificado
     enqueueEmail(
-      () => mailer.sendWelcomeEmail(email, user.username),
+      () =>
+        mailer.sendWelcomeEmail(email, user.username, {
+          language: resolveUserEmailLanguage(user),
+        }),
       { type: 'welcome_email', to: email }
     );
 
@@ -414,7 +292,7 @@ router.post('/verify-email', registerLimiter, async (req, res) => {
     const { accessToken, refreshToken } = await generateTokens(user._id, user.role || 'user');
 
     res.json({
-      message: 'Email verificado exitosamente',
+      message: copy.verifyEmailSuccess,
       accessToken,
       token: accessToken,
       refreshToken,
@@ -422,19 +300,17 @@ router.post('/verify-email', registerLimiter, async (req, res) => {
     });
   } catch (error) {
     console.error('Error verificando email:', error);
-    res.status(500).json({ message: 'Error al verificar el email' });
+    res.status(500).json({ message: copy.verifyEmailError });
   }
 });
 
 // Reenviar código de verificación de email
 router.post('/resend-verification-code', registerLimiter, async (req, res) => {
+  const copy = req.apiCopy;
   try {
-    const { error, value } = passwordResetSchema.validate(req.body, { stripUnknown: true });
+    const { error, value } = validateBody(getPasswordResetSchema(copy), req.body);
     if (error) {
-      return res.status(400).json({
-        message: 'Datos inválidos',
-        errors: error.details.map(detail => detail.message)
-      });
+      return res.status(400).json(validationErrorBody(copy, error));
     }
 
     const { email } = value;
@@ -442,12 +318,12 @@ router.post('/resend-verification-code', registerLimiter, async (req, res) => {
     // Buscar usuario
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: 'No existe una cuenta con este correo electrónico' });
+      return res.status(404).json({ message: copy.emailNotFound });
     }
 
     // Verificar si ya está verificado
     if (user.emailVerified) {
-      return res.status(400).json({ message: 'El email ya está verificado' });
+      return res.status(400).json({ message: copy.emailAlreadyVerified });
     }
 
     // Generar nuevo código
@@ -460,31 +336,30 @@ router.post('/resend-verification-code', registerLimiter, async (req, res) => {
 
     // Enviar código por email
     try {
-      await mailer.sendEmailVerificationCode(email, verificationCode, user.username);
+      await mailer.sendEmailVerificationCode(email, verificationCode, user.username, {
+        language: resolveUserEmailLanguage(user, resolveEmailLanguageFromRequest(req, user)),
+      });
       res.json({
-        message: 'Código de verificación reenviado exitosamente',
+        message: copy.resendCodeSuccess,
         expiresIn: 600 // 10 minutos en segundos
       });
     } catch (err) {
       console.error('Error enviando código de verificación:', err.message);
-      res.status(500).json({ message: 'Error al enviar el código de verificación' });
+      res.status(500).json({ message: copy.resendCodeSendError });
     }
   } catch (error) {
     console.error('Error reenviando código:', error);
-    res.status(500).json({ message: 'Error al procesar la solicitud' });
+    res.status(500).json({ message: copy.requestProcessError });
   }
 });
 
 // Login
 router.post('/login', loginLimiter, async (req, res) => {
+  const copy = req.apiCopy;
   try {
-    // Validar datos de entrada
-    const { error, value } = loginSchema.validate(req.body, { stripUnknown: true });
+    const { error, value } = validateBody(getLoginSchema(copy), req.body);
     if (error) {
-      return res.status(400).json({
-        message: 'Datos inválidos',
-        errors: error.details.map(detail => detail.message)
-      });
+      return res.status(400).json(validationErrorBody(copy, error));
     }
 
     const { email, password } = value;
@@ -493,22 +368,18 @@ router.post('/login', loginLimiter, async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user || !user.comparePassword(password)) {
-      return res.status(401).json({ 
-        message: 'Credenciales incorrectas' 
-      });
+      return res.status(401).json({ message: copy.invalidCredentials });
     }
 
     // Verificar si el usuario está activo
     if (!user.isActive) {
-      return res.status(403).json({
-        message: 'Tu cuenta ha sido desactivada. Contacta al soporte.'
-      });
+      return res.status(403).json({ message: copy.accountDeactivated });
     }
 
     // Verificar si el email está verificado
     if (!user.emailVerified) {
       return res.status(403).json({
-        message: 'Por favor verifica tu email antes de iniciar sesión. Revisa tu correo para el código de verificación.',
+        message: copy.verifyEmailBeforeLogin,
         requiresVerification: true,
         email: user.email
       });
@@ -539,30 +410,29 @@ router.post('/login', loginLimiter, async (req, res) => {
 
   } catch (error) {
     console.error('Error en login:', error);
-    res.status(500).json({ 
-      message: 'Error al iniciar sesión' 
-    });
+    res.status(500).json({ message: copy.loginError });
   }
 });
 
 // Refresh token: genera nuevo access token
 router.post('/refresh', async (req, res) => {
+  const copy = req.apiCopy;
   try {
     const { refreshToken } = req.body;
 
     if (!refreshToken) {
-      return res.status(400).json({ message: 'Refresh token es requerido' });
+      return res.status(400).json({ message: copy.refreshTokenRequired });
     }
 
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
     
     if (decoded.type !== 'refresh') {
-      return res.status(401).json({ message: 'Token inválido' });
+      return res.status(401).json({ message: copy.invalidToken });
     }
 
     const user = await User.findById(decoded.userId);
     if (!user || !user.isActive) {
-      return res.status(401).json({ message: 'Usuario no encontrado o inactivo' });
+      return res.status(401).json({ message: copy.userNotFoundInactive });
     }
 
     // Generar nuevo access token con el rol actualizado del usuario
@@ -575,36 +445,32 @@ router.post('/refresh', async (req, res) => {
 
   } catch (error) {
     console.error('Error en refresh token:', error);
-    res.status(401).json({ message: 'Token inválido o expirado' });
+    res.status(401).json({ message: copy.tokenInvalidOrExpired });
   }
 });
 
 // Recuperar contraseña: envía código de verificación
 router.post('/recover-password', passwordResetLimiter, async (req, res) => {
+  const copy = req.apiCopy;
   try {
-    const { error, value } = passwordResetSchema.validate(req.body, { stripUnknown: true });
+    const { error, value } = validateBody(getPasswordResetSchema(copy), req.body);
     if (error) {
-      return res.status(400).json({
-        message: 'Datos inválidos',
-        errors: error.details.map(detail => detail.message)
-      });
+      return res.status(400).json(validationErrorBody(copy, error));
     }
 
     const { email } = value;
 
     // Verificar si el usuario existe (Joi ya normaliza email a lowercase)
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('preferences.language resetPasswordCode resetPasswordExpires');
     if (!user) {
-      return res.status(404).json({ 
-        message: 'No existe una cuenta con este correo electrónico' 
-      });
+      return res.status(404).json({ message: copy.emailNotFound });
     }
+
+    const emailLanguage = resolveUserEmailLanguage(user, resolveEmailLanguageFromRequest(req, user));
 
     // Verificar si ya hay un código activo
     if (user.resetPasswordCode && user.resetPasswordExpires > Date.now()) {
-      return res.status(400).json({
-        message: 'Ya existe un código de recuperación activo. Por favor, espere a que expire.'
-      });
+      return res.status(400).json({ message: copy.activeRecoveryCodeExists });
     }
 
     // Generar código de verificación (6 dígitos)
@@ -617,30 +483,26 @@ router.post('/recover-password', passwordResetLimiter, async (req, res) => {
     await user.save();
 
     // Enviar correo con el código
-    await mailer.sendVerificationCode(email, verificationCode);
+    await mailer.sendVerificationCode(email, verificationCode, { language: emailLanguage });
 
     res.json({ 
-      message: 'Se ha enviado un código de verificación a tu correo',
+      message: copy.verificationCodeSent,
       expiresIn: 600 // 10 minutos en segundos
     });
 
   } catch (error) {
     console.error('Error en recuperación de contraseña:', error);
-    res.status(500).json({ 
-      message: 'Error al procesar la solicitud' 
-    });
+    res.status(500).json({ message: copy.requestProcessError });
   }
 });
 
 // Verificar código de recuperación
 router.post('/verify-code', passwordResetLimiter, async (req, res) => {
+  const copy = req.apiCopy;
   try {
-    const { error, value } = verifyCodeSchema.validate(req.body, { stripUnknown: true });
+    const { error, value } = validateBody(getVerifyCodeSchema(copy), req.body);
     if (error) {
-      return res.status(400).json({
-        message: 'Datos inválidos',
-        errors: error.details.map(detail => detail.message)
-      });
+      return res.status(400).json(validationErrorBody(copy, error));
     }
 
     const { email, code } = value;
@@ -650,33 +512,31 @@ router.post('/verify-code', passwordResetLimiter, async (req, res) => {
       .select('_id resetPasswordCode resetPasswordExpires')
       .lean();
     if (!user) {
-      return res.status(404).json({ message: 'No existe una cuenta con este correo electrónico' });
+      return res.status(404).json({ message: copy.emailNotFound });
     }
 
     // Validar código
     if (!validateResetCode(user, code)) {
-      return res.status(400).json({ message: 'Código inválido o expirado' });
+      return res.status(400).json({ message: copy.invalidOrExpiredCode });
     }
 
     res.json({
-      message: 'Código verificado correctamente',
+      message: copy.codeVerifiedSuccess,
       expiresIn: Math.floor((user.resetPasswordExpires - Date.now()) / 1000)
     });
   } catch (error) {
     console.error('Error al verificar código:', error);
-    res.status(500).json({ message: 'Error al verificar el código' });
+    res.status(500).json({ message: copy.codeVerifyError });
   }
 });
 
 // Restablecer contraseña: cambia la contraseña con código verificado
 router.post('/reset-password', passwordResetLimiter, async (req, res) => {
+  const copy = req.apiCopy;
   try {
-    const { error, value } = resetPasswordSchema.validate(req.body, { stripUnknown: true });
+    const { error, value } = validateBody(getResetPasswordSchema(copy), req.body);
     if (error) {
-      return res.status(400).json({
-        message: 'Datos inválidos',
-        errors: error.details.map(detail => detail.message)
-      });
+      return res.status(400).json(validationErrorBody(copy, error));
     }
 
     const { email, code, newPassword } = value;
@@ -684,12 +544,12 @@ router.post('/reset-password', passwordResetLimiter, async (req, res) => {
     // Buscar usuario (Joi ya normaliza email a lowercase)
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: 'No existe una cuenta con este correo electrónico' });
+      return res.status(404).json({ message: copy.emailNotFound });
     }
 
     // Verificar código y expiración
     if (!validateResetCode(user, code)) {
-      return res.status(400).json({ message: 'Código inválido o expirado' });
+      return res.status(400).json({ message: copy.invalidOrExpiredCode });
     }
 
     // Hashear la nueva contraseña
@@ -703,34 +563,22 @@ router.post('/reset-password', passwordResetLimiter, async (req, res) => {
     user.lastPasswordChange = new Date();
     await user.save();
 
-    res.json({ message: 'Contraseña restablecida correctamente' });
+    res.json({ message: copy.passwordResetSuccess });
   } catch (error) {
     console.error('Error al restablecer contraseña:', error);
-    res.status(500).json({ message: 'Error al restablecer la contraseña' });
+    res.status(500).json({ message: copy.passwordResetError });
   }
 });
 
 // Cambiar contraseña (usuario autenticado)
-const changePasswordSchema = Joi.object({
-  currentPassword: Joi.string().required().messages({
-    'any.required': 'La contraseña actual es obligatoria',
-    'string.empty': 'La contraseña actual es obligatoria',
-  }),
-  newPassword: Joi.string().min(6).required().messages({
-    'any.required': 'La nueva contraseña es obligatoria',
-    'string.empty': 'La nueva contraseña es obligatoria',
-    'string.min': 'La nueva contraseña debe tener al menos 6 caracteres',
-  }),
-});
-
 router.put('/change-password', changePasswordLimiter, authenticateToken, async (req, res) => {
+  const copy = req.apiCopy;
   try {
-    const { error, value } = changePasswordSchema.validate(req.body, { stripUnknown: true });
+    const { error, value } = validateBody(getChangePasswordSchema(copy), req.body);
     if (error) {
       return res.status(400).json({
-        message: 'Datos inválidos',
+        ...validationErrorBody(copy, error),
         errorCode: 'VALIDATION_ERROR',
-        errors: error.details.map(detail => detail.message),
       });
     }
 
@@ -740,21 +588,21 @@ router.put('/change-password', changePasswordLimiter, authenticateToken, async (
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({
-        message: 'Usuario no encontrado',
+        message: copy.userNotFound,
         errorCode: 'USER_NOT_FOUND',
       });
     }
 
     if (!user.comparePassword(currentPassword)) {
       return res.status(401).json({
-        message: 'La contraseña actual es incorrecta',
+        message: copy.wrongCurrentPassword,
         errorCode: 'WRONG_CURRENT_PASSWORD',
       });
     }
 
     if (user.comparePassword(newPassword)) {
       return res.status(400).json({
-        message: 'La nueva contraseña debe ser diferente a la actual',
+        message: copy.passwordSameAsCurrent,
         errorCode: 'PASSWORD_SAME_AS_CURRENT',
       });
     }
@@ -765,11 +613,11 @@ router.put('/change-password', changePasswordLimiter, authenticateToken, async (
     user.lastPasswordChange = new Date();
     await user.save();
 
-    res.json({ message: 'Contraseña actualizada correctamente' });
+    res.json({ message: copy.passwordUpdatedSuccess });
   } catch (error) {
     console.error('Error al cambiar contraseña:', error);
     res.status(500).json({
-      message: 'Error al cambiar la contraseña',
+      message: copy.changePasswordError,
       errorCode: 'CHANGE_PASSWORD_FAILED',
     });
   }
@@ -777,11 +625,12 @@ router.put('/change-password', changePasswordLimiter, authenticateToken, async (
 
 // Logout: cierra sesión (en implementación futura se invalidaría el refresh token)
 router.post('/logout', authenticateToken, async (req, res) => {
+  const copy = req.apiCopy;
   try {
-    res.json({ message: 'Sesión cerrada correctamente' });
+    res.json({ message: copy.logoutSuccess });
   } catch (error) {
     console.error('Error en logout:', error);
-    res.status(500).json({ message: 'Error al cerrar sesión' });
+    res.status(500).json({ message: copy.logoutError });
   }
 });
 

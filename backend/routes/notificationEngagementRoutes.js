@@ -1,28 +1,30 @@
 /**
  * Rutas para Analytics de Engagement de Notificaciones
  */
-
 import express from 'express';
 import { createRateLimiter } from '../utils/createRateLimiter.js';
 import mongoose from 'mongoose';
 import { authenticateToken } from '../middleware/auth.js';
+import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
 import NotificationEngagement from '../models/NotificationEngagement.js';
+import { resolveRequestLanguage } from '../utils/apiLanguage.js';
+import { notificationEngagementApiCopy } from '../utils/notificationEngagementApiCopy.js';
 
 const router = express.Router();
 
+router.use(attachApiCopy(notificationEngagementApiCopy));
+
 const patchEngagementLimiter = createRateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 minutos
+  windowMs: 15 * 60 * 1000,
   max: 30,
-  message: 'Demasiadas actualizaciones. Por favor, intente más tarde.',
+  message: (req) =>
+    notificationEngagementApiCopy(resolveRequestLanguage(req)).rateLimitUpdate,
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 
-/**
- * GET /api/notifications/engagement/stats
- * Obtiene estadísticas de engagement de notificaciones del usuario
- */
 router.get('/engagement/stats', authenticateToken, async (req, res) => {
+  const copy = req.apiCopy;
   try {
     const userId = new mongoose.Types.ObjectId(req.user._id);
     const days = parseInt(req.query.days) || 30;
@@ -33,23 +35,20 @@ router.get('/engagement/stats', authenticateToken, async (req, res) => {
       success: true,
       data: {
         stats,
-        period: days
-      }
+        period: days,
+      },
     });
   } catch (error) {
     console.error('[NotificationEngagementRoutes] Error obteniendo stats:', error);
     res.status(500).json({
       success: false,
-      message: 'Error obteniendo estadísticas de engagement'
+      message: copy.engagementStatsError,
     });
   }
 });
 
-/**
- * GET /api/notifications/engagement/overall
- * Obtiene estadísticas generales de engagement
- */
 router.get('/engagement/overall', authenticateToken, async (req, res) => {
+  const copy = req.apiCopy;
   try {
     const userId = new mongoose.Types.ObjectId(req.user._id);
     const days = parseInt(req.query.days) || 30;
@@ -58,22 +57,19 @@ router.get('/engagement/overall', authenticateToken, async (req, res) => {
 
     res.json({
       success: true,
-      data: stats
+      data: stats,
     });
   } catch (error) {
     console.error('[NotificationEngagementRoutes] Error obteniendo overall stats:', error);
     res.status(500).json({
       success: false,
-      message: 'Error obteniendo estadísticas generales'
+      message: copy.overallStatsError,
     });
   }
 });
 
-/**
- * GET /api/notifications/engagement/history
- * Obtiene el historial de notificaciones del usuario
- */
 router.get('/engagement/history', authenticateToken, async (req, res) => {
+  const copy = req.apiCopy;
   try {
     const userId = new mongoose.Types.ObjectId(req.user._id);
     const page = parseInt(req.query.page) || 1;
@@ -81,8 +77,7 @@ router.get('/engagement/history', authenticateToken, async (req, res) => {
     const skip = (page - 1) * limit;
 
     const filter = { userId };
-    
-    // Filtros opcionales
+
     if (req.query.type) {
       filter.notificationType = req.query.type;
     }
@@ -105,7 +100,7 @@ router.get('/engagement/history', authenticateToken, async (req, res) => {
         .skip(skip)
         .limit(limit)
         .lean(),
-      NotificationEngagement.countDocuments(filter)
+      NotificationEngagement.countDocuments(filter),
     ]);
 
     res.json({
@@ -116,24 +111,21 @@ router.get('/engagement/history', authenticateToken, async (req, res) => {
           page,
           limit,
           total,
-          pages: Math.ceil(total / limit)
-        }
-      }
+          pages: Math.ceil(total / limit),
+        },
+      },
     });
   } catch (error) {
     console.error('[NotificationEngagementRoutes] Error obteniendo historial:', error);
     res.status(500).json({
       success: false,
-      message: 'Error obteniendo historial de notificaciones'
+      message: copy.historyError,
     });
   }
 });
 
-/**
- * PATCH /api/notifications/engagement/:id/status
- * Actualiza el estado de una notificación (por ejemplo, cuando el usuario la abre)
- */
 router.patch('/engagement/:id/status', authenticateToken, patchEngagementLimiter, async (req, res) => {
+  const copy = req.apiCopy;
   try {
     const notificationId = new mongoose.Types.ObjectId(req.params.id);
     const { status } = req.body;
@@ -141,17 +133,15 @@ router.patch('/engagement/:id/status', authenticateToken, patchEngagementLimiter
     if (!['sent', 'delivered', 'opened', 'dismissed', 'error'].includes(status)) {
       return res.status(400).json({
         success: false,
-        message: 'Estado inválido'
+        message: copy.invalidStatus,
       });
     }
 
     const update = { status };
-    
-    // Si se marca como abierta, agregar timestamp
+
     if (status === 'opened') {
       update.openedAt = new Date();
     }
-    // Si se marca como entregada, agregar timestamp
     if (status === 'delivered') {
       update.deliveredAt = new Date();
     }
@@ -165,22 +155,21 @@ router.patch('/engagement/:id/status', authenticateToken, patchEngagementLimiter
     if (!notification) {
       return res.status(404).json({
         success: false,
-        message: 'Notificación no encontrada'
+        message: copy.notificationNotFound,
       });
     }
 
     res.json({
       success: true,
-      data: notification
+      data: notification,
     });
   } catch (error) {
     console.error('[NotificationEngagementRoutes] Error actualizando estado:', error);
     res.status(500).json({
       success: false,
-      message: 'Error actualizando estado de notificación'
+      message: copy.updateStatusError,
     });
   }
 });
 
 export default router;
-

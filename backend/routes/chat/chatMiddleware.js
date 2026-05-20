@@ -20,7 +20,7 @@ export function validarConversationId(req, res, next) {
       surface: 'registered'
     });
     return res.status(400).json({
-      message: 'ID de conversación requerido'
+      message: req.apiCopy.conversationIdRequired,
     });
   }
 
@@ -30,7 +30,7 @@ export function validarConversationId(req, res, next) {
       surface: 'registered'
     });
     return res.status(400).json({
-      message: 'ID de conversación inválido'
+      message: req.apiCopy.conversationIdInvalid,
     });
   }
   next();
@@ -44,7 +44,7 @@ export async function validarConversacion(req, res, next) {
       httpStatus: 400,
       surface: 'registered'
     });
-    return res.status(400).json({ message: 'ID de conversación o usuario inválido' });
+    return res.status(400).json({ message: req.apiCopy.conversationOrUserInvalid });
   }
 
   const conversation = await Conversation.findOne({
@@ -59,7 +59,7 @@ export async function validarConversacion(req, res, next) {
       httpStatus: 404,
       surface: 'registered'
     });
-    return res.status(404).json({ message: 'Conversación no encontrada' });
+    return res.status(404).json({ message: req.apiCopy.conversationNotFound });
   }
 
   req.conversation = conversation;

@@ -20,6 +20,8 @@ export function resolveAppLanguage({
   const accept = String(acceptLanguage || '').toLowerCase();
   if (accept.startsWith('en')) return 'en';
   if (accept.startsWith('es')) return 'es';
+  // Alineado con cliente móvil: locale no español → inglés
+  if (accept.length > 0) return 'en';
 
   return defaultLanguage === 'en' ? 'en' : 'es';
 }

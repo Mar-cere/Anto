@@ -45,6 +45,51 @@ function reminderIcon(kind) {
   }
 }
 
+/** Ajusta recordatorios legacy en español cuando la UI está en inglés (p. ej. caché). */
+function normalizeReminderForLanguage(reminder, language, DASH) {
+  if (!reminder) return reminder;
+  const isEnglish = language === 'en';
+  let title = String(reminder.title || '').trim();
+  let subtitle = reminder.subtitle != null ? String(reminder.subtitle).trim() : '';
+
+  if (isEnglish) {
+    if (/recordatorio programado\s*\(mañana\)/i.test(title)) {
+      title = DASH.FOCUS_PUSH_SCHEDULED_MORNING;
+    } else if (/recordatorio programado\s*\(tarde/i.test(title)) {
+      title = DASH.FOCUS_PUSH_SCHEDULED_EVENING;
+    } else if (/^recordatorio programado$/i.test(title)) {
+      title = DASH.FOCUS_PUSH_SCHEDULED_GENERIC;
+    } else if (/^pr[oó]xima tarea:/i.test(title)) {
+      title = title.replace(/^pr[oó]xima tarea:/i, DASH.FOCUS_REMINDER_NEXT_TASK_PREFIX);
+    } else if (/^h[aá]bito:/i.test(title)) {
+      title = title.replace(/^h[aá]bito:/i, DASH.FOCUS_REMINDER_HABIT_PREFIX);
+    }
+    if (/^recordatorio hacia las/i.test(subtitle)) {
+      subtitle = subtitle.replace(/^recordatorio hacia las/i, DASH.FOCUS_REMINDER_AROUND_PREFIX);
+    } else if (/^vence el /i.test(subtitle)) {
+      subtitle = subtitle.replace(/^vence el /i, 'Due ');
+    }
+  } else if (language === 'es') {
+    if (/^scheduled reminder\s*\(morning\)/i.test(title)) {
+      title = DASH.FOCUS_PUSH_SCHEDULED_MORNING;
+    } else if (/^scheduled reminder\s*\(evening/i.test(title)) {
+      title = DASH.FOCUS_PUSH_SCHEDULED_EVENING;
+    } else if (/^next task:/i.test(title)) {
+      title = title.replace(/^next task:/i, DASH.FOCUS_REMINDER_NEXT_TASK_PREFIX);
+    } else if (/^habit:/i.test(title)) {
+      title = title.replace(/^habit:/i, DASH.FOCUS_REMINDER_HABIT_PREFIX);
+    }
+    if (/^reminder around /i.test(subtitle)) {
+      subtitle = subtitle.replace(/^reminder around /i, `${DASH.FOCUS_REMINDER_AROUND_PREFIX} `);
+    } else if (/^due /i.test(subtitle)) {
+      subtitle = subtitle.replace(/^due /i, 'Vence el ');
+    }
+  }
+
+  if (title === reminder.title && subtitle === (reminder.subtitle || '')) return reminder;
+  return { ...reminder, title, subtitle: subtitle || null };
+}
+
 function normalizePreloadedChatCopy(reminder, language, DASH) {
   if (!reminder || reminder.kind !== 'chat') return reminder;
   const originalTitle = String(reminder.title || '').trim();
@@ -108,14 +153,17 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation }) => {
 
   const displayedReminder = useMemo(() => {
     const picked = pickDisplayedReminder(reminder?.candidates, isCompact);
-    return normalizePreloadedChatCopy(picked, language, DASH);
+    const localized = normalizeReminderForLanguage(picked, language, DASH);
+    return normalizePreloadedChatCopy(localized, language, DASH);
   }, [reminder?.candidates, isCompact, language, DASH]);
 
   const lastSessionText = useMemo(() => {
     if (!lastSession) return '';
     const s = String(lastSession.snippet || '').trim();
+    const b = String(lastSession.bridge || '').trim();
+    if (lastSession.placeholder && b) return b;
     if (s) return s;
-    return String(lastSession.bridge || '').trim();
+    return b;
   }, [lastSession]);
 
   const lastSessionConvId = lastSession?.conversationId ? String(lastSession.conversationId) : null;

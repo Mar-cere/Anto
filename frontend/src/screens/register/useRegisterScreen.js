@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Animated } from 'react-native';
-import { api, ENDPOINTS } from '../../config/api';
+import { api, ENDPOINTS, getAppLanguage } from '../../config/api';
 import { ROUTES } from '../../constants/routes';
 import {
   ANIMATION_DELAYS,
@@ -16,92 +16,19 @@ import { checkServerStatus } from '../../utils/networkUtils';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { openRegisterPrivacyUrl } from './openPrivacyLink';
 import chatService from '../../services/chatService';
 import { STORAGE_KEYS, SERVER_CHECK_TIMEOUT } from './registerScreenConstants';
+import {
+  isRegisterDuplicateError,
+  resolveRegisterErrorMessage,
+} from './registerErrorUtils';
 const { NAME_MIN, NAME_MAX, USERNAME_MIN, USERNAME_MAX, PASSWORD_MIN } = VALIDATION_LENGTHS;
 const { EMAIL } = VALIDATION_REGEX;
 
 const validateEmail = (email) => EMAIL.test(email);
-
-const resolveRegisterErrorMessage = ({
-  error,
-  errorMessages = {},
-  texts = {},
-  isOffline = false,
-}) => {
-  if (isOffline) {
-    return (
-      errorMessages.NETWORK_ERROR ||
-      errorMessages.CONNECTION_ERROR ||
-      errorMessages.GENERIC_ERROR ||
-      texts.ERROR_TITLE
-    );
-  }
-
-  const normalizedMessage = String(
-    error?.response?.data?.message ?? error?.message ?? '',
-  ).toLowerCase();
-  const status = error?.response?.status;
-
-  const isTooManyAttempts =
-    status === 429 ||
-    normalizedMessage.includes('too many') ||
-    normalizedMessage.includes('demasiados intentos');
-  if (isTooManyAttempts) {
-    return (
-      errorMessages.TOO_MANY_ATTEMPTS ||
-      errorMessages.GENERIC_ERROR ||
-      texts.ERROR_TITLE
-    );
-  }
-
-  const isAlreadyExists =
-    status === 409 ||
-    normalizedMessage.includes('already') ||
-    normalizedMessage.includes('exist') ||
-    normalizedMessage.includes('duplicate') ||
-    normalizedMessage.includes('registrado');
-  if (isAlreadyExists) {
-    return (
-      errorMessages.ALREADY_EXISTS ||
-      errorMessages.GENERIC_ERROR ||
-      texts.ERROR_TITLE
-    );
-  }
-
-  const isInvalidData =
-    status === 400 ||
-    status === 422 ||
-    normalizedMessage.includes('invalid') ||
-    normalizedMessage.includes('validation') ||
-    normalizedMessage.includes('formato');
-  if (isInvalidData) {
-    return (
-      errorMessages.INVALID_DATA ||
-      errorMessages.GENERIC_ERROR ||
-      texts.ERROR_TITLE
-    );
-  }
-
-  const isNetworkError =
-    normalizedMessage.includes('network') ||
-    normalizedMessage.includes('econnrefused') ||
-    normalizedMessage.includes('timeout') ||
-    normalizedMessage.includes('timed out') ||
-    normalizedMessage.includes('failed to fetch');
-  if (isNetworkError) {
-    return (
-      errorMessages.NETWORK_ERROR ||
-      errorMessages.CONNECTION_ERROR ||
-      errorMessages.GENERIC_ERROR ||
-      texts.ERROR_TITLE
-    );
-  }
-
-  return errorMessages.GENERIC_ERROR || texts.ERROR_TITLE;
-};
 
 const validateField = (field, value, formData = {}, errorMessages = {}) => {
   switch (field) {
@@ -152,6 +79,7 @@ const saveAuthData = async (tokens, user, email) => {
 
 export function useRegisterScreen(navigation) {
   const TEXTS = useSectionTranslations('REGISTER');
+  const { language } = useLanguage();
   const ERROR_MESSAGES = useMemo(() => TEXTS.ERRORS || {}, [TEXTS.ERRORS]);
   const { refreshSession } = useAuth();
   const { showToast } = useToast();
@@ -243,7 +171,6 @@ export function useRegisterScreen(navigation) {
   const handleRegister = useCallback(async () => {
     if (!validateForm()) return;
     setIsSubmitting(true);
-    setIsLoading(true);
     try {
       if (isOffline) {
         showToast({
@@ -262,6 +189,7 @@ export function useRegisterScreen(navigation) {
         showToast({ message: ERROR_MESSAGES.SERVER_ERROR, type: 'error', duration: 5000 });
         return;
       }
+      const appLanguage = await getAppLanguage();
       const userData = {
         email: formData.email.toLowerCase().trim(),
         username: formData.username.toLowerCase().trim(),
@@ -271,6 +199,7 @@ export function useRegisterScreen(navigation) {
         privacyAccepted: isPrivacyAccepted,
         privacyAcceptedAt: new Date().toISOString(),
         termsVersion: '1.0',
+        language: appLanguage,
         ...(formData.name?.trim() ? { name: formData.name.trim() } : {}),
       };
       const response = await api.post(ENDPOINTS.REGISTER, userData);
@@ -291,38 +220,34 @@ export function useRegisterScreen(navigation) {
       throw new Error(ERROR_MESSAGES.NO_TOKEN);
     } catch (error) {
       console.error('Error en registro:', error);
-      showToast({
-        message: resolveRegisterErrorMessage({
-          error,
-          errorMessages: ERROR_MESSAGES,
-          texts: TEXTS,
-          isOffline,
-        }),
-        type: 'error',
-        duration: 5000,
+      const message = resolveRegisterErrorMessage({
+        error,
+        errorMessages: ERROR_MESSAGES,
+        texts: TEXTS,
+        isOffline,
       });
+      if (isRegisterDuplicateError(error) && message) {
+        setErrors((prev) => ({
+          ...prev,
+          email: message,
+          username: message,
+        }));
+      }
+      if (typeof message === 'string' && message.trim().length > 0) {
+        showToast({
+          message,
+          type: 'error',
+          duration: 5000,
+        });
+      }
     } finally {
       setIsSubmitting(false);
-      setIsLoading(false);
     }
   }, [formData, isTermsAccepted, isPrivacyAccepted, isOffline, validateForm, navigation, refreshSession, showToast, ERROR_MESSAGES, TEXTS]);
 
   const openPrivacyUrl = useCallback(
-    () =>
-      openRegisterPrivacyUrl(showToast, {
-        UNAVAILABLE_TITLE: TEXTS.ERROR_TITLE,
-        OPEN_LINK_UNAVAILABLE:
-          ERROR_MESSAGES?.LINK_OPEN_ERROR ||
-          'No se pudo abrir el enlace en este dispositivo.',
-        ERROR_TITLE: TEXTS.ERROR_TITLE,
-        OPEN_LINK_FALLBACK:
-          ERROR_MESSAGES?.LINK_OPEN_ERROR ||
-          'No se pudo abrir el enlace. Puedes visitar antoapps.com desde el navegador.',
-        OPEN_LINK_TOAST_FALLBACK:
-          ERROR_MESSAGES?.LINK_OPEN_ERROR ||
-          'No se pudo abrir el enlace. Visita antoapps.com desde el navegador.',
-      }),
-    [showToast, TEXTS.ERROR_TITLE, ERROR_MESSAGES],
+    () => openRegisterPrivacyUrl(showToast, language),
+    [showToast, language],
   );
 
   const acceptTermsAndClose = useCallback(() => {

@@ -54,6 +54,12 @@ export const REGISTER = {
   MODAL_CLOSE_LABEL: 'Close',
   TERMS_MODAL_CLOSE: 'Close',
   TERMS_MODAL_ACCEPT: 'Accept Terms',
+  LINK_UNAVAILABLE_TITLE: 'Unavailable',
+  PRIVACY_OPEN_UNAVAILABLE: 'Could not open the link on this device.',
+  PRIVACY_OPEN_FALLBACK_ALERT:
+    'Could not open the link. You can visit antoapps.com in your browser.',
+  PRIVACY_OPEN_FALLBACK_TOAST:
+    'Could not open the link. Visit antoapps.com in your browser.',
   PRIVACY_ACCEPT_PREFIX: 'I accept the ',
   SHOW_PASSWORD: 'Show password',
   HIDE_PASSWORD: 'Hide password',
@@ -78,7 +84,7 @@ export const REGISTER = {
       'Could not connect to the server. Please:\n\n1. Check your internet connection\n2. Wait a few minutes and try again\n3. If the issue continues, contact support',
     NETWORK_ERROR:
       'Connection error. Please:\n\n1. Check your internet connection\n2. Try again in a moment\n3. If the issue continues, contact support',
-    ALREADY_EXISTS: 'Email or username is already registered',
+    ALREADY_EXISTS: 'Email or username is already in use',
     INVALID_DATA: 'Please verify all fields are correct',
     TOO_MANY_ATTEMPTS: 'Too many registration attempts. Please wait a moment',
     NO_TOKEN: 'Authentication token not received',
@@ -111,35 +117,24 @@ export const ONBOARDING = {
   STEP_4_TITLE: 'Emergency Contacts',
   STEP_4_DESCRIPTION:
     'Set trusted contacts who will receive alerts in risk situations.',
-  QUESTIONS_TITLE: 'To better adapt to you',
-  QUESTIONS_SUBTITLE:
-    'Three short questions. If none fits, you can skip.',
-  QUESTIONS_Q1_LABEL: 'What are you looking for here?',
-  QUESTIONS_Q2_LABEL: 'What would you like to improve?',
-  QUESTIONS_Q3_LABEL: 'How would you like me to support you?',
-  QUESTIONS_SUBMIT: 'Done',
-  QUESTIONS_EXPLORE_APP: 'View app walkthrough',
+  QUESTIONS_TITLE: 'What should we focus on?',
+  QUESTIONS_SUBTITLE: 'Optional. Pick one option or skip.',
+  QUESTIONS_MAIN_LABEL: 'Right now I care most about…',
+  QUESTIONS_SUBMIT: 'Continue',
+  QUESTIONS_EXPLORE_APP: 'View walkthrough',
   QUESTIONS_SAVE_SUCCESS: 'Done, thank you',
   QUESTIONS_SAVE_ERROR:
-    'Your answers could not be saved. You can skip and continue.',
+    'Could not save your choice. You can skip and continue.',
   QUESTIONS_TOO_MANY_ATTEMPTS:
     'Too many attempts. Please wait a moment and try again.',
   QUESTIONS_CONNECTION_ERROR:
     'No connection. Please check your internet and try again.',
-  QUESTIONS_OPTIONS_WHAT_EXPECT_FROM_APP: [
+  QUESTIONS_FOCUS_OPTIONS: [
     'Emotional support',
     'Anxiety or stress',
-    'Habits and routines',
-  ],
-  QUESTIONS_OPTIONS_WHAT_TO_IMPROVE_OR_WORK_ON: [
     'Sleep and rest',
-    'Self-esteem',
+    'Habits and routines',
     'Focus and organization',
-  ],
-  QUESTIONS_OPTIONS_TYPE_OF_SPECIALIST: [
-    'Step by step',
-    'Listening and support',
-    'Practical ideas',
   ],
 };
 
@@ -151,7 +146,7 @@ export const DASH = {
   ERROR_USER: 'Could not load user data. Try again.',
   ERROR_TASKS: 'Could not load tasks. Try again.',
   ERROR_HABITS: 'Could not load habits. Try again.',
-  ERROR_GENERIC: 'Error loading data',
+  ERROR_GENERIC: 'Could not load data',
   ERROR_BOUNDARY_TITLE: 'Oops! Something went wrong',
   ERROR_BOUNDARY_MESSAGE: 'Sorry, an unexpected error occurred.',
   ERROR_BOUNDARY_RETRY: 'Retry',
@@ -196,6 +191,12 @@ export const DASH = {
     'Última actividad en el chat: hace {days} días.',
   FOCUS_PRELOADED_LAST_CHAT_SUBTITLE_FALLBACK_ES:
     'Última actividad reciente en el chat.',
+  FOCUS_PUSH_SCHEDULED_MORNING: 'Scheduled reminder (morning)',
+  FOCUS_PUSH_SCHEDULED_EVENING: 'Scheduled reminder (evening)',
+  FOCUS_PUSH_SCHEDULED_GENERIC: 'Scheduled reminder',
+  FOCUS_REMINDER_NEXT_TASK_PREFIX: 'Next task:',
+  FOCUS_REMINDER_HABIT_PREFIX: 'Habit:',
+  FOCUS_REMINDER_AROUND_PREFIX: 'Reminder around',
   QUOTE_KICKER: 'Moment for you',
   QUOTE_A11Y_LABEL: 'Inspiring quote',
   QUOTE_A11Y_HINT: 'Double tap to show another random quote',
@@ -299,7 +300,7 @@ export const SETTINGS = {
   LOGOUT: 'Sign out',
   DELETE_ACCOUNT: 'Delete account',
   FAQ: 'Frequently asked questions',
-  APP_INFO: 'Application information',
+  APP_INFO: 'App information',
   AI_PRIVACY: 'Privacy and AI',
   AI_PRIVACY_DESC: 'What data is processed with AI and with which provider',
   LOGOUT_TITLE: 'Sign out',
@@ -376,7 +377,7 @@ export const SETTINGS = {
   CHAT_PREF_LESS_VALIDATION: 'Less generic reassurance',
   CHAT_PREF_LESS_VALIDATION_DESC: 'Prioritize substance and useful questions',
   CHAT_PREF_NO_APOLOGY: 'Avoid apology openings',
-  CHAT_PREF_NO_APOLOGY_DESC: 'Fewer "I am sorry" or "I regret" at the start',
+  CHAT_PREF_NO_APOLOGY_DESC: 'Fewer "sorry" or "I regret" openings at the start',
   CHAT_PREF_MORE_QUESTIONS: 'More questions, less monologue',
   CHAT_PREF_MORE_QUESTIONS_DESC: 'Responses with 1-2 clear questions',
   CHAT_TONE_APPLIES_HINT:
@@ -436,7 +437,7 @@ export const SETTINGS = {
 
 export const AUTH = {
   SIGN_IN: {
-    TITLE: 'Sign In',
+    TITLE: 'Sign in',
     SUBTITLE: 'Access your account',
     EMAIL_PLACEHOLDER: 'Email',
     PASSWORD_PLACEHOLDER: 'Password',
@@ -452,7 +453,7 @@ export const AUTH = {
     LOGIN_LOADING: 'Signing in...',
     LOGIN_HINT: 'Double tap to sign in',
     REGISTER_HINT: 'Double tap to create an account',
-    RECOVER_HINT: 'Double tap to recover password',
+    RECOVER_HINT: 'Double tap to reset your password',
     BACK_HINT: 'Go back to previous screen',
     OFFLINE_WARNING:
       'No internet connection. Please check your connection and try again.',
@@ -475,18 +476,18 @@ export const AUTH = {
     CONNECTION_ERROR: 'Connection error. Please check your internet connection.',
   },
   RECOVER_PASSWORD: {
-    TITLE: 'Recover Password',
+    TITLE: 'Reset password',
     SUBTITLE:
-      'Enter your email and we will send you a verification code to recover your password.',
+      'Enter your email and we will send you a verification code to reset your password.',
     EMAIL_PLACEHOLDER: 'Email',
     EMAIL_LABEL: 'Email',
-    BUTTON_SEND_CODE: 'Send Code',
-    BUTTON_SEND_CODE_LABEL: 'Send Code',
-    LINK_BACK: 'Back to Sign In',
+    BUTTON_SEND_CODE: 'Send code',
+    BUTTON_SEND_CODE_LABEL: 'Send code',
+    LINK_BACK: 'Back to sign in',
     BACK: 'Back',
     EMAIL_REQUIRED: 'Please enter your email',
     EMAIL_INVALID: 'Please enter a valid email',
-    ERROR_SEND_CODE: 'Error sending recovery code',
+    ERROR_SEND_CODE: 'Could not send verification code',
     TOO_MANY_ATTEMPTS:
       'Too many attempts. Please wait a moment and try again.',
     CONNECTION_ERROR:
@@ -498,14 +499,14 @@ export const AUTH = {
       'Enter your email and we will send instructions to reset your password.',
     EMAIL_PLACEHOLDER: 'Email',
     BUTTON_SEND: 'Send Instructions',
-    BUTTON_BACK: 'Back to Sign In',
+    BUTTON_BACK: 'Back to sign in',
     SUCCESS_TITLE:
       'We\'ve sent an email with instructions to reset your password.',
     SUCCESS_INSTRUCTION:
       'Please check your inbox and follow the instructions.',
     EMAIL_REQUIRED: 'Please enter your email',
     EMAIL_INVALID: 'Please enter a valid email',
-    ERROR_SEND_EMAIL: 'Error sending recovery email',
+    ERROR_SEND_EMAIL: 'Could not send recovery email',
     TOO_MANY_ATTEMPTS:
       'Too many attempts. Please wait a moment and try again.',
     CONNECTION_ERROR:
@@ -523,7 +524,7 @@ export const AUTH = {
     CODE_RESENT: 'Code resent',
     CODE_RESENT_MESSAGE: 'A new code has been sent to your email',
     ERROR: 'Something went wrong',
-    RESEND_ERROR: 'Error resending code',
+    RESEND_ERROR: 'Could not resend code',
     BACK: 'Back',
     TOO_MANY_ATTEMPTS:
       'Too many attempts. Please wait a moment and try again.',
@@ -541,7 +542,7 @@ export const AUTH = {
     SUCCESS_INSTRUCTION: 'You can now sign in with your new password.',
     VALIDATION_ERROR: 'Please review the form',
     ERROR: 'Something went wrong',
-    ERROR_RESET_PASSWORD: 'Error changing password',
+    ERROR_RESET_PASSWORD: 'Could not change password',
     PASSWORD_REQUIRED: 'Password is required',
     PASSWORD_MIN_LENGTH: 'Password must be at least 6 characters',
     CONFIRM_PASSWORD_REQUIRED: 'You must confirm the password',
@@ -562,9 +563,9 @@ export const AUTH = {
     VERIFIED_MESSAGE: 'Your account has been successfully verified.',
     CONTINUE: 'Continue',
     TOKENS_MISSING: 'Authentication tokens were not received',
-    VERIFY_ERROR: 'Error verifying the code. Please try again.',
+    VERIFY_ERROR: 'Could not verify the code. Please try again.',
     RESENT_OK: 'A new verification code has been sent to your email.',
-    RESEND_ERROR: 'Error resending the code. Please try again.',
+    RESEND_ERROR: 'Could not resend the code. Please try again.',
     EXPIRES_IN: 'Code expires in:',
     VERIFY: 'Verify',
     RESEND: 'Resend code',
@@ -686,10 +687,10 @@ export const CHAT = {
   EMPTY: 'No messages yet',
   EMPTY_KICKER: 'Conversation',
   EMPTY_SUBTITLE: 'Type below to start the conversation with Anto',
-  ERROR_LOAD: 'Error loading chat',
-  ERROR_SEND: 'Error sending message. Please try again.',
+  ERROR_LOAD: 'Could not load chat',
+  ERROR_SEND: 'Could not send message. Please try again.',
   ERROR_COMMUNICATION: 'Communication error',
-  ERROR_CLEAR: 'Error clearing conversation',
+  ERROR_CLEAR: 'Could not clear conversation',
   MODAL_TITLE: 'Clear conversation',
   MODAL_MESSAGE:
     'Are you sure you want to clear the entire conversation? This action cannot be undone.',
@@ -772,7 +773,7 @@ export const CHAT = {
   SUBSCRIPTION_VIEW_PLANS: 'View plans',
   MESSAGE_IN_FLIGHT_DEFAULT: 'This message is already being sent.',
   SEND_TIMEOUT_DEFAULT: 'The response took too long. Please try again.',
-  NETWORK_ERROR_INIT: 'Error loading chat',
+  NETWORK_ERROR_INIT: 'Could not load chat',
   EMERGENCY_ALERT_SENT_TITLE: 'Emergency Alert Sent',
   EMERGENCY_ALERT_SENT_BODY:
     'We notified {successful} out of {total} emergency contact(s).',
@@ -797,6 +798,19 @@ export const CHAT = {
   SUGGESTION_TRY_PREFIX: 'I want to try: ',
   GUEST_HANDOFF_PREFILL_PREFIX:
     'Continuing from guest chat (you can edit this before sending):',
+  GUEST_HANDOFF_ROLE_USER: 'Me',
+  GUEST_HANDOFF_ROLE_ANTO: 'Anto',
+  SERVICE_CREATE_CONVERSATION_RETRY:
+    'Could not create a conversation. Please try again.',
+  SERVICE_CREATE_CONVERSATION_FAILED: 'Could not create the conversation',
+  SERVICE_GUEST_START_FAILED: 'Could not start guest chat',
+  SERVICE_CLEAR_CONVERSATION_FAILED: 'Could not clear the conversation',
+  SERVICE_SESSION_REQUIRED: 'Session required',
+  SERVICE_INVALID_CONVERSATION_ID: 'Invalid conversation ID',
+  SERVICE_INVALID_SESSION_INTENTION: 'Invalid session intention',
+  SERVICE_INVALID_MESSAGE_ID: 'Invalid message ID',
+  SERVICE_INVALID_HELPFUL: 'Invalid feedback value',
+  SERVICE_INVALID_ACTION: 'Invalid action',
 };
 
 export const NAV = {
@@ -823,7 +837,7 @@ export const TASKS = {
   PRIORITY_PREFIX: 'Priority',
   A11Y_OPEN_DETAILS_HINT: 'Double tap to view details',
   NO_TOKEN: 'Authentication token not found',
-  ERROR_LOAD: 'Error fetching tasks',
+  ERROR_LOAD: 'Could not load tasks',
   SESSION_EXPIRED: 'Session expired',
   SESSION_EXPIRED_MESSAGE: 'Please sign in again',
   ERROR_LOAD_ITEMS: 'Items could not be loaded',
@@ -848,7 +862,7 @@ export const TASKS = {
   ADD_REMINDER: 'Add reminder',
   ADD_ITEM: 'Add item',
   INVALID_DATA: 'Invalid data:',
-  ERROR_CREATE_TASK: 'Error creating task',
+  ERROR_CREATE_TASK: 'Could not create task',
   TASK_COMPLETED: 'Task completed',
   UNDO: 'Undo',
   RETRY: 'Retry',
@@ -882,7 +896,7 @@ export const TASKS = {
   VALIDATION_DATE_PAST: 'Date cannot be earlier than now',
   VALIDATION_TIME_PAST: 'Time cannot be earlier than now',
   VALIDATION_DESCRIPTION_MAX: 'Description cannot exceed 500 characters',
-  ERROR_CREATE_TASK_GENERIC: 'Error creating task.',
+  ERROR_CREATE_TASK_GENERIC: 'Could not create task.',
   KICKER_TASK: 'Task',
   KICKER_GOAL: 'Goal',
   KICKER_REMINDER: 'Reminder',
@@ -1056,8 +1070,8 @@ export const POMODORO = {
   SUMMARY_TITLE: 'Block summary',
   SUMMARY_FOCUS_TIME: 'Focused time',
   SUMMARY_LINKED_TASK: 'Focused task',
-  SUMMARY_STREAK: 'Today streak',
-  SUMMARY_TIME_LOGGED: '{n} min were added to the task actual time.',
+  SUMMARY_STREAK: "Today's streak",
+  SUMMARY_TIME_LOGGED: '{n} min were added to the task time log.',
   SUMMARY_OPEN_TASK: 'Open task',
   SUMMARY_MARK_TASK_DONE: 'Mark task done',
   SUMMARY_CLOSE: 'Continue',
@@ -1180,7 +1194,7 @@ export const TECHNIQUES = {
     'Example: "I hear that you feel... Is that right?"',
   COMMUNICATION_TECH_3_TITLE: 'Validation',
   COMMUNICATION_TECH_3_DESC:
-    'Recognize and validate the other person feelings.',
+    'Recognize and validate the other person\'s feelings.',
   COMMUNICATION_TECH_3_EXAMPLE:
     'Example: "It makes sense that you feel that way..."',
   COMMUNICATION_TECH_4_TITLE: 'Open Questions',
@@ -1590,7 +1604,7 @@ export const TECHNIQUES = {
   DETAIL_PRACTICE_AGAIN: 'Practice again',
   THERAPEUTIC_STATS_TITLE: 'Technique Statistics',
   THERAPEUTIC_STATS_LOADING: 'Loading statistics...',
-  THERAPEUTIC_STATS_ERROR: 'Error loading statistics',
+  THERAPEUTIC_STATS_ERROR: 'Could not load statistics',
   THERAPEUTIC_STATS_RETRY: 'Retry',
   THERAPEUTIC_STATS_GENERAL_STATS: 'General Statistics',
   THERAPEUTIC_STATS_MOST_USED: 'Most Used Techniques',
@@ -1624,10 +1638,10 @@ export const PROFILE = {
     'Subscription refresh took too long. Please try again.',
   SUBSCRIPTION_STATUS_RATE_LIMIT_ERROR:
     'Too many attempts refreshing subscription status. Please wait a moment.',
-  LOGOUT_TITLE: 'Sign Out',
+  LOGOUT_TITLE: 'Sign out',
   LOGOUT_MESSAGE: 'Are you sure you want to sign out?',
   CANCEL: 'Cancel',
-  LOGOUT: 'Sign Out',
+  LOGOUT: 'Sign out',
   ERROR_LOGOUT: 'Something went wrong',
   ERROR_LOGOUT_MESSAGE: 'Could not sign out. Please try again.',
   PROFILE_TITLE: 'My Profile',
@@ -1669,11 +1683,11 @@ export const PROFILE = {
   EDIT_PROFILE_EMAIL_PLACEHOLDER: 'Email',
   EDIT_PROFILE_SAVED: 'Saved',
   EDIT_PROFILE_PERMISSION_REQUIRED: 'Permission required',
-  EDIT_PROFILE_SESSION_EXPIRED: 'Session Expired',
+  EDIT_PROFILE_SESSION_EXPIRED: 'Session expired',
   EDIT_PROFILE_SESSION_EXPIRED_MESSAGE: 'Please sign in again',
   EDIT_PROFILE_NO_SESSION: 'User session not found',
-  EDIT_PROFILE_ERROR_LOAD_USER: 'Error fetching user data',
-  EDIT_PROFILE_ERROR_UPDATE_PROFILE: 'Error updating profile',
+  EDIT_PROFILE_ERROR_LOAD_USER: 'Could not load profile',
+  EDIT_PROFILE_ERROR_UPDATE_PROFILE: 'Could not update profile',
   EDIT_PROFILE_ERROR_UPLOAD_IMAGE:
     'Could not upload image. Please try again.',
   EDIT_PROFILE_NAME_MIN_LENGTH:
@@ -1696,7 +1710,7 @@ export const PROFILE = {
   DELETE_CONTACT: 'Delete contact',
   DELETE_CONTACT_CONFIRM: 'Are you sure you want to delete this contact?',
   CONTACT_DELETED: 'Contact deleted successfully',
-  CONTACT_DELETE_ERROR: 'Error deleting contact',
+  CONTACT_DELETE_ERROR: 'Could not delete contact',
   CRISIS_DASHBOARD: 'Crisis Dashboard',
   CRISIS_DASHBOARD_DESC: 'View metrics and statistics of detected crises',
   ALERTS_HISTORY: 'Alerts History',
@@ -1865,7 +1879,7 @@ export const PROFILE = {
   EMERGENCY_ADD_CONTACT: 'Add Contact',
   EMERGENCY_SAVE: 'Save',
   EMERGENCY_SKIP: 'Skip for now',
-  EMERGENCY_ADD_ERROR: 'Error adding contact',
+  EMERGENCY_ADD_ERROR: 'Could not add contact',
   EMERGENCY_MAX_CONTACTS: 'You have reached the 2-contact limit',
   EMERGENCY_DUPLICATE_EMAIL: 'A contact with this email already exists',
   EMERGENCY_ALERT_CHANNEL_NOTE: 'Alert channel: WhatsApp to the provided number',
@@ -1877,7 +1891,7 @@ export const PROFILE = {
     'Emergency contacts are important for your safety. Are you sure you want to skip this setup?',
   EMERGENCY_ATTENTION_TITLE: 'Attention',
   EMERGENCY_UPDATE_SUCCESS: 'Contact updated successfully',
-  EMERGENCY_UPDATE_ERROR: 'Error updating contact',
+  EMERGENCY_UPDATE_ERROR: 'Could not update contact',
   EMERGENCY_CONTACT_NOT_EDITABLE:
     'This contact cannot be edited. Please try again.',
   EMERGENCY_REQUIRED_FIELD: 'This field is required',
@@ -1983,11 +1997,11 @@ export const PROFILE = {
   PAYMENT_METHOD_CURRENT_METHOD: 'Current Payment Method',
   PAYMENT_METHOD_UPDATE_METHOD: 'Update Payment Method',
   PAYMENT_METHOD_LOADING: 'Loading information...',
-  PAYMENT_METHOD_ERROR: 'Error loading information',
+  PAYMENT_METHOD_ERROR: 'Could not load information',
   PAYMENT_METHOD_NO_METHOD: 'No payment method configured',
   PAYMENT_METHOD_NO_METHOD_DESC:
     'Set up a payment method to subscribe',
-  PAYMENT_METHOD_UPDATE_ERROR: 'Error updating payment method',
+  PAYMENT_METHOD_UPDATE_ERROR: 'Could not update payment method',
   PAYMENT_METHOD_UPDATE_CONFIRM: 'Do you want to update your payment method?',
   PAYMENT_METHOD_PROVIDER_INFO:
     'Payment methods are managed through Mercado Pago',
@@ -2010,7 +2024,7 @@ export const PROFILE = {
   PAYMENT_METHOD_OTHER_DESC: 'Mercado Pago, others',
   TRANSACTIONS_TITLE: 'Transaction History',
   TRANSACTIONS_LOADING: 'Loading transactions...',
-  TRANSACTIONS_ERROR: 'Error loading transactions',
+  TRANSACTIONS_ERROR: 'Could not load transactions',
   TRANSACTIONS_EMPTY_TITLE: 'You have no transactions yet',
   TRANSACTIONS_EMPTY_DESC: 'Your payments and subscriptions will appear here',
   TRANSACTIONS_EMPTY_FILTERED:
@@ -2032,8 +2046,10 @@ export const PROFILE = {
   TRANSACTIONS_STATUS_CANCELED: 'Canceled',
   TRANSACTIONS_STATUS_REFUNDED: 'Refunded',
   TRANSACTIONS_FILTER_COUNT: '{filtered} of {total} transactions',
+  ERROR_CONNECTION: 'No connection. Check your internet and try again.',
+  ERROR_TOO_MANY_REQUESTS: 'Too many attempts. Wait a moment and try again.',
   SYSTEM_HEALTH_LOADING: 'Loading metrics...',
-  SYSTEM_HEALTH_LOAD_ERROR: 'Error loading system metrics',
+  SYSTEM_HEALTH_LOAD_ERROR: 'Could not load system metrics',
   SYSTEM_HEALTH_RETRY: 'Retry',
   SYSTEM_HEALTH_TITLE_STATUS: 'System Health Status',
   SYSTEM_HEALTH_STATUS_HEALTHY: 'Healthy',
@@ -2065,17 +2081,17 @@ export const SUBSCRIPTION = {
   CURRENT_SUBSCRIPTION: 'Your Subscription',
   AVAILABLE_PLANS: 'Available Plans',
   LOADING: 'Loading plans...',
-  ERROR: 'Error loading plans',
+  ERROR: 'Could not load plans',
   RETRY: 'Retry',
   LINK_OPEN_ERROR: 'Could not open the link',
   SUBSCRIBING: 'Processing...',
-  SUBSCRIBE_ERROR: 'Error processing subscription',
+  SUBSCRIBE_ERROR: 'Could not process subscription',
   OPENING_PAYMENT: 'Opening payment page...',
   INVALID_PAYMENT_URL: 'Payment URL is not valid.',
   CANCEL_SUBSCRIPTION: 'Cancel Subscription',
   CANCEL_CONFIRM: 'Are you sure you want to cancel your subscription?',
   CANCEL_SUCCESS: 'Subscription cancelled successfully',
-  CANCEL_ERROR: 'Error cancelling subscription',
+  CANCEL_ERROR: 'Could not cancel subscription',
   NO_PLANS: 'No plans are available at the moment',
   LEGAL_TITLE: 'Terms and Privacy Policy',
   TERMS_EULA_LABEL: 'Terms of Use (EULA)',
@@ -2164,14 +2180,14 @@ export const SUBSCRIPTION = {
   PAYMENT_HEADER_TITLE: 'Pay with Mercado Pago',
   PAYMENT_LOADING: 'Loading payment page...',
   PAYMENT_LOADING_SECURE: 'Processing your payment securely...',
-  PAYMENT_ERROR: 'Error loading payment',
+  PAYMENT_ERROR: 'Could not load payment',
   PAYMENT_ERROR_TITLE: 'Error',
   PAYMENT_ERROR_NO_VALID_URL: 'No valid URL was provided',
   PAYMENT_ERROR_INVALID_URL_PROTOCOL:
     'Invalid URL. It must start with http:// or https://',
   PAYMENT_ERROR_INVALID_URL: 'Invalid URL',
-  PAYMENT_ERROR_PROCESS: 'Error in payment process',
-  PAYMENT_ERROR_HTTP_PAGE: 'Error loading page ({statusCode})',
+  PAYMENT_ERROR_PROCESS: 'Could not complete payment process',
+  PAYMENT_ERROR_HTTP_PAGE: 'Could not load page ({statusCode})',
   PAYMENT_ERROR_BROWSER_OPEN: 'Could not open browser',
   PAYMENT_ERROR_CONNECTION:
     'Connection error. Check your internet connection.',
@@ -2217,6 +2233,18 @@ export const SUBSCRIPTION = {
   SUBSCRIPTION_STATUS_DATE_VALID_UNTIL: 'Valid until:',
 };
 
+export const API_ERRORS = {
+  NETWORK: 'No connection. Check your internet and try again.',
+  TIMEOUT: 'The request took too long. Try again.',
+  SERVER: 'Server error. Try again later.',
+  UNAUTHORIZED: 'Incorrect email or password.',
+  FORBIDDEN: 'Your account is deactivated. Contact support if you believe this is an error.',
+  NOT_FOUND: 'Not found. The link may have expired.',
+  TOO_MANY_REQUESTS: 'Too many attempts. Wait a moment and try again.',
+  BAD_REQUEST: 'Check your data and try again.',
+  GENERIC: 'Something went wrong. Try again.',
+};
+
 export default {
   HOME,
   REGISTER,
@@ -2233,4 +2261,5 @@ export default {
   TECHNIQUES,
   PROFILE,
   SUBSCRIPTION,
+  API_ERRORS,
 };

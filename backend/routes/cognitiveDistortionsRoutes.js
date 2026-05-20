@@ -9,14 +9,19 @@ import { requireActiveSubscription } from '../middleware/checkSubscription.js';
 import CognitiveDistortionReport from '../models/CognitiveDistortionReport.js';
 import cognitiveDistortionDetector from '../services/cognitiveDistortionDetector.js';
 import logger from '../utils/logger.js';
+import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
+import { resolveRequestLanguage } from '../utils/apiLanguage.js';
+import { cognitiveDistortionsApiCopy } from '../utils/cognitiveDistortionsApiCopy.js';
 
 const router = express.Router();
+
+router.use(attachApiCopy(cognitiveDistortionsApiCopy));
 
 // Rate limiting para distorsiones cognitivas
 const distortionsLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 50, // Máximo 50 requests por 15 minutos
-  message: 'Demasiadas solicitudes. Por favor, espera un momento.',
+  message: (req) => cognitiveDistortionsApiCopy(resolveRequestLanguage(req)).rateLimit,
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -46,8 +51,8 @@ router.get('/types', async (req, res) => {
   } catch (error) {
     logger.error('[CognitiveDistortionsRoutes] Error obteniendo tipos:', error);
     res.status(500).json({
-      message: 'Error al obtener tipos de distorsiones',
-      error: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : error.message
+      message: req.apiCopy.typesError,
+      error: process.env.NODE_ENV === 'production' ? req.apiCopy.internalError : error.message
     });
   }
 });
@@ -63,7 +68,7 @@ router.get('/:type', async (req, res) => {
     // SEGURIDAD: Validar que el tipo solo contenga caracteres permitidos
     if (!type || !/^[a-z_]+$/.test(type)) {
       return res.status(400).json({
-        message: 'Tipo de distorsión inválido'
+        message: req.apiCopy.invalidType
       });
     }
     
@@ -71,7 +76,7 @@ router.get('/:type', async (req, res) => {
     
     if (!distortionInfo) {
       return res.status(404).json({
-        message: 'Tipo de distorsión no encontrado'
+        message: req.apiCopy.typeNotFound
       });
     }
     
@@ -79,8 +84,8 @@ router.get('/:type', async (req, res) => {
   } catch (error) {
     logger.error('[CognitiveDistortionsRoutes] Error obteniendo distorsión:', error);
     res.status(500).json({
-      message: 'Error al obtener información de distorsión',
-      error: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : error.message
+      message: req.apiCopy.distortionInfoError,
+      error: process.env.NODE_ENV === 'production' ? req.apiCopy.internalError : error.message
     });
   }
 });
@@ -106,7 +111,7 @@ router.get('/reports', async (req, res) => {
         query['primaryDistortion.type'] = type;
       } else {
         return res.status(400).json({
-          message: 'Tipo de distorsión inválido'
+          message: req.apiCopy.invalidType
         });
       }
     }
@@ -135,8 +140,8 @@ router.get('/reports', async (req, res) => {
   } catch (error) {
     logger.error('[CognitiveDistortionsRoutes] Error obteniendo reportes:', error);
     res.status(500).json({
-      message: 'Error al obtener reportes',
-      error: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : error.message
+      message: req.apiCopy.reportsError,
+      error: process.env.NODE_ENV === 'production' ? req.apiCopy.internalError : error.message
     });
   }
 });
@@ -162,8 +167,8 @@ router.get('/statistics', async (req, res) => {
   } catch (error) {
     logger.error('[CognitiveDistortionsRoutes] Error obteniendo estadísticas:', error);
     res.status(500).json({
-      message: 'Error al obtener estadísticas',
-      error: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : error.message
+      message: req.apiCopy.statsError,
+      error: process.env.NODE_ENV === 'production' ? req.apiCopy.internalError : error.message
     });
   }
 });
@@ -210,8 +215,8 @@ router.get('/summary', async (req, res) => {
   } catch (error) {
     logger.error('[CognitiveDistortionsRoutes] Error obteniendo resumen:', error);
     res.status(500).json({
-      message: 'Error al obtener resumen',
-      error: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : error.message
+      message: req.apiCopy.summaryError,
+      error: process.env.NODE_ENV === 'production' ? req.apiCopy.internalError : error.message
     });
   }
 });

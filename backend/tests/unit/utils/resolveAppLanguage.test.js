@@ -36,7 +36,20 @@ describe('resolveAppLanguage', () => {
     ).toBe('en');
   });
 
-  it('default es español', () => {
+  it('default es español sin señales de idioma', () => {
     expect(resolveAppLanguage({})).toBe('es');
+  });
+
+  it('accept-language no español cae en inglés', () => {
+    expect(
+      resolveAppLanguage({
+        acceptLanguage: 'pt-BR,pt;q=0.9',
+      }),
+    ).toBe('en');
+    expect(
+      resolveAppLanguage({
+        acceptLanguage: 'ja-JP',
+      }),
+    ).toBe('en');
   });
 });

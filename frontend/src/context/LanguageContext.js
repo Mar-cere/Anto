@@ -1,45 +1,39 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES, getSupportedLanguage } from '../constants/translations';
-
-const STORAGE_KEY = 'preferences:language';
+import { SUPPORTED_LANGUAGES, getSupportedLanguage } from '../constants/translations';
+import {
+  detectDeviceLanguage,
+  persistAppLanguage,
+  resolveAppLanguageForSession,
+  subscribeAppLanguage,
+} from '../utils/appLanguage';
 
 const LanguageContext = createContext(null);
 const FALLBACK_LANGUAGE_CONTEXT = {
-  language: DEFAULT_LANGUAGE,
-  setLanguage: async () => DEFAULT_LANGUAGE,
+  language: detectDeviceLanguage(),
+  isLanguageReady: false,
+  setLanguage: async () => detectDeviceLanguage(),
   availableLanguages: SUPPORTED_LANGUAGES,
 };
 
-function detectDeviceLanguage() {
-  try {
-    const locale = Intl?.DateTimeFormat?.().resolvedOptions?.().locale;
-    if (typeof locale === 'string' && locale.toLowerCase().startsWith('en')) {
-      return 'en';
-    }
-  } catch (_) {
-    // noop
-  }
-  return DEFAULT_LANGUAGE;
-}
-
 export function LanguageProvider({ children }) {
-  const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
+  const [language, setLanguage] = useState(() => detectDeviceLanguage());
+  const [isLanguageReady, setIsLanguageReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const stored = await AsyncStorage.getItem(STORAGE_KEY);
-        if (cancelled) return;
-        if (stored) {
-          setLanguage(getSupportedLanguage(stored));
-          return;
+        const resolved = await resolveAppLanguageForSession(null);
+        if (!cancelled) {
+          setLanguage(getSupportedLanguage(resolved));
         }
-        setLanguage(getSupportedLanguage(detectDeviceLanguage()));
       } catch (_) {
         if (!cancelled) {
-          setLanguage(DEFAULT_LANGUAGE);
+          setLanguage(detectDeviceLanguage());
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLanguageReady(true);
         }
       }
     })();
@@ -48,24 +42,27 @@ export function LanguageProvider({ children }) {
     };
   }, []);
 
+  useEffect(() => {
+    return subscribeAppLanguage((nextLanguage) => {
+      setLanguage(getSupportedLanguage(nextLanguage));
+    });
+  }, []);
+
   const setLanguagePreference = useCallback(async (nextLanguage) => {
     const safeLanguage = getSupportedLanguage(nextLanguage);
     setLanguage(safeLanguage);
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY, safeLanguage);
-    } catch (_) {
-      // noop
-    }
+    await persistAppLanguage(safeLanguage, { manual: true });
     return safeLanguage;
   }, []);
 
   const value = useMemo(
     () => ({
       language,
+      isLanguageReady,
       setLanguage: setLanguagePreference,
       availableLanguages: SUPPORTED_LANGUAGES,
     }),
-    [language, setLanguagePreference],
+    [language, isLanguageReady, setLanguagePreference],
   );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

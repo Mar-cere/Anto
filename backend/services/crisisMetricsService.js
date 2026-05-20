@@ -7,6 +7,7 @@ import Message from '../models/Message.js';
 import TherapeuticTechniqueUsage from '../models/TherapeuticTechniqueUsage.js';
 import crisisTrendAnalyzer from './crisisTrendAnalyzer.js';
 import { selectAppropriateTechnique } from '../constants/therapeuticTechniques.js';
+import { crisisRecommendationsCopy } from '../utils/crisisRecommendationsCopy.js';
 
 class CrisisMetricsService {
   /**
@@ -508,7 +509,7 @@ class CrisisMetricsService {
    * @param {number} days - Número de días hacia atrás
    * @returns {Promise<Object>} Recomendaciones de técnicas
    */
-  async getTechniqueRecommendations(userId, days = 30) {
+  async getTechniqueRecommendations(userId, days = 30, language = 'es') {
     try {
       const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
       
@@ -543,31 +544,39 @@ class CrisisMetricsService {
         : 2;
       const avgIntensity = avgRiskLevel < 1.5 ? 4 : avgRiskLevel < 2.5 ? 6 : avgRiskLevel < 3.5 ? 7 : 9;
 
+      const copy = crisisRecommendationsCopy(language);
+
       // Seleccionar técnicas recomendadas
       const recommendedTechniques = [];
-      
+
       // Técnica basada en emoción más frecuente
       if (mostFrequentEmotion !== 'neutral') {
-        const technique = selectAppropriateTechnique(mostFrequentEmotion, avgIntensity, 'intermedia');
+        const technique = selectAppropriateTechnique(
+          mostFrequentEmotion,
+          avgIntensity,
+          'intermedia',
+          null,
+          language,
+        );
         if (technique) {
           recommendedTechniques.push({
             ...technique,
-            reason: `Basada en tu emoción más frecuente en crisis: ${mostFrequentEmotion}`,
-            priority: 'high'
+            reason: copy.emotionReason(copy.emotionLabel(mostFrequentEmotion)),
+            priority: 'high',
           });
         }
       }
 
       // Técnicas más efectivas del usuario
-      mostEffectiveTechniques.slice(0, 2).forEach(tech => {
+      mostEffectiveTechniques.slice(0, 2).forEach((tech) => {
         if (tech.averageEffectiveness && tech.averageEffectiveness >= 3.5) {
           recommendedTechniques.push({
             techniqueId: tech.techniqueId,
             name: tech.techniqueName,
             type: tech.techniqueType,
-            reason: `Técnica que te ha funcionado bien (efectividad: ${tech.averageEffectiveness}/5)`,
+            reason: copy.effectiveReason(tech.averageEffectiveness),
             priority: 'medium',
-            effectiveness: tech.averageEffectiveness
+            effectiveness: tech.averageEffectiveness,
           });
         }
       });
