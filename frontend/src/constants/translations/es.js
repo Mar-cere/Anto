@@ -2226,6 +2226,8 @@ export const SUBSCRIPTION = {
   SUBSCRIPTION_STATUS_DESCRIPTION_FREE:
     'Actualiza a Premium para acceder a todas las funciones',
   SUBSCRIPTION_STATUS_LABEL_TRIAL: 'Periodo de Prueba',
+  SUBSCRIPTION_STATUS_DESCRIPTION_TRIAL_ONE: 'Trial activo - 1 día restante',
+  SUBSCRIPTION_STATUS_DESCRIPTION_TRIAL_MANY: 'Trial activo - {days} días restantes',
   SUBSCRIPTION_STATUS_DESCRIPTION_TRIAL_TEMPLATE:
     'Trial activo - {days} días restantes',
   SUBSCRIPTION_STATUS_LABEL_PREMIUM: 'Premium Activo',

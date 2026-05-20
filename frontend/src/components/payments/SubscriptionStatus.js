@@ -13,11 +13,17 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
+import {
+  computeTrialDaysRemaining,
+  formatTrialStatusDescription,
+} from '../../utils/subscriptionTrialDisplay';
 
 const DEFAULT_TEXTS = {
   LABEL_FREE: 'Plan Gratuito',
   DESCRIPTION_FREE: 'Actualiza a Premium para acceder a todas las funciones',
   LABEL_TRIAL: 'Periodo de Prueba',
+  DESCRIPTION_TRIAL_ONE: 'Trial activo - 1 día restante',
+  DESCRIPTION_TRIAL_MANY: 'Trial activo - {days} días restantes',
   DESCRIPTION_TRIAL_TEMPLATE: 'Trial activo - {days} días restantes',
   LABEL_PREMIUM: 'Premium Activo',
   DESCRIPTION_PREMIUM_FALLBACK: 'Plan Premium',
@@ -45,6 +51,12 @@ const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscri
         translated?.SUBSCRIPTION_STATUS_DESCRIPTION_FREE ||
         DEFAULT_TEXTS.DESCRIPTION_FREE,
       LABEL_TRIAL: translated?.SUBSCRIPTION_STATUS_LABEL_TRIAL || DEFAULT_TEXTS.LABEL_TRIAL,
+      DESCRIPTION_TRIAL_ONE:
+        translated?.SUBSCRIPTION_STATUS_DESCRIPTION_TRIAL_ONE ||
+        DEFAULT_TEXTS.DESCRIPTION_TRIAL_ONE,
+      DESCRIPTION_TRIAL_MANY:
+        translated?.SUBSCRIPTION_STATUS_DESCRIPTION_TRIAL_MANY ||
+        DEFAULT_TEXTS.DESCRIPTION_TRIAL_MANY,
       DESCRIPTION_TRIAL_TEMPLATE:
         translated?.SUBSCRIPTION_STATUS_DESCRIPTION_TRIAL_TEMPLATE ||
         DEFAULT_TEXTS.DESCRIPTION_TRIAL_TEMPLATE,
@@ -102,6 +114,14 @@ const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscri
     effectiveStatus = 'expired';
   }
 
+  const trialDaysDisplay = useMemo(
+    () =>
+      effectiveStatus === 'trialing' || effectiveStatus === 'trial'
+        ? computeTrialDaysRemaining(daysRemaining, trialEndDate)
+        : Number(daysRemaining) || 0,
+    [effectiveStatus, daysRemaining, trialEndDate],
+  );
+
   const getStatusInfo = () => {
     // Normalizar: estados que el backend puede devolver y el frontend no trataba
     switch (effectiveStatus) {
@@ -118,10 +138,7 @@ const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscri
           icon: 'clock-outline',
           color: colors.warning,
           label: T.LABEL_TRIAL,
-          description: T.DESCRIPTION_TRIAL_TEMPLATE.replace(
-            '{days}',
-            String(daysRemaining ?? 0),
-          ),
+          description: formatTrialStatusDescription(trialDaysDisplay, T),
         };
       case 'premium':
       case 'active':

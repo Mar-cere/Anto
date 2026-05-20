@@ -15,6 +15,7 @@ import User from '../models/User.js';
 import paymentAuditService from './paymentAuditService.js';
 import cacheService from './cacheService.js';
 import logger from '../utils/logger.js';
+import { calculateDaysRemainingUntil } from '../utils/subscriptionDaysRemaining.js';
 import { fetchMercadoPagoPaymentById, fetchMercadoPagoPreapprovalById } from '../utils/mercadopagoPaymentApi.js';
 
 /**
@@ -480,7 +481,7 @@ class PaymentServiceMercadoPago {
       new Date(userSub.subscriptionEndDate) >= now
     ) {
       const end = new Date(userSub.subscriptionEndDate);
-      const daysRemaining = Math.max(0, Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+      const daysRemaining = calculateDaysRemainingUntil(end, now);
       return {
         hasSubscription: true,
         status: 'premium',
@@ -500,16 +501,22 @@ class PaymentServiceMercadoPago {
     }
 
     if (subscription) {
-      const periodEnd = subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd) : null;
-      const daysRemaining = periodEnd
-        ? Math.max(0, Math.ceil((periodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
-        : 0;
+      const periodEnd = subscription.currentPeriodEnd
+        ? new Date(subscription.currentPeriodEnd)
+        : null;
+      const trialEnd = subscription.trialEnd ? new Date(subscription.trialEnd) : null;
       const isInTrial =
         subscription.status === 'trialing' &&
         subscription.trialStart &&
         subscription.trialEnd &&
         now >= new Date(subscription.trialStart) &&
         now <= new Date(subscription.trialEnd);
+      let daysRemaining = 0;
+      if (isInTrial && trialEnd && !Number.isNaN(trialEnd.getTime())) {
+        daysRemaining = calculateDaysRemainingUntil(trialEnd, now);
+      } else if (periodEnd && !Number.isNaN(periodEnd.getTime())) {
+        daysRemaining = calculateDaysRemainingUntil(periodEnd, now);
+      }
       const isActive =
         !!periodEnd &&
         periodEnd >= now &&
@@ -597,14 +604,35 @@ class PaymentServiceMercadoPago {
       return result;
     }
 
+    const isInTrial =
+      userSubscription.status === 'trial' &&
+      uTrialEnd &&
+      !Number.isNaN(uTrialEnd.getTime()) &&
+      uTrialEnd >= now;
+    const isPremiumActive =
+      userSubscription.status === 'premium' &&
+      uEnd &&
+      !Number.isNaN(uEnd.getTime()) &&
+      uEnd >= now;
+
+    let daysRemaining = 0;
+    if (isInTrial) {
+      daysRemaining = calculateDaysRemainingUntil(uTrialEnd, now);
+    } else if (isPremiumActive) {
+      daysRemaining = calculateDaysRemainingUntil(uEnd, now);
+    }
+
     return {
       hasSubscription: userSubscription.status !== 'free',
       status: userSubscription.status,
       plan: userSubscription.plan,
+      isInTrial,
+      isActive: isInTrial || isPremiumActive,
       trialStartDate: userSubscription.trialStartDate,
       trialEndDate: userSubscription.trialEndDate,
       subscriptionStartDate: userSubscription.subscriptionStartDate,
       subscriptionEndDate: userSubscription.subscriptionEndDate,
+      daysRemaining,
     };
   }
 
