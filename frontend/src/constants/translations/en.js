@@ -488,6 +488,9 @@ export const AUTH = {
     EMAIL_REQUIRED: 'Please enter your email',
     EMAIL_INVALID: 'Please enter a valid email',
     ERROR_SEND_CODE: 'Could not send verification code',
+    EMAIL_NOT_FOUND: 'No account exists with this email address',
+    ACTIVE_CODE_EXISTS:
+      'An active recovery code already exists. Please wait for it to expire.',
     TOO_MANY_ATTEMPTS:
       'Too many attempts. Please wait a moment and try again.',
     CONNECTION_ERROR:
@@ -507,6 +510,9 @@ export const AUTH = {
     EMAIL_REQUIRED: 'Please enter your email',
     EMAIL_INVALID: 'Please enter a valid email',
     ERROR_SEND_EMAIL: 'Could not send recovery email',
+    EMAIL_NOT_FOUND: 'No account exists with this email address',
+    ACTIVE_CODE_EXISTS:
+      'An active recovery code already exists. Please wait for it to expire.',
     TOO_MANY_ATTEMPTS:
       'Too many attempts. Please wait a moment and try again.',
     CONNECTION_ERROR:
@@ -520,7 +526,10 @@ export const AUTH = {
     COUNTDOWN_MESSAGE: 'You can request a new code in',
     BACK_TO_SIGN_IN: 'Back to Sign In',
     CODE_REQUIRED: 'Please enter the full 6-digit code',
-    CODE_INVALID: 'Invalid or expired code',
+    CODE_INVALID: 'The code is incorrect. Check it and try again.',
+    EMAIL_NOT_FOUND: 'No account exists with this email address',
+    ACTIVE_CODE_EXISTS:
+      'An active recovery code already exists. Please wait for it to expire.',
     CODE_RESENT: 'Code resent',
     CODE_RESENT_MESSAGE: 'A new code has been sent to your email',
     ERROR: 'Something went wrong',
@@ -544,7 +553,7 @@ export const AUTH = {
     ERROR: 'Something went wrong',
     ERROR_RESET_PASSWORD: 'Could not change password',
     PASSWORD_REQUIRED: 'Password is required',
-    PASSWORD_MIN_LENGTH: 'Password must be at least 6 characters',
+    PASSWORD_MIN_LENGTH: 'Password must be at least 8 characters',
     CONFIRM_PASSWORD_REQUIRED: 'You must confirm the password',
     PASSWORDS_NOT_MATCH: 'Passwords do not match',
     BACK: 'Back',

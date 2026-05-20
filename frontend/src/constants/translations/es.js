@@ -486,6 +486,9 @@ export const AUTH = {
     EMAIL_REQUIRED: 'Por favor, introduce tu correo electrónico',
     EMAIL_INVALID: 'Por favor, introduce un correo electrónico válido',
     ERROR_SEND_CODE: 'Error al enviar el código de recuperación',
+    EMAIL_NOT_FOUND: 'No existe una cuenta con este correo electrónico',
+    ACTIVE_CODE_EXISTS:
+      'Ya existe un código de recuperación activo. Espera a que expire.',
     TOO_MANY_ATTEMPTS:
       'Demasiados intentos. Espera un momento y vuelve a intentar.',
     CONNECTION_ERROR:
@@ -505,6 +508,9 @@ export const AUTH = {
     EMAIL_REQUIRED: 'Por favor, introduce tu correo electrónico',
     EMAIL_INVALID: 'Por favor, introduce un correo electrónico válido',
     ERROR_SEND_EMAIL: 'Error al enviar el correo de recuperación',
+    EMAIL_NOT_FOUND: 'No existe una cuenta con este correo electrónico',
+    ACTIVE_CODE_EXISTS:
+      'Ya existe un código de recuperación activo. Espera a que expire.',
     TOO_MANY_ATTEMPTS:
       'Demasiados intentos. Espera un momento y vuelve a intentar.',
     CONNECTION_ERROR:
@@ -518,7 +524,10 @@ export const AUTH = {
     COUNTDOWN_MESSAGE: 'Puedes solicitar un nuevo código en',
     BACK_TO_SIGN_IN: 'Volver al Inicio de Sesión',
     CODE_REQUIRED: 'Por favor, introduce el código completo de 6 dígitos',
-    CODE_INVALID: 'Código inválido o expirado',
+    CODE_INVALID: 'El código no es correcto. Revísalo e inténtalo de nuevo.',
+    EMAIL_NOT_FOUND: 'No existe una cuenta con este correo electrónico',
+    ACTIVE_CODE_EXISTS:
+      'Ya existe un código de recuperación activo. Espera a que expire.',
     CODE_RESENT: 'Código reenviado',
     CODE_RESENT_MESSAGE:
       'Se ha enviado un nuevo código a tu correo electrónico',
@@ -544,7 +553,7 @@ export const AUTH = {
     ERROR: 'Error',
     ERROR_RESET_PASSWORD: 'Error al cambiar la contraseña',
     PASSWORD_REQUIRED: 'La contraseña es obligatoria',
-    PASSWORD_MIN_LENGTH: 'La contraseña debe tener al menos 6 caracteres',
+    PASSWORD_MIN_LENGTH: 'La contraseña debe tener al menos 8 caracteres',
     CONFIRM_PASSWORD_REQUIRED: 'Debes confirmar la contraseña',
     PASSWORDS_NOT_MATCH: 'Las contraseñas no coinciden',
     BACK: 'Volver',

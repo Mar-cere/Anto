@@ -27,6 +27,7 @@ import { ROUTES } from '../constants/routes';
 import { userService } from '../services/userService';
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
+import { resolvePasswordRecoveryErrorMessage } from '../utils/passwordRecoveryErrors';
 
 // Constantes de textos
 const DEFAULT_TEXTS = {
@@ -43,7 +44,7 @@ const DEFAULT_TEXTS = {
   ERROR: 'Error',
   ERROR_RESET_PASSWORD: 'Error al cambiar la contraseña',
   PASSWORD_REQUIRED: 'La contraseña es obligatoria',
-  PASSWORD_MIN_LENGTH: 'La contraseña debe tener al menos 6 caracteres',
+  PASSWORD_MIN_LENGTH: 'La contraseña debe tener al menos 8 caracteres',
   CONFIRM_PASSWORD_REQUIRED: 'Debes confirmar la contraseña',
   PASSWORDS_NOT_MATCH: 'Las contraseñas no coinciden',
   BACK: 'Volver',
@@ -52,46 +53,8 @@ const DEFAULT_TEXTS = {
   CODE_EXPIRED: 'El código de recuperación expiró. Solicita uno nuevo.',
 };
 
-const resolveNewPasswordErrorMessage = (error, texts) => {
-  const status = error?.response?.status;
-  const rawMessage = String(
-    error?.response?.data?.message ?? error?.message ?? '',
-  ).toLowerCase();
-
-  const isNetworkIssue =
-    !error?.response ||
-    rawMessage.includes('network') ||
-    rawMessage.includes('econnrefused') ||
-    rawMessage.includes('timeout') ||
-    rawMessage.includes('timed out');
-  if (isNetworkIssue) {
-    return texts.CONNECTION_ERROR;
-  }
-
-  if (
-    status === 429 ||
-    rawMessage.includes('too many') ||
-    rawMessage.includes('demasiados intentos')
-  ) {
-    return texts.TOO_MANY_ATTEMPTS;
-  }
-
-  if (
-    rawMessage.includes('expired') ||
-    rawMessage.includes('expir') ||
-    rawMessage.includes('vencid') ||
-    rawMessage.includes('invalid code') ||
-    rawMessage.includes('codigo') ||
-    rawMessage.includes('código')
-  ) {
-    return texts.CODE_EXPIRED;
-  }
-
-  return texts.ERROR_RESET_PASSWORD;
-};
-
 // Constantes de validación
-const MIN_PASSWORD_LENGTH = 6;
+const MIN_PASSWORD_LENGTH = 8;
 
 // Constantes de animación
 const ANIMATION_INITIAL_DELAY = 500; // ms
@@ -458,7 +421,10 @@ const NewPasswordScreen = ({ navigation, route }) => {
       await userService.resetPassword(email, code, formData.password);
       setSuccess(true);
     } catch (error) {
-      Alert.alert(TEXTS.ERROR, resolveNewPasswordErrorMessage(error, TEXTS));
+      Alert.alert(
+        TEXTS.ERROR,
+        resolvePasswordRecoveryErrorMessage(error, TEXTS, 'ERROR_RESET_PASSWORD'),
+      );
     } finally {
       setIsSubmitting(false);
     }

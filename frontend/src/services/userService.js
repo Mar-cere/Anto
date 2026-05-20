@@ -1,10 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { create } from 'axios';
 import { User } from '../models/User';
-import { ENDPOINTS } from '../config/api';
+import { API_URL, ENDPOINTS } from '../config/api';
+import { getAppLanguage } from '../utils/appLanguage';
+import { normalizeVerificationCode } from '../utils/verificationCode';
 
-// URL base de la API
-export const API_BASE_URL = 'https://antobackend.onrender.com';
+// Misma base que el resto de la app (EXPO_PUBLIC_API_URL / api.ts)
+export const API_BASE_URL = API_URL;
 
 // Rutas de navegación
 export const ROUTES = {
@@ -33,6 +35,13 @@ apiClient.interceptors.request.use(
   async (config) => {
     try {
       const token = await AsyncStorage.getItem('userToken');
+      const appLanguage = await getAppLanguage();
+      config.headers = {
+        ...config.headers,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-App-Language': appLanguage,
+      };
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -369,7 +378,9 @@ export const userService = {
 
   recoverPassword: async (email) => {
     try {
-      const response = await apiClient.post('/api/auth/recover-password', { email });
+      const response = await apiClient.post(ENDPOINTS.RECOVER_PASSWORD, {
+        email: String(email).toLowerCase().trim(),
+      });
       return response.data;
     } catch (error) {
       console.error('Error en recuperación de contraseña:', error);
@@ -379,7 +390,10 @@ export const userService = {
 
   verifyCode: async (email, code) => {
     try {
-      const response = await apiClient.post('/api/auth/verify-code', { email, code });
+      const response = await apiClient.post(ENDPOINTS.VERIFY_CODE, {
+        email: String(email).toLowerCase().trim(),
+        code: normalizeVerificationCode(code),
+      });
       return response.data;
     } catch (error) {
       console.error('Error al verificar código:', error);
@@ -389,7 +403,11 @@ export const userService = {
 
   resetPassword: async (email, code, newPassword) => {
     try {
-      const response = await apiClient.post('/api/auth/reset-password', { email, code, newPassword });
+      const response = await apiClient.post(ENDPOINTS.RESET_PASSWORD, {
+        email: String(email).toLowerCase().trim(),
+        code: normalizeVerificationCode(code),
+        newPassword,
+      });
       return response.data;
     } catch (error) {
       console.error('Error al restablecer contraseña:', error);
@@ -399,7 +417,7 @@ export const userService = {
 
   logout: async () => {
     try {
-      const response = await apiClient.post('/api/auth/logout');
+      const response = await apiClient.post(ENDPOINTS.LOGOUT);
       await AsyncStorage.removeItem('userToken');
       return response.data;
     } catch (error) {

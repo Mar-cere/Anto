@@ -27,6 +27,7 @@ import { ROUTES } from '../constants/routes';
 import { userService } from '../services/userService';
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
+import { resolvePasswordRecoveryErrorMessage } from '../utils/passwordRecoveryErrors';
 
 // Constantes de textos
 const DEFAULT_TEXTS = {
@@ -43,33 +44,6 @@ const DEFAULT_TEXTS = {
   ERROR_SEND_CODE: 'Error al enviar el código de recuperación',
   TOO_MANY_ATTEMPTS: 'Demasiados intentos. Espera un momento y vuelve a intentar.',
   CONNECTION_ERROR: 'No hay conexión. Verifica tu internet e inténtalo de nuevo.',
-};
-
-const resolveRecoverPasswordErrorMessage = (error, texts) => {
-  const status = error?.response?.status;
-  const rawMessage = String(
-    error?.response?.data?.message ?? error?.message ?? '',
-  ).toLowerCase();
-
-  const isNetworkIssue =
-    !error?.response ||
-    rawMessage.includes('network') ||
-    rawMessage.includes('econnrefused') ||
-    rawMessage.includes('timeout') ||
-    rawMessage.includes('timed out');
-  if (isNetworkIssue) {
-    return texts.CONNECTION_ERROR;
-  }
-
-  if (
-    status === 429 ||
-    rawMessage.includes('too many') ||
-    rawMessage.includes('demasiados intentos')
-  ) {
-    return texts.TOO_MANY_ATTEMPTS;
-  }
-
-  return texts.ERROR_SEND_CODE;
 };
 
 // Constantes de validación
@@ -257,11 +231,15 @@ const RecoverPasswordScreen = ({ navigation }) => {
     setError('');
 
     try {
-      await userService.recoverPassword(normalizedEmail);
-      // Navegar a la pantalla de verificación de código
-      navigation.navigate(VERIFY_CODE_ROUTE, { email: normalizedEmail });
+      const data = await userService.recoverPassword(normalizedEmail);
+      navigation.navigate(VERIFY_CODE_ROUTE, {
+        email: normalizedEmail,
+        expiresIn: data?.expiresIn ?? 900,
+      });
     } catch (error) {
-      setError(resolveRecoverPasswordErrorMessage(error, TEXTS));
+      setError(
+        resolvePasswordRecoveryErrorMessage(error, TEXTS, 'ERROR_SEND_CODE'),
+      );
     } finally {
       setIsSubmitting(false);
     }

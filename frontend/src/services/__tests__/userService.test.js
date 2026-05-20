@@ -12,10 +12,15 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 // Mock api config
 jest.mock('../../config/api', () => ({
   API_URL: 'https://test-api.com',
+  API_URL: 'https://test-api.com',
   ENDPOINTS: {
     ME: '/api/users/me',
     LOGIN: '/api/auth/login',
-    REGISTER: '/api/auth/register'
+    REGISTER: '/api/auth/register',
+    RECOVER_PASSWORD: '/api/auth/recover-password',
+    VERIFY_CODE: '/api/auth/verify-code',
+    RESET_PASSWORD: '/api/auth/reset-password',
+    LOGOUT: '/api/auth/logout',
   },
   fetchWithToken: jest.fn()
 }));
@@ -199,6 +204,47 @@ describe('userService', () => {
       global.mockApiClient.get.mockRejectedValue(new Error('Network error'));
       
       await expect(userService.register({})).rejects.toThrow('No se puede conectar con el servidor');
+    });
+  });
+
+  describe('password recovery', () => {
+    it('recoverPassword normaliza email', async () => {
+      global.mockApiClient.post.mockResolvedValue({
+        data: { message: 'ok', expiresIn: 900 },
+      });
+
+      await userService.recoverPassword('  User@Example.COM ');
+
+      expect(global.mockApiClient.post).toHaveBeenCalledWith(
+        '/api/auth/recover-password',
+        { email: 'user@example.com' },
+      );
+    });
+
+    it('verifyCode normaliza email y código', async () => {
+      global.mockApiClient.post.mockResolvedValue({ data: { message: 'ok' } });
+
+      await userService.verifyCode('User@Example.com', ' 123-456 ');
+
+      expect(global.mockApiClient.post).toHaveBeenCalledWith(
+        '/api/auth/verify-code',
+        { email: 'user@example.com', code: '123456' },
+      );
+    });
+
+    it('resetPassword normaliza email y código', async () => {
+      global.mockApiClient.post.mockResolvedValue({ data: { message: 'ok' } });
+
+      await userService.resetPassword('User@Example.com', '654-321', 'password1234');
+
+      expect(global.mockApiClient.post).toHaveBeenCalledWith(
+        '/api/auth/reset-password',
+        {
+          email: 'user@example.com',
+          code: '654321',
+          newPassword: 'password1234',
+        },
+      );
     });
   });
 

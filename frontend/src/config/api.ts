@@ -45,6 +45,10 @@ export const ENDPOINTS = {
   VERIFY_EMAIL: '/api/auth/verify-email',
   RESEND_VERIFICATION_CODE: '/api/auth/resend-verification-code',
   CHANGE_PASSWORD: '/api/auth/change-password',
+  RECOVER_PASSWORD: '/api/auth/recover-password',
+  VERIFY_CODE: '/api/auth/verify-code',
+  RESET_PASSWORD: '/api/auth/reset-password',
+  LOGOUT: '/api/auth/logout',
   HEALTH: '/health',
   ME: '/api/users/me',
   /** Telemetría §8 contrato chat → tarea/hábito (dismiss / fallo cliente). */

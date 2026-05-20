@@ -26,6 +26,10 @@ import { validationErrorBody, validateBody } from '../utils/apiValidation.js';
 import { resolveAppLanguage } from '../utils/resolveAppLanguage.js';
 import { resolveEmailLanguageFromRequest, resolveUserEmailLanguage } from '../utils/emailLanguage.js';
 import { buildDuplicateRegisterBody } from '../utils/authErrorCodes.js';
+import {
+  isResetCodeExpired,
+  isResetCodeValid,
+} from '../utils/authResetCode.js';
 
 const router = express.Router();
 
@@ -49,13 +53,31 @@ const registerLimiter = createRateLimiter({
   legacyHeaders: false
 });
 
-const passwordResetLimiter = createRateLimiter({
-  windowMs: 60 * 60 * 1000, // 1 hora
-  max: 3,
+const passwordRecoverSendLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
   message: (req) => authApiCopy(resolveRequestLanguage(req)).rateLimitPasswordReset,
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
+
+const passwordVerifyCodeLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  message: (req) => authApiCopy(resolveRequestLanguage(req)).rateLimitPasswordReset,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const passwordResetSubmitLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 8,
+  message: (req) => authApiCopy(resolveRequestLanguage(req)).rateLimitPasswordReset,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const RESET_CODE_TTL_MS = 15 * 60 * 1000;
 
 const changePasswordLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
@@ -95,11 +117,12 @@ const generateEmailVerificationCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-const validateResetCode = (user, code) => {
-  return user.resetPasswordCode &&
-         user.resetPasswordExpires &&
-         user.resetPasswordCode === code &&
-         user.resetPasswordExpires > Date.now();
+const respondInvalidResetCode = (res, copy, user) => {
+  const message = isResetCodeExpired(user)
+    ? copy.resetCodeExpired
+    : copy.resetCodeInvalid;
+  const code = isResetCodeExpired(user) ? 'RESET_CODE_EXPIRED' : 'RESET_CODE_INVALID';
+  return res.status(400).json({ message, code });
 };
 
 // Health check
@@ -450,7 +473,7 @@ router.post('/refresh', async (req, res) => {
 });
 
 // Recuperar contraseña: envía código de verificación
-router.post('/recover-password', passwordResetLimiter, async (req, res) => {
+router.post('/recover-password', passwordRecoverSendLimiter, async (req, res) => {
   const copy = req.apiCopy;
   try {
     const { error, value } = validateBody(getPasswordResetSchema(copy), req.body);
@@ -468,14 +491,9 @@ router.post('/recover-password', passwordResetLimiter, async (req, res) => {
 
     const emailLanguage = resolveUserEmailLanguage(user, resolveEmailLanguageFromRequest(req, user));
 
-    // Verificar si ya hay un código activo
-    if (user.resetPasswordCode && user.resetPasswordExpires > Date.now()) {
-      return res.status(400).json({ message: copy.activeRecoveryCodeExists });
-    }
-
-    // Generar código de verificación (6 dígitos)
+    // Generar código de verificación (6 dígitos); reemplaza uno anterior si existía
     const verificationCode = crypto.randomInt(100000, 999999).toString();
-    const expiresIn = 600000; // 10 minutos
+    const expiresIn = RESET_CODE_TTL_MS;
     
     // Guardar el código en el usuario
     user.resetPasswordCode = verificationCode;
@@ -485,9 +503,9 @@ router.post('/recover-password', passwordResetLimiter, async (req, res) => {
     // Enviar correo con el código
     await mailer.sendVerificationCode(email, verificationCode, { language: emailLanguage });
 
-    res.json({ 
+    res.json({
       message: copy.verificationCodeSent,
-      expiresIn: 600 // 10 minutos en segundos
+      expiresIn: Math.floor(RESET_CODE_TTL_MS / 1000),
     });
 
   } catch (error) {
@@ -497,7 +515,7 @@ router.post('/recover-password', passwordResetLimiter, async (req, res) => {
 });
 
 // Verificar código de recuperación
-router.post('/verify-code', passwordResetLimiter, async (req, res) => {
+router.post('/verify-code', passwordVerifyCodeLimiter, async (req, res) => {
   const copy = req.apiCopy;
   try {
     const { error, value } = validateBody(getVerifyCodeSchema(copy), req.body);
@@ -515,14 +533,18 @@ router.post('/verify-code', passwordResetLimiter, async (req, res) => {
       return res.status(404).json({ message: copy.emailNotFound });
     }
 
-    // Validar código
-    if (!validateResetCode(user, code)) {
-      return res.status(400).json({ message: copy.invalidOrExpiredCode });
+    if (!isResetCodeValid(user, code)) {
+      return respondInvalidResetCode(res, copy, user);
     }
+
+    const expiresMs =
+      user.resetPasswordExpires instanceof Date
+        ? user.resetPasswordExpires.getTime()
+        : new Date(user.resetPasswordExpires).getTime();
 
     res.json({
       message: copy.codeVerifiedSuccess,
-      expiresIn: Math.floor((user.resetPasswordExpires - Date.now()) / 1000)
+      expiresIn: Math.max(0, Math.floor((expiresMs - Date.now()) / 1000)),
     });
   } catch (error) {
     console.error('Error al verificar código:', error);
@@ -531,7 +553,7 @@ router.post('/verify-code', passwordResetLimiter, async (req, res) => {
 });
 
 // Restablecer contraseña: cambia la contraseña con código verificado
-router.post('/reset-password', passwordResetLimiter, async (req, res) => {
+router.post('/reset-password', passwordResetSubmitLimiter, async (req, res) => {
   const copy = req.apiCopy;
   try {
     const { error, value } = validateBody(getResetPasswordSchema(copy), req.body);
@@ -547,9 +569,8 @@ router.post('/reset-password', passwordResetLimiter, async (req, res) => {
       return res.status(404).json({ message: copy.emailNotFound });
     }
 
-    // Verificar código y expiración
-    if (!validateResetCode(user, code)) {
-      return res.status(400).json({ message: copy.invalidOrExpiredCode });
+    if (!isResetCodeValid(user, code)) {
+      return respondInvalidResetCode(res, copy, user);
     }
 
     // Hashear la nueva contraseña

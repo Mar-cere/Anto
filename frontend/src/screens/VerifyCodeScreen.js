@@ -25,9 +25,11 @@ import {
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import ParticleBackground from '../components/ParticleBackground';
 import { ROUTES } from '../constants/routes';
+import { isCompleteVerificationCode } from '../utils/verificationCode';
 import { userService } from '../services/userService';
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
+import { resolvePasswordRecoveryErrorMessage } from '../utils/passwordRecoveryErrors';
 
 // Constantes de textos
 const DEFAULT_TEXTS = {
@@ -48,38 +50,13 @@ const DEFAULT_TEXTS = {
   CODE_EXPIRED: 'El código expiró. Solicita uno nuevo.',
 };
 
-const resolveVerifyCodeErrorMessage = (error, texts, fallbackKey) => {
-  const status = error?.response?.status;
-  const rawMessage = String(
-    error?.response?.data?.message ?? error?.message ?? '',
-  ).toLowerCase();
-
-  if (
-    status === 429 ||
-    rawMessage.includes('too many') ||
-    rawMessage.includes('demasiados intentos')
-  ) {
-    return texts.TOO_MANY_ATTEMPTS;
-  }
-
-  if (
-    rawMessage.includes('expired') ||
-    rawMessage.includes('expir') ||
-    rawMessage.includes('vencid')
-  ) {
-    return texts.CODE_EXPIRED;
-  }
-
-  return texts[fallbackKey];
-};
-
 // Constantes de validación
 const CODE_LENGTH = 6;
 const CODE_INPUTS_COUNT = 6;
 const LAST_INPUT_INDEX = CODE_INPUTS_COUNT - 1;
 
 // Constantes de tiempo
-const COUNTDOWN_INITIAL = 300; // 5 minutos en segundos
+const COUNTDOWN_INITIAL = 900; // 15 minutos en segundos (alineado con backend)
 const COUNTDOWN_INTERVAL = 1000; // 1 segundo
 const SECONDS_PER_MINUTE = 60;
 
@@ -143,16 +120,17 @@ const hexToRgba = (hex, alpha) => {
 // Constantes de imágenes
 const BACKGROUND_IMAGE = require('../images/back.png');
 
-// Constantes de navegación
-const NAVIGATION_ROUTE_NEW_PASSWORD = 'NewPassword';
-
 const VerifyCodeScreen = ({ navigation, route }) => {
   const AUTH = useSectionTranslations('AUTH');
   const TEXTS = useMemo(
     () => ({ ...DEFAULT_TEXTS, ...(AUTH?.VERIFY_CODE || {}) }),
     [AUTH],
   );
-  const { email } = route.params || {};
+  const { email, expiresIn: routeExpiresIn } = route.params || {};
+  const initialCountdown =
+    typeof routeExpiresIn === 'number' && routeExpiresIn > 0
+      ? routeExpiresIn
+      : COUNTDOWN_INITIAL;
   const { colors, statusBarStyle } = useTheme();
 
   const styles = useMemo(
@@ -310,7 +288,7 @@ const VerifyCodeScreen = ({ navigation, route }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [countdown, setCountdown] = useState(COUNTDOWN_INITIAL);
+  const [countdown, setCountdown] = useState(initialCountdown);
   const [canResend, setCanResend] = useState(false);
 
   // Efecto de entrada con animación
@@ -355,27 +333,43 @@ const VerifyCodeScreen = ({ navigation, route }) => {
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   }, []);
 
-  // Manejar cambio en input de código
+  // Manejar cambio en input de código (incluye pegado de 6 dígitos)
   const handleCodeChange = useCallback((text, index) => {
-    if (text.length > 1) {
-      text = text.charAt(text.length - 1);
+    const digits = text.replace(/\D/g, '');
+
+    if (digits.length > 1) {
+      const pasted = digits.slice(0, CODE_LENGTH).split('');
+      setCode((prevCode) => {
+        const newCode = [...prevCode];
+        pasted.forEach((digit, offset) => {
+          const targetIndex = index + offset;
+          if (targetIndex < CODE_INPUTS_COUNT) {
+            newCode[targetIndex] = digit;
+          }
+        });
+        return newCode;
+      });
+      const nextFocus = Math.min(index + pasted.length, LAST_INPUT_INDEX);
+      setTimeout(() => {
+        inputRefs[nextFocus].current?.focus();
+      }, 0);
+      if (error) setError('');
+      return;
     }
-    
-    setCode(prevCode => {
+
+    setCode((prevCode) => {
       const newCode = [...prevCode];
-      newCode[index] = text;
-      
-      // Auto-avanzar al siguiente input
-      if (text !== '' && index < LAST_INPUT_INDEX) {
+      newCode[index] = digits;
+
+      if (digits !== '' && index < LAST_INPUT_INDEX) {
         setTimeout(() => {
           inputRefs[index + 1].current?.focus();
         }, 0);
       }
-      
+
       return newCode;
     });
-    
-    // Quitar error al escribir
+
     if (error) setError('');
   }, [error, inputRefs]);
 
@@ -405,7 +399,7 @@ const VerifyCodeScreen = ({ navigation, route }) => {
   const handleVerifyCode = useCallback(async () => {
     const completeCode = code.join('');
     
-    if (completeCode.length !== CODE_LENGTH) {
+    if (!isCompleteVerificationCode(completeCode)) {
       setError(TEXTS.CODE_REQUIRED);
       return;
     }
@@ -416,9 +410,11 @@ const VerifyCodeScreen = ({ navigation, route }) => {
     try {
       await userService.verifyCode(email, completeCode);
       // Si el código es válido, navegar a la pantalla de nueva contraseña
-      navigation.navigate(NAVIGATION_ROUTE_NEW_PASSWORD, { email, code: completeCode });
+      navigation.navigate(ROUTES.NEW_PASSWORD, { email, code: completeCode });
     } catch (error) {
-      setError(resolveVerifyCodeErrorMessage(error, TEXTS, 'CODE_INVALID'));
+      setError(
+        resolvePasswordRecoveryErrorMessage(error, TEXTS, 'CODE_INVALID'),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -432,14 +428,18 @@ const VerifyCodeScreen = ({ navigation, route }) => {
   // Reenviar código
   const handleResendCode = useCallback(async () => {
     try {
-      await userService.recoverPassword(email);
-      setCountdown(COUNTDOWN_INITIAL);
+      const data = await userService.recoverPassword(email);
+      const nextCountdown =
+        typeof data?.expiresIn === 'number' && data.expiresIn > 0
+          ? data.expiresIn
+          : COUNTDOWN_INITIAL;
+      setCountdown(nextCountdown);
       setCanResend(false);
       Alert.alert(TEXTS.CODE_RESENT, TEXTS.CODE_RESENT_MESSAGE);
     } catch (error) {
       Alert.alert(
         TEXTS.ERROR,
-        resolveVerifyCodeErrorMessage(error, TEXTS, 'RESEND_ERROR'),
+        resolvePasswordRecoveryErrorMessage(error, TEXTS, 'RESEND_ERROR'),
       );
     }
   }, [

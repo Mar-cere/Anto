@@ -2,6 +2,7 @@
  * Esquemas Joi de autenticación por idioma (copy).
  */
 import Joi from 'joi';
+import { normalizeVerificationCode } from './authResetCode.js';
 
 function emailField(copy) {
   return Joi.string()
@@ -43,9 +44,17 @@ function usernameField(copy) {
 
 function verificationCodeField(copy) {
   return Joi.string()
-    .length(6)
-    .pattern(/^[0-9]+$/)
     .required()
+    .custom((value, helpers) => {
+      const normalized = normalizeVerificationCode(value);
+      if (normalized.length !== 6) {
+        return helpers.error('string.length');
+      }
+      if (!/^[0-9]{6}$/.test(normalized)) {
+        return helpers.error('string.pattern.base');
+      }
+      return normalized;
+    })
     .messages({
       'string.length': copy.joiCodeLength,
       'string.pattern.base': copy.joiCodePattern,
