@@ -60,10 +60,18 @@ export const MERCADOPAGO_CONFIG = {
   
   // IDs de Preapproval Plans (creados en el panel de Mercado Pago)
   preapprovalPlanIds: {
-    monthly: process.env.MERCADOPAGO_PREAPPROVAL_PLAN_ID_MONTHLY || '',
-    quarterly: process.env.MERCADOPAGO_PREAPPROVAL_PLAN_ID_QUARTERLY || '',
-    semestral: process.env.MERCADOPAGO_PREAPPROVAL_PLAN_ID_SEMESTRAL || '',
-    yearly: process.env.MERCADOPAGO_PREAPPROVAL_PLAN_ID_YEARLY || '',
+    es: {
+      monthly: process.env.MERCADOPAGO_PREAPPROVAL_PLAN_ID_MONTHLY || '',
+      quarterly: process.env.MERCADOPAGO_PREAPPROVAL_PLAN_ID_QUARTERLY || '',
+      semestral: process.env.MERCADOPAGO_PREAPPROVAL_PLAN_ID_SEMESTRAL || '',
+      yearly: process.env.MERCADOPAGO_PREAPPROVAL_PLAN_ID_YEARLY || '',
+    },
+    en: {
+      monthly: process.env.ENG_MERCADOPAGO_PREAPPROVAL_PLAN_ID_MONTHLY || '',
+      quarterly: process.env.ENG_MERCADOPAGO_PREAPPROVAL_PLAN_ID_QUARTERLY || '',
+      semestral: process.env.ENG_MERCADOPAGO_PREAPPROVAL_PLAN_ID_SEMESTRAL || '',
+      yearly: process.env.ENG_MERCADOPAGO_PREAPPROVAL_PLAN_ID_YEARLY || '',
+    },
   },
   
   // Configuración de trial (días)
@@ -91,10 +99,54 @@ export const getPlanPrice = (plan) => {
   return MERCADOPAGO_CONFIG.prices[plan] || 0;
 };
 
+export const BILLING_PLANS = ['monthly', 'quarterly', 'semestral', 'yearly'];
+
 // Helper: obtener el ID del Preapproval Plan según el plan
-export const getPreapprovalPlanId = (plan) => {
-  return MERCADOPAGO_CONFIG.preapprovalPlanIds[plan] || null;
+export const getPreapprovalPlanId = (plan, language = 'es') => {
+  if (!BILLING_PLANS.includes(plan)) return null;
+  const lang = language === 'en' ? 'en' : 'es';
+  const map = MERCADOPAGO_CONFIG.preapprovalPlanIds?.[lang];
+  const planId = map?.[plan];
+  return typeof planId === 'string' && planId.trim() ? planId.trim() : null;
 };
+
+/** Nombre de variable de entorno esperada para un plan e idioma. */
+export const getPreapprovalPlanEnvKey = (plan, language = 'es') => {
+  const prefix = language === 'en' ? 'ENG_' : '';
+  return `${prefix}MERCADOPAGO_PREAPPROVAL_PLAN_ID_${String(plan).toUpperCase()}`;
+};
+
+/**
+ * Valida que existan IDs de preapproval para ES y EN.
+ * En producción emite advertencias al arrancar si falta alguno.
+ */
+export const validatePreapprovalPlanIds = ({ warn = console.warn } = {}) => {
+  if (!isMercadoPagoConfigured()) {
+    return { ok: true, missing: [] };
+  }
+
+  const missing = [];
+  for (const lang of ['es', 'en']) {
+    for (const plan of BILLING_PLANS) {
+      if (!getPreapprovalPlanId(plan, lang)) {
+        missing.push({ lang, plan, envKey: getPreapprovalPlanEnvKey(plan, lang) });
+      }
+    }
+  }
+
+  if (missing.length > 0 && MERCADOPAGO_CONFIG.mode === 'production') {
+    warn('⚠️  Mercado Pago: faltan IDs de Preapproval Plan en variables de entorno:');
+    for (const { envKey } of missing) {
+      warn(`   - ${envKey}`);
+    }
+  }
+
+  return { ok: missing.length === 0, missing };
+};
+
+if (isMercadoPagoConfigured()) {
+  validatePreapprovalPlanIds();
+}
 
 // Helper: generar URL de checkout para Preapproval Plan
 //

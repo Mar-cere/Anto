@@ -8,6 +8,7 @@ import User from '../models/User.js';
 import pushNotificationService from '../services/pushNotificationService.js';
 import { createRateLimiter } from '../utils/createRateLimiter.js';
 import { resolveRequestLanguage } from '../utils/apiLanguage.js';
+import { resolveAppLanguage } from '../utils/resolveAppLanguage.js';
 import { notificationApiCopy } from '../utils/notificationApiCopy.js';
 
 const router = express.Router();
@@ -79,7 +80,13 @@ router.post('/push-token', authenticateToken, async (req, res) => {
       prevUser?.preferences?.notifications !== false
     ) {
       try {
-        await pushNotificationService.sendTrialWelcome(pushToken);
+        const pushLanguage = resolveAppLanguage({
+          preferenceLanguage: prevUser?.preferences?.language,
+          headerLanguage: req.headers['x-app-language'],
+        });
+        await pushNotificationService.sendTrialWelcome(pushToken, {
+          language: pushLanguage,
+        });
       } catch (welcomeErr) {
         console.warn('[NotificationRoutes] No se pudo enviar trial welcome push:', welcomeErr?.message);
       }

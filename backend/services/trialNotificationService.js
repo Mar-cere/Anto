@@ -11,6 +11,7 @@
 
 import Subscription from '../models/Subscription.js';
 import User from '../models/User.js';
+import { resolveAppLanguage } from '../utils/resolveAppLanguage.js';
 import pushNotificationService from './pushNotificationService.js';
 
 class TrialNotificationService {
@@ -80,21 +81,24 @@ class TrialNotificationService {
    */
   async sendTrialExpirationNotification(userId, daysRemaining) {
     try {
-      const user = await User.findById(userId).select('email username pushToken');
+      const user = await User.findById(userId).select(
+        'email username pushToken preferences.language',
+      );
       if (!user) return;
+
+      const language = resolveAppLanguage({
+        preferenceLanguage: user?.preferences?.language,
+      });
 
       console.log(`[TrialNotificationService] Trial próximo a expirar para usuario ${userId}: ${daysRemaining} días restantes`);
       
       // Enviar notificación push si el usuario tiene token
       if (user.pushToken) {
         try {
-          if (daysRemaining >= 3) {
-            await pushNotificationService.sendSubscriptionReminder(user.pushToken, {
-              message: `Te quedan ${daysRemaining} días de prueba premium. Aprovecha el chat y las herramientas.`,
-            });
-          } else {
-            await pushNotificationService.sendTrialExpiring(user.pushToken, { daysRemaining });
-          }
+          await pushNotificationService.sendTrialExpiring(user.pushToken, {
+            daysRemaining,
+            language,
+          });
           console.log(`[TrialNotificationService] Notificación push enviada a usuario ${userId}`);
         } catch (pushError) {
           console.error('[TrialNotificationService] Error enviando notificación push:', pushError);

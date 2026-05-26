@@ -8,7 +8,7 @@
  * @author AntoApp Team
  */
 
-import { preferenceClient, preapprovalClient, preapprovalPlanClient, MERCADOPAGO_CONFIG, getPlanPrice, getPreapprovalPlanId, getPreapprovalCheckoutUrl, isMercadoPagoConfigured } from '../config/mercadopago.js';
+import { preferenceClient, preapprovalClient, preapprovalPlanClient, MERCADOPAGO_CONFIG, getPlanPrice, getPreapprovalPlanId, getPreapprovalPlanEnvKey, getPreapprovalCheckoutUrl, isMercadoPagoConfigured } from '../config/mercadopago.js';
 import Transaction from '../models/Transaction.js';
 import Subscription from '../models/Subscription.js';
 import User from '../models/User.js';
@@ -247,10 +247,16 @@ class PaymentServiceMercadoPago {
         throw new Error(`Plan inválido: ${plan}. Los planes válidos son: ${validPlans.join(', ')}`);
       }
 
-      // Obtener el ID del Preapproval Plan
-      const preapprovalPlanId = getPreapprovalPlanId(plan);
+      const userLanguage = user?.preferences?.language;
+      const effectiveLanguage = userLanguage === 'en' ? 'en' : 'es';
+
+      // Obtener el ID del Preapproval Plan (ES/EN) según el idioma del usuario
+      const preapprovalPlanId = getPreapprovalPlanId(plan, effectiveLanguage);
       if (!preapprovalPlanId) {
-        throw new Error(`Preapproval Plan ID para ${plan} no está configurado. Por favor, configura MERCADOPAGO_PREAPPROVAL_PLAN_ID_${plan.toUpperCase()} en las variables de entorno`);
+        const envHint = getPreapprovalPlanEnvKey(plan, effectiveLanguage);
+        throw new Error(
+          `Preapproval Plan ID para ${plan} (${effectiveLanguage}) no está configurado. Por favor, configura ${envHint} en las variables de entorno`,
+        );
       }
 
       const price = getPlanPrice(plan);
@@ -282,6 +288,7 @@ class PaymentServiceMercadoPago {
           metadata: {
             preapprovalPlanId: preapprovalPlanId,
             plan: plan,
+            effectiveLanguage: effectiveLanguage,
             checkoutUrl: checkoutUrl,
             successUrl: finalSuccessUrl,
             cancelUrl: finalCancelUrl,

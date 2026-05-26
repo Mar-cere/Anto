@@ -1,6 +1,6 @@
 # 🧠 Anto App — Asistente de bienestar emocional con IA
 
-**Versión de la app (Expo): 1.3.3** · Evaluación con escalas clínicas y protocolos estructurados
+**Versión de la app (Expo): 1.4.0** · Evaluación con escalas clínicas y protocolos estructurados
 
 **Anto** es una aplicación móvil de salud mental que utiliza inteligencia artificial para ofrecer **apoyo emocional personalizado**, análisis de estado de ánimo, detección de crisis y herramientas de bienestar. **No sustituye** la atención de un profesional de la salud mental ni proporciona diagnóstico clínico.
 
@@ -329,8 +329,8 @@ Anto/
 
 ### Estado General: **Listo para Producción** ✅
 
-**Última actualización del README:** 2026-03-27  
-**Versión publicada (app):** 1.3.3 (ver `frontend/app.json`)
+**Última actualización del README:** 2026-05-26  
+**Versión publicada (app):** 1.4.0 (ver `frontend/app.json`)
 
 ### Completado ✅
 
@@ -439,7 +439,7 @@ Para soporte técnico o preguntas:
 - [ ] Visualización gráfica de progreso en escalas
 - [ ] Dashboard avanzado de distorsiones cognitivas
 - [ ] Modo offline para uso sin conexión
-- [ ] Internacionalización (multi-idioma)
+- [x] Internacionalización (multi-idioma) — ES/EN en app, correos, push y checkout Mercado Pago
 - [ ] Integración con wearables (Apple Watch, Fitbit)
 - [ ] Sistema de referidos
 - [ ] Programa de fidelización
