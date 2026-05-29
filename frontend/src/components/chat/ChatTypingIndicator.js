@@ -3,7 +3,7 @@
  */
 
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, Image, StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
 import {
   LAYOUT,
   TYPING_ANIMATION_DELAYS,
@@ -12,8 +12,6 @@ import {
   TYPING_TRANSLATE_Y,
   useChatColors,
 } from '../../screens/chat/chatScreenConstants';
-
-const ANTO_AVATAR = require('../../images/Anto.png');
 
 function TypingDot({ delay, dotStyle }) {
   const animation = useRef(new Animated.Value(0)).current;
@@ -69,12 +67,6 @@ export default function ChatTypingIndicator() {
           alignItems: 'flex-end',
           marginBottom: LAYOUT.TYPING_CONTAINER_MARGIN_BOTTOM,
         },
-        typingAvatar: {
-          width: LAYOUT.HEADER_AVATAR_SIZE,
-          height: LAYOUT.HEADER_AVATAR_SIZE,
-          borderRadius: 12,
-          marginRight: 8,
-        },
         typingBubble: {
           backgroundColor: chatColors.TYPING_BUBBLE_BACKGROUND,
           borderRadius: LAYOUT.MESSAGE_BUBBLE_BORDER_RADIUS,
@@ -103,7 +95,6 @@ export default function ChatTypingIndicator() {
 
   return (
     <View style={styles.typingContainer}>
-      <Image source={ANTO_AVATAR} style={styles.typingAvatar} />
       <View style={styles.typingBubble}>
         <View style={styles.typingDotsContainer}>
           {TYPING_ANIMATION_DELAYS.map((delay, index) => (

@@ -1,6 +1,6 @@
 # Propuestas de producto: acompañamiento e IA
 
-Listado de **177** propuestas `No` en la tabla principal, más **2** `Parcial` con trabajo abierto (#151, #194) y **8 anclas entregadas** referenciadas (numeración **#1–#214**; huecos históricos conservados; **16** ex-Q5 + **11** entregadas archivadas). **Hecha:** `Sí` / `Sí*` / `Parcial` = ver columna; en la tabla activa predominan filas `No` y `Parcial` con trabajo abierto. Chat → tarea/hábito: [CONTRATO_CHAT_ACCIONES_V1.md](./CONTRATO_CHAT_ACCIONES_V1.md).
+Listado de **~185** propuestas `No` en la tabla principal, más **2** `Parcial` con trabajo abierto (#151, #194) y **8 anclas entregadas** referenciadas (numeración **#1–#214**; huecos históricos conservados; **16** ex-Q5 + **11** entregadas archivadas). **Hecha:** `Sí` / `Sí*` / `Parcial` = ver columna; en la tabla activa predominan filas `No` y `Parcial` con trabajo abierto. Chat → tarea/hábito: [CONTRATO_CHAT_ACCIONES_V1.md](./CONTRATO_CHAT_ACCIONES_V1.md).
 
 **Matriz:** Urgencia, Impacto, Retención (1–5). **Imp*** = redondeo de la media de Impacto y Retención. **Costo** B/M/A. **T** tiempo dev S/M/L. **Q** = cuadrante Eisenhower (**Q1–Q4**). **Q5** = descartadas (sección ex-Q5). **Entregadas archivadas** = fuera de la tabla salvo anclas referenciadas (sección siguiente).
 
@@ -65,7 +65,7 @@ Criterio para **eliminar** del backlog activo (no son un quinto cuadrante de pri
 
 ### Nuevas propuestas (input producto, mayo 2026)
 
-Incorporadas como **#201–#214**. Criterio: no duplicar filas ya cubiertas; donde hay **pinceladas en app**, la fila nueva describe el salto de producto pendiente y enlaza la fila existente.
+Incorporadas como **#201–#223** (lotes 1–3). Criterio: no duplicar filas ya cubiertas; donde hay **pinceladas en app**, la fila nueva describe el salto de producto pendiente y enlaza la fila existente.
 
 **Lote 1 (#201–#209)**
 
@@ -91,6 +91,22 @@ Incorporadas como **#201–#214**. Criterio: no duplicar filas ya cubiertas; don
 | Ciclo ABC macro (T→P→C→K) | ABC puntual (#86); sin agregación de eventos ni visual de ciclo | #86, #207, #208 | **#212** |
 | UX revelación de insights | Refugio general (#204); reportes aún no diseñados para impacto emocional | #204, #208 | **#213** |
 | Cápsula del tiempo reflexiva | Carta al yo futuro (#44) es proactiva; sin replay de mensajes pasados vulnerables | #44, #203 | **#214** |
+
+**Lote 3 (#215–#223) — señales conductuales, correlación y capas LLM profundas** (input producto, mayo 2026)
+
+| Tema (tu input) | En la app hoy (pinceladas) | Ya en matriz | Nueva fila |
+|-----------------|----------------------------|--------------|------------|
+| Dinámica de tecleo (dwell, flight, backspace) | Input de chat sin telemetría de teclado; clasificador de turno en servidor (#56 arch.) | #135 (señal on-device genérica), #178, #79 | **#215** |
+| Fenotipado digital (sueño, pasos, pantalla) | Sin HealthKit / Screen Time API integrados | **#106** (contexto opt-in al modelo), #91, #195 | **#216** |
+| Motor correlación multimodal + insight semanal | Resumen semanal (#11) = actividad; #208/#213 = patrones pendientes sin cruce tecleo/dispositivo | #203, #208, #213, #154 | **#217** |
+| Grafo sinapsis de detonantes (red interactiva) | Sin grafo de usuario; #127 es metadatos internos producto | #127, #212, #208, #79 | **#218** |
+| Gemelo conductual / simulación anticipatoria | Sin modelo predictivo personal | #91, #203, #177 | **#219** |
+| Clasificador mecanismos de defensa (capa LLM) | Pipeline clasifica riesgo/tono; no etiqueta defensas ni serie temporal | #210, #178, #66 | **#220** |
+| Deriva semántica en embeddings | Sin índice vectorial personal ni series de centroides por concepto | #203, #113, #126 | **#221** |
+| Rutas socráticas estratificadas (plan 3–4 turnos) | `socraticQuestions.js` por categoría; sin plan oculto multi-turno ni routing dedicado | #61, #177, #209, #201 | **#222** |
+| Detección dobles vínculos / paradojas | PSST (#99) y disonancia (#211) parciales; sin desglose de dilema ganar-perder | #211, #99, #209 | **#223** |
+
+**Notas de encaje (lote 3):** La UI de “revelación semanal” (tipografía grande, refugio) se cubre con **#213**; no duplicar fila. **#217** es el motor de datos; **#208** la narrativa de patrones. Ampliar **#106** solo si basta ingestión al prompt — el salto de fenotipado con pródomos y correlaciones justifica **#216**.
 
 ### Continuidad del chat (#4 + #47) — especificación v1
 
@@ -297,7 +313,16 @@ Incorporadas como **#201–#214**. Criterio: no duplicar filas ya cubiertas; don
 | 212 | Ciclo ABC macro visual | Agrupar eventos similares en **Detonante → Pensamiento → Conducta → Consecuencia**; lienzo interactivo para ver dónde intervenir. Distinto de ABC puntual (**#86**). Acopla **#207**, **#208**. | No | 3 | 5 | 4 | 5 | M | L | Q2 |
 | 213 | UX revelación de insights | Diseño de pantallas de patrón/insight: minimalismo, insight principal en tipografía grande, detalle opcional, gráficos sobrios (neutros, sombras suaves). Para que la revelación se sienta **segura y clínica**, no dashboard ruidoso. Complementa **#204**, **#208–#212**. | No | 3 | 4 | 4 | 4 | M | M | Q2 |
 | 214 | Cápsula del tiempo reflexiva | La IA selecciona un **fragmento propio** de hace semanas/meses (alta vulnerabilidad) y guía reflexión: “¿qué herramientas tienes hoy que no tenías entonces?”. Consolida crecimiento. Distinto de carta al futuro (**#44**). Requiere **#203** + consentimiento. | No | 2 | 4 | 5 | 5 | M | M | Q2 |
+| 215 | Telemetría de tecleo (estado cognitivo) | En el input del chat (solo en app, opt-in explícito): **dwell time**, **flight time** y tasa de **backspace** por borrador/mensaje; agregados por sesión sin enviar contenido extra al servidor salvo features resumidas. Señales: inhibición/autocensura (reescritura suave), inundación (flight errático + errores). Alimenta **#178**, **#217**; no sustituye lectura clínica del texto. Gobernanza privacidad + copy “no leemos más palabras”. | No | 2 | 4 | 4 | 4 | M | M | Q2 |
+| 216 | Fenotipado digital (rutina invisible) | Opt-in **HealthKit / Health Connect** + categorías de **tiempo de pantalla** (APIs nativas): ventana de inactividad (sueño estimado), pasos, ratio social/entretenimiento vs media personal. Patrones: aislamiento (chat “abrumado” + pasos bajos + pantalla ↑), **pródomos** (retraso sueño 3 días → alerta educativa antes de rumiación en chat). Complementa **#106** (inyección al prompt) con capa analítica y **#217**. | No | 3 | 5 | 5 | 5 | M | L | Q2 |
+| 217 | Motor correlación multimodal | Cruza señales **#215**, **#216**, extracciones de **#203** y marco clínico (esquemas **#210**, ABC **#212**) en jobs async; produce **insights verificables** (“firma física” ante frustración laboral) para **#208** / sesión semanal con UI **#213**. Umbrales estadísticos conservadores; sin afirmaciones causales fuertes. Requiere consentimiento granular por fuente. | No | 3 | 5 | 5 | 5 | A | L | Q2 |
+| 218 | Grafo sinapsis de detonantes | Visualización **nativa** (grafo nodos/aristas): conceptos del chat, métricas de tecleo y fenotipado; grosor de arista = fuerza de correlación del motor **#217**. Autodescubrimiento, no dashboard analítico frío. Distinto de **#127** (grafo interno producto) y **#212** (ciclo ABC macro). Toggle privacidad; accesibilidad simplificada (lista alternativa). | No | 2 | 5 | 4 | 5 | A | L | Q2 |
+| 219 | Gemelo conductual (simulación) | Modelo **predictivo conservador** sobre historial propio (tecleo, rutina, emociones en chat): preguntas hipotéticas (“entrega el viernes”) con respuesta basada en patrones pasados + CTA de contención (**#52–#53**, **#41**). No diagnóstico ni certeza; disclaimers. Evolución de **#91** y **#203**; riesgo de sobre-promesa → copy probabilístico. | No | 2 | 4 | 4 | 4 | A | L | Q2 |
+| 220 | Mecanismos de defensa (capa LLM) | Capa invisible clasifica estructura defensiva del turno (proyección, racionalización, intelectualización, etc.) **sin** mostrar etiqueta en tiempo real; serie temporal para insight semanal (“cuando hablas de familia, predomina racionalización”). Revisión clínica **#46**, **#111**; evitar patologizar. Acopla **#210**, **#208**. | No | 3 | 5 | 4 | 5 | M | L | Q2 |
+| 221 | Deriva semántica (embedding drift) | Monitorear desplazamiento de **centroides** de conceptos clave del usuario en el índice de **#203** (p. ej. “trabajo” alejándose de “logro” hacia “asfixia”); insight narrativo con precisión (“cambió el significado”, no score crudo). Requiere **#203** + volumen de datos; coste embeddings y explicabilidad. | No | 2 | 4 | 3 | 4 | A | L | Q2 |
+| 222 | Socrático estratificado (routing) | Con creencia rígida detectada (**#210**), activar **plan oculto** multi-turno (**#177**): secuencia de preguntas encadenadas sin contradecir; objetivo = disonancia cognitiva segura. Registrar “cede ante contradicción” (proxy flexibilidad). Más que `socraticQuestions.js` puntual. Unifica **#209** (modo mayéutico). | No | 3 | 5 | 5 | 5 | M | M | Q2 |
+| 223 | Dobles vínculos y paradojas | Detectar estructuras “hagas lo que hagas, pierdes”; desglosar en chat con tercera vía (copy Bateson, no jerga). Complementa **#211** (disonancia factual) y **#99** (PSST). Interrumpe flujo normal con pantalla o bloque estructurado (**#207** opcional). | No | 3 | 5 | 4 | 5 | M | M | Q2 |
 
 ---
 
-*Puntuaciones orientativas. Última revisión: 18 mayo 2026 (16 ex-Q5 + 11 entregadas archivadas; 8 anclas; **#201–#214** incorporadas mayo 2026; 187 filas en matriz).*
+*Puntuaciones orientativas. Última revisión: 27 mayo 2026 (16 ex-Q5 + 11 entregadas archivadas; 8 anclas; **#201–#214** mayo 2026; **#215–#223** lote 3 mayo 2026; 195 filas en matriz).*

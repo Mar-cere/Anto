@@ -10,7 +10,14 @@ import { setChatEntryBackTarget } from '../utils/chatEntryContext';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigationTexts } from '../hooks/useNavigationTexts';
 import { SPACING } from '../constants/ui';
+
 const BAR_BLUR = Platform.OS === 'ios' ? 76 : 48;
+
+/** Anto.png tiene fondo negro opaco: en modo oscuro desaparece sobre surface oscuro. */
+const CENTER_NAV_ICON = {
+  light: require('../images/Anto.png'),
+  dark: require('../../assets/icon.png'),
+};
 
 /**
  * @param {string} activeTab - 'home' | 'calendar' | 'chat' | 'pomodoro' | 'settings'
@@ -50,6 +57,8 @@ const FloatingNavBar = ({
     bottomInsetEffective - relief + aboveSafe + bottomExtra,
   );
   const barBlurTint = resolvedScheme === 'dark' ? 'dark' : 'light';
+  const isDarkNav = resolvedScheme === 'dark';
+  const centerIconSource = CENTER_NAV_ICON[isDarkNav ? 'dark' : 'light'];
   const rippleColor = useMemo(
     () => `${colors.primary}38`,
     [colors.primary],
@@ -140,9 +149,9 @@ const FloatingNavBar = ({
           borderRadius: 28,
           justifyContent: 'center',
           alignItems: 'center',
-          backgroundColor: colors.surface,
+          backgroundColor: isDarkNav ? colors.white : colors.surface,
           borderWidth: 2,
-          borderColor: colors.accentLine,
+          borderColor: isDarkNav ? colors.primary : colors.accentLine,
           shadowColor: colors.primary,
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.22,
@@ -159,13 +168,13 @@ const FloatingNavBar = ({
           transform: [{ scale: 0.97 }],
         },
         centerButtonImage: {
-          width: 52,
-          height: 52,
-          resizeMode: 'cover',
-          borderRadius: 26,
+          width: isDarkNav ? 48 : 52,
+          height: isDarkNav ? 48 : 52,
+          resizeMode: 'contain',
+          borderRadius: isDarkNav ? 24 : 26,
         },
       }),
-    [colors, resolvedScheme],
+    [colors, isDarkNav],
   );
 
   // Altura visual fija para mantener la barra en la misma posición en todas las pantallas.
@@ -310,10 +319,11 @@ const FloatingNavBar = ({
               android_ripple={{ color: rippleColor, borderless: false }}
             >
               <Image
-                source={require('../images/Anto.png')}
+                source={centerIconSource}
                 style={styles.centerButtonImage}
+                accessibilityIgnoresInvertColors
                 onError={(e) => {
-                  console.warn('Error al cargar la imagen de Anto:', e.nativeEvent.error);
+                  console.warn('Error al cargar el icono central de la navbar:', e.nativeEvent.error);
                 }}
               />
             </Pressable>

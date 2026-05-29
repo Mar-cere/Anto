@@ -1,10 +1,10 @@
 /**
- * Cabecera del chat: botón atrás, avatar, título, menú (opciones).
+ * Cabecera del chat: botón atrás, título, menú (opciones).
  */
 
 import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
-import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import {
   ICON_SIZES,
@@ -12,8 +12,6 @@ import {
   useChatColors,
   useChatTexts,
 } from '../../screens/chat/chatScreenConstants';
-
-const ANTO_AVATAR = require('../../images/Anto.png');
 
 export default function ChatHeader({ onBack, onOpenMenu }) {
   const TEXTS = useChatTexts();
@@ -41,20 +39,15 @@ export default function ChatHeader({ onBack, onOpenMenu }) {
           backgroundColor: colors.chromeHeaderBack,
         },
         headerTitleContainer: {
-          flexDirection: 'row',
+          flex: 1,
           alignItems: 'center',
+          justifyContent: 'center',
         },
         headerTitle: {
           color: chatColors.BOT_TEXT,
           fontSize: 18,
           fontWeight: '600',
           letterSpacing: 0.2,
-        },
-        headerAvatar: {
-          width: LAYOUT.HEADER_AVATAR_SIZE,
-          height: LAYOUT.HEADER_AVATAR_SIZE,
-          borderRadius: 12,
-          marginRight: 8,
         },
         menuButton: {
           padding: 10,
@@ -78,7 +71,6 @@ export default function ChatHeader({ onBack, onOpenMenu }) {
         <Ionicons name="arrow-back" size={ICON_SIZES.BACK} color={chatColors.PRIMARY} />
       </TouchableOpacity>
       <View style={styles.headerTitleContainer}>
-        <Image source={ANTO_AVATAR} style={styles.headerAvatar} />
         <Text style={styles.headerTitle}>{TEXTS.TITLE}</Text>
       </View>
       <TouchableOpacity

@@ -59,8 +59,6 @@ const DEFAULT_TEXTS = {
   LINE_1_PLACEHOLDER: 'Algo que te hizo bien hoy',
   LINE_2_PLACEHOLDER: 'Una persona o gesto que valoras',
   LINE_3_PLACEHOLDER: 'Algo de ti que reconoces',
-  HIDE_KEYBOARD_A11Y: 'Ocultar teclado',
-  DONE: 'Listo',
   SAVE_ENTRY_A11Y: 'Guardar entrada de gratitud',
   SAVE_ENTRY: 'Guardar',
   TOAST_SAVED: 'Quedo registrado',
@@ -201,6 +199,10 @@ function createStyles(colors, t) {
       color: colors.text,
       fontSize: 14,
       paddingVertical: 6,
+    },
+    composerFooter: {
+      marginTop: 18,
+      paddingTop: 4,
     },
     footerRow: {
       flexDirection: 'row',
@@ -360,9 +362,6 @@ const GratitudeJournalScreen = () => {
         translated?.GRATITUDE_LINE_2_PLACEHOLDER ?? DEFAULT_TEXTS.LINE_2_PLACEHOLDER,
       LINE_3_PLACEHOLDER:
         translated?.GRATITUDE_LINE_3_PLACEHOLDER ?? DEFAULT_TEXTS.LINE_3_PLACEHOLDER,
-      HIDE_KEYBOARD_A11Y:
-        translated?.GRATITUDE_HIDE_KEYBOARD_A11Y ?? DEFAULT_TEXTS.HIDE_KEYBOARD_A11Y,
-      DONE: translated?.GRATITUDE_DONE ?? DEFAULT_TEXTS.DONE,
       SAVE_ENTRY_A11Y:
         translated?.GRATITUDE_SAVE_ENTRY_A11Y ?? DEFAULT_TEXTS.SAVE_ENTRY_A11Y,
       SAVE_ENTRY: translated?.GRATITUDE_SAVE_ENTRY ?? DEFAULT_TEXTS.SAVE_ENTRY,
@@ -669,20 +668,10 @@ const GratitudeJournalScreen = () => {
             </View>
 
             <View style={styles.composerFooter}>
-              <TouchableOpacity
-                style={styles.keyboardChip}
-                onPress={() => Keyboard.dismiss()}
-                accessibilityRole="button"
-                accessibilityLabel={T.HIDE_KEYBOARD_A11Y}
-              >
-                <MaterialCommunityIcons name="keyboard-close" size={16} color={t.FOCUS_KICKER_COLOR} />
-                <Text style={styles.keyboardChipText}>{T.DONE}</Text>
-              </TouchableOpacity>
-              <Animated.View style={{ flex: 1, transform: [{ scale: saveBtnScale }] }}>
+              <Animated.View style={{ transform: [{ scale: saveBtnScale }] }}>
                 <TouchableOpacity
                   style={[
                     techniqueScreenStyles.saveButton,
-                    styles.saveButtonGrow,
                     !hasAnyLine && techniqueScreenStyles.saveButtonDisabled,
                   ]}
                   onPress={handleSave}
@@ -877,29 +866,6 @@ const styles = StyleSheet.create({
   },
   composerFooter: {
     marginTop: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  keyboardChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-    paddingVertical: 10,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: FOCUS_ACCENT_BORDER,
-  },
-  keyboardChipText: {
-    color: FOCUS_KICKER_COLOR,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  saveButtonGrow: {
-    flex: 1,
   },
   entriesContainer: {
     marginTop: 6,

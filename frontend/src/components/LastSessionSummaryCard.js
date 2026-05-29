@@ -5,16 +5,18 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { TEXTS } from '../screens/profileScreen/profileScreenConstants';
+import { useProfileTexts } from '../screens/profileScreen/profileScreenConstants';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { SPACING } from '../constants/ui';
 
-function formatGeneratedAt(iso) {
+function formatGeneratedAt(iso, language) {
   if (!iso) return '';
   try {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return '';
-    return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+    const locale = language === 'en' ? 'en-US' : 'es-ES';
+    return d.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
   } catch {
     return '';
   }
@@ -22,13 +24,15 @@ function formatGeneratedAt(iso) {
 
 export function LastSessionSummaryCard({ summary, onOpenChat, flushWithParentGutter = false }) {
   const { colors } = useTheme();
+  const { language } = useLanguage();
+  const TEXTS = useProfileTexts();
   const text = useMemo(() => {
     if (!summary) return '';
     const s = String(summary.snippet || '').trim();
     if (s) return s;
     return String(summary.bridge || '').trim();
   }, [summary]);
-  const dateLabel = formatGeneratedAt(summary?.generatedAt);
+  const dateLabel = formatGeneratedAt(summary?.generatedAt, language);
   const card = useMemo(
     () => ({
       bg: colors.chromeCard,
