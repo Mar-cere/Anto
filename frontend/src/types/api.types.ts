@@ -46,8 +46,38 @@ export interface UserSubscription {
   status?: string;
   trialStartDate?: string | Date;
   trialEndDate?: string | Date;
+  trialGrantedAt?: string | Date;
   plan?: string;
   [key: string]: unknown;
+}
+
+/** Config pública de la app (GET /api/health/app-config) */
+export interface AppConfigResponse {
+  success: boolean;
+  trialDays: number;
+  weeklySummaryTrialGiftDays: number;
+}
+
+/** Respuesta de registro (POST /api/auth/register) */
+export interface RegisterResponse {
+  message?: string;
+  requiresVerification?: boolean;
+  email?: string;
+  trialDays: number;
+  weeklySummaryTrialGiftDays?: number;
+  user: Pick<User, '_id' | 'email' | 'username' | 'emailVerified'>;
+}
+
+/** Trial del usuario (GET /api/payments/trial-info) */
+export interface TrialInfoResponse {
+  success: boolean;
+  isInTrial: boolean;
+  daysRemaining: number;
+  hoursRemaining?: number;
+  trialEndDate?: string | Date | null;
+  appTrialDays?: number;
+  shouldNotify?: boolean;
+  error?: string;
 }
 
 /** Usuario tal como lo devuelve el backend (login, me, userData) */

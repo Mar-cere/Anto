@@ -16,6 +16,8 @@ import {
   closeDatabase,
 } from '../../helpers/testHelpers.js';
 import { validUser } from '../../fixtures/userFixtures.js';
+import { trialSubscriptionFixture } from '../../helpers/trialTestDates.js';
+import { APP_TRIAL_DAYS } from '../../../constants/subscription.js';
 import jwt from 'jsonwebtoken';
 
 // Helper para crear usuario con password hasheado y token
@@ -44,11 +46,7 @@ const createUserAndToken = async () => {
       totalSessions: 0,
       lastActive: new Date()
     },
-    subscription: {
-      status: 'trial',
-      trialStartDate: new Date(),
-      trialEndDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
-    }
+    subscription: trialSubscriptionFixture()
   });
 
   const token = jwt.sign(
@@ -101,6 +99,26 @@ describe('Payment Routes', () => {
         .expect(200);
 
       expect(response.body).toHaveProperty('success', true);
+    });
+  });
+
+  describe('GET /api/payments/trial-info', () => {
+    it('devuelve trial activo con días, horas y appTrialDays', async () => {
+      const response = await request(app)
+        .get('/api/payments/trial-info')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.isInTrial).toBe(true);
+      expect(response.body.daysRemaining).toBeGreaterThanOrEqual(1);
+      expect(response.body.hoursRemaining).toBeGreaterThan(0);
+      expect(response.body.appTrialDays).toBe(APP_TRIAL_DAYS);
+      expect(response.body.trialEndDate).toBeTruthy();
+    });
+
+    it('debe rechazar request sin autenticación', async () => {
+      await request(app).get('/api/payments/trial-info').expect(401);
     });
   });
 

@@ -50,7 +50,7 @@ async function main() {
     const dayAfterTomorrow = new Date(now);
     dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
 
-    // Usuarios en trial que expiran en 1 o 2 días
+    // Usuarios en trial que expiran en los próximos días (ventana corta; p. ej. trial de 1 día)
     const usersInTrial = await User.find({
       'subscription.status': 'trial',
       'subscription.trialEndDate': {
@@ -59,7 +59,7 @@ async function main() {
       },
     }).select('_id email username subscription');
 
-    // Suscripciones en trial que expiran en 1 o 2 días
+    // Suscripciones en trial que expiran en los próximos días
     const subscriptionsInTrial = await Subscription.find({
       status: 'trialing',
       trialEnd: {

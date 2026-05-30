@@ -23,7 +23,7 @@ Para una especificación interactiva de cada ruta (parámetros, cuerpos, respues
 | Frontend ENDPOINTS | Método | Ruta backend | Auth | Contrato resumido |
 |-------------------|--------|--------------|------|-------------------|
 | LOGIN | POST | /api/auth/login | No | Body: `{ email, password }` → `{ token o accessToken, user }` |
-| REGISTER | POST | /api/auth/register | No | Body: datos registro → `{ user, token?, message? }` |
+| REGISTER | POST | /api/auth/register | No | Body: datos registro → `{ message, requiresVerification, email, trialDays, user }` |
 | VERIFY_EMAIL | POST | /api/auth/verify-email | No | Body: código verificación |
 | RESEND_VERIFICATION_CODE | POST | /api/auth/resend-verification-code | No | Reenvío de código |
 
@@ -90,6 +90,7 @@ Detalle del flujo StoreKit y validación de recibos: [REVISION_STOREKIT_COMPRAS.
 
 ### Otras rutas
 - **Health:** `GET /health` (sin prefijo `/api`) — estado del servidor.
+- **App config (pública):** `GET /api/health/app-config` — `{ success, trialDays, weeklySummaryTrialGiftDays }` (sin auth; alineado con `APP_TRIAL_DAYS`).
 - **Técnicas terapéuticas:** THERAPEUTIC_TECHNIQUES, THERAPEUTIC_TECHNIQUES_BY_EMOTION, THERAPEUTIC_TECHNIQUES_USE, THERAPEUTIC_TECHNIQUES_HISTORY, THERAPEUTIC_TECHNIQUES_STATS.
 - **Escalas clínicas:** bajo `/api/clinical-scales/*` (available, submit, progress, summary, etc.).
 - **Distorsiones cognitivas:** bajo `/api/cognitive-distortions/*`.

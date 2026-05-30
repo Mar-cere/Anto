@@ -24,6 +24,7 @@ import ErrorBoundary from './src/components/ErrorBoundary';
 import Toast from './src/components/Toast';
 import ConnectionRestoredListener from './src/components/ConnectionRestoredListener';
 import LanguageAuthSync from './src/components/LanguageAuthSync';
+import AppConfigPreload from './src/components/AppConfigPreload';
 
 // Fallback cuando initialWindowMetrics es null (web, SSR, o módulo nativo no listo)
 const DEFAULT_SAFE_AREA_METRICS = {
@@ -44,6 +45,7 @@ function AppContent() {
         translucent={STATUS_BAR_TRANSLUCENT}
       />
       <ConnectionRestoredListener />
+      <AppConfigPreload />
       <AppNavigator />
       <Toast />
     </View>

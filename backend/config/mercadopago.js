@@ -10,6 +10,7 @@
 // Importar Mercado Pago SDK (CommonJS module)
 import dotenv from 'dotenv';
 import mercadopago from 'mercadopago';
+import { APP_TRIAL_DAYS } from '../constants/subscription.js';
 
 dotenv.config();
 
@@ -74,8 +75,8 @@ export const MERCADOPAGO_CONFIG = {
     },
   },
   
-  // Configuración de trial (días)
-  trialDays: parseInt(process.env.MERCADOPAGO_TRIAL_DAYS || '3', 10),
+  // Configuración de trial (días) — misma fuente que registro (`APP_TRIAL_DAYS`)
+  trialDays: APP_TRIAL_DAYS,
   
   // Moneda
   currency: process.env.MERCADOPAGO_CURRENCY || 'CLP',

@@ -13,6 +13,7 @@ import {
   clearDatabase,
   closeDatabase,
 } from '../../helpers/testHelpers.js';
+import { trialSubscriptionFixture } from '../../helpers/trialTestDates.js';
 import { validUser } from '../../fixtures/userFixtures.js';
 import jwt from 'jsonwebtoken';
 
@@ -53,11 +54,7 @@ describe('Crisis Routes', () => {
         totalSessions: 0,
         lastActive: new Date()
       },
-      subscription: {
-        status: 'trial',
-        trialStartDate: new Date(),
-        trialEndDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
-      }
+      subscription: trialSubscriptionFixture()
     });
 
     authToken = jwt.sign(

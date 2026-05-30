@@ -28,10 +28,12 @@ const DEFAULT_TEXTS = {
   TRIAL_EXPIRING_SOON: 'Tu trial expira pronto',
   TRIAL_DAY_REMAINING: 'día restante',
   TRIAL_DAYS_REMAINING: 'días restantes',
+  TRIAL_HOUR_REMAINING: 'hora restante',
+  TRIAL_HOURS_REMAINING: 'horas restantes',
   TRIAL_BANNER_CLOSE_A11Y: 'Cerrar aviso de trial',
 };
 
-const TrialBanner = ({ daysRemaining, onDismiss, dismissed = false }) => {
+const TrialBanner = ({ daysRemaining, hoursRemaining, onDismiss, dismissed = false }) => {
   const translated = useSectionTranslations('SETTINGS');
   const TEXTS = useMemo(
     () => ({
@@ -45,6 +47,10 @@ const TrialBanner = ({ daysRemaining, onDismiss, dismissed = false }) => {
         translated?.TRIAL_BANNER_DAY_REMAINING || DEFAULT_TEXTS.TRIAL_DAY_REMAINING,
       TRIAL_DAYS_REMAINING:
         translated?.TRIAL_BANNER_DAYS_REMAINING || DEFAULT_TEXTS.TRIAL_DAYS_REMAINING,
+      TRIAL_HOUR_REMAINING:
+        translated?.TRIAL_BANNER_HOUR_REMAINING || DEFAULT_TEXTS.TRIAL_HOUR_REMAINING,
+      TRIAL_HOURS_REMAINING:
+        translated?.TRIAL_BANNER_HOURS_REMAINING || DEFAULT_TEXTS.TRIAL_HOURS_REMAINING,
       CLOSE_A11Y:
         translated?.TRIAL_BANNER_CLOSE_A11Y || DEFAULT_TEXTS.TRIAL_BANNER_CLOSE_A11Y,
     }),
@@ -160,7 +166,12 @@ const TrialBanner = ({ daysRemaining, onDismiss, dismissed = false }) => {
     }
   };
 
-  const isExpiringSoon = daysRemaining <= 2;
+  const isExpiringSoon = daysRemaining <= 1;
+  const showHours =
+    daysRemaining <= 1 &&
+    typeof hoursRemaining === 'number' &&
+    hoursRemaining > 0 &&
+    hoursRemaining < 24;
   const accentColor = isExpiringSoon ? colors.warning : colors.primary;
   const surfaceBg = isExpiringSoon ? hexToRgba(colors.warning, 0.12) : hexToRgba(colors.primary, 0.1);
   const borderColor = isExpiringSoon ? hexToRgba(colors.warning, 0.4) : colors.accentLine;
@@ -192,7 +203,11 @@ const TrialBanner = ({ daysRemaining, onDismiss, dismissed = false }) => {
             {isExpiringSoon ? TEXTS.TRIAL_EXPIRING_SOON : TEXTS.TRIAL_ACTIVE}
           </Text>
           <Text style={styles.subtitle}>
-            {daysRemaining} {daysLabel}
+            {showHours
+              ? `${hoursRemaining} ${
+                  hoursRemaining === 1 ? TEXTS.TRIAL_HOUR_REMAINING : TEXTS.TRIAL_HOURS_REMAINING
+                }`
+              : `${daysRemaining} ${daysLabel}`}
           </Text>
         </View>
       </View>

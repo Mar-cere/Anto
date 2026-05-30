@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
@@ -31,6 +31,12 @@ import { CHAT_BACK_TARGET } from '../navigation/navigationHelpers';
 import { setChatEntryBackTarget } from '../utils/chatEntryContext';
 import faqData from '../data/FaQScreen';
 import faqDataEn from '../data/FaQScreen.en';
+import {
+  applyTrialPeriodToFaq,
+  formatTrialPeriodLabel,
+  DEFAULT_APP_TRIAL_DAYS,
+} from '../constants/subscription';
+import { fetchAppTrialDays } from '../services/appConfigService';
 import { SPACING } from '../constants/ui';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -193,10 +199,25 @@ const FaQScreen = () => {
     () => ({ ...DEFAULT_TEXTS, ...(INFO?.FAQ || {}) }),
     [INFO],
   );
-  const faqSections = useMemo(
-    () => (language === 'en' ? faqDataEn : faqData),
-    [language],
-  );
+  const [trialDays, setTrialDays] = useState(DEFAULT_APP_TRIAL_DAYS);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchAppTrialDays().then((days) => {
+      if (!cancelled) {
+        setTrialDays(days);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const faqSections = useMemo(() => {
+    const base = language === 'en' ? faqDataEn : faqData;
+    const label = formatTrialPeriodLabel(trialDays, language === 'en' ? 'en' : 'es');
+    return applyTrialPeriodToFaq(base, label);
+  }, [language, trialDays]);
   const navigation = useNavigation();
   const { colors, statusBarStyle } = useTheme();
   const fadeAnim = useRef(new Animated.Value(0)).current;

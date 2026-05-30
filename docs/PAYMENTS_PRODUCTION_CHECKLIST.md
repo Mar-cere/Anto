@@ -20,7 +20,7 @@ Este documento fija **invariantes** y pasos de validación manual. Complementa e
    - `Transaction` queda coherente (`completed` cuando aplica).
    - `User.subscription.status === premium` y fechas alineadas al período.
    - En `Subscription` (si aplica MP): `active`, `trialStart`/`trialEnd` limpiados.
-3. **Trial de app (3 días)**:
+3. **Trial de app (1 día, `APP_TRIAL_DAYS`)**:
    - Se otorga **una vez por cuenta** en el registro (`trialGrantedAt` definido).
    - Al pasar a premium se limpian `trialStartDate` / `trialEndDate` embebidos en usuario.
 
@@ -31,6 +31,12 @@ Este documento fija **invariantes** y pasos de validación manual. Complementa e
 - **Validación**:
   - Monto del pago vs `Transaction.amount` (vía API de pagos MP si el body no trae monto).
   - Email del pagador vs usuario: modo estricto por defecto en producción (`MERCADOPAGO_STRICT_PAYER_EMAIL`).
+
+## Copy y legal (fuera del repo de la app)
+
+- [ ] **Términos web** — [antoapps.com/terminos](https://www.antoapps.com/terminos) §3.7 aún dice «3 días»; actualizar a 1 día (o redacción genérica «según se muestre en la app»).
+- [ ] **App Store / Play Console** — descripción y capturas si mencionan trial de 3 días.
+- [ ] **Migración BD** — trials activos con span > `APP_TRIAL_DAYS`: dry-run y apply con `node backend/scripts/migrateActiveAppTrials.js [--apply]`.
 
 ## Pruebas manuales recomendadas (post-deploy)
 
@@ -51,6 +57,11 @@ Este documento fija **invariantes** y pasos de validación manual. Complementa e
 | `MERCADOPAGO_WEBHOOK_IPS` | Opcional, allowlist IP |
 | `MERCADOPAGO_STRICT_PAYER_EMAIL` | `true` (default prod): bloquear activación si email pagador ≠ usuario |
 | `APPLE_SHARED_SECRET` | Validación de recibos de suscripción |
+| `APP_TRIAL_DAYS` | Días de trial al registrarse (default `1`; alias `MERCADOPAGO_TRIAL_DAYS`) |
+| `TRIAL_RETENTION_EMAIL_AFTER_HOURS` | Horas tras inicio para correo de retención (default `12`) |
+| `TRIAL_RETENTION_MAX_TRIAL_HOURS` | Solo trials cortos ≤ N horas (default `APP_TRIAL_DAYS×24+6`) |
+| `GET /api/health/app-config` | Expone `trialDays` y `weeklySummaryTrialGiftDays` al cliente (FAQ, registro; sin auth) |
+| `WEEKLY_SUMMARY_TRIAL_GIFT_DAYS` | Días extra tras correo semanal (default `1` si `APP_TRIAL_DAYS≤1`, si no `min(2, APP_TRIAL_DAYS)`) |
 
 ## Métricas de integridad
 

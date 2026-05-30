@@ -50,6 +50,8 @@ export const ENDPOINTS = {
   RESET_PASSWORD: '/api/auth/reset-password',
   LOGOUT: '/api/auth/logout',
   HEALTH: '/health',
+  /** Config pública (trialDays, etc.) — sin auth */
+  HEALTH_APP_CONFIG: '/api/health/app-config',
   ME: '/api/users/me',
   /** Telemetría §8 contrato chat → tarea/hábito (dismiss / fallo cliente). */
   METRICS_PRODUCT_ACTION: '/api/metrics/product-action',

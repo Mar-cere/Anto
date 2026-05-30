@@ -31,6 +31,7 @@ export const HOME = {
 export const REGISTER = {
   TITLE: 'Create Account',
   SUBTITLE: 'Please fill in the fields to register.',
+  TRIAL_HINT: 'Includes a free {trialPeriod} trial when you create your account.',
   NAME_PLACEHOLDER: 'Real name (optional)',
   NAME_INFO_LINK: 'Is my real name required?',
   NAME_INFO_MODAL_TITLE: 'Is my real name required?',
@@ -288,6 +289,8 @@ export const SETTINGS = {
   TRIAL_BANNER_SUBSCRIBE: 'Subscribe',
   TRIAL_BANNER_DAY_REMAINING: 'day remaining',
   TRIAL_BANNER_DAYS_REMAINING: 'days remaining',
+  TRIAL_BANNER_HOUR_REMAINING: 'hour remaining',
+  TRIAL_BANNER_HOURS_REMAINING: 'hours remaining',
   TRIAL_BANNER_CLOSE_A11Y: 'Close trial notice',
   DEV_NOTIFICATIONS_TEST_SECTION: 'Tests (Development only)',
   DEV_NOTIFICATIONS_TEST_WARNING: 'Test WARNING',

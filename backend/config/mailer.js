@@ -651,7 +651,7 @@ const emailTemplates = {
   },
 
   /**
-   * Retención trial (~2.º día de prueba corta): español neutro, sin presión; CTA a app / resumen.
+   * Retención trial (horas restantes dinámicas; envío ~mitad de APP_TRIAL_DAYS): español neutro; CTA a app / resumen.
    * @param {string} username
    * @param {Date|string} trialEndDate
    */
@@ -1567,7 +1567,7 @@ const mailer = {
   },
 
   /**
-   * Correo de retención antes del fin del trial corto (p. ej. ~48 h tras inicio).
+   * Correo de retención antes del fin del trial corto (p. ej. ~12 h tras inicio si trial = 1 día).
    * @param {string} email
    * @param {string} username
    * @param {Date|string} trialEndDate

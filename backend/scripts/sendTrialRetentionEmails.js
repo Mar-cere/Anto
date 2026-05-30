@@ -2,8 +2,8 @@
  * Envía correos de retención trial (prueba por finalizar) manualmente.
  *
  * Variables útiles (.env):
- *   TRIAL_RETENTION_EMAIL_AFTER_HOURS   (default 48)
- *   TRIAL_RETENTION_MAX_TRIAL_HOURS      (default 96, solo trials cortos)
+ *   TRIAL_RETENTION_EMAIL_AFTER_HOURS   (default 12)
+ *   TRIAL_RETENTION_MAX_TRIAL_HOURS      (default 30, solo trials cortos)
  *   TRIAL_RETENTION_EMAIL_MAX_PER_RUN    (default 500)
  *
  * Uso:

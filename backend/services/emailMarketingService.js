@@ -12,13 +12,14 @@ import mailer from '../config/mailer.js';
 import logger from '../utils/logger.js';
 import { enqueueEmail } from './emailQueueService.js';
 import { getUtcIsoWeekParts } from '../utils/isoWeek.js';
+import cacheService from './cacheService.js';
+import {
+  getDefaultTrialRetentionAfterHours,
+  getDefaultTrialRetentionMaxTrialHours,
+  getWeeklySummaryTrialGiftDays,
+} from '../constants/subscription.js';
 
 const MS_PER_DAY = 86400000;
-
-function getWeeklySummaryTrialGiftDays() {
-  const n = parseInt(process.env.WEEKLY_SUMMARY_TRIAL_GIFT_DAYS || '2', 10);
-  return Number.isFinite(n) && n > 0 ? n : 2;
-}
 
 function isWeeklySummaryTrialGiftEnabled() {
   return process.env.WEEKLY_SUMMARY_TRIAL_GIFT_ENABLED !== 'false';
@@ -37,6 +38,9 @@ export async function applyWeeklySummaryTrialGift(userId) {
   }
 
   const days = getWeeklySummaryTrialGiftDays();
+  if (days <= 0) {
+    return { applied: false, reason: 'zero_gift_days' };
+  }
   const user = await User.findById(userId).select('subscription');
   if (!user?.subscription) {
     return { applied: false, reason: 'no_user' };
@@ -116,6 +120,10 @@ export async function applyWeeklySummaryTrialGift(userId) {
   }
   await subscription.save();
 
+  await cacheService.invalidateUserCache(user._id.toString()).catch((err) => {
+    logger.warn(`[EmailMarketing] No se pudo invalidar caché tras regalo trial (${user._id}):`, err?.message);
+  });
+
   logger.info(`[EmailMarketing] Regalo trial correo semanal (+${days} días) aplicado a usuario ${user._id}`);
   return { applied: true, trialEndDate };
 }
@@ -124,11 +132,13 @@ export async function applyWeeklySummaryTrialGift(userId) {
  * Filtro Mongo para candidatos al correo de retención trial (misma semántica que `findOneAndUpdate` del job).
  *
  * @param {Date} now
- * @param {number} afterHours — horas desde inicio del trial (p. ej. 48)
+ * @param {number} afterHours — horas desde inicio del trial (default: ~mitad de APP_TRIAL_DAYS)
  */
 export function buildTrialRetentionBaseFilter(now, afterHours) {
   const hours =
-    Number.isFinite(Number(afterHours)) && Number(afterHours) > 0 ? Number(afterHours) : 48;
+    Number.isFinite(Number(afterHours)) && Number(afterHours) > 0
+      ? Number(afterHours)
+      : getDefaultTrialRetentionAfterHours();
   const trialStartDeadline = new Date(now.getTime() - hours * 60 * 60 * 1000);
   return {
     emailVerified: true,
@@ -216,16 +226,18 @@ export function buildWeeklySummaryCandidateFilter(yearWeekKey, requireMinSession
   return filter;
 }
 
-/** Horas tras el inicio del trial para enviar el correo de retención (default: fin ~2.º día en trial de 3 días). */
+/** Horas tras el inicio del trial para enviar el correo de retención (default: ~mitad de APP_TRIAL_DAYS). */
 function getTrialRetentionAfterHours() {
-  const n = parseInt(process.env.TRIAL_RETENTION_EMAIL_AFTER_HOURS || '48', 10);
-  return Number.isFinite(n) && n > 0 ? n : 48;
+  const fallback = getDefaultTrialRetentionAfterHours();
+  const n = parseInt(process.env.TRIAL_RETENTION_EMAIL_AFTER_HOURS || String(fallback), 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
-/** Solo trials “cortos” (p. ej. 3 días en prod); evita mail a cuentas de prueba con trial largo. */
+/** Solo trials “cortos”; evita mail a cuentas de prueba con trial largo. */
 function getTrialRetentionMaxTrialHours() {
-  const n = parseInt(process.env.TRIAL_RETENTION_MAX_TRIAL_HOURS || '96', 10);
-  return Number.isFinite(n) && n > 0 ? n : 96;
+  const fallback = getDefaultTrialRetentionMaxTrialHours();
+  const n = parseInt(process.env.TRIAL_RETENTION_MAX_TRIAL_HOURS || String(fallback), 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
 class EmailMarketingService {

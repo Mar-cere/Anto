@@ -86,7 +86,7 @@ const faqDataEn = [
       {
         question: 'Is there a trial period?',
         answer:
-          'Yes. Anto offers a free 3-day trial so you can explore all features without commitment. During this period you have full access to all app capabilities.',
+          'Yes. Anto offers a free {{TRIAL_PERIOD}} trial so you can explore all features without commitment. During this period you have full access to all app capabilities.',
       },
       {
         question: 'How do payments work?',

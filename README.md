@@ -108,7 +108,7 @@
 ### 💳 Sistema de Suscripciones
 
 - **Planes Flexibles**: Opciones adaptadas a diferentes necesidades
-- **Período de Prueba**: 3 días gratis para explorar todas las funcionalidades
+- **Período de Prueba**: 1 día gratis para explorar todas las funcionalidades
 - **Pagos Seguros**: Integración con Mercado Pago para transacciones seguras
 - **Gestión Transparente**: Control total sobre tu suscripción y facturación
 

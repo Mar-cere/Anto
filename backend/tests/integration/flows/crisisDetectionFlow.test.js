@@ -18,6 +18,7 @@ import {
   clearDatabase,
   closeDatabase,
 } from '../../helpers/testHelpers.js';
+import { trialSubscriptionFixture } from '../../helpers/trialTestDates.js';
 import jwt from 'jsonwebtoken';
 
 describe('Flujo completo: Detección y Manejo de Crisis', () => {
@@ -56,11 +57,7 @@ describe('Flujo completo: Detección y Manejo de Crisis', () => {
           isActive: true
         }
       ],
-      subscription: {
-        status: 'trial',
-        trialStartDate: new Date(),
-        trialEndDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-      }
+      subscription: trialSubscriptionFixture(),
     });
 
     authToken = jwt.sign(

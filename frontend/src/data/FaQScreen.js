@@ -72,7 +72,7 @@ const faqData = [
     items: [
       {
         question: "¿Hay un período de prueba?",
-        answer: "Sí. Anto ofrece un período de prueba gratuito de 3 días para que puedas explorar todas las funcionalidades sin compromiso. Durante este período tendrás acceso completo a todas las características de la aplicación."
+        answer: "Sí. Anto ofrece un período de prueba gratuito de {{TRIAL_PERIOD}} para que puedas explorar todas las funcionalidades sin compromiso. Durante este período tendrás acceso completo a todas las características de la aplicación."
       },
       {
         question: "¿Cómo funcionan los pagos?",

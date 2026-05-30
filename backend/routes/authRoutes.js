@@ -10,6 +10,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
 import User from '../models/User.js';
 import { CURRENT_TERMS_VERSION } from '../constants/app.js';
+import { addTrialDays, getAppTrialPublicConfig } from '../constants/subscription.js';
 import { enqueueEmail } from '../services/emailQueueService.js';
 import { resolveRequestLanguage } from '../utils/apiLanguage.js';
 import { authApiCopy } from '../utils/authApiCopy.js';
@@ -182,6 +183,7 @@ router.post('/register', registerLimiter, async (req, res) => {
     const codeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
 
     // Crear nuevo usuario (sin verificar email)
+    const trialStartDate = new Date();
     const userData = {
       email,
       username,
@@ -203,9 +205,9 @@ router.post('/register', registerLimiter, async (req, res) => {
       },
       subscription: {
         status: 'trial',
-        trialStartDate: new Date(),
-        trialEndDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 días de trial
-        trialGrantedAt: new Date()
+        trialStartDate,
+        trialEndDate: addTrialDays(trialStartDate),
+        trialGrantedAt: trialStartDate,
       },
       termsAccepted: termsAccepted || false,
       termsAcceptedAt: termsAcceptedAt ? new Date(termsAcceptedAt) : new Date(),
@@ -236,6 +238,7 @@ router.post('/register', registerLimiter, async (req, res) => {
       message: copy.registerSuccess,
       requiresVerification: true,
       email: email, // Enviar email para la pantalla de verificación
+      ...getAppTrialPublicConfig(),
       user: {
         _id: user._id,
         email: user.email,

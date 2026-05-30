@@ -486,6 +486,7 @@ const ChatScreen = () => {
       {trialInfo?.isInTrial && !trialBannerDismissed && (
         <TrialBanner
           daysRemaining={trialInfo.daysRemaining}
+          hoursRemaining={trialInfo.hoursRemaining}
           onDismiss={handleTrialBannerDismiss}
           dismissed={trialBannerDismissed}
         />

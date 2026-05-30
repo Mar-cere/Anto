@@ -6,6 +6,12 @@
  * Tono: español neutro y natural (sin voseo ni marcas fuertemente regionales).
  */
 import { APP_NAME } from '../constants/app.js';
+import {
+  buildWeeklySummaryGiftCopy,
+  formatTrialGiftDaysCount,
+  formatTrialGiftDaysPlus,
+  getWeeklySummaryTrialGiftDays,
+} from '../constants/subscription.js';
 import { buildWeeklySummaryEmailContextEn } from './weeklySummaryEmailContext.en.js';
 import { normalizeEmailLanguage } from './emailLanguage.js';
 
@@ -46,12 +52,18 @@ const SUBJECT_BUILDERS = [
   (weekLabel) => `${weekLabel} — Mira tu semana cuando quieras en ${APP_NAME}`,
   (weekLabel) => `${weekLabel} — Tu semana, con perspectiva, en ${APP_NAME}`,
   (weekLabel) => `${weekLabel} — Novedades en la app y tu resumen en ${APP_NAME}`,
-  (weekLabel) =>
-    `${weekLabel} — Resumen, novedades y posible +2 días de prueba (si tu cuenta califica) en ${APP_NAME}`,
-  (weekLabel) =>
-    `${weekLabel} — +2 días de prueba extra si aplica tu cuenta: resumen y novedades en ${APP_NAME}`,
-  (weekLabel) =>
-    `${weekLabel} — Regalo puntual (+2 días si procede), novedades y resumen en ${APP_NAME}`,
+  (weekLabel) => {
+    const plus = formatTrialGiftDaysPlus(getWeeklySummaryTrialGiftDays(), 'es');
+    return `${weekLabel} — Resumen, novedades y posible ${plus} de prueba (si tu cuenta califica) en ${APP_NAME}`;
+  },
+  (weekLabel) => {
+    const plus = formatTrialGiftDaysPlus(getWeeklySummaryTrialGiftDays(), 'es');
+    return `${weekLabel} — ${plus} de prueba extra si aplica tu cuenta: resumen y novedades en ${APP_NAME}`;
+  },
+  (weekLabel) => {
+    const plus = formatTrialGiftDaysPlus(getWeeklySummaryTrialGiftDays(), 'es');
+    return `${weekLabel} — Regalo puntual (${plus} si procede), novedades y resumen en ${APP_NAME}`;
+  },
 ];
 
 /**
@@ -87,8 +99,10 @@ const PREHEADER_VARIANTS = [
     `Regalarte un respiro y revisar la semana también es autocuidado. En ${name} lo ves con privacidad, dentro de la app.`,
   (name) =>
     `¿Hace rato que no miras cómo vienes? ${name} ofrece una vista clara, sin apuro. Tú eliges cuándo entrar.`,
-  (name) =>
-    `+2 días de prueba Premium al procesar este envío (si tu cuenta califica) y novedades de la app. Abre ${name} y revisa tu resumen.`,
+  (name) => {
+    const count = formatTrialGiftDaysCount(getWeeklySummaryTrialGiftDays(), 'es');
+    return `${count} de prueba Premium al procesar este envío (si tu cuenta califica) y novedades de la app. Abre ${name} y revisa tu resumen.`;
+  },
 ];
 
 /** Párrafos de apertura (invitación + perspectiva). */
@@ -221,7 +235,13 @@ export function buildWeeklySummaryEmailContext(user, isoParts, language = 'es') 
   const weekLabel = `Semana ${isoWeek} · ${isoWeekYear}`;
   const subjectLine = buildWeeklySummarySubjectLine(weekLabel, isoWeekYear, isoWeek);
 
-  const preheaderText = PREHEADER_VARIANTS[weeklyContentVariantIndex(isoWeekYear, isoWeek, PREHEADER_VARIANTS.length, 1)](APP_NAME);
+  const preheaderIndex = weeklyContentVariantIndex(
+    isoWeekYear,
+    isoWeek,
+    PREHEADER_VARIANTS.length,
+    1
+  );
+  const preheaderText = PREHEADER_VARIANTS[preheaderIndex](APP_NAME);
 
   const leadParagraph = LEAD_PARAGRAPH_VARIANTS[weeklyContentVariantIndex(isoWeekYear, isoWeek, LEAD_PARAGRAPH_VARIANTS.length, 2)](APP_NAME);
 
@@ -248,19 +268,18 @@ export function buildWeeklySummaryEmailContext(user, isoParts, language = 'es') 
   const subStatus = typeof rawSubStatus === 'string' ? rawSubStatus.trim() : '';
   const isPremium = subStatus === 'premium';
 
-  const giftBadgeLabel = isPremium ? 'Tu plan' : 'Regalo';
-
-  const giftTitle = isPremium
-    ? 'Tu plan Premium'
-    : 'Regalo: +2 días de prueba Premium';
-
-  const giftPrimary = isPremium
-    ? `Tienes suscripción de pago activa: el regalo de 2 días extra de prueba no modifica tu plan ni genera cargos. Gracias por seguir en ${APP_NAME}.`
-    : `Si tu cuenta califica, sumamos 2 días de prueba Premium al procesar el envío de este correo desde nuestro sistema. No hace falta pulsar ningún enlace para “activarlo”: se aplica al despachar el mensaje.`;
-
-  const giftSecondary = isPremium
-    ? `Las novedades del producto van justo debajo; ábrelas en la app con tu sesión iniciada.`
-    : `Revisa en la app (Perfil o suscripción) si ya ves la prueba ampliada; a veces la tienda tarda unos minutos en reflejarlo.`;
+  const giftDays = getWeeklySummaryTrialGiftDays();
+  const {
+    giftBadgeLabel,
+    giftTitle,
+    giftPrimary,
+    giftSecondary,
+  } = buildWeeklySummaryGiftCopy({
+    giftDays,
+    isPremium,
+    appName: APP_NAME,
+    locale: 'es',
+  });
 
   const updatesSectionTitle = 'Novedades en la app';
   const updatesIntro =

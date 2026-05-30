@@ -13,6 +13,10 @@ import Subscription from '../models/Subscription.js';
 import User from '../models/User.js';
 import { resolveAppLanguage } from '../utils/resolveAppLanguage.js';
 import pushNotificationService from './pushNotificationService.js';
+import {
+  APP_TRIAL_DAYS,
+  computeTrialTimeRemaining,
+} from '../constants/subscription.js';
 
 class TrialNotificationService {
   /**
@@ -48,11 +52,10 @@ class TrialNotificationService {
         return { success: false, message: 'Usuario no está en trial' };
       }
 
-      // Calcular días restantes
-      const daysRemaining = Math.ceil((trialEndDate - now) / (1000 * 60 * 60 * 24));
+      const { daysRemaining } = computeTrialTimeRemaining(trialEndDate, now);
+      const notifyWindowDays = Math.max(1, APP_TRIAL_DAYS);
 
-      // Enviar recordatorio de trial con más frecuencia (5 → 1 días restantes)
-      if (daysRemaining >= 1 && daysRemaining <= 5) {
+      if (daysRemaining >= 1 && daysRemaining <= notifyWindowDays) {
         await this.sendTrialExpirationNotification(userId, daysRemaining);
         return { 
           success: true, 
@@ -198,13 +201,16 @@ class TrialNotificationService {
         };
       }
 
-      const daysRemaining = Math.ceil((trialEndDate - now) / (1000 * 60 * 60 * 24));
+      const { daysRemaining, hoursRemaining } = computeTrialTimeRemaining(trialEndDate, now);
+      const notifyWindowDays = Math.max(1, APP_TRIAL_DAYS);
 
       return {
         isInTrial: true,
-        daysRemaining: Math.max(0, daysRemaining),
+        daysRemaining,
+        hoursRemaining,
         trialEndDate,
-        shouldNotify: daysRemaining <= 5,
+        appTrialDays: APP_TRIAL_DAYS,
+        shouldNotify: daysRemaining >= 1 && daysRemaining <= notifyWindowDays,
       };
     } catch (error) {
       console.error('[TrialNotificationService] Error obteniendo info de trial:', error);

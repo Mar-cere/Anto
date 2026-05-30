@@ -14,6 +14,7 @@ import User from '../models/User.js';
 import Subscription from '../models/Subscription.js';
 import config from '../config/config.js';
 import crypto from 'crypto';
+import { APP_TRIAL_DAYS, addTrialDays } from '../constants/subscription.js';
 
 // Función para hashear contraseña (copiada de authRoutes)
 function hashPassword(password) {
@@ -68,7 +69,7 @@ Ejemplos:
   # Crear usuario con premium anual
   node scripts/createUser.js usuario@ejemplo.com usuario123 password123 premium yearly
 
-  # Crear usuario con trial por defecto (21 días)
+  # Crear usuario con trial por defecto (APP_TRIAL_DAYS, p. ej. 1)
   node scripts/createUser.js usuario@ejemplo.com usuario123 password123 trial
     `);
     process.exit(1);
@@ -145,18 +146,18 @@ Ejemplos:
 
     // Configurar suscripción
     if (subscriptionType === 'trial') {
-      const days = option ? parseInt(option, 10) : 21;
+      const days = option ? parseInt(option, 10) : APP_TRIAL_DAYS;
       if (isNaN(days) || days < 1) {
         console.error('❌ Número de días inválido');
         process.exit(1);
       }
 
-      const trialEndDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+      const trialEndDate = addTrialDays(now, days);
 
       userData.subscription = {
         status: 'trial',
         trialStartDate: now,
-        trialEndDate: trialEndDate,
+        trialEndDate,
         subscriptionStartDate: null,
         subscriptionEndDate: null,
         plan: null,

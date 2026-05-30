@@ -68,6 +68,12 @@ export function createRegisterScreenStyles(colors) {
       marginBottom: SUBTITLE_MARGIN_BOTTOM,
       textAlign: 'center',
     },
+    trialHint: {
+      fontSize: 15,
+      marginTop: -12,
+      marginBottom: SUBTITLE_MARGIN_BOTTOM,
+      color: colors.primary,
+    },
     checkboxContainer: {
       flexDirection: 'row',
       alignItems: 'center',

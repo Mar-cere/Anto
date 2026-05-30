@@ -2,7 +2,7 @@
  * Script para enviar notificaciones de trial próximo a expirar
  * 
  * Este script verifica todos los usuarios en trial y envía notificaciones
- * push a aquellos cuyo trial expira en 1 o 2 días.
+ * push a aquellos cuyo trial expira pronto (ventana según APP_TRIAL_DAYS).
  * 
  * Uso:
  *   node backend/scripts/notifyTrialExpiring.js

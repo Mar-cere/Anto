@@ -3,6 +3,12 @@
  */
 import { APP_NAME } from '../constants/app.js';
 import {
+  buildWeeklySummaryGiftCopy,
+  formatTrialGiftDaysCount,
+  formatTrialGiftDaysPlus,
+  getWeeklySummaryTrialGiftDays,
+} from '../constants/subscription.js';
+import {
   escapeHtmlText,
   weeklyContentVariantIndex,
   weeklyEmailSubjectIndex,
@@ -16,12 +22,18 @@ const SUBJECT_BUILDERS_EN = [
   (weekLabel) => `${weekLabel} — Check your week whenever you want in ${APP_NAME}`,
   (weekLabel) => `${weekLabel} — Your week, with perspective, in ${APP_NAME}`,
   (weekLabel) => `${weekLabel} — App updates and your summary in ${APP_NAME}`,
-  (weekLabel) =>
-    `${weekLabel} — Summary, updates, and possible +2 trial days (if your account qualifies) in ${APP_NAME}`,
-  (weekLabel) =>
-    `${weekLabel} — +2 extra trial days if your account qualifies: summary and updates in ${APP_NAME}`,
-  (weekLabel) =>
-    `${weekLabel} — A small gift (+2 days if eligible), updates, and summary in ${APP_NAME}`,
+  (weekLabel) => {
+    const plus = formatTrialGiftDaysPlus(getWeeklySummaryTrialGiftDays(), 'en');
+    return `${weekLabel} — Summary, updates, and possible ${plus} trial (if your account qualifies) in ${APP_NAME}`;
+  },
+  (weekLabel) => {
+    const plus = formatTrialGiftDaysPlus(getWeeklySummaryTrialGiftDays(), 'en');
+    return `${weekLabel} — ${plus} extra trial if your account qualifies: summary and updates in ${APP_NAME}`;
+  },
+  (weekLabel) => {
+    const plus = formatTrialGiftDaysPlus(getWeeklySummaryTrialGiftDays(), 'en');
+    return `${weekLabel} — A small gift (${plus} if eligible), updates, and summary in ${APP_NAME}`;
+  },
 ];
 
 const PREHEADER_VARIANTS_EN = [
@@ -37,8 +49,10 @@ const PREHEADER_VARIANTS_EN = [
     `Giving yourself a breather and reviewing the week is self-care too. In ${name} you see it privately, inside the app.`,
   (name) =>
     `Has it been a while since you checked in? ${name} offers a clear view, without rush. You choose when to open it.`,
-  (name) =>
-    `+2 Premium trial days when this email is processed (if your account qualifies) and app updates. Open ${name} and review your summary.`,
+  (name) => {
+    const count = formatTrialGiftDaysCount(getWeeklySummaryTrialGiftDays(), 'en');
+    return `${count} of Premium trial when this email is processed (if your account qualifies) and app updates. Open ${name} and review your summary.`;
+  },
 ];
 
 const LEAD_PARAGRAPH_VARIANTS_EN = [
@@ -170,17 +184,18 @@ export function buildWeeklySummaryEmailContextEn(user, isoParts) {
   const subStatus = typeof rawSubStatus === 'string' ? rawSubStatus.trim() : '';
   const isPremium = subStatus === 'premium';
 
-  const giftBadgeLabel = isPremium ? 'Your plan' : 'Gift';
-
-  const giftTitle = isPremium ? 'Your Premium plan' : 'Gift: +2 Premium trial days';
-
-  const giftPrimary = isPremium
-    ? `You have an active paid subscription: the extra 2-day trial gift does not change your plan or create charges. Thank you for staying with ${APP_NAME}.`
-    : `If your account qualifies, we add 2 Premium trial days when this email is sent from our system. You do not need to click a link to “activate” it: it applies when the message is dispatched.`;
-
-  const giftSecondary = isPremium
-    ? `Product updates are just below; open them in the app with your session signed in.`
-    : `Check in the app (Profile or subscription) whether the extended trial is visible; stores sometimes take a few minutes to reflect it.`;
+  const giftDays = getWeeklySummaryTrialGiftDays();
+  const {
+    giftBadgeLabel,
+    giftTitle,
+    giftPrimary,
+    giftSecondary,
+  } = buildWeeklySummaryGiftCopy({
+    giftDays,
+    isPremium,
+    appName: APP_NAME,
+    locale: 'en',
+  });
 
   const updatesSectionTitle = 'What is new in the app';
   const updatesIntro =

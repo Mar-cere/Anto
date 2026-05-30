@@ -8,6 +8,7 @@ import request from 'supertest';
 import mongoose from 'mongoose';
 import app from '../../../server.js';
 import { connectDatabase, closeDatabase } from '../../helpers/testHelpers.js';
+import { APP_TRIAL_DAYS, getWeeklySummaryTrialGiftDays } from '../../../constants/subscription.js';
 
 describe('Health Check Routes', () => {
   // Conectar a la base de datos antes de los tests
@@ -23,6 +24,16 @@ describe('Health Check Routes', () => {
     // Dar tiempo para que los procesos se cierren
     await new Promise(resolve => setTimeout(resolve, 100));
   }, 15000); // Timeout extendido para cleanup
+
+  describe('GET /api/health/app-config', () => {
+    it('expone trialDays sin autenticación', async () => {
+      const response = await request(app).get('/api/health/app-config').expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.trialDays).toBe(APP_TRIAL_DAYS);
+      expect(response.body.weeklySummaryTrialGiftDays).toBe(getWeeklySummaryTrialGiftDays());
+    });
+  });
 
   describe('GET /health', () => {
     it('debe retornar información de salud (puede ser 200 o 503 dependiendo de MongoDB)', async () => {

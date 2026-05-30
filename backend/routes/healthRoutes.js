@@ -9,6 +9,7 @@
 
 import express from 'express';
 import mongoose from 'mongoose';
+import { getAppTrialPublicConfig } from '../constants/subscription.js';
 
 const router = express.Router();
 
@@ -59,6 +60,17 @@ const getMongoDBStatus = () => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
+/**
+ * GET /api/health/app-config
+ * Config pública de la app (sin auth). Usada por FAQ y copy de trial.
+ */
+router.get('/app-config', (req, res) => {
+  res.json({
+    success: true,
+    ...getAppTrialPublicConfig(),
+  });
+});
+
 router.get('/', async (req, res) => {
   const health = {
     status: 'ok',

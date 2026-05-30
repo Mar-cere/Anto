@@ -272,7 +272,7 @@ if (config.app.environment === 'development') {
 const limiter = createRateLimiter({
   windowMs: RATE_LIMIT_WINDOW_MS,
   max: RATE_LIMIT_MAX_REQUESTS,
-  skip: (req) => req.path === '/health' // Excluir /health del rate limiting
+  skip: (req) => req.path === '/health' || req.path.startsWith('/api/health')
 });
 app.use(limiter);
 
@@ -497,7 +497,7 @@ if (process.env.NODE_ENV !== 'test') {
     );
   }
 
-  // Correo retención trial (~48 h tras inicio, trials cortos) — diario, NO en test
+  // Correo retención trial (~12 h tras inicio, trials cortos) — diario, NO en test
   if (features.trialRetentionEmail && process.env.NODE_ENV !== 'test') {
     const TRIAL_RETENTION_INTERVAL_MS = 24 * 60 * 60 * 1000;
     const runTrialRetention = async () => {

@@ -19,6 +19,7 @@ import {
   clearDatabase,
   closeDatabase,
 } from '../../helpers/testHelpers.js';
+import { trialingSubscriptionDocFixture } from '../../helpers/trialTestDates.js';
 import jwt from 'jsonwebtoken';
 
 describe('Flujo completo: Tareas y Hábitos', () => {
@@ -52,15 +53,7 @@ describe('Flujo completo: Tareas y Hábitos', () => {
     });
 
     // Crear suscripción activa
-    await Subscription.create({
-      userId: testUser._id,
-      plan: 'monthly',
-      status: 'trialing',
-      currentPeriodStart: new Date(),
-      currentPeriodEnd: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      trialStart: new Date(),
-      trialEnd: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-    });
+    await Subscription.create(trialingSubscriptionDocFixture(testUser._id));
 
         authToken = jwt.sign(
           { userId: testUser._id.toString(), _id: testUser._id.toString() },

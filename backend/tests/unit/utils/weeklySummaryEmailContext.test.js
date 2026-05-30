@@ -42,7 +42,8 @@ describe('weeklyEmailSubjectIndex / buildWeeklySummarySubjectLine', () => {
     const w = 'Semana 9 · 2026';
     expect(weeklyEmailSubjectIndex(2026, 9)).toBe(7);
     const s = buildWeeklySummarySubjectLine(w, 2026, 9);
-    expect(s).toMatch(/califica|\+2|prueba/i);
+    expect(s).toMatch(/califica|\+1|prueba/i);
+    expect(s).not.toMatch(/\+2 d[ií]a/i);
   });
 });
 
@@ -70,8 +71,9 @@ describe('buildWeeklySummaryEmailContext', () => {
       /resumen|notificaciones|tareas|hábitos|pomodoro|tema claro|chat|Ecosistema/i
     );
     expect(ctx.giftBadgeLabel).toBe('Regalo');
-    expect(ctx.giftTitle).toMatch(/2 días|Premium/i);
-    expect(ctx.giftPrimary).toMatch(/2 días|prueba|Premium/i);
+    expect(ctx.giftTitle).toMatch(/1 día|Premium/i);
+    expect(ctx.giftPrimary).toMatch(/1 día|prueba|Premium/i);
+    expect(ctx.giftPrimary).not.toMatch(/2 días/);
     expect(ctx.closingLine).toMatch(/Anto|acompañarte/i);
     expect(ctx.subjectLine).not.toContain('99');
     expect(ctx.leadParagraph).toMatch(/ritmo|semana/i);

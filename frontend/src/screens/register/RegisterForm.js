@@ -1,8 +1,14 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
+import {
+  DEFAULT_APP_TRIAL_DAYS,
+  formatTrialPeriodLabel,
+} from '../../constants/subscription';
+import { fetchAppTrialDays } from '../../services/appConfigService';
 import { useRegisterScreenStyles } from './registerScreenStyles';
 import { EYE_ICON_SIZE, BUTTON_ICON_SIZE, BUTTON_ICON_MARGIN, ACTIVE_OPACITY, BUTTON_ACTIVE_OPACITY, CHECKBOX_ICON_SIZE } from './registerScreenConstants';
 
@@ -32,8 +38,31 @@ export function RegisterForm({
   AnimatedView,
 }) {
   const TEXTS = useSectionTranslations('REGISTER');
+  const { language } = useLanguage();
   const { colors, globalStyles: gs } = useTheme();
   const styles = useRegisterScreenStyles();
+  const [trialDays, setTrialDays] = useState(DEFAULT_APP_TRIAL_DAYS);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchAppTrialDays().then((days) => {
+      if (!cancelled) {
+        setTrialDays(days);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const trialHint = useMemo(() => {
+    const template = TEXTS.TRIAL_HINT;
+    if (!template) {
+      return null;
+    }
+    const label = formatTrialPeriodLabel(trialDays, language === 'en' ? 'en' : 'es');
+    return template.replace('{trialPeriod}', label);
+  }, [TEXTS.TRIAL_HINT, trialDays, language]);
 
   return (
     <AnimatedView
@@ -47,6 +76,9 @@ export function RegisterForm({
     >
       <Text style={styles.title}>{TEXTS.TITLE}</Text>
       <Text style={styles.subtitle}>{TEXTS.SUBTITLE}</Text>
+      {trialHint ? (
+        <Text style={[styles.subtitle, styles.trialHint]}>{trialHint}</Text>
+      ) : null}
 
       <View style={gs.inputWrapper}>
         <View style={[gs.inputContainer, errors.name && gs.inputError]}>

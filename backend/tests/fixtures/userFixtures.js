@@ -6,6 +6,8 @@
  * @author AntoApp Team
  */
 
+import { APP_TRIAL_DURATION_MS } from '../../constants/subscription.js';
+
 export const validUser = {
   username: 'testuser',
   email: 'test@example.com',
@@ -34,7 +36,7 @@ export const userInTrial = {
   username: 'trialuser',
   email: 'trial@example.com',
   password: 'Test123456!',
-  trialEndDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 días
+  trialEndDate: new Date(Date.now() + APP_TRIAL_DURATION_MS),
 };
 
 export const expiredTrialUser = {

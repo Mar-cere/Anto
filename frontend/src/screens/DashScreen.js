@@ -814,6 +814,7 @@ const DashScreen = () => {
           {trialInfo && trialInfo.isInTrial && !trialBannerDismissed && (
             <TrialBanner
               daysRemaining={trialInfo.daysRemaining}
+              hoursRemaining={trialInfo.hoursRemaining}
               onDismiss={handleTrialBannerDismiss}
               dismissed={trialBannerDismissed}
             />

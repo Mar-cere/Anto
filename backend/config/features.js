@@ -12,8 +12,8 @@
  * | intenseChatCheckIn         | ENABLE_INTENSE_CHAT_CHECKIN    | activo  | check-ins poschat |
  * | notificationScheduler      | ENABLE_NOTIFICATION_SCHEDULER  | activo  | cola de notificaciones; tunear espaciado con `NOTIFICATION_*` en `notificationScheduler.js` |
  * | openaiDailyCostReport      | ENABLE_OPENAI_DAILY_COST_REPORT | activo | correo diario uso OpenAI |
- * | trialRetentionEmail        | ENABLE_TRIAL_RETENTION_EMAIL   | activo | correo fin día ~2 de trial corto |
- * | weeklySummaryEmail         | ENABLE_WEEKLY_SUMMARY_EMAIL o ENABLE_WEEKLY_TIPS_EMAIL | off | aviso resumen semanal (neutro); slot `WEEKLY_TIPS_EMAIL_SLOT`; regalo trial +N días tras envío: `WEEKLY_SUMMARY_TRIAL_GIFT_DAYS` (default 2), desactivar con `WEEKLY_SUMMARY_TRIAL_GIFT_ENABLED=false` |
+ * | trialRetentionEmail        | ENABLE_TRIAL_RETENTION_EMAIL   | activo | correo ~12 h tras inicio de trial corto (1 día) |
+ * | weeklySummaryEmail         | ENABLE_WEEKLY_SUMMARY_EMAIL o ENABLE_WEEKLY_TIPS_EMAIL | off | aviso resumen semanal (neutro); slot `WEEKLY_TIPS_EMAIL_SLOT`; regalo trial +N días tras envío: `WEEKLY_SUMMARY_TRIAL_GIFT_DAYS` (default: 1 si APP_TRIAL_DAYS≤1, si no min(2, APP_TRIAL_DAYS)), desactivar con `WEEKLY_SUMMARY_TRIAL_GIFT_ENABLED=false` |
  * | lastSessionSummaryWorker   | ENABLE_LAST_SESSION_SUMMARY    | activo salvo `false` | worker continuidad último chat (#4+#47); tick `LAST_SESSION_SUMMARY_TICK_MS`; reencola `processing` viejos con `LAST_SESSION_SUMMARY_STALE_MS` (default 15 min); reintentos LLM `LAST_SESSION_SUMMARY_MAX_ATTEMPTS` (default 2, máx 5) |
  * | swagger                    | ENABLE_SWAGGER + NODE_ENV      | ver abajo | en prod solo si `ENABLE_SWAGGER=true` |
  *

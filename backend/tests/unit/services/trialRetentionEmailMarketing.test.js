@@ -1,4 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
+import { getDefaultTrialRetentionAfterHours } from '../../../constants/subscription.js';
 import {
   buildTrialRetentionBaseFilter,
   computeTrialSpanMs,
@@ -9,12 +10,21 @@ import {
 describe('buildTrialRetentionBaseFilter', () => {
   it('exige fechas de trial presentes y ventana de inicio', () => {
     const now = new Date('2026-06-10T12:00:00.000Z');
-    const f = buildTrialRetentionBaseFilter(now, 48);
+    const f = buildTrialRetentionBaseFilter(now, 12);
     expect(f['subscription.status']).toBe('trial');
-    expect(f['subscription.trialStartDate'].$lte).toEqual(new Date('2026-06-08T12:00:00.000Z'));
+    expect(f['subscription.trialStartDate'].$lte).toEqual(new Date('2026-06-10T00:00:00.000Z'));
     expect(f['subscription.trialEndDate'].$gt).toEqual(now);
     expect(f['subscription.trialStartDate'].$exists).toBe(true);
     expect(f['subscription.trialEndDate'].$exists).toBe(true);
+  });
+
+  it('usa default de APP_TRIAL_DAYS si afterHours es inválido', () => {
+    const now = new Date('2026-06-10T12:00:00.000Z');
+    const f = buildTrialRetentionBaseFilter(now, NaN);
+    const expectedHours = getDefaultTrialRetentionAfterHours();
+    expect(f['subscription.trialStartDate'].$lte).toEqual(
+      new Date(now.getTime() - expectedHours * 60 * 60 * 1000)
+    );
   });
 });
 
@@ -39,8 +49,8 @@ describe('isTrialSpanEligibleForRetention', () => {
   });
 
   it('acepta trial corto dentro del tope', () => {
-    const maxMs = 96 * 3600000;
-    expect(isTrialSpanEligibleForRetention(72 * 3600000, maxMs)).toBe(true);
+    const maxMs = 30 * 3600000;
+    expect(isTrialSpanEligibleForRetention(24 * 3600000, maxMs)).toBe(true);
   });
 });
 

@@ -16,6 +16,8 @@ import {
   closeDatabase,
 } from '../../helpers/testHelpers.js';
 import { validUser, invalidUser } from '../../fixtures/userFixtures.js';
+import { trialSubscriptionFixture } from '../../helpers/trialTestDates.js';
+import { APP_TRIAL_DAYS, APP_TRIAL_DURATION_MS } from '../../../constants/subscription.js';
 
 jest.setTimeout(30000);
 
@@ -40,11 +42,7 @@ const createUserWithHashedPassword = async (userData) => {
       totalSessions: 0,
       lastActive: new Date()
     },
-    subscription: {
-      status: 'trial',
-      trialStartDate: new Date(),
-      trialEndDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
-    }
+    subscription: trialSubscriptionFixture(),
   });
 };
 
@@ -84,9 +82,23 @@ describe('Auth Routes', () => {
       // Tras registro, la API exige verificación de email: no devuelve accessToken hasta verificar
       expect(response.body).toHaveProperty('user');
       expect(response.body).toHaveProperty('requiresVerification', true);
+      expect(response.body).toHaveProperty('trialDays', APP_TRIAL_DAYS);
+      expect(response.body).toHaveProperty('weeklySummaryTrialGiftDays');
       expect(response.body.user).toHaveProperty('username', uniqueUser.username.toLowerCase());
       expect(response.body.user).toHaveProperty('email', uniqueUser.email.toLowerCase());
       expect(response.body.user).not.toHaveProperty('password');
+
+      const saved = await User.findOne({ email: uniqueUser.email.toLowerCase() });
+      expect(saved?.subscription?.status).toBe('trial');
+      expect(saved?.subscription?.trialGrantedAt).toBeTruthy();
+      expect(new Date(saved.subscription.trialGrantedAt).getTime()).toBe(
+        new Date(saved.subscription.trialStartDate).getTime()
+      );
+      const spanMs =
+        new Date(saved.subscription.trialEndDate).getTime() -
+        new Date(saved.subscription.trialStartDate).getTime();
+      expect(spanMs).toBeGreaterThanOrEqual(APP_TRIAL_DURATION_MS - 1000);
+      expect(spanMs).toBeLessThanOrEqual(APP_TRIAL_DURATION_MS + 1000);
     });
 
     it('debe rechazar registro con datos inválidos', async () => {
@@ -275,6 +287,43 @@ describe('Auth Routes', () => {
         .expect(401);
 
       expect(response.body).toHaveProperty('message');
+    });
+  });
+
+  describe('POST /api/auth/verify-email', () => {
+    it('verifica email sin modificar fechas de trial', async () => {
+      const timestamp = Date.now().toString().slice(-6);
+      const uniqueUser = {
+        ...validUser,
+        email: `verify${timestamp}@example.com`,
+        username: `verify${timestamp}`,
+        termsAccepted: true,
+        privacyAccepted: true,
+      };
+
+      await request(app).post('/api/auth/register').send(uniqueUser).expect(201);
+
+      const saved = await User.findOne({ email: uniqueUser.email.toLowerCase() });
+      const trialStart = saved.subscription.trialStartDate;
+      const trialEnd = saved.subscription.trialEndDate;
+      const code = saved.emailVerificationCode;
+
+      const response = await request(app)
+        .post('/api/auth/verify-email')
+        .send({ email: uniqueUser.email, code })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('accessToken');
+      expect(response.body.user.emailVerified).toBe(true);
+
+      const after = await User.findOne({ email: uniqueUser.email.toLowerCase() });
+      expect(after.subscription.status).toBe('trial');
+      expect(new Date(after.subscription.trialStartDate).getTime()).toBe(
+        new Date(trialStart).getTime()
+      );
+      expect(new Date(after.subscription.trialEndDate).getTime()).toBe(
+        new Date(trialEnd).getTime()
+      );
     });
   });
 });

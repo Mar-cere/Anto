@@ -16,6 +16,7 @@ import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Subscription from '../models/Subscription.js';
 import config from '../config/config.js';
+import { APP_TRIAL_DAYS, addTrialDays } from '../constants/subscription.js';
 
 // Conectar a MongoDB usando la misma configuración que el servidor
 const connectDB = async () => {
@@ -54,8 +55,8 @@ async function setupUserSubscription() {
 📋 Uso: node scripts/setupUserSubscription.js <email|username> <trial|premium> [opciones]
 
 Ejemplos:
-  # Configurar trial de 21 días
-  node scripts/setupUserSubscription.js usuario@ejemplo.com trial 21
+  # Configurar trial de N días (sin N: APP_TRIAL_DAYS, p. ej. 1)
+  node scripts/setupUserSubscription.js usuario@ejemplo.com trial 7
 
   # Configurar premium mensual
   node scripts/setupUserSubscription.js usuario@ejemplo.com premium monthly
@@ -63,7 +64,7 @@ Ejemplos:
   # Configurar premium anual
   node scripts/setupUserSubscription.js usuario@ejemplo.com premium yearly
 
-  # Configurar trial por defecto (21 días)
+  # Configurar trial por defecto (APP_TRIAL_DAYS)
   node scripts/setupUserSubscription.js usuario@ejemplo.com trial
 
   # Aumentar trial: sumar N días al vencimiento actual (correo o username)
@@ -119,7 +120,7 @@ Ejemplos:
       const prevSub = user.subscription || {};
       const prevEnd = prevSub.trialEndDate ? new Date(prevSub.trialEndDate).getTime() : null;
       const baseMs = prevEnd != null ? Math.max(Date.now(), prevEnd) : Date.now();
-      const trialEndDate = new Date(baseMs + addDays * 24 * 60 * 60 * 1000);
+      const trialEndDate = addTrialDays(new Date(baseMs), addDays);
       const trialStartDate = prevSub.trialStartDate ? new Date(prevSub.trialStartDate) : now;
 
       user.subscription = {
@@ -162,19 +163,19 @@ Ejemplos:
       console.log(`   Inicio trial (sin cambiar si ya existía): ${trialStartDate.toLocaleString('es-CL')}`);
     } else if (subscriptionType === 'trial') {
       // Configurar trial
-      const days = option ? parseInt(option, 10) : 21;
+      const days = option ? parseInt(option, 10) : APP_TRIAL_DAYS;
       if (isNaN(days) || days < 1) {
         console.error('❌ Número de días inválido');
         process.exit(1);
       }
 
-      const trialEndDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+      const trialEndDate = addTrialDays(now, days);
 
       // Actualizar modelo User
       user.subscription = {
         status: 'trial',
         trialStartDate: now,
-        trialEndDate: trialEndDate,
+        trialEndDate,
         subscriptionStartDate: null,
         subscriptionEndDate: null,
         plan: null,
