@@ -9,7 +9,7 @@
  */
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -87,6 +87,7 @@ const THERAPEUTIC_STATS_TEXT_MAP = {
 };
 
 const TherapeuticTechniquesStatsScreen = () => {
+  const navigation = useNavigation();
   const TEXTS = useMappedSectionTexts('TECHNIQUES', DEFAULT_TEXTS, THERAPEUTIC_STATS_TEXT_MAP);
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle, resolvedScheme } = useTheme();
@@ -207,6 +208,19 @@ const TherapeuticTechniquesStatsScreen = () => {
           fontSize: 16,
           color: colors.textSecondary,
           textAlign: 'center',
+        },
+        devLink: {
+          marginTop: 24,
+          padding: 14,
+          borderRadius: 10,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+          alignItems: 'center',
+        },
+        devLinkText: {
+          fontSize: 14,
+          color: colors.primary,
+          fontWeight: '600',
         },
         retryButton: {
           marginTop: 20,
@@ -534,6 +548,14 @@ const TherapeuticTechniquesStatsScreen = () => {
         {renderByEmotion()}
         {renderByType()}
         {renderUsageTrend()}
+        {typeof __DEV__ !== 'undefined' && __DEV__ ? (
+          <TouchableOpacity
+            style={styles.devLink}
+            onPress={() => navigation.navigate('InterventionGraph')}
+          >
+            <Text style={styles.devLinkText}>Grafo sugerencias del chat (interno)</Text>
+          </TouchableOpacity>
+        ) : null}
       </ScrollView>
     );
   };

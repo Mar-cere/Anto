@@ -3,6 +3,8 @@
  * Extraído de chatRoutes para mantener el archivo de rutas más legible.
  */
 
+import chatInterventionGraphService from '../../services/chatInterventionGraphService.js';
+
 export function detectEmotionalEscalation(conversationHistory, currentEmotionalAnalysis) {
   if (!conversationHistory || conversationHistory.length < 2) return false;
 
@@ -114,19 +116,21 @@ export function detectSilenceAfterNegative(conversationHistory) {
   return false;
 }
 
-export function shouldShowActionSuggestions(emotionalAnalysis, contextualAnalysis, conversationHistory, userId) {
+export function isActionSuggestionException(emotionalAnalysis, contextualAnalysis, conversationHistory) {
   const intensity = emotionalAnalysis?.intensity || 5;
   if (intensity >= 7) return true;
 
-  if (contextualAnalysis?.intencion?.tipo === 'CRISIS' ||
-      contextualAnalysis?.urgencia === 'alta' ||
-      emotionalAnalysis?.requiresAttention) {
+  if (
+    contextualAnalysis?.intencion?.tipo === 'CRISIS' ||
+    contextualAnalysis?.urgencia === 'alta' ||
+    emotionalAnalysis?.requiresAttention
+  ) {
     return true;
   }
 
   if (conversationHistory && conversationHistory.length >= 2) {
     const recentUserMessages = conversationHistory
-      .filter(msg => msg.role === 'user' && msg.metadata?.context?.emotional?.mainEmotion)
+      .filter((msg) => msg.role === 'user' && msg.metadata?.context?.emotional?.mainEmotion)
       .slice(0, 2);
 
     if (recentUserMessages.length >= 1) {
@@ -141,31 +145,64 @@ export function shouldShowActionSuggestions(emotionalAnalysis, contextualAnalysi
     }
   }
 
-  if (conversationHistory && conversationHistory.length > 0) {
-    const recentContent = conversationHistory
-      .filter(msg => msg.role === 'user')
-      .slice(0, 3)
-      .map(msg => msg.content?.toLowerCase() || '')
-      .join(' ');
-
-    const rejectionPatterns = /(?:no.*quiero.*ayuda|no.*necesito.*ayuda|no.*me.*ayudes|déjame.*solo|no.*me.*importa|no.*sirve.*de.*nada|no.*gracias)/i;
-    if (rejectionPatterns.test(recentContent)) {
-      return false;
-    }
-  }
-
-  if (conversationHistory && conversationHistory.length > 0) {
-    const userMessages = conversationHistory.filter(msg => msg.role === 'user');
-    const totalUserMessages = userMessages.length;
-    const shouldShowByCount = totalUserMessages > 0 &&
-      (totalUserMessages % 3 === 0 || totalUserMessages % 4 === 0);
-
-    if (!shouldShowByCount) {
-      return false;
-    }
-  }
-
   return false;
+}
+
+export function hasActionSuggestionRejection(conversationHistory) {
+  if (!conversationHistory?.length) return false;
+  const recentContent = conversationHistory
+    .filter((msg) => msg.role === 'user')
+    .slice(0, 3)
+    .map((msg) => msg.content?.toLowerCase() || '')
+    .join(' ');
+  const rejectionPatterns =
+    /(?:no.*quiero.*ayuda|no.*necesito.*ayuda|no.*me.*ayudes|déjame.*solo|no.*me.*importa|no.*sirve.*de.*nada|no.*gracias)/i;
+  return rejectionPatterns.test(recentContent);
+}
+
+export function passesActionSuggestionCadence(conversationHistory) {
+  if (!conversationHistory?.length) return false;
+  const userMessages = conversationHistory.filter((msg) => msg.role === 'user');
+  const totalUserMessages = userMessages.length;
+  return (
+    totalUserMessages > 0 && (totalUserMessages % 3 === 0 || totalUserMessages % 4 === 0)
+  );
+}
+
+/** @deprecated Usar shouldShowChatActionSuggestions (incluye cap por sesión #127). */
+export function shouldShowActionSuggestions(emotionalAnalysis, contextualAnalysis, conversationHistory, userId) {
+  if (hasActionSuggestionRejection(conversationHistory)) return false;
+  if (isActionSuggestionException(emotionalAnalysis, contextualAnalysis, conversationHistory)) {
+    return true;
+  }
+  return passesActionSuggestionCadence(conversationHistory);
+}
+
+/**
+ * Sugerencias de chat: cadencia + máximo un bloque por sesión lógica (salvo excepciones de seguridad/intensidad).
+ */
+export async function shouldShowChatActionSuggestions({
+  emotionalAnalysis,
+  contextualAnalysis,
+  conversationHistory,
+  userId,
+  conversationId,
+}) {
+  if (hasActionSuggestionRejection(conversationHistory)) return false;
+  if (isActionSuggestionException(emotionalAnalysis, contextualAnalysis, conversationHistory)) {
+    return true;
+  }
+  if (!passesActionSuggestionCadence(conversationHistory)) return false;
+  try {
+    const alreadyShown = await chatInterventionGraphService.hasShownSuggestionsInActiveSession({
+      userId,
+      conversationId,
+    });
+    if (alreadyShown) return false;
+  } catch {
+    return passesActionSuggestionCadence(conversationHistory);
+  }
+  return true;
 }
 
 export function calculateRiskScore(emotionalAnalysis, contextualAnalysis, content, options = {}) {

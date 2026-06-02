@@ -61,6 +61,8 @@ import paymentAuditService from '../services/paymentAuditService.js';
 import pushNotificationService from '../services/pushNotificationService.js';
 import sessionEmotionalMemory from '../services/sessionEmotionalMemory.js';
 import { buildSessionRetentionPayload, withThematicMicroClosureRetention } from '../services/sessionRetentionHints.js';
+import { isValidInterventionId } from '../constants/interventionCatalog.js';
+import chatInterventionGraphService from '../services/chatInterventionGraphService.js';
 import { cursorPaginate } from '../utils/pagination.js';
 import {
     HISTORIAL_LIMITE,
@@ -79,7 +81,7 @@ import {
     patchMessageLimiter,
     scheduleSessionSummaryLimiter,
     sendMessageLimiter,
-    shouldShowActionSuggestions,
+    shouldShowChatActionSuggestions,
     validarConversacion,
     validarConversationId
 } from './chat/index.js';
@@ -335,6 +337,91 @@ router.post(
     }
   }
 );
+
+// Eventos del grafo tema–intervención (#127): clicked/dismissed/completed.
+router.post(
+  '/conversations/:conversationId/interventions/events',
+  protect,
+  requireActiveSubscription(true),
+  validarConversationId,
+  validarConversacion,
+  async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const interventionId = String(req.body?.interventionId || '').trim();
+      const eventType = String(req.body?.eventType || '').trim();
+      if (!interventionId || !isValidInterventionId(interventionId)) {
+        return res.status(400).json({ message: req.apiCopy?.invalidRequest || 'Solicitud inválida' });
+      }
+      if (!['clicked', 'dismissed', 'completed'].includes(eventType)) {
+        return res.status(400).json({ message: req.apiCopy?.invalidRequest || 'Solicitud inválida' });
+      }
+      // best-effort: no bloquear el flujo del usuario si hay fallo de DB
+      chatInterventionGraphService
+        .recordInterventionEvent({
+          userId: req.user._id,
+          conversationId: new mongoose.Types.ObjectId(conversationId),
+          interventionId,
+          eventType,
+          assistantMessageId: null,
+          emotionalAnalysis: null,
+          contextualAnalysis: null,
+          riskLevel: null,
+          source: 'chat_suggestions_v1',
+        })
+        .catch(() => {});
+      return res.status(204).end();
+    } catch (error) {
+      console.error('[ChatRoutes] interventions/events:', error);
+      return res.status(500).json({ message: req.apiCopy?.serverError || 'Error del servidor' });
+    }
+  }
+);
+
+/**
+ * GET /api/chat/interventions/graph
+ * Agregado del grafo tema–intervención (#127) para el usuario autenticado.
+ * Query:
+ * - days: ventana (default 14, min 1, max 180)
+ * - limit: máximo de edges (default 60, min 1, max 300)
+ */
+router.get('/interventions/graph', protect, requireActiveSubscription(true), async (req, res) => {
+  try {
+    const daysRaw = req.query?.days;
+    const limitRaw = req.query?.limit;
+    const days = Math.max(1, Math.min(180, Number(daysRaw ?? 14) || 14));
+    const limit = Math.max(1, Math.min(300, Number(limitRaw ?? 60) || 60));
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const edges = await chatInterventionGraphService.aggregateInterventionGraph({
+      userId: req.user._id,
+      since,
+      limit,
+    });
+
+    res.json({
+      success: true,
+      aggregationMode: 'session',
+      windowDays: days,
+      since: since.toISOString(),
+      count: edges.length,
+      edges: edges.map((e) => ({
+        topicTag: String(e?._id?.topicTag || 'general').slice(0, 64),
+        interventionId: String(e?._id?.interventionId || '').slice(0, 80),
+        shown: e.shown || 0,
+        clicked: e.clicked || 0,
+        dismissed: e.dismissed || 0,
+        completed: e.completed || 0,
+        ctr: typeof e.ctr === 'number' ? e.ctr : 0,
+        completionRate: typeof e.completionRate === 'number' ? e.completionRate : 0,
+        lastAt: e.lastAt,
+      }))
+    });
+  } catch (error) {
+    console.error('[ChatRoutes] GET /interventions/graph:', error);
+    res.status(500).json({ success: false, message: req.apiCopy?.serverError || 'Error del servidor' });
+  }
+});
 
 // Crear nueva conversación con mensaje de bienvenida
 // Optimizado: saludo sin cargar perfil en la ruta crítica para reducir latencia (<1s)
@@ -1366,13 +1453,33 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                 const cognitiveDistortions = contextualAnalysis?.cognitiveDistortions || null;
                 const primaryDistortion = contextualAnalysis?.primaryDistortion || null;
                 const distortionIntervention = contextualAnalysis?.distortionIntervention || null;
-                const shouldShowSuggestions = shouldShowActionSuggestions(emotionalAnalysis, contextualAnalysis, conversationHistory, req.user._id);
+                const shouldShowSuggestions = await shouldShowChatActionSuggestions({
+                  emotionalAnalysis,
+                  contextualAnalysis,
+                  conversationHistory,
+                  userId: req.user._id,
+                  conversationId,
+                });
                 let formattedSuggestions = [];
                 if (shouldShowSuggestions) {
                   try {
                     const actionSuggestions = actionSuggestionService.generateSuggestions(emotionalAnalysis, contextualAnalysis);
                     formattedSuggestions = actionSuggestionService.formatSuggestions(actionSuggestions);
                   } catch (_) {}
+                }
+                if (formattedSuggestions.length > 0) {
+                  chatInterventionGraphService
+                    .recordSuggestionEventsShown({
+                      userId: req.user._id,
+                      conversationId: new mongoose.Types.ObjectId(conversationId),
+                      assistantMessageId: assistantMessage?._id || null,
+                      suggestions: formattedSuggestions,
+                      emotionalAnalysis,
+                      contextualAnalysis,
+                      riskLevel,
+                      source: 'chat_suggestions_v1'
+                    })
+                    .catch(() => {});
                 }
 
                 let proposedProductActions = [];
@@ -1781,12 +1888,13 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         }
         
         // Determinar si debemos mostrar sugerencias basado en criterios inteligentes
-        const shouldShowSuggestions = shouldShowActionSuggestions(
+        const shouldShowSuggestions = await shouldShowChatActionSuggestions({
           emotionalAnalysis,
           contextualAnalysis,
           conversationHistory,
-          req.user._id
-        );
+          userId: req.user._id,
+          conversationId,
+        });
         
         // Generar sugerencias solo si es apropiado
         let formattedSuggestions = [];
@@ -1806,6 +1914,21 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   suggestionType: suggestion
                 }, req.user._id.toString()).catch(() => {});
               });
+            }
+
+            if (formattedSuggestions.length > 0) {
+              chatInterventionGraphService
+                .recordSuggestionEventsShown({
+                  userId: req.user._id,
+                  conversationId: new mongoose.Types.ObjectId(conversationId),
+                  assistantMessageId: assistantMessage?._id || null,
+                  suggestions: formattedSuggestions,
+                  emotionalAnalysis,
+                  contextualAnalysis,
+                  riskLevel,
+                  source: 'chat_suggestions_v1'
+                })
+                .catch(() => {});
             }
           } catch (error) {
             console.error('[ChatRoutes] Error generando sugerencias:', error);

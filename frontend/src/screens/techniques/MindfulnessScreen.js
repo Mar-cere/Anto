@@ -21,6 +21,7 @@ import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
+import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const DEFAULT_TEXTS = {
@@ -196,6 +197,7 @@ const MindfulnessScreen = () => {
       }, 1000);
     } else if (timeRemaining === 0 && isActive) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      recordInterventionCompleted('mindfulness_reminder');
       setIsActive(false);
     }
     return () => clearInterval(interval);

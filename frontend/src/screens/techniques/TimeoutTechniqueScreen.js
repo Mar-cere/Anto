@@ -21,6 +21,7 @@ import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
+import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const DEFAULT_TEXTS = {
@@ -180,6 +181,12 @@ const TimeoutTechniqueScreen = () => {
     }
   };
 
+  const handleFinish = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    recordInterventionCompleted('timeout_technique');
+    setIsActive(false);
+  };
+
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -254,7 +261,7 @@ const TimeoutTechniqueScreen = () => {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={techniqueScreenStyles.stopButton} onPress={() => setIsActive(false)}>
+            <TouchableOpacity style={techniqueScreenStyles.stopButton} onPress={handleFinish}>
               <Text style={techniqueScreenStyles.stopButtonText}>{TEXTS.FINISH}</Text>
             </TouchableOpacity>
           </View>

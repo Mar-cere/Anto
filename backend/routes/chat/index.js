@@ -26,6 +26,8 @@ export {
   calculateAverageTimeDiff,
   detectSilenceAfterNegative,
   shouldShowActionSuggestions,
+  shouldShowChatActionSuggestions,
+  isActionSuggestionException,
   calculateRiskScore,
   extractRiskFactors,
   extractProtectiveFactors

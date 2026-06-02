@@ -28,6 +28,7 @@ import { useSectionTranslations } from '../hooks/useTranslations';
 import { getFocusTheme } from '../styles/focusCardTheme';
 import { SPACING } from '../constants/ui';
 import { resolveInteractiveExerciseType } from './therapeuticTechniques/therapeuticTechniquesUtils';
+import { recordInterventionCompleted } from '../utils/recordInterventionCompleted';
 
 // Constantes de textos
 const DEFAULT_TEXTS = {
@@ -303,6 +304,17 @@ const TechniqueDetailScreen = () => {
         exerciseData: data || {},
         completedAt: new Date().toISOString(),
       });
+
+      // #127: cerrar loop sugerencia → completado (best-effort, sin romper UX)
+      try {
+        const completionInterventionId =
+          exerciseType === 'breathing'
+            ? 'breathing_exercise'
+            : exerciseType === 'grounding'
+              ? 'grounding_technique'
+              : technique.id || technique.name;
+        recordInterventionCompleted(completionInterventionId);
+      } catch (_) {}
     } catch (error) {
       console.error('Error registrando uso de técnica:', error);
     }

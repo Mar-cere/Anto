@@ -39,6 +39,10 @@ import { SkeletonBlock } from '../components/Skeleton';
 import TrialBanner from '../components/TrialBanner';
 import { useTheme } from '../context/ThemeContext';
 import { useChatScreen } from '../hooks/useChatScreen';
+import {
+  recordInterventionClicked,
+  recordInterventionDismissed,
+} from '../utils/recordInterventionCompleted';
 import { getFeedbackTargetMessageId } from './chat/chatFeedbackAnchor';
 import { SPACING } from '../constants/ui';
 import {
@@ -363,9 +367,10 @@ const ChatScreen = () => {
 
   const handleSuggestionPress = useCallback(
     (suggestion) => {
+      recordInterventionClicked(suggestion?.id);
       if (suggestion?.screen) {
         try {
-          navigation.navigate(suggestion.screen);
+          navigation.navigate(suggestion.screen, suggestion?.params || undefined);
         } catch (err) {
           console.warn(TEXTS.NAVIGATION_ERROR_WARN, suggestion.screen, err);
           setInputText(`${TEXTS.SUGGESTION_TRY_PREFIX}${suggestion.label || ''}`);
@@ -378,6 +383,8 @@ const ChatScreen = () => {
   );
 
   const handleSuggestionDismiss = useCallback((message, index) => {
+    const dismissed = message?.suggestions?.[index];
+    recordInterventionDismissed(dismissed?.id);
     setMessages((prev) =>
       prev
         .map((msg) => {

@@ -18,6 +18,7 @@ import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
+import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
 
 const DEFAULT_TEXTS = {
   TITLE: 'Ejercicio de Respiracion',
@@ -49,8 +50,10 @@ const BreathingExerciseScreen = () => {
     [colors],
   );
 
-  const handleComplete = (data) => {
+  const handleComplete = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // #127: registrar completado cuando se abre desde sugerencia directa (best-effort)
+    recordInterventionCompleted('breathing_exercise');
     // Opcional: navegar de vuelta o mostrar mensaje de éxito
     setTimeout(() => {
       navigation.goBack();

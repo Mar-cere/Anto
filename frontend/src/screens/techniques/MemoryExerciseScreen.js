@@ -24,6 +24,7 @@ import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
+import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const DEFAULT_TEXTS = {
@@ -163,6 +164,7 @@ const MemoryExerciseScreen = () => {
   const handleSave = () => {
     if (response.trim()) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      recordInterventionCompleted('memory_exercise');
       setResponse('');
       setSelectedExercise(null);
     }
