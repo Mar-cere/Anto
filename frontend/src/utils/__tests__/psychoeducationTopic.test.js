@@ -24,6 +24,15 @@ describe('psychoeducationTopic', () => {
     expect(out.cardVariant).toBe('psychoeducation_native');
     expect(out.previewSummary).toMatch(/Qué es|apoyo/i);
     expect(out.params.topic).toBe('anxiety');
+    expect(out.label).toBe('Ansiedad');
+  });
+
+  it('hidrata en inglés', () => {
+    const out = hydratePsychoeducationSuggestion(
+      { id: 'psychoeducation_anger', interventionType: 'psychoeducation' },
+      'en',
+    );
+    expect(out.label).toMatch(/Anger/i);
   });
 
   it('solo acepta URLs https para fuentes', () => {

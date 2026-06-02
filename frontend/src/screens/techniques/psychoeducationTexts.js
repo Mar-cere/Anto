@@ -60,7 +60,9 @@ export function formatReviewFooter(texts, clinicalReview) {
   if (!clinicalReview) return null;
   const version = clinicalReview.version || '1.0.0';
   const date = clinicalReview.reviewedAt || '';
-  return texts.REVIEW_FOOTER.replace('{version}', version).replace('{date}', date);
+  const line = texts.REVIEW_FOOTER.replace('{version}', version).replace('{date}', date);
+  const note = String(clinicalReview.note || '').trim();
+  return note ? `${line}\n${note}` : line;
 }
 
 export function usePsychoeducationTexts() {

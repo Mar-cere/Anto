@@ -1,4 +1,7 @@
-import { getInterventionCatalogEntry } from '../constants/interventionCatalog.js';
+import {
+  getInterventionCatalogEntry,
+  getInterventionCatalogLabel,
+} from '../constants/interventionCatalog.js';
 import {
   getPsychoeducationCardFields,
   normalizePsychoeducationTopic,
@@ -188,7 +191,7 @@ class ActionSuggestionService {
       if (entry) {
         const base = {
           id: entry.id,
-          label: entry.label,
+          label: getInterventionCatalogLabel(entry, language),
           icon: entry.icon,
           screen: entry.screen,
           params: entry.params,
@@ -202,6 +205,7 @@ class ActionSuggestionService {
             return {
               ...base,
               ...card,
+              label: card.previewTitle || base.label,
               params: { ...(entry.params || {}), topic: psychoTopic },
               description: card.previewSummary,
             };

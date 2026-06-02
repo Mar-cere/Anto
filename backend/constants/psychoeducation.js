@@ -271,7 +271,13 @@ export const getPsychoeducationModule = (topic, language = 'es') => {
     version: PSYCHOEDUCATION_VERSION,
     interventionId: meta?.interventionId || null,
     disclaimer: getPsychoeducationDisclaimer(language),
-    clinicalReview: PSYCHOEDUCATION_CLINICAL_REVIEW,
+    clinicalReview: {
+      ...PSYCHOEDUCATION_CLINICAL_REVIEW,
+      note:
+        lang === 'en'
+          ? PSYCHOEDUCATION_CLINICAL_REVIEW.noteEn
+          : PSYCHOEDUCATION_CLINICAL_REVIEW.noteEs,
+    },
     mechanismLine:
       lang === 'en' ? meta?.mechanismLineEn : meta?.mechanismLineEs,
   };

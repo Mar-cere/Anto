@@ -4,6 +4,7 @@
  * - IDs deben ser estables (persisten en eventos).
  * - Este catálogo es “producto”: controla etiquetas, tipo y pantallas destino.
  */
+import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 
 export const INTERVENTION_CATALOG = {
   breathing_exercise: {
@@ -236,6 +237,7 @@ export const INTERVENTION_CATALOG = {
   psychoeducation_anxiety: {
     id: 'psychoeducation_anxiety',
     label: 'Entender la Ansiedad (psicoeducación)',
+    labelEn: 'Understanding Anxiety (psychoeducation)',
     icon: '📚',
     screen: 'PsychoeducationModule',
     type: 'psychoeducation',
@@ -245,6 +247,7 @@ export const INTERVENTION_CATALOG = {
   psychoeducation_depression: {
     id: 'psychoeducation_depression',
     label: 'Entender la Depresión (psicoeducación)',
+    labelEn: 'Understanding Low Mood (psychoeducation)',
     icon: '📚',
     screen: 'PsychoeducationModule',
     type: 'psychoeducation',
@@ -254,6 +257,7 @@ export const INTERVENTION_CATALOG = {
   psychoeducation_stress: {
     id: 'psychoeducation_stress',
     label: 'Entender el Estrés (psicoeducación)',
+    labelEn: 'Understanding Stress (psychoeducation)',
     icon: '📚',
     screen: 'PsychoeducationModule',
     type: 'psychoeducation',
@@ -263,6 +267,7 @@ export const INTERVENTION_CATALOG = {
   psychoeducation_anger: {
     id: 'psychoeducation_anger',
     label: 'Enojo e ira (psicoeducación)',
+    labelEn: 'Anger (psychoeducation)',
     icon: '📚',
     screen: 'PsychoeducationModule',
     type: 'psychoeducation',
@@ -272,6 +277,7 @@ export const INTERVENTION_CATALOG = {
   psychoeducation_sleep: {
     id: 'psychoeducation_sleep',
     label: 'Sueño e higiene del descanso',
+    labelEn: 'Sleep and rest hygiene',
     icon: '📚',
     screen: 'PsychoeducationModule',
     type: 'psychoeducation',
@@ -281,6 +287,7 @@ export const INTERVENTION_CATALOG = {
   psychoeducation_emotion_regulation: {
     id: 'psychoeducation_emotion_regulation',
     label: 'Regulación emocional (psicoeducación)',
+    labelEn: 'Emotion Regulation (psychoeducation)',
     icon: '📚',
     screen: 'PsychoeducationModule',
     type: 'psychoeducation',
@@ -290,6 +297,7 @@ export const INTERVENTION_CATALOG = {
   psychoeducation_trauma: {
     id: 'psychoeducation_trauma',
     label: 'Experiencias difíciles (informado en trauma)',
+    labelEn: 'Difficult Experiences (trauma-informed)',
     icon: '📚',
     screen: 'PsychoeducationModule',
     type: 'psychoeducation',
@@ -320,5 +328,18 @@ export function getInterventionCatalogEntry(id) {
 
 export function listCatalogInterventionIds() {
   return Object.keys(INTERVENTION_CATALOG);
+}
+
+/**
+ * @param {object|null} entry
+ * @param {string} [language='es']
+ */
+export function getInterventionCatalogLabel(entry, language = 'es') {
+  if (!entry) return '';
+  const lang = normalizeApiLanguage(language);
+  if (lang === 'en' && typeof entry.labelEn === 'string' && entry.labelEn.trim()) {
+    return entry.labelEn.trim();
+  }
+  return String(entry.label || '').trim();
 }
 

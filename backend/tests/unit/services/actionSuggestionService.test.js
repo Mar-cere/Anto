@@ -192,6 +192,7 @@ describe('ActionSuggestionService', () => {
         'en',
       );
       expect(card.previewTitle).toMatch(/Sleep/i);
+      expect(card.label).toMatch(/Sleep/i);
       expect(card.params.topic).toBe('sleep');
     });
   });

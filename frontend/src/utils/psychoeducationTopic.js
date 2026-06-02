@@ -135,6 +135,7 @@ export function hydratePsychoeducationSuggestion(suggestion, language = 'es') {
   return {
     ...suggestion,
     ...copy,
+    label: copy.previewTitle || suggestion.label,
     params: { ...(suggestion.params || {}), topic },
     interventionType: 'psychoeducation',
     screen: suggestion.screen || 'PsychoeducationModule',

@@ -1566,6 +1566,9 @@ export const TECHNIQUES = {
     'Abre una categoría, elige una práctica y sigue los pasos o el ejercicio guiado.',
   THERAPEUTIC_TECHNIQUES_STATS: 'Estadísticas',
   THERAPEUTIC_TECHNIQUES_STATS_HINT: 'Ver tu uso y progreso',
+  THERAPEUTIC_TECHNIQUES_PSYCHOED_LIBRARY: 'Módulos de psicoeducación',
+  THERAPEUTIC_TECHNIQUES_PSYCHOED_LIBRARY_HINT:
+    'Temas breves con fuentes y lenguaje no diagnóstico',
   THERAPEUTIC_TECHNIQUES_CLEAR_EMOTION_FILTER: 'Ver todas',
   THERAPEUTIC_TECHNIQUES_CATEGORY_IMMEDIATE_SHORT: 'Inmediatas',
   THERAPEUTIC_TECHNIQUES_CATEGORY_CBT_SHORT: 'TCC',

@@ -1562,6 +1562,9 @@ export const TECHNIQUES = {
     'Open a category, choose a practice, and follow the steps or guided exercise.',
   THERAPEUTIC_TECHNIQUES_STATS: 'Statistics',
   THERAPEUTIC_TECHNIQUES_STATS_HINT: 'See your usage and progress',
+  THERAPEUTIC_TECHNIQUES_PSYCHOED_LIBRARY: 'Psychoeducation modules',
+  THERAPEUTIC_TECHNIQUES_PSYCHOED_LIBRARY_HINT:
+    'Short topics with sources and non-diagnostic language',
   THERAPEUTIC_TECHNIQUES_CLEAR_EMOTION_FILTER: 'See all',
   THERAPEUTIC_TECHNIQUES_CATEGORY_IMMEDIATE_SHORT: 'Immediate',
   THERAPEUTIC_TECHNIQUES_CATEGORY_CBT_SHORT: 'CBT',

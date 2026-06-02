@@ -42,6 +42,15 @@ describe('interventionCatalog', () => {
     expect(card.estimatedMinutes).toBe(2);
   });
 
+  it('etiquetas de psicoeducación en inglés en formatSuggestions', () => {
+    const [card] = actionSuggestionService.formatSuggestions(
+      ['psychoeducation_anger'],
+      'en',
+    );
+    expect(card.label).toMatch(/Anger/i);
+    expect(card.previewTitle).toMatch(/Anger/i);
+  });
+
   it('rechaza IDs con caracteres inválidos', () => {
     expect(isValidInterventionId('breathing_exercise')).toBe(true);
     expect(isValidInterventionId('')).toBe(false);

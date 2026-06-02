@@ -23,6 +23,13 @@ describe('psychoeducation locale', () => {
     expect(PSYCHOEDUCATION_MODULES.anxiety).toBeDefined();
   });
 
+  it('devuelve nota de revisión en el idioma solicitado', () => {
+    const modEn = getPsychoeducationModule('anxiety', 'en');
+    expect(modEn?.clinicalReview?.note).toMatch(/Editorial/i);
+    const modEs = getPsychoeducationModule('anxiety', 'es');
+    expect(modEs?.clinicalReview?.note).toMatch(/editorial/i);
+  });
+
   it('incluye ira y sueño en el catálogo', () => {
     const topics = getAvailableTopics('es');
     expect(topics).toEqual(
