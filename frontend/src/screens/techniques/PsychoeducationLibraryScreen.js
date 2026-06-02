@@ -4,6 +4,7 @@
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -11,7 +12,6 @@ import {
   SafeAreaView,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -22,14 +22,17 @@ import ParticleBackground from '../../components/ParticleBackground';
 import { api } from '../../config/api';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
-import { SPACING } from '../../constants/ui';
-import { normalizePsychoeducationTopic } from '../../utils/psychoeducationTopic';
+import { createPsychoeducationLibraryStyles } from './psychoeducationScreenStyles';
+import { getTopicVisual } from './psychoeducationTopicVisuals';
 import { usePsychoeducationTexts } from './psychoeducationTexts';
+import { normalizePsychoeducationTopic } from '../../utils/psychoeducationTopic';
+
+const READ_MINUTES = 2;
 
 const PsychoeducationLibraryScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { colors, statusBarStyle } = useTheme();
+  const { colors, statusBarStyle, resolvedScheme } = useTheme();
   const { language } = useLanguage();
   const texts = usePsychoeducationTexts();
   const [modules, setModules] = useState([]);
@@ -38,25 +41,18 @@ const PsychoeducationLibraryScreen = () => {
   const [error, setError] = useState(null);
 
   const styles = useMemo(
-    () =>
-      StyleSheet.create({
-        container: { flex: 1, backgroundColor: colors.background },
-        content: { padding: SPACING.SCREEN_EDGE_INSET, paddingBottom: 48 },
-        subtitle: { fontSize: 14, lineHeight: 20, color: colors.textSecondary, marginBottom: 16 },
-        card: {
-          backgroundColor: colors.card,
-          borderRadius: 12,
-          padding: 14,
-          marginBottom: 10,
-          borderWidth: 1,
-          borderColor: colors.border,
-        },
-        cardTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 4 },
-        cardSummary: { fontSize: 13, lineHeight: 18, color: colors.textSecondary },
-        error: { color: colors.error, fontSize: 14, marginBottom: 12 },
-        retry: { color: colors.primary, fontWeight: '600', fontSize: 14 },
-      }),
-    [colors],
+    () => createPsychoeducationLibraryStyles(colors, resolvedScheme),
+    [colors, resolvedScheme],
+  );
+
+  const countLabel = useMemo(
+    () => texts.MODULE_COUNT.replace('{n}', String(modules.length)),
+    [texts.MODULE_COUNT, modules.length],
+  );
+
+  const readLabel = useMemo(
+    () => texts.READ_TIME.replace('{n}', String(READ_MINUTES)),
+    [texts.READ_TIME],
   );
 
   const load = useCallback(async (isRefresh = false) => {
@@ -64,13 +60,24 @@ const PsychoeducationLibraryScreen = () => {
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
       setError(null);
-      const res = await api.get('/api/therapeutic-techniques/psychoeducation', {
-        headers: { 'X-App-Language': language },
-      });
-      const list = Array.isArray(res?.data?.data) ? res.data.data : [];
-      setModules(
-        list.filter((item) => item?.topic && normalizePsychoeducationTopic(item.topic)),
-      );
+      const res = await api.get('/api/therapeutic-techniques/psychoeducation');
+      if (res && typeof res === 'object' && res.success === false) {
+        setError(res.error || texts.ERROR);
+        setModules([]);
+        return;
+      }
+      const raw = Array.isArray(res?.data) ? res.data : [];
+      const list = raw
+        .map((item) => {
+          if (item && typeof item === 'object' && item.topic) return item;
+          if (typeof item === 'string') {
+            const topic = normalizePsychoeducationTopic(item);
+            return topic ? { topic, title: item, summary: '' } : null;
+          }
+          return null;
+        })
+        .filter((item) => item?.topic && normalizePsychoeducationTopic(item.topic));
+      setModules(list);
     } catch {
       setError(texts.ERROR);
       setModules([]);
@@ -88,6 +95,7 @@ const PsychoeducationLibraryScreen = () => {
     (rawTopic) => {
       const topic = normalizePsychoeducationTopic(rawTopic);
       if (!topic) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
       try {
         navigation.navigate('PsychoeducationModule', { topic });
       } catch (e) {
@@ -103,42 +111,92 @@ const PsychoeducationLibraryScreen = () => {
       <ParticleBackground />
       <Header title={texts.LIBRARY_TITLE} showBackButton onBackPress={() => navigation.goBack()} />
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.primary} />
         }
       >
-        <Text style={styles.subtitle}>{texts.LIBRARY_SUBTITLE}</Text>
+        <View style={styles.hero}>
+          <View style={styles.heroRow}>
+            <View style={styles.heroIconWrap}>
+              <MaterialCommunityIcons name="book-open-variant" size={26} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.heroKicker}>{texts.HERO_KICKER}</Text>
+              <Text style={styles.heroTitle}>{texts.LIBRARY_SUBTITLE}</Text>
+            </View>
+          </View>
+          {!loading && !error && modules.length > 0 ? (
+            <View style={styles.countPill}>
+              <Text style={styles.countPillText}>{countLabel}</Text>
+            </View>
+          ) : null}
+        </View>
+
         {loading && !refreshing ? (
-          <ActivityIndicator color={colors.primary} />
+          <View style={styles.centerBox}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
         ) : null}
+
         {error ? (
-          <View>
-            <Text style={styles.error}>{error}</Text>
-            <TouchableOpacity onPress={() => load()}>
-              <Text style={styles.retry}>{texts.RETRY}</Text>
+          <View style={styles.centerBox}>
+            <MaterialCommunityIcons name="cloud-off-outline" size={40} color={colors.textSecondary} />
+            <Text style={[styles.errorText, { marginTop: 12 }]}>{error}</Text>
+            <TouchableOpacity style={[styles.retryBtn, { marginTop: 16 }]} onPress={() => load()}>
+              <Text style={styles.retryText}>{texts.RETRY}</Text>
             </TouchableOpacity>
           </View>
         ) : null}
+
+        {!loading && !error && modules.length === 0 ? (
+          <Text style={styles.emptyText}>{texts.EMPTY_LIST}</Text>
+        ) : null}
+
         {!loading &&
           !error &&
-          modules.map((item) => (
-            <TouchableOpacity
-              key={item.topic}
-              style={styles.card}
-              onPress={() => openModule(item.topic)}
-              accessibilityRole="button"
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <MaterialCommunityIcons name="book-open-page-variant" size={22} color={colors.primary} />
-                <View style={{ flex: 1, marginLeft: 10 }}>
-                  <Text style={styles.cardTitle}>{item.title}</Text>
-                  <Text style={styles.cardSummary}>{item.summary}</Text>
+          modules.map((item) => {
+            const topic = normalizePsychoeducationTopic(item.topic);
+            const visual = getTopicVisual(topic, colors);
+            return (
+              <TouchableOpacity
+                key={item.topic}
+                style={[styles.moduleCard, { borderLeftColor: visual.borderLeft }]}
+                onPress={() => openModule(item.topic)}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+              >
+                <View style={styles.moduleRow}>
+                  <View style={[styles.iconTile, { backgroundColor: visual.iconBg }]}>
+                    <MaterialCommunityIcons name={visual.icon} size={26} color={visual.accent} />
+                  </View>
+                  <View style={styles.moduleText}>
+                    <Text style={styles.moduleTitle}>{item.title}</Text>
+                    {item.summary ? (
+                      <Text style={styles.moduleSummary} numberOfLines={2}>
+                        {item.summary}
+                      </Text>
+                    ) : null}
+                    <View style={styles.metaRow}>
+                      <View style={styles.readPill}>
+                        <MaterialCommunityIcons
+                          name="clock-outline"
+                          size={13}
+                          color={colors.textSecondary}
+                        />
+                        <Text style={styles.readPillText}>{readLabel}</Text>
+                      </View>
+                    </View>
+                  </View>
+                  <MaterialCommunityIcons
+                    name="chevron-right"
+                    size={22}
+                    color={colors.textSecondary}
+                  />
                 </View>
-                <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textSecondary} />
-              </View>
-            </TouchableOpacity>
-          ))}
+              </TouchableOpacity>
+            );
+          })}
       </ScrollView>
     </SafeAreaView>
   );

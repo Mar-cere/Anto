@@ -7,6 +7,8 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { usePsychoeducationTexts } from '../screens/techniques/psychoeducationTexts';
+import { getTopicVisual } from '../screens/techniques/psychoeducationTopicVisuals';
+import { topicFromInterventionId } from '../utils/psychoeducationTopic';
 import { getFocusTheme } from '../styles/focusCardTheme';
 
 const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
@@ -17,16 +19,26 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
   const translateX = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
 
+  const topic =
+    suggestion?.params?.topic || topicFromInterventionId(suggestion?.id);
+  const visual = useMemo(() => getTopicVisual(topic, colors), [topic, colors]);
+
   const styles = useMemo(
     () =>
       StyleSheet.create({
         container: { marginBottom: 10 },
         card: {
-          borderRadius: 16,
+          borderRadius: 22,
           padding: 14,
-          backgroundColor: colors.card,
+          backgroundColor: colors.cardBackground ?? colors.card,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: t.FOCUS_BORDER_SUBTLE,
+          borderLeftWidth: 3,
+          shadowColor: colors.glassShadow ?? colors.shadowAmbient,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
+          elevation: 2,
         },
         badgeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
         badge: {
@@ -109,10 +121,26 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
       style={[styles.container, { opacity: Animated.multiply(fadeAnim, opacity), transform: [{ translateX }] }]}
       {...panResponder.panHandlers}
     >
-      <TouchableOpacity style={styles.card} onPress={handlePress} activeOpacity={0.85}>
+      <TouchableOpacity
+        style={[styles.card, { borderLeftColor: visual.borderLeft }]}
+        onPress={handlePress}
+        activeOpacity={0.85}
+      >
         <View style={styles.badgeRow}>
-          <MaterialCommunityIcons name="book-open-page-variant" size={18} color={colors.primary} />
-          <Text style={styles.badge}>{texts.CARD_BADGE}</Text>
+          <View
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 10,
+              backgroundColor: visual.iconBg,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 4,
+            }}
+          >
+            <MaterialCommunityIcons name={visual.icon} size={18} color={visual.accent} />
+          </View>
+          <Text style={[styles.badge, { color: visual.accent }]}>{texts.CARD_BADGE}</Text>
         </View>
         <Text style={styles.title}>{title}</Text>
         {summary ? <Text style={styles.summary}>{summary}</Text> : null}

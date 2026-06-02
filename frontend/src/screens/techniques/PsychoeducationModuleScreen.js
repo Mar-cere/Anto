@@ -1,16 +1,16 @@
 /**
  * Módulo de psicoeducación (#85).
- * Fuente: GET /api/therapeutic-techniques/psychoeducation/:topic
  */
 
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Linking,
   SafeAreaView,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -21,12 +21,15 @@ import ParticleBackground from '../../components/ParticleBackground';
 import { api } from '../../config/api';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
-import { SPACING } from '../../constants/ui';
 import { createInterventionCompletedRecorder } from '../../utils/recordInterventionCompleted';
 import { isSafeHttpsUrl, normalizePsychoeducationTopic } from '../../utils/psychoeducationTopic';
 import { moduleContentEntries, sectionLabel } from './psychoeducationDisplay';
+import { createPsychoeducationModuleStyles } from './psychoeducationScreenStyles';
+import { getTopicVisual } from './psychoeducationTopicVisuals';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { formatReviewFooter, resolveModuleTitle, usePsychoeducationTexts } from './psychoeducationTexts';
+
+const READ_MINUTES = 2;
 
 const TOPIC_TO_INTERVENTION_ID = {
   anxiety: 'psychoeducation_anxiety',
@@ -42,54 +45,31 @@ const PsychoeducationModuleScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const insets = useSafeAreaInsets();
-  const { colors, statusBarStyle } = useTheme();
+  const { colors, statusBarStyle, resolvedScheme } = useTheme();
   const { language } = useLanguage();
   const texts = usePsychoeducationTexts();
   const techniquesI18n = useSectionTranslations('TECHNIQUES');
   const styles = useMemo(
-    () =>
-      StyleSheet.create({
-        container: { flex: 1, backgroundColor: colors.background },
-        content: { padding: SPACING.SCREEN_EDGE_INSET, paddingBottom: 60 },
-        title: { fontSize: 22, fontWeight: '800', color: colors.text, marginBottom: 10 },
-        disclaimerBox: {
-          backgroundColor: colors.card,
-          borderRadius: 10,
-          padding: 12,
-          marginBottom: 16,
-          borderWidth: 1,
-          borderColor: colors.border,
-        },
-        disclaimerTitle: { fontSize: 13, fontWeight: '700', color: colors.text, marginBottom: 6 },
-        sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 18, marginBottom: 8 },
-        body: { fontSize: 14, lineHeight: 20, color: colors.textSecondary },
-        bullet: { fontSize: 14, lineHeight: 20, color: colors.textSecondary, marginBottom: 6 },
-        sourceLink: { fontSize: 14, lineHeight: 20, color: colors.primary, marginBottom: 8 },
-        error: { color: colors.error, fontSize: 14, lineHeight: 20 },
-        reviewFooter: {
-          fontSize: 11,
-          lineHeight: 16,
-          color: colors.textSecondary,
-          marginTop: 24,
-          fontStyle: 'italic',
-        },
-        mechanismBox: {
-          backgroundColor: colors.card,
-          borderRadius: 10,
-          padding: 12,
-          marginBottom: 12,
-          borderWidth: 1,
-          borderColor: colors.border,
-        },
-      }),
-    [colors],
+    () => createPsychoeducationModuleStyles(colors, resolvedScheme),
+    [colors, resolvedScheme],
   );
 
   const topic = normalizePsychoeducationTopic(route?.params?.topic);
+  const visual = useMemo(() => getTopicVisual(topic, colors), [topic, colors]);
   const recordCompletedOnce = useMemo(() => createInterventionCompletedRecorder(), []);
   const [loading, setLoading] = useState(true);
   const [module, setModule] = useState(null);
   const [error, setError] = useState(null);
+
+  const headerTitle = useMemo(
+    () => resolveModuleTitle(texts, topic, module, techniquesI18n),
+    [texts, topic, module, techniquesI18n],
+  );
+
+  const readLabel = useMemo(
+    () => texts.READ_TIME.replace('{n}', String(READ_MINUTES)),
+    [texts.READ_TIME],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -104,14 +84,13 @@ const PsychoeducationModuleScreen = () => {
         }
         const res = await api.get(
           `/api/therapeutic-techniques/psychoeducation/${encodeURIComponent(topic)}`,
-          { headers: { 'X-App-Language': language } },
         );
         if (!mounted) return;
-        if (res?.data?.success === false) {
-          setError(res?.data?.error || texts.MODULE_NOT_FOUND);
+        if (res && typeof res === 'object' && res.success === false) {
+          setError(res.error || texts.MODULE_NOT_FOUND);
           return;
         }
-        const loaded = res?.data?.data || null;
+        const loaded = res?.data || null;
         setModule(loaded);
         if (loaded) {
           const interventionId = TOPIC_TO_INTERVENTION_ID[topic];
@@ -129,8 +108,6 @@ const PsychoeducationModuleScreen = () => {
       mounted = false;
     };
   }, [topic, language, texts, recordCompletedOnce]);
-
-  const title = resolveModuleTitle(texts, topic, module, techniquesI18n);
 
   const renderValue = (v) => {
     if (typeof v === 'string') return <Text style={styles.body}>{v}</Text>;
@@ -155,39 +132,66 @@ const PsychoeducationModuleScreen = () => {
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
-      <Header title={title} showBackButton onBackPress={() => navigation.goBack()} />
+      <Header title={headerTitle} showBackButton onBackPress={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>
-          {resolveModuleTitle(texts, topic, module, techniquesI18n)}
-        </Text>
-        {loading ? <Text style={styles.body}>{texts.LOADING}</Text> : null}
+        {loading ? (
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {!loading && !error && module ? (
           <>
-            {module.disclaimer ? (
-              <View style={styles.disclaimerBox}>
-                <Text style={styles.disclaimerTitle}>{texts.DISCLAIMER_TITLE}</Text>
-                <Text style={styles.body}>{module.disclaimer}</Text>
+            <View style={styles.hero}>
+              <View style={[styles.heroIcon, { backgroundColor: visual.iconBg }]}>
+                <MaterialCommunityIcons name={visual.icon} size={30} color={visual.accent} />
               </View>
-            ) : null}
+              <Text style={styles.heroTitle}>{headerTitle}</Text>
+              <Text style={styles.heroMinutes}>{readLabel}</Text>
+            </View>
+
             {module.mechanismLine ? (
-              <View style={styles.mechanismBox}>
-                <Text style={styles.disclaimerTitle}>{texts.MECHANISM_TITLE}</Text>
-                <Text style={styles.body}>{module.mechanismLine}</Text>
+              <View
+                style={[
+                  styles.callout,
+                  styles.calloutMechanism,
+                  { borderLeftColor: visual.borderLeft },
+                ]}
+              >
+                <Text style={styles.calloutTitle}>{texts.MECHANISM_TITLE}</Text>
+                <Text style={styles.calloutBody}>{module.mechanismLine}</Text>
               </View>
             ) : null}
+
+            {module.disclaimer ? (
+              <View style={[styles.callout, styles.calloutDisclaimer]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                  <MaterialCommunityIcons
+                    name="information-outline"
+                    size={18}
+                    color={colors.primary}
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text style={styles.calloutTitle}>{texts.DISCLAIMER_TITLE}</Text>
+                </View>
+                <Text style={styles.calloutBody}>{module.disclaimer}</Text>
+              </View>
+            ) : null}
+
             {moduleContentEntries(module).map(([key, value]) => (
-              <View key={key}>
+              <View key={key} style={styles.sectionBlock}>
                 <Text style={styles.sectionTitle}>{sectionLabel(key, language)}</Text>
                 {renderValue(value)}
               </View>
             ))}
+
             {sources.length > 0 ? (
-              <View>
-                <Text style={styles.sectionTitle}>{texts.SOURCES_TITLE}</Text>
+              <View style={styles.sourcesPanel}>
+                <Text style={[styles.sectionTitle, { marginBottom: 4 }]}>{texts.SOURCES_TITLE}</Text>
                 {sources.map((src, i) => (
                   <TouchableOpacity
                     key={`${src.url}-${i}`}
+                    style={[styles.sourceRow, i === 0 && styles.sourceRowFirst]}
                     onPress={() => {
                       if (isSafeHttpsUrl(src?.url)) {
                         Linking.openURL(src.url.trim()).catch(() => {});
@@ -195,13 +199,21 @@ const PsychoeducationModuleScreen = () => {
                     }}
                     accessibilityRole="link"
                   >
-                    <Text style={styles.sourceLink}>
-                      {src.label || texts.OPEN_SOURCE} ↗
+                    <MaterialCommunityIcons
+                      name="link-variant"
+                      size={18}
+                      color={colors.primary}
+                      style={{ marginRight: 10 }}
+                    />
+                    <Text style={styles.sourceLink} numberOfLines={2}>
+                      {src.label || texts.OPEN_SOURCE}
                     </Text>
+                    <MaterialCommunityIcons name="open-in-new" size={16} color={colors.textSecondary} />
                   </TouchableOpacity>
                 ))}
               </View>
             ) : null}
+
             {reviewLine ? <Text style={styles.reviewFooter}>{reviewLine}</Text> : null}
           </>
         ) : null}
