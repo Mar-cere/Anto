@@ -6,6 +6,7 @@ import {
 describe('psychoeducationContentLayout', () => {
   const sample = {
     whatIs: 'Texto introductorio.',
+    title: 'Ansiedad',
     symptoms: ['A', 'B'],
     causes: ['C'],
     whenToSeekHelp: 'Busca apoyo.',
@@ -29,6 +30,19 @@ describe('psychoeducationContentLayout', () => {
   it('no incluye metadatos ni whatIs en acordeón', () => {
     const sections = buildModuleSections(sample, 'en');
     expect(sections.some((s) => s.key === 'whatIs')).toBe(false);
+    expect(sections.some((s) => s.key === 'title')).toBe(false);
     expect(sections.some((s) => s.key === 'disclaimer')).toBe(false);
+  });
+
+  it('fusiona señales de alerta y apoyo en sueño', () => {
+    const sleep = {
+      whatIs: 'Intro sueño.',
+      hygiene: ['Horario regular'],
+      whenWorry: ['Insomnio frecuente'],
+      whenToSeekHelp: 'Busca apoyo profesional.',
+    };
+    const sections = buildModuleSections(sleep, 'es');
+    expect(sections.filter((s) => s.isHighlight)).toHaveLength(1);
+    expect(sections.find((s) => s.key === 'whenToSeekHelp')?.highlightLayout).toBe('supportGroup');
   });
 });

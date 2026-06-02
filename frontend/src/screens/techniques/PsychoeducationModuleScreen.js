@@ -24,15 +24,14 @@ import { createInterventionCompletedRecorder } from '../../utils/recordIntervent
 import { isSafeHttpsUrl, normalizePsychoeducationTopic } from '../../utils/psychoeducationTopic';
 import { buildModuleSections, getModuleLeadText } from './psychoeducationContentLayout';
 import {
-  PsychoeducationDisclaimerFold,
   PsychoeducationHighlightSection,
+  PsychoeducationModuleFooter,
   PsychoeducationSectionAccordion,
-  PsychoeducationSourcesFold,
 } from './PsychoeducationModuleSections';
 import { createPsychoeducationModuleStyles } from './psychoeducationScreenStyles';
 import { getTopicVisual } from './psychoeducationTopicVisuals';
 import { useSectionTranslations } from '../../hooks/useTranslations';
-import { formatReviewFooter, resolveModuleTitle, usePsychoeducationTexts } from './psychoeducationTexts';
+import { resolveModuleTitle, usePsychoeducationTexts } from './psychoeducationTexts';
 
 const READ_MINUTES = 2;
 
@@ -90,7 +89,7 @@ const PsychoeducationModuleScreen = () => {
       accordionIconBg: visual.iconBg,
       accentFallback: colors.primary,
       chevronColor: colors.textSecondary,
-      disclaimerIconColor: colors.textSecondary,
+      footerIconColor: colors.textSecondary,
     }),
     [styles, visual, colors],
   );
@@ -134,7 +133,6 @@ const PsychoeducationModuleScreen = () => {
   }, [topic, language, texts, recordCompletedOnce]);
 
   const sources = Array.isArray(module?.sources) ? module.sources : [];
-  const reviewLine = formatReviewFooter(texts, module?.clinicalReview);
 
   const openSource = (src) => {
     if (isSafeHttpsUrl(src?.url)) {
@@ -188,6 +186,8 @@ const PsychoeducationModuleScreen = () => {
                     icon={section.icon}
                     accentColor={visual.accent}
                     styles={sectionStyles}
+                    highlightLayout={section.highlightLayout}
+                    supportGroup={section.supportGroup}
                   />
                 ) : (
                   <PsychoeducationSectionAccordion
@@ -204,21 +204,16 @@ const PsychoeducationModuleScreen = () => {
               )}
             </View>
 
-            <PsychoeducationSourcesFold
-              title={texts.SOURCES_TITLE}
+            <PsychoeducationModuleFooter
+              sourcesTitle={texts.SOURCES_TITLE}
               sources={sources}
               onOpenSource={openSource}
               openSourceLabel={texts.OPEN_SOURCE}
+              sourcesCountLabel={texts.SOURCES_COUNT}
+              disclaimerTitle={texts.DISCLAIMER_TITLE}
+              disclaimerBody={module.disclaimer}
               styles={sectionStyles}
             />
-
-            <PsychoeducationDisclaimerFold
-              title={texts.DISCLAIMER_TITLE}
-              body={module.disclaimer}
-              styles={sectionStyles}
-            />
-
-            {reviewLine ? <Text style={styles.reviewFooter}>{reviewLine}</Text> : null}
           </>
         ) : null}
       </ScrollView>

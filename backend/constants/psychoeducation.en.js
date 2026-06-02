@@ -84,6 +84,7 @@ export const PSYCHOEDUCATION_MODULES_EN = {
       "Better recovery after stress",
       "Decisions more aligned with your values"
     ],
+    "whenToSeekHelp": "If emotions often overwhelm you, lead to behavior you regret, or harm your relationships, talking to a professional can help.",
     "sources": [
       {
         "label": "APA — Stress and emotions",
@@ -111,6 +112,7 @@ export const PSYCHOEDUCATION_MODULES_EN = {
       "Limits and delegate when possible",
       "Social support and, if necessary, therapy"
     ],
+    "whenToSeekHelp": "If stress exhausts you for weeks, affects your physical health, or you cannot rest despite trying, consider seeking professional support.",
     "sources": [
       {
         "label": "WHO — Stress at work (overview)",

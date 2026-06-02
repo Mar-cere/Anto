@@ -2,6 +2,7 @@ import {
   hydrateInterventionSuggestion,
   isSafeHttpsUrl,
   normalizePsychoeducationTopic,
+  parsePsychoeducationBrowseResponse,
   topicFromInterventionId,
 } from '../psychoeducationTopic';
 import { INTERVENTION_LABELS_EN } from '../../constants/interventionCatalogLabels.en';
@@ -47,5 +48,41 @@ describe('psychoeducationTopic', () => {
   it('solo acepta URLs https para fuentes', () => {
     expect(isSafeHttpsUrl('https://www.who.int')).toBe(true);
     expect(isSafeHttpsUrl('javascript:alert(1)')).toBe(false);
+  });
+
+  it('parsePsychoeducationBrowseResponse lee res.data (no res.data.data)', () => {
+    const list = parsePsychoeducationBrowseResponse({
+      success: true,
+      data: [
+        { topic: 'anxiety', title: 'Ansiedad', summary: 'Resumen' },
+        { topic: 'invalid_topic' },
+        'sleep',
+      ],
+    });
+    expect(list).toHaveLength(2);
+    expect(list[0].topic).toBe('anxiety');
+    expect(list[1].topic).toBe('sleep');
+  });
+
+  it('parsePsychoeducationBrowseResponse devuelve [] si success false', () => {
+    expect(parsePsychoeducationBrowseResponse({ success: false, error: 'x' })).toEqual([]);
+  });
+
+  it('hidrata los 7 topics de psicoeducación', () => {
+    const ids = [
+      'psychoeducation_anxiety',
+      'psychoeducation_depression',
+      'psychoeducation_stress',
+      'psychoeducation_anger',
+      'psychoeducation_sleep',
+      'psychoeducation_emotion_regulation',
+      'psychoeducation_trauma',
+    ];
+    ids.forEach((id) => {
+      const out = hydrateInterventionSuggestion({ id, interventionType: 'psychoeducation' }, 'es');
+      expect(out.cardVariant).toBe('psychoeducation_native');
+      expect(out.params.topic).toBeTruthy();
+      expect(out.previewTitle).toBeTruthy();
+    });
   });
 });

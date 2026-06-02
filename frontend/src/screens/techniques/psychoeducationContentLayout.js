@@ -1,7 +1,7 @@
 /**
  * Orden y metadatos de secciones del módulo (#85).
  */
-import { moduleContentEntries, sectionLabel } from './psychoeducationDisplay';
+import { hasContentSectionLabel, moduleContentEntries, sectionLabel } from './psychoeducationDisplay';
 
 const SECTION_ORDER = [
   'symptoms',
@@ -16,8 +16,8 @@ const SECTION_ORDER = [
   'techniques',
   'benefits',
   'types',
-  'whenToSeekHelp',
   'whenWorry',
+  'whenToSeekHelp',
 ];
 
 const LEAD_KEY = 'whatIs';
@@ -39,11 +39,47 @@ const SECTION_ICONS = {
   whenWorry: 'alert-circle-outline',
 };
 
-const DEFAULT_EXPAND_KEYS = new Set(['symptoms', 'signs', 'whatHelps', 'treatment']);
+export function sectionHasContent(value) {
+  if (value == null) return false;
+  if (typeof value === 'string') return Boolean(value.trim());
+  if (Array.isArray(value)) return value.length > 0;
+  return false;
+}
 
 export function getModuleLeadText(module) {
   const text = module?.[LEAD_KEY];
   return typeof text === 'string' && text.trim() ? text.trim() : null;
+}
+
+function mergeSupportHighlights(sections, language = 'es') {
+  const worryIdx = sections.findIndex((s) => s.key === 'whenWorry');
+  const seekIdx = sections.findIndex((s) => s.key === 'whenToSeekHelp');
+  if (worryIdx === -1 || seekIdx === -1) return sections;
+
+  const worry = sections[worryIdx];
+  const seek = sections[seekIdx];
+  const seekHelpText = typeof seek.value === 'string' ? seek.value.trim() : '';
+  const worryItems = Array.isArray(worry.value) ? worry.value : [];
+
+  const merged = {
+    key: 'whenToSeekHelp',
+    label: sectionLabel('whenToSeekHelp', language),
+    value: seek.value,
+    icon: SECTION_ICONS.whenToSeekHelp,
+    defaultExpanded: false,
+    isHighlight: true,
+    highlightLayout: 'supportGroup',
+    supportGroup: {
+      worryLabel: sectionLabel('whenWorry', language),
+      worryItems,
+      seekHelpText,
+    },
+  };
+
+  const without = sections.filter((s) => s.key !== 'whenWorry' && s.key !== 'whenToSeekHelp');
+  const insertAt = Math.min(worryIdx, seekIdx);
+  without.splice(insertAt, 0, merged);
+  return without;
 }
 
 /**
@@ -59,13 +95,10 @@ export function buildModuleSections(module, language = 'es') {
   SECTION_ORDER.forEach((key) => {
     if (!entries.has(key)) return;
     const value = entries.get(key);
-    if (value == null) return;
-    if (typeof value === 'string' && !value.trim()) return;
-    if (Array.isArray(value) && value.length === 0) return;
+    if (!sectionHasContent(value)) return;
 
     const isHighlight = key === 'whenToSeekHelp' || key === 'whenWorry';
-    const shouldExpand =
-      !expandedAssigned && !isHighlight && DEFAULT_EXPAND_KEYS.has(key);
+    const shouldExpand = !expandedAssigned && !isHighlight;
     if (shouldExpand) expandedAssigned = true;
 
     ordered.push({
@@ -81,6 +114,8 @@ export function buildModuleSections(module, language = 'es') {
 
   entries.forEach((value, key) => {
     if (key === LEAD_KEY) return;
+    if (!hasContentSectionLabel(key, language)) return;
+    if (!sectionHasContent(value)) return;
     ordered.push({
       key,
       label: sectionLabel(key, language),
@@ -91,5 +126,5 @@ export function buildModuleSections(module, language = 'es') {
     });
   });
 
-  return ordered;
+  return mergeSupportHighlights(ordered, language);
 }

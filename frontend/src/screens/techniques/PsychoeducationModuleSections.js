@@ -46,7 +46,15 @@ function collapsedPreview(value, itemsPreviewLabel) {
   return '';
 }
 
-export function PsychoeducationHighlightSection({ label, value, icon, accentColor, styles }) {
+export function PsychoeducationHighlightSection({
+  label,
+  value,
+  icon,
+  accentColor,
+  styles,
+  highlightLayout,
+  supportGroup,
+}) {
   return (
     <View
       style={[
@@ -54,7 +62,7 @@ export function PsychoeducationHighlightSection({ label, value, icon, accentColo
         accentColor ? { borderLeftWidth: 3, borderLeftColor: accentColor } : null,
       ]}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+      <View style={styles.highlightHeader}>
         <MaterialCommunityIcons
           name={icon}
           size={18}
@@ -63,7 +71,28 @@ export function PsychoeducationHighlightSection({ label, value, icon, accentColo
         />
         <Text style={styles.highlightTitle}>{label}</Text>
       </View>
-      <SectionBody value={value} styles={styles} />
+      {highlightLayout === 'supportGroup' && supportGroup ? (
+        <View>
+          <View style={styles.highlightSubheader}>
+            <MaterialCommunityIcons
+              name="alert-circle-outline"
+              size={15}
+              color={accentColor || styles.accentFallback}
+              style={{ marginRight: 6 }}
+            />
+            <Text style={styles.highlightSubtitle}>{supportGroup.worryLabel}</Text>
+          </View>
+          <SectionBody value={supportGroup.worryItems} styles={styles} />
+          {supportGroup.seekHelpText ? (
+            <>
+              <View style={styles.highlightDivider} />
+              <Text style={styles.highlightSeekText}>{supportGroup.seekHelpText}</Text>
+            </>
+          ) : null}
+        </View>
+      ) : (
+        <SectionBody value={value} styles={styles} />
+      )}
     </View>
   );
 }
@@ -133,38 +162,49 @@ export function PsychoeducationDisclaimerFold({ title, body, styles }) {
   const [open, setOpen] = useState(false);
   if (!body) return null;
   return (
-    <TouchableOpacity
-      style={styles.disclaimerFold}
-      onPress={() => {
-        animateLayout();
-        setOpen((o) => !o);
-      }}
-      activeOpacity={0.8}
-      accessibilityRole="button"
-      accessibilityState={{ expanded: open }}
-    >
-      <View style={styles.disclaimerFoldHeader}>
-        <MaterialCommunityIcons name="information-outline" size={16} color={styles.disclaimerIconColor} />
-        <Text style={styles.disclaimerFoldTitle}>{title}</Text>
+    <>
+      <TouchableOpacity
+        style={styles.footerRow}
+        onPress={() => {
+          animateLayout();
+          setOpen((o) => !o);
+        }}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+      >
+        <MaterialCommunityIcons name="information-outline" size={17} color={styles.footerIconColor} />
+        <View style={styles.footerRowText}>
+          <Text style={styles.footerRowTitle}>{title}</Text>
+        </View>
         <MaterialCommunityIcons
           name={open ? 'chevron-up' : 'chevron-down'}
-          size={18}
+          size={20}
           color={styles.chevronColor}
         />
-      </View>
-      {open ? <Text style={styles.disclaimerFoldBody}>{body}</Text> : null}
-    </TouchableOpacity>
+      </TouchableOpacity>
+      {open ? <Text style={styles.footerBody}>{body}</Text> : null}
+    </>
   );
 }
 
-export function PsychoeducationSourcesFold({ title, sources, onOpenSource, openSourceLabel, styles }) {
+export function PsychoeducationSourcesFold({
+  title,
+  sources,
+  onOpenSource,
+  openSourceLabel,
+  sourcesCountLabel,
+  styles,
+}) {
   const [open, setOpen] = useState(false);
   if (!sources?.length) return null;
 
+  const countLabel = sourcesCountLabel.replace('{n}', String(sources.length));
+
   return (
-    <View style={styles.sourcesFold}>
+    <>
       <TouchableOpacity
-        style={styles.accordionWrap}
+        style={styles.footerRow}
         onPress={() => {
           animateLayout();
           setOpen((o) => !o);
@@ -173,51 +213,71 @@ export function PsychoeducationSourcesFold({ title, sources, onOpenSource, openS
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
       >
-        <View style={styles.accordionHeader}>
-          <View style={[styles.accordionIcon, { backgroundColor: styles.accordionIconBg }]}>
-            <MaterialCommunityIcons
-              name="book-open-variant"
-              size={20}
-              color={styles.accentFallback}
-            />
-          </View>
-          <View style={styles.accordionHeaderText}>
-            <Text style={styles.accordionTitle}>{title}</Text>
-            {!open ? (
-              <Text style={styles.accordionPreview} numberOfLines={1}>
-                {sources.length}
-              </Text>
-            ) : null}
-          </View>
-          <MaterialCommunityIcons
-            name={open ? 'chevron-up' : 'chevron-down'}
-            size={22}
-            color={styles.chevronColor}
-          />
+        <MaterialCommunityIcons name="book-open-variant" size={17} color={styles.footerIconColor} />
+        <View style={styles.footerRowText}>
+          <Text style={styles.footerRowTitle}>{title}</Text>
+          {!open ? <Text style={styles.footerRowMeta}>{countLabel}</Text> : null}
         </View>
+        <MaterialCommunityIcons
+          name={open ? 'chevron-up' : 'chevron-down'}
+          size={20}
+          color={styles.chevronColor}
+        />
       </TouchableOpacity>
       {open ? (
-        <View style={styles.sourcesList}>
+        <View style={styles.footerLinks}>
           {sources.map((src, i) => (
             <TouchableOpacity
               key={`${src.url}-${i}`}
-              style={[styles.sourceRow, i === 0 && styles.sourceRowFirst]}
+              style={styles.footerLinkRow}
               onPress={() => onOpenSource(src)}
               accessibilityRole="link"
             >
-              <MaterialCommunityIcons
-                name="link-variant"
-                size={18}
-                color={styles.accentFallback}
-                style={{ marginRight: 10 }}
-              />
-              <Text style={styles.sourceLink} numberOfLines={2}>
+              <Text style={styles.footerLinkText} numberOfLines={2}>
                 {src.label || openSourceLabel}
               </Text>
-              <MaterialCommunityIcons name="open-in-new" size={16} color={styles.chevronColor} />
+              <MaterialCommunityIcons name="open-in-new" size={14} color={styles.chevronColor} />
             </TouchableOpacity>
           ))}
         </View>
+      ) : null}
+    </>
+  );
+}
+
+export function PsychoeducationModuleFooter({
+  sourcesTitle,
+  sources,
+  onOpenSource,
+  openSourceLabel,
+  sourcesCountLabel,
+  disclaimerTitle,
+  disclaimerBody,
+  styles,
+}) {
+  const hasSources = sources?.length > 0;
+  const hasDisclaimer = Boolean(disclaimerBody);
+  if (!hasSources && !hasDisclaimer) return null;
+
+  return (
+    <View style={styles.footerPanel}>
+      {hasSources ? (
+        <PsychoeducationSourcesFold
+          title={sourcesTitle}
+          sources={sources}
+          onOpenSource={onOpenSource}
+          openSourceLabel={openSourceLabel}
+          sourcesCountLabel={sourcesCountLabel}
+          styles={styles}
+        />
+      ) : null}
+      {hasSources && hasDisclaimer ? <View style={styles.footerDivider} /> : null}
+      {hasDisclaimer ? (
+        <PsychoeducationDisclaimerFold
+          title={disclaimerTitle}
+          body={disclaimerBody}
+          styles={styles}
+        />
       ) : null}
     </View>
   );

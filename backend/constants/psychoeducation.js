@@ -122,6 +122,8 @@ export const PSYCHOEDUCATION_MODULES = {
       'Mejor recuperación después del estrés',
       'Decisiones más alineadas con tus valores',
     ],
+    whenToSeekHelp:
+      'Si las emociones te desbordan con frecuencia, te llevan a conductas de las que te arrepientes o dañan tus relaciones, hablar con un profesional puede ayudarte.',
     sources: [
       {
         label: 'APA — Gestión del estrés y emociones',
@@ -151,6 +153,8 @@ export const PSYCHOEDUCATION_MODULES = {
       'Límites y delegar cuando sea posible',
       'Apoyo social y, si hace falta, terapia',
     ],
+    whenToSeekHelp:
+      'Si el estrés te agota durante semanas, afecta tu salud física o no logras descansar aunque lo intentes, conviene buscar apoyo profesional.',
     sources: [
       {
         label: 'OMS — Estrés laboral (marco general)',

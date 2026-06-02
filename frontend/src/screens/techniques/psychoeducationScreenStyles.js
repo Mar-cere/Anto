@@ -263,49 +263,103 @@ export function createPsychoeducationModuleStyles(colors, resolvedScheme) {
     highlightCard: {
       borderRadius: 18,
       padding: 14,
-      marginBottom: 10,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.FOCUS_BORDER_SUBTLE,
       backgroundColor: darkTint(colors, 0.06),
     },
+    highlightHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 10,
+    },
     highlightTitle: {
-      fontSize: 13,
-      fontWeight: '700',
+      flex: 1,
+      fontSize: 14,
+      fontWeight: '600',
       color: colors.text,
+    },
+    highlightSubheader: {
+      flexDirection: 'row',
+      alignItems: 'center',
       marginBottom: 8,
     },
-    disclaimerFold: {
-      marginTop: 16,
-      paddingVertical: 12,
-      paddingHorizontal: 14,
-      borderRadius: 14,
-      backgroundColor: darkTint(colors, 0.05),
+    highlightSubtitle: {
+      flex: 1,
+      fontSize: 12,
+      fontWeight: '600',
+      letterSpacing: 0.2,
+      textTransform: 'uppercase',
+      color: t.FOCUS_KICKER_COLOR,
+    },
+    highlightDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: t.FOCUS_BORDER_SUBTLE,
+      marginVertical: 12,
+    },
+    highlightSeekText: {
+      fontSize: 14,
+      lineHeight: 22,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    footerPanel: {
+      marginTop: 20,
+      borderRadius: 16,
+      paddingVertical: 4,
+      paddingHorizontal: 12,
+      backgroundColor: darkTint(colors, 0.04),
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.FOCUS_BORDER_SUBTLE,
     },
-    disclaimerFoldHeader: {
+    footerRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      paddingVertical: 12,
+      gap: 10,
     },
-    disclaimerFoldTitle: {
+    footerRowText: {
       flex: 1,
-      fontSize: 13,
+      minWidth: 0,
+    },
+    footerRowTitle: {
+      fontSize: 14,
       fontWeight: '600',
       color: colors.textSecondary,
     },
-    disclaimerFoldBody: {
-      marginTop: 10,
+    footerRowMeta: {
+      marginTop: 2,
+      fontSize: 12,
+      color: t.FOCUS_META,
+    },
+    footerBody: {
+      paddingBottom: 12,
+      paddingLeft: 27,
       fontSize: 13,
       lineHeight: 20,
       color: colors.textSecondary,
     },
-    sourcesFold: {
-      marginTop: 8,
+    footerLinks: {
+      paddingBottom: 8,
+      paddingLeft: 27,
+      gap: 6,
     },
-    sourcesList: {
-      paddingHorizontal: 14,
-      paddingBottom: 10,
+    footerLinkRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingVertical: 6,
+    },
+    footerLinkText: {
+      flex: 1,
+      fontSize: 13,
+      lineHeight: 19,
+      color: colors.primary,
+      fontWeight: '500',
+    },
+    footerDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: t.FOCUS_BORDER_SUBTLE,
+      marginHorizontal: 4,
     },
     callout: {
       borderRadius: 18,

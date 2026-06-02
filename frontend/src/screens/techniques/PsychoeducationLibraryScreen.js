@@ -25,7 +25,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { createPsychoeducationLibraryStyles } from './psychoeducationScreenStyles';
 import { getTopicVisual } from './psychoeducationTopicVisuals';
 import { usePsychoeducationTexts } from './psychoeducationTexts';
-import { normalizePsychoeducationTopic } from '../../utils/psychoeducationTopic';
+import { normalizePsychoeducationTopic, parsePsychoeducationBrowseResponse } from '../../utils/psychoeducationTopic';
 
 const READ_MINUTES = 2;
 
@@ -66,17 +66,7 @@ const PsychoeducationLibraryScreen = () => {
         setModules([]);
         return;
       }
-      const raw = Array.isArray(res?.data) ? res.data : [];
-      const list = raw
-        .map((item) => {
-          if (item && typeof item === 'object' && item.topic) return item;
-          if (typeof item === 'string') {
-            const topic = normalizePsychoeducationTopic(item);
-            return topic ? { topic, title: item, summary: '' } : null;
-          }
-          return null;
-        })
-        .filter((item) => item?.topic && normalizePsychoeducationTopic(item.topic));
+      const list = parsePsychoeducationBrowseResponse(res);
       setModules(list);
     } catch {
       setError(texts.ERROR);

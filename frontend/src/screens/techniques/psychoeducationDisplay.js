@@ -1,6 +1,25 @@
 /**
  * Etiquetas de sección para módulos de psicoeducación (#85).
+ * META_KEYS: mantener alineado con backend/constants/psychoeducationContentKeys.js
  */
+
+export const PSYCHOEDUCATION_CONTENT_SECTION_KEYS = [
+  'whatIs',
+  'symptoms',
+  'signs',
+  'causes',
+  'triggers',
+  'whatHelps',
+  'treatment',
+  'management',
+  'hygiene',
+  'skills',
+  'techniques',
+  'benefits',
+  'types',
+  'whenToSeekHelp',
+  'whenWorry',
+];
 
 const SECTION_LABELS = {
   es: {
@@ -45,11 +64,31 @@ const SKIP_KEYS = new Set([
   'disclaimer',
   'sources',
   'topic',
+  'title',
+  'summary',
   'version',
   'interventionId',
   'mechanismLine',
   'clinicalReview',
+  'tags',
+  'estimatedMinutes',
+  'cardVariant',
+  'previewTitle',
+  'previewSummary',
 ]);
+
+/** Claves de metadato/API que nunca deben renderizarse como sección de contenido. */
+export const PSYCHOEDUCATION_META_KEYS = SKIP_KEYS;
+
+export function hasContentSectionLabel(key, language = 'es') {
+  const lang = String(language || 'es').toLowerCase().startsWith('en') ? 'en' : 'es';
+  return Boolean(SECTION_LABELS[lang][key]);
+}
+
+export function isRenderableContentSection(key, language = 'es') {
+  if (key === 'whatIs') return false;
+  return hasContentSectionLabel(key, language);
+}
 
 export function sectionLabel(key, language = 'es') {
   const lang = String(language || 'es').toLowerCase().startsWith('en') ? 'en' : 'es';

@@ -27,6 +27,7 @@ const DEFAULTS = {
   REVIEW_FOOTER: 'Contenido v{version} · revisión editorial ({date})',
   MECHANISM_TITLE: 'Por qué puede ayudar',
   SECTION_ITEMS_PREVIEW: '{n} puntos',
+  SOURCES_COUNT: '{n} enlaces',
 };
 
 const KEY_MAP = {
@@ -52,6 +53,7 @@ const KEY_MAP = {
   REVIEW_FOOTER: 'PSYCHOED_REVIEW_FOOTER',
   MECHANISM_TITLE: 'PSYCHOED_MECHANISM_TITLE',
   SECTION_ITEMS_PREVIEW: 'PSYCHOED_SECTION_ITEMS_PREVIEW',
+  SOURCES_COUNT: 'PSYCHOED_SOURCES_COUNT',
 };
 
 const TOPIC_KEY_MAP = {

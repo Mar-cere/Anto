@@ -116,6 +116,31 @@ export function isSafeHttpsUrl(url) {
   return typeof url === 'string' && /^https:\/\//i.test(url.trim());
 }
 
+/**
+ * Normaliza respuesta GET /psychoeducation (evita confundir res.data.data).
+ * @param {unknown} res body JSON del cliente API
+ * @returns {{ topic: string, title?: string, summary?: string }[]}
+ */
+export function parsePsychoeducationBrowseResponse(res) {
+  if (res && typeof res === 'object' && res.success === false) {
+    return [];
+  }
+  const raw = Array.isArray(res?.data) ? res.data : [];
+  return raw
+    .map((item) => {
+      if (item && typeof item === 'object' && item.topic) {
+        const topic = normalizePsychoeducationTopic(item.topic);
+        return topic ? { ...item, topic } : null;
+      }
+      if (typeof item === 'string') {
+        const topic = normalizePsychoeducationTopic(item);
+        return topic ? { topic, title: item, summary: '' } : null;
+      }
+      return null;
+    })
+    .filter((item) => item?.topic && normalizePsychoeducationTopic(item.topic));
+}
+
 function applyEnglishCatalogLabel(suggestion) {
   const id = String(suggestion?.id || '').trim().toLowerCase();
   const enLabel = INTERVENTION_LABELS_EN[id];
