@@ -42,17 +42,30 @@ describe('shouldShowChatActionSuggestions', () => {
     expect(mockHasShown).not.toHaveBeenCalled();
   });
 
-  it('muestra en excepción aunque ya hubo shown en la sesión', async () => {
+  it('muestra en excepción de seguridad aunque ya hubo shown en la sesión', async () => {
     mockHasShown.mockResolvedValue(true);
     const result = await shouldShowChatActionSuggestions({
       emotionalAnalysis: { intensity: 8, mainEmotion: 'ansiedad' },
-      contextualAnalysis: {},
+      contextualAnalysis: { intencion: { tipo: 'CRISIS' } },
       conversationHistory: baseHistory,
       userId: 'u1',
       conversationId: 'c1',
     });
     expect(result).toBe(true);
     expect(mockHasShown).not.toHaveBeenCalled();
+  });
+
+  it('no muestra de nuevo solo por intensidad alta si ya hubo shown', async () => {
+    mockHasShown.mockResolvedValue(true);
+    const result = await shouldShowChatActionSuggestions({
+      emotionalAnalysis: { intensity: 9, mainEmotion: 'ansiedad' },
+      contextualAnalysis: {},
+      conversationHistory: baseHistory,
+      userId: 'u1',
+      conversationId: 'c1',
+    });
+    expect(result).toBe(false);
+    expect(mockHasShown).toHaveBeenCalled();
   });
 
   it('no muestra si ya hubo sugerencias en la sesión activa', async () => {
@@ -80,10 +93,13 @@ describe('shouldShowChatActionSuggestions', () => {
   });
 });
 
-describe('isActionSuggestionException', () => {
-  it('detecta crisis', () => {
+describe('isActionSuggestionSafetyException', () => {
+  it('detecta crisis', async () => {
+    const { isActionSuggestionSafetyException } = await import(
+      '../../../routes/chat/chatContextAnalysis.js'
+    );
     expect(
-      isActionSuggestionException(
+      isActionSuggestionSafetyException(
         { intensity: 4 },
         { intencion: { tipo: 'CRISIS' } },
         [],

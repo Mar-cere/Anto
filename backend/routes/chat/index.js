@@ -28,6 +28,8 @@ export {
   shouldShowActionSuggestions,
   shouldShowChatActionSuggestions,
   isActionSuggestionException,
+  isActionSuggestionSafetyException,
+  bypassesActionSuggestionCadence,
   calculateRiskScore,
   extractRiskFactors,
   extractProtectiveFactors

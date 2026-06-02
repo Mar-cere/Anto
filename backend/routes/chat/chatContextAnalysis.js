@@ -116,10 +116,8 @@ export function detectSilenceAfterNegative(conversationHistory) {
   return false;
 }
 
-export function isActionSuggestionException(emotionalAnalysis, contextualAnalysis, conversationHistory) {
-  const intensity = emotionalAnalysis?.intensity || 5;
-  if (intensity >= 7) return true;
-
+/** Crisis / urgencia / giro emocional: puede mostrar otro bloque en la misma sesión. */
+export function isActionSuggestionSafetyException(emotionalAnalysis, contextualAnalysis, conversationHistory) {
   if (
     contextualAnalysis?.intencion?.tipo === 'CRISIS' ||
     contextualAnalysis?.urgencia === 'alta' ||
@@ -148,6 +146,20 @@ export function isActionSuggestionException(emotionalAnalysis, contextualAnalysi
   return false;
 }
 
+/** Intensidad alta: salta cadencia (3/4 mensajes) pero NO el cap por sesión. */
+export function bypassesActionSuggestionCadence(emotionalAnalysis) {
+  const intensity = emotionalAnalysis?.intensity || 5;
+  return intensity >= 7;
+}
+
+/** @deprecated Usar isActionSuggestionSafetyException */
+export function isActionSuggestionException(emotionalAnalysis, contextualAnalysis, conversationHistory) {
+  return (
+    isActionSuggestionSafetyException(emotionalAnalysis, contextualAnalysis, conversationHistory) ||
+    bypassesActionSuggestionCadence(emotionalAnalysis)
+  );
+}
+
 export function hasActionSuggestionRejection(conversationHistory) {
   if (!conversationHistory?.length) return false;
   const recentContent = conversationHistory
@@ -172,14 +184,17 @@ export function passesActionSuggestionCadence(conversationHistory) {
 /** @deprecated Usar shouldShowChatActionSuggestions (incluye cap por sesión #127). */
 export function shouldShowActionSuggestions(emotionalAnalysis, contextualAnalysis, conversationHistory, userId) {
   if (hasActionSuggestionRejection(conversationHistory)) return false;
-  if (isActionSuggestionException(emotionalAnalysis, contextualAnalysis, conversationHistory)) {
+  if (
+    isActionSuggestionSafetyException(emotionalAnalysis, contextualAnalysis, conversationHistory) ||
+    bypassesActionSuggestionCadence(emotionalAnalysis)
+  ) {
     return true;
   }
   return passesActionSuggestionCadence(conversationHistory);
 }
 
 /**
- * Sugerencias de chat: cadencia + máximo un bloque por sesión lógica (salvo excepciones de seguridad/intensidad).
+ * Sugerencias de chat: cadencia + máximo un bloque por sesión lógica (salvo excepciones de seguridad).
  */
 export async function shouldShowChatActionSuggestions({
   emotionalAnalysis,
@@ -189,19 +204,29 @@ export async function shouldShowChatActionSuggestions({
   conversationId,
 }) {
   if (hasActionSuggestionRejection(conversationHistory)) return false;
-  if (isActionSuggestionException(emotionalAnalysis, contextualAnalysis, conversationHistory)) {
-    return true;
+
+  const safetyException = isActionSuggestionSafetyException(
+    emotionalAnalysis,
+    contextualAnalysis,
+    conversationHistory,
+  );
+  const cadenceOk =
+    bypassesActionSuggestionCadence(emotionalAnalysis) ||
+    passesActionSuggestionCadence(conversationHistory);
+  if (!cadenceOk) return false;
+
+  if (!safetyException) {
+    try {
+      const alreadyShown = await chatInterventionGraphService.hasShownSuggestionsInActiveSession({
+        userId,
+        conversationId,
+      });
+      if (alreadyShown) return false;
+    } catch {
+      return cadenceOk;
+    }
   }
-  if (!passesActionSuggestionCadence(conversationHistory)) return false;
-  try {
-    const alreadyShown = await chatInterventionGraphService.hasShownSuggestionsInActiveSession({
-      userId,
-      conversationId,
-    });
-    if (alreadyShown) return false;
-  } catch {
-    return passesActionSuggestionCadence(conversationHistory);
-  }
+
   return true;
 }
 
