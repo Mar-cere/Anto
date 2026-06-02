@@ -141,11 +141,11 @@ const PsychoeducationModuleScreen = () => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]} testID={`psychoed-module-${topic || 'unknown'}`}>
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header title={headerTitle} showBackButton onBackPress={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} testID="psychoed-module-scroll">
         {loading ? (
           <View style={styles.loadingWrap}>
             <ActivityIndicator size="large" color={colors.primary} />
@@ -154,7 +154,7 @@ const PsychoeducationModuleScreen = () => {
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {!loading && !error && module ? (
           <>
-            <View style={styles.hero}>
+            <View style={styles.hero} testID="psychoed-module-hero">
               <View style={[styles.heroIcon, { backgroundColor: visual.iconBg }]}>
                 <MaterialCommunityIcons name={visual.icon} size={30} color={visual.accent} />
               </View>
@@ -181,6 +181,11 @@ const PsychoeducationModuleScreen = () => {
                 section.isHighlight ? (
                   <PsychoeducationHighlightSection
                     key={section.key}
+                    testID={
+                      section.highlightLayout === 'supportGroup'
+                        ? 'psychoed-module-support-group'
+                        : `psychoed-module-highlight-${section.key}`
+                    }
                     label={section.label}
                     value={section.value}
                     icon={section.icon}

@@ -258,6 +258,7 @@ const TherapeuticTechniquesScreen = () => {
           ) : null}
           <TouchableOpacity
             style={[styles.psychoedCard, { marginTop: 20, width: '100%' }]}
+            testID="psychoed-entry-library"
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
               therapeuticSafeNavigate(navigation, 'PsychoeducationLibrary');
@@ -297,6 +298,7 @@ const TherapeuticTechniquesScreen = () => {
         </View>
         <TouchableOpacity
           style={styles.psychoedCard}
+          testID="psychoed-entry-library"
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
             therapeuticSafeNavigate(navigation, 'PsychoeducationLibrary');

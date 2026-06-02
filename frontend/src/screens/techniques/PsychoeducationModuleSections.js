@@ -54,9 +54,11 @@ export function PsychoeducationHighlightSection({
   styles,
   highlightLayout,
   supportGroup,
+  testID,
 }) {
   return (
     <View
+      testID={testID}
       style={[
         styles.highlightCard,
         accentColor ? { borderLeftWidth: 3, borderLeftColor: accentColor } : null,

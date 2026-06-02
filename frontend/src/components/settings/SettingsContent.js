@@ -1306,6 +1306,7 @@ export default function SettingsContent({
                 </TouchableOpacity>
                 <TouchableOpacity activeOpacity={LIST_PRESS_OPACITY}
                   style={[styles.settingsLinkRow, styles.settingsLinkRowLast]}
+                  testID="settings-therapeutic-techniques"
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     navigation.navigate('TherapeuticTechniques');

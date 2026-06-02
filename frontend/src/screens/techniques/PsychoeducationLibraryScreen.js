@@ -96,7 +96,7 @@ const PsychoeducationLibraryScreen = () => {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]} testID="psychoed-library-screen">
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header title={texts.LIBRARY_TITLE} showBackButton onBackPress={() => navigation.goBack()} />
@@ -151,6 +151,7 @@ const PsychoeducationLibraryScreen = () => {
             return (
               <TouchableOpacity
                 key={item.topic}
+                testID={`psychoed-library-card-${topic}`}
                 style={[styles.moduleCard, { borderLeftColor: visual.borderLeft }]}
                 onPress={() => openModule(item.topic)}
                 activeOpacity={0.75}
