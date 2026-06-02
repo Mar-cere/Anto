@@ -12,7 +12,6 @@ import {
   ScrollView,
   StatusBar,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,7 +22,13 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { createInterventionCompletedRecorder } from '../../utils/recordInterventionCompleted';
 import { isSafeHttpsUrl, normalizePsychoeducationTopic } from '../../utils/psychoeducationTopic';
-import { moduleContentEntries, sectionLabel } from './psychoeducationDisplay';
+import { buildModuleSections, getModuleLeadText } from './psychoeducationContentLayout';
+import {
+  PsychoeducationDisclaimerFold,
+  PsychoeducationHighlightSection,
+  PsychoeducationSectionAccordion,
+  PsychoeducationSourcesFold,
+} from './PsychoeducationModuleSections';
 import { createPsychoeducationModuleStyles } from './psychoeducationScreenStyles';
 import { getTopicVisual } from './psychoeducationTopicVisuals';
 import { useSectionTranslations } from '../../hooks/useTranslations';
@@ -71,6 +76,25 @@ const PsychoeducationModuleScreen = () => {
     [texts.READ_TIME],
   );
 
+  const leadText = useMemo(() => getModuleLeadText(module), [module]);
+
+  const sections = useMemo(
+    () => buildModuleSections(module, language),
+    [module, language],
+  );
+
+  const sectionStyles = useMemo(
+    () => ({
+      ...styles,
+      bulletDotColor: visual.accent,
+      accordionIconBg: visual.iconBg,
+      accentFallback: colors.primary,
+      chevronColor: colors.textSecondary,
+      disclaimerIconColor: colors.textSecondary,
+    }),
+    [styles, visual, colors],
+  );
+
   useEffect(() => {
     let mounted = true;
     const run = async () => {
@@ -109,24 +133,14 @@ const PsychoeducationModuleScreen = () => {
     };
   }, [topic, language, texts, recordCompletedOnce]);
 
-  const renderValue = (v) => {
-    if (typeof v === 'string') return <Text style={styles.body}>{v}</Text>;
-    if (Array.isArray(v)) {
-      return (
-        <View>
-          {v.map((x, i) => (
-            <Text key={`${i}`} style={styles.bullet}>
-              • {String(x)}
-            </Text>
-          ))}
-        </View>
-      );
-    }
-    return null;
-  };
-
   const sources = Array.isArray(module?.sources) ? module.sources : [];
   const reviewLine = formatReviewFooter(texts, module?.clinicalReview);
+
+  const openSource = (src) => {
+    if (isSafeHttpsUrl(src?.url)) {
+      Linking.openURL(src.url.trim()).catch(() => {});
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
@@ -148,6 +162,7 @@ const PsychoeducationModuleScreen = () => {
               </View>
               <Text style={styles.heroTitle}>{headerTitle}</Text>
               <Text style={styles.heroMinutes}>{readLabel}</Text>
+              {leadText ? <Text style={styles.heroLead}>{leadText}</Text> : null}
             </View>
 
             {module.mechanismLine ? (
@@ -163,56 +178,45 @@ const PsychoeducationModuleScreen = () => {
               </View>
             ) : null}
 
-            {module.disclaimer ? (
-              <View style={[styles.callout, styles.calloutDisclaimer]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                  <MaterialCommunityIcons
-                    name="information-outline"
-                    size={18}
-                    color={colors.primary}
-                    style={{ marginRight: 8 }}
+            <View style={styles.sectionsStack}>
+              {sections.map((section) =>
+                section.isHighlight ? (
+                  <PsychoeducationHighlightSection
+                    key={section.key}
+                    label={section.label}
+                    value={section.value}
+                    icon={section.icon}
+                    accentColor={visual.accent}
+                    styles={sectionStyles}
                   />
-                  <Text style={styles.calloutTitle}>{texts.DISCLAIMER_TITLE}</Text>
-                </View>
-                <Text style={styles.calloutBody}>{module.disclaimer}</Text>
-              </View>
-            ) : null}
+                ) : (
+                  <PsychoeducationSectionAccordion
+                    key={section.key}
+                    label={section.label}
+                    value={section.value}
+                    icon={section.icon}
+                    defaultExpanded={section.defaultExpanded}
+                    accentColor={visual.accent}
+                    styles={sectionStyles}
+                    itemsPreviewLabel={texts.SECTION_ITEMS_PREVIEW}
+                  />
+                ),
+              )}
+            </View>
 
-            {moduleContentEntries(module).map(([key, value]) => (
-              <View key={key} style={styles.sectionBlock}>
-                <Text style={styles.sectionTitle}>{sectionLabel(key, language)}</Text>
-                {renderValue(value)}
-              </View>
-            ))}
+            <PsychoeducationSourcesFold
+              title={texts.SOURCES_TITLE}
+              sources={sources}
+              onOpenSource={openSource}
+              openSourceLabel={texts.OPEN_SOURCE}
+              styles={sectionStyles}
+            />
 
-            {sources.length > 0 ? (
-              <View style={styles.sourcesPanel}>
-                <Text style={[styles.sectionTitle, { marginBottom: 4 }]}>{texts.SOURCES_TITLE}</Text>
-                {sources.map((src, i) => (
-                  <TouchableOpacity
-                    key={`${src.url}-${i}`}
-                    style={[styles.sourceRow, i === 0 && styles.sourceRowFirst]}
-                    onPress={() => {
-                      if (isSafeHttpsUrl(src?.url)) {
-                        Linking.openURL(src.url.trim()).catch(() => {});
-                      }
-                    }}
-                    accessibilityRole="link"
-                  >
-                    <MaterialCommunityIcons
-                      name="link-variant"
-                      size={18}
-                      color={colors.primary}
-                      style={{ marginRight: 10 }}
-                    />
-                    <Text style={styles.sourceLink} numberOfLines={2}>
-                      {src.label || texts.OPEN_SOURCE}
-                    </Text>
-                    <MaterialCommunityIcons name="open-in-new" size={16} color={colors.textSecondary} />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ) : null}
+            <PsychoeducationDisclaimerFold
+              title={texts.DISCLAIMER_TITLE}
+              body={module.disclaimer}
+              styles={sectionStyles}
+            />
 
             {reviewLine ? <Text style={styles.reviewFooter}>{reviewLine}</Text> : null}
           </>

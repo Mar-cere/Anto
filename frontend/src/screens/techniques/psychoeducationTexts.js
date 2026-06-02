@@ -26,6 +26,7 @@ const DEFAULTS = {
   CARD_MINUTES: '~{n} min',
   REVIEW_FOOTER: 'Contenido v{version} · revisión editorial ({date})',
   MECHANISM_TITLE: 'Por qué puede ayudar',
+  SECTION_ITEMS_PREVIEW: '{n} puntos',
 };
 
 const KEY_MAP = {
@@ -50,6 +51,7 @@ const KEY_MAP = {
   CARD_MINUTES: 'PSYCHOED_CARD_MINUTES',
   REVIEW_FOOTER: 'PSYCHOED_REVIEW_FOOTER',
   MECHANISM_TITLE: 'PSYCHOED_MECHANISM_TITLE',
+  SECTION_ITEMS_PREVIEW: 'PSYCHOED_SECTION_ITEMS_PREVIEW',
 };
 
 const TOPIC_KEY_MAP = {
