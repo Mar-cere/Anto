@@ -195,6 +195,24 @@ describe('ActionSuggestionService', () => {
       expect(card.label).toMatch(/Sleep/i);
       expect(card.params.topic).toBe('sleep');
     });
+
+    it('incluye psicoed de sueño por contenido contextual', () => {
+      const suggestions = actionSuggestionService.generateSuggestions(
+        { mainEmotion: 'ansiedad', intensity: 7, topic: 'general' },
+        {},
+        { userContent: 'Llevo semanas con insomnio y me despierto a la noche sin poder volver a dormir.' },
+      );
+      expect(suggestions).toContain('psychoeducation_sleep');
+    });
+
+    it('incluye psicoed de estrés por contenido laboral', () => {
+      const suggestions = actionSuggestionService.generateSuggestions(
+        { mainEmotion: 'ansiedad', intensity: 6, topic: 'trabajo' },
+        {},
+        { userContent: 'El estrés del trabajo me tiene agotada, con demasiadas responsabilidades.' },
+      );
+      expect(suggestions).toContain('psychoeducation_stress');
+    });
   });
 
   describe('Niveles de intensidad', () => {

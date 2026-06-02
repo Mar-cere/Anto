@@ -8,6 +8,45 @@ import {
 } from '../constants/psychoeducation.js';
 import { rankInterventionIds } from './interventionRankingService.js';
 
+/** Psicoed por señales en el mensaje (#85 / #127). */
+export const CONTEXTUAL_PSYCHOEDUCATION_RULES = [
+  {
+    id: 'psychoeducation_sleep',
+    pattern:
+      /(?:insomnio|no\s+puedo\s+dormir|duermo\s+mal|despierto\s+(?:a\s+)?(?:la\s+)?noche|sueño\s+(?:muy\s+)?(?:mal|interrumpido|fragmentado)|me\s+cuesta\s+conciliar)/i,
+  },
+  {
+    id: 'psychoeducation_stress',
+    pattern:
+      /(?:estrés|estres(?:ado|ada)?|agotad[oa]\s+(?:del\s+)?trabajo|presión\s+(?:laboral|en\s+el\s+trabajo|académica)|demasiadas\s+responsabilidades|sobrecarga\s+(?:laboral|de\s+trabajo))/i,
+  },
+  {
+    id: 'psychoeducation_trauma',
+    pattern:
+      /(?:trauma|flashback|revivir|experiencia\s+(?:muy\s+)?(?:difícil|traumática)|(?:ptsd|tept)\b|pesadillas\s+recurrentes)/i,
+  },
+  {
+    id: 'psychoeducation_emotion_regulation',
+    pattern:
+      /(?:desbord(?:o|a|ad[oa])|no\s+controlo\s+(?:mis\s+)?emociones|explot(?:o|é)\s+sin\s+querer|regul(?:ar|ación)\s+emocional|me\s+sobrepasa\s+lo\s+que\s+siento)/i,
+  },
+];
+
+export function resolveContextualPsychoeducationIds(userContent = '') {
+  const text = String(userContent || '');
+  if (!text.trim()) return [];
+  return CONTEXTUAL_PSYCHOEDUCATION_RULES.filter(({ pattern }) => pattern.test(text)).map(
+    ({ id }) => id,
+  );
+}
+
+function appendUniqueIds(list, ids) {
+  ids.forEach((id) => {
+    if (id && !list.includes(id)) list.push(id);
+  });
+  return list;
+}
+
 /**
  * Servicio de Sugerencias de Acciones
  * Conecta el análisis emocional con otras partes de la app
@@ -90,13 +129,9 @@ class ActionSuggestionService {
 
   /**
    * Genera sugerencias de acciones basadas en el análisis emocional
-   * @param {Object} emotionalAnalysis - Análisis emocional completo
-   * @param {Object} contextualAnalysis - Análisis contextual (opcional)
-   * @returns {Array} Array de sugerencias de acciones
-   */
-  /**
    * @param {Object} [options]
    * @param {Map<string, number>} [options.rankingScores] — prior del grafo #127
+   * @param {string} [options.userContent] — mensaje del usuario (psicoed contextual)
    */
   generateSuggestions(emotionalAnalysis, contextualAnalysis = {}, options = {}) {
     if (!emotionalAnalysis) {
@@ -130,14 +165,18 @@ class ActionSuggestionService {
       actions = this.adjustActionsBySubtype(actions, emotion, subtype);
     }
 
-    // Limitar a máximo 3 sugerencias
-    const enriched = [...actions];
-    // Fase 2 (#127): psicoeducación mínima según emoción (sin LLM, bajo riesgo).
-    // Se agrega al final para no romper los defaults actuales.
-    if (emotion === 'ansiedad') enriched.push('psychoeducation_anxiety');
-    if (emotion === 'tristeza') enriched.push('psychoeducation_depression');
-    if (emotion === 'enojo') enriched.push('psychoeducation_anger');
-    if (emotion === 'miedo') enriched.push('psychoeducation_anxiety');
+    const userContent = options?.userContent || contextualAnalysis?.userContent || '';
+    const contextualPsycho = resolveContextualPsychoeducationIds(userContent);
+    const techniqueLimit = contextualPsycho.length > 0 ? 1 : 2;
+    const enriched = [...actions].slice(0, techniqueLimit);
+
+    const emotionPsycho = [];
+    if (emotion === 'ansiedad') emotionPsycho.push('psychoeducation_anxiety');
+    if (emotion === 'tristeza') emotionPsycho.push('psychoeducation_depression');
+    if (emotion === 'enojo') emotionPsycho.push('psychoeducation_anger');
+    if (emotion === 'miedo') emotionPsycho.push('psychoeducation_anxiety');
+
+    appendUniqueIds(enriched, [...contextualPsycho, ...emotionPsycho]);
 
     const rankingScores = options?.rankingScores;
     const ranked =

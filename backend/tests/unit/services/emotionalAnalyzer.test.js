@@ -108,6 +108,14 @@ describe('EmotionalAnalyzer Service', () => {
       expect(result.mainEmotion).toBe('ansiedad');
     });
 
+    it('prioriza ansiedad explícita aunque haya "no puedo" y "lo peor"', async () => {
+      const result = await emotionalAnalyzer.analyzeEmotion(
+        'Me siento muy ansioso, corazón acelerado y no puedo dejar de anticipar lo peor. Diría un 8/10',
+      );
+      expect(result.mainEmotion).toBe('ansiedad');
+      expect(result.intensity).toBe(8);
+    });
+
     it('debe detectar alegría', async () => {
       const result = await emotionalAnalyzer.analyzeEmotion('Estoy muy feliz y contento hoy');
       

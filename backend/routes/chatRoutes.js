@@ -1483,7 +1483,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                     const actionSuggestions = actionSuggestionService.generateSuggestions(
                       emotionalAnalysis,
                       contextualAnalysis,
-                      { rankingScores },
+                      { rankingScores, userContent: content },
                     );
                     formattedSuggestions = actionSuggestionService.formatSuggestions(
                       actionSuggestions,
@@ -1932,7 +1932,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             const actionSuggestions = actionSuggestionService.generateSuggestions(
               emotionalAnalysis,
               contextualAnalysis,
-              { rankingScores },
+              { rankingScores, userContent: content },
             );
             formattedSuggestions = actionSuggestionService.formatSuggestions(
               actionSuggestions,
