@@ -48,6 +48,7 @@ import GriefSupportScreen from '../screens/techniques/GriefSupportScreen';
 import MemoryExerciseScreen from '../screens/techniques/MemoryExerciseScreen';
 import ConnectionExerciseScreen from '../screens/techniques/ConnectionExerciseScreen';
 import SocialActivityScreen from '../screens/techniques/SocialActivityScreen';
+import PsychoeducationLibraryScreen from '../screens/techniques/PsychoeducationLibraryScreen';
 import PsychoeducationModuleScreen from '../screens/techniques/PsychoeducationModuleScreen';
 import AboutScreen from '../screens/AboutScreen';
 import AIPrivacyScreen from '../screens/AIPrivacyScreen';
@@ -318,6 +319,11 @@ const StackNavigator = () => {
       <Stack.Screen
         name="SocialActivity"
         component={SocialActivityScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="PsychoeducationLibrary"
+        component={PsychoeducationLibraryScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

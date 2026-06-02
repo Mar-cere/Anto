@@ -67,6 +67,8 @@ describe('Therapeutic Techniques Routes i18n', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.language).toBe('en');
-    expect(response.body.data).toContain('anxiety');
+    expect(Array.isArray(response.body.data)).toBe(true);
+    expect(response.body.data.some((m) => m.topic === 'anxiety')).toBe(true);
+    expect(response.body.topics).toContain('anxiety');
   });
 });

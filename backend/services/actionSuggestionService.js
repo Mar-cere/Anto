@@ -1,4 +1,8 @@
 import { getInterventionCatalogEntry } from '../constants/interventionCatalog.js';
+import {
+  getPsychoeducationCardFields,
+  normalizePsychoeducationTopic,
+} from '../constants/psychoeducation.js';
 
 /**
  * Servicio de Sugerencias de Acciones
@@ -124,7 +128,7 @@ class ActionSuggestionService {
     // Se agrega al final para no romper los defaults actuales.
     if (emotion === 'ansiedad') enriched.push('psychoeducation_anxiety');
     if (emotion === 'tristeza') enriched.push('psychoeducation_depression');
-    if (emotion === 'enojo') enriched.push('psychoeducation_stress');
+    if (emotion === 'enojo') enriched.push('psychoeducation_anger');
     if (emotion === 'miedo') enriched.push('psychoeducation_anxiety');
     return enriched.slice(0, 3);
   }
@@ -165,6 +169,10 @@ class ActionSuggestionService {
     ids.add('psychoeducation_anxiety');
     ids.add('psychoeducation_depression');
     ids.add('psychoeducation_stress');
+    ids.add('psychoeducation_anger');
+    ids.add('psychoeducation_sleep');
+    ids.add('psychoeducation_emotion_regulation');
+    ids.add('psychoeducation_trauma');
     return [...ids].filter(Boolean);
   }
 
@@ -173,12 +181,12 @@ class ActionSuggestionService {
    * @param {Array} actionIds - IDs de acciones
    * @returns {Array} Array de objetos con información formateada
    */
-  formatSuggestions(actionIds) {
+  formatSuggestions(actionIds, language = 'es') {
     return actionIds.map((raw) => {
       const id = String(raw || '').trim();
       const entry = getInterventionCatalogEntry(id);
       if (entry) {
-        return {
+        const base = {
           id: entry.id,
           label: entry.label,
           icon: entry.icon,
@@ -187,6 +195,19 @@ class ActionSuggestionService {
           interventionType: entry.type,
           tags: entry.tags,
         };
+        const psychoTopic = normalizePsychoeducationTopic(entry.params?.topic);
+        if (entry.type === 'psychoeducation' && psychoTopic) {
+          const card = getPsychoeducationCardFields(psychoTopic, language);
+          if (card) {
+            return {
+              ...base,
+              ...card,
+              params: { ...(entry.params || {}), topic: psychoTopic },
+              description: card.previewSummary,
+            };
+          }
+        }
+        return base;
       }
       return {
         id,

@@ -7,6 +7,7 @@ import {
   isValidInterventionId,
   listCatalogInterventionIds,
 } from '../../../constants/interventionCatalog.js';
+import { normalizePsychoeducationTopic } from '../../../constants/psychoeducationTopicNormalize.js';
 
 describe('interventionCatalog', () => {
   it('todos los IDs de actionSuggestionService existen en el catálogo', () => {
@@ -21,6 +22,24 @@ describe('interventionCatalog', () => {
     const formatted = actionSuggestionService.formatSuggestions(referenced);
     const unknown = formatted.filter((s) => s.interventionType === 'unknown');
     expect(unknown).toEqual([]);
+  });
+
+  it('cada entrada psychoeducation_* tiene topic válido en params', () => {
+    const psycho = listCatalogInterventionIds().filter((id) => id.startsWith('psychoeducation_'));
+    expect(psycho.length).toBe(7);
+    psycho.forEach((id) => {
+      const entry = getInterventionCatalogEntry(id);
+      expect(normalizePsychoeducationTopic(entry.params?.topic)).toBeTruthy();
+    });
+  });
+
+  it('enriquece tarjetas de psicoeducación para chat (#78)', () => {
+    const [card] = actionSuggestionService.formatSuggestions(['psychoeducation_anxiety'], 'es');
+    expect(card.interventionType).toBe('psychoeducation');
+    expect(card.cardVariant).toBe('psychoeducation_native');
+    expect(card.previewSummary).toMatch(/ansiedad|apoyo/i);
+    expect(card.mechanismLine).toBeTruthy();
+    expect(card.estimatedMinutes).toBe(2);
   });
 
   it('rechaza IDs con caracteres inválidos', () => {

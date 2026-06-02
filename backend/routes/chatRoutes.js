@@ -1464,7 +1464,10 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                 if (shouldShowSuggestions) {
                   try {
                     const actionSuggestions = actionSuggestionService.generateSuggestions(emotionalAnalysis, contextualAnalysis);
-                    formattedSuggestions = actionSuggestionService.formatSuggestions(actionSuggestions);
+                    formattedSuggestions = actionSuggestionService.formatSuggestions(
+                      actionSuggestions,
+                      req.appLanguage || resolveRequestLanguage(req),
+                    );
                   } catch (_) {}
                 }
                 if (formattedSuggestions.length > 0) {
@@ -1904,8 +1907,11 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               emotionalAnalysis,
               contextualAnalysis
             );
-            formattedSuggestions = actionSuggestionService.formatSuggestions(actionSuggestions);
-            
+            formattedSuggestions = actionSuggestionService.formatSuggestions(
+              actionSuggestions,
+              req.appLanguage || resolveRequestLanguage(req),
+            );
+
             // Registrar métricas de sugerencias
             if (actionSuggestions.length > 0) {
               actionSuggestions.forEach(suggestion => {

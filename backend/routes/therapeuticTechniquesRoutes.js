@@ -20,6 +20,8 @@ import {
 import {
   getPsychoeducationModule,
   getAvailableTopics,
+  getPsychoeducationBrowseItems,
+  normalizePsychoeducationTopic,
 } from '../constants/psychoeducation.js';
 import { resolveRequestLanguage } from '../utils/apiLanguage.js';
 import { therapeuticApiCopy } from '../utils/therapeuticApiCopy.js';
@@ -126,14 +128,16 @@ router.get('/psychoeducation/:topic', authenticateToken, (req, res) => {
   const language = resolveRequestLanguage(req);
   const copy = therapeuticApiCopy(language);
   try {
-    const { topic } = req.params;
-    const module = getPsychoeducationModule(topic, language);
+    const normalizedTopic = normalizePsychoeducationTopic(req.params.topic);
+    const module = normalizedTopic
+      ? getPsychoeducationModule(normalizedTopic, language)
+      : null;
 
     if (!module) {
       const availableTopics = getAvailableTopics(language);
       return res.status(404).json({
         success: false,
-        error: copy.psychoeducationNotFound(topic),
+        error: copy.psychoeducationNotFound(req.params.topic),
         availableTopics,
       });
     }
@@ -141,7 +145,7 @@ router.get('/psychoeducation/:topic', authenticateToken, (req, res) => {
     res.json({
       success: true,
       data: module,
-      topic,
+      topic: normalizedTopic,
       language,
     });
   } catch (error) {
@@ -162,10 +166,12 @@ router.get('/psychoeducation', authenticateToken, (req, res) => {
   const copy = therapeuticApiCopy(language);
   try {
     const topics = getAvailableTopics(language);
+    const modules = getPsychoeducationBrowseItems(language);
     res.json({
       success: true,
-      data: topics,
-      count: topics.length,
+      data: modules,
+      topics,
+      count: modules.length,
       language,
     });
   } catch (error) {

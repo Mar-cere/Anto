@@ -18,7 +18,15 @@ describe('psychoeducation locale', () => {
 
   it('mantiene español por defecto', () => {
     const mod = getPsychoeducationModule('anxiety');
-    expect(mod?.whatIs).toMatch(/La ansiedad/);
+    expect(mod?.whatIs).toMatch(/ansiedad/i);
+    expect(mod?.disclaimer).toMatch(/educativo/i);
     expect(PSYCHOEDUCATION_MODULES.anxiety).toBeDefined();
+  });
+
+  it('incluye ira y sueño en el catálogo', () => {
+    const topics = getAvailableTopics('es');
+    expect(topics).toEqual(
+      expect.arrayContaining(['anger', 'sleep', 'trauma', 'emotionRegulation']),
+    );
   });
 });

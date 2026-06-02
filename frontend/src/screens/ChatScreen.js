@@ -367,7 +367,8 @@ const ChatScreen = () => {
 
   const handleSuggestionPress = useCallback(
     (suggestion) => {
-      recordInterventionClicked(suggestion?.id);
+      if (!suggestion?.id) return;
+      recordInterventionClicked(suggestion.id);
       if (suggestion?.screen) {
         try {
           navigation.navigate(suggestion.screen, suggestion?.params || undefined);

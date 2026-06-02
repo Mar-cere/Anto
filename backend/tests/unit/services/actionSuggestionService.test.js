@@ -176,6 +176,26 @@ describe('ActionSuggestionService', () => {
     });
   });
 
+  describe('Psicoeducación (#85)', () => {
+    it('incluye módulo de ira para emoción enojo', () => {
+      const suggestions = actionSuggestionService.generateSuggestions({
+        mainEmotion: 'enojo',
+        intensity: 6,
+        topic: 'general',
+      });
+      expect(suggestions).toContain('psychoeducation_anger');
+    });
+
+    it('formatea tarjeta nativa en inglés', () => {
+      const [card] = actionSuggestionService.formatSuggestions(
+        ['psychoeducation_sleep'],
+        'en',
+      );
+      expect(card.previewTitle).toMatch(/Sleep/i);
+      expect(card.params.topic).toBe('sleep');
+    });
+  });
+
   describe('Niveles de intensidad', () => {
     it('debe clasificar intensidad alta (>=8)', () => {
       const suggestions = actionSuggestionService.generateSuggestions({

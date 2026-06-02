@@ -260,6 +260,42 @@ export const INTERVENTION_CATALOG = {
     tags: ['estres'],
     params: { topic: 'stress' },
   },
+  psychoeducation_anger: {
+    id: 'psychoeducation_anger',
+    label: 'Enojo e ira (psicoeducación)',
+    icon: '📚',
+    screen: 'PsychoeducationModule',
+    type: 'psychoeducation',
+    tags: ['enojo', 'ira'],
+    params: { topic: 'anger' },
+  },
+  psychoeducation_sleep: {
+    id: 'psychoeducation_sleep',
+    label: 'Sueño e higiene del descanso',
+    icon: '📚',
+    screen: 'PsychoeducationModule',
+    type: 'psychoeducation',
+    tags: ['sueño', 'insomnio'],
+    params: { topic: 'sleep' },
+  },
+  psychoeducation_emotion_regulation: {
+    id: 'psychoeducation_emotion_regulation',
+    label: 'Regulación emocional (psicoeducación)',
+    icon: '📚',
+    screen: 'PsychoeducationModule',
+    type: 'psychoeducation',
+    tags: ['regulacion', 'emociones'],
+    params: { topic: 'emotionRegulation' },
+  },
+  psychoeducation_trauma: {
+    id: 'psychoeducation_trauma',
+    label: 'Experiencias difíciles (informado en trauma)',
+    icon: '📚',
+    screen: 'PsychoeducationModule',
+    type: 'psychoeducation',
+    tags: ['trauma'],
+    params: { topic: 'trauma' },
+  },
 };
 
 /** IDs estables: snake_case, máx. 80 caracteres. */

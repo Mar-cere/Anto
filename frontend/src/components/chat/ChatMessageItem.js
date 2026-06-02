@@ -6,6 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import ActionSuggestionCard from '../ActionSuggestionCard';
+import { useLanguage } from '../../context/LanguageContext';
+import { hydratePsychoeducationSuggestion } from '../../utils/psychoeducationTopic';
+import PsychoeducationSuggestionCard from '../PsychoeducationSuggestionCard';
 import MarkdownText from '../MarkdownText';
 import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
@@ -330,6 +333,7 @@ function ChatMessageItem({
   onMessageFeedback,
   feedbackSubmittingId,
 }) {
+  const { language } = useLanguage();
   const TEXTS = useChatTexts();
   const { colors } = useTheme();
   const chatColors = useChatColors();
@@ -512,14 +516,21 @@ function ChatMessageItem({
     return (
       <View style={styles.suggestionsContainer}>
         <Text style={styles.suggestionsTitle}>{TEXTS.SUGGESTIONS_TITLE}</Text>
-        {message.suggestions.map((suggestion, index) => (
-          <ActionSuggestionCard
-            key={suggestion.id || index}
-            suggestion={suggestion}
-            onPress={() => onSuggestionPress?.(suggestion, index)}
-            onDismiss={() => onSuggestionDismiss?.(message, index)}
-          />
-        ))}
+        {message.suggestions.map((suggestion, index) => {
+          const hydrated = hydratePsychoeducationSuggestion(suggestion, language);
+          const isPsychoed =
+            hydrated?.cardVariant === 'psychoeducation_native' ||
+            hydrated?.interventionType === 'psychoeducation';
+          const Card = isPsychoed ? PsychoeducationSuggestionCard : ActionSuggestionCard;
+          return (
+            <Card
+              key={hydrated.id || index}
+              suggestion={hydrated}
+              onPress={() => onSuggestionPress?.(hydrated, index)}
+              onDismiss={() => onSuggestionDismiss?.(message, index)}
+            />
+          );
+        })}
       </View>
     );
   }
