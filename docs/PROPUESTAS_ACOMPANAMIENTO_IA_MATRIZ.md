@@ -62,8 +62,8 @@ Criterio para **eliminar** del backlog activo (no son un quinto cuadrante de pri
 | **Panel IA (#8)** | **Sí (MVP):** `AIPrivacyScreen`, enlace en Ajustes y menú del chat (`ChatOptionsSheet`); textos bilingües vía traducciones. |
 | **Resumen en app (#11)** | `SummaryScreen` (semana/mes) sin cambios de alcance. |
 | **CI lint unificado (#167)** | Sigue **No** en matriz: CI frontend ejecuta `check` (imports, SafeArea) + Jest; ESLint local en `eslint.config.js` sin gate en workflow. |
-| **Grafo tema–intervención (#127)** | **Parcial (MVP cerrado jun 2026):** catálogo canónico, eventos `shown/clicked/dismissed/completed`, sesión lógica 45 min, cap 1 bloque/sesión (excepción crisis/urgencia), agregado `GET /api/chat/interventions/graph` por sesión, panel dev `InterventionGraph`, psicoed enlazada vía catálogo (ver **#85**). **Pendiente:** ranking por grafo, resto #86–#99, `topicFree`, #218. |
-| **Psicoeducación modular (#85)** | **Parcial (jun 2026):** 7 módulos, disclaimer/fuentes, biblioteca, sugerencias chat, tarjeta nativa (#78), `mechanismLine` (#191), `clinicalReview` editorial (#111). **Pendiente:** sello clínico formal, i18n global biblioteca. Rama: `feat/propuesta-85-psicoeducacion-modular`. |
+| **Grafo tema–intervención (#127)** | **Parcial (jun 2026):** catálogo, eventos, sesión 45 min, cap 1 bloque/sesión, `GET /api/chat/interventions/graph`, panel dev, psicoed vía catálogo (#85), **ranking de sugerencias** según histórico del usuario (completion/CTR/dismiss). **Pendiente:** más señales, resto #86–#99, `topicFree`, #218. |
+| **Psicoeducación modular (#85)** | **Parcial (MVP UX jun 2026):** 7 módulos es/en, biblioteca con acordeón, disclaimer/fuentes, chat + tarjeta nativa (#78), `mechanismLine` (#191), tests/smoke/Maestro. **Pendiente:** sello clínico formal (#111), más temas (#86–#99). Rama: `feat/propuesta-85-psicoeducacion-modular`. |
 
 ### Nuevas propuestas (input producto, mayo 2026)
 

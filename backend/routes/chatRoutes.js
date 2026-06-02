@@ -67,6 +67,7 @@ import {
   isValidInterventionId,
 } from '../constants/interventionCatalog.js';
 import chatInterventionGraphService from '../services/chatInterventionGraphService.js';
+import { resolveChatSuggestionRankingScores } from '../services/chatSuggestionRanking.js';
 import { cursorPaginate } from '../utils/pagination.js';
 import {
     HISTORIAL_LIMITE,
@@ -1474,7 +1475,16 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                 let formattedSuggestions = [];
                 if (shouldShowSuggestions) {
                   try {
-                    const actionSuggestions = actionSuggestionService.generateSuggestions(emotionalAnalysis, contextualAnalysis);
+                    const rankingScores = await resolveChatSuggestionRankingScores({
+                      userId: req.user._id,
+                      emotionalAnalysis,
+                      contextualAnalysis,
+                    });
+                    const actionSuggestions = actionSuggestionService.generateSuggestions(
+                      emotionalAnalysis,
+                      contextualAnalysis,
+                      { rankingScores },
+                    );
                     formattedSuggestions = actionSuggestionService.formatSuggestions(
                       actionSuggestions,
                       req.appLanguage || resolveRequestLanguage(req),
@@ -1914,9 +1924,15 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         let formattedSuggestions = [];
         if (shouldShowSuggestions) {
           try {
+            const rankingScores = await resolveChatSuggestionRankingScores({
+              userId: req.user._id,
+              emotionalAnalysis,
+              contextualAnalysis,
+            });
             const actionSuggestions = actionSuggestionService.generateSuggestions(
               emotionalAnalysis,
-              contextualAnalysis
+              contextualAnalysis,
+              { rankingScores },
             );
             formattedSuggestions = actionSuggestionService.formatSuggestions(
               actionSuggestions,

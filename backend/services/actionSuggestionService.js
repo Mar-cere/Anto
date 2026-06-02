@@ -6,6 +6,7 @@ import {
   getPsychoeducationCardFields,
   normalizePsychoeducationTopic,
 } from '../constants/psychoeducation.js';
+import { rankInterventionIds } from './interventionRankingService.js';
 
 /**
  * Servicio de Sugerencias de Acciones
@@ -93,7 +94,11 @@ class ActionSuggestionService {
    * @param {Object} contextualAnalysis - Análisis contextual (opcional)
    * @returns {Array} Array de sugerencias de acciones
    */
-  generateSuggestions(emotionalAnalysis, contextualAnalysis = {}) {
+  /**
+   * @param {Object} [options]
+   * @param {Map<string, number>} [options.rankingScores] — prior del grafo #127
+   */
+  generateSuggestions(emotionalAnalysis, contextualAnalysis = {}, options = {}) {
     if (!emotionalAnalysis) {
       return [];
     }
@@ -133,7 +138,13 @@ class ActionSuggestionService {
     if (emotion === 'tristeza') enriched.push('psychoeducation_depression');
     if (emotion === 'enojo') enriched.push('psychoeducation_anger');
     if (emotion === 'miedo') enriched.push('psychoeducation_anxiety');
-    return enriched.slice(0, 3);
+
+    const rankingScores = options?.rankingScores;
+    const ranked =
+      rankingScores instanceof Map && rankingScores.size > 0
+        ? rankInterventionIds(enriched, rankingScores)
+        : enriched;
+    return ranked.slice(0, 3);
   }
 
   /**
