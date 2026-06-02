@@ -19,7 +19,7 @@ describe('interventionCatalog', () => {
 
   it('formatSuggestions no devuelve interventionType unknown para IDs mapeados', () => {
     const referenced = actionSuggestionService.getAllReferencedInterventionIds();
-    const formatted = actionSuggestionService.formatSuggestions(referenced);
+    const formatted = actionSuggestionService.formatSuggestions(referenced, 'es');
     const unknown = formatted.filter((s) => s.interventionType === 'unknown');
     expect(unknown).toEqual([]);
   });

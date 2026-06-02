@@ -1,6 +1,7 @@
 /**
- * Normalización de topic y hidratación de sugerencias de chat (#85 / #78).
+ * Normalización de topic, hidratación de sugerencias de chat (#85 / #78 / i18n).
  */
+import { INTERVENTION_LABELS_EN } from '../constants/interventionCatalogLabels.en';
 
 const TOPIC_BY_KEY = {
   anxiety: 'anxiety',
@@ -111,13 +112,18 @@ export function topicFromInterventionId(interventionId) {
   return ID_TO_TOPIC[String(interventionId || '').trim().toLowerCase()] || null;
 }
 
-/**
- * Rellena campos de tarjeta si el payload del chat viene sin enriquecer (histórico).
- */
-export function hydratePsychoeducationSuggestion(suggestion, language = 'es') {
-  if (!suggestion || suggestion.cardVariant === 'psychoeducation_native') {
-    return suggestion;
-  }
+export function isSafeHttpsUrl(url) {
+  return typeof url === 'string' && /^https:\/\//i.test(url.trim());
+}
+
+function applyEnglishCatalogLabel(suggestion) {
+  const id = String(suggestion?.id || '').trim().toLowerCase();
+  const enLabel = INTERVENTION_LABELS_EN[id];
+  if (!enLabel) return suggestion;
+  return { ...suggestion, label: enLabel };
+}
+
+function applyPsychoeducationCardFields(suggestion, language) {
   const isPsychoed =
     suggestion.interventionType === 'psychoeducation' ||
     String(suggestion.id || '').startsWith('psychoeducation_');
@@ -145,6 +151,28 @@ export function hydratePsychoeducationSuggestion(suggestion, language = 'es') {
   };
 }
 
-export function isSafeHttpsUrl(url) {
-  return typeof url === 'string' && /^https:\/\//i.test(url.trim());
+/**
+ * Rellena etiquetas/campos si el payload del chat viene sin enriquecer (histórico).
+ */
+export function hydrateInterventionSuggestion(suggestion, language = 'es') {
+  if (!suggestion) return suggestion;
+  const lang = String(language || 'es').toLowerCase().startsWith('en') ? 'en' : 'es';
+
+  let next = suggestion;
+  if (lang === 'en') {
+    next = applyEnglishCatalogLabel(next);
+  }
+  if (
+    next.cardVariant !== 'psychoeducation_native' &&
+    (next.interventionType === 'psychoeducation' ||
+      String(next.id || '').startsWith('psychoeducation_'))
+  ) {
+    next = applyPsychoeducationCardFields(next, lang);
+  } else if (lang === 'en' && next.cardVariant === 'psychoeducation_native') {
+    next = applyPsychoeducationCardFields(next, lang);
+  }
+  return next;
 }
+
+/** @deprecated usar hydrateInterventionSuggestion */
+export const hydratePsychoeducationSuggestion = hydrateInterventionSuggestion;

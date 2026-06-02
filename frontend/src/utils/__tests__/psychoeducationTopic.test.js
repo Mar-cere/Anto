@@ -1,9 +1,10 @@
 import {
-  hydratePsychoeducationSuggestion,
+  hydrateInterventionSuggestion,
   isSafeHttpsUrl,
   normalizePsychoeducationTopic,
   topicFromInterventionId,
 } from '../psychoeducationTopic';
+import { INTERVENTION_LABELS_EN } from '../../constants/interventionCatalogLabels.en';
 
 describe('psychoeducationTopic', () => {
   it('normaliza topics con distintas capitalizaciones', () => {
@@ -17,7 +18,7 @@ describe('psychoeducationTopic', () => {
   });
 
   it('hidrata sugerencias sin cardVariant', () => {
-    const out = hydratePsychoeducationSuggestion(
+    const out = hydrateInterventionSuggestion(
       { id: 'psychoeducation_anxiety', interventionType: 'psychoeducation' },
       'es',
     );
@@ -28,11 +29,19 @@ describe('psychoeducationTopic', () => {
   });
 
   it('hidrata en inglés', () => {
-    const out = hydratePsychoeducationSuggestion(
+    const out = hydrateInterventionSuggestion(
       { id: 'psychoeducation_anger', interventionType: 'psychoeducation' },
       'en',
     );
     expect(out.label).toMatch(/Anger/i);
+  });
+
+  it('traduce chips de técnicas en inglés (histórico)', () => {
+    const out = hydrateInterventionSuggestion(
+      { id: 'breathing_exercise', label: 'Ejercicio de Respiración' },
+      'en',
+    );
+    expect(out.label).toBe(INTERVENTION_LABELS_EN.breathing_exercise);
   });
 
   it('solo acepta URLs https para fuentes', () => {

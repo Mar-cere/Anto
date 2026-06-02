@@ -61,7 +61,11 @@ import paymentAuditService from '../services/paymentAuditService.js';
 import pushNotificationService from '../services/pushNotificationService.js';
 import sessionEmotionalMemory from '../services/sessionEmotionalMemory.js';
 import { buildSessionRetentionPayload, withThematicMicroClosureRetention } from '../services/sessionRetentionHints.js';
-import { isValidInterventionId } from '../constants/interventionCatalog.js';
+import {
+  getInterventionCatalogEntry,
+  getInterventionCatalogLabel,
+  isValidInterventionId,
+} from '../constants/interventionCatalog.js';
 import chatInterventionGraphService from '../services/chatInterventionGraphService.js';
 import { cursorPaginate } from '../utils/pagination.js';
 import {
@@ -398,6 +402,7 @@ router.get('/interventions/graph', protect, requireActiveSubscription(true), asy
       since,
       limit,
     });
+    const language = req.appLanguage || resolveRequestLanguage(req);
 
     res.json({
       success: true,
@@ -405,17 +410,23 @@ router.get('/interventions/graph', protect, requireActiveSubscription(true), asy
       windowDays: days,
       since: since.toISOString(),
       count: edges.length,
-      edges: edges.map((e) => ({
-        topicTag: String(e?._id?.topicTag || 'general').slice(0, 64),
-        interventionId: String(e?._id?.interventionId || '').slice(0, 80),
-        shown: e.shown || 0,
-        clicked: e.clicked || 0,
-        dismissed: e.dismissed || 0,
-        completed: e.completed || 0,
-        ctr: typeof e.ctr === 'number' ? e.ctr : 0,
-        completionRate: typeof e.completionRate === 'number' ? e.completionRate : 0,
-        lastAt: e.lastAt,
-      }))
+      language,
+      edges: edges.map((e) => {
+        const interventionId = String(e?._id?.interventionId || '').slice(0, 80);
+        const entry = getInterventionCatalogEntry(interventionId);
+        return {
+          topicTag: String(e?._id?.topicTag || 'general').slice(0, 64),
+          interventionId,
+          interventionLabel: getInterventionCatalogLabel(entry, language) || interventionId,
+          shown: e.shown || 0,
+          clicked: e.clicked || 0,
+          dismissed: e.dismissed || 0,
+          completed: e.completed || 0,
+          ctr: typeof e.ctr === 'number' ? e.ctr : 0,
+          completionRate: typeof e.completionRate === 'number' ? e.completionRate : 0,
+          lastAt: e.lastAt,
+        };
+      }),
     });
   } catch (error) {
     console.error('[ChatRoutes] GET /interventions/graph:', error);

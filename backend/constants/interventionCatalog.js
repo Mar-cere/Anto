@@ -5,6 +5,7 @@
  * - Este catálogo es “producto”: controla etiquetas, tipo y pantallas destino.
  */
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
+import { INTERVENTION_LABELS_EN } from './interventionCatalogLabels.en.js';
 
 export const INTERVENTION_CATALOG = {
   breathing_exercise: {
@@ -337,8 +338,12 @@ export function listCatalogInterventionIds() {
 export function getInterventionCatalogLabel(entry, language = 'es') {
   if (!entry) return '';
   const lang = normalizeApiLanguage(language);
-  if (lang === 'en' && typeof entry.labelEn === 'string' && entry.labelEn.trim()) {
-    return entry.labelEn.trim();
+  if (lang === 'en') {
+    const mapped = INTERVENTION_LABELS_EN[entry.id];
+    if (typeof mapped === 'string' && mapped.trim()) return mapped.trim();
+    if (typeof entry.labelEn === 'string' && entry.labelEn.trim()) {
+      return entry.labelEn.trim();
+    }
   }
   return String(entry.label || '').trim();
 }

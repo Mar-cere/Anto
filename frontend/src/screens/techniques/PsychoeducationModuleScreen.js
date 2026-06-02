@@ -25,7 +25,8 @@ import { SPACING } from '../../constants/ui';
 import { createInterventionCompletedRecorder } from '../../utils/recordInterventionCompleted';
 import { isSafeHttpsUrl, normalizePsychoeducationTopic } from '../../utils/psychoeducationTopic';
 import { moduleContentEntries, sectionLabel } from './psychoeducationDisplay';
-import { formatReviewFooter, topicTitle, usePsychoeducationTexts } from './psychoeducationTexts';
+import { useSectionTranslations } from '../../hooks/useTranslations';
+import { formatReviewFooter, resolveModuleTitle, usePsychoeducationTexts } from './psychoeducationTexts';
 
 const TOPIC_TO_INTERVENTION_ID = {
   anxiety: 'psychoeducation_anxiety',
@@ -44,6 +45,7 @@ const PsychoeducationModuleScreen = () => {
   const { colors, statusBarStyle } = useTheme();
   const { language } = useLanguage();
   const texts = usePsychoeducationTexts();
+  const techniquesI18n = useSectionTranslations('TECHNIQUES');
   const styles = useMemo(
     () =>
       StyleSheet.create({
@@ -128,7 +130,7 @@ const PsychoeducationModuleScreen = () => {
     };
   }, [topic, language, texts, recordCompletedOnce]);
 
-  const title = topicTitle(texts, topic);
+  const title = resolveModuleTitle(texts, topic, module, techniquesI18n);
 
   const renderValue = (v) => {
     if (typeof v === 'string') return <Text style={styles.body}>{v}</Text>;
@@ -155,7 +157,9 @@ const PsychoeducationModuleScreen = () => {
       <ParticleBackground />
       <Header title={title} showBackButton onBackPress={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title}>
+          {resolveModuleTitle(texts, topic, module, techniquesI18n)}
+        </Text>
         {loading ? <Text style={styles.body}>{texts.LOADING}</Text> : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {!loading && !error && module ? (

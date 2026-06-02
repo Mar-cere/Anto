@@ -7,7 +7,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import ActionSuggestionCard from '../ActionSuggestionCard';
 import { useLanguage } from '../../context/LanguageContext';
-import { hydratePsychoeducationSuggestion } from '../../utils/psychoeducationTopic';
+import { hydrateInterventionSuggestion } from '../../utils/psychoeducationTopic';
 import PsychoeducationSuggestionCard from '../PsychoeducationSuggestionCard';
 import MarkdownText from '../MarkdownText';
 import { SPACING } from '../../constants/ui';
@@ -517,7 +517,7 @@ function ChatMessageItem({
       <View style={styles.suggestionsContainer}>
         <Text style={styles.suggestionsTitle}>{TEXTS.SUGGESTIONS_TITLE}</Text>
         {message.suggestions.map((suggestion, index) => {
-          const hydrated = hydratePsychoeducationSuggestion(suggestion, language);
+          const hydrated = hydrateInterventionSuggestion(suggestion, language);
           const isPsychoed =
             hydrated?.cardVariant === 'psychoeducation_native' ||
             hydrated?.interventionType === 'psychoeducation';

@@ -20,6 +20,12 @@ import ParticleBackground from '../components/ParticleBackground';
 import { SPACING } from '../constants/ui';
 import { useTheme } from '../context/ThemeContext';
 import chatService from '../services/chatService';
+import {
+  formatGraphMeta,
+  formatGraphMetrics,
+  formatGraphRates,
+  useInterventionGraphTexts,
+} from './interventionGraphTexts';
 
 function pct(n) {
   if (!Number.isFinite(n)) return '0%';
@@ -29,6 +35,7 @@ function pct(n) {
 const InterventionGraphScreen = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle } = useTheme();
+  const TEXTS = useInterventionGraphTexts();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [edges, setEdges] = useState([]);
@@ -72,13 +79,13 @@ const InterventionGraphScreen = ({ navigation }) => {
       const data = res?.data ?? res;
       setWindowDays(data?.windowDays ?? 14);
       setEdges(Array.isArray(data?.edges) ? data.edges : []);
-    } catch (e) {
-      setError('No se pudo cargar el grafo de intervenciones.');
+    } catch {
+      setError(TEXTS.ERROR);
       setEdges([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [TEXTS.ERROR]);
 
   useFocusEffect(
     useCallback(() => {
@@ -91,22 +98,22 @@ const InterventionGraphScreen = ({ navigation }) => {
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header
-        title="Grafo intervenciones"
+        title={TEXTS.TITLE}
         showBackButton
         onBackPress={() => navigation.goBack()}
       />
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={colors.primary} />}
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={load} tintColor={colors.primary} />
+        }
       >
-        <Text style={styles.meta}>
-          Ventana: últimos {windowDays} días · métricas por sesión lógica (shown/click/done)
-        </Text>
+        <Text style={styles.meta}>{formatGraphMeta(TEXTS, windowDays)}</Text>
         {error ? (
           <>
             <Text style={styles.error}>{error}</Text>
             <TouchableOpacity style={styles.retry} onPress={load}>
-              <Text style={styles.retryText}>Reintentar</Text>
+              <Text style={styles.retryText}>{TEXTS.RETRY}</Text>
             </TouchableOpacity>
           </>
         ) : null}
@@ -116,22 +123,18 @@ const InterventionGraphScreen = ({ navigation }) => {
           </View>
         ) : null}
         {!loading && !error && edges.length === 0 ? (
-          <Text style={styles.meta}>Sin datos aún. Usa sugerencias del chat y completa técnicas.</Text>
+          <Text style={styles.meta}>{TEXTS.EMPTY}</Text>
         ) : null}
         {edges.map((edge) => {
           const key = `${edge.topicTag}:${edge.interventionId}`;
+          const label = edge.interventionLabel || edge.interventionId;
           return (
             <View key={key} style={styles.row}>
               <Text style={styles.rowTitle}>
-                {edge.topicTag} → {edge.interventionId}
+                {edge.topicTag} → {label}
               </Text>
-              <Text style={styles.rowSub}>
-                shown {edge.shown ?? 0} · click {edge.clicked ?? 0} · dismiss {edge.dismissed ?? 0} · done{' '}
-                {edge.completed ?? 0}
-              </Text>
-              <Text style={styles.rowSub}>
-                CTR {pct(edge.ctr)} · completación {pct(edge.completionRate)}
-              </Text>
+              <Text style={styles.rowSub}>{formatGraphMetrics(TEXTS, edge)}</Text>
+              <Text style={styles.rowSub}>{formatGraphRates(TEXTS, edge, pct)}</Text>
             </View>
           );
         })}

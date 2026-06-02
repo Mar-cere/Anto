@@ -59,6 +59,7 @@ const DEFAULT_TEXTS = {
   NA: 'N/A',
   USE_SINGULAR: 'uso',
   USE_PLURAL: 'usos',
+  DEV_GRAPH_LINK: 'Grafo de sugerencias del chat (interno)',
 };
 
 const THERAPEUTIC_STATS_TEXT_MAP = {
@@ -84,6 +85,7 @@ const THERAPEUTIC_STATS_TEXT_MAP = {
   NA: 'THERAPEUTIC_STATS_NA',
   USE_SINGULAR: 'THERAPEUTIC_STATS_USE_SINGULAR',
   USE_PLURAL: 'THERAPEUTIC_STATS_USE_PLURAL',
+  DEV_GRAPH_LINK: 'INTERVENTION_GRAPH_DEV_LINK',
 };
 
 const TherapeuticTechniquesStatsScreen = () => {
@@ -506,7 +508,7 @@ const TherapeuticTechniquesStatsScreen = () => {
         style={styles.devLink}
         onPress={() => navigation.navigate('InterventionGraph')}
       >
-        <Text style={styles.devLinkText}>Grafo sugerencias del chat (interno)</Text>
+        <Text style={styles.devLinkText}>{TEXTS.DEV_GRAPH_LINK}</Text>
       </TouchableOpacity>
     ) : null;
 

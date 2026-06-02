@@ -1,59 +1,57 @@
 import { useMemo } from 'react';
-import { useLanguage } from '../../context/LanguageContext';
+import {
+  buildMappedSectionTexts,
+  useSectionTranslations,
+} from '../../hooks/useTranslations';
 
-const TEXTS = {
-  es: {
-    LIBRARY_TITLE: 'Psicoeducación',
-    LIBRARY_SUBTITLE: 'Módulos breves con lenguaje no diagnóstico y fuentes.',
-    LOADING: 'Cargando módulos…',
-    ERROR: 'No se pudieron cargar los módulos.',
-    RETRY: 'Reintentar',
-    DISCLAIMER_TITLE: 'Aviso importante',
-    SOURCES_TITLE: 'Fuentes',
-    OPEN_SOURCE: 'Abrir enlace',
-    MODULE_DEFAULT_TITLE: 'Psicoeducación',
-    TOPIC_anxiety: 'Ansiedad',
-    TOPIC_depression: 'Bajo ánimo',
-    TOPIC_stress: 'Estrés',
-    TOPIC_anger: 'Enojo e ira',
-    TOPIC_sleep: 'Sueño',
-    TOPIC_emotionRegulation: 'Regulación emocional',
-    TOPIC_trauma: 'Experiencias difíciles',
-    NO_TOPIC: 'No se indicó un tema.',
-    LOAD_MODULE_ERROR: 'No se pudo cargar el módulo.',
-    MODULE_NOT_FOUND: 'No se encontró el módulo.',
-    CARD_BADGE: 'Psicoeducación',
-    CARD_CTA_READ: 'Leer módulo',
-    CARD_MINUTES: '~{n} min',
-    REVIEW_FOOTER: 'Contenido v{version} · revisión editorial ({date})',
-    MECHANISM_TITLE: 'Por qué puede ayudar',
-  },
-  en: {
-    LIBRARY_TITLE: 'Psychoeducation',
-    LIBRARY_SUBTITLE: 'Short modules with non-diagnostic language and sources.',
-    LOADING: 'Loading modules…',
-    ERROR: 'Could not load modules.',
-    RETRY: 'Retry',
-    DISCLAIMER_TITLE: 'Important notice',
-    SOURCES_TITLE: 'Sources',
-    OPEN_SOURCE: 'Open link',
-    MODULE_DEFAULT_TITLE: 'Psychoeducation',
-    TOPIC_anxiety: 'Anxiety',
-    TOPIC_depression: 'Low mood',
-    TOPIC_stress: 'Stress',
-    TOPIC_anger: 'Anger',
-    TOPIC_sleep: 'Sleep',
-    TOPIC_emotionRegulation: 'Emotion regulation',
-    TOPIC_trauma: 'Difficult experiences',
-    NO_TOPIC: 'No topic was specified.',
-    LOAD_MODULE_ERROR: 'Could not load the module.',
-    MODULE_NOT_FOUND: 'Module not found.',
-    CARD_BADGE: 'Psychoeducation',
-    CARD_CTA_READ: 'Read module',
-    CARD_MINUTES: '~{n} min',
-    REVIEW_FOOTER: 'Content v{version} · editorial review ({date})',
-    MECHANISM_TITLE: 'Why this may help',
-  },
+const DEFAULTS = {
+  LIBRARY_TITLE: 'Psicoeducación',
+  LIBRARY_SUBTITLE: 'Módulos breves con lenguaje no diagnóstico y fuentes.',
+  LOADING: 'Cargando módulos…',
+  ERROR: 'No se pudieron cargar los módulos.',
+  RETRY: 'Reintentar',
+  DISCLAIMER_TITLE: 'Aviso importante',
+  SOURCES_TITLE: 'Fuentes',
+  OPEN_SOURCE: 'Abrir enlace',
+  MODULE_DEFAULT_TITLE: 'Psicoeducación',
+  NO_TOPIC: 'No se indicó un tema.',
+  LOAD_MODULE_ERROR: 'No se pudo cargar el módulo.',
+  MODULE_NOT_FOUND: 'No se encontró el módulo.',
+  CARD_BADGE: 'Psicoeducación',
+  CARD_CTA_READ: 'Leer módulo',
+  CARD_MINUTES: '~{n} min',
+  REVIEW_FOOTER: 'Contenido v{version} · revisión editorial ({date})',
+  MECHANISM_TITLE: 'Por qué puede ayudar',
+};
+
+const KEY_MAP = {
+  LIBRARY_TITLE: 'THERAPEUTIC_TECHNIQUES_PSYCHOED_LIBRARY',
+  LIBRARY_SUBTITLE: 'THERAPEUTIC_TECHNIQUES_PSYCHOED_LIBRARY_HINT',
+  LOADING: 'PSYCHOED_LOADING',
+  ERROR: 'PSYCHOED_ERROR',
+  RETRY: 'PSYCHOED_RETRY',
+  DISCLAIMER_TITLE: 'PSYCHOED_DISCLAIMER_TITLE',
+  SOURCES_TITLE: 'PSYCHOED_SOURCES_TITLE',
+  OPEN_SOURCE: 'PSYCHOED_OPEN_SOURCE',
+  MODULE_DEFAULT_TITLE: 'PSYCHOED_MODULE_DEFAULT_TITLE',
+  NO_TOPIC: 'PSYCHOED_NO_TOPIC',
+  LOAD_MODULE_ERROR: 'PSYCHOED_LOAD_MODULE_ERROR',
+  MODULE_NOT_FOUND: 'PSYCHOED_MODULE_NOT_FOUND',
+  CARD_BADGE: 'PSYCHOED_CARD_BADGE',
+  CARD_CTA_READ: 'PSYCHOED_CARD_CTA_READ',
+  CARD_MINUTES: 'PSYCHOED_CARD_MINUTES',
+  REVIEW_FOOTER: 'PSYCHOED_REVIEW_FOOTER',
+  MECHANISM_TITLE: 'PSYCHOED_MECHANISM_TITLE',
+};
+
+const TOPIC_KEY_MAP = {
+  anxiety: 'PSYCHOED_TOPIC_anxiety',
+  depression: 'PSYCHOED_TOPIC_depression',
+  stress: 'PSYCHOED_TOPIC_stress',
+  anger: 'PSYCHOED_TOPIC_anger',
+  sleep: 'PSYCHOED_TOPIC_sleep',
+  emotionRegulation: 'PSYCHOED_TOPIC_emotionRegulation',
+  trauma: 'PSYCHOED_TOPIC_trauma',
 };
 
 export function formatReviewFooter(texts, clinicalReview) {
@@ -66,11 +64,24 @@ export function formatReviewFooter(texts, clinicalReview) {
 }
 
 export function usePsychoeducationTexts() {
-  const { language } = useLanguage();
-  return useMemo(() => TEXTS[language === 'en' ? 'en' : 'es'], [language]);
+  const translated = useSectionTranslations('TECHNIQUES');
+  return useMemo(
+    () => buildMappedSectionTexts(translated, DEFAULTS, KEY_MAP),
+    [translated],
+  );
 }
 
-export function topicTitle(texts, topic) {
+export function topicTitle(texts, topic, translatedSection) {
   if (!topic) return texts.MODULE_DEFAULT_TITLE;
-  return texts[`TOPIC_${topic}`] || texts.MODULE_DEFAULT_TITLE;
+  const remoteKey = TOPIC_KEY_MAP[topic];
+  const fromDict = remoteKey && translatedSection?.[remoteKey];
+  if (typeof fromDict === 'string' && fromDict.trim()) return fromDict;
+  return texts.MODULE_DEFAULT_TITLE;
+}
+
+/** Título localizado; prefiere `module.title` de la API si existe. */
+export function resolveModuleTitle(texts, topic, module, translatedSection) {
+  const apiTitle = String(module?.title || '').trim();
+  if (apiTitle) return apiTitle;
+  return topicTitle(texts, topic, translatedSection);
 }

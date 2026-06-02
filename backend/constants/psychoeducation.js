@@ -268,6 +268,7 @@ export const getPsychoeducationModule = (topic, language = 'es') => {
   return {
     ...body,
     topic: normalizedTopic,
+    title: lang === 'en' ? meta?.titleEn : meta?.titleEs,
     version: PSYCHOEDUCATION_VERSION,
     interventionId: meta?.interventionId || null,
     disclaimer: getPsychoeducationDisclaimer(language),

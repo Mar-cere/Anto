@@ -23,6 +23,11 @@ describe('psychoeducation locale', () => {
     expect(PSYCHOEDUCATION_MODULES.anxiety).toBeDefined();
   });
 
+  it('incluye título localizado en el módulo', () => {
+    expect(getPsychoeducationModule('anxiety', 'en')?.title).toMatch(/Anxiety/i);
+    expect(getPsychoeducationModule('anxiety', 'es')?.title).toMatch(/Ansiedad/i);
+  });
+
   it('devuelve nota de revisión en el idioma solicitado', () => {
     const modEn = getPsychoeducationModule('anxiety', 'en');
     expect(modEn?.clinicalReview?.note).toMatch(/Editorial/i);
