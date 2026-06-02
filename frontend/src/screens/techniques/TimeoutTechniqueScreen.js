@@ -111,7 +111,7 @@ const TimeoutTechniqueScreen = () => {
     () => [
       { id: 1, title: TEXTS.STEP_1_TITLE, description: TEXTS.STEP_1_DESC, icon: 'alert-circle' },
       { id: 2, title: TEXTS.STEP_2_TITLE, description: TEXTS.STEP_2_DESC, icon: 'door-open' },
-      { id: 3, title: TEXTS.STEP_3_TITLE, description: TEXTS.STEP_3_DESC, icon: 'breathing' },
+      { id: 3, title: TEXTS.STEP_3_TITLE, description: TEXTS.STEP_3_DESC, icon: 'weather-windy' },
       { id: 4, title: TEXTS.STEP_4_TITLE, description: TEXTS.STEP_4_DESC, icon: 'lightbulb-on' },
       { id: 5, title: TEXTS.STEP_5_TITLE, description: TEXTS.STEP_5_DESC, icon: 'arrow-left' },
     ],

@@ -112,7 +112,7 @@ const MindfulnessScreen = () => {
         title: TEXTS.EXERCISE_1_TITLE,
         description: TEXTS.EXERCISE_1_DESC,
         duration: TEXTS.EXERCISE_1_DURATION,
-        icon: 'breathing',
+        icon: 'weather-windy',
       },
       {
         id: 2,

@@ -209,6 +209,10 @@ const TherapeuticTechniquesStatsScreen = () => {
           color: colors.textSecondary,
           textAlign: 'center',
         },
+        emptyScrollContent: {
+          flexGrow: 1,
+          justifyContent: 'space-between',
+        },
         devLink: {
           marginTop: 24,
           padding: 14,
@@ -496,6 +500,16 @@ const TherapeuticTechniquesStatsScreen = () => {
     );
   };
 
+  const renderDevGraphLink = () =>
+    typeof __DEV__ !== 'undefined' && __DEV__ ? (
+      <TouchableOpacity
+        style={styles.devLink}
+        onPress={() => navigation.navigate('InterventionGraph')}
+      >
+        <Text style={styles.devLinkText}>Grafo sugerencias del chat (interno)</Text>
+      </TouchableOpacity>
+    ) : null;
+
   // Renderizar contenido
   const renderContent = () => {
     if (loading) {
@@ -521,10 +535,27 @@ const TherapeuticTechniquesStatsScreen = () => {
 
     if (!stats || (!stats.general || stats.general.totalUses === 0)) {
       return (
-        <View style={styles.centerContainer}>
-          <MaterialCommunityIcons name="chart-line" size={48} color={colors.accent} />
-          <Text style={styles.emptyText}>{TEXTS.NO_DATA}</Text>
-        </View>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.scrollContent,
+            styles.emptyScrollContent,
+            { paddingBottom: insets.bottom + SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA },
+          ]}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.primary}
+            />
+          }
+        >
+          <View style={styles.centerContainer}>
+            <MaterialCommunityIcons name="chart-line" size={48} color={colors.accent} />
+            <Text style={styles.emptyText}>{TEXTS.NO_DATA}</Text>
+          </View>
+          {renderDevGraphLink()}
+        </ScrollView>
       );
     }
 
@@ -548,14 +579,7 @@ const TherapeuticTechniquesStatsScreen = () => {
         {renderByEmotion()}
         {renderByType()}
         {renderUsageTrend()}
-        {typeof __DEV__ !== 'undefined' && __DEV__ ? (
-          <TouchableOpacity
-            style={styles.devLink}
-            onPress={() => navigation.navigate('InterventionGraph')}
-          >
-            <Text style={styles.devLinkText}>Grafo sugerencias del chat (interno)</Text>
-          </TouchableOpacity>
-        ) : null}
+        {renderDevGraphLink()}
       </ScrollView>
     );
   };
