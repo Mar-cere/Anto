@@ -1,6 +1,6 @@
 # Propuestas de producto: acompañamiento e IA
 
-Listado de **~185** propuestas `No` en la tabla principal, más **2** `Parcial` con trabajo abierto (#151, #194) y **8 anclas entregadas** referenciadas (numeración **#1–#214**; huecos históricos conservados; **16** ex-Q5 + **11** entregadas archivadas). **Hecha:** `Sí` / `Sí*` / `Parcial` = ver columna; en la tabla activa predominan filas `No` y `Parcial` con trabajo abierto. Chat → tarea/hábito: [CONTRATO_CHAT_ACCIONES_V1.md](./CONTRATO_CHAT_ACCIONES_V1.md).
+Listado de **~185** propuestas `No` en la tabla principal, más **3** `Parcial` con trabajo abierto (#127 MVP cerrado, #151, #194) y **8 anclas entregadas** referenciadas (numeración **#1–#214**; huecos históricos conservados; **16** ex-Q5 + **11** entregadas archivadas). **Hecha:** `Sí` / `Sí*` / `Parcial` = ver columna; en la tabla activa predominan filas `No` y `Parcial` con trabajo abierto. Chat → tarea/hábito: [CONTRATO_CHAT_ACCIONES_V1.md](./CONTRATO_CHAT_ACCIONES_V1.md).
 
 **Matriz:** Urgencia, Impacto, Retención (1–5). **Imp*** = redondeo de la media de Impacto y Retención. **Costo** B/M/A. **T** tiempo dev S/M/L. **Q** = cuadrante Eisenhower (**Q1–Q4**). **Q5** = descartadas (sección ex-Q5). **Entregadas archivadas** = fuera de la tabla salvo anclas referenciadas (sección siguiente).
 
@@ -62,6 +62,7 @@ Criterio para **eliminar** del backlog activo (no son un quinto cuadrante de pri
 | **Panel IA (#8)** | **Sí (MVP):** `AIPrivacyScreen`, enlace en Ajustes y menú del chat (`ChatOptionsSheet`); textos bilingües vía traducciones. |
 | **Resumen en app (#11)** | `SummaryScreen` (semana/mes) sin cambios de alcance. |
 | **CI lint unificado (#167)** | Sigue **No** en matriz: CI frontend ejecuta `check` (imports, SafeArea) + Jest; ESLint local en `eslint.config.js` sin gate en workflow. |
+| **Grafo tema–intervención (#127)** | **Parcial (MVP cerrado jun 2026):** catálogo canónico, eventos `shown/clicked/dismissed/completed`, sesión lógica 45 min, cap 1 bloque/sesión (excepción crisis/urgencia), agregado `GET /api/chat/interventions/graph` por sesión, panel dev `InterventionGraph`, psicoed mínima (3 temas, pantalla simple). **Pendiente:** ranking por grafo, #85–#99 completos, `topicFree`, #218. Rama: `feat/propuesta-127-grafo-tema-intervencion`. |
 
 ### Nuevas propuestas (input producto, mayo 2026)
 
@@ -234,7 +235,7 @@ Incorporadas como **#201–#223** (lotes 1–3). Criterio: no duplicar filas ya 
 | 124 | Feature flags experimentos | LaunchDarkly, Unleash o flags en DB; combina con **#109** y **#35** para rollout gradual. | No | 3 | 4 | 4 | 4 | B | S | Q2 |
 | 125 | Fallback multi-proveedor | Segundo proveedor LLM si el primario falla o rate-limit; contrato de respuesta normalizado; coste operativo **A**. | No | 3 | 4 | 3 | 4 | A | L | Q2 |
 | 126 | Embeddings on-write opt-in | Indexar solo mensajes que el usuario marca “recordar para contexto futuro”; base para RAG híbrido personal con borrado duro. | No | 2 | 4 | 3 | 4 | A | L | Q2 |
-| 127 | Grafo ligero tema–intervención | Metadatos estructurados (no NLP pesado) para sugerir módulos #85–#99 y medir qué rutas funcionan. | No | 2 | 4 | 3 | 4 | M | L | Q2 |
+| 127 | Grafo ligero tema–intervención | Metadatos estructurados (no NLP pesado) para sugerir módulos #85–#99 y medir qué rutas funcionan. **MVP cerrado:** tracking + catálogo + sugerencias desde reglas + grafo agregado por sesión + panel dev. **Pendiente:** cerrar bucle con datos del grafo, expansión catálogo #85–#99, temas emergentes. | Parcial | 2 | 4 | 3 | 4 | M | L | Q2 |
 | 128 | Streaming Socket paridad SSE | Mismo streaming por chunks que SSE en HTTP; UX y telemetría coherentes con **#76**. | No | 3 | 4 | 4 | 4 | M | M | Q2 |
 | 129 | Red team prompts automático | Suite mensual de ataques (jailbreak, inyección) sobre builds candidatas; informe bloqueante antes de producción. | No | 3 | 5 | 3 | 4 | M | M | Q2 |
 | 130 | Canary prompt/modelo % | Exponer 5–10 % a nueva versión; comparar métricas de calidad y latencia antes de rollout total. | No | 3 | 4 | 4 | 4 | B | M | Q2 |
