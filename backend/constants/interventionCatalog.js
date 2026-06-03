@@ -64,6 +64,14 @@ export const INTERVENTION_CATALOG = {
     type: 'exercise',
     tags: ['gratitud', 'bienestar'],
   },
+  abc_record: {
+    id: 'abc_record',
+    label: 'Autorregistro ABC',
+    icon: '📝',
+    screen: 'AbcRecord',
+    type: 'exercise',
+    tags: ['tcc', 'patrones', 'reestructuracion'],
+  },
   timeout_technique: {
     id: 'timeout_technique',
     label: 'Técnica de Tiempo Fuera',

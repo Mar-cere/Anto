@@ -327,6 +327,7 @@ export const CBT_TECHNIQUES_EN = {
   "thoughtRecord": {
     "name": "Thought Record",
     "description": "Document thoughts, emotions and behaviors to identify patterns.",
+    "linkedScreen": "AbcRecord",
     "whenToUse": "To identify thinking patterns and practice cognitive restructuring.",
     "steps": [
       "Record the situation that activated the thought",
@@ -342,6 +343,25 @@ export const CBT_TECHNIQUES_EN = {
       "enojo",
       "culpa",
       "verguenza"
+    ]
+  },
+  "abcRecord": {
+    "name": "ABC Self-Monitoring",
+    "description": "Record the situation → thought → consequence chain to spot behavioral patterns.",
+    "linkedScreen": "AbcRecord",
+    "whenToUse": "When you want to understand what triggers a recurring emotional or behavioral reaction.",
+    "steps": [
+      "A — Describe the situation that activated you",
+      "B — Write down the thoughts that showed up",
+      "C — Note emotions, intensity, and what you did or felt in your body"
+    ],
+    "emotions": [
+      "ansiedad",
+      "tristeza",
+      "enojo",
+      "culpa",
+      "verguenza",
+      "miedo"
     ]
   },
   "behavioralActivation": {

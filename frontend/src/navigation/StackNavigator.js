@@ -38,6 +38,7 @@ import GroundingTechniqueScreen from '../screens/techniques/GroundingTechniqueSc
 import SelfCompassionScreen from '../screens/techniques/SelfCompassionScreen';
 import CommunicationToolScreen from '../screens/techniques/CommunicationToolScreen';
 import GratitudeJournalScreen from '../screens/techniques/GratitudeJournalScreen';
+import AbcRecordScreen from '../screens/techniques/AbcRecordScreen';
 import ActivitySuggestionScreen from '../screens/techniques/ActivitySuggestionScreen';
 import MindfulnessScreen from '../screens/techniques/MindfulnessScreen';
 import SelfCareScreen from '../screens/techniques/SelfCareScreen';
@@ -269,6 +270,11 @@ const StackNavigator = () => {
       <Stack.Screen
         name="GratitudeJournal"
         component={GratitudeJournalScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AbcRecord"
+        component={AbcRecordScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

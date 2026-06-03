@@ -1,0 +1,77 @@
+/**
+ * Mensajes de API del autorregistro ABC (es/en).
+ */
+import { normalizeApiLanguage } from './apiLanguage.js';
+
+const COPY = {
+  es: {
+    rateLimitCreate:
+      'Demasiados registros creados. Por favor, intente más tarde.',
+    rateLimitDelete:
+      'Demasiadas eliminaciones. Por favor, intente más tarde.',
+    listError: 'Error al obtener los registros ABC',
+    notFound: 'Registro no encontrado',
+    getError: 'Error al obtener el registro',
+    createdSuccess: 'Registro ABC guardado',
+    createError: 'Error al crear el registro',
+    deletedSuccess: 'Registro eliminado',
+    deleteError: 'Error al eliminar el registro',
+    exportError: 'Error al exportar los registros',
+    exportHeader: 'Autorregistro ABC — resumen para revisión',
+    exportSectionA: 'A — Situación',
+    exportSectionB: 'B — Pensamientos',
+    exportSectionC: 'C — Consecuencias',
+    exportEmotion: 'Emoción',
+    exportIntensity: 'Intensidad',
+    exportBehavior: 'Conducta',
+    exportDate: 'Fecha',
+    joiActivatingEmpty: 'La situación no puede estar vacía',
+    joiActivatingMin: 'La situación debe tener al menos 1 carácter',
+    joiActivatingMax: 'La situación no puede exceder 1000 caracteres',
+    joiActivatingRequired: 'La situación activadora es requerida',
+    joiBeliefsEmpty: 'Los pensamientos no pueden estar vacíos',
+    joiBeliefsMin: 'Los pensamientos deben tener al menos 1 carácter',
+    joiBeliefsMax: 'Los pensamientos no pueden exceder 1000 caracteres',
+    joiBeliefsRequired: 'Los pensamientos son requeridos',
+    joiEmotionsMax: 'Las emociones no pueden exceder 200 caracteres',
+    joiIntensityMin: 'La intensidad mínima es 1',
+    joiIntensityMax: 'La intensidad máxima es 10',
+    joiConsequenceMax: 'La consecuencia no puede exceder 1000 caracteres',
+  },
+  en: {
+    rateLimitCreate: 'Too many ABC records created. Please try again later.',
+    rateLimitDelete: 'Too many deletions. Please try again later.',
+    listError: 'Could not load ABC records',
+    notFound: 'Record not found',
+    getError: 'Could not load record',
+    createdSuccess: 'ABC record saved',
+    createError: 'Could not create record',
+    deletedSuccess: 'Record deleted',
+    deleteError: 'Could not delete record',
+    exportError: 'Could not export records',
+    exportHeader: 'ABC self-monitoring — summary for review',
+    exportSectionA: 'A — Situation',
+    exportSectionB: 'B — Thoughts',
+    exportSectionC: 'C — Consequences',
+    exportEmotion: 'Emotion',
+    exportIntensity: 'Intensity',
+    exportBehavior: 'Behavior',
+    exportDate: 'Date',
+    joiActivatingEmpty: 'Situation cannot be empty',
+    joiActivatingMin: 'Situation must be at least 1 character',
+    joiActivatingMax: 'Situation cannot exceed 1000 characters',
+    joiActivatingRequired: 'Activating situation is required',
+    joiBeliefsEmpty: 'Thoughts cannot be empty',
+    joiBeliefsMin: 'Thoughts must be at least 1 character',
+    joiBeliefsMax: 'Thoughts cannot exceed 1000 characters',
+    joiBeliefsRequired: 'Thoughts are required',
+    joiEmotionsMax: 'Emotions cannot exceed 200 characters',
+    joiIntensityMin: 'Minimum intensity is 1',
+    joiIntensityMax: 'Maximum intensity is 10',
+    joiConsequenceMax: 'Consequence cannot exceed 1000 characters',
+  },
+};
+
+export function abcRecordApiCopy(language) {
+  return COPY[normalizeApiLanguage(language)];
+}

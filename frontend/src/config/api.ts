@@ -71,6 +71,9 @@ export const ENDPOINTS = {
   JOURNAL_BY_ID: (id: string) => `/api/journals/${id}`,
   JOURNALS_STATS: '/api/journals/stats',
   JOURNAL_ARCHIVE: (id: string) => `/api/journals/${id}/archive`,
+  ABC_RECORDS: '/api/abc-records',
+  ABC_RECORD_BY_ID: (id: string) => `/api/abc-records/${id}`,
+  ABC_RECORDS_EXPORT: '/api/abc-records/export',
   /** Resumen semanal o mensual: query period=week|month, opcional date, year, month */
   SUMMARY: '/api/summary',
   /** Foco del panel (dashboard #34): agrega semana, tareas, chats, compromisos, línea de prioridad */

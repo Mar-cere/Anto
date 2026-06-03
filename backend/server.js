@@ -53,6 +53,7 @@ import testNotificationRoutes from './routes/testNotificationRoutes.js';
 import therapeuticTechniquesRoutes from './routes/therapeuticTechniquesRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import journalRoutes from './routes/journalRoutes.js';
+import abcRecordRoutes from './routes/abcRecordRoutes.js';
 import summaryRoutes from './routes/summaryRoutes.js';
 
 // Constantes de configuración
@@ -350,6 +351,7 @@ logger.info('📋 Registrando rutas de la API...');
 app.use('/api/tasks', taskRoutes);
 app.use('/api/habits', habitRoutes);
 app.use('/api/journals', journalRoutes);
+app.use('/api/abc-records', abcRecordRoutes);
 app.use('/api/summary', summaryRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);

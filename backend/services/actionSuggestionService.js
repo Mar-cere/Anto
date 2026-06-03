@@ -103,7 +103,7 @@ class ActionSuggestionService {
           pérdida: ['grief_support', 'memory_exercise']
         },
         medium: {
-          general: ['gratitude_journal', 'activity_suggestion'],
+          general: ['abc_record', 'gratitude_journal', 'activity_suggestion'],
           relaciones: ['communication_tool', 'self_care'],
           pérdida: ['grief_support', 'self_compassion_exercise']
         }
@@ -115,7 +115,7 @@ class ActionSuggestionService {
           trabajo: ['timeout_technique', 'boundary_setting']
         },
         medium: {
-          general: ['anger_management', 'physical_activity'],
+          general: ['abc_record', 'anger_management', 'physical_activity'],
           relaciones: ['communication_tool', 'boundary_setting'],
           trabajo: ['boundary_setting', 'task_break']
         }
@@ -126,7 +126,7 @@ class ActionSuggestionService {
           relaciones: ['self_compassion_exercise', 'communication_tool']
         },
         medium: {
-          general: ['self_compassion_exercise', 'values_exploration'],
+          general: ['abc_record', 'self_compassion_exercise', 'values_exploration'],
           relaciones: ['communication_tool', 'apology_guide']
         }
       },

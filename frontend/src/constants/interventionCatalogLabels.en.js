@@ -10,6 +10,7 @@ export const INTERVENTION_LABELS_EN = {
   self_compassion_exercise: 'Self-Compassion Exercise',
   support_contact: 'Contact Support',
   gratitude_journal: 'Gratitude Journal',
+  abc_record: 'ABC Self-Monitoring',
   timeout_technique: 'Time-Out Technique',
   communication_tool: 'Communication Tool',
   boundary_setting: 'Set Boundaries',

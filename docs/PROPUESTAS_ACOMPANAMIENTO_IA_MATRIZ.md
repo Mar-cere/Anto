@@ -62,8 +62,9 @@ Criterio para **eliminar** del backlog activo (no son un quinto cuadrante de pri
 | **Panel IA (#8)** | **Sí (MVP):** `AIPrivacyScreen`, enlace en Ajustes y menú del chat (`ChatOptionsSheet`); textos bilingües vía traducciones. |
 | **Resumen en app (#11)** | `SummaryScreen` (semana/mes) sin cambios de alcance. |
 | **CI lint unificado (#167)** | Sigue **No** en matriz: CI frontend ejecuta `check` (imports, SafeArea) + Jest; ESLint local en `eslint.config.js` sin gate en workflow. |
-| **Grafo tema–intervención (#127)** | **Parcial (jun 2026):** catálogo, eventos, sesión 45 min, cap 1 bloque/sesión, `GET /api/chat/interventions/graph`, panel dev, psicoed vía catálogo (#85), **ranking de sugerencias** según histórico del usuario (completion/CTR/dismiss). **Pendiente:** más señales, resto #86–#99, `topicFree`, #218. |
+| **Grafo tema–intervención (#127)** | **Parcial (jun 2026):** catálogo, eventos, sesión 45 min, cap 1 bloque/sesión, `GET /api/chat/interventions/graph`, panel dev, psicoed vía catálogo (#85), **ranking de sugerencias** según histórico del usuario (completion/CTR/dismiss), **ABC (#86)** en catálogo. **Pendiente:** más señales, resto #87–#99, `topicFree`, #218. |
 | **Psicoeducación modular (#85)** | **Parcial (MVP UX jun 2026):** 7 módulos es/en, biblioteca, chat (#78), tests/smoke. **Pendiente:** más temas (#86–#99). **#111** sello UI en módulo/biblioteca/chat. |
+| **Autorregistro ABC (#86)** | **Parcial (MVP jun 2026):** wizard A→B→C, `POST/GET /api/abc-records`, export texto, pantalla `AbcRecord`, técnica TCC + catálogo `#127` (`abc_record`), sugerencias chat tristeza/enojo/culpa media. **Pendiente:** entrada desde chat con prefill, agregación macro (#212). |
 
 ### Nuevas propuestas (input producto, mayo 2026)
 
@@ -90,7 +91,7 @@ Incorporadas como **#201–#223** (lotes 1–3). Criterio: no duplicar filas ya 
 |-----------------|----------------------------|--------------|------------|
 | Rastreador esquemas / creencias nucleares | Copy CBT en plantillas; preguntas socráticas con categoría `beliefs` (`socraticQuestions.js`); sin etiquetado de esquemas ni mapa narrativo | #201, #89, #203, #208 | **#210** |
 | Detector puntos ciegos | Sin contraste explícito pasado↔presente; eco comprobatorio (#61) solo en turno | #203, #61, #208 | **#211** |
-| Ciclo ABC macro (T→P→C→K) | ABC puntual (#86); sin agregación de eventos ni visual de ciclo | #86, #207, #208 | **#212** |
+| Ciclo ABC macro (T→P→C→K) | **#86 MVP:** wizard ABC puntual + export; sin agregación de eventos ni visual de ciclo | #86, #207, #208 | **#212** |
 | UX revelación de insights | Refugio general (#204); reportes aún no diseñados para impacto emocional | #204, #208 | **#213** |
 | Cápsula del tiempo reflexiva | Carta al yo futuro (#44) es proactiva; sin replay de mensajes pasados vulnerables | #44, #203 | **#214** |
 
@@ -200,7 +201,7 @@ Incorporadas como **#201–#223** (lotes 1–3). Criterio: no duplicar filas ya 
 | 82 | Slash commands | `/respirar`, `/resumen`, `/silencio` que ejecutan acciones o insertan plantillas sin salir del flujo de chat; extensible por equipo (plugin interno). | No | 2 | 4 | 5 | 5 | B | M | Q2 |
 | 84 | Tema dinámico por tono sesión | Paleta o gradiente sutil derivado del tono emocional agregado (no intrusivo); **siempre** con modo alto contraste / off por accesibilidad y preferencia usuario. | No | 2 | 4 | 3 | 4 | M | S | Q2 |
 | 85 | Psicoeducación modular evidencia | Módulos breves (ansiedad, depresión, ira, sueño, trauma informado) con fuentes y lenguaje no diagnóstico; activables desde chat o biblioteca. **Parcial (jun 2026):** 7 temas, disclaimer/fuentes, biblioteca en Técnicas, chat vía catálogo #127. **Pendiente:** #78 tarjetas nativas, #111 sello clínico, más temas. | Parcial | 2 | 4 | 4 | 4 | M | M | Q2 |
-| 86 | Autorregistro ABC | Flujo guiado in-app o desde el chat para patrones conductuales; export opcional para terapeuta humano. **Evolución macro:** #212 (ciclo agregado + visual). | No | 3 | 5 | 4 | 5 | M | M | Q2 |
+| 86 | Autorregistro ABC | Flujo guiado in-app o desde el chat para patrones conductuales; export opcional para terapeuta humano. **Parcial (jun 2026):** wizard A→B→C, API `/api/abc-records`, export texto, pantalla `AbcRecord`, catálogo #127. **Pendiente:** prefill desde chat, agregación macro (#212). | Parcial | 3 | 5 | 4 | 5 | M | M | Q2 |
 | 87 | Jerarquía exposición + SUDS | Lista colaborativa de pasos + intensidad subjetiva; seguimiento de intentos sin sustituir ERP clínica presencial. | No | 2 | 4 | 4 | 4 | M | L | Q2 |
 | 88 | Activación conductual | Planificación de actividades placenteras/obligatorias vinculada a estado de ánimo y registro breve post-actividad. | No | 3 | 4 | 5 | 5 | M | M | Q2 |
 | 89 | Pensamientos automáticos CBT | Detectar y nombrar cogniciones con vocabulario CBT estándar + enlace a distorsiones ya existentes en el producto. **Evolución:** #201 (flujo estructurado paso a paso en chat). | No | 3 | 5 | 4 | 5 | M | M | Q2 |

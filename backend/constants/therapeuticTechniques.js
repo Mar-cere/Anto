@@ -369,6 +369,7 @@ export const CBT_TECHNIQUES = {
   thoughtRecord: {
     name: 'Registro de Pensamientos',
     description: 'Documentar pensamientos, emociones y comportamientos para identificar patrones.',
+    linkedScreen: 'AbcRecord',
     steps: [
       'Registra la situación que activó el pensamiento',
       'Anota el pensamiento automático exacto',
@@ -379,6 +380,19 @@ export const CBT_TECHNIQUES = {
     ],
     whenToUse: 'Para identificar patrones de pensamiento y practicar reestructuración cognitiva.',
     emotions: ['ansiedad', 'tristeza', 'enojo', 'culpa', 'verguenza']
+  },
+
+  abcRecord: {
+    name: 'Autorregistro ABC',
+    description: 'Registrar la cadena situación → pensamiento → consecuencia para detectar patrones conductuales.',
+    linkedScreen: 'AbcRecord',
+    steps: [
+      'A — Describe la situación que te activó',
+      'B — Anota los pensamientos que aparecieron',
+      'C — Registra emociones, intensidad y lo que hiciste o sentiste'
+    ],
+    whenToUse: 'Cuando quieres entender qué desencadena una reacción emocional o conductual recurrente.',
+    emotions: ['ansiedad', 'tristeza', 'enojo', 'culpa', 'verguenza', 'miedo']
   },
 
   behavioralActivation: {
