@@ -10,6 +10,7 @@ import {
   getPsychoeducationBrowseItems,
   getPsychoeducationDisclaimer,
   getTopicMeta,
+  normalizeClinicalReview,
 } from './psychoeducationTopics.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 import { normalizePsychoeducationTopic } from './psychoeducationTopicNormalize.js';
@@ -24,6 +25,7 @@ export {
   getPsychoeducationDisclaimer,
   getTopicMeta,
   getPsychoeducationCardFields,
+  normalizeClinicalReview,
 } from './psychoeducationTopics.js';
 
 function psychoeducationCatalogForLanguage(language = 'es') {
@@ -277,11 +279,7 @@ export const getPsychoeducationModule = (topic, language = 'es') => {
     interventionId: meta?.interventionId || null,
     disclaimer: getPsychoeducationDisclaimer(language),
     clinicalReview: {
-      ...PSYCHOEDUCATION_CLINICAL_REVIEW,
-      note:
-        lang === 'en'
-          ? PSYCHOEDUCATION_CLINICAL_REVIEW.noteEn
-          : PSYCHOEDUCATION_CLINICAL_REVIEW.noteEs,
+      ...normalizeClinicalReview(lang),
     },
     mechanismLine:
       lang === 'en' ? meta?.mechanismLineEn : meta?.mechanismLineEs,

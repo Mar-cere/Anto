@@ -1,17 +1,14 @@
 /**
  * Metadatos de temas de psicoeducación (#85): títulos, resúmenes, IDs de intervención.
  */
+import {
+  PSYCHOEDUCATION_CLINICAL_REVIEW,
+  normalizeClinicalReview,
+} from './psychoeducationClinicalReview.js';
+
+export { PSYCHOEDUCATION_CLINICAL_REVIEW, normalizeClinicalReview };
 
 export const PSYCHOEDUCATION_VERSION = '1.0.0';
-
-/** #111: governance visible; sustituir `reviewedAt` tras revisión clínica formal. */
-export const PSYCHOEDUCATION_CLINICAL_REVIEW = {
-  status: 'editorial_review',
-  version: PSYCHOEDUCATION_VERSION,
-  reviewedAt: '2026-06-01',
-  noteEs: 'Revisión editorial de contenido; no constituye validación clínica individual.',
-  noteEn: 'Editorial content review; not individual clinical validation.',
-};
 
 export const PSYCHOEDUCATION_ESTIMATED_MINUTES = 2;
 
@@ -166,7 +163,7 @@ export function getPsychoeducationCardFields(topic, language = 'es') {
     mechanismLine: lang === 'en' ? meta.mechanismLineEn : meta.mechanismLineEs,
     microSteps: Array.isArray(microSteps) ? microSteps.slice(0, 2) : [],
     estimatedMinutes: PSYCHOEDUCATION_ESTIMATED_MINUTES,
-    clinicalReview: PSYCHOEDUCATION_CLINICAL_REVIEW,
+    clinicalReview: normalizeClinicalReview(lang),
     cardVariant: 'psychoeducation_native',
   };
 }
@@ -199,7 +196,7 @@ export function getPsychoeducationBrowseItems(language = 'es') {
       tags: meta.tags,
       version: PSYCHOEDUCATION_VERSION,
       estimatedMinutes: PSYCHOEDUCATION_ESTIMATED_MINUTES,
-      clinicalReview: PSYCHOEDUCATION_CLINICAL_REVIEW,
+      clinicalReview: normalizeClinicalReview(lang),
       mechanismLine: lang === 'en' ? meta.mechanismLineEn : meta.mechanismLineEs,
     };
   }).filter(Boolean);

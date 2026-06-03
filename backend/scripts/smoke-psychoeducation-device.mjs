@@ -91,6 +91,9 @@ function checkModule(topic, language) {
   if (!mod.mechanismLine?.trim()) errors.push('falta mechanismLine');
   if (!mod.disclaimer?.trim()) errors.push('falta disclaimer');
   if (!mod.whenToSeekHelp?.trim()) errors.push('falta whenToSeekHelp');
+  if (!mod.clinicalReview?.status) errors.push('falta clinicalReview.status');
+  if (!mod.clinicalReview?.statusLabel?.trim()) errors.push('falta clinicalReview.statusLabel');
+  if (!mod.clinicalReview?.note?.trim()) errors.push('falta clinicalReview.note');
 
   psychoeducationBodyKeys(mod).forEach((key) => {
     if (!PSYCHOEDUCATION_CONTENT_KEY_SET.has(key)) {

@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
+import PsychoeducationClinicalReviewSeal from '../../components/PsychoeducationClinicalReviewSeal';
 import ParticleBackground from '../../components/ParticleBackground';
 import { api } from '../../config/api';
 import { useLanguage } from '../../context/LanguageContext';
@@ -177,6 +178,14 @@ const PsychoeducationLibraryScreen = () => {
                         />
                         <Text style={styles.readPillText}>{readLabel}</Text>
                       </View>
+                      {item.clinicalReview ? (
+                        <PsychoeducationClinicalReviewSeal
+                          clinicalReview={item.clinicalReview}
+                          texts={texts}
+                          variant="library"
+                          accentColor={visual.accent}
+                        />
+                      ) : null}
                     </View>
                   </View>
                   <MaterialCommunityIcons

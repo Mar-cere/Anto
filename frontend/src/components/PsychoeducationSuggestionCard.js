@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import PsychoeducationClinicalReviewSeal from './PsychoeducationClinicalReviewSeal';
 import { usePsychoeducationTexts } from '../screens/techniques/psychoeducationTexts';
 import { getTopicVisual } from '../screens/techniques/psychoeducationTopicVisuals';
 import { topicFromInterventionId } from '../utils/psychoeducationTopic';
@@ -192,6 +193,14 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
           </View>
         ) : (
           <>
+            {suggestion.clinicalReview ? (
+              <PsychoeducationClinicalReviewSeal
+                clinicalReview={suggestion.clinicalReview}
+                texts={texts}
+                variant="chat"
+                accentColor={visual.accent}
+              />
+            ) : null}
             {summary ? <Text style={styles.summary}>{summary}</Text> : null}
             {suggestion.mechanismLine ? (
               <Text style={styles.mechanism}>{suggestion.mechanismLine}</Text>

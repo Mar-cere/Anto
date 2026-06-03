@@ -63,7 +63,7 @@ Criterio para **eliminar** del backlog activo (no son un quinto cuadrante de pri
 | **Resumen en app (#11)** | `SummaryScreen` (semana/mes) sin cambios de alcance. |
 | **CI lint unificado (#167)** | Sigue **No** en matriz: CI frontend ejecuta `check` (imports, SafeArea) + Jest; ESLint local en `eslint.config.js` sin gate en workflow. |
 | **Grafo tema–intervención (#127)** | **Parcial (jun 2026):** catálogo, eventos, sesión 45 min, cap 1 bloque/sesión, `GET /api/chat/interventions/graph`, panel dev, psicoed vía catálogo (#85), **ranking de sugerencias** según histórico del usuario (completion/CTR/dismiss). **Pendiente:** más señales, resto #86–#99, `topicFree`, #218. |
-| **Psicoeducación modular (#85)** | **Parcial (MVP UX jun 2026):** 7 módulos es/en, biblioteca con acordeón, disclaimer/fuentes, chat + tarjeta nativa (#78), `mechanismLine` (#191), tests/smoke/Maestro, **contrato chat** (`npm run test:psychoeducation-chat`, `smoke:psychoeducation` + mensaje `device_stress_panic`). **Pendiente:** sello clínico formal (#111), más temas (#86–#99). |
+| **Psicoeducación modular (#85)** | **Parcial (MVP UX jun 2026):** 7 módulos es/en, biblioteca, chat (#78), tests/smoke. **Pendiente:** más temas (#86–#99). **#111** sello UI en módulo/biblioteca/chat. |
 
 ### Nuevas propuestas (input producto, mayo 2026)
 
@@ -223,7 +223,7 @@ Incorporadas como **#201–#223** (lotes 1–3). Criterio: no duplicar filas ya 
 | 107 | Simulador + feedback criterios | Roleplay + puntuación o feedback por criterios (claridad, calidez, límites); orientado a práctica, no a juicio social. | No | 2 | 5 | 4 | 5 | M | L | Q2 |
 | 108 | Pausa terapéutica global | Un control silencia IA sugerente, micro-acciones y notificaciones **salvo** crisis explícita; para saturación o “burnout de app”. | No | 3 | 4 | 4 | 4 | B | S | Q2 |
 | 109 | Versionado prompts rollback | Paquetes de system prompts versionados; revertir release que degrade tono o seguridad; operación madura y confianza de producto. | No | 3 | 4 | 4 | 4 | B | S | Q2 |
-| 111 | Sello revisión clínica por versión | Governance visible: qué versión de qué módulo (#85–#99) pasó revisión; alinea marketing y compliance interno. **Parcial:** `clinicalReview` v1.0 editorial en API/módulo #85. **Pendiente:** sello UI tras revisión clínica formal. | Parcial | 2 | 4 | 3 | 4 | M | M | Q2 |
+| 111 | Sello revisión clínica por versión | Governance visible: qué versión de qué módulo (#85–#99) pasó revisión; alinea marketing y compliance interno. **Parcial (jun 2026):** `clinicalReview` en API + **sello UI** (módulo, biblioteca, tarjeta chat expandida); status `editorial_review` / futuro `clinical_review`. | Parcial | 2 | 4 | 3 | 4 | M | M | Q2 |
 | 112 | Pipeline unificado SSE + Socket | Una sola orquestación `mensaje → contexto → OpenAI → persistencia` para REST/stream y sockets; elimina divergencias de comportamiento, métricas y bugs. | No | 3 | 5 | 4 | 5 | M | L | Q2 |
 | 113 | RAG corpus curado | Vector store (p. ej. Atlas Vector, pgvector, Qdrant) con chunks de protocolos, psychoed revisada y políticas de crisis; recuperación por `conversationId` + tema, no web abierta. **Complemento usuario:** #203 (patrones personales entre sesiones). | No | 3 | 5 | 4 | 5 | A | L | Q2 |
 | 115 | Structured outputs JSON | Respuestas con esquema para `assistantMessage`, `suggestedActions`, `safetyFlags`; menos parsing frágil en frontend y mejor control. | No | 3 | 5 | 5 | 5 | M | M | Q2 |

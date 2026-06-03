@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
+import PsychoeducationClinicalReviewSeal from '../../components/PsychoeducationClinicalReviewSeal';
 import ParticleBackground from '../../components/ParticleBackground';
 import { api } from '../../config/api';
 import { useLanguage } from '../../context/LanguageContext';
@@ -162,6 +163,13 @@ const PsychoeducationModuleScreen = () => {
               <Text style={styles.heroMinutes}>{readLabel}</Text>
               {leadText ? <Text style={styles.heroLead}>{leadText}</Text> : null}
             </View>
+
+            <PsychoeducationClinicalReviewSeal
+              clinicalReview={module.clinicalReview}
+              texts={texts}
+              variant="module"
+              accentColor={visual.accent}
+            />
 
             {module.mechanismLine ? (
               <View
