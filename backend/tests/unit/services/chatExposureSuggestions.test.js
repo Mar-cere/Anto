@@ -45,4 +45,15 @@ describe('chatExposureSuggestions (#87)', () => {
     });
     expect(actionIds).toContain('exposure_hierarchy');
   });
+
+  it('pipeline ansiedad alta + evitación prioriza exposure_hierarchy', async () => {
+    const msg =
+      'Tengo ansiedad social, 8/10. Evito hablar en reuniones porque me da mucho miedo quedar mal.';
+    const analysis = await emotionalAnalyzer.analyzeEmotion(msg);
+    const actionIds = actionSuggestionService.generateSuggestions(analysis, {}, {
+      userContent: msg,
+    });
+    expect(actionIds[0]).toBe('exposure_hierarchy');
+    expect(actionIds).toContain('breathing_exercise');
+  });
 });

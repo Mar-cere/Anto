@@ -65,9 +65,13 @@ export function shouldBypassTccSuggestionCadence(userContent = '') {
 
 export function applyExposureSuggestionPolicy(ids, { emotion, intensityLevel, userContent } = {}) {
   if (!Array.isArray(ids) || ids.length === 0) return ids;
-  if (emotion !== 'ansiedad' || intensityLevel !== 'medium') return ids.slice(0, 3);
+  if (emotion !== 'ansiedad') return ids.slice(0, 3);
 
   const contextualAvoidance = shouldBoostExposureSuggestion(userContent);
+  const eligibleIntensity =
+    intensityLevel === 'medium' || (intensityLevel === 'high' && contextualAvoidance);
+  if (!eligibleIntensity) return ids.slice(0, 3);
+
   let list = [...ids];
 
   if (!list.includes(EXPOSURE_HIERARCHY_ID) && contextualAvoidance) {
