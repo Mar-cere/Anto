@@ -31,4 +31,14 @@ describe('getCreateAbcRecordSchema', () => {
     });
     expect(error).toBeDefined();
   });
+
+  it('recorta espacios en campos de texto', () => {
+    const { error, value } = schema.validate({
+      activatingEvent: '  Situación  ',
+      beliefs: '  Pensamiento  ',
+    });
+    expect(error).toBeUndefined();
+    expect(value.activatingEvent).toBe('Situación');
+    expect(value.beliefs).toBe('Pensamiento');
+  });
 });

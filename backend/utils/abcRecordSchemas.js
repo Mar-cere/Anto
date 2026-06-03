@@ -6,6 +6,7 @@ import Joi from 'joi';
 export function getCreateAbcRecordSchema(copy) {
   return Joi.object({
     activatingEvent: Joi.string()
+      .trim()
       .required()
       .min(1)
       .max(1000)
@@ -16,6 +17,7 @@ export function getCreateAbcRecordSchema(copy) {
         'any.required': copy.joiActivatingRequired,
       }),
     beliefs: Joi.string()
+      .trim()
       .required()
       .min(1)
       .max(1000)

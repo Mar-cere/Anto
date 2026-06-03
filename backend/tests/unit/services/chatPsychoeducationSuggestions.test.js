@@ -50,6 +50,12 @@ describe('chatPsychoeducationSuggestions (#85)', () => {
       ).toBe('ansiedad');
     });
 
+    it('resolveSuggestionEmotion mapea neutral + sad (EN) a tristeza', () => {
+      expect(
+        resolveSuggestionEmotion('neutral', 'I feel sad and low, 7/10'),
+      ).toBe('tristeza');
+    });
+
     it('resolveSuggestionEmotion prioriza desborde sobre estrés', () => {
       expect(
         resolveSuggestionEmotion(

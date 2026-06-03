@@ -35,6 +35,14 @@ const deleteAbcRecordLimiter = createRateLimiter({
 
 router.use(authenticateToken);
 
+const ALLOWED_SORT_FIELDS = new Set(['entryDate', 'createdAt', 'updatedAt']);
+
+function clampQueryInt(value, { fallback = 0, min = 0, max = 50 } = {}) {
+  const parsed = parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(min, Math.min(parsed, max));
+}
+
 const findAbcRecordById = async (recordId, userId) => {
   if (
     !mongoose.Types.ObjectId.isValid(recordId) ||
@@ -78,7 +86,7 @@ router.get('/export', async (req, res) => {
     const { limit = 20 } = req.query;
     const records = await AbcRecord.findByUser(userId, {
       archived: false,
-      limit: Math.min(parseInt(limit, 10) || 20, 50),
+      limit: clampQueryInt(limit, { fallback: 20, min: 1, max: 50 }),
       sortOrder: 'desc',
     });
 
@@ -117,14 +125,17 @@ router.get('/', async (req, res) => {
       sortOrder = 'desc',
     } = req.query;
 
+    const safeSortBy = ALLOWED_SORT_FIELDS.has(sortBy) ? sortBy : 'entryDate';
+    const safeSortOrder = sortOrder === 'asc' ? 'asc' : 'desc';
+
     const records = await AbcRecord.findByUser(userId, {
       startDate,
       endDate,
       archived: archived === 'true',
-      limit: parseInt(limit, 10),
-      skip: parseInt(skip, 10),
-      sortBy,
-      sortOrder,
+      limit: clampQueryInt(limit, { fallback: 50, min: 1, max: 100 }),
+      skip: clampQueryInt(skip, { fallback: 0, min: 0, max: 500 }),
+      sortBy: safeSortBy,
+      sortOrder: safeSortOrder,
     });
 
     res.json({

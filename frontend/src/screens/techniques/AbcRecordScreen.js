@@ -3,7 +3,7 @@
  * Wizard A → B → C con persistencia en backend y exportación para revisión.
  */
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -136,6 +136,7 @@ const AbcRecordScreen = () => {
   );
 
   const navigation = useNavigation();
+  const route = useRoute();
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle } = useTheme();
   const techniqueScreenStyles = useTechniqueScreenStyles();
@@ -278,6 +279,17 @@ const AbcRecordScreen = () => {
     loadRecords();
   }, [loadRecords]);
 
+  useEffect(() => {
+    const params = route.params || {};
+    const prefillA = String(params.prefillActivatingEvent || '').trim();
+    const prefillB = String(params.prefillBeliefs || '').trim();
+    if (prefillA) setActivatingEvent(prefillA);
+    if (prefillB) setBeliefs(prefillB);
+    if (prefillA || prefillB) {
+      setStepIndex(prefillA && prefillB ? 2 : prefillA ? 1 : 0);
+    }
+  }, [route.params]);
+
   const goNext = () => {
     setValidationMessage('');
     if (stepIndex === 0 && !activatingEvent.trim()) {
@@ -325,7 +337,7 @@ const AbcRecordScreen = () => {
         resetWizard();
         await loadRecords();
       } else {
-        showToast(TEXTS.TOAST_ERROR);
+        showToast(response?.error || TEXTS.TOAST_ERROR);
       }
     } catch (err) {
       console.error('Error guardando registro ABC:', err);

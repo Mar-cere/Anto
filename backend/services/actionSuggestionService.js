@@ -40,6 +40,37 @@ export function resolveContextualPsychoeducationIds(userContent = '') {
   );
 }
 
+/** Señales de cadena pensamiento → consecuencia; activa ABC (#86). */
+export const CONTEXTUAL_ABC_PATTERN =
+  /(?:pienso\s+lo\s+peor|siempre\s+pienso|peor\s+escenario|worst.?case|keep\s+thinking\s+the\s+worst|automatic\s+thought|pensamiento\s+autom[aá]tico|repaso\s+(?:una\s+y\s+otra|sin\s+parar)|darle\s+vueltas|no\s+paro\s+de\s+(?:pensar|darle\s+vueltas)|can'?t\s+stop\s+thinking|going\s+over\s+and\s+over|reaccion[eé]\s+mal|reacted\s+badly|qu[eé]\s+pas[oó]\s+en\s+mi\s+cabeza|what\s+went\s+through\s+my\s+mind)/i;
+
+const TCC_MEDIUM_EMOTIONS = new Set(['tristeza', 'enojo', 'culpa']);
+const ABC_RECORD_ID = 'abc_record';
+
+export function shouldBoostAbcSuggestion(userContent = '') {
+  return CONTEXTUAL_ABC_PATTERN.test(String(userContent || ''));
+}
+
+/**
+ * Prioriza ABC en intensidad media TCC: fija primer slot y/o inyecta si hay señal cognitiva.
+ */
+export function applyAbcSuggestionPolicy(ids, { emotion, intensityLevel, userContent } = {}) {
+  if (!Array.isArray(ids) || ids.length === 0) return ids;
+  if (intensityLevel !== 'medium' || !TCC_MEDIUM_EMOTIONS.has(emotion)) return ids.slice(0, 3);
+
+  const contextualThought = shouldBoostAbcSuggestion(userContent);
+  let list = [...ids];
+
+  if (!list.includes(ABC_RECORD_ID) && contextualThought) {
+    list = [ABC_RECORD_ID, ...list];
+  }
+
+  if (!list.includes(ABC_RECORD_ID)) return list.slice(0, 3);
+
+  list = [ABC_RECORD_ID, ...list.filter((id) => id !== ABC_RECORD_ID)];
+  return list.slice(0, 3);
+}
+
 /** Emoción con reglas de sugerencias; cae a ansiedad/enojo si el texto lo indica (#85). */
 export function resolveSuggestionEmotion(mainEmotion, userContent = '') {
   const known = new Set([
@@ -64,6 +95,23 @@ export function resolveSuggestionEmotion(mainEmotion, userContent = '') {
     )
   ) {
     return 'ansiedad';
+  }
+  if (
+    /(?:\bsad\b|\bdepressed\b|\bhopeless\b|feel(?:ing)?\s+(?:sad|low|down)|\blow\b.*\bfeel)/i.test(
+      text,
+    )
+  ) {
+    return 'tristeza';
+  }
+  if (
+    /(?:\bangry\b|\bfurious\b|\birritated\b|\bmad\b|\blash(?:ed)?\s+out|\breacted\s+badly)/i.test(
+      text,
+    )
+  ) {
+    return 'enojo';
+  }
+  if (/(?:\bguilty\b|\bguilt\b)/i.test(text)) {
+    return 'culpa';
   }
   return mainEmotion;
 }
@@ -104,7 +152,7 @@ class ActionSuggestionService {
         },
         medium: {
           general: ['abc_record', 'gratitude_journal', 'activity_suggestion'],
-          relaciones: ['communication_tool', 'self_care'],
+          relaciones: ['abc_record', 'communication_tool', 'self_care'],
           pérdida: ['grief_support', 'self_compassion_exercise']
         }
       },
@@ -116,8 +164,8 @@ class ActionSuggestionService {
         },
         medium: {
           general: ['abc_record', 'anger_management', 'physical_activity'],
-          relaciones: ['communication_tool', 'boundary_setting'],
-          trabajo: ['boundary_setting', 'task_break']
+          relaciones: ['abc_record', 'communication_tool', 'boundary_setting'],
+          trabajo: ['abc_record', 'boundary_setting', 'task_break']
         }
       },
       culpa: {
@@ -127,7 +175,7 @@ class ActionSuggestionService {
         },
         medium: {
           general: ['abc_record', 'self_compassion_exercise', 'values_exploration'],
-          relaciones: ['communication_tool', 'apology_guide']
+          relaciones: ['abc_record', 'communication_tool', 'apology_guide']
         }
       },
       soledad: {
@@ -220,7 +268,11 @@ class ActionSuggestionService {
       rankingScores instanceof Map && rankingScores.size > 0
         ? rankInterventionIds(enriched, rankingScores)
         : enriched;
-    return ranked.slice(0, 3);
+    return applyAbcSuggestionPolicy(ranked, {
+      emotion,
+      intensityLevel,
+      userContent,
+    });
   }
 
   /**

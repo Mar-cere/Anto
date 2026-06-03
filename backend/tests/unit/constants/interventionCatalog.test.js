@@ -51,6 +51,14 @@ describe('interventionCatalog', () => {
     expect(card.previewTitle).toMatch(/Anger/i);
   });
 
+  it('abc_record tiene pantalla y etiqueta EN', () => {
+    const entry = getInterventionCatalogEntry('abc_record');
+    expect(entry?.screen).toBe('AbcRecord');
+    const [card] = actionSuggestionService.formatSuggestions(['abc_record'], 'en');
+    expect(card.label).toMatch(/ABC/i);
+    expect(card.screen).toBe('AbcRecord');
+  });
+
   it('rechaza IDs con caracteres inválidos', () => {
     expect(isValidInterventionId('breathing_exercise')).toBe(true);
     expect(isValidInterventionId('')).toBe(false);

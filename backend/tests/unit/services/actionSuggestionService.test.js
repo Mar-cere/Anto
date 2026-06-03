@@ -5,8 +5,11 @@
  */
 
 import actionSuggestionService, {
+  applyAbcSuggestionPolicy,
   resolveContextualPsychoeducationIds,
+  shouldBoostAbcSuggestion,
 } from '../../../services/actionSuggestionService.js';
+import { rankInterventionIds } from '../../../services/interventionRankingService.js';
 
 describe('ActionSuggestionService', () => {
   describe('Métodos del servicio', () => {
@@ -175,6 +178,76 @@ describe('ActionSuggestionService', () => {
       );
       
       expect(Array.isArray(suggestions)).toBe(true);
+    });
+  });
+
+  describe('Autorregistro ABC (#86)', () => {
+    it('incluye abc_record en tristeza intensidad media', () => {
+      const suggestions = actionSuggestionService.generateSuggestions({
+        mainEmotion: 'tristeza',
+        intensity: 6,
+        topic: 'general',
+      });
+      expect(suggestions).toContain('abc_record');
+    });
+
+    it('no incluye abc_record en tristeza alta intensidad', () => {
+      const suggestions = actionSuggestionService.generateSuggestions({
+        mainEmotion: 'tristeza',
+        intensity: 9,
+        topic: 'general',
+      });
+      expect(suggestions).not.toContain('abc_record');
+    });
+
+    it('formatea abc_record con pantalla AbcRecord', () => {
+      const [card] = actionSuggestionService.formatSuggestions(['abc_record'], 'es');
+      expect(card.screen).toBe('AbcRecord');
+      expect(card.interventionType).toBe('exercise');
+    });
+
+    it('prioriza abc_record aunque el ranking favorezca otras técnicas', () => {
+      const msg =
+        'Me siento triste y apagado, 7/10. Noto que siempre pienso lo peor después de discutir con mi pareja.';
+      const ranked = rankInterventionIds(
+        ['abc_record', 'communication_tool', 'psychoeducation_depression'],
+        new Map([
+          ['communication_tool', 10],
+          ['self_care', 8],
+          ['abc_record', 0],
+        ]),
+      );
+      expect(ranked[0]).toBe('communication_tool');
+      const pinned = applyAbcSuggestionPolicy(ranked, {
+        emotion: 'tristeza',
+        intensityLevel: 'medium',
+        userContent: msg,
+      });
+      expect(pinned[0]).toBe('abc_record');
+    });
+
+    it('inyecta abc_record si hay señal cognitiva y falta en la lista (legacy)', () => {
+      const msg = 'Siempre pienso lo peor después de discutir, 6/10';
+      expect(shouldBoostAbcSuggestion(msg)).toBe(true);
+      const pinned = applyAbcSuggestionPolicy(
+        ['communication_tool', 'self_care', 'psychoeducation_depression'],
+        { emotion: 'tristeza', intensityLevel: 'medium', userContent: msg },
+      );
+      expect(pinned[0]).toBe('abc_record');
+    });
+
+    it('coloca abc_record primero en el mensaje canónico de dispositivo', () => {
+      const msg =
+        'Me siento triste y apagado, 7/10. Noto que siempre pienso lo peor después de discutir con mi pareja.';
+      const suggestions = actionSuggestionService.generateSuggestions(
+        { mainEmotion: 'tristeza', intensity: 7, topic: 'relaciones' },
+        {},
+        {
+          userContent: msg,
+          rankingScores: new Map([['communication_tool', 10], ['self_care', 9]]),
+        },
+      );
+      expect(suggestions[0]).toBe('abc_record');
     });
   });
 
