@@ -259,6 +259,7 @@ class ActionSuggestionService {
     ids.add('psychoeducation_sleep');
     ids.add('psychoeducation_emotion_regulation');
     ids.add('psychoeducation_trauma');
+    CONTEXTUAL_PSYCHOEDUCATION_RULES.forEach(({ id }) => ids.add(id));
     return [...ids].filter(Boolean);
   }
 

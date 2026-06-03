@@ -27,6 +27,7 @@
     "generate:therapeutic-templates-en": "node scripts/generate-therapeutic-templates-en.mjs",
     "generate:psychoeducation-en": "node scripts/generate-psychoeducation-en.mjs",
     "smoke:psychoeducation": "node scripts/smoke-psychoeducation-device.mjs",
+    "test:psychoeducation-chat": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js tests/unit/services/chatPsychoeducationSuggestions.test.js --coverage=false",
     "test:i18n": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern='apiRoutesI18nAudit|apiCopyParity|pushCopyEnAudit|emailEnAudit|EmailTemplate|emailLanguage|therapeuticTechniquesLocale|therapeuticTechniquesEnAudit|therapeuticApiCopy|therapeuticTechniquesRoutes.i18n|crisisRoutes.i18n|chatRoutes.i18n|authRoutes.i18n|authRoutes.registerDuplicate|authApiCopy|authErrorCodes|onboardingPromptSnippet|openaiPromptBuilder.onboarding|onboardingFocus|userApiCopy|journalApiCopy|journalRoutes.i18n|notificationApiCopy|cognitiveDistortionsApiCopy|responseFeedbackApiCopy|clinicalScalesApiCopy|metricsApiCopy|cloudinaryApiCopy|testNotificationApiCopy|notificationEngagementApiCopy|summaryApiCopy|productApiCopy|crisisApiCopy|guestChatApiCopy|apiLanguage|psychoeducation|therapeuticTemplate|therapeuticTemplatesEn' --coverage=false",
     "generate:therapeutic-en": "node scripts/generate-therapeutic-techniques-en.mjs",
     "generate:mindfulness-en": "node scripts/generate-mindfulness-techniques-en.mjs",

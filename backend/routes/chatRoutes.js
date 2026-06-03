@@ -67,7 +67,7 @@ import {
   isValidInterventionId,
 } from '../constants/interventionCatalog.js';
 import chatInterventionGraphService from '../services/chatInterventionGraphService.js';
-import { resolveChatSuggestionRankingScores } from '../services/chatSuggestionRanking.js';
+import { planChatActionSuggestions } from '../services/psychoeducationPromptSnippetService.js';
 import { cursorPaginate } from '../utils/pagination.js';
 import {
     HISTORIAL_LIMITE,
@@ -1247,6 +1247,17 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           conversationHistoryNewestFirst: conversationHistory
         });
         const forceFactualMode = detectFactualModeFromMessage({ currentMessage: content });
+
+        const appLanguageForChat = req.appLanguage || resolveRequestLanguage(req);
+        const suggestionPlan = await planChatActionSuggestions({
+          emotionalAnalysis,
+          contextualAnalysis,
+          userContent: content,
+          userId: req.user._id,
+          conversationId,
+          conversationHistory,
+          language: appLanguageForChat,
+        });
         
         const openaiContext = {
           rollingSummary: conversation?.rollingSummary || null,
@@ -1285,7 +1296,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           sessionRetention,
           sessionIntention: sessionIntentionSafe,
           responseStrategyHint,
-          conversationPattern
+          conversationPattern,
+          psychoeducationPromptSnippet: suggestionPlan.psychoeducationPromptSnippet,
         };
 
         metricsService
@@ -1465,31 +1477,17 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                 const cognitiveDistortions = contextualAnalysis?.cognitiveDistortions || null;
                 const primaryDistortion = contextualAnalysis?.primaryDistortion || null;
                 const distortionIntervention = contextualAnalysis?.distortionIntervention || null;
-                const shouldShowSuggestions = await shouldShowChatActionSuggestions({
-                  emotionalAnalysis,
-                  contextualAnalysis,
-                  conversationHistory,
-                  userId: req.user._id,
-                  conversationId,
-                });
-                let formattedSuggestions = [];
-                if (shouldShowSuggestions) {
-                  try {
-                    const rankingScores = await resolveChatSuggestionRankingScores({
-                      userId: req.user._id,
-                      emotionalAnalysis,
-                      contextualAnalysis,
-                    });
-                    const actionSuggestions = actionSuggestionService.generateSuggestions(
-                      emotionalAnalysis,
-                      contextualAnalysis,
-                      { rankingScores, userContent: content },
-                    );
-                    formattedSuggestions = actionSuggestionService.formatSuggestions(
-                      actionSuggestions,
-                      req.appLanguage || resolveRequestLanguage(req),
-                    );
-                  } catch (_) {}
+                const formattedSuggestions = suggestionPlan.formatted;
+                if (suggestionPlan.actionIds.length > 0) {
+                  suggestionPlan.actionIds.forEach((suggestionType) => {
+                    metricsService
+                      .recordMetric(
+                        'action_suggestion',
+                        { action: 'generate', suggestionType },
+                        req.user._id.toString(),
+                      )
+                      .catch(() => {});
+                  });
                 }
                 if (formattedSuggestions.length > 0) {
                   chatInterventionGraphService
@@ -1911,61 +1909,31 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           }
         }
         
-        // Determinar si debemos mostrar sugerencias basado en criterios inteligentes
-        const shouldShowSuggestions = await shouldShowChatActionSuggestions({
-          emotionalAnalysis,
-          contextualAnalysis,
-          conversationHistory,
-          userId: req.user._id,
-          conversationId,
-        });
-        
-        // Generar sugerencias solo si es apropiado
-        let formattedSuggestions = [];
-        if (shouldShowSuggestions) {
-          try {
-            const rankingScores = await resolveChatSuggestionRankingScores({
+        const formattedSuggestions = suggestionPlan.formatted;
+        if (suggestionPlan.actionIds.length > 0) {
+          suggestionPlan.actionIds.forEach((suggestionType) => {
+            metricsService
+              .recordMetric(
+                'action_suggestion',
+                { action: 'generate', suggestionType },
+                req.user._id.toString(),
+              )
+              .catch(() => {});
+          });
+        }
+        if (formattedSuggestions.length > 0) {
+          chatInterventionGraphService
+            .recordSuggestionEventsShown({
               userId: req.user._id,
+              conversationId: new mongoose.Types.ObjectId(conversationId),
+              assistantMessageId: assistantMessage?._id || null,
+              suggestions: formattedSuggestions,
               emotionalAnalysis,
               contextualAnalysis,
-            });
-            const actionSuggestions = actionSuggestionService.generateSuggestions(
-              emotionalAnalysis,
-              contextualAnalysis,
-              { rankingScores, userContent: content },
-            );
-            formattedSuggestions = actionSuggestionService.formatSuggestions(
-              actionSuggestions,
-              req.appLanguage || resolveRequestLanguage(req),
-            );
-
-            // Registrar métricas de sugerencias
-            if (actionSuggestions.length > 0) {
-              actionSuggestions.forEach(suggestion => {
-                metricsService.recordMetric('action_suggestion', {
-                  action: 'generate',
-                  suggestionType: suggestion
-                }, req.user._id.toString()).catch(() => {});
-              });
-            }
-
-            if (formattedSuggestions.length > 0) {
-              chatInterventionGraphService
-                .recordSuggestionEventsShown({
-                  userId: req.user._id,
-                  conversationId: new mongoose.Types.ObjectId(conversationId),
-                  assistantMessageId: assistantMessage?._id || null,
-                  suggestions: formattedSuggestions,
-                  emotionalAnalysis,
-                  contextualAnalysis,
-                  riskLevel,
-                  source: 'chat_suggestions_v1'
-                })
-                .catch(() => {});
-            }
-          } catch (error) {
-            console.error('[ChatRoutes] Error generando sugerencias:', error);
-          }
+              riskLevel,
+              source: 'chat_suggestions_v1',
+            })
+            .catch(() => {});
         }
 
         let proposedProductActions = [];

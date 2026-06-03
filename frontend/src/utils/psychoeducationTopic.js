@@ -173,6 +173,10 @@ function applyPsychoeducationCardFields(suggestion, language) {
     cardVariant: 'psychoeducation_native',
     estimatedMinutes: suggestion.estimatedMinutes || 2,
     description: suggestion.description || copy.previewSummary,
+    microSteps:
+      Array.isArray(suggestion.microSteps) && suggestion.microSteps.length > 0
+        ? suggestion.microSteps
+        : copy.microSteps || [],
   };
 }
 

@@ -56,8 +56,10 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
           lineHeight: 17,
           color: colors.textSecondary,
           fontStyle: 'italic',
-          marginBottom: 12,
+          marginBottom: 8,
         },
+        steps: { marginBottom: 12, gap: 4 },
+        stepText: { fontSize: 12, lineHeight: 17, color: colors.textSecondary },
         footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
         cta: {
           flexDirection: 'row',
@@ -108,6 +110,9 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
   const title = suggestion.previewTitle || suggestion.label;
   const summary = suggestion.previewSummary || suggestion.description;
   const minutes = suggestion.estimatedMinutes || 2;
+  const microSteps = Array.isArray(suggestion.microSteps)
+    ? suggestion.microSteps.filter((s) => typeof s === 'string' && s.trim()).slice(0, 2)
+    : [];
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -146,6 +151,15 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
         {summary ? <Text style={styles.summary}>{summary}</Text> : null}
         {suggestion.mechanismLine ? (
           <Text style={styles.mechanism}>{suggestion.mechanismLine}</Text>
+        ) : null}
+        {microSteps.length > 0 ? (
+          <View style={styles.steps}>
+            {microSteps.map((step, index) => (
+              <Text key={`${suggestion.id}-step-${index}`} style={styles.stepText}>
+                {index + 1}. {step}
+              </Text>
+            ))}
+          </View>
         ) : null}
         <View style={styles.footer}>
           <View style={styles.cta}>

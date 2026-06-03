@@ -12,6 +12,9 @@ import {
   PSYCHOEDUCATION_META_KEY_SET,
   psychoeducationBodyKeys,
 } from '../constants/psychoeducationContentKeys.js';
+import emotionalAnalyzer from '../services/emotionalAnalyzer.js';
+import actionSuggestionService from '../services/actionSuggestionService.js';
+import { CHAT_PSYCHOEDUCATION_SMOKE_CASES } from '../tests/fixtures/chatPsychoeducationSmokeMessages.js';
 
 const PRIORITY = new Set(['sleep', 'stress', 'emotionRegulation']);
 const LANGUAGES = ['es', 'en'];
@@ -169,8 +172,53 @@ for (const language of LANGUAGES) {
 console.log('Prioridad manual en dispositivo: sleep, stress, emotionRegulation');
 console.log('Ruta: Ajustes → Técnicas terapéuticas → Módulos de psicoeducación\n');
 
-if (failed > 0) {
-  console.error(`❌ ${failed} comprobación(es) fallida(s)\n`);
+console.log('--- Chat: análisis + sugerencias (mensajes canónicos) ---');
+let chatFailed = 0;
+for (const {
+  id,
+  message,
+  expectedPsycho,
+  allowedEmotions,
+  minIntensity,
+  minSuggestions,
+} of CHAT_PSYCHOEDUCATION_SMOKE_CASES) {
+  const analysis = await emotionalAnalyzer.analyzeEmotion(message);
+  const suggestions = actionSuggestionService.generateSuggestions(analysis, {}, {
+    userContent: message,
+  });
+  const missingPsycho = expectedPsycho.filter((p) => !suggestions.includes(p));
+  const emotionOk = allowedEmotions.includes(analysis.mainEmotion);
+  const intensityOk = analysis.intensity >= minIntensity;
+  const countOk = suggestions.length >= minSuggestions;
+  const ok =
+    missingPsycho.length === 0 && emotionOk && intensityOk && countOk;
+  const status = ok ? 'OK' : 'FAIL';
+  console.log(
+    `  [${status}] ${id} → ${analysis.mainEmotion} ${analysis.intensity} | ${suggestions.join(', ')}`,
+  );
+  if (!ok) {
+    if (missingPsycho.length) {
+      console.log(`         ✗ falta psicoed: ${missingPsycho.join(', ')}`);
+    }
+    if (!emotionOk) {
+      console.log(
+        `         ✗ emoción ${analysis.mainEmotion} no está en ${allowedEmotions.join(', ')}`,
+      );
+    }
+    if (!intensityOk) {
+      console.log(`         ✗ intensidad ${analysis.intensity} < ${minIntensity}`);
+    }
+    if (!countOk) {
+      console.log(`         ✗ sugerencias vacías o insuficientes`);
+    }
+    chatFailed += 1;
+  }
+}
+console.log('');
+
+if (failed > 0 || chatFailed > 0) {
+  const total = failed + chatFailed;
+  console.error(`❌ ${total} comprobación(es) fallida(s)\n`);
   process.exit(1);
 }
 
