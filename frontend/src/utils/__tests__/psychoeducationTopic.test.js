@@ -68,6 +68,19 @@ describe('psychoeducationTopic', () => {
     expect(parsePsychoeducationBrowseResponse({ success: false, error: 'x' })).toEqual([]);
   });
 
+  it('conserva microSteps del servidor al hidratar', () => {
+    const out = hydrateInterventionSuggestion(
+      {
+        id: 'psychoeducation_stress',
+        interventionType: 'psychoeducation',
+        microSteps: ['Paso A del servidor.', 'Paso B del servidor.'],
+        params: { topic: 'stress' },
+      },
+      'es',
+    );
+    expect(out.microSteps).toEqual(['Paso A del servidor.', 'Paso B del servidor.']);
+  });
+
   it('hidrata los 7 topics de psicoeducación', () => {
     const ids = [
       'psychoeducation_anxiety',

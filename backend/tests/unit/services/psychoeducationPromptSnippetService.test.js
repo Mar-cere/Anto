@@ -1,9 +1,13 @@
 import actionSuggestionService from '../../../services/actionSuggestionService.js';
+import emotionalAnalyzer from '../../../services/emotionalAnalyzer.js';
 import {
+  applyPsychoeducationCardTiers,
   buildPsychoeducationPromptSnippet,
   extractPsychoeducationSuggestions,
+  pickPredominantPsychoeducationId,
 } from '../../../services/psychoeducationPromptSnippetService.js';
 import { buildContextualizedPrompt } from '../../../services/openai/openaiPromptBuilder.js';
+import { CHAT_PSYCHOEDUCATION_SMOKE_CASES } from '../../fixtures/chatPsychoeducationSmokeMessages.js';
 
 describe('psychoeducationPromptSnippetService (#78)', () => {
   it('extractPsychoeducationSuggestions filtra solo psicoed', () => {
@@ -18,15 +22,23 @@ describe('psychoeducationPromptSnippetService (#78)', () => {
     ]);
   });
 
-  it('buildPsychoeducationPromptSnippet incluye títulos de tarjetas', () => {
-    const formatted = actionSuggestionService.formatSuggestions(
+  it('buildPsychoeducationPromptSnippet solo menciona tarjeta principal', () => {
+    const raw = actionSuggestionService.formatSuggestions(
       ['psychoeducation_stress', 'psychoeducation_anxiety'],
       'es',
     );
-    const snippet = buildPsychoeducationPromptSnippet(formatted, 'es');
-    expect(snippet).toMatch(/Estrés/);
+    const formatted = applyPsychoeducationCardTiers(raw, {
+      userContent: 'crisis de pánico y mucha ansiedad',
+      mainEmotion: 'ansiedad',
+    });
+    const primaryId = pickPredominantPsychoeducationId(formatted, {
+      userContent: 'crisis de pánico',
+      mainEmotion: 'ansiedad',
+    });
+    const snippet = buildPsychoeducationPromptSnippet(formatted, 'es', primaryId);
     expect(snippet).toMatch(/Ansiedad/);
-    expect(snippet).toMatch(/psicoeducación/i);
+    expect(snippet).not.toMatch(/«Estrés»/);
+    expect(snippet).toMatch(/tarjeta principal/i);
   });
 
   it('buildPsychoeducationPromptSnippet devuelve null sin psicoed', () => {
@@ -35,6 +47,44 @@ describe('psychoeducationPromptSnippetService (#78)', () => {
       'es',
     );
     expect(buildPsychoeducationPromptSnippet(formatted, 'es')).toBeNull();
+  });
+
+  it('buildPsychoeducationPromptSnippet en inglés', () => {
+    const formatted = actionSuggestionService.formatSuggestions(
+      ['psychoeducation_sleep'],
+      'en',
+    );
+    const snippet = buildPsychoeducationPromptSnippet(formatted, 'en');
+    expect(snippet).toMatch(/Psychoeducation card in the UI/i);
+    expect(snippet).toMatch(/Sleep/i);
+  });
+
+  it('device_stress_panic: ansiedad expandida, estrés compacto', async () => {
+    const fixture = CHAT_PSYCHOEDUCATION_SMOKE_CASES.find(
+      (c) => c.id === 'device_stress_panic',
+    );
+    const analysis = await emotionalAnalyzer.analyzeEmotion(fixture.message);
+    const ids = actionSuggestionService.generateSuggestions(analysis, {}, {
+      userContent: fixture.message,
+    });
+    const formatted = applyPsychoeducationCardTiers(
+      actionSuggestionService.formatSuggestions(ids, 'es'),
+      { userContent: fixture.message, mainEmotion: analysis.mainEmotion },
+    );
+    const anxiety = formatted.find((c) => c.id === 'psychoeducation_anxiety');
+    const stress = formatted.find((c) => c.id === 'psychoeducation_stress');
+    const snippet = buildPsychoeducationPromptSnippet(
+      formatted,
+      'es',
+      'psychoeducation_anxiety',
+    );
+    expect(analysis.mainEmotion).toBe('ansiedad');
+    expect(anxiety?.cardDisplayMode).toBe('expanded');
+    expect(anxiety?.microSteps?.length).toBe(2);
+    expect(stress?.cardDisplayMode).toBe('compact');
+    expect(stress?.microSteps?.length || 0).toBe(0);
+    expect(snippet).toMatch(/Ansiedad/);
+    expect(snippet).not.toMatch(/«Estrés»/);
   });
 
   it('formatSuggestions incluye microSteps (#78)', () => {
@@ -60,7 +110,7 @@ describe('openaiPromptBuilder — snippet psicoed (#78)', () => {
         psychoeducationPromptSnippet: snippet,
       },
     );
-    expect(systemMessage).toMatch(/Tarjetas de psicoeducación/i);
+    expect(systemMessage).toMatch(/tarjeta principal de psicoeducación/i);
     expect(systemMessage).toMatch(/Ansiedad/);
   });
 });

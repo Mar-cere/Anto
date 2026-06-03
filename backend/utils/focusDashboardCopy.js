@@ -117,6 +117,58 @@ export function routinePushSlotLabel(kind, language = 'es') {
   return c.scheduledReminder;
 }
 
+/**
+ * Días calendario entre dos instantes (misma zona; IANA si se pasa timeZone).
+ * @param {Date|string|number} fromDate
+ * @param {Date|string|number} toDate
+ * @param {string} [timeZone]
+ */
+export function calendarDaysBetweenInTz(fromDate, toDate, timeZone) {
+  const opts = { year: 'numeric', month: '2-digit', day: '2-digit' };
+  if (timeZone && typeof timeZone === 'string' && timeZone.trim()) {
+    opts.timeZone = timeZone.trim();
+  }
+  const fmt = new Intl.DateTimeFormat('en-CA', opts);
+  const dayKey = (d) => {
+    const [y, m, day] = fmt.format(new Date(d)).split('-').map((x) => Number(x));
+    return Date.UTC(y, m - 1, day);
+  };
+  return Math.round((dayKey(toDate) - dayKey(fromDate)) / 86400000);
+}
+
+/**
+ * Sustituto de "Hoy"/"Today" al inicio del snippet según cuándo terminó la sesión.
+ * @param {number} daysAgo días calendario entre sesión y ahora (0 = mismo día)
+ * @param {'es'|'en'} language
+ */
+export function relativeSessionDayOpener(daysAgo, language = 'es') {
+  const lang = normalizeFocusLanguage(language);
+  if (daysAgo <= 0) return lang === 'en' ? 'Today' : 'Hoy';
+  if (daysAgo === 1) return lang === 'en' ? 'Yesterday' : 'Ayer';
+  return lang === 'en' ? `${daysAgo} days ago` : `Hace ${daysAgo} días`;
+}
+
+/**
+ * Corrige "Hoy"/"Today" al inicio cuando el resumen es de otra fecha (p. ej. snippet generado hace semanas).
+ */
+export function fixContinuationTemporalOpeners(
+  text,
+  sessionReferenceAt,
+  language = 'es',
+  now = new Date(),
+  timeZone
+) {
+  if (!text || typeof text !== 'string' || !sessionReferenceAt) return text;
+  const days = calendarDaysBetweenInTz(sessionReferenceAt, now, timeZone);
+  if (days <= 0) return text;
+  const replacement = relativeSessionDayOpener(days, language);
+  const lang = normalizeFocusLanguage(language);
+  if (lang === 'en') {
+    return text.replace(/^Today\b/i, replacement);
+  }
+  return text.replace(/^Hoy\b/i, replacement);
+}
+
 /** Heurística ligera: texto guardado en español cuando el usuario pide inglés. */
 export function looksLikeSpanishText(text) {
   if (!text || typeof text !== 'string') return false;
@@ -130,12 +182,15 @@ export function looksLikeSpanishText(text) {
  * Ajusta continuidad del chat al idioma solicitado (resúmenes legacy pueden estar en español).
  * @param {object|null} summary
  * @param {'es'|'en'} language
+ * @param {{ now?: Date, timezone?: string }} [opts]
  */
-export function localizeLastSessionSummaryForDisplay(summary, language = 'es') {
+export function localizeLastSessionSummaryForDisplay(summary, language = 'es', opts = {}) {
   if (!summary) return null;
   const lang = normalizeFocusLanguage(language);
   const c = focusCopy(lang);
   const storedLang = summary.language === 'en' ? 'en' : 'es';
+  const now = opts.now instanceof Date ? opts.now : new Date();
+  const timezone = opts.timezone;
   let snippet = typeof summary.snippet === 'string' ? summary.snippet : '';
   let bridge = typeof summary.bridge === 'string' ? summary.bridge : '';
 
@@ -146,6 +201,12 @@ export function localizeLastSessionSummaryForDisplay(summary, language = 'es') {
     snippet = c.lastSessionMismatchFallback;
     if (looksLikeSpanishText(bridge)) {
       bridge = c.lastSessionMismatchFallback;
+    }
+  } else {
+    const sessionRef = summary.sessionEndedAt || summary.generatedAt;
+    if (sessionRef) {
+      snippet = fixContinuationTemporalOpeners(snippet, sessionRef, lang, now, timezone);
+      bridge = fixContinuationTemporalOpeners(bridge, sessionRef, lang, now, timezone);
     }
   }
 

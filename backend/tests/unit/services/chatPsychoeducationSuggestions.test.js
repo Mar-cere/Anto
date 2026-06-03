@@ -7,16 +7,26 @@ import actionSuggestionService, {
   resolveContextualPsychoeducationIds,
   resolveSuggestionEmotion,
 } from '../../../services/actionSuggestionService.js';
+import {
+  applyPsychoeducationCardTiers,
+  buildPsychoeducationPromptSnippet,
+  pickPredominantPsychoeducationId,
+} from '../../../services/psychoeducationPromptSnippetService.js';
 import { getInterventionCatalogEntry } from '../../../constants/interventionCatalog.js';
 import { CHAT_PSYCHOEDUCATION_SMOKE_CASES } from '../../fixtures/chatPsychoeducationSmokeMessages.js';
 
 function runChatPipeline(message) {
-  return emotionalAnalyzer.analyzeEmotion(message).then((analysis) => ({
-    analysis,
-    suggestions: actionSuggestionService.generateSuggestions(analysis, {}, {
+  return emotionalAnalyzer.analyzeEmotion(message).then((analysis) => {
+    const suggestions = actionSuggestionService.generateSuggestions(analysis, {}, {
       userContent: message,
-    }),
-  }));
+    });
+    const raw = actionSuggestionService.formatSuggestions(suggestions, 'es');
+    const formatted = applyPsychoeducationCardTiers(raw, {
+      userContent: message,
+      mainEmotion: analysis.mainEmotion,
+    });
+    return { analysis, suggestions, formatted };
+  });
 }
 
 describe('chatPsychoeducationSuggestions (#85)', () => {
@@ -67,8 +77,9 @@ describe('chatPsychoeducationSuggestions (#85)', () => {
         allowedEmotions,
         minIntensity,
         minSuggestions,
+        expectPromptSnippet,
       }) => {
-        const { analysis, suggestions } = await runChatPipeline(message);
+        const { analysis, suggestions, formatted } = await runChatPipeline(message);
 
         expect(allowedEmotions).toContain(analysis.mainEmotion);
         expect(analysis.intensity).toBeGreaterThanOrEqual(minIntensity);
@@ -77,14 +88,35 @@ describe('chatPsychoeducationSuggestions (#85)', () => {
         for (const psychoId of expectedPsycho) {
           expect(suggestions).toContain(psychoId);
         }
+        const primaryId = pickPredominantPsychoeducationId(formatted, {
+          userContent: message,
+          mainEmotion: analysis.mainEmotion,
+        });
 
-        const formatted = actionSuggestionService.formatSuggestions(suggestions, 'es');
         for (const psychoId of expectedPsycho) {
           const card = formatted.find((c) => c.id === psychoId);
           expect(card?.screen).toBe('PsychoeducationModule');
           expect(card?.params?.topic).toBeTruthy();
           expect(card?.previewTitle?.length).toBeGreaterThan(0);
-          expect(card?.microSteps?.length).toBeGreaterThanOrEqual(2);
+          if (psychoId === primaryId) {
+            expect(card?.cardDisplayMode).toBe('expanded');
+            expect(card?.microSteps?.length).toBeGreaterThanOrEqual(2);
+          } else if (expectedPsycho.length > 1) {
+            expect(card?.cardDisplayMode).toBe('compact');
+            expect(card?.microSteps?.length || 0).toBe(0);
+            expect(card?.mechanismLine).toBeUndefined();
+          }
+        }
+
+        if (expectPromptSnippet) {
+          const snippet = buildPsychoeducationPromptSnippet(
+            formatted,
+            'es',
+            primaryId,
+          );
+          expect(snippet).toMatch(/tarjeta principal/i);
+          const primaryCard = formatted.find((c) => c.id === primaryId);
+          expect(snippet).toContain(primaryCard.previewTitle);
         }
       },
     );

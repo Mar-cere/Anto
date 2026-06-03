@@ -15,6 +15,7 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
   const { colors, resolvedScheme } = useTheme();
   const texts = usePsychoeducationTexts();
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+  const isCompact = suggestion?.cardDisplayMode === 'compact';
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
@@ -28,8 +29,8 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
       StyleSheet.create({
         container: { marginBottom: 10 },
         card: {
-          borderRadius: 22,
-          padding: 14,
+          borderRadius: isCompact ? 16 : 22,
+          padding: isCompact ? 10 : 14,
           backgroundColor: colors.cardBackground ?? colors.card,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: t.FOCUS_BORDER_SUBTLE,
@@ -40,7 +41,11 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
           shadowRadius: 8,
           elevation: 2,
         },
-        badgeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+        badgeRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginBottom: isCompact ? 4 : 8,
+        },
         badge: {
           fontSize: 11,
           fontWeight: '700',
@@ -49,7 +54,28 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
           letterSpacing: 0.4,
           marginLeft: 6,
         },
-        title: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 },
+        title: {
+          fontSize: isCompact ? 15 : 16,
+          fontWeight: '700',
+          color: colors.text,
+          marginBottom: isCompact ? 0 : 6,
+        },
+        compactRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginTop: 8,
+        },
+        compactCta: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 6,
+          paddingHorizontal: 10,
+          borderRadius: 999,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_BORDER_SUBTLE,
+        },
+        compactCtaText: { fontSize: 12, fontWeight: '600', color: colors.primary, marginRight: 2 },
         summary: { fontSize: 13, lineHeight: 19, color: colors.textSecondary, marginBottom: 8 },
         mechanism: {
           fontSize: 12,
@@ -72,7 +98,7 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
         ctaText: { color: colors.textOnPrimary, fontSize: 13, fontWeight: '600', marginRight: 4 },
         minutes: { fontSize: 12, color: colors.textSecondary },
       }),
-    [colors, t],
+    [colors, t, isCompact],
   );
 
   useEffect(() => {
@@ -110,9 +136,12 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
   const title = suggestion.previewTitle || suggestion.label;
   const summary = suggestion.previewSummary || suggestion.description;
   const minutes = suggestion.estimatedMinutes || 2;
-  const microSteps = Array.isArray(suggestion.microSteps)
-    ? suggestion.microSteps.filter((s) => typeof s === 'string' && s.trim()).slice(0, 2)
-    : [];
+  const microSteps =
+    isCompact
+      ? []
+      : Array.isArray(suggestion.microSteps)
+        ? suggestion.microSteps.filter((s) => typeof s === 'string' && s.trim()).slice(0, 2)
+        : [];
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -134,8 +163,8 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
         <View style={styles.badgeRow}>
           <View
             style={{
-              width: 32,
-              height: 32,
+              width: isCompact ? 28 : 32,
+              height: isCompact ? 28 : 32,
               borderRadius: 10,
               backgroundColor: visual.iconBg,
               alignItems: 'center',
@@ -143,33 +172,50 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
               marginRight: 4,
             }}
           >
-            <MaterialCommunityIcons name={visual.icon} size={18} color={visual.accent} />
+            <MaterialCommunityIcons
+              name={visual.icon}
+              size={isCompact ? 16 : 18}
+              color={visual.accent}
+            />
           </View>
-          <Text style={[styles.badge, { color: visual.accent }]}>{texts.CARD_BADGE}</Text>
+          {!isCompact ? (
+            <Text style={[styles.badge, { color: visual.accent }]}>{texts.CARD_BADGE}</Text>
+          ) : null}
         </View>
         <Text style={styles.title}>{title}</Text>
-        {summary ? <Text style={styles.summary}>{summary}</Text> : null}
-        {suggestion.mechanismLine ? (
-          <Text style={styles.mechanism}>{suggestion.mechanismLine}</Text>
-        ) : null}
-        {microSteps.length > 0 ? (
-          <View style={styles.steps}>
-            {microSteps.map((step, index) => (
-              <Text key={`${suggestion.id}-step-${index}`} style={styles.stepText}>
-                {index + 1}. {step}
+        {isCompact ? (
+          <View style={styles.compactRow}>
+            <View style={styles.compactCta}>
+              <Text style={styles.compactCtaText}>{texts.CARD_CTA_COMPACT || 'Abrir'}</Text>
+              <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+            </View>
+          </View>
+        ) : (
+          <>
+            {summary ? <Text style={styles.summary}>{summary}</Text> : null}
+            {suggestion.mechanismLine ? (
+              <Text style={styles.mechanism}>{suggestion.mechanismLine}</Text>
+            ) : null}
+            {microSteps.length > 0 ? (
+              <View style={styles.steps}>
+                {microSteps.map((step, index) => (
+                  <Text key={`${suggestion.id}-step-${index}`} style={styles.stepText}>
+                    {index + 1}. {step}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
+            <View style={styles.footer}>
+              <View style={styles.cta}>
+                <Text style={styles.ctaText}>{texts.CARD_CTA_READ}</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textOnPrimary} />
+              </View>
+              <Text style={styles.minutes}>
+                {texts.CARD_MINUTES.replace('{n}', String(minutes))}
               </Text>
-            ))}
-          </View>
-        ) : null}
-        <View style={styles.footer}>
-          <View style={styles.cta}>
-            <Text style={styles.ctaText}>{texts.CARD_CTA_READ}</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.textOnPrimary} />
-          </View>
-          <Text style={styles.minutes}>
-            {texts.CARD_MINUTES.replace('{n}', String(minutes))}
-          </Text>
-        </View>
+            </View>
+          </>
+        )}
       </TouchableOpacity>
     </Animated.View>
   );

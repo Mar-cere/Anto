@@ -14,6 +14,12 @@ import {
 } from '../constants/psychoeducationContentKeys.js';
 import emotionalAnalyzer from '../services/emotionalAnalyzer.js';
 import actionSuggestionService from '../services/actionSuggestionService.js';
+import {
+  applyPsychoeducationCardTiers,
+  buildPsychoeducationPromptSnippet,
+  pickPredominantPsychoeducationId,
+} from '../services/psychoeducationPromptSnippetService.js';
+import { getPsychoeducationCardFields } from '../constants/psychoeducationTopics.js';
 import { CHAT_PSYCHOEDUCATION_SMOKE_CASES } from '../tests/fixtures/chatPsychoeducationSmokeMessages.js';
 
 const PRIORITY = new Set(['sleep', 'stress', 'emotionRegulation']);
@@ -181,20 +187,43 @@ for (const {
   allowedEmotions,
   minIntensity,
   minSuggestions,
+  expectPromptSnippet,
 } of CHAT_PSYCHOEDUCATION_SMOKE_CASES) {
   const analysis = await emotionalAnalyzer.analyzeEmotion(message);
   const suggestions = actionSuggestionService.generateSuggestions(analysis, {}, {
     userContent: message,
   });
+  const formatted = applyPsychoeducationCardTiers(
+    actionSuggestionService.formatSuggestions(suggestions, 'es'),
+    { userContent: message, mainEmotion: analysis.mainEmotion },
+  );
+  const primaryId = pickPredominantPsychoeducationId(formatted, {
+    userContent: message,
+    mainEmotion: analysis.mainEmotion,
+  });
   const missingPsycho = expectedPsycho.filter((p) => !suggestions.includes(p));
   const emotionOk = allowedEmotions.includes(analysis.mainEmotion);
   const intensityOk = analysis.intensity >= minIntensity;
   const countOk = suggestions.length >= minSuggestions;
+  const microOk = expectedPsycho.every((pid) => {
+    const card = formatted.find((c) => c.id === pid);
+    if (pid === primaryId) return card?.microSteps?.length >= 2;
+    if (expectedPsycho.length > 1) return card?.cardDisplayMode === 'compact';
+    return card?.microSteps?.length >= 2;
+  });
+  const snippet = buildPsychoeducationPromptSnippet(formatted, 'es', primaryId);
+  const snippetOk = expectPromptSnippet ? Boolean(snippet) : true;
   const ok =
-    missingPsycho.length === 0 && emotionOk && intensityOk && countOk;
+    missingPsycho.length === 0 &&
+    emotionOk &&
+    intensityOk &&
+    countOk &&
+    microOk &&
+    snippetOk;
   const status = ok ? 'OK' : 'FAIL';
+  const snippetTag = snippet ? 'snippet✓' : 'snippet—';
   console.log(
-    `  [${status}] ${id} → ${analysis.mainEmotion} ${analysis.intensity} | ${suggestions.join(', ')}`,
+    `  [${status}] ${id} → ${analysis.mainEmotion} ${analysis.intensity} | ${suggestions.join(', ')} | ${snippetTag}`,
   );
   if (!ok) {
     if (missingPsycho.length) {
@@ -211,13 +240,31 @@ for (const {
     if (!countOk) {
       console.log(`         ✗ sugerencias vacías o insuficientes`);
     }
+    if (!microOk) {
+      console.log(`         ✗ falta microSteps (2) en tarjeta psicoed`);
+    }
+    if (!snippetOk) {
+      console.log(`         ✗ se esperaba snippet de prompt #78`);
+    }
     chatFailed += 1;
   }
 }
 console.log('');
 
-if (failed > 0 || chatFailed > 0) {
-  const total = failed + chatFailed;
+console.log('--- #78: microSteps por topic (catálogo) ---');
+let metaFailed = 0;
+for (const topic of topics) {
+  const es = getPsychoeducationCardFields(topic, 'es');
+  const en = getPsychoeducationCardFields(topic, 'en');
+  const ok =
+    es?.microSteps?.length === 2 && en?.microSteps?.length === 2;
+  console.log(`  [${ok ? 'OK' : 'FAIL'}] ${topic} microSteps es/en`);
+  if (!ok) metaFailed += 1;
+}
+console.log('');
+
+if (failed > 0 || chatFailed > 0 || metaFailed > 0) {
+  const total = failed + chatFailed + metaFailed;
   console.error(`❌ ${total} comprobación(es) fallida(s)\n`);
   process.exit(1);
 }

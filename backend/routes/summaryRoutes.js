@@ -6,6 +6,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import { buildDashboardFocus } from '../services/dashboardFocusService.js';
 import { getLastSessionSummaryForUser } from '../services/lastSessionSummaryService.js';
 import { buildUserSummary } from '../services/userSummaryService.js';
+import User from '../models/User.js';
 import { localizeLastSessionSummaryForDisplay } from '../utils/focusDashboardCopy.js';
 import { resolveSummaryRequestLanguage, summaryApiCopy } from '../utils/summaryApiCopy.js';
 
@@ -28,8 +29,13 @@ router.get('/last-session', authenticateToken, async (req, res) => {
   const language = resolveSummaryRequestLanguage(req);
   const copy = summaryApiCopy(language);
   try {
-    const raw = await getLastSessionSummaryForUser(req.user._id);
-    const data = localizeLastSessionSummaryForDisplay(raw, language);
+    const [raw, userDoc] = await Promise.all([
+      getLastSessionSummaryForUser(req.user._id),
+      User.findById(req.user._id).select('preferences.timezone').lean()
+    ]);
+    const data = localizeLastSessionSummaryForDisplay(raw, language, {
+      timezone: userDoc?.preferences?.timezone || null
+    });
     return res.json({ success: true, data, language });
   } catch (err) {
     console.error('[summaryRoutes] Error /last-session:', err);
