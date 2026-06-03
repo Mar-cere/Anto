@@ -1599,6 +1599,7 @@ export const TECHNIQUES = {
   PSYCHOED_MODULE_NOT_FOUND: 'Module not found.',
   PSYCHOED_CARD_BADGE: 'Psychoeducation',
   PSYCHOED_CARD_CTA_READ: 'Read module',
+  PSYCHOED_CARD_CTA_COMPACT: 'Open',
   PSYCHOED_CARD_MINUTES: '~{n} min',
   PSYCHOED_REVIEW_FOOTER: 'Content v{version} · editorial review ({date})',
   PSYCHOED_MECHANISM_TITLE: 'Why this may help',

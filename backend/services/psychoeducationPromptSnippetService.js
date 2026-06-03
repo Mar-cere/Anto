@@ -37,7 +37,9 @@ export function pickPredominantPsychoeducationId(formatted, options = {}) {
   const ids = new Set(psychos.map((p) => p.id));
 
   if (
-    /(?:crisis\s+de\s+p[aá]nico|ataque\s+de\s+p[aá]nico|p[aá]nico|panico)/i.test(text) &&
+    /(?:crisis\s+de\s+p[aá]nico|ataque\s+de\s+p[aá]nico|p[aá]nico|panico|panic\s+attack|having\s+a\s+panic|panicking)/i.test(
+      text,
+    ) &&
     ids.has('psychoeducation_anxiety')
   ) {
     return 'psychoeducation_anxiety';

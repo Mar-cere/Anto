@@ -1603,6 +1603,7 @@ export const TECHNIQUES = {
   PSYCHOED_MODULE_NOT_FOUND: 'No se encontró el módulo.',
   PSYCHOED_CARD_BADGE: 'Psicoeducación',
   PSYCHOED_CARD_CTA_READ: 'Leer módulo',
+  PSYCHOED_CARD_CTA_COMPACT: 'Abrir',
   PSYCHOED_CARD_MINUTES: '~{n} min',
   PSYCHOED_REVIEW_FOOTER: 'Contenido v{version} · revisión editorial ({date})',
   PSYCHOED_MECHANISM_TITLE: 'Por qué puede ayudar',

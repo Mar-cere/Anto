@@ -37,6 +37,22 @@ describe('psychoeducationTopic', () => {
     expect(out.label).toMatch(/Anger/i);
   });
 
+  it('hidrata tarjeta compacta en inglés con microSteps del servidor', () => {
+    const out = hydrateInterventionSuggestion(
+      {
+        id: 'psychoeducation_anxiety',
+        interventionType: 'psychoeducation',
+        cardDisplayMode: 'compact',
+        microSteps: [],
+        previewTitle: 'Anxiety',
+        params: { topic: 'anxiety' },
+      },
+      'en',
+    );
+    expect(out.cardDisplayMode).toBe('compact');
+    expect(out.previewTitle).toMatch(/Anxiety/i);
+  });
+
   it('traduce chips de técnicas en inglés (histórico)', () => {
     const out = hydrateInterventionSuggestion(
       { id: 'breathing_exercise', label: 'Ejercicio de Respiración' },

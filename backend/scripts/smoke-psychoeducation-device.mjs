@@ -21,6 +21,7 @@ import {
 } from '../services/psychoeducationPromptSnippetService.js';
 import { getPsychoeducationCardFields } from '../constants/psychoeducationTopics.js';
 import { CHAT_PSYCHOEDUCATION_SMOKE_CASES } from '../tests/fixtures/chatPsychoeducationSmokeMessages.js';
+import { CHAT_PSYCHOEDUCATION_SMOKE_CASES_EN } from '../tests/fixtures/chatPsychoeducationSmokeMessages.en.js';
 
 const PRIORITY = new Set(['sleep', 'stress', 'emotionRegulation']);
 const LANGUAGES = ['es', 'en'];
@@ -178,23 +179,33 @@ for (const language of LANGUAGES) {
 console.log('Prioridad manual en dispositivo: sleep, stress, emotionRegulation');
 console.log('Ruta: Ajustes → Técnicas terapéuticas → Módulos de psicoeducación\n');
 
-console.log('--- Chat: análisis + sugerencias (mensajes canónicos) ---');
+const CHAT_SMOKE_BY_LANG = [
+  { lang: 'es', cases: CHAT_PSYCHOEDUCATION_SMOKE_CASES },
+  { lang: 'en', cases: CHAT_PSYCHOEDUCATION_SMOKE_CASES_EN },
+];
+
+console.log('--- Chat: análisis + sugerencias (es/en) ---');
 let chatFailed = 0;
-for (const {
-  id,
-  message,
-  expectedPsycho,
-  allowedEmotions,
-  minIntensity,
-  minSuggestions,
-  expectPromptSnippet,
-} of CHAT_PSYCHOEDUCATION_SMOKE_CASES) {
+for (const { lang, cases } of CHAT_SMOKE_BY_LANG) {
+  console.log(`  · ${lang.toUpperCase()}`);
+  for (const {
+    id,
+    message,
+    expectedPsycho,
+    allowedEmotions,
+    minIntensity,
+    minSuggestions,
+    expectPromptSnippet,
+    primaryPsycho,
+    language: caseLang,
+  } of cases) {
+    const formatLang = caseLang || lang;
   const analysis = await emotionalAnalyzer.analyzeEmotion(message);
   const suggestions = actionSuggestionService.generateSuggestions(analysis, {}, {
     userContent: message,
   });
   const formatted = applyPsychoeducationCardTiers(
-    actionSuggestionService.formatSuggestions(suggestions, 'es'),
+    actionSuggestionService.formatSuggestions(suggestions, formatLang),
     { userContent: message, mainEmotion: analysis.mainEmotion },
   );
   const primaryId = pickPredominantPsychoeducationId(formatted, {
@@ -211,19 +222,21 @@ for (const {
     if (expectedPsycho.length > 1) return card?.cardDisplayMode === 'compact';
     return card?.microSteps?.length >= 2;
   });
-  const snippet = buildPsychoeducationPromptSnippet(formatted, 'es', primaryId);
+  const snippet = buildPsychoeducationPromptSnippet(formatted, formatLang, primaryId);
   const snippetOk = expectPromptSnippet ? Boolean(snippet) : true;
+  const primaryOk = primaryPsycho ? primaryId === primaryPsycho : true;
   const ok =
     missingPsycho.length === 0 &&
     emotionOk &&
     intensityOk &&
     countOk &&
     microOk &&
-    snippetOk;
+    snippetOk &&
+    primaryOk;
   const status = ok ? 'OK' : 'FAIL';
   const snippetTag = snippet ? 'snippet✓' : 'snippet—';
   console.log(
-    `  [${status}] ${id} → ${analysis.mainEmotion} ${analysis.intensity} | ${suggestions.join(', ')} | ${snippetTag}`,
+    `  [${status}] ${formatLang}:${id} → ${analysis.mainEmotion} ${analysis.intensity} | ${suggestions.join(', ')} | ${snippetTag}`,
   );
   if (!ok) {
     if (missingPsycho.length) {
@@ -247,6 +260,7 @@ for (const {
       console.log(`         ✗ se esperaba snippet de prompt #78`);
     }
     chatFailed += 1;
+  }
   }
 }
 console.log('');

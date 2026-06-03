@@ -4,7 +4,9 @@
  * @author AntoApp Team
  */
 
-import actionSuggestionService from '../../../services/actionSuggestionService.js';
+import actionSuggestionService, {
+  resolveContextualPsychoeducationIds,
+} from '../../../services/actionSuggestionService.js';
 
 describe('ActionSuggestionService', () => {
   describe('Métodos del servicio', () => {
@@ -194,6 +196,13 @@ describe('ActionSuggestionService', () => {
       expect(card.previewTitle).toMatch(/Sleep/i);
       expect(card.label).toMatch(/Sleep/i);
       expect(card.params.topic).toBe('sleep');
+    });
+
+    it('detecta estrés contextual en inglés', () => {
+      const ids = resolveContextualPsychoeducationIds(
+        'Work stress has me burned out',
+      );
+      expect(ids).toContain('psychoeducation_stress');
     });
 
     it('incluye psicoed de sueño por contenido contextual', () => {

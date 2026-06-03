@@ -13,22 +13,22 @@ export const CONTEXTUAL_PSYCHOEDUCATION_RULES = [
   {
     id: 'psychoeducation_sleep',
     pattern:
-      /(?:insomnio|no\s+puedo\s+dormir|duermo\s+mal|durmiendo\s+mal|despierto\s+(?:a\s+(?:las|la)|(?:en\s+)?la\s+noche)|sueño\s+(?:muy\s+)?(?:mal|interrumpido|fragmentado)|me\s+cuesta\s+conciliar)/i,
+      /(?:insomnio|no\s+puedo\s+dormir|duermo\s+mal|durmiendo\s+mal|despierto\s+(?:a\s+(?:las|la)|(?:en\s+)?la\s+noche)|sueño\s+(?:muy\s+)?(?:mal|interrumpido|fragmentado)|me\s+cuesta\s+conciliar|insomnia|can'?t\s+sleep|sleep(?:ing)?\s+badly|wake\s+up\s+(?:at\s+)?night|trouble\s+falling\s+asleep)/i,
   },
   {
     id: 'psychoeducation_stress',
     pattern:
-      /(?:estrés|estres(?:ado|ada)?|agotad[oa]|(?:trabajo|laboral).*agotad|presión\s+(?:laboral|en\s+el\s+trabajo|académica)|demasiadas\s+responsabilidades|sobrecarga\s+(?:laboral|de\s+trabajo))/i,
+      /(?:estrés|estres(?:ado|ada)?|agotad[oa]|(?:trabajo|laboral).*agotad|presión\s+(?:laboral|en\s+el\s+trabajo|académica)|demasiadas\s+responsabilidades|sobrecarga\s+(?:laboral|de\s+trabajo)|\bstress(?:ed)?\b|burned?\s+out|overwhelmed|too\s+many\s+responsibilities|work\s+pressure)/i,
   },
   {
     id: 'psychoeducation_trauma',
     pattern:
-      /(?:trauma|flashback|revivir|experiencia\s+(?:muy\s+)?(?:difícil|traumática)|(?:ptsd|tept)\b|pesadillas\s+recurrentes)/i,
+      /(?:trauma|flashback|revivir|experiencia\s+(?:muy\s+)?(?:difícil|traumática)|(?:ptsd|tept)\b|pesadillas\s+recurrentes|traumatic\s+experience|recurring\s+nightmares)/i,
   },
   {
     id: 'psychoeducation_emotion_regulation',
     pattern:
-      /(?:desbord(?:o|a|ad[oa])|no\s+controlo\s+(?:mis\s+)?emociones|explot(?:o|é)\s+sin\s+querer|regul(?:ar|ación)\s+emocional|me\s+sobrepasa\s+lo\s+que\s+siento)/i,
+      /(?:desbord(?:o|a|ad[oa])|no\s+controlo\s+(?:mis\s+)?emociones|explot(?:o|é)\s+sin\s+querer|regul(?:ar|ación)\s+emocional|me\s+sobrepasa\s+lo\s+que\s+siento|emotionally\s+overwhelmed|can'?t\s+control\s+my\s+emotions|lash\s+out|emotion\s+regulation)/i,
   },
 ];
 
@@ -51,11 +51,15 @@ export function resolveSuggestionEmotion(mainEmotion, userContent = '') {
   ]);
   if (known.has(mainEmotion)) return mainEmotion;
   const text = String(userContent || '');
-  if (/(?:desbord|explot(?:o|é)\s+sin\s+querer|no\s+controlo\s+(?:mis\s+)?emociones)/i.test(text)) {
+  if (
+    /(?:desbord|explot(?:o|é)\s+sin\s+querer|no\s+controlo\s+(?:mis\s+)?emociones|emotionally\s+overwhelmed|can'?t\s+control\s+my\s+emotions|lash\s+out)/i.test(
+      text,
+    )
+  ) {
     return 'enojo';
   }
   if (
-    /(?:estrés|estres|agotad|insomnio|duermo\s+mal|durmiendo\s+mal|despierto.*(?:noche|dormir)|sobrecarga|demasiadas\s+responsabilidades)/i.test(
+    /(?:estrés|estres|agotad|insomnio|duermo\s+mal|durmiendo\s+mal|despierto.*(?:noche|dormir)|sobrecarga|demasiadas\s+responsabilidades|\bstress(?:ed)?\b|burned?\s+out|insomnia|can'?t\s+sleep)/i.test(
       text,
     )
   ) {
