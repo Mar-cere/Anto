@@ -5,6 +5,14 @@
 
 const MAX_ACTIVATING_LENGTH = 500;
 
+/** Elimina caracteres de control; mantiene saltos implícitos como espacio. */
+export function sanitizeAbcPrefillText(text = '') {
+  return String(text || '')
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 const INTENSITY_PATTERNS = [
   /\b\d{1,2}\s*\/\s*10\b/gi,
   /\b(?:un|de|a)\s+\d{1,2}\s+de\s+10\b/gi,
@@ -26,7 +34,7 @@ const THOUGHT_PREFIX =
  * @returns {string|null}
  */
 export function extractActivatingEventFromMessage(userContent = '') {
-  let text = String(userContent || '').replace(/\s+/g, ' ').trim();
+  let text = sanitizeAbcPrefillText(userContent);
   if (!text) return null;
 
   INTENSITY_PATTERNS.forEach((pattern) => {
@@ -62,7 +70,9 @@ export function extractActivatingEventFromMessage(userContent = '') {
   }
 
   candidate = candidate.replace(AFTER_PREFIX, '').trim();
-  candidate = candidate.replace(/^["'«]+|["'»]+$/g, '').trim();
+  candidate = sanitizeAbcPrefillText(
+    candidate.replace(/^["'«]+|["'»]+$/g, ''),
+  );
 
   if (candidate.length > MAX_ACTIVATING_LENGTH) {
     candidate = `${candidate.slice(0, MAX_ACTIVATING_LENGTH - 1).trim()}…`;
@@ -86,10 +96,12 @@ export function buildAbcPrefillParams(userContent = '') {
  * @param {string} userContent
  */
 export function enrichSuggestionsWithAbcPrefill(formatted = [], userContent = '') {
+  if (!Array.isArray(formatted) || formatted.length === 0) return formatted;
+  if (!formatted.some((s) => s?.id === 'abc_record')) return formatted;
+
   const prefill = buildAbcPrefillParams(userContent);
-  if (!prefill || !Array.isArray(formatted) || formatted.length === 0) {
-    return formatted;
-  }
+  if (!prefill) return formatted;
+
   return formatted.map((suggestion) => {
     if (suggestion?.id !== 'abc_record') return suggestion;
     return {

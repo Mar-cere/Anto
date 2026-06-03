@@ -3,9 +3,9 @@
  * Wizard A → B → C con persistencia en backend y exportación para revisión.
  */
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -29,6 +29,7 @@ import { useToast } from '../../context/ToastContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
 import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
+import { parseAbcRecordRouteParams } from '../../utils/abcRecordPrefill';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const STEPS = ['A', 'B', 'C'];
@@ -157,6 +158,8 @@ const AbcRecordScreen = () => {
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [fromChatPrefill, setFromChatPrefill] = useState(false);
+  const handledResetAtRef = useRef(null);
+  const handledChatPrefillKeyRef = useRef('');
 
   const styles = useMemo(
     () =>
@@ -259,7 +262,41 @@ const AbcRecordScreen = () => {
     setEmotionIntensity(5);
     setConsequence('');
     setValidationMessage('');
+    setFromChatPrefill(false);
+    handledChatPrefillKeyRef.current = '';
   }, []);
+
+  const applyRoutePrefill = useCallback((params) => {
+    const raw = params && typeof params === 'object' ? params : {};
+    if (raw.resetFormAt != null && handledResetAtRef.current !== raw.resetFormAt) {
+      handledResetAtRef.current = raw.resetFormAt;
+      handledChatPrefillKeyRef.current = '';
+      resetWizard();
+      return;
+    }
+
+    const parsed = parseAbcRecordRouteParams(raw);
+    if (!parsed.fromChat || !parsed.prefillActivatingEvent) {
+      if (raw.fromChat === false) {
+        setFromChatPrefill(false);
+      }
+      return;
+    }
+
+    const prefillKey = `${parsed.prefillActivatingEvent}|${parsed.prefillBeliefs}`;
+    if (prefillKey === handledChatPrefillKeyRef.current) return;
+    handledChatPrefillKeyRef.current = prefillKey;
+    handledResetAtRef.current = null;
+
+    setActivatingEvent(parsed.prefillActivatingEvent);
+    setFromChatPrefill(true);
+    if (parsed.prefillBeliefs) {
+      setBeliefs(parsed.prefillBeliefs);
+      setStepIndex(2);
+    } else {
+      setStepIndex(0);
+    }
+  }, [resetWizard]);
 
   const loadRecords = useCallback(async () => {
     setLoadingRecords(true);
@@ -282,19 +319,11 @@ const AbcRecordScreen = () => {
     loadRecords();
   }, [loadRecords]);
 
-  useEffect(() => {
-    const params = route.params || {};
-    const prefillA = String(params.prefillActivatingEvent || '').trim();
-    const prefillB = String(params.prefillBeliefs || '').trim();
-    if (prefillA) setActivatingEvent(prefillA);
-    if (prefillB) setBeliefs(prefillB);
-    setFromChatPrefill(Boolean(params.fromChat && prefillA));
-    if (prefillA && prefillB) {
-      setStepIndex(2);
-    } else if (prefillB) {
-      setStepIndex(1);
-    }
-  }, [route.params]);
+  useFocusEffect(
+    useCallback(() => {
+      applyRoutePrefill(route.params);
+    }, [applyRoutePrefill, route.params]),
+  );
 
   const goNext = () => {
     setValidationMessage('');

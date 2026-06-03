@@ -288,7 +288,11 @@ const TechniqueDetailScreen = () => {
     if (!hasLinkedScreen) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     try {
-      navigation.navigate(linkedScreen);
+      navigation.navigate({
+        name: linkedScreen,
+        params: { fromChat: false, resetFormAt: Date.now() },
+        merge: false,
+      });
     } catch (err) {
       console.warn('[TechniqueDetail] navigate failed:', linkedScreen, err);
     }

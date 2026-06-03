@@ -2,7 +2,11 @@ import {
   buildAbcPrefillParams,
   enrichSuggestionsWithAbcPrefill,
   extractActivatingEventFromMessage,
+  sanitizeAbcPrefillText,
 } from '../../../services/abcRecordPrefillService.js';
+import actionSuggestionService from '../../../services/actionSuggestionService.js';
+import { applyPsychoeducationCardTiers } from '../../../services/psychoeducationPromptSnippetService.js';
+import emotionalAnalyzer from '../../../services/emotionalAnalyzer.js';
 
 describe('abcRecordPrefillService (#86)', () => {
   const canonical =
@@ -43,5 +47,41 @@ describe('abcRecordPrefillService (#86)', () => {
       'I feel sad and low, 7/10. I keep thinking the worst after arguing with my partner.',
     );
     expect(event).toMatch(/arguing with my partner/i);
+  });
+
+  it('extrae situación en contexto laboral (reunión)', () => {
+    const event = extractActivatingEventFromMessage(
+      'Estoy enojado, 6/10. Reaccioné mal en la reunión y quiero entender qué pasó.',
+    );
+    expect(event).toMatch(/reuni[oó]n/i);
+    expect(event).not.toMatch(/6\/10/);
+  });
+
+  it('sanitizeAbcPrefillText elimina caracteres de control', () => {
+    expect(sanitizeAbcPrefillText('discutir\u0001 pareja')).toBe('discutir pareja');
+  });
+
+  it('no enriquece si abc_record no está en la lista', () => {
+    const formatted = enrichSuggestionsWithAbcPrefill(
+      [{ id: 'communication_tool', screen: 'CommunicationTool' }],
+      canonical,
+    );
+    expect(formatted[0].params).toBeUndefined();
+  });
+
+  it('pipeline chat canónico incluye params de prefill en abc_record', async () => {
+    const analysis = await emotionalAnalyzer.analyzeEmotion(canonical);
+    const actionIds = actionSuggestionService.generateSuggestions(analysis, {}, {
+      userContent: canonical,
+    });
+    const tiered = applyPsychoeducationCardTiers(
+      actionSuggestionService.formatSuggestions(actionIds, 'es'),
+      { userContent: canonical, mainEmotion: analysis.mainEmotion },
+    );
+    const formatted = enrichSuggestionsWithAbcPrefill(tiered, canonical);
+    const abc = formatted.find((s) => s.id === 'abc_record');
+    expect(abc?.params?.fromChat).toBe(true);
+    expect(abc?.params?.prefillActivatingEvent).toMatch(/discutir/i);
+    expect(abc?.screen).toBe('AbcRecord');
   });
 });

@@ -3,6 +3,10 @@
  */
 import emotionalAnalyzer from '../../../services/emotionalAnalyzer.js';
 import actionSuggestionService from '../../../services/actionSuggestionService.js';
+import { enrichSuggestionsWithAbcPrefill } from '../../../services/abcRecordPrefillService.js';
+import {
+  applyPsychoeducationCardTiers,
+} from '../../../services/psychoeducationPromptSnippetService.js';
 import { getInterventionCatalogEntry } from '../../../constants/interventionCatalog.js';
 import {
   CHAT_ABC_SMOKE_CASES,
@@ -14,7 +18,12 @@ function runAbcPipeline(message, language = 'es') {
     const actionIds = actionSuggestionService.generateSuggestions(analysis, {}, {
       userContent: message,
     });
-    const formatted = actionSuggestionService.formatSuggestions(actionIds, language);
+    const rawFormatted = actionSuggestionService.formatSuggestions(actionIds, language);
+    const tiered = applyPsychoeducationCardTiers(rawFormatted, {
+      userContent: message,
+      mainEmotion: analysis.mainEmotion,
+    });
+    const formatted = enrichSuggestionsWithAbcPrefill(tiered, message);
     const abcCard = formatted.find((s) => s.id === 'abc_record');
     return { analysis, actionIds, formatted, abcCard };
   });
@@ -63,6 +72,8 @@ describe('chatAbcSuggestions (#86)', () => {
           expect(actionIds).toContain('abc_record');
           expect(actionIds[0]).toBe('abc_record');
           expect(abcCard?.screen).toBe('AbcRecord');
+          expect(abcCard?.params?.fromChat).toBe(true);
+          expect(abcCard?.params?.prefillActivatingEvent?.length).toBeGreaterThan(2);
         } else {
           expect(actionIds).not.toContain('abc_record');
         }

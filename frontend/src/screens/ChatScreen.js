@@ -371,7 +371,11 @@ const ChatScreen = () => {
       recordInterventionClicked(suggestion.id);
       if (suggestion?.screen) {
         try {
-          navigation.navigate(suggestion.screen, suggestion?.params || undefined);
+          navigation.navigate({
+            name: suggestion.screen,
+            params: suggestion?.params || undefined,
+            merge: false,
+          });
         } catch (err) {
           console.warn(TEXTS.NAVIGATION_ERROR_WARN, suggestion.screen, err);
           setInputText(`${TEXTS.SUGGESTION_TRY_PREFIX}${suggestion.label || ''}`);

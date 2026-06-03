@@ -114,4 +114,21 @@ describe('psychoeducationTopic', () => {
       expect(out.previewTitle).toBeTruthy();
     });
   });
+
+  it('hydrateInterventionSuggestion conserva params de abc_record', () => {
+    const out = hydrateInterventionSuggestion(
+      {
+        id: 'abc_record',
+        screen: 'AbcRecord',
+        params: {
+          fromChat: true,
+          prefillActivatingEvent: 'discutir con mi pareja',
+        },
+      },
+      'en',
+    );
+    expect(out.params.prefillActivatingEvent).toMatch(/discutir/i);
+    expect(out.params.fromChat).toBe(true);
+    expect(out.label).toMatch(/ABC/i);
+  });
 });
