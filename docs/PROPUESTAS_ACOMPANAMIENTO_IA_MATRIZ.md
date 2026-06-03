@@ -64,7 +64,7 @@ Criterio para **eliminar** del backlog activo (no son un quinto cuadrante de pri
 | **CI lint unificado (#167)** | Sigue **No** en matriz: CI frontend ejecuta `check` (imports, SafeArea) + Jest; ESLint local en `eslint.config.js` sin gate en workflow. |
 | **Grafo tema–intervención (#127)** | **Parcial (jun 2026):** catálogo, eventos, sesión 45 min, cap 1 bloque/sesión, `GET /api/chat/interventions/graph`, panel dev, psicoed vía catálogo (#85), **ranking de sugerencias** según histórico del usuario (completion/CTR/dismiss), **ABC (#86)** en catálogo. **Pendiente:** más señales, resto #87–#99, `topicFree`, #218. |
 | **Psicoeducación modular (#85)** | **Parcial (MVP UX jun 2026):** 7 módulos es/en, biblioteca, chat (#78), tests/smoke. **Pendiente:** más temas (#86–#99). **#111** sello UI en módulo/biblioteca/chat. |
-| **Autorregistro ABC (#86)** | **Parcial (MVP jun 2026):** wizard A→B→C, `POST/GET /api/abc-records`, export texto, pantalla `AbcRecord`, técnica TCC + catálogo `#127` (`abc_record`), sugerencias chat tristeza/enojo/culpa media. **Pendiente:** entrada desde chat con prefill, agregación macro (#212). |
+| **Autorregistro ABC (#86)** | **Parcial (MVP jun 2026):** wizard A→B→C, API, export, pantalla `AbcRecord`, catálogo #127, sugerencias chat, **prefill paso A desde mensaje**. **Pendiente:** agregación macro (#212). |
 
 ### Nuevas propuestas (input producto, mayo 2026)
 

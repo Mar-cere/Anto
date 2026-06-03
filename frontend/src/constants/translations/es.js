@@ -1228,6 +1228,8 @@ export const TECHNIQUES = {
   ABC_OF: 'de',
   ABC_VALIDATION_A: 'Describe la situación antes de continuar.',
   ABC_VALIDATION_B: 'Anota al menos un pensamiento antes de continuar.',
+  ABC_PREFILL_HINT:
+    'Tomado de tu mensaje en el chat. Puedes editarlo antes de continuar.',
   COMMUNICATION_TITLE: 'Herramienta de Comunicacion',
   COMMUNICATION_INTRO_KICKER: 'Comunicacion',
   COMMUNICATION_INTRO_TITLE: 'Herramientas empaticas',

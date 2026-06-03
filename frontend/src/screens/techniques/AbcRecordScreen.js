@@ -69,6 +69,7 @@ const DEFAULT_TEXTS = {
   OF: 'de',
   VALIDATION_A: 'Describe la situación antes de continuar.',
   VALIDATION_B: 'Anota al menos un pensamiento antes de continuar.',
+  PREFILL_HINT: 'Tomado de tu mensaje en el chat. Puedes editarlo antes de continuar.',
 };
 
 function formatEntryDate(iso) {
@@ -131,6 +132,7 @@ const AbcRecordScreen = () => {
       OF: translated?.ABC_OF || DEFAULT_TEXTS.OF,
       VALIDATION_A: translated?.ABC_VALIDATION_A || DEFAULT_TEXTS.VALIDATION_A,
       VALIDATION_B: translated?.ABC_VALIDATION_B || DEFAULT_TEXTS.VALIDATION_B,
+      PREFILL_HINT: translated?.ABC_PREFILL_HINT || DEFAULT_TEXTS.PREFILL_HINT,
     }),
     [translated],
   );
@@ -154,6 +156,7 @@ const AbcRecordScreen = () => {
   const [loadingRecords, setLoadingRecords] = useState(true);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [fromChatPrefill, setFromChatPrefill] = useState(false);
 
   const styles = useMemo(
     () =>
@@ -285,8 +288,11 @@ const AbcRecordScreen = () => {
     const prefillB = String(params.prefillBeliefs || '').trim();
     if (prefillA) setActivatingEvent(prefillA);
     if (prefillB) setBeliefs(prefillB);
-    if (prefillA || prefillB) {
-      setStepIndex(prefillA && prefillB ? 2 : prefillA ? 1 : 0);
+    setFromChatPrefill(Boolean(params.fromChat && prefillA));
+    if (prefillA && prefillB) {
+      setStepIndex(2);
+    } else if (prefillB) {
+      setStepIndex(1);
     }
   }, [route.params]);
 
@@ -414,6 +420,9 @@ const AbcRecordScreen = () => {
       return (
         <>
           <Text style={techniqueScreenStyles.formSectionHeading}>{TEXTS.STEP_A_TITLE}</Text>
+          {fromChatPrefill && stepIndex === 0 ? (
+            <Text style={techniqueScreenStyles.formHint}>{TEXTS.PREFILL_HINT}</Text>
+          ) : null}
           <Text style={techniqueScreenStyles.formHint}>{TEXTS.STEP_A_HINT}</Text>
           <TextInput
             style={[techniqueScreenStyles.textInput, { minHeight: 100 }]}
