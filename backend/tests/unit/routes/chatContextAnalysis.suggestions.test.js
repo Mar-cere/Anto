@@ -91,6 +91,20 @@ describe('shouldShowChatActionSuggestions', () => {
     });
     expect(result).toBe(true);
   });
+
+  it('muestra en 1.er turno con señal TCC (evitación) aunque intensidad sea 6 (#87)', async () => {
+    const result = await shouldShowChatActionSuggestions({
+      emotionalAnalysis: { intensity: 6, mainEmotion: 'miedo' },
+      contextualAnalysis: {},
+      conversationHistory: [{ role: 'assistant', content: 'Hola' }],
+      userId: 'u1',
+      conversationId: 'c1',
+      userContent:
+        'Tengo ansiedad social, 6/10. Evito hablar en reuniones porque me da mucho miedo quedar mal.',
+    });
+    expect(result).toBe(true);
+    expect(mockHasShown).toHaveBeenCalled();
+  });
 });
 
 describe('isActionSuggestionSafetyException', () => {

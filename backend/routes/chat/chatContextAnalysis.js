@@ -4,6 +4,7 @@
  */
 
 import chatInterventionGraphService from '../../services/chatInterventionGraphService.js';
+import { shouldBypassTccSuggestionCadence } from '../../services/actionSuggestionService.js';
 
 export function detectEmotionalEscalation(conversationHistory, currentEmotionalAnalysis) {
   if (!conversationHistory || conversationHistory.length < 2) return false;
@@ -202,6 +203,7 @@ export async function shouldShowChatActionSuggestions({
   conversationHistory,
   userId,
   conversationId,
+  userContent = '',
 }) {
   if (hasActionSuggestionRejection(conversationHistory)) return false;
 
@@ -212,6 +214,7 @@ export async function shouldShowChatActionSuggestions({
   );
   const cadenceOk =
     bypassesActionSuggestionCadence(emotionalAnalysis) ||
+    shouldBypassTccSuggestionCadence(userContent) ||
     passesActionSuggestionCadence(conversationHistory);
   if (!cadenceOk) return false;
 

@@ -161,6 +161,7 @@ export async function planChatActionSuggestions({
     conversationHistory,
     userId,
     conversationId,
+    userContent,
   });
   if (!shouldShow) return empty;
 

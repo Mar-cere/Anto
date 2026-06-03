@@ -56,6 +56,13 @@ export function shouldBoostExposureSuggestion(userContent = '') {
   return CONTEXTUAL_EXPOSURE_PATTERN.test(String(userContent || ''));
 }
 
+/** Señal TCC fuerte (#86/#87): permite sugerencias en 1.er turno aunque intensidad < 7. */
+export function shouldBypassTccSuggestionCadence(userContent = '') {
+  return (
+    shouldBoostAbcSuggestion(userContent) || shouldBoostExposureSuggestion(userContent)
+  );
+}
+
 export function applyExposureSuggestionPolicy(ids, { emotion, intensityLevel, userContent } = {}) {
   if (!Array.isArray(ids) || ids.length === 0) return ids;
   if (emotion !== 'ansiedad' || intensityLevel !== 'medium') return ids.slice(0, 3);
