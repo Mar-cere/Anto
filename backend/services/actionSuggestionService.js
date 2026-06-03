@@ -13,12 +13,12 @@ export const CONTEXTUAL_PSYCHOEDUCATION_RULES = [
   {
     id: 'psychoeducation_sleep',
     pattern:
-      /(?:insomnio|no\s+puedo\s+dormir|duermo\s+mal|despierto\s+(?:a\s+)?(?:la\s+)?noche|sueño\s+(?:muy\s+)?(?:mal|interrumpido|fragmentado)|me\s+cuesta\s+conciliar)/i,
+      /(?:insomnio|no\s+puedo\s+dormir|duermo\s+mal|durmiendo\s+mal|despierto\s+(?:a\s+(?:las|la)|(?:en\s+)?la\s+noche)|sueño\s+(?:muy\s+)?(?:mal|interrumpido|fragmentado)|me\s+cuesta\s+conciliar)/i,
   },
   {
     id: 'psychoeducation_stress',
     pattern:
-      /(?:estrés|estres(?:ado|ada)?|agotad[oa]\s+(?:del\s+)?trabajo|presión\s+(?:laboral|en\s+el\s+trabajo|académica)|demasiadas\s+responsabilidades|sobrecarga\s+(?:laboral|de\s+trabajo))/i,
+      /(?:estrés|estres(?:ado|ada)?|agotad[oa]|(?:trabajo|laboral).*agotad|presión\s+(?:laboral|en\s+el\s+trabajo|académica)|demasiadas\s+responsabilidades|sobrecarga\s+(?:laboral|de\s+trabajo))/i,
   },
   {
     id: 'psychoeducation_trauma',
@@ -38,6 +38,30 @@ export function resolveContextualPsychoeducationIds(userContent = '') {
   return CONTEXTUAL_PSYCHOEDUCATION_RULES.filter(({ pattern }) => pattern.test(text)).map(
     ({ id }) => id,
   );
+}
+
+/** Emoción con reglas de sugerencias; cae a ansiedad/enojo si el texto lo indica (#85). */
+export function resolveSuggestionEmotion(mainEmotion, userContent = '') {
+  const known = new Set([
+    'ansiedad',
+    'tristeza',
+    'enojo',
+    'culpa',
+    'soledad',
+  ]);
+  if (known.has(mainEmotion)) return mainEmotion;
+  const text = String(userContent || '');
+  if (/(?:desbord|explot(?:o|é)\s+sin\s+querer|no\s+controlo\s+(?:mis\s+)?emociones)/i.test(text)) {
+    return 'enojo';
+  }
+  if (
+    /(?:estrés|estres|agotad|insomnio|duermo\s+mal|durmiendo\s+mal|despierto.*(?:noche|dormir)|sobrecarga|demasiadas\s+responsabilidades)/i.test(
+      text,
+    )
+  ) {
+    return 'ansiedad';
+  }
+  return mainEmotion;
 }
 
 function appendUniqueIds(list, ids) {
@@ -138,7 +162,8 @@ class ActionSuggestionService {
       return [];
     }
 
-    const emotion = emotionalAnalysis.mainEmotion;
+    const userContent = options?.userContent || contextualAnalysis?.userContent || '';
+    const emotion = resolveSuggestionEmotion(emotionalAnalysis.mainEmotion, userContent);
     const intensity = emotionalAnalysis.intensity || 5;
     const topic = emotionalAnalysis.topic || 'general';
     const subtype = emotionalAnalysis.subtype;
@@ -149,10 +174,19 @@ class ActionSuggestionService {
     // Obtener acciones base según emoción e intensidad
     const emotionMappings = this.actionMappings[emotion];
     if (!emotionMappings) {
-      return [];
+      const contextualOnly = resolveContextualPsychoeducationIds(userContent);
+      if (contextualOnly.length === 0) return [];
+      const fallback = ['mindfulness_reminder', ...contextualOnly];
+      const rankingScores = options?.rankingScores;
+      const ranked =
+        rankingScores instanceof Map && rankingScores.size > 0
+          ? rankInterventionIds(fallback, rankingScores)
+          : fallback;
+      return ranked.slice(0, 3);
     }
 
-    const intensityMappings = emotionMappings[intensityLevel];
+    const intensityMappings =
+      emotionMappings[intensityLevel] || emotionMappings.medium || emotionMappings.high;
     if (!intensityMappings) {
       return [];
     }
@@ -165,7 +199,6 @@ class ActionSuggestionService {
       actions = this.adjustActionsBySubtype(actions, emotion, subtype);
     }
 
-    const userContent = options?.userContent || contextualAnalysis?.userContent || '';
     const contextualPsycho = resolveContextualPsychoeducationIds(userContent);
     const techniqueLimit = contextualPsycho.length > 0 ? 1 : 2;
     const enriched = [...actions].slice(0, techniqueLimit);

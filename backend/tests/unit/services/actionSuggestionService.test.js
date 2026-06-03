@@ -206,12 +206,25 @@ describe('ActionSuggestionService', () => {
     });
 
     it('incluye psicoed de estrés por contenido laboral', () => {
+      const msg =
+        'El estrés del trabajo me tiene agotada, con demasiadas responsabilidades. 6/10';
       const suggestions = actionSuggestionService.generateSuggestions(
-        { mainEmotion: 'ansiedad', intensity: 6, topic: 'trabajo' },
+        { mainEmotion: 'neutral', intensity: 6, topic: 'trabajo' },
         {},
-        { userContent: 'El estrés del trabajo me tiene agotada, con demasiadas responsabilidades.' },
+        { userContent: msg },
       );
       expect(suggestions).toContain('psychoeducation_stress');
+      expect(suggestions.length).toBeGreaterThan(0);
+    });
+
+    it('incluye psicoed de regulación emocional cuando desborda', () => {
+      const msg = 'Me desborda lo que siento y a veces exploto sin querer. 7/10';
+      const suggestions = actionSuggestionService.generateSuggestions(
+        { mainEmotion: 'neutral', intensity: 7, topic: 'general' },
+        {},
+        { userContent: msg },
+      );
+      expect(suggestions).toContain('psychoeducation_emotion_regulation');
     });
   });
 

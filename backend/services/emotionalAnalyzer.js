@@ -322,6 +322,18 @@ class EmotionalAnalyzer {
         name: 'miedo',
         baseIntensity: 7,
       },
+      {
+        pattern:
+          /(?:estrés|estres(?:ado|ada)?|(?:me\s+tiene|estoy)\s+agotad[oa]|demasiadas\s+responsabilidades|sobrecarga\s+(?:laboral|de\s+trabajo))/i,
+        name: 'ansiedad',
+        baseIntensity: 6,
+      },
+      {
+        pattern:
+          /(?:me\s+desbord|desbordad[oa]|explot(?:o|é)\s+sin\s+querer|no\s+controlo\s+(?:mis\s+)?emociones)/i,
+        name: 'enojo',
+        baseIntensity: 7,
+      },
     ];
     for (const rule of rules) {
       if (!rule.pattern.test(content)) continue;
