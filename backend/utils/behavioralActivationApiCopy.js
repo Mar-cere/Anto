@@ -1,0 +1,73 @@
+/**
+ * Mensajes de API de activación conductual (#88).
+ */
+import { normalizeApiLanguage } from './apiLanguage.js';
+
+const COPY = {
+  es: {
+    rateLimitCreate:
+      'Demasiados registros creados. Por favor, intente más tarde.',
+    rateLimitDelete:
+      'Demasiadas eliminaciones. Por favor, intente más tarde.',
+    listError: 'Error al obtener los registros de activación conductual',
+    notFound: 'Registro no encontrado',
+    getError: 'Error al obtener el registro',
+    createdSuccess: 'Actividad registrada',
+    createError: 'Error al crear el registro',
+    deletedSuccess: 'Registro eliminado',
+    deleteError: 'Error al eliminar el registro',
+    exportError: 'Error al exportar los registros',
+    exportHeader: 'Activación conductual — resumen para revisión',
+    exportActivity: 'Actividad',
+    exportType: 'Tipo',
+    exportTypePleasant: 'Placentera',
+    exportTypeRoutine: 'Rutina / obligatoria',
+    exportMoodBefore: 'Ánimo antes',
+    exportMoodAfter: 'Ánimo después',
+    exportNotes: 'Notas',
+    exportDate: 'Fecha',
+    joiActivityEmpty: 'La actividad no puede estar vacía',
+    joiActivityMax: 'La actividad no puede exceder 500 caracteres',
+    joiActivityRequired: 'La actividad es requerida',
+    joiTypeInvalid: 'Tipo de actividad inválido',
+    joiMoodBeforeRequired: 'El ánimo antes es requerido',
+    joiMoodAfterRequired: 'El ánimo después es requerido',
+    joiMoodMin: 'El ánimo mínimo es 1',
+    joiMoodMax: 'El ánimo máximo es 10',
+    joiNotesMax: 'Las notas no pueden exceder 500 caracteres',
+  },
+  en: {
+    rateLimitCreate: 'Too many records created. Please try again later.',
+    rateLimitDelete: 'Too many deletions. Please try again later.',
+    listError: 'Could not load behavioral activation records',
+    notFound: 'Record not found',
+    getError: 'Could not load record',
+    createdSuccess: 'Activity logged',
+    createError: 'Could not create record',
+    deletedSuccess: 'Record deleted',
+    deleteError: 'Could not delete record',
+    exportError: 'Could not export records',
+    exportHeader: 'Behavioral activation — summary for review',
+    exportActivity: 'Activity',
+    exportType: 'Type',
+    exportTypePleasant: 'Pleasant',
+    exportTypeRoutine: 'Routine / necessary',
+    exportMoodBefore: 'Mood before',
+    exportMoodAfter: 'Mood after',
+    exportNotes: 'Notes',
+    exportDate: 'Date',
+    joiActivityEmpty: 'Activity cannot be empty',
+    joiActivityMax: 'Activity cannot exceed 500 characters',
+    joiActivityRequired: 'Activity is required',
+    joiTypeInvalid: 'Invalid activity type',
+    joiMoodBeforeRequired: 'Mood before is required',
+    joiMoodAfterRequired: 'Mood after is required',
+    joiMoodMin: 'Minimum mood is 1',
+    joiMoodMax: 'Maximum mood is 10',
+    joiNotesMax: 'Notes cannot exceed 500 characters',
+  },
+};
+
+export function behavioralActivationApiCopy(language) {
+  return COPY[normalizeApiLanguage(language)];
+}

@@ -398,6 +398,7 @@ export const CBT_TECHNIQUES = {
   behavioralActivation: {
     name: 'Activación Conductual',
     description: 'Aumentar actividades agradables y significativas para mejorar el estado de ánimo.',
+    linkedScreen: 'BehavioralActivation',
     steps: [
       'Identifica actividades que solías disfrutar o que son importantes para ti',
       'Crea una lista de actividades graduadas (de más fácil a más difícil)',

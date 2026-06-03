@@ -80,6 +80,14 @@ export const INTERVENTION_CATALOG = {
     type: 'exercise',
     tags: ['tcc', 'ansiedad', 'exposicion'],
   },
+  behavioral_activation: {
+    id: 'behavioral_activation',
+    label: 'Activación conductual',
+    icon: '🚶',
+    screen: 'BehavioralActivation',
+    type: 'exercise',
+    tags: ['tcc', 'tristeza', 'activacion'],
+  },
   timeout_technique: {
     id: 'timeout_technique',
     label: 'Técnica de Tiempo Fuera',

@@ -367,6 +367,7 @@ export const CBT_TECHNIQUES_EN = {
   "behavioralActivation": {
     "name": "Behavioral Activation",
     "description": "Increase pleasant and meaningful activities to improve mood.",
+    "linkedScreen": "BehavioralActivation",
     "whenToUse": "For depression, persistent sadness, or when you feel unmotivated and without energy.",
     "steps": [
       "Identify activities that you used to enjoy or that are important to you",

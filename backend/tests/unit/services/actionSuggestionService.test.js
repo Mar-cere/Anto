@@ -283,6 +283,37 @@ describe('ActionSuggestionService', () => {
     });
   });
 
+  describe('Activación conductual (#88)', () => {
+    it('incluye behavioral_activation en tristeza intensidad media', () => {
+      const suggestions = actionSuggestionService.generateSuggestions(
+        { mainEmotion: 'tristeza', intensity: 6, topic: 'general' },
+        {},
+        { userContent: 'Me siento triste, 6/10' },
+      );
+      expect(suggestions).toContain('behavioral_activation');
+    });
+
+    it('prioriza behavioral_activation con apatía en tristeza media', () => {
+      const msg =
+        'Me siento apagado y sin ganas de hacer nada, 6/10. Llevo días sin salir de casa.';
+      const suggestions = actionSuggestionService.generateSuggestions(
+        { mainEmotion: 'tristeza', intensity: 6, topic: 'general' },
+        {},
+        { userContent: msg },
+      );
+      expect(suggestions[0]).toBe('behavioral_activation');
+    });
+
+    it('no incluye behavioral_activation en tristeza alta', () => {
+      const suggestions = actionSuggestionService.generateSuggestions(
+        { mainEmotion: 'tristeza', intensity: 9, topic: 'general' },
+        {},
+        { userContent: 'Me siento muy mal, 9/10' },
+      );
+      expect(suggestions).not.toContain('behavioral_activation');
+    });
+  });
+
   describe('Psicoeducación (#85)', () => {
     it('incluye módulo de ira para emoción enojo', () => {
       const suggestions = actionSuggestionService.generateSuggestions({

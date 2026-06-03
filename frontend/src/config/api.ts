@@ -80,6 +80,9 @@ export const ENDPOINTS = {
   EXPOSURE_PLAN_STEP_COMPLETE: (id: string, stepIndex: number) =>
     `/api/exposure-plans/${id}/steps/${stepIndex}/complete`,
   EXPOSURE_PLANS_EXPORT: '/api/exposure-plans/export',
+  BEHAVIORAL_ACTIVATION_LOGS: '/api/behavioral-activation-logs',
+  BEHAVIORAL_ACTIVATION_LOG_BY_ID: (id: string) => `/api/behavioral-activation-logs/${id}`,
+  BEHAVIORAL_ACTIVATION_LOGS_EXPORT: '/api/behavioral-activation-logs/export',
   /** Resumen semanal o mensual: query period=week|month, opcional date, year, month */
   SUMMARY: '/api/summary',
   /** Foco del panel (dashboard #34): agrega semana, tareas, chats, compromisos, línea de prioridad */

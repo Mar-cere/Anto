@@ -67,6 +67,14 @@ describe('interventionCatalog', () => {
     expect(card.screen).toBe('ExposureHierarchy');
   });
 
+  it('behavioral_activation tiene pantalla y etiqueta EN (#88)', () => {
+    const entry = getInterventionCatalogEntry('behavioral_activation');
+    expect(entry?.screen).toBe('BehavioralActivation');
+    const [card] = actionSuggestionService.formatSuggestions(['behavioral_activation'], 'en');
+    expect(card.label).toMatch(/behavioral|activation/i);
+    expect(card.screen).toBe('BehavioralActivation');
+  });
+
   it('rechaza IDs con caracteres inválidos', () => {
     expect(isValidInterventionId('breathing_exercise')).toBe(true);
     expect(isValidInterventionId('')).toBe(false);

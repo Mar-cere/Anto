@@ -51,6 +51,15 @@ export const CONTEXTUAL_EXPOSURE_PATTERN =
 const TCC_MEDIUM_EMOTIONS = new Set(['tristeza', 'enojo', 'culpa']);
 const ABC_RECORD_ID = 'abc_record';
 const EXPOSURE_HIERARCHY_ID = 'exposure_hierarchy';
+const BEHAVIORAL_ACTIVATION_ID = 'behavioral_activation';
+
+/** Señales de apatía / baja activación; activa BA (#88). */
+export const CONTEXTUAL_BA_PATTERN =
+  /(?:desmotivad[oa]|sin\s+ganas|sin\s+energ[ií]a|no\s+hago\s+nada|me\s+cuesta\s+(?:levantarme|salir|empezar)|ap[aá]tic[oa]|anhedonia|nothing\s+brings\s+joy|no\s+motivation|can'?t\s+get\s+(?:out\s+of\s+bed|started)|feel\s+numb|me\s+siento\s+apagad[oa]|sin\s+fuerzas|no\s+tengo\s+energ[ií]a)/i;
+
+export function shouldBoostBaSuggestion(userContent = '') {
+  return CONTEXTUAL_BA_PATTERN.test(String(userContent || ''));
+}
 
 export function shouldBoostExposureSuggestion(userContent = '') {
   return CONTEXTUAL_EXPOSURE_PATTERN.test(String(userContent || ''));
@@ -59,7 +68,9 @@ export function shouldBoostExposureSuggestion(userContent = '') {
 /** Señal TCC fuerte (#86/#87): permite sugerencias en 1.er turno aunque intensidad < 7. */
 export function shouldBypassTccSuggestionCadence(userContent = '') {
   return (
-    shouldBoostAbcSuggestion(userContent) || shouldBoostExposureSuggestion(userContent)
+    shouldBoostAbcSuggestion(userContent) ||
+    shouldBoostExposureSuggestion(userContent) ||
+    shouldBoostBaSuggestion(userContent)
   );
 }
 
@@ -87,6 +98,31 @@ export function applyExposureSuggestionPolicy(ids, { emotion, intensityLevel, us
   return list.slice(0, 3);
 }
 
+export function applyBaSuggestionPolicy(ids, { emotion, intensityLevel, userContent } = {}) {
+  if (!Array.isArray(ids) || ids.length === 0) return ids;
+  if (emotion !== 'tristeza' || intensityLevel !== 'medium') return ids.slice(0, 3);
+
+  const contextualLowActivation = shouldBoostBaSuggestion(userContent);
+  let list = [...ids];
+
+  if (!list.includes(BEHAVIORAL_ACTIVATION_ID) && contextualLowActivation) {
+    list = [BEHAVIORAL_ACTIVATION_ID, ...list];
+  }
+
+  if (!list.includes(BEHAVIORAL_ACTIVATION_ID)) return list.slice(0, 3);
+
+  if (list[0] === ABC_RECORD_ID) return list.slice(0, 3);
+
+  if (contextualLowActivation) {
+    list = [
+      BEHAVIORAL_ACTIVATION_ID,
+      ...list.filter((id) => id !== BEHAVIORAL_ACTIVATION_ID),
+    ];
+  }
+
+  return list.slice(0, 3);
+}
+
 export function shouldBoostAbcSuggestion(userContent = '') {
   return CONTEXTUAL_ABC_PATTERN.test(String(userContent || ''));
 }
@@ -107,7 +143,10 @@ export function applyAbcSuggestionPolicy(ids, { emotion, intensityLevel, userCon
 
   if (!list.includes(ABC_RECORD_ID)) return list.slice(0, 3);
 
-  list = [ABC_RECORD_ID, ...list.filter((id) => id !== ABC_RECORD_ID)];
+  if (contextualThought) {
+    list = [ABC_RECORD_ID, ...list.filter((id) => id !== ABC_RECORD_ID)];
+  }
+
   return list.slice(0, 3);
 }
 
@@ -145,7 +184,7 @@ export function resolveSuggestionEmotion(mainEmotion, userContent = '') {
     return 'ansiedad';
   }
   if (
-    /(?:\bsad\b|\bdepressed\b|\bhopeless\b|feel(?:ing)?\s+(?:sad|low|down)|\blow\b.*\bfeel)/i.test(
+    /(?:\bsad\b|\bdepressed\b|\bhopeless\b|feel(?:ing)?\s+(?:sad|low|down)|\blow\b.*\bfeel|feel\s+numb|no\s+motivation)/i.test(
       text,
     )
   ) {
@@ -199,7 +238,7 @@ class ActionSuggestionService {
           pérdida: ['grief_support', 'memory_exercise']
         },
         medium: {
-          general: ['abc_record', 'gratitude_journal', 'activity_suggestion'],
+          general: ['behavioral_activation', 'abc_record', 'gratitude_journal'],
           relaciones: ['abc_record', 'communication_tool', 'self_care'],
           pérdida: ['grief_support', 'self_compassion_exercise']
         }
@@ -317,11 +356,18 @@ class ActionSuggestionService {
         ? rankInterventionIds(enriched, rankingScores)
         : enriched;
     return applyExposureSuggestionPolicy(
-      applyAbcSuggestionPolicy(ranked, {
-        emotion,
-        intensityLevel,
-        userContent,
-      }),
+      applyBaSuggestionPolicy(
+        applyAbcSuggestionPolicy(ranked, {
+          emotion,
+          intensityLevel,
+          userContent,
+        }),
+        {
+          emotion,
+          intensityLevel,
+          userContent,
+        },
+      ),
       {
         emotion,
         intensityLevel,
