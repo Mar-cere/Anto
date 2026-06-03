@@ -44,8 +44,37 @@ export function resolveContextualPsychoeducationIds(userContent = '') {
 export const CONTEXTUAL_ABC_PATTERN =
   /(?:pienso\s+lo\s+peor|siempre\s+pienso|peor\s+escenario|worst.?case|keep\s+thinking\s+the\s+worst|automatic\s+thought|pensamiento\s+autom[aá]tico|repaso\s+(?:una\s+y\s+otra|sin\s+parar)|darle\s+vueltas|no\s+paro\s+de\s+(?:pensar|darle\s+vueltas)|can'?t\s+stop\s+thinking|going\s+over\s+and\s+over|reaccion[eé]\s+mal|reacted\s+badly|qu[eé]\s+pas[oó]\s+en\s+mi\s+cabeza|what\s+went\s+through\s+my\s+mind)/i;
 
+/** Señales de evitación/miedo; activa jerarquía de exposición (#87). */
+export const CONTEXTUAL_EXPOSURE_PATTERN =
+  /(?:evit(?:o|ar|ación|ando)|miedo\s+a|temor\s+a|fobia|p[aá]nico|me\s+da\s+(?:mucho\s+)?miedo|no\s+puedo\s+(?:entrar|salir|hacer|decir)|afraid\s+of|avoid(?:ing)?|panic\s+about|scared\s+to|social\s+anxiety|ansiedad\s+social|me\s+paraliza|me\s+bloquea)/i;
+
 const TCC_MEDIUM_EMOTIONS = new Set(['tristeza', 'enojo', 'culpa']);
 const ABC_RECORD_ID = 'abc_record';
+const EXPOSURE_HIERARCHY_ID = 'exposure_hierarchy';
+
+export function shouldBoostExposureSuggestion(userContent = '') {
+  return CONTEXTUAL_EXPOSURE_PATTERN.test(String(userContent || ''));
+}
+
+export function applyExposureSuggestionPolicy(ids, { emotion, intensityLevel, userContent } = {}) {
+  if (!Array.isArray(ids) || ids.length === 0) return ids;
+  if (emotion !== 'ansiedad' || intensityLevel !== 'medium') return ids.slice(0, 3);
+
+  const contextualAvoidance = shouldBoostExposureSuggestion(userContent);
+  let list = [...ids];
+
+  if (!list.includes(EXPOSURE_HIERARCHY_ID) && contextualAvoidance) {
+    list = [EXPOSURE_HIERARCHY_ID, ...list];
+  }
+
+  if (!list.includes(EXPOSURE_HIERARCHY_ID)) return list.slice(0, 3);
+
+  if (contextualAvoidance) {
+    list = [EXPOSURE_HIERARCHY_ID, ...list.filter((id) => id !== EXPOSURE_HIERARCHY_ID)];
+  }
+
+  return list.slice(0, 3);
+}
 
 export function shouldBoostAbcSuggestion(userContent = '') {
   return CONTEXTUAL_ABC_PATTERN.test(String(userContent || ''));
@@ -82,6 +111,14 @@ export function resolveSuggestionEmotion(mainEmotion, userContent = '') {
   ]);
   if (known.has(mainEmotion)) return mainEmotion;
   const text = String(userContent || '');
+  if (
+    /(?:\bmiedo\b|temor|fobia|\bfear\b|\bphobia\b|ansiedad\s+social|social\s+anxiety)/i.test(
+      text,
+    )
+  ) {
+    return 'ansiedad';
+  }
+  if (mainEmotion === 'miedo') return 'ansiedad';
   if (
     /(?:desbord|explot(?:o|é)\s+sin\s+querer|no\s+controlo\s+(?:mis\s+)?emociones|emotionally\s+overwhelmed|can'?t\s+control\s+my\s+emotions|lash\s+out)/i.test(
       text,
@@ -139,7 +176,7 @@ class ActionSuggestionService {
           relaciones: ['breathing_exercise', 'communication_tool']
         },
         medium: {
-          general: ['mindfulness_reminder', 'self_care'],
+          general: ['exposure_hierarchy', 'mindfulness_reminder', 'self_care'],
           trabajo: ['task_organization', 'time_management'],
           relaciones: ['communication_tool', 'boundary_setting']
         }
@@ -191,7 +228,7 @@ class ActionSuggestionService {
     };
     this.subtypeAdjustments = {
       ansiedad: {
-        social: ['social_anxiety_tool', 'exposure_guide'],
+        social: ['exposure_hierarchy', 'social_anxiety_tool', 'exposure_guide'],
         anticipatoria: ['grounding_technique', 'present_moment_exercise'],
         rendimiento: ['performance_anxiety_tool', 'self_compassion_exercise'],
       },
@@ -268,11 +305,18 @@ class ActionSuggestionService {
       rankingScores instanceof Map && rankingScores.size > 0
         ? rankInterventionIds(enriched, rankingScores)
         : enriched;
-    return applyAbcSuggestionPolicy(ranked, {
-      emotion,
-      intensityLevel,
-      userContent,
-    });
+    return applyExposureSuggestionPolicy(
+      applyAbcSuggestionPolicy(ranked, {
+        emotion,
+        intensityLevel,
+        userContent,
+      }),
+      {
+        emotion,
+        intensityLevel,
+        userContent,
+      },
+    );
   }
 
   /**

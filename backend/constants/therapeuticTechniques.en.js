@@ -384,6 +384,7 @@ export const CBT_TECHNIQUES_EN = {
   "exposure": {
     "name": "Gradual Exhibition",
     "description": "Gradually confront feared situations to reduce anxiety.",
+    "linkedScreen": "ExposureHierarchy",
     "whenToUse": "For anxiety, phobias, or when you avoid important situations out of fear.",
     "steps": [
       "Create a hierarchy of feared situations (from least to most anxious)",

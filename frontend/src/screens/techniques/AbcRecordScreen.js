@@ -71,6 +71,7 @@ const DEFAULT_TEXTS = {
   VALIDATION_A: 'Describe la situación antes de continuar.',
   VALIDATION_B: 'Anota al menos un pensamiento antes de continuar.',
   PREFILL_HINT: 'Tomado de tu mensaje en el chat. Puedes editarlo antes de continuar.',
+  PREFILL_HINT_B: 'Pensamiento detectado en tu mensaje. Ajusta la frase si hace falta.',
 };
 
 function formatEntryDate(iso) {
@@ -134,6 +135,7 @@ const AbcRecordScreen = () => {
       VALIDATION_A: translated?.ABC_VALIDATION_A || DEFAULT_TEXTS.VALIDATION_A,
       VALIDATION_B: translated?.ABC_VALIDATION_B || DEFAULT_TEXTS.VALIDATION_B,
       PREFILL_HINT: translated?.ABC_PREFILL_HINT || DEFAULT_TEXTS.PREFILL_HINT,
+      PREFILL_HINT_B: translated?.ABC_PREFILL_HINT_B || DEFAULT_TEXTS.PREFILL_HINT_B,
     }),
     [translated],
   );
@@ -158,6 +160,7 @@ const AbcRecordScreen = () => {
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [fromChatPrefill, setFromChatPrefill] = useState(false);
+  const [fromChatPrefillB, setFromChatPrefillB] = useState(false);
   const handledResetAtRef = useRef(null);
   const handledChatPrefillKeyRef = useRef('');
 
@@ -263,6 +266,7 @@ const AbcRecordScreen = () => {
     setConsequence('');
     setValidationMessage('');
     setFromChatPrefill(false);
+    setFromChatPrefillB(false);
     handledChatPrefillKeyRef.current = '';
   }, []);
 
@@ -276,9 +280,10 @@ const AbcRecordScreen = () => {
     }
 
     const parsed = parseAbcRecordRouteParams(raw);
-    if (!parsed.fromChat || !parsed.prefillActivatingEvent) {
+    if (!parsed.fromChat || (!parsed.prefillActivatingEvent && !parsed.prefillBeliefs)) {
       if (raw.fromChat === false) {
         setFromChatPrefill(false);
+        setFromChatPrefillB(false);
       }
       return;
     }
@@ -288,14 +293,19 @@ const AbcRecordScreen = () => {
     handledChatPrefillKeyRef.current = prefillKey;
     handledResetAtRef.current = null;
 
-    setActivatingEvent(parsed.prefillActivatingEvent);
-    setFromChatPrefill(true);
+    if (parsed.prefillActivatingEvent) {
+      setActivatingEvent(parsed.prefillActivatingEvent);
+      setFromChatPrefill(true);
+    } else {
+      setFromChatPrefill(false);
+    }
     if (parsed.prefillBeliefs) {
       setBeliefs(parsed.prefillBeliefs);
-      setStepIndex(2);
+      setFromChatPrefillB(true);
     } else {
-      setStepIndex(0);
+      setFromChatPrefillB(false);
     }
+    setStepIndex(0);
   }, [resetWizard]);
 
   const loadRecords = useCallback(async () => {
@@ -470,6 +480,9 @@ const AbcRecordScreen = () => {
       return (
         <>
           <Text style={techniqueScreenStyles.formSectionHeading}>{TEXTS.STEP_B_TITLE}</Text>
+          {fromChatPrefillB && stepIndex === 1 ? (
+            <Text style={techniqueScreenStyles.formHint}>{TEXTS.PREFILL_HINT_B}</Text>
+          ) : null}
           <Text style={techniqueScreenStyles.formHint}>{TEXTS.STEP_B_HINT}</Text>
           <TextInput
             style={[techniqueScreenStyles.textInput, { minHeight: 100 }]}

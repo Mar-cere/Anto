@@ -413,6 +413,7 @@ export const CBT_TECHNIQUES = {
   exposure: {
     name: 'Exposición Gradual',
     description: 'Enfrentar gradualmente situaciones temidas para reducir la ansiedad.',
+    linkedScreen: 'ExposureHierarchy',
     steps: [
       'Crea una jerarquía de situaciones temidas (de menos a más ansiosas)',
       'Comienza con la situación menos ansiosa',

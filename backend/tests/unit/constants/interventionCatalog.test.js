@@ -59,6 +59,14 @@ describe('interventionCatalog', () => {
     expect(card.screen).toBe('AbcRecord');
   });
 
+  it('exposure_hierarchy tiene pantalla y etiqueta EN (#87)', () => {
+    const entry = getInterventionCatalogEntry('exposure_hierarchy');
+    expect(entry?.screen).toBe('ExposureHierarchy');
+    const [card] = actionSuggestionService.formatSuggestions(['exposure_hierarchy'], 'en');
+    expect(card.label).toMatch(/exposure/i);
+    expect(card.screen).toBe('ExposureHierarchy');
+  });
+
   it('rechaza IDs con caracteres inválidos', () => {
     expect(isValidInterventionId('breathing_exercise')).toBe(true);
     expect(isValidInterventionId('')).toBe(false);

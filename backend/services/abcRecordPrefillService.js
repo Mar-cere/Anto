@@ -1,9 +1,10 @@
 /**
  * Prefill del autorregistro ABC (#86) desde el mensaje del chat.
- * A = situación activadora (sin intensidad ni metadatos de chat).
+ * A = situación activadora, B = pensamientos (sin intensidad ni metadatos de chat).
  */
 
 const MAX_ACTIVATING_LENGTH = 500;
+const MAX_BELIEFS_LENGTH = 500;
 
 /** Elimina caracteres de control; mantiene saltos implícitos como espacio. */
 export function sanitizeAbcPrefillText(text = '') {
@@ -29,18 +30,29 @@ const AFTER_PREFIX =
 const THOUGHT_PREFIX =
   /^(?:noto\s+que|me\s+doy\s+cuenta\s+de\s+que|creo\s+que|pienso\s+que|siento\s+que|i\s+(?:notice|realize|think|feel)\s+that)\s+/i;
 
+function stripIntensityMarkers(text = '') {
+  let out = sanitizeAbcPrefillText(text);
+  INTENSITY_PATTERNS.forEach((pattern) => {
+    out = out.replace(pattern, '');
+  });
+  return out.replace(/\s{2,}/g, ' ').replace(/\s+([,.!?])/g, '$1').trim();
+}
+
+function clampPrefillField(text, maxLength) {
+  let value = sanitizeAbcPrefillText(String(text || '').replace(/^["'«]+|["'»]+$/g, ''));
+  if (!value) return null;
+  if (value.length > maxLength) {
+    value = `${value.slice(0, maxLength - 1).trim()}…`;
+  }
+  return value;
+}
+
 /**
  * @param {string} userContent
  * @returns {string|null}
  */
 export function extractActivatingEventFromMessage(userContent = '') {
-  let text = sanitizeAbcPrefillText(userContent);
-  if (!text) return null;
-
-  INTENSITY_PATTERNS.forEach((pattern) => {
-    text = text.replace(pattern, '');
-  });
-  text = text.replace(/\s{2,}/g, ' ').replace(/\s+([,.!?])/g, '$1').trim();
+  let text = stripIntensityMarkers(userContent);
   if (!text) return null;
 
   const sentences = text
@@ -70,25 +82,80 @@ export function extractActivatingEventFromMessage(userContent = '') {
   }
 
   candidate = candidate.replace(AFTER_PREFIX, '').trim();
-  candidate = sanitizeAbcPrefillText(
-    candidate.replace(/^["'«]+|["'»]+$/g, ''),
-  );
+  const result = clampPrefillField(candidate, MAX_ACTIVATING_LENGTH);
+  return result && result.length >= 3 ? result : null;
+}
 
-  if (candidate.length > MAX_ACTIVATING_LENGTH) {
-    candidate = `${candidate.slice(0, MAX_ACTIVATING_LENGTH - 1).trim()}…`;
+const BELIEF_EXTRACTION_PATTERNS = [
+  {
+    pattern:
+      /(?:noto\s+que|me\s+doy\s+cuenta\s+de\s+que|creo\s+que|pienso\s+que|siento\s+que|i\s+(?:notice|realize|think|feel)\s+that)\s+(.+?)(?:\s+despu[eé]s\s+de|\s+after|\s+when|\s+cuando|[.!?]|$)/i,
+    minLength: 5,
+  },
+  {
+    pattern:
+      /(?:siempre\s+pienso|keep\s+(?:on\s+)?thinking(?:\s+the)?|can'?t\s+stop\s+thinking(?:\s+the)?)\s+(.+?)(?:\s+despu[eé]s|\s+after|[.!?]|$)/i,
+    minLength: 5,
+  },
+  {
+    pattern:
+      /(?:repaso|going\s+over)\s+(?:una\s+y\s+otra\s+vez\s+)?(?:cómo|how|that)\s+(.+?)(?:[.!?]|$)/i,
+    minLength: 8,
+  },
+  {
+    pattern:
+      /(?:me\s+dij[eé]\s+a\s+m[ií]\s+mismo|me\s+digo\s+a\s+m[ií]\s+mismo|i\s+tell\s+myself)\s+(.+?)(?:[.!?]|$)/i,
+    minLength: 5,
+  },
+];
+
+/**
+ * @param {string} userContent
+ * @returns {string|null}
+ */
+export function extractBeliefsFromMessage(userContent = '') {
+  const text = stripIntensityMarkers(userContent);
+  if (!text) return null;
+
+  const quoted = text.match(/[«"']([^«"']{5,500})[»"']/);
+  if (quoted?.[1]) {
+    const fromQuote = clampPrefillField(quoted[1], MAX_BELIEFS_LENGTH);
+    if (fromQuote && fromQuote.length >= 5) return fromQuote;
   }
 
-  return candidate.length >= 3 ? candidate : null;
+  for (const { pattern, minLength } of BELIEF_EXTRACTION_PATTERNS) {
+    const match = text.match(pattern);
+    if (!match?.[1]) continue;
+    const belief = clampPrefillField(
+      match[1].replace(/^(?:que\s+|that\s+)/i, ''),
+      MAX_BELIEFS_LENGTH,
+    );
+    if (belief && belief.length >= minLength) return belief;
+  }
+
+  const compactWorst = text.match(
+    /((?:siempre\s+)?pienso\s+lo\s+peor|(?:keep\s+(?:on\s+)?)?thinking\s+the\s+worst)/i,
+  );
+  if (compactWorst?.[1]) {
+    const belief = clampPrefillField(compactWorst[1], MAX_BELIEFS_LENGTH);
+    if (belief && belief.length >= 5) return belief;
+  }
+
+  return null;
 }
 
 /**
  * @param {string} userContent
- * @returns {{ prefillActivatingEvent: string }|null}
+ * @returns {{ prefillActivatingEvent?: string, prefillBeliefs?: string }|null}
  */
 export function buildAbcPrefillParams(userContent = '') {
   const prefillActivatingEvent = extractActivatingEventFromMessage(userContent);
-  if (!prefillActivatingEvent) return null;
-  return { prefillActivatingEvent };
+  const prefillBeliefs = extractBeliefsFromMessage(userContent);
+  if (!prefillActivatingEvent && !prefillBeliefs) return null;
+  return {
+    ...(prefillActivatingEvent ? { prefillActivatingEvent } : {}),
+    ...(prefillBeliefs ? { prefillBeliefs } : {}),
+  };
 }
 
 /**

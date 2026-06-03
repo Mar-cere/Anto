@@ -74,6 +74,9 @@ describe('chatAbcSuggestions (#86)', () => {
           expect(abcCard?.screen).toBe('AbcRecord');
           expect(abcCard?.params?.fromChat).toBe(true);
           expect(abcCard?.params?.prefillActivatingEvent?.length).toBeGreaterThan(2);
+          if (message.includes('pienso') || message.includes('thinking')) {
+            expect(abcCard?.params?.prefillBeliefs?.length).toBeGreaterThan(2);
+          }
         } else {
           expect(actionIds).not.toContain('abc_record');
         }

@@ -74,6 +74,12 @@ export const ENDPOINTS = {
   ABC_RECORDS: '/api/abc-records',
   ABC_RECORD_BY_ID: (id: string) => `/api/abc-records/${id}`,
   ABC_RECORDS_EXPORT: '/api/abc-records/export',
+  EXPOSURE_PLANS: '/api/exposure-plans',
+  EXPOSURE_PLAN_BY_ID: (id: string) => `/api/exposure-plans/${id}`,
+  EXPOSURE_PLAN_ATTEMPTS: (id: string) => `/api/exposure-plans/${id}/attempts`,
+  EXPOSURE_PLAN_STEP_COMPLETE: (id: string, stepIndex: number) =>
+    `/api/exposure-plans/${id}/steps/${stepIndex}/complete`,
+  EXPOSURE_PLANS_EXPORT: '/api/exposure-plans/export',
   /** Resumen semanal o mensual: query period=week|month, opcional date, year, month */
   SUMMARY: '/api/summary',
   /** Foco del panel (dashboard #34): agrega semana, tareas, chats, compromisos, línea de prioridad */

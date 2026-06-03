@@ -39,6 +39,7 @@ import SelfCompassionScreen from '../screens/techniques/SelfCompassionScreen';
 import CommunicationToolScreen from '../screens/techniques/CommunicationToolScreen';
 import GratitudeJournalScreen from '../screens/techniques/GratitudeJournalScreen';
 import AbcRecordScreen from '../screens/techniques/AbcRecordScreen';
+import ExposureHierarchyScreen from '../screens/techniques/ExposureHierarchyScreen';
 import ActivitySuggestionScreen from '../screens/techniques/ActivitySuggestionScreen';
 import MindfulnessScreen from '../screens/techniques/MindfulnessScreen';
 import SelfCareScreen from '../screens/techniques/SelfCareScreen';
@@ -275,6 +276,11 @@ const StackNavigator = () => {
       <Stack.Screen
         name="AbcRecord"
         component={AbcRecordScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ExposureHierarchy"
+        component={ExposureHierarchyScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

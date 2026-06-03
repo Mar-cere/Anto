@@ -31,4 +31,13 @@ describe('parseAbcRecordRouteParams', () => {
     expect(out.prefillActivatingEvent.length).toBeLessThanOrEqual(ABC_PREFILL_MAX_LENGTH);
     expect(out.prefillActivatingEvent).not.toMatch(/\u0001/);
   });
+
+  it('acepta prefill B solo cuando fromChat es true', () => {
+    const out = parseAbcRecordRouteParams({
+      fromChat: true,
+      prefillBeliefs: 'siempre pienso lo peor',
+    });
+    expect(out.prefillBeliefs).toMatch(/pienso lo peor/i);
+    expect(out.prefillActivatingEvent).toBe('');
+  });
 });

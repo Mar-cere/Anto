@@ -72,6 +72,14 @@ export const INTERVENTION_CATALOG = {
     type: 'exercise',
     tags: ['tcc', 'patrones', 'reestructuracion'],
   },
+  exposure_hierarchy: {
+    id: 'exposure_hierarchy',
+    label: 'Jerarquía de exposición',
+    icon: '🪜',
+    screen: 'ExposureHierarchy',
+    type: 'exercise',
+    tags: ['tcc', 'ansiedad', 'exposicion'],
+  },
   timeout_technique: {
     id: 'timeout_technique',
     label: 'Técnica de Tiempo Fuera',

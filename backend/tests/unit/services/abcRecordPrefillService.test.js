@@ -2,6 +2,7 @@ import {
   buildAbcPrefillParams,
   enrichSuggestionsWithAbcPrefill,
   extractActivatingEventFromMessage,
+  extractBeliefsFromMessage,
   sanitizeAbcPrefillText,
 } from '../../../services/abcRecordPrefillService.js';
 import actionSuggestionService from '../../../services/actionSuggestionService.js';
@@ -19,9 +20,16 @@ describe('abcRecordPrefillService (#86)', () => {
     expect(event).not.toMatch(/pienso lo peor/i);
   });
 
-  it('buildAbcPrefillParams devuelve prefillActivatingEvent', () => {
+  it('buildAbcPrefillParams devuelve prefillActivatingEvent y prefillBeliefs', () => {
     const params = buildAbcPrefillParams(canonical);
     expect(params?.prefillActivatingEvent).toMatch(/discutir con mi pareja/i);
+    expect(params?.prefillBeliefs).toMatch(/pienso lo peor/i);
+  });
+
+  it('extractBeliefsFromMessage separa pensamiento de situación', () => {
+    const beliefs = extractBeliefsFromMessage(canonical);
+    expect(beliefs).toMatch(/pienso lo peor/i);
+    expect(beliefs).not.toMatch(/discutir/i);
   });
 
   it('enrichSuggestionsWithAbcPrefill solo toca abc_record', () => {
@@ -33,6 +41,7 @@ describe('abcRecordPrefillService (#86)', () => {
       canonical,
     );
     expect(formatted[0].params.prefillActivatingEvent).toMatch(/discutir/i);
+    expect(formatted[0].params.prefillBeliefs).toMatch(/pienso lo peor/i);
     expect(formatted[0].params.fromChat).toBe(true);
     expect(formatted[1].params).toBeUndefined();
   });
@@ -82,6 +91,21 @@ describe('abcRecordPrefillService (#86)', () => {
     const abc = formatted.find((s) => s.id === 'abc_record');
     expect(abc?.params?.fromChat).toBe(true);
     expect(abc?.params?.prefillActivatingEvent).toMatch(/discutir/i);
+    expect(abc?.params?.prefillBeliefs).toMatch(/pienso lo peor/i);
     expect(abc?.screen).toBe('AbcRecord');
+  });
+
+  it('extrae pensamiento en mensaje de culpa', () => {
+    const beliefs = extractBeliefsFromMessage(
+      'Siento mucha culpa por lo que dije ayer, 7/10. Repaso una y otra vez cómo reaccioné mal.',
+    );
+    expect(beliefs).toMatch(/reaccion[eé]/i);
+  });
+
+  it('buildAbcPrefillParams puede devolver solo prefillBeliefs', () => {
+    const params = buildAbcPrefillParams(
+      'Repaso una y otra vez cómo reaccioné mal con mi hijo.',
+    );
+    expect(params?.prefillBeliefs).toMatch(/reaccion[eé]/i);
   });
 });

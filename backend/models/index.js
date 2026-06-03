@@ -15,6 +15,7 @@ import Transaction from './Transaction.js';
 import Subscription from './Subscription.js';
 import Journal from './Journal.js';
 import AbcRecord from './AbcRecord.js';
+import ExposurePlan from './ExposurePlan.js';
 import ClinicalScaleResult from './ClinicalScaleResult.js';
 import CognitiveDistortionReport from './CognitiveDistortionReport.js';
 import IntenseChatCheckIn from './IntenseChatCheckIn.js';
@@ -41,6 +42,7 @@ const models = {
   Subscription,
   Journal,
   AbcRecord,
+  ExposurePlan,
   ClinicalScaleResult,
   CognitiveDistortionReport,
   IntenseChatCheckIn,
@@ -74,6 +76,7 @@ export {
   Subscription,
   Journal,
   AbcRecord,
+  ExposurePlan,
   ClinicalScaleResult,
   CognitiveDistortionReport,
   IntenseChatCheckIn,
