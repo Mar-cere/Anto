@@ -252,6 +252,10 @@ router.post('/:id/attempts', validateObjectId, attemptLimiter, async (req, res) 
     }
 
     const step = plan.steps[stepIndex];
+    if (step.status === 'completed') {
+      return res.status(400).json({ success: false, error: copy.stepAlreadyCompleted });
+    }
+
     if (step.status === 'pending') {
       step.status = 'in_progress';
     }
@@ -297,6 +301,14 @@ router.post('/:id/steps/:stepIndex/complete', validateObjectId, attemptLimiter, 
     }
 
     const step = plan.steps[stepIndex];
+    if (step.status === 'completed') {
+      return res.status(400).json({ success: false, error: copy.stepAlreadyCompleted });
+    }
+
+    if (!Array.isArray(step.attempts) || step.attempts.length === 0) {
+      return res.status(400).json({ success: false, error: copy.stepNeedsAttempt });
+    }
+
     step.status = 'completed';
     step.completedAt = new Date();
 

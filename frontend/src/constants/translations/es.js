@@ -1264,6 +1264,8 @@ export const TECHNIQUES = {
   EXPOSURE_NOTES_PLACEHOLDER: 'Qué ayudó, qué fue difícil…',
   EXPOSURE_LOG_ATTEMPT: 'Registrar intento',
   EXPOSURE_COMPLETE_STEP: 'Marcar paso como completado',
+  EXPOSURE_COMPLETE_NEEDS_ATTEMPT:
+    'Registra al menos un intento antes de marcar el paso como completado.',
   EXPOSURE_ALL_DONE: 'Completaste todos los pasos de esta jerarquía.',
   EXPOSURE_NO_PLANS: 'Aún no hay jerarquías. Crea una arriba.',
   EXPOSURE_RECENT_TITLE: 'Tus jerarquías',

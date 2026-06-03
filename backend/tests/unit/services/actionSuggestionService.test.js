@@ -251,6 +251,38 @@ describe('ActionSuggestionService', () => {
     });
   });
 
+  describe('Jerarquía exposición (#87)', () => {
+    it('incluye exposure_hierarchy en ansiedad intensidad media', () => {
+      const suggestions = actionSuggestionService.generateSuggestions(
+        { mainEmotion: 'ansiedad', intensity: 6, topic: 'general' },
+        {},
+        { userContent: 'Me siento ansioso, 6/10' },
+      );
+      expect(suggestions).toContain('exposure_hierarchy');
+    });
+
+    it('no incluye exposure_hierarchy en ansiedad alta sin evitación', () => {
+      const suggestions = actionSuggestionService.generateSuggestions(
+        { mainEmotion: 'ansiedad', intensity: 9, topic: 'general' },
+        {},
+        { userContent: 'Corazón acelerado y mucha anticipación. 9/10' },
+      );
+      expect(suggestions).not.toContain('exposure_hierarchy');
+      expect(suggestions).toContain('breathing_exercise');
+    });
+
+    it('prioriza exposure_hierarchy con evitación en ansiedad alta', () => {
+      const msg =
+        'Tengo ansiedad social, 8/10. Evito hablar en reuniones porque me da mucho miedo quedar mal.';
+      const suggestions = actionSuggestionService.generateSuggestions(
+        { mainEmotion: 'miedo', intensity: 8, topic: 'general' },
+        {},
+        { userContent: msg },
+      );
+      expect(suggestions[0]).toBe('exposure_hierarchy');
+    });
+  });
+
   describe('Psicoeducación (#85)', () => {
     it('incluye módulo de ira para emoción enojo', () => {
       const suggestions = actionSuggestionService.generateSuggestions({

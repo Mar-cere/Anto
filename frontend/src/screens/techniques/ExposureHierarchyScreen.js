@@ -67,6 +67,7 @@ const DEFAULT_TEXTS = {
   NOTES_PLACEHOLDER: 'Qué ayudó, qué fue difícil…',
   LOG_ATTEMPT: 'Registrar intento',
   COMPLETE_STEP: 'Marcar paso como completado',
+  COMPLETE_NEEDS_ATTEMPT: 'Registra al menos un intento antes de marcar el paso como completado.',
   ALL_DONE: 'Completaste todos los pasos de esta jerarquía.',
   NO_PLANS: 'Aún no hay jerarquías. Crea una arriba.',
   RECENT_TITLE: 'Tus jerarquías',
@@ -128,6 +129,8 @@ const ExposureHierarchyScreen = () => {
         translated?.EXPOSURE_NOTES_PLACEHOLDER || DEFAULT_TEXTS.NOTES_PLACEHOLDER,
       LOG_ATTEMPT: translated?.EXPOSURE_LOG_ATTEMPT || DEFAULT_TEXTS.LOG_ATTEMPT,
       COMPLETE_STEP: translated?.EXPOSURE_COMPLETE_STEP || DEFAULT_TEXTS.COMPLETE_STEP,
+      COMPLETE_NEEDS_ATTEMPT:
+        translated?.EXPOSURE_COMPLETE_NEEDS_ATTEMPT || DEFAULT_TEXTS.COMPLETE_NEEDS_ATTEMPT,
       ALL_DONE: translated?.EXPOSURE_ALL_DONE || DEFAULT_TEXTS.ALL_DONE,
       NO_PLANS: translated?.EXPOSURE_NO_PLANS || DEFAULT_TEXTS.NO_PLANS,
       RECENT_TITLE: translated?.EXPOSURE_RECENT_TITLE || DEFAULT_TEXTS.RECENT_TITLE,
@@ -172,6 +175,9 @@ const ExposureHierarchyScreen = () => {
     const index = activePlan.currentStepIndex ?? 0;
     return activePlan.steps[index] || null;
   }, [activePlan]);
+
+  const currentStepAttemptCount = currentStep?.attempts?.length || 0;
+  const canCompleteStep = currentStepAttemptCount > 0;
 
   const allStepsCompleted = useMemo(() => {
     if (!activePlan?.steps?.length) return false;
@@ -534,6 +540,9 @@ const ExposureHierarchyScreen = () => {
               multiline
               textAlignVertical="top"
             />
+            {!canCompleteStep ? (
+              <Text style={techniqueScreenStyles.formHint}>{TEXTS.COMPLETE_NEEDS_ATTEMPT}</Text>
+            ) : null}
             <View style={styles.actionRow}>
               <TouchableOpacity
                 style={[techniqueScreenStyles.primaryButton, { opacity: loggingAttempt ? 0.7 : 1 }]}
@@ -549,10 +558,13 @@ const ExposureHierarchyScreen = () => {
               <TouchableOpacity
                 style={[
                   techniqueScreenStyles.primaryButton,
-                  { backgroundColor: colors.primary, opacity: completingStep ? 0.7 : 1 },
+                  {
+                    backgroundColor: colors.primary,
+                    opacity: completingStep || !canCompleteStep ? 0.5 : 1,
+                  },
                 ]}
                 onPress={handleCompleteStep}
-                disabled={completingStep}
+                disabled={completingStep || !canCompleteStep}
               >
                 {completingStep ? (
                   <ActivityIndicator size="small" color={colors.textOnPrimary} />

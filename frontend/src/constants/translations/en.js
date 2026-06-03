@@ -1260,6 +1260,8 @@ export const TECHNIQUES = {
   EXPOSURE_NOTES_PLACEHOLDER: 'What helped, what was hard…',
   EXPOSURE_LOG_ATTEMPT: 'Log attempt',
   EXPOSURE_COMPLETE_STEP: 'Mark step complete',
+  EXPOSURE_COMPLETE_NEEDS_ATTEMPT:
+    'Log at least one attempt before marking the step complete.',
   EXPOSURE_ALL_DONE: 'You completed all steps in this hierarchy.',
   EXPOSURE_NO_PLANS: 'No hierarchies yet. Create one above.',
   EXPOSURE_RECENT_TITLE: 'Your hierarchies',
