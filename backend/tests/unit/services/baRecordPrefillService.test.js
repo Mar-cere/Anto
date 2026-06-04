@@ -31,6 +31,11 @@ describe('baRecordPrefillService (#88)', () => {
     expect(params.prefillActivityType).toBe('pleasant');
   });
 
+  it('buildBaPrefillParams devuelve null para mensaje vacío', () => {
+    expect(buildBaPrefillParams('')).toBeNull();
+    expect(buildBaPrefillParams('   ')).toBeNull();
+  });
+
   it('enrichSuggestionsWithBaPrefill solo toca behavioral_activation', () => {
     const formatted = enrichSuggestionsWithBaPrefill(
       [

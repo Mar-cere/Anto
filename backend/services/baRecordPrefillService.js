@@ -103,9 +103,10 @@ export function inferActivityTypeFromMessage(userContent = '') {
  */
 export function buildBaPrefillParams(userContent = '', language = 'es') {
   const lang = resolveLanguage(language);
-  const prefillActivityDescription =
-    suggestMicroActivityFromMessage(userContent, lang) ||
-    clampActivity(MICRO_ACTIVITY[lang].default);
+  const text = sanitizeAbcPrefillText(userContent);
+  if (!text) return null;
+
+  const prefillActivityDescription = suggestMicroActivityFromMessage(userContent, lang);
   const prefillMoodBefore = extractMoodBeforeFromMessage(userContent);
   const prefillActivityType = inferActivityTypeFromMessage(userContent);
 
@@ -114,7 +115,8 @@ export function buildBaPrefillParams(userContent = '', language = 'es') {
   if (prefillMoodBefore != null) params.prefillMoodBefore = prefillMoodBefore;
   if (prefillActivityType) params.prefillActivityType = prefillActivityType;
 
-  return Object.keys(params).length > 0 ? params : null;
+  if (Object.keys(params).length === 0) return null;
+  return params;
 }
 
 /**
