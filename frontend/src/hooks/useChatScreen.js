@@ -263,10 +263,9 @@ export function useChatScreen() {
         const timeB = new Date(b.createdAt || b.metadata?.timestamp || 0).getTime();
         return timeA - timeB;
       });
-      const filtered = uniqueMessages.filter((m) => m.type !== 'quickReplies');
-      setMessages(localizeChatWelcomeMessages(filtered, appLanguage));
+      setMessages(finalizeLoadedChatMessages(uniqueMessages, appLanguage));
       if (isRegistered) {
-        const userCount = filtered.filter((m) => m.role === MESSAGE_ROLES.USER).length;
+        const userCount = uniqueMessages.filter((m) => m.type !== 'quickReplies' && m.role === MESSAGE_ROLES.USER).length;
         setShowSessionIntentionPrompt(userCount === 0 && !sessionIntentionMeta);
       } else {
         setShowSessionIntentionPrompt(false);
