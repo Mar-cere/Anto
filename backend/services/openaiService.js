@@ -12,7 +12,7 @@ import {
     EMOTIONAL_COHERENCE_PHRASES,
     ERROR_MESSAGES,
     GENERIC_RESPONSE_PATTERNS,
-    GREETING_VARIATIONS,
+    getRandomGreeting,
     MESSAGE_INTENTS,
     OPENAI_MODEL,
     PROMPT_CONFIG,
@@ -1902,14 +1902,9 @@ class OpenAIService {
    * @returns {string} Saludo personalizado
    */
   generarSaludoPersonalizado(userPreferences = {}) {
+    const language = userPreferences?.language === 'en' ? 'en' : 'es';
     const timeOfDay = getTimeOfDayEnglish();
-    const greetings = GREETING_VARIATIONS[timeOfDay] || GREETING_VARIATIONS.morning;
-    
-    if (!greetings || greetings.length === 0) {
-      return GREETING_VARIATIONS.morning[0] || '¡Hola! ¿Cómo puedo ayudarte hoy?';
-    }
-    
-    return greetings[Math.floor(Math.random() * greetings.length)];
+    return getRandomGreeting(timeOfDay, language);
   }
 
   /**

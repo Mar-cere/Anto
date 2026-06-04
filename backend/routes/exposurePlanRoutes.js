@@ -15,6 +15,10 @@ import {
   getLogExposureAttemptSchema,
 } from '../utils/exposurePlanSchemas.js';
 import { createRateLimiter } from '../utils/createRateLimiter.js';
+import {
+  evaluateCompleteExposureStep,
+  evaluateLogExposureAttempt,
+} from '../utils/exposurePlanGuards.js';
 
 const router = express.Router();
 
@@ -100,14 +104,6 @@ function formatPlanForExport(plan, copy) {
   });
 
   return lines.join('\n');
-}
-
-function normalizeStepIndex(plan, stepIndex) {
-  const index = Number(stepIndex);
-  if (!Number.isInteger(index) || index < 0 || index >= plan.steps.length) {
-    return null;
-  }
-  return index;
 }
 
 router.get('/export', async (req, res) => {
@@ -242,19 +238,20 @@ router.post('/:id/attempts', validateObjectId, attemptLimiter, async (req, res) 
       });
     }
 
-    const stepIndex = normalizeStepIndex(plan, value.stepIndex);
-    if (stepIndex == null) {
-      return res.status(400).json({ success: false, error: copy.stepIndexInvalid });
+    const attemptEval = evaluateLogExposureAttempt(plan, value.stepIndex);
+    if (!attemptEval.ok) {
+      const errMap = {
+        stepIndexInvalid: copy.stepIndexInvalid,
+        stepLocked: copy.stepLocked,
+        stepAlreadyCompleted: copy.stepAlreadyCompleted,
+      };
+      return res.status(400).json({
+        success: false,
+        error: errMap[attemptEval.errorKey] || copy.stepIndexInvalid,
+      });
     }
-
-    if (stepIndex > plan.currentStepIndex) {
-      return res.status(400).json({ success: false, error: copy.stepLocked });
-    }
-
+    const stepIndex = attemptEval.stepIndex;
     const step = plan.steps[stepIndex];
-    if (step.status === 'completed') {
-      return res.status(400).json({ success: false, error: copy.stepAlreadyCompleted });
-    }
 
     if (step.status === 'pending') {
       step.status = 'in_progress';
@@ -291,23 +288,21 @@ router.post('/:id/steps/:stepIndex/complete', validateObjectId, attemptLimiter, 
       return res.status(404).json({ success: false, error: copy.notFound });
     }
 
-    const stepIndex = normalizeStepIndex(plan, req.params.stepIndex);
-    if (stepIndex == null) {
-      return res.status(400).json({ success: false, error: copy.stepIndexInvalid });
+    const completeEval = evaluateCompleteExposureStep(plan, req.params.stepIndex);
+    if (!completeEval.ok) {
+      const errMap = {
+        stepIndexInvalid: copy.stepIndexInvalid,
+        stepLocked: copy.stepLocked,
+        stepAlreadyCompleted: copy.stepAlreadyCompleted,
+        stepNeedsAttempt: copy.stepNeedsAttempt,
+      };
+      return res.status(400).json({
+        success: false,
+        error: errMap[completeEval.errorKey] || copy.stepIndexInvalid,
+      });
     }
-
-    if (stepIndex !== plan.currentStepIndex) {
-      return res.status(400).json({ success: false, error: copy.stepLocked });
-    }
-
+    const stepIndex = completeEval.stepIndex;
     const step = plan.steps[stepIndex];
-    if (step.status === 'completed') {
-      return res.status(400).json({ success: false, error: copy.stepAlreadyCompleted });
-    }
-
-    if (!Array.isArray(step.attempts) || step.attempts.length === 0) {
-      return res.status(400).json({ success: false, error: copy.stepNeedsAttempt });
-    }
 
     step.status = 'completed';
     step.completedAt = new Date();

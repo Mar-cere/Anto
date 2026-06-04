@@ -505,7 +505,7 @@ const ExposureHierarchyScreen = () => {
                 <Text
                   style={[
                     styles.planTabText,
-                    { color: selected ? colors.textOnPrimary : colors.textPrimary },
+                    { color: selected ? colors.textOnPrimary : colors.text },
                   ]}
                   numberOfLines={1}
                 >
@@ -550,7 +550,7 @@ const ExposureHierarchyScreen = () => {
                 disabled={loggingAttempt}
               >
                 {loggingAttempt ? (
-                  <ActivityIndicator size="small" color={colors.textPrimary} />
+                  <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
                   <Text style={techniqueScreenStyles.primaryButtonText}>{TEXTS.LOG_ATTEMPT}</Text>
                 )}
@@ -664,7 +664,7 @@ const ExposureHierarchyScreen = () => {
                   <Text
                     style={[
                       styles.modeTabText,
-                      { color: active ? colors.textOnPrimary : colors.textPrimary },
+                      { color: active ? colors.textOnPrimary : colors.text },
                     ]}
                   >
                     {label}
@@ -685,7 +685,7 @@ const ExposureHierarchyScreen = () => {
               disabled={exporting || plans.length === 0}
             >
               {exporting ? (
-                <ActivityIndicator size="small" color={colors.textPrimary} />
+                <ActivityIndicator size="small" color={colors.primary} />
               ) : (
                 <Text style={techniqueScreenStyles.primaryButtonText}>{TEXTS.EXPORT}</Text>
               )}

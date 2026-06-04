@@ -105,6 +105,20 @@ describe('shouldShowChatActionSuggestions', () => {
     expect(result).toBe(true);
     expect(mockHasShown).toHaveBeenCalled();
   });
+
+  it('muestra en 1.er turno con señal TCC (apatía) aunque intensidad sea 6 (#88)', async () => {
+    const result = await shouldShowChatActionSuggestions({
+      emotionalAnalysis: { intensity: 6, mainEmotion: 'tristeza' },
+      contextualAnalysis: {},
+      conversationHistory: [{ role: 'assistant', content: 'Hi' }],
+      userId: 'u1',
+      conversationId: 'c1',
+      userContent:
+        'Me siento apagado y sin ganas de hacer nada, 6/10. Llevo días sin salir de casa.',
+    });
+    expect(result).toBe(true);
+    expect(mockHasShown).toHaveBeenCalled();
+  });
 });
 
 describe('isActionSuggestionSafetyException', () => {

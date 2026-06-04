@@ -47,7 +47,7 @@ function signGuestToken(guestSessionId) {
   );
 }
 
-export async function createGuestSession(ipHash) {
+export async function createGuestSession(ipHash, language = 'es') {
   const expiresAt = new Date(Date.now() + GUEST_SESSION_HOURS * 60 * 60 * 1000);
 
   const guestSession = new GuestSession({
@@ -67,7 +67,9 @@ export async function createGuestSession(ipHash) {
   guestSession.conversationId = conversation._id;
   await guestSession.save();
 
-  const welcomeContent = openaiService.generarSaludoPersonalizado({});
+  const welcomeContent = openaiService.generarSaludoPersonalizado({
+    language: language === 'en' ? 'en' : 'es',
+  });
   const welcomeMessage = new Message({
     userId: null,
     guestSessionId: guestSession._id,

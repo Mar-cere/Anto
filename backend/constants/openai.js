@@ -406,6 +406,30 @@ export const GREETING_VARIATIONS = {
   ]
 };
 
+/** Saludos de bienvenida en chat (EN) — misma estructura que GREETING_VARIATIONS. */
+export const GREETING_VARIATIONS_EN = {
+  morning: [
+    'Good morning! How can I help you today?',
+    'Hi! How did you wake up feeling today?',
+    'Good morning — how are you feeling today?',
+  ],
+  afternoon: [
+    'Hi! How is your day going?',
+    'Good afternoon! What can I help you with?',
+    'Hi! How are you feeling right now?',
+  ],
+  evening: [
+    'Good evening! How has your day been?',
+    'Hi! How are you doing this evening?',
+    'Hi! How is everything going?',
+  ],
+  night: [
+    'Good evening! How are you feeling?',
+    'Hi! How did your day go?',
+    'Good evening! What can I help you with?',
+  ],
+};
+
 // ========== PATRONES DE RESPUESTAS GENÉRICAS ==========
 // Patrones regex para detectar respuestas demasiado genéricas que necesitan expansión
 export const GENERIC_RESPONSE_PATTERNS = [
@@ -645,10 +669,13 @@ export const clampIntensity = (intensity) => {
 /**
  * Obtiene un saludo aleatorio para un período del día
  * @param {string} period - Período del día ('morning', 'afternoon', 'evening', 'night')
+ * @param {string} [language='es'] - 'es' | 'en'
  * @returns {string} Saludo aleatorio
  */
-export const getRandomGreeting = (period) => {
-  const greetings = GREETING_VARIATIONS[period] || GREETING_VARIATIONS.morning;
+export const getRandomGreeting = (period, language = 'es') => {
+  const pool =
+    language === 'en' ? GREETING_VARIATIONS_EN : GREETING_VARIATIONS;
+  const greetings = pool[period] || pool.morning;
   return greetings[Math.floor(Math.random() * greetings.length)];
 };
 

@@ -165,16 +165,35 @@ const BehavioralActivationScreen = () => {
         },
         stepDotText: { fontSize: 14, fontWeight: '700' },
         stepConnector: { flex: 1, height: 2, backgroundColor: colors.accentLineSoft },
-        navRow: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.md },
-        typeRow: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.sm },
-        typeChip: {
+        typeSegment: {
+          flexDirection: 'row',
+          alignSelf: 'stretch',
+          backgroundColor: colors.glassFill,
+          borderRadius: 14,
+          padding: 4,
+          marginBottom: SPACING.md,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+        },
+        typeSegmentItem: {
           flex: 1,
-          paddingVertical: SPACING.sm,
-          borderRadius: 12,
-          borderWidth: 1,
+          paddingVertical: 10,
+          paddingHorizontal: 8,
+          borderRadius: 10,
           alignItems: 'center',
         },
-        typeChipText: { fontSize: 13, fontWeight: '600' },
+        typeSegmentItemOn: {
+          backgroundColor: colors.accentLineSoft,
+        },
+        typeSegmentText: {
+          fontSize: 13,
+          fontWeight: '600',
+          color: colors.textSecondary,
+          textAlign: 'center',
+        },
+        typeSegmentTextOn: {
+          color: colors.text,
+        },
         moodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.xs },
         moodChip: {
           minWidth: 36,
@@ -354,7 +373,7 @@ const BehavioralActivationScreen = () => {
         <>
           <Text style={techniqueScreenStyles.formSectionHeading}>{TEXTS.STEP1_TITLE}</Text>
           <Text style={techniqueScreenStyles.formHint}>{TEXTS.STEP1_HINT}</Text>
-          <View style={styles.typeRow}>
+          <View style={styles.typeSegment}>
             {[
               { id: 'pleasant', label: TEXTS.TYPE_PLEASANT },
               { id: 'routine', label: TEXTS.TYPE_ROUTINE },
@@ -363,19 +382,15 @@ const BehavioralActivationScreen = () => {
               return (
                 <TouchableOpacity
                   key={id}
-                  style={[
-                    styles.typeChip,
-                    {
-                      backgroundColor: selected ? colors.primary : colors.glassFill,
-                      borderColor: selected ? colors.primary : colors.accentLineSoft,
-                    },
-                  ]}
+                  style={[styles.typeSegmentItem, selected && styles.typeSegmentItemOn]}
                   onPress={() => setActivityType(id)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
                 >
                   <Text
                     style={[
-                      styles.typeChipText,
-                      { color: selected ? colors.textOnPrimary : colors.textPrimary },
+                      styles.typeSegmentText,
+                      selected && styles.typeSegmentTextOn,
                     ]}
                   >
                     {label}
@@ -385,7 +400,7 @@ const BehavioralActivationScreen = () => {
             })}
           </View>
           <TextInput
-            style={[techniqueScreenStyles.textInput, { minHeight: 88 }]}
+            style={[techniqueScreenStyles.textInput, { minHeight: 88, marginTop: 0 }]}
             placeholder={TEXTS.STEP1_PLACEHOLDER}
             placeholderTextColor={colors.textSecondary}
             value={activityDescription}
@@ -481,44 +496,37 @@ const BehavioralActivationScreen = () => {
               <Text style={styles.validationText}>{validationMessage}</Text>
             ) : null}
             {renderStepContent()}
-            <View style={styles.navRow}>
-              <TouchableOpacity style={techniqueScreenStyles.primaryButton} onPress={goBack}>
-                <Text style={techniqueScreenStyles.primaryButtonText}>{TEXTS.BACK}</Text>
+            <View style={[techniqueScreenStyles.navRow, { marginTop: SPACING.md }]}>
+              <TouchableOpacity
+                style={techniqueScreenStyles.navButton}
+                onPress={goBack}
+                accessibilityRole="button"
+              >
+                <Text style={techniqueScreenStyles.navButtonTextMuted}>{TEXTS.BACK}</Text>
               </TouchableOpacity>
               {stepIndex < STEPS.length - 1 ? (
                 <TouchableOpacity
-                  style={[techniqueScreenStyles.primaryButton, { backgroundColor: colors.primary }]}
+                  style={[techniqueScreenStyles.navButton, techniqueScreenStyles.navButtonPrimary]}
                   onPress={goNext}
+                  accessibilityRole="button"
                 >
-                  <Text
-                    style={[
-                      techniqueScreenStyles.primaryButtonText,
-                      { color: colors.textOnPrimary },
-                    ]}
-                  >
-                    {TEXTS.NEXT}
-                  </Text>
+                  <Text style={techniqueScreenStyles.navButtonText}>{TEXTS.NEXT}</Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
                   style={[
-                    techniqueScreenStyles.primaryButton,
-                    { backgroundColor: colors.primary, opacity: saving ? 0.7 : 1 },
+                    techniqueScreenStyles.navButton,
+                    techniqueScreenStyles.navButtonPrimary,
+                    saving && { opacity: 0.7 },
                   ]}
                   onPress={handleSave}
                   disabled={saving}
+                  accessibilityRole="button"
                 >
                   {saving ? (
                     <ActivityIndicator size="small" color={colors.textOnPrimary} />
                   ) : (
-                    <Text
-                      style={[
-                        techniqueScreenStyles.primaryButtonText,
-                        { color: colors.textOnPrimary },
-                      ]}
-                    >
-                      {TEXTS.SAVE}
-                    </Text>
+                    <Text style={techniqueScreenStyles.navButtonText}>{TEXTS.SAVE}</Text>
                   )}
                 </TouchableOpacity>
               )}
@@ -571,7 +579,7 @@ const BehavioralActivationScreen = () => {
               disabled={exporting || records.length === 0}
             >
               {exporting ? (
-                <ActivityIndicator size="small" color={colors.textPrimary} />
+                <ActivityIndicator size="small" color={colors.primary} />
               ) : (
                 <Text style={techniqueScreenStyles.primaryButtonText}>{TEXTS.EXPORT}</Text>
               )}

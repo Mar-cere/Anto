@@ -176,7 +176,9 @@ router.get('/conversations/:conversationId', protect, validarConversationId, val
             : Date.now();
           const welcomeCreatedAt = new Date(baseTime - 1000);
 
-          const welcomeContent = openaiService.generarSaludoPersonalizado({});
+          const welcomeContent = openaiService.generarSaludoPersonalizado({
+            language: req.appLanguage,
+          });
           const welcomeMessage = new Message({
             userId,
             content: welcomeContent,
@@ -459,7 +461,9 @@ router.post('/conversations', protect, requireActiveSubscription(true), async (r
     await conversation.save();
 
     // Mensaje de bienvenida con saludo por momento del día (sin await de perfil para evitar +1 ronda DB)
-    const welcomeContent = openaiService.generarSaludoPersonalizado({});
+    const welcomeContent = openaiService.generarSaludoPersonalizado({
+      language: req.appLanguage,
+    });
     const welcomeMessage = new Message({
       userId,
       content: welcomeContent,
@@ -467,8 +471,9 @@ router.post('/conversations', protect, requireActiveSubscription(true), async (r
       conversationId: conversation._id,
       metadata: {
         context: { preferences: {} },
-        status: 'sent'
-      }
+        status: 'sent',
+        type: 'welcome',
+      },
     });
     await welcomeMessage.save();
 
