@@ -4,6 +4,7 @@ import actionSuggestionService, {
 } from '../../../services/actionSuggestionService.js';
 import emotionalAnalyzer from '../../../services/emotionalAnalyzer.js';
 import { getInterventionCatalogEntry } from '../../../constants/interventionCatalog.js';
+import { planChatActionSuggestions } from '../../../services/psychoeducationPromptSnippetService.js';
 import {
   CHAT_BA_SMOKE_CASES,
   CHAT_BA_SMOKE_CASES_EN,
@@ -47,6 +48,23 @@ describe('chatBaSuggestions (#88)', () => {
       },
     );
     expect(out[0]).toBe('behavioral_activation');
+  });
+
+  it('planChatActionSuggestions incluye prefill en behavioral_activation', async () => {
+    const analysis = await emotionalAnalyzer.analyzeEmotion(CANONICAL_APATHY);
+    const plan = await planChatActionSuggestions({
+      emotionalAnalysis: analysis,
+      contextualAnalysis: {},
+      userContent: CANONICAL_APATHY,
+      userId: 'u1',
+      conversationId: 'c1',
+      conversationHistory: [{ role: 'assistant', content: 'Hola' }],
+      language: 'es',
+    });
+    const ba = plan.formatted.find((s) => s.id === 'behavioral_activation');
+    expect(ba?.params?.fromChat).toBe(true);
+    expect(ba?.params?.prefillMoodBefore).toBe(6);
+    expect(ba?.params?.prefillActivityDescription).toMatch(/paseo/i);
   });
 
   it('applyBaSuggestionPolicy no desplaza ABC si ya es primero', () => {

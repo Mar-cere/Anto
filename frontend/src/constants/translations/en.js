@@ -1304,6 +1304,9 @@ export const TECHNIQUES = {
   BA_OF: 'of',
   BA_VALIDATION_ACTIVITY: 'Describe the activity before continuing.',
   BA_MOOD_DELTA: 'Mood change',
+  BA_PREFILL_HINT:
+    'Suggested from your chat message. You can edit it before continuing.',
+  BA_PREFILL_MOOD_HINT: 'Starting mood taken from your message (you can change it).',
   COMMUNICATION_TITLE: 'Communication Tool',
   COMMUNICATION_INTRO_KICKER: 'Communication',
   COMMUNICATION_INTRO_TITLE: 'Empathetic tools',

@@ -66,7 +66,7 @@ Criterio para **eliminar** del backlog activo (no son un quinto cuadrante de pri
 | **Psicoeducación modular (#85)** | **Parcial (MVP UX jun 2026):** 7 módulos es/en, biblioteca, chat (#78), tests/smoke. **Pendiente:** más temas (#86–#99). **#111** sello UI en módulo/biblioteca/chat. |
 | **Autorregistro ABC (#86)** | **Parcial (MVP jun 2026):** wizard A→B→C, API, export, pantalla `AbcRecord`, catálogo #127, sugerencias chat, **prefill A+B desde mensaje**. **Pendiente:** agregación macro (#212). |
 | **Jerarquía exposición + SUDS (#87)** | **Parcial (MVP jun 2026):** jerarquía colaborativa, SUDS 0–100 por intento, API `/api/exposure-plans`, pantalla `ExposureHierarchy`, catálogo #127, sugerencias ansiedad media, **guardas anti-saltos** (`exposurePlanGuards` + UI). **Pendiente:** prefill desde chat. |
-| **Activación conductual (#88)** | **Parcial (MVP jun 2026, validado dispositivo):** wizard actividad + ánimo antes/después, API `/api/behavioral-activation-logs`, pantalla `BehavioralActivation`, catálogo #127, sugerencias tristeza/apatía (cadencia TCC), estilos wizard. **Pendiente:** prefill desde chat, plan semanal. |
+| **Activación conductual (#88)** | **Parcial (MVP jun 2026, validado dispositivo):** wizard actividad + ánimo antes/después, API `/api/behavioral-activation-logs`, pantalla `BehavioralActivation`, catálogo #127, sugerencias tristeza/apatía (cadencia TCC), estilos wizard, **prefill actividad + ánimo desde chat**. **Pendiente:** plan semanal. |
 | **Saludo inicial chat (i18n)** | **Parcial (jun 2026):** `GREETING_VARIATIONS_EN`, `X-App-Language` en creación de conversación/welcome/invitado; frontend `chatWelcomeGreeting` localiza welcome persistido. |
 
 ### Nuevas propuestas (input producto, mayo 2026)

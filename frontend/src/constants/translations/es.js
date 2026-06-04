@@ -1308,6 +1308,9 @@ export const TECHNIQUES = {
   BA_OF: 'de',
   BA_VALIDATION_ACTIVITY: 'Describe la actividad antes de continuar.',
   BA_MOOD_DELTA: 'Cambio de ánimo',
+  BA_PREFILL_HINT:
+    'Sugerencia a partir de tu mensaje en el chat. Puedes editarla antes de continuar.',
+  BA_PREFILL_MOOD_HINT: 'Ánimo inicial tomado de tu mensaje (puedes cambiarlo).',
   COMMUNICATION_TITLE: 'Herramienta de Comunicacion',
   COMMUNICATION_INTRO_KICKER: 'Comunicacion',
   COMMUNICATION_INTRO_TITLE: 'Herramientas empaticas',

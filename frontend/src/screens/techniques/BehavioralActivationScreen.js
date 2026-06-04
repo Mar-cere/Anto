@@ -2,9 +2,9 @@
  * Activación conductual (#88): actividad + ánimo antes/después.
  */
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -28,6 +28,7 @@ import { useToast } from '../../context/ToastContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
 import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
+import { parseBaRecordRouteParams } from '../../utils/baRecordPrefill';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const STEPS = ['1', '2', '3'];
@@ -67,6 +68,9 @@ const DEFAULT_TEXTS = {
   OF: 'de',
   VALIDATION_ACTIVITY: 'Describe la actividad antes de continuar.',
   MOOD_DELTA: 'Cambio de ánimo',
+  PREFILL_HINT:
+    'Sugerencia a partir de tu mensaje en el chat. Puedes editarla antes de continuar.',
+  PREFILL_MOOD_HINT: 'Ánimo inicial tomado de tu mensaje (puedes cambiarlo).',
 };
 
 function formatEntryDate(iso) {
@@ -120,11 +124,14 @@ const BehavioralActivationScreen = () => {
       VALIDATION_ACTIVITY:
         translated?.BA_VALIDATION_ACTIVITY || DEFAULT_TEXTS.VALIDATION_ACTIVITY,
       MOOD_DELTA: translated?.BA_MOOD_DELTA || DEFAULT_TEXTS.MOOD_DELTA,
+      PREFILL_HINT: translated?.BA_PREFILL_HINT || DEFAULT_TEXTS.PREFILL_HINT,
+      PREFILL_MOOD_HINT: translated?.BA_PREFILL_MOOD_HINT || DEFAULT_TEXTS.PREFILL_MOOD_HINT,
     }),
     [translated],
   );
 
   const navigation = useNavigation();
+  const route = useRoute();
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle } = useTheme();
   const techniqueScreenStyles = useTechniqueScreenStyles();
@@ -142,6 +149,9 @@ const BehavioralActivationScreen = () => {
   const [loadingRecords, setLoadingRecords] = useState(true);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [fromChatPrefill, setFromChatPrefill] = useState(false);
+  const [fromChatMoodPrefill, setFromChatMoodPrefill] = useState(false);
+  const handledChatPrefillKeyRef = useRef('');
 
   const styles = useMemo(
     () =>
@@ -248,7 +258,48 @@ const BehavioralActivationScreen = () => {
     setMoodAfter(5);
     setNotes('');
     setValidationMessage('');
+    setFromChatPrefill(false);
+    setFromChatMoodPrefill(false);
+    handledChatPrefillKeyRef.current = '';
   }, []);
+
+  const applyRoutePrefill = useCallback(
+    (params) => {
+      const parsed = parseBaRecordRouteParams(params);
+      if (
+        !parsed.fromChat ||
+        (!parsed.prefillActivityDescription &&
+          parsed.prefillMoodBefore == null &&
+          !parsed.prefillActivityType)
+      ) {
+        return;
+      }
+
+      const prefillKey = `${parsed.prefillActivityDescription}|${parsed.prefillMoodBefore}|${parsed.prefillActivityType}`;
+      if (prefillKey === handledChatPrefillKeyRef.current) return;
+      handledChatPrefillKeyRef.current = prefillKey;
+
+      if (parsed.prefillActivityDescription) {
+        setActivityDescription(parsed.prefillActivityDescription);
+        setFromChatPrefill(true);
+      }
+      if (parsed.prefillMoodBefore != null) {
+        setMoodBefore(parsed.prefillMoodBefore);
+        setFromChatMoodPrefill(true);
+      }
+      if (parsed.prefillActivityType) {
+        setActivityType(parsed.prefillActivityType);
+      }
+      setStepIndex(0);
+    },
+    [],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      applyRoutePrefill(route.params);
+    }, [applyRoutePrefill, route.params]),
+  );
 
   const goNext = () => {
     setValidationMessage('');
@@ -372,6 +423,9 @@ const BehavioralActivationScreen = () => {
       return (
         <>
           <Text style={techniqueScreenStyles.formSectionHeading}>{TEXTS.STEP1_TITLE}</Text>
+          {fromChatPrefill ? (
+            <Text style={techniqueScreenStyles.formHint}>{TEXTS.PREFILL_HINT}</Text>
+          ) : null}
           <Text style={techniqueScreenStyles.formHint}>{TEXTS.STEP1_HINT}</Text>
           <View style={styles.typeSegment}>
             {[
@@ -414,6 +468,9 @@ const BehavioralActivationScreen = () => {
     if (stepIndex === 1) {
       return (
         <>
+          {fromChatMoodPrefill ? (
+            <Text style={techniqueScreenStyles.formHint}>{TEXTS.PREFILL_MOOD_HINT}</Text>
+          ) : null}
           <Text style={techniqueScreenStyles.formHint}>{TEXTS.STEP2_HINT}</Text>
           {renderMoodPicker(TEXTS.STEP2_TITLE, moodBefore, setMoodBefore)}
         </>

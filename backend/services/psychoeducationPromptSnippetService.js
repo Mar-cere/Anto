@@ -7,6 +7,7 @@ import actionSuggestionService, {
 import { shouldShowChatActionSuggestions } from '../routes/chat/chatContextAnalysis.js';
 import { resolveChatSuggestionRankingScores } from './chatSuggestionRanking.js';
 import { enrichSuggestionsWithAbcPrefill } from './abcRecordPrefillService.js';
+import { enrichSuggestionsWithBaPrefill } from './baRecordPrefillService.js';
 
 export function isPsychoeducationSuggestion(suggestion) {
   return (
@@ -181,12 +182,14 @@ export async function planChatActionSuggestions({
       userContent,
       mainEmotion: emotionalAnalysis?.mainEmotion,
     });
-    const formatted = enrichSuggestionsWithAbcPrefill(
-      applyPsychoeducationCardTiers(rawFormatted, {
-        userContent,
-        mainEmotion: emotionalAnalysis?.mainEmotion,
-      }),
+    const tiered = applyPsychoeducationCardTiers(rawFormatted, {
       userContent,
+      mainEmotion: emotionalAnalysis?.mainEmotion,
+    });
+    const formatted = enrichSuggestionsWithBaPrefill(
+      enrichSuggestionsWithAbcPrefill(tiered, userContent),
+      userContent,
+      language,
     );
     return {
       shouldShow: true,
