@@ -59,6 +59,8 @@ describe('chatAbcSuggestions (#86)', () => {
         minIntensity,
         maxIntensity,
         expectAbc,
+        expectAbcFirst = true,
+        expectAt,
       }) => {
         const { analysis, actionIds, abcCard } = await runAbcPipeline(message);
 
@@ -70,7 +72,9 @@ describe('chatAbcSuggestions (#86)', () => {
 
         if (expectAbc) {
           expect(actionIds).toContain('abc_record');
-          expect(actionIds[0]).toBe('abc_record');
+          if (expectAbcFirst) {
+            expect(actionIds[0]).toBe('abc_record');
+          }
           expect(abcCard?.screen).toBe('AbcRecord');
           expect(abcCard?.params?.fromChat).toBe(true);
           expect(abcCard?.params?.prefillActivatingEvent?.length).toBeGreaterThan(2);
@@ -80,6 +84,10 @@ describe('chatAbcSuggestions (#86)', () => {
         } else {
           expect(actionIds).not.toContain('abc_record');
         }
+
+        if (expectAt) {
+          expect(actionIds).toContain('automatic_thought_record');
+        }
       },
     );
   });
@@ -87,12 +95,14 @@ describe('chatAbcSuggestions (#86)', () => {
   describe('paridad EN', () => {
     it.each(CHAT_ABC_SMOKE_CASES_EN)(
       '$id → incluye abc_record',
-      async ({ message, minIntensity, expectAbc }) => {
+      async ({ message, minIntensity, expectAbc, expectAbcFirst = true }) => {
         const { analysis, actionIds, abcCard } = await runAbcPipeline(message, 'en');
         expect(analysis.intensity).toBeGreaterThanOrEqual(minIntensity);
         if (expectAbc) {
           expect(actionIds).toContain('abc_record');
-          expect(actionIds[0]).toBe('abc_record');
+          if (expectAbcFirst) {
+            expect(actionIds[0]).toBe('abc_record');
+          }
           expect(abcCard?.screen).toBe('AbcRecord');
         }
       },

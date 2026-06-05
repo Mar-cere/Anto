@@ -75,6 +75,14 @@ describe('interventionCatalog', () => {
     expect(card.screen).toBe('BehavioralActivation');
   });
 
+  it('automatic_thought_record tiene pantalla y etiqueta EN (#89)', () => {
+    const entry = getInterventionCatalogEntry('automatic_thought_record');
+    expect(entry?.screen).toBe('AutomaticThoughtRecord');
+    const [card] = actionSuggestionService.formatSuggestions(['automatic_thought_record'], 'en');
+    expect(card.label).toMatch(/automatic|thought/i);
+    expect(card.screen).toBe('AutomaticThoughtRecord');
+  });
+
   it('rechaza IDs con caracteres inválidos', () => {
     expect(isValidInterventionId('breathing_exercise')).toBe(true);
     expect(isValidInterventionId('')).toBe(false);

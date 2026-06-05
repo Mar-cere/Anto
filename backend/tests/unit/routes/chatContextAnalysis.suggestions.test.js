@@ -119,6 +119,20 @@ describe('shouldShowChatActionSuggestions', () => {
     expect(result).toBe(true);
     expect(mockHasShown).toHaveBeenCalled();
   });
+
+  it('muestra en 1.er turno con señal TCC (distorsión) aunque intensidad sea 6 (#89)', async () => {
+    const result = await shouldShowChatActionSuggestions({
+      emotionalAnalysis: { intensity: 6, mainEmotion: 'ansiedad' },
+      contextualAnalysis: {},
+      conversationHistory: [{ role: 'assistant', content: 'Hola' }],
+      userId: 'u1',
+      conversationId: 'c1',
+      userContent:
+        'Me siento ansioso, 6/10. Sé que van a pensar mal de mí y nunca va a salir bien.',
+    });
+    expect(result).toBe(true);
+    expect(mockHasShown).toHaveBeenCalled();
+  });
 });
 
 describe('isActionSuggestionSafetyException', () => {

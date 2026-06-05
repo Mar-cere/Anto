@@ -382,6 +382,27 @@ export const CBT_TECHNIQUES_EN = {
       "neutral"
     ]
   },
+  "automaticThoughtRecord": {
+    "name": "Automatic Thought",
+    "description": "Name the cognition that showed up in a situation and link it to a cognitive distortion.",
+    "linkedScreen": "AutomaticThoughtRecord",
+    "whenToUse": "When you want to label a recurring thought and understand which cognitive pattern keeps it going.",
+    "steps": [
+      "Describe the situation that activated the thought",
+      "Write the automatic thought exactly as it appeared",
+      "Identify the emotion and its intensity (1–10)",
+      "Select the cognitive distortion that fits best",
+      "Optional: write a more balanced alternative thought"
+    ],
+    "emotions": [
+      "ansiedad",
+      "tristeza",
+      "enojo",
+      "culpa",
+      "verguenza",
+      "miedo"
+    ]
+  },
   "exposure": {
     "name": "Gradual Exhibition",
     "description": "Gradually confront feared situations to reduce anxiety.",

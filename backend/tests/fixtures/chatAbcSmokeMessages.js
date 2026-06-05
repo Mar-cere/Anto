@@ -12,6 +12,8 @@ export const CHAT_ABC_SMOKE_CASES = [
     minIntensity: 6,
     maxIntensity: 7,
     expectAbc: true,
+    expectAbcFirst: false,
+    expectAt: true,
   },
   {
     id: 'anger_medium_abc',
@@ -50,5 +52,6 @@ export const CHAT_ABC_SMOKE_CASES_EN = [
     minIntensity: 6,
     maxIntensity: 7,
     expectAbc: true,
+    expectAbcFirst: false,
   },
 ];

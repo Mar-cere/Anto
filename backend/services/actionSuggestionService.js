@@ -7,6 +7,7 @@ import {
   normalizePsychoeducationTopic,
 } from '../constants/psychoeducation.js';
 import { rankInterventionIds } from './interventionRankingService.js';
+import cognitiveDistortionDetector from './cognitiveDistortionDetector.js';
 
 /** Psicoed por señales en el mensaje (#85 / #127). */
 export const CONTEXTUAL_PSYCHOEDUCATION_RULES = [
@@ -49,9 +50,12 @@ export const CONTEXTUAL_EXPOSURE_PATTERN =
   /(?:evit(?:o|ar|ación|ando)|miedo\s+a|temor\s+a|fobia|p[aá]nico|me\s+da\s+(?:mucho\s+)?miedo|no\s+puedo\s+(?:entrar|salir|hacer|decir)|afraid\s+of|avoid(?:ing)?|panic\s+about|scared\s+to|social\s+anxiety|ansiedad\s+social|me\s+paraliza|me\s+bloquea)/i;
 
 const TCC_MEDIUM_EMOTIONS = new Set(['tristeza', 'enojo', 'culpa']);
+/** Emociones elegibles para pensamiento automático (#89). */
+const AT_MEDIUM_EMOTIONS = new Set(['ansiedad', 'tristeza', 'enojo', 'culpa', 'miedo']);
 const ABC_RECORD_ID = 'abc_record';
 const EXPOSURE_HIERARCHY_ID = 'exposure_hierarchy';
 const BEHAVIORAL_ACTIVATION_ID = 'behavioral_activation';
+const AUTOMATIC_THOUGHT_RECORD_ID = 'automatic_thought_record';
 
 /** Señales de apatía / baja activación; activa BA (#88). */
 export const CONTEXTUAL_BA_PATTERN =
@@ -65,12 +69,22 @@ export function shouldBoostExposureSuggestion(userContent = '') {
   return CONTEXTUAL_EXPOSURE_PATTERN.test(String(userContent || ''));
 }
 
-/** Señal TCC fuerte (#86/#87): permite sugerencias en 1.er turno aunque intensidad < 7. */
+export function shouldBoostAutomaticThoughtSuggestion(userContent = '') {
+  const text = String(userContent || '');
+  if (!text.trim()) return false;
+  if (shouldBoostAbcSuggestion(text)) return true;
+  // Apatía pura (#88): «hacer nada» puede coincidir con patrón todo/nada sin señal cognitiva.
+  if (shouldBoostBaSuggestion(text) && !shouldBoostAbcSuggestion(text)) return false;
+  return cognitiveDistortionDetector.detectDistortions(text).length > 0;
+}
+
+/** Señal TCC fuerte (#86/#87/#88/#89): permite sugerencias en 1.er turno aunque intensidad < 7. */
 export function shouldBypassTccSuggestionCadence(userContent = '') {
   return (
     shouldBoostAbcSuggestion(userContent) ||
     shouldBoostExposureSuggestion(userContent) ||
-    shouldBoostBaSuggestion(userContent)
+    shouldBoostBaSuggestion(userContent) ||
+    shouldBoostAutomaticThoughtSuggestion(userContent)
   );
 }
 
@@ -150,6 +164,62 @@ export function applyAbcSuggestionPolicy(ids, { emotion, intensityLevel, userCon
   return list.slice(0, 3);
 }
 
+/**
+ * Prioriza registro de pensamiento automático (#89) cuando hay distorsión detectada
+ * o señal cognitiva explícita en intensidad media TCC.
+ */
+export function applyAutomaticThoughtSuggestionPolicy(
+  ids,
+  { emotion, intensityLevel, userContent } = {},
+) {
+  if (!Array.isArray(ids) || ids.length === 0) return ids;
+  if (intensityLevel !== 'medium' || !AT_MEDIUM_EMOTIONS.has(emotion)) return ids.slice(0, 3);
+
+  const text = String(userContent || '');
+  const hasDistortion =
+    cognitiveDistortionDetector.detectDistortions(text).length > 0 &&
+    !(shouldBoostBaSuggestion(text) && !shouldBoostAbcSuggestion(text));
+  const hasCognitiveSignal = shouldBoostAbcSuggestion(text);
+  if (!hasDistortion && !hasCognitiveSignal) return ids.slice(0, 3);
+
+  let list = [...ids];
+
+  // Evitación (#87) prevalece sobre AT cuando exposición ya es primera.
+  if (list[0] === EXPOSURE_HIERARCHY_ID && shouldBoostExposureSuggestion(text)) {
+    if (
+      !list.includes(AUTOMATIC_THOUGHT_RECORD_ID) &&
+      shouldBoostAutomaticThoughtSuggestion(text)
+    ) {
+      list.splice(1, 0, AUTOMATIC_THOUGHT_RECORD_ID);
+    }
+    return list.slice(0, 3);
+  }
+
+  if (!list.includes(AUTOMATIC_THOUGHT_RECORD_ID)) {
+    list = [AUTOMATIC_THOUGHT_RECORD_ID, ...list];
+  }
+
+  if (hasDistortion) {
+    list = [
+      AUTOMATIC_THOUGHT_RECORD_ID,
+      ...list.filter((id) => id !== AUTOMATIC_THOUGHT_RECORD_ID),
+    ];
+    return list.slice(0, 3);
+  }
+
+  if (list[0] === ABC_RECORD_ID) {
+    return list.slice(0, 3);
+  }
+
+  if (hasCognitiveSignal && list.includes(ABC_RECORD_ID)) {
+    list = list.filter((id) => id !== AUTOMATIC_THOUGHT_RECORD_ID);
+    const abcIndex = list.indexOf(ABC_RECORD_ID);
+    list.splice(abcIndex + 1, 0, AUTOMATIC_THOUGHT_RECORD_ID);
+  }
+
+  return list.slice(0, 3);
+}
+
 /** Emoción con reglas de sugerencias; cae a ansiedad/enojo si el texto lo indica (#85). */
 export function resolveSuggestionEmotion(mainEmotion, userContent = '') {
   const known = new Set([
@@ -161,6 +231,9 @@ export function resolveSuggestionEmotion(mainEmotion, userContent = '') {
   ]);
   if (known.has(mainEmotion)) return mainEmotion;
   const text = String(userContent || '');
+  if (/(?:\bansios[oa]\b|\banxious\b|\bnervios[oa]\b|\bnervous\b)/i.test(text)) {
+    return 'ansiedad';
+  }
   if (
     /(?:\bmiedo\b|temor|fobia|\bfear\b|\bphobia\b|ansiedad\s+social|social\s+anxiety)/i.test(
       text,
@@ -355,13 +428,20 @@ class ActionSuggestionService {
       rankingScores instanceof Map && rankingScores.size > 0
         ? rankInterventionIds(enriched, rankingScores)
         : enriched;
-    return applyExposureSuggestionPolicy(
-      applyBaSuggestionPolicy(
-        applyAbcSuggestionPolicy(ranked, {
-          emotion,
-          intensityLevel,
-          userContent,
-        }),
+    return applyAutomaticThoughtSuggestionPolicy(
+      applyExposureSuggestionPolicy(
+        applyBaSuggestionPolicy(
+          applyAbcSuggestionPolicy(ranked, {
+            emotion,
+            intensityLevel,
+            userContent,
+          }),
+          {
+            emotion,
+            intensityLevel,
+            userContent,
+          },
+        ),
         {
           emotion,
           intensityLevel,

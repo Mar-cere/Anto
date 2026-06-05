@@ -20,7 +20,9 @@ export const CHAT_BA_SMOKE_CASES = [
     expectBa: false,
     expectBaFirst: false,
     expectAbc: true,
-    expectAbcFirst: true,
+    expectAbcFirst: false,
+    expectAt: true,
+    expectAtFirst: true,
   },
   {
     id: 'sadness_high_no_ba',

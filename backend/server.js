@@ -56,6 +56,7 @@ import journalRoutes from './routes/journalRoutes.js';
 import abcRecordRoutes from './routes/abcRecordRoutes.js';
 import exposurePlanRoutes from './routes/exposurePlanRoutes.js';
 import behavioralActivationRoutes from './routes/behavioralActivationRoutes.js';
+import automaticThoughtRoutes from './routes/automaticThoughtRoutes.js';
 import summaryRoutes from './routes/summaryRoutes.js';
 
 // Constantes de configuración
@@ -356,6 +357,7 @@ app.use('/api/journals', journalRoutes);
 app.use('/api/abc-records', abcRecordRoutes);
 app.use('/api/exposure-plans', exposurePlanRoutes);
 app.use('/api/behavioral-activation-logs', behavioralActivationRoutes);
+app.use('/api/automatic-thought-logs', automaticThoughtRoutes);
 app.use('/api/summary', summaryRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);

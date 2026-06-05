@@ -1,8 +1,9 @@
 /**
- * Regresión: prefills ABC (#86) y BA (#88) en la misma cadena de sugerencias.
+ * Regresión: prefills ABC (#86), BA (#88) y AT (#89) en la misma cadena de sugerencias.
  */
 import { enrichSuggestionsWithAbcPrefill } from '../../../services/abcRecordPrefillService.js';
 import { enrichSuggestionsWithBaPrefill } from '../../../services/baRecordPrefillService.js';
+import { enrichSuggestionsWithAtPrefill } from '../../../services/atRecordPrefillService.js';
 import { applyPsychoeducationCardTiers } from '../../../services/psychoeducationPromptSnippetService.js';
 import actionSuggestionService from '../../../services/actionSuggestionService.js';
 import emotionalAnalyzer from '../../../services/emotionalAnalyzer.js';
@@ -13,10 +14,13 @@ const COGNITIVE_ABC =
   'Me siento triste y apagado, 7/10. Noto que siempre pienso lo peor después de discutir con mi pareja.';
 
 function enrichTechniquePrefills(formatted, userContent, language = 'es') {
-  return enrichSuggestionsWithBaPrefill(
-    enrichSuggestionsWithAbcPrefill(formatted, userContent),
+  return enrichSuggestionsWithAtPrefill(
+    enrichSuggestionsWithBaPrefill(
+      enrichSuggestionsWithAbcPrefill(formatted, userContent),
+      userContent,
+      language,
+    ),
     userContent,
-    language,
   );
 }
 
@@ -63,5 +67,16 @@ describe('techniqueSuggestionPrefills (ABC + BA)', () => {
     const ba = formatted.find((s) => s.id === 'behavioral_activation');
     expect(ba?.params?.prefillMoodBefore).toBe(6);
     expect(ba?.screen).toBe('BehavioralActivation');
+  });
+
+  it('distorsión: AT con prefill sin mezclar otras tarjetas', () => {
+    const formatted = enrichTechniquePrefills(
+      [{ id: 'automatic_thought_record', screen: 'AutomaticThoughtRecord' }],
+      'Me siento ansioso, 6/10. Sé que van a pensar mal de mí y nunca va a salir bien.',
+      'es',
+    );
+    const at = formatted.find((s) => s.id === 'automatic_thought_record');
+    expect(at?.params?.fromChat).toBe(true);
+    expect(at?.params?.prefillDistortionType).toBeTruthy();
   });
 });

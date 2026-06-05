@@ -90,6 +90,8 @@ describe('chatBaSuggestions (#88)', () => {
         expectBaFirst,
         expectAbc,
         expectAbcFirst,
+        expectAt,
+        expectAtFirst,
       }) => {
         const { analysis, actionIds, baCard } = await runBaPipeline(message);
 
@@ -115,6 +117,13 @@ describe('chatBaSuggestions (#88)', () => {
           }
         } else if (expectAbc === false) {
           expect(actionIds).not.toContain('abc_record');
+        }
+
+        if (expectAt) {
+          expect(actionIds).toContain('automatic_thought_record');
+          if (expectAtFirst) {
+            expect(actionIds[0]).toBe('automatic_thought_record');
+          }
         }
       },
     );

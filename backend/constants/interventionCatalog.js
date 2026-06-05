@@ -88,6 +88,14 @@ export const INTERVENTION_CATALOG = {
     type: 'exercise',
     tags: ['tcc', 'tristeza', 'activacion'],
   },
+  automatic_thought_record: {
+    id: 'automatic_thought_record',
+    label: 'Pensamiento automático',
+    icon: '💭',
+    screen: 'AutomaticThoughtRecord',
+    type: 'exercise',
+    tags: ['tcc', 'cogniciones', 'distorsiones'],
+  },
   timeout_technique: {
     id: 'timeout_technique',
     label: 'Técnica de Tiempo Fuera',

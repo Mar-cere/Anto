@@ -236,7 +236,18 @@ describe('ActionSuggestionService', () => {
       expect(pinned[0]).toBe('abc_record');
     });
 
-    it('coloca abc_record primero en el mensaje canónico de dispositivo', () => {
+    it('coloca abc_record primero en mensaje cognitivo sin distorsión clara', () => {
+      const msg =
+        'Me siento enojado, 6/10. Noto que reaccioné mal y no paro de darle vueltas a lo que dije.';
+      const suggestions = actionSuggestionService.generateSuggestions(
+        { mainEmotion: 'enojo', intensity: 6, topic: 'general' },
+        {},
+        { userContent: msg },
+      );
+      expect(suggestions[0]).toBe('abc_record');
+    });
+
+    it('prioriza automatic_thought_record cuando hay distorsión detectada (#89)', () => {
       const msg =
         'Me siento triste y apagado, 7/10. Noto que siempre pienso lo peor después de discutir con mi pareja.';
       const suggestions = actionSuggestionService.generateSuggestions(
@@ -247,7 +258,7 @@ describe('ActionSuggestionService', () => {
           rankingScores: new Map([['communication_tool', 10], ['self_care', 9]]),
         },
       );
-      expect(suggestions[0]).toBe('abc_record');
+      expect(suggestions[0]).toBe('automatic_thought_record');
     });
   });
 
