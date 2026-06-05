@@ -3,9 +3,9 @@
  * Crear pasos ordenados, registrar intentos y avanzar sin saltos.
  */
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -28,7 +28,9 @@ import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
+import { getFocusTheme } from '../../styles/focusCardTheme';
 import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
+import { parseExposurePlanRouteParams } from '../../utils/exposurePlanPrefill';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const SUDS_LEVELS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
@@ -45,8 +47,14 @@ const DEFAULT_TEXTS = {
   TAB_CREATE: 'Nueva jerarquía',
   TAB_PRACTICE: 'Practicar',
   GOAL_LABEL: '¿Qué situación o miedo quieres trabajar?',
+  GOAL_HINT: 'Una frase clara sobre lo que evitas o te da miedo.',
   GOAL_PLACEHOLDER: 'Ejemplo: hablar en reuniones sin prepararme de más',
   STEPS_LABEL: 'Pasos (de menos a más difícil)',
+  STEPS_HINT: 'Arriba el paso más fácil; abajo el más difícil. Puedes editar cada uno.',
+  LADDER_EASY: 'Más fácil',
+  LADDER_HARD: 'Más difícil',
+  PREFILL_HINT:
+    'Sugerencia a partir de tu mensaje en el chat. Puedes editarla antes de guardar.',
   STEP_PLACEHOLDER: 'Describe el paso…',
   ADD_STEP: 'Agregar paso',
   REMOVE_STEP: 'Quitar',
@@ -104,8 +112,13 @@ const ExposureHierarchyScreen = () => {
       TAB_CREATE: translated?.EXPOSURE_TAB_CREATE || DEFAULT_TEXTS.TAB_CREATE,
       TAB_PRACTICE: translated?.EXPOSURE_TAB_PRACTICE || DEFAULT_TEXTS.TAB_PRACTICE,
       GOAL_LABEL: translated?.EXPOSURE_GOAL_LABEL || DEFAULT_TEXTS.GOAL_LABEL,
+      GOAL_HINT: translated?.EXPOSURE_GOAL_HINT || DEFAULT_TEXTS.GOAL_HINT,
       GOAL_PLACEHOLDER: translated?.EXPOSURE_GOAL_PLACEHOLDER || DEFAULT_TEXTS.GOAL_PLACEHOLDER,
       STEPS_LABEL: translated?.EXPOSURE_STEPS_LABEL || DEFAULT_TEXTS.STEPS_LABEL,
+      STEPS_HINT: translated?.EXPOSURE_STEPS_HINT || DEFAULT_TEXTS.STEPS_HINT,
+      LADDER_EASY: translated?.EXPOSURE_LADDER_EASY || DEFAULT_TEXTS.LADDER_EASY,
+      LADDER_HARD: translated?.EXPOSURE_LADDER_HARD || DEFAULT_TEXTS.LADDER_HARD,
+      PREFILL_HINT: translated?.EXPOSURE_PREFILL_HINT || DEFAULT_TEXTS.PREFILL_HINT,
       STEP_PLACEHOLDER: translated?.EXPOSURE_STEP_PLACEHOLDER || DEFAULT_TEXTS.STEP_PLACEHOLDER,
       ADD_STEP: translated?.EXPOSURE_ADD_STEP || DEFAULT_TEXTS.ADD_STEP,
       REMOVE_STEP: translated?.EXPOSURE_REMOVE_STEP || DEFAULT_TEXTS.REMOVE_STEP,
@@ -145,8 +158,13 @@ const ExposureHierarchyScreen = () => {
   );
 
   const navigation = useNavigation();
+  const route = useRoute();
   const insets = useSafeAreaInsets();
-  const { colors, statusBarStyle } = useTheme();
+  const { colors, statusBarStyle, resolvedScheme } = useTheme();
+  const focusTheme = useMemo(
+    () => getFocusTheme(colors, resolvedScheme),
+    [colors, resolvedScheme],
+  );
   const techniqueScreenStyles = useTechniqueScreenStyles();
   const { showToast } = useToast();
 
@@ -154,6 +172,9 @@ const ExposureHierarchyScreen = () => {
   const [title, setTitle] = useState('');
   const [draftSteps, setDraftSteps] = useState(['', '']);
   const [validationMessage, setValidationMessage] = useState('');
+  const [fromChatPrefill, setFromChatPrefill] = useState(false);
+  const handledChatPrefillKeyRef = useRef('');
+  const handledResetAtRef = useRef(null);
   const [plans, setPlans] = useState([]);
   const [activePlanId, setActivePlanId] = useState(null);
   const [loadingPlans, setLoadingPlans] = useState(true);
@@ -209,11 +230,54 @@ const ExposureHierarchyScreen = () => {
     loadPlans();
   }, [loadPlans]);
 
-  const resetCreateForm = () => {
+  const resetCreateForm = useCallback(() => {
     setTitle('');
     setDraftSteps(['', '']);
     setValidationMessage('');
-  };
+    setFromChatPrefill(false);
+    handledChatPrefillKeyRef.current = '';
+  }, []);
+
+  const applyRoutePrefill = useCallback(
+    (params) => {
+      const raw = params && typeof params === 'object' ? params : {};
+      if (raw.resetFormAt != null && handledResetAtRef.current !== raw.resetFormAt) {
+        handledResetAtRef.current = raw.resetFormAt;
+        handledChatPrefillKeyRef.current = '';
+        resetCreateForm();
+        return;
+      }
+
+      const parsed = parseExposurePlanRouteParams(raw);
+      if (
+        !parsed.fromChat ||
+        (!parsed.prefillGoal && parsed.prefillSteps.length === 0)
+      ) {
+        if (raw.fromChat === false) setFromChatPrefill(false);
+        return;
+      }
+
+      const prefillKey = `${parsed.prefillGoal}|${parsed.prefillSteps.join('|')}`;
+      if (prefillKey === handledChatPrefillKeyRef.current) return;
+      handledChatPrefillKeyRef.current = prefillKey;
+      handledResetAtRef.current = null;
+
+      if (parsed.prefillGoal) setTitle(parsed.prefillGoal);
+      if (parsed.prefillSteps.length >= 2) {
+        setDraftSteps(parsed.prefillSteps);
+      }
+      setFromChatPrefill(true);
+      setMode('create');
+      setValidationMessage('');
+    },
+    [resetCreateForm],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      applyRoutePrefill(route.params);
+    }, [applyRoutePrefill, route.params]),
+  );
 
   const updateDraftStep = (index, value) => {
     setDraftSteps((prev) => {
@@ -398,42 +462,85 @@ const ExposureHierarchyScreen = () => {
 
   const renderCreatePanel = () => (
     <View style={techniqueScreenStyles.card}>
+      {fromChatPrefill ? (
+        <Text style={techniqueScreenStyles.formHint}>{TEXTS.PREFILL_HINT}</Text>
+      ) : null}
       <Text style={techniqueScreenStyles.formSectionHeading}>{TEXTS.GOAL_LABEL}</Text>
+      <Text style={techniqueScreenStyles.formHint}>{TEXTS.GOAL_HINT}</Text>
       <TextInput
-        style={techniqueScreenStyles.textInput}
+        style={[techniqueScreenStyles.textInput, styles.goalInput]}
         placeholder={TEXTS.GOAL_PLACEHOLDER}
         placeholderTextColor={colors.textSecondary}
         value={title}
-        onChangeText={setTitle}
+        onChangeText={(value) => {
+          setTitle(value);
+          setFromChatPrefill(false);
+        }}
+        multiline
+        textAlignVertical="top"
         accessibilityLabel={TEXTS.GOAL_LABEL}
       />
-      <Text style={[techniqueScreenStyles.formSectionHeading, { marginTop: SPACING.md }]}>
+      <Text style={[techniqueScreenStyles.formSectionHeading, { marginTop: SPACING.sm }]}>
         {TEXTS.STEPS_LABEL}
       </Text>
-      {draftSteps.map((step, index) => (
-        <View key={`draft-${index}`} style={styles.stepDraftRow}>
-          <Text style={[styles.stepIndexLabel, { color: colors.textSecondary }]}>
-            {index + 1}.
-          </Text>
-          <TextInput
-            style={[techniqueScreenStyles.textInput, styles.stepDraftInput]}
-            placeholder={TEXTS.STEP_PLACEHOLDER}
-            placeholderTextColor={colors.textSecondary}
-            value={step}
-            onChangeText={(v) => updateDraftStep(index, v)}
-            accessibilityLabel={`${TEXTS.STEPS_LABEL} ${index + 1}`}
-          />
-          {draftSteps.length > MIN_STEPS ? (
-            <TouchableOpacity
-              onPress={() => removeDraftStep(index)}
-              accessibilityRole="button"
-              accessibilityLabel={TEXTS.REMOVE_STEP}
-            >
-              <MaterialCommunityIcons name="close-circle-outline" size={22} color={colors.textSecondary} />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      ))}
+      <Text style={techniqueScreenStyles.formHint}>{TEXTS.STEPS_HINT}</Text>
+      <Text style={[styles.ladderScaleLabel, { color: colors.textSecondary }]}>
+        {TEXTS.LADDER_EASY}
+      </Text>
+      <View style={styles.ladderList}>
+        {draftSteps.map((step, index) => (
+          <View key={`draft-${index}`} style={styles.ladderRow}>
+            <View style={styles.ladderRail}>
+              <View
+                style={[
+                  styles.ladderBadge,
+                  {
+                    backgroundColor: colors.accentLineSoft,
+                    borderColor: colors.primary,
+                  },
+                ]}
+              >
+                <Text style={[styles.ladderBadgeText, { color: colors.primary }]}>
+                  {index + 1}
+                </Text>
+              </View>
+              {index < draftSteps.length - 1 ? (
+                <View style={[styles.ladderLine, { backgroundColor: colors.accentLineSoft }]} />
+              ) : null}
+            </View>
+            <View style={styles.ladderInputCol}>
+              <TextInput
+                style={[techniqueScreenStyles.textInput, styles.stepInput]}
+                placeholder={TEXTS.STEP_PLACEHOLDER}
+                placeholderTextColor={colors.textSecondary}
+                value={step}
+                onChangeText={(v) => {
+                  updateDraftStep(index, v);
+                  setFromChatPrefill(false);
+                }}
+                accessibilityLabel={`${TEXTS.STEPS_LABEL} ${index + 1}`}
+              />
+              {draftSteps.length > MIN_STEPS ? (
+                <TouchableOpacity
+                  style={styles.removeStepBtn}
+                  onPress={() => removeDraftStep(index)}
+                  accessibilityRole="button"
+                  accessibilityLabel={TEXTS.REMOVE_STEP}
+                >
+                  <MaterialCommunityIcons
+                    name="close-circle-outline"
+                    size={20}
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </View>
+        ))}
+      </View>
+      <Text style={[styles.ladderScaleLabel, { color: colors.textSecondary }]}>
+        {TEXTS.LADDER_HARD}
+      </Text>
       {draftSteps.length < MAX_STEPS ? (
         <TouchableOpacity style={styles.addStepBtn} onPress={addDraftStep}>
           <MaterialCommunityIcons name="plus-circle-outline" size={20} color={colors.primary} />
@@ -447,8 +554,10 @@ const ExposureHierarchyScreen = () => {
       ) : null}
       <TouchableOpacity
         style={[
-          techniqueScreenStyles.primaryButton,
-          { backgroundColor: colors.primary, marginTop: SPACING.md, opacity: saving ? 0.7 : 1 },
+          techniqueScreenStyles.navButton,
+          techniqueScreenStyles.navButtonPrimary,
+          styles.saveButton,
+          saving && { opacity: 0.7 },
         ]}
         onPress={handleSavePlan}
         disabled={saving}
@@ -456,9 +565,7 @@ const ExposureHierarchyScreen = () => {
         {saving ? (
           <ActivityIndicator size="small" color={colors.textOnPrimary} />
         ) : (
-          <Text style={[techniqueScreenStyles.primaryButtonText, { color: colors.textOnPrimary }]}>
-            {TEXTS.SAVE_PLAN}
-          </Text>
+          <Text style={techniqueScreenStyles.navButtonText}>{TEXTS.SAVE_PLAN}</Text>
         )}
       </TouchableOpacity>
     </View>
@@ -645,7 +752,15 @@ const ExposureHierarchyScreen = () => {
             </Text>
           </View>
 
-          <View style={styles.modeRow}>
+          <View
+            style={[
+              styles.modeRow,
+              {
+                backgroundColor: colors.chromeInput,
+                borderColor: focusTheme.FOCUS_BORDER_SUBTLE,
+              },
+            ]}
+          >
             {['create', 'practice'].map((tab) => {
               const active = mode === tab;
               const label = tab === 'create' ? TEXTS.TAB_CREATE : TEXTS.TAB_PRACTICE;
@@ -654,9 +769,9 @@ const ExposureHierarchyScreen = () => {
                   key={tab}
                   style={[
                     styles.modeTab,
-                    {
-                      backgroundColor: active ? colors.primary : colors.glassFill,
-                      borderColor: active ? colors.primary : colors.accentLineSoft,
+                    active && {
+                      backgroundColor: colors.cardBackground,
+                      borderColor: focusTheme.FOCUS_ACCENT_BORDER,
                     },
                   ]}
                   onPress={() => setMode(tab)}
@@ -664,7 +779,7 @@ const ExposureHierarchyScreen = () => {
                   <Text
                     style={[
                       styles.modeTabText,
-                      { color: active ? colors.textOnPrimary : colors.text },
+                      { color: active ? colors.primary : colors.textSecondary },
                     ]}
                   >
                     {label}
@@ -676,21 +791,23 @@ const ExposureHierarchyScreen = () => {
 
           {mode === 'create' ? renderCreatePanel() : renderPracticePanel()}
 
-          <View style={styles.exportBlock}>
-            <Text style={techniqueScreenStyles.formSectionHeading}>{TEXTS.EXPORT}</Text>
-            <Text style={techniqueScreenStyles.formHint}>{TEXTS.EXPORT_HINT}</Text>
-            <TouchableOpacity
-              style={techniqueScreenStyles.primaryButton}
-              onPress={handleExport}
-              disabled={exporting || plans.length === 0}
-            >
-              {exporting ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <Text style={techniqueScreenStyles.primaryButtonText}>{TEXTS.EXPORT}</Text>
-              )}
-            </TouchableOpacity>
-          </View>
+          {plans.length > 0 ? (
+            <View style={styles.exportBlock}>
+              <Text style={techniqueScreenStyles.formSectionHeading}>{TEXTS.EXPORT}</Text>
+              <Text style={techniqueScreenStyles.formHint}>{TEXTS.EXPORT_HINT}</Text>
+              <TouchableOpacity
+                style={[techniqueScreenStyles.secondaryButton, styles.exportButton]}
+                onPress={handleExport}
+                disabled={exporting}
+              >
+                {exporting ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Text style={techniqueScreenStyles.secondaryButtonText}>{TEXTS.EXPORT}</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -703,32 +820,91 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1 },
   modeRow: {
     flexDirection: 'row',
-    gap: SPACING.sm,
+    gap: 4,
+    padding: 4,
     marginBottom: SPACING.md,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   modeTab: {
     flex: 1,
-    paddingVertical: SPACING.sm,
-    borderRadius: 12,
-    borderWidth: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'transparent',
     alignItems: 'center',
   },
   modeTabText: { fontSize: 14, fontWeight: '600' },
-  stepDraftRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
+  goalInput: {
+    minHeight: 56,
     marginBottom: SPACING.sm,
   },
-  stepIndexLabel: { width: 24, fontWeight: '600' },
-  stepDraftInput: { flex: 1 },
+  ladderScaleLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    marginBottom: SPACING.xs,
+  },
+  ladderList: {
+    marginBottom: SPACING.xs,
+  },
+  ladderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: SPACING.sm,
+  },
+  ladderRail: {
+    width: 36,
+    alignItems: 'center',
+    paddingTop: 10,
+  },
+  ladderBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ladderBadgeText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  ladderLine: {
+    width: 2,
+    flex: 1,
+    minHeight: 24,
+    marginTop: 4,
+    borderRadius: 1,
+  },
+  ladderInputCol: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: SPACING.xs,
+  },
+  stepInput: {
+    flex: 1,
+    minHeight: 48,
+    marginBottom: 0,
+    paddingVertical: 10,
+  },
+  removeStepBtn: {
+    paddingTop: 12,
+  },
   addStepBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.xs,
+    marginTop: SPACING.xs,
     marginBottom: SPACING.sm,
   },
   addStepText: { fontSize: 14, fontWeight: '600' },
+  saveButton: {
+    alignSelf: 'stretch',
+    marginTop: SPACING.md,
+  },
   validationText: { marginTop: SPACING.sm, fontSize: 14 },
   sudsBlock: { marginTop: SPACING.sm },
   sudsRow: {
@@ -770,7 +946,8 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(128,128,128,0.25)',
   },
   planListBody: { flex: 1, paddingRight: SPACING.sm },
-  exportBlock: { marginTop: SPACING.lg, marginBottom: SPACING.xxl },
+  exportBlock: { marginTop: SPACING.md, marginBottom: SPACING.xxl },
+  exportButton: { alignSelf: 'stretch', marginTop: SPACING.sm },
 });
 
 export default ExposureHierarchyScreen;

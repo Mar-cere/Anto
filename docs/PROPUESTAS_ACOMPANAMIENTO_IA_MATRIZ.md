@@ -51,22 +51,23 @@ Criterio para **eliminar** del backlog activo (no son un quinto cuadrante de pri
 
 **Anclas entregadas que permanecen en la tabla** (otras propuestas las referencian): **#8** ← #194; **#11** ← #154, #195; **#34** ← #161; **#47** ← #163; **#52–#53** ← #159, #164; **#59** ← #168; **#67** ← #123, #175.
 
-### Estado del código (revisión 18 mayo 2026)
+### Estado del código (revisión 5 jun 2026)
 
 | Área | Estado |
 |------|--------|
 | **Continuidad chat (#4, #47)** | Sin cambios de alcance: worker `lastSessionSummary`, tarjeta perfil, bloque foco en inicio (`GET /api/summary/focus`). |
 | **Acciones desde chat (#52, #53)** | Contrato v1 en producción: `proposedProductActions`, confirmación en UI, `clientRequestId` opcional. |
 | **Dashboard foco (#34)** | `DashboardFocusCard` + API agregada; integra continuidad del último hilo cuando aplica. |
-| **i18n UI EN (#151)** | **Parcial:** `LanguageContext`, selector en Ajustes (persistencia local + `preferences.language` en perfil), diccionarios `es`/`en` (~2.1k claves c/u), `useTranslations` en la mayoría de pantallas y componentes; FAQ con `FaQScreen.en.js`. **Pendiente:** emails transaccionales, push copy pools, prompts de chat y crisis en backend (**#153** sigue **No**). |
+| **i18n UI EN (#151)** | **Parcial:** `LanguageContext`, selector en Ajustes, diccionarios `es`/`en` (~2.1k+ claves c/u), wizards TCC (#86–#89) y psicoed (#85) bilingües vía `TECHNIQUES`. **Pendiente:** emails, push, prompts chat/crisis backend (**#153**). |
 | **Panel IA (#8)** | **Sí (MVP):** `AIPrivacyScreen`, enlace en Ajustes y menú del chat (`ChatOptionsSheet`); textos bilingües vía traducciones. |
 | **Resumen en app (#11)** | `SummaryScreen` (semana/mes) sin cambios de alcance. |
 | **CI lint unificado (#167)** | Sigue **No** en matriz: CI frontend ejecuta `check` (imports, SafeArea) + Jest; ESLint local en `eslint.config.js` sin gate en workflow. |
-| **Grafo tema–intervención (#127)** | **Parcial (jun 2026):** catálogo, eventos, sesión 45 min, cap 1 bloque/sesión, `GET /api/chat/interventions/graph`, panel dev, psicoed vía catálogo (#85), **ranking de sugerencias** según histórico del usuario (completion/CTR/dismiss), **ABC (#86)** en catálogo. **Pendiente:** más señales, resto #87–#99, `topicFree`, #218. |
-| **Psicoeducación modular (#85)** | **Parcial (MVP UX jun 2026):** 7 módulos es/en, biblioteca, chat (#78), tests/smoke. **Pendiente:** más temas (#86–#99). **#111** sello UI en módulo/biblioteca/chat. |
-| **Autorregistro ABC (#86)** | **Parcial (MVP jun 2026):** wizard A→B→C, API, export, pantalla `AbcRecord`, catálogo #127, sugerencias chat, **prefill A+B desde mensaje**. **Pendiente:** agregación macro (#212). |
-| **Jerarquía exposición + SUDS (#87)** | **Parcial (MVP jun 2026):** jerarquía colaborativa, SUDS 0–100 por intento, API `/api/exposure-plans`, pantalla `ExposureHierarchy`, catálogo #127, sugerencias ansiedad media, **guardas anti-saltos** (`exposurePlanGuards` + UI). **Pendiente:** prefill desde chat. |
-| **Activación conductual (#88)** | **Parcial (MVP jun 2026, validado dispositivo):** wizard actividad + ánimo antes/después, API `/api/behavioral-activation-logs`, pantalla `BehavioralActivation`, catálogo #127, sugerencias tristeza/apatía (cadencia TCC), estilos wizard, **prefill actividad + ánimo desde chat**. **Pendiente:** plan semanal. |
+| **Grafo tema–intervención (#127)** | **Parcial (jun 2026):** catálogo (#85–#89), eventos, sesión 45 min, cap 1 bloque/sesión, ranking por histórico (CTR/completion/dismiss), políticas chat TCC (ABC/BA/AT/exposición), panel dev, `test:tcc-suite`. **Pendiente:** cerrar bucle con datos reales, resto catálogo (#90–#99), `topicFree`, #218. |
+| **Psicoeducación modular (#85)** | **Parcial (MVP UX jun 2026):** 7 módulos es/en, biblioteca, chat (#78), tests/smoke. **Pendiente:** más temas. **#111** sello clínico. |
+| **Autorregistro ABC (#86)** | **Parcial (MVP jun 2026, validado dispositivo):** wizard A→B→C, API, export, pantalla `AbcRecord`, catálogo #127, sugerencias chat, **prefill A+B desde mensaje** (es/en). **Pendiente:** agregación macro (#212). |
+| **Jerarquía exposición + SUDS (#87)** | **Parcial (MVP jun 2026):** jerarquía + SUDS, API `/api/exposure-plans`, pantalla `ExposureHierarchy`, catálogo #127, sugerencias ansiedad/evitación, **guardas anti-saltos** (`exposurePlanGuards` + UI; cubre MVP **#190**), **prefill desde chat** (objetivo + 2 pasos sugeridos cuando hay evitación). |
+| **Activación conductual (#88)** | **Parcial (MVP jun 2026, validado dispositivo):** wizard 3 pasos, API `/api/behavioral-activation-logs`, pantalla `BehavioralActivation`, catálogo #127, sugerencias tristeza/apatía, **prefill actividad + ánimo desde chat** (es/en). **Pendiente:** plan semanal. |
+| **Pensamientos automáticos (#89)** | **Parcial (MVP jun 2026, validado dispositivo):** wizard 3 pasos, API `/api/automatic-thought-logs`, pantalla `AutomaticThoughtRecord`, catálogo #127, sugerencias con prioridad si distorsión, prefill chat, **picker curado 8 patrones** (es/en, lenguaje accesible), `/distortion-options`, traducciones `AT_*`, tests `test:at-chat`. **Pendiente:** #201 (TCC in-chat). |
 | **Saludo inicial chat (i18n)** | **Parcial (jun 2026):** `GREETING_VARIATIONS_EN`, `X-App-Language` en creación de conversación/welcome/invitado; frontend `chatWelcomeGreeting` localiza welcome persistido. |
 
 ### Nuevas propuestas (input producto, mayo 2026)
@@ -77,7 +78,7 @@ Incorporadas como **#201–#223** (lotes 1–3). Criterio: no duplicar filas ya 
 
 | Tema (tu input) | En la app hoy (pinceladas) | Ya en matriz | Nueva fila |
 |-----------------|----------------------------|--------------|------------|
-| Marcos TCC (distorsiones + reestructuración) | Plantillas terapéuticas con copy CBT; técnicas en pantallas; chat abierto con prompts generales | #40, #86, #89 | **#201** |
+| Marcos TCC (distorsiones + reestructuración) | Wizards #86/#89, detector distorsiones, sugerencias chat; chat abierto sin marco paso a paso | #40, #86, #89 | **#201** |
 | ACT (valores + alineación conducta) | Menciones en plantillas; sin flujo valores→acciones | **#94** (suficiente; ampliar allí) | — |
 | Deberes entre sesiones | Tareas/hábitos desde chat (#52–#53); compromisos (#20) sin follow-up sistemático | #20, #52–#53 | **#202** |
 | Memoria largo plazo / RAG patrones | Continuidad último hilo (#47); compactación de hilo (#60); resumen semanal (#11); sin vector store personal ni “la semana pasada dijiste…” | #60, #113, #17, #126, #154 | **#203** |
@@ -204,10 +205,10 @@ Incorporadas como **#201–#223** (lotes 1–3). Criterio: no duplicar filas ya 
 | 82 | Slash commands | `/respirar`, `/resumen`, `/silencio` que ejecutan acciones o insertan plantillas sin salir del flujo de chat; extensible por equipo (plugin interno). | No | 2 | 4 | 5 | 5 | B | M | Q2 |
 | 84 | Tema dinámico por tono sesión | Paleta o gradiente sutil derivado del tono emocional agregado (no intrusivo); **siempre** con modo alto contraste / off por accesibilidad y preferencia usuario. | No | 2 | 4 | 3 | 4 | M | S | Q2 |
 | 85 | Psicoeducación modular evidencia | Módulos breves (ansiedad, depresión, ira, sueño, trauma informado) con fuentes y lenguaje no diagnóstico; activables desde chat o biblioteca. **Parcial (jun 2026):** 7 temas, disclaimer/fuentes, biblioteca en Técnicas, chat vía catálogo #127. **Pendiente:** #78 tarjetas nativas, #111 sello clínico, más temas. | Parcial | 2 | 4 | 4 | 4 | M | M | Q2 |
-| 86 | Autorregistro ABC | Flujo guiado in-app o desde el chat para patrones conductuales; export opcional para terapeuta humano. **Parcial (jun 2026):** wizard A→B→C, API `/api/abc-records`, export texto, pantalla `AbcRecord`, catálogo #127. **Pendiente:** prefill desde chat, agregación macro (#212). | Parcial | 3 | 5 | 4 | 5 | M | M | Q2 |
-| 87 | Jerarquía exposición + SUDS | Lista colaborativa de pasos + intensidad subjetiva; seguimiento de intentos sin sustituir ERP clínica presencial. **Parcial (jun 2026):** jerarquía + SUDS, API, pantalla `ExposureHierarchy`, catálogo #127. **Pendiente:** anti-saltos (#190), prefill chat. | Parcial | 2 | 4 | 4 | 4 | M | L | Q2 |
-| 88 | Activación conductual | Planificación de actividades placenteras/obligatorias vinculada a estado de ánimo y registro breve post-actividad. **Parcial (jun 2026):** wizard 3 pasos, API, pantalla `BehavioralActivation`, catálogo #127. **Pendiente:** prefill chat, plan semanal. | Parcial | 3 | 4 | 5 | 5 | M | M | Q2 |
-| 89 | Pensamientos automáticos CBT | Detectar y nombrar cogniciones con vocabulario CBT estándar + enlace a distorsiones ya existentes en el producto. **Parcial (jun 2026):** wizard 3 pasos, API `/api/automatic-thought-logs`, pantalla `AutomaticThoughtRecord`, catálogo #127, prefill chat + distorsión sugerida. **Evolución:** #201 (flujo estructurado paso a paso en chat). | Parcial | 3 | 5 | 4 | 5 | M | M | Q2 |
+| 86 | Autorregistro ABC | Flujo guiado in-app o desde el chat para patrones conductuales; export opcional para terapeuta humano. **Parcial (jun 2026):** wizard A→B→C, API `/api/abc-records`, export, pantalla `AbcRecord`, catálogo #127, **prefill A+B desde chat** (es/en). **Pendiente:** agregación macro (#212). | Parcial | 3 | 5 | 4 | 5 | M | M | Q2 |
+| 87 | Jerarquía exposición + SUDS | Lista colaborativa de pasos + intensidad subjetiva; seguimiento de intentos sin sustituir ERP clínica presencial. **Parcial (jun 2026):** jerarquía + SUDS, API, pantalla `ExposureHierarchy`, catálogo #127, sugerencias evitación/ansiedad, **anti-saltos** (`exposurePlanGuards`; MVP **#190**), **prefill chat** (objetivo + pasos sugeridos). | Parcial | 2 | 4 | 4 | 4 | M | L | Q2 |
+| 88 | Activación conductual | Planificación de actividades placenteras/obligatorias vinculada a estado de ánimo y registro breve post-actividad. **Parcial (jun 2026):** wizard 3 pasos, API, pantalla `BehavioralActivation`, catálogo #127, **prefill actividad + ánimo desde chat** (es/en). **Pendiente:** plan semanal. | Parcial | 3 | 4 | 5 | 5 | M | M | Q2 |
+| 89 | Pensamientos automáticos CBT | Detectar y nombrar cogniciones; enlace a patrones de pensamiento. **Parcial (jun 2026):** wizard 3 pasos, API `/api/automatic-thought-logs`, pantalla `AutomaticThoughtRecord`, catálogo #127, prefill chat + patrón sugerido, **picker 8 patrones accesibles** (es/en), tests `test:at-chat`. **Pendiente:** #201 (TCC in-chat). | Parcial | 3 | 5 | 4 | 5 | M | M | Q2 |
 | 90 | Hoja de ruta duelo | Fases normalizadas (shock, año, sentido) con copy revisado clínicamente; sin presionar “cerrar” el duelo. | No | 2 | 4 | 3 | 4 | M | L | Q2 |
 | 91 | Prevención recaída | Señaladores tempranos, plan por escrito con el usuario y contactos; alineado a modelos de Marlatt/Marlatt-Kadden en versión app. | No | 3 | 5 | 5 | 5 | M | M | Q2 |
 | 92 | DBT-lite / regulación | Técnicas cortas (TIPP simplificado, “STOP”, hielo, respiración cuadrada) sugeridas según estado detectado, con timing y opt-in. | No | 2 | 4 | 4 | 4 | B | M | Q2 |
@@ -240,7 +241,7 @@ Incorporadas como **#201–#223** (lotes 1–3). Criterio: no duplicar filas ya 
 | 124 | Feature flags experimentos | LaunchDarkly, Unleash o flags en DB; combina con **#109** y **#35** para rollout gradual. | No | 3 | 4 | 4 | 4 | B | S | Q2 |
 | 125 | Fallback multi-proveedor | Segundo proveedor LLM si el primario falla o rate-limit; contrato de respuesta normalizado; coste operativo **A**. | No | 3 | 4 | 3 | 4 | A | L | Q2 |
 | 126 | Embeddings on-write opt-in | Indexar solo mensajes que el usuario marca “recordar para contexto futuro”; base para RAG híbrido personal con borrado duro. | No | 2 | 4 | 3 | 4 | A | L | Q2 |
-| 127 | Grafo ligero tema–intervención | Metadatos estructurados (no NLP pesado) para sugerir módulos #85–#99 y medir qué rutas funcionan. **MVP cerrado:** tracking + catálogo + sugerencias desde reglas + grafo agregado por sesión + panel dev. **Pendiente:** cerrar bucle con datos del grafo, expansión catálogo #85–#99, temas emergentes. | Parcial | 2 | 4 | 3 | 4 | M | L | Q2 |
+| 127 | Grafo ligero tema–intervención | Metadatos estructurados (no NLP pesado) para sugerir módulos #85–#99 y medir qué rutas funcionan. **MVP cerrado:** tracking + catálogo (#85–#89) + sugerencias desde reglas + ranking + grafo agregado + panel dev + `test:tcc-suite`. **Pendiente:** cerrar bucle con datos del grafo, resto catálogo (#90–#99), `topicFree`, #218. | Parcial | 2 | 4 | 3 | 4 | M | L | Q2 |
 | 128 | Streaming Socket paridad SSE | Mismo streaming por chunks que SSE en HTTP; UX y telemetría coherentes con **#76**. | No | 3 | 4 | 4 | 4 | M | M | Q2 |
 | 129 | Red team prompts automático | Suite mensual de ataques (jailbreak, inyección) sobre builds candidatas; informe bloqueante antes de producción. | No | 3 | 5 | 3 | 4 | M | M | Q2 |
 | 130 | Canary prompt/modelo % | Exponer 5–10 % a nueva versión; comparar métricas de calidad y latencia antes de rollout total. | No | 3 | 4 | 4 | 4 | B | M | Q2 |
@@ -295,7 +296,7 @@ Incorporadas como **#201–#223** (lotes 1–3). Criterio: no duplicar filas ya 
 | 186 | Virtualización lista chat | Lista larga (miles de burbujas) con **windowing**; rendimiento percibido y batería. | No | 3 | 4 | 4 | 4 | M | M | Q2 |
 | 187 | Error boundary burbuja | Fallo de render o de fetch aislado por mensaje con **reintentar** sin perder hilo. | No | 3 | 4 | 4 | 4 | B | M | Q2 |
 | 189 | OARS/MI prompts clínico | Incorporar **motivational interviewing** (preguntas abiertas, reflejo, resumen) en system; revisión con **#46**, **#111**. | No | 3 | 5 | 4 | 5 | M | L | Q2 |
-| 190 | Escalado exposición sin saltos | Flujo guiado que impide saltar pasos en **#87** sin validación explícita del usuario. | No | 3 | 4 | 4 | 4 | M | M | Q2 |
+| 190 | Escalado exposición sin saltos | Flujo guiado que impide saltar pasos en **#87** sin validación explícita del usuario. **Parcial (jun 2026):** guardas backend + UI en **#87** (`exposurePlanGuards`); pendiente confirmación explícita tipo diálogo si se quiere endurecer UX. | Parcial | 3 | 4 | 4 | 4 | M | M | Q2 |
 | 191 | Mecanismo de cambio one-liner | Tras micro-guías (**#78**, **#85**), una frase tipo “por qué esto ayuda” basada en evidencia genérica. **Parcial:** `mechanismLine` por tema en catálogo #85 (tarjeta chat + módulo). | Parcial | 2 | 4 | 4 | 4 | M | M | Q2 |
 | 192 | Formulación cultural opt-in | Campo opt-in (valores, idioma familiar, espiritualidad) que informa el tono sin diagnosticar; ética con **#104**. | No | 2 | 4 | 3 | 4 | M | M | Q2 |
 | 193 | Repair alianza WAI baja | Si **#98** detecta caída, guion breve de “chequeo de ajuste” sin culpar al usuario. | No | 3 | 4 | 5 | 5 | M | M | Q2 |
@@ -331,4 +332,4 @@ Incorporadas como **#201–#223** (lotes 1–3). Criterio: no duplicar filas ya 
 
 ---
 
-*Puntuaciones orientativas. Última revisión: 27 mayo 2026 (16 ex-Q5 + 11 entregadas archivadas; 8 anclas; **#201–#214** mayo 2026; **#215–#223** lote 3 mayo 2026; 195 filas en matriz).*
+*Puntuaciones orientativas. Última revisión: 5 jun 2026 (bloque TCC chat→wizard #85–#89; picker AT accesible + i18n; **#190** MVP vía #87; **#201–#223** mayo 2026; 195 filas en matriz).*

@@ -4,6 +4,7 @@
 import { enrichSuggestionsWithAbcPrefill } from '../../../services/abcRecordPrefillService.js';
 import { enrichSuggestionsWithBaPrefill } from '../../../services/baRecordPrefillService.js';
 import { enrichSuggestionsWithAtPrefill } from '../../../services/atRecordPrefillService.js';
+import { enrichSuggestionsWithExposurePrefill } from '../../../services/exposurePlanPrefillService.js';
 import { applyPsychoeducationCardTiers } from '../../../services/psychoeducationPromptSnippetService.js';
 import actionSuggestionService from '../../../services/actionSuggestionService.js';
 import emotionalAnalyzer from '../../../services/emotionalAnalyzer.js';
@@ -15,8 +16,12 @@ const COGNITIVE_ABC =
 
 function enrichTechniquePrefills(formatted, userContent, language = 'es') {
   return enrichSuggestionsWithAtPrefill(
-    enrichSuggestionsWithBaPrefill(
-      enrichSuggestionsWithAbcPrefill(formatted, userContent),
+    enrichSuggestionsWithExposurePrefill(
+      enrichSuggestionsWithBaPrefill(
+        enrichSuggestionsWithAbcPrefill(formatted, userContent),
+        userContent,
+        language,
+      ),
       userContent,
       language,
     ),
@@ -79,5 +84,17 @@ describe('techniqueSuggestionPrefills (ABC + BA)', () => {
     const at = formatted.find((s) => s.id === 'automatic_thought_record');
     expect(at?.params?.fromChat).toBe(true);
     expect(at?.params?.prefillDistortionType).toBeTruthy();
+  });
+
+  it('evitación: exposición con prefill goal y steps', () => {
+    const formatted = enrichTechniquePrefills(
+      [{ id: 'exposure_hierarchy', screen: 'ExposureHierarchy' }],
+      'Tengo ansiedad social, 6/10. Evito hablar en reuniones porque me da mucho miedo quedar mal.',
+      'es',
+    );
+    const exposure = formatted.find((s) => s.id === 'exposure_hierarchy');
+    expect(exposure?.params?.fromChat).toBe(true);
+    expect(exposure?.params?.prefillGoal).toMatch(/reuniones/i);
+    expect(exposure?.params?.prefillSteps?.length).toBeGreaterThanOrEqual(2);
   });
 });
