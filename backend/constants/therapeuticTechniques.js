@@ -413,16 +413,16 @@ export const CBT_TECHNIQUES = {
 
   automaticThoughtRecord: {
     name: 'Pensamiento automático',
-    description: 'Nombrar la cognición que aparece en una situación y vincularla a una distorsión cognitiva.',
+    description: 'Anota un pensamiento difícil y el patrón que lo mantiene.',
     linkedScreen: 'AutomaticThoughtRecord',
     steps: [
       'Describe la situación que activó el pensamiento',
-      'Escribe el pensamiento automático tal como apareció',
+      'Escribe el pensamiento tal como apareció',
       'Identifica la emoción y su intensidad (1–10)',
-      'Selecciona la distorsión cognitiva que mejor encaja',
-      'Opcional: formula un pensamiento alternativo más equilibrado'
+      'Elige el patrón que más se parezca (opcional)',
+      'Opcional: formula una versión más equilibrada',
     ],
-    whenToUse: 'Cuando quieres poner nombre a un pensamiento repetitivo y entender qué patrón cognitivo lo sostiene.',
+    whenToUse: 'Cuando quieres entender un pensamiento repetitivo y ver qué patrón lo sostiene.',
     emotions: ['ansiedad', 'tristeza', 'enojo', 'culpa', 'verguenza', 'miedo']
   },
 

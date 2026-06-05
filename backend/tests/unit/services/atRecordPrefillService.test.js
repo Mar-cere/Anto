@@ -15,6 +15,14 @@ describe('atRecordPrefillService (#89)', () => {
     expect(out?.name).toBeTruthy();
   });
 
+  it('buildAtPrefillParams usa etiqueta accesible en inglés', () => {
+    const params = buildAtPrefillParams(DISTORTION_MSG, 'en');
+    expect(params?.prefillDistortionName).toBe(
+      getAutomaticThoughtDistortionLabel(params.prefillDistortionType, 'en'),
+    );
+    expect(params?.prefillDistortionName).not.toMatch(/Polarized|Magnification/i);
+  });
+
   it('buildAtPrefillParams usa etiqueta accesible para distorsión', () => {
     const params = buildAtPrefillParams(DISTORTION_MSG, 'es');
     expect(params?.prefillDistortionType).toBeTruthy();

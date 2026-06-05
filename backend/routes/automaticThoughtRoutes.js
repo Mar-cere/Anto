@@ -188,7 +188,7 @@ router.post('/', createLimiter, async (req, res) => {
       });
     }
 
-    const prepared = prepareAutomaticThoughtCreatePayload(value);
+    const prepared = prepareAutomaticThoughtCreatePayload(value, resolveRequestLanguage(req));
 
     const record = new AutomaticThoughtLog({
       userId: new mongoose.Types.ObjectId(req.user.userId),

@@ -10,6 +10,16 @@ describe('automaticThoughtDistortionPicker (#89 UX)', () => {
     expect(AT_PICKER_DISTORTION_TYPES).toHaveLength(8);
   });
 
+  it('getAutomaticThoughtDistortionPickerOptions devuelve labels accesibles en EN', () => {
+    const options = getAutomaticThoughtDistortionPickerOptions('en');
+    expect(options).toHaveLength(8);
+    expect(options.some((o) => o.label === 'Predicting the worst')).toBe(true);
+    options.forEach((option) => {
+      expect(option.label).toBeTruthy();
+      expect(option.hint).toBeTruthy();
+    });
+  });
+
   it('getAutomaticThoughtDistortionPickerOptions devuelve labels accesibles en ES', () => {
     const options = getAutomaticThoughtDistortionPickerOptions('es');
     expect(options).toHaveLength(8);

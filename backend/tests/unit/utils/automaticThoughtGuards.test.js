@@ -19,13 +19,24 @@ describe('automaticThoughtGuards (#89)', () => {
     expect(hasActionableDistortionInMessage(DISTORTION)).toBe(true);
   });
 
-  it('normalizeAutomaticThoughtDistortion rellena nombre desde catálogo', () => {
+  it('normalizeAutomaticThoughtDistortion rellena nombre accesible desde picker (ES)', () => {
     const out = normalizeAutomaticThoughtDistortion({
       distortionType: 'mind_reading',
       distortionName: '',
+      language: 'es',
     });
     expect(out.distortionType).toBe('mind_reading');
-    expect(out.distortionName).toMatch(/mente/i);
+    expect(out.distortionName).toBe('Creo saber qué piensan');
+  });
+
+  it('normalizeAutomaticThoughtDistortion rellena nombre accesible desde picker (EN)', () => {
+    const out = normalizeAutomaticThoughtDistortion({
+      distortionType: 'mind_reading',
+      distortionName: '',
+      language: 'en',
+    });
+    expect(out.distortionType).toBe('mind_reading');
+    expect(out.distortionName).toBe('Mind reading');
   });
 
   it('normalizeAutomaticThoughtDistortion rechaza tipo inválido', () => {

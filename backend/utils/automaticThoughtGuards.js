@@ -1,6 +1,7 @@
 /**
  * Reglas de negocio para pensamientos automáticos (#89).
  */
+import { getAutomaticThoughtDistortionLabel } from '../constants/automaticThoughtDistortionPicker.js';
 import cognitiveDistortionDetector from '../services/cognitiveDistortionDetector.js';
 
 /** Apatía pura: evita falso positivo «nada» en todo/nada (#88). */
@@ -28,6 +29,7 @@ export function hasActionableDistortionInMessage(userContent = '') {
 export function normalizeAutomaticThoughtDistortion({
   distortionType = '',
   distortionName = '',
+  language = 'es',
 } = {}) {
   const type = String(distortionType || '').trim().toLowerCase();
   if (!type || !/^[a-z_]+$/.test(type)) {
@@ -37,7 +39,9 @@ export function normalizeAutomaticThoughtDistortion({
   if (!info) {
     return { distortionType: '', distortionName: '' };
   }
-  const name = String(distortionName || '').trim() || info.name || '';
+  const friendly = getAutomaticThoughtDistortionLabel(type, language);
+  const name =
+    String(distortionName || '').trim() || friendly || info.name || '';
   return {
     distortionType: type,
     distortionName: name.length > 200 ? `${name.slice(0, 199).trim()}…` : name,
@@ -47,8 +51,8 @@ export function normalizeAutomaticThoughtDistortion({
 /**
  * Normaliza payload validado antes de persistir.
  */
-export function prepareAutomaticThoughtCreatePayload(value = {}) {
-  const distortion = normalizeAutomaticThoughtDistortion(value);
+export function prepareAutomaticThoughtCreatePayload(value = {}, language = 'es') {
+  const distortion = normalizeAutomaticThoughtDistortion({ ...value, language });
   return {
     ...value,
     distortionType: distortion.distortionType,

@@ -13,7 +13,7 @@ export const INTERVENTION_LABELS_EN = {
   abc_record: 'ABC Self-Monitoring',
   exposure_hierarchy: 'Exposure Hierarchy + SUDS',
   behavioral_activation: 'Behavioral Activation',
-  automatic_thought_record: 'Automatic Thought Record',
+  automatic_thought_record: 'Automatic thought',
   timeout_technique: 'Time-Out Technique',
   communication_tool: 'Communication Tool',
   boundary_setting: 'Set Boundaries',
