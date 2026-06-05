@@ -11,6 +11,7 @@ import { resolveRequestLanguage } from '../utils/apiLanguage.js';
 import { validateBody } from '../utils/apiValidation.js';
 import { automaticThoughtApiCopy } from '../utils/automaticThoughtApiCopy.js';
 import { prepareAutomaticThoughtCreatePayload } from '../utils/automaticThoughtGuards.js';
+import { getAutomaticThoughtDistortionPickerOptions } from '../constants/automaticThoughtDistortionPicker.js';
 import { getCreateAutomaticThoughtSchema } from '../utils/automaticThoughtSchemas.js';
 import { createRateLimiter } from '../utils/createRateLimiter.js';
 
@@ -109,6 +110,23 @@ router.get('/export', async (req, res) => {
   } catch (error) {
     console.error('Error exportando registros AT:', error);
     res.status(500).json({ success: false, error: copy.exportError });
+  }
+});
+
+router.get('/distortion-options', async (req, res) => {
+  try {
+    const language = resolveRequestLanguage(req);
+    const rawSuggested = req.query.suggestedType;
+    const suggestedTypes = Array.isArray(rawSuggested)
+      ? rawSuggested
+      : rawSuggested
+        ? [rawSuggested]
+        : [];
+    const options = getAutomaticThoughtDistortionPickerOptions(language, { suggestedTypes });
+    res.json({ success: true, options });
+  } catch (error) {
+    console.error('Error obteniendo opciones de distorsión AT:', error);
+    res.status(500).json({ success: false, error: req.apiCopy.listError });
   }
 });
 

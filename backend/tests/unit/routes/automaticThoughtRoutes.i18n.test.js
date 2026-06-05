@@ -26,4 +26,12 @@ describe('Automatic thought routes i18n (#89)', () => {
 
     expect(response.status).toBe(401);
   });
+
+  it('GET distortion-options sin auth rechaza (401)', async () => {
+    const response = await request(app)
+      .get('/api/automatic-thought-logs/distortion-options')
+      .set('X-App-Language', 'en');
+
+    expect(response.status).toBe(401);
+  });
 });

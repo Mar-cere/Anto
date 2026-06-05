@@ -8,6 +8,7 @@ import {
   sanitizeAbcPrefillText,
 } from './abcRecordPrefillService.js';
 import cognitiveDistortionDetector from './cognitiveDistortionDetector.js';
+import { getAutomaticThoughtDistortionLabel } from '../constants/automaticThoughtDistortionPicker.js';
 import { hasActionableDistortionInMessage } from '../utils/automaticThoughtGuards.js';
 
 const INTENSITY_PATTERNS = [
@@ -51,7 +52,7 @@ export function suggestDistortionFromMessage(userContent = '') {
  * @param {string} userContent
  * @returns {{ prefillSituation?: string, prefillAutomaticThought?: string, prefillEmotionIntensity?: number, prefillDistortionType?: string, prefillDistortionName?: string }|null}
  */
-export function buildAtPrefillParams(userContent = '') {
+export function buildAtPrefillParams(userContent = '', language = 'es') {
   const prefillSituation = extractActivatingEventFromMessage(userContent);
   const prefillAutomaticThought = extractBeliefsFromMessage(userContent);
   const prefillEmotionIntensity = extractEmotionIntensityFromMessage(userContent);
@@ -63,7 +64,8 @@ export function buildAtPrefillParams(userContent = '') {
   if (prefillEmotionIntensity != null) params.prefillEmotionIntensity = prefillEmotionIntensity;
   if (distortion?.type) {
     params.prefillDistortionType = distortion.type;
-    if (distortion.name) params.prefillDistortionName = distortion.name;
+    const simpleLabel = getAutomaticThoughtDistortionLabel(distortion.type, language);
+    params.prefillDistortionName = simpleLabel || distortion.name || '';
   }
 
   if (Object.keys(params).length === 0) return null;
@@ -74,11 +76,11 @@ export function buildAtPrefillParams(userContent = '') {
  * @param {Array<object>} formatted
  * @param {string} userContent
  */
-export function enrichSuggestionsWithAtPrefill(formatted = [], userContent = '') {
+export function enrichSuggestionsWithAtPrefill(formatted = [], userContent = '', language = 'es') {
   if (!Array.isArray(formatted) || formatted.length === 0) return formatted;
   if (!formatted.some((s) => s?.id === 'automatic_thought_record')) return formatted;
 
-  const prefill = buildAtPrefillParams(userContent);
+  const prefill = buildAtPrefillParams(userContent, language);
   if (!prefill) return formatted;
 
   return formatted.map((suggestion) => {

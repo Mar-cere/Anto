@@ -37,9 +37,9 @@ const MOOD_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const DEFAULT_TEXTS = {
   TITLE: 'Pensamiento automático',
   INTRO_KICKER: 'TCC',
-  INTRO_TITLE: 'Nombrar la cognición y su patrón',
+  INTRO_TITLE: 'Analiza un pensamiento difícil',
   INTRO_BODY:
-    'Registra la situación, el pensamiento que apareció y la distorsión cognitiva que mejor lo describe. Opcionalmente, formula una alternativa más equilibrada.',
+    'Anota qué pasó, qué pensaste y qué patrón notas. Opcionalmente, formula una versión más equilibrada.',
   STEP1_TITLE: 'Situación',
   STEP1_HINT: '¿Qué estaba pasando cuando apareció el pensamiento?',
   STEP1_PLACEHOLDER: 'Ejemplo: discutí con mi pareja por un mensaje',
@@ -50,9 +50,9 @@ const DEFAULT_TEXTS = {
   STEP2_HINT: '¿Qué sentiste? (opcional)',
   STEP2_PLACEHOLDER: 'Ejemplo: tristeza, ansiedad…',
   STEP2_INTENSITY: 'Intensidad (1–10)',
-  STEP3_TITLE: 'Distorsión cognitiva',
-  STEP3_HINT: 'Elige la que mejor encaje (opcional).',
-  STEP3_LOADING: 'Cargando tipos…',
+  STEP3_TITLE: '¿Qué patrón notas?',
+  STEP3_HINT: 'Elige el que más se parezca (opcional).',
+  STEP3_LOADING: 'Cargando opciones…',
   STEP3_BALANCED: 'Pensamiento alternativo (opcional)',
   STEP3_BALANCED_PLACEHOLDER: 'Una versión más equilibrada del pensamiento…',
   STEP3_NOTES: 'Notas (opcional)',
@@ -76,7 +76,7 @@ const DEFAULT_TEXTS = {
   VALIDATION_THOUGHT: 'Escribe el pensamiento automático antes de continuar.',
   PREFILL_HINT:
     'Sugerencia a partir de tu mensaje en el chat. Puedes editarla antes de continuar.',
-  PREFILL_DISTORTION_HINT: 'Distorsión sugerida a partir de tu mensaje (puedes cambiarla).',
+  PREFILL_DISTORTION_HINT: 'Patrón sugerido desde el chat (puedes cambiarlo).',
 };
 
 function formatEntryDate(iso) {
@@ -208,15 +208,16 @@ const AutomaticThoughtRecordScreen = () => {
           alignItems: 'center',
         },
         moodChipText: { fontSize: 12, fontWeight: '600' },
-        distortionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: SPACING.sm },
-        distortionChip: {
-          paddingVertical: 8,
-          paddingHorizontal: 10,
+        distortionRow: { marginTop: SPACING.sm },
+        distortionOption: {
+          paddingVertical: 10,
+          paddingHorizontal: 12,
           borderRadius: 10,
           borderWidth: 1,
-          maxWidth: '100%',
+          marginBottom: 8,
         },
-        distortionChipText: { fontSize: 12, fontWeight: '600' },
+        distortionOptionLabel: { fontSize: 15, fontWeight: '600' },
+        distortionOptionHint: { fontSize: 13, marginTop: 2 },
         validationText: { marginTop: SPACING.sm, fontSize: 14, color: colors.error || '#c0392b' },
         recordItem: {
           flexDirection: 'row',
@@ -232,17 +233,21 @@ const AutomaticThoughtRecordScreen = () => {
     [colors],
   );
 
-  const loadDistortionTypes = useCallback(async () => {
+  const loadDistortionTypes = useCallback(async (suggestedTypes = []) => {
     setLoadingDistortions(true);
     try {
-      const response = await api.get(ENDPOINTS.COGNITIVE_DISTORTIONS_TYPES);
-      if (Array.isArray(response?.distortions)) {
-        setDistortionTypes(response.distortions);
+      const query =
+        suggestedTypes.length > 0
+          ? `?${suggestedTypes.map((type) => `suggestedType=${encodeURIComponent(type)}`).join('&')}`
+          : '';
+      const response = await api.get(`${ENDPOINTS.AUTOMATIC_THOUGHT_DISTORTION_OPTIONS}${query}`);
+      if (Array.isArray(response?.options)) {
+        setDistortionTypes(response.options);
       } else {
         setDistortionTypes([]);
       }
     } catch (err) {
-      console.error('Error cargando distorsiones:', err);
+      console.error('Error cargando patrones AT:', err);
       setDistortionTypes([]);
     } finally {
       setLoadingDistortions(false);
@@ -271,6 +276,11 @@ const AutomaticThoughtRecordScreen = () => {
     loadRecords();
   }, [loadDistortionTypes, loadRecords]);
 
+  useEffect(() => {
+    if (!fromChatDistortionPrefill || !distortionType) return;
+    loadDistortionTypes([distortionType]);
+  }, [fromChatDistortionPrefill, distortionType, loadDistortionTypes]);
+
   const resolveDistortionPayload = useCallback(() => {
     if (!distortionType) {
       return { distortionType: '', distortionName: '' };
@@ -281,7 +291,7 @@ const AutomaticThoughtRecordScreen = () => {
     }
     return {
       distortionType: match.type,
-      distortionName: (distortionName || match.name || '').trim(),
+      distortionName: (distortionName || match.label || '').trim(),
     };
   }, [distortionType, distortionName, distortionTypes]);
 
@@ -294,8 +304,8 @@ const AutomaticThoughtRecordScreen = () => {
       setFromChatDistortionPrefill(false);
       return;
     }
-    if (!distortionName && match.name) {
-      setDistortionName(match.name);
+    if (!distortionName && match.label) {
+      setDistortionName(match.label);
     }
   }, [distortionType, distortionName, distortionTypes]);
 
@@ -388,7 +398,7 @@ const AutomaticThoughtRecordScreen = () => {
       return;
     }
     setDistortionType(item.type);
-    setDistortionName(item.name || '');
+    setDistortionName(item.label || '');
     setFromChatDistortionPrefill(false);
   };
 
@@ -594,7 +604,7 @@ const AutomaticThoughtRecordScreen = () => {
                 <TouchableOpacity
                   key={item.type}
                   style={[
-                    styles.distortionChip,
+                    styles.distortionOption,
                     {
                       backgroundColor: selected ? colors.accentLineSoft : colors.glassFill,
                       borderColor: selected ? colors.primary : colors.border,
@@ -603,15 +613,26 @@ const AutomaticThoughtRecordScreen = () => {
                   onPress={() => selectDistortion(item)}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
+                  accessibilityLabel={item.label}
                 >
                   <Text
                     style={[
-                      styles.distortionChipText,
+                      styles.distortionOptionLabel,
                       { color: selected ? colors.text : colors.textSecondary },
                     ]}
                   >
-                    {item.name}
+                    {item.label}
                   </Text>
+                  {item.hint ? (
+                    <Text
+                      style={[
+                        styles.distortionOptionHint,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {item.hint}
+                    </Text>
+                  ) : null}
                 </TouchableOpacity>
               );
             })}

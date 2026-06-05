@@ -3,6 +3,7 @@ import {
   enrichSuggestionsWithAtPrefill,
   suggestDistortionFromMessage,
 } from '../../../services/atRecordPrefillService.js';
+import { getAutomaticThoughtDistortionLabel } from '../../../constants/automaticThoughtDistortionPicker.js';
 
 const DISTORTION_MSG =
   'Me siento ansioso, 6/10. Sé que van a pensar mal de mí y nunca va a salir bien.';
@@ -12,6 +13,15 @@ describe('atRecordPrefillService (#89)', () => {
     const out = suggestDistortionFromMessage(DISTORTION_MSG);
     expect(out?.type).toBeTruthy();
     expect(out?.name).toBeTruthy();
+  });
+
+  it('buildAtPrefillParams usa etiqueta accesible para distorsión', () => {
+    const params = buildAtPrefillParams(DISTORTION_MSG, 'es');
+    expect(params?.prefillDistortionType).toBeTruthy();
+    expect(params?.prefillDistortionName).toBe(
+      getAutomaticThoughtDistortionLabel(params.prefillDistortionType, 'es'),
+    );
+    expect(params?.prefillDistortionName).not.toMatch(/Polarizado|Magnificación/i);
   });
 
   it('buildAtPrefillParams extrae situación, pensamiento, intensidad y distorsión', () => {

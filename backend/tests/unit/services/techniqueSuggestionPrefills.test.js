@@ -21,6 +21,7 @@ function enrichTechniquePrefills(formatted, userContent, language = 'es') {
       language,
     ),
     userContent,
+    language,
   );
 }
 

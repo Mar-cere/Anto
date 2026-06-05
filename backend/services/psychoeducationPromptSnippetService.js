@@ -194,6 +194,7 @@ export async function planChatActionSuggestions({
         language,
       ),
       userContent,
+      language,
     );
     return {
       shouldShow: true,

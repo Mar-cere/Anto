@@ -86,6 +86,7 @@ export const ENDPOINTS = {
   AUTOMATIC_THOUGHT_LOGS: '/api/automatic-thought-logs',
   AUTOMATIC_THOUGHT_LOG_BY_ID: (id: string) => `/api/automatic-thought-logs/${id}`,
   AUTOMATIC_THOUGHT_LOGS_EXPORT: '/api/automatic-thought-logs/export',
+  AUTOMATIC_THOUGHT_DISTORTION_OPTIONS: '/api/automatic-thought-logs/distortion-options',
   COGNITIVE_DISTORTIONS_TYPES: '/api/cognitive-distortions/types',
   /** Resumen semanal o mensual: query period=week|month, opcional date, year, month */
   SUMMARY: '/api/summary',
