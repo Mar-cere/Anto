@@ -36,4 +36,13 @@ describe('atRecordPrefillService (#89)', () => {
     expect(at?.params?.prefillDistortionType).toBeTruthy();
     expect(abc?.params).toBeUndefined();
   });
+
+  it('enrichSuggestionsWithAtPrefill no sugiere distorsión en apatía pura', () => {
+    const formatted = enrichSuggestionsWithAtPrefill(
+      [{ id: 'automatic_thought_record', screen: 'AutomaticThoughtRecord' }],
+      'Me siento apagado y sin ganas de hacer nada, 6/10. Llevo días sin salir de casa.',
+    );
+    const at = formatted.find((s) => s.id === 'automatic_thought_record');
+    expect(at?.params?.prefillDistortionType).toBeUndefined();
+  });
 });

@@ -10,6 +10,7 @@ import AutomaticThoughtLog from '../models/AutomaticThoughtLog.js';
 import { resolveRequestLanguage } from '../utils/apiLanguage.js';
 import { validateBody } from '../utils/apiValidation.js';
 import { automaticThoughtApiCopy } from '../utils/automaticThoughtApiCopy.js';
+import { prepareAutomaticThoughtCreatePayload } from '../utils/automaticThoughtGuards.js';
 import { getCreateAutomaticThoughtSchema } from '../utils/automaticThoughtSchemas.js';
 import { createRateLimiter } from '../utils/createRateLimiter.js';
 
@@ -169,17 +170,19 @@ router.post('/', createLimiter, async (req, res) => {
       });
     }
 
+    const prepared = prepareAutomaticThoughtCreatePayload(value);
+
     const record = new AutomaticThoughtLog({
       userId: new mongoose.Types.ObjectId(req.user.userId),
-      situation: value.situation,
-      automaticThought: value.automaticThought,
-      emotion: value.emotion || '',
-      emotionIntensity: value.emotionIntensity ?? 5,
-      distortionType: value.distortionType || '',
-      distortionName: value.distortionName || '',
-      balancedThought: value.balancedThought || '',
-      notes: value.notes || '',
-      entryDate: value.entryDate ? new Date(value.entryDate) : new Date(),
+      situation: prepared.situation,
+      automaticThought: prepared.automaticThought,
+      emotion: prepared.emotion || '',
+      emotionIntensity: prepared.emotionIntensity ?? 5,
+      distortionType: prepared.distortionType || '',
+      distortionName: prepared.distortionName || '',
+      balancedThought: prepared.balancedThought || '',
+      notes: prepared.notes || '',
+      entryDate: prepared.entryDate ? new Date(prepared.entryDate) : new Date(),
     });
 
     await record.save();

@@ -174,6 +174,7 @@ const AutomaticThoughtRecordScreen = () => {
   const [fromChatThoughtPrefill, setFromChatThoughtPrefill] = useState(false);
   const [fromChatDistortionPrefill, setFromChatDistortionPrefill] = useState(false);
   const handledChatPrefillKeyRef = useRef('');
+  const handledResetAtRef = useRef(null);
 
   const styles = useMemo(
     () =>
@@ -270,6 +271,34 @@ const AutomaticThoughtRecordScreen = () => {
     loadRecords();
   }, [loadDistortionTypes, loadRecords]);
 
+  const resolveDistortionPayload = useCallback(() => {
+    if (!distortionType) {
+      return { distortionType: '', distortionName: '' };
+    }
+    const match = distortionTypes.find((item) => item.type === distortionType);
+    if (!match) {
+      return { distortionType: '', distortionName: '' };
+    }
+    return {
+      distortionType: match.type,
+      distortionName: (distortionName || match.name || '').trim(),
+    };
+  }, [distortionType, distortionName, distortionTypes]);
+
+  useEffect(() => {
+    if (!distortionType || distortionTypes.length === 0) return;
+    const match = distortionTypes.find((item) => item.type === distortionType);
+    if (!match) {
+      setDistortionType('');
+      setDistortionName('');
+      setFromChatDistortionPrefill(false);
+      return;
+    }
+    if (!distortionName && match.name) {
+      setDistortionName(match.name);
+    }
+  }, [distortionType, distortionName, distortionTypes]);
+
   const resetWizard = useCallback(() => {
     setStepIndex(0);
     setSituation('');
@@ -289,7 +318,15 @@ const AutomaticThoughtRecordScreen = () => {
 
   const applyRoutePrefill = useCallback(
     (params) => {
-      const parsed = parseAtRecordRouteParams(params);
+      const raw = params && typeof params === 'object' ? params : {};
+      if (raw.resetFormAt != null && handledResetAtRef.current !== raw.resetFormAt) {
+        handledResetAtRef.current = raw.resetFormAt;
+        handledChatPrefillKeyRef.current = '';
+        resetWizard();
+        return;
+      }
+
+      const parsed = parseAtRecordRouteParams(raw);
       if (
         !parsed.fromChat ||
         (!parsed.prefillSituation &&
@@ -297,20 +334,30 @@ const AutomaticThoughtRecordScreen = () => {
           parsed.prefillEmotionIntensity == null &&
           !parsed.prefillDistortionType)
       ) {
+        if (raw.fromChat === false) {
+          setFromChatSituationPrefill(false);
+          setFromChatThoughtPrefill(false);
+          setFromChatDistortionPrefill(false);
+        }
         return;
       }
 
       const prefillKey = `${parsed.prefillSituation}|${parsed.prefillAutomaticThought}|${parsed.prefillEmotionIntensity}|${parsed.prefillDistortionType}`;
       if (prefillKey === handledChatPrefillKeyRef.current) return;
       handledChatPrefillKeyRef.current = prefillKey;
+      handledResetAtRef.current = null;
 
       if (parsed.prefillSituation) {
         setSituation(parsed.prefillSituation);
         setFromChatSituationPrefill(true);
+      } else {
+        setFromChatSituationPrefill(false);
       }
       if (parsed.prefillAutomaticThought) {
         setAutomaticThought(parsed.prefillAutomaticThought);
         setFromChatThoughtPrefill(true);
+      } else {
+        setFromChatThoughtPrefill(false);
       }
       if (parsed.prefillEmotionIntensity != null) {
         setEmotionIntensity(parsed.prefillEmotionIntensity);
@@ -319,10 +366,12 @@ const AutomaticThoughtRecordScreen = () => {
         setDistortionType(parsed.prefillDistortionType);
         setDistortionName(parsed.prefillDistortionName || '');
         setFromChatDistortionPrefill(true);
+      } else {
+        setFromChatDistortionPrefill(false);
       }
       setStepIndex(0);
     },
-    [],
+    [resetWizard],
   );
 
   useFocusEffect(
@@ -378,13 +427,14 @@ const AutomaticThoughtRecordScreen = () => {
     }
     setSaving(true);
     try {
+      const distortion = resolveDistortionPayload();
       const response = await api.post(ENDPOINTS.AUTOMATIC_THOUGHT_LOGS, {
         situation: situation.trim(),
         automaticThought: automaticThought.trim(),
         emotion: emotion.trim(),
         emotionIntensity,
-        distortionType,
-        distortionName,
+        distortionType: distortion.distortionType,
+        distortionName: distortion.distortionName,
         balancedThought: balancedThought.trim(),
         notes: notes.trim(),
       });

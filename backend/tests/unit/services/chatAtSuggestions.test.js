@@ -1,5 +1,6 @@
 import actionSuggestionService, {
   applyAutomaticThoughtSuggestionPolicy,
+  applyBaSuggestionPolicy,
   shouldBoostAutomaticThoughtSuggestion,
 } from '../../../services/actionSuggestionService.js';
 import emotionalAnalyzer from '../../../services/emotionalAnalyzer.js';
@@ -48,6 +49,28 @@ describe('chatAtSuggestions (#89)', () => {
       },
     );
     expect(out[0]).toBe('automatic_thought_record');
+  });
+
+  it('applyAutomaticThoughtSuggestionPolicy no desplaza BA con apatía pura (#88)', () => {
+    const apathy =
+      'Me siento apagado y sin ganas de hacer nada, 6/10. Llevo días sin salir de casa.';
+    const out = applyAutomaticThoughtSuggestionPolicy(
+      applyBaSuggestionPolicy(
+        ['gratitude_journal', 'psychoeducation_depression'],
+        {
+          emotion: 'tristeza',
+          intensityLevel: 'medium',
+          userContent: apathy,
+        },
+      ),
+      {
+        emotion: 'tristeza',
+        intensityLevel: 'medium',
+        userContent: apathy,
+      },
+    );
+    expect(out[0]).toBe('behavioral_activation');
+    expect(out).not.toContain('automatic_thought_record');
   });
 
   it('planChatActionSuggestions incluye prefill en automatic_thought_record', async () => {

@@ -8,6 +8,7 @@ import {
   sanitizeAbcPrefillText,
 } from './abcRecordPrefillService.js';
 import cognitiveDistortionDetector from './cognitiveDistortionDetector.js';
+import { hasActionableDistortionInMessage } from '../utils/automaticThoughtGuards.js';
 
 const INTENSITY_PATTERNS = [
   /\b(\d{1,2})\s*\/\s*10\b/i,
@@ -37,7 +38,7 @@ export function extractEmotionIntensityFromMessage(userContent = '') {
  */
 export function suggestDistortionFromMessage(userContent = '') {
   const text = sanitizeAbcPrefillText(userContent);
-  if (!text) return null;
+  if (!text || !hasActionableDistortionInMessage(text)) return null;
   const primary = cognitiveDistortionDetector.getPrimaryDistortion(text);
   if (!primary?.type) return null;
   return {

@@ -7,7 +7,7 @@ import {
   normalizePsychoeducationTopic,
 } from '../constants/psychoeducation.js';
 import { rankInterventionIds } from './interventionRankingService.js';
-import cognitiveDistortionDetector from './cognitiveDistortionDetector.js';
+import { hasActionableDistortionInMessage } from '../utils/automaticThoughtGuards.js';
 
 /** Psicoed por señales en el mensaje (#85 / #127). */
 export const CONTEXTUAL_PSYCHOEDUCATION_RULES = [
@@ -75,7 +75,7 @@ export function shouldBoostAutomaticThoughtSuggestion(userContent = '') {
   if (shouldBoostAbcSuggestion(text)) return true;
   // Apatía pura (#88): «hacer nada» puede coincidir con patrón todo/nada sin señal cognitiva.
   if (shouldBoostBaSuggestion(text) && !shouldBoostAbcSuggestion(text)) return false;
-  return cognitiveDistortionDetector.detectDistortions(text).length > 0;
+  return hasActionableDistortionInMessage(text);
 }
 
 /** Señal TCC fuerte (#86/#87/#88/#89): permite sugerencias en 1.er turno aunque intensidad < 7. */
@@ -176,9 +176,7 @@ export function applyAutomaticThoughtSuggestionPolicy(
   if (intensityLevel !== 'medium' || !AT_MEDIUM_EMOTIONS.has(emotion)) return ids.slice(0, 3);
 
   const text = String(userContent || '');
-  const hasDistortion =
-    cognitiveDistortionDetector.detectDistortions(text).length > 0 &&
-    !(shouldBoostBaSuggestion(text) && !shouldBoostAbcSuggestion(text));
+  const hasDistortion = hasActionableDistortionInMessage(text);
   const hasCognitiveSignal = shouldBoostAbcSuggestion(text);
   if (!hasDistortion && !hasCognitiveSignal) return ids.slice(0, 3);
 
@@ -192,6 +190,15 @@ export function applyAutomaticThoughtSuggestionPolicy(
     ) {
       list.splice(1, 0, AUTOMATIC_THOUGHT_RECORD_ID);
     }
+    return list.slice(0, 3);
+  }
+
+  // Apatía (#88) prevalece sobre AT cuando BA ya es primera.
+  if (
+    list[0] === BEHAVIORAL_ACTIVATION_ID &&
+    shouldBoostBaSuggestion(text) &&
+    !shouldBoostAbcSuggestion(text)
+  ) {
     return list.slice(0, 3);
   }
 
