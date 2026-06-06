@@ -1273,7 +1273,9 @@ export const TECHNIQUES = {
   EXPOSURE_COMPLETE_NEEDS_ATTEMPT:
     'Registra al menos un intento antes de marcar el paso como completado.',
   EXPOSURE_ALL_DONE: 'Completaste todos los pasos de esta jerarquía.',
-  EXPOSURE_NO_PLANS: 'Aún no hay jerarquías. Crea una arriba.',
+  EXPOSURE_NO_PLANS: 'Aún no hay jerarquías guardadas.',
+  EXPOSURE_NO_PLANS_HINT: 'Crea una lista de pasos en la pestaña «Nueva jerarquía».',
+  EXPOSURE_NO_PLANS_CTA: 'Ir a nueva jerarquía',
   EXPOSURE_RECENT_TITLE: 'Tus jerarquías',
   EXPOSURE_EXPORT: 'Exportar resumen',
   EXPOSURE_EXPORT_HINT: 'Texto para compartir con tu terapeuta.',

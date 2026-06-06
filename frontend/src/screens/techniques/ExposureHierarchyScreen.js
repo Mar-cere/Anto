@@ -77,7 +77,9 @@ const DEFAULT_TEXTS = {
   COMPLETE_STEP: 'Marcar paso como completado',
   COMPLETE_NEEDS_ATTEMPT: 'Registra al menos un intento antes de marcar el paso como completado.',
   ALL_DONE: 'Completaste todos los pasos de esta jerarquía.',
-  NO_PLANS: 'Aún no hay jerarquías. Crea una arriba.',
+  NO_PLANS: 'Aún no hay jerarquías guardadas.',
+  NO_PLANS_HINT: 'Crea una lista de pasos en la pestaña «Nueva jerarquía».',
+  NO_PLANS_CTA: 'Ir a nueva jerarquía',
   RECENT_TITLE: 'Tus jerarquías',
   EXPORT: 'Exportar resumen',
   EXPORT_HINT: 'Texto para compartir con tu terapeuta.',
@@ -146,6 +148,8 @@ const ExposureHierarchyScreen = () => {
         translated?.EXPOSURE_COMPLETE_NEEDS_ATTEMPT || DEFAULT_TEXTS.COMPLETE_NEEDS_ATTEMPT,
       ALL_DONE: translated?.EXPOSURE_ALL_DONE || DEFAULT_TEXTS.ALL_DONE,
       NO_PLANS: translated?.EXPOSURE_NO_PLANS || DEFAULT_TEXTS.NO_PLANS,
+      NO_PLANS_HINT: translated?.EXPOSURE_NO_PLANS_HINT || DEFAULT_TEXTS.NO_PLANS_HINT,
+      NO_PLANS_CTA: translated?.EXPOSURE_NO_PLANS_CTA || DEFAULT_TEXTS.NO_PLANS_CTA,
       RECENT_TITLE: translated?.EXPOSURE_RECENT_TITLE || DEFAULT_TEXTS.RECENT_TITLE,
       EXPORT: translated?.EXPOSURE_EXPORT || DEFAULT_TEXTS.EXPORT,
       EXPORT_HINT: translated?.EXPOSURE_EXPORT_HINT || DEFAULT_TEXTS.EXPORT_HINT,
@@ -424,7 +428,7 @@ const ExposureHierarchyScreen = () => {
 
   const renderSudsPicker = (label, value, onChange) => (
     <View style={styles.sudsBlock}>
-      <Text style={techniqueScreenStyles.formHint}>{label}</Text>
+      <Text style={techniqueScreenStyles.formSectionHeading}>{label}</Text>
       <View style={styles.sudsRow}>
         {SUDS_LEVELS.map((level) => {
           const selected = value === level;
@@ -434,7 +438,7 @@ const ExposureHierarchyScreen = () => {
               style={[
                 styles.sudsChip,
                 {
-                  backgroundColor: selected ? colors.primary : colors.glassFill,
+                  backgroundColor: selected ? colors.accentLineSoft : colors.chromeInput,
                   borderColor: selected ? colors.primary : colors.accentLineSoft,
                 },
               ]}
@@ -448,7 +452,7 @@ const ExposureHierarchyScreen = () => {
               <Text
                 style={[
                   styles.sudsChipText,
-                  { color: selected ? colors.textOnPrimary : colors.textSecondary },
+                  { color: selected ? colors.primary : colors.textSecondary },
                 ]}
               >
                 {level}
@@ -459,6 +463,28 @@ const ExposureHierarchyScreen = () => {
       </View>
     </View>
   );
+
+  const renderStepProgress = (plan) => {
+    if (!plan?.steps?.length) return null;
+    const current = (plan.currentStepIndex ?? 0) + 1;
+    const total = plan.steps.length;
+    const ratio = Math.min(1, current / total);
+    return (
+      <View style={styles.progressBlock}>
+        <Text style={techniqueScreenStyles.cardMeta}>
+          {TEXTS.STEP_OF} {current} {TEXTS.OF} {total}
+        </Text>
+        <View style={[styles.progressTrack, { backgroundColor: colors.chromeInput }]}>
+          <View
+            style={[
+              styles.progressFill,
+              { backgroundColor: colors.primary, width: `${ratio * 100}%` },
+            ]}
+          />
+        </View>
+      </View>
+    );
+  };
 
   const renderCreatePanel = () => (
     <View style={techniqueScreenStyles.card}>
@@ -582,7 +608,18 @@ const ExposureHierarchyScreen = () => {
     if (plans.length === 0) {
       return (
         <View style={techniqueScreenStyles.card}>
-          <Text style={techniqueScreenStyles.formHint}>{TEXTS.NO_PLANS}</Text>
+          <Text style={techniqueScreenStyles.formSectionHeading}>{TEXTS.NO_PLANS}</Text>
+          <Text style={techniqueScreenStyles.formHint}>{TEXTS.NO_PLANS_HINT}</Text>
+          <TouchableOpacity
+            style={[
+              techniqueScreenStyles.navButton,
+              techniqueScreenStyles.navButtonPrimary,
+              styles.emptyCta,
+            ]}
+            onPress={() => setMode('create')}
+          >
+            <Text style={techniqueScreenStyles.navButtonText}>{TEXTS.NO_PLANS_CTA}</Text>
+          </TouchableOpacity>
         </View>
       );
     }
@@ -592,8 +629,14 @@ const ExposureHierarchyScreen = () => {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={styles.planTabs}
-          contentContainerStyle={styles.planTabsContent}
+          style={styles.planTabsScroll}
+          contentContainerStyle={[
+            styles.planTabsContent,
+            {
+              backgroundColor: colors.chromeInput,
+              borderColor: focusTheme.FOCUS_BORDER_SUBTLE,
+            },
+          ]}
         >
           {plans.map((plan) => {
             const selected = plan._id === activePlanId;
@@ -602,9 +645,9 @@ const ExposureHierarchyScreen = () => {
                 key={plan._id}
                 style={[
                   styles.planTab,
-                  {
-                    backgroundColor: selected ? colors.primary : colors.glassFill,
-                    borderColor: selected ? colors.primary : colors.accentLineSoft,
+                  selected && {
+                    backgroundColor: colors.cardBackground,
+                    borderColor: focusTheme.FOCUS_ACCENT_BORDER,
                   },
                 ]}
                 onPress={() => setActivePlanId(plan._id)}
@@ -612,7 +655,7 @@ const ExposureHierarchyScreen = () => {
                 <Text
                   style={[
                     styles.planTabText,
-                    { color: selected ? colors.textOnPrimary : colors.text },
+                    { color: selected ? colors.primary : colors.textSecondary },
                   ]}
                   numberOfLines={1}
                 >
@@ -625,10 +668,8 @@ const ExposureHierarchyScreen = () => {
 
         {activePlan && currentStep && !allStepsCompleted ? (
           <View style={techniqueScreenStyles.card}>
-            <Text style={techniqueScreenStyles.cardMeta}>
-              {TEXTS.CURRENT_STEP} · {TEXTS.STEP_OF}{' '}
-              {(activePlan.currentStepIndex ?? 0) + 1} {TEXTS.OF} {activePlan.steps.length}
-            </Text>
+            {renderStepProgress(activePlan)}
+            <Text style={techniqueScreenStyles.cardMeta}>{TEXTS.CURRENT_STEP}</Text>
             <Text style={techniqueScreenStyles.formSectionHeading}>
               {currentStep.description}
             </Text>
@@ -637,9 +678,9 @@ const ExposureHierarchyScreen = () => {
             </Text>
             {renderSudsPicker(TEXTS.PEAK_SUDS, peakSuds, setPeakSuds)}
             {renderSudsPicker(TEXTS.END_SUDS, endSuds, setEndSuds)}
-            <Text style={techniqueScreenStyles.formHint}>{TEXTS.NOTES_LABEL}</Text>
+            <Text style={techniqueScreenStyles.formSectionHeading}>{TEXTS.NOTES_LABEL}</Text>
             <TextInput
-              style={[techniqueScreenStyles.textInput, { minHeight: 72 }]}
+              style={[techniqueScreenStyles.textInput, styles.notesInput]}
               placeholder={TEXTS.NOTES_PLACEHOLDER}
               placeholderTextColor={colors.textSecondary}
               value={attemptNotes}
@@ -650,76 +691,83 @@ const ExposureHierarchyScreen = () => {
             {!canCompleteStep ? (
               <Text style={techniqueScreenStyles.formHint}>{TEXTS.COMPLETE_NEEDS_ATTEMPT}</Text>
             ) : null}
-            <View style={styles.actionRow}>
-              <TouchableOpacity
-                style={[techniqueScreenStyles.primaryButton, { opacity: loggingAttempt ? 0.7 : 1 }]}
-                onPress={handleLogAttempt}
-                disabled={loggingAttempt}
-              >
-                {loggingAttempt ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
-                ) : (
-                  <Text style={techniqueScreenStyles.primaryButtonText}>{TEXTS.LOG_ATTEMPT}</Text>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  techniqueScreenStyles.primaryButton,
-                  {
-                    backgroundColor: colors.primary,
-                    opacity: completingStep || !canCompleteStep ? 0.5 : 1,
-                  },
-                ]}
-                onPress={handleCompleteStep}
-                disabled={completingStep || !canCompleteStep}
-              >
-                {completingStep ? (
-                  <ActivityIndicator size="small" color={colors.textOnPrimary} />
-                ) : (
-                  <Text
-                    style={[
-                      techniqueScreenStyles.primaryButtonText,
-                      { color: colors.textOnPrimary },
-                    ]}
-                  >
-                    {TEXTS.COMPLETE_STEP}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={[
+                techniqueScreenStyles.navButton,
+                techniqueScreenStyles.navButtonPrimary,
+                styles.practiceAction,
+                loggingAttempt && { opacity: 0.7 },
+              ]}
+              onPress={handleLogAttempt}
+              disabled={loggingAttempt}
+            >
+              {loggingAttempt ? (
+                <ActivityIndicator size="small" color={colors.textOnPrimary} />
+              ) : (
+                <Text style={techniqueScreenStyles.navButtonText}>{TEXTS.LOG_ATTEMPT}</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                techniqueScreenStyles.navButton,
+                styles.practiceAction,
+                (completingStep || !canCompleteStep) && techniqueScreenStyles.navButtonDisabled,
+              ]}
+              onPress={handleCompleteStep}
+              disabled={completingStep || !canCompleteStep}
+            >
+              {completingStep ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Text style={techniqueScreenStyles.navButtonTextMuted}>{TEXTS.COMPLETE_STEP}</Text>
+              )}
+            </TouchableOpacity>
           </View>
         ) : activePlan && allStepsCompleted ? (
-          <View style={techniqueScreenStyles.card}>
-            <Text style={techniqueScreenStyles.introTitle}>{TEXTS.ALL_DONE}</Text>
+          <View style={[techniqueScreenStyles.card, styles.doneCard]}>
+            <MaterialCommunityIcons name="check-circle-outline" size={32} color={colors.primary} />
+            <Text style={[techniqueScreenStyles.introTitle, styles.doneTitle]}>{TEXTS.ALL_DONE}</Text>
             <Text style={techniqueScreenStyles.formHint}>{activePlan.title}</Text>
           </View>
         ) : null}
 
         <View style={techniqueScreenStyles.card}>
           <Text style={techniqueScreenStyles.formSectionHeading}>{TEXTS.RECENT_TITLE}</Text>
-          {plans.map((plan) => (
-            <View key={`list-${plan._id}`} style={styles.planListItem}>
-              <View style={styles.planListBody}>
-                <Text style={techniqueScreenStyles.formSectionHeading}>{plan.title}</Text>
-                <Text style={techniqueScreenStyles.formHint}>
-                  {formatPlanDate(plan.updatedAt)} ·{' '}
-                  {TEXTS.STEP_OF} {(plan.currentStepIndex ?? 0) + 1} {TEXTS.OF}{' '}
-                  {plan.steps?.length || 0}
-                </Text>
+          {plans.map((plan) => {
+            const stepIndex = (plan.currentStepIndex ?? 0) + 1;
+            const stepTotal = plan.steps?.length || 0;
+            const done = stepIndex >= stepTotal && stepTotal > 0;
+            return (
+              <View key={`list-${plan._id}`} style={styles.planListItem}>
+                <TouchableOpacity
+                  style={styles.planListBody}
+                  onPress={() => {
+                    setActivePlanId(plan._id);
+                    setMode('practice');
+                  }}
+                >
+                  <Text style={techniqueScreenStyles.formSectionHeading}>{plan.title}</Text>
+                  <Text style={techniqueScreenStyles.formHint}>
+                    {formatPlanDate(plan.updatedAt)} · {TEXTS.STEP_OF} {stepIndex} {TEXTS.OF}{' '}
+                    {stepTotal}
+                    {done ? ' · ✓' : ''}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => handleDelete(plan._id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={TEXTS.DELETE_A11Y}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <MaterialCommunityIcons
+                    name="trash-can-outline"
+                    size={22}
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity
-                onPress={() => handleDelete(plan._id)}
-                accessibilityRole="button"
-                accessibilityLabel={TEXTS.DELETE_A11Y}
-              >
-                <MaterialCommunityIcons
-                  name="trash-can-outline"
-                  size={22}
-                  color={colors.textSecondary}
-                />
-              </TouchableOpacity>
-            </View>
-          ))}
+            );
+          })}
         </View>
       </>
     );
@@ -914,26 +962,45 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xs,
   },
   sudsChip: {
-    minWidth: 44,
+    minWidth: 40,
     paddingVertical: 6,
     paddingHorizontal: 4,
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
   },
   sudsChipText: { fontSize: 12, fontWeight: '600' },
-  actionRow: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-    marginTop: SPACING.md,
+  progressBlock: { marginBottom: SPACING.sm },
+  progressTrack: {
+    height: 6,
+    borderRadius: 3,
+    marginTop: SPACING.xs,
+    overflow: 'hidden',
   },
-  planTabs: { marginBottom: SPACING.md, maxHeight: 48 },
-  planTabsContent: { gap: SPACING.sm, paddingRight: SPACING.md },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  notesInput: { minHeight: 72, marginTop: SPACING.xs },
+  practiceAction: { alignSelf: 'stretch', marginTop: SPACING.sm },
+  emptyCta: { alignSelf: 'stretch', marginTop: SPACING.md },
+  doneCard: { alignItems: 'center', paddingVertical: SPACING.lg },
+  doneTitle: { marginTop: SPACING.sm, textAlign: 'center' },
+  planTabsScroll: { marginBottom: SPACING.md, maxHeight: 52 },
+  planTabsContent: {
+    flexDirection: 'row',
+    gap: 4,
+    padding: 4,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingRight: SPACING.md,
+  },
   planTab: {
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: 20,
-    borderWidth: 1,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'transparent',
     maxWidth: 200,
   },
   planTabText: { fontSize: 13, fontWeight: '600' },

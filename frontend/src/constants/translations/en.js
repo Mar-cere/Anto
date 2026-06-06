@@ -1269,7 +1269,9 @@ export const TECHNIQUES = {
   EXPOSURE_COMPLETE_NEEDS_ATTEMPT:
     'Log at least one attempt before marking the step complete.',
   EXPOSURE_ALL_DONE: 'You completed all steps in this hierarchy.',
-  EXPOSURE_NO_PLANS: 'No hierarchies yet. Create one above.',
+  EXPOSURE_NO_PLANS: 'No hierarchies saved yet.',
+  EXPOSURE_NO_PLANS_HINT: 'Create a step list in the «New hierarchy» tab.',
+  EXPOSURE_NO_PLANS_CTA: 'Go to new hierarchy',
   EXPOSURE_RECENT_TITLE: 'Your hierarchies',
   EXPOSURE_EXPORT: 'Export summary',
   EXPOSURE_EXPORT_HINT: 'Text to share with your therapist.',
