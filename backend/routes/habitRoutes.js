@@ -76,10 +76,14 @@ const findHabitById = async (habitId, userId) => {
   if (!mongoose.Types.ObjectId.isValid(habitId) || !mongoose.Types.ObjectId.isValid(userId)) {
     return null;
   }
-  return await Habit.findOne({
+  const habit = await Habit.findOne({
     _id: new mongoose.Types.ObjectId(habitId),
     userId: new mongoose.Types.ObjectId(userId)
   });
+  if (habit) {
+    await habit.syncDailyStatus({ persist: true });
+  }
+  return habit;
 };
 
 // Helper: validar año
@@ -295,12 +299,14 @@ router.get('/', async (req, res) => {
     const sortField = sortOptions.includes(sort) ? sort : '-createdAt';
 
     const [habits, total] = await Promise.all([
-      Habit.find(query)
-        .sort(sortField)
-        .skip(skip)
-        .limit(limitNum)
-        .lean(),
-      Habit.countDocuments(query)
+      Habit.syncDailyStatusForQuery(query).then(() =>
+        Habit.find(query)
+          .sort(sortField)
+          .skip(skip)
+          .limit(limitNum)
+          .lean(),
+      ),
+      Habit.countDocuments(query),
     ]);
 
     // Calcular estadísticas adicionales

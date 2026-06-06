@@ -1224,6 +1224,9 @@ export const TECHNIQUES = {
   ABC_EXPORT: 'Exportar resumen',
   ABC_EXPORT_HINT: 'Texto para compartir con tu terapeuta o revisar después.',
   ABC_DELETE_A11Y: 'Eliminar registro',
+  ABC_DELETE_CONFIRM_TITLE: 'Eliminar registro ABC',
+  ABC_DELETE_CONFIRM_MESSAGE:
+    'Este registro se eliminará permanentemente. Esta acción no se puede deshacer.',
   ABC_STEP_PROGRESS: 'Paso',
   ABC_OF: 'de',
   ABC_VALIDATION_A: 'Describe la situación antes de continuar.',
@@ -1272,6 +1275,14 @@ export const TECHNIQUES = {
   EXPOSURE_COMPLETE_STEP: 'Marcar paso como completado',
   EXPOSURE_COMPLETE_NEEDS_ATTEMPT:
     'Registra al menos un intento antes de marcar el paso como completado.',
+  EXPOSURE_CONFIRM_COMPLETE_TITLE: '¿Listo para avanzar?',
+  EXPOSURE_CONFIRM_COMPLETE_BODY:
+    'Completaste «{step}» con al menos un intento registrado. Pasarás al siguiente paso, que suele ser más difícil.\n\nSiguiente: «{next}»\n\nSolo avanza si te sientes preparado.',
+  EXPOSURE_CONFIRM_COMPLETE_LAST_TITLE: '¿Completar jerarquía?',
+  EXPOSURE_CONFIRM_COMPLETE_LAST_BODY:
+    'Completaste «{step}». Esto marcará toda la jerarquía como terminada. ¿Continuar?',
+  EXPOSURE_CONFIRM_ADVANCE: 'Sí, avanzar',
+  EXPOSURE_CONFIRM_CANCEL: 'Todavía no',
   EXPOSURE_ALL_DONE: 'Completaste todos los pasos de esta jerarquía.',
   EXPOSURE_NO_PLANS: 'Aún no hay jerarquías guardadas.',
   EXPOSURE_NO_PLANS_HINT: 'Crea una lista de pasos en la pestaña «Nueva jerarquía».',
@@ -1280,6 +1291,9 @@ export const TECHNIQUES = {
   EXPOSURE_EXPORT: 'Exportar resumen',
   EXPOSURE_EXPORT_HINT: 'Texto para compartir con tu terapeuta.',
   EXPOSURE_DELETE_A11Y: 'Eliminar jerarquía',
+  EXPOSURE_DELETE_CONFIRM_TITLE: 'Eliminar jerarquía',
+  EXPOSURE_DELETE_CONFIRM_MESSAGE:
+    'Se borrarán todos los pasos e intentos registrados. Esta acción no se puede deshacer.',
   EXPOSURE_STEP_OF: 'Paso',
   EXPOSURE_OF: 'de',
   EXPOSURE_ATTEMPTS: 'intentos',
@@ -1312,6 +1326,9 @@ export const TECHNIQUES = {
   BA_EXPORT: 'Exportar resumen',
   BA_EXPORT_HINT: 'Texto para compartir con tu terapeuta.',
   BA_DELETE_A11Y: 'Eliminar registro',
+  BA_DELETE_CONFIRM_TITLE: 'Eliminar actividad',
+  BA_DELETE_CONFIRM_MESSAGE:
+    'Este registro de activación conductual se eliminará permanentemente. Esta acción no se puede deshacer.',
   BA_STEP_PROGRESS: 'Paso',
   BA_OF: 'de',
   BA_VALIDATION_ACTIVITY: 'Describe la actividad antes de continuar.',
@@ -1354,6 +1371,11 @@ export const TECHNIQUES = {
   AT_EXPORT: 'Exportar resumen',
   AT_EXPORT_HINT: 'Texto para compartir con tu terapeuta.',
   AT_DELETE_A11Y: 'Eliminar registro',
+  AT_DELETE_CONFIRM_TITLE: 'Eliminar registro de pensamiento',
+  AT_DELETE_CONFIRM_MESSAGE:
+    'Este registro se eliminará permanentemente. Esta acción no se puede deshacer.',
+  TCC_DELETE_CANCEL: 'Cancelar',
+  TCC_DELETE_CONFIRM: 'Eliminar',
   AT_STEP_PROGRESS: 'Paso',
   AT_OF: 'de',
   AT_VALIDATION_SITUATION: 'Describe la situación antes de continuar.',

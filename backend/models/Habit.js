@@ -223,16 +223,84 @@ habitSchema.virtual('daysSinceLastCompleted').get(function() {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 });
 
+habitSchema.statics.getLocalDayStart = function(date = new Date()) {
+  const d = new Date(date);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+};
+
+habitSchema.statics.isSameLocalDay = function(left, right) {
+  if (!left || !right) return false;
+  const a = Habit.getLocalDayStart(new Date(left));
+  const b = Habit.getLocalDayStart(new Date(right));
+  return a.getTime() === b.getTime();
+};
+
+habitSchema.statics.daysBetweenLocalDays = function(earlier, later) {
+  const startEarlier = Habit.getLocalDayStart(earlier);
+  const startLater = Habit.getLocalDayStart(later);
+  return Math.floor((startLater - startEarlier) / (1000 * 60 * 60 * 24));
+};
+
+habitSchema.methods.computeCompletedToday = function(now = new Date()) {
+  if (!this.status?.lastCompleted) return false;
+  return Habit.isSameLocalDay(this.status.lastCompleted, now);
+};
+
+/**
+ * Alinea completedToday y racha con lastCompleted (evita flags obsoletos tras cambio de día).
+ * @param {{ persist?: boolean, now?: Date }} options
+ * @returns {Promise<boolean>} true si hubo cambios
+ */
+habitSchema.methods.syncDailyStatus = async function({ persist = true, now = new Date() } = {}) {
+  let dirty = false;
+  const completedToday = this.computeCompletedToday(now);
+
+  if (this.status.completedToday !== completedToday) {
+    this.status.completedToday = completedToday;
+    dirty = true;
+  }
+
+  if (this.frequency === 'daily') {
+    if (this.status.lastCompleted) {
+      const daysSince = Habit.daysBetweenLocalDays(this.status.lastCompleted, now);
+      if (daysSince > 1 && this.progress.streak > 0) {
+        this.progress.streak = 0;
+        dirty = true;
+      }
+    } else if (this.progress.streak > 0) {
+      this.progress.streak = 0;
+      dirty = true;
+    }
+  }
+
+  const reminderTime = new Date(this.reminder.time);
+  const today = Habit.getLocalDayStart(now);
+  const reminderToday = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+    reminderTime.getHours(),
+    reminderTime.getMinutes(),
+  );
+  const isOverdue = !completedToday && now > reminderToday;
+  if (this.status.isOverdue !== isOverdue) {
+    this.status.isOverdue = isOverdue;
+    dirty = true;
+  }
+
+  if (dirty && persist) {
+    await this.save();
+  }
+
+  return dirty;
+};
+
 // Métodos de instancia: operaciones sobre un hábito específico
 habitSchema.methods.toggleComplete = async function() {
+  await this.syncDailyStatus({ persist: false });
+
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
-  const lastCompleted = this.status.lastCompleted ? new Date(this.status.lastCompleted) : null;
-  const wasCompletedToday = lastCompleted && 
-    lastCompleted.getFullYear() === today.getFullYear() &&
-    lastCompleted.getMonth() === today.getMonth() &&
-    lastCompleted.getDate() === today.getDate();
+  const wasCompletedToday = this.computeCompletedToday(now);
 
   if (wasCompletedToday) {
     // Desmarcar como completado
@@ -365,14 +433,22 @@ habitSchema.pre('save', function(next) {
     this.progress.bestStreak = this.progress.streak;
   }
 
-  // Verificar si está vencido
+  // Verificar si está vencido (completedToday coherente con lastCompleted)
   const now = new Date();
-  const reminderTime = new Date(this.reminder.time);
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const reminderToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 
-                               reminderTime.getHours(), reminderTime.getMinutes());
+  const completedToday = this.computeCompletedToday(now);
+  this.status.completedToday = completedToday;
 
-  this.status.isOverdue = !this.status.completedToday && now > reminderToday;
+  const reminderTime = new Date(this.reminder.time);
+  const today = Habit.getLocalDayStart(now);
+  const reminderToday = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+    reminderTime.getHours(),
+    reminderTime.getMinutes(),
+  );
+
+  this.status.isOverdue = !completedToday && now > reminderToday;
   
   next();
 });
@@ -395,12 +471,21 @@ habitSchema.statics.getStats = async function(userId) {
   ]);
 };
 
-habitSchema.statics.getActiveHabits = function(userId) {
-  return this.find({
+habitSchema.statics.getActiveHabits = async function(userId) {
+  const habits = await this.find({
     userId,
     deletedAt: { $exists: false },
-    'status.archived': false
+    'status.archived': false,
   }).sort({ createdAt: -1 });
+
+  await Promise.all(habits.map((habit) => habit.syncDailyStatus({ persist: true })));
+  return habits;
+};
+
+habitSchema.statics.syncDailyStatusForQuery = async function(query = {}) {
+  const habits = await this.find(query);
+  await Promise.all(habits.map((habit) => habit.syncDailyStatus({ persist: true })));
+  return habits.length;
 };
 
 habitSchema.statics.getOverdueHabits = function(userId) {

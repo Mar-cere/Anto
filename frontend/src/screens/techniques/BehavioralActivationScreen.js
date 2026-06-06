@@ -28,6 +28,7 @@ import { useToast } from '../../context/ToastContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
 import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
+import { confirmDestructiveAction } from '../../utils/confirmDestructiveAction';
 import { parseBaRecordRouteParams } from '../../utils/baRecordPrefill';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
@@ -64,6 +65,11 @@ const DEFAULT_TEXTS = {
   EXPORT: 'Exportar resumen',
   EXPORT_HINT: 'Texto para compartir con tu terapeuta.',
   DELETE_A11Y: 'Eliminar registro',
+  DELETE_CONFIRM_TITLE: 'Eliminar actividad',
+  DELETE_CONFIRM_MESSAGE:
+    'Este registro de activación conductual se eliminará permanentemente. Esta acción no se puede deshacer.',
+  DELETE_CANCEL: 'Cancelar',
+  DELETE_CONFIRM: 'Eliminar',
   STEP_PROGRESS: 'Paso',
   OF: 'de',
   VALIDATION_ACTIVITY: 'Describe la actividad antes de continuar.',
@@ -119,6 +125,12 @@ const BehavioralActivationScreen = () => {
       EXPORT: translated?.BA_EXPORT || DEFAULT_TEXTS.EXPORT,
       EXPORT_HINT: translated?.BA_EXPORT_HINT || DEFAULT_TEXTS.EXPORT_HINT,
       DELETE_A11Y: translated?.BA_DELETE_A11Y || DEFAULT_TEXTS.DELETE_A11Y,
+      DELETE_CONFIRM_TITLE:
+        translated?.BA_DELETE_CONFIRM_TITLE || DEFAULT_TEXTS.DELETE_CONFIRM_TITLE,
+      DELETE_CONFIRM_MESSAGE:
+        translated?.BA_DELETE_CONFIRM_MESSAGE || DEFAULT_TEXTS.DELETE_CONFIRM_MESSAGE,
+      DELETE_CANCEL: translated?.TCC_DELETE_CANCEL || DEFAULT_TEXTS.DELETE_CANCEL,
+      DELETE_CONFIRM: translated?.TCC_DELETE_CONFIRM || DEFAULT_TEXTS.DELETE_CONFIRM,
       STEP_PROGRESS: translated?.BA_STEP_PROGRESS || DEFAULT_TEXTS.STEP_PROGRESS,
       OF: translated?.BA_OF || DEFAULT_TEXTS.OF,
       VALIDATION_ACTIVITY:
@@ -352,17 +364,39 @@ const BehavioralActivationScreen = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await api.delete(ENDPOINTS.BEHAVIORAL_ACTIVATION_LOG_BY_ID(id));
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      showToast(TEXTS.TOAST_DELETED);
-      setRecords((prev) => prev.filter((r) => r._id !== id));
-    } catch (err) {
-      console.error('Error eliminando registro BA:', err);
-      showToast(TEXTS.TOAST_ERROR);
-    }
-  };
+  const performDelete = useCallback(
+    async (id) => {
+      try {
+        await api.delete(ENDPOINTS.BEHAVIORAL_ACTIVATION_LOG_BY_ID(id));
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        showToast(TEXTS.TOAST_DELETED);
+        setRecords((prev) => prev.filter((r) => r._id !== id));
+      } catch (err) {
+        console.error('Error eliminando registro BA:', err);
+        showToast(TEXTS.TOAST_ERROR);
+      }
+    },
+    [TEXTS.TOAST_DELETED, TEXTS.TOAST_ERROR, showToast],
+  );
+
+  const handleDelete = useCallback(
+    (id) => {
+      confirmDestructiveAction({
+        title: TEXTS.DELETE_CONFIRM_TITLE,
+        message: TEXTS.DELETE_CONFIRM_MESSAGE,
+        cancelLabel: TEXTS.DELETE_CANCEL,
+        confirmLabel: TEXTS.DELETE_CONFIRM,
+        onConfirm: () => performDelete(id),
+      });
+    },
+    [
+      performDelete,
+      TEXTS.DELETE_CANCEL,
+      TEXTS.DELETE_CONFIRM,
+      TEXTS.DELETE_CONFIRM_MESSAGE,
+      TEXTS.DELETE_CONFIRM_TITLE,
+    ],
+  );
 
   const handleExport = async () => {
     setExporting(true);

@@ -220,6 +220,66 @@ describe('Habit Model', () => {
       expect(habit.progress.streak).toBe(0);
     });
 
+    it('syncDailyStatus corrige completedToday obsoleto', async () => {
+      const twoWeeksAgo = new Date();
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
+      const habit = await Habit.create({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Tomar agua',
+        frequency: 'daily',
+        icon: 'water',
+        reminder: {
+          time: new Date(),
+          enabled: true,
+        },
+        status: {
+          completedToday: true,
+          lastCompleted: twoWeeksAgo,
+        },
+        progress: {
+          streak: 3,
+          completedDays: 3,
+          totalDays: 8,
+        },
+      });
+
+      await habit.syncDailyStatus({ persist: true });
+
+      expect(habit.status.completedToday).toBe(false);
+      expect(habit.progress.streak).toBe(0);
+    });
+
+    it('syncDailyStatus mantiene racha si el último completion fue ayer', async () => {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      const habit = await Habit.create({
+        userId: new mongoose.Types.ObjectId(),
+        title: 'Meditar',
+        frequency: 'daily',
+        icon: 'meditation',
+        reminder: {
+          time: new Date(),
+          enabled: true,
+        },
+        status: {
+          completedToday: false,
+          lastCompleted: yesterday,
+        },
+        progress: {
+          streak: 3,
+          completedDays: 3,
+          totalDays: 8,
+        },
+      });
+
+      await habit.syncDailyStatus({ persist: true });
+
+      expect(habit.status.completedToday).toBe(false);
+      expect(habit.progress.streak).toBe(3);
+    });
+
     it('debe verificar si debe notificar', () => {
       const now = new Date();
       const habit = new Habit({
@@ -556,7 +616,7 @@ describe('Habit Model', () => {
 
       await new Promise(resolve => setTimeout(resolve, 150));
 
-      const habits = await Habit.getActiveHabits(userId).exec();
+      const habits = await Habit.getActiveHabits(userId);
       
       expect(habits.length).toBeGreaterThan(0);
       habits.forEach(habit => {

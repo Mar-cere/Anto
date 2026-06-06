@@ -8,6 +8,7 @@ import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -30,6 +31,7 @@ import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
+import { confirmDestructiveAction } from '../../utils/confirmDestructiveAction';
 import { parseExposurePlanRouteParams } from '../../utils/exposurePlanPrefill';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
@@ -76,6 +78,14 @@ const DEFAULT_TEXTS = {
   LOG_ATTEMPT: 'Registrar intento',
   COMPLETE_STEP: 'Marcar paso como completado',
   COMPLETE_NEEDS_ATTEMPT: 'Registra al menos un intento antes de marcar el paso como completado.',
+  CONFIRM_COMPLETE_TITLE: '¿Listo para avanzar?',
+  CONFIRM_COMPLETE_BODY:
+    'Completaste «{step}» con al menos un intento registrado. Pasarás al siguiente paso, que suele ser más difícil.\n\nSiguiente: «{next}»\n\nSolo avanza si te sientes preparado.',
+  CONFIRM_COMPLETE_LAST_TITLE: '¿Completar jerarquía?',
+  CONFIRM_COMPLETE_LAST_BODY:
+    'Completaste «{step}». Esto marcará toda la jerarquía como terminada. ¿Continuar?',
+  CONFIRM_ADVANCE: 'Sí, avanzar',
+  CONFIRM_CANCEL: 'Todavía no',
   ALL_DONE: 'Completaste todos los pasos de esta jerarquía.',
   NO_PLANS: 'Aún no hay jerarquías guardadas.',
   NO_PLANS_HINT: 'Crea una lista de pasos en la pestaña «Nueva jerarquía».',
@@ -84,6 +94,11 @@ const DEFAULT_TEXTS = {
   EXPORT: 'Exportar resumen',
   EXPORT_HINT: 'Texto para compartir con tu terapeuta.',
   DELETE_A11Y: 'Eliminar jerarquía',
+  DELETE_CONFIRM_TITLE: 'Eliminar jerarquía',
+  DELETE_CONFIRM_MESSAGE:
+    'Se borrarán todos los pasos e intentos registrados. Esta acción no se puede deshacer.',
+  DELETE_CANCEL: 'Cancelar',
+  DELETE_CONFIRM: 'Eliminar',
   STEP_OF: 'Paso',
   OF: 'de',
   ATTEMPTS: 'intentos',
@@ -146,6 +161,16 @@ const ExposureHierarchyScreen = () => {
       COMPLETE_STEP: translated?.EXPOSURE_COMPLETE_STEP || DEFAULT_TEXTS.COMPLETE_STEP,
       COMPLETE_NEEDS_ATTEMPT:
         translated?.EXPOSURE_COMPLETE_NEEDS_ATTEMPT || DEFAULT_TEXTS.COMPLETE_NEEDS_ATTEMPT,
+      CONFIRM_COMPLETE_TITLE:
+        translated?.EXPOSURE_CONFIRM_COMPLETE_TITLE || DEFAULT_TEXTS.CONFIRM_COMPLETE_TITLE,
+      CONFIRM_COMPLETE_BODY:
+        translated?.EXPOSURE_CONFIRM_COMPLETE_BODY || DEFAULT_TEXTS.CONFIRM_COMPLETE_BODY,
+      CONFIRM_COMPLETE_LAST_TITLE:
+        translated?.EXPOSURE_CONFIRM_COMPLETE_LAST_TITLE || DEFAULT_TEXTS.CONFIRM_COMPLETE_LAST_TITLE,
+      CONFIRM_COMPLETE_LAST_BODY:
+        translated?.EXPOSURE_CONFIRM_COMPLETE_LAST_BODY || DEFAULT_TEXTS.CONFIRM_COMPLETE_LAST_BODY,
+      CONFIRM_ADVANCE: translated?.EXPOSURE_CONFIRM_ADVANCE || DEFAULT_TEXTS.CONFIRM_ADVANCE,
+      CONFIRM_CANCEL: translated?.EXPOSURE_CONFIRM_CANCEL || DEFAULT_TEXTS.CONFIRM_CANCEL,
       ALL_DONE: translated?.EXPOSURE_ALL_DONE || DEFAULT_TEXTS.ALL_DONE,
       NO_PLANS: translated?.EXPOSURE_NO_PLANS || DEFAULT_TEXTS.NO_PLANS,
       NO_PLANS_HINT: translated?.EXPOSURE_NO_PLANS_HINT || DEFAULT_TEXTS.NO_PLANS_HINT,
@@ -154,6 +179,12 @@ const ExposureHierarchyScreen = () => {
       EXPORT: translated?.EXPOSURE_EXPORT || DEFAULT_TEXTS.EXPORT,
       EXPORT_HINT: translated?.EXPOSURE_EXPORT_HINT || DEFAULT_TEXTS.EXPORT_HINT,
       DELETE_A11Y: translated?.EXPOSURE_DELETE_A11Y || DEFAULT_TEXTS.DELETE_A11Y,
+      DELETE_CONFIRM_TITLE:
+        translated?.EXPOSURE_DELETE_CONFIRM_TITLE || DEFAULT_TEXTS.DELETE_CONFIRM_TITLE,
+      DELETE_CONFIRM_MESSAGE:
+        translated?.EXPOSURE_DELETE_CONFIRM_MESSAGE || DEFAULT_TEXTS.DELETE_CONFIRM_MESSAGE,
+      DELETE_CANCEL: translated?.TCC_DELETE_CANCEL || DEFAULT_TEXTS.DELETE_CANCEL,
+      DELETE_CONFIRM: translated?.TCC_DELETE_CONFIRM || DEFAULT_TEXTS.DELETE_CONFIRM,
       STEP_OF: translated?.EXPOSURE_STEP_OF || DEFAULT_TEXTS.STEP_OF,
       OF: translated?.EXPOSURE_OF || DEFAULT_TEXTS.OF,
       ATTEMPTS: translated?.EXPOSURE_ATTEMPTS || DEFAULT_TEXTS.ATTEMPTS,
@@ -233,6 +264,12 @@ const ExposureHierarchyScreen = () => {
   useEffect(() => {
     loadPlans();
   }, [loadPlans]);
+
+  useEffect(() => {
+    setPeakSuds(50);
+    setEndSuds(30);
+    setAttemptNotes('');
+  }, [activePlan?._id, activePlan?.currentStepIndex]);
 
   const resetCreateForm = useCallback(() => {
     setTitle('');
@@ -322,7 +359,6 @@ const ExposureHierarchyScreen = () => {
       if (response?.success && response.plan) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         showToast(TEXTS.TOAST_SAVED);
-        recordInterventionCompleted('exposure_hierarchy');
         resetCreateForm();
         setActivePlanId(response.plan._id);
         setMode('practice');
@@ -339,10 +375,10 @@ const ExposureHierarchyScreen = () => {
   };
 
   const handleLogAttempt = async () => {
-    if (!activePlan?._id || currentStep == null) return;
+    if (!activePlan?._id || currentStep == null || loggingAttempt || completingStep) return;
+    const stepIndex = activePlan.currentStepIndex ?? 0;
     setLoggingAttempt(true);
     try {
-      const stepIndex = activePlan.currentStepIndex ?? 0;
       const response = await api.post(ENDPOINTS.EXPOSURE_PLAN_ATTEMPTS(activePlan._id), {
         stepIndex,
         peakSuds,
@@ -367,9 +403,10 @@ const ExposureHierarchyScreen = () => {
     }
   };
 
-  const handleCompleteStep = async () => {
-    if (!activePlan?._id) return;
+  const performCompleteStep = useCallback(async () => {
+    if (!activePlan?._id || completingStep) return;
     const stepIndex = activePlan.currentStepIndex ?? 0;
+    const isLastStep = stepIndex >= (activePlan.steps?.length ?? 0) - 1;
     setCompletingStep(true);
     try {
       const response = await api.post(
@@ -378,7 +415,9 @@ const ExposureHierarchyScreen = () => {
       if (response?.success && response.plan) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         showToast(TEXTS.TOAST_STEP_DONE);
-        recordInterventionCompleted('exposure_hierarchy');
+        if (isLastStep) {
+          recordInterventionCompleted('exposure_hierarchy');
+        }
         setPlans((prev) =>
           prev.map((p) => (p._id === response.plan._id ? response.plan : p)),
         );
@@ -391,22 +430,82 @@ const ExposureHierarchyScreen = () => {
     } finally {
       setCompletingStep(false);
     }
-  };
+  }, [activePlan, completingStep, TEXTS.TOAST_STEP_DONE, TEXTS.TOAST_ERROR, showToast]);
 
-  const handleDelete = async (id) => {
-    try {
-      await api.delete(ENDPOINTS.EXPOSURE_PLAN_BY_ID(id));
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      showToast(TEXTS.TOAST_DELETED);
-      setPlans((prev) => prev.filter((p) => p._id !== id));
-      if (activePlanId === id) {
-        setActivePlanId(null);
-      }
-    } catch (err) {
-      console.error('Error eliminando plan:', err);
-      showToast(TEXTS.TOAST_ERROR);
+  const handleCompleteStep = useCallback(() => {
+    if (!activePlan?._id || !canCompleteStep || !currentStep || completingStep || loggingAttempt) {
+      return;
     }
-  };
+
+    const stepIndex = activePlan.currentStepIndex ?? 0;
+    const isLastStep = stepIndex >= activePlan.steps.length - 1;
+    const nextStep = !isLastStep ? activePlan.steps[stepIndex + 1] : null;
+    const stepLabel = currentStep.description?.trim() || TEXTS.CURRENT_STEP;
+
+    const title = isLastStep ? TEXTS.CONFIRM_COMPLETE_LAST_TITLE : TEXTS.CONFIRM_COMPLETE_TITLE;
+    const message = isLastStep
+      ? TEXTS.CONFIRM_COMPLETE_LAST_BODY.replace('{step}', stepLabel)
+      : TEXTS.CONFIRM_COMPLETE_BODY.replace('{step}', stepLabel).replace(
+          '{next}',
+          nextStep?.description?.trim() || '—',
+        );
+
+    Alert.alert(title, message, [
+      { text: TEXTS.CONFIRM_CANCEL, style: 'cancel' },
+      { text: TEXTS.CONFIRM_ADVANCE, onPress: performCompleteStep },
+    ]);
+  }, [
+    activePlan,
+    canCompleteStep,
+    currentStep,
+    performCompleteStep,
+    TEXTS.CONFIRM_ADVANCE,
+    TEXTS.CONFIRM_CANCEL,
+    TEXTS.CONFIRM_COMPLETE_BODY,
+    TEXTS.CONFIRM_COMPLETE_LAST_BODY,
+    TEXTS.CONFIRM_COMPLETE_LAST_TITLE,
+    TEXTS.CONFIRM_COMPLETE_TITLE,
+    TEXTS.CURRENT_STEP,
+    completingStep,
+    loggingAttempt,
+  ]);
+
+  const performDelete = useCallback(
+    async (id) => {
+      try {
+        await api.delete(ENDPOINTS.EXPOSURE_PLAN_BY_ID(id));
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        showToast(TEXTS.TOAST_DELETED);
+        setPlans((prev) => prev.filter((p) => p._id !== id));
+        if (activePlanId === id) {
+          setActivePlanId(null);
+        }
+      } catch (err) {
+        console.error('Error eliminando plan:', err);
+        showToast(TEXTS.TOAST_ERROR);
+      }
+    },
+    [activePlanId, TEXTS.TOAST_DELETED, TEXTS.TOAST_ERROR, showToast],
+  );
+
+  const handleDelete = useCallback(
+    (id) => {
+      confirmDestructiveAction({
+        title: TEXTS.DELETE_CONFIRM_TITLE,
+        message: TEXTS.DELETE_CONFIRM_MESSAGE,
+        cancelLabel: TEXTS.DELETE_CANCEL,
+        confirmLabel: TEXTS.DELETE_CONFIRM,
+        onConfirm: () => performDelete(id),
+      });
+    },
+    [
+      performDelete,
+      TEXTS.DELETE_CANCEL,
+      TEXTS.DELETE_CONFIRM,
+      TEXTS.DELETE_CONFIRM_MESSAGE,
+      TEXTS.DELETE_CONFIRM_TITLE,
+    ],
+  );
 
   const handleExport = async () => {
     setExporting(true);

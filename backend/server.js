@@ -4,7 +4,7 @@
  * Este archivo configura y ejecuta el servidor Express, estableciendo
  * middlewares, rutas y conexión a la base de datos.
  * 
- * @version 1.4.1
+ * @version 1.4.2
  * @author AntoApp Team
  */
 
@@ -60,7 +60,7 @@ import automaticThoughtRoutes from './routes/automaticThoughtRoutes.js';
 import summaryRoutes from './routes/summaryRoutes.js';
 
 // Constantes de configuración
-const APP_VERSION = '1.4.1';
+const APP_VERSION = '1.4.2';
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutos
 const RATE_LIMIT_MAX_REQUESTS = 100;
 const ALLOWED_HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];

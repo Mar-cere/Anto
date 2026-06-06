@@ -288,7 +288,12 @@ router.post('/:id/steps/:stepIndex/complete', validateObjectId, attemptLimiter, 
       return res.status(404).json({ success: false, error: copy.notFound });
     }
 
-    const completeEval = evaluateCompleteExposureStep(plan, req.params.stepIndex);
+    const stepIndex = parseInt(req.params.stepIndex, 10);
+    if (!Number.isInteger(stepIndex)) {
+      return res.status(400).json({ success: false, error: copy.stepIndexInvalid });
+    }
+
+    const completeEval = evaluateCompleteExposureStep(plan, stepIndex);
     if (!completeEval.ok) {
       const errMap = {
         stepIndexInvalid: copy.stepIndexInvalid,
@@ -301,13 +306,13 @@ router.post('/:id/steps/:stepIndex/complete', validateObjectId, attemptLimiter, 
         error: errMap[completeEval.errorKey] || copy.stepIndexInvalid,
       });
     }
-    const stepIndex = completeEval.stepIndex;
-    const step = plan.steps[stepIndex];
+    const resolvedStepIndex = completeEval.stepIndex;
+    const step = plan.steps[resolvedStepIndex];
 
     step.status = 'completed';
     step.completedAt = new Date();
 
-    const nextIndex = stepIndex + 1;
+    const nextIndex = resolvedStepIndex + 1;
     if (nextIndex < plan.steps.length) {
       plan.currentStepIndex = nextIndex;
       if (plan.steps[nextIndex].status === 'pending') {
