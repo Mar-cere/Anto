@@ -369,6 +369,7 @@ export const CBT_TECHNIQUES = {
   thoughtRecord: {
     name: 'Registro de Pensamientos',
     description: 'Documentar pensamientos, emociones y comportamientos para identificar patrones.',
+    linkedScreen: 'AbcRecord',
     steps: [
       'Registra la situación que activó el pensamiento',
       'Anota el pensamiento automático exacto',
@@ -381,9 +382,23 @@ export const CBT_TECHNIQUES = {
     emotions: ['ansiedad', 'tristeza', 'enojo', 'culpa', 'verguenza']
   },
 
+  abcRecord: {
+    name: 'Autorregistro ABC',
+    description: 'Registrar la cadena situación → pensamiento → consecuencia para detectar patrones conductuales.',
+    linkedScreen: 'AbcRecord',
+    steps: [
+      'A — Describe la situación que te activó',
+      'B — Anota los pensamientos que aparecieron',
+      'C — Registra emociones, intensidad y lo que hiciste o sentiste'
+    ],
+    whenToUse: 'Cuando quieres entender qué desencadena una reacción emocional o conductual recurrente.',
+    emotions: ['ansiedad', 'tristeza', 'enojo', 'culpa', 'verguenza', 'miedo']
+  },
+
   behavioralActivation: {
     name: 'Activación Conductual',
     description: 'Aumentar actividades agradables y significativas para mejorar el estado de ánimo.',
+    linkedScreen: 'BehavioralActivation',
     steps: [
       'Identifica actividades que solías disfrutar o que son importantes para ti',
       'Crea una lista de actividades graduadas (de más fácil a más difícil)',
@@ -396,9 +411,25 @@ export const CBT_TECHNIQUES = {
     emotions: ['tristeza', 'neutral']
   },
 
+  automaticThoughtRecord: {
+    name: 'Pensamiento automático',
+    description: 'Anota un pensamiento difícil y el patrón que lo mantiene.',
+    linkedScreen: 'AutomaticThoughtRecord',
+    steps: [
+      'Describe la situación que activó el pensamiento',
+      'Escribe el pensamiento tal como apareció',
+      'Identifica la emoción y su intensidad (1–10)',
+      'Elige el patrón que más se parezca (opcional)',
+      'Opcional: formula una versión más equilibrada',
+    ],
+    whenToUse: 'Cuando quieres entender un pensamiento repetitivo y ver qué patrón lo sostiene.',
+    emotions: ['ansiedad', 'tristeza', 'enojo', 'culpa', 'verguenza', 'miedo']
+  },
+
   exposure: {
     name: 'Exposición Gradual',
     description: 'Enfrentar gradualmente situaciones temidas para reducir la ansiedad.',
+    linkedScreen: 'ExposureHierarchy',
     steps: [
       'Crea una jerarquía de situaciones temidas (de menos a más ansiosas)',
       'Comienza con la situación menos ansiosa',

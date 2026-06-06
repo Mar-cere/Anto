@@ -21,6 +21,7 @@ import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
+import { createInterventionCompletedRecorder } from '../../utils/recordInterventionCompleted';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const DEFAULT_TEXTS = {
@@ -115,6 +116,7 @@ const ConnectionExerciseScreen = () => {
     [translated]
   );
   const navigation = useNavigation();
+  const recordCompletedOnce = useMemo(() => createInterventionCompletedRecorder(), []);
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle } = useTheme();
   const techniqueScreenStyles = useTechniqueScreenStyles();
@@ -167,6 +169,7 @@ const ConnectionExerciseScreen = () => {
   const handleCompleteExercise = (exerciseId) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     if (!completedExercises.includes(exerciseId)) {
+      recordCompletedOnce('connection_exercise');
       setCompletedExercises(prev => [...prev, exerciseId]);
     }
   };

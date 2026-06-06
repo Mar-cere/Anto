@@ -3,6 +3,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, ENDPOINTS } from '../../config/api';
+import { useLanguage } from '../../context/LanguageContext';
 import {
   CATEGORIES,
   EMOTION_KEYS,
@@ -14,6 +15,7 @@ import {
 } from './therapeuticTechniquesUtils';
 
 export function useTherapeuticTechniquesScreen() {
+  const { language, isLanguageReady } = useLanguage();
   const TEXTS = useTherapeuticTechniquesTexts();
   const isMountedRef = useRef(true);
   useEffect(() => {
@@ -67,8 +69,9 @@ export function useTherapeuticTechniquesScreen() {
   }, [TEXTS]);
 
   useEffect(() => {
+    if (!isLanguageReady) return;
     loadTechniques({ isRefresh: false });
-  }, [loadTechniques]);
+  }, [loadTechniques, isLanguageReady, language]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);

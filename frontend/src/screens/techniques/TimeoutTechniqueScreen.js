@@ -21,6 +21,7 @@ import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
+import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const DEFAULT_TEXTS = {
@@ -110,7 +111,7 @@ const TimeoutTechniqueScreen = () => {
     () => [
       { id: 1, title: TEXTS.STEP_1_TITLE, description: TEXTS.STEP_1_DESC, icon: 'alert-circle' },
       { id: 2, title: TEXTS.STEP_2_TITLE, description: TEXTS.STEP_2_DESC, icon: 'door-open' },
-      { id: 3, title: TEXTS.STEP_3_TITLE, description: TEXTS.STEP_3_DESC, icon: 'breathing' },
+      { id: 3, title: TEXTS.STEP_3_TITLE, description: TEXTS.STEP_3_DESC, icon: 'weather-windy' },
       { id: 4, title: TEXTS.STEP_4_TITLE, description: TEXTS.STEP_4_DESC, icon: 'lightbulb-on' },
       { id: 5, title: TEXTS.STEP_5_TITLE, description: TEXTS.STEP_5_DESC, icon: 'arrow-left' },
     ],
@@ -178,6 +179,12 @@ const TimeoutTechniqueScreen = () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setCurrentStep(prev => prev - 1);
     }
+  };
+
+  const handleFinish = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    recordInterventionCompleted('timeout_technique');
+    setIsActive(false);
   };
 
   const formatTime = (seconds) => {
@@ -254,7 +261,7 @@ const TimeoutTechniqueScreen = () => {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={techniqueScreenStyles.stopButton} onPress={() => setIsActive(false)}>
+            <TouchableOpacity style={techniqueScreenStyles.stopButton} onPress={handleFinish}>
               <Text style={techniqueScreenStyles.stopButtonText}>{TEXTS.FINISH}</Text>
             </TouchableOpacity>
           </View>

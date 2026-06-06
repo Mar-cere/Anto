@@ -71,6 +71,23 @@ export const ENDPOINTS = {
   JOURNAL_BY_ID: (id: string) => `/api/journals/${id}`,
   JOURNALS_STATS: '/api/journals/stats',
   JOURNAL_ARCHIVE: (id: string) => `/api/journals/${id}/archive`,
+  ABC_RECORDS: '/api/abc-records',
+  ABC_RECORD_BY_ID: (id: string) => `/api/abc-records/${id}`,
+  ABC_RECORDS_EXPORT: '/api/abc-records/export',
+  EXPOSURE_PLANS: '/api/exposure-plans',
+  EXPOSURE_PLAN_BY_ID: (id: string) => `/api/exposure-plans/${id}`,
+  EXPOSURE_PLAN_ATTEMPTS: (id: string) => `/api/exposure-plans/${id}/attempts`,
+  EXPOSURE_PLAN_STEP_COMPLETE: (id: string, stepIndex: number) =>
+    `/api/exposure-plans/${id}/steps/${stepIndex}/complete`,
+  EXPOSURE_PLANS_EXPORT: '/api/exposure-plans/export',
+  BEHAVIORAL_ACTIVATION_LOGS: '/api/behavioral-activation-logs',
+  BEHAVIORAL_ACTIVATION_LOG_BY_ID: (id: string) => `/api/behavioral-activation-logs/${id}`,
+  BEHAVIORAL_ACTIVATION_LOGS_EXPORT: '/api/behavioral-activation-logs/export',
+  AUTOMATIC_THOUGHT_LOGS: '/api/automatic-thought-logs',
+  AUTOMATIC_THOUGHT_LOG_BY_ID: (id: string) => `/api/automatic-thought-logs/${id}`,
+  AUTOMATIC_THOUGHT_LOGS_EXPORT: '/api/automatic-thought-logs/export',
+  AUTOMATIC_THOUGHT_DISTORTION_OPTIONS: '/api/automatic-thought-logs/distortion-options',
+  COGNITIVE_DISTORTIONS_TYPES: '/api/cognitive-distortions/types',
   /** Resumen semanal o mensual: query period=week|month, opcional date, year, month */
   SUMMARY: '/api/summary',
   /** Foco del panel (dashboard #34): agrega semana, tareas, chats, compromisos, línea de prioridad */

@@ -9,7 +9,7 @@
  */
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -59,6 +59,7 @@ const DEFAULT_TEXTS = {
   NA: 'N/A',
   USE_SINGULAR: 'uso',
   USE_PLURAL: 'usos',
+  DEV_GRAPH_LINK: 'Grafo de sugerencias del chat (interno)',
 };
 
 const THERAPEUTIC_STATS_TEXT_MAP = {
@@ -84,9 +85,11 @@ const THERAPEUTIC_STATS_TEXT_MAP = {
   NA: 'THERAPEUTIC_STATS_NA',
   USE_SINGULAR: 'THERAPEUTIC_STATS_USE_SINGULAR',
   USE_PLURAL: 'THERAPEUTIC_STATS_USE_PLURAL',
+  DEV_GRAPH_LINK: 'INTERVENTION_GRAPH_DEV_LINK',
 };
 
 const TherapeuticTechniquesStatsScreen = () => {
+  const navigation = useNavigation();
   const TEXTS = useMappedSectionTexts('TECHNIQUES', DEFAULT_TEXTS, THERAPEUTIC_STATS_TEXT_MAP);
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle, resolvedScheme } = useTheme();
@@ -207,6 +210,23 @@ const TherapeuticTechniquesStatsScreen = () => {
           fontSize: 16,
           color: colors.textSecondary,
           textAlign: 'center',
+        },
+        emptyScrollContent: {
+          flexGrow: 1,
+          justifyContent: 'space-between',
+        },
+        devLink: {
+          marginTop: 24,
+          padding: 14,
+          borderRadius: 10,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+          alignItems: 'center',
+        },
+        devLinkText: {
+          fontSize: 14,
+          color: colors.primary,
+          fontWeight: '600',
         },
         retryButton: {
           marginTop: 20,
@@ -482,6 +502,16 @@ const TherapeuticTechniquesStatsScreen = () => {
     );
   };
 
+  const renderDevGraphLink = () =>
+    typeof __DEV__ !== 'undefined' && __DEV__ ? (
+      <TouchableOpacity
+        style={styles.devLink}
+        onPress={() => navigation.navigate('InterventionGraph')}
+      >
+        <Text style={styles.devLinkText}>{TEXTS.DEV_GRAPH_LINK}</Text>
+      </TouchableOpacity>
+    ) : null;
+
   // Renderizar contenido
   const renderContent = () => {
     if (loading) {
@@ -507,10 +537,27 @@ const TherapeuticTechniquesStatsScreen = () => {
 
     if (!stats || (!stats.general || stats.general.totalUses === 0)) {
       return (
-        <View style={styles.centerContainer}>
-          <MaterialCommunityIcons name="chart-line" size={48} color={colors.accent} />
-          <Text style={styles.emptyText}>{TEXTS.NO_DATA}</Text>
-        </View>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.scrollContent,
+            styles.emptyScrollContent,
+            { paddingBottom: insets.bottom + SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA },
+          ]}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.primary}
+            />
+          }
+        >
+          <View style={styles.centerContainer}>
+            <MaterialCommunityIcons name="chart-line" size={48} color={colors.accent} />
+            <Text style={styles.emptyText}>{TEXTS.NO_DATA}</Text>
+          </View>
+          {renderDevGraphLink()}
+        </ScrollView>
       );
     }
 
@@ -534,6 +581,7 @@ const TherapeuticTechniquesStatsScreen = () => {
         {renderByEmotion()}
         {renderByType()}
         {renderUsageTrend()}
+        {renderDevGraphLink()}
       </ScrollView>
     );
   };

@@ -36,6 +36,7 @@ import {
   getGratitudeEntryDisplayText,
   sanitizeGratitudeEntriesFromStorage,
 } from '../../utils/gratitudeJournalEntry';
+import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
 
 const GRATITUDE_ENTRIES_KEY = 'gratitudeJournalEntries';
 
@@ -483,6 +484,8 @@ const GratitudeJournalScreen = () => {
     Keyboard.dismiss();
 
     showToast({ message: T.TOAST_SAVED, type: 'success', duration: 2500 });
+
+    recordInterventionCompleted('gratitude_journal');
 
     Animated.sequence([
       Animated.spring(saveBtnScale, {

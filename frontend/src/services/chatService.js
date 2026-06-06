@@ -560,6 +560,61 @@ export const submitProductProposalFeedback = async (conversationId, action) => {
 };
 
 /**
+ * Eventos del grafo tema–intervención (#127) para sugerencias del chat.
+ * @param {string} conversationId
+ * @param {{ interventionId: string, eventType: 'clicked'|'dismissed'|'completed' }} payload
+ */
+export const submitInterventionEvent = async (conversationId, payload) => {
+  const lang = await getAppLanguage();
+  const token = await AsyncStorage.getItem('userToken');
+  if (!token) {
+    const e = new Error(getChatCopy('SERVICE_SESSION_REQUIRED', lang));
+    e.code = 'NO_AUTH';
+    throw e;
+  }
+  const cid = String(conversationId ?? '').trim();
+  if (!/^[\da-f]{24}$/i.test(cid)) {
+    const e = new Error(getChatCopy('SERVICE_INVALID_CONVERSATION_ID', lang));
+    e.code = 'INVALID_CONVERSATION_ID';
+    throw e;
+  }
+  const interventionId = String(payload?.interventionId ?? '').trim();
+  const eventType = String(payload?.eventType ?? '').trim();
+  if (!interventionId) {
+    const e = new Error(getChatCopy('SERVICE_INVALID_ACTION', lang));
+    e.code = 'INVALID_INTERVENTION_ID';
+    throw e;
+  }
+  if (!['clicked', 'dismissed', 'completed'].includes(eventType)) {
+    const e = new Error(getChatCopy('SERVICE_INVALID_ACTION', lang));
+    e.code = 'INVALID_EVENT_TYPE';
+    throw e;
+  }
+  // best-effort: si falla, no debe romper UX
+  return apiClient.post(`/api/chat/conversations/${cid}/interventions/events`, {
+    interventionId,
+    eventType,
+  });
+};
+
+/**
+ * Agregado del grafo tema–intervención (#127) para el usuario autenticado.
+ * @param {{ days?: number, limit?: number }} [params]
+ */
+export const getInterventionGraph = async (params = {}) => {
+  const lang = await getAppLanguage();
+  const token = await AsyncStorage.getItem('userToken');
+  if (!token) {
+    const e = new Error(getChatCopy('SERVICE_SESSION_REQUIRED', lang));
+    e.code = 'NO_AUTH';
+    throw e;
+  }
+  const days = Math.max(1, Math.min(180, Number(params?.days ?? 14) || 14));
+  const limit = Math.max(1, Math.min(300, Number(params?.limit ?? 60) || 60));
+  return apiClient.get('/api/chat/interventions/graph', { params: { days, limit } });
+};
+
+/**
  * Programa en servidor la continuidad diferida del último chat (#4 + #47); no sustituye al resumen semanal/mensual.
  * Sin op si invitado, sin token o id inválido. Errores de red se ignoran (best-effort).
  * @param {string} conversationId
@@ -614,6 +669,8 @@ export default {
   scheduleLastSessionSummary,
   submitMessageFeedback,
   submitProductProposalFeedback,
+  submitInterventionEvent,
+  getInterventionGraph,
   onMessage,
   onError,
   saveMessages,

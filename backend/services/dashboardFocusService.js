@@ -172,8 +172,13 @@ async function loadTherapeuticProtocolHint(userId, language = 'es') {
 }
 
 async function loadUserNotificationPrefs(userId) {
-  const u = await User.findById(userId).select('notificationPreferences').lean();
-  return u?.notificationPreferences || null;
+  const u = await User.findById(userId)
+    .select('notificationPreferences preferences.timezone')
+    .lean();
+  return {
+    notificationPreferences: u?.notificationPreferences || null,
+    timezone: u?.preferences?.timezone || null
+  };
 }
 
 /** Subtítulo genérico para “retomar chat” sin mostrar contenido del hilo. */
@@ -439,7 +444,7 @@ export async function buildDashboardFocus(userId, opts = {}) {
     scales,
     habitReminder,
     protocolNext,
-    notificationPreferences,
+    userFocusPrefs,
     lastSessionSummaryRaw
   ] = await Promise.all([
     buildUserSummary(userId, { period: 'week', language }),
@@ -453,6 +458,8 @@ export async function buildDashboardFocus(userId, opts = {}) {
     getLastSessionSummaryForUser(userId)
   ]);
 
+  const notificationPreferences = userFocusPrefs?.notificationPreferences || null;
+  const userTimezone = userFocusPrefs?.timezone || null;
   const nextPushSlot = computeNextRoutinePushSlot(notificationPreferences, new Date(), language);
 
   const reminderCandidates = buildReminderCandidates({
@@ -495,7 +502,9 @@ export async function buildDashboardFocus(userId, opts = {}) {
     language
   );
 
-  const lastSessionSummary = localizeLastSessionSummaryForDisplay(lastSessionSummaryRaw, language);
+  const lastSessionSummary = localizeLastSessionSummaryForDisplay(lastSessionSummaryRaw, language, {
+    timezone: userTimezone
+  });
 
   const firstTask = upcomingTasks[0];
   return {

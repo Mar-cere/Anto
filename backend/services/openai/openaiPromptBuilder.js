@@ -1025,6 +1025,11 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     systemMessage += medicationSnippet;
   }
 
+  const psychoSnippet = String(contexto.psychoeducationPromptSnippet || '').trim();
+  if (psychoSnippet) {
+    systemMessage += psychoSnippet;
+  }
+
   if (contexto.crisis?.riskLevel && shouldAttachCrisisContextToPrompt(contexto.crisis.riskLevel)) {
     const crisisPrompt = generateCrisisSystemPrompt(contexto.crisis.riskLevel, contexto.crisis.country || 'GENERAL');
     systemMessage = `${crisisPrompt}\n\n---\n\n${systemMessage}`;

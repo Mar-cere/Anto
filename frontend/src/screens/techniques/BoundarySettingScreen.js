@@ -25,6 +25,7 @@ import ParticleBackground from '../../components/ParticleBackground';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
+import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
 
 const DEFAULT_TEXTS = {
   TITLE: 'Establecer Limites',
@@ -146,6 +147,7 @@ const BoundarySettingScreen = () => {
   const handleSave = () => {
     if (boundaryText.trim()) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      recordInterventionCompleted('boundary_setting');
       setBoundaryText('');
     }
   };

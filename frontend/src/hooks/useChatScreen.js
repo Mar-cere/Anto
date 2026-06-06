@@ -43,6 +43,11 @@ import {
   parseGuestHandoffPendingFromStorage,
   parseUserIdFromUserDataStorage,
 } from '../utils/safeStorageJson';
+import {
+  finalizeLoadedChatMessages,
+  pickChatWelcomeGreeting,
+} from '../utils/chatWelcomeGreeting';
+import { getAppLanguage } from '../config/api';
 
 /** Retroalimentación al recibir respuesta del asistente (háptica + vibración corta en Android). */
 function hapticAssistantMessageReceived() {
@@ -239,6 +244,7 @@ export function useChatScreen() {
 
   const initializeConversation = useCallback(async () => {
     const texts = textsRef.current;
+    const appLanguage = await getAppLanguage();
     const dedupeAndSetMessages = (serverMessages, sessionIntentionMeta, flags) => {
       const isRegistered = flags?.isRegistered === true;
       if (!serverMessages || serverMessages.length === 0) return false;
@@ -257,10 +263,9 @@ export function useChatScreen() {
         const timeB = new Date(b.createdAt || b.metadata?.timestamp || 0).getTime();
         return timeA - timeB;
       });
-      const filtered = uniqueMessages.filter((m) => m.type !== 'quickReplies');
-      setMessages(filtered);
+      setMessages(finalizeLoadedChatMessages(uniqueMessages, appLanguage));
       if (isRegistered) {
-        const userCount = filtered.filter((m) => m.role === MESSAGE_ROLES.USER).length;
+        const userCount = uniqueMessages.filter((m) => m.type !== 'quickReplies' && m.role === MESSAGE_ROLES.USER).length;
         setShowSessionIntentionPrompt(userCount === 0 && !sessionIntentionMeta);
       } else {
         setShowSessionIntentionPrompt(false);
@@ -302,7 +307,7 @@ export function useChatScreen() {
         }
         const welcomeMessage = {
           id: `${MESSAGE_ID_PREFIXES.WELCOME}-${Date.now()}`,
-          content: texts.WELCOME,
+          content: pickChatWelcomeGreeting(appLanguage),
           role: MESSAGE_ROLES.ASSISTANT,
           type: MESSAGE_TYPES.TEXT,
           metadata: { timestamp: new Date().toISOString(), type: MESSAGE_TYPES.WELCOME },
@@ -358,7 +363,7 @@ export function useChatScreen() {
         setGuestQuota({ max: GUEST_MAX_USER_MESSAGES, remaining: GUEST_MAX_USER_MESSAGES });
         const welcomeMessage = {
           id: `${MESSAGE_ID_PREFIXES.WELCOME}-${Date.now()}`,
-          content: texts.WELCOME,
+          content: pickChatWelcomeGreeting(appLanguage),
           role: MESSAGE_ROLES.ASSISTANT,
           type: MESSAGE_TYPES.TEXT,
           metadata: { timestamp: new Date().toISOString(), type: MESSAGE_TYPES.WELCOME },
@@ -446,7 +451,8 @@ export function useChatScreen() {
             const timeB = new Date(b.createdAt || b.metadata?.timestamp || 0).getTime();
             return timeA - timeB;
           });
-          setMessages(uniqueMessages.filter((m) => m.type !== 'quickReplies'));
+          const lang = await getAppLanguage();
+          setMessages(finalizeLoadedChatMessages(uniqueMessages, lang));
           stickToBottomRef.current = true;
           requestAnimationFrame(() => {
             scrollToBottomStableRef.current?.(false, { force: true });
@@ -848,7 +854,8 @@ export function useChatScreen() {
                   const createdAt = new Date(m.createdAt || m.metadata?.timestamp || 0).getTime();
                   return Number.isFinite(createdAt) ? createdAt >= sentAt - 1000 : true;
                 });
-                setMessages(uniqueMessages.filter((m) => m.type !== 'quickReplies'));
+                const langGuest = await getAppLanguage();
+                setMessages(finalizeLoadedChatMessages(uniqueMessages, langGuest));
               }
             }
           } else {
@@ -877,7 +884,8 @@ export function useChatScreen() {
                   const createdAt = new Date(m.createdAt || m.metadata?.timestamp || 0).getTime();
                   return Number.isFinite(createdAt) ? createdAt >= sentAt - 1000 : true;
                 });
-                setMessages(uniqueMessages.filter((m) => m.type !== 'quickReplies'));
+                const langReg = await getAppLanguage();
+                setMessages(finalizeLoadedChatMessages(uniqueMessages, langReg));
               }
             }
           }
@@ -1100,6 +1108,7 @@ export function useChatScreen() {
   const refreshMessages = useCallback(async () => {
     try {
       setRefreshing(true);
+      const refreshLang = await getAppLanguage();
       if (await chatService.isGuestChatMode()) {
         const convId = await AsyncStorage.getItem(STORAGE_KEYS.GUEST_CONVERSATION_ID);
         if (convId) {
@@ -1122,7 +1131,7 @@ export function useChatScreen() {
               const timeB = new Date(b.createdAt || b.metadata?.timestamp || 0).getTime();
               return timeA - timeB;
             });
-            setMessages(uniqueMessages);
+            setMessages(finalizeLoadedChatMessages(uniqueMessages, refreshLang));
           }
         }
         return;
@@ -1144,7 +1153,7 @@ export function useChatScreen() {
             const timeB = new Date(b.createdAt || b.metadata?.timestamp || 0).getTime();
             return timeA - timeB;
           });
-          setMessages(uniqueMessages);
+          setMessages(finalizeLoadedChatMessages(uniqueMessages, refreshLang));
           const uc = uniqueMessages.filter((m) => m.role === 'user').length;
           setShowSessionIntentionPrompt(uc === 0 && !pack.sessionIntention);
         }

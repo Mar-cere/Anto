@@ -373,6 +373,11 @@ const userSchema = new mongoose.Schema({
     generatedAt: {
       type: Date,
       default: null
+    },
+    /** Último mensaje de la conversación al generar la continuidad (referencia temporal). */
+    sessionEndedAt: {
+      type: Date,
+      default: null
     }
   }
 }, {

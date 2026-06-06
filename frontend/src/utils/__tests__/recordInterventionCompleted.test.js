@@ -1,0 +1,64 @@
+/**
+ * Tests — util de completed (#127)
+ */
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import chatService from '../../services/chatService';
+import {
+  createInterventionCompletedRecorder,
+  recordInterventionCompleted,
+} from '../recordInterventionCompleted';
+import { CHAT_SESSION_KEYS } from '../chatSessionStorage';
+
+jest.mock('../../services/chatService', () => ({
+  __esModule: true,
+  default: {
+    submitInterventionEvent: jest.fn(() => Promise.resolve()),
+  },
+}));
+
+describe('recordInterventionCompleted', () => {
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    await AsyncStorage.clear();
+  });
+
+  it('no envía si el id es inválido', async () => {
+    recordInterventionCompleted('INVALID!');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(chatService.submitInterventionEvent).not.toHaveBeenCalled();
+  });
+
+  it('no envía sin conversationId', async () => {
+    recordInterventionCompleted('breathing_exercise');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(chatService.submitInterventionEvent).not.toHaveBeenCalled();
+  });
+
+  it('envía completed con conversationId válido', async () => {
+    const convId = '507f1f77bcf86cd799439011';
+    await AsyncStorage.setItem(CHAT_SESSION_KEYS.CONVERSATION_ID, convId);
+    recordInterventionCompleted('breathing_exercise');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(chatService.submitInterventionEvent).toHaveBeenCalledWith(convId, {
+      interventionId: 'breathing_exercise',
+      eventType: 'completed',
+    });
+  });
+});
+
+describe('createInterventionCompletedRecorder', () => {
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    await AsyncStorage.clear();
+  });
+
+  it('solo registra una vez por instancia', async () => {
+    const convId = '507f1f77bcf86cd799439011';
+    await AsyncStorage.setItem(CHAT_SESSION_KEYS.CONVERSATION_ID, convId);
+    const record = createInterventionCompletedRecorder();
+    record('self_care');
+    record('self_care');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(chatService.submitInterventionEvent).toHaveBeenCalledTimes(1);
+  });
+});

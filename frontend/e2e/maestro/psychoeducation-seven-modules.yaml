@@ -1,0 +1,77 @@
+# Smoke: biblioteca psicoeducación → 7 módulos
+# Requiere: com.anto.app, sesión iniciada, backend accesible desde el dispositivo.
+# Ejecutar desde repo: maestro test frontend/e2e/maestro/psychoeducation-seven-modules.yaml
+
+appId: com.anto.app
+
+---
+- launchApp
+
+- tapOn:
+    text: "Ajustes"
+
+- scrollUntilVisible:
+    id: settings-therapeutic-techniques
+    direction: DOWN
+    timeout: 20000
+
+- tapOn:
+    id: settings-therapeutic-techniques
+
+- tapOn:
+    id: psychoed-entry-library
+
+- assertVisible:
+    id: psychoed-library-screen
+
+# Prioridad: sueño, estrés, regulación emocional
+- tapOn:
+    id: psychoed-library-card-sleep
+- assertVisible:
+    id: psychoed-module-sleep
+- assertVisible:
+    id: psychoed-module-hero
+- assertVisible:
+    id: psychoed-module-support-group
+- back
+
+- tapOn:
+    id: psychoed-library-card-stress
+- assertVisible:
+    id: psychoed-module-stress
+- assertVisible:
+    id: psychoed-module-hero
+- back
+
+- tapOn:
+    id: psychoed-library-card-emotionRegulation
+- assertVisible:
+    id: psychoed-module-emotionRegulation
+- assertVisible:
+    id: psychoed-module-hero
+- back
+
+# Resto del catálogo
+- tapOn:
+    id: psychoed-library-card-anxiety
+- assertVisible:
+    id: psychoed-module-anxiety
+- back
+
+- tapOn:
+    id: psychoed-library-card-depression
+- assertVisible:
+    id: psychoed-module-depression
+- back
+
+- tapOn:
+    id: psychoed-library-card-anger
+- assertVisible:
+    id: psychoed-module-anger
+- back
+
+- tapOn:
+    id: psychoed-library-card-trauma
+- assertVisible:
+    id: psychoed-module-trauma
+- back

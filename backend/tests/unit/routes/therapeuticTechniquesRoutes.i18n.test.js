@@ -67,6 +67,50 @@ describe('Therapeutic Techniques Routes i18n', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.language).toBe('en');
-    expect(response.body.data).toContain('anxiety');
+    expect(Array.isArray(response.body.data)).toBe(true);
+    expect(response.body.data.some((m) => m.topic === 'anxiety')).toBe(true);
+    expect(response.body.topics).toContain('anxiety');
+    expect(response.body.data.length).toBe(7);
+    response.body.data.forEach((item) => {
+      expect(item.topic).toBeTruthy();
+      expect(item.title).toBeTruthy();
+      expect(item.summary).toBeTruthy();
+    });
+  });
+
+  it('GET /psychoeducation/sleep incluye whenWorry y metadatos localizados', async () => {
+    const response = await request(app)
+      .get('/api/therapeutic-techniques/psychoeducation/sleep')
+      .set('X-App-Language', 'es');
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.topic).toBe('sleep');
+    expect(response.body.data.title).toMatch(/Sueño/i);
+    expect(Array.isArray(response.body.data.whenWorry)).toBe(true);
+    expect(response.body.data.whenToSeekHelp).toBeTruthy();
+    expect(response.body.data.title).not.toBe(response.body.data.whatIs);
+  });
+
+  const allTopics = [
+    'anxiety',
+    'depression',
+    'stress',
+    'anger',
+    'sleep',
+    'emotionRegulation',
+    'trauma',
+  ];
+
+  it.each(allTopics)('GET /psychoeducation/%s responde 200 en es', async (topic) => {
+    const response = await request(app)
+      .get(`/api/therapeutic-techniques/psychoeducation/${topic}`)
+      .set('X-App-Language', 'es');
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.topic).toBe(topic);
+    expect(response.body.data.whatIs).toBeTruthy();
+    expect(response.body.data.whenToSeekHelp).toBeTruthy();
+    expect(response.body.data.title).toBeTruthy();
   });
 });

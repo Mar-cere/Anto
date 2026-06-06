@@ -29,6 +29,7 @@ import { useSectionTranslations } from '../../hooks/useTranslations';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 import { SPACING } from '../../constants/ui';
+import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
 
 const BACKGROUND_IMAGE = require('../../images/back.png');
 const BACKGROUND_OPACITY = 0.1;
@@ -392,6 +393,7 @@ const SelfCompassionScreen = () => {
   const handleComplete = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setCompleted(true);
+    recordInterventionCompleted('self_compassion_exercise');
     setTimeout(() => {
       navigation.goBack();
     }, 2000);

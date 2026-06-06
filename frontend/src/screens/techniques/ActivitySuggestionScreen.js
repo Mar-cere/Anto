@@ -21,6 +21,7 @@ import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
+import { createInterventionCompletedRecorder } from '../../utils/recordInterventionCompleted';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const DEFAULT_TEXTS = {
@@ -137,6 +138,7 @@ const ActivitySuggestionScreen = () => {
     [translated]
   );
   const navigation = useNavigation();
+  const recordCompletedOnce = useMemo(() => createInterventionCompletedRecorder(), []);
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle } = useTheme();
   const techniqueScreenStyles = useTechniqueScreenStyles();
@@ -197,6 +199,7 @@ const ActivitySuggestionScreen = () => {
   const handleSelectActivity = (activity) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedActivity(activity);
+    recordCompletedOnce('activity_suggestion');
   };
 
   return (

@@ -28,6 +28,7 @@ import { useSectionTranslations } from '../hooks/useTranslations';
 import { getFocusTheme } from '../styles/focusCardTheme';
 import { SPACING } from '../constants/ui';
 import { resolveInteractiveExerciseType } from './therapeuticTechniques/therapeuticTechniquesUtils';
+import { recordInterventionCompleted } from '../utils/recordInterventionCompleted';
 
 // Constantes de textos
 const DEFAULT_TEXTS = {
@@ -45,6 +46,7 @@ const DEFAULT_TEXTS = {
   THERAPEUTIC: 'Terapéutica',
   TECHNIQUES: 'Técnicas',
   PRACTICE_AGAIN: 'Practicar de nuevo',
+  OPEN_LINKED_TOOL: 'Abrir herramienta',
 };
 
 const TechniqueDetailScreen = () => {
@@ -73,6 +75,8 @@ const TechniqueDetailScreen = () => {
       TECHNIQUES: translated?.DETAIL_TECHNIQUES || DEFAULT_TEXTS.TECHNIQUES,
       PRACTICE_AGAIN:
         translated?.DETAIL_PRACTICE_AGAIN || DEFAULT_TEXTS.PRACTICE_AGAIN,
+      OPEN_LINKED_TOOL:
+        translated?.DETAIL_OPEN_LINKED_TOOL || DEFAULT_TEXTS.OPEN_LINKED_TOOL,
     }),
     [translated],
   );
@@ -276,6 +280,23 @@ const TechniqueDetailScreen = () => {
 
   const exerciseType = resolveInteractiveExerciseType(technique);
   const hasInteractiveExercise = !!exerciseType;
+  const linkedScreen =
+    typeof technique.linkedScreen === 'string' ? technique.linkedScreen.trim() : '';
+  const hasLinkedScreen = linkedScreen.length > 0;
+
+  const handleOpenLinkedTool = () => {
+    if (!hasLinkedScreen) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    try {
+      navigation.navigate({
+        name: linkedScreen,
+        params: { fromChat: false, resetFormAt: Date.now() },
+        merge: false,
+      });
+    } catch (err) {
+      console.warn('[TechniqueDetail] navigate failed:', linkedScreen, err);
+    }
+  };
 
   // Manejar inicio de ejercicio
   const handleStartExercise = () => {
@@ -303,6 +324,17 @@ const TechniqueDetailScreen = () => {
         exerciseData: data || {},
         completedAt: new Date().toISOString(),
       });
+
+      // #127: cerrar loop sugerencia → completado (best-effort, sin romper UX)
+      try {
+        const completionInterventionId =
+          exerciseType === 'breathing'
+            ? 'breathing_exercise'
+            : exerciseType === 'grounding'
+              ? 'grounding_technique'
+              : technique.id || technique.name;
+        recordInterventionCompleted(completionInterventionId);
+      } catch (_) {}
     } catch (error) {
       console.error('Error registrando uso de técnica:', error);
     }
@@ -416,6 +448,21 @@ const TechniqueDetailScreen = () => {
               </View>
             ))}
           </View>
+        )}
+
+        {/* Botón de herramienta vinculada (p. ej. ABC #86) */}
+        {hasLinkedScreen && !showExercise && (
+          <TouchableOpacity
+            style={styles.exerciseButton}
+            onPress={handleOpenLinkedTool}
+          >
+            <MaterialCommunityIcons
+              name="notebook-edit-outline"
+              size={24}
+              color={colors.white}
+            />
+            <Text style={styles.exerciseButtonText}>{TEXTS.OPEN_LINKED_TOOL}</Text>
+          </TouchableOpacity>
         )}
 
         {/* Botón de ejercicio interactivo */}

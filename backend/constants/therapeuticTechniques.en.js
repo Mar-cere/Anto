@@ -327,6 +327,7 @@ export const CBT_TECHNIQUES_EN = {
   "thoughtRecord": {
     "name": "Thought Record",
     "description": "Document thoughts, emotions and behaviors to identify patterns.",
+    "linkedScreen": "AbcRecord",
     "whenToUse": "To identify thinking patterns and practice cognitive restructuring.",
     "steps": [
       "Record the situation that activated the thought",
@@ -344,9 +345,29 @@ export const CBT_TECHNIQUES_EN = {
       "verguenza"
     ]
   },
+  "abcRecord": {
+    "name": "ABC Self-Monitoring",
+    "description": "Record the situation → thought → consequence chain to spot behavioral patterns.",
+    "linkedScreen": "AbcRecord",
+    "whenToUse": "When you want to understand what triggers a recurring emotional or behavioral reaction.",
+    "steps": [
+      "A — Describe the situation that activated you",
+      "B — Write down the thoughts that showed up",
+      "C — Note emotions, intensity, and what you did or felt in your body"
+    ],
+    "emotions": [
+      "ansiedad",
+      "tristeza",
+      "enojo",
+      "culpa",
+      "verguenza",
+      "miedo"
+    ]
+  },
   "behavioralActivation": {
     "name": "Behavioral Activation",
     "description": "Increase pleasant and meaningful activities to improve mood.",
+    "linkedScreen": "BehavioralActivation",
     "whenToUse": "For depression, persistent sadness, or when you feel unmotivated and without energy.",
     "steps": [
       "Identify activities that you used to enjoy or that are important to you",
@@ -361,9 +382,31 @@ export const CBT_TECHNIQUES_EN = {
       "neutral"
     ]
   },
+  "automaticThoughtRecord": {
+    "name": "Automatic thought",
+    "description": "Log a difficult thought and the pattern that keeps it going.",
+    "linkedScreen": "AutomaticThoughtRecord",
+    "whenToUse": "When you want to understand a recurring thought and see which pattern keeps it going.",
+    "steps": [
+      "Describe the situation that activated the thought",
+      "Write the thought exactly as it appeared",
+      "Identify the emotion and its intensity (1–10)",
+      "Pick the closest pattern (optional)",
+      "Optional: write a more balanced version"
+    ],
+    "emotions": [
+      "ansiedad",
+      "tristeza",
+      "enojo",
+      "culpa",
+      "verguenza",
+      "miedo"
+    ]
+  },
   "exposure": {
     "name": "Gradual Exhibition",
     "description": "Gradually confront feared situations to reduce anxiety.",
+    "linkedScreen": "ExposureHierarchy",
     "whenToUse": "For anxiety, phobias, or when you avoid important situations out of fear.",
     "steps": [
       "Create a hierarchy of feared situations (from least to most anxious)",

@@ -24,6 +24,7 @@ import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
+import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const DEFAULT_TEXTS = {
@@ -201,6 +202,7 @@ const CommunicationToolScreen = () => {
 
   const handleSave = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    recordInterventionCompleted('communication_tool');
     navigation.goBack();
   };
 

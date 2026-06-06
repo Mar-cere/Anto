@@ -108,6 +108,30 @@ describe('EmotionalAnalyzer Service', () => {
       expect(result.mainEmotion).toBe('ansiedad');
     });
 
+    it('prioriza ansiedad explícita aunque haya "no puedo" y "lo peor"', async () => {
+      const result = await emotionalAnalyzer.analyzeEmotion(
+        'Me siento muy ansioso, corazón acelerado y no puedo dejar de anticipar lo peor. Diría un 8/10',
+      );
+      expect(result.mainEmotion).toBe('ansiedad');
+      expect(result.intensity).toBe(8);
+    });
+
+    it('detecta estrés laboral como ansiedad', async () => {
+      const result = await emotionalAnalyzer.analyzeEmotion(
+        'El estrés del trabajo me tiene agotada, con demasiadas responsabilidades. 6/10',
+      );
+      expect(result.mainEmotion).toBe('ansiedad');
+      expect(result.intensity).toBe(6);
+    });
+
+    it('detecta desborde emocional como enojo', async () => {
+      const result = await emotionalAnalyzer.analyzeEmotion(
+        'Me desborda lo que siento y a veces exploto sin querer. 7/10',
+      );
+      expect(result.mainEmotion).toBe('enojo');
+      expect(result.intensity).toBe(7);
+    });
+
     it('debe detectar alegría', async () => {
       const result = await emotionalAnalyzer.analyzeEmotion('Estoy muy feliz y contento hoy');
       

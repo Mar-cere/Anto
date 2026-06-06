@@ -3,6 +3,9 @@
  * Extraído de chatRoutes para mantener el archivo de rutas más legible.
  */
 
+import chatInterventionGraphService from '../../services/chatInterventionGraphService.js';
+import { shouldBypassTccSuggestionCadence } from '../../services/actionSuggestionService.js';
+
 export function detectEmotionalEscalation(conversationHistory, currentEmotionalAnalysis) {
   if (!conversationHistory || conversationHistory.length < 2) return false;
 
@@ -114,19 +117,19 @@ export function detectSilenceAfterNegative(conversationHistory) {
   return false;
 }
 
-export function shouldShowActionSuggestions(emotionalAnalysis, contextualAnalysis, conversationHistory, userId) {
-  const intensity = emotionalAnalysis?.intensity || 5;
-  if (intensity >= 7) return true;
-
-  if (contextualAnalysis?.intencion?.tipo === 'CRISIS' ||
-      contextualAnalysis?.urgencia === 'alta' ||
-      emotionalAnalysis?.requiresAttention) {
+/** Crisis / urgencia / giro emocional: puede mostrar otro bloque en la misma sesión. */
+export function isActionSuggestionSafetyException(emotionalAnalysis, contextualAnalysis, conversationHistory) {
+  if (
+    contextualAnalysis?.intencion?.tipo === 'CRISIS' ||
+    contextualAnalysis?.urgencia === 'alta' ||
+    emotionalAnalysis?.requiresAttention
+  ) {
     return true;
   }
 
   if (conversationHistory && conversationHistory.length >= 2) {
     const recentUserMessages = conversationHistory
-      .filter(msg => msg.role === 'user' && msg.metadata?.context?.emotional?.mainEmotion)
+      .filter((msg) => msg.role === 'user' && msg.metadata?.context?.emotional?.mainEmotion)
       .slice(0, 2);
 
     if (recentUserMessages.length >= 1) {
@@ -141,31 +144,93 @@ export function shouldShowActionSuggestions(emotionalAnalysis, contextualAnalysi
     }
   }
 
-  if (conversationHistory && conversationHistory.length > 0) {
-    const recentContent = conversationHistory
-      .filter(msg => msg.role === 'user')
-      .slice(0, 3)
-      .map(msg => msg.content?.toLowerCase() || '')
-      .join(' ');
-
-    const rejectionPatterns = /(?:no.*quiero.*ayuda|no.*necesito.*ayuda|no.*me.*ayudes|déjame.*solo|no.*me.*importa|no.*sirve.*de.*nada|no.*gracias)/i;
-    if (rejectionPatterns.test(recentContent)) {
-      return false;
-    }
-  }
-
-  if (conversationHistory && conversationHistory.length > 0) {
-    const userMessages = conversationHistory.filter(msg => msg.role === 'user');
-    const totalUserMessages = userMessages.length;
-    const shouldShowByCount = totalUserMessages > 0 &&
-      (totalUserMessages % 3 === 0 || totalUserMessages % 4 === 0);
-
-    if (!shouldShowByCount) {
-      return false;
-    }
-  }
-
   return false;
+}
+
+/** Intensidad alta: salta cadencia (3/4 mensajes) pero NO el cap por sesión. */
+export function bypassesActionSuggestionCadence(emotionalAnalysis) {
+  const intensity = emotionalAnalysis?.intensity || 5;
+  return intensity >= 7;
+}
+
+/** @deprecated Usar isActionSuggestionSafetyException */
+export function isActionSuggestionException(emotionalAnalysis, contextualAnalysis, conversationHistory) {
+  return (
+    isActionSuggestionSafetyException(emotionalAnalysis, contextualAnalysis, conversationHistory) ||
+    bypassesActionSuggestionCadence(emotionalAnalysis)
+  );
+}
+
+export function hasActionSuggestionRejection(conversationHistory) {
+  if (!conversationHistory?.length) return false;
+  const recentContent = conversationHistory
+    .filter((msg) => msg.role === 'user')
+    .slice(0, 3)
+    .map((msg) => msg.content?.toLowerCase() || '')
+    .join(' ');
+  const rejectionPatterns =
+    /(?:no.*quiero.*ayuda|no.*necesito.*ayuda|no.*me.*ayudes|déjame.*solo|no.*me.*importa|no.*sirve.*de.*nada|no.*gracias)/i;
+  return rejectionPatterns.test(recentContent);
+}
+
+export function passesActionSuggestionCadence(conversationHistory) {
+  if (!conversationHistory?.length) return false;
+  const userMessages = conversationHistory.filter((msg) => msg.role === 'user');
+  const totalUserMessages = userMessages.length;
+  return (
+    totalUserMessages > 0 && (totalUserMessages % 3 === 0 || totalUserMessages % 4 === 0)
+  );
+}
+
+/** @deprecated Usar shouldShowChatActionSuggestions (incluye cap por sesión #127). */
+export function shouldShowActionSuggestions(emotionalAnalysis, contextualAnalysis, conversationHistory, userId) {
+  if (hasActionSuggestionRejection(conversationHistory)) return false;
+  if (
+    isActionSuggestionSafetyException(emotionalAnalysis, contextualAnalysis, conversationHistory) ||
+    bypassesActionSuggestionCadence(emotionalAnalysis)
+  ) {
+    return true;
+  }
+  return passesActionSuggestionCadence(conversationHistory);
+}
+
+/**
+ * Sugerencias de chat: cadencia + máximo un bloque por sesión lógica (salvo excepciones de seguridad).
+ */
+export async function shouldShowChatActionSuggestions({
+  emotionalAnalysis,
+  contextualAnalysis,
+  conversationHistory,
+  userId,
+  conversationId,
+  userContent = '',
+}) {
+  if (hasActionSuggestionRejection(conversationHistory)) return false;
+
+  const safetyException = isActionSuggestionSafetyException(
+    emotionalAnalysis,
+    contextualAnalysis,
+    conversationHistory,
+  );
+  const cadenceOk =
+    bypassesActionSuggestionCadence(emotionalAnalysis) ||
+    shouldBypassTccSuggestionCadence(userContent) ||
+    passesActionSuggestionCadence(conversationHistory);
+  if (!cadenceOk) return false;
+
+  if (!safetyException) {
+    try {
+      const alreadyShown = await chatInterventionGraphService.hasShownSuggestionsInActiveSession({
+        userId,
+        conversationId,
+      });
+      if (alreadyShown) return false;
+    } catch {
+      return cadenceOk;
+    }
+  }
+
+  return true;
 }
 
 export function calculateRiskScore(emotionalAnalysis, contextualAnalysis, content, options = {}) {

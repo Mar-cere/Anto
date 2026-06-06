@@ -4,7 +4,7 @@
  * Este archivo configura y ejecuta el servidor Express, estableciendo
  * middlewares, rutas y conexión a la base de datos.
  * 
- * @version 1.4.1
+ * @version 1.4.2
  * @author AntoApp Team
  */
 
@@ -53,10 +53,14 @@ import testNotificationRoutes from './routes/testNotificationRoutes.js';
 import therapeuticTechniquesRoutes from './routes/therapeuticTechniquesRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import journalRoutes from './routes/journalRoutes.js';
+import abcRecordRoutes from './routes/abcRecordRoutes.js';
+import exposurePlanRoutes from './routes/exposurePlanRoutes.js';
+import behavioralActivationRoutes from './routes/behavioralActivationRoutes.js';
+import automaticThoughtRoutes from './routes/automaticThoughtRoutes.js';
 import summaryRoutes from './routes/summaryRoutes.js';
 
 // Constantes de configuración
-const APP_VERSION = '1.4.1';
+const APP_VERSION = '1.4.2';
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutos
 const RATE_LIMIT_MAX_REQUESTS = 100;
 const ALLOWED_HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
@@ -350,6 +354,10 @@ logger.info('📋 Registrando rutas de la API...');
 app.use('/api/tasks', taskRoutes);
 app.use('/api/habits', habitRoutes);
 app.use('/api/journals', journalRoutes);
+app.use('/api/abc-records', abcRecordRoutes);
+app.use('/api/exposure-plans', exposurePlanRoutes);
+app.use('/api/behavioral-activation-logs', behavioralActivationRoutes);
+app.use('/api/automatic-thought-logs', automaticThoughtRoutes);
 app.use('/api/summary', summaryRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);

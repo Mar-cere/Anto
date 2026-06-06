@@ -21,6 +21,7 @@ import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
+import { createInterventionCompletedRecorder } from '../../utils/recordInterventionCompleted';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const DEFAULT_TEXTS = {
@@ -135,6 +136,7 @@ const SocialActivityScreen = () => {
     [translated]
   );
   const navigation = useNavigation();
+  const recordCompletedOnce = useMemo(() => createInterventionCompletedRecorder(), []);
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle } = useTheme();
   const techniqueScreenStyles = useTechniqueScreenStyles();
@@ -193,6 +195,7 @@ const SocialActivityScreen = () => {
 
   const handleSelectActivity = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    recordCompletedOnce('social_activity');
   };
 
   return (

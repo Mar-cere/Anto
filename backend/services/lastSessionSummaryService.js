@@ -9,7 +9,11 @@ import SessionSummaryJob from '../models/SessionSummaryJob.js';
 import User from '../models/User.js';
 import openaiService from './openaiService.js';
 import logger from '../utils/logger.js';
-import { focusCopy, normalizeFocusLanguage } from '../utils/focusDashboardCopy.js';
+import {
+  focusCopy,
+  focusLocale,
+  normalizeFocusLanguage
+} from '../utils/focusDashboardCopy.js';
 
 const RISK_RANK = { LOW: 0, WARNING: 1, MEDIUM: 2, HIGH: 3, unknown: -1 };
 
@@ -114,6 +118,22 @@ export function sanitizeContinuationText(s, maxLen) {
     .trim();
   if (!maxLen || maxLen <= 0) return t;
   return t.length > maxLen ? t.slice(0, maxLen) : t;
+}
+
+function formatSessionEndedHint(sessionEndedAt, language = 'es') {
+  const d = new Date(sessionEndedAt);
+  if (Number.isNaN(d.getTime())) return '';
+  const locale = focusLocale(language);
+  const dateLabel = d.toLocaleDateString(locale, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+  if (language === 'en') {
+    return `The conversation ended on ${dateLabel}. Do not use "today" unless that calendar date is literally today when you write. Prefer neutral phrasing ("you planned", "you talked about") or the weekday/date if needed.`;
+  }
+  return `La conversación terminó el ${dateLabel}. No uses "hoy" salvo que esa fecha calendario sea literalmente hoy al redactar. Prefiere redacción neutra ("planificaste", "hablaste de") o el día/fecha si hace falta.`;
 }
 
 function buildSnippet(bullets, bridge, language = 'es') {
@@ -233,11 +253,16 @@ export async function scheduleLastSessionSummary(userId, conversationId, opts = 
   };
 }
 
-async function savePlaceholderSummary(userId, conversationId, { userTurns, riskTier, language = 'es' }) {
+async function savePlaceholderSummary(
+  userId,
+  conversationId,
+  { userTurns, riskTier, language = 'es', sessionEndedAt = null }
+) {
   const lang = normalizeFocusLanguage(language);
   const c = focusCopy(lang);
   const bridge = sanitizeContinuationText(c.lastSessionPlaceholderBridge, 600);
   const snippet = sanitizeContinuationText(c.lastSessionPlaceholderSnippet, 280);
+  const endedAt = sessionEndedAt ? new Date(sessionEndedAt) : new Date();
   await User.updateOne(
     { _id: userId },
     {
@@ -251,7 +276,8 @@ async function savePlaceholderSummary(userId, conversationId, { userTurns, riskT
           placeholder: true,
           userTurnCount: userTurns,
           language: lang,
-          generatedAt: new Date()
+          generatedAt: new Date(),
+          sessionEndedAt: endedAt
         }
       }
     }
@@ -275,6 +301,9 @@ async function processOneJob(job) {
 
   const userId = job.userId;
   const conversationId = job.conversationId;
+  const sessionEndedAt = job.baselineLastMessageAt
+    ? new Date(job.baselineLastMessageAt)
+    : new Date();
 
   const userDoc = await User.findById(userId).select('preferences.language').lean();
   const language = normalizeFocusLanguage(userDoc?.preferences?.language);
@@ -300,7 +329,12 @@ async function processOneJob(job) {
 
   if (userTurns < MIN_USER_TURNS_FOR_LLM || userChars < MIN_USER_CHARS_FOR_LLM) {
     await persistAndCompleteJob(job._id, () =>
-      savePlaceholderSummary(userId, conversationId, { userTurns, riskTier, language })
+      savePlaceholderSummary(userId, conversationId, {
+        userTurns,
+        riskTier,
+        language,
+        sessionEndedAt
+      })
     );
     return;
   }
@@ -308,7 +342,12 @@ async function processOneJob(job) {
   if (!process.env.OPENAI_API_KEY) {
     logger.warn('[lastSessionSummary] OPENAI_API_KEY ausente; placeholder');
     await persistAndCompleteJob(job._id, () =>
-      savePlaceholderSummary(userId, conversationId, { userTurns, riskTier, language })
+      savePlaceholderSummary(userId, conversationId, {
+        userTurns,
+        riskTier,
+        language,
+        sessionEndedAt
+      })
     );
     return;
   }
@@ -327,7 +366,8 @@ async function processOneJob(job) {
       ? 'Neutral English; no numbered lists inside strings; do not diagnose; do not invent facts not stated.'
       : 'Español neutro; sin listas numeradas dentro de strings; no diagnosticar; no inventar hechos no dichos.';
 
-  const userPrompt = `Transcript (chronological order, truncated if needed):\n${transcript}\n\nReturn ONLY JSON with exact shape:\n{"bullets":["..."],"bridge":"..."}\n- bullets: at most ${limits.maxBullets} strings, each max ${limits.bulletMaxChars} characters.\n- bridge: 1-2 short sentences for next time, max ${limits.bridgeMaxChars} characters total.\n- ${langDirective}`;
+  const sessionHint = formatSessionEndedHint(sessionEndedAt, language);
+  const userPrompt = `${sessionHint ? `${sessionHint}\n\n` : ''}Transcript (chronological order, truncated if needed):\n${transcript}\n\nReturn ONLY JSON with exact shape:\n{"bullets":["..."],"bridge":"..."}\n- bullets: at most ${limits.maxBullets} strings, each max ${limits.bulletMaxChars} characters.\n- bridge: 1-2 short sentences for next time, max ${limits.bridgeMaxChars} characters total.\n- ${langDirective}`;
 
   const systemLang =
     language === 'en'
@@ -369,7 +409,12 @@ async function processOneJob(job) {
 
     if (!bullets.length && !bridge) {
       await persistAndCompleteJob(job._id, () =>
-        savePlaceholderSummary(userId, conversationId, { userTurns, riskTier, language })
+        savePlaceholderSummary(userId, conversationId, {
+          userTurns,
+          riskTier,
+          language,
+          sessionEndedAt
+        })
       );
     } else {
       const snippet = buildSnippet(bullets, bridge, language);
@@ -390,7 +435,8 @@ async function processOneJob(job) {
                 placeholder: false,
                 userTurnCount: userTurns,
                 language,
-                generatedAt: new Date()
+                generatedAt: new Date(),
+                sessionEndedAt
               }
             }
           }
@@ -506,7 +552,11 @@ export async function getLastSessionSummaryForUser(userId) {
     placeholder: s.placeholder === true,
     userTurnCount: Number.isFinite(s.userTurnCount) ? s.userTurnCount : 0,
     language: s.language === 'en' ? 'en' : 'es',
-    generatedAt: s.generatedAt instanceof Date ? s.generatedAt.toISOString() : s.generatedAt
+    generatedAt: s.generatedAt instanceof Date ? s.generatedAt.toISOString() : s.generatedAt,
+    sessionEndedAt:
+      s.sessionEndedAt instanceof Date
+        ? s.sessionEndedAt.toISOString()
+        : s.sessionEndedAt || null
   };
 }
 

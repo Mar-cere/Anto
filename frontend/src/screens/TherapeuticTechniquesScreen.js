@@ -236,7 +236,13 @@ const TherapeuticTechniquesScreen = () => {
     if (filteredTechniques.length === 0) {
       const isFilteredEmpty = techniques.length > 0;
       return (
-        <View style={styles.centerContainer}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.centerContainer,
+            styles.scrollContent,
+            { paddingBottom: insets.bottom + SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA },
+          ]}
+        >
           <MaterialCommunityIcons
             name={isFilteredEmpty ? 'filter-off' : 'book-open-variant'}
             size={48}
@@ -250,7 +256,24 @@ const TherapeuticTechniquesScreen = () => {
               <Text style={styles.retryButtonText}>{TEXTS.CLEAR_EMOTION_FILTER}</Text>
             </TouchableOpacity>
           ) : null}
-        </View>
+          <TouchableOpacity
+            style={[styles.psychoedCard, { marginTop: 20, width: '100%' }]}
+            testID="psychoed-entry-library"
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+              therapeuticSafeNavigate(navigation, 'PsychoeducationLibrary');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={TEXTS.PSYCHOED_LIBRARY}
+          >
+            <MaterialCommunityIcons name="book-open-page-variant" size={22} color={colors.primary} />
+            <View style={styles.psychoedCardText}>
+              <Text style={styles.psychoedCardTitle}>{TEXTS.PSYCHOED_LIBRARY}</Text>
+              <Text style={styles.psychoedCardHint}>{TEXTS.PSYCHOED_LIBRARY_HINT}</Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </ScrollView>
       );
     }
 
@@ -273,6 +296,25 @@ const TherapeuticTechniquesScreen = () => {
           <MaterialCommunityIcons name="hand-pointing-right" size={18} color={colors.primary} />
           <Text style={styles.listIntroText}>{TEXTS.HOW_IT_WORKS}</Text>
         </View>
+        <TouchableOpacity
+          style={styles.psychoedCard}
+          testID="psychoed-entry-library"
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+            therapeuticSafeNavigate(navigation, 'PsychoeducationLibrary');
+          }}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={TEXTS.PSYCHOED_LIBRARY}
+          accessibilityHint={TEXTS.PSYCHOED_LIBRARY_HINT}
+        >
+          <MaterialCommunityIcons name="book-open-page-variant" size={22} color={colors.primary} />
+          <View style={styles.psychoedCardText}>
+            <Text style={styles.psychoedCardTitle}>{TEXTS.PSYCHOED_LIBRARY}</Text>
+            <Text style={styles.psychoedCardHint}>{TEXTS.PSYCHOED_LIBRARY_HINT}</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textSecondary} />
+        </TouchableOpacity>
         {CATEGORY_ORDER.map((key) => renderCategorySection(key))}
       </ScrollView>
     );

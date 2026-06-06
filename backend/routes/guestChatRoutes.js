@@ -60,7 +60,7 @@ function hashIp(req) {
 
 router.post('/session', guestSessionCreateLimiter, async (req, res) => {
   try {
-    const data = await guestChatService.createGuestSession(hashIp(req));
+    const data = await guestChatService.createGuestSession(hashIp(req), req.appLanguage);
     res.status(201).json({ ...data, language: req.appLanguage });
   } catch (error) {
     console.error('[GuestChat] Error creando sesión:', error);

@@ -21,6 +21,7 @@ import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
+import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const DEFAULT_TEXTS = {
@@ -117,7 +118,7 @@ const TaskBreakScreen = () => {
     () => [
       { id: 1, title: TEXTS.ACTIVITY_1_TITLE, description: TEXTS.ACTIVITY_1_DESC, duration: TEXTS.ACTIVITY_1_DURATION, icon: 'yoga' },
       { id: 2, title: TEXTS.ACTIVITY_2_TITLE, description: TEXTS.ACTIVITY_2_DESC, duration: TEXTS.ACTIVITY_2_DURATION, icon: 'walk' },
-      { id: 3, title: TEXTS.ACTIVITY_3_TITLE, description: TEXTS.ACTIVITY_3_DESC, duration: TEXTS.ACTIVITY_3_DURATION, icon: 'breathing' },
+      { id: 3, title: TEXTS.ACTIVITY_3_TITLE, description: TEXTS.ACTIVITY_3_DESC, duration: TEXTS.ACTIVITY_3_DURATION, icon: 'weather-windy' },
       { id: 4, title: TEXTS.ACTIVITY_4_TITLE, description: TEXTS.ACTIVITY_4_DESC, duration: TEXTS.ACTIVITY_4_DURATION, icon: 'cup-water' },
       { id: 5, title: TEXTS.ACTIVITY_5_TITLE, description: TEXTS.ACTIVITY_5_DESC, duration: TEXTS.ACTIVITY_5_DURATION, icon: 'window-open' },
     ],
@@ -180,6 +181,7 @@ const TaskBreakScreen = () => {
       }, 1000);
     } else if (timeRemaining === 0 && isActive) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      recordInterventionCompleted('task_break');
       setIsActive(false);
     }
     return () => clearInterval(interval);
@@ -195,6 +197,7 @@ const TaskBreakScreen = () => {
 
   const handleStop = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    recordInterventionCompleted('task_break');
     setIsActive(false);
     setTimeRemaining(0);
   };

@@ -297,6 +297,58 @@ class EmotionalAnalyzer {
   }
 
   /**
+   * Cuando el usuario nombra la emoción explícitamente ("me siento ansioso").
+   */
+  detectExplicitSelfReportedEmotion(content) {
+    if (!this.isValidString(content)) return null;
+    const rules = [
+      {
+        pattern: /(?:me\s+siento|estoy|me\s+encuentro)\s+(?:muy\s+|bastante\s+|realmente\s+)?ansios[oa]/i,
+        name: 'ansiedad',
+        baseIntensity: 7,
+      },
+      {
+        pattern: /(?:me\s+siento|estoy)\s+(?:muy\s+|bastante\s+)?triste/i,
+        name: 'tristeza',
+        baseIntensity: 7,
+      },
+      {
+        pattern: /(?:me\s+siento|estoy)\s+(?:muy\s+|bastante\s+)?enojad[oa]/i,
+        name: 'enojo',
+        baseIntensity: 7,
+      },
+      {
+        pattern: /(?:me\s+siento|estoy)\s+(?:muy\s+|bastante\s+)?asustad[oa]|tengo\s+miedo/i,
+        name: 'miedo',
+        baseIntensity: 7,
+      },
+      {
+        pattern:
+          /(?:estrés|estres(?:ado|ada)?|(?:me\s+tiene|estoy)\s+agotad[oa]|demasiadas\s+responsabilidades|sobrecarga\s+(?:laboral|de\s+trabajo))/i,
+        name: 'ansiedad',
+        baseIntensity: 6,
+      },
+      {
+        pattern:
+          /(?:me\s+desbord|desbordad[oa]|explot(?:o|é)\s+sin\s+querer|no\s+controlo\s+(?:mis\s+)?emociones)/i,
+        name: 'enojo',
+        baseIntensity: 7,
+      },
+    ];
+    for (const rule of rules) {
+      if (!rule.pattern.test(content)) continue;
+      const emotionData = this.emotionPatterns[rule.name];
+      if (!emotionData) continue;
+      return {
+        name: rule.name,
+        category: emotionData.category,
+        baseIntensity: rule.baseIntensity,
+      };
+    }
+    return null;
+  }
+
+  /**
    * Detecta la emoción principal en el contenido
    * @param {string} content - Contenido en minúsculas
    * @returns {Object} Emoción detectada con nombre, categoría e intensidad base
@@ -344,6 +396,11 @@ class EmotionalAnalyzer {
         category: emotionData.category,
         baseIntensity: emotionData.intensity
       };
+    }
+
+    const explicitEmotion = this.detectExplicitSelfReportedEmotion(content);
+    if (explicitEmotion) {
+      return explicitEmotion;
     }
     
     // IMPORTANTE: Verificar indicadores negativos ANTES de buscar emociones positivas
@@ -791,8 +848,24 @@ class EmotionalAnalyzer {
         /(?:solo.*estoy.*un.*poco.*triste|un.*poco.*triste)/i.test(content)) {
       intensity = Math.max(intensity, 5);
     }
+
+    const reportedIntensity = this.parseSelfReportedIntensity(content);
+    if (reportedIntensity != null) {
+      return reportedIntensity;
+    }
     
     return intensity;
+  }
+
+  parseSelfReportedIntensity(content) {
+    if (!this.isValidString(content)) return null;
+    const scaleMatch =
+      content.match(/(?:dir[ií]a|es\s+un?|nota|nivel)\s*(?:de\s+)?(\d{1,2})\s*\/\s*10/i) ||
+      content.match(/\b(\d{1,2})\s*\/\s*10\b/);
+    if (!scaleMatch) return null;
+    const reported = Number(scaleMatch[1]);
+    if (!Number.isFinite(reported) || reported < 1 || reported > 10) return null;
+    return reported;
   }
 
   /**

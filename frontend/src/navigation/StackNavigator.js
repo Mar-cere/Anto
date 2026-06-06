@@ -27,6 +27,7 @@ import VerifyEmailScreen from '../screens/VerifyEmailScreen';
 import CrisisDashboardScreen from '../screens/CrisisDashboardScreen';
 import EmergencyAlertsHistoryScreen from '../screens/EmergencyAlertsHistoryScreen';
 import SystemHealthScreen from '../screens/SystemHealthScreen';
+import InterventionGraphScreen from '../screens/InterventionGraphScreen';
 import TherapeuticTechniquesScreen from '../screens/TherapeuticTechniquesScreen';
 import TechniqueDetailScreen from '../screens/TechniqueDetailScreen';
 import TherapeuticTechniquesStatsScreen from '../screens/TherapeuticTechniquesStatsScreen';
@@ -37,6 +38,10 @@ import GroundingTechniqueScreen from '../screens/techniques/GroundingTechniqueSc
 import SelfCompassionScreen from '../screens/techniques/SelfCompassionScreen';
 import CommunicationToolScreen from '../screens/techniques/CommunicationToolScreen';
 import GratitudeJournalScreen from '../screens/techniques/GratitudeJournalScreen';
+import AbcRecordScreen from '../screens/techniques/AbcRecordScreen';
+import ExposureHierarchyScreen from '../screens/techniques/ExposureHierarchyScreen';
+import BehavioralActivationScreen from '../screens/techniques/BehavioralActivationScreen';
+import AutomaticThoughtRecordScreen from '../screens/techniques/AutomaticThoughtRecordScreen';
 import ActivitySuggestionScreen from '../screens/techniques/ActivitySuggestionScreen';
 import MindfulnessScreen from '../screens/techniques/MindfulnessScreen';
 import SelfCareScreen from '../screens/techniques/SelfCareScreen';
@@ -47,6 +52,8 @@ import GriefSupportScreen from '../screens/techniques/GriefSupportScreen';
 import MemoryExerciseScreen from '../screens/techniques/MemoryExerciseScreen';
 import ConnectionExerciseScreen from '../screens/techniques/ConnectionExerciseScreen';
 import SocialActivityScreen from '../screens/techniques/SocialActivityScreen';
+import PsychoeducationLibraryScreen from '../screens/techniques/PsychoeducationLibraryScreen';
+import PsychoeducationModuleScreen from '../screens/techniques/PsychoeducationModuleScreen';
 import AboutScreen from '../screens/AboutScreen';
 import AIPrivacyScreen from '../screens/AIPrivacyScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
@@ -70,6 +77,7 @@ const ROUTE_NAMES = {
   CRISIS_DASHBOARD: 'CrisisDashboard',
   EMERGENCY_ALERTS_HISTORY: 'EmergencyAlertsHistory',
   SYSTEM_HEALTH: 'SystemHealth',
+  INTERVENTION_GRAPH: 'InterventionGraph',
   THERAPEUTIC_TECHNIQUES: 'TherapeuticTechniques',
   TECHNIQUE_DETAIL: 'TechniqueDetail',
   THERAPEUTIC_TECHNIQUES_STATS: 'TherapeuticTechniquesStats',
@@ -209,6 +217,11 @@ const StackNavigator = () => {
         component={SystemHealthScreen}
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name={ROUTE_NAMES.INTERVENTION_GRAPH}
+        component={InterventionGraphScreen}
+        options={{ headerShown: false }}
+      />
       <Stack.Screen 
         name={ROUTE_NAMES.THERAPEUTIC_TECHNIQUES} 
         component={TherapeuticTechniquesScreen}
@@ -263,6 +276,26 @@ const StackNavigator = () => {
         options={{ headerShown: false }}
       />
       <Stack.Screen
+        name="AbcRecord"
+        component={AbcRecordScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ExposureHierarchy"
+        component={ExposureHierarchyScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="BehavioralActivation"
+        component={BehavioralActivationScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AutomaticThoughtRecord"
+        component={AutomaticThoughtRecordScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
         name="ActivitySuggestion"
         component={ActivitySuggestionScreen}
         options={{ headerShown: false }}
@@ -310,6 +343,16 @@ const StackNavigator = () => {
       <Stack.Screen
         name="SocialActivity"
         component={SocialActivityScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="PsychoeducationLibrary"
+        component={PsychoeducationLibraryScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="PsychoeducationModule"
+        component={PsychoeducationModuleScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
