@@ -3,6 +3,8 @@ import {
   shouldOfferProductActions,
   isExplicitProductActionRequest,
   getProductActionNeedLevel,
+  alignProductActionsWithPsychoeducation,
+  getPsychoeducationProductActionContext,
   mergeTaskDraftFromLlm,
   mergeHabitDraftFromLlm,
   mergeProductActionDraftFromLlm
@@ -243,6 +245,50 @@ describe('chatProductActionProposalService', () => {
     const next = mergeProductActionDraftFromLlm(action, { title: 'Cambiado' });
     expect(next.type).toBe('propose_other');
     expect(next.draft.title).toBe('Solo');
+  });
+
+  it('alignProductActionsWithPsychoeducation conserva tarea de preocupaciones si encaja con sueño', () => {
+    const actions = [
+      {
+        type: 'propose_task',
+        id: 't1',
+        draft: { title: 'Registrar lo que me preocupa antes de dormir' },
+        rationaleShort: 'Hay señales claras para bajar esto a un paso accionable.'
+      }
+    ];
+    const aligned = alignProductActionsWithPsychoeducation(actions, {
+      primaryPsychoeducationId: 'psychoeducation_sleep',
+      language: 'es',
+      userContent: 'No puedo dormir, sigo pensando en todo lo que salió mal hoy'
+    });
+    expect(aligned[0].draft.title).toBe('Registrar lo que me preocupa antes de dormir');
+    expect(aligned[0].rationaleShort).toContain('accionable');
+  });
+
+  it('alignProductActionsWithPsychoeducation corrige tareas claramente fuera de tema', () => {
+    const actions = [
+      {
+        type: 'propose_task',
+        id: 't1',
+        draft: { title: 'Ordenar encimera de cocina' },
+        rationaleShort: 'Paso concreto.'
+      }
+    ];
+    const aligned = alignProductActionsWithPsychoeducation(actions, {
+      primaryPsychoeducationId: 'psychoeducation_sleep',
+      language: 'es',
+      userContent: 'No puedo dormir, sigo pensando en todo lo que salió mal hoy'
+    });
+    expect(aligned[0].draft.title).toBe(
+      'Anotar brevemente lo que me preocupa antes de acostarme'
+    );
+    expect(aligned[0].rationaleShort).toContain('Sueño');
+  });
+
+  it('getPsychoeducationProductActionContext expone microSteps del tema', () => {
+    const ctx = getPsychoeducationProductActionContext('psychoeducation_sleep', 'es');
+    expect(ctx?.topicTitle).toBe('Sueño');
+    expect(ctx?.microSteps?.[0]).toContain('despertar');
   });
 
   describe('merge desde LLM', () => {

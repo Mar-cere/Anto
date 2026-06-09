@@ -113,6 +113,45 @@ describe('chatProductActionLlmService', () => {
     expect(out[2].draft.title).toBe('C');
   });
 
+  it('enrichProposedProductActionsWithLlm conserva tarea coherente con sueño y rumiación', async () => {
+    createResilient.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              title: 'Registrar lo que me preocupa antes de dormir'
+            })
+          }
+        }
+      ]
+    });
+
+    const actions = [
+      {
+        type: 'propose_task',
+        id: 'a1',
+        draft: {
+          title: 'Paso genérico',
+          description: '',
+          dueDate: new Date(Date.now() + 86400000).toISOString(),
+          priority: 'medium',
+          itemType: 'task',
+          category: 'General',
+          tags: []
+        }
+      }
+    ];
+
+    const out = await chatProductActionLlmService.enrichProposedProductActionsWithLlm(actions, {
+      userContent: 'No puedo dormir, sigo pensando en todo lo que salió mal hoy',
+      assistantContent: 'Podemos anotar tus preocupaciones.',
+      primaryPsychoeducationId: 'psychoeducation_sleep',
+      language: 'es'
+    });
+
+    expect(out[0].draft.title).toBe('Registrar lo que me preocupa antes de dormir');
+  });
+
   it('enrichProposedProductActionsWithLlm devuelve acciones sin cambio si CHAT_PRODUCT_ACTION_LLM=false', async () => {
     process.env.CHAT_PRODUCT_ACTION_LLM = 'false';
     const actions = [

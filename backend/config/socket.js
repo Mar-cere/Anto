@@ -22,6 +22,7 @@ import { sanitizeSessionIntentionForClient } from '../constants/sessionIntention
 import { evaluateSuicideRisk, normalizeStoredCrisisRiskLevel } from '../constants/crisis.js';
 import chatProductActionProposalService from '../services/chatProductActionProposalService.js';
 import chatProductActionLlmService from '../services/chatProductActionLlmService.js';
+import { resolveContextualPsychoeducationIds } from '../services/actionSuggestionService.js';
 import conversationProductProposalCapService from '../services/conversationProductProposalCapService.js';
 import metricsService from '../services/metricsService.js';
 
@@ -363,7 +364,12 @@ export const setupSocketIO = (server) => {
             proposedProductActions =
               await chatProductActionLlmService.enrichProposedProductActionsWithLlm(
                 proposedProductActions,
-                { userContent: messageText, assistantContent: response.content }
+                {
+                  userContent: messageText,
+                  assistantContent: response.content,
+                  primaryPsychoeducationId: resolveContextualPsychoeducationIds(messageText)[0] || null,
+                  language: 'es',
+                }
               );
           } catch (llmPropErr) {
             console.warn('[SocketIO] proposedProductActions LLM:', llmPropErr?.message || llmPropErr);

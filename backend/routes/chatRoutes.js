@@ -1549,7 +1549,12 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                     proposedProductActions =
                       await chatProductActionLlmService.enrichProposedProductActionsWithLlm(
                         proposedProductActions,
-                        { userContent: content, assistantContent: response.content }
+                        {
+                          userContent: content,
+                          assistantContent: response.content,
+                          primaryPsychoeducationId: suggestionPlan.primaryPsychoeducationId,
+                          language: appLanguageForChat,
+                        }
                       );
                   } catch (llmPropErr) {
                     console.warn('[ChatRoutes] proposedProductActions LLM (stream):', llmPropErr?.message || llmPropErr);
@@ -1986,7 +1991,12 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             proposedProductActions =
               await chatProductActionLlmService.enrichProposedProductActionsWithLlm(
                 proposedProductActions,
-                { userContent: content, assistantContent: response.content }
+                {
+                  userContent: content,
+                  assistantContent: response.content,
+                  primaryPsychoeducationId: suggestionPlan.primaryPsychoeducationId,
+                  language: appLanguageForChat,
+                }
               );
           } catch (llmPropErr) {
             console.warn('[ChatRoutes] proposedProductActions LLM (non-stream):', llmPropErr?.message || llmPropErr);
