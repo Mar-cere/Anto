@@ -72,17 +72,15 @@ describe('psychoeducationPromptSnippetService (#78)', () => {
       { userContent: fixture.message, mainEmotion: analysis.mainEmotion },
     );
     const anxiety = formatted.find((c) => c.id === 'psychoeducation_anxiety');
-    const stress = formatted.find((c) => c.id === 'psychoeducation_stress');
     const snippet = buildPsychoeducationPromptSnippet(
       formatted,
       'es',
       'psychoeducation_anxiety',
     );
     expect(analysis.mainEmotion).toBe('ansiedad');
+    expect(ids).toContain('psychoeducation_anxiety');
     expect(anxiety?.cardDisplayMode).toBe('expanded');
     expect(anxiety?.microSteps?.length).toBe(2);
-    expect(stress?.cardDisplayMode).toBe('compact');
-    expect(stress?.microSteps?.length || 0).toBe(0);
     expect(snippet).toMatch(/Ansiedad/);
     expect(snippet).not.toMatch(/«Estrés»/);
   });

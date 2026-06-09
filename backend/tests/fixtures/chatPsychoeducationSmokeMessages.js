@@ -67,7 +67,7 @@ export const CHAT_PSYCHOEDUCATION_SMOKE_CASES = [
     id: 'device_stress_panic',
     message:
       'Ahora mismo me siento estreso 9/10, enfermo del estomago, crisis de panico',
-    expectedPsycho: ['psychoeducation_stress', 'psychoeducation_anxiety'],
+    expectedPsycho: ['psychoeducation_anxiety'],
     allowedEmotions: ['ansiedad'],
     minIntensity: 8,
     minSuggestions: 2,

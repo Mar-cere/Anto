@@ -122,12 +122,12 @@ async function recordSuggestionEventsShown({
 
 async function hasShownSuggestionsInActiveSession({ userId, conversationId, now = new Date() }) {
   if (!userId || !conversationId) return false;
-  const sessionId = await resolveSessionId({ userId, conversationId, now });
+  const since = new Date(now.getTime() - DEFAULT_SESSION_GAP_MINUTES * 60 * 1000);
   const existing = await ChatInterventionEvent.findOne({
-    userId,
-    conversationId,
-    sessionId: String(sessionId),
+    userId: toObjectId(userId),
+    conversationId: toObjectId(conversationId),
     eventType: 'shown',
+    createdAt: { $gte: since },
   })
     .select('_id')
     .lean();

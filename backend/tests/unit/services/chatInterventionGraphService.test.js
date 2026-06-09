@@ -127,6 +127,20 @@ describe('chatInterventionGraphService', () => {
     expect(mockInsertMany).not.toHaveBeenCalled();
   });
 
+  it('hasShownSuggestionsInActiveSession detecta shown reciente en la conversación', async () => {
+    mockFindOne.mockReturnValueOnce(chainFindOne({ _id: 'evt-1' }));
+
+    const shown = await chatInterventionGraphService.hasShownSuggestionsInActiveSession({
+      userId: 'user-1',
+      conversationId: 'conv-1',
+    });
+
+    expect(shown).toBe(true);
+    const query = mockFindOne.mock.calls[0][0];
+    expect(query.eventType).toBe('shown');
+    expect(query.createdAt?.$gte).toBeInstanceOf(Date);
+  });
+
   it('recordSuggestionEventsShown inserta eventos shown con tags del catálogo', async () => {
     mockFindOne.mockReturnValueOnce(
       chainFindOne({ sessionId: 'sess-old', createdAt: new Date() }),

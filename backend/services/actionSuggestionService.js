@@ -57,6 +57,91 @@ const EXPOSURE_HIERARCHY_ID = 'exposure_hierarchy';
 const BEHAVIORAL_ACTIVATION_ID = 'behavioral_activation';
 const AUTOMATIC_THOUGHT_RECORD_ID = 'automatic_thought_record';
 
+/** Máximo de sugerencias por bloque en el chat (técnicas + psicoed). */
+export const MAX_CHAT_ACTION_SUGGESTIONS = 2;
+
+const PSYCHO_MESSAGE_PRIORITY = [
+  { id: 'psychoeducation_sleep', pattern: /(?:insomnio|dormir|sueño|sleep)/i },
+  { id: 'psychoeducation_anxiety', pattern: /(?:p[aá]nico|ansiedad|ansios)/i },
+  { id: 'psychoeducation_stress', pattern: /(?:estr[eé]s|agotad|overwhelmed)/i },
+  {
+    id: 'psychoeducation_emotion_regulation',
+    pattern: /(?:desbord|explot.*sin\s+querer|regulaci[oó]n\s+emocional)/i,
+  },
+  { id: 'psychoeducation_anger', pattern: /(?:enojad|enfad|furios|angry)/i },
+  { id: 'psychoeducation_depression', pattern: /(?:triste|sin\s+energ|desmotivad|low\s+mood)/i },
+  { id: 'psychoeducation_trauma', pattern: /(?:flashback|trauma|tept|ptsd)/i },
+];
+
+function pickPreferredRequiredPsycho(psychoRequired, list, { emotion, userContent } = {}) {
+  const candidates = psychoRequired.filter((id) => list.includes(id));
+  const text = String(userContent || '');
+  for (const { id, pattern } of PSYCHO_MESSAGE_PRIORITY) {
+    if (candidates.includes(id) && pattern.test(text)) return id;
+  }
+  const emotionPsycho =
+    emotion === 'ansiedad' || emotion === 'miedo'
+      ? 'psychoeducation_anxiety'
+      : emotion === 'tristeza'
+        ? 'psychoeducation_depression'
+        : emotion === 'enojo'
+          ? 'psychoeducation_anger'
+          : null;
+  if (emotionPsycho && candidates.includes(emotionPsycho)) return emotionPsycho;
+  return candidates[0] || null;
+}
+
+function prioritizeSuggestionBlock(
+  ids,
+  {
+    max = MAX_CHAT_ACTION_SUGGESTIONS,
+    psychoRequired = [],
+    emotion = null,
+    userContent = '',
+  } = {},
+) {
+  const list = [...ids];
+  psychoRequired.forEach((psychoId) => {
+    if (psychoId && !list.includes(psychoId)) list.push(psychoId);
+  });
+  if (list.length <= max) return list;
+
+  const requiredPsycho = pickPreferredRequiredPsycho(psychoRequired, list, {
+    emotion,
+    userContent,
+  });
+  const techniques = list.filter((id) => !String(id).startsWith('psychoeducation_'));
+  const psychos = list.filter((id) => String(id).startsWith('psychoeducation_'));
+  const out = [];
+
+  if (techniques.length > 0) out.push(techniques[0]);
+  if (requiredPsycho && out.length < max) {
+    out.push(requiredPsycho);
+  } else if (psychos.length > 0 && out.length < max) {
+    out.push(psychos[0]);
+  } else if (techniques.length > 1 && out.length < max) {
+    out.push(techniques[1]);
+  }
+  return out.slice(0, max);
+}
+
+function isMundanePhysicalHealthMessage(userContent = '') {
+  return /(?:resfriad[oa]|gripe|catarro|fiebre|mocos|tos\b|(?:estoy|tengo)\s+enferm[oa]|me\s+agarr[oó]\s+(?:un|la)\s+gripe|common\s+cold|just\s+a\s+cold|\bflu\b|congesti[oó]n)/i.test(
+    String(userContent || ''),
+  );
+}
+
+/** Psicoed por emoción solo con señal fuerte; evita tarjetas en cansancio físico banal. */
+export function shouldAttachEmotionPsychoeducation(emotion, userContent = '', intensity = 5) {
+  if (isMundanePhysicalHealthMessage(userContent)) return false;
+  if (resolveContextualPsychoeducationIds(userContent).length > 0) return true;
+  if (intensity >= 8) return true;
+  if (emotion === 'tristeza' && shouldBoostBaSuggestion(userContent)) return true;
+  if (emotion === 'ansiedad' && shouldBoostExposureSuggestion(userContent)) return true;
+  if (emotion === 'enojo' && intensity >= 7) return true;
+  return false;
+}
+
 /** Señales de apatía / baja activación; activa BA (#88). */
 export const CONTEXTUAL_BA_PATTERN =
   /(?:desmotivad[oa]|sin\s+ganas|sin\s+energ[ií]a|no\s+hago\s+nada|me\s+cuesta\s+(?:levantarme|salir|empezar)|ap[aá]tic[oa]|anhedonia|nothing\s+brings\s+joy|no\s+motivation|can'?t\s+get\s+(?:out\s+of\s+bed|started)|feel\s+numb|me\s+siento\s+apagad[oa]|sin\s+fuerzas|no\s+tengo\s+energ[ií]a)/i;
@@ -78,8 +163,10 @@ export function shouldBoostAutomaticThoughtSuggestion(userContent = '') {
   return hasActionableDistortionInMessage(text);
 }
 
-/** Señal TCC fuerte (#86/#87/#88/#89): permite sugerencias en 1.er turno aunque intensidad < 7. */
-export function shouldBypassTccSuggestionCadence(userContent = '') {
+/** Señal TCC fuerte (#86/#87/#88/#89): solo en el primer mensaje del hilo. */
+export function shouldBypassTccSuggestionCadence(userContent = '', conversationHistory = []) {
+  const userTurns = conversationHistory?.filter((msg) => msg.role === 'user').length || 0;
+  if (userTurns > 1) return false;
   return (
     shouldBoostAbcSuggestion(userContent) ||
     shouldBoostExposureSuggestion(userContent) ||
@@ -90,12 +177,12 @@ export function shouldBypassTccSuggestionCadence(userContent = '') {
 
 export function applyExposureSuggestionPolicy(ids, { emotion, intensityLevel, userContent } = {}) {
   if (!Array.isArray(ids) || ids.length === 0) return ids;
-  if (emotion !== 'ansiedad') return ids.slice(0, 3);
+  if (emotion !== 'ansiedad') return ids.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
 
   const contextualAvoidance = shouldBoostExposureSuggestion(userContent);
   const eligibleIntensity =
     intensityLevel === 'medium' || (intensityLevel === 'high' && contextualAvoidance);
-  if (!eligibleIntensity) return ids.slice(0, 3);
+  if (!eligibleIntensity) return ids.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
 
   let list = [...ids];
 
@@ -103,18 +190,18 @@ export function applyExposureSuggestionPolicy(ids, { emotion, intensityLevel, us
     list = [EXPOSURE_HIERARCHY_ID, ...list];
   }
 
-  if (!list.includes(EXPOSURE_HIERARCHY_ID)) return list.slice(0, 3);
+  if (!list.includes(EXPOSURE_HIERARCHY_ID)) return list.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
 
   if (contextualAvoidance) {
     list = [EXPOSURE_HIERARCHY_ID, ...list.filter((id) => id !== EXPOSURE_HIERARCHY_ID)];
   }
 
-  return list.slice(0, 3);
+  return list.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
 }
 
 export function applyBaSuggestionPolicy(ids, { emotion, intensityLevel, userContent } = {}) {
   if (!Array.isArray(ids) || ids.length === 0) return ids;
-  if (emotion !== 'tristeza' || intensityLevel !== 'medium') return ids.slice(0, 3);
+  if (emotion !== 'tristeza' || intensityLevel !== 'medium') return ids.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
 
   const contextualLowActivation = shouldBoostBaSuggestion(userContent);
   let list = [...ids];
@@ -123,9 +210,9 @@ export function applyBaSuggestionPolicy(ids, { emotion, intensityLevel, userCont
     list = [BEHAVIORAL_ACTIVATION_ID, ...list];
   }
 
-  if (!list.includes(BEHAVIORAL_ACTIVATION_ID)) return list.slice(0, 3);
+  if (!list.includes(BEHAVIORAL_ACTIVATION_ID)) return list.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
 
-  if (list[0] === ABC_RECORD_ID) return list.slice(0, 3);
+  if (list[0] === ABC_RECORD_ID) return list.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
 
   if (contextualLowActivation) {
     list = [
@@ -134,7 +221,7 @@ export function applyBaSuggestionPolicy(ids, { emotion, intensityLevel, userCont
     ];
   }
 
-  return list.slice(0, 3);
+  return list.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
 }
 
 export function shouldBoostAbcSuggestion(userContent = '') {
@@ -146,7 +233,7 @@ export function shouldBoostAbcSuggestion(userContent = '') {
  */
 export function applyAbcSuggestionPolicy(ids, { emotion, intensityLevel, userContent } = {}) {
   if (!Array.isArray(ids) || ids.length === 0) return ids;
-  if (intensityLevel !== 'medium' || !TCC_MEDIUM_EMOTIONS.has(emotion)) return ids.slice(0, 3);
+  if (intensityLevel !== 'medium' || !TCC_MEDIUM_EMOTIONS.has(emotion)) return ids.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
 
   const contextualThought = shouldBoostAbcSuggestion(userContent);
   let list = [...ids];
@@ -155,13 +242,13 @@ export function applyAbcSuggestionPolicy(ids, { emotion, intensityLevel, userCon
     list = [ABC_RECORD_ID, ...list];
   }
 
-  if (!list.includes(ABC_RECORD_ID)) return list.slice(0, 3);
+  if (!list.includes(ABC_RECORD_ID)) return list.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
 
   if (contextualThought) {
     list = [ABC_RECORD_ID, ...list.filter((id) => id !== ABC_RECORD_ID)];
   }
 
-  return list.slice(0, 3);
+  return list.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
 }
 
 /**
@@ -173,12 +260,12 @@ export function applyAutomaticThoughtSuggestionPolicy(
   { emotion, intensityLevel, userContent } = {},
 ) {
   if (!Array.isArray(ids) || ids.length === 0) return ids;
-  if (intensityLevel !== 'medium' || !AT_MEDIUM_EMOTIONS.has(emotion)) return ids.slice(0, 3);
+  if (intensityLevel !== 'medium' || !AT_MEDIUM_EMOTIONS.has(emotion)) return ids.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
 
   const text = String(userContent || '');
   const hasDistortion = hasActionableDistortionInMessage(text);
   const hasCognitiveSignal = shouldBoostAbcSuggestion(text);
-  if (!hasDistortion && !hasCognitiveSignal) return ids.slice(0, 3);
+  if (!hasDistortion && !hasCognitiveSignal) return ids.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
 
   let list = [...ids];
 
@@ -190,7 +277,7 @@ export function applyAutomaticThoughtSuggestionPolicy(
     ) {
       list.splice(1, 0, AUTOMATIC_THOUGHT_RECORD_ID);
     }
-    return list.slice(0, 3);
+    return list.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
   }
 
   // Apatía (#88) prevalece sobre AT cuando BA ya es primera.
@@ -199,7 +286,7 @@ export function applyAutomaticThoughtSuggestionPolicy(
     shouldBoostBaSuggestion(text) &&
     !shouldBoostAbcSuggestion(text)
   ) {
-    return list.slice(0, 3);
+    return list.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
   }
 
   if (!list.includes(AUTOMATIC_THOUGHT_RECORD_ID)) {
@@ -211,11 +298,11 @@ export function applyAutomaticThoughtSuggestionPolicy(
       AUTOMATIC_THOUGHT_RECORD_ID,
       ...list.filter((id) => id !== AUTOMATIC_THOUGHT_RECORD_ID),
     ];
-    return list.slice(0, 3);
+    return list.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
   }
 
   if (list[0] === ABC_RECORD_ID) {
-    return list.slice(0, 3);
+    return list.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
   }
 
   if (hasCognitiveSignal && list.includes(ABC_RECORD_ID)) {
@@ -224,7 +311,7 @@ export function applyAutomaticThoughtSuggestionPolicy(
     list.splice(abcIndex + 1, 0, AUTOMATIC_THOUGHT_RECORD_ID);
   }
 
-  return list.slice(0, 3);
+  return list.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
 }
 
 /** Emoción con reglas de sugerencias; cae a ansiedad/enojo si el texto lo indica (#85). */
@@ -401,7 +488,7 @@ class ActionSuggestionService {
         rankingScores instanceof Map && rankingScores.size > 0
           ? rankInterventionIds(fallback, rankingScores)
           : fallback;
-      return ranked.slice(0, 3);
+      return ranked.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
     }
 
     const intensityMappings =
@@ -419,14 +506,22 @@ class ActionSuggestionService {
     }
 
     const contextualPsycho = resolveContextualPsychoeducationIds(userContent);
-    const techniqueLimit = contextualPsycho.length > 0 ? 1 : 2;
+    const attachEmotionPsycho = shouldAttachEmotionPsychoeducation(
+      emotion,
+      userContent,
+      intensity,
+    );
+    const techniqueLimit = contextualPsycho.length > 0 || attachEmotionPsycho ? 1 : MAX_CHAT_ACTION_SUGGESTIONS;
     const enriched = [...actions].slice(0, techniqueLimit);
 
     const emotionPsycho = [];
-    if (emotion === 'ansiedad') emotionPsycho.push('psychoeducation_anxiety');
-    if (emotion === 'tristeza') emotionPsycho.push('psychoeducation_depression');
-    if (emotion === 'enojo') emotionPsycho.push('psychoeducation_anger');
-    if (emotion === 'miedo') emotionPsycho.push('psychoeducation_anxiety');
+    if (attachEmotionPsycho) {
+      if (emotion === 'ansiedad' || emotion === 'miedo') {
+        emotionPsycho.push('psychoeducation_anxiety');
+      }
+      if (emotion === 'tristeza') emotionPsycho.push('psychoeducation_depression');
+      if (emotion === 'enojo') emotionPsycho.push('psychoeducation_anger');
+    }
 
     appendUniqueIds(enriched, [...contextualPsycho, ...emotionPsycho]);
 
@@ -435,7 +530,8 @@ class ActionSuggestionService {
       rankingScores instanceof Map && rankingScores.size > 0
         ? rankInterventionIds(enriched, rankingScores)
         : enriched;
-    return applyAutomaticThoughtSuggestionPolicy(
+    const psychoRequired = [...contextualPsycho, ...emotionPsycho];
+    const afterPolicies = applyAutomaticThoughtSuggestionPolicy(
       applyExposureSuggestionPolicy(
         applyBaSuggestionPolicy(
           applyAbcSuggestionPolicy(ranked, {
@@ -461,6 +557,11 @@ class ActionSuggestionService {
         userContent,
       },
     );
+    return prioritizeSuggestionBlock(afterPolicies, {
+      psychoRequired,
+      emotion,
+      userContent,
+    });
   }
 
   /**

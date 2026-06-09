@@ -722,7 +722,8 @@ export function useChatScreen() {
           setMessages((prev) => {
             const filtered = prev
               .filter((msg) => msg.id !== tempAssistantId)
-              .filter((msg) => msg.type !== 'quickReplies');
+              .filter((msg) => msg.type !== 'quickReplies')
+              .filter((msg) => msg.type !== 'suggestions');
             const finalAssistant = {
               id: payload.messageId || tempAssistantId,
               _id: payload.messageId || tempAssistantId,

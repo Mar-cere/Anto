@@ -1495,8 +1495,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   });
                 }
                 if (formattedSuggestions.length > 0) {
-                  chatInterventionGraphService
-                    .recordSuggestionEventsShown({
+                  try {
+                    await chatInterventionGraphService.recordSuggestionEventsShown({
                       userId: req.user._id,
                       conversationId: new mongoose.Types.ObjectId(conversationId),
                       assistantMessageId: assistantMessage?._id || null,
@@ -1504,9 +1504,14 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                       emotionalAnalysis,
                       contextualAnalysis,
                       riskLevel,
-                      source: 'chat_suggestions_v1'
-                    })
-                    .catch(() => {});
+                      source: 'chat_suggestions_v1',
+                    });
+                  } catch (recordErr) {
+                    console.warn(
+                      '[ChatRoutes] recordSuggestionEventsShown (stream):',
+                      recordErr?.message || recordErr,
+                    );
+                  }
                 }
 
                 let proposedProductActions = [];
@@ -1927,8 +1932,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           });
         }
         if (formattedSuggestions.length > 0) {
-          chatInterventionGraphService
-            .recordSuggestionEventsShown({
+          try {
+            await chatInterventionGraphService.recordSuggestionEventsShown({
               userId: req.user._id,
               conversationId: new mongoose.Types.ObjectId(conversationId),
               assistantMessageId: assistantMessage?._id || null,
@@ -1937,8 +1942,13 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               contextualAnalysis,
               riskLevel,
               source: 'chat_suggestions_v1',
-            })
-            .catch(() => {});
+            });
+          } catch (recordErr) {
+            console.warn(
+              '[ChatRoutes] recordSuggestionEventsShown:',
+              recordErr?.message || recordErr,
+            );
+          }
         }
 
         let proposedProductActions = [];
