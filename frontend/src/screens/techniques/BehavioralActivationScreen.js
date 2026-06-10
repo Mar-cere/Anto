@@ -31,6 +31,7 @@ import { recordInterventionCompleted } from '../../utils/recordInterventionCompl
 import { confirmDestructiveAction } from '../../utils/confirmDestructiveAction';
 import { parseBaRecordRouteParams } from '../../utils/baRecordPrefill';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
+import BehavioralActivationWeekPanel from './BehavioralActivationWeekPanel';
 
 const STEPS = ['1', '2', '3'];
 const MOOD_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -77,6 +78,22 @@ const DEFAULT_TEXTS = {
   PREFILL_HINT:
     'Sugerencia a partir de tu mensaje en el chat. Puedes editarla antes de continuar.',
   PREFILL_MOOD_HINT: 'Ánimo inicial tomado de tu mensaje (puedes cambiarlo).',
+  TAB_WEEK: 'Esta semana',
+  TAB_LOG: 'Registrar',
+  WEEK_TITLE: 'Plan de la semana',
+  WEEK_BODY:
+    'Cinco actividades pequeñas repartidas en la semana. Puedes editarlas, registrarlas o omitirlas.',
+  WEEK_EMPTY: 'No hay actividades planificadas.',
+  WEEK_LOADING: 'Cargando plan…',
+  WEEK_LOAD_ERROR: 'No se pudo cargar el plan semanal.',
+  WEEK_SAVE_ERROR: 'No se pudo actualizar el plan.',
+  WEEK_STATUS_PLANNED: 'Pendiente',
+  WEEK_STATUS_COMPLETED: 'Hecha',
+  WEEK_STATUS_SKIPPED: 'Omitida',
+  WEEK_REGISTER: 'Registrar',
+  WEEK_SKIP: 'Omitir',
+  WEEK_TYPE_PLEASANT: 'Placentera',
+  WEEK_TYPE_ROUTINE: 'Rutina',
 };
 
 function formatEntryDate(iso) {
@@ -138,6 +155,22 @@ const BehavioralActivationScreen = () => {
       MOOD_DELTA: translated?.BA_MOOD_DELTA || DEFAULT_TEXTS.MOOD_DELTA,
       PREFILL_HINT: translated?.BA_PREFILL_HINT || DEFAULT_TEXTS.PREFILL_HINT,
       PREFILL_MOOD_HINT: translated?.BA_PREFILL_MOOD_HINT || DEFAULT_TEXTS.PREFILL_MOOD_HINT,
+      TAB_WEEK: translated?.BA_TAB_WEEK || DEFAULT_TEXTS.TAB_WEEK,
+      TAB_LOG: translated?.BA_TAB_LOG || DEFAULT_TEXTS.TAB_LOG,
+      WEEK_TITLE: translated?.BA_WEEK_TITLE || DEFAULT_TEXTS.WEEK_TITLE,
+      WEEK_BODY: translated?.BA_WEEK_BODY || DEFAULT_TEXTS.WEEK_BODY,
+      WEEK_EMPTY: translated?.BA_WEEK_EMPTY || DEFAULT_TEXTS.WEEK_EMPTY,
+      WEEK_LOADING: translated?.BA_WEEK_LOADING || DEFAULT_TEXTS.WEEK_LOADING,
+      WEEK_LOAD_ERROR: translated?.BA_WEEK_LOAD_ERROR || DEFAULT_TEXTS.WEEK_LOAD_ERROR,
+      WEEK_SAVE_ERROR: translated?.BA_WEEK_SAVE_ERROR || DEFAULT_TEXTS.WEEK_SAVE_ERROR,
+      WEEK_STATUS_PLANNED: translated?.BA_WEEK_STATUS_PLANNED || DEFAULT_TEXTS.WEEK_STATUS_PLANNED,
+      WEEK_STATUS_COMPLETED:
+        translated?.BA_WEEK_STATUS_COMPLETED || DEFAULT_TEXTS.WEEK_STATUS_COMPLETED,
+      WEEK_STATUS_SKIPPED: translated?.BA_WEEK_STATUS_SKIPPED || DEFAULT_TEXTS.WEEK_STATUS_SKIPPED,
+      WEEK_REGISTER: translated?.BA_WEEK_REGISTER || DEFAULT_TEXTS.WEEK_REGISTER,
+      WEEK_SKIP: translated?.BA_WEEK_SKIP || DEFAULT_TEXTS.WEEK_SKIP,
+      WEEK_TYPE_PLEASANT: translated?.BA_WEEK_TYPE_PLEASANT || DEFAULT_TEXTS.WEEK_TYPE_PLEASANT,
+      WEEK_TYPE_ROUTINE: translated?.BA_WEEK_TYPE_ROUTINE || DEFAULT_TEXTS.WEEK_TYPE_ROUTINE,
     }),
     [translated],
   );
@@ -164,6 +197,15 @@ const BehavioralActivationScreen = () => {
   const [fromChatPrefill, setFromChatPrefill] = useState(false);
   const [fromChatMoodPrefill, setFromChatMoodPrefill] = useState(false);
   const handledChatPrefillKeyRef = useRef('');
+  const pendingWeekSlotIdRef = useRef('');
+
+  const [viewMode, setViewMode] = useState('week');
+  const [weekPlan, setWeekPlan] = useState(null);
+  const [weekStart, setWeekStart] = useState(null);
+  const [dayLabels, setDayLabels] = useState([]);
+  const [loadingWeekPlan, setLoadingWeekPlan] = useState(true);
+  const [savingSlotId, setSavingSlotId] = useState('');
+  const weekPlanRef = useRef(null);
 
   const styles = useMemo(
     () =>
@@ -237,6 +279,58 @@ const BehavioralActivationScreen = () => {
         },
         recordBody: { flex: 1, paddingRight: SPACING.sm },
         exportBlock: { marginTop: SPACING.lg, marginBottom: SPACING.xxl },
+        viewSegment: {
+          flexDirection: 'row',
+          backgroundColor: colors.glassFill,
+          borderRadius: 14,
+          padding: 4,
+          marginBottom: SPACING.md,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+        },
+        viewSegmentItem: {
+          flex: 1,
+          paddingVertical: 10,
+          borderRadius: 10,
+          alignItems: 'center',
+        },
+        viewSegmentItemOn: { backgroundColor: colors.accentLineSoft },
+        viewSegmentText: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
+        viewSegmentTextOn: { color: colors.text },
+        weekLoading: { alignItems: 'center', paddingVertical: SPACING.lg },
+        weekSlot: {
+          paddingVertical: SPACING.sm,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: 'rgba(128,128,128,0.25)',
+        },
+        weekSlotHeader: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 4,
+        },
+        weekDay: { fontSize: 13, fontWeight: '700', color: colors.primary },
+        weekStatusPill: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+        weekStatusText: { fontSize: 11, fontWeight: '600' },
+        weekType: { marginBottom: 4 },
+        weekActivity: { fontSize: 15, lineHeight: 22, marginBottom: SPACING.sm },
+        weekActions: { flexDirection: 'row', gap: 8 },
+        weekActionPrimary: {
+          flex: 1,
+          borderRadius: 10,
+          paddingVertical: 10,
+          alignItems: 'center',
+        },
+        weekActionSecondary: {
+          borderRadius: 10,
+          paddingVertical: 10,
+          paddingHorizontal: 14,
+          borderWidth: StyleSheet.hairlineWidth,
+          alignItems: 'center',
+        },
+        weekActionText: { fontSize: 14, fontWeight: '600' },
+        weekActionTextMuted: { fontSize: 14, fontWeight: '600' },
+        weekDoneIcon: { marginTop: 4 },
       }),
     [colors],
   );
@@ -261,6 +355,84 @@ const BehavioralActivationScreen = () => {
   useEffect(() => {
     loadRecords();
   }, [loadRecords]);
+
+  const loadWeekPlan = useCallback(async () => {
+    setLoadingWeekPlan(true);
+    try {
+      const response = await api.get(ENDPOINTS.BEHAVIORAL_ACTIVATION_WEEK_PLAN);
+      if (response?.success && response?.plan) {
+        setWeekPlan(response.plan);
+        weekPlanRef.current = response.plan;
+        setWeekStart(response.weekStart || null);
+        setDayLabels(Array.isArray(response.dayLabels) ? response.dayLabels : []);
+      } else {
+        setWeekPlan(null);
+      }
+    } catch (err) {
+      console.error('Error cargando plan semanal BA:', err);
+      showToast(TEXTS.WEEK_LOAD_ERROR);
+      setWeekPlan(null);
+    } finally {
+      setLoadingWeekPlan(false);
+    }
+  }, [showToast, TEXTS.WEEK_LOAD_ERROR]);
+
+  useEffect(() => {
+    loadWeekPlan();
+  }, [loadWeekPlan]);
+
+  const persistWeekPlan = useCallback(
+    async (slots) => {
+      const response = await api.put(ENDPOINTS.BEHAVIORAL_ACTIVATION_WEEK_PLAN, {
+        weekStart: weekStart || undefined,
+        slots,
+      });
+      if (response?.success && response?.plan) {
+        setWeekPlan(response.plan);
+        weekPlanRef.current = response.plan;
+        if (response.weekStart) setWeekStart(response.weekStart);
+        if (Array.isArray(response.dayLabels)) setDayLabels(response.dayLabels);
+        return true;
+      }
+      showToast(response?.error || TEXTS.WEEK_SAVE_ERROR);
+      return false;
+    },
+    [weekStart, showToast, TEXTS.WEEK_SAVE_ERROR],
+  );
+
+  const handleRegisterWeekSlot = useCallback(
+    (slot) => {
+      if (!slot?.slotId) return;
+      pendingWeekSlotIdRef.current = slot.slotId;
+      setActivityDescription(slot.activityDescription || '');
+      setActivityType(slot.activityType === 'routine' ? 'routine' : 'pleasant');
+      setStepIndex(0);
+      setValidationMessage('');
+      setFromChatPrefill(false);
+      setFromChatMoodPrefill(false);
+      setViewMode('log');
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    },
+    [],
+  );
+
+  const handleSkipWeekSlot = useCallback(
+    async (slot) => {
+      const plan = weekPlanRef.current;
+      if (!slot?.slotId || !plan?.slots) return;
+      setSavingSlotId(slot.slotId);
+      try {
+        const updated = plan.slots.map((s) =>
+          s.slotId === slot.slotId ? { ...s, status: 'skipped' } : s,
+        );
+        await persistWeekPlan(updated);
+        Haptics.selectionAsync().catch(() => {});
+      } finally {
+        setSavingSlotId('');
+      }
+    },
+    [persistWeekPlan],
+  );
 
   const resetWizard = useCallback(() => {
     setStepIndex(0);
@@ -302,6 +474,7 @@ const BehavioralActivationScreen = () => {
       if (parsed.prefillActivityType) {
         setActivityType(parsed.prefillActivityType);
       }
+      setViewMode('log');
       setStepIndex(0);
     },
     [],
@@ -351,6 +524,23 @@ const BehavioralActivationScreen = () => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         showToast(TEXTS.TOAST_SAVED);
         recordInterventionCompleted('behavioral_activation');
+
+        const slotId = pendingWeekSlotIdRef.current;
+        const logId = response?.record?._id;
+        const currentPlan = weekPlanRef.current;
+        if (slotId && logId && currentPlan?.slots) {
+          const updated = currentPlan.slots.map((s) =>
+            s.slotId === slotId
+              ? { ...s, status: 'completed', completedLogId: logId }
+              : s,
+          );
+          const synced = await persistWeekPlan(updated);
+          pendingWeekSlotIdRef.current = '';
+          if (synced) {
+            setViewMode('week');
+          }
+        }
+
         resetWizard();
         await loadRecords();
       } else {
@@ -550,6 +740,50 @@ const BehavioralActivationScreen = () => {
             <Text style={techniqueScreenStyles.introText}>{TEXTS.INTRO_BODY}</Text>
           </View>
 
+          <View style={styles.viewSegment}>
+            {[
+              { id: 'week', label: TEXTS.TAB_WEEK },
+              { id: 'log', label: TEXTS.TAB_LOG },
+            ].map(({ id, label }) => {
+              const selected = viewMode === id;
+              return (
+                <TouchableOpacity
+                  key={id}
+                  style={[styles.viewSegmentItem, selected && styles.viewSegmentItemOn]}
+                  onPress={() => {
+                    Haptics.selectionAsync().catch(() => {});
+                    setViewMode(id);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                >
+                  <Text
+                    style={[styles.viewSegmentText, selected && styles.viewSegmentTextOn]}
+                  >
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {viewMode === 'week' ? (
+            <BehavioralActivationWeekPanel
+              TEXTS={TEXTS}
+              colors={colors}
+              techniqueScreenStyles={techniqueScreenStyles}
+              styles={styles}
+              slots={weekPlan?.slots}
+              dayLabels={dayLabels}
+              loading={loadingWeekPlan}
+              savingSlotId={savingSlotId}
+              onRegisterSlot={handleRegisterWeekSlot}
+              onSkipSlot={handleSkipWeekSlot}
+            />
+          ) : null}
+
+          {viewMode === 'log' ? (
+          <>
           <View style={techniqueScreenStyles.card}>
             <Text style={techniqueScreenStyles.cardMeta}>
               {TEXTS.STEP_PROGRESS} {stepIndex + 1} {TEXTS.OF} {STEPS.length}
@@ -676,6 +910,8 @@ const BehavioralActivationScreen = () => {
               )}
             </TouchableOpacity>
           </View>
+          </>
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

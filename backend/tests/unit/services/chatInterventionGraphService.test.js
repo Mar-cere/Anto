@@ -61,6 +61,7 @@ describe('chatInterventionGraphService', () => {
         chainFindOne({
           sessionId: 'sess-inherited',
           topicTag: 'trabajo',
+          topicFree: 'Me siento ansioso por la reunión con mi jefe',
           riskLevel: 'low',
           assistantMessageId: 'msg-1',
         }),
@@ -78,6 +79,7 @@ describe('chatInterventionGraphService', () => {
     const doc = mockCreate.mock.calls[0][0];
     expect(doc.sessionId).toBe('sess-inherited');
     expect(doc.topicTag).toBe('trabajo');
+    expect(doc.topicFree).toBe('Me siento ansioso por la reunión con mi jefe');
     expect(doc.assistantMessageId).toBe('msg-1');
     expect(doc.riskLevel).toBe('low');
   });
@@ -110,6 +112,22 @@ describe('chatInterventionGraphService', () => {
       conversationId: 'conv-1',
       interventionId: 'INVALID ID!',
       eventType: 'completed',
+    });
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it('recordInterventionEvent ignora si falta userId o conversationId', async () => {
+    await chatInterventionGraphService.recordInterventionEvent({
+      userId: null,
+      conversationId: 'conv-1',
+      interventionId: 'breathing_exercise',
+      eventType: 'clicked',
+    });
+    await chatInterventionGraphService.recordInterventionEvent({
+      userId: 'user-1',
+      conversationId: null,
+      interventionId: 'breathing_exercise',
+      eventType: 'clicked',
     });
     expect(mockCreate).not.toHaveBeenCalled();
   });
@@ -166,6 +184,83 @@ describe('chatInterventionGraphService', () => {
     expect(docs).toHaveLength(1);
     expect(docs[0].eventType).toBe('shown');
     expect(docs[0].topicTag).toBe('trabajo');
+    expect(docs[0].topicFree).toBeNull();
     expect(docs[0].meta.tags).toEqual(['ansiedad']);
+  });
+
+  it('recordSuggestionEventsShown guarda topicFree desde userContent', async () => {
+    mockFindOne.mockReturnValueOnce(
+      chainFindOne({ sessionId: 'sess-old', createdAt: new Date() }),
+    );
+
+    const userContent =
+      'Estoy muy ansioso porque mañana tengo una reunión importante con mi jefe';
+
+    await chatInterventionGraphService.recordSuggestionEventsShown({
+      userId: 'user-1',
+      conversationId: 'conv-1',
+      suggestions: [{ id: 'behavioral_activation', label: 'Activación', interventionType: 'exercise' }],
+      emotionalAnalysis: { topic: 'trabajo' },
+      userContent,
+    });
+
+    const docs = mockInsertMany.mock.calls[0][0];
+    expect(docs[0].topicFree).toBe(userContent);
+  });
+
+  it('bucle shown → clicked → completed hereda topicFree en cada paso', async () => {
+    const topicFree = 'No tengo ganas de nada y me cuesta levantarme cada mañana';
+
+    mockFindOne
+      .mockReturnValueOnce(chainFindOne({ sessionId: 'sess-loop', createdAt: new Date() }))
+      .mockReturnValueOnce(
+        chainFindOne({
+          sessionId: 'sess-loop',
+          topicTag: 'trabajo',
+          topicFree,
+          riskLevel: null,
+          assistantMessageId: 'msg-loop',
+        }),
+      )
+      .mockReturnValueOnce(chainFindOne(null))
+      .mockReturnValueOnce(
+        chainFindOne({
+          sessionId: 'sess-loop',
+          topicTag: 'trabajo',
+          topicFree,
+          riskLevel: null,
+          assistantMessageId: 'msg-loop',
+        }),
+      )
+      .mockReturnValueOnce(chainFindOne(null));
+
+    await chatInterventionGraphService.recordSuggestionEventsShown({
+      userId: 'user-1',
+      conversationId: 'conv-1',
+      assistantMessageId: 'msg-loop',
+      suggestions: [{ id: 'behavioral_activation', label: 'BA' }],
+      emotionalAnalysis: { topic: 'trabajo' },
+      userContent: topicFree,
+    });
+
+    await chatInterventionGraphService.recordInterventionEvent({
+      userId: 'user-1',
+      conversationId: 'conv-1',
+      interventionId: 'behavioral_activation',
+      eventType: 'clicked',
+    });
+
+    await chatInterventionGraphService.recordInterventionEvent({
+      userId: 'user-1',
+      conversationId: 'conv-1',
+      interventionId: 'behavioral_activation',
+      eventType: 'completed',
+    });
+
+    expect(mockCreate).toHaveBeenCalledTimes(2);
+    expect(mockCreate.mock.calls[0][0].topicFree).toBe(topicFree);
+    expect(mockCreate.mock.calls[0][0].eventType).toBe('clicked');
+    expect(mockCreate.mock.calls[1][0].topicFree).toBe(topicFree);
+    expect(mockCreate.mock.calls[1][0].eventType).toBe('completed');
   });
 });

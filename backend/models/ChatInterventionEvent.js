@@ -17,7 +17,7 @@ const ChatInterventionEventSchema = new mongoose.Schema(
     interventionType: { type: String, default: 'technique' },
     // Tema canónico (tags fijos) y opcionalmente un tema libre para el modo mixto.
     topicTag: { type: String, index: true, default: 'general' },
-    topicFree: { type: String, default: null },
+    topicFree: { type: String, default: null, maxlength: 128 },
     // shown | clicked | dismissed | completed
     eventType: { type: String, index: true, required: true },
     source: { type: String, default: 'chat_suggestions_v1' },

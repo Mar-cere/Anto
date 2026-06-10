@@ -6,6 +6,8 @@ import chatService from '../../services/chatService';
 import {
   createInterventionCompletedRecorder,
   recordInterventionCompleted,
+  recordInterventionCompletedIfInlineSuggestion,
+  shouldRecordInterventionCompletedOnSuggestionPress,
 } from '../recordInterventionCompleted';
 import { CHAT_SESSION_KEYS } from '../chatSessionStorage';
 
@@ -60,5 +62,58 @@ describe('createInterventionCompletedRecorder', () => {
     record('self_care');
     await new Promise((r) => setTimeout(r, 0));
     expect(chatService.submitInterventionEvent).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('shouldRecordInterventionCompletedOnSuggestionPress', () => {
+  it('devuelve true para micro_guide', () => {
+    expect(
+      shouldRecordInterventionCompletedOnSuggestionPress({
+        id: 'reframing_tool',
+        interventionType: 'micro_guide',
+        screen: null,
+      }),
+    ).toBe(true);
+  });
+
+  it('devuelve true para support con pantalla', () => {
+    expect(
+      shouldRecordInterventionCompletedOnSuggestionPress({
+        id: 'support_contact',
+        interventionType: 'support',
+        screen: 'Profile',
+      }),
+    ).toBe(true);
+  });
+
+  it('devuelve false para exercise con pantalla', () => {
+    expect(
+      shouldRecordInterventionCompletedOnSuggestionPress({
+        id: 'behavioral_activation',
+        interventionType: 'exercise',
+        screen: 'BehavioralActivation',
+      }),
+    ).toBe(false);
+  });
+});
+
+describe('recordInterventionCompletedIfInlineSuggestion', () => {
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    await AsyncStorage.clear();
+  });
+
+  it('envía completed para micro_guide con conversationId', async () => {
+    const convId = '507f1f77bcf86cd799439011';
+    await AsyncStorage.setItem(CHAT_SESSION_KEYS.CONVERSATION_ID, convId);
+    recordInterventionCompletedIfInlineSuggestion({
+      id: 'reframing_tool',
+      interventionType: 'micro_guide',
+    });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(chatService.submitInterventionEvent).toHaveBeenCalledWith(convId, {
+      interventionId: 'reframing_tool',
+      eventType: 'completed',
+    });
   });
 });

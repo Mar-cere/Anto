@@ -69,6 +69,7 @@ import {
 } from '../constants/interventionCatalog.js';
 import chatInterventionGraphService from '../services/chatInterventionGraphService.js';
 import { planChatActionSuggestions } from '../services/psychoeducationPromptSnippetService.js';
+import { buildActiveTccProtocolsPromptSnippet } from '../services/activeTccProtocolsContextService.js';
 import { cursorPaginate } from '../utils/pagination.js';
 import {
     HISTORIAL_LIMITE,
@@ -1293,6 +1294,16 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           conversationHistory,
           language: appLanguageForChat,
         });
+
+        let activeTccProtocolsPromptSnippet = null;
+        try {
+          activeTccProtocolsPromptSnippet = await buildActiveTccProtocolsPromptSnippet({
+            userId: req.user._id,
+            language: appLanguageForChat,
+          });
+        } catch {
+          activeTccProtocolsPromptSnippet = null;
+        }
         
         const openaiContext = {
           rollingSummary: conversation?.rollingSummary || null,
@@ -1333,6 +1344,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           responseStrategyHint,
           conversationPattern,
           psychoeducationPromptSnippet: suggestionPlan.psychoeducationPromptSnippet,
+          activeTccProtocolsPromptSnippet,
         };
 
         metricsService
@@ -1533,6 +1545,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                       suggestions: formattedSuggestions,
                       emotionalAnalysis,
                       contextualAnalysis,
+                      userContent: content,
                       riskLevel,
                       source: 'chat_suggestions_v1',
                     });
@@ -1975,6 +1988,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               suggestions: formattedSuggestions,
               emotionalAnalysis,
               contextualAnalysis,
+              userContent: content,
               riskLevel,
               source: 'chat_suggestions_v1',
             });

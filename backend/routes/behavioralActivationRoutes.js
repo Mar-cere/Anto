@@ -11,7 +11,12 @@ import { resolveRequestLanguage } from '../utils/apiLanguage.js';
 import { validateBody } from '../utils/apiValidation.js';
 import { behavioralActivationApiCopy } from '../utils/behavioralActivationApiCopy.js';
 import { getCreateBehavioralActivationSchema } from '../utils/behavioralActivationSchemas.js';
+import { getUpdateWeekPlanSchema } from '../utils/behavioralActivationWeekPlanSchemas.js';
 import { createRateLimiter } from '../utils/createRateLimiter.js';
+import {
+  getOrCreateWeekPlan,
+  saveWeekPlan,
+} from '../services/behavioralActivationWeekPlanService.js';
 
 const router = express.Router();
 
@@ -29,6 +34,14 @@ const deleteLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 20,
   message: (req) => behavioralActivationApiCopy(resolveRequestLanguage(req)).rateLimitDelete,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const weekPlanLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 40,
+  message: (req) => behavioralActivationApiCopy(resolveRequestLanguage(req)).rateLimitCreate,
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -77,6 +90,64 @@ function formatLogForExport(record, copy, index) {
   if (index > 0) lines.unshift('');
   return lines.join('\n');
 }
+
+router.get('/week-plan', weekPlanLimiter, async (req, res) => {
+  const copy = req.apiCopy;
+  const language = resolveRequestLanguage(req);
+  try {
+    const weekStartRaw = req.query?.weekStart;
+    if (
+      weekStartRaw != null &&
+      weekStartRaw !== '' &&
+      !/^\d{4}-\d{2}-\d{2}$/.test(String(weekStartRaw).trim())
+    ) {
+      return res.status(400).json({ success: false, error: copy.joiWeekStartInvalid });
+    }
+    const weekStart = weekStartRaw;
+    const result = await getOrCreateWeekPlan(req.user.userId, weekStart, language);
+    res.json({
+      success: true,
+      weekStart: result.weekStart,
+      dayLabels: result.dayLabels,
+      plan: result.plan,
+    });
+  } catch (error) {
+    console.error('Error obteniendo plan semanal BA:', error);
+    res.status(500).json({ success: false, error: copy.weekPlanError });
+  }
+});
+
+router.put('/week-plan', weekPlanLimiter, async (req, res) => {
+  const copy = req.apiCopy;
+  const language = resolveRequestLanguage(req);
+  try {
+    const { error, value } = validateBody(getUpdateWeekPlanSchema(copy), req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        error: error.details[0].message,
+      });
+    }
+
+    const result = await saveWeekPlan(
+      req.user.userId,
+      value.weekStart || undefined,
+      value.slots,
+      language,
+    );
+
+    res.json({
+      success: true,
+      message: copy.weekPlanSaved,
+      weekStart: result.weekStart,
+      dayLabels: result.dayLabels,
+      plan: result.plan,
+    });
+  } catch (error) {
+    console.error('Error guardando plan semanal BA:', error);
+    res.status(500).json({ success: false, error: copy.weekPlanSaveError });
+  }
+});
 
 router.get('/export', async (req, res) => {
   const copy = req.apiCopy;

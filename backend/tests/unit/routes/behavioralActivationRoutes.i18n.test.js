@@ -27,4 +27,12 @@ describe('Behavioral activation routes i18n (#88)', () => {
 
     expect(response.status).toBe(401);
   });
+
+  it('GET week-plan sin auth rechaza (401)', async () => {
+    const response = await request(app)
+      .get('/api/behavioral-activation-logs/week-plan')
+      .set('X-App-Language', 'en');
+
+    expect(response.status).toBe(401);
+  });
 });

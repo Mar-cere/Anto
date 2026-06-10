@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { isValidInterventionId } from '../constants/interventionCatalog.js';
 import ChatInterventionEvent from '../models/ChatInterventionEvent.js';
+import { buildTopicFreeFromUserContent } from '../utils/interventionTopicFree.js';
 
 const DEFAULT_SESSION_GAP_MINUTES = 45;
 const DEFAULT_EVENT_DEDUPE_SECONDS = 8;
@@ -53,7 +54,9 @@ async function findRecentShownContext({ userId, conversationId, interventionId, 
     createdAt: { $gte: since },
   })
     .sort({ createdAt: -1 })
-    .select('sessionId topicTag topicFree riskLevel assistantMessageId interventionType createdAt')
+    .select(
+      'sessionId topicTag topicFree riskLevel assistantMessageId interventionType createdAt',
+    )
     .lean();
 
   return lastShown || null;
@@ -81,6 +84,7 @@ async function recordSuggestionEventsShown({
   suggestions = [],
   emotionalAnalysis,
   contextualAnalysis,
+  userContent = null,
   riskLevel = null,
   source = 'chat_suggestions_v1',
 }) {
@@ -89,6 +93,7 @@ async function recordSuggestionEventsShown({
   const now = new Date();
   const sessionId = await resolveSessionId({ userId, conversationId, now });
   const topicTag = safeTopicTag(emotionalAnalysis, contextualAnalysis);
+  const topicFree = buildTopicFreeFromUserContent(userContent);
 
   const docs = suggestions
     .map((s) => {
@@ -102,7 +107,7 @@ async function recordSuggestionEventsShown({
         interventionId,
         interventionType: typeof s?.interventionType === 'string' ? s.interventionType : 'technique',
         topicTag,
-        topicFree: null,
+        topicFree,
         eventType: 'shown',
         source,
         riskLevel: riskLevel ? String(riskLevel) : null,
@@ -207,6 +212,7 @@ async function recordInterventionEvent({
   source = 'chat_suggestions_v1',
   meta = {},
 }) {
+  if (!userId || !conversationId) return;
   const ev = String(eventType || '').trim();
   if (!['clicked', 'dismissed', 'completed'].includes(ev)) return;
   const id = String(interventionId || '').trim();

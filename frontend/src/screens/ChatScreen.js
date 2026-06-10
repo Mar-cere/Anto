@@ -41,6 +41,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useChatScreen } from '../hooks/useChatScreen';
 import {
   recordInterventionClicked,
+  recordInterventionCompletedIfInlineSuggestion,
   recordInterventionDismissed,
 } from '../utils/recordInterventionCompleted';
 import { getFeedbackTargetMessageId } from './chat/chatFeedbackAnchor';
@@ -382,6 +383,7 @@ const ChatScreen = () => {
         }
       } else {
         setInputText(`${TEXTS.SUGGESTION_TRY_PREFIX}${suggestion?.label || ''}`);
+        recordInterventionCompletedIfInlineSuggestion(suggestion);
       }
     },
     [navigation, setInputText, TEXTS.NAVIGATION_ERROR_WARN, TEXTS.SUGGESTION_TRY_PREFIX]
