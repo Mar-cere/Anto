@@ -24,6 +24,14 @@ await jest.unstable_mockModule('../../../models/ChatInterventionEvent.js', () =>
   default: { findOne: mockInterventionFindOne },
 }));
 
+const mockGenerateHeadline = jest.fn().mockResolvedValue(null);
+
+await jest.unstable_mockModule('../../../services/sessionInsightHeadlineService.js', () => ({
+  __esModule: true,
+  generateSessionInsightHeadline: mockGenerateHeadline,
+  isSessionInsightHeadlineLlmEnabled: jest.fn().mockReturnValue(true),
+}));
+
 const { buildSessionInsight } = await import('../../../services/sessionInsightService.js');
 
 const userId = '507f1f77bcf86cd799439011';
@@ -49,6 +57,7 @@ function chainInterventionLean(result) {
 describe('buildSessionInsight', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGenerateHeadline.mockResolvedValue(null);
     mockConversationFindOne.mockReturnValue(
       chainLean({ sessionIntention: 'vent' }),
     );
@@ -119,6 +128,37 @@ describe('buildSessionInsight', () => {
     expect(insight.thoughtPattern?.type).toBe('fortune_telling');
     expect(insight.themes).toContain('Trabajo');
     expect(insight.headline).toMatch(/patrón/i);
+    expect(insight.headlineSource).toBe('rules');
+    expect(mockGenerateHeadline).toHaveBeenCalled();
+  });
+
+  it('usa titular LLM cuando el servicio lo devuelve', async () => {
+    mockGenerateHeadline.mockResolvedValue('Tu ansiedad en el trabajo merece espacio y cuidado');
+    const now = Date.now();
+    mockMessageFind.mockReturnValue(
+      chainLean([
+        {
+          role: 'user',
+          content: 'Me da mucha ansiedad en el trabajo y no sé cómo manejarlo',
+          metadata: {
+            context: { emotional: { mainEmotion: 'ansiedad', intensity: 6, topic: 'trabajo' } },
+          },
+          createdAt: new Date(now - 60000),
+        },
+        {
+          role: 'user',
+          content: 'Siento que nunca voy a poder relajarme del todo',
+          metadata: {
+            context: { emotional: { mainEmotion: 'ansiedad', intensity: 6, topic: 'trabajo' } },
+          },
+          createdAt: new Date(now),
+        },
+      ]),
+    );
+
+    const insight = await buildSessionInsight({ userId, conversationId, language: 'es' });
+    expect(insight.headline).toBe('Tu ansiedad en el trabajo merece espacio y cuidado');
+    expect(insight.headlineSource).toBe('llm');
   });
 
   it('incluye paso sugerido desde último shown', async () => {

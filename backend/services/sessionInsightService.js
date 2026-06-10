@@ -15,6 +15,10 @@ import {
   localizeTopic,
   normalizeInsightLanguage,
 } from '../utils/sessionInsightCopy.js';
+import {
+  generateSessionInsightHeadline,
+  isSessionInsightHeadlineLlmEnabled,
+} from './sessionInsightHeadlineService.js';
 
 const MIN_USER_TURNS = 2;
 const MIN_USER_CHARS = 40;
@@ -209,12 +213,30 @@ export async function buildSessionInsight({ userId, conversationId, language = '
     sessionIntention: sessionIntentionLabel,
   });
 
+  let headline = copy.headline;
+  let headlineSource = 'rules';
+  if (isSessionInsightHeadlineLlmEnabled()) {
+    const llmHeadline = await generateSessionInsightHeadline({
+      userMsgs,
+      allMsgs: msgs,
+      language: lang,
+      fallbackHeadline: copy.headline,
+      dominantEmotion,
+      thoughtPattern,
+    }).catch(() => null);
+    if (llmHeadline) {
+      headline = llmHeadline;
+      headlineSource = 'llm';
+    }
+  }
+
   return {
     eligible: true,
     conversationId: String(conversationId),
     userTurns,
     durationMinutes: estimateDurationMinutes(msgs),
-    headline: copy.headline,
+    headline,
+    headlineSource,
     reflection: copy.reflection,
     intentionLine: copy.intentionLine,
     dominantEmotion: {

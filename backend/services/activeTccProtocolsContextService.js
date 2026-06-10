@@ -1,9 +1,13 @@
 /**
  * Puente chat ↔ protocolos TCC in-app (#6): snippet interno para el prompt.
  */
+import AbcRecord from '../models/AbcRecord.js';
 import ExposurePlan from '../models/ExposurePlan.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
-import { findWeekPlanForUser, getWeekDayLabels } from './behavioralActivationWeekPlanService.js';
+import { findWeekPlanForUser } from './behavioralActivationWeekPlanService.js';
+
+const ABC_LOOKBACK_DAYS = 14;
+const MAX_PROTOCOL_LINES = 3;
 
 function truncate(text, max = 100) {
   const t = String(text || '').trim();
@@ -33,6 +37,20 @@ export function pickNextBaWeekSlot(plan, dayLabels) {
     activityDescription: truncate(next.activityDescription, 90),
     dayLabel: dayLabels?.[next.dayOffset] || '',
   };
+}
+
+function stripControlChars(text) {
+  return String(text || '')
+    .replace(/[\u0000-\u001F\u007F]/g, '')
+    .trim();
+}
+
+export function summarizeRecentAbcRecord(record) {
+  if (!record) return null;
+  const activatingEvent = truncate(stripControlChars(record.activatingEvent), 70);
+  const beliefs = truncate(stripControlChars(record.beliefs), 70);
+  if (!activatingEvent && !beliefs) return null;
+  return { activatingEvent, beliefs };
 }
 
 /**
@@ -85,13 +103,35 @@ export async function buildActiveTccProtocolsPromptSnippet({ userId, language = 
     // best-effort
   }
 
+  try {
+    const since = new Date(Date.now() - ABC_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
+    const records = await AbcRecord.findByUser(userId, {
+      startDate: since,
+      archived: false,
+      limit: 1,
+      sortOrder: 'desc',
+    });
+    const abcSummary = summarizeRecentAbcRecord(records?.[0]);
+    if (abcSummary) {
+      lines.push(
+        en
+          ? `- Recent ABC log: situation «${abcSummary.activatingEvent}»; thought «${abcSummary.beliefs}».`
+          : `- Autorregistro ABC reciente: situación «${abcSummary.activatingEvent}»; pensamiento «${abcSummary.beliefs}».`,
+      );
+    }
+  } catch {
+    // best-effort
+  }
+
   if (lines.length === 0) return null;
+
+  const capped = lines.slice(0, MAX_PROTOCOL_LINES);
 
   if (en) {
     return (
       '\n\n### Active in-app CBT tools (internal)\n' +
       'The user has structured tools outside chat:\n' +
-      `${lines.join('\n')}\n` +
+      `${capped.join('\n')}\n` +
       '- You may briefly reference these if emotionally relevant; do not list screens or menus.\n' +
       '- Invite them to resume a tool only when it clearly supports what they are sharing.'
     );
@@ -100,7 +140,7 @@ export async function buildActiveTccProtocolsPromptSnippet({ userId, language = 
   return (
     '\n\n### Herramientas TCC activas en la app (interno)\n' +
     'El usuario tiene protocolos estructurados fuera del chat:\n' +
-    `${lines.join('\n')}\n` +
+    `${capped.join('\n')}\n` +
     '- Puedes mencionarlos brevemente si encaja emocionalmente; no enumeres pantallas ni menús.\n' +
     '- Invita a retomarlos solo cuando apoye claramente lo que está compartiendo.'
   );
@@ -110,4 +150,5 @@ export default {
   buildActiveTccProtocolsPromptSnippet,
   pickActiveExposureStep,
   pickNextBaWeekSlot,
+  summarizeRecentAbcRecord,
 };

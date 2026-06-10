@@ -41,6 +41,59 @@ export function resolveContextualPsychoeducationIds(userContent = '') {
   );
 }
 
+/** Catálogo extendido #90–#99: micro-guías por señales en el mensaje. */
+export const CONTEXTUAL_PROTOCOL_RULES = [
+  {
+    id: 'grief_roadmap',
+    pattern:
+      /(?:duelo|falleci[oó]|murió|perd[ií]|luto|extra[ñn]ar(?:lo|la)?|grief|bereavement|passed away|lo\s+extra[ñn]o)/i,
+  },
+  {
+    id: 'relapse_prevention',
+    pattern:
+      /(?:reca[íi]d|volver\s+a\s+(?:fumar|beber|consumir)|disparador|trigger|craving|antojo|relapse|tentaci[oó]n\s+fuerte)/i,
+  },
+  {
+    id: 'dbt_stop_skill',
+    pattern:
+      /(?:impulso\s+(?:fuerte|de)|me\s+voy\s+a\s+explotar|urges?|STOP\b|desbord(?:o|a)|no\s+aguanto\s+m[aá]s|lash\s+out)/i,
+  },
+  {
+    id: 'act_values_check',
+    pattern:
+      /(?:mis\s+valores|qu[eé]\s+importa\s+de\s+verdad|sentido\s+de\s+vida|values|what\s+matters\s+to\s+me|life\s+meaning)/i,
+  },
+  {
+    id: 'sleep_diary_lite',
+    pattern:
+      /(?:insomnio|no\s+puedo\s+dormir|duermo\s+mal|despierto\s+(?:a\s+(?:las|la)|en\s+la\s+noche)|insomnia|can'?t\s+sleep|sleep\s+diary)/i,
+  },
+  {
+    id: 'mindfulness_sequence',
+    pattern:
+      /(?:mindfulness|atenci[oó]n\s+plena|meditar|meditation|pr[aá]ctica\s+de\s+atenci[oó]n)/i,
+  },
+  {
+    id: 'assertive_i_messages',
+    pattern:
+      /(?:decir\s+no|asertiv|l[ií]mite\s+claro|I-messages?|assertive|no\s+s[eé]\s+c[oó]mo\s+decirle)/i,
+  },
+  {
+    id: 'problem_solving_psst',
+    pattern:
+      /(?:no\s+s[eé]\s+qu[eé]\s+hacer|decidir\s+entre|opciones|pros\s+y\s+contras|problem\s+solving|stuck\s+deciding)/i,
+  },
+];
+
+export function resolveContextualProtocolIds(userContent = '', max = 2) {
+  const text = String(userContent || '');
+  if (!text.trim()) return [];
+  const cap = Math.max(1, Math.min(Number(max) || 2, CONTEXTUAL_PROTOCOL_RULES.length));
+  return CONTEXTUAL_PROTOCOL_RULES.filter(({ pattern }) => pattern.test(text))
+    .map(({ id }) => id)
+    .slice(0, cap);
+}
+
 /** Señales de cadena pensamiento → consecuencia; activa ABC (#86). */
 export const CONTEXTUAL_ABC_PATTERN =
   /(?:pienso\s+lo\s+peor|siempre\s+pienso|peor\s+escenario|worst.?case|keep\s+thinking\s+the\s+worst|automatic\s+thought|pensamiento\s+autom[aá]tico|repaso\s+(?:una\s+y\s+otra|sin\s+parar)|darle\s+vueltas|no\s+paro\s+de\s+(?:pensar|darle\s+vueltas)|can'?t\s+stop\s+thinking|going\s+over\s+and\s+over|reaccion[eé]\s+mal|reacted\s+badly|qu[eé]\s+pas[oó]\s+en\s+mi\s+cabeza|what\s+went\s+through\s+my\s+mind)/i;
@@ -393,9 +446,9 @@ class ActionSuggestionService {
           relaciones: ['breathing_exercise', 'communication_tool']
         },
         medium: {
-          general: ['exposure_hierarchy', 'mindfulness_reminder', 'self_care'],
-          trabajo: ['task_organization', 'time_management'],
-          relaciones: ['communication_tool', 'boundary_setting']
+          general: ['exposure_hierarchy', 'mindfulness_sequence', 'self_care'],
+          trabajo: ['task_organization', 'problem_solving_psst'],
+          relaciones: ['communication_tool', 'assertive_i_messages'],
         }
       },
       tristeza: {
@@ -407,7 +460,7 @@ class ActionSuggestionService {
         medium: {
           general: ['behavioral_activation', 'abc_record', 'gratitude_journal'],
           relaciones: ['abc_record', 'communication_tool', 'self_care'],
-          pérdida: ['grief_support', 'self_compassion_exercise']
+          pérdida: ['grief_support', 'grief_roadmap', 'self_compassion_exercise'],
         }
       },
       enojo: {
@@ -417,9 +470,9 @@ class ActionSuggestionService {
           trabajo: ['timeout_technique', 'boundary_setting']
         },
         medium: {
-          general: ['abc_record', 'anger_management', 'physical_activity'],
-          relaciones: ['abc_record', 'communication_tool', 'boundary_setting'],
-          trabajo: ['abc_record', 'boundary_setting', 'task_break']
+          general: ['abc_record', 'anger_management', 'dbt_stop_skill'],
+          relaciones: ['abc_record', 'communication_tool', 'assertive_i_messages'],
+          trabajo: ['abc_record', 'boundary_setting', 'problem_solving_psst'],
         }
       },
       culpa: {
@@ -450,7 +503,7 @@ class ActionSuggestionService {
         rendimiento: ['performance_anxiety_tool', 'self_compassion_exercise'],
       },
       tristeza: {
-        duelo: ['grief_support', 'memory_exercise'],
+        duelo: ['grief_support', 'grief_roadmap', 'memory_exercise'],
         soledad: ['connection_exercise', 'support_contact'],
         fracaso: ['self_compassion_exercise', 'reframing_tool'],
       },
@@ -524,6 +577,7 @@ class ActionSuggestionService {
     }
 
     appendUniqueIds(enriched, [...contextualPsycho, ...emotionPsycho]);
+    appendUniqueIds(enriched, resolveContextualProtocolIds(userContent));
 
     const rankingScores = options?.rankingScores;
     const ranked =
@@ -605,6 +659,7 @@ class ActionSuggestionService {
     ids.add('psychoeducation_emotion_regulation');
     ids.add('psychoeducation_trauma');
     CONTEXTUAL_PSYCHOEDUCATION_RULES.forEach(({ id }) => ids.add(id));
+    CONTEXTUAL_PROTOCOL_RULES.forEach(({ id }) => ids.add(id));
     return [...ids].filter(Boolean);
   }
 
