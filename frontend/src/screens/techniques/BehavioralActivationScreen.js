@@ -232,6 +232,7 @@ const BehavioralActivationScreen = () => {
   const [loadingWeekPlan, setLoadingWeekPlan] = useState(true);
   const [savingSlotId, setSavingSlotId] = useState('');
   const weekPlanRef = useRef(null);
+  const handledFocusSlotKeyRef = useRef('');
 
   const styles = useMemo(
     () =>
@@ -468,6 +469,17 @@ const BehavioralActivationScreen = () => {
   useEffect(() => {
     loadWeekPlan();
   }, [loadWeekPlan]);
+
+  useEffect(() => {
+    const slotId = String(route.params?.openWeekSlotId || '').trim();
+    if (!slotId || loadingWeekPlan || !weekPlan?.slots?.length) return;
+    const focusKey = `${weekStart || 'week'}:${slotId}`;
+    if (handledFocusSlotKeyRef.current === focusKey) return;
+    const slot = weekPlan.slots.find((s) => String(s?.slotId) === slotId);
+    if (!slot || slot.status !== 'planned') return;
+    handledFocusSlotKeyRef.current = focusKey;
+    setViewMode('week');
+  }, [route.params?.openWeekSlotId, loadingWeekPlan, weekPlan, weekStart]);
 
   const persistWeekPlan = useCallback(
     async (slots) => {

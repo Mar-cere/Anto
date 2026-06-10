@@ -609,10 +609,37 @@ const DashScreen = () => {
     navigation.navigate('MainTabs', { screen: 'Chat' });
   }, [navigation]);
 
-  const openBehavioralActivationFromFocus = useCallback(() => {
+  const openBehavioralActivationFromFocus = useCallback((slotId) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    navigation.navigate('BehavioralActivation');
+    const trimmed = slotId ? String(slotId).trim() : '';
+    navigation.navigate(
+      'BehavioralActivation',
+      trimmed ? { openWeekSlotId: trimmed } : undefined,
+    );
   }, [navigation]);
+
+  const refreshHomeDataOnFocus = useCallback(async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) return;
+      const [userDataRes, tasksRes, habitsRes, focusRes] = await Promise.all([
+        api.get(ENDPOINTS.ME).catch(() => null),
+        api.get(ENDPOINTS.TASKS).catch(() => null),
+        api.get(ENDPOINTS.HABITS).catch(() => null),
+        api.get(ENDPOINTS.SUMMARY_FOCUS).catch(() => null),
+      ]);
+      if (userDataRes && typeof userDataRes === 'object') {
+        setUserData(userDataRes);
+      }
+      if (Array.isArray(tasksRes)) setTasks(tasksRes);
+      if (Array.isArray(habitsRes)) setHabits(habitsRes);
+      if (focusRes?.success && focusRes?.data) {
+        setFocusPayload(focusRes.data);
+      }
+    } catch (_) {
+      /* pull-to-refresh sigue disponible */
+    }
+  }, []);
 
   const openConversationFromFocus = useCallback(
     async (conversationId) => {
@@ -675,7 +702,7 @@ const DashScreen = () => {
     }
   }, [loadData, loading]);
 
-  // Al volver al tab Inicio (p. ej. desde el chat), refrescar usuario para no mostrar datos de otra sesión
+  // Al volver al tab Inicio, refrescar foco/tareas/hábitos (p. ej. tras registrar BA)
   useFocusEffect(
     useCallback(() => {
       if (dashFirstFocusRef.current) {
@@ -684,21 +711,13 @@ const DashScreen = () => {
       }
       let cancelled = false;
       (async () => {
-        const token = await AsyncStorage.getItem('userToken');
-        if (!token || cancelled) return;
-        try {
-          const user = await api.get(ENDPOINTS.ME);
-          if (!cancelled && user && typeof user === 'object') {
-            setUserData(user);
-          }
-        } catch (_) {
-          /* loadData / pull manejan errores visibles */
-        }
+        if (cancelled) return;
+        await refreshHomeDataOnFocus();
       })();
       return () => {
         cancelled = true;
       };
-    }, [])
+    }, [refreshHomeDataOnFocus]),
   );
 
   // Configurar listeners de WebSocket para alertas de emergencia

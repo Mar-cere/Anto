@@ -155,6 +155,7 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation, onOpenBehavi
   const baWeekCopy = useMemo(() => {
     if (!baWeekNext) return null;
     const desc = String(baWeekNext.activityDescription || '').trim();
+    if (!desc) return null;
     const day = String(baWeekNext.dayLabel || '').trim();
     let title = DASH.FOCUS_BA_UPCOMING;
     if (baWeekNext.isToday) title = DASH.FOCUS_BA_TODAY;
@@ -215,8 +216,9 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation, onOpenBehavi
   }, [lastSessionConvId, handleConv, onOpenConversation, onOpenChat]);
 
   const onBaWeekPress = useCallback(() => {
-    if (onOpenBehavioralActivation) onOpenBehavioralActivation();
-  }, [onOpenBehavioralActivation]);
+    if (!onOpenBehavioralActivation) return;
+    onOpenBehavioralActivation(baWeekNext?.slotId ? String(baWeekNext.slotId) : null);
+  }, [onOpenBehavioralActivation, baWeekNext?.slotId]);
 
   if (!data) return null;
 

@@ -52,10 +52,19 @@ export function getTodayDayOffsetInWeek(weekStartKey, now = new Date()) {
   return diffDays;
 }
 
+function stripControlChars(text) {
+  return String(text || '')
+    .replace(/[\u0000-\u001F\u007F]/g, '')
+    .trim();
+}
+
 function formatBaFocusSlot(slot, dayLabels, { isToday, isOverdue, pendingCount }) {
+  const slotId = String(slot?.slotId || '').trim();
+  const activityDescription = truncate(stripControlChars(slot?.activityDescription), 90);
+  if (!slotId || !activityDescription) return null;
   return {
-    slotId: String(slot.slotId || ''),
-    activityDescription: truncate(slot.activityDescription, 90),
+    slotId,
+    activityDescription,
     dayLabel: dayLabels?.[slot.dayOffset] || '',
     dayOffset: slot.dayOffset ?? 0,
     isToday,
@@ -64,14 +73,19 @@ function formatBaFocusSlot(slot, dayLabels, { isToday, isOverdue, pendingCount }
   };
 }
 
+function pendingBaSlots(plan) {
+  return (Array.isArray(plan?.slots) ? plan.slots : [])
+    .filter((s) => s?.status === 'planned')
+    .filter((s) => String(s?.slotId || '').trim())
+    .filter((s) => stripControlChars(s?.activityDescription))
+    .sort((a, b) => (a.dayOffset ?? 0) - (b.dayOffset ?? 0));
+}
+
 /**
  * Slot del plan BA más relevante para el foco del dashboard: hoy → próximo en la semana → atrasado.
  */
 export function pickBaFocusSlot({ plan, weekStart, dayLabels, now = new Date() }) {
-  const slots = Array.isArray(plan?.slots) ? plan.slots : [];
-  const pending = slots
-    .filter((s) => s?.status === 'planned')
-    .sort((a, b) => (a.dayOffset ?? 0) - (b.dayOffset ?? 0));
+  const pending = pendingBaSlots(plan);
   if (pending.length === 0) return null;
 
   const todayOffset = getTodayDayOffsetInWeek(weekStart, now);
@@ -93,12 +107,6 @@ export function pickBaFocusSlot({ plan, weekStart, dayLabels, now = new Date() }
   }
 
   return formatBaFocusSlot(pending[0], dayLabels, { ...meta, isToday: false, isOverdue: false });
-}
-
-function stripControlChars(text) {
-  return String(text || '')
-    .replace(/[\u0000-\u001F\u007F]/g, '')
-    .trim();
 }
 
 export function summarizeRecentAbcRecord(record) {

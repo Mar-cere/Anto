@@ -96,6 +96,42 @@ describe('activeTccProtocolsContextService', () => {
     expect(picked?.isOverdue).toBe(true);
   });
 
+  it('pickBaFocusSlot elige la próxima pendiente si hoy no tiene actividad', () => {
+    const weekStart = normalizeWeekStart(new Date('2026-06-04'));
+    const dayLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    const picked = pickBaFocusSlot({
+      plan: {
+        slots: [
+          { slotId: 'a', dayOffset: 1, status: 'completed', activityDescription: 'Hecha' },
+          { slotId: 'b', dayOffset: 4, status: 'planned', activityDescription: 'Viernes' },
+        ],
+      },
+      weekStart,
+      dayLabels,
+      now: new Date('2026-06-04T12:00:00'),
+    });
+    expect(picked?.slotId).toBe('b');
+    expect(picked?.isToday).toBe(false);
+    expect(picked?.isOverdue).toBe(false);
+  });
+
+  it('pickBaFocusSlot ignora slots sin descripción o slotId', () => {
+    const weekStart = normalizeWeekStart(new Date('2026-06-04'));
+    const picked = pickBaFocusSlot({
+      plan: {
+        slots: [
+          { slotId: '', dayOffset: 3, status: 'planned', activityDescription: 'Sin id' },
+          { slotId: 'ok', dayOffset: 4, status: 'planned', activityDescription: '   ' },
+          { slotId: 'good', dayOffset: 5, status: 'planned', activityDescription: 'Válida' },
+        ],
+      },
+      weekStart,
+      dayLabels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+      now: new Date('2026-06-04T12:00:00'),
+    });
+    expect(picked?.slotId).toBe('good');
+  });
+
   it('pickNextBaWeekSlot elige la pendiente más temprana', () => {
     const dayLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
     const next = pickNextBaWeekSlot(

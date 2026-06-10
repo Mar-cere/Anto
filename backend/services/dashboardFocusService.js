@@ -159,7 +159,7 @@ async function loadBaWeekFocus(userId, language = 'es') {
       dayLabels: weekCtx.dayLabels,
       now: new Date()
     });
-    if (!picked?.slotId) return null;
+    if (!picked?.slotId || !String(picked.activityDescription || '').trim()) return null;
     return { ...picked, weekStart: weekCtx.weekStart };
   } catch {
     return null;
