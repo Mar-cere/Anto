@@ -117,8 +117,15 @@ function aggregateThoughtPattern(userMsgs, assistantMsgs, language) {
   return localizeDistortion(best, language);
 }
 
-async function findSuggestedStep({ userId, conversationId, language }) {
-  const since = new Date(Date.now() - SESSION_LOOKBACK_MINUTES * 60 * 1000);
+async function findSuggestedStep({ userId, conversationId, language, threadStartedAt = null }) {
+  const lookback = new Date(Date.now() - SESSION_LOOKBACK_MINUTES * 60 * 1000);
+  const threadStart =
+    threadStartedAt instanceof Date && !Number.isNaN(threadStartedAt.getTime())
+      ? threadStartedAt
+      : null;
+  const since =
+    threadStart && threadStart > lookback ? threadStart : lookback;
+
   const lastShown = await ChatInterventionEvent.findOne({
     userId,
     conversationId,
@@ -195,10 +202,12 @@ export async function buildSessionInsight({ userId, conversationId, language = '
   const emotionMeta = getEmotionInsightMeta(dominantEmotion, lang);
   const themes = collectThemes(userMsgs, lang);
   const thoughtPattern = aggregateThoughtPattern(userMsgs, assistantMsgs, lang);
+  const threadStartedAt = msgs[0]?.createdAt ? new Date(msgs[0].createdAt) : null;
   const suggestedStep = await findSuggestedStep({
     userId,
     conversationId: convOid,
     language: lang,
+    threadStartedAt,
   });
   const sessionIntentionLabel = localizeSessionIntention(
     conversation.sessionIntention,

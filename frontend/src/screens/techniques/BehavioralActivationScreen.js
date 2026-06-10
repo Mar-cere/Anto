@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -94,6 +95,17 @@ const DEFAULT_TEXTS = {
   WEEK_SKIP: 'Omitir',
   WEEK_TYPE_PLEASANT: 'Placentera',
   WEEK_TYPE_ROUTINE: 'Rutina',
+  LINK_PRODUCT_TITLE: '¿Añadir también a Tareas o Hábitos?',
+  LINK_PRODUCT_BODY:
+    'Puedes llevar esta actividad a tu espacio diario con recordatorios. El registro de ánimo sigue aquí.',
+  LINK_PRODUCT_TASK: 'Como tarea',
+  LINK_PRODUCT_HABIT: 'Como hábito',
+  LINK_PRODUCT_SKIP: 'Solo aquí',
+  LINK_PRODUCT_TOAST_TASK: 'También añadida a Tareas',
+  LINK_PRODUCT_TOAST_HABIT: 'También añadida a Hábitos',
+  LINK_PRODUCT_TOAST_ERROR: 'No se pudo vincular con Tareas/Hábitos',
+  WEEK_LINKED_TASK: 'En Tareas',
+  WEEK_LINKED_HABIT: 'En Hábitos',
 };
 
 function formatEntryDate(iso) {
@@ -171,6 +183,19 @@ const BehavioralActivationScreen = () => {
       WEEK_SKIP: translated?.BA_WEEK_SKIP || DEFAULT_TEXTS.WEEK_SKIP,
       WEEK_TYPE_PLEASANT: translated?.BA_WEEK_TYPE_PLEASANT || DEFAULT_TEXTS.WEEK_TYPE_PLEASANT,
       WEEK_TYPE_ROUTINE: translated?.BA_WEEK_TYPE_ROUTINE || DEFAULT_TEXTS.WEEK_TYPE_ROUTINE,
+      LINK_PRODUCT_TITLE: translated?.BA_LINK_PRODUCT_TITLE || DEFAULT_TEXTS.LINK_PRODUCT_TITLE,
+      LINK_PRODUCT_BODY: translated?.BA_LINK_PRODUCT_BODY || DEFAULT_TEXTS.LINK_PRODUCT_BODY,
+      LINK_PRODUCT_TASK: translated?.BA_LINK_PRODUCT_TASK || DEFAULT_TEXTS.LINK_PRODUCT_TASK,
+      LINK_PRODUCT_HABIT: translated?.BA_LINK_PRODUCT_HABIT || DEFAULT_TEXTS.LINK_PRODUCT_HABIT,
+      LINK_PRODUCT_SKIP: translated?.BA_LINK_PRODUCT_SKIP || DEFAULT_TEXTS.LINK_PRODUCT_SKIP,
+      LINK_PRODUCT_TOAST_TASK:
+        translated?.BA_LINK_PRODUCT_TOAST_TASK || DEFAULT_TEXTS.LINK_PRODUCT_TOAST_TASK,
+      LINK_PRODUCT_TOAST_HABIT:
+        translated?.BA_LINK_PRODUCT_TOAST_HABIT || DEFAULT_TEXTS.LINK_PRODUCT_TOAST_HABIT,
+      LINK_PRODUCT_TOAST_ERROR:
+        translated?.BA_LINK_PRODUCT_TOAST_ERROR || DEFAULT_TEXTS.LINK_PRODUCT_TOAST_ERROR,
+      WEEK_LINKED_TASK: translated?.BA_WEEK_LINKED_TASK || DEFAULT_TEXTS.WEEK_LINKED_TASK,
+      WEEK_LINKED_HABIT: translated?.BA_WEEK_LINKED_HABIT || DEFAULT_TEXTS.WEEK_LINKED_HABIT,
     }),
     [translated],
   );
@@ -198,6 +223,7 @@ const BehavioralActivationScreen = () => {
   const [fromChatMoodPrefill, setFromChatMoodPrefill] = useState(false);
   const handledChatPrefillKeyRef = useRef('');
   const pendingWeekSlotIdRef = useRef('');
+  const pendingProductLinkRef = useRef(null);
 
   const [viewMode, setViewMode] = useState('week');
   const [weekPlan, setWeekPlan] = useState(null);
@@ -298,39 +324,101 @@ const BehavioralActivationScreen = () => {
         viewSegmentText: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
         viewSegmentTextOn: { color: colors.text },
         weekLoading: { alignItems: 'center', paddingVertical: SPACING.lg },
-        weekSlot: {
-          paddingVertical: SPACING.sm,
-          borderBottomWidth: StyleSheet.hairlineWidth,
-          borderBottomColor: 'rgba(128,128,128,0.25)',
+        weekRoot: { gap: 10 },
+        weekIntroCard: { marginBottom: 0 },
+        weekIntroBody: { marginBottom: 14, lineHeight: 21 },
+        weekProgressBlock: { marginTop: 4 },
+        weekProgressRow: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 8,
         },
-        weekSlotHeader: {
+        weekProgressLabel: { fontSize: 13, fontWeight: '700' },
+        weekProgressHint: { fontSize: 12, fontWeight: '500' },
+        weekProgressTrack: {
+          height: 6,
+          borderRadius: 999,
+          overflow: 'hidden',
+        },
+        weekProgressFill: { height: '100%', borderRadius: 999 },
+        weekSlotCard: {
+          borderRadius: 18,
+          padding: 14,
+          borderWidth: StyleSheet.hairlineWidth,
+        },
+        weekSlotTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+        weekDayBadge: {
+          minWidth: 44,
+          height: 44,
+          borderRadius: 14,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        weekDayBadgeText: { fontSize: 12, fontWeight: '800', letterSpacing: 0.3 },
+        weekSlotMain: { flex: 1 },
+        weekChipRow: {
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 8,
+          marginBottom: 6,
+        },
+        weekChipLeft: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+        weekTypeChip: {
           flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 4,
+          gap: 4,
+          paddingHorizontal: 8,
+          paddingVertical: 4,
+          borderRadius: 999,
         },
-        weekDay: { fontSize: 13, fontWeight: '700', color: colors.primary },
-        weekStatusPill: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-        weekStatusText: { fontSize: 11, fontWeight: '600' },
-        weekType: { marginBottom: 4 },
-        weekActivity: { fontSize: 15, lineHeight: 22, marginBottom: SPACING.sm },
-        weekActions: { flexDirection: 'row', gap: 8 },
+        weekLinkedChip: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 4,
+          paddingHorizontal: 8,
+          paddingVertical: 4,
+          borderRadius: 999,
+        },
+        weekLinkedChipText: { fontSize: 10, fontWeight: '700' },
+        weekTypeChipText: { fontSize: 11, fontWeight: '600' },
+        weekStatusPill: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4 },
+        weekStatusText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
+        weekActivity: { fontSize: 15, lineHeight: 22, fontWeight: '500' },
+        weekDoneRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          marginTop: 10,
+        },
+        weekDoneText: { fontSize: 13, fontWeight: '600' },
+        weekActions: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+          marginTop: 12,
+        },
         weekActionPrimary: {
           flex: 1,
-          borderRadius: 10,
-          paddingVertical: 10,
+          flexDirection: 'row',
           alignItems: 'center',
+          justifyContent: 'center',
+          gap: 6,
+          borderRadius: 12,
+          paddingVertical: 11,
+          minHeight: 42,
         },
         weekActionSecondary: {
-          borderRadius: 10,
-          paddingVertical: 10,
+          borderRadius: 12,
+          paddingVertical: 11,
           paddingHorizontal: 14,
           borderWidth: StyleSheet.hairlineWidth,
-          alignItems: 'center',
+          minHeight: 42,
+          justifyContent: 'center',
         },
-        weekActionText: { fontSize: 14, fontWeight: '600' },
-        weekActionTextMuted: { fontSize: 14, fontWeight: '600' },
-        weekDoneIcon: { marginTop: 4 },
+        weekActionText: { fontSize: 14, fontWeight: '700' },
+        weekActionTextMuted: { fontSize: 13, fontWeight: '600' },
       }),
     [colors],
   );
@@ -400,20 +488,56 @@ const BehavioralActivationScreen = () => {
     [weekStart, showToast, TEXTS.WEEK_SAVE_ERROR],
   );
 
+  const beginWeekSlotRegistration = useCallback((slot, productKind) => {
+    if (!slot?.slotId) return;
+    pendingWeekSlotIdRef.current = slot.slotId;
+    pendingProductLinkRef.current = productKind;
+    setActivityDescription(slot.activityDescription || '');
+    setActivityType(slot.activityType === 'routine' ? 'routine' : 'pleasant');
+    setStepIndex(0);
+    setValidationMessage('');
+    setFromChatPrefill(false);
+    setFromChatMoodPrefill(false);
+    setViewMode('log');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+  }, []);
+
   const handleRegisterWeekSlot = useCallback(
     (slot) => {
       if (!slot?.slotId) return;
-      pendingWeekSlotIdRef.current = slot.slotId;
-      setActivityDescription(slot.activityDescription || '');
-      setActivityType(slot.activityType === 'routine' ? 'routine' : 'pleasant');
-      setStepIndex(0);
-      setValidationMessage('');
-      setFromChatPrefill(false);
-      setFromChatMoodPrefill(false);
-      setViewMode('log');
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      if (slot.linkedTaskId || slot.linkedHabitId) {
+        beginWeekSlotRegistration(slot, null);
+        return;
+      }
+
+      const isRoutine = slot.activityType === 'routine';
+      Alert.alert(TEXTS.LINK_PRODUCT_TITLE, TEXTS.LINK_PRODUCT_BODY, [
+        isRoutine
+          ? {
+              text: TEXTS.LINK_PRODUCT_HABIT,
+              onPress: () => beginWeekSlotRegistration(slot, 'habit'),
+            }
+          : {
+              text: TEXTS.LINK_PRODUCT_TASK,
+              onPress: () => beginWeekSlotRegistration(slot, 'task'),
+            },
+        isRoutine
+          ? {
+              text: TEXTS.LINK_PRODUCT_TASK,
+              onPress: () => beginWeekSlotRegistration(slot, 'task'),
+            }
+          : {
+              text: TEXTS.LINK_PRODUCT_HABIT,
+              onPress: () => beginWeekSlotRegistration(slot, 'habit'),
+            },
+        {
+          text: TEXTS.LINK_PRODUCT_SKIP,
+          style: 'cancel',
+          onPress: () => beginWeekSlotRegistration(slot, null),
+        },
+      ]);
     },
-    [],
+    [TEXTS, beginWeekSlotRegistration],
   );
 
   const handleSkipWeekSlot = useCallback(
@@ -445,6 +569,8 @@ const BehavioralActivationScreen = () => {
     setFromChatPrefill(false);
     setFromChatMoodPrefill(false);
     handledChatPrefillKeyRef.current = '';
+    pendingWeekSlotIdRef.current = '';
+    pendingProductLinkRef.current = null;
   }, []);
 
   const applyRoutePrefill = useCallback(
@@ -527,7 +653,9 @@ const BehavioralActivationScreen = () => {
 
         const slotId = pendingWeekSlotIdRef.current;
         const logId = response?.record?._id;
+        const productKind = pendingProductLinkRef.current;
         const currentPlan = weekPlanRef.current;
+        const slotBeforeSave = currentPlan?.slots?.find((s) => s.slotId === slotId);
         if (slotId && logId && currentPlan?.slots) {
           const updated = currentPlan.slots.map((s) =>
             s.slotId === slotId
@@ -539,7 +667,48 @@ const BehavioralActivationScreen = () => {
           if (synced) {
             setViewMode('week');
           }
+
+          const hasExistingLink =
+            !!slotBeforeSave?.linkedTaskId || !!slotBeforeSave?.linkedHabitId;
+
+          if (productKind === 'task' || productKind === 'habit') {
+            try {
+              const linkRes = await api.post(ENDPOINTS.BEHAVIORAL_ACTIVATION_WEEK_PLAN_LINK, {
+                slotId,
+                weekStart: weekStart || undefined,
+                productKind,
+                logId,
+              });
+              if (linkRes?.success && linkRes?.plan) {
+                setWeekPlan(linkRes.plan);
+                weekPlanRef.current = linkRes.plan;
+                showToast(
+                  productKind === 'task'
+                    ? TEXTS.LINK_PRODUCT_TOAST_TASK
+                    : TEXTS.LINK_PRODUCT_TOAST_HABIT,
+                );
+              }
+            } catch (linkErr) {
+              console.error('Error vinculando BA con producto:', linkErr);
+              showToast(TEXTS.LINK_PRODUCT_TOAST_ERROR);
+            }
+          } else if (hasExistingLink) {
+            try {
+              const syncRes = await api.post(ENDPOINTS.BEHAVIORAL_ACTIVATION_WEEK_PLAN_SYNC, {
+                slotId,
+                weekStart: weekStart || undefined,
+                logId,
+              });
+              if (syncRes?.success && syncRes?.plan) {
+                setWeekPlan(syncRes.plan);
+                weekPlanRef.current = syncRes.plan;
+              }
+            } catch (syncErr) {
+              console.error('Error sincronizando BA con producto:', syncErr);
+            }
+          }
         }
+        pendingProductLinkRef.current = null;
 
         resetWizard();
         await loadRecords();
@@ -549,6 +718,8 @@ const BehavioralActivationScreen = () => {
     } catch (err) {
       console.error('Error guardando registro BA:', err);
       showToast(TEXTS.TOAST_ERROR);
+      pendingWeekSlotIdRef.current = '';
+      pendingProductLinkRef.current = null;
     } finally {
       setSaving(false);
     }

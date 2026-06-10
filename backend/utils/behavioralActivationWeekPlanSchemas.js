@@ -51,6 +51,14 @@ export function getUpdateWeekPlanSchema(copy) {
             .messages({
               'string.pattern.base': copy.joiCompletedLogInvalid,
             }),
+          linkedTaskId: Joi.string()
+            .pattern(/^[a-fA-F0-9]{24}$/)
+            .optional()
+            .allow(null),
+          linkedHabitId: Joi.string()
+            .pattern(/^[a-fA-F0-9]{24}$/)
+            .optional()
+            .allow(null),
         }),
       )
       .min(1)

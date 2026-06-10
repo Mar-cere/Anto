@@ -17,6 +17,14 @@ import {
   getOrCreateWeekPlan,
   saveWeekPlan,
 } from '../services/behavioralActivationWeekPlanService.js';
+import {
+  linkBaSlotToProduct,
+  syncBaEcosystemFromLog,
+} from '../services/behavioralActivationProductBridgeService.js';
+import {
+  getLinkBaProductSchema,
+  getSyncBaFromLogSchema,
+} from '../utils/behavioralActivationLinkProductSchemas.js';
 
 const router = express.Router();
 
@@ -114,6 +122,83 @@ router.get('/week-plan', weekPlanLimiter, async (req, res) => {
   } catch (error) {
     console.error('Error obteniendo plan semanal BA:', error);
     res.status(500).json({ success: false, error: copy.weekPlanError });
+  }
+});
+
+router.post('/week-plan/link-product', weekPlanLimiter, async (req, res) => {
+  const copy = req.apiCopy;
+  try {
+    const { error, value } = validateBody(getLinkBaProductSchema(copy), req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        error: error.details[0].message,
+      });
+    }
+
+    const result = await linkBaSlotToProduct({
+      userId: req.user.userId,
+      weekStartInput: value.weekStart || undefined,
+      slotId: value.slotId,
+      productKind: value.productKind,
+      logId: value.logId || null,
+    });
+
+    res.status(result.idempotentReplay ? 200 : 201).json({
+      success: true,
+      message: copy.linkProductSuccess,
+      productKind: result.productKind,
+      task: result.task || undefined,
+      habit: result.habit || undefined,
+      plan: result.plan,
+      idempotentReplay: !!result.idempotentReplay,
+    });
+  } catch (err) {
+    if (err?.code === 'PLAN_NOT_FOUND') {
+      return res.status(404).json({ success: false, error: copy.linkProductPlanNotFound });
+    }
+    if (err?.code === 'SLOT_NOT_FOUND') {
+      return res.status(404).json({ success: false, error: copy.linkProductSlotNotFound });
+    }
+    if (err?.code === 'SLOT_LINK_CONFLICT') {
+      return res.status(409).json({ success: false, error: copy.linkProductConflict });
+    }
+    console.error('Error vinculando slot BA a producto:', err);
+    res.status(500).json({ success: false, error: copy.linkProductError });
+  }
+});
+
+router.post('/week-plan/sync-from-log', weekPlanLimiter, async (req, res) => {
+  const copy = req.apiCopy;
+  try {
+    const { error, value } = validateBody(getSyncBaFromLogSchema(copy), req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        error: error.details[0].message,
+      });
+    }
+
+    const result = await syncBaEcosystemFromLog({
+      userId: req.user.userId,
+      weekStartInput: value.weekStart || undefined,
+      slotId: value.slotId,
+      logId: value.logId,
+    });
+
+    if (!result) {
+      return res.status(404).json({ success: false, error: copy.linkProductSlotNotFound });
+    }
+
+    res.json({
+      success: true,
+      message: copy.syncFromLogSuccess,
+      plan: result.plan,
+      sync: result.sync,
+    });
+  } catch (err) {
+    console.error('Error sincronizando BA desde log:', err);
+    res.status(500).json({ success: false, error: copy.syncFromLogError });
   }
 });
 

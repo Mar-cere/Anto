@@ -70,6 +70,7 @@ import {
 import chatInterventionGraphService from '../services/chatInterventionGraphService.js';
 import { planChatActionSuggestions } from '../services/psychoeducationPromptSnippetService.js';
 import { buildActiveTccProtocolsPromptSnippet } from '../services/activeTccProtocolsContextService.js';
+import { resetConversationSessionState } from '../services/conversationClearService.js';
 import { cursorPaginate } from '../utils/pagination.js';
 import {
     HISTORIAL_LIMITE,
@@ -2507,6 +2508,10 @@ router.delete('/conversations/:conversationId', protect, validarConversationId, 
     };
 
     const result = await Message.deleteMany(query);
+
+    if (!role) {
+      await resetConversationSessionState(conversationId, { full: true });
+    }
 
     res.json({
       message: req.apiCopy.messagesDeletedSuccess,

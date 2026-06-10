@@ -42,6 +42,16 @@ const weekPlanSlotSchema = new mongoose.Schema(
       ref: 'BehavioralActivationLog',
       default: null,
     },
+    linkedTaskId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Task',
+      default: null,
+    },
+    linkedHabitId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Habit',
+      default: null,
+    },
   },
   { _id: false },
 );

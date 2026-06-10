@@ -117,6 +117,12 @@ export function normalizeWeekPlanSlots(slots) {
         status === 'completed' && /^[a-fA-F0-9]{24}$/.test(String(slot?.completedLogId || ''))
           ? String(slot.completedLogId)
           : null;
+      const linkedTaskId = /^[a-fA-F0-9]{24}$/.test(String(slot?.linkedTaskId || ''))
+        ? String(slot.linkedTaskId)
+        : null;
+      const linkedHabitId = /^[a-fA-F0-9]{24}$/.test(String(slot?.linkedHabitId || ''))
+        ? String(slot.linkedHabitId)
+        : null;
       return {
         slotId,
         dayOffset,
@@ -124,6 +130,8 @@ export function normalizeWeekPlanSlots(slots) {
         activityType,
         status,
         completedLogId,
+        linkedTaskId,
+        linkedHabitId,
       };
     })
     .filter(Boolean)

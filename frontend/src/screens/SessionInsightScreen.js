@@ -267,7 +267,7 @@ export default function SessionInsightScreen() {
       finish();
       return;
     }
-    recordInterventionClicked(step.id).catch(() => {});
+    recordInterventionClicked(step.id);
     navigation.navigate(step.screen, step.params || {});
   }, [insight, navigation, finish]);
 

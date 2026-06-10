@@ -58,4 +58,20 @@ describe('behavioralActivationWeekPlanService', () => {
     expect(out[0].completedLogId).toBeNull();
     expect(out[1].completedLogId).toBe('507f1f77bcf86cd799439011');
   });
+
+  it('normalizeWeekPlanSlots conserva vínculos con tareas/hábitos', () => {
+    const out = normalizeWeekPlanSlots([
+      {
+        slotId: 'a',
+        dayOffset: 0,
+        activityDescription: 'Paseo',
+        activityType: 'pleasant',
+        status: 'planned',
+        linkedTaskId: '507f1f77bcf86cd799439011',
+        linkedHabitId: null,
+      },
+    ]);
+    expect(out[0].linkedTaskId).toBe('507f1f77bcf86cd799439011');
+    expect(out[0].linkedHabitId).toBeNull();
+  });
 });

@@ -84,6 +84,8 @@ export const ENDPOINTS = {
   BEHAVIORAL_ACTIVATION_LOG_BY_ID: (id: string) => `/api/behavioral-activation-logs/${id}`,
   BEHAVIORAL_ACTIVATION_LOGS_EXPORT: '/api/behavioral-activation-logs/export',
   BEHAVIORAL_ACTIVATION_WEEK_PLAN: '/api/behavioral-activation-logs/week-plan',
+  BEHAVIORAL_ACTIVATION_WEEK_PLAN_LINK: '/api/behavioral-activation-logs/week-plan/link-product',
+  BEHAVIORAL_ACTIVATION_WEEK_PLAN_SYNC: '/api/behavioral-activation-logs/week-plan/sync-from-log',
   AUTOMATIC_THOUGHT_LOGS: '/api/automatic-thought-logs',
   AUTOMATIC_THOUGHT_LOG_BY_ID: (id: string) => `/api/automatic-thought-logs/${id}`,
   AUTOMATIC_THOUGHT_LOGS_EXPORT: '/api/automatic-thought-logs/export',
