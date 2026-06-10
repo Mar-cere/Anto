@@ -58,7 +58,7 @@ function stripControlChars(text) {
     .trim();
 }
 
-function formatBaFocusSlot(slot, dayLabels, { isToday, isOverdue, pendingCount }) {
+function formatBaFocusSlot(slot, dayLabels, { isToday, isTomorrow, isOverdue, pendingCount }) {
   const slotId = String(slot?.slotId || '').trim();
   const activityDescription = truncate(stripControlChars(slot?.activityDescription), 90);
   if (!slotId || !activityDescription) return null;
@@ -68,6 +68,7 @@ function formatBaFocusSlot(slot, dayLabels, { isToday, isOverdue, pendingCount }
     dayLabel: dayLabels?.[slot.dayOffset] || '',
     dayOffset: slot.dayOffset ?? 0,
     isToday,
+    isTomorrow,
     isOverdue,
     pendingCount,
   };
@@ -82,31 +83,49 @@ function pendingBaSlots(plan) {
 }
 
 /**
- * Slot del plan BA más relevante para el foco del dashboard: hoy → próximo en la semana → atrasado.
+ * Slot del plan BA para el foco del dashboard: hoy → mañana → atrasada esta semana.
+ * No muestra actividades a más de un día vista (p. ej. domingo si hoy es miércoles).
  */
 export function pickBaFocusSlot({ plan, weekStart, dayLabels, now = new Date() }) {
   const pending = pendingBaSlots(plan);
   if (pending.length === 0) return null;
 
   const todayOffset = getTodayDayOffsetInWeek(weekStart, now);
+  if (todayOffset === null) return null;
+
   const meta = { pendingCount: pending.length };
 
-  if (todayOffset !== null) {
-    const todaySlot = pending.find((s) => (s.dayOffset ?? 0) === todayOffset);
-    if (todaySlot) {
-      return formatBaFocusSlot(todaySlot, dayLabels, { ...meta, isToday: true, isOverdue: false });
-    }
-
-    const upcoming = pending.find((s) => (s.dayOffset ?? 0) > todayOffset);
-    if (upcoming) {
-      return formatBaFocusSlot(upcoming, dayLabels, { ...meta, isToday: false, isOverdue: false });
-    }
-
-    const overdue = pending[0];
-    return formatBaFocusSlot(overdue, dayLabels, { ...meta, isToday: false, isOverdue: true });
+  const todaySlot = pending.find((s) => (s.dayOffset ?? 0) === todayOffset);
+  if (todaySlot) {
+    return formatBaFocusSlot(todaySlot, dayLabels, {
+      ...meta,
+      isToday: true,
+      isTomorrow: false,
+      isOverdue: false,
+    });
   }
 
-  return formatBaFocusSlot(pending[0], dayLabels, { ...meta, isToday: false, isOverdue: false });
+  const tomorrowSlot = pending.find((s) => (s.dayOffset ?? 0) === todayOffset + 1);
+  if (tomorrowSlot) {
+    return formatBaFocusSlot(tomorrowSlot, dayLabels, {
+      ...meta,
+      isToday: false,
+      isTomorrow: true,
+      isOverdue: false,
+    });
+  }
+
+  const overdue = pending.find((s) => (s.dayOffset ?? 0) < todayOffset);
+  if (overdue) {
+    return formatBaFocusSlot(overdue, dayLabels, {
+      ...meta,
+      isToday: false,
+      isTomorrow: false,
+      isOverdue: true,
+    });
+  }
+
+  return null;
 }
 
 export function summarizeRecentAbcRecord(record) {

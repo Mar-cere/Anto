@@ -175,6 +175,7 @@ export const DASH = {
   FOCUS_REMINDER_TAP_CHAT: 'Toca para ir al chat',
   FOCUS_PROTOCOL: 'Próximo paso (seguimiento)',
   FOCUS_BA_TODAY: 'Activación conductual · Hoy',
+  FOCUS_BA_TOMORROW: 'Activación conductual · Mañana',
   FOCUS_BA_OVERDUE: 'Activación conductual · Pendiente',
   FOCUS_BA_UPCOMING: 'Activación conductual',
   FOCUS_BA_MORE_SUFFIX: 'actividades más esta semana',

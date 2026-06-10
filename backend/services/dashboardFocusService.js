@@ -560,6 +560,7 @@ export async function buildDashboardFocus(userId, opts = {}) {
           dayLabel: baWeekFocus.dayLabel,
           dayOffset: baWeekFocus.dayOffset,
           isToday: baWeekFocus.isToday,
+          isTomorrow: baWeekFocus.isTomorrow,
           isOverdue: baWeekFocus.isOverdue,
           pendingCount: baWeekFocus.pendingCount,
           weekStart: baWeekFocus.weekStart

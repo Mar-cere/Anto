@@ -159,6 +159,7 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation, onOpenBehavi
     const day = String(baWeekNext.dayLabel || '').trim();
     let title = DASH.FOCUS_BA_UPCOMING;
     if (baWeekNext.isToday) title = DASH.FOCUS_BA_TODAY;
+    else if (baWeekNext.isTomorrow) title = DASH.FOCUS_BA_TOMORROW;
     else if (baWeekNext.isOverdue) title = DASH.FOCUS_BA_OVERDUE;
 
     let subtitle = desc;

@@ -96,7 +96,7 @@ describe('activeTccProtocolsContextService', () => {
     expect(picked?.isOverdue).toBe(true);
   });
 
-  it('pickBaFocusSlot elige la próxima pendiente si hoy no tiene actividad', () => {
+  it('pickBaFocusSlot elige la de mañana si hoy no tiene actividad', () => {
     const weekStart = normalizeWeekStart(new Date('2026-06-04'));
     const dayLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
     const picked = pickBaFocusSlot({
@@ -111,8 +111,24 @@ describe('activeTccProtocolsContextService', () => {
       now: new Date('2026-06-04T12:00:00'),
     });
     expect(picked?.slotId).toBe('b');
-    expect(picked?.isToday).toBe(false);
+    expect(picked?.isTomorrow).toBe(true);
     expect(picked?.isOverdue).toBe(false);
+  });
+
+  it('pickBaFocusSlot no muestra actividades a más de un día vista', () => {
+    const weekStart = normalizeWeekStart(new Date('2026-06-04'));
+    const picked = pickBaFocusSlot({
+      plan: {
+        slots: [
+          { slotId: 'a', dayOffset: 1, status: 'completed', activityDescription: 'Hecha' },
+          { slotId: 'b', dayOffset: 6, status: 'planned', activityDescription: 'Domingo lejano' },
+        ],
+      },
+      weekStart,
+      dayLabels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+      now: new Date('2026-06-04T12:00:00'),
+    });
+    expect(picked).toBe(null);
   });
 
   it('pickBaFocusSlot ignora slots sin descripción o slotId', () => {
@@ -120,9 +136,9 @@ describe('activeTccProtocolsContextService', () => {
     const picked = pickBaFocusSlot({
       plan: {
         slots: [
-          { slotId: '', dayOffset: 3, status: 'planned', activityDescription: 'Sin id' },
+          { slotId: '', dayOffset: 4, status: 'planned', activityDescription: 'Sin id' },
           { slotId: 'ok', dayOffset: 4, status: 'planned', activityDescription: '   ' },
-          { slotId: 'good', dayOffset: 5, status: 'planned', activityDescription: 'Válida' },
+          { slotId: 'good', dayOffset: 4, status: 'planned', activityDescription: 'Mañana válida' },
         ],
       },
       weekStart,
