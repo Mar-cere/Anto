@@ -127,7 +127,7 @@ function normalizePreloadedChatCopy(reminder, language, DASH) {
   return reminder;
 }
 
-const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation }) => {
+const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation, onOpenBehavioralActivation }) => {
   const DASH = useSectionTranslations('DASH');
   const { language } = useLanguage();
   const { width } = useWindowDimensions();
@@ -150,6 +150,28 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation }) => {
   const focus = data?.focus;
   const protocolNext = data?.protocolNext;
   const nextTask = data?.nextTask;
+  const baWeekNext = data?.baWeekNext;
+
+  const baWeekCopy = useMemo(() => {
+    if (!baWeekNext) return null;
+    const desc = String(baWeekNext.activityDescription || '').trim();
+    const day = String(baWeekNext.dayLabel || '').trim();
+    let title = DASH.FOCUS_BA_UPCOMING;
+    if (baWeekNext.isToday) title = DASH.FOCUS_BA_TODAY;
+    else if (baWeekNext.isOverdue) title = DASH.FOCUS_BA_OVERDUE;
+
+    let subtitle = desc;
+    if (baWeekNext.isToday) {
+      if (baWeekNext.pendingCount > 1) {
+        const extra = baWeekNext.pendingCount - 1;
+        subtitle = `${desc} · ${extra} ${DASH.FOCUS_BA_MORE_SUFFIX}`;
+      }
+    } else if (day) {
+      subtitle = `${day} · ${desc}`;
+    }
+
+    return { title, subtitle };
+  }, [baWeekNext, DASH]);
 
   const displayedReminder = useMemo(() => {
     const picked = pickDisplayedReminder(reminder?.candidates, isCompact);
@@ -191,6 +213,10 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation }) => {
       onOpenChat();
     }
   }, [lastSessionConvId, handleConv, onOpenConversation, onOpenChat]);
+
+  const onBaWeekPress = useCallback(() => {
+    if (onOpenBehavioralActivation) onOpenBehavioralActivation();
+  }, [onOpenBehavioralActivation]);
 
   if (!data) return null;
 
@@ -237,6 +263,29 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation }) => {
           {reminderIsPressable ? (
             <Ionicons name="chevron-forward" size={18} color={chevronMuted} style={styles.reminderChevron} />
           ) : null}
+        </TouchableOpacity>
+      ) : null}
+
+      {baWeekCopy ? (
+        <TouchableOpacity
+          style={[styles.reminderRow, styles.reminderRowPressable]}
+          onPress={onBaWeekPress}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={`${baWeekCopy.title}. ${baWeekCopy.subtitle}. ${DASH.FOCUS_BA_OPEN_A11Y}`}
+        >
+          <View style={styles.reminderIconWrap}>
+            <Ionicons name="footsteps-outline" size={20} color={colors.primary} />
+          </View>
+          <View style={styles.reminderCopy}>
+            <Text style={styles.reminderTitle} numberOfLines={2}>
+              {baWeekCopy.title}
+            </Text>
+            <Text style={styles.reminderMeta} numberOfLines={2}>
+              {baWeekCopy.subtitle}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={chevronMuted} style={styles.reminderChevron} />
         </TouchableOpacity>
       ) : null}
 

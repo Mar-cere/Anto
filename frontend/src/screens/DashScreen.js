@@ -609,6 +609,11 @@ const DashScreen = () => {
     navigation.navigate('MainTabs', { screen: 'Chat' });
   }, [navigation]);
 
+  const openBehavioralActivationFromFocus = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    navigation.navigate('BehavioralActivation');
+  }, [navigation]);
+
   const openConversationFromFocus = useCallback(
     async (conversationId) => {
       if (!conversationId) return;
@@ -830,9 +835,8 @@ const DashScreen = () => {
             data={focusPayload}
             onOpenChat={goToChatFromOnboarding}
             onOpenConversation={openConversationFromFocus}
+            onOpenBehavioralActivation={openBehavioralActivationFromFocus}
           />
-          <TccProtocolsQuickCard accessibilityLabel={DASH.TCC_TOOLS_LABEL} />
-          <QuoteSection />
           {error && (
             <ErrorMessage
               message={error}
@@ -860,10 +864,12 @@ const DashScreen = () => {
               accessibilityLabel={DASH.HABITS_LABEL}
             />
           </Animated.View>
+          <TccProtocolsQuickCard accessibilityLabel={DASH.TCC_TOOLS_LABEL} />
           <PomodoroCard accessibilityLabel={DASH.POMODORO_LABEL} collapsible defaultExpanded={false} />
           <Animated.View style={refreshAnimationStyle}>
             <JournalCard />
           </Animated.View>
+          <QuoteSection />
         </DashboardScroll>
         </SafeAreaView>
       </ImageBackground>

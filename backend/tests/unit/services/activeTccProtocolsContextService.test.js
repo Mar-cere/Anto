@@ -7,9 +7,22 @@ const mockFindWeekPlanForUser = jest.fn();
 const mockExposureFindByUser = jest.fn();
 const mockAbcFindByUser = jest.fn();
 
+function normalizeWeekStart(input) {
+  const d =
+    input instanceof Date
+      ? new Date(input.getTime())
+      : new Date(String(input || '').trim() || Date.now());
+  const utc = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const day = utc.getUTCDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  utc.setUTCDate(utc.getUTCDate() + diff);
+  return utc;
+}
+
 await jest.unstable_mockModule('../../../services/behavioralActivationWeekPlanService.js', () => ({
   __esModule: true,
   findWeekPlanForUser: mockFindWeekPlanForUser,
+  normalizeWeekStart,
 }));
 
 await jest.unstable_mockModule('../../../models/ExposurePlan.js', () => ({
@@ -24,7 +37,9 @@ await jest.unstable_mockModule('../../../models/AbcRecord.js', () => ({
 
 const {
   buildActiveTccProtocolsPromptSnippet,
+  getTodayDayOffsetInWeek,
   pickActiveExposureStep,
+  pickBaFocusSlot,
   pickNextBaWeekSlot,
   summarizeRecentAbcRecord,
 } = await import('../../../services/activeTccProtocolsContextService.js');
@@ -35,6 +50,50 @@ describe('activeTccProtocolsContextService', () => {
     mockFindWeekPlanForUser.mockResolvedValue(null);
     mockExposureFindByUser.mockResolvedValue([]);
     mockAbcFindByUser.mockResolvedValue([]);
+  });
+
+  it('getTodayDayOffsetInWeek devuelve el índice del día dentro de la semana del plan', () => {
+    const monday = normalizeWeekStart(new Date('2026-06-04'));
+    expect(getTodayDayOffsetInWeek(monday, new Date('2026-06-04T12:00:00'))).toBe(3);
+    expect(getTodayDayOffsetInWeek(monday, new Date('2026-06-11T12:00:00'))).toBe(null);
+  });
+
+  it('pickBaFocusSlot prioriza la actividad de hoy', () => {
+    const weekStart = normalizeWeekStart(new Date('2026-06-04'));
+    const dayLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    const picked = pickBaFocusSlot({
+      plan: {
+        slots: [
+          { slotId: 'a', dayOffset: 1, status: 'planned', activityDescription: 'Lunes pasado' },
+          { slotId: 'b', dayOffset: 3, status: 'planned', activityDescription: 'Hoy toca' },
+          { slotId: 'c', dayOffset: 5, status: 'planned', activityDescription: 'Sábado' },
+        ],
+      },
+      weekStart,
+      dayLabels,
+      now: new Date('2026-06-04T12:00:00'),
+    });
+    expect(picked?.slotId).toBe('b');
+    expect(picked?.isToday).toBe(true);
+    expect(picked?.activityDescription).toBe('Hoy toca');
+  });
+
+  it('pickBaFocusSlot elige atrasada si no quedan días futuros en la semana', () => {
+    const weekStart = normalizeWeekStart(new Date('2026-06-04'));
+    const dayLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    const picked = pickBaFocusSlot({
+      plan: {
+        slots: [
+          { slotId: 'a', dayOffset: 0, status: 'planned', activityDescription: 'Lunes atrasado' },
+          { slotId: 'b', dayOffset: 1, status: 'completed', activityDescription: 'Hecha' },
+        ],
+      },
+      weekStart,
+      dayLabels,
+      now: new Date('2026-06-04T12:00:00'),
+    });
+    expect(picked?.slotId).toBe('a');
+    expect(picked?.isOverdue).toBe(true);
   });
 
   it('pickNextBaWeekSlot elige la pendiente más temprana', () => {

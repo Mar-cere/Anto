@@ -4,7 +4,10 @@
 import AbcRecord from '../models/AbcRecord.js';
 import ExposurePlan from '../models/ExposurePlan.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
-import { findWeekPlanForUser } from './behavioralActivationWeekPlanService.js';
+import {
+  findWeekPlanForUser,
+  normalizeWeekStart,
+} from './behavioralActivationWeekPlanService.js';
 
 const ABC_LOOKBACK_DAYS = 14;
 const MAX_PROTOCOL_LINES = 3;
@@ -37,6 +40,59 @@ export function pickNextBaWeekSlot(plan, dayLabels) {
     activityDescription: truncate(next.activityDescription, 90),
     dayLabel: dayLabels?.[next.dayOffset] || '',
   };
+}
+
+/** Día 0–6 dentro de la semana del plan (lunes = 0); null si hoy cae fuera de esa semana. */
+export function getTodayDayOffsetInWeek(weekStartKey, now = new Date()) {
+  const start = normalizeWeekStart(weekStartKey);
+  const startLocal = new Date(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate());
+  const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diffDays = Math.round((todayLocal.getTime() - startLocal.getTime()) / 86400000);
+  if (diffDays < 0 || diffDays > 6) return null;
+  return diffDays;
+}
+
+function formatBaFocusSlot(slot, dayLabels, { isToday, isOverdue, pendingCount }) {
+  return {
+    slotId: String(slot.slotId || ''),
+    activityDescription: truncate(slot.activityDescription, 90),
+    dayLabel: dayLabels?.[slot.dayOffset] || '',
+    dayOffset: slot.dayOffset ?? 0,
+    isToday,
+    isOverdue,
+    pendingCount,
+  };
+}
+
+/**
+ * Slot del plan BA más relevante para el foco del dashboard: hoy → próximo en la semana → atrasado.
+ */
+export function pickBaFocusSlot({ plan, weekStart, dayLabels, now = new Date() }) {
+  const slots = Array.isArray(plan?.slots) ? plan.slots : [];
+  const pending = slots
+    .filter((s) => s?.status === 'planned')
+    .sort((a, b) => (a.dayOffset ?? 0) - (b.dayOffset ?? 0));
+  if (pending.length === 0) return null;
+
+  const todayOffset = getTodayDayOffsetInWeek(weekStart, now);
+  const meta = { pendingCount: pending.length };
+
+  if (todayOffset !== null) {
+    const todaySlot = pending.find((s) => (s.dayOffset ?? 0) === todayOffset);
+    if (todaySlot) {
+      return formatBaFocusSlot(todaySlot, dayLabels, { ...meta, isToday: true, isOverdue: false });
+    }
+
+    const upcoming = pending.find((s) => (s.dayOffset ?? 0) > todayOffset);
+    if (upcoming) {
+      return formatBaFocusSlot(upcoming, dayLabels, { ...meta, isToday: false, isOverdue: false });
+    }
+
+    const overdue = pending[0];
+    return formatBaFocusSlot(overdue, dayLabels, { ...meta, isToday: false, isOverdue: true });
+  }
+
+  return formatBaFocusSlot(pending[0], dayLabels, { ...meta, isToday: false, isOverdue: false });
 }
 
 function stripControlChars(text) {
@@ -150,5 +206,7 @@ export default {
   buildActiveTccProtocolsPromptSnippet,
   pickActiveExposureStep,
   pickNextBaWeekSlot,
+  pickBaFocusSlot,
+  getTodayDayOffsetInWeek,
   summarizeRecentAbcRecord,
 };
