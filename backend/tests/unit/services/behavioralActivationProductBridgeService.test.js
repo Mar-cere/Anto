@@ -93,7 +93,8 @@ describe('behavioralActivationProductBridgeService', () => {
     expect(draft.title).toMatch(/Paseo/);
     expect(draft.itemType).toBe('task');
     expect(draft.dueDate).toBeInstanceOf(Date);
-    expect(draft.tags).toContain('activacion-conductual');
+    expect(draft.tags).toEqual(['ba']);
+    expect(draft.tags[0].length).toBeLessThanOrEqual(20);
   });
 
   it('buildHabitDraftFromBaSlot usa frecuencia semanal', () => {
@@ -107,9 +108,39 @@ describe('behavioralActivationProductBridgeService', () => {
 
   it('computeSlotDueDate no devuelve fecha pasada', () => {
     const due = computeSlotDueDate(weekStart, 0);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    expect(due.getTime()).toBeGreaterThanOrEqual(today.getTime());
+    expect(due.getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it('computeSlotDueDate agenda días pasados en la misma semana para la semana siguiente', () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-06-04T12:00:00')); // miércoles; lunes de esa semana ya pasó
+    try {
+      const planMonday = normalizeWeekStart(new Date('2026-06-04'));
+      const due = computeSlotDueDate(planMonday, 0);
+      expect(due.getHours()).toBe(18);
+      const expected = new Date(planMonday.getTime());
+      expected.setUTCDate(expected.getUTCDate() + 7);
+      expected.setHours(18, 0, 0, 0);
+      expect(due.getTime()).toBe(expected.getTime());
+      expect(due.getTime()).toBeGreaterThan(Date.now());
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('computeSlotDueDate conserva el día futuro de la semana actual', () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-06-04T12:00:00')); // miércoles
+    try {
+      const planMonday = normalizeWeekStart(new Date('2026-06-04'));
+      const due = computeSlotDueDate(planMonday, 4); // viernes de la misma semana
+      const expected = new Date(planMonday.getTime());
+      expected.setUTCDate(expected.getUTCDate() + 4);
+      expected.setHours(18, 0, 0, 0);
+      expect(due.getTime()).toBe(expected.getTime());
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('inferHabitIcon reconoce paseo y comida', () => {

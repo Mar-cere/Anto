@@ -16,14 +16,9 @@ function toObjectId(value) {
   return new mongoose.Types.ObjectId(s);
 }
 
-function startOfTodayLocal() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
 /**
- * Fecha sugerida para la actividad del slot (no antes de hoy).
+ * Fecha para tarea/hábito: día del slot en la semana del plan a las 18:00.
+ * Si ese momento ya pasó, se agenda la misma actividad el mismo día de la semana siguiente (+7 días).
  */
 export function computeSlotDueDate(weekStart, dayOffset) {
   const start = normalizeWeekStart(weekStart);
@@ -31,14 +26,9 @@ export function computeSlotDueDate(weekStart, dayOffset) {
   due.setUTCDate(due.getUTCDate() + Number(dayOffset) || 0);
   due.setHours(18, 0, 0, 0);
 
-  const today = startOfTodayLocal();
-  if (due < today) {
-    const fallback = new Date();
-    fallback.setHours(18, 0, 0, 0);
-    if (fallback < new Date()) {
-      fallback.setDate(fallback.getDate() + 1);
-    }
-    return fallback;
+  const now = new Date();
+  while (due <= now) {
+    due.setDate(due.getDate() + 7);
   }
   return due;
 }
@@ -74,7 +64,7 @@ export function buildTaskDraftFromBaSlot({ slot, weekStart }) {
     priority: 'medium',
     itemType: 'task',
     category: 'Bienestar',
-    tags: ['activacion-conductual'],
+    tags: ['ba'],
   };
 }
 
@@ -374,6 +364,7 @@ export async function linkBaSlotToProduct({
   }
 
   let created;
+  try {
   if (kind === 'task') {
     const draft = buildTaskDraftFromBaSlot({ slot, weekStart });
     created = await Task.create({
@@ -435,6 +426,12 @@ export async function linkBaSlotToProduct({
     habit: (await Habit.findById(created._id).lean()),
     plan: await BehavioralActivationWeekPlan.findById(plan._id).lean(),
   };
+  } catch (err) {
+    if (err?.name === 'ValidationError') {
+      throw Object.assign(new Error(err.message), { code: 'PRODUCT_VALIDATION', cause: err });
+    }
+    throw err;
+  }
 }
 
 async function attachLinkToSlot(planId, slotId, kind, productId, logOid) {

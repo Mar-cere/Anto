@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FloatingNavBar from '../components/FloatingNavBar';
 import Header from '../components/Header';
 import ParticleBackground from '../components/ParticleBackground';
+import TccProtocolsQuickCard from '../components/TccProtocolsQuickCard';
 import TechniqueCard from '../components/therapeutic/TechniqueCard';
 import { useTheme } from '../context/ThemeContext';
 import {
@@ -97,13 +98,30 @@ const TherapeuticTechniquesScreen = () => {
     [setSelectedEmotion]
   );
 
+  const DIRECT_PROTOCOL_SCREENS = useMemo(
+    () =>
+      new Set([
+        'BehavioralActivation',
+        'AbcRecord',
+        'ExposureHierarchy',
+        'AutomaticThoughtRecord',
+      ]),
+    [],
+  );
+
   const handleTechniquePress = useCallback(
     (technique) => {
       if (technique == null || typeof technique !== 'object') return;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      const linkedScreen =
+        typeof technique.linkedScreen === 'string' ? technique.linkedScreen.trim() : '';
+      if (linkedScreen && DIRECT_PROTOCOL_SCREENS.has(linkedScreen)) {
+        therapeuticSafeNavigate(navigation, linkedScreen);
+        return;
+      }
       therapeuticSafeNavigate(navigation, 'TechniqueDetail', { technique });
     },
-    [navigation]
+    [navigation, DIRECT_PROTOCOL_SCREENS],
   );
 
   const toggleSection = useCallback((categoryKey) => {
@@ -296,6 +314,7 @@ const TherapeuticTechniquesScreen = () => {
           <MaterialCommunityIcons name="hand-pointing-right" size={18} color={colors.primary} />
           <Text style={styles.listIntroText}>{TEXTS.HOW_IT_WORKS}</Text>
         </View>
+        <TccProtocolsQuickCard />
         <TouchableOpacity
           style={styles.psychoedCard}
           testID="psychoed-entry-library"

@@ -163,6 +163,13 @@ router.post('/week-plan/link-product', weekPlanLimiter, async (req, res) => {
     if (err?.code === 'SLOT_LINK_CONFLICT') {
       return res.status(409).json({ success: false, error: copy.linkProductConflict });
     }
+    if (err?.code === 'PRODUCT_VALIDATION') {
+      return res.status(400).json({
+        success: false,
+        error: copy.linkProductValidationError,
+        details: err.message,
+      });
+    }
     console.error('Error vinculando slot BA a producto:', err);
     res.status(500).json({ success: false, error: copy.linkProductError });
   }

@@ -39,6 +39,7 @@ import PomodoroCard from '../components/PomodoroCard';
 import JournalCard from '../components/JournalCard';
 import QuoteSection from '../components/QuoteSection';
 import DashboardFocusCard from '../components/DashboardFocusCard';
+import TccProtocolsQuickCard from '../components/TccProtocolsQuickCard';
 import TaskCard from '../components/TaskCard';
 import { SkeletonBlock, SkeletonCard } from '../components/Skeleton';
 import { api, ENDPOINTS } from '../config/api';
@@ -830,6 +831,7 @@ const DashScreen = () => {
             onOpenChat={goToChatFromOnboarding}
             onOpenConversation={openConversationFromFocus}
           />
+          <TccProtocolsQuickCard accessibilityLabel={DASH.TCC_TOOLS_LABEL} />
           <QuoteSection />
           {error && (
             <ErrorMessage
