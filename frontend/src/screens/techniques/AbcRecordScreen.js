@@ -31,10 +31,10 @@ import { SPACING } from '../../constants/ui';
 import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
 import { confirmDestructiveAction } from '../../utils/confirmDestructiveAction';
 import { parseAbcRecordRouteParams } from '../../utils/abcRecordPrefill';
+import IntensityScalePicker from '../../components/techniques/IntensityScalePicker';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const STEPS = ['A', 'B', 'C'];
-const INTENSITY_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 const DEFAULT_TEXTS = {
   TITLE: 'Autorregistro ABC',
@@ -224,24 +224,6 @@ const AbcRecordScreen = () => {
           fontSize: 13,
           color: colors.error,
           marginBottom: 8,
-        },
-        intensityRow: {
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          gap: 8,
-          marginBottom: 16,
-        },
-        intensityChip: {
-          minWidth: 36,
-          paddingVertical: 8,
-          paddingHorizontal: 10,
-          borderRadius: 10,
-          borderWidth: StyleSheet.hairlineWidth,
-          alignItems: 'center',
-        },
-        intensityChipText: {
-          fontSize: 14,
-          fontWeight: '600',
         },
         recordCard: {
           marginBottom: 12,
@@ -543,39 +525,12 @@ const AbcRecordScreen = () => {
           onChangeText={setEmotions}
           accessibilityLabel={TEXTS.STEP_C_EMOTION_HINT}
         />
-        <Text style={[techniqueScreenStyles.formHint, { marginTop: 12 }]}>
-          {TEXTS.STEP_C_INTENSITY_LABEL}
-        </Text>
-        <View style={styles.intensityRow}>
-          {INTENSITY_OPTIONS.map((value) => {
-            const selected = emotionIntensity === value;
-            return (
-              <TouchableOpacity
-                key={value}
-                style={[
-                  styles.intensityChip,
-                  {
-                    backgroundColor: selected ? colors.accentLineSoft : colors.glassFill,
-                    borderColor: selected ? colors.primary : colors.accentLineSoft,
-                  },
-                ]}
-                onPress={() => setEmotionIntensity(value)}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                accessibilityLabel={`${TEXTS.STEP_C_INTENSITY_LABEL} ${value}`}
-              >
-                <Text
-                  style={[
-                    styles.intensityChipText,
-                    { color: selected ? colors.primary : colors.text },
-                  ]}
-                >
-                  {value}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <IntensityScalePicker
+          label={TEXTS.STEP_C_INTENSITY_LABEL}
+          value={emotionIntensity}
+          onChange={setEmotionIntensity}
+          accessibilityLabelPrefix={TEXTS.STEP_C_INTENSITY_LABEL}
+        />
         <Text style={techniqueScreenStyles.formHint}>{TEXTS.STEP_C_BEHAVIOR_HINT}</Text>
         <TextInput
           style={[techniqueScreenStyles.textInput, { minHeight: 80 }]}

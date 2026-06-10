@@ -30,10 +30,10 @@ import { SPACING } from '../../constants/ui';
 import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
 import { confirmDestructiveAction } from '../../utils/confirmDestructiveAction';
 import { parseAtRecordRouteParams } from '../../utils/atRecordPrefill';
+import IntensityScalePicker from '../../components/techniques/IntensityScalePicker';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const STEPS = ['1', '2', '3'];
-const MOOD_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 const DEFAULT_TEXTS = {
   TITLE: 'Pensamiento automático',
@@ -210,16 +210,6 @@ const AutomaticThoughtRecordScreen = () => {
         },
         stepDotText: { fontSize: 14, fontWeight: '700' },
         stepConnector: { flex: 1, height: 2, backgroundColor: colors.accentLineSoft },
-        moodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.xs },
-        moodChip: {
-          minWidth: 36,
-          paddingVertical: 6,
-          paddingHorizontal: 4,
-          borderRadius: 8,
-          borderWidth: 1,
-          alignItems: 'center',
-        },
-        moodChipText: { fontSize: 12, fontWeight: '600' },
         distortionRow: { marginTop: SPACING.sm },
         distortionOption: {
           paddingVertical: 10,
@@ -529,42 +519,6 @@ const AutomaticThoughtRecordScreen = () => {
     }
   };
 
-  const renderIntensityPicker = () => (
-    <View style={{ marginTop: SPACING.sm }}>
-      <Text style={techniqueScreenStyles.formSectionHeading}>{TEXTS.STEP2_INTENSITY}</Text>
-      <View style={styles.moodRow}>
-        {MOOD_OPTIONS.map((level) => {
-          const selected = emotionIntensity === level;
-          return (
-            <TouchableOpacity
-              key={`intensity-${level}`}
-              style={[
-                styles.moodChip,
-                {
-                  backgroundColor: selected ? colors.primary : colors.glassFill,
-                  borderColor: selected ? colors.primary : colors.accentLineSoft,
-                },
-              ]}
-              onPress={() => {
-                Haptics.selectionAsync().catch(() => {});
-                setEmotionIntensity(level);
-              }}
-            >
-              <Text
-                style={[
-                  styles.moodChipText,
-                  { color: selected ? colors.textOnPrimary : colors.textSecondary },
-                ]}
-              >
-                {level}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
-
   const renderStepContent = () => {
     if (stepIndex === 0) {
       return (
@@ -617,7 +571,12 @@ const AutomaticThoughtRecordScreen = () => {
             value={emotion}
             onChangeText={setEmotion}
           />
-          {renderIntensityPicker()}
+          <IntensityScalePicker
+            label={TEXTS.STEP2_INTENSITY}
+            value={emotionIntensity}
+            onChange={setEmotionIntensity}
+            accessibilityLabelPrefix={TEXTS.STEP2_INTENSITY}
+          />
         </>
       );
     }

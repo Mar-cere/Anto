@@ -33,9 +33,9 @@ import { confirmDestructiveAction } from '../../utils/confirmDestructiveAction';
 import { parseBaRecordRouteParams } from '../../utils/baRecordPrefill';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 import BehavioralActivationWeekPanel from './BehavioralActivationWeekPanel';
+import IntensityScalePicker from '../../components/techniques/IntensityScalePicker';
 
 const STEPS = ['1', '2', '3'];
-const MOOD_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 const DEFAULT_TEXTS = {
   TITLE: 'Activación conductual',
@@ -285,16 +285,6 @@ const BehavioralActivationScreen = () => {
         typeSegmentTextOn: {
           color: colors.text,
         },
-        moodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.xs },
-        moodChip: {
-          minWidth: 36,
-          paddingVertical: 6,
-          paddingHorizontal: 4,
-          borderRadius: 8,
-          borderWidth: 1,
-          alignItems: 'center',
-        },
-        moodChipText: { fontSize: 12, fontWeight: '600' },
         validationText: { marginTop: SPACING.sm, fontSize: 14, color: colors.error || '#c0392b' },
         recordItem: {
           flexDirection: 'row',
@@ -789,42 +779,6 @@ const BehavioralActivationScreen = () => {
     }
   };
 
-  const renderMoodPicker = (label, value, onChange) => (
-    <View style={{ marginTop: SPACING.sm }}>
-      <Text style={techniqueScreenStyles.formSectionHeading}>{label}</Text>
-      <View style={styles.moodRow}>
-        {MOOD_OPTIONS.map((level) => {
-          const selected = value === level;
-          return (
-            <TouchableOpacity
-              key={`${label}-${level}`}
-              style={[
-                styles.moodChip,
-                {
-                  backgroundColor: selected ? colors.primary : colors.glassFill,
-                  borderColor: selected ? colors.primary : colors.accentLineSoft,
-                },
-              ]}
-              onPress={() => {
-                Haptics.selectionAsync().catch(() => {});
-                onChange(level);
-              }}
-            >
-              <Text
-                style={[
-                  styles.moodChipText,
-                  { color: selected ? colors.textOnPrimary : colors.textSecondary },
-                ]}
-              >
-                {level}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
-
   const renderStepContent = () => {
     if (stepIndex === 0) {
       return (
@@ -879,14 +833,24 @@ const BehavioralActivationScreen = () => {
             <Text style={techniqueScreenStyles.formHint}>{TEXTS.PREFILL_MOOD_HINT}</Text>
           ) : null}
           <Text style={techniqueScreenStyles.formHint}>{TEXTS.STEP2_HINT}</Text>
-          {renderMoodPicker(TEXTS.STEP2_TITLE, moodBefore, setMoodBefore)}
+          <IntensityScalePicker
+            label={TEXTS.STEP2_TITLE}
+            value={moodBefore}
+            onChange={setMoodBefore}
+            accessibilityLabelPrefix={TEXTS.STEP2_TITLE}
+          />
         </>
       );
     }
     return (
       <>
         <Text style={techniqueScreenStyles.formHint}>{TEXTS.STEP3_HINT}</Text>
-        {renderMoodPicker(TEXTS.STEP3_TITLE, moodAfter, setMoodAfter)}
+        <IntensityScalePicker
+          label={TEXTS.STEP3_TITLE}
+          value={moodAfter}
+          onChange={setMoodAfter}
+          accessibilityLabelPrefix={TEXTS.STEP3_TITLE}
+        />
         <Text style={[techniqueScreenStyles.formHint, { marginTop: SPACING.sm }]}>
           {TEXTS.STEP3_NOTES}
         </Text>

@@ -34,6 +34,7 @@ import { recordInterventionCompleted } from '../../utils/recordInterventionCompl
 import { confirmDestructiveAction } from '../../utils/confirmDestructiveAction';
 import { parseExposurePlanRouteParams } from '../../utils/exposurePlanPrefill';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
+import IntensityScalePicker from '../../components/techniques/IntensityScalePicker';
 
 const SUDS_LEVELS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 const MAX_STEPS = 15;
@@ -526,41 +527,15 @@ const ExposureHierarchyScreen = () => {
   };
 
   const renderSudsPicker = (label, value, onChange) => (
-    <View style={styles.sudsBlock}>
-      <Text style={techniqueScreenStyles.formSectionHeading}>{label}</Text>
-      <View style={styles.sudsRow}>
-        {SUDS_LEVELS.map((level) => {
-          const selected = value === level;
-          return (
-            <TouchableOpacity
-              key={`${label}-${level}`}
-              style={[
-                styles.sudsChip,
-                {
-                  backgroundColor: selected ? colors.accentLineSoft : colors.chromeInput,
-                  borderColor: selected ? colors.primary : colors.accentLineSoft,
-                },
-              ]}
-              onPress={() => {
-                Haptics.selectionAsync().catch(() => {});
-                onChange(level);
-              }}
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-            >
-              <Text
-                style={[
-                  styles.sudsChipText,
-                  { color: selected ? colors.primary : colors.textSecondary },
-                ]}
-              >
-                {level}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
+    <IntensityScalePicker
+      label={label}
+      values={SUDS_LEVELS}
+      value={value}
+      onChange={onChange}
+      lowLabel="0"
+      highLabel="100"
+      accessibilityLabelPrefix={label}
+    />
   );
 
   const renderStepProgress = (plan) => {
@@ -1053,22 +1028,6 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
   },
   validationText: { marginTop: SPACING.sm, fontSize: 14 },
-  sudsBlock: { marginTop: SPACING.sm },
-  sudsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: SPACING.xs,
-  },
-  sudsChip: {
-    minWidth: 40,
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-  },
-  sudsChipText: { fontSize: 12, fontWeight: '600' },
   progressBlock: { marginBottom: SPACING.sm },
   progressTrack: {
     height: 6,
