@@ -58,6 +58,7 @@ import AboutScreen from '../screens/AboutScreen';
 import AIPrivacyScreen from '../screens/AIPrivacyScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import SummaryScreen from '../screens/SummaryScreen';
+import SessionInsightScreen from '../screens/SessionInsightScreen';
 import { useTheme } from '../context/ThemeContext';
 import TabNavigator from './TabNavigator';
 
@@ -86,6 +87,7 @@ const ROUTE_NAMES = {
   ABOUT: 'About',
   AI_PRIVACY: 'AIPrivacy',
   ACTIVITY_SUMMARY: 'ActivitySummary',
+  SESSION_INSIGHT: 'SessionInsight',
   CHANGE_PASSWORD: 'ChangePassword',
 };
 
@@ -200,6 +202,11 @@ const StackNavigator = () => {
       <Stack.Screen
         name={ROUTE_NAMES.ACTIVITY_SUMMARY}
         component={SummaryScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name={ROUTE_NAMES.SESSION_INSIGHT}
+        component={SessionInsightScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen 

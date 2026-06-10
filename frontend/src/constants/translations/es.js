@@ -2498,6 +2498,20 @@ export const SUBSCRIPTION = {
   SUBSCRIPTION_STATUS_DATE_VALID_UNTIL: 'Vigencia hasta:',
 };
 
+export const SESSION_INSIGHT = {
+  KICKER: 'Resumen de sesión',
+  EMOTION_TITLE: 'Lo que detectamos',
+  PATTERN_TITLE: 'Patrón de pensamiento',
+  THEMES_TITLE: 'Temas de la conversación',
+  STEP_TITLE: 'Tu siguiente paso',
+  CTA_DONE: 'Continuar',
+  CTA_SKIP_STEP: 'Lo haré después',
+  MESSAGES_COUNT: '{n} mensajes tuyos',
+  DURATION_MIN: '{n} min',
+  DISCLAIMER:
+    'Esto es orientación de bienestar, no un diagnóstico. Si te sientes en riesgo, busca apoyo profesional.',
+};
+
 export const API_ERRORS = {
   NETWORK: 'No hay conexión. Revisa tu internet e inténtalo de nuevo.',
   TIMEOUT: 'La solicitud tardó demasiado. Inténtalo de nuevo.',
@@ -2520,6 +2534,7 @@ export default {
   AUTH,
   INFO,
   CHAT,
+  SESSION_INSIGHT,
   NAV,
   TASKS,
   HABITS,

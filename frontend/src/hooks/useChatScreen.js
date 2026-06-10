@@ -1182,11 +1182,29 @@ export function useChatScreen() {
       const token = await AsyncStorage.getItem('userToken');
       const target = await resolveChatBackTarget(route.params);
       await clearChatEntryBackTarget();
+      void scheduleLastSessionSummaryDeferred();
 
       if (!token) {
         dispatchRootReset({ index: 0, routes: [{ name: 'Home' }] });
         return;
       }
+
+      const userTurnCount = messagesRef.current.filter(
+        (m) => m.role === MESSAGE_ROLES.USER && String(m.content || '').trim().length > 0,
+      ).length;
+
+      if (userTurnCount >= 2 && !(await chatService.isGuestChatMode())) {
+        const cid = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+        if (cid && isValidMongoObjectId24(cid)) {
+          const insight = await chatService.fetchSessionInsight(cid);
+          if (insight?.eligible) {
+            const parentNav = navigation.getParent?.() || navigation;
+            parentNav.navigate('SessionInsight', { insight, backTarget: target });
+            return;
+          }
+        }
+      }
+
       if (target === 'home') {
         dispatchRootReset({ index: 0, routes: [{ name: 'Home' }] });
         return;
@@ -1201,7 +1219,7 @@ export function useChatScreen() {
         console.error('[ChatScreen] goBack recuperación:', e2);
       }
     }
-  }, [dispatchRootReset, route.params]);
+  }, [dispatchRootReset, navigation, route.params, scheduleLastSessionSummaryDeferred]);
 
   const guestHandoffStartFresh = useCallback(async () => {
     try {

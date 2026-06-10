@@ -55,6 +55,7 @@ import {
     writingStyleDetector
 } from '../services/index.js';
 import { scheduleLastSessionSummary } from '../services/lastSessionSummaryService.js';
+import { buildSessionInsight } from '../services/sessionInsightService.js';
 import metricsService from '../services/metricsService.js';
 import { buildHistoryForPromptFromMessages } from '../services/openai/openaiPromptBuilder.js';
 import paymentAuditService from '../services/paymentAuditService.js';
@@ -554,6 +555,35 @@ router.post(
       });
     }
   }
+);
+
+/**
+ * GET /api/chat/conversations/:conversationId/session-insight
+ * Insight inmediato al cerrar el chat (emoción, patrón, paso sugerido).
+ */
+router.get(
+  '/conversations/:conversationId/session-insight',
+  protect,
+  requireActiveSubscription(true),
+  validarConversationId,
+  validarConversacion,
+  async (req, res) => {
+    try {
+      const language = req.appLanguage || resolveRequestLanguage(req);
+      const insight = await buildSessionInsight({
+        userId: req.user._id,
+        conversationId: req.params.conversationId,
+        language,
+      });
+      return res.json({ success: true, data: insight });
+    } catch (error) {
+      console.error('[chatRoutes] session-insight:', error);
+      return res.status(500).json({
+        success: false,
+        message: req.apiCopy.sessionInsightError,
+      });
+    }
+  },
 );
 
 // Crear nuevo mensaje

@@ -621,6 +621,28 @@ export const getInterventionGraph = async (params = {}) => {
  * @param {{ delayMinutes?: number }} [options]
  * @returns {Promise<object|null>}
  */
+/**
+ * Insight inmediato al cerrar el chat (emoción, patrón, paso sugerido).
+ * @param {string} conversationId
+ * @returns {Promise<object|null>}
+ */
+export const fetchSessionInsight = async (conversationId) => {
+  try {
+    if (await isGuestChatMode()) return null;
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token) return null;
+    const cid = String(conversationId || '').trim();
+    if (!/^[\da-f]{24}$/i.test(cid)) return null;
+    const response = await apiClient.get(`/api/chat/conversations/${cid}/session-insight`);
+    return response?.data ?? null;
+  } catch (e) {
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.warn('[chatService] fetchSessionInsight:', e?.message || e);
+    }
+    return null;
+  }
+};
+
 export const scheduleLastSessionSummary = async (conversationId, options = {}) => {
   try {
     if (await isGuestChatMode()) return null;
@@ -666,6 +688,7 @@ export default {
   initializeSocket,
   sendMessage,
   sendMessageStream,
+  fetchSessionInsight,
   scheduleLastSessionSummary,
   submitMessageFeedback,
   submitProductProposalFeedback,

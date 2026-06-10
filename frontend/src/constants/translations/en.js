@@ -2484,6 +2484,20 @@ export const SUBSCRIPTION = {
   SUBSCRIPTION_STATUS_DATE_VALID_UNTIL: 'Valid until:',
 };
 
+export const SESSION_INSIGHT = {
+  KICKER: 'Session insight',
+  EMOTION_TITLE: 'What we noticed',
+  PATTERN_TITLE: 'Thinking pattern',
+  THEMES_TITLE: 'Conversation themes',
+  STEP_TITLE: 'Your next step',
+  CTA_DONE: 'Continue',
+  CTA_SKIP_STEP: 'I will do it later',
+  MESSAGES_COUNT: '{n} messages from you',
+  DURATION_MIN: '{n} min',
+  DISCLAIMER:
+    'This is wellbeing guidance, not a diagnosis. If you feel at risk, seek professional support.',
+};
+
 export const API_ERRORS = {
   NETWORK: 'No connection. Check your internet and try again.',
   TIMEOUT: 'The request took too long. Try again.',
@@ -2505,6 +2519,7 @@ export default {
   AUTH,
   INFO,
   CHAT,
+  SESSION_INSIGHT,
   NAV,
   TASKS,
   HABITS,
