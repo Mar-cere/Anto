@@ -576,6 +576,7 @@ const AutomaticThoughtRecordScreen = () => {
             value={emotionIntensity}
             onChange={setEmotionIntensity}
             accessibilityLabelPrefix={TEXTS.STEP2_INTENSITY}
+            style={{ marginTop: SPACING.sm }}
           />
         </>
       );

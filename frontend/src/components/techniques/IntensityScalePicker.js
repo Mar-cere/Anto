@@ -1,15 +1,19 @@
 /**
  * Selector unificado de intensidad / ánimo (1–10, SUDS, etc.).
- * Slider discreto con valor visible junto al título; sin chips ni segmentos.
+ * Slider discreto en JS puro (sin módulo nativo RNCSlider).
  */
-import Slider from '@react-native-community/slider';
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useMemo, useRef } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { PanResponder, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
 import { buildScaleValues } from '../../utils/intensityScale';
+
+const THUMB_SIZE = 26;
+const THUMB_INSET = THUMB_SIZE / 2;
+const TRACK_HEIGHT = 8;
+const TRACK_HIT_HEIGHT = 44;
 
 const DEFAULT_TEXTS = {
   LOW: 'Bajo',
@@ -33,6 +37,7 @@ export default function IntensityScalePicker({
   const { colors, resolvedScheme } = useTheme();
   const translated = useSectionTranslations('TECHNIQUES');
   const lastHapticIndex = useRef(-1);
+  const [trackWidth, setTrackWidth] = useState(0);
 
   const TEXTS = useMemo(
     () => ({
@@ -54,22 +59,28 @@ export default function IntensityScalePicker({
   const styles = useMemo(
     () =>
       StyleSheet.create({
-        wrap: { marginTop: SPACING.sm },
+        wrap: {
+          marginTop: SPACING.md,
+          marginBottom: SPACING.lg,
+        },
         headerRow: {
           flexDirection: 'row',
-          alignItems: 'flex-end',
+          alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 12,
-          marginBottom: hint ? 4 : 10,
+          gap: SPACING.sm,
+          marginBottom: hint ? SPACING.xs : SPACING.sm,
+          minHeight: 32,
         },
         label: {
           flex: 1,
+          flexShrink: 1,
           fontSize: 15,
           fontWeight: '700',
           color: colors.text,
           lineHeight: 20,
         },
         valuePill: {
+          flexShrink: 0,
           minWidth: 44,
           paddingHorizontal: 12,
           paddingVertical: 6,
@@ -89,17 +100,52 @@ export default function IntensityScalePicker({
           fontSize: 13,
           lineHeight: 18,
           color: colors.textSecondary,
-          marginBottom: 10,
+          marginBottom: SPACING.sm,
         },
-        slider: {
-          width: '100%',
-          height: Platform.OS === 'ios' ? 36 : 40,
+        trackHit: {
+          height: TRACK_HIT_HEIGHT,
+          justifyContent: 'center',
+        },
+        trackInner: {
+          position: 'relative',
+          height: TRACK_HIT_HEIGHT,
+          justifyContent: 'center',
+          paddingHorizontal: THUMB_INSET,
+        },
+        trackShell: {
+          height: TRACK_HEIGHT,
+          borderRadius: TRACK_HEIGHT / 2,
+          backgroundColor: colors.accentLineSoft,
+          overflow: 'hidden',
+        },
+        trackFill: {
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          backgroundColor: colors.primary,
+          borderRadius: TRACK_HEIGHT / 2,
+        },
+        thumb: {
+          position: 'absolute',
+          top: (TRACK_HIT_HEIGHT - THUMB_SIZE) / 2,
+          width: THUMB_SIZE,
+          height: THUMB_SIZE,
+          borderRadius: THUMB_SIZE / 2,
+          backgroundColor: colors.primary,
+          borderWidth: 2,
+          borderColor: resolvedScheme === 'dark' ? colors.background : '#fff',
+          shadowColor: '#000',
+          shadowOpacity: 0.18,
+          shadowRadius: 3,
+          shadowOffset: { width: 0, height: 1 },
+          elevation: 2,
         },
         scaleEndsRow: {
           flexDirection: 'row',
           justifyContent: 'space-between',
-          marginTop: -4,
-          paddingHorizontal: 4,
+          paddingHorizontal: THUMB_INSET + 2,
+          marginTop: SPACING.xs,
         },
         scaleEndNumber: {
           fontSize: 12,
@@ -109,8 +155,8 @@ export default function IntensityScalePicker({
         anchorsRow: {
           flexDirection: 'row',
           justifyContent: 'space-between',
-          marginTop: 6,
-          paddingHorizontal: 2,
+          marginTop: SPACING.xs,
+          paddingHorizontal: THUMB_INSET + 2,
         },
         anchorText: {
           fontSize: 12,
@@ -119,6 +165,16 @@ export default function IntensityScalePicker({
         },
       }),
     [colors, resolvedScheme, hint],
+  );
+
+  const indexFromLocationX = useCallback(
+    (locationX) => {
+      if (!trackWidth || sliderMax <= 0) return 0;
+      const usable = Math.max(1, trackWidth - THUMB_SIZE);
+      const ratio = Math.max(0, Math.min(1, (locationX - THUMB_INSET - THUMB_SIZE / 2) / usable));
+      return Math.round(ratio * sliderMax);
+    },
+    [sliderMax, trackWidth],
   );
 
   const emitChange = useCallback(
@@ -134,6 +190,31 @@ export default function IntensityScalePicker({
     },
     [onChange, resolvedValue, scaleValues, sliderMax],
   );
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: (evt) => {
+          emitChange(indexFromLocationX(evt.nativeEvent.locationX));
+        },
+        onPanResponderMove: (evt) => {
+          emitChange(indexFromLocationX(evt.nativeEvent.locationX));
+        },
+        onPanResponderRelease: () => {
+          lastHapticIndex.current = -1;
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        },
+      }),
+    [emitChange, indexFromLocationX],
+  );
+
+  const fillPercent = sliderMax <= 0 ? 100 : (selectedIndex / sliderMax) * 100;
+  const thumbLeft =
+    trackWidth > 0 && sliderMax > 0
+      ? THUMB_INSET + (selectedIndex / sliderMax) * Math.max(0, trackWidth - THUMB_SIZE)
+      : THUMB_INSET;
 
   const a11yPrefix = accessibilityLabelPrefix || label || 'Intensidad';
   const rangeMin = scaleValues[0];
@@ -151,39 +232,28 @@ export default function IntensityScalePicker({
         text: `${resolvedValue} de ${rangeMax}`,
       }}
     >
-      {label ? (
-        <View style={styles.headerRow}>
-          <Text style={styles.label}>{label}</Text>
-          <View style={styles.valuePill}>
-            <Text style={styles.valueText}>{resolvedValue}</Text>
-          </View>
+      <View style={styles.headerRow}>
+        {label ? <Text style={styles.label}>{label}</Text> : <View style={{ flex: 1 }} />}
+        <View style={styles.valuePill}>
+          <Text style={styles.valueText}>{resolvedValue}</Text>
         </View>
-      ) : (
-        <View style={[styles.headerRow, { justifyContent: 'flex-end', marginBottom: 8 }]}>
-          <View style={styles.valuePill}>
-            <Text style={styles.valueText}>{resolvedValue}</Text>
-          </View>
-        </View>
-      )}
+      </View>
 
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
 
-      <Slider
-        style={styles.slider}
-        minimumValue={0}
-        maximumValue={sliderMax}
-        step={1}
-        value={selectedIndex}
-        onValueChange={emitChange}
-        onSlidingComplete={(idx) => {
-          lastHapticIndex.current = -1;
-          emitChange(idx);
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-        }}
-        minimumTrackTintColor={colors.primary}
-        maximumTrackTintColor={colors.accentLineSoft}
-        thumbTintColor={colors.primary}
-      />
+      <View style={styles.trackHit} {...panResponder.panHandlers}>
+        <View
+          style={styles.trackInner}
+          onLayout={(e) => {
+            setTrackWidth(e.nativeEvent.layout.width);
+          }}
+        >
+          <View style={styles.trackShell}>
+            <View style={[styles.trackFill, { width: `${fillPercent}%` }]} />
+          </View>
+          <View style={[styles.thumb, { left: thumbLeft }]} pointerEvents="none" />
+        </View>
+      </View>
 
       <View style={styles.scaleEndsRow}>
         <Text style={styles.scaleEndNumber}>{rangeMin}</Text>

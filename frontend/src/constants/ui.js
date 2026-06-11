@@ -32,6 +32,12 @@ export const SCALES = {
 
 // Espaciado y padding común
 export const SPACING = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
   /**
    * Inset horizontal del borde de pantalla al contenido (header con saludo, scroll del dashboard, etc.).
    */

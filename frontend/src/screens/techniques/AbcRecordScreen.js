@@ -530,6 +530,7 @@ const AbcRecordScreen = () => {
           value={emotionIntensity}
           onChange={setEmotionIntensity}
           accessibilityLabelPrefix={TEXTS.STEP_C_INTENSITY_LABEL}
+          style={{ marginTop: SPACING.sm }}
         />
         <Text style={techniqueScreenStyles.formHint}>{TEXTS.STEP_C_BEHAVIOR_HINT}</Text>
         <TextInput

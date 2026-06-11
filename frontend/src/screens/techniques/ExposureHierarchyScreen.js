@@ -526,7 +526,7 @@ const ExposureHierarchyScreen = () => {
     }
   };
 
-  const renderSudsPicker = (label, value, onChange) => (
+  const renderSudsPicker = (label, value, onChange, pickerStyle) => (
     <IntensityScalePicker
       label={label}
       values={SUDS_LEVELS}
@@ -535,6 +535,7 @@ const ExposureHierarchyScreen = () => {
       lowLabel="0"
       highLabel="100"
       accessibilityLabelPrefix={label}
+      style={pickerStyle}
     />
   );
 
@@ -750,9 +751,11 @@ const ExposureHierarchyScreen = () => {
             <Text style={techniqueScreenStyles.formHint}>
               {(currentStep.attempts?.length || 0)} {TEXTS.ATTEMPTS}
             </Text>
-            {renderSudsPicker(TEXTS.PEAK_SUDS, peakSuds, setPeakSuds)}
-            {renderSudsPicker(TEXTS.END_SUDS, endSuds, setEndSuds)}
-            <Text style={techniqueScreenStyles.formSectionHeading}>{TEXTS.NOTES_LABEL}</Text>
+            {renderSudsPicker(TEXTS.PEAK_SUDS, peakSuds, setPeakSuds, styles.sudsPickerFirst)}
+            {renderSudsPicker(TEXTS.END_SUDS, endSuds, setEndSuds, styles.sudsPickerSecond)}
+            <Text style={[techniqueScreenStyles.formSectionHeading, styles.notesHeading]}>
+              {TEXTS.NOTES_LABEL}
+            </Text>
             <TextInput
               style={[techniqueScreenStyles.textInput, styles.notesInput]}
               placeholder={TEXTS.NOTES_PLACEHOLDER}
@@ -1038,6 +1041,18 @@ const styles = StyleSheet.create({
   progressFill: {
     height: '100%',
     borderRadius: 3,
+  },
+  sudsPickerFirst: {
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.sm,
+  },
+  sudsPickerSecond: {
+    marginTop: 0,
+    marginBottom: SPACING.lg,
+  },
+  notesHeading: {
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
   notesInput: { minHeight: 72, marginTop: SPACING.xs },
   practiceAction: { alignSelf: 'stretch', marginTop: SPACING.sm },

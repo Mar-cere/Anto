@@ -829,27 +829,29 @@ const BehavioralActivationScreen = () => {
     if (stepIndex === 1) {
       return (
         <>
+          <Text style={techniqueScreenStyles.formSectionHeading}>{TEXTS.STEP2_TITLE}</Text>
           {fromChatMoodPrefill ? (
             <Text style={techniqueScreenStyles.formHint}>{TEXTS.PREFILL_MOOD_HINT}</Text>
           ) : null}
-          <Text style={techniqueScreenStyles.formHint}>{TEXTS.STEP2_HINT}</Text>
           <IntensityScalePicker
-            label={TEXTS.STEP2_TITLE}
+            hint={TEXTS.STEP2_HINT}
             value={moodBefore}
             onChange={setMoodBefore}
             accessibilityLabelPrefix={TEXTS.STEP2_TITLE}
+            style={{ marginTop: SPACING.sm }}
           />
         </>
       );
     }
     return (
       <>
-        <Text style={techniqueScreenStyles.formHint}>{TEXTS.STEP3_HINT}</Text>
+        <Text style={techniqueScreenStyles.formSectionHeading}>{TEXTS.STEP3_TITLE}</Text>
         <IntensityScalePicker
-          label={TEXTS.STEP3_TITLE}
+          hint={TEXTS.STEP3_HINT}
           value={moodAfter}
           onChange={setMoodAfter}
           accessibilityLabelPrefix={TEXTS.STEP3_TITLE}
+          style={{ marginTop: SPACING.sm }}
         />
         <Text style={[techniqueScreenStyles.formHint, { marginTop: SPACING.sm }]}>
           {TEXTS.STEP3_NOTES}
