@@ -180,6 +180,8 @@ export const DASH = {
   FOCUS_BA_UPCOMING: 'Activación conductual',
   FOCUS_BA_MORE_SUFFIX: 'actividades más esta semana',
   FOCUS_BA_OPEN_A11Y: 'Abrir plan semanal de activación conductual',
+  FOCUS_EXPOSURE_TITLE: 'Exposición · Paso en curso',
+  FOCUS_EXPOSURE_OPEN_A11Y: 'Abrir jerarquía de exposición',
   TCC_TOOLS_TITLE: 'Herramientas de seguimiento',
   TCC_TOOLS_HINT: 'Protocolos guiados para practicar entre conversaciones con Anto.',
   TCC_TOOLS_BA: 'Activación conductual',
@@ -742,6 +744,9 @@ export const CHAT = {
   CHAT_MENU_A11Y_HINT:
     'Abre un menú con ir al último mensaje, personalización, privacidad, información sobre IA o borrar la conversación',
   SUGGESTIONS_TITLE: 'Sugerencias para ti',
+  TCC_CONTINUITY_KICKER: 'Retoma tu proceso',
+  TCC_CONTINUITY_OPEN: 'Abrir',
+  TCC_CONTINUITY_DISMISS_A11Y: 'Ocultar sugerencia',
   PRODUCT_ACTIONS_TITLE: 'Puedes guardarlo en la app',
   NETWORK_ERROR:
     'Sin conexión a internet. Por favor, verifica tu conexión e intenta nuevamente.',
@@ -1313,6 +1318,7 @@ export const TECHNIQUES = {
   EXPOSURE_STEP_OF: 'Paso',
   EXPOSURE_OF: 'de',
   EXPOSURE_ATTEMPTS: 'intentos',
+  EXPOSURE_RECENT_ATTEMPTS: 'Últimos intentos',
   BA_TITLE: 'Activación conductual',
   BA_INTRO_KICKER: 'TCC',
   BA_INTRO_TITLE: 'Pequeñas acciones, cambios graduales en el ánimo',

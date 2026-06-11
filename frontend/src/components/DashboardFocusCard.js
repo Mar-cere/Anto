@@ -127,7 +127,7 @@ function normalizePreloadedChatCopy(reminder, language, DASH) {
   return reminder;
 }
 
-const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation, onOpenBehavioralActivation }) => {
+const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation, onOpenBehavioralActivation, onOpenExposureHierarchy }) => {
   const DASH = useSectionTranslations('DASH');
   const { language } = useLanguage();
   const { width } = useWindowDimensions();
@@ -151,6 +151,7 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation, onOpenBehavi
   const protocolNext = data?.protocolNext;
   const nextTask = data?.nextTask;
   const baWeekNext = data?.baWeekNext;
+  const exposureNext = data?.exposureNext;
 
   const baWeekCopy = useMemo(() => {
     if (!baWeekNext) return null;
@@ -174,6 +175,25 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation, onOpenBehavi
 
     return { title, subtitle };
   }, [baWeekNext, DASH]);
+
+  const exposureCopy = useMemo(() => {
+    if (!exposureNext) return null;
+    const title = DASH.FOCUS_EXPOSURE_TITLE;
+    const planTitle = String(exposureNext.planTitle || '').trim();
+    const stepDesc = String(exposureNext.stepDescription || '').trim();
+    if (!planTitle && !stepDesc) return null;
+    const stepPart =
+      exposureNext.stepTotal > 0
+        ? `${exposureNext.stepIndex}/${exposureNext.stepTotal}`
+        : '';
+    const stepLabel = language === 'en' ? 'Step' : 'Paso';
+    const parts = [
+      planTitle,
+      stepPart ? `${stepLabel} ${stepPart}` : null,
+      stepDesc,
+    ].filter(Boolean);
+    return { title, subtitle: parts.join(' · ') };
+  }, [exposureNext, DASH, language]);
 
   const displayedReminder = useMemo(() => {
     const picked = pickDisplayedReminder(reminder?.candidates, isCompact);
@@ -220,6 +240,13 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation, onOpenBehavi
     if (!onOpenBehavioralActivation) return;
     onOpenBehavioralActivation(baWeekNext?.slotId ? String(baWeekNext.slotId) : null);
   }, [onOpenBehavioralActivation, baWeekNext?.slotId]);
+
+  const onExposurePress = useCallback(() => {
+    if (!onOpenExposureHierarchy) return;
+    onOpenExposureHierarchy(
+      exposureNext?.planId ? String(exposureNext.planId) : null,
+    );
+  }, [onOpenExposureHierarchy, exposureNext?.planId]);
 
   if (!data) return null;
 
@@ -286,6 +313,29 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation, onOpenBehavi
             </Text>
             <Text style={styles.reminderMeta} numberOfLines={2}>
               {baWeekCopy.subtitle}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={chevronMuted} style={styles.reminderChevron} />
+        </TouchableOpacity>
+      ) : null}
+
+      {exposureCopy ? (
+        <TouchableOpacity
+          style={[styles.reminderRow, styles.reminderRowPressable]}
+          onPress={onExposurePress}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={`${exposureCopy.title}. ${exposureCopy.subtitle}. ${DASH.FOCUS_EXPOSURE_OPEN_A11Y}`}
+        >
+          <View style={styles.reminderIconWrap}>
+            <Ionicons name="trail-sign-outline" size={20} color={colors.primary} />
+          </View>
+          <View style={styles.reminderCopy}>
+            <Text style={styles.reminderTitle} numberOfLines={2}>
+              {exposureCopy.title}
+            </Text>
+            <Text style={styles.reminderMeta} numberOfLines={2}>
+              {exposureCopy.subtitle}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={chevronMuted} style={styles.reminderChevron} />

@@ -70,6 +70,7 @@ import {
 import chatInterventionGraphService from '../services/chatInterventionGraphService.js';
 import { planChatActionSuggestions } from '../services/psychoeducationPromptSnippetService.js';
 import { buildActiveTccProtocolsPromptSnippet } from '../services/activeTccProtocolsContextService.js';
+import { buildChatTccContinuity } from '../services/chatTccContinuityService.js';
 import { resetConversationSessionState } from '../services/conversationClearService.js';
 import { cursorPaginate } from '../utils/pagination.js';
 import {
@@ -437,6 +438,21 @@ router.get('/interventions/graph', protect, requireActiveSubscription(true), asy
   } catch (error) {
     console.error('[ChatRoutes] GET /interventions/graph:', error);
     res.status(500).json({ success: false, message: req.apiCopy?.serverError || 'Error del servidor' });
+  }
+});
+
+/**
+ * GET /api/chat/tcc-continuity
+ * Ítems accionables para retomar protocolos TCC (BA, exposición) en el chat.
+ */
+router.get('/tcc-continuity', protect, requireActiveSubscription(true), async (req, res) => {
+  try {
+    const language = req.appLanguage || resolveRequestLanguage(req);
+    const data = await buildChatTccContinuity({ userId: req.user._id, language });
+    return res.json({ success: true, data, language });
+  } catch (error) {
+    console.error('[ChatRoutes] GET /tcc-continuity:', error);
+    return res.status(500).json({ success: false, message: req.apiCopy?.serverError || 'Error del servidor' });
   }
 });
 

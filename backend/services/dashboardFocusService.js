@@ -24,6 +24,7 @@ import {
   normalizeFocusLanguage
 } from '../utils/focusDashboardCopy.js';
 import { findWeekPlanForUser } from './behavioralActivationWeekPlanService.js';
+import { loadExposureFocus } from './chatTccContinuityService.js';
 import { pickBaFocusSlot } from './activeTccProtocolsContextService.js';
 
 function cacheTtlSecondsUntilUtcEndOfDay() {
@@ -465,7 +466,8 @@ export async function buildDashboardFocus(userId, opts = {}) {
     protocolNext,
     userFocusPrefs,
     lastSessionSummaryRaw,
-    baWeekFocus
+    baWeekFocus,
+    exposureFocus
   ] = await Promise.all([
     buildUserSummary(userId, { period: 'week', language }),
     loadUpcomingTasks(userId, 5),
@@ -476,7 +478,8 @@ export async function buildDashboardFocus(userId, opts = {}) {
     loadTherapeuticProtocolHint(userId, language),
     loadUserNotificationPrefs(userId),
     getLastSessionSummaryForUser(userId),
-    loadBaWeekFocus(userId, language)
+    loadBaWeekFocus(userId, language),
+    loadExposureFocus(userId)
   ]);
 
   const notificationPreferences = userFocusPrefs?.notificationPreferences || null;
@@ -564,6 +567,16 @@ export async function buildDashboardFocus(userId, opts = {}) {
           isOverdue: baWeekFocus.isOverdue,
           pendingCount: baWeekFocus.pendingCount,
           weekStart: baWeekFocus.weekStart
+        }
+      : null,
+    exposureNext: exposureFocus
+      ? {
+          planId: exposureFocus.planId,
+          planTitle: exposureFocus.planTitle,
+          stepDescription: exposureFocus.stepDescription,
+          stepIndex: exposureFocus.stepIndex,
+          stepTotal: exposureFocus.stepTotal,
+          attemptCount: exposureFocus.attemptCount
         }
       : null,
     week: {

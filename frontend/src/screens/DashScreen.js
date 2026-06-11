@@ -618,6 +618,15 @@ const DashScreen = () => {
     );
   }, [navigation]);
 
+  const openExposureFromFocus = useCallback((planId) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    const trimmed = planId ? String(planId).trim() : '';
+    navigation.navigate(
+      'ExposureHierarchy',
+      trimmed ? { openPlanId: trimmed, mode: 'practice' } : { mode: 'practice' },
+    );
+  }, [navigation]);
+
   const refreshHomeDataOnFocus = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
@@ -855,6 +864,7 @@ const DashScreen = () => {
             onOpenChat={goToChatFromOnboarding}
             onOpenConversation={openConversationFromFocus}
             onOpenBehavioralActivation={openBehavioralActivationFromFocus}
+            onOpenExposureHierarchy={openExposureFromFocus}
           />
           {error && (
             <ErrorMessage

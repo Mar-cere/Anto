@@ -29,6 +29,7 @@ import ChatHeader from '../components/chat/ChatHeader';
 import ChatInput from '../components/chat/ChatInput';
 import ChatMessageItem from '../components/chat/ChatMessageItem';
 import SessionIntentionBanner from '../components/chat/SessionIntentionBanner';
+import TccContinuityStrip from '../components/chat/TccContinuityStrip';
 import ChatTypingIndicator from '../components/chat/ChatTypingIndicator';
 import ChatOptionsSheet from '../components/chat/ChatOptionsSheet';
 import ClearConversationModal from '../components/chat/ClearConversationModal';
@@ -303,6 +304,9 @@ const ChatScreen = () => {
     sessionIntentionSubmitting,
     selectSessionIntention,
     skipSessionIntention,
+    visibleTccContinuityItems,
+    handleOpenTccContinuityItem,
+    handleDismissTccContinuityItem,
   } = useChatScreen();
   const feedbackTargetId = useMemo(
     () => getFeedbackTargetMessageId(messages, chatFeedbackEnabled),
@@ -579,6 +583,12 @@ const ChatScreen = () => {
         submitting={sessionIntentionSubmitting}
         onSelect={selectSessionIntention}
         onSkip={skipSessionIntention}
+      />
+
+      <TccContinuityStrip
+        items={visibleTccContinuityItems}
+        onOpen={handleOpenTccContinuityItem}
+        onDismiss={handleDismissTccContinuityItem}
       />
 
       <ChatInput

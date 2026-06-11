@@ -34,6 +34,7 @@ import { recordInterventionCompleted } from '../../utils/recordInterventionCompl
 import { confirmDestructiveAction } from '../../utils/confirmDestructiveAction';
 import { parseExposurePlanRouteParams } from '../../utils/exposurePlanPrefill';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
+import IntensityBeforeAfterMarker from '../../components/techniques/IntensityBeforeAfterMarker';
 import IntensityScalePicker from '../../components/techniques/IntensityScalePicker';
 
 const SUDS_LEVELS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
@@ -103,6 +104,7 @@ const DEFAULT_TEXTS = {
   STEP_OF: 'Paso',
   OF: 'de',
   ATTEMPTS: 'intentos',
+  RECENT_ATTEMPTS: 'Últimos intentos',
 };
 
 function formatPlanDate(iso) {
@@ -189,6 +191,7 @@ const ExposureHierarchyScreen = () => {
       STEP_OF: translated?.EXPOSURE_STEP_OF || DEFAULT_TEXTS.STEP_OF,
       OF: translated?.EXPOSURE_OF || DEFAULT_TEXTS.OF,
       ATTEMPTS: translated?.EXPOSURE_ATTEMPTS || DEFAULT_TEXTS.ATTEMPTS,
+      RECENT_ATTEMPTS: translated?.EXPOSURE_RECENT_ATTEMPTS || DEFAULT_TEXTS.RECENT_ATTEMPTS,
     }),
     [translated],
   );
@@ -265,6 +268,15 @@ const ExposureHierarchyScreen = () => {
   useEffect(() => {
     loadPlans();
   }, [loadPlans]);
+
+  useEffect(() => {
+    const openPlanId = route.params?.openPlanId ? String(route.params.openPlanId) : '';
+    if (!openPlanId || loadingPlans || !plans.length) return;
+    if (plans.some((p) => String(p._id) === openPlanId)) {
+      setActivePlanId(openPlanId);
+      setMode(route.params?.mode === 'create' ? 'create' : 'practice');
+    }
+  }, [route.params?.openPlanId, route.params?.mode, plans, loadingPlans]);
 
   useEffect(() => {
     setPeakSuds(50);
@@ -753,6 +765,32 @@ const ExposureHierarchyScreen = () => {
             </Text>
             {renderSudsPicker(TEXTS.PEAK_SUDS, peakSuds, setPeakSuds, styles.sudsPickerFirst)}
             {renderSudsPicker(TEXTS.END_SUDS, endSuds, setEndSuds, styles.sudsPickerSecond)}
+            {currentStep?.attempts?.length > 0 ? (
+              <View style={styles.recentAttemptsBlock}>
+                <Text style={[techniqueScreenStyles.formSectionHeading, styles.recentAttemptsTitle]}>
+                  {TEXTS.RECENT_ATTEMPTS}
+                </Text>
+                {[...(currentStep.attempts || [])]
+                  .slice(-3)
+                  .reverse()
+                  .map((attempt) => (
+                    <View key={String(attempt._id || attempt.attemptDate)} style={styles.attemptRow}>
+                      <Text style={techniqueScreenStyles.formHint}>
+                        {formatPlanDate(attempt.attemptDate)}
+                      </Text>
+                      <IntensityBeforeAfterMarker
+                        beforeValue={attempt.peakSuds}
+                        afterValue={attempt.endSuds}
+                        min={0}
+                        max={100}
+                        deltaMode="lower-is-better"
+                        compact
+                        style={{ marginTop: SPACING.xs }}
+                      />
+                    </View>
+                  ))}
+              </View>
+            ) : null}
             <Text style={[techniqueScreenStyles.formSectionHeading, styles.notesHeading]}>
               {TEXTS.NOTES_LABEL}
             </Text>
@@ -1049,6 +1087,16 @@ const styles = StyleSheet.create({
   sudsPickerSecond: {
     marginTop: 0,
     marginBottom: SPACING.lg,
+  },
+  recentAttemptsBlock: {
+    marginBottom: SPACING.sm,
+  },
+  recentAttemptsTitle: {
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.xs,
+  },
+  attemptRow: {
+    marginBottom: SPACING.sm,
   },
   notesHeading: {
     marginTop: SPACING.sm,

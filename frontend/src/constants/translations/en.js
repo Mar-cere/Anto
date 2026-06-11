@@ -180,6 +180,8 @@ export const DASH = {
   FOCUS_BA_UPCOMING: 'Behavioral activation',
   FOCUS_BA_MORE_SUFFIX: 'more activities this week',
   FOCUS_BA_OPEN_A11Y: 'Open behavioral activation weekly plan',
+  FOCUS_EXPOSURE_TITLE: 'Exposure · Step in progress',
+  FOCUS_EXPOSURE_OPEN_A11Y: 'Open exposure hierarchy',
   TCC_TOOLS_TITLE: 'Follow-up tools',
   TCC_TOOLS_HINT: 'Guided protocols to practice between chats with Anto.',
   TCC_TOOLS_BA: 'Behavioral activation',
@@ -738,6 +740,9 @@ export const CHAT = {
   CHAT_MENU_A11Y_HINT:
     'Opens a menu with go to last message, customization, privacy, AI information, or clear conversation',
   SUGGESTIONS_TITLE: 'Suggestions for you',
+  TCC_CONTINUITY_KICKER: 'Pick up where you left off',
+  TCC_CONTINUITY_OPEN: 'Open',
+  TCC_CONTINUITY_DISMISS_A11Y: 'Hide suggestion',
   PRODUCT_ACTIONS_TITLE: 'You can save it in the app',
   NETWORK_ERROR:
     'No internet connection. Please check your connection and try again.',
@@ -1308,6 +1313,7 @@ export const TECHNIQUES = {
   EXPOSURE_STEP_OF: 'Step',
   EXPOSURE_OF: 'of',
   EXPOSURE_ATTEMPTS: 'attempts',
+  EXPOSURE_RECENT_ATTEMPTS: 'Recent attempts',
   BA_TITLE: 'Behavioral activation',
   BA_INTRO_KICKER: 'CBT',
   BA_INTRO_TITLE: 'Small actions, gradual mood shifts',

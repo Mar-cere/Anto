@@ -6,7 +6,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CommonActions, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Animated, AppState, InteractionManager, Platform, Vibration } from 'react-native';
 import chatService from '../services/chatService';
 import paymentService from '../services/paymentService';
@@ -36,6 +36,7 @@ import {
 } from '../services/chatOfflinePending';
 import { useToast } from '../context/ToastContext';
 import { isValidSessionIntentionId } from '../constants/sessionIntention';
+import { recordInterventionClicked } from '../utils/recordInterventionCompleted';
 import { newClientRequestId } from '../utils/clientRequestId';
 import { isValidMongoObjectId24 } from '../utils/mongoId';
 import { sanitizeProposedProductActions } from '../utils/sanitizeProposedProductActions';
@@ -115,6 +116,8 @@ export function useChatScreen() {
   const [sessionIntentionSubmitting, setSessionIntentionSubmitting] = useState(false);
   /** Pulgar en mensajes del asistente (solo usuarios con cuenta) */
   const [chatFeedbackEnabled, setChatFeedbackEnabled] = useState(false);
+  const [tccContinuityItems, setTccContinuityItems] = useState([]);
+  const [dismissedContinuityIds, setDismissedContinuityIds] = useState([]);
   /** Evita doble envío y permite deshabilitar botones mientras viaja la petición */
   const [feedbackSubmittingId, setFeedbackSubmittingId] = useState(null);
   const feedbackRequestLockRef = useRef(false);
@@ -1367,6 +1370,39 @@ export function useChatScreen() {
     checkAuthentication();
   }, [navigation, route.params?.startGuest]);
 
+  const loadTccContinuity = useCallback(async () => {
+    try {
+      const items = await chatService.fetchTccContinuity();
+      setTccContinuityItems(Array.isArray(items) ? items : []);
+    } catch {
+      setTccContinuityItems([]);
+    }
+  }, []);
+
+  const visibleTccContinuityItems = useMemo(
+    () =>
+      (tccContinuityItems || []).filter(
+        (item) => item?.id && !dismissedContinuityIds.includes(item.id),
+      ),
+    [tccContinuityItems, dismissedContinuityIds],
+  );
+
+  const handleOpenTccContinuityItem = useCallback(
+    (item) => {
+      if (!item?.screen) return;
+      if (item.interventionId) {
+        recordInterventionClicked(item.interventionId);
+      }
+      navigation.navigate(item.screen, item.params || {});
+    },
+    [navigation],
+  );
+
+  const handleDismissTccContinuityItem = useCallback((item) => {
+    if (!item?.id) return;
+    setDismissedContinuityIds((prev) => (prev.includes(item.id) ? prev : [...prev, item.id]));
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       (async () => {
@@ -1374,7 +1410,9 @@ export function useChatScreen() {
           setTrialInfo(null);
         } else {
           loadTrialInfo();
+          loadTccContinuity();
         }
+        setDismissedContinuityIds([]);
         const p = await getOfflinePendingMessage();
         setOfflinePendingMessage(p);
       })();
@@ -1394,6 +1432,7 @@ export function useChatScreen() {
       };
     }, [
       loadTrialInfo,
+      loadTccContinuity,
       initializeConversation,
       offerGuestHandoffIfPending,
       scheduleLastSessionSummaryDeferred,
@@ -1445,5 +1484,8 @@ export function useChatScreen() {
     sessionIntentionSubmitting,
     selectSessionIntention,
     skipSessionIntention,
+    visibleTccContinuityItems,
+    handleOpenTccContinuityItem,
+    handleDismissTccContinuityItem,
   };
 }

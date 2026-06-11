@@ -622,6 +622,25 @@ export const getInterventionGraph = async (params = {}) => {
  * @returns {Promise<object|null>}
  */
 /**
+ * Protocolos TCC activos para retomar desde el chat (BA, exposición).
+ * @returns {Promise<object[]>}
+ */
+export const fetchTccContinuity = async () => {
+  try {
+    if (await isGuestChatMode()) return [];
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token) return [];
+    const response = await apiClient.get('/api/chat/tcc-continuity');
+    return response?.data?.items || [];
+  } catch (e) {
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.warn('[chatService] fetchTccContinuity:', e?.message || e);
+    }
+    return [];
+  }
+};
+
+/**
  * Insight inmediato al cerrar el chat (emoción, patrón, paso sugerido).
  * @param {string} conversationId
  * @returns {Promise<object|null>}
@@ -688,6 +707,7 @@ export default {
   initializeSocket,
   sendMessage,
   sendMessageStream,
+  fetchTccContinuity,
   fetchSessionInsight,
   scheduleLastSessionSummary,
   submitMessageFeedback,
