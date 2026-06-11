@@ -30,6 +30,8 @@ import ChatInput from '../components/chat/ChatInput';
 import ChatMessageItem from '../components/chat/ChatMessageItem';
 import SessionIntentionBanner from '../components/chat/SessionIntentionBanner';
 import TccContinuityStrip from '../components/chat/TccContinuityStrip';
+import TccLiteProgressStrip from '../components/chat/TccLiteProgressStrip';
+import TccLiteAtHandoffStrip from '../components/chat/TccLiteAtHandoffStrip';
 import ChatTypingIndicator from '../components/chat/ChatTypingIndicator';
 import ChatOptionsSheet from '../components/chat/ChatOptionsSheet';
 import ClearConversationModal from '../components/chat/ClearConversationModal';
@@ -307,6 +309,10 @@ const ChatScreen = () => {
     visibleTccContinuityItems,
     handleOpenTccContinuityItem,
     handleDismissTccContinuityItem,
+    tccLiteState,
+    tccLiteAtHandoff,
+    handleOpenTccLiteAtHandoff,
+    handleDismissTccLiteAtHandoff,
   } = useChatScreen();
   const feedbackTargetId = useMemo(
     () => getFeedbackTargetMessageId(messages, chatFeedbackEnabled),
@@ -583,6 +589,14 @@ const ChatScreen = () => {
         submitting={sessionIntentionSubmitting}
         onSelect={selectSessionIntention}
         onSkip={skipSessionIntention}
+      />
+
+      <TccLiteProgressStrip tccLite={tccLiteState} />
+
+      <TccLiteAtHandoffStrip
+        atHandoff={tccLiteAtHandoff}
+        onOpen={handleOpenTccLiteAtHandoff}
+        onDismiss={handleDismissTccLiteAtHandoff}
       />
 
       <TccContinuityStrip

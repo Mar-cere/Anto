@@ -382,7 +382,14 @@ const AutomaticThoughtRecordScreen = () => {
       } else {
         setFromChatDistortionPrefill(false);
       }
-      setStepIndex(0);
+      if (parsed.prefillBalancedThought) {
+        setBalancedThought(parsed.prefillBalancedThought);
+        setStepIndex(2);
+      } else if (parsed.fromTccLite && (parsed.prefillSituation || parsed.prefillAutomaticThought)) {
+        setStepIndex(parsed.prefillAutomaticThought ? 1 : 0);
+      } else {
+        setStepIndex(0);
+      }
     },
     [resetWizard],
   );

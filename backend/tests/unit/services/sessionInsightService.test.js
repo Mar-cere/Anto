@@ -191,4 +191,102 @@ describe('buildSessionInsight', () => {
     expect(insight.suggestedStep?.id).toBe('behavioral_activation');
     expect(insight.suggestedStep?.screen).toBe('BehavioralActivation');
   });
+
+  it('expone tccLiteResume cuando hay patrón cognitivo', async () => {
+    const now = Date.now();
+    mockMessageFind.mockReturnValue(
+      chainLean([
+        {
+          role: 'user',
+          content: 'Siempre todo sale mal y nunca puedo',
+          metadata: {
+            context: { emotional: { mainEmotion: 'ansiedad', intensity: 6, topic: 'general' } },
+          },
+          createdAt: new Date(now - 60000),
+        },
+        {
+          role: 'assistant',
+          content: 'Te escucho',
+          metadata: {
+            context: {
+              contextual: {
+                primaryDistortion: {
+                  type: 'all_or_nothing',
+                  name: 'Pensamiento Todo-o-Nada (Polarizado)',
+                  description: 'Ver las cosas en categorías absolutas',
+                  intervention: 'Explorar matices',
+                  confidence: 0.8,
+                },
+              },
+            },
+          },
+          createdAt: new Date(now - 30000),
+        },
+        {
+          role: 'user',
+          content: 'Es que nunca tengo tiempo para mis hijos',
+          metadata: {
+            context: { emotional: { mainEmotion: 'tristeza', intensity: 6, topic: 'vida_diaria' } },
+          },
+          createdAt: new Date(now),
+        },
+      ]),
+    );
+
+    const insight = await buildSessionInsight({ userId, conversationId, language: 'es' });
+    expect(insight.tccLiteResume?.eligible).toBe(true);
+    expect(insight.tccLiteResume?.distortionType).toBe('all_or_nothing');
+  });
+
+  it('calcula duración solo de la sesión activa, no del hilo completo', async () => {
+    const now = Date.now();
+    const twoDaysAgo = now - 2 * 24 * 60 * 60 * 1000;
+    mockMessageFind.mockReturnValue(
+      chainLean([
+        {
+          role: 'user',
+          content: 'Mensaje antiguo del hilo que ya no cuenta para esta visita',
+          metadata: {
+            context: { emotional: { mainEmotion: 'tristeza', intensity: 5, topic: 'general' } },
+          },
+          createdAt: new Date(twoDaysAgo),
+        },
+        {
+          role: 'assistant',
+          content: 'Respuesta antigua',
+          metadata: {},
+          createdAt: new Date(twoDaysAgo + 60000),
+        },
+        {
+          role: 'user',
+          content: 'Hoy el trabajo me agobia y llego cansado a casa',
+          metadata: {
+            context: { emotional: { mainEmotion: 'ansiedad', intensity: 5, topic: 'vida_diaria' } },
+          },
+          createdAt: new Date(now - 8 * 60000),
+        },
+        {
+          role: 'assistant',
+          content: 'Te escucho',
+          metadata: {},
+          createdAt: new Date(now - 7 * 60000),
+        },
+        {
+          role: 'user',
+          content: 'No puedo ver a mis hijos con la energía que me queda',
+          metadata: {
+            context: { emotional: { mainEmotion: 'ansiedad', intensity: 6, topic: 'vida_diaria' } },
+          },
+          createdAt: new Date(now - 2 * 60000),
+        },
+      ]),
+    );
+
+    const insight = await buildSessionInsight({ userId, conversationId, language: 'es' });
+    expect(insight.eligible).toBe(true);
+    expect(insight.durationMinutes).toBeGreaterThanOrEqual(5);
+    expect(insight.durationMinutes).toBeLessThanOrEqual(15);
+    expect(insight.userTurns).toBe(2);
+  });
 });
+

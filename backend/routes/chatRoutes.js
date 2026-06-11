@@ -71,6 +71,11 @@ import chatInterventionGraphService from '../services/chatInterventionGraphServi
 import { planChatActionSuggestions } from '../services/psychoeducationPromptSnippetService.js';
 import { buildActiveTccProtocolsPromptSnippet } from '../services/activeTccProtocolsContextService.js';
 import { buildChatTccContinuity } from '../services/chatTccContinuityService.js';
+import {
+  attachTccLiteToAssistantMetadata,
+  planChatTccLite,
+  toTccLiteClientPayload,
+} from '../services/chatTccLiteService.js';
 import { resetConversationSessionState } from '../services/conversationClearService.js';
 import { cursorPaginate } from '../utils/pagination.js';
 import {
@@ -612,7 +617,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
   let assistantMessage = null;
   
   try {
-    const { conversationId, content, role = 'user' } = req.body;
+    const { conversationId, content, role = 'user', resumeTccLite = null } = req.body;
 
     // SEGURIDAD: Validar formato de conversationId
     if (!conversationId) {
@@ -1321,6 +1326,28 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         } catch {
           activeTccProtocolsPromptSnippet = null;
         }
+
+        let tccLitePlan = { active: false };
+        try {
+          tccLitePlan = planChatTccLite({
+            userContent: content.trim(),
+            contextualAnalysis,
+            emotionalAnalysis,
+            conversationHistory,
+            riskLevel,
+            sessionIntention: sessionIntentionSafe,
+            language: appLanguageForChat,
+            resumeFromInsight:
+              resumeTccLite && typeof resumeTccLite === 'object'
+                ? {
+                    distortionType: resumeTccLite.distortionType,
+                    distortionLabel: resumeTccLite.distortionLabel,
+                  }
+                : null,
+          });
+        } catch {
+          tccLitePlan = { active: false };
+        }
         
         const openaiContext = {
           rollingSummary: conversation?.rollingSummary || null,
@@ -1362,6 +1389,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           conversationPattern,
           psychoeducationPromptSnippet: suggestionPlan.psychoeducationPromptSnippet,
           activeTccProtocolsPromptSnippet,
+          tccLitePromptSnippet: tccLitePlan.promptSnippet || null,
         };
 
         metricsService
@@ -1439,7 +1467,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                     content: response.content,
                     role: 'assistant',
                     conversationId,
-                    metadata: {
+                    metadata: attachTccLiteToAssistantMetadata({
                       status: 'sent',
                       crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
                       context: {
@@ -1448,7 +1476,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                         response: JSON.stringify(response.context),
                         ...(therapeutic && { therapeutic: { technique: therapeutic.technique, type: therapeutic.type } })
                       }
-                    }
+                    }, tccLitePlan),
                   });
                   await assistantMessage.save();
                 } catch (saveError) {
@@ -1458,7 +1486,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                       content: response.content,
                       role: 'assistant',
                       conversationId,
-                      metadata: {
+                      metadata: attachTccLiteToAssistantMetadata({
                         status: 'sent',
                         crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
                         context: {
@@ -1467,7 +1495,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                           response: JSON.stringify(response.context),
                           ...(therapeutic && { therapeutic: { technique: therapeutic.technique, type: therapeutic.type } })
                         }
-                      }
+                      }, tccLitePlan),
                     });
                     await assistantMessage.save();
                   } else throw saveError;
@@ -1652,6 +1680,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   productActionStatus,
                   clinicalScale: scaleSuggestion ? { ...scaleSuggestion, suggestion: clinicalScalesService.generateScaleSuggestion(scaleSuggestion.scale, scaleSuggestion.reason), automaticResult: null } : null,
                   cognitiveDistortions: cognitiveDistortions?.length > 0 ? { detected: cognitiveDistortions, primary: primaryDistortion, intervention: distortionIntervention } : null,
+                  tccLite: toTccLiteClientPayload(tccLitePlan, appLanguageForChat),
                   processingTime: responseTime
                 }) + '\n\n');
 
@@ -1745,7 +1774,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             content: response.content,
             role: 'assistant',
             conversationId,
-            metadata: {
+            metadata: attachTccLiteToAssistantMetadata({
               status: 'sent',
               crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
               context: {
@@ -1754,7 +1783,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                 response: JSON.stringify(response.context),
                 ...(therapeutic && { therapeutic: { technique: therapeutic.technique, type: therapeutic.type } })
               }
-            }
+            }, tccLitePlan),
           });
           await assistantMessage.save();
         } catch (saveError) {
@@ -1767,7 +1796,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               content: response.content,
               role: 'assistant',
               conversationId,
-              metadata: {
+              metadata: attachTccLiteToAssistantMetadata({
                 status: 'sent',
                 crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
                 context: {
@@ -1779,7 +1808,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   response: JSON.stringify(response.context),
                   ...(therapeutic && { therapeutic: { technique: therapeutic.technique, type: therapeutic.type } })
                 }
-              }
+              }, tccLitePlan),
             });
             await assistantMessage.save();
           } else {
@@ -2114,6 +2143,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             primary: primaryDistortion,
             intervention: distortionIntervention
           } : null,
+          tccLite: toTccLiteClientPayload(tccLitePlan, appLanguageForChat),
           processingTime: responseTime
         });
 

@@ -23,6 +23,7 @@ import {
 } from '../navigation/navigationHelpers';
 import { SPACING } from '../constants/ui';
 import { recordInterventionClicked } from '../utils/recordInterventionCompleted';
+import { setPendingTccLiteResume } from '../utils/chatTccLiteResume';
 
 function IntensityBar({ value, colors, sx }) {
   const pct = Math.min(100, Math.max(0, (Number(value) || 0) * 10));
@@ -271,6 +272,23 @@ export default function SessionInsightScreen() {
     navigation.navigate(step.screen, step.params || {});
   }, [insight, navigation, finish]);
 
+  const openTccLiteInChat = useCallback(async () => {
+    const resume = insight?.tccLiteResume;
+    if (!resume?.eligible || !resume.distortionType) {
+      finish();
+      return;
+    }
+    await setPendingTccLiteResume(resume);
+    let nav = navigation;
+    while (nav?.getParent?.()) nav = nav.getParent();
+    nav.dispatch(
+      getResetToMainTabsWithChatState({
+        chatBackTarget: backTarget === CHAT_BACK_TARGET.HOME ? CHAT_BACK_TARGET.HOME : CHAT_BACK_TARGET.DASH,
+        resumeTccLite: resume,
+      }),
+    );
+  }, [insight, navigation, finish, backTarget]);
+
   useEffect(() => {
     if (!insight?.eligible) finish();
   }, [insight?.eligible, finish]);
@@ -281,6 +299,7 @@ export default function SessionInsightScreen() {
   const pattern = insight.thoughtPattern;
   const themes = Array.isArray(insight.themes) ? insight.themes : [];
   const step = insight.suggestedStep;
+  const tccLiteResume = insight.tccLiteResume;
 
   return (
     <View style={styles.root}>
@@ -363,6 +382,30 @@ export default function SessionInsightScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.stepTitle}>{step.label}</Text>
                 <Text style={styles.stepReason}>{step.reason}</Text>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={22} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {tccLiteResume?.eligible ? (
+          <View style={styles.card}>
+            <Text style={styles.cardKicker}>{TEXTS.PATTERN_TITLE}</Text>
+            <Text style={[styles.patternBody, { marginBottom: 10 }]}>
+              {TEXTS.CTA_TCC_LITE_CHAT_HINT}
+            </Text>
+            <TouchableOpacity
+              style={styles.stepCard}
+              onPress={openTccLiteInChat}
+              accessibilityRole="button"
+              accessibilityLabel={TEXTS.CTA_TCC_LITE_CHAT}
+            >
+              <Text style={styles.stepIcon}>🧠</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.stepTitle}>{TEXTS.CTA_TCC_LITE_CHAT}</Text>
+                {tccLiteResume.distortionLabel ? (
+                  <Text style={styles.stepReason}>{tccLiteResume.distortionLabel}</Text>
+                ) : null}
               </View>
               <MaterialCommunityIcons name="chevron-right" size={22} color={colors.primary} />
             </TouchableOpacity>

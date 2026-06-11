@@ -36,7 +36,7 @@ import {
 } from '../services/chatOfflinePending';
 import { useToast } from '../context/ToastContext';
 import { isValidSessionIntentionId } from '../constants/sessionIntention';
-import { recordInterventionClicked } from '../utils/recordInterventionCompleted';
+import { recordInterventionClicked, recordInterventionDismissed } from '../utils/recordInterventionCompleted';
 import { newClientRequestId } from '../utils/clientRequestId';
 import { isValidMongoObjectId24 } from '../utils/mongoId';
 import { sanitizeProposedProductActions } from '../utils/sanitizeProposedProductActions';
@@ -49,6 +49,12 @@ import {
   pickChatWelcomeGreeting,
 } from '../utils/chatWelcomeGreeting';
 import { getAppLanguage } from '../config/api';
+import {
+  buildTccLiteUiFromResume,
+  consumePendingTccLiteResume,
+  peekPendingTccLiteResume,
+  setPendingTccLiteResume,
+} from '../utils/chatTccLiteResume';
 
 /** Retroalimentación al recibir respuesta del asistente (háptica + vibración corta en Android). */
 function hapticAssistantMessageReceived() {
@@ -85,6 +91,32 @@ function extractErrorCode(errorLike) {
   return '';
 }
 
+function extractTccLiteFromMessages(messages) {
+  if (!Array.isArray(messages)) return null;
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const lite = messages[i]?.metadata?.tccLite;
+    if (!lite?.step || lite.completed === true) continue;
+    return {
+      active: true,
+      step: lite.step,
+      distortionType: lite.distortionType || null,
+    };
+  }
+  return null;
+}
+
+function applyTccLiteAtHandoff(payload) {
+  if (!payload?.tccLite?.atHandoff?.screen) return null;
+  return payload.tccLite.atHandoff;
+}
+
+function applyTccLiteStateFromPayload(payload) {
+  if (!payload?.tccLite) return null;
+  if (payload.tccLite.active) return payload.tccLite;
+  if (payload.tccLite.completed) return null;
+  return null;
+}
+
 export function useChatScreen() {
   const TEXTS = useChatTexts();
   const textsRef = useRef(TEXTS);
@@ -118,6 +150,10 @@ export function useChatScreen() {
   const [chatFeedbackEnabled, setChatFeedbackEnabled] = useState(false);
   const [tccContinuityItems, setTccContinuityItems] = useState([]);
   const [dismissedContinuityIds, setDismissedContinuityIds] = useState([]);
+  const dismissedContinuityIdsRef = useRef([]);
+  const [tccLiteState, setTccLiteState] = useState(null);
+  const [tccLiteAtHandoff, setTccLiteAtHandoff] = useState(null);
+  const pendingTccLiteResumeRef = useRef(null);
   /** Evita doble envío y permite deshabilitar botones mientras viaja la petición */
   const [feedbackSubmittingId, setFeedbackSubmittingId] = useState(null);
   const feedbackRequestLockRef = useRef(false);
@@ -267,6 +303,7 @@ export function useChatScreen() {
         return timeA - timeB;
       });
       setMessages(finalizeLoadedChatMessages(uniqueMessages, appLanguage));
+      setTccLiteState(extractTccLiteFromMessages(uniqueMessages));
       if (isRegistered) {
         const userCount = uniqueMessages.filter((m) => m.type !== 'quickReplies' && m.role === MESSAGE_ROLES.USER).length;
         setShowSessionIntentionPrompt(userCount === 0 && !sessionIntentionMeta);
@@ -700,7 +737,15 @@ export function useChatScreen() {
       });
       scrollToBottom(true, { force: true });
 
+      let resumePayload = pendingTccLiteResumeRef.current;
+      if (!resumePayload) {
+        resumePayload = await consumePendingTccLiteResume();
+      } else {
+        pendingTccLiteResumeRef.current = null;
+      }
+
       await chatService.sendMessageStream(messageText, {
+        resumeTccLite: resumePayload,
         onChunk(content) {
           pendingChunk += content;
           if (!flushTimer) {
@@ -778,6 +823,11 @@ export function useChatScreen() {
                 metadata: { timestamp: new Date().toISOString() }
               });
             }
+            const nextTccLite = applyTccLiteStateFromPayload(payload);
+            setTccLiteState(nextTccLite);
+            const handoff = applyTccLiteAtHandoff(payload);
+            if (handoff) setTccLiteAtHandoff(handoff);
+            else if (nextTccLite?.active) setTccLiteAtHandoff(null);
             return next;
           });
           scrollToBottom(true, { force: false });
@@ -1097,6 +1147,11 @@ export function useChatScreen() {
     try {
       await clearOfflinePendingMessage();
       setOfflinePendingMessage(null);
+      dismissedContinuityIdsRef.current = [];
+      setDismissedContinuityIds([]);
+      setTccLiteState(null);
+      setTccLiteAtHandoff(null);
+      pendingTccLiteResumeRef.current = null;
       await chatService.clearMessages();
       await initializeConversation();
       setShowClearModal(false);
@@ -1400,8 +1455,50 @@ export function useChatScreen() {
 
   const handleDismissTccContinuityItem = useCallback((item) => {
     if (!item?.id) return;
-    setDismissedContinuityIds((prev) => (prev.includes(item.id) ? prev : [...prev, item.id]));
+    if (item.interventionId) {
+      recordInterventionDismissed(item.interventionId);
+    }
+    dismissedContinuityIdsRef.current = dismissedContinuityIdsRef.current.includes(item.id)
+      ? dismissedContinuityIdsRef.current
+      : [...dismissedContinuityIdsRef.current, item.id];
+    setDismissedContinuityIds(dismissedContinuityIdsRef.current);
   }, []);
+
+  const handleOpenTccLiteAtHandoff = useCallback(
+    (handoff) => {
+      if (!handoff?.screen) return;
+      recordInterventionClicked('automatic_thought_record');
+      setTccLiteAtHandoff(null);
+      navigation.navigate(handoff.screen, handoff.params || {});
+    },
+    [navigation],
+  );
+
+  const handleDismissTccLiteAtHandoff = useCallback(() => {
+    setTccLiteAtHandoff(null);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      (async () => {
+        const routeResume = route.params?.resumeTccLite;
+        if (routeResume?.distortionType) {
+          pendingTccLiteResumeRef.current = routeResume;
+          await setPendingTccLiteResume(routeResume);
+          setTccLiteState(buildTccLiteUiFromResume(routeResume));
+          try {
+            navigation.setParams({ resumeTccLite: undefined });
+          } catch (_) {}
+        } else {
+          const peek = await peekPendingTccLiteResume();
+          if (peek?.distortionType) {
+            pendingTccLiteResumeRef.current = peek;
+            setTccLiteState(buildTccLiteUiFromResume(peek));
+          }
+        }
+      })();
+    }, [navigation, route.params?.resumeTccLite]),
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -1412,7 +1509,6 @@ export function useChatScreen() {
           loadTrialInfo();
           loadTccContinuity();
         }
-        setDismissedContinuityIds([]);
         const p = await getOfflinePendingMessage();
         setOfflinePendingMessage(p);
       })();
@@ -1487,5 +1583,9 @@ export function useChatScreen() {
     visibleTccContinuityItems,
     handleOpenTccContinuityItem,
     handleDismissTccContinuityItem,
+    tccLiteState,
+    tccLiteAtHandoff,
+    handleOpenTccLiteAtHandoff,
+    handleDismissTccLiteAtHandoff,
   };
 }

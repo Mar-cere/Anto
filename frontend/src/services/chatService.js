@@ -277,7 +277,7 @@ async function postGuestMessage(text, conversationId, token, language) {
   return data;
 }
 
-export const sendMessageStream = async (text, { onChunk, onDone }) => {
+export const sendMessageStream = async (text, { onChunk, onDone, resumeTccLite } = {}) => {
   if (await isGuestChatMode()) {
     const guestLang = await getAppLanguage();
     const conversationId = await AsyncStorage.getItem(GUEST_KEYS.GUEST_CONVERSATION_ID);
@@ -327,6 +327,14 @@ export const sendMessageStream = async (text, { onChunk, onDone }) => {
     content: text,
     role: 'user',
     conversationId,
+    ...(resumeTccLite?.distortionType
+      ? {
+          resumeTccLite: {
+            distortionType: resumeTccLite.distortionType,
+            distortionLabel: resumeTccLite.distortionLabel || '',
+          },
+        }
+      : {}),
   });
 
   // iOS/Android: SSE incremental con XMLHttpRequest (responseText crece).

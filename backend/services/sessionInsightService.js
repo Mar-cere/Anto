@@ -24,6 +24,44 @@ const MIN_USER_TURNS = 2;
 const MIN_USER_CHARS = 40;
 const MESSAGE_LIMIT = 80;
 const SESSION_LOOKBACK_MINUTES = 45;
+const MAX_SESSION_DURATION_MINUTES = 180;
+
+function messageTimestampMs(msg) {
+  const t = new Date(msg?.createdAt).getTime();
+  return Number.isFinite(t) ? t : NaN;
+}
+
+/**
+ * Índice del primer mensaje de la sesión activa (gap ≥ SESSION_LOOKBACK_MINUTES).
+ */
+export function findActiveSessionStartIndex(msgs, gapMinutes = SESSION_LOOKBACK_MINUTES) {
+  if (!Array.isArray(msgs) || msgs.length <= 1) return 0;
+  const gapMs = Math.max(1, gapMinutes) * 60 * 1000;
+
+  for (let i = msgs.length - 1; i > 0; i -= 1) {
+    const current = messageTimestampMs(msgs[i]);
+    const previous = messageTimestampMs(msgs[i - 1]);
+    if (!Number.isFinite(current) || !Number.isFinite(previous)) continue;
+    if (current - previous >= gapMs) return i;
+  }
+  return 0;
+}
+
+export function sliceActiveSessionMessages(msgs, gapMinutes = SESSION_LOOKBACK_MINUTES) {
+  if (!Array.isArray(msgs) || msgs.length === 0) return [];
+  const start = findActiveSessionStartIndex(msgs, gapMinutes);
+  return msgs.slice(start);
+}
+
+function estimateDurationMinutes(msgs) {
+  if (!Array.isArray(msgs) || msgs.length < 2) return 0;
+  const first = messageTimestampMs(msgs[0]);
+  const last = messageTimestampMs(msgs[msgs.length - 1]);
+  if (!Number.isFinite(first) || !Number.isFinite(last) || last <= first) return 0;
+  const minutes = Math.round((last - first) / (1000 * 60));
+  if (minutes <= 0) return 0;
+  return Math.min(minutes, MAX_SESSION_DURATION_MINUTES);
+}
 
 const EMOTION_WEIGHTS = {
   ansiedad: 0,
@@ -150,14 +188,6 @@ async function findSuggestedStep({ userId, conversationId, language, threadStart
   return { ...step, reason };
 }
 
-function estimateDurationMinutes(msgs) {
-  if (!msgs.length) return 0;
-  const first = new Date(msgs[0].createdAt).getTime();
-  const last = new Date(msgs[msgs.length - 1].createdAt).getTime();
-  if (!Number.isFinite(first) || !Number.isFinite(last) || last <= first) return 0;
-  return Math.max(1, Math.round((last - first) / (1000 * 60)));
-}
-
 /**
  * @param {object} params
  * @param {import('mongoose').Types.ObjectId|string} params.userId
@@ -184,12 +214,13 @@ export async function buildSessionInsight({ userId, conversationId, language = '
 
   if (!conversation) return empty;
 
-  const msgs = await Message.find({ conversationId: convOid })
+  const allMsgs = await Message.find({ conversationId: convOid })
     .sort({ createdAt: 1 })
     .limit(MESSAGE_LIMIT)
     .select('role content metadata createdAt')
     .lean();
 
+  const msgs = sliceActiveSessionMessages(allMsgs);
   const userMsgs = msgs.filter((m) => m.role === 'user');
   const assistantMsgs = msgs.filter((m) => m.role === 'assistant');
   const { userTurns, userChars } = countUserStats(msgs);
@@ -258,6 +289,14 @@ export async function buildSessionInsight({ userId, conversationId, language = '
     themes,
     suggestedStep,
     sessionIntention: conversation.sessionIntention || null,
+    tccLiteResume: thoughtPattern?.type
+      ? {
+          eligible: true,
+          distortionType: thoughtPattern.type,
+          distortionLabel: thoughtPattern.name,
+          step: 'capture_thought',
+        }
+      : null,
   };
 }
 

@@ -23,6 +23,9 @@ export function parseAtRecordRouteParams(params) {
   const prefillDistortionName = fromChat
     ? clampAtField(raw.prefillDistortionName, 200)
     : '';
+  const prefillBalancedThought = fromChat
+    ? clampAtField(raw.prefillBalancedThought, AT_PREFILL_MAX_FIELD_LENGTH)
+    : '';
 
   return {
     fromChat,
@@ -31,6 +34,8 @@ export function parseAtRecordRouteParams(params) {
     prefillEmotionIntensity,
     prefillDistortionType,
     prefillDistortionName,
+    prefillBalancedThought,
+    fromTccLite: raw.fromTccLite === true,
   };
 }
 
