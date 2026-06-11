@@ -31,6 +31,7 @@ import { recordInterventionCompleted } from '../../utils/recordInterventionCompl
 import { confirmDestructiveAction } from '../../utils/confirmDestructiveAction';
 import { parseAtRecordRouteParams } from '../../utils/atRecordPrefill';
 import IntensityScalePicker from '../../components/techniques/IntensityScalePicker';
+import IntensityScaleValueChip from '../../components/techniques/IntensityScaleValueChip';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const STEPS = ['1', '2', '3'];
@@ -770,8 +771,15 @@ const AutomaticThoughtRecordScreen = () => {
                     <Text style={techniqueScreenStyles.formHint} numberOfLines={2}>
                       {formatEntryDate(record.entryDate)}
                       {record.distortionName ? ` · ${record.distortionName}` : ''}
-                      {record.emotionIntensity != null ? ` · ${record.emotionIntensity}/10` : ''}
                     </Text>
+                    {record.emotionIntensity != null ? (
+                      <IntensityScaleValueChip
+                        value={record.emotionIntensity}
+                        compact
+                        suffix="/10"
+                        style={{ marginTop: SPACING.xs }}
+                      />
+                    ) : null}
                   </View>
                   <TouchableOpacity
                     onPress={() => handleDelete(record._id)}

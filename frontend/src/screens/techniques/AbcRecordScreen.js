@@ -32,6 +32,7 @@ import { recordInterventionCompleted } from '../../utils/recordInterventionCompl
 import { confirmDestructiveAction } from '../../utils/confirmDestructiveAction';
 import { parseAbcRecordRouteParams } from '../../utils/abcRecordPrefill';
 import IntensityScalePicker from '../../components/techniques/IntensityScalePicker';
+import IntensityScaleValueChip from '../../components/techniques/IntensityScaleValueChip';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const STEPS = ['A', 'B', 'C'];
@@ -665,14 +666,43 @@ const AbcRecordScreen = () => {
                   <Text style={{ fontWeight: '600' }}>B: </Text>
                   {record.beliefs}
                 </Text>
-                {(record.emotions || record.consequence) && (
-                  <Text style={[styles.recordSnippet, { marginTop: 4 }]} numberOfLines={2}>
-                    <Text style={{ fontWeight: '600' }}>C: </Text>
-                    {[record.emotions, record.emotionIntensity ? `${record.emotionIntensity}/10` : null, record.consequence]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </Text>
-                )}
+                {(record.emotions || record.emotionIntensity != null || record.consequence) ? (
+                  <View style={{ marginTop: 4 }}>
+                    {record.emotions ? (
+                      <Text style={styles.recordSnippet} numberOfLines={2}>
+                        <Text style={{ fontWeight: '600' }}>C: </Text>
+                        {record.emotions}
+                      </Text>
+                    ) : null}
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: SPACING.sm,
+                        marginTop: record.emotions ? SPACING.xs : 0,
+                      }}
+                    >
+                      {record.emotionIntensity != null ? (
+                        <IntensityScaleValueChip
+                          value={record.emotionIntensity}
+                          compact
+                          suffix="/10"
+                        />
+                      ) : null}
+                      {record.consequence ? (
+                        <Text style={[styles.recordSnippet, { flex: 1, minWidth: 120 }]} numberOfLines={2}>
+                          {!record.emotions ? (
+                            <>
+                              <Text style={{ fontWeight: '600' }}>C: </Text>
+                            </>
+                          ) : null}
+                          {record.consequence}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </View>
+                ) : null}
                 <View style={styles.recordActions}>
                   <TouchableOpacity
                     onPress={() => handleDelete(record._id)}

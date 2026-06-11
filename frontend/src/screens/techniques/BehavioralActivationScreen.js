@@ -33,6 +33,7 @@ import { confirmDestructiveAction } from '../../utils/confirmDestructiveAction';
 import { parseBaRecordRouteParams } from '../../utils/baRecordPrefill';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 import BehavioralActivationWeekPanel from './BehavioralActivationWeekPanel';
+import IntensityBeforeAfterMarker from '../../components/techniques/IntensityBeforeAfterMarker';
 import IntensityScalePicker from '../../components/techniques/IntensityScalePicker';
 
 const STEPS = ['1', '2', '3'];
@@ -75,7 +76,6 @@ const DEFAULT_TEXTS = {
   STEP_PROGRESS: 'Paso',
   OF: 'de',
   VALIDATION_ACTIVITY: 'Describe la actividad antes de continuar.',
-  MOOD_DELTA: 'Cambio de ánimo',
   PREFILL_HINT:
     'Sugerencia a partir de tu mensaje en el chat. Puedes editarla antes de continuar.',
   PREFILL_MOOD_HINT: 'Ánimo inicial tomado de tu mensaje (puedes cambiarlo).',
@@ -164,7 +164,6 @@ const BehavioralActivationScreen = () => {
       OF: translated?.BA_OF || DEFAULT_TEXTS.OF,
       VALIDATION_ACTIVITY:
         translated?.BA_VALIDATION_ACTIVITY || DEFAULT_TEXTS.VALIDATION_ACTIVITY,
-      MOOD_DELTA: translated?.BA_MOOD_DELTA || DEFAULT_TEXTS.MOOD_DELTA,
       PREFILL_HINT: translated?.BA_PREFILL_HINT || DEFAULT_TEXTS.PREFILL_HINT,
       PREFILL_MOOD_HINT: translated?.BA_PREFILL_MOOD_HINT || DEFAULT_TEXTS.PREFILL_MOOD_HINT,
       TAB_WEEK: translated?.BA_TAB_WEEK || DEFAULT_TEXTS.TAB_WEEK,
@@ -1014,19 +1013,21 @@ const BehavioralActivationScreen = () => {
             ) : records.length === 0 ? (
               <Text style={techniqueScreenStyles.formHint}>{TEXTS.RECENT_EMPTY}</Text>
             ) : (
-              records.slice(0, 10).map((record) => {
-                const delta = (record.moodAfter ?? 0) - (record.moodBefore ?? 0);
-                const deltaLabel = delta > 0 ? `+${delta}` : String(delta);
-                return (
+              records.slice(0, 10).map((record) => (
                   <View key={record._id} style={styles.recordItem}>
                     <View style={styles.recordBody}>
                       <Text style={techniqueScreenStyles.formSectionHeading}>
                         {record.activityDescription}
                       </Text>
                       <Text style={techniqueScreenStyles.formHint}>
-                        {formatEntryDate(record.entryDate)} · {record.moodBefore}→
-                        {record.moodAfter} ({TEXTS.MOOD_DELTA} {deltaLabel})
+                        {formatEntryDate(record.entryDate)}
                       </Text>
+                      <IntensityBeforeAfterMarker
+                        beforeValue={record.moodBefore}
+                        afterValue={record.moodAfter}
+                        compact
+                        style={{ marginTop: SPACING.xs }}
+                      />
                     </View>
                     <TouchableOpacity
                       onPress={() => handleDelete(record._id)}
@@ -1039,8 +1040,7 @@ const BehavioralActivationScreen = () => {
                       />
                     </TouchableOpacity>
                   </View>
-                );
-              })
+                ))
             )}
           </View>
 
