@@ -34,6 +34,15 @@ describe('microGuideContent', () => {
       guideId: expect.any(String),
       title: expect.any(String),
       stepCount: expect.any(Number),
+      clinicalReview: expect.objectContaining({ version: expect.any(String) }),
+    });
+  });
+
+  it('getMicroGuideCardFields incluye sello clínico (#111)', () => {
+    const card = getMicroGuideCardFields('dbt_stop_skill', 'es');
+    expect(card?.clinicalReview).toMatchObject({
+      status: expect.any(String),
+      version: expect.any(String),
     });
   });
 

@@ -200,6 +200,22 @@ async function aggregateInterventionGraph({ userId, since, limit }) {
   return ChatInterventionEvent.aggregate(pipeline);
 }
 
+async function findTopicFreeAffinityEvents({ userId, since, limit = 100 }) {
+  if (!userId || !(since instanceof Date) || Number.isNaN(since.getTime())) {
+    return [];
+  }
+  return ChatInterventionEvent.find({
+    userId: toObjectId(userId),
+    createdAt: { $gte: since },
+    topicFree: { $exists: true, $nin: [null, ''] },
+    eventType: { $in: ['clicked', 'completed'] },
+  })
+    .select('interventionId topicFree eventType')
+    .sort({ createdAt: -1 })
+    .limit(Math.max(1, Math.min(limit, 200)))
+    .lean();
+}
+
 async function recordContinuityItemsShown({
   userId,
   conversationId,
@@ -315,6 +331,7 @@ export default {
   recordInterventionEvent,
   hasShownSuggestionsInActiveSession,
   aggregateInterventionGraph,
+  findTopicFreeAffinityEvents,
   buildSessionAggregatedGraphPipeline,
 };
 

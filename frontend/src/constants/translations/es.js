@@ -1825,6 +1825,9 @@ export const TECHNIQUES = {
   THERAPEUTIC_TECHNIQUES_PSYCHOED_LIBRARY: 'Módulos de psicoeducación',
   THERAPEUTIC_TECHNIQUES_PSYCHOED_LIBRARY_HINT:
     'Temas breves con fuentes y lenguaje no diagnóstico',
+  THERAPEUTIC_TECHNIQUES_MICRO_GUIDE_LIBRARY: 'Micro-guías',
+  THERAPEUTIC_TECHNIQUES_MICRO_GUIDE_LIBRARY_HINT:
+    'Prácticas breves paso a paso para el momento',
   INTERVENTION_GRAPH_TITLE: 'Grafo de intervenciones',
   INTERVENTION_GRAPH_META:
     'Ventana: últimos {days} días · métricas por sesión (mostradas/clic/hecho)',
@@ -1875,6 +1878,16 @@ export const TECHNIQUES = {
   MICRO_GUIDE_KICKER: 'Micro-guía',
   MICRO_GUIDE_CARD_BADGE: 'Micro-guía',
   MICRO_GUIDE_CARD_CTA: 'Abrir guía',
+  MICRO_GUIDE_LIBRARY_TITLE: 'Micro-guías',
+  MICRO_GUIDE_LIBRARY_SUBTITLE: 'Prácticas breves paso a paso para el momento.',
+  MICRO_GUIDE_LIBRARY_LOADING: 'Cargando guías…',
+  MICRO_GUIDE_LIBRARY_ERROR: 'No se pudieron cargar las guías.',
+  MICRO_GUIDE_LIBRARY_RETRY: 'Reintentar',
+  MICRO_GUIDE_LIBRARY_EMPTY: 'No hay guías disponibles en este momento.',
+  MICRO_GUIDE_LIBRARY_COUNT: '{n} guías',
+  MICRO_GUIDE_LIBRARY_STEPS: '{n} pasos',
+  MICRO_GUIDE_LIBRARY_READ_TIME: '~{n} min',
+  MICRO_GUIDE_LIBRARY_HERO_KICKER: 'Biblioteca',
   PSYCHOED_REVIEW_FOOTER: 'Contenido v{version} · revisión editorial ({date})',
   PSYCHOED_REVIEW_SEAL_HEADLINE: 'v{version} · {status} · {date}',
   PSYCHOED_REVIEW_SEAL_SHORT: 'v{version} · {status}',

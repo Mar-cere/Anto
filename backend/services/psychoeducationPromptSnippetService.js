@@ -191,6 +191,7 @@ export async function planChatActionSuggestions({
       userId,
       emotionalAnalysis,
       contextualAnalysis,
+      userContent,
     });
     const rankingPersonalized = rankingScores instanceof Map && rankingScores.size > 0;
     const actionIds = actionSuggestionService.generateSuggestions(

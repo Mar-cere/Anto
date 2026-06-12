@@ -2,6 +2,7 @@
  * Ranking de intervenciones a partir del grafo #127 (histórico del usuario).
  */
 import chatInterventionGraphService from './chatInterventionGraphService.js';
+import { buildTopicFreeFromUserContent } from '../utils/interventionTopicFree.js';
 
 const DEFAULT_RANKING_DAYS = 30;
 const DEFAULT_GRAPH_LIMIT = 120;
@@ -87,10 +88,70 @@ export function rankInterventionIds(ids, scoreMap) {
     .map((row) => row.id);
 }
 
+function tokenizeTopicFreeText(text) {
+  return new Set(
+    String(text || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{M}/gu, '')
+      .split(/[^\p{L}\p{N}]+/u)
+      .filter((word) => word.length >= 3),
+  );
+}
+
+function computeTokenOverlap(left, right) {
+  if (!left?.size || !right?.size) return 0;
+  let shared = 0;
+  left.forEach((token) => {
+    if (right.has(token)) shared += 1;
+  });
+  return shared / Math.sqrt(left.size * right.size);
+}
+
+/**
+ * Boost de ranking por similitud léxica con topicFree histórico (#218 lite).
+ */
+export function buildTopicFreeAffinityBoost(events, userContent) {
+  const snippet = buildTopicFreeFromUserContent(userContent);
+  if (!snippet) return new Map();
+  const currentTokens = tokenizeTopicFreeText(snippet);
+  if (currentTokens.size === 0) return new Map();
+
+  const map = new Map();
+  for (const ev of events || []) {
+    const overlap = computeTokenOverlap(currentTokens, tokenizeTopicFreeText(ev?.topicFree));
+    if (overlap < 0.12) continue;
+    const id = String(ev?.interventionId || '').trim();
+    if (!id) continue;
+    const weight = overlap * (ev?.eventType === 'completed' ? 1.25 : 0.85);
+    map.set(id, Math.max(map.get(id) ?? 0, weight));
+  }
+  return map;
+}
+
+export function mergeRankingScoreMaps(baseMap, boostMap, factor = 0.4) {
+  const merged = new Map(baseMap instanceof Map ? baseMap : []);
+  if (!(boostMap instanceof Map) || boostMap.size === 0) return merged;
+  boostMap.forEach((value, id) => {
+    merged.set(id, (merged.get(id) ?? 0) + value * factor);
+  });
+  return merged;
+}
+
+async function fetchTopicFreeAffinityScores({ userId, userContent, days = DEFAULT_RANKING_DAYS }) {
+  if (!userId || !userContent) return new Map();
+  const since = new Date(Date.now() - Math.max(1, days) * 24 * 60 * 60 * 1000);
+  const events = await chatInterventionGraphService
+    .findTopicFreeAffinityEvents({ userId, since })
+    .catch(() => []);
+  return buildTopicFreeAffinityBoost(events, userContent);
+}
+
 export async function fetchRankingScoresForUser({
   userId,
   emotionalAnalysis = null,
   contextualAnalysis = null,
+  userContent = null,
   days = DEFAULT_RANKING_DAYS,
   limit = DEFAULT_GRAPH_LIMIT,
 }) {
@@ -102,12 +163,19 @@ export async function fetchRankingScoresForUser({
     since,
     limit,
   });
-  return buildRankingScoreMap(edges, topicTag);
+  let scores = buildRankingScoreMap(edges, topicTag);
+  if (userContent) {
+    const affinity = await fetchTopicFreeAffinityScores({ userId, userContent, days });
+    scores = mergeRankingScoreMaps(scores, affinity);
+  }
+  return scores;
 }
 
 export default {
   scoreInterventionEdge,
   buildRankingScoreMap,
+  buildTopicFreeAffinityBoost,
+  mergeRankingScoreMaps,
   rankInterventionIds,
   fetchRankingScoresForUser,
   safeTopicTag,

@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
+import PsychoeducationClinicalReviewSeal from '../../components/PsychoeducationClinicalReviewSeal';
 import ParticleBackground from '../../components/ParticleBackground';
 import { api } from '../../config/api';
 import { useTheme } from '../../context/ThemeContext';
@@ -23,6 +24,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { pickLocalizedDefaults } from '../../utils/localizedFallback';
 import { createInterventionCompletedRecorder } from '../../utils/recordInterventionCompleted';
+import { usePsychoeducationTexts } from './psychoeducationTexts';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const DEFAULT_TEXTS_BY_LANG = {
@@ -58,6 +60,7 @@ export default function MicroGuideScreen() {
   const { language } = useLanguage();
   const techniqueScreenStyles = useTechniqueScreenStyles();
   const translated = useSectionTranslations('TECHNIQUES');
+  const sealTexts = usePsychoeducationTexts();
   const TEXTS = useMemo(() => {
     const defaults = pickLocalizedDefaults(language, DEFAULT_TEXTS_BY_LANG);
     return {
@@ -187,6 +190,13 @@ export default function MicroGuideScreen() {
               <Text style={techniqueScreenStyles.introTitle}>{guide?.title}</Text>
               {guide?.intro ? (
                 <Text style={techniqueScreenStyles.introBody}>{guide.intro}</Text>
+              ) : null}
+              {guide?.clinicalReview ? (
+                <PsychoeducationClinicalReviewSeal
+                  clinicalReview={guide.clinicalReview}
+                  texts={sealTexts}
+                  variant="module"
+                />
               ) : null}
             </View>
             <View style={techniqueScreenStyles.card}>

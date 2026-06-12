@@ -291,6 +291,23 @@ const TherapeuticTechniquesScreen = () => {
             </View>
             <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textSecondary} />
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.psychoedCard, { marginTop: 12, width: '100%' }]}
+            testID="microguide-entry-library"
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+              therapeuticSafeNavigate(navigation, 'MicroGuideLibrary');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={TEXTS.MICRO_GUIDE_LIBRARY}
+          >
+            <MaterialCommunityIcons name="compass-outline" size={22} color={colors.primary} />
+            <View style={styles.psychoedCardText}>
+              <Text style={styles.psychoedCardTitle}>{TEXTS.MICRO_GUIDE_LIBRARY}</Text>
+              <Text style={styles.psychoedCardHint}>{TEXTS.MICRO_GUIDE_LIBRARY_HINT}</Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textSecondary} />
+          </TouchableOpacity>
         </ScrollView>
       );
     }
@@ -331,6 +348,25 @@ const TherapeuticTechniquesScreen = () => {
           <View style={styles.psychoedCardText}>
             <Text style={styles.psychoedCardTitle}>{TEXTS.PSYCHOED_LIBRARY}</Text>
             <Text style={styles.psychoedCardHint}>{TEXTS.PSYCHOED_LIBRARY_HINT}</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textSecondary} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.psychoedCard}
+          testID="microguide-entry-library"
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+            therapeuticSafeNavigate(navigation, 'MicroGuideLibrary');
+          }}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={TEXTS.MICRO_GUIDE_LIBRARY}
+          accessibilityHint={TEXTS.MICRO_GUIDE_LIBRARY_HINT}
+        >
+          <MaterialCommunityIcons name="compass-outline" size={22} color={colors.primary} />
+          <View style={styles.psychoedCardText}>
+            <Text style={styles.psychoedCardTitle}>{TEXTS.MICRO_GUIDE_LIBRARY}</Text>
+            <Text style={styles.psychoedCardHint}>{TEXTS.MICRO_GUIDE_LIBRARY_HINT}</Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textSecondary} />
         </TouchableOpacity>

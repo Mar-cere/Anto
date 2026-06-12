@@ -432,8 +432,9 @@ const BehavioralActivationScreen = () => {
     [colors],
   );
 
-  const loadRecords = useCallback(async () => {
-    setLoadingRecords(true);
+  const loadRecords = useCallback(async (opts = {}) => {
+    const silent = opts.silent === true;
+    if (!silent) setLoadingRecords(true);
     try {
       const response = await api.get(ENDPOINTS.BEHAVIORAL_ACTIVATION_LOGS);
       if (response?.success && Array.isArray(response.records)) {
@@ -443,9 +444,9 @@ const BehavioralActivationScreen = () => {
       }
     } catch (err) {
       console.error('Error cargando registros BA:', err);
-      setRecords([]);
+      if (!silent) setRecords([]);
     } finally {
-      setLoadingRecords(false);
+      if (!silent) setLoadingRecords(false);
     }
   }, []);
 
@@ -630,7 +631,8 @@ const BehavioralActivationScreen = () => {
     useCallback(() => {
       applyRoutePrefill(route.params);
       loadWeekPlan();
-    }, [applyRoutePrefill, route.params, loadWeekPlan]),
+      loadRecords({ silent: true });
+    }, [applyRoutePrefill, route.params, loadWeekPlan, loadRecords]),
   );
 
   const goNext = () => {

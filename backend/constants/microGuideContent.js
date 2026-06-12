@@ -2,6 +2,7 @@
  * Contenido de micro-guías in-app (#90–#99 y catálogo #127).
  */
 import { MICRO_GUIDE_MODULES_EN } from './microGuideContent.en.js';
+import { normalizeClinicalReview } from './psychoeducationClinicalReview.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 import { INTERVENTION_CATALOG } from './interventionCatalog.js';
 import { getInterventionCatalogLabel } from './interventionCatalog.js';
@@ -259,6 +260,7 @@ export function getMicroGuideModule(guideId, language = 'es') {
       lang === 'en'
         ? 'Educational guide; not a substitute for professional care.'
         : 'Guía educativa; no sustituye atención profesional.',
+    clinicalReview: normalizeClinicalReview(lang),
   };
 }
 
@@ -276,6 +278,7 @@ export function getMicroGuideBrowseItems(language = 'es') {
       estimatedMinutes: mod.estimatedMinutes || 2,
       stepCount: mod.steps?.length || 0,
       icon: entry.icon,
+      clinicalReview: mod.clinicalReview,
     };
   }).filter(Boolean);
 }
@@ -289,6 +292,7 @@ export function getMicroGuideCardFields(guideId, language = 'es') {
     previewSummary: mod.intro,
     microSteps: steps,
     estimatedMinutes: mod.estimatedMinutes || 2,
+    clinicalReview: mod.clinicalReview,
     cardVariant: 'micro_guide_native',
   };
 }

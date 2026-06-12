@@ -1,5 +1,7 @@
 import {
   buildRankingScoreMap,
+  buildTopicFreeAffinityBoost,
+  mergeRankingScoreMaps,
   rankInterventionIds,
   scoreInterventionEdge,
 } from '../../../services/interventionRankingService.js';
@@ -60,6 +62,34 @@ describe('interventionRankingService', () => {
       'trabajo',
     );
     expect(map.get('task_break')).toBeGreaterThan(map.get('breathing_exercise'));
+  });
+
+  it('buildTopicFreeAffinityBoost prioriza intervenciones con mensaje similar', () => {
+    const boost = buildTopicFreeAffinityBoost(
+      [
+        {
+          interventionId: 'behavioral_activation',
+          topicFree: 'No tengo ganas de nada y me cuesta levantarme cada mañana',
+          eventType: 'completed',
+        },
+        {
+          interventionId: 'self_care',
+          topicFree: 'Me duele mucho la cabeza desde ayer por la tarde',
+          eventType: 'clicked',
+        },
+      ],
+      'No tengo ganas de levantarme y siento que nada tiene sentido',
+    );
+    expect(boost.get('behavioral_activation') ?? 0).toBeGreaterThan(boost.get('self_care') ?? 0);
+  });
+
+  it('mergeRankingScoreMaps combina grafo y topicFree', () => {
+    const merged = mergeRankingScoreMaps(
+      new Map([['behavioral_activation', 1]]),
+      new Map([['behavioral_activation', 2], ['grounding_technique', 1]]),
+    );
+    expect(merged.get('behavioral_activation')).toBeGreaterThan(1);
+    expect(merged.get('grounding_technique')).toBeGreaterThan(0);
   });
 });
 
