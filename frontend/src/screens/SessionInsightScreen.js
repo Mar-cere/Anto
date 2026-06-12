@@ -3,8 +3,9 @@
  */
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { CommonActions, useNavigation, useRoute } from '@react-navigation/native';
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Platform,
   ScrollView,
   StatusBar,
@@ -19,11 +20,13 @@ import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import {
   CHAT_BACK_TARGET,
+  getResetToMainTabsWithChatState,
   getResetToMainTabsWithInicioState,
 } from '../navigation/navigationHelpers';
 import { SPACING } from '../constants/ui';
 import { recordInterventionClicked } from '../utils/recordInterventionCompleted';
 import { setPendingTccLiteResume } from '../utils/chatTccLiteResume';
+import chatService from '../services/chatService';
 
 function IntensityBar({ value, colors, sx }) {
   const pct = Math.min(100, Math.max(0, (Number(value) || 0) * 10));
@@ -41,8 +44,42 @@ export default function SessionInsightScreen() {
   const { colors, statusBarStyle } = useTheme();
   const TEXTS = useSectionTranslations('SESSION_INSIGHT');
 
-  const insight = route.params?.insight;
+  const routeInsight = route.params?.insight;
+  const conversationId = route.params?.conversationId;
   const backTarget = route.params?.backTarget || CHAT_BACK_TARGET.DASH;
+  const [insight, setInsight] = useState(routeInsight || null);
+  const [loading, setLoading] = useState(
+    route.params?.loading === true && !routeInsight?.eligible,
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    if (routeInsight?.eligible) {
+      setInsight(routeInsight);
+      setLoading(false);
+      return undefined;
+    }
+    if (!conversationId || route.params?.loading !== true) return undefined;
+    (async () => {
+      try {
+        setLoading(true);
+        const fetched = await chatService.fetchSessionInsight(conversationId);
+        if (cancelled) return;
+        if (fetched?.eligible) {
+          setInsight(fetched);
+        } else {
+          setInsight(null);
+        }
+      } catch {
+        if (!cancelled) setInsight(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [conversationId, route.params?.loading, routeInsight]);
 
   const styles = useMemo(
     () =>
@@ -290,8 +327,21 @@ export default function SessionInsightScreen() {
   }, [insight, navigation, finish, backTarget]);
 
   useEffect(() => {
-    if (!insight?.eligible) finish();
-  }, [insight?.eligible, finish]);
+    if (!loading && !insight?.eligible) finish();
+  }, [insight?.eligible, loading, finish]);
+
+  if (loading) {
+    return (
+      <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
+        <StatusBar barStyle={statusBarStyle} />
+        <ParticleBackground />
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.reflection, { marginTop: 16, textAlign: 'center' }]}>
+          {TEXTS.LOADING || 'Preparando resumen…'}
+        </Text>
+      </View>
+    );
+  }
 
   if (!insight?.eligible) return null;
 

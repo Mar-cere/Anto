@@ -51,8 +51,9 @@ import {
 } from '../utils/chatWelcomeGreeting';
 import { getAppLanguage } from '../config/api';
 import {
+  buildTccLiteUiFromPersistedStep,
   buildTccLiteUiFromResume,
-  consumePendingTccLiteResume,
+  clearPendingTccLiteResume,
   peekPendingTccLiteResume,
   setPendingTccLiteResume,
 } from '../utils/chatTccLiteResume';
@@ -288,15 +289,8 @@ export function useChatScreen() {
     const resolveTccLiteOnLoad = (serverTccLite, serverMessages) => {
       if (serverTccLite?.active) return serverTccLite;
       const fromMessages = extractTccLiteFromMessages(serverMessages);
-      if (!fromMessages?.active) return null;
-      return {
-        active: true,
-        completed: false,
-        step: fromMessages.step,
-        stepIndex: 0,
-        stepTotal: 4,
-        distortionType: fromMessages.distortionType || null,
-      };
+      if (!fromMessages?.step) return null;
+      return buildTccLiteUiFromPersistedStep(fromMessages, appLanguage);
     };
 
     const dedupeAndSetMessages = (serverMessages, sessionIntentionMeta, flags, serverTccLite) => {
@@ -318,7 +312,12 @@ export function useChatScreen() {
         return timeA - timeB;
       });
       setMessages(finalizeLoadedChatMessages(uniqueMessages, appLanguage));
-      setTccLiteState(resolveTccLiteOnLoad(serverTccLite, uniqueMessages));
+      const pendingResume = pendingTccLiteResumeRef.current;
+      if (pendingResume?.distortionType) {
+        setTccLiteState(buildTccLiteUiFromResume(pendingResume));
+      } else {
+        setTccLiteState(resolveTccLiteOnLoad(serverTccLite, uniqueMessages));
+      }
       if (isRegistered) {
         const userCount = uniqueMessages.filter((m) => m.type !== 'quickReplies' && m.role === MESSAGE_ROLES.USER).length;
         setShowSessionIntentionPrompt(userCount === 0 && !sessionIntentionMeta);
@@ -329,7 +328,10 @@ export function useChatScreen() {
     };
 
     try {
-      setIsLoading(true);
+      const silentReload = messagesRef.current.length > 0;
+      if (!silentReload) {
+        setIsLoading(true);
+      }
       const userToken = await AsyncStorage.getItem('userToken');
       setChatFeedbackEnabled(!!userToken);
 
@@ -763,9 +765,10 @@ export function useChatScreen() {
 
       let resumePayload = pendingTccLiteResumeRef.current;
       if (!resumePayload) {
-        resumePayload = await consumePendingTccLiteResume();
-      } else {
-        pendingTccLiteResumeRef.current = null;
+        resumePayload = await peekPendingTccLiteResume();
+      }
+      if (resumePayload?.distortionType) {
+        pendingTccLiteResumeRef.current = resumePayload;
       }
 
       await chatService.sendMessageStream(messageText, {
@@ -857,6 +860,8 @@ export function useChatScreen() {
             else if (nextTccLite?.active) setTccLiteAtHandoff(null);
             return next;
           });
+          pendingTccLiteResumeRef.current = null;
+          void clearPendingTccLiteResume();
           scrollToBottom(true, { force: false });
           requestAnimationFrame(() => {
             hapticAssistantMessageReceived();
@@ -874,6 +879,12 @@ export function useChatScreen() {
 
       // Quitar mensajes temporales en error
       setMessages((prev) => prev.filter((msg) => msg.id !== tempUserMessage.id && msg.id !== tempAssistantId));
+
+      const resumePayload = pendingTccLiteResumeRef.current;
+      if (resumePayload?.distortionType) {
+        pendingTccLiteResumeRef.current = resumePayload;
+        void setPendingTccLiteResume(resumePayload);
+      }
 
       const backendCode = extractErrorCode(err);
       const isNetworkError =
@@ -1281,12 +1292,13 @@ export function useChatScreen() {
       if (userTurnCount >= 2 && !(await chatService.isGuestChatMode())) {
         const cid = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
         if (cid && isValidMongoObjectId24(cid)) {
-          const insight = await chatService.fetchSessionInsight(cid);
-          if (insight?.eligible) {
-            const parentNav = navigation.getParent?.() || navigation;
-            parentNav.navigate('SessionInsight', { insight, backTarget: target });
-            return;
-          }
+          const parentNav = navigation.getParent?.() || navigation;
+          parentNav.navigate('SessionInsight', {
+            conversationId: cid,
+            backTarget: target,
+            loading: true,
+          });
+          return;
         }
       }
 
@@ -1498,7 +1510,16 @@ export function useChatScreen() {
       recordInterventionClicked('automatic_thought_record');
       setTccLiteAtHandoff(null);
       try {
+        const conversationHistory = messages
+          .filter((m) => m?.role === MESSAGE_ROLES.USER || m?.role === MESSAGE_ROLES.ASSISTANT)
+          .slice(-14)
+          .map((m) => ({
+            role: m.role,
+            content: String(m.content || '').trim(),
+          }))
+          .filter((m) => m.content);
         const draft = await chatService.createTccLiteAtDraft({
+          conversationHistory,
           handoffParams: handoff.params,
           distortionType: handoff.params?.prefillDistortionType,
         });
@@ -1511,7 +1532,7 @@ export function useChatScreen() {
       }
       navigation.navigate(handoff.screen, handoff.params || {});
     },
-    [navigation],
+    [messages, navigation],
   );
 
   const handleDismissTccLiteAtHandoff = useCallback(() => {
@@ -1563,7 +1584,6 @@ export function useChatScreen() {
           contentSizeScrollTimerRef.current = null;
         }
         void scheduleLastSessionSummaryDeferred();
-        setMessages([]);
         setShowSessionIntentionPrompt(false);
       };
     }, [

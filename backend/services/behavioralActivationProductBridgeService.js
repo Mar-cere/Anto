@@ -489,7 +489,16 @@ export async function reconcileWeekPlanWithLinkedProducts({ userId, plan }) {
       })
         .select('status')
         .lean();
-      if (habit?.status?.completedToday) {
+      const habitStatus = habit?.status;
+      let habitFulfilled = habitStatus?.completedToday === true;
+      if (!habitFulfilled && habitStatus?.lastCompleted && plan.weekStart != null) {
+        const slotDate = new Date(plan.weekStart);
+        if (!Number.isNaN(slotDate.getTime())) {
+          slotDate.setDate(slotDate.getDate() + (Number(slot.dayOffset) || 0));
+          habitFulfilled = Habit.isSameLocalDay(habitStatus.lastCompleted, slotDate);
+        }
+      }
+      if (habitFulfilled) {
         await BehavioralActivationWeekPlan.updateOne(
           { _id: plan._id, 'slots.slotId': slot.slotId },
           { $set: { 'slots.$.status': 'completed' } },

@@ -77,7 +77,7 @@ export default function MicroGuideScreen() {
       try {
         const res = await api.get(`/api/therapeutic-techniques/micro-guides/${guideId}`);
         if (cancelled) return;
-        if (res?.success && res?.data) {
+        if (res?.success && res?.data && Array.isArray(res.data.steps) && res.data.steps.length > 0) {
           setGuide(res.data);
         } else {
           setError(TEXTS.ERROR);
@@ -104,6 +104,7 @@ export default function MicroGuideScreen() {
   };
 
   const handleNext = () => {
+    if (totalSteps === 0 || !step?.body) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     if (isLast) {
       handleComplete();
@@ -145,9 +146,15 @@ export default function MicroGuideScreen() {
             <ActivityIndicator color={colors.primary} />
             <Text style={techniqueScreenStyles.formHint}>{TEXTS.LOADING}</Text>
           </View>
-        ) : error ? (
+        ) : error || totalSteps === 0 ? (
           <View style={techniqueScreenStyles.card}>
-            <Text style={techniqueScreenStyles.formHint}>{error}</Text>
+            <Text style={techniqueScreenStyles.formHint}>{error || TEXTS.ERROR}</Text>
+            <TouchableOpacity
+              style={[techniqueScreenStyles.primaryButton, { marginTop: 16 }]}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={techniqueScreenStyles.primaryButtonText}>{TEXTS.BACK}</Text>
+            </TouchableOpacity>
           </View>
         ) : finished ? (
           <View style={techniqueScreenStyles.card}>

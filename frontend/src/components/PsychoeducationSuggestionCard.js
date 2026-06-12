@@ -208,7 +208,9 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
         {isCompact ? (
           <View style={styles.compactRow}>
             <View style={styles.compactCta}>
-              <Text style={styles.compactCtaText}>{texts.CARD_CTA_COMPACT || 'Abrir'}</Text>
+              <Text style={styles.compactCtaText}>
+                {isMicroGuide ? ctaReadLabel : texts.CARD_CTA_COMPACT || 'Abrir'}
+              </Text>
               <Ionicons name="chevron-forward" size={14} color={colors.primary} />
             </View>
           </View>

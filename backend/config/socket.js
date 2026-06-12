@@ -22,7 +22,7 @@ import { sanitizeSessionIntentionForClient } from '../constants/sessionIntention
 import { evaluateSuicideRisk, normalizeStoredCrisisRiskLevel } from '../constants/crisis.js';
 import chatProductActionProposalService from '../services/chatProductActionProposalService.js';
 import chatProductActionLlmService from '../services/chatProductActionLlmService.js';
-import { resolveContextualPsychoeducationIds } from '../services/actionSuggestionService.js';
+import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 import conversationProductProposalCapService from '../services/conversationProductProposalCapService.js';
 import metricsService from '../services/metricsService.js';
 import {
@@ -287,6 +287,12 @@ export const setupSocketIO = (server) => {
         
         // 6. Extras de turno (sugerencias, TCC lite, protocolos activos)
         const sessionIntentionSafe = sanitizeSessionIntentionForClient(conversation.sessionIntention);
+        const socketLanguage = normalizeApiLanguage(
+          data?.language ||
+            userProfile?.preferences?.language ||
+            userProfile?.language ||
+            'es',
+        );
         const turnEnhancements = await planChatTurnEnhancements({
           userId,
           conversationId: conversation._id,
@@ -296,7 +302,11 @@ export const setupSocketIO = (server) => {
           contextualAnalysis,
           riskLevel,
           sessionIntention: sessionIntentionSafe,
-          language: 'es',
+          language: socketLanguage,
+          resumeTccLite:
+            data?.resumeTccLite && typeof data.resumeTccLite === 'object'
+              ? data.resumeTccLite
+              : null,
         });
         const promptSnippets = buildOpenaiEnhancementSnippets(turnEnhancements);
 
@@ -405,8 +415,9 @@ export const setupSocketIO = (server) => {
                 {
                   userContent: messageText,
                   assistantContent: response.content,
-                  primaryPsychoeducationId: resolveContextualPsychoeducationIds(messageText)[0] || null,
-                  language: 'es',
+                  primaryPsychoeducationId:
+                    turnEnhancements.suggestionPlan?.primaryPsychoeducationId || null,
+                  language: socketLanguage,
                 }
               );
           } catch (llmPropErr) {
@@ -438,7 +449,7 @@ export const setupSocketIO = (server) => {
         const clientTurn = buildClientTurnPayload({
           tccLitePlan: turnEnhancements.tccLitePlan,
           suggestionPlan: turnEnhancements.suggestionPlan,
-          language: 'es',
+          language: socketLanguage,
         });
 
         // 9. Emitir respuesta al cliente

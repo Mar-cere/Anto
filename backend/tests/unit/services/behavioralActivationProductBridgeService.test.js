@@ -46,6 +46,11 @@ await jest.unstable_mockModule('../../../models/Habit.js', () => ({
     create: mockHabitCreate,
     updateOne: mockHabitUpdateOne,
     findById: jest.fn(),
+    isSameLocalDay(left, right) {
+      const a = new Date(left);
+      const b = new Date(right);
+      return a.toDateString() === b.toDateString();
+    },
   },
 }));
 
@@ -191,6 +196,33 @@ describe('behavioralActivationProductBridgeService', () => {
     });
 
     expect(result?.updated).toBe(true);
+    expect(mockPlanUpdateOne).toHaveBeenCalled();
+  });
+
+  it('reconcileWeekPlanWithLinkedProducts marca slot si el hábito se completó el día del slot', async () => {
+    const linkedHabitId = '507f1f77bcf86cd799439021';
+    const slotDay = new Date(weekStart);
+    slotDay.setDate(slotDay.getDate() + baseSlot.dayOffset);
+    mockHabitFindOne.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue({
+          status: { completedToday: false, lastCompleted: slotDay },
+        }),
+      }),
+    });
+    mockPlanFindById.mockImplementation(() => ({
+      lean: jest.fn().mockResolvedValue({
+        _id: planId,
+        slots: [{ ...baseSlot, linkedHabitId, status: 'completed' }],
+      }),
+    }));
+
+    const result = await reconcileWeekPlanWithLinkedProducts({
+      userId,
+      plan: { _id: planId, weekStart, slots: [{ ...baseSlot, linkedHabitId }] },
+    });
+
+    expect(result.updated).toBe(true);
     expect(mockPlanUpdateOne).toHaveBeenCalled();
   });
 

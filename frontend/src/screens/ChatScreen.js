@@ -47,6 +47,7 @@ import {
   recordInterventionCompletedIfInlineSuggestion,
   recordInterventionDismissed,
 } from '../utils/recordInterventionCompleted';
+import { topicFromInterventionId } from '../utils/psychoeducationTopic';
 import { getFeedbackTargetMessageId } from './chat/chatFeedbackAnchor';
 import { SPACING } from '../constants/ui';
 import {
@@ -380,18 +381,30 @@ const ChatScreen = () => {
     (suggestion) => {
       if (!suggestion?.id) return;
       recordInterventionClicked(suggestion.id);
-      if (suggestion?.screen) {
+      const targetScreen =
+        suggestion.screen ||
+        (suggestion.interventionType === 'micro_guide' ||
+        suggestion.cardVariant === 'micro_guide_native'
+          ? 'MicroGuide'
+          : suggestion.interventionType === 'psychoeducation' ||
+              String(suggestion.id || '').startsWith('psychoeducation_')
+            ? 'PsychoeducationModule'
+            : null);
+      if (targetScreen) {
         try {
-          const params =
-            suggestion.screen === 'MicroGuide'
-              ? {
-                  guideId:
-                    suggestion?.params?.guideId || suggestion?.id,
-                  ...(suggestion?.params || {}),
-                }
-              : suggestion?.params || undefined;
+          let params = suggestion?.params || undefined;
+          if (targetScreen === 'MicroGuide') {
+            params = {
+              guideId: suggestion?.params?.guideId || suggestion?.id,
+              ...(suggestion?.params || {}),
+            };
+          } else if (targetScreen === 'PsychoeducationModule') {
+            const topic =
+              suggestion?.params?.topic || topicFromInterventionId(suggestion?.id);
+            params = { ...(suggestion?.params || {}), ...(topic ? { topic } : {}) };
+          }
           navigation.navigate({
-            name: suggestion.screen,
+            name: targetScreen,
             params,
             merge: false,
           });
@@ -593,7 +606,7 @@ const ChatScreen = () => {
       </Animated.View>
 
       <SessionIntentionBanner
-        visible={showSessionIntentionPrompt && guestQuota === null}
+        visible={showSessionIntentionPrompt && guestQuota === null && !isLoading}
         submitting={sessionIntentionSubmitting}
         onSelect={selectSessionIntention}
         onSkip={skipSessionIntention}

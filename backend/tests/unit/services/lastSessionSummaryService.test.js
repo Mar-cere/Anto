@@ -66,6 +66,12 @@ describe('lastSessionSummaryService', () => {
       expect(sanitizeContinuationText('hola\u0000mundo', 100)).toBe('holamundo');
       expect(sanitizeContinuationText('abcdef', 3)).toBe('abc');
     });
+    it('recorta en límite de palabra cuando es posible', () => {
+      const text = 'Es normal sentirse así a veces, recuerda que cada intento es una oportunidad de aprendizaje';
+      const out = sanitizeContinuationText(text, 90);
+      expect(out.length).toBeLessThanOrEqual(90);
+      expect(out.endsWith('aprendizaj')).toBe(false);
+    });
   });
 
   describe('countUserTurnStats', () => {

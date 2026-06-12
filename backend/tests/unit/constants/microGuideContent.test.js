@@ -52,4 +52,15 @@ describe('microGuideContent', () => {
     expect(mod?.title).toMatch(/STOP/i);
     expect(mod?.disclaimer).toMatch(/professional/i);
   });
+
+  it('paridad ES/EN: cada guía tiene título y pasos en ambos idiomas', () => {
+    MICRO_GUIDE_IDS.forEach((id) => {
+      const es = getMicroGuideModule(id, 'es');
+      const en = getMicroGuideModule(id, 'en');
+      expect(es?.title).toBeTruthy();
+      expect(en?.title).toBeTruthy();
+      expect(es?.steps?.length).toBeGreaterThanOrEqual(2);
+      expect(en?.steps?.length).toBe(es?.steps?.length);
+    });
+  });
 });

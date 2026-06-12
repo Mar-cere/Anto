@@ -117,7 +117,13 @@ export function sanitizeContinuationText(s, maxLen) {
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
     .trim();
   if (!maxLen || maxLen <= 0) return t;
-  return t.length > maxLen ? t.slice(0, maxLen) : t;
+  if (t.length <= maxLen) return t;
+  const slice = t.slice(0, maxLen);
+  const lastSpace = slice.lastIndexOf(' ');
+  if (lastSpace > Math.floor(maxLen * 0.55)) {
+    return slice.slice(0, lastSpace).trim();
+  }
+  return slice.trim();
 }
 
 function formatSessionEndedHint(sessionEndedAt, language = 'es') {

@@ -18,6 +18,26 @@ describe('psychoeducationTopic', () => {
     expect(topicFromInterventionId('psychoeducation_anger')).toBe('anger');
   });
 
+  it('hidrata micro-guía sin screen enriquecido', () => {
+    const out = hydrateInterventionSuggestion(
+      { id: 'dbt_stop_skill', interventionType: 'micro_guide' },
+      'es',
+    );
+    expect(out.screen).toBe('MicroGuide');
+    expect(out.params.guideId).toBe('dbt_stop_skill');
+    expect(out.cardVariant).toBe('micro_guide_native');
+  });
+
+  it('hidrata psicoeducación duelo con topic grief', () => {
+    const out = hydrateInterventionSuggestion(
+      { id: 'psychoeducation_grief', interventionType: 'psychoeducation' },
+      'es',
+    );
+    expect(out.params.topic).toBe('grief');
+    expect(out.screen).toBe('PsychoeducationModule');
+    expect(out.previewTitle).toMatch(/duelo|pérdida/i);
+  });
+
   it('hidrata sugerencias sin cardVariant', () => {
     const out = hydrateInterventionSuggestion(
       { id: 'psychoeducation_anxiety', interventionType: 'psychoeducation' },
