@@ -67,6 +67,7 @@ const {
   suggestProductKindForSlot,
   syncBaEcosystemFromLog,
   syncBaSlotFromProductCompletion,
+  reconcileWeekPlanWithLinkedProducts,
 } = await import('../../../services/behavioralActivationProductBridgeService.js');
 const { normalizeWeekStart } = await import(
   '../../../services/behavioralActivationWeekPlanService.js'
@@ -190,6 +191,29 @@ describe('behavioralActivationProductBridgeService', () => {
     });
 
     expect(result?.updated).toBe(true);
+    expect(mockPlanUpdateOne).toHaveBeenCalled();
+  });
+
+  it('reconcileWeekPlanWithLinkedProducts marca slot si la tarea vinculada ya está hecha', async () => {
+    const linkedTaskId = '507f1f77bcf86cd799439020';
+    mockTaskFindOne.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue({ status: 'completed' }),
+      }),
+    });
+    mockPlanFindById.mockImplementation(() => ({
+      lean: jest.fn().mockResolvedValue({
+        _id: planId,
+        slots: [{ ...baseSlot, linkedTaskId, status: 'completed' }],
+      }),
+    }));
+
+    const result = await reconcileWeekPlanWithLinkedProducts({
+      userId,
+      plan: { _id: planId, slots: [{ ...baseSlot, linkedTaskId }] },
+    });
+
+    expect(result.updated).toBe(true);
     expect(mockPlanUpdateOne).toHaveBeenCalled();
   });
 

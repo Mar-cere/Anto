@@ -453,6 +453,57 @@ export function isValidBaProductSource(source) {
   return BA_PRODUCT_SOURCES.has(String(source || ''));
 }
 
+/**
+ * Al cargar el plan: marca slots planned si su tarea/hábito vinculado ya está hecho.
+ */
+export async function reconcileWeekPlanWithLinkedProducts({ userId, plan }) {
+  const uid = toObjectId(userId);
+  if (!uid || !plan?._id) return { plan, updated: false };
+
+  const slots = Array.isArray(plan.slots) ? plan.slots : [];
+  let changed = false;
+
+  for (const slot of slots) {
+    if (!slot || slot.status === 'completed' || slot.status === 'skipped') continue;
+
+    if (slot.linkedTaskId) {
+      const task = await Task.findOne({
+        _id: toObjectId(slot.linkedTaskId),
+        userId: uid,
+        deletedAt: { $exists: false },
+      })
+        .select('status')
+        .lean();
+      if (task?.status === 'completed') {
+        await BehavioralActivationWeekPlan.updateOne(
+          { _id: plan._id, 'slots.slotId': slot.slotId },
+          { $set: { 'slots.$.status': 'completed' } },
+        );
+        changed = true;
+      }
+    } else if (slot.linkedHabitId) {
+      const habit = await Habit.findOne({
+        _id: toObjectId(slot.linkedHabitId),
+        userId: uid,
+        deletedAt: { $exists: false },
+      })
+        .select('status')
+        .lean();
+      if (habit?.status?.completedToday) {
+        await BehavioralActivationWeekPlan.updateOne(
+          { _id: plan._id, 'slots.slotId': slot.slotId },
+          { $set: { 'slots.$.status': 'completed' } },
+        );
+        changed = true;
+      }
+    }
+  }
+
+  if (!changed) return { plan, updated: false };
+  const refreshed = await BehavioralActivationWeekPlan.findById(plan._id).lean();
+  return { plan: refreshed || plan, updated: true };
+}
+
 export default {
   suggestProductKindForSlot,
   computeSlotDueDate,
@@ -462,5 +513,6 @@ export default {
   syncProductFromBaCompletion,
   syncBaSlotFromProductCompletion,
   syncBaEcosystemFromLog,
+  reconcileWeekPlanWithLinkedProducts,
   isValidBaProductSource,
 };

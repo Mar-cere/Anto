@@ -382,9 +382,17 @@ const ChatScreen = () => {
       recordInterventionClicked(suggestion.id);
       if (suggestion?.screen) {
         try {
+          const params =
+            suggestion.screen === 'MicroGuide'
+              ? {
+                  guideId:
+                    suggestion?.params?.guideId || suggestion?.id,
+                  ...(suggestion?.params || {}),
+                }
+              : suggestion?.params || undefined;
           navigation.navigate({
             name: suggestion.screen,
-            params: suggestion?.params || undefined,
+            params,
             merge: false,
           });
         } catch (err) {

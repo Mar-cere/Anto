@@ -54,6 +54,7 @@ import ConnectionExerciseScreen from '../screens/techniques/ConnectionExerciseSc
 import SocialActivityScreen from '../screens/techniques/SocialActivityScreen';
 import PsychoeducationLibraryScreen from '../screens/techniques/PsychoeducationLibraryScreen';
 import PsychoeducationModuleScreen from '../screens/techniques/PsychoeducationModuleScreen';
+import MicroGuideScreen from '../screens/techniques/MicroGuideScreen';
 import AboutScreen from '../screens/AboutScreen';
 import AIPrivacyScreen from '../screens/AIPrivacyScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
@@ -360,6 +361,11 @@ const StackNavigator = () => {
       <Stack.Screen
         name="PsychoeducationModule"
         component={PsychoeducationModuleScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="MicroGuide"
+        component={MicroGuideScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

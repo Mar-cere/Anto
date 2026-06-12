@@ -285,7 +285,21 @@ export function useChatScreen() {
   const initializeConversation = useCallback(async () => {
     const texts = textsRef.current;
     const appLanguage = await getAppLanguage();
-    const dedupeAndSetMessages = (serverMessages, sessionIntentionMeta, flags) => {
+    const resolveTccLiteOnLoad = (serverTccLite, serverMessages) => {
+      if (serverTccLite?.active) return serverTccLite;
+      const fromMessages = extractTccLiteFromMessages(serverMessages);
+      if (!fromMessages?.active) return null;
+      return {
+        active: true,
+        completed: false,
+        step: fromMessages.step,
+        stepIndex: 0,
+        stepTotal: 4,
+        distortionType: fromMessages.distortionType || null,
+      };
+    };
+
+    const dedupeAndSetMessages = (serverMessages, sessionIntentionMeta, flags, serverTccLite) => {
       const isRegistered = flags?.isRegistered === true;
       if (!serverMessages || serverMessages.length === 0) return false;
       const uniqueMessages = serverMessages.reduce((acc, message) => {
@@ -304,7 +318,7 @@ export function useChatScreen() {
         return timeA - timeB;
       });
       setMessages(finalizeLoadedChatMessages(uniqueMessages, appLanguage));
-      setTccLiteState(extractTccLiteFromMessages(uniqueMessages));
+      setTccLiteState(resolveTccLiteOnLoad(serverTccLite, uniqueMessages));
       if (isRegistered) {
         const userCount = uniqueMessages.filter((m) => m.type !== 'quickReplies' && m.role === MESSAGE_ROLES.USER).length;
         setShowSessionIntentionPrompt(userCount === 0 && !sessionIntentionMeta);
@@ -333,7 +347,9 @@ export function useChatScreen() {
         let conversationId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
         if (conversationId) {
           const pack = await chatService.getMessages(conversationId);
-          if (dedupeAndSetMessages(pack.messages, pack.sessionIntention, { isRegistered: true }))
+          if (
+            dedupeAndSetMessages(pack.messages, pack.sessionIntention, { isRegistered: true }, pack.tccLite)
+          )
             return;
         }
         const idAfterFetch = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
@@ -342,7 +358,14 @@ export function useChatScreen() {
           conversationId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
           if (conversationId) {
             const retryPack = await chatService.getMessages(conversationId);
-            if (dedupeAndSetMessages(retryPack.messages, retryPack.sessionIntention, { isRegistered: true }))
+            if (
+              dedupeAndSetMessages(
+                retryPack.messages,
+                retryPack.sessionIntention,
+                { isRegistered: true },
+                retryPack.tccLite,
+              )
+            )
               return;
           }
         }

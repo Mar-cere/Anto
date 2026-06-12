@@ -719,7 +719,8 @@ export const getMessages = async (conversationId) => {
     const rawIntention = response.sessionIntention ?? null;
     return {
       messages: response.messages ?? [],
-      sessionIntention: isValidSessionIntentionId(rawIntention) ? String(rawIntention).trim() : null
+      sessionIntention: isValidSessionIntentionId(rawIntention) ? String(rawIntention).trim() : null,
+      tccLite: response.tccLite ?? null,
     };
   } catch (error) {
     const status = error?.response?.status;
@@ -728,7 +729,7 @@ export const getMessages = async (conversationId) => {
       await clearPersistedChatSession();
     }
     console.error('Error al obtener mensajes:', error);
-    return { messages: [], sessionIntention: null };
+    return { messages: [], sessionIntention: null, tccLite: null };
   }
 };
 

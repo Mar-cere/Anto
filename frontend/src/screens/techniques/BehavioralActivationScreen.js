@@ -629,7 +629,8 @@ const BehavioralActivationScreen = () => {
   useFocusEffect(
     useCallback(() => {
       applyRoutePrefill(route.params);
-    }, [applyRoutePrefill, route.params]),
+      loadWeekPlan();
+    }, [applyRoutePrefill, route.params, loadWeekPlan]),
   );
 
   const goNext = () => {

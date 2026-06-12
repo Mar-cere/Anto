@@ -25,6 +25,13 @@ import chatProductActionLlmService from '../services/chatProductActionLlmService
 import { resolveContextualPsychoeducationIds } from '../services/actionSuggestionService.js';
 import conversationProductProposalCapService from '../services/conversationProductProposalCapService.js';
 import metricsService from '../services/metricsService.js';
+import {
+  planChatTurnEnhancements,
+  buildOpenaiEnhancementSnippets,
+  buildAssistantMetadataWithEnhancements,
+  finalizeChatTurnEnhancements,
+  buildClientTurnPayload,
+} from '../services/chatTurnEnhancementsService.js';
 
 // Constantes de configuración
 const DEFAULT_FRONTEND_URLS = ['http://localhost:3000', 'http://localhost:19006'];
@@ -154,7 +161,7 @@ export const setupSocketIO = (server) => {
           userId: userId,
           status: 'active'
         })
-          .select('_id sessionIntention')
+          .select('_id sessionIntention tccLiteState')
           .sort({ updatedAt: -1 })
           .lean();
 
@@ -278,8 +285,21 @@ export const setupSocketIO = (server) => {
           }
         });
         
-        // 6. Generar respuesta usando OpenAI
+        // 6. Extras de turno (sugerencias, TCC lite, protocolos activos)
         const sessionIntentionSafe = sanitizeSessionIntentionForClient(conversation.sessionIntention);
+        const turnEnhancements = await planChatTurnEnhancements({
+          userId,
+          conversationId: conversation._id,
+          userContent: messageText,
+          conversationHistory,
+          emotionalAnalysis,
+          contextualAnalysis,
+          riskLevel,
+          sessionIntention: sessionIntentionSafe,
+          language: 'es',
+        });
+        const promptSnippets = buildOpenaiEnhancementSnippets(turnEnhancements);
+
         const responseStrategyHint =
           sessionIntentionSafe === 'vent'
             ? 'validate_first_then_action'
@@ -299,6 +319,9 @@ export const setupSocketIO = (server) => {
             conversationPattern,
             sessionIntention: sessionIntentionSafe,
             responseStrategyHint,
+            psychoeducationPromptSnippet: promptSnippets.psychoeducationPromptSnippet,
+            activeTccProtocolsPromptSnippet: promptSnippets.activeTccProtocolsPromptSnippet,
+            tccLitePromptSnippet: promptSnippets.tccLitePromptSnippet,
             _promptTelemetry: {
               userId,
               conversationId: conversation._id,
@@ -314,17 +337,32 @@ export const setupSocketIO = (server) => {
           content: response.content,
           role: 'assistant',
           conversationId: conversation._id,
-          metadata: {
-            status: 'sent',
-            crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
-            context: {
-              emotional: emotionalAnalysis,
-              contextual: contextualAnalysis,
-              response: JSON.stringify(response.context)
-            }
-          }
+          metadata: buildAssistantMetadataWithEnhancements(
+            {
+              status: 'sent',
+              crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
+              context: {
+                emotional: emotionalAnalysis,
+                contextual: contextualAnalysis,
+                response: JSON.stringify(response.context)
+              }
+            },
+            turnEnhancements.tccLitePlan,
+          ),
         });
         await assistantMessage.save();
+
+        await finalizeChatTurnEnhancements({
+          conversationId: conversation._id,
+          userId,
+          assistantMessageId: assistantMessage._id,
+          tccLitePlan: turnEnhancements.tccLitePlan,
+          suggestionPlan: turnEnhancements.suggestionPlan,
+          emotionalAnalysis,
+          contextualAnalysis,
+          userContent: messageText,
+          riskLevel,
+        }).catch(() => {});
         
         // 8. Actualizar última conversación
         await Conversation.findByIdAndUpdate(conversation._id, { 
@@ -397,6 +435,12 @@ export const setupSocketIO = (server) => {
             );
         }
         
+        const clientTurn = buildClientTurnPayload({
+          tccLitePlan: turnEnhancements.tccLitePlan,
+          suggestionPlan: turnEnhancements.suggestionPlan,
+          language: 'es',
+        });
+
         // 9. Emitir respuesta al cliente
         socket.emit(SOCKET_EVENTS.AI_TYPING, false);
         socket.emit(SOCKET_EVENTS.MESSAGE_RECEIVED, {
@@ -405,7 +449,10 @@ export const setupSocketIO = (server) => {
           userId: currentUserId,
           timestamp: new Date(),
           proposedProductActions,
-          productActionStatus
+          productActionStatus,
+          suggestions: clientTurn.suggestions,
+          suggestionsPersonalized: clientTurn.suggestionsPersonalized,
+          tccLite: clientTurn.tccLite,
         });
         
         console.log(`[SocketIO] Mensaje procesado para usuario ${currentUserId}`);

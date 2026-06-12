@@ -23,6 +23,11 @@ import {
   getPsychoeducationBrowseItems,
   normalizePsychoeducationTopic,
 } from '../constants/psychoeducation.js';
+import {
+  getMicroGuideBrowseItems,
+  getMicroGuideModule,
+  normalizeMicroGuideId,
+} from '../constants/microGuideContent.js';
 import { resolveRequestLanguage } from '../utils/apiLanguage.js';
 import { therapeuticApiCopy } from '../utils/therapeuticApiCopy.js';
 
@@ -117,6 +122,43 @@ router.get('/mindfulness/:emotion?', authenticateToken, (req, res) => {
       success: false,
       error: copy.mindfulnessError,
     });
+  }
+});
+
+/**
+ * GET /api/therapeutic-techniques/micro-guides
+ */
+router.get('/micro-guides', authenticateToken, (req, res) => {
+  const language = resolveRequestLanguage(req);
+  const copy = therapeuticApiCopy(language);
+  try {
+    const items = getMicroGuideBrowseItems(language);
+    res.json({ success: true, data: items, language });
+  } catch (error) {
+    console.error('Error listando micro-guías:', error);
+    res.status(500).json({ success: false, error: copy.microGuideTopicsError });
+  }
+});
+
+/**
+ * GET /api/therapeutic-techniques/micro-guides/:guideId
+ */
+router.get('/micro-guides/:guideId', authenticateToken, (req, res) => {
+  const language = resolveRequestLanguage(req);
+  const copy = therapeuticApiCopy(language);
+  try {
+    const guideId = normalizeMicroGuideId(req.params.guideId);
+    const module = guideId ? getMicroGuideModule(guideId, language) : null;
+    if (!module) {
+      return res.status(404).json({
+        success: false,
+        error: copy.microGuideNotFound(req.params.guideId),
+      });
+    }
+    res.json({ success: true, data: module, guideId, language });
+  } catch (error) {
+    console.error('Error obteniendo micro-guía:', error);
+    res.status(500).json({ success: false, error: copy.microGuideError });
   }
 });
 

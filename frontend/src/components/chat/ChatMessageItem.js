@@ -522,7 +522,14 @@ function ChatMessageItem({
           const isPsychoed =
             hydrated?.cardVariant === 'psychoeducation_native' ||
             hydrated?.interventionType === 'psychoeducation';
-          const Card = isPsychoed ? PsychoeducationSuggestionCard : ActionSuggestionCard;
+          const isMicroGuide =
+            hydrated?.cardVariant === 'micro_guide_native' ||
+            hydrated?.interventionType === 'micro_guide';
+          const Card = isPsychoed
+            ? PsychoeducationSuggestionCard
+            : isMicroGuide
+              ? PsychoeducationSuggestionCard
+              : ActionSuggestionCard;
           return (
             <Card
               key={hydrated.id || index}

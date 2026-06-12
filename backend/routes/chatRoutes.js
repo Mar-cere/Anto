@@ -78,8 +78,11 @@ import {
 } from '../services/chatTccLiteService.js';
 import {
   loadTccLiteStateFromConversation,
+  normalizeTccLiteState,
   saveTccLiteStateToConversation,
 } from '../services/tccLiteConversationStateService.js';
+import { tccLiteStepIndex, tccLiteStepOrder } from '../utils/tccLiteCopy.js';
+import { getAutomaticThoughtDistortionLabel } from '../constants/automaticThoughtDistortionPicker.js';
 import { resetConversationSessionState } from '../services/conversationClearService.js';
 import { cursorPaginate } from '../utils/pagination.js';
 import {
@@ -150,7 +153,7 @@ router.get('/conversations/:conversationId', protect, validarConversationId, val
         .limit(parseInt(limit))
         .lean(),
       Message.countDocuments(query),
-      Conversation.findById(convId).select('sessionIntention').lean()
+      Conversation.findById(convId).select('sessionIntention tccLiteState').lean()
     ]);
 
     // Asegurar que el primer mensaje del historial sea del asistente (y quede persistido).
@@ -247,9 +250,32 @@ router.get('/conversations/:conversationId', protect, validarConversationId, val
       page: parseInt(page, 10) || 1
     });
 
+    const appLanguage = req.appLanguage || resolveRequestLanguage(req);
+    const persistedTcc = normalizeTccLiteState(convMeta?.tccLiteState);
+    let tccLite = null;
+    if (persistedTcc && !persistedTcc.completed && persistedTcc.step) {
+      const dtype = persistedTcc.distortionType;
+      tccLite = toTccLiteClientPayload(
+        {
+          active: true,
+          step: persistedTcc.step,
+          stepIndex: tccLiteStepIndex(persistedTcc.step),
+          stepTotal: tccLiteStepOrder().length,
+          distortionType: dtype,
+          distortionLabel: dtype
+            ? getAutomaticThoughtDistortionLabel(dtype, appLanguage) || null
+            : null,
+          completed: false,
+          atHandoff: null,
+        },
+        appLanguage,
+      );
+    }
+
     res.json({
       messages: uniqueMessages.reverse(),
       sessionIntention: sanitizeSessionIntentionForClient(convMeta?.sessionIntention),
+      tccLite,
       pagination: {
         total,
         page: parseInt(page),

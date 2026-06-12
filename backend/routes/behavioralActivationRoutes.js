@@ -19,6 +19,7 @@ import {
 } from '../services/behavioralActivationWeekPlanService.js';
 import {
   linkBaSlotToProduct,
+  reconcileWeekPlanWithLinkedProducts,
   syncBaEcosystemFromLog,
 } from '../services/behavioralActivationProductBridgeService.js';
 import {
@@ -113,11 +114,15 @@ router.get('/week-plan', weekPlanLimiter, async (req, res) => {
     }
     const weekStart = weekStartRaw;
     const result = await getOrCreateWeekPlan(req.user.userId, weekStart, language);
+    const reconciled = await reconcileWeekPlanWithLinkedProducts({
+      userId: req.user.userId,
+      plan: result.plan,
+    });
     res.json({
       success: true,
       weekStart: result.weekStart,
       dayLabels: result.dayLabels,
-      plan: result.plan,
+      plan: reconciled.plan,
     });
   } catch (error) {
     console.error('Error obteniendo plan semanal BA:', error);

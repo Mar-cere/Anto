@@ -6,6 +6,7 @@ import {
   getPsychoeducationCardFields,
   normalizePsychoeducationTopic,
 } from '../constants/psychoeducation.js';
+import { getMicroGuideCardFields } from '../constants/microGuideContent.js';
 import { rankInterventionIds } from './interventionRankingService.js';
 import { hasActionableDistortionInMessage } from '../utils/automaticThoughtGuards.js';
 
@@ -691,11 +692,26 @@ class ActionSuggestionService {
           id: entry.id,
           label: getInterventionCatalogLabel(entry, language),
           icon: entry.icon,
-          screen: entry.screen,
-          params: entry.params,
+          screen:
+            entry.type === 'micro_guide' ? entry.screen || 'MicroGuide' : entry.screen,
+          params:
+            entry.type === 'micro_guide'
+              ? { ...(entry.params || {}), guideId: entry.params?.guideId || entry.id }
+              : entry.params,
           interventionType: entry.type,
           tags: entry.tags,
         };
+        if (entry.type === 'micro_guide') {
+          const card = getMicroGuideCardFields(entry.id, language);
+          if (card) {
+            return {
+              ...base,
+              ...card,
+              label: card.previewTitle || base.label,
+              description: card.previewSummary,
+            };
+          }
+        }
         const psychoTopic = normalizePsychoeducationTopic(entry.params?.topic);
         if (entry.type === 'psychoeducation' && psychoTopic) {
           const card = getPsychoeducationCardFields(psychoTopic, language);

@@ -43,13 +43,14 @@ export function readPersistedTccLiteState(persistedState) {
 
 export function readLastTccLiteFromHistory(conversationHistory) {
   const list = Array.isArray(conversationHistory) ? conversationHistory : [];
+  // Historial newest-first: el asistente más reciente define si el marco sigue activo.
   for (let i = 0; i < list.length; i += 1) {
     const msg = list[i];
     if (msg?.role !== 'assistant') continue;
     const lite = msg?.metadata?.tccLite;
-    if (!lite?.step) continue;
+    if (!lite?.step) return null;
     const step = String(lite.step).trim();
-    if (!tccLiteStepOrder().includes(step)) continue;
+    if (!tccLiteStepOrder().includes(step)) return null;
     return {
       step,
       distortionType: lite.distortionType ? String(lite.distortionType).trim() : null,

@@ -73,12 +73,20 @@ describe('chatTccLiteService', () => {
     expect(plan.step).toBe('build_alternative');
   });
 
-  it('readLastTccLiteFromHistory lee el último paso del asistente', () => {
+  it('readLastTccLiteFromHistory lee el paso del asistente más reciente', () => {
     const history = [
-      { role: 'user', content: 'hola' },
       { role: 'assistant', metadata: { tccLite: { step: 'check_evidence' } } },
+      { role: 'user', content: 'hola' },
     ];
     expect(readLastTccLiteFromHistory(history)?.step).toBe('check_evidence');
+  });
+
+  it('readLastTccLiteFromHistory devuelve null si el asistente más reciente no tiene tccLite', () => {
+    const history = [
+      { role: 'assistant', metadata: { status: 'sent' } },
+      { role: 'assistant', metadata: { tccLite: { step: 'capture_thought' } } },
+    ];
+    expect(readLastTccLiteFromHistory(history)).toBeNull();
   });
 
   it('toTccLiteClientPayload expone labels para UI', () => {

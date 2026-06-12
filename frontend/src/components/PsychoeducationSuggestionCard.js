@@ -7,6 +7,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import PsychoeducationClinicalReviewSeal from './PsychoeducationClinicalReviewSeal';
+import { useSectionTranslations } from '../hooks/useTranslations';
 import { usePsychoeducationTexts } from '../screens/techniques/psychoeducationTexts';
 import { getTopicVisual } from '../screens/techniques/psychoeducationTopicVisuals';
 import { topicFromInterventionId } from '../utils/psychoeducationTopic';
@@ -15,7 +16,11 @@ import { getFocusTheme } from '../styles/focusCardTheme';
 const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
   const { colors, resolvedScheme } = useTheme();
   const texts = usePsychoeducationTexts();
+  const techniqueTexts = useSectionTranslations('TECHNIQUES');
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+  const isMicroGuide =
+    suggestion?.cardVariant === 'micro_guide_native' ||
+    suggestion?.interventionType === 'micro_guide';
   const isCompact = suggestion?.cardDisplayMode === 'compact';
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(0)).current;
@@ -23,7 +28,23 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
 
   const topic =
     suggestion?.params?.topic || topicFromInterventionId(suggestion?.id);
-  const visual = useMemo(() => getTopicVisual(topic, colors), [topic, colors]);
+  const visual = useMemo(() => {
+    if (isMicroGuide) {
+      return {
+        icon: 'map-marker-path',
+        iconBg: `${colors.primary}22`,
+        accent: colors.primary,
+        borderLeft: colors.primary,
+      };
+    }
+    return getTopicVisual(topic, colors);
+  }, [isMicroGuide, topic, colors]);
+  const badgeLabel = isMicroGuide
+    ? techniqueTexts?.MICRO_GUIDE_CARD_BADGE || 'Micro-guía'
+    : texts.CARD_BADGE;
+  const ctaReadLabel = isMicroGuide
+    ? techniqueTexts?.MICRO_GUIDE_CARD_CTA || 'Abrir guía'
+    : texts.CARD_CTA_READ;
 
   const styles = useMemo(
     () =>
@@ -180,7 +201,7 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
             />
           </View>
           {!isCompact ? (
-            <Text style={[styles.badge, { color: visual.accent }]}>{texts.CARD_BADGE}</Text>
+            <Text style={[styles.badge, { color: visual.accent }]}>{badgeLabel}</Text>
           ) : null}
         </View>
         <Text style={styles.title}>{title}</Text>
@@ -216,7 +237,7 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
             ) : null}
             <View style={styles.footer}>
               <View style={styles.cta}>
-                <Text style={styles.ctaText}>{texts.CARD_CTA_READ}</Text>
+                <Text style={styles.ctaText}>{ctaReadLabel}</Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.textOnPrimary} />
               </View>
               <Text style={styles.minutes}>
