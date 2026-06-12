@@ -744,6 +744,7 @@ export const CHAT = {
   CHAT_MENU_A11Y_HINT:
     'Abre un menú con ir al último mensaje, personalización, privacidad, información sobre IA o borrar la conversación',
   SUGGESTIONS_TITLE: 'Sugerencias para ti',
+  SUGGESTIONS_PERSONALIZED_HINT: 'ordenadas según tu historial',
   TCC_CONTINUITY_KICKER: 'Retoma tu proceso',
   TCC_CONTINUITY_OPEN: 'Abrir',
   TCC_CONTINUITY_DISMISS_A11Y: 'Ocultar sugerencia',
@@ -1357,6 +1358,10 @@ export const TECHNIQUES = {
   BA_TOAST_DELETED: 'Registro eliminado',
   BA_TOAST_EXPORT_ERROR: 'No se pudo exportar',
   BA_RECENT_TITLE: 'Registros recientes',
+  BA_MOOD_TREND_IMPROVING: 'Tendencia: tu ánimo suele subir tras las actividades (+{delta} de media).',
+  BA_MOOD_TREND_DECLINING:
+    'Tendencia: el ánimo baja tras algunas actividades ({delta} de media). Ajusta la dificultad o el tipo.',
+  BA_MOOD_TREND_STABLE: 'Tendencia: el ánimo se mantiene estable tras las actividades.',
   BA_RECENT_EMPTY: 'Aún no hay registros. Completa el wizard arriba.',
   BA_EXPORT: 'Exportar resumen',
   BA_EXPORT_HINT: 'Texto para compartir con tu terapeuta.',

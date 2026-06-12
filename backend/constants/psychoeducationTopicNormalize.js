@@ -11,6 +11,11 @@ const TOPIC_BY_KEY = {
   sleep: 'sleep',
   emotionregulation: 'emotionRegulation',
   trauma: 'trauma',
+  grief: 'grief',
+  duelo: 'grief',
+  loss: 'grief',
+  burnout: 'burnout',
+  agotamiento: 'burnout',
 };
 
 const ALLOWED = new Set(PSYCHOEDUCATION_TOPIC_ORDER);

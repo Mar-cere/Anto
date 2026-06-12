@@ -19,7 +19,17 @@ export const CONTEXTUAL_PSYCHOEDUCATION_RULES = [
   {
     id: 'psychoeducation_stress',
     pattern:
-      /(?:estrés|estres(?:ado|ada)?|agotad[oa]|(?:trabajo|laboral).*agotad|presión\s+(?:laboral|en\s+el\s+trabajo|académica)|demasiadas\s+responsabilidades|sobrecarga\s+(?:laboral|de\s+trabajo)|\bstress(?:ed)?\b|burned?\s+out|overwhelmed|too\s+many\s+responsibilities|work\s+pressure)/i,
+      /(?:estrés|estres(?:ado|ada)?|presión\s+(?:laboral|en\s+el\s+trabajo|académica)|demasiadas\s+responsabilidades|sobrecarga\s+(?:laboral|de\s+trabajo)|\bstress(?:ed)?\b|overwhelmed|too\s+many\s+responsibilities|work\s+pressure)/i,
+  },
+  {
+    id: 'psychoeducation_burnout',
+    pattern:
+      /(?:burnout|burned?\s+out|agotamiento\s+(?:laboral|profesional|crónico)|saturad[oa]\s+del\s+trabajo|no\s+aguanto\s+más\s+(?:el\s+)?trabajo|emotional\s+exhaustion|compassion\s+fatigue)/i,
+  },
+  {
+    id: 'psychoeducation_grief',
+    pattern:
+      /(?:duelo|luto|falleci[oó]|murió|perd[ií]\s+a|extra[ñn]o\s+(?:mucho|a)|grief|bereavement|passed away|lo\s+extra[ñn]o)/i,
   },
   {
     id: 'psychoeducation_trauma',
@@ -124,6 +134,8 @@ const PSYCHO_MESSAGE_PRIORITY = [
   { id: 'psychoeducation_anger', pattern: /(?:enojad|enfad|furios|angry)/i },
   { id: 'psychoeducation_depression', pattern: /(?:triste|sin\s+energ|desmotivad|low\s+mood)/i },
   { id: 'psychoeducation_trauma', pattern: /(?:flashback|trauma|tept|ptsd)/i },
+  { id: 'psychoeducation_grief', pattern: /(?:duelo|luto|falleci|extra[ñn]o|grief|bereavement)/i },
+  { id: 'psychoeducation_burnout', pattern: /(?:burnout|agotamiento|burned?\s+out)/i },
 ];
 
 function pickPreferredRequiredPsycho(psychoRequired, list, { emotion, userContent } = {}) {
@@ -658,6 +670,8 @@ class ActionSuggestionService {
     ids.add('psychoeducation_sleep');
     ids.add('psychoeducation_emotion_regulation');
     ids.add('psychoeducation_trauma');
+    ids.add('psychoeducation_grief');
+    ids.add('psychoeducation_burnout');
     CONTEXTUAL_PSYCHOEDUCATION_RULES.forEach(({ id }) => ids.add(id));
     CONTEXTUAL_PROTOCOL_RULES.forEach(({ id }) => ids.add(id));
     return [...ids].filter(Boolean);

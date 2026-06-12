@@ -27,6 +27,20 @@ function isHighRisk(riskLevel) {
   return r === 'HIGH' || r === 'CRITICAL';
 }
 
+export function readPersistedTccLiteState(persistedState) {
+  if (!persistedState || typeof persistedState !== 'object') return null;
+  const step = String(persistedState.step || '').trim();
+  if (!tccLiteStepOrder().includes(step)) return null;
+  if (persistedState.completed === true) return null;
+  return {
+    step,
+    distortionType: persistedState.distortionType
+      ? String(persistedState.distortionType).trim()
+      : null,
+    completed: false,
+  };
+}
+
 export function readLastTccLiteFromHistory(conversationHistory) {
   const list = Array.isArray(conversationHistory) ? conversationHistory : [];
   for (let i = 0; i < list.length; i += 1) {
@@ -195,6 +209,7 @@ export function planChatTccLite({
   sessionIntention,
   language = 'es',
   resumeFromInsight = null,
+  persistedState = null,
 }) {
   const inactive = {
     active: false,
@@ -212,7 +227,9 @@ export function planChatTccLite({
   if (!text) return inactive;
   if (EXIT_PATTERN.test(text)) return inactive;
 
-  const previous = readLastTccLiteFromHistory(conversationHistory);
+  const previous =
+    readLastTccLiteFromHistory(conversationHistory) ||
+    readPersistedTccLiteState(persistedState);
   const resumeType = String(resumeFromInsight?.distortionType || '').trim().toLowerCase();
 
   if (resumeType && !previous) {
@@ -346,5 +363,6 @@ export default {
   attachTccLiteToAssistantMetadata,
   toTccLiteClientPayload,
   readLastTccLiteFromHistory,
+  readPersistedTccLiteState,
   buildAtHandoffFromTccLiteSession,
 };

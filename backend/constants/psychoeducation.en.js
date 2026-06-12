@@ -202,5 +202,59 @@ export const PSYCHOEDUCATION_MODULES_EN = {
         "url": "https://www.nimh.nih.gov/health/publications/post-traumatic-stress-disorder-ptsd"
       }
     ]
-  }
+  },
+  grief: {
+    whatIs:
+      "Grief is a natural response to a significant loss. It is not linear: sadness, fatigue, anger, relief, or numbness can alternate.",
+    symptoms: [
+      "Deep sadness or crying spells",
+      "Longing, emptiness, or a sense that something is missing",
+      "Fatigue, trouble concentrating, or sleep changes",
+      "Anger, guilt, or feeling you did not do or say “enough”",
+    ],
+    whatHelps: [
+      "Allow feelings without judging yourself",
+      "Rituals or symbolic gestures that honor what was lost",
+      "Safe social support and space to talk or stay quiet",
+      "Grief therapy if pain limits your life for a long time",
+    ],
+    whenToSeekHelp:
+      "If grief is overwhelming, self-harm thoughts appear, or basic needs are hard to meet, seek professional support.",
+    sources: [
+      {
+        label: "WHO — Mental health",
+        url: "https://www.who.int/health-topics/mental-health",
+      },
+    ],
+  },
+  burnout: {
+    whatIs:
+      "Prolonged exhaustion often mixes emotional fatigue, cynicism or distance from work/study, and low sense of effectiveness. It is sustained overload, not a character flaw.",
+    symptoms: [
+      "Exhaustion that does not improve after one weekend",
+      "Irritability, demotivation, or detachment from what mattered before",
+      "Difficulty switching off or feeling always “on”",
+      "Physical signs: headaches, tension, sleep disruption",
+    ],
+    causes: [
+      "High demands without recovery or clear boundaries",
+      "Little control over workload",
+      "Value conflict or lack of recognition",
+      "Caring for others without room for self-care",
+    ],
+    whatHelps: [
+      "Concrete boundaries (hours, breaks, saying no to one small thing)",
+      "Active recovery: sleep, gentle movement, restorative contact",
+      "Review priorities with support (therapy, mentoring, team)",
+      "Medical care if physical symptoms persist",
+    ],
+    whenToSeekHelp:
+      "If exhaustion affects health, relationships, or work for weeks, talk to a professional.",
+    sources: [
+      {
+        label: "WHO — Burn-out (occupational phenomenon)",
+        url: "https://www.who.int/news/item/28-05-2019-burn-out-an-occupational-phenomenon",
+      },
+    ],
+  },
 };

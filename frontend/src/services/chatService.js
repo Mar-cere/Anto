@@ -572,6 +572,25 @@ export const submitProductProposalFeedback = async (conversationId, action) => {
  * @param {string} conversationId
  * @param {{ interventionId: string, eventType: 'clicked'|'dismissed'|'completed' }} payload
  */
+/**
+ * Borrador AT desde cierre TCC lite (#201 / #89).
+ */
+export const createTccLiteAtDraft = async ({ conversationHistory, distortionType, handoffParams } = {}) => {
+  const lang = await getAppLanguage();
+  const token = await AsyncStorage.getItem('userToken');
+  if (!token) {
+    const e = new Error(getChatCopy('SERVICE_SESSION_REQUIRED', lang));
+    e.code = 'NO_AUTH';
+    throw e;
+  }
+  const response = await apiClient.post('/api/automatic-thought-logs/tcc-lite-draft', {
+    conversationHistory: Array.isArray(conversationHistory) ? conversationHistory : [],
+    distortionType,
+    handoffParams,
+  });
+  return response?.data?.handoff || null;
+};
+
 export const submitInterventionEvent = async (conversationId, payload) => {
   const lang = await getAppLanguage();
   const token = await AsyncStorage.getItem('userToken');
@@ -633,13 +652,15 @@ export const getInterventionGraph = async (params = {}) => {
  * Protocolos TCC activos para retomar desde el chat (BA, exposición).
  * @returns {Promise<object[]>}
  */
-export const fetchTccContinuity = async () => {
+export const fetchTccContinuity = async (conversationId) => {
   try {
     if (await isGuestChatMode()) return [];
     const token = await AsyncStorage.getItem('userToken');
     if (!token) return [];
-    const response = await apiClient.get('/api/chat/tcc-continuity');
-    return response?.data?.items || [];
+    const cid = String(conversationId ?? '').trim();
+    const params = /^[\da-f]{24}$/i.test(cid) ? { conversationId: cid } : undefined;
+    const response = await apiClient.get('/api/chat/tcc-continuity', { params });
+    return response?.data?.data?.items || response?.data?.items || [];
   } catch (e) {
     if (typeof __DEV__ !== 'undefined' && __DEV__) {
       console.warn('[chatService] fetchTccContinuity:', e?.message || e);
@@ -716,6 +737,7 @@ export default {
   sendMessage,
   sendMessageStream,
   fetchTccContinuity,
+  createTccLiteAtDraft,
   fetchSessionInsight,
   scheduleLastSessionSummary,
   submitMessageFeedback,

@@ -200,6 +200,49 @@ async function aggregateInterventionGraph({ userId, since, limit }) {
   return ChatInterventionEvent.aggregate(pipeline);
 }
 
+async function recordContinuityItemsShown({
+  userId,
+  conversationId,
+  items = [],
+  source = 'chat_continuity_v1',
+}) {
+  if (!userId || !conversationId || !Array.isArray(items) || items.length === 0) return;
+
+  const now = new Date();
+  const sessionId = await resolveSessionId({ userId, conversationId, now });
+
+  for (const item of items) {
+    const interventionId = String(item?.interventionId || '').trim();
+    if (!isValidInterventionId(interventionId)) continue;
+
+    const dup = await isDuplicateEvent({
+      userId,
+      conversationId,
+      sessionId,
+      interventionId,
+      eventType: 'shown',
+      now,
+    }).catch(() => false);
+    if (dup) continue;
+
+    await ChatInterventionEvent.create({
+      userId,
+      conversationId,
+      sessionId,
+      assistantMessageId: null,
+      interventionId,
+      interventionType: String(item?.kind || item?.interventionType || 'technique'),
+      topicTag: 'continuity',
+      topicFree: null,
+      eventType: 'shown',
+      source,
+      riskLevel: null,
+      meta: { continuityId: item?.id || null },
+      createdAt: now,
+    });
+  }
+}
+
 async function recordInterventionEvent({
   userId,
   conversationId,
@@ -268,6 +311,7 @@ async function recordInterventionEvent({
 
 export default {
   recordSuggestionEventsShown,
+  recordContinuityItemsShown,
   recordInterventionEvent,
   hasShownSuggestionsInActiveSession,
   aggregateInterventionGraph,

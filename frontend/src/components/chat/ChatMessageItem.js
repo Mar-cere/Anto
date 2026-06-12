@@ -512,7 +512,11 @@ function ChatMessageItem({
   if (message.type === 'suggestions' && message.suggestions) {
     return (
       <View style={styles.suggestionsContainer}>
-        <Text style={styles.suggestionsTitle}>{TEXTS.SUGGESTIONS_TITLE}</Text>
+        <Text style={styles.suggestionsTitle}>
+          {message.metadata?.rankingPersonalized && TEXTS.SUGGESTIONS_PERSONALIZED_HINT
+            ? `${TEXTS.SUGGESTIONS_TITLE} · ${TEXTS.SUGGESTIONS_PERSONALIZED_HINT}`
+            : TEXTS.SUGGESTIONS_TITLE}
+        </Text>
         {message.suggestions.map((suggestion, index) => {
           const hydrated = hydrateInterventionSuggestion(suggestion, language);
           const isPsychoed =

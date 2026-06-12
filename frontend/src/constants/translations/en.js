@@ -740,6 +740,7 @@ export const CHAT = {
   CHAT_MENU_A11Y_HINT:
     'Opens a menu with go to last message, customization, privacy, AI information, or clear conversation',
   SUGGESTIONS_TITLE: 'Suggestions for you',
+  SUGGESTIONS_PERSONALIZED_HINT: 'ordered from your history',
   TCC_CONTINUITY_KICKER: 'Pick up where you left off',
   TCC_CONTINUITY_OPEN: 'Open',
   TCC_CONTINUITY_DISMISS_A11Y: 'Hide suggestion',
@@ -1352,6 +1353,10 @@ export const TECHNIQUES = {
   BA_TOAST_DELETED: 'Record deleted',
   BA_TOAST_EXPORT_ERROR: 'Could not export',
   BA_RECENT_TITLE: 'Recent records',
+  BA_MOOD_TREND_IMPROVING: 'Trend: mood often rises after activities (+{delta} on average).',
+  BA_MOOD_TREND_DECLINING:
+    'Trend: mood drops after some activities ({delta} on average). Adjust difficulty or type.',
+  BA_MOOD_TREND_STABLE: 'Trend: mood stays stable after activities.',
   BA_RECENT_EMPTY: 'No records yet. Complete the wizard above.',
   BA_EXPORT: 'Export summary',
   BA_EXPORT_HINT: 'Text to share with your therapist.',

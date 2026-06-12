@@ -46,6 +46,7 @@ export const TEXTS = {
   CHAT_MENU_A11Y_HINT:
     'Abre un menú con ir al último mensaje, personalización, privacidad, información sobre IA o borrar la conversación',
   SUGGESTIONS_TITLE: 'Sugerencias para ti',
+  SUGGESTIONS_PERSONALIZED_HINT: 'ordenadas según tu historial',
   PRODUCT_ACTIONS_TITLE: 'Puedes guardarlo en la app',
   NETWORK_ERROR: 'Sin conexión a internet. Por favor, verifica tu conexión e intenta nuevamente.',
   OFFLINE_PENDING_ONE:

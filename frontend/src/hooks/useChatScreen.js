@@ -37,6 +37,7 @@ import {
 import { useToast } from '../context/ToastContext';
 import { isValidSessionIntentionId } from '../constants/sessionIntention';
 import { recordInterventionClicked, recordInterventionDismissed } from '../utils/recordInterventionCompleted';
+import { CHAT_SESSION_KEYS } from '../utils/chatSessionStorage';
 import { newClientRequestId } from '../utils/clientRequestId';
 import { isValidMongoObjectId24 } from '../utils/mongoId';
 import { sanitizeProposedProductActions } from '../utils/sanitizeProposedProductActions';
@@ -789,7 +790,10 @@ export function useChatScreen() {
                 role: 'suggestions',
                 type: 'suggestions',
                 suggestions: payload.suggestions,
-                metadata: { timestamp: new Date().toISOString() },
+                metadata: {
+                  timestamp: new Date().toISOString(),
+                  rankingPersonalized: payload.suggestionsPersonalized === true,
+                },
               });
             }
             const ppa = sanitizeProposedProductActions(payload.proposedProductActions);
@@ -1427,7 +1431,8 @@ export function useChatScreen() {
 
   const loadTccContinuity = useCallback(async () => {
     try {
-      const items = await chatService.fetchTccContinuity();
+      const convId = await AsyncStorage.getItem(CHAT_SESSION_KEYS.CONVERSATION_ID);
+      const items = await chatService.fetchTccContinuity(convId);
       setTccContinuityItems(Array.isArray(items) ? items : []);
     } catch {
       setTccContinuityItems([]);
@@ -1465,10 +1470,22 @@ export function useChatScreen() {
   }, []);
 
   const handleOpenTccLiteAtHandoff = useCallback(
-    (handoff) => {
+    async (handoff) => {
       if (!handoff?.screen) return;
       recordInterventionClicked('automatic_thought_record');
       setTccLiteAtHandoff(null);
+      try {
+        const draft = await chatService.createTccLiteAtDraft({
+          handoffParams: handoff.params,
+          distortionType: handoff.params?.prefillDistortionType,
+        });
+        if (draft?.screen) {
+          navigation.navigate(draft.screen, draft.params || {});
+          return;
+        }
+      } catch {
+        // fallback: navegación con prefill local
+      }
       navigation.navigate(handoff.screen, handoff.params || {});
     },
     [navigation],

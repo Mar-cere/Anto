@@ -411,6 +411,26 @@ export const INTERVENTION_CATALOG = {
     tags: ['trauma'],
     params: { topic: 'trauma' },
   },
+  psychoeducation_grief: {
+    id: 'psychoeducation_grief',
+    label: 'Duelo y pérdida (psicoeducación)',
+    labelEn: 'Grief and Loss (psychoeducation)',
+    icon: '📚',
+    screen: 'PsychoeducationModule',
+    type: 'psychoeducation',
+    tags: ['duelo', 'perdida'],
+    params: { topic: 'grief' },
+  },
+  psychoeducation_burnout: {
+    id: 'psychoeducation_burnout',
+    label: 'Agotamiento y burnout (psicoeducación)',
+    labelEn: 'Exhaustion and Burnout (psychoeducation)',
+    icon: '📚',
+    screen: 'PsychoeducationModule',
+    type: 'psychoeducation',
+    tags: ['agotamiento', 'trabajo'],
+    params: { topic: 'burnout' },
+  },
 };
 
 /** IDs estables: snake_case, máx. 80 caracteres. */

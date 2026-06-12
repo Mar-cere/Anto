@@ -76,6 +76,10 @@ import {
   planChatTccLite,
   toTccLiteClientPayload,
 } from '../services/chatTccLiteService.js';
+import {
+  loadTccLiteStateFromConversation,
+  saveTccLiteStateToConversation,
+} from '../services/tccLiteConversationStateService.js';
 import { resetConversationSessionState } from '../services/conversationClearService.js';
 import { cursorPaginate } from '../utils/pagination.js';
 import {
@@ -454,6 +458,21 @@ router.get('/tcc-continuity', protect, requireActiveSubscription(true), async (r
   try {
     const language = req.appLanguage || resolveRequestLanguage(req);
     const data = await buildChatTccContinuity({ userId: req.user._id, language });
+    const conversationId = String(req.query?.conversationId || '').trim();
+    if (
+      conversationId &&
+      mongoose.Types.ObjectId.isValid(conversationId) &&
+      Array.isArray(data?.items) &&
+      data.items.length > 0
+    ) {
+      chatInterventionGraphService
+        .recordContinuityItemsShown({
+          userId: req.user._id,
+          conversationId: new mongoose.Types.ObjectId(conversationId),
+          items: data.items,
+        })
+        .catch(() => {});
+    }
     return res.json({ success: true, data, language });
   } catch (error) {
     console.error('[ChatRoutes] GET /tcc-continuity:', error);
@@ -1328,6 +1347,12 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         }
 
         let tccLitePlan = { active: false };
+        let persistedTccLiteState = null;
+        try {
+          persistedTccLiteState = await loadTccLiteStateFromConversation(conversationId);
+        } catch {
+          persistedTccLiteState = null;
+        }
         try {
           tccLitePlan = planChatTccLite({
             userContent: content.trim(),
@@ -1337,6 +1362,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             riskLevel,
             sessionIntention: sessionIntentionSafe,
             language: appLanguageForChat,
+            persistedState: persistedTccLiteState,
             resumeFromInsight:
               resumeTccLite && typeof resumeTccLite === 'object'
                 ? {
@@ -1545,6 +1571,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
 
                 Promise.all([
                   Conversation.findByIdAndUpdate(conversationId, { lastMessage: assistantMessage._id }).catch(() => {}),
+                  saveTccLiteStateToConversation(conversationId, tccLitePlan).catch(() => {}),
                   progressTracker.trackProgress(req.user._id, { userMessage, assistantMessage, analysis: { emotional: emotionalAnalysis, contextual: contextualAnalysis } }).catch(() => {}),
                   userProfileService.actualizarPerfil(req.user._id, userMessage, { emotional: emotionalAnalysis, contextual: contextualAnalysis }).catch(() => {}),
                   userProfileService.updateLongTermProfileFromConversation(req.user._id, { emotionalAnalysis, contextualAnalysis }).catch(() => {}),
@@ -1676,6 +1703,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   content: response.content,
                   context: { emotional: emotionalAnalysis, contextual: contextualAnalysis },
                   suggestions: formattedSuggestions,
+                  suggestionsPersonalized: suggestionPlan.rankingPersonalized === true,
                   proposedProductActions,
                   productActionStatus,
                   clinicalScale: scaleSuggestion ? { ...scaleSuggestion, suggestion: clinicalScalesService.generateScaleSuggestion(scaleSuggestion.scale, scaleSuggestion.reason), automaticResult: null } : null,
@@ -1862,6 +1890,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         // Solo actualizar lastMessage de forma síncrona, el resto puede ser asíncrono
         Promise.all([
           Conversation.findByIdAndUpdate(conversationId, { lastMessage: assistantMessage._id }).catch(() => {}),
+          saveTccLiteStateToConversation(conversationId, tccLitePlan).catch(() => {}),
           progressTracker.trackProgress(req.user._id, {
             userMessage,
             assistantMessage,
@@ -2130,6 +2159,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             contextual: contextualAnalysis
           },
           suggestions: formattedSuggestions, // Solo se incluyen si es apropiado
+          suggestionsPersonalized: suggestionPlan.rankingPersonalized === true,
           proposedProductActions,
           productActionStatus,
           // NUEVO: Información de escalas clínicas y distorsiones cognitivas

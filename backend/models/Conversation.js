@@ -89,7 +89,20 @@ const conversationSchema = new mongoose.Schema({
     type: Number,
     default: 0,
     min: 0
-  }
+  },
+  /** Marco TCC lite in-chat (#201): paso activo en el hilo */
+  tccLiteState: {
+    type: {
+      step: {
+        type: String,
+        enum: ['capture_thought', 'check_evidence', 'build_alternative', 'wrap_up'],
+      },
+      distortionType: { type: String, default: null, maxlength: 80 },
+      completed: { type: Boolean, default: false },
+      updatedAt: { type: Date, default: null },
+    },
+    default: undefined,
+  },
 }, {
   timestamps: true // Crea createdAt y updatedAt automáticamente
 });

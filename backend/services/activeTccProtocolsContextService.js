@@ -2,6 +2,7 @@
  * Puente chat ↔ protocolos TCC in-app (#6): snippet interno para el prompt.
  */
 import AbcRecord from '../models/AbcRecord.js';
+import AutomaticThoughtLog from '../models/AutomaticThoughtLog.js';
 import ExposurePlan from '../models/ExposurePlan.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 import {
@@ -200,6 +201,27 @@ export async function buildActiveTccProtocolsPromptSnippet({ userId, language = 
         en
           ? `- Recent ABC log: situation «${abcSummary.activatingEvent}»; thought «${abcSummary.beliefs}».`
           : `- Autorregistro ABC reciente: situación «${abcSummary.activatingEvent}»; pensamiento «${abcSummary.beliefs}».`,
+      );
+    }
+  } catch {
+    // best-effort
+  }
+
+  try {
+    const sinceAt = new Date(Date.now() - ABC_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
+    const atLogs = await AutomaticThoughtLog.findByUser(userId, {
+      startDate: sinceAt,
+      archived: false,
+      limit: 1,
+      sortOrder: 'desc',
+    });
+    const at = atLogs?.[0];
+    const thought = truncate(stripControlChars(at?.automaticThought), 70);
+    if (thought) {
+      lines.push(
+        en
+          ? `- Recent automatic thought log: «${thought}».`
+          : `- Registro de pensamiento automático reciente: «${thought}».`,
       );
     }
   } catch {

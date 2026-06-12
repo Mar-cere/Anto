@@ -50,4 +50,6 @@ export const INTERVENTION_LABELS_EN = {
   psychoeducation_sleep: 'Sleep and rest hygiene',
   psychoeducation_emotion_regulation: 'Emotion Regulation (psychoeducation)',
   psychoeducation_trauma: 'Difficult Experiences (trauma-informed)',
+  psychoeducation_grief: 'Grief and Loss (psychoeducation)',
+  psychoeducation_burnout: 'Exhaustion and Burnout (psychoeducation)',
 };

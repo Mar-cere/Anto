@@ -62,6 +62,17 @@ describe('chatTccLiteService', () => {
     expect(plan.step).toBe('check_evidence');
   });
 
+  it('reanuda desde estado persistido si no hay metadata en historial', () => {
+    const plan = planChatTccLite({
+      ...baseContext,
+      userContent: 'Sigo pensando que todo saldrá mal en el examen',
+      conversationHistory: [],
+      persistedState: { step: 'check_evidence', distortionType: 'catastrophizing', completed: false },
+    });
+    expect(plan.active).toBe(true);
+    expect(plan.step).toBe('build_alternative');
+  });
+
   it('readLastTccLiteFromHistory lee el último paso del asistente', () => {
     const history = [
       { role: 'user', content: 'hola' },

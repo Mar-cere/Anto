@@ -173,6 +173,7 @@ export async function planChatActionSuggestions({
     actionIds: [],
     formatted: [],
     psychoeducationPromptSnippet: null,
+    rankingPersonalized: false,
   };
 
   const shouldShow = await shouldShowChatActionSuggestions({
@@ -191,6 +192,7 @@ export async function planChatActionSuggestions({
       emotionalAnalysis,
       contextualAnalysis,
     });
+    const rankingPersonalized = rankingScores instanceof Map && rankingScores.size > 0;
     const actionIds = actionSuggestionService.generateSuggestions(
       emotionalAnalysis,
       contextualAnalysis,
@@ -225,6 +227,7 @@ export async function planChatActionSuggestions({
       actionIds,
       formatted,
       primaryPsychoeducationId,
+      rankingPersonalized,
       psychoeducationPromptSnippet: buildPsychoeducationPromptSnippet(
         formatted,
         language,

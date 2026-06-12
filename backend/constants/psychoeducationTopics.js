@@ -20,6 +20,8 @@ export const PSYCHOEDUCATION_TOPIC_ORDER = [
   'sleep',
   'emotionRegulation',
   'trauma',
+  'grief',
+  'burnout',
 ];
 
 export const PSYCHOEDUCATION_TOPIC_META = {
@@ -147,6 +149,42 @@ export const PSYCHOEDUCATION_TOPIC_META = {
     chatMicroStepsEn: [
       'Look at a nearby object and describe its texture or color.',
       'If overwhelmed, prioritize safety and reaching support.',
+    ],
+  },
+  grief: {
+    interventionId: 'psychoeducation_grief',
+    tags: ['duelo', 'perdida'],
+    titleEs: 'Duelo y pérdida',
+    titleEn: 'Grief and loss',
+    summaryEs: 'Cómo suele vivirse el duelo y formas de acompañarte sin apurarte.',
+    summaryEn: 'How grief often unfolds and ways to support yourself without rushing.',
+    mechanismLineEs: 'Nombrar la pérdida y tus necesidades reduce la soledad del proceso.',
+    mechanismLineEn: 'Naming the loss and your needs can ease the loneliness of grief.',
+    chatMicroStepsEs: [
+      'Escribe una frase sobre lo que extrañas o agradeces.',
+      'Elige un gesto pequeño de cuidado hoy (agua, descanso, contacto).',
+    ],
+    chatMicroStepsEn: [
+      'Write one sentence about what you miss or appreciate.',
+      'Pick one small act of care today (water, rest, reaching out).',
+    ],
+  },
+  burnout: {
+    interventionId: 'psychoeducation_burnout',
+    tags: ['agotamiento', 'trabajo'],
+    titleEs: 'Agotamiento y burnout',
+    titleEn: 'Exhaustion and burnout',
+    summaryEs: 'Señales de sobrecarga sostenida y primeros pasos de recuperación.',
+    summaryEn: 'Signs of sustained overload and first recovery steps.',
+    mechanismLineEs: 'Recuperar energía suele empezar por límites pequeños y repetibles.',
+    mechanismLineEn: 'Recovering energy often starts with small, repeatable boundaries.',
+    chatMicroStepsEs: [
+      'Identifica una tarea que puedes posponer o delegar hoy.',
+      'Programa 10 minutos sin pantallas para respirar o caminar.',
+    ],
+    chatMicroStepsEn: [
+      'Name one task you can postpone or delegate today.',
+      'Schedule 10 screen-free minutes to breathe or walk.',
     ],
   },
 };

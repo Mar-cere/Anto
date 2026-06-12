@@ -33,6 +33,7 @@ import { confirmDestructiveAction } from '../../utils/confirmDestructiveAction';
 import { parseBaRecordRouteParams } from '../../utils/baRecordPrefill';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 import BehavioralActivationWeekPanel from './BehavioralActivationWeekPanel';
+import { computeBaMoodTrend } from '../../utils/baMoodTrend';
 import IntensityBeforeAfterMarker from '../../components/techniques/IntensityBeforeAfterMarker';
 import IntensityScalePicker from '../../components/techniques/IntensityScalePicker';
 
@@ -64,6 +65,9 @@ const DEFAULT_TEXTS = {
   TOAST_DELETED: 'Registro eliminado',
   TOAST_EXPORT_ERROR: 'No se pudo exportar',
   RECENT_TITLE: 'Registros recientes',
+  MOOD_TREND_IMPROVING: 'Tendencia: tu ánimo suele subir tras las actividades (+{delta} de media).',
+  MOOD_TREND_DECLINING: 'Tendencia: el ánimo baja tras algunas actividades ({delta} de media). Ajusta la dificultad o el tipo.',
+  MOOD_TREND_STABLE: 'Tendencia: el ánimo se mantiene estable tras las actividades.',
   RECENT_EMPTY: 'Aún no hay registros. Completa el wizard arriba.',
   EXPORT: 'Exportar resumen',
   EXPORT_HINT: 'Texto para compartir con tu terapeuta.',
@@ -150,6 +154,9 @@ const BehavioralActivationScreen = () => {
       TOAST_DELETED: translated?.BA_TOAST_DELETED || DEFAULT_TEXTS.TOAST_DELETED,
       TOAST_EXPORT_ERROR: translated?.BA_TOAST_EXPORT_ERROR || DEFAULT_TEXTS.TOAST_EXPORT_ERROR,
       RECENT_TITLE: translated?.BA_RECENT_TITLE || DEFAULT_TEXTS.RECENT_TITLE,
+      MOOD_TREND_IMPROVING: translated?.BA_MOOD_TREND_IMPROVING || DEFAULT_TEXTS.MOOD_TREND_IMPROVING,
+      MOOD_TREND_DECLINING: translated?.BA_MOOD_TREND_DECLINING || DEFAULT_TEXTS.MOOD_TREND_DECLINING,
+      MOOD_TREND_STABLE: translated?.BA_MOOD_TREND_STABLE || DEFAULT_TEXTS.MOOD_TREND_STABLE,
       RECENT_EMPTY: translated?.BA_RECENT_EMPTY || DEFAULT_TEXTS.RECENT_EMPTY,
       EXPORT: translated?.BA_EXPORT || DEFAULT_TEXTS.EXPORT,
       EXPORT_HINT: translated?.BA_EXPORT_HINT || DEFAULT_TEXTS.EXPORT_HINT,
@@ -215,6 +222,18 @@ const BehavioralActivationScreen = () => {
   const [validationMessage, setValidationMessage] = useState('');
 
   const [records, setRecords] = useState([]);
+  const moodTrend = useMemo(() => computeBaMoodTrend(records), [records]);
+  const moodTrendLine = useMemo(() => {
+    if (!moodTrend?.eligible) return null;
+    const delta = moodTrend.avgDelta ?? 0;
+    if (moodTrend.direction === 'improving') {
+      return (TEXTS.MOOD_TREND_IMPROVING || '').replace('{delta}', String(delta));
+    }
+    if (moodTrend.direction === 'declining') {
+      return (TEXTS.MOOD_TREND_DECLINING || '').replace('{delta}', String(delta));
+    }
+    return TEXTS.MOOD_TREND_STABLE;
+  }, [moodTrend, TEXTS]);
   const [loadingRecords, setLoadingRecords] = useState(true);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -1008,6 +1027,11 @@ const BehavioralActivationScreen = () => {
 
           <View style={techniqueScreenStyles.card}>
             <Text style={techniqueScreenStyles.formSectionHeading}>{TEXTS.RECENT_TITLE}</Text>
+            {moodTrendLine ? (
+              <Text style={[techniqueScreenStyles.formHint, { marginBottom: SPACING.sm }]}>
+                {moodTrendLine}
+              </Text>
+            ) : null}
             {loadingRecords ? (
               <ActivityIndicator color={colors.primary} />
             ) : records.length === 0 ? (
