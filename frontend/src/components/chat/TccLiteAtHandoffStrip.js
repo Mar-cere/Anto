@@ -68,7 +68,9 @@ export default function TccLiteAtHandoffStrip({ atHandoff, onOpen, onDismiss, st
   if (!atHandoff?.screen) return null;
 
   const kicker = translated?.TCC_LITE_HANDOFF_KICKER || 'Guarda tu avance';
-  const title = translated?.TCC_LITE_HANDOFF_TITLE || 'Registrar pensamiento automático';
+  const title =
+    translated?.TCC_LITE_HANDOFF_TITLE ||
+    'Puedes registrar lo que exploraste en el pensamiento automático.';
   const openLabel = translated?.TCC_LITE_HANDOFF_OPEN || 'Abrir registro';
 
   return (

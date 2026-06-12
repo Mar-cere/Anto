@@ -14,6 +14,7 @@ const TOPIC_BY_KEY = {
   grief: 'grief',
   duelo: 'grief',
   loss: 'grief',
+  perdida: 'grief',
   burnout: 'burnout',
   agotamiento: 'burnout',
 };

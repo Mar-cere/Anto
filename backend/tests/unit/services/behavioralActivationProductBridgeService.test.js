@@ -101,6 +101,17 @@ describe('behavioralActivationProductBridgeService', () => {
     expect(draft.dueDate).toBeInstanceOf(Date);
     expect(draft.tags).toEqual(['ba']);
     expect(draft.tags[0].length).toBeLessThanOrEqual(20);
+    expect(draft.category).toBe('Bienestar');
+  });
+
+  it('buildTaskDraftFromBaSlot usa copy EN', () => {
+    const draft = buildTaskDraftFromBaSlot({
+      slot: { activityDescription: 'x', dayOffset: 2, activityType: 'pleasant' },
+      weekStart,
+      language: 'en',
+    });
+    expect(draft.category).toBe('Wellbeing');
+    expect(draft.title).toBe('BA activity');
   });
 
   it('buildHabitDraftFromBaSlot usa frecuencia semanal', () => {

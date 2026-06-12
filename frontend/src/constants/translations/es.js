@@ -1855,7 +1855,7 @@ export const TECHNIQUES = {
   PSYCHOED_TOPIC_emotionRegulation: 'Regulación emocional',
   PSYCHOED_TOPIC_trauma: 'Experiencias difíciles',
   PSYCHOED_TOPIC_grief: 'Duelo y pérdida',
-  PSYCHOED_TOPIC_burnout: 'Agotamiento',
+  PSYCHOED_TOPIC_burnout: 'Agotamiento y burnout',
   PSYCHOED_NO_TOPIC: 'No se indicó un tema.',
   PSYCHOED_LOAD_MODULE_ERROR: 'No se pudo cargar el módulo.',
   PSYCHOED_MODULE_NOT_FOUND: 'No se encontró el módulo.',

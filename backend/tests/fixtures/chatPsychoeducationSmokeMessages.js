@@ -62,6 +62,22 @@ export const CHAT_PSYCHOEDUCATION_SMOKE_CASES = [
     minIntensity: 5,
     minSuggestions: 1,
   },
+  {
+    id: 'grief_loss',
+    message: 'Perdí a mi papá y me cuesta mucho seguir adelante. 8/10',
+    expectedPsycho: ['psychoeducation_grief'],
+    allowedEmotions: ['tristeza', 'neutral'],
+    minIntensity: 6,
+    minSuggestions: 1,
+  },
+  {
+    id: 'burnout_work',
+    message: 'Estoy en burnout, agotado del trabajo y sin energía. 7/10',
+    expectedPsycho: ['psychoeducation_burnout'],
+    allowedEmotions: ['neutral', 'tristeza', 'ansiedad'],
+    minIntensity: 5,
+    minSuggestions: 1,
+  },
   /** Validado en dispositivo (jun 2026): estrés 9/10 + crisis de pánico. */
   {
     id: 'device_stress_panic',

@@ -1849,7 +1849,7 @@ export const TECHNIQUES = {
   PSYCHOED_TOPIC_emotionRegulation: 'Emotion regulation',
   PSYCHOED_TOPIC_trauma: 'Difficult experiences',
   PSYCHOED_TOPIC_grief: 'Grief and loss',
-  PSYCHOED_TOPIC_burnout: 'Burnout',
+  PSYCHOED_TOPIC_burnout: 'Exhaustion and burnout',
   PSYCHOED_NO_TOPIC: 'No topic was specified.',
   PSYCHOED_LOAD_MODULE_ERROR: 'Could not load the module.',
   PSYCHOED_MODULE_NOT_FOUND: 'Module not found.',

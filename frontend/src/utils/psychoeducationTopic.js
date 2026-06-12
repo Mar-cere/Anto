@@ -14,6 +14,7 @@ const TOPIC_BY_KEY = {
   grief: 'grief',
   duelo: 'grief',
   loss: 'grief',
+  perdida: 'grief',
   burnout: 'burnout',
   agotamiento: 'burnout',
 };
@@ -73,7 +74,7 @@ const CARD_COPY = {
       mechanismLine: 'Nombrar la pérdida y tus necesidades puede aliviar la soledad del duelo.',
     },
     burnout: {
-      previewTitle: 'Agotamiento',
+      previewTitle: 'Agotamiento y burnout',
       previewSummary: 'Señales de saturación y pasos para recuperar energía sin culparte.',
       mechanismLine: 'Reconocer el agotamiento es el primer paso para ajustar la carga.',
     },
@@ -120,7 +121,7 @@ const CARD_COPY = {
       mechanismLine: 'Naming the loss and your needs can ease the loneliness of grief.',
     },
     burnout: {
-      previewTitle: 'Burnout',
+      previewTitle: 'Exhaustion and burnout',
       previewSummary: 'Signs of overload and steps to recover energy without self-blame.',
       mechanismLine: 'Recognizing exhaustion is the first step to adjust your load.',
     },

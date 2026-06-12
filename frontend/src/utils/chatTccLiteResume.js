@@ -66,7 +66,7 @@ export async function peekPendingTccLiteResume() {
   }
 }
 
-export function buildTccLiteUiFromResume(resume) {
+export function buildTccLiteUiFromResume(resume, language = 'es') {
   if (!resume?.distortionType) return null;
   return buildTccLiteUiFromPersistedStep(
     {
@@ -77,7 +77,7 @@ export function buildTccLiteUiFromResume(resume) {
       stepShort: resume.stepShort,
       kicker: resume.kicker,
     },
-    'es',
+    language,
     { fromInsight: true },
   );
 }

@@ -6,6 +6,17 @@ import BehavioralActivationWeekPlan from '../models/BehavioralActivationWeekPlan
 import Habit from '../models/Habit.js';
 import Task from '../models/Task.js';
 import { normalizeWeekStart } from './behavioralActivationWeekPlanService.js';
+import { normalizeApiLanguage } from '../utils/apiLanguage.js';
+
+const BA_PRODUCT_COPY = {
+  es: { defaultTitle: 'Actividad BA', category: 'Bienestar' },
+  en: { defaultTitle: 'BA activity', category: 'Wellbeing' },
+};
+
+function baProductCopy(language = 'es') {
+  const lang = normalizeApiLanguage(language);
+  return BA_PRODUCT_COPY[lang] || BA_PRODUCT_COPY.es;
+}
 
 const BA_PRODUCT_SOURCES = new Set(['ba_week_plan_v1']);
 
@@ -37,10 +48,10 @@ export function suggestProductKindForSlot(slot) {
   return slot?.activityType === 'routine' ? 'habit' : 'task';
 }
 
-function clampTitle(text, max = 100) {
+function clampTitle(text, max = 100, language = 'es') {
   const t = String(text || '').trim();
-  if (t.length >= 3) return t.slice(0, max);
-  return `${t || 'Actividad BA'}`.slice(0, max);
+  const title = t.length >= 3 ? t : baProductCopy(language).defaultTitle;
+  return title.slice(0, max);
 }
 
 export function inferHabitIcon(description = '') {
@@ -55,23 +66,24 @@ export function inferHabitIcon(description = '') {
   return 'journal';
 }
 
-export function buildTaskDraftFromBaSlot({ slot, weekStart }) {
+export function buildTaskDraftFromBaSlot({ slot, weekStart, language = 'es' }) {
   const dueDate = computeSlotDueDate(weekStart, slot.dayOffset);
+  const copy = baProductCopy(language);
   return {
-    title: clampTitle(slot.activityDescription),
+    title: clampTitle(slot.activityDescription, 100, language),
     description: '',
     dueDate,
     priority: 'medium',
     itemType: 'task',
-    category: 'Bienestar',
+    category: copy.category,
     tags: ['ba'],
   };
 }
 
-export function buildHabitDraftFromBaSlot({ slot, weekStart }) {
+export function buildHabitDraftFromBaSlot({ slot, weekStart, language = 'es' }) {
   const reminderTime = computeSlotDueDate(weekStart, slot.dayOffset);
   return {
-    title: clampTitle(slot.activityDescription),
+    title: clampTitle(slot.activityDescription, 100, language),
     description: '',
     icon: inferHabitIcon(slot.activityDescription),
     frequency: 'weekly',
@@ -262,6 +274,7 @@ export async function linkBaSlotToProduct({
   slotId,
   productKind = 'auto',
   logId = null,
+  language = 'es',
 }) {
   const uid = toObjectId(userId);
   const slotKey = String(slotId || '').trim();
@@ -366,7 +379,7 @@ export async function linkBaSlotToProduct({
   let created;
   try {
   if (kind === 'task') {
-    const draft = buildTaskDraftFromBaSlot({ slot, weekStart });
+    const draft = buildTaskDraftFromBaSlot({ slot, weekStart, language });
     created = await Task.create({
       ...draft,
       userId: uid,
@@ -389,7 +402,7 @@ export async function linkBaSlotToProduct({
     };
   }
 
-  const draft = buildHabitDraftFromBaSlot({ slot, weekStart });
+  const draft = buildHabitDraftFromBaSlot({ slot, weekStart, language });
   created = await Habit.create({
     ...draft,
     userId: uid,

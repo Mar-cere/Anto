@@ -314,7 +314,7 @@ export function useChatScreen() {
       setMessages(finalizeLoadedChatMessages(uniqueMessages, appLanguage));
       const pendingResume = pendingTccLiteResumeRef.current;
       if (pendingResume?.distortionType) {
-        setTccLiteState(buildTccLiteUiFromResume(pendingResume));
+        setTccLiteState(buildTccLiteUiFromResume(pendingResume, appLanguage));
       } else {
         setTccLiteState(resolveTccLiteOnLoad(serverTccLite, uniqueMessages));
       }
@@ -1542,11 +1542,12 @@ export function useChatScreen() {
   useFocusEffect(
     useCallback(() => {
       (async () => {
+        const appLanguage = await getAppLanguage();
         const routeResume = route.params?.resumeTccLite;
         if (routeResume?.distortionType) {
           pendingTccLiteResumeRef.current = routeResume;
           await setPendingTccLiteResume(routeResume);
-          setTccLiteState(buildTccLiteUiFromResume(routeResume));
+          setTccLiteState(buildTccLiteUiFromResume(routeResume, appLanguage));
           try {
             navigation.setParams({ resumeTccLite: undefined });
           } catch (_) {}
@@ -1554,7 +1555,7 @@ export function useChatScreen() {
           const peek = await peekPendingTccLiteResume();
           if (peek?.distortionType) {
             pendingTccLiteResumeRef.current = peek;
-            setTccLiteState(buildTccLiteUiFromResume(peek));
+            setTccLiteState(buildTccLiteUiFromResume(peek, appLanguage));
           }
         }
       })();

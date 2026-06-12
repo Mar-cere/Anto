@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Smoke #85: valida los 7 módulos listos para prueba en dispositivo.
+ * Smoke #85: valida los 9 módulos listos para prueba en dispositivo.
  * Uso: node scripts/smoke-psychoeducation-device.mjs
  */
 import {
@@ -156,7 +156,7 @@ function checkModule(topic, language) {
 const topics = getAvailableTopics('es');
 let failed = 0;
 
-console.log('\n=== Smoke psicoeducación (#85) — 7 módulos ===\n');
+console.log('\n=== Smoke psicoeducación (#85) — 9 módulos ===\n');
 
 for (const language of LANGUAGES) {
   console.log(`--- ${language.toUpperCase()} ---`);

@@ -28,6 +28,11 @@ describe('psychoeducationTopic', () => {
     expect(out.cardVariant).toBe('micro_guide_native');
   });
 
+  it('normaliza perdida a grief', () => {
+    expect(normalizePsychoeducationTopic('perdida')).toBe('grief');
+    expect(topicFromInterventionId('psychoeducation_grief')).toBe('grief');
+  });
+
   it('hidrata psicoeducación duelo con topic grief', () => {
     const out = hydrateInterventionSuggestion(
       { id: 'psychoeducation_grief', interventionType: 'psychoeducation' },
@@ -117,7 +122,7 @@ describe('psychoeducationTopic', () => {
     expect(out.microSteps).toEqual(['Paso A del servidor.', 'Paso B del servidor.']);
   });
 
-  it('hidrata los 7 topics de psicoeducación', () => {
+  it('hidrata los 9 topics de psicoeducación', () => {
     const ids = [
       'psychoeducation_anxiety',
       'psychoeducation_depression',
@@ -126,6 +131,8 @@ describe('psychoeducationTopic', () => {
       'psychoeducation_sleep',
       'psychoeducation_emotion_regulation',
       'psychoeducation_trauma',
+      'psychoeducation_grief',
+      'psychoeducation_burnout',
     ];
     ids.forEach((id) => {
       const out = hydrateInterventionSuggestion({ id, interventionType: 'psychoeducation' }, 'es');

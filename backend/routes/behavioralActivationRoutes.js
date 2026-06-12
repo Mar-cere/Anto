@@ -147,6 +147,7 @@ router.post('/week-plan/link-product', weekPlanLimiter, async (req, res) => {
       slotId: value.slotId,
       productKind: value.productKind,
       logId: value.logId || null,
+      language: resolveRequestLanguage(req),
     });
 
     res.status(result.idempotentReplay ? 200 : 201).json({
