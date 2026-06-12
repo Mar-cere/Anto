@@ -6,29 +6,39 @@ import * as Haptics from 'expo-haptics';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
+import { pickLocalizedDefaults } from '../../utils/localizedFallback';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 
-const DEFAULT_TEXTS = {
-  KICKER: 'Retoma tu proceso',
-  OPEN: 'Abrir',
-  DISMISS_A11Y: 'Ocultar sugerencia',
+const DEFAULT_TEXTS_BY_LANG = {
+  es: {
+    KICKER: 'Retoma tu proceso',
+    OPEN: 'Abrir',
+    DISMISS_A11Y: 'Ocultar sugerencia',
+  },
+  en: {
+    KICKER: 'Pick up where you left off',
+    OPEN: 'Open',
+    DISMISS_A11Y: 'Hide suggestion',
+  },
 };
 
 export default function TccContinuityStrip({ items, onOpen, onDismiss, style }) {
   const { colors, resolvedScheme } = useTheme();
+  const { language } = useLanguage();
   const translated = useSectionTranslations('CHAT');
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
 
-  const TEXTS = useMemo(
-    () => ({
-      KICKER: translated?.TCC_CONTINUITY_KICKER || DEFAULT_TEXTS.KICKER,
-      OPEN: translated?.TCC_CONTINUITY_OPEN || DEFAULT_TEXTS.OPEN,
-      DISMISS_A11Y: translated?.TCC_CONTINUITY_DISMISS_A11Y || DEFAULT_TEXTS.DISMISS_A11Y,
-    }),
-    [translated],
-  );
+  const TEXTS = useMemo(() => {
+    const defaults = pickLocalizedDefaults(language, DEFAULT_TEXTS_BY_LANG);
+    return {
+      KICKER: translated?.TCC_CONTINUITY_KICKER || defaults.KICKER,
+      OPEN: translated?.TCC_CONTINUITY_OPEN || defaults.OPEN,
+      DISMISS_A11Y: translated?.TCC_CONTINUITY_DISMISS_A11Y || defaults.DISMISS_A11Y,
+    };
+  }, [language, translated]);
 
   const styles = useMemo(
     () =>

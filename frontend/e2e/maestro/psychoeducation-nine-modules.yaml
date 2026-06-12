@@ -1,6 +1,6 @@
-# Smoke: biblioteca psicoeducación → 7 módulos
+# Smoke: biblioteca psicoeducación → 9 módulos
 # Requiere: com.anto.app, sesión iniciada, backend accesible desde el dispositivo.
-# Ejecutar desde repo: maestro test frontend/e2e/maestro/psychoeducation-seven-modules.yaml
+# Ejecutar desde repo: maestro test frontend/e2e/maestro/psychoeducation-nine-modules.yaml
 
 appId: com.anto.app
 
@@ -74,4 +74,20 @@ appId: com.anto.app
     id: psychoed-library-card-trauma
 - assertVisible:
     id: psychoed-module-trauma
+- back
+
+- tapOn:
+    id: psychoed-library-card-grief
+- assertVisible:
+    id: psychoed-module-grief
+- assertVisible:
+    id: psychoed-module-hero
+- back
+
+- tapOn:
+    id: psychoed-library-card-burnout
+- assertVisible:
+    id: psychoed-module-burnout
+- assertVisible:
+    id: psychoed-module-hero
 - back

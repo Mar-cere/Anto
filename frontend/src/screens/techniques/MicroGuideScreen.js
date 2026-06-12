@@ -19,20 +19,35 @@ import Header from '../../components/Header';
 import ParticleBackground from '../../components/ParticleBackground';
 import { api } from '../../config/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
+import { pickLocalizedDefaults } from '../../utils/localizedFallback';
 import { createInterventionCompletedRecorder } from '../../utils/recordInterventionCompleted';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
-const DEFAULT_TEXTS = {
-  LOADING: 'Cargando guía…',
-  ERROR: 'No se pudo cargar la guía.',
-  BACK: 'Atrás',
-  NEXT: 'Siguiente',
-  COMPLETE: 'Completar',
-  DONE_TITLE: 'Guía completada',
-  DONE_BODY: 'Has recorrido los pasos de esta guía. Puedes volver cuando lo necesites.',
-  STEP_OF: 'Paso {current} de {total}',
-  KICKER: 'Micro-guía',
+const DEFAULT_TEXTS_BY_LANG = {
+  es: {
+    LOADING: 'Cargando guía…',
+    ERROR: 'No se pudo cargar la guía.',
+    BACK: 'Atrás',
+    NEXT: 'Siguiente',
+    COMPLETE: 'Completar',
+    DONE_TITLE: 'Guía completada',
+    DONE_BODY: 'Has recorrido los pasos de esta guía. Puedes volver cuando lo necesites.',
+    STEP_OF: 'Paso {current} de {total}',
+    KICKER: 'Micro-guía',
+  },
+  en: {
+    LOADING: 'Loading guide…',
+    ERROR: 'Could not load the guide.',
+    BACK: 'Back',
+    NEXT: 'Next',
+    COMPLETE: 'Complete',
+    DONE_TITLE: 'Guide completed',
+    DONE_BODY: 'You have gone through the steps of this guide. You can return whenever you need.',
+    STEP_OF: 'Step {current} of {total}',
+    KICKER: 'Micro-guide',
+  },
 };
 
 export default function MicroGuideScreen() {
@@ -40,22 +55,23 @@ export default function MicroGuideScreen() {
   const route = useRoute();
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle } = useTheme();
+  const { language } = useLanguage();
   const techniqueScreenStyles = useTechniqueScreenStyles();
   const translated = useSectionTranslations('TECHNIQUES');
-  const TEXTS = useMemo(
-    () => ({
-      LOADING: translated?.MICRO_GUIDE_LOADING || DEFAULT_TEXTS.LOADING,
-      ERROR: translated?.MICRO_GUIDE_ERROR || DEFAULT_TEXTS.ERROR,
-      BACK: translated?.MICRO_GUIDE_BACK || DEFAULT_TEXTS.BACK,
-      NEXT: translated?.MICRO_GUIDE_NEXT || DEFAULT_TEXTS.NEXT,
-      COMPLETE: translated?.MICRO_GUIDE_COMPLETE || DEFAULT_TEXTS.COMPLETE,
-      DONE_TITLE: translated?.MICRO_GUIDE_DONE_TITLE || DEFAULT_TEXTS.DONE_TITLE,
-      DONE_BODY: translated?.MICRO_GUIDE_DONE_BODY || DEFAULT_TEXTS.DONE_BODY,
-      STEP_OF: translated?.MICRO_GUIDE_STEP_OF || DEFAULT_TEXTS.STEP_OF,
-      KICKER: translated?.MICRO_GUIDE_KICKER || DEFAULT_TEXTS.KICKER,
-    }),
-    [translated],
-  );
+  const TEXTS = useMemo(() => {
+    const defaults = pickLocalizedDefaults(language, DEFAULT_TEXTS_BY_LANG);
+    return {
+      LOADING: translated?.MICRO_GUIDE_LOADING || defaults.LOADING,
+      ERROR: translated?.MICRO_GUIDE_ERROR || defaults.ERROR,
+      BACK: translated?.MICRO_GUIDE_BACK || defaults.BACK,
+      NEXT: translated?.MICRO_GUIDE_NEXT || defaults.NEXT,
+      COMPLETE: translated?.MICRO_GUIDE_COMPLETE || defaults.COMPLETE,
+      DONE_TITLE: translated?.MICRO_GUIDE_DONE_TITLE || defaults.DONE_TITLE,
+      DONE_BODY: translated?.MICRO_GUIDE_DONE_BODY || defaults.DONE_BODY,
+      STEP_OF: translated?.MICRO_GUIDE_STEP_OF || defaults.STEP_OF,
+      KICKER: translated?.MICRO_GUIDE_KICKER || defaults.KICKER,
+    };
+  }, [language, translated]);
 
   const guideId = String(route?.params?.guideId || route?.params?.id || '').trim();
   const recordCompletedOnce = useMemo(() => createInterventionCompletedRecorder(), []);
