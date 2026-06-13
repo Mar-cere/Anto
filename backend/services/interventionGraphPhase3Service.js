@@ -49,6 +49,7 @@ export async function buildInterventionGraphPhase3Payload({
   topicTagEdges = [],
   topicFreeEdges = [],
   queryEmbedding = null,
+  language = 'es',
 }) {
   const embeddingIndex = await fetchEmbeddingIndexForTopicFree(
     userId,
@@ -59,7 +60,7 @@ export async function buildInterventionGraphPhase3Payload({
   const { conceptNodes, conceptEdges } = buildTopicFreeConceptGraph(
     topicFreeEdges,
     embeddingIndex,
-    { maxConcepts: 12, minSimilarity: 0.78 },
+    { maxConcepts: 12, minSimilarity: 0.78, language: language === 'en' ? 'en' : 'es' },
   );
 
   const { correlations, summary } = await buildMultimodalCorrelations({

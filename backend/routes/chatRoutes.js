@@ -70,6 +70,7 @@ import {
 import chatInterventionGraphService from '../services/chatInterventionGraphService.js';
 import { isTopicFreeEmbeddingsEnabled } from '../services/topicFreeEmbeddingService.js';
 import { buildInterventionGraphPhase3Payload } from '../services/interventionGraphPhase3Service.js';
+import { enrichInterventionGraphLabels } from '../services/graphSourceLabelService.js';
 import { getVectorSearchMode } from '../services/topicFreeVectorSearchService.js';
 import { buildChatTccContinuity } from '../services/chatTccContinuityService.js';
 import {
@@ -482,6 +483,13 @@ router.get('/interventions/graph', protect, requireActiveSubscription(true), asy
       since,
       topicTagEdges: mappedEdges,
       topicFreeEdges: mappedTopicFreeEdges,
+      language,
+    });
+
+    const labeled = await enrichInterventionGraphLabels({
+      topicFreeEdges: mappedTopicFreeEdges,
+      conceptNodes: phase3.conceptNodes,
+      language,
     });
 
     res.json({
@@ -495,8 +503,8 @@ router.get('/interventions/graph', protect, requireActiveSubscription(true), asy
       vectorSearchMode: getVectorSearchMode(),
       language,
       edges: mappedEdges,
-      topicFreeEdges: mappedTopicFreeEdges,
-      conceptNodes: phase3.conceptNodes,
+      topicFreeEdges: labeled.topicFreeEdges,
+      conceptNodes: labeled.conceptNodes,
       conceptEdges: phase3.conceptEdges,
       correlations: phase3.correlations,
       correlationSummary: phase3.correlationSummary,

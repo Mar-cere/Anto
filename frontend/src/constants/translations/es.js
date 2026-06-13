@@ -1904,6 +1904,7 @@ export const TECHNIQUES = {
   INTERVENTION_GRAPH_MAP_SOURCE_COL: 'Tus ideas en el chat',
   INTERVENTION_GRAPH_MAP_TARGET_COL: 'Técnicas',
   INTERVENTION_GRAPH_MAP_TAP_HINT: 'Toca una conexión o un nodo para ver el detalle.',
+  INTERVENTION_GRAPH_ORIGINAL_SNIPPET: 'Texto original del chat',
   PSYCHOED_LOADING: 'Cargando módulos…',
   PSYCHOED_ERROR: 'No se pudieron cargar los módulos.',
   PSYCHOED_RETRY: 'Reintentar',

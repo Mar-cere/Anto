@@ -1,6 +1,7 @@
 /**
  * Layout bipartito tema → intervención para el grafo visual (#218 / #127).
  */
+import { resolveTopicFreeDisplayLabel } from './graphSourceLabel.js';
 
 const DEFAULT_MAX_TOPICS = 7;
 const DEFAULT_MAX_INTERVENTIONS = 10;
@@ -286,6 +287,7 @@ export function buildTopicFreeGraphModel(
     maxTopicFree = DEFAULT_MAX_TOPIC_FREE,
     maxInterventions = DEFAULT_MAX_INTERVENTIONS,
     canvasWidth = 340,
+    language = 'es',
   } = {},
 ) {
   const list = Array.isArray(topicFreeEdges)
@@ -322,7 +324,8 @@ export function buildTopicFreeGraphModel(
 
   const sourceItems = topicFreeKeys.map((topicFree) => ({
     id: topicFree,
-    label: topicFree,
+    label: resolveTopicFreeDisplayLabel(topicFree, list, language),
+    fullLabel: topicFree,
     weight: topicFreeWeights.get(topicFree) || 0,
   }));
   const targetItems = interventionKeys.map((label) => ({
@@ -415,9 +418,11 @@ export function buildConceptGraphModel(
 
   const sourceItems = conceptKeys.map((conceptId) => {
     const raw = nodeById.get(conceptId);
+    const rawText = raw?.rawLabel || raw?.label || conceptId;
     return {
       id: conceptId,
-      label: raw?.label || conceptId,
+      label: raw?.displayLabel || raw?.label || conceptId,
+      fullLabel: rawText,
       weight: conceptWeights.get(conceptId) || 0,
       memberCount: raw?.memberCount || 1,
     };
@@ -480,17 +485,20 @@ export function buildInterventionGraphViewModel(
 ) {
   const conceptNodes = options?.conceptNodes;
   const conceptEdges = options?.conceptEdges;
+  const language = options?.language === 'en' ? 'en' : 'es';
+  const withLang = { ...options, language };
+
   if (Array.isArray(conceptNodes) && conceptNodes.length > 0 && Array.isArray(conceptEdges)) {
-    const conceptModel = buildConceptGraphModel(conceptNodes, conceptEdges, options);
+    const conceptModel = buildConceptGraphModel(conceptNodes, conceptEdges, withLang);
     if (conceptModel.links.length > 0) return conceptModel;
   }
 
   const tfList = Array.isArray(topicFreeEdges) ? topicFreeEdges : [];
   if (tfList.length > 0) {
-    const model = buildTopicFreeGraphModel(tfList, options);
+    const model = buildTopicFreeGraphModel(tfList, withLang);
     if (model.links.length > 0) return model;
   }
-  const base = buildInterventionGraphModel(edges, options);
+  const base = buildInterventionGraphModel(edges, withLang);
   return { ...base, topicFreeNodes: [], conceptNodes: [], mode: 'topicTag' };
 }
 

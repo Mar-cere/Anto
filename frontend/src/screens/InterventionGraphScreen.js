@@ -209,8 +209,10 @@ const InterventionGraphScreen = ({ navigation }) => {
       ? `tf:${edge.topicFree}:${edge.interventionId}`
       : `${edge.topicTag}:${edge.interventionId}`;
     const label = edge.interventionLabel || edge.interventionId;
+    const rawTopic = String(edge.topicFree || '').trim();
+    const displayTopic = String(edge.displayLabel || rawTopic).trim();
     const topicLabel = topicFree
-      ? `"${String(edge.topicFree || '').slice(0, 48)}${String(edge.topicFree || '').length > 48 ? '…' : ''}"`
+      ? `"${displayTopic.length > 56 ? `${displayTopic.slice(0, 55)}…` : displayTopic}"`
       : formatTopicTagLabel(edge.topicTag, language);
     const isSelected = selectedKey === key;
     return (
@@ -335,12 +337,31 @@ const InterventionGraphScreen = ({ navigation }) => {
             </Text>
             {selectedEdge ? (
               <View style={styles.detail}>
-                <Text style={styles.detailTitle}>
-                  {selectedEdge.conceptLabel || selectedEdge.topicFree
-                    ? `"${String(selectedEdge.conceptLabel || selectedEdge.topicFree)}" → `
-                    : `${formatTopicTagLabel(selectedEdge.topicTag, language)} → `}
-                  {selectedEdge.interventionLabel || selectedEdge.interventionId}
-                </Text>
+                {(() => {
+                  const rawSnippet = String(
+                    selectedEdge.conceptLabel || selectedEdge.topicFree || '',
+                  ).trim();
+                  const displaySnippet = String(
+                    selectedEdge.displayLabel ||
+                      topicFreeEdges.find((e) => e.topicFree === rawSnippet)?.displayLabel ||
+                      rawSnippet,
+                  ).trim();
+                  const titleLeft = rawSnippet
+                    ? `"${displaySnippet}"`
+                    : formatTopicTagLabel(selectedEdge.topicTag, language);
+                  return (
+                    <>
+                      <Text style={styles.detailTitle}>
+                        {titleLeft} → {selectedEdge.interventionLabel || selectedEdge.interventionId}
+                      </Text>
+                      {rawSnippet && displaySnippet && rawSnippet !== displaySnippet ? (
+                        <Text style={styles.rowSub}>
+                          {TEXTS.ORIGINAL_SNIPPET}: «{rawSnippet}»
+                        </Text>
+                      ) : null}
+                    </>
+                  );
+                })()}
                 <Text style={styles.rowSub}>{formatGraphMetrics(TEXTS, selectedEdge)}</Text>
                 <Text style={styles.rowSub}>{formatGraphRates(TEXTS, selectedEdge, pct)}</Text>
               </View>

@@ -1898,6 +1898,7 @@ export const TECHNIQUES = {
   INTERVENTION_GRAPH_MAP_SOURCE_COL: 'Your chat ideas',
   INTERVENTION_GRAPH_MAP_TARGET_COL: 'Techniques',
   INTERVENTION_GRAPH_MAP_TAP_HINT: 'Tap a connection or node to see details.',
+  INTERVENTION_GRAPH_ORIGINAL_SNIPPET: 'Original chat snippet',
   PSYCHOED_LOADING: 'Loading modules…',
   PSYCHOED_ERROR: 'Could not load modules.',
   PSYCHOED_RETRY: 'Retry',

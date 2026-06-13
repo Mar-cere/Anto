@@ -2,6 +2,7 @@
  * Clustering semántico de snippets topicFree → nodos concepto (#218 fase 3 / #126).
  */
 import crypto from 'crypto';
+import { pickClusterDisplayLabel } from '../utils/graphSourceLabel.js';
 import { cosineSimilarity } from '../utils/vectorMath.js';
 
 const DEFAULT_MIN_SIMILARITY = 0.78;
@@ -11,11 +12,8 @@ function conceptIdFromLabel(label) {
   return crypto.createHash('sha256').update(String(label)).digest('hex').slice(0, 12);
 }
 
-function pickRepresentativeLabel(samples) {
-  const list = (samples || []).filter(Boolean).map((s) => String(s).trim());
-  if (list.length === 0) return 'Concepto';
-  list.sort((a, b) => a.length - b.length || a.localeCompare(b));
-  return list[0];
+function pickRepresentativeLabel(samples, language = 'es') {
+  return pickClusterDisplayLabel(samples, language);
 }
 
 /**
@@ -24,7 +22,7 @@ function pickRepresentativeLabel(samples) {
  */
 export function clusterTopicFreeItems(
   items,
-  { minSimilarity = DEFAULT_MIN_SIMILARITY, maxConcepts = DEFAULT_MAX_CONCEPTS } = {},
+  { minSimilarity = DEFAULT_MIN_SIMILARITY, maxConcepts = DEFAULT_MAX_CONCEPTS, language = 'es' } = {},
 ) {
   const valid = (items || []).filter(
     (item) =>
@@ -67,7 +65,7 @@ export function clusterTopicFreeItems(
   }
 
   const conceptNodes = clusters.map((cluster, index) => {
-    const label = pickRepresentativeLabel(cluster.samples);
+    const label = pickRepresentativeLabel(cluster.samples, language);
     return {
       id: `concept_${conceptIdFromLabel(label)}_${index}`,
       label: label.slice(0, 128),

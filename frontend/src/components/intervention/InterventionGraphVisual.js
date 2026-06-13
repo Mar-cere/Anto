@@ -109,6 +109,7 @@ export default function InterventionGraphVisual({
       canvasWidth: width,
       conceptNodes,
       conceptEdges,
+      language,
     });
     if (base.mode === 'topicTag') {
       return localizeGraphModel(base, language);

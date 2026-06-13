@@ -32,7 +32,7 @@ const DEFAULTS = {
   MAP_A11Y: 'Mapa de conexiones entre temas e intervenciones',
   MAP_SOURCE_COL: 'Tus ideas en el chat',
   MAP_TARGET_COL: 'Técnicas',
-  MAP_TAP_HINT: 'Toca una conexión o un nodo para ver el detalle.',
+  ORIGINAL_SNIPPET: 'Texto original del chat',
 };
 
 const KEY_MAP = {
@@ -65,6 +65,7 @@ const KEY_MAP = {
   MAP_SOURCE_COL: 'INTERVENTION_GRAPH_MAP_SOURCE_COL',
   MAP_TARGET_COL: 'INTERVENTION_GRAPH_MAP_TARGET_COL',
   MAP_TAP_HINT: 'INTERVENTION_GRAPH_MAP_TAP_HINT',
+  ORIGINAL_SNIPPET: 'INTERVENTION_GRAPH_ORIGINAL_SNIPPET',
 };
 
 export function useInterventionGraphTexts() {
