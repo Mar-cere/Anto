@@ -39,6 +39,7 @@ import PomodoroCard from '../components/PomodoroCard';
 import JournalCard from '../components/JournalCard';
 import QuoteSection from '../components/QuoteSection';
 import DashboardFocusCard from '../components/DashboardFocusCard';
+import InsightsQuickCard from '../components/InsightsQuickCard';
 import TccProtocolsQuickCard from '../components/TccProtocolsQuickCard';
 import TaskCard from '../components/TaskCard';
 import { SkeletonBlock, SkeletonCard } from '../components/Skeleton';
@@ -866,6 +867,7 @@ const DashScreen = () => {
             onOpenBehavioralActivation={openBehavioralActivationFromFocus}
             onOpenExposureHierarchy={openExposureFromFocus}
           />
+          <InsightsQuickCard accessibilityLabel={DASH.INSIGHTS_CARD_A11Y} />
           {error && (
             <ErrorMessage
               message={error}

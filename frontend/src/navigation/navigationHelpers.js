@@ -2,6 +2,7 @@
  * Estado de reset para abrir MainTabs con la pestaña Chat enfocada.
  * Evita fallos de navigate anidado desde Home u otras pantallas del stack raíz.
  */
+import { CommonActions } from '@react-navigation/native';
 import { ROUTES } from '../constants/routes';
 import { setChatEntryBackTarget } from '../utils/chatEntryContext';
 
@@ -70,6 +71,40 @@ export function getResetToMainTabsWithInicioState() {
       },
     ],
   };
+}
+
+/**
+ * Navegador raíz (stack principal) desde cualquier pantalla anidada.
+ * @param {import('@react-navigation/native').NavigationProp<Record<string, unknown>>} navigation
+ */
+export function getRootNavigation(navigation) {
+  let nav = navigation;
+  while (nav?.getParent?.()) nav = nav.getParent();
+  return nav;
+}
+
+/**
+ * Reset en el stack raíz. Siempre envuelve con CommonActions.reset.
+ * @param {import('@react-navigation/native').NavigationProp<Record<string, unknown>>} navigation
+ * @param {object} state
+ * @returns {boolean} true si se despachó la acción
+ */
+export function dispatchRootReset(navigation, state) {
+  if (!state || typeof state !== 'object') return false;
+  const root = getRootNavigation(navigation);
+  if (!root?.dispatch) return false;
+  root.dispatch(CommonActions.reset(state));
+  return true;
+}
+
+/**
+ * Reset a MainTabs con Chat activo (TCC lite, emergencia, etc.).
+ * @param {import('@react-navigation/native').NavigationProp<Record<string, unknown>>} navigation
+ * @param {Parameters<typeof getResetToMainTabsWithChatState>[0]} [options]
+ * @returns {boolean}
+ */
+export function dispatchResetToMainTabsWithChat(navigation, options = {}) {
+  return dispatchRootReset(navigation, getResetToMainTabsWithChatState(options));
 }
 
 /**

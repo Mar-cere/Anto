@@ -772,6 +772,8 @@ export default function SummaryScreen() {
           <TouchableOpacity
             style={[styles.segmentItem, granularity === 'week' && styles.segmentItemOn]}
             onPress={() => setGranularity('week')}
+            accessibilityRole="button"
+            accessibilityLabel={TEXTS.WEEK}
             accessibilityState={{ selected: granularity === 'week' }}
           >
             <Text style={[styles.segmentText, granularity === 'week' && styles.segmentTextOn]}>{TEXTS.WEEK}</Text>
@@ -779,6 +781,8 @@ export default function SummaryScreen() {
           <TouchableOpacity
             style={[styles.segmentItem, granularity === 'month' && styles.segmentItemOn]}
             onPress={() => setGranularity('month')}
+            accessibilityRole="button"
+            accessibilityLabel={TEXTS.MONTH}
             accessibilityState={{ selected: granularity === 'month' }}
           >
             <Text style={[styles.segmentText, granularity === 'month' && styles.segmentTextOn]}>{TEXTS.MONTH}</Text>
@@ -835,17 +839,17 @@ export default function SummaryScreen() {
               ) : (
                 <View>
                   <NarrativeCard narrative={payload?.narrative} sx={styles} texts={TEXTS} />
-                  {granularity === 'week' ? (
-                    <TouchableOpacity
-                      style={styles.weeklyInsightBtn}
-                      onPress={() => navigation.navigate('WeeklyInsight')}
-                      activeOpacity={0.85}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.weeklyInsightBtnTitle}>{TEXTS.WEEKLY_INSIGHT_CTA}</Text>
-                      <Text style={styles.weeklyInsightBtnHint}>{TEXTS.WEEKLY_INSIGHT_CTA_HINT}</Text>
-                    </TouchableOpacity>
-                  ) : null}
+                  <TouchableOpacity
+                    style={styles.weeklyInsightBtn}
+                    onPress={() => navigation.navigate('WeeklyInsight')}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel={TEXTS.WEEKLY_INSIGHT_CTA}
+                    accessibilityHint={TEXTS.WEEKLY_INSIGHT_CTA_HINT}
+                  >
+                    <Text style={styles.weeklyInsightBtnTitle}>{TEXTS.WEEKLY_INSIGHT_CTA}</Text>
+                    <Text style={styles.weeklyInsightBtnHint}>{TEXTS.WEEKLY_INSIGHT_CTA_HINT}</Text>
+                  </TouchableOpacity>
                   <View style={styles.grid}>
                     <MetricTile
                       icon="message-text-outline"

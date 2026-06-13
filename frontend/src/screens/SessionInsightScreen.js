@@ -2,7 +2,7 @@
  * Insight de sesión post-chat: emoción, patrón cognitivo y paso sugerido.
  */
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { CommonActions, useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -20,7 +20,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import {
   CHAT_BACK_TARGET,
-  getResetToMainTabsWithChatState,
+  dispatchResetToMainTabsWithChat,
+  dispatchRootReset,
   getResetToMainTabsWithInicioState,
 } from '../navigation/navigationHelpers';
 import { SPACING } from '../constants/ui';
@@ -290,13 +291,11 @@ export default function SessionInsightScreen() {
   );
 
   const finish = useCallback(() => {
-    let nav = navigation;
-    while (nav?.getParent?.()) nav = nav.getParent();
     if (backTarget === CHAT_BACK_TARGET.HOME) {
-      nav.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'Home' }] }));
+      dispatchRootReset(navigation, { index: 0, routes: [{ name: 'Home' }] });
       return;
     }
-    nav.dispatch(CommonActions.reset(getResetToMainTabsWithInicioState()));
+    dispatchRootReset(navigation, getResetToMainTabsWithInicioState());
   }, [navigation, backTarget]);
 
   const openSuggestedStep = useCallback(() => {
@@ -316,16 +315,11 @@ export default function SessionInsightScreen() {
       return;
     }
     await setPendingTccLiteResume(resume);
-    let nav = navigation;
-    while (nav?.getParent?.()) nav = nav.getParent();
-    nav.dispatch(
-      CommonActions.reset(
-        getResetToMainTabsWithChatState({
-          chatBackTarget: backTarget === CHAT_BACK_TARGET.HOME ? CHAT_BACK_TARGET.HOME : CHAT_BACK_TARGET.DASH,
-          resumeTccLite: resume,
-        }),
-      ),
-    );
+    const ok = dispatchResetToMainTabsWithChat(navigation, {
+      chatBackTarget: backTarget === CHAT_BACK_TARGET.HOME ? CHAT_BACK_TARGET.HOME : CHAT_BACK_TARGET.DASH,
+      resumeTccLite: resume,
+    });
+    if (!ok) finish();
   }, [insight, navigation, finish, backTarget]);
 
   useEffect(() => {

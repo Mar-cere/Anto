@@ -216,7 +216,7 @@ export async function generateWeeklyPatternInsight({
   const headline = buildHeadline(correlations, language);
   const body =
     insights.length > 0
-      ? insights.map((i) => i.detail).join(' ')
+      ? ''
       : language === 'en'
         ? 'There is not enough signal yet for a strong pattern. Keep using suggestions and techniques when you want.'
         : 'Aún no hay señal suficiente para un patrón sólido. Sigue usando sugerencias y técnicas cuando quieras.';
@@ -262,8 +262,14 @@ export async function getWeeklyPatternInsight({ userId, weekKey = null, language
     throw new Error('invalid_week_key');
   }
 
+  const lang = language === 'en' ? 'en' : 'es';
+
   let doc = await WeeklyPatternInsight.findOne({ userId, weekKey: key }).lean();
-  if (doc?.status === 'ready') return doc;
+  if (doc?.status === 'ready' && doc.language === lang) return doc;
+
+  if (doc?.status === 'ready' && doc.language !== lang) {
+    return generateWeeklyPatternInsight({ userId, weekKey: key, language: lang });
+  }
 
   const updatedAtMs = doc?.updatedAt ? new Date(doc.updatedAt).getTime() : 0;
   if (updatedAtMs && Date.now() - updatedAtMs < GENERATION_COOLDOWN_MS) {
@@ -281,7 +287,7 @@ export async function getWeeklyPatternInsight({ userId, weekKey = null, language
     );
   }
 
-  doc = await generateWeeklyPatternInsight({ userId, weekKey: key, language });
+  doc = await generateWeeklyPatternInsight({ userId, weekKey: key, language: lang });
   return doc;
 }
 

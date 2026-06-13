@@ -1,7 +1,7 @@
 /**
  * Pantalla de revelación semanal (#213 / #208).
  */
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -19,11 +19,13 @@ import ParticleBackground from '../components/ParticleBackground';
 import SignalConsentPanel from '../components/signals/SignalConsentPanel';
 import { SPACING } from '../constants/ui';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import signalsService from '../services/signalsService';
 
 export default function WeeklyInsightScreen({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { language } = useLanguage();
   const { colors, statusBarStyle } = useTheme();
   const TEXTS = useSectionTranslations('TECHNIQUES');
   const [loading, setLoading] = useState(true);
@@ -31,38 +33,59 @@ export default function WeeklyInsightScreen({ navigation }) {
   const [error, setError] = useState(null);
   const [insight, setInsight] = useState(null);
   const [weekKey, setWeekKey] = useState(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const copy = useMemo(
-    () => ({
-      kicker: TEXTS.WEEKLY_INSIGHT_KICKER || 'Informe observacional',
-      disclaimer:
-        TEXTS.WEEKLY_INSIGHT_DISCLAIMER ||
-        'Correlaciones, no causas. No sustituye orientación profesional.',
-      empty:
-        TEXTS.WEEKLY_INSIGHT_EMPTY ||
-        'Aún no hay suficientes señales para un informe. Activa las opciones de abajo y sigue usando la app.',
-      retry: TEXTS.WEEKLY_INSIGHT_RETRY || 'Reintentar',
-      error: TEXTS.WEEKLY_INSIGHT_ERROR || 'No se pudo cargar el informe semanal.',
-    }),
-    [TEXTS],
+    () => {
+      const en = language === 'en';
+      return {
+        kicker: TEXTS.WEEKLY_INSIGHT_KICKER || (en ? 'Observational report' : 'Informe observacional'),
+        disclaimer:
+          TEXTS.WEEKLY_INSIGHT_DISCLAIMER ||
+          (en
+            ? 'Correlations, not causes. Not a substitute for professional care.'
+            : 'Correlaciones, no causas. No sustituye orientación profesional.'),
+        empty:
+          TEXTS.WEEKLY_INSIGHT_EMPTY ||
+          (en
+            ? 'Not enough signal yet for a report. Turn on the options below and keep using the app.'
+            : 'Aún no hay suficientes señales para un informe. Activa las opciones de abajo y sigue usando la app.'),
+        retry: TEXTS.WEEKLY_INSIGHT_RETRY || (en ? 'Retry' : 'Reintentar'),
+        error:
+          TEXTS.WEEKLY_INSIGHT_ERROR ||
+          (en ? 'Could not load the weekly report.' : 'No se pudo cargar el informe semanal.'),
+      };
+    },
+    [TEXTS, language],
   );
 
   const load = useCallback(async () => {
     try {
-      setError(null);
+      if (mountedRef.current) setError(null);
       const res = await signalsService.fetchWeeklyInsight();
-      setWeekKey(res?.weekKey || null);
-      setInsight(res?.insight || null);
+      if (!mountedRef.current) return;
+      setWeekKey(typeof res?.weekKey === 'string' ? res.weekKey : null);
+      setInsight(res?.insight && typeof res.insight === 'object' ? res.insight : null);
     } catch {
+      if (!mountedRef.current) return;
       setError(copy.error);
       setInsight(null);
+      setWeekKey(null);
     } finally {
+      if (!mountedRef.current) return;
       setLoading(false);
       setRefreshing(false);
     }
   }, [copy.error]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     load();
   }, [load]);
 
@@ -151,14 +174,28 @@ export default function WeeklyInsightScreen({ navigation }) {
     [colors, insets.top, insets.bottom],
   );
 
-  const rows = Array.isArray(insight?.insights) ? insight.insights : [];
-  const showBody = Boolean(insight?.body) && rows.length === 0;
+  const rows = useMemo(() => {
+    const raw = Array.isArray(insight?.insights) ? insight.insights : [];
+    return raw
+      .filter((row) => row && typeof row === 'object')
+      .map((row) => ({
+        type: String(row.type || 'insight'),
+        label: String(row.label || '').trim(),
+        detail: String(row.detail || '').trim(),
+      }))
+      .filter((row) => row.label || row.detail);
+  }, [insight?.insights]);
+  const showBody = Boolean(String(insight?.body || '').trim()) && rows.length === 0;
 
   return (
     <View style={styles.root}>
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
-      <Header title={copy.kicker} showBackButton onBackPress={() => navigation.goBack()} />
+      <Header
+        title={copy.kicker}
+        showBackButton
+        onBackPress={() => navigation?.goBack?.()}
+      />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -197,7 +234,12 @@ export default function WeeklyInsightScreen({ navigation }) {
             </View>
 
             {rows.map((row, index) => (
-              <View key={`${row.type}-${index}`} style={styles.card}>
+              <View
+                key={`${row.type}-${index}`}
+                style={styles.card}
+                accessibilityRole="text"
+                accessibilityLabel={`${row.label}. ${row.detail}`}
+              >
                 <Text style={styles.cardTitle}>{row.label}</Text>
                 <Text style={styles.cardText}>{row.detail}</Text>
               </View>

@@ -18,6 +18,11 @@ describe('chatTriageLoopHints', () => {
     it('no confunde frases largas con totalizador', () => {
       expect(isTotalizingReply('Todo empezó cuando me rechazaron')).toBe(false);
     });
+
+    it('ignora entradas vacías o no texto', () => {
+      expect(isTotalizingReply('')).toBe(false);
+      expect(isTotalizingReply(null)).toBe(false);
+    });
   });
 
   describe('isMultiOptionTriageQuestion', () => {
@@ -30,6 +35,10 @@ describe('chatTriageLoopHints', () => {
     it('ignora preguntas abiertas simples', () => {
       expect(isMultiOptionTriageQuestion('¿Qué te gustaría contarme ahora?')).toBe(false);
     });
+
+    it('ignora preguntas binarias sin lista', () => {
+      expect(isMultiOptionTriageQuestion('¿Prefieres hablar o hacer una técnica?')).toBe(false);
+    });
   });
 
   describe('shouldSuppressRepeatTriage', () => {
@@ -41,6 +50,19 @@ describe('chatTriageLoopHints', () => {
         shouldSuppressRepeatTriage({
           userMessage: 'Todo',
           safetyHistory: [{ role: 'assistant', content: lastAssistant }]
+        })
+      ).toBe(true);
+    });
+
+    it('activa con historial newest-first (usuario actual primero)', () => {
+      expect(
+        shouldSuppressRepeatTriage({
+          userMessage: 'Todo',
+          safetyHistory: [
+            { role: 'user', content: 'Todo' },
+            { role: 'assistant', content: lastAssistant },
+            { role: 'user', content: 'El estar sin trabajo' }
+          ]
         })
       ).toBe(true);
     });

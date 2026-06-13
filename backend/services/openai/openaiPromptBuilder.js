@@ -28,6 +28,7 @@ import {
 } from '../chat/sessionPhaseHints.js';
 import {
   buildAntiRepeatTriageSnippet,
+  resolveUserMessage,
   shouldSuppressRepeatTriage
 } from '../chat/chatTriageLoopHints.js';
 import { getSessionIntentionSystemSnippet } from '../chat/sessionIntentionHints.js';
@@ -959,11 +960,7 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   if (threadSnippet) systemMessage += threadSnippet;
   systemMessage += getSessionPhaseSystemSnippet(contexto.sessionPhase || 'default');
 
-  const userMessageForTriage =
-    contexto.userMessage ??
-    (typeof contexto.currentMessage === 'string'
-      ? contexto.currentMessage
-      : contexto.currentMessage?.content);
+  const userMessageForTriage = resolveUserMessage(contexto);
   const suppressTriageMenu = shouldSuppressRepeatTriage({
     userMessage: userMessageForTriage,
     safetyHistory: contexto.safetyHistory || []

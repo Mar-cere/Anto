@@ -4,7 +4,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CommonActions, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Animated, AppState, InteractionManager, Platform, Vibration } from 'react-native';
@@ -24,7 +24,7 @@ import {
   STORAGE_KEYS,
   useChatTexts,
 } from '../screens/chat/chatScreenConstants';
-import { getResetToMainTabsWithInicioState } from '../navigation/navigationHelpers';
+import { dispatchRootReset, getResetToMainTabsWithInicioState } from '../navigation/navigationHelpers';
 import {
   clearChatEntryBackTarget,
   resolveChatBackTarget,
@@ -1295,17 +1295,6 @@ export function useChatScreen() {
     }
   }, []);
 
-  const dispatchRootReset = useCallback(
-    (state) => {
-      let nav = navigation;
-      while (nav?.getParent?.()) {
-        nav = nav.getParent();
-      }
-      nav?.dispatch(CommonActions.reset(state));
-    },
-    [navigation]
-  );
-
   const handleBack = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
@@ -1314,7 +1303,7 @@ export function useChatScreen() {
       void scheduleLastSessionSummaryDeferred();
 
       if (!token) {
-        dispatchRootReset({ index: 0, routes: [{ name: 'Home' }] });
+        dispatchRootReset(navigation, { index: 0, routes: [{ name: 'Home' }] });
         return;
       }
 
@@ -1336,20 +1325,20 @@ export function useChatScreen() {
       }
 
       if (target === 'home') {
-        dispatchRootReset({ index: 0, routes: [{ name: 'Home' }] });
+        dispatchRootReset(navigation, { index: 0, routes: [{ name: 'Home' }] });
         return;
       }
-      dispatchRootReset(getResetToMainTabsWithInicioState());
+      dispatchRootReset(navigation, getResetToMainTabsWithInicioState());
     } catch (err) {
       console.error('[ChatScreen] Error en goBack:', err);
       try {
         await clearChatEntryBackTarget();
-        dispatchRootReset({ index: 0, routes: [{ name: 'Home' }] });
+        dispatchRootReset(navigation, { index: 0, routes: [{ name: 'Home' }] });
       } catch (e2) {
         console.error('[ChatScreen] goBack recuperación:', e2);
       }
     }
-  }, [dispatchRootReset, navigation, route.params, scheduleLastSessionSummaryDeferred]);
+  }, [navigation, route.params, scheduleLastSessionSummaryDeferred]);
 
   const guestHandoffStartFresh = useCallback(async () => {
     try {

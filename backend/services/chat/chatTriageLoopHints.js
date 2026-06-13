@@ -51,10 +51,14 @@ export function isMultiOptionTriageQuestion(content) {
 }
 
 function getLastAssistantMessage(historyNewestFirst) {
-  const chronological = [...(historyNewestFirst || [])].reverse();
-  for (let i = chronological.length - 1; i >= 0; i -= 1) {
-    if (chronological[i]?.role === 'assistant') {
-      return chronological[i].content || '';
+  const list = [...(historyNewestFirst || [])];
+  // Historial newest-first: el turno actual del usuario suele ser el primer mensaje.
+  let start = 0;
+  while (start < list.length && list[start]?.role === 'user') start += 1;
+
+  for (let i = start; i < list.length; i += 1) {
+    if (list[i]?.role === 'assistant') {
+      return String(list[i].content || '');
     }
   }
   return '';
@@ -70,7 +74,7 @@ export function shouldSuppressRepeatTriage({ userMessage, safetyHistory }) {
   return isMultiOptionTriageQuestion(lastAssistant);
 }
 
-function resolveUserMessage(contexto) {
+export function resolveUserMessage(contexto) {
   if (typeof contexto?.userMessage === 'string') return contexto.userMessage;
   if (typeof contexto?.currentMessage === 'string') return contexto.currentMessage;
   return contexto?.currentMessage?.content || '';

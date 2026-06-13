@@ -4,10 +4,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Switch, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import signalsService from '../../services/signalsService';
 
-const DEFAULTS = {
+const DEFAULTS_ES = {
   TITLE: 'Señales opcionales',
   TYPING: 'Ritmo al escribir (sin guardar más palabras)',
   TYPING_HINT: 'Mide pausas y retoques del borrador para detectar carga cognitiva.',
@@ -16,6 +17,17 @@ const DEFAULTS = {
   WEEKLY: 'Informe semanal de patrones',
   WEEKLY_HINT: 'Resumen observacional, no diagnóstico.',
   SAVING: 'Guardando…',
+};
+
+const DEFAULTS_EN = {
+  TITLE: 'Optional signals',
+  TYPING: 'Writing pace (no extra words stored)',
+  TYPING_HINT: 'Measures pauses and edits in drafts to detect cognitive load.',
+  HEALTH: 'Digital health (steps, sleep, screen)',
+  HEALTH_HINT: 'Requires device permissions when available.',
+  WEEKLY: 'Weekly pattern report',
+  WEEKLY_HINT: 'Observational summary, not a diagnosis.',
+  SAVING: 'Saving…',
 };
 
 const KEY_MAP = {
@@ -31,14 +43,16 @@ const KEY_MAP = {
 
 export default function SignalConsentPanel({ compact = false }) {
   const { colors } = useTheme();
+  const { language } = useLanguage();
   const translated = useSectionTranslations('TECHNIQUES');
   const TEXTS = useMemo(() => {
-    const t = { ...DEFAULTS };
+    const base = language === 'en' ? DEFAULTS_EN : DEFAULTS_ES;
+    const t = { ...base };
     Object.entries(KEY_MAP).forEach(([local, remote]) => {
       if (translated?.[remote]) t[local] = translated[remote];
     });
     return t;
-  }, [translated]);
+  }, [translated, language]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -127,6 +141,8 @@ export default function SignalConsentPanel({ compact = false }) {
           value={consent.typingTelemetry?.enabled === true}
           onValueChange={(enabled) => patchConsent({ typingTelemetry: { enabled } })}
           trackColor={{ true: colors.primary, false: colors.border }}
+          accessibilityLabel={TEXTS.TYPING}
+          accessibilityHint={TEXTS.TYPING_HINT}
         />
       </View>
       <View style={styles.row}>
@@ -147,6 +163,8 @@ export default function SignalConsentPanel({ compact = false }) {
             })
           }
           trackColor={{ true: colors.primary, false: colors.border }}
+          accessibilityLabel={TEXTS.HEALTH}
+          accessibilityHint={TEXTS.HEALTH_HINT}
         />
       </View>
       <View style={styles.row}>
@@ -158,6 +176,8 @@ export default function SignalConsentPanel({ compact = false }) {
           value={consent.weeklyInsights?.enabled !== false}
           onValueChange={(enabled) => patchConsent({ weeklyInsights: { enabled } })}
           trackColor={{ true: colors.primary, false: colors.border }}
+          accessibilityLabel={TEXTS.WEEKLY}
+          accessibilityHint={TEXTS.WEEKLY_HINT}
         />
       </View>
       {saving ? <Text style={styles.saving}>{TEXTS.SAVING}</Text> : null}
