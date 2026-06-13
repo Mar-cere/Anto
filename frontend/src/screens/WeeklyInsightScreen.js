@@ -1,6 +1,7 @@
 /**
  * Pantalla de revelación semanal (#213 / #208).
  */
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRoute } from '@react-navigation/native';
 import {
   ActivityIndicator,
