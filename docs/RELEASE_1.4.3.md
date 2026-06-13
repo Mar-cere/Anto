@@ -2,7 +2,9 @@
 
 ## Resumen
 
-Oleada 1.4.3 **completa en `main`**: marco TCC lite inline, continuidad, psicoeducación, ranking semántico topicFree, grafo visual fase 2 y micro-guías timeline.
+Oleada 1.4.3 **completa en `main`**: marco TCC lite inline, continuidad, psicoeducación, ranking semántico topicFree, grafo visual (fases 2–3), micro-guías timeline, patrones mensuales, mapa del grafo rediseñado y etiquetas de ideas legibles.
+
+**Build tiendas:** `1.4.3` · iOS `buildNumber` **33** · Android `versionCode` **19**
 
 ## Incluye
 
@@ -17,6 +19,9 @@ Oleada 1.4.3 **completa en `main`**: marco TCC lite inline, continuidad, psicoed
 - **Session insight:** duración ventana activa (fix minutos inflados).
 - **Transporte chat:** HTTP/SSE alineado con `chatTurnEnhancementsService`.
 - **Motor multimodal (#217):** telemetría tecleo (#215), fenotipado digital (#216), informe semanal (#208) con UI revelación (#213), consentimiento granular en `/api/signals`.
+- **Patrones mensuales:** CTA en resumen según semana/mes, endpoint `GET /api/signals/monthly-insight`, pantalla WeeklyInsight con `monthKey`.
+- **Grafo visual (UX):** nodos pastilla, columnas «Tus ideas» / «Técnicas», conexiones Bezier; **etiquetas parafraseadas** de snippets topicFree (determinístico + LLM opcional con `INTERVENTION_GRAPH_LABEL_LLM_ENABLED`).
+- **Dashboard:** orden Foco → Tareas → Hábitos → TCC → Diario → Patrones → Cita; login con alerta visible en contraseña incorrecta.
 
 ## QA en dispositivo (checklist)
 
@@ -55,7 +60,7 @@ Sin Atlas, el ranking y el grafo usan **modo scan** (cosine local).
 
 ## Pendiente post-1.4.3
 
-- Deploy Render + build tiendas 1.4.3.
+- Deploy Render + EAS build producción (`eas build --profile production`).
 - Backfill inicial en prod: `TOPIC_FREE_EMBEDDINGS_ENABLED=true npm run backfill:topic-free-embeddings -- --limit=1000`.
 - Integración nativa HealthKit (#216) en dev client iOS + Health Connect Android.
 - #203 RAG patrones, #210 esquemas, narrativa LLM en informe #208 (opcional).
