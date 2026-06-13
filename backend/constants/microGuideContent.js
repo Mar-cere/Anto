@@ -255,6 +255,7 @@ export function getMicroGuideModule(guideId, language = 'es') {
     ...body,
     guideId: id,
     interventionId: id,
+    icon: entry?.icon ?? null,
     title: body.title || getInterventionCatalogLabel(entry, lang),
     disclaimer:
       lang === 'en'

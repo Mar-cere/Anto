@@ -108,6 +108,7 @@ const MicroGuideLibraryScreen = () => {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.heroKicker}>{texts.HERO_KICKER}</Text>
+              <Text style={[styles.moduleTitle, { marginBottom: 4 }]}>{texts.LIBRARY_TITLE}</Text>
               <Text style={styles.heroTitle}>{texts.LIBRARY_SUBTITLE}</Text>
             </View>
           </View>

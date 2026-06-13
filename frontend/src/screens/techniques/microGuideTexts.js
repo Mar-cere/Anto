@@ -35,7 +35,11 @@ export function parseMicroGuideBrowseResponse(res) {
   });
 }
 
+export function resolveMicroGuideTexts(translated) {
+  return buildMappedSectionTexts(translated, DEFAULTS, KEY_MAP);
+}
+
 export function useMicroGuideTexts() {
   const translated = useSectionTranslations('TECHNIQUES');
-  return useMemo(() => buildMappedSectionTexts(translated, KEY_MAP, DEFAULTS), [translated]);
+  return useMemo(() => resolveMicroGuideTexts(translated), [translated]);
 }

@@ -1,5 +1,5 @@
 /**
- * Micro-guías interactivas (#90–#99 / catálogo #127).
+ * Micro-guías interactivas (#90–#99) — vista única con timeline.
  */
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -19,62 +19,90 @@ import Header from '../../components/Header';
 import PsychoeducationClinicalReviewSeal from '../../components/PsychoeducationClinicalReviewSeal';
 import ParticleBackground from '../../components/ParticleBackground';
 import { api } from '../../config/api';
-import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { pickLocalizedDefaults } from '../../utils/localizedFallback';
 import { createInterventionCompletedRecorder } from '../../utils/recordInterventionCompleted';
+import { createMicroGuideScreenStyles } from './microGuideScreenStyles';
 import { usePsychoeducationTexts } from './psychoeducationTexts';
-import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const DEFAULT_TEXTS_BY_LANG = {
   es: {
     LOADING: 'Cargando guía…',
     ERROR: 'No se pudo cargar la guía.',
-    BACK: 'Atrás',
-    NEXT: 'Siguiente',
-    COMPLETE: 'Completar',
+    BACK: 'Volver',
+    COMPLETE: 'Completar guía',
     DONE_TITLE: 'Guía completada',
     DONE_BODY: 'Has recorrido los pasos de esta guía. Puedes volver cuando lo necesites.',
-    STEP_OF: 'Paso {current} de {total}',
     KICKER: 'Micro-guía',
+    STEPS_HEADING: 'Pasos',
+    TIP_LABEL: 'Al cerrar',
+    READ_TIME: '~{n} min',
+    STEP_COUNT: '{n} pasos',
   },
   en: {
     LOADING: 'Loading guide…',
     ERROR: 'Could not load the guide.',
     BACK: 'Back',
-    NEXT: 'Next',
-    COMPLETE: 'Complete',
+    COMPLETE: 'Complete guide',
     DONE_TITLE: 'Guide completed',
-    DONE_BODY: 'You have gone through the steps of this guide. You can return whenever you need.',
-    STEP_OF: 'Step {current} of {total}',
+    DONE_BODY: 'You have gone through the steps. You can return whenever you need.',
     KICKER: 'Micro-guide',
+    STEPS_HEADING: 'Steps',
+    TIP_LABEL: 'When you finish',
+    READ_TIME: '~{n} min',
+    STEP_COUNT: '{n} steps',
   },
 };
+
+function TimelineStep({ index, total, step, styles, isLast }) {
+  return (
+    <View style={styles.timelineRow}>
+      <View style={styles.timelineRail}>
+        <View style={styles.timelineDot}>
+          <Text style={styles.timelineDotText}>{index + 1}</Text>
+        </View>
+        {!isLast ? <View style={styles.timelineLine} /> : null}
+      </View>
+      <View style={[styles.stepCard, isLast && { marginBottom: 4 }]}>
+        {step?.title ? <Text style={styles.stepTitle}>{step.title}</Text> : null}
+        {step?.body ? <Text style={styles.stepBody}>{step.body}</Text> : null}
+      </View>
+    </View>
+  );
+}
 
 export default function MicroGuideScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const insets = useSafeAreaInsets();
-  const { colors, statusBarStyle } = useTheme();
+  const { colors, statusBarStyle, resolvedScheme } = useTheme();
   const { language } = useLanguage();
-  const techniqueScreenStyles = useTechniqueScreenStyles();
   const translated = useSectionTranslations('TECHNIQUES');
   const sealTexts = usePsychoeducationTexts();
+
   const TEXTS = useMemo(() => {
     const defaults = pickLocalizedDefaults(language, DEFAULT_TEXTS_BY_LANG);
     return {
       LOADING: translated?.MICRO_GUIDE_LOADING || defaults.LOADING,
       ERROR: translated?.MICRO_GUIDE_ERROR || defaults.ERROR,
       BACK: translated?.MICRO_GUIDE_BACK || defaults.BACK,
-      NEXT: translated?.MICRO_GUIDE_NEXT || defaults.NEXT,
-      COMPLETE: translated?.MICRO_GUIDE_COMPLETE || defaults.COMPLETE,
+      COMPLETE: translated?.MICRO_GUIDE_COMPLETE_CTA || defaults.COMPLETE,
       DONE_TITLE: translated?.MICRO_GUIDE_DONE_TITLE || defaults.DONE_TITLE,
       DONE_BODY: translated?.MICRO_GUIDE_DONE_BODY || defaults.DONE_BODY,
-      STEP_OF: translated?.MICRO_GUIDE_STEP_OF || defaults.STEP_OF,
       KICKER: translated?.MICRO_GUIDE_KICKER || defaults.KICKER,
+      STEPS_HEADING: translated?.MICRO_GUIDE_STEPS_HEADING || defaults.STEPS_HEADING,
+      TIP_LABEL: translated?.MICRO_GUIDE_TIP_LABEL || defaults.TIP_LABEL,
+      READ_TIME: translated?.MICRO_GUIDE_LIBRARY_READ_TIME || defaults.READ_TIME,
+      STEP_COUNT: translated?.MICRO_GUIDE_LIBRARY_STEPS || defaults.STEP_COUNT,
     };
   }, [language, translated]);
+
+  const styles = useMemo(
+    () => createMicroGuideScreenStyles(colors, resolvedScheme),
+    [colors, resolvedScheme],
+  );
 
   const guideId = String(route?.params?.guideId || route?.params?.id || '').trim();
   const recordCompletedOnce = useMemo(() => createInterventionCompletedRecorder(), []);
@@ -82,7 +110,6 @@ export default function MicroGuideScreen() {
   const [loading, setLoading] = useState(true);
   const [guide, setGuide] = useState(null);
   const [error, setError] = useState(null);
-  const [stepIndex, setStepIndex] = useState(0);
   const [finished, setFinished] = useState(false);
 
   useEffect(() => {
@@ -114,7 +141,8 @@ export default function MicroGuideScreen() {
 
   const steps = useMemo(() => (Array.isArray(guide?.steps) ? guide.steps : []), [guide]);
   const totalSteps = steps.length;
-  const isLast = stepIndex >= totalSteps - 1;
+  const minutesLabel = TEXTS.READ_TIME.replace('{n}', String(guide?.estimatedMinutes || 2));
+  const stepsLabel = TEXTS.STEP_COUNT.replace('{n}', String(totalSteps || 0));
 
   const handleComplete = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -122,109 +150,119 @@ export default function MicroGuideScreen() {
     setFinished(true);
   };
 
-  const handleNext = () => {
-    if (totalSteps === 0 || !step?.body) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    if (isLast) {
-      handleComplete();
-      return;
-    }
-    setStepIndex((i) => Math.min(i + 1, totalSteps - 1));
-  };
-
-  const handleBack = () => {
-    Haptics.selectionAsync().catch(() => {});
-    if (stepIndex === 0) {
-      navigation.goBack();
-      return;
-    }
-    setStepIndex((i) => Math.max(0, i - 1));
-  };
-
   const headerTitle = guide?.title || TEXTS.KICKER;
-  const step = steps[stepIndex];
-  const stepLabel = TEXTS.STEP_OF.replace('{current}', String(stepIndex + 1)).replace(
-    '{total}',
-    String(totalSteps || 1),
-  );
 
   return (
-    <SafeAreaView style={techniqueScreenStyles.container}>
-      <StatusBar barStyle={statusBarStyle} />
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
       <Header title={headerTitle} showBackButton onBackPress={() => navigation.goBack()} />
-      <ScrollView
-        contentContainerStyle={[
-          techniqueScreenStyles.scrollContent,
-          { paddingBottom: insets.bottom + 24 },
-        ]}
-        keyboardShouldPersistTaps="handled"
-      >
-        {loading ? (
-          <View style={techniqueScreenStyles.card}>
-            <ActivityIndicator color={colors.primary} />
-            <Text style={techniqueScreenStyles.formHint}>{TEXTS.LOADING}</Text>
-          </View>
-        ) : error || totalSteps === 0 ? (
-          <View style={techniqueScreenStyles.card}>
-            <Text style={techniqueScreenStyles.formHint}>{error || TEXTS.ERROR}</Text>
-            <TouchableOpacity
-              style={[techniqueScreenStyles.primaryButton, { marginTop: 16 }]}
-              onPress={() => navigation.goBack()}
-            >
-              <Text style={techniqueScreenStyles.primaryButtonText}>{TEXTS.BACK}</Text>
+
+      {loading ? (
+        <View style={styles.centerBox}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.errorText}>{TEXTS.LOADING}</Text>
+        </View>
+      ) : error || totalSteps === 0 ? (
+        <View style={styles.centerBox}>
+          <MaterialCommunityIcons name="alert-circle-outline" size={40} color={colors.error} />
+          <Text style={styles.errorText}>{error || TEXTS.ERROR}</Text>
+          <TouchableOpacity style={styles.doneBtn} onPress={() => navigation.goBack()}>
+            <Text style={styles.doneBtnText}>{TEXTS.BACK}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : finished ? (
+        <ScrollView
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 32 }]}
+        >
+          <View style={styles.doneHero}>
+            <View style={styles.doneIconWrap}>
+              <MaterialCommunityIcons name="check-circle" size={44} color={colors.primary} />
+            </View>
+            <Text style={styles.doneTitle}>{TEXTS.DONE_TITLE}</Text>
+            <Text style={styles.doneBody}>{guide?.completionNote || TEXTS.DONE_BODY}</Text>
+            <TouchableOpacity style={styles.doneBtn} onPress={() => navigation.goBack()}>
+              <Text style={styles.doneBtnText}>{TEXTS.BACK}</Text>
             </TouchableOpacity>
           </View>
-        ) : finished ? (
-          <View style={techniqueScreenStyles.card}>
-            <MaterialCommunityIcons name="check-circle-outline" size={40} color={colors.primary} />
-            <Text style={techniqueScreenStyles.formSectionHeading}>{TEXTS.DONE_TITLE}</Text>
-            <Text style={techniqueScreenStyles.formHint}>
-              {guide?.completionNote || TEXTS.DONE_BODY}
-            </Text>
-          </View>
-        ) : (
-          <>
-            <View style={techniqueScreenStyles.introPanel}>
-              <Text style={techniqueScreenStyles.introKicker}>{TEXTS.KICKER}</Text>
-              <Text style={techniqueScreenStyles.introTitle}>{guide?.title}</Text>
-              {guide?.intro ? (
-                <Text style={techniqueScreenStyles.introBody}>{guide.intro}</Text>
-              ) : null}
+        </ScrollView>
+      ) : (
+        <>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.hero}>
+              <View style={styles.heroIcon}>
+                <Text style={styles.heroIconText}>{guide?.icon || '📘'}</Text>
+              </View>
+              <Text style={styles.heroKicker}>{TEXTS.KICKER}</Text>
+              <Text style={styles.heroTitle}>{guide?.title}</Text>
+              {guide?.intro ? <Text style={styles.heroLead}>{guide.intro}</Text> : null}
+              <View style={styles.metaRow}>
+                <View style={styles.metaPill}>
+                  <MaterialCommunityIcons name="clock-outline" size={14} color={colors.primary} />
+                  <Text style={styles.metaPillText}>{minutesLabel}</Text>
+                </View>
+                <View style={styles.metaPill}>
+                  <MaterialCommunityIcons
+                    name="format-list-numbered"
+                    size={14}
+                    color={colors.primary}
+                  />
+                  <Text style={styles.metaPillText}>{stepsLabel}</Text>
+                </View>
+              </View>
               {guide?.clinicalReview ? (
-                <PsychoeducationClinicalReviewSeal
-                  clinicalReview={guide.clinicalReview}
-                  texts={sealTexts}
-                  variant="module"
-                />
+                <View style={{ marginTop: 14, width: '100%' }}>
+                  <PsychoeducationClinicalReviewSeal
+                    clinicalReview={guide.clinicalReview}
+                    texts={sealTexts}
+                    variant="module"
+                  />
+                </View>
               ) : null}
             </View>
-            <View style={techniqueScreenStyles.card}>
-              <Text style={techniqueScreenStyles.formHint}>{stepLabel}</Text>
-              {step?.title ? (
-                <Text style={techniqueScreenStyles.formSectionHeading}>{step.title}</Text>
-              ) : null}
-              <Text style={techniqueScreenStyles.formLabel}>{step?.body}</Text>
+
+            <View style={styles.stepsSection}>
+              <Text style={styles.stepsHeading}>{TEXTS.STEPS_HEADING}</Text>
+              <View style={styles.timeline}>
+                {steps.map((step, index) => (
+                  <TimelineStep
+                    key={`${index}-${step?.title || 'step'}`}
+                    index={index}
+                    total={totalSteps}
+                    step={step}
+                    styles={styles}
+                    isLast={index === totalSteps - 1}
+                  />
+                ))}
+              </View>
             </View>
-            <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
-              <TouchableOpacity
-                style={[techniqueScreenStyles.secondaryButton, { flex: 1 }]}
-                onPress={handleBack}
-              >
-                <Text style={techniqueScreenStyles.secondaryButtonText}>{TEXTS.BACK}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[techniqueScreenStyles.primaryButton, { flex: 1 }]}
-                onPress={handleNext}
-              >
-                <Text style={techniqueScreenStyles.primaryButtonText}>
-                  {isLast ? TEXTS.COMPLETE : TEXTS.NEXT}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-      </ScrollView>
+
+            {guide?.completionNote ? (
+              <View style={styles.tipCard}>
+                <Text style={styles.tipLabel}>{TEXTS.TIP_LABEL}</Text>
+                <Text style={styles.tipBody}>{guide.completionNote}</Text>
+              </View>
+            ) : null}
+
+            {guide?.disclaimer ? (
+              <Text style={styles.disclaimer}>{guide.disclaimer}</Text>
+            ) : null}
+          </ScrollView>
+
+          <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
+            <TouchableOpacity
+              style={styles.primaryBtn}
+              onPress={handleComplete}
+              accessibilityRole="button"
+            >
+              <Text style={styles.primaryBtnText}>{TEXTS.COMPLETE}</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
     </SafeAreaView>
   );
 }

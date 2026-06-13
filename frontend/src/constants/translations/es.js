@@ -1883,6 +1883,9 @@ export const TECHNIQUES = {
   MICRO_GUIDE_BACK: 'Atrás',
   MICRO_GUIDE_NEXT: 'Siguiente',
   MICRO_GUIDE_COMPLETE: 'Completar',
+  MICRO_GUIDE_COMPLETE_CTA: 'Completar guía',
+  MICRO_GUIDE_STEPS_HEADING: 'Pasos',
+  MICRO_GUIDE_TIP_LABEL: 'Al cerrar',
   MICRO_GUIDE_DONE_TITLE: 'Guía completada',
   MICRO_GUIDE_DONE_BODY:
     'Has recorrido los pasos de esta guía. Puedes volver cuando lo necesites.',
