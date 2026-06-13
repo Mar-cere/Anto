@@ -50,6 +50,26 @@ describe('buildSessionAggregatedGraphPipeline', () => {
   });
 });
 
+describe('buildTopicFreeGraphPipeline', () => {
+  it('agrupa por topicFree e intervención con dedupe por sesión', () => {
+    const pipeline = chatInterventionGraphService.buildTopicFreeGraphPipeline({
+      userId: 'user-1',
+      since: new Date('2026-01-01'),
+      limit: 20,
+    });
+    expect(pipeline[0].$match.topicFree).toEqual({ $type: 'string', $nin: [null, ''] });
+    expect(pipeline[1].$group._id).toMatchObject({
+      sessionId: '$sessionId',
+      topicFree: '$topicFree',
+      interventionId: '$interventionId',
+    });
+    expect(pipeline[2].$group._id).toMatchObject({
+      topicFree: '$_id.topicFree',
+      interventionId: '$_id.interventionId',
+    });
+  });
+});
+
 describe('chatInterventionGraphService', () => {
   beforeEach(() => {
     jest.clearAllMocks();

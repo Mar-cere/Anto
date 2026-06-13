@@ -1,5 +1,7 @@
 import {
   buildInterventionGraphModel,
+  buildInterventionGraphViewModel,
+  buildTopicFreeGraphModel,
   computeEdgeWeight,
   formatTopicTagLabel,
   localizeGraphModel,
@@ -108,5 +110,43 @@ describe('interventionGraphLayout', () => {
 
   it('formatTopicTagLabel capitaliza tags desconocidos', () => {
     expect(formatTopicTagLabel('custom_tag', 'es')).toBe('Custom_tag');
+  });
+
+  it('buildTopicFreeGraphModel conecta snippets con intervenciones', () => {
+    const topicFreeEdges = [
+      {
+        topicFree: 'No tengo ganas de levantarme por la mañana',
+        topicTag: 'trabajo',
+        interventionId: 'behavioral_activation',
+        interventionLabel: 'Activación conductual',
+        shown: 2,
+        clicked: 1,
+        completed: 1,
+      },
+    ];
+    const model = buildTopicFreeGraphModel(topicFreeEdges, { canvasWidth: 360 });
+    expect(model.mode).toBe('topicFree');
+    expect(model.topicFreeNodes.length).toBe(1);
+    expect(model.interventions.length).toBe(1);
+    expect(model.links[0].linkKind).toBe('topicFree');
+  });
+
+  it('buildInterventionGraphViewModel prefiere topicFree cuando hay datos', () => {
+    const model = buildInterventionGraphViewModel(
+      sampleEdges,
+      [
+        {
+          topicFree: 'Me cuesta dormir y doy vueltas a todo',
+          interventionId: 'breathing_exercise',
+          interventionLabel: 'Respiración',
+          shown: 1,
+          clicked: 1,
+          completed: 0,
+        },
+      ],
+      { canvasWidth: 320 },
+    );
+    expect(model.mode).toBe('topicFree');
+    expect(model.links.length).toBeGreaterThan(0);
   });
 });

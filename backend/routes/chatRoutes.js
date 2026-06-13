@@ -68,6 +68,7 @@ import {
   isValidInterventionId,
 } from '../constants/interventionCatalog.js';
 import chatInterventionGraphService from '../services/chatInterventionGraphService.js';
+import { isTopicFreeEmbeddingsEnabled } from '../services/topicFreeEmbeddingService.js';
 import { buildChatTccContinuity } from '../services/chatTccContinuityService.js';
 import {
   planChatTurnEnhancements,
@@ -441,7 +442,35 @@ router.get('/interventions/graph', protect, requireActiveSubscription(true), asy
       since,
       limit,
     });
+    const topicFreeLimit = Math.max(1, Math.min(80, Math.floor(limit * 0.75) || 30));
+    const topicFreeRaw = await chatInterventionGraphService.aggregateTopicFreeGraph({
+      userId: req.user._id,
+      since,
+      limit: topicFreeLimit,
+    });
     const language = req.appLanguage || resolveRequestLanguage(req);
+
+    const mapEdge = (e, includeTopicFree = false) => {
+      const interventionId = String(e?._id?.interventionId || '').slice(0, 80);
+      const entry = getInterventionCatalogEntry(interventionId);
+      return {
+        topicTag: String(
+          includeTopicFree ? e?.topicTag || 'general' : e?._id?.topicTag || 'general',
+        ).slice(0, 64),
+        ...(includeTopicFree
+          ? { topicFree: String(e?._id?.topicFree || '').slice(0, 128) }
+          : {}),
+        interventionId,
+        interventionLabel: getInterventionCatalogLabel(entry, language) || interventionId,
+        shown: e.shown || 0,
+        clicked: e.clicked || 0,
+        dismissed: e.dismissed || 0,
+        completed: e.completed || 0,
+        ctr: typeof e.ctr === 'number' ? e.ctr : 0,
+        completionRate: typeof e.completionRate === 'number' ? e.completionRate : 0,
+        lastAt: e.lastAt,
+      };
+    };
 
     res.json({
       success: true,
@@ -449,23 +478,11 @@ router.get('/interventions/graph', protect, requireActiveSubscription(true), asy
       windowDays: days,
       since: since.toISOString(),
       count: edges.length,
+      topicFreeCount: topicFreeRaw.length,
+      embeddingsEnabled: isTopicFreeEmbeddingsEnabled(),
       language,
-      edges: edges.map((e) => {
-        const interventionId = String(e?._id?.interventionId || '').slice(0, 80);
-        const entry = getInterventionCatalogEntry(interventionId);
-        return {
-          topicTag: String(e?._id?.topicTag || 'general').slice(0, 64),
-          interventionId,
-          interventionLabel: getInterventionCatalogLabel(entry, language) || interventionId,
-          shown: e.shown || 0,
-          clicked: e.clicked || 0,
-          dismissed: e.dismissed || 0,
-          completed: e.completed || 0,
-          ctr: typeof e.ctr === 'number' ? e.ctr : 0,
-          completionRate: typeof e.completionRate === 'number' ? e.completionRate : 0,
-          lastAt: e.lastAt,
-        };
-      }),
+      edges: edges.map((e) => mapEdge(e, false)),
+      topicFreeEdges: topicFreeRaw.map((e) => mapEdge(e, true)),
     });
   } catch (error) {
     console.error('[ChatRoutes] GET /interventions/graph:', error);

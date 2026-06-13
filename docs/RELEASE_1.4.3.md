@@ -2,38 +2,39 @@
 
 ## Resumen
 
-Cierre de la oleada prometida (~98%): marco TCC lite in-chat, continuidad con protocolos, psicoeducación ampliada, ranking de sugerencias, biblioteca de micro-guías y pulido BA.
+Oleada 1.4.3 **completa en `main`**: marco TCC lite inline, continuidad, psicoeducación, ranking semántico topicFree, grafo visual fase 2 y micro-guías timeline.
 
 ## Incluye
 
-- **TCC lite (#201):** 4 pasos en el hilo, strip de progreso, estado en conversación, handoff a registro AT con borrador, resume desde session insight.
+- **TCC lite (#201):** 4 pasos en el hilo, progreso inline en burbuja, handoff AT al completar, resume desde session insight.
 - **Continuidad:** franja BA / exposición / AT / ABC; telemetría `shown` en grafo #127.
-- **Psicoed (#85):** 9 temas (duelo, burnout); tarjetas con micro-pasos en chat (#78); sello clínico #111 en biblioteca, módulos y chat.
-- **Sugerencias (#127):** ranking histórico visible; boost `topicFree` híbrido léxico + embeddings OpenAI (#218 fase 3, requiere `TOPIC_FREE_EMBEDDINGS_ENABLED=true`).
-- **Grafo visual (#218):** mapa bipartito tema→intervención (SVG), toggle lista accesible, entrada desde estadísticas de técnicas.
-- **BA (#88):** plan semanal, tendencia de ánimo, sync tarea/hábito ↔ slot, refresh al volver a la pantalla.
-- **Micro-guías (#90–#99):** 19 guías in-app, API, biblioteca en Técnicas, tarjetas en chat y pantalla `MicroGuide`.
-- **Session insight:** duración acotada a ventana activa (fix minutos inflados).
-- **Transporte chat:** HTTP/SSE alineado con `chatTurnEnhancementsService` (paridad socket).
+- **Psicoed (#85):** 9 temas (duelo, burnout); tarjetas chat (#78); sello clínico #111.
+- **Sugerencias (#127):** ranking histórico + boost topicFree híbrido (léxico + embeddings OpenAI).
+- **Embeddings topicFree:** activos en prod/Render por defecto si hay `OPENAI_API_KEY` (opt-out: `TOPIC_FREE_EMBEDDINGS_ENABLED=false`). Backfill: `npm run backfill:topic-free-embeddings`.
+- **Grafo visual (#218 fase 1+2):** tema→intervención + **nodos topicFree** (mensajes del chat → técnica), líneas punteadas, toggle lista.
+- **BA (#88):** plan semanal, ánimo, sync tarea/hábito, refresh al volver.
+- **Micro-guías (#90–#99):** 19 guías, biblioteca, pantalla timeline única.
+- **Session insight:** duración ventana activa (fix minutos inflados).
+- **Transporte chat:** HTTP/SSE alineado con `chatTurnEnhancementsService`.
 
 ## QA en dispositivo (checklist)
 
-1. Chat con distorsión detectada → strip TCC lite y avance de pasos.
-2. Cerrar chat y reabrir → strip TCC lite restaurado.
-3. Completar marco → CTA «Registrar pensamiento automático» crea borrador.
-4. Session insight con patrón → «Explorar en el chat» retoma TCC.
-5. Usuario con plan BA / exposición → franja de continuidad en chat.
-6. BA: completar tarea vinculada desde Tareas → slot marcado al volver al plan.
-7. Mensaje de duelo o agotamiento → sugerencia psicoed grief/burnout.
-8. Sugerencias con historial → subtítulo «ordenadas según tu historial».
-9. Sugerencia micro-guía (p. ej. ansiedad → STOP) → tarjeta «Micro-guía» → wizard por pasos.
-10. Error de red al enviar con resume TCC desde insight → al reintentar, el resume sigue disponible.
-11. Técnicas → «Micro-guías» → biblioteca con 19 guías → abrir una guía → sello editorial.
-12. BA: volver desde Tareas/Hábitos → plan semanal y registros actualizados sin salir de BA.
-13. Estadísticas de técnicas → «Tu mapa de temas e intervenciones» → mapa visual con líneas por fuerza.
+1. Chat con distorsión → pie de progreso TCC **inline** en burbuja de Anto.
+2. Cerrar chat y reabrir → último mensaje con `metadata.tccLite` muestra el paso correcto.
+3. Completar marco → franja compacta «¿Lo registramos en el pensamiento automático?».
+4. Session insight → «Explorar en el chat» retoma TCC.
+5. Usuario con BA / exposición → franja continuidad en chat.
+6. BA: tarea vinculada completada → slot marcado al volver.
+7. Duelo o agotamiento → psicoed grief/burnout.
+8. Sugerencias con historial → «ordenadas según tu historial».
+9. Micro-guía en chat → biblioteca → pantalla **timeline** (no wizard).
+10. Error de red con resume TCC → reintento conserva payload.
+11. Biblioteca 19 micro-guías + sello editorial.
+12. BA: volver desde Tareas/Hábitos → plan actualizado.
+13. Estadísticas → mapa visual; si hay mensajes en chat, **nodos topicFree** y líneas punteadas.
 
-## Pendiente post-1.4.3 (~2%)
+## Pendiente post-1.4.3
 
-- Merge a `main` y deploy Render.
-- Grafo #218 fase 2: topicFree como nodos, correlación multimodal (#217).
-- Backfill masivo de embeddings históricos y vector index (#126 / Atlas).
+- Deploy Render + build tiendas 1.4.3.
+- Backfill inicial en prod: `TOPIC_FREE_EMBEDDINGS_ENABLED=true npm run backfill:topic-free-embeddings -- --limit=1000`.
+- Grafo #218 fase 3: topicFree como nodos en Atlas vector index (#126), correlación multimodal (#217).

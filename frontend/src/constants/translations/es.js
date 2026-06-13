@@ -1849,6 +1849,10 @@ export const TECHNIQUES = {
   INTERVENTION_GRAPH_VIEW_LIST: 'Lista',
   INTERVENTION_GRAPH_LEGEND:
     'Grosor de la línea ≈ frecuencia y completación. Toca una conexión para ver detalle.',
+  INTERVENTION_GRAPH_LEGEND_TOPIC_FREE:
+    'Líneas punteadas: lo que escribiste en el chat → técnica que usaste. Grosor ≈ frecuencia.',
+  INTERVENTION_GRAPH_TOPIC_FREE_SECTION: 'Tus mensajes en el chat',
+  INTERVENTION_GRAPH_EMBEDDINGS_ON: 'Ranking semántico activo (embeddings topicFree).',
   INTERVENTION_GRAPH_LIST_A11Y: 'Detalle de conexiones del grafo',
   INTERVENTION_GRAPH_MAP_A11Y: 'Mapa de conexiones entre temas e intervenciones',
   PSYCHOED_LOADING: 'Cargando módulos…',

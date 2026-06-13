@@ -6,13 +6,14 @@ import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Line, Text as SvgText } from 'react-native-svg';
 import { useTheme } from '../../context/ThemeContext';
 import {
-  buildInterventionGraphModel,
+  buildInterventionGraphViewModel,
   localizeGraphModel,
   normalizeStrokeWidth,
 } from '../../utils/interventionGraphLayout';
 
 export default function InterventionGraphVisual({
   edges,
+  topicFreeEdges = [],
   language = 'es',
   width = 340,
   selectedKey = null,
@@ -23,9 +24,12 @@ export default function InterventionGraphVisual({
   const { colors, resolvedScheme } = useTheme();
 
   const model = useMemo(() => {
-    const base = buildInterventionGraphModel(edges, { canvasWidth: width });
-    return localizeGraphModel(base, language);
-  }, [edges, language, width]);
+    const base = buildInterventionGraphViewModel(edges, topicFreeEdges, { canvasWidth: width });
+    if (base.mode === 'topicTag') {
+      return localizeGraphModel(base, language);
+    }
+    return base;
+  }, [edges, topicFreeEdges, language, width]);
 
   const styles = useMemo(
     () =>
@@ -68,6 +72,7 @@ export default function InterventionGraphVisual({
           {model.links.map((link) => {
             const isSelected = selectedKey === link.key;
             const strokeW = normalizeStrokeWidth(link.weight, model.maxWeight);
+            const isTopicFreeLink = link.linkKind === 'topicFree';
             return (
               <Line
                 key={link.key}
@@ -77,7 +82,8 @@ export default function InterventionGraphVisual({
                 y2={link.y2}
                 stroke={isSelected ? edgeHighlight : edgeColor}
                 strokeWidth={isSelected ? strokeW + 1 : strokeW}
-                strokeOpacity={isSelected ? 0.95 : 0.7}
+                strokeOpacity={isSelected ? 0.95 : isTopicFreeLink ? 0.85 : 0.7}
+                strokeDasharray={isTopicFreeLink ? '4 3' : undefined}
                 onPress={() => onSelectLink?.(link)}
               />
             );
@@ -99,6 +105,28 @@ export default function InterventionGraphVisual({
                 fontWeight="600"
                 fill={colors.text}
                 textAnchor="end"
+              >
+                {node.label}
+              </SvgText>
+            </React.Fragment>
+          ))}
+          {(model.topicFreeNodes || []).map((node) => (
+            <React.Fragment key={`tf-${node.id}`}>
+              <Circle
+                cx={node.x}
+                cy={node.y}
+                r={6}
+                fill={nodeFill}
+                stroke={nodeStroke}
+                strokeWidth={1.5}
+              />
+              <SvgText
+                x={node.x}
+                y={node.y - 10}
+                fontSize={10}
+                fontWeight="500"
+                fill={colors.textSecondary}
+                textAnchor="middle"
               >
                 {node.label}
               </SvgText>

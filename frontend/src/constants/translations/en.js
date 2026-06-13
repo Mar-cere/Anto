@@ -1843,6 +1843,10 @@ export const TECHNIQUES = {
   INTERVENTION_GRAPH_VIEW_LIST: 'List',
   INTERVENTION_GRAPH_LEGEND:
     'Line thickness ≈ frequency and completion. Tap a connection for details.',
+  INTERVENTION_GRAPH_LEGEND_TOPIC_FREE:
+    'Dashed lines: what you wrote in chat → technique you used. Thickness ≈ frequency.',
+  INTERVENTION_GRAPH_TOPIC_FREE_SECTION: 'Your chat messages',
+  INTERVENTION_GRAPH_EMBEDDINGS_ON: 'Semantic ranking active (topicFree embeddings).',
   INTERVENTION_GRAPH_LIST_A11Y: 'Graph connection details',
   INTERVENTION_GRAPH_MAP_A11Y: 'Topics and interventions connection map',
   PSYCHOED_LOADING: 'Loading modules…',

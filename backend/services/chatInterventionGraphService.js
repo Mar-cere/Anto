@@ -204,6 +204,70 @@ async function aggregateInterventionGraph({ userId, since, limit }) {
   return ChatInterventionEvent.aggregate(pipeline);
 }
 
+/**
+ * Grafo fase 2 (#218): agrega por snippet topicFree → intervención (sesión lógica).
+ */
+export function buildTopicFreeGraphPipeline({ userId, since, limit = 40 }) {
+  const uid = toObjectId(userId);
+  return [
+    {
+      $match: {
+        userId: uid,
+        createdAt: { $gte: since },
+        topicFree: { $type: 'string', $nin: [null, ''] },
+        interventionId: { $type: 'string' },
+        sessionId: { $type: 'string' },
+      },
+    },
+    {
+      $group: {
+        _id: {
+          sessionId: '$sessionId',
+          topicFree: '$topicFree',
+          interventionId: '$interventionId',
+        },
+        topicTag: { $first: '$topicTag' },
+        shown: { $max: { $cond: [{ $eq: ['$eventType', 'shown'] }, 1, 0] } },
+        clicked: { $max: { $cond: [{ $eq: ['$eventType', 'clicked'] }, 1, 0] } },
+        dismissed: { $max: { $cond: [{ $eq: ['$eventType', 'dismissed'] }, 1, 0] } },
+        completed: { $max: { $cond: [{ $eq: ['$eventType', 'completed'] }, 1, 0] } },
+        lastAt: { $max: '$createdAt' },
+      },
+    },
+    {
+      $group: {
+        _id: { topicFree: '$_id.topicFree', interventionId: '$_id.interventionId' },
+        topicTag: { $first: '$topicTag' },
+        shown: { $sum: '$shown' },
+        clicked: { $sum: '$clicked' },
+        dismissed: { $sum: '$dismissed' },
+        completed: { $sum: '$completed' },
+        lastAt: { $max: '$lastAt' },
+      },
+    },
+    {
+      $addFields: {
+        ctr: {
+          $cond: [{ $gt: ['$shown', 0] }, { $divide: ['$clicked', '$shown'] }, 0],
+        },
+        completionRate: {
+          $cond: [{ $gt: ['$clicked', 0] }, { $divide: ['$completed', '$clicked'] }, 0],
+        },
+      },
+    },
+    { $sort: { shown: -1, clicked: -1, completed: -1 } },
+    { $limit: Math.max(1, Math.min(limit, 120)) },
+  ];
+}
+
+async function aggregateTopicFreeGraph({ userId, since, limit = 40 }) {
+  if (!userId || !(since instanceof Date) || Number.isNaN(since.getTime())) {
+    return [];
+  }
+  const pipeline = buildTopicFreeGraphPipeline({ userId, since, limit });
+  return ChatInterventionEvent.aggregate(pipeline);
+}
+
 async function findTopicFreeAffinityEvents({ userId, since, limit = 100 }) {
   if (!userId || !(since instanceof Date) || Number.isNaN(since.getTime())) {
     return [];
@@ -336,7 +400,9 @@ export default {
   recordInterventionEvent,
   hasShownSuggestionsInActiveSession,
   aggregateInterventionGraph,
+  aggregateTopicFreeGraph,
   findTopicFreeAffinityEvents,
   buildSessionAggregatedGraphPipeline,
+  buildTopicFreeGraphPipeline,
 };
 

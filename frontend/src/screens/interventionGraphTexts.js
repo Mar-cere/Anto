@@ -14,6 +14,10 @@ const DEFAULTS = {
   VIEW_GRAPH: 'Mapa visual',
   VIEW_LIST: 'Lista',
   LEGEND: 'Grosor de la línea ≈ frecuencia y completación. Toca una conexión para ver detalle.',
+  LEGEND_TOPIC_FREE:
+    'Líneas punteadas: lo que escribiste en el chat → técnica que usaste. Grosor ≈ frecuencia.',
+  TOPIC_FREE_SECTION: 'Tus mensajes en el chat',
+  EMBEDDINGS_ON: 'Ranking semántico activo (embeddings topicFree).',
   LIST_A11Y: 'Detalle de conexiones del grafo',
   MAP_A11Y: 'Mapa de conexiones entre temas e intervenciones',
 };
@@ -31,6 +35,9 @@ const KEY_MAP = {
   VIEW_GRAPH: 'INTERVENTION_GRAPH_VIEW_GRAPH',
   VIEW_LIST: 'INTERVENTION_GRAPH_VIEW_LIST',
   LEGEND: 'INTERVENTION_GRAPH_LEGEND',
+  LEGEND_TOPIC_FREE: 'INTERVENTION_GRAPH_LEGEND_TOPIC_FREE',
+  TOPIC_FREE_SECTION: 'INTERVENTION_GRAPH_TOPIC_FREE_SECTION',
+  EMBEDDINGS_ON: 'INTERVENTION_GRAPH_EMBEDDINGS_ON',
   LIST_A11Y: 'INTERVENTION_GRAPH_LIST_A11Y',
   MAP_A11Y: 'INTERVENTION_GRAPH_MAP_A11Y',
 };

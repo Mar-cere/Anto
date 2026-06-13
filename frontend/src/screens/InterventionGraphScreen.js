@@ -24,7 +24,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import chatService from '../services/chatService';
 import {
-  buildInterventionGraphModel,
+  buildInterventionGraphViewModel,
   formatTopicTagLabel,
 } from '../utils/interventionGraphLayout';
 import {
@@ -47,6 +47,8 @@ const InterventionGraphScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [edges, setEdges] = useState([]);
+  const [topicFreeEdges, setTopicFreeEdges] = useState([]);
+  const [embeddingsEnabled, setEmbeddingsEnabled] = useState(false);
   const [windowDays, setWindowDays] = useState(30);
   const [viewMode, setViewMode] = useState('graph');
   const [selectedKey, setSelectedKey] = useState(null);
@@ -58,14 +60,19 @@ const InterventionGraphScreen = ({ navigation }) => {
   );
 
   const hasVisualGraph = useMemo(() => {
-    if (!edges.length) return false;
-    return buildInterventionGraphModel(edges, { canvasWidth: graphWidth }).links.length > 0;
-  }, [edges, graphWidth]);
+    if (!edges.length && !topicFreeEdges.length) return false;
+    return buildInterventionGraphViewModel(edges, topicFreeEdges, { canvasWidth: graphWidth }).links
+      .length > 0;
+  }, [edges, topicFreeEdges, graphWidth]);
 
-  const selectedEdge = useMemo(
-    () => edges.find((e) => `${e.topicTag}:${e.interventionId}` === selectedKey) || null,
-    [edges, selectedKey],
-  );
+  const selectedEdge = useMemo(() => {
+    if (!selectedKey) return null;
+    const fromTopicFree = topicFreeEdges.find(
+      (e) => `tf:${e.topicFree}:${e.interventionId}` === selectedKey,
+    );
+    if (fromTopicFree) return fromTopicFree;
+    return edges.find((e) => `${e.topicTag}:${e.interventionId}` === selectedKey) || null;
+  }, [edges, topicFreeEdges, selectedKey]);
 
   const styles = useMemo(
     () =>
@@ -143,10 +150,13 @@ const InterventionGraphScreen = ({ navigation }) => {
       const data = res?.data ?? res;
       setWindowDays(data?.windowDays ?? 30);
       setEdges(Array.isArray(data?.edges) ? data.edges : []);
+      setTopicFreeEdges(Array.isArray(data?.topicFreeEdges) ? data.topicFreeEdges : []);
+      setEmbeddingsEnabled(data?.embeddingsEnabled === true);
       setSelectedKey(null);
     } catch {
       setError(TEXTS.ERROR);
       setEdges([]);
+      setTopicFreeEdges([]);
     } finally {
       setLoading(false);
     }
@@ -158,10 +168,14 @@ const InterventionGraphScreen = ({ navigation }) => {
     }, [load]),
   );
 
-  const renderEdgeRow = (edge) => {
-    const key = `${edge.topicTag}:${edge.interventionId}`;
+  const renderEdgeRow = (edge, { topicFree = false } = {}) => {
+    const key = topicFree
+      ? `tf:${edge.topicFree}:${edge.interventionId}`
+      : `${edge.topicTag}:${edge.interventionId}`;
     const label = edge.interventionLabel || edge.interventionId;
-    const topicLabel = formatTopicTagLabel(edge.topicTag, language);
+    const topicLabel = topicFree
+      ? `"${String(edge.topicFree || '').slice(0, 48)}${String(edge.topicFree || '').length > 48 ? '…' : ''}"`
+      : formatTopicTagLabel(edge.topicTag, language);
     const isSelected = selectedKey === key;
     return (
       <TouchableOpacity
@@ -192,6 +206,9 @@ const InterventionGraphScreen = ({ navigation }) => {
         }
       >
         <Text style={styles.meta}>{formatGraphMeta(TEXTS, windowDays)}</Text>
+        {embeddingsEnabled ? (
+          <Text style={[styles.legend, { marginTop: -8 }]}>{TEXTS.EMBEDDINGS_ON}</Text>
+        ) : null}
 
         <View style={styles.toggleRow}>
           <TouchableOpacity
@@ -231,15 +248,18 @@ const InterventionGraphScreen = ({ navigation }) => {
           </View>
         ) : null}
 
-        {!loading && !error && edges.length === 0 ? (
+        {!loading && !error && edges.length === 0 && topicFreeEdges.length === 0 ? (
           <Text style={styles.meta}>{TEXTS.EMPTY}</Text>
         ) : null}
 
-        {!error && edges.length > 0 && viewMode === 'graph' && hasVisualGraph ? (
+        {!error && (edges.length > 0 || topicFreeEdges.length > 0) && viewMode === 'graph' && hasVisualGraph ? (
           <>
-            <Text style={styles.legend}>{TEXTS.LEGEND}</Text>
+            <Text style={styles.legend}>
+              {topicFreeEdges.length > 0 ? TEXTS.LEGEND_TOPIC_FREE : TEXTS.LEGEND}
+            </Text>
             <InterventionGraphVisual
               edges={edges}
+              topicFreeEdges={topicFreeEdges}
               language={language}
               width={graphWidth}
               selectedKey={selectedKey}
@@ -251,7 +271,9 @@ const InterventionGraphScreen = ({ navigation }) => {
             {selectedEdge ? (
               <View style={styles.detail}>
                 <Text style={styles.detailTitle}>
-                  {formatTopicTagLabel(selectedEdge.topicTag, language)} →{' '}
+                  {selectedEdge.topicFree
+                    ? `"${String(selectedEdge.topicFree).slice(0, 64)}" → `
+                    : `${formatTopicTagLabel(selectedEdge.topicTag, language)} → `}
                   {selectedEdge.interventionLabel || selectedEdge.interventionId}
                 </Text>
                 <Text style={styles.rowSub}>{formatGraphMetrics(TEXTS, selectedEdge)}</Text>
@@ -261,11 +283,23 @@ const InterventionGraphScreen = ({ navigation }) => {
           </>
         ) : null}
 
-        {!error && edges.length > 0 && viewMode === 'list' ? edges.map(renderEdgeRow) : null}
+        {!error && (edges.length > 0 || topicFreeEdges.length > 0) && viewMode === 'list' ? (
+          <>
+            {topicFreeEdges.length > 0 ? (
+              <>
+                <Text style={styles.legend}>{TEXTS.TOPIC_FREE_SECTION}</Text>
+                {topicFreeEdges.map((edge) => renderEdgeRow(edge, { topicFree: true }))}
+              </>
+            ) : null}
+            {edges.length > 0 ? edges.map((edge) => renderEdgeRow(edge)) : null}
+          </>
+        ) : null}
 
-        {!error && edges.length > 0 && viewMode === 'graph' ? (
+        {!error && (edges.length > 0 || topicFreeEdges.length > 0) && viewMode === 'graph' ? (
           <View accessibilityRole="list" accessibilityLabel={TEXTS.LIST_A11Y}>
-            {(hasVisualGraph ? edges.slice(0, 8) : edges).map(renderEdgeRow)}
+            {(topicFreeEdges.length > 0 ? topicFreeEdges.slice(0, 6) : hasVisualGraph ? edges.slice(0, 8) : edges).map(
+              (edge) => renderEdgeRow(edge, { topicFree: topicFreeEdges.length > 0 }),
+            )}
           </View>
         ) : null}
       </ScrollView>

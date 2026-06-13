@@ -33,17 +33,25 @@ describe('topicFreeEmbeddingService', () => {
     process.env = prevEnv;
   });
 
-  it('isTopicFreeEmbeddingsEnabled exige opt-in explícito', () => {
+  it('isTopicFreeEmbeddingsEnabled respeta opt-out y activa en prod/Render', () => {
     process.env.TOPIC_FREE_EMBEDDINGS_ENABLED = 'false';
     expect(isTopicFreeEmbeddingsEnabled()).toBe(false);
 
     delete process.env.TOPIC_FREE_EMBEDDINGS_ENABLED;
+    process.env.NODE_ENV = 'test';
+    process.env.RENDER = undefined;
     expect(isTopicFreeEmbeddingsEnabled()).toBe(false);
 
     process.env.NODE_ENV = 'production';
+    expect(isTopicFreeEmbeddingsEnabled()).toBe(true);
+
+    process.env.NODE_ENV = 'test';
+    process.env.RENDER = 'true';
+    expect(isTopicFreeEmbeddingsEnabled()).toBe(true);
+
+    process.env.RENDER = undefined;
     process.env.TOPIC_FREE_EMBEDDINGS_ENABLED = 'true';
     expect(isTopicFreeEmbeddingsEnabled()).toBe(true);
-    process.env.NODE_ENV = 'test';
   });
 
   it('getTopicFreeEmbeddingMinSimilarity usa default con valor inválido', () => {
