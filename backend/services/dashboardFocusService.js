@@ -23,6 +23,9 @@ import {
   localizeLastSessionSummaryForDisplay,
   normalizeFocusLanguage
 } from '../utils/focusDashboardCopy.js';
+import { findWeekPlanForUser } from './behavioralActivationWeekPlanService.js';
+import { loadExposureFocus } from './chatTccContinuityService.js';
+import { pickBaFocusSlot } from './activeTccProtocolsContextService.js';
 
 function cacheTtlSecondsUntilUtcEndOfDay() {
   const now = Date.now();
@@ -145,6 +148,23 @@ async function loadNextHabitReminder(userId) {
     }
   }
   return best;
+}
+
+async function loadBaWeekFocus(userId, language = 'es') {
+  try {
+    const weekCtx = await findWeekPlanForUser(userId, null, language);
+    if (!weekCtx) return null;
+    const picked = pickBaFocusSlot({
+      plan: weekCtx.plan,
+      weekStart: weekCtx.weekStart,
+      dayLabels: weekCtx.dayLabels,
+      now: new Date()
+    });
+    if (!picked?.slotId || !String(picked.activityDescription || '').trim()) return null;
+    return { ...picked, weekStart: weekCtx.weekStart };
+  } catch {
+    return null;
+  }
 }
 
 async function loadTherapeuticProtocolHint(userId, language = 'es') {
@@ -445,7 +465,9 @@ export async function buildDashboardFocus(userId, opts = {}) {
     habitReminder,
     protocolNext,
     userFocusPrefs,
-    lastSessionSummaryRaw
+    lastSessionSummaryRaw,
+    baWeekFocus,
+    exposureFocus
   ] = await Promise.all([
     buildUserSummary(userId, { period: 'week', language }),
     loadUpcomingTasks(userId, 5),
@@ -455,7 +477,9 @@ export async function buildDashboardFocus(userId, opts = {}) {
     loadNextHabitReminder(userId),
     loadTherapeuticProtocolHint(userId, language),
     loadUserNotificationPrefs(userId),
-    getLastSessionSummaryForUser(userId)
+    getLastSessionSummaryForUser(userId),
+    loadBaWeekFocus(userId, language),
+    loadExposureFocus(userId)
   ]);
 
   const notificationPreferences = userFocusPrefs?.notificationPreferences || null;
@@ -532,6 +556,29 @@ export async function buildDashboardFocus(userId, opts = {}) {
       line: protocolNext.line,
       source: protocolNext.source
     },
+    baWeekNext: baWeekFocus
+      ? {
+          slotId: baWeekFocus.slotId,
+          activityDescription: baWeekFocus.activityDescription,
+          dayLabel: baWeekFocus.dayLabel,
+          dayOffset: baWeekFocus.dayOffset,
+          isToday: baWeekFocus.isToday,
+          isTomorrow: baWeekFocus.isTomorrow,
+          isOverdue: baWeekFocus.isOverdue,
+          pendingCount: baWeekFocus.pendingCount,
+          weekStart: baWeekFocus.weekStart
+        }
+      : null,
+    exposureNext: exposureFocus
+      ? {
+          planId: exposureFocus.planId,
+          planTitle: exposureFocus.planTitle,
+          stepDescription: exposureFocus.stepDescription,
+          stepIndex: exposureFocus.stepIndex,
+          stepTotal: exposureFocus.stepTotal,
+          attemptCount: exposureFocus.attemptCount
+        }
+      : null,
     week: {
       label: summary?.period?.label,
       start: summary?.period?.start,

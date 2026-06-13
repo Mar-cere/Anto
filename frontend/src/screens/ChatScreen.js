@@ -29,6 +29,8 @@ import ChatHeader from '../components/chat/ChatHeader';
 import ChatInput from '../components/chat/ChatInput';
 import ChatMessageItem from '../components/chat/ChatMessageItem';
 import SessionIntentionBanner from '../components/chat/SessionIntentionBanner';
+import TccContinuityStrip from '../components/chat/TccContinuityStrip';
+import TccLiteAtHandoffStrip from '../components/chat/TccLiteAtHandoffStrip';
 import ChatTypingIndicator from '../components/chat/ChatTypingIndicator';
 import ChatOptionsSheet from '../components/chat/ChatOptionsSheet';
 import ClearConversationModal from '../components/chat/ClearConversationModal';
@@ -41,8 +43,10 @@ import { useTheme } from '../context/ThemeContext';
 import { useChatScreen } from '../hooks/useChatScreen';
 import {
   recordInterventionClicked,
+  recordInterventionCompletedIfInlineSuggestion,
   recordInterventionDismissed,
 } from '../utils/recordInterventionCompleted';
+import { topicFromInterventionId } from '../utils/psychoeducationTopic';
 import { getFeedbackTargetMessageId } from './chat/chatFeedbackAnchor';
 import { SPACING } from '../constants/ui';
 import {
@@ -302,11 +306,19 @@ const ChatScreen = () => {
     sessionIntentionSubmitting,
     selectSessionIntention,
     skipSessionIntention,
+    visibleTccContinuityItems,
+    handleOpenTccContinuityItem,
+    handleDismissTccContinuityItem,
+    tccLiteAtHandoff,
+    handleOpenTccLiteAtHandoff,
+    handleDismissTccLiteAtHandoff,
   } = useChatScreen();
   const feedbackTargetId = useMemo(
     () => getFeedbackTargetMessageId(messages, chatFeedbackEnabled),
     [messages, chatFeedbackEnabled]
   );
+  const hasTccContinuity = visibleTccContinuityItems.length > 0;
+  const showTccLiteHandoff = Boolean(tccLiteAtHandoff?.screen) && !hasTccContinuity;
   const [showAIDisclosure, setShowAIDisclosure] = React.useState(false);
   const [showChatOptions, setShowChatOptions] = React.useState(false);
 
@@ -369,11 +381,31 @@ const ChatScreen = () => {
     (suggestion) => {
       if (!suggestion?.id) return;
       recordInterventionClicked(suggestion.id);
-      if (suggestion?.screen) {
+      const targetScreen =
+        suggestion.screen ||
+        (suggestion.interventionType === 'micro_guide' ||
+        suggestion.cardVariant === 'micro_guide_native'
+          ? 'MicroGuide'
+          : suggestion.interventionType === 'psychoeducation' ||
+              String(suggestion.id || '').startsWith('psychoeducation_')
+            ? 'PsychoeducationModule'
+            : null);
+      if (targetScreen) {
         try {
+          let params = suggestion?.params || undefined;
+          if (targetScreen === 'MicroGuide') {
+            params = {
+              guideId: suggestion?.params?.guideId || suggestion?.id,
+              ...(suggestion?.params || {}),
+            };
+          } else if (targetScreen === 'PsychoeducationModule') {
+            const topic =
+              suggestion?.params?.topic || topicFromInterventionId(suggestion?.id);
+            params = { ...(suggestion?.params || {}), ...(topic ? { topic } : {}) };
+          }
           navigation.navigate({
-            name: suggestion.screen,
-            params: suggestion?.params || undefined,
+            name: targetScreen,
+            params,
             merge: false,
           });
         } catch (err) {
@@ -382,6 +414,7 @@ const ChatScreen = () => {
         }
       } else {
         setInputText(`${TEXTS.SUGGESTION_TRY_PREFIX}${suggestion?.label || ''}`);
+        recordInterventionCompletedIfInlineSuggestion(suggestion);
       }
     },
     [navigation, setInputText, TEXTS.NAVIGATION_ERROR_WARN, TEXTS.SUGGESTION_TRY_PREFIX]
@@ -573,10 +606,22 @@ const ChatScreen = () => {
       </Animated.View>
 
       <SessionIntentionBanner
-        visible={showSessionIntentionPrompt && guestQuota === null}
+        visible={showSessionIntentionPrompt && guestQuota === null && !isLoading}
         submitting={sessionIntentionSubmitting}
         onSelect={selectSessionIntention}
         onSkip={skipSessionIntention}
+      />
+
+      <TccLiteAtHandoffStrip
+        atHandoff={showTccLiteHandoff ? tccLiteAtHandoff : null}
+        onOpen={handleOpenTccLiteAtHandoff}
+        onDismiss={handleDismissTccLiteAtHandoff}
+      />
+
+      <TccContinuityStrip
+        items={visibleTccContinuityItems}
+        onOpen={handleOpenTccContinuityItem}
+        onDismiss={handleDismissTccContinuityItem}
       />
 
       <ChatInput

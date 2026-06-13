@@ -60,7 +60,7 @@ describe('greetings', () => {
     });
 
     it('debe incluir día de la semana', () => {
-      const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+      const days = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
       
       days.forEach((day, index) => {
         const greeting = getGreetingByHourAndDayAndName({ 

@@ -44,9 +44,15 @@ describe('chatExposureSuggestions (#87)', () => {
     expect(shouldBoostExposureSuggestion('Estoy tranquilo hoy.')).toBe(false);
   });
 
-  it('shouldBypassTccSuggestionCadence con evitación en 6/10', () => {
+  it('shouldBypassTccSuggestionCadence con evitación en 6/10 solo en 1.er turno', () => {
     expect(shouldBypassTccSuggestionCadence(CANONICAL_AVOIDANCE)).toBe(true);
     expect(shouldBypassTccSuggestionCadence('Me siento bien hoy.')).toBe(false);
+    expect(
+      shouldBypassTccSuggestionCadence(CANONICAL_AVOIDANCE, [
+        { role: 'user', content: 'hola' },
+        { role: 'user', content: 'otro' },
+      ]),
+    ).toBe(false);
   });
 
   it('applyExposureSuggestionPolicy prioriza exposure en ansiedad media contextual', () => {

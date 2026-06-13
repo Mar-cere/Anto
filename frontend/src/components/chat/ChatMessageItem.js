@@ -10,6 +10,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { hydrateInterventionSuggestion } from '../../utils/psychoeducationTopic';
 import PsychoeducationSuggestionCard from '../PsychoeducationSuggestionCard';
 import MarkdownText from '../MarkdownText';
+import TccLiteMessageFooter from './TccLiteMessageFooter';
 import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
 import {
@@ -147,10 +148,10 @@ const createStyles = (themeColors, c) =>
     paddingVertical: 13,
     paddingHorizontal: 14,
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(30, 131, 211, 0.28)',
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    shadowColor: themeColors.glassShadow,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: themeColors.border,
+    backgroundColor: themeColors.cardBackground ?? themeColors.chromeCard,
+    shadowColor: themeColors.glassShadow ?? themeColors.shadowAmbient,
     shadowOpacity: 0.2,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
@@ -164,66 +165,63 @@ const createStyles = (themeColors, c) =>
   },
   productProposalChip: {
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(30, 131, 211, 0.45)',
-    backgroundColor: 'rgba(30, 131, 211, 0.12)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: themeColors.accentLine ?? themeColors.border,
+    backgroundColor: themeColors.accentLineSoft,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   productProposalChipText: {
-    color: c.PRIMARY,
+    color: themeColors.primary,
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
   productProposalHint: {
-    color: c.ACCENT,
+    color: themeColors.textSecondary,
     fontSize: 11,
-    opacity: 0.88,
   },
   productProposalLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: c.BOT_TEXT,
+    color: themeColors.text,
     marginBottom: 6,
   },
   productProposalSub: {
     fontSize: 12.5,
-    color: c.ACCENT,
-    opacity: 0.92,
+    color: themeColors.textSecondary,
     marginBottom: 7,
   },
   productProposalTitle: {
     fontSize: 14,
     lineHeight: 19,
-    color: c.BOT_TEXT,
+    color: themeColors.text,
     fontStyle: 'italic',
     marginBottom: 2,
   },
   productProposalWhy: {
     fontSize: 11.5,
-    color: c.ACCENT,
-    opacity: 0.9,
+    color: themeColors.textSecondary,
     marginTop: 6,
     marginBottom: 8,
     borderLeftWidth: 2,
-    borderLeftColor: 'rgba(30, 131, 211, 0.35)',
+    borderLeftColor: themeColors.accentLine ?? themeColors.border,
     paddingLeft: 8,
     lineHeight: 16,
   },
   proposalDivider: {
-    height: 1,
-    backgroundColor: 'rgba(36, 35, 79, 0.08)',
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: themeColors.border,
     marginBottom: 8,
   },
   proposalEditInput: {
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: themeColors.border,
     borderRadius: 10,
     paddingHorizontal: 11,
     paddingVertical: 8,
-    color: c.BOT_TEXT,
+    color: themeColors.text,
     fontSize: 13,
     marginTop: 7,
     backgroundColor: themeColors.chromeInput,
@@ -237,28 +235,28 @@ const createStyles = (themeColors, c) =>
   proposalPrimaryBtn: {
     flex: 1,
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(30, 131, 211, 0.45)',
-    backgroundColor: 'rgba(30, 131, 211, 0.14)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: themeColors.accentLine ?? themeColors.border,
+    backgroundColor: themeColors.accentLineSoft,
     paddingVertical: 9,
     alignItems: 'center',
   },
   proposalPrimaryBtnText: {
-    color: c.PRIMARY,
+    color: themeColors.primary,
     fontSize: 12.5,
     fontWeight: '700',
   },
   proposalGhostBtn: {
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(36, 35, 79, 0.14)',
-    backgroundColor: 'rgba(36, 35, 79, 0.04)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: themeColors.border,
+    backgroundColor: themeColors.chromeListRow ?? themeColors.chromeInputDisabled,
     paddingVertical: 9,
     paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     alignItems: 'center',
   },
   proposalGhostBtnText: {
-    color: c.ACCENT,
+    color: themeColors.textSecondary,
     fontSize: 12.5,
     fontWeight: '600',
   },
@@ -267,12 +265,12 @@ const createStyles = (themeColors, c) =>
     paddingVertical: 10,
     paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(36, 35, 79, 0.1)',
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: themeColors.border,
+    backgroundColor: themeColors.cardBackground ?? themeColors.chromeCard,
   },
   statusCardText: {
-    color: c.ACCENT,
+    color: themeColors.textSecondary,
     fontSize: 12,
     lineHeight: 17,
   },
@@ -437,7 +435,7 @@ function ChatMessageItem({
             <TextInput
               style={styles.proposalEditInput}
               placeholder={TEXTS.PRODUCT_PROPOSAL_TITLE_PLACEHOLDER}
-              placeholderTextColor="rgba(92, 90, 120, 0.62)"
+              placeholderTextColor={colors.textMuted ?? colors.textSecondary}
               value={proposalDraftEdits[action.id]?.title ?? action.draft?.title ?? ''}
               onChangeText={(value) =>
                 setProposalDraftEdits((prev) => ({
@@ -452,7 +450,7 @@ function ChatMessageItem({
             <TextInput
               style={styles.proposalEditInput}
               placeholder={TEXTS.PRODUCT_PROPOSAL_WHEN_PLACEHOLDER}
-              placeholderTextColor="rgba(92, 90, 120, 0.62)"
+              placeholderTextColor={colors.textMuted ?? colors.textSecondary}
               value={proposalDraftEdits[action.id]?.when ?? ''}
               onChangeText={(value) =>
                 setProposalDraftEdits((prev) => ({
@@ -515,13 +513,24 @@ function ChatMessageItem({
   if (message.type === 'suggestions' && message.suggestions) {
     return (
       <View style={styles.suggestionsContainer}>
-        <Text style={styles.suggestionsTitle}>{TEXTS.SUGGESTIONS_TITLE}</Text>
+        <Text style={styles.suggestionsTitle}>
+          {message.metadata?.rankingPersonalized && TEXTS.SUGGESTIONS_PERSONALIZED_HINT
+            ? `${TEXTS.SUGGESTIONS_TITLE} · ${TEXTS.SUGGESTIONS_PERSONALIZED_HINT}`
+            : TEXTS.SUGGESTIONS_TITLE}
+        </Text>
         {message.suggestions.map((suggestion, index) => {
           const hydrated = hydrateInterventionSuggestion(suggestion, language);
           const isPsychoed =
             hydrated?.cardVariant === 'psychoeducation_native' ||
             hydrated?.interventionType === 'psychoeducation';
-          const Card = isPsychoed ? PsychoeducationSuggestionCard : ActionSuggestionCard;
+          const isMicroGuide =
+            hydrated?.cardVariant === 'micro_guide_native' ||
+            hydrated?.interventionType === 'micro_guide';
+          const Card = isPsychoed
+            ? PsychoeducationSuggestionCard
+            : isMicroGuide
+              ? PsychoeducationSuggestionCard
+              : ActionSuggestionCard;
           return (
             <Card
               key={hydrated.id || index}
@@ -560,6 +569,9 @@ function ChatMessageItem({
           {message.content}
         </MarkdownText>
       )}
+      {!isUser && message.metadata?.tccLite ? (
+        <TccLiteMessageFooter tccLite={message.metadata.tccLite} />
+      ) : null}
     </View>
   );
 

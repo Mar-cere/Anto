@@ -19,7 +19,7 @@ export const CHAT_EXPOSURE_SMOKE_CASES = [
     minIntensity: 8,
     expectExposure: true,
     expectExposureFirst: true,
-    expectRegulation: true,
+    expectRegulation: false,
   },
   {
     id: 'anxiety_high_no_avoidance',

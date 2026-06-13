@@ -16,6 +16,7 @@ import {
 } from '../utils/metricsProductActions.js';
 import { resolveRequestLanguage } from '../utils/apiLanguage.js';
 import { habitApiCopy } from '../utils/habitApiCopy.js';
+import { syncBaSlotFromProductCompletion } from '../services/behavioralActivationProductBridgeService.js';
 import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
 
 const router = express.Router();
@@ -765,6 +766,10 @@ router.patch('/:id/toggle', validateObjectId, patchHabitLimiter, async (req, res
     const streakBefore = habit.progress?.streak ?? 0;
     await habit.toggleComplete();
     const streakAfter = habit.progress?.streak ?? 0;
+
+    if (habit.status?.completedToday) {
+      syncBaSlotFromProductCompletion({ userId: req.user._id, habitId: habit._id }).catch(() => {});
+    }
 
     if (streakAfter > streakBefore) {
       await User.updateOne(

@@ -2,6 +2,8 @@ import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { isValidInterventionId } from '../constants/interventionCatalog.js';
 import ChatInterventionEvent from '../models/ChatInterventionEvent.js';
+import { persistTopicFreeEmbeddingsForDocs } from './topicFreeEmbeddingService.js';
+import { buildTopicFreeFromUserContent } from '../utils/interventionTopicFree.js';
 
 const DEFAULT_SESSION_GAP_MINUTES = 45;
 const DEFAULT_EVENT_DEDUPE_SECONDS = 8;
@@ -53,7 +55,9 @@ async function findRecentShownContext({ userId, conversationId, interventionId, 
     createdAt: { $gte: since },
   })
     .sort({ createdAt: -1 })
-    .select('sessionId topicTag topicFree riskLevel assistantMessageId interventionType createdAt')
+    .select(
+      '+topicFreeEmbedding sessionId topicTag topicFree riskLevel assistantMessageId interventionType createdAt',
+    )
     .lean();
 
   return lastShown || null;
@@ -81,6 +85,7 @@ async function recordSuggestionEventsShown({
   suggestions = [],
   emotionalAnalysis,
   contextualAnalysis,
+  userContent = null,
   riskLevel = null,
   source = 'chat_suggestions_v1',
 }) {
@@ -89,6 +94,7 @@ async function recordSuggestionEventsShown({
   const now = new Date();
   const sessionId = await resolveSessionId({ userId, conversationId, now });
   const topicTag = safeTopicTag(emotionalAnalysis, contextualAnalysis);
+  const topicFree = buildTopicFreeFromUserContent(userContent);
 
   const docs = suggestions
     .map((s) => {
@@ -102,7 +108,7 @@ async function recordSuggestionEventsShown({
         interventionId,
         interventionType: typeof s?.interventionType === 'string' ? s.interventionType : 'technique',
         topicTag,
-        topicFree: null,
+        topicFree,
         eventType: 'shown',
         source,
         riskLevel: riskLevel ? String(riskLevel) : null,
@@ -117,17 +123,20 @@ async function recordSuggestionEventsShown({
     .filter(Boolean);
 
   if (docs.length === 0) return;
-  await ChatInterventionEvent.insertMany(docs, { ordered: false });
+  const inserted = await ChatInterventionEvent.insertMany(docs, { ordered: false });
+  void persistTopicFreeEmbeddingsForDocs(inserted, { updateModel: ChatInterventionEvent }).catch(
+    () => {},
+  );
 }
 
 async function hasShownSuggestionsInActiveSession({ userId, conversationId, now = new Date() }) {
   if (!userId || !conversationId) return false;
-  const sessionId = await resolveSessionId({ userId, conversationId, now });
+  const since = new Date(now.getTime() - DEFAULT_SESSION_GAP_MINUTES * 60 * 1000);
   const existing = await ChatInterventionEvent.findOne({
-    userId,
-    conversationId,
-    sessionId: String(sessionId),
+    userId: toObjectId(userId),
+    conversationId: toObjectId(conversationId),
     eventType: 'shown',
+    createdAt: { $gte: since },
   })
     .select('_id')
     .lean();
@@ -195,6 +204,65 @@ async function aggregateInterventionGraph({ userId, since, limit }) {
   return ChatInterventionEvent.aggregate(pipeline);
 }
 
+async function findTopicFreeAffinityEvents({ userId, since, limit = 100 }) {
+  if (!userId || !(since instanceof Date) || Number.isNaN(since.getTime())) {
+    return [];
+  }
+  return ChatInterventionEvent.find({
+    userId: toObjectId(userId),
+    createdAt: { $gte: since },
+    topicFree: { $exists: true, $nin: [null, ''] },
+    eventType: { $in: ['clicked', 'completed'] },
+  })
+    .select('+topicFreeEmbedding interventionId topicFree eventType')
+    .sort({ createdAt: -1 })
+    .limit(Math.max(1, Math.min(limit, 200)))
+    .lean();
+}
+
+async function recordContinuityItemsShown({
+  userId,
+  conversationId,
+  items = [],
+  source = 'chat_continuity_v1',
+}) {
+  if (!userId || !conversationId || !Array.isArray(items) || items.length === 0) return;
+
+  const now = new Date();
+  const sessionId = await resolveSessionId({ userId, conversationId, now });
+
+  for (const item of items) {
+    const interventionId = String(item?.interventionId || '').trim();
+    if (!isValidInterventionId(interventionId)) continue;
+
+    const dup = await isDuplicateEvent({
+      userId,
+      conversationId,
+      sessionId,
+      interventionId,
+      eventType: 'shown',
+      now,
+    }).catch(() => false);
+    if (dup) continue;
+
+    await ChatInterventionEvent.create({
+      userId,
+      conversationId,
+      sessionId,
+      assistantMessageId: null,
+      interventionId,
+      interventionType: String(item?.kind || item?.interventionType || 'technique'),
+      topicTag: 'continuity',
+      topicFree: null,
+      eventType: 'shown',
+      source,
+      riskLevel: null,
+      meta: { continuityId: item?.id || null },
+      createdAt: now,
+    });
+  }
+}
+
 async function recordInterventionEvent({
   userId,
   conversationId,
@@ -207,6 +275,7 @@ async function recordInterventionEvent({
   source = 'chat_suggestions_v1',
   meta = {},
 }) {
+  if (!userId || !conversationId) return;
   const ev = String(eventType || '').trim();
   if (!['clicked', 'dismissed', 'completed'].includes(ev)) return;
   const id = String(interventionId || '').trim();
@@ -252,6 +321,7 @@ async function recordInterventionEvent({
         : shownCtx?.interventionType || 'technique',
     topicTag,
     topicFree: shownCtx?.topicFree ?? null,
+    topicFreeEmbedding: shownCtx?.topicFreeEmbedding ?? null,
     eventType: ev,
     source,
     riskLevel: riskLevel ? String(riskLevel) : inheritedRiskLevel,
@@ -262,9 +332,11 @@ async function recordInterventionEvent({
 
 export default {
   recordSuggestionEventsShown,
+  recordContinuityItemsShown,
   recordInterventionEvent,
   hasShownSuggestionsInActiveSession,
   aggregateInterventionGraph,
+  findTopicFreeAffinityEvents,
   buildSessionAggregatedGraphPipeline,
 };
 

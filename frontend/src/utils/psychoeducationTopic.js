@@ -11,6 +11,12 @@ const TOPIC_BY_KEY = {
   sleep: 'sleep',
   emotionregulation: 'emotionRegulation',
   trauma: 'trauma',
+  grief: 'grief',
+  duelo: 'grief',
+  loss: 'grief',
+  perdida: 'grief',
+  burnout: 'burnout',
+  agotamiento: 'burnout',
 };
 
 const ID_TO_TOPIC = {
@@ -21,6 +27,8 @@ const ID_TO_TOPIC = {
   psychoeducation_sleep: 'sleep',
   psychoeducation_emotion_regulation: 'emotionRegulation',
   psychoeducation_trauma: 'trauma',
+  psychoeducation_grief: 'grief',
+  psychoeducation_burnout: 'burnout',
 };
 
 const CARD_COPY = {
@@ -60,6 +68,16 @@ const CARD_COPY = {
       previewSummary: 'Enfoque informado en trauma, sin sustituir terapia especializada.',
       mechanismLine: 'La estabilización antes de revivir recuerdos protege tu sistema nervioso.',
     },
+    grief: {
+      previewTitle: 'Duelo y pérdida',
+      previewSummary: 'Cómo suele vivirse el duelo y formas de acompañarte sin apurar el proceso.',
+      mechanismLine: 'Nombrar la pérdida y tus necesidades puede aliviar la soledad del duelo.',
+    },
+    burnout: {
+      previewTitle: 'Agotamiento y burnout',
+      previewSummary: 'Señales de saturación y pasos para recuperar energía sin culparte.',
+      mechanismLine: 'Reconocer el agotamiento es el primer paso para ajustar la carga.',
+    },
   },
   en: {
     anxiety: {
@@ -96,6 +114,16 @@ const CARD_COPY = {
       previewTitle: 'Difficult experiences',
       previewSummary: 'Trauma-informed overview; not a substitute for specialized therapy.',
       mechanismLine: 'Stabilization before revisiting memories protects your nervous system.',
+    },
+    grief: {
+      previewTitle: 'Grief and loss',
+      previewSummary: 'How grief often unfolds and ways to support yourself without rushing.',
+      mechanismLine: 'Naming the loss and your needs can ease the loneliness of grief.',
+    },
+    burnout: {
+      previewTitle: 'Exhaustion and burnout',
+      previewSummary: 'Signs of overload and steps to recover energy without self-blame.',
+      mechanismLine: 'Recognizing exhaustion is the first step to adjust your load.',
     },
   },
 };
@@ -146,6 +174,28 @@ function applyEnglishCatalogLabel(suggestion) {
   const enLabel = INTERVENTION_LABELS_EN[id];
   if (!enLabel) return suggestion;
   return { ...suggestion, label: enLabel };
+}
+
+function isMicroGuideSuggestion(suggestion) {
+  return (
+    suggestion?.interventionType === 'micro_guide' ||
+    suggestion?.cardVariant === 'micro_guide_native'
+  );
+}
+
+function applyMicroGuideCardFields(suggestion) {
+  if (!isMicroGuideSuggestion(suggestion)) return suggestion;
+  const guideId = String(suggestion.params?.guideId || suggestion.id || '').trim();
+  if (!guideId) return suggestion;
+  return {
+    ...suggestion,
+    interventionType: 'micro_guide',
+    screen: suggestion.screen || 'MicroGuide',
+    params: { ...(suggestion.params || {}), guideId },
+    cardVariant: suggestion.cardVariant || 'micro_guide_native',
+    label: suggestion.label || suggestion.previewTitle || guideId,
+    description: suggestion.description || suggestion.previewSummary || '',
+  };
 }
 
 function applyPsychoeducationCardFields(suggestion, language) {
@@ -199,6 +249,11 @@ export function hydrateInterventionSuggestion(suggestion, language = 'es') {
     next = applyPsychoeducationCardFields(next, lang);
   } else if (lang === 'en' && next.cardVariant === 'psychoeducation_native') {
     next = applyPsychoeducationCardFields(next, lang);
+  }
+  if (next.cardVariant !== 'micro_guide_native' && isMicroGuideSuggestion(next)) {
+    next = applyMicroGuideCardFields(next);
+  } else if (next.cardVariant === 'micro_guide_native' && !next.screen) {
+    next = applyMicroGuideCardFields(next);
   }
   return next;
 }

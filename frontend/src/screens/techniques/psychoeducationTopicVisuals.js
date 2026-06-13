@@ -30,6 +30,14 @@ export const PSYCHOED_TOPIC_VISUALS = {
     icon: 'shield-heart',
     accentKey: 'primary',
   },
+  grief: {
+    icon: 'flower',
+    accentKey: 'primary',
+  },
+  burnout: {
+    icon: 'battery-low',
+    accentKey: 'warning',
+  },
 };
 
 export function getTopicVisual(topic, colors) {

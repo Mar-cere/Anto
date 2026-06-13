@@ -39,6 +39,11 @@ describe('psychoeducationChatI18n', () => {
     expect(ids).toContain('psychoeducation_sleep');
   });
 
+  it('resolveContextualPsychoeducationIds detecta duelo en inglés', () => {
+    const ids = resolveContextualPsychoeducationIds('I miss him so much since he passed');
+    expect(ids).toContain('psychoeducation_grief');
+  });
+
   it.each(CHAT_PSYCHOEDUCATION_SMOKE_CASES_EN)(
     '$id (en)',
     async ({

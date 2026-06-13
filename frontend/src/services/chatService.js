@@ -277,7 +277,7 @@ async function postGuestMessage(text, conversationId, token, language) {
   return data;
 }
 
-export const sendMessageStream = async (text, { onChunk, onDone }) => {
+export const sendMessageStream = async (text, { onChunk, onDone, resumeTccLite } = {}) => {
   if (await isGuestChatMode()) {
     const guestLang = await getAppLanguage();
     const conversationId = await AsyncStorage.getItem(GUEST_KEYS.GUEST_CONVERSATION_ID);
@@ -327,6 +327,14 @@ export const sendMessageStream = async (text, { onChunk, onDone }) => {
     content: text,
     role: 'user',
     conversationId,
+    ...(resumeTccLite?.distortionType
+      ? {
+          resumeTccLite: {
+            distortionType: resumeTccLite.distortionType,
+            distortionLabel: resumeTccLite.distortionLabel || '',
+          },
+        }
+      : {}),
   });
 
   // iOS/Android: SSE incremental con XMLHttpRequest (responseText crece).
@@ -564,6 +572,25 @@ export const submitProductProposalFeedback = async (conversationId, action) => {
  * @param {string} conversationId
  * @param {{ interventionId: string, eventType: 'clicked'|'dismissed'|'completed' }} payload
  */
+/**
+ * Borrador AT desde cierre TCC lite (#201 / #89).
+ */
+export const createTccLiteAtDraft = async ({ conversationHistory, distortionType, handoffParams } = {}) => {
+  const lang = await getAppLanguage();
+  const token = await AsyncStorage.getItem('userToken');
+  if (!token) {
+    const e = new Error(getChatCopy('SERVICE_SESSION_REQUIRED', lang));
+    e.code = 'NO_AUTH';
+    throw e;
+  }
+  const response = await apiClient.post('/api/automatic-thought-logs/tcc-lite-draft', {
+    conversationHistory: Array.isArray(conversationHistory) ? conversationHistory : [],
+    distortionType,
+    handoffParams,
+  });
+  return response?.data?.handoff || null;
+};
+
 export const submitInterventionEvent = async (conversationId, payload) => {
   const lang = await getAppLanguage();
   const token = await AsyncStorage.getItem('userToken');
@@ -621,6 +648,49 @@ export const getInterventionGraph = async (params = {}) => {
  * @param {{ delayMinutes?: number }} [options]
  * @returns {Promise<object|null>}
  */
+/**
+ * Protocolos TCC activos para retomar desde el chat (BA, exposición).
+ * @returns {Promise<object[]>}
+ */
+export const fetchTccContinuity = async (conversationId) => {
+  try {
+    if (await isGuestChatMode()) return [];
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token) return [];
+    const cid = String(conversationId ?? '').trim();
+    const params = /^[\da-f]{24}$/i.test(cid) ? { conversationId: cid } : undefined;
+    const response = await apiClient.get('/api/chat/tcc-continuity', { params });
+    return response?.data?.data?.items || response?.data?.items || [];
+  } catch (e) {
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.warn('[chatService] fetchTccContinuity:', e?.message || e);
+    }
+    return [];
+  }
+};
+
+/**
+ * Insight inmediato al cerrar el chat (emoción, patrón, paso sugerido).
+ * @param {string} conversationId
+ * @returns {Promise<object|null>}
+ */
+export const fetchSessionInsight = async (conversationId) => {
+  try {
+    if (await isGuestChatMode()) return null;
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token) return null;
+    const cid = String(conversationId || '').trim();
+    if (!/^[\da-f]{24}$/i.test(cid)) return null;
+    const response = await apiClient.get(`/api/chat/conversations/${cid}/session-insight`);
+    return response?.data ?? null;
+  } catch (e) {
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.warn('[chatService] fetchSessionInsight:', e?.message || e);
+    }
+    return null;
+  }
+};
+
 export const scheduleLastSessionSummary = async (conversationId, options = {}) => {
   try {
     if (await isGuestChatMode()) return null;
@@ -649,7 +719,8 @@ export const getMessages = async (conversationId) => {
     const rawIntention = response.sessionIntention ?? null;
     return {
       messages: response.messages ?? [],
-      sessionIntention: isValidSessionIntentionId(rawIntention) ? String(rawIntention).trim() : null
+      sessionIntention: isValidSessionIntentionId(rawIntention) ? String(rawIntention).trim() : null,
+      tccLite: response.tccLite ?? null,
     };
   } catch (error) {
     const status = error?.response?.status;
@@ -658,7 +729,7 @@ export const getMessages = async (conversationId) => {
       await clearPersistedChatSession();
     }
     console.error('Error al obtener mensajes:', error);
-    return { messages: [], sessionIntention: null };
+    return { messages: [], sessionIntention: null, tccLite: null };
   }
 };
 
@@ -666,6 +737,9 @@ export default {
   initializeSocket,
   sendMessage,
   sendMessageStream,
+  fetchTccContinuity,
+  createTccLiteAtDraft,
+  fetchSessionInsight,
   scheduleLastSessionSummary,
   submitMessageFeedback,
   submitProductProposalFeedback,

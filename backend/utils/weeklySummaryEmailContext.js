@@ -167,12 +167,12 @@ const BENEFIT_BUNDLES = [
  * Redacción orientada a persona usuaria; sin métricas ni datos de la cuenta.
  */
 const WEEKLY_PRODUCT_NEWS_LINES = [
-  `Ecosistema conectado al chat: tareas, hábitos y pomodoros sin salir de la conversación.`,
-  `Tareas inteligentes: propuestas alineadas con lo que hablaste y menos fricción para pasar a la acción.`,
-  `Chat más estable: mejor continuidad, recuperación si se corta una respuesta y resumen breve al volver.`,
-  `Tema claro para quien prefiere pantallas luminosas y lectura cómoda.`,
-  `Notificaciones inteligentes: avisos más útiles, menos ruido y límites diarios razonables.`,
-  `Resumen semanal y mensual renovado: una sola vista para ver cómo encajan chat, tareas, hábitos y foco.`
+  `Técnicas guiadas desde el chat: si compartes cómo te sientes, Anto puede sugerirte ejercicios concretos y abrirlos con partes ya completadas para empezar más rápido.`,
+  `Biblioteca de psicoeducación: módulos breves sobre ansiedad, estrés, sueño y más, listos para leer cuando quieras.`,
+  `Autorregistro ABC: anota situación, pensamiento y consecuencia en un flujo paso a paso.`,
+  `Jerarquía de exposición: arma pasos de menor a mayor dificultad y registra tu ansiedad (SUDS) mientras practicas.`,
+  `Activación conductual: elige una actividad pequeña y registra cómo te sentiste antes y después.`,
+  `Registro de pensamientos automáticos: identifica pensamientos difíciles y patrones habituales con un lenguaje claro.`,
 ];
 
 const CLOSING_LINE_VARIANTS = [

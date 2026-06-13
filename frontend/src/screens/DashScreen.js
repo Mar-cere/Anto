@@ -39,6 +39,7 @@ import PomodoroCard from '../components/PomodoroCard';
 import JournalCard from '../components/JournalCard';
 import QuoteSection from '../components/QuoteSection';
 import DashboardFocusCard from '../components/DashboardFocusCard';
+import TccProtocolsQuickCard from '../components/TccProtocolsQuickCard';
 import TaskCard from '../components/TaskCard';
 import { SkeletonBlock, SkeletonCard } from '../components/Skeleton';
 import { api, ENDPOINTS } from '../config/api';
@@ -608,6 +609,47 @@ const DashScreen = () => {
     navigation.navigate('MainTabs', { screen: 'Chat' });
   }, [navigation]);
 
+  const openBehavioralActivationFromFocus = useCallback((slotId) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    const trimmed = slotId ? String(slotId).trim() : '';
+    navigation.navigate(
+      'BehavioralActivation',
+      trimmed ? { openWeekSlotId: trimmed } : undefined,
+    );
+  }, [navigation]);
+
+  const openExposureFromFocus = useCallback((planId) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    const trimmed = planId ? String(planId).trim() : '';
+    navigation.navigate(
+      'ExposureHierarchy',
+      trimmed ? { openPlanId: trimmed, mode: 'practice' } : { mode: 'practice' },
+    );
+  }, [navigation]);
+
+  const refreshHomeDataOnFocus = useCallback(async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) return;
+      const [userDataRes, tasksRes, habitsRes, focusRes] = await Promise.all([
+        api.get(ENDPOINTS.ME).catch(() => null),
+        api.get(ENDPOINTS.TASKS).catch(() => null),
+        api.get(ENDPOINTS.HABITS).catch(() => null),
+        api.get(ENDPOINTS.SUMMARY_FOCUS).catch(() => null),
+      ]);
+      if (userDataRes && typeof userDataRes === 'object') {
+        setUserData(userDataRes);
+      }
+      if (Array.isArray(tasksRes)) setTasks(tasksRes);
+      if (Array.isArray(habitsRes)) setHabits(habitsRes);
+      if (focusRes?.success && focusRes?.data) {
+        setFocusPayload(focusRes.data);
+      }
+    } catch (_) {
+      /* pull-to-refresh sigue disponible */
+    }
+  }, []);
+
   const openConversationFromFocus = useCallback(
     async (conversationId) => {
       if (!conversationId) return;
@@ -669,7 +711,7 @@ const DashScreen = () => {
     }
   }, [loadData, loading]);
 
-  // Al volver al tab Inicio (p. ej. desde el chat), refrescar usuario para no mostrar datos de otra sesión
+  // Al volver al tab Inicio, refrescar foco/tareas/hábitos (p. ej. tras registrar BA)
   useFocusEffect(
     useCallback(() => {
       if (dashFirstFocusRef.current) {
@@ -678,21 +720,13 @@ const DashScreen = () => {
       }
       let cancelled = false;
       (async () => {
-        const token = await AsyncStorage.getItem('userToken');
-        if (!token || cancelled) return;
-        try {
-          const user = await api.get(ENDPOINTS.ME);
-          if (!cancelled && user && typeof user === 'object') {
-            setUserData(user);
-          }
-        } catch (_) {
-          /* loadData / pull manejan errores visibles */
-        }
+        if (cancelled) return;
+        await refreshHomeDataOnFocus();
       })();
       return () => {
         cancelled = true;
       };
-    }, [])
+    }, [refreshHomeDataOnFocus]),
   );
 
   // Configurar listeners de WebSocket para alertas de emergencia
@@ -829,8 +863,9 @@ const DashScreen = () => {
             data={focusPayload}
             onOpenChat={goToChatFromOnboarding}
             onOpenConversation={openConversationFromFocus}
+            onOpenBehavioralActivation={openBehavioralActivationFromFocus}
+            onOpenExposureHierarchy={openExposureFromFocus}
           />
-          <QuoteSection />
           {error && (
             <ErrorMessage
               message={error}
@@ -858,10 +893,12 @@ const DashScreen = () => {
               accessibilityLabel={DASH.HABITS_LABEL}
             />
           </Animated.View>
+          <TccProtocolsQuickCard accessibilityLabel={DASH.TCC_TOOLS_LABEL} />
           <PomodoroCard accessibilityLabel={DASH.POMODORO_LABEL} collapsible defaultExpanded={false} />
           <Animated.View style={refreshAnimationStyle}>
             <JournalCard />
           </Animated.View>
+          <QuoteSection />
         </DashboardScroll>
         </SafeAreaView>
       </ImageBackground>

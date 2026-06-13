@@ -11,7 +11,21 @@ import { resolveRequestLanguage } from '../utils/apiLanguage.js';
 import { validateBody } from '../utils/apiValidation.js';
 import { behavioralActivationApiCopy } from '../utils/behavioralActivationApiCopy.js';
 import { getCreateBehavioralActivationSchema } from '../utils/behavioralActivationSchemas.js';
+import { getUpdateWeekPlanSchema } from '../utils/behavioralActivationWeekPlanSchemas.js';
 import { createRateLimiter } from '../utils/createRateLimiter.js';
+import {
+  getOrCreateWeekPlan,
+  saveWeekPlan,
+} from '../services/behavioralActivationWeekPlanService.js';
+import {
+  linkBaSlotToProduct,
+  reconcileWeekPlanWithLinkedProducts,
+  syncBaEcosystemFromLog,
+} from '../services/behavioralActivationProductBridgeService.js';
+import {
+  getLinkBaProductSchema,
+  getSyncBaFromLogSchema,
+} from '../utils/behavioralActivationLinkProductSchemas.js';
 
 const router = express.Router();
 
@@ -29,6 +43,14 @@ const deleteLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 20,
   message: (req) => behavioralActivationApiCopy(resolveRequestLanguage(req)).rateLimitDelete,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const weekPlanLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 40,
+  message: (req) => behavioralActivationApiCopy(resolveRequestLanguage(req)).rateLimitCreate,
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -77,6 +99,153 @@ function formatLogForExport(record, copy, index) {
   if (index > 0) lines.unshift('');
   return lines.join('\n');
 }
+
+router.get('/week-plan', weekPlanLimiter, async (req, res) => {
+  const copy = req.apiCopy;
+  const language = resolveRequestLanguage(req);
+  try {
+    const weekStartRaw = req.query?.weekStart;
+    if (
+      weekStartRaw != null &&
+      weekStartRaw !== '' &&
+      !/^\d{4}-\d{2}-\d{2}$/.test(String(weekStartRaw).trim())
+    ) {
+      return res.status(400).json({ success: false, error: copy.joiWeekStartInvalid });
+    }
+    const weekStart = weekStartRaw;
+    const result = await getOrCreateWeekPlan(req.user.userId, weekStart, language);
+    const reconciled = await reconcileWeekPlanWithLinkedProducts({
+      userId: req.user.userId,
+      plan: result.plan,
+    });
+    res.json({
+      success: true,
+      weekStart: result.weekStart,
+      dayLabels: result.dayLabels,
+      plan: reconciled.plan,
+    });
+  } catch (error) {
+    console.error('Error obteniendo plan semanal BA:', error);
+    res.status(500).json({ success: false, error: copy.weekPlanError });
+  }
+});
+
+router.post('/week-plan/link-product', weekPlanLimiter, async (req, res) => {
+  const copy = req.apiCopy;
+  try {
+    const { error, value } = validateBody(getLinkBaProductSchema(copy), req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        error: error.details[0].message,
+      });
+    }
+
+    const result = await linkBaSlotToProduct({
+      userId: req.user.userId,
+      weekStartInput: value.weekStart || undefined,
+      slotId: value.slotId,
+      productKind: value.productKind,
+      logId: value.logId || null,
+      language: resolveRequestLanguage(req),
+    });
+
+    res.status(result.idempotentReplay ? 200 : 201).json({
+      success: true,
+      message: copy.linkProductSuccess,
+      productKind: result.productKind,
+      task: result.task || undefined,
+      habit: result.habit || undefined,
+      plan: result.plan,
+      idempotentReplay: !!result.idempotentReplay,
+    });
+  } catch (err) {
+    if (err?.code === 'PLAN_NOT_FOUND') {
+      return res.status(404).json({ success: false, error: copy.linkProductPlanNotFound });
+    }
+    if (err?.code === 'SLOT_NOT_FOUND') {
+      return res.status(404).json({ success: false, error: copy.linkProductSlotNotFound });
+    }
+    if (err?.code === 'SLOT_LINK_CONFLICT') {
+      return res.status(409).json({ success: false, error: copy.linkProductConflict });
+    }
+    if (err?.code === 'PRODUCT_VALIDATION') {
+      return res.status(400).json({
+        success: false,
+        error: copy.linkProductValidationError,
+        details: err.message,
+      });
+    }
+    console.error('Error vinculando slot BA a producto:', err);
+    res.status(500).json({ success: false, error: copy.linkProductError });
+  }
+});
+
+router.post('/week-plan/sync-from-log', weekPlanLimiter, async (req, res) => {
+  const copy = req.apiCopy;
+  try {
+    const { error, value } = validateBody(getSyncBaFromLogSchema(copy), req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        error: error.details[0].message,
+      });
+    }
+
+    const result = await syncBaEcosystemFromLog({
+      userId: req.user.userId,
+      weekStartInput: value.weekStart || undefined,
+      slotId: value.slotId,
+      logId: value.logId,
+    });
+
+    if (!result) {
+      return res.status(404).json({ success: false, error: copy.linkProductSlotNotFound });
+    }
+
+    res.json({
+      success: true,
+      message: copy.syncFromLogSuccess,
+      plan: result.plan,
+      sync: result.sync,
+    });
+  } catch (err) {
+    console.error('Error sincronizando BA desde log:', err);
+    res.status(500).json({ success: false, error: copy.syncFromLogError });
+  }
+});
+
+router.put('/week-plan', weekPlanLimiter, async (req, res) => {
+  const copy = req.apiCopy;
+  const language = resolveRequestLanguage(req);
+  try {
+    const { error, value } = validateBody(getUpdateWeekPlanSchema(copy), req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        error: error.details[0].message,
+      });
+    }
+
+    const result = await saveWeekPlan(
+      req.user.userId,
+      value.weekStart || undefined,
+      value.slots,
+      language,
+    );
+
+    res.json({
+      success: true,
+      message: copy.weekPlanSaved,
+      weekStart: result.weekStart,
+      dayLabels: result.dayLabels,
+      plan: result.plan,
+    });
+  } catch (error) {
+    console.error('Error guardando plan semanal BA:', error);
+    res.status(500).json({ success: false, error: copy.weekPlanSaveError });
+  }
+});
 
 router.get('/export', async (req, res) => {
   const copy = req.apiCopy;

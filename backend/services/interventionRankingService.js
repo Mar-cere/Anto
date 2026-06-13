@@ -2,6 +2,14 @@
  * Ranking de intervenciones a partir del grafo #127 (histórico del usuario).
  */
 import chatInterventionGraphService from './chatInterventionGraphService.js';
+import {
+  embedTopicFreeText,
+  enrichTopicFreeEventsWithEmbeddings,
+  getTopicFreeEmbeddingMinSimilarity,
+  isTopicFreeEmbeddingsEnabled,
+} from './topicFreeEmbeddingService.js';
+import { buildTopicFreeFromUserContent } from '../utils/interventionTopicFree.js';
+import { cosineSimilarity } from '../utils/vectorMath.js';
 
 const DEFAULT_RANKING_DAYS = 30;
 const DEFAULT_GRAPH_LIMIT = 120;
@@ -87,10 +95,131 @@ export function rankInterventionIds(ids, scoreMap) {
     .map((row) => row.id);
 }
 
+function tokenizeTopicFreeText(text) {
+  return new Set(
+    String(text || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{M}/gu, '')
+      .split(/[^\p{L}\p{N}]+/u)
+      .filter((word) => word.length >= 3),
+  );
+}
+
+function computeTokenOverlap(left, right) {
+  if (!left?.size || !right?.size) return 0;
+  let shared = 0;
+  left.forEach((token) => {
+    if (right.has(token)) shared += 1;
+  });
+  return shared / Math.sqrt(left.size * right.size);
+}
+
+function eventAffinityWeight(eventType, baseWeight) {
+  return baseWeight * (eventType === 'completed' ? 1.25 : 0.85);
+}
+
+function mergeBoostMapsMax(left, right) {
+  const merged = new Map(left instanceof Map ? left : []);
+  if (!(right instanceof Map)) return merged;
+  right.forEach((value, id) => {
+    merged.set(id, Math.max(merged.get(id) ?? 0, value));
+  });
+  return merged;
+}
+
+/**
+ * Boost léxico (#218 lite).
+ */
+export function buildTopicFreeLexicalBoost(events, userContent) {
+  const snippet = buildTopicFreeFromUserContent(userContent);
+  if (!snippet) return new Map();
+  const currentTokens = tokenizeTopicFreeText(snippet);
+  if (currentTokens.size === 0) return new Map();
+
+  const map = new Map();
+  for (const ev of events || []) {
+    const overlap = computeTokenOverlap(currentTokens, tokenizeTopicFreeText(ev?.topicFree));
+    if (overlap < 0.12) continue;
+    const id = String(ev?.interventionId || '').trim();
+    if (!id) continue;
+    const weight = eventAffinityWeight(ev?.eventType, overlap);
+    map.set(id, Math.max(map.get(id) ?? 0, weight));
+  }
+  return map;
+}
+
+/**
+ * Boost semántico por cosine similarity (#218 fase 3).
+ * @param {Array} events
+ * @param {number[]} queryEmbedding
+ */
+export function buildTopicFreeSemanticBoost(
+  events,
+  queryEmbedding,
+  { minSimilarity = getTopicFreeEmbeddingMinSimilarity() } = {},
+) {
+  if (!Array.isArray(queryEmbedding) || queryEmbedding.length === 0) return new Map();
+
+  const map = new Map();
+  for (const ev of events || []) {
+    const stored = ev?.topicFreeEmbedding;
+    if (!Array.isArray(stored) || stored.length !== queryEmbedding.length) continue;
+    const similarity = cosineSimilarity(queryEmbedding, stored);
+    if (similarity < minSimilarity) continue;
+    const id = String(ev?.interventionId || '').trim();
+    if (!id) continue;
+    const weight = eventAffinityWeight(ev?.eventType, similarity);
+    map.set(id, Math.max(map.get(id) ?? 0, weight));
+  }
+  return map;
+}
+
+/**
+ * Boost híbrido léxico + embeddings (máximo por intervención).
+ */
+export function buildTopicFreeAffinityBoost(events, userContent, options = {}) {
+  const lexical = buildTopicFreeLexicalBoost(events, userContent);
+  const queryEmbedding = options?.queryEmbedding;
+  if (!queryEmbedding?.length) return lexical;
+
+  const semantic = buildTopicFreeSemanticBoost(events, queryEmbedding, options);
+  if (semantic.size === 0) return lexical;
+  if (lexical.size === 0) return semantic;
+  return mergeBoostMapsMax(lexical, semantic);
+}
+
+export function mergeRankingScoreMaps(baseMap, boostMap, factor = 0.4) {
+  const merged = new Map(baseMap instanceof Map ? baseMap : []);
+  if (!(boostMap instanceof Map) || boostMap.size === 0) return merged;
+  boostMap.forEach((value, id) => {
+    merged.set(id, (merged.get(id) ?? 0) + value * factor);
+  });
+  return merged;
+}
+
+async function fetchTopicFreeAffinityScores({ userId, userContent, days = DEFAULT_RANKING_DAYS }) {
+  if (!userId || !userContent) return new Map();
+  const since = new Date(Date.now() - Math.max(1, days) * 24 * 60 * 60 * 1000);
+  let events = await chatInterventionGraphService
+    .findTopicFreeAffinityEvents({ userId, since })
+    .catch(() => []);
+
+  const snippet = buildTopicFreeFromUserContent(userContent);
+  let queryEmbedding = null;
+  if (snippet && isTopicFreeEmbeddingsEnabled()) {
+    events = await enrichTopicFreeEventsWithEmbeddings(events);
+    queryEmbedding = await embedTopicFreeText(snippet);
+  }
+
+  return buildTopicFreeAffinityBoost(events, userContent, { queryEmbedding });
+}
+
 export async function fetchRankingScoresForUser({
   userId,
   emotionalAnalysis = null,
   contextualAnalysis = null,
+  userContent = null,
   days = DEFAULT_RANKING_DAYS,
   limit = DEFAULT_GRAPH_LIMIT,
 }) {
@@ -102,12 +231,21 @@ export async function fetchRankingScoresForUser({
     since,
     limit,
   });
-  return buildRankingScoreMap(edges, topicTag);
+  let scores = buildRankingScoreMap(edges, topicTag);
+  if (userContent) {
+    const affinity = await fetchTopicFreeAffinityScores({ userId, userContent, days });
+    scores = mergeRankingScoreMaps(scores, affinity);
+  }
+  return scores;
 }
 
 export default {
   scoreInterventionEdge,
   buildRankingScoreMap,
+  buildTopicFreeLexicalBoost,
+  buildTopicFreeSemanticBoost,
+  buildTopicFreeAffinityBoost,
+  mergeRankingScoreMaps,
   rankInterventionIds,
   fetchRankingScoresForUser,
   safeTopicTag,

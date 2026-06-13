@@ -177,9 +177,31 @@ export function passesActionSuggestionCadence(conversationHistory) {
   if (!conversationHistory?.length) return false;
   const userMessages = conversationHistory.filter((msg) => msg.role === 'user');
   const totalUserMessages = userMessages.length;
-  return (
-    totalUserMessages > 0 && (totalUserMessages % 3 === 0 || totalUserMessages % 4 === 0)
-  );
+  // Un bloque como máximo cada 6 mensajes del usuario (evita ráfagas en msg 3, 4, 6, 8…).
+  return totalUserMessages > 0 && totalUserMessages % 6 === 0;
+}
+
+/** Contextos donde las técnicas TCC/psicoed suelen ser ruido (p. ej. resfriado común). */
+export function shouldSuppressLowRelevanceSuggestions(userContent = '') {
+  const text = String(userContent || '').trim();
+  if (!text) return false;
+
+  const mundanePhysical =
+    /(?:resfriad[oa]|gripe|catarro|fiebre|mocos|tos\b|(?:estoy|tengo)\s+enferm[oa]|me\s+agarr[oó]\s+(?:un|la)\s+gripe|common\s+cold|just\s+a\s+cold|\bflu\b|congesti[oó]n)/i.test(
+      text,
+    );
+  const minimizing =
+    /(?:solo\s+(?:un|es)|nada\s+m[aá]s\s+que|no\s+es\s+para\s+tanto|es\s+normal|no\s+pasa\s+nada)/i.test(
+      text,
+    );
+  const distress =
+    /(?:ansiedad|tristeza|depresi[oó]n|p[aá]nico|desesper|suicid|no\s+puedo\s+m[aá]s|me\s+siento\s+muy\s+mal)/i.test(
+      text,
+    );
+
+  if (mundanePhysical && !distress) return true;
+  if (minimizing && !distress && text.length < 140) return true;
+  return false;
 }
 
 /** @deprecated Usar shouldShowChatActionSuggestions (incluye cap por sesión #127). */
@@ -206,6 +228,7 @@ export async function shouldShowChatActionSuggestions({
   userContent = '',
 }) {
   if (hasActionSuggestionRejection(conversationHistory)) return false;
+  if (shouldSuppressLowRelevanceSuggestions(userContent)) return false;
 
   const safetyException = isActionSuggestionSafetyException(
     emotionalAnalysis,
@@ -214,7 +237,7 @@ export async function shouldShowChatActionSuggestions({
   );
   const cadenceOk =
     bypassesActionSuggestionCadence(emotionalAnalysis) ||
-    shouldBypassTccSuggestionCadence(userContent) ||
+    shouldBypassTccSuggestionCadence(userContent, conversationHistory) ||
     passesActionSuggestionCadence(conversationHistory);
   if (!cadenceOk) return false;
 
@@ -226,7 +249,7 @@ export async function shouldShowChatActionSuggestions({
       });
       if (alreadyShown) return false;
     } catch {
-      return cadenceOk;
+      return false;
     }
   }
 

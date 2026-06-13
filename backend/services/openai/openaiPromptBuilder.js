@@ -1030,6 +1030,16 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     systemMessage += psychoSnippet;
   }
 
+  const activeTccSnippet = String(contexto.activeTccProtocolsPromptSnippet || '').trim();
+  if (activeTccSnippet) {
+    systemMessage += activeTccSnippet;
+  }
+
+  const tccLiteSnippet = String(contexto.tccLitePromptSnippet || '').trim();
+  if (tccLiteSnippet) {
+    systemMessage += tccLiteSnippet;
+  }
+
   if (contexto.crisis?.riskLevel && shouldAttachCrisisContextToPrompt(contexto.crisis.riskLevel)) {
     const crisisPrompt = generateCrisisSystemPrompt(contexto.crisis.riskLevel, contexto.crisis.country || 'GENERAL');
     systemMessage = `${crisisPrompt}\n\n---\n\n${systemMessage}`;

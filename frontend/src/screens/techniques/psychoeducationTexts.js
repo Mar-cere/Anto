@@ -74,6 +74,8 @@ const TOPIC_KEY_MAP = {
   sleep: 'PSYCHOED_TOPIC_sleep',
   emotionRegulation: 'PSYCHOED_TOPIC_emotionRegulation',
   trauma: 'PSYCHOED_TOPIC_trauma',
+  grief: 'PSYCHOED_TOPIC_grief',
+  burnout: 'PSYCHOED_TOPIC_burnout',
 };
 
 export function formatReviewFooter(texts, clinicalReview) {

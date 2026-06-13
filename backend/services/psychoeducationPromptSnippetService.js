@@ -94,6 +94,23 @@ export function applyPsychoeducationCardTiers(formatted, options = {}) {
   return [...techniques, ...(primary ? [primary] : []), ...secondary];
 }
 
+/** Máximo visible por bloque: 1 técnica + 1 psicoed (o 2 técnicas si no hay psicoed). */
+export function capFormattedSuggestions(formatted, max = 2) {
+  if (!Array.isArray(formatted) || formatted.length <= max) return formatted;
+
+  const techniques = formatted.filter((s) => !isPsychoeducationSuggestion(s));
+  const psychos = formatted.filter(isPsychoeducationSuggestion);
+  const primary =
+    psychos.find((p) => p.isPrimaryPsychoeducation || p.cardDisplayMode === 'expanded') ||
+    psychos[0];
+
+  const out = [];
+  if (techniques.length > 0) out.push(techniques[0]);
+  if (primary && out.length < max) out.push(primary);
+  else if (techniques.length > 1 && out.length < max) out.push(techniques[1]);
+  return out.slice(0, max);
+}
+
 /**
  * @param {Array<{ previewTitle?: string, label?: string }>} formatted
  * @param {string} [language='es']
@@ -156,6 +173,7 @@ export async function planChatActionSuggestions({
     actionIds: [],
     formatted: [],
     psychoeducationPromptSnippet: null,
+    rankingPersonalized: false,
   };
 
   const shouldShow = await shouldShowChatActionSuggestions({
@@ -173,7 +191,9 @@ export async function planChatActionSuggestions({
       userId,
       emotionalAnalysis,
       contextualAnalysis,
+      userContent,
     });
+    const rankingPersonalized = rankingScores instanceof Map && rankingScores.size > 0;
     const actionIds = actionSuggestionService.generateSuggestions(
       emotionalAnalysis,
       contextualAnalysis,
@@ -188,24 +208,27 @@ export async function planChatActionSuggestions({
       userContent,
       mainEmotion: emotionalAnalysis?.mainEmotion,
     });
-    const formatted = enrichSuggestionsWithAtPrefill(
-      enrichSuggestionsWithExposurePrefill(
-        enrichSuggestionsWithBaPrefill(
-          enrichSuggestionsWithAbcPrefill(tiered, userContent),
+    const formatted = capFormattedSuggestions(
+      enrichSuggestionsWithAtPrefill(
+        enrichSuggestionsWithExposurePrefill(
+          enrichSuggestionsWithBaPrefill(
+            enrichSuggestionsWithAbcPrefill(tiered, userContent),
+            userContent,
+            language,
+          ),
           userContent,
           language,
         ),
         userContent,
         language,
       ),
-      userContent,
-      language,
     );
     return {
       shouldShow: true,
       actionIds,
       formatted,
       primaryPsychoeducationId,
+      rankingPersonalized,
       psychoeducationPromptSnippet: buildPsychoeducationPromptSnippet(
         formatted,
         language,

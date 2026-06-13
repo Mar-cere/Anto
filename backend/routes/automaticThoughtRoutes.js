@@ -14,6 +14,7 @@ import { prepareAutomaticThoughtCreatePayload } from '../utils/automaticThoughtG
 import { getAutomaticThoughtDistortionPickerOptions } from '../constants/automaticThoughtDistortionPicker.js';
 import { getCreateAutomaticThoughtSchema } from '../utils/automaticThoughtSchemas.js';
 import { createRateLimiter } from '../utils/createRateLimiter.js';
+import { createAtDraftFromTccLite } from '../services/tccLiteAtDraftService.js';
 
 const router = express.Router();
 
@@ -110,6 +111,28 @@ router.get('/export', async (req, res) => {
   } catch (error) {
     console.error('Error exportando registros AT:', error);
     res.status(500).json({ success: false, error: copy.exportError });
+  }
+});
+
+router.post('/tcc-lite-draft', createLimiter, async (req, res) => {
+  const copy = req.apiCopy;
+  try {
+    const handoff = await createAtDraftFromTccLite({
+      userId: req.user.userId,
+      conversationHistory: Array.isArray(req.body?.conversationHistory)
+        ? req.body.conversationHistory
+        : [],
+      distortionType: req.body?.distortionType,
+      language: resolveRequestLanguage(req),
+      handoffParams: req.body?.handoffParams,
+    });
+    if (!handoff) {
+      return res.status(400).json({ success: false, error: copy.createError });
+    }
+    return res.status(201).json({ success: true, handoff });
+  } catch (error) {
+    console.error('Error creando borrador AT desde TCC lite:', error);
+    return res.status(500).json({ success: false, error: copy.createError });
   }
 });
 

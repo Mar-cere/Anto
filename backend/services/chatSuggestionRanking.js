@@ -7,6 +7,7 @@ export async function resolveChatSuggestionRankingScores({
   userId,
   emotionalAnalysis,
   contextualAnalysis,
+  userContent = null,
 }) {
   if (!userId) return null;
   try {
@@ -14,6 +15,7 @@ export async function resolveChatSuggestionRankingScores({
       userId,
       emotionalAnalysis,
       contextualAnalysis,
+      userContent,
     });
     return scores?.size > 0 ? scores : null;
   } catch {

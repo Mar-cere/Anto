@@ -224,6 +224,62 @@ export const PSYCHOEDUCATION_MODULES = {
     ],
   },
 
+  grief: {
+    whatIs:
+      'El duelo es la respuesta natural a una pérdida significativa. No sigue un calendario fijo: puede alternar tristeza, cansancio, enojo, alivio o sensación de entumecimiento.',
+    symptoms: [
+      'Tristeza profunda o episodios de llanto',
+      'Añoranza, sensación de vacío o de que “algo falta”',
+      'Cansancio, dificultad para concentrarte o para dormir',
+      'Enojo, culpa o sensación de no haber dicho o hecho “lo suficiente”',
+    ],
+    whatHelps: [
+      'Permitirte sentir sin juzgarte; el duelo no es lineal',
+      'Rituales o gestos simbólicos que honren lo perdido',
+      'Apoyo social seguro y espacios para hablar o guardar silencio',
+      'Terapia de duelo si el dolor limita tu vida durante mucho tiempo',
+    ],
+    whenToSeekHelp:
+      'Si el dolor es abrumador, aparecen pensamientos de autolesión o no puedes cubrir necesidades básicas, busca apoyo profesional.',
+    sources: [
+      {
+        label: 'OMS — Salud mental',
+        url: 'https://www.who.int/es/health-topics/mental-health',
+      },
+    ],
+  },
+
+  burnout: {
+    whatIs:
+      'El agotamiento prolongado suele mezclar cansancio emocional, cinismo o distancia del trabajo/estudio y sensación de poca eficacia. No es “falta de actitud”: es sobrecarga sostenida.',
+    symptoms: [
+      'Agotamiento que no mejora con un solo fin de semana',
+      'Irritabilidad, desmotivación o desapego de lo que antes importaba',
+      'Dificultad para desconectar, rumiar sobre tareas o sentirte “siempre encendido/a”',
+      'Síntomas físicos: dolores de cabeza, tensión, alteraciones del sueño',
+    ],
+    causes: [
+      'Demandas altas sin recuperación ni límites claros',
+      'Poco control sobre el trabajo o la carga',
+      'Conflicto de valores o falta de reconocimiento',
+      'Cuidar de otros sin espacio para autocuidado',
+    ],
+    whatHelps: [
+      'Límites concretos (horarios, pausas, decir no a una cosa pequeña)',
+      'Recuperación activa: sueño, movimiento suave, contacto social reparador',
+      'Revisar prioridades con apoyo (terapia, mentoría, equipo)',
+      'Atención médica si hay síntomas físicos persistentes',
+    ],
+    whenToSeekHelp:
+      'Si el agotamiento afecta tu salud, relaciones o trabajo durante semanas, conviene hablar con un profesional.',
+    sources: [
+      {
+        label: 'OMS — Burn-out (concepto ocupacional)',
+        url: 'https://www.who.int/news/item/28-05-2019-burn-out-an-occupational-phenomenon',
+      },
+    ],
+  },
+
   trauma: {
     whatIs:
       'Después de experiencias muy estresantes o amenazantes, el cuerpo y la mente pueden quedar en alerta o evitar recordatorios. Esto es una respuesta humana común, no un “defecto” de carácter.',

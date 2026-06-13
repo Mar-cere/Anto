@@ -5,6 +5,10 @@
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { normalizeSessionIntention } from '../constants/sessionIntention.js';
+import {
+  getPsychoeducationCardFields,
+  PSYCHOEDUCATION_TOPIC_META,
+} from '../constants/psychoeducationTopics.js';
 
 function isValidObjectIdParam(v) {
   if (v == null) return false;
@@ -119,6 +123,144 @@ function defaultDueDateNextEvening() {
   d.setDate(d.getDate() + 1);
   d.setHours(18, 0, 0, 0);
   return d;
+}
+
+function topicFromInterventionId(interventionId) {
+  const id = String(interventionId || '').trim();
+  if (!id) return null;
+  for (const [topic, meta] of Object.entries(PSYCHOEDUCATION_TOPIC_META)) {
+    if (meta.interventionId === id) return topic;
+  }
+  return null;
+}
+
+const HABIT_ICON_BY_TOPIC = {
+  sleep: 'sleep',
+  anxiety: 'meditation',
+  depression: 'journal',
+  stress: 'meditation',
+  anger: 'journal',
+  emotionRegulation: 'journal',
+  trauma: 'journal',
+};
+
+/** Señales de que el título ya encaja con el módulo de psicoeducación activo. */
+const TOPIC_TITLE_ALIGNMENT = {
+  sleep:
+    /dormir|sueño|acostar|despertar|insomnio|pantalla|preocup|pensar|rumi|mente\s+antes|noche/i,
+  anxiety: /ansiedad|miedo|p[aá]nico|preocup|ancl|respir|tensi[oó]n|alarma/i,
+  depression: /[áa]nimo|activ|energ|inercia|paso\s+peque|desmotiv/i,
+  stress: /estr[eé]s|agot|sobrecarga|controlable|descanso/i,
+  anger: /enoj|ira|l[ií]mite|pausa|mensaje/i,
+  emotionRegulation: /emoci[oó]n|desbord|pausa|nombr/i,
+  trauma: /trauma|flashback|segur|ancl|ground/i,
+};
+
+const SLEEP_RUMINATION_CUES =
+  /(?:pensando|preocup|rumi|salió\s+mal|darle\s+vueltas|no\s+paro\s+de\s+pensar|todo\s+lo\s+que)/i;
+const SLEEP_SCREEN_CUES = /(?:pantalla|móvil|celular|tablet|redes|scroll|tiktok|instagram)/i;
+
+function titleMatchesMicroSteps(title, microSteps = []) {
+  const t = String(title || '').toLowerCase();
+  return microSteps.some((step) => {
+    const words = String(step || '')
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 5);
+    return words.some((w) => t.includes(w));
+  });
+}
+
+function isProductActionOnPsychoeducationTopic(title, topic, microSteps = []) {
+  const pattern = TOPIC_TITLE_ALIGNMENT[topic];
+  if (!pattern) return false;
+  const t = String(title || '');
+  return pattern.test(t) || titleMatchesMicroSteps(t, microSteps);
+}
+
+function resolvePsychoeducationAlignedTitle(topic, userContent, microSteps = [], language = 'es') {
+  const steps = Array.isArray(microSteps) ? microSteps : [];
+  const text = String(userContent || '');
+
+  if (topic === 'sleep') {
+    if (SLEEP_RUMINATION_CUES.test(text)) {
+      return language === 'en'
+        ? 'Briefly note what is worrying me before bed'
+        : 'Anotar brevemente lo que me preocupa antes de acostarme';
+    }
+    if (SLEEP_SCREEN_CUES.test(text) && steps[1]) {
+      return steps[1];
+    }
+  }
+
+  return steps[0] || null;
+}
+
+/**
+ * Contexto de psicoeducación para enriquecer propuestas con LLM.
+ * @param {string|null|undefined} primaryPsychoeducationId
+ * @param {string} language
+ */
+export function getPsychoeducationProductActionContext(primaryPsychoeducationId, language = 'es') {
+  const topic = topicFromInterventionId(primaryPsychoeducationId);
+  if (!topic) return null;
+  const fields = getPsychoeducationCardFields(topic, language);
+  if (!fields?.microSteps?.length) return null;
+  return {
+    topicTitle: fields.previewTitle,
+    microSteps: fields.microSteps.slice(0, 2),
+    interventionId: String(primaryPsychoeducationId),
+  };
+}
+
+/**
+ * Corrige tareas solo si están claramente fuera del módulo de psicoeducación del turno.
+ * Si el borrador ya encaja con el tema (p. ej. preocupaciones + sueño), se conserva.
+ * @param {Array<{ type: string, draft: object, id?: string, rationaleShort?: string }>} actions
+ * @param {{ primaryPsychoeducationId?: string|null, language?: string, userContent?: string }} options
+ */
+export function alignProductActionsWithPsychoeducation(
+  actions,
+  { primaryPsychoeducationId, language = 'es', userContent = '' } = {},
+) {
+  if (!primaryPsychoeducationId || !Array.isArray(actions) || actions.length === 0) {
+    return actions;
+  }
+
+  const topic = topicFromInterventionId(primaryPsychoeducationId);
+  if (!topic) return actions;
+
+  const fields = getPsychoeducationCardFields(topic, language);
+  const microSteps = fields?.microSteps || [];
+  if (microSteps.length === 0) return actions;
+
+  const topicTitle = fields.previewTitle || topic;
+
+  return actions.map((action) => {
+    if (!action || typeof action !== 'object') return action;
+    if (action.type !== 'propose_task' && action.type !== 'propose_habit') return action;
+
+    const currentTitle = String(action.draft?.title || '');
+    if (isProductActionOnPsychoeducationTopic(currentTitle, topic, microSteps)) {
+      return action;
+    }
+
+    const fallbackTitle = resolvePsychoeducationAlignedTitle(
+      topic,
+      userContent,
+      microSteps,
+      language,
+    );
+    if (!fallbackTitle) return action;
+
+    const alignedTitle = clampTitle(fallbackTitle);
+    const rationaleShort = `Relacionado con ${topicTitle}: un paso pequeño del módulo que acabas de ver.`;
+    const draft = { ...(action.draft || {}), title: alignedTitle };
+    if (action.type === 'propose_habit' && HABIT_ICON_BY_TOPIC[topic]) {
+      draft.icon = HABIT_ICON_BY_TOPIC[topic];
+    }
+    return { ...action, draft, rationaleShort };
+  });
 }
 
 function clampTitle(raw, minLen = 3, maxLen = 100) {
@@ -422,6 +564,7 @@ export default {
   isExplicitProductActionRequest,
   getProductActionNeedLevel,
   buildProposedProductActions,
+  alignProductActionsWithPsychoeducation,
   mergeProductActionDraftFromLlm,
   mergeTaskDraftFromLlm,
   mergeHabitDraftFromLlm

@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 import { authenticateGuest } from '../middleware/guestAuth.js';
 import Message from '../models/Message.js';
 import guestChatService from '../services/guestChatService.js';
+import { resetConversationSessionState } from '../services/conversationClearService.js';
 import metricsService from '../services/metricsService.js';
 import { GUEST_SESSION_CREATE_RATE_LIMIT } from '../constants/guestChat.js';
 import { resolveRequestLanguage } from '../utils/apiLanguage.js';
@@ -138,6 +139,7 @@ router.delete(
         conversationId,
         guestSessionId: req.guestSession._id,
       });
+      await resetConversationSessionState(conversationId, { full: true });
       res.json({
         message: req.apiCopy.messagesDeletedSuccess,
         deletedCount: result.deletedCount,

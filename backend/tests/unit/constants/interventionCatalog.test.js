@@ -26,11 +26,28 @@ describe('interventionCatalog', () => {
 
   it('cada entrada psychoeducation_* tiene topic válido en params', () => {
     const psycho = listCatalogInterventionIds().filter((id) => id.startsWith('psychoeducation_'));
-    expect(psycho.length).toBe(7);
+    expect(psycho.length).toBe(9);
     psycho.forEach((id) => {
       const entry = getInterventionCatalogEntry(id);
       expect(normalizePsychoeducationTopic(entry.params?.topic)).toBeTruthy();
     });
+  });
+
+  it('enriquece tarjetas de micro-guía con pantalla MicroGuide (#90–#99)', () => {
+    const [card] = actionSuggestionService.formatSuggestions(['dbt_stop_skill'], 'es');
+    expect(card.interventionType).toBe('micro_guide');
+    expect(card.screen).toBe('MicroGuide');
+    expect(card.params?.guideId).toBe('dbt_stop_skill');
+    expect(card.cardVariant).toBe('micro_guide_native');
+    expect(card.previewSummary).toBeTruthy();
+    expect(Array.isArray(card.microSteps)).toBe(true);
+    expect(card.microSteps.length).toBeGreaterThan(0);
+  });
+
+  it('micro-guía legacy sin screen en catálogo usa MicroGuide en formatSuggestions', () => {
+    const [card] = actionSuggestionService.formatSuggestions(['reframing_tool'], 'en');
+    expect(card.screen).toBe('MicroGuide');
+    expect(card.params?.guideId).toBe('reframing_tool');
   });
 
   it('enriquece tarjetas de psicoeducación para chat (#78)', () => {

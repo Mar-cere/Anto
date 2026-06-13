@@ -126,6 +126,30 @@ const habitSchema = new mongoose.Schema({
     required: [true, 'El usuario es requerido'],
     index: true
   },
+  /** Origen en plan semanal BA (fase 1 ecosistema); opcional. */
+  baOrigin: {
+    weekPlanId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'BehavioralActivationWeekPlan',
+      default: undefined,
+    },
+    slotId: {
+      type: String,
+      trim: true,
+      maxlength: 64,
+      default: undefined,
+    },
+    logId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'BehavioralActivationLog',
+      default: undefined,
+    },
+    source: {
+      type: String,
+      enum: ['ba_week_plan_v1'],
+      default: undefined,
+    },
+  },
   /** Origen en chat (CONTRATO_CHAT_ACCIONES_V1); opcional. */
   chatOrigin: {
     conversationId: {

@@ -68,7 +68,7 @@ describe('buildWeeklySummaryEmailContext', () => {
     expect(ctx.benefitSectionTitle).toBe('En tu resumen');
     expect(ctx.updatesLines).toHaveLength(6);
     expect(ctx.updatesLines.join(' ')).toMatch(
-      /resumen|notificaciones|tareas|hábitos|pomodoro|tema claro|chat|Ecosistema/i
+      /chat|psicoeducación|ABC|exposición|activación|pensamientos automáticos|técnicas guiadas/i
     );
     expect(ctx.giftBadgeLabel).toBe('Regalo');
     expect(ctx.giftTitle).toMatch(/1 día|Premium/i);

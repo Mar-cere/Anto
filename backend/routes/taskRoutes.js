@@ -22,6 +22,7 @@ import {
 import { resolveRequestLanguage } from '../utils/apiLanguage.js';
 import { taskApiCopy } from '../utils/taskApiCopy.js';
 import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
+import { syncBaSlotFromProductCompletion } from '../services/behavioralActivationProductBridgeService.js';
 
 const router = express.Router();
 
@@ -691,6 +692,10 @@ router.put('/:id', validateObjectId, updateTaskLimiter, async (req, res) => {
     await task.save();
     await bumpUserTasksCompletedIfNewlyCompleted(req.user._id, previousStatus, task);
 
+    if (previousStatus !== 'completed' && task.status === 'completed') {
+      syncBaSlotFromProductCompletion({ userId: req.user._id, taskId: task._id }).catch(() => {});
+    }
+
     res.json({ 
       success: true, 
       message: req.apiCopy.updatedSuccess,
@@ -742,6 +747,8 @@ router.patch('/:id/complete', validateObjectId, patchTaskLimiter, async (req, re
 
     await task.markAsCompleted();
     await bumpUserTasksCompletedIfNewlyCompleted(req.user._id, previousStatus, task);
+
+    syncBaSlotFromProductCompletion({ userId: req.user._id, taskId: task._id }).catch(() => {});
 
     res.json({ 
       success: true, 

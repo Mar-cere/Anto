@@ -111,12 +111,12 @@ const BENEFIT_BUNDLES_EN = [
 ];
 
 const WEEKLY_PRODUCT_NEWS_LINES_EN = [
-  `Ecosystem connected to chat: tasks, habits, and pomodoros without leaving the conversation.`,
-  `Smart tasks: suggestions aligned with what you discussed and less friction to take action.`,
-  `More stable chat: better continuity, recovery if a reply cuts off, and a short summary when you return.`,
-  `Light theme for those who prefer bright screens and comfortable reading.`,
-  `Smarter notifications: more useful alerts, less noise, and reasonable daily limits.`,
-  `Renewed weekly and monthly summary: one view for how chat, tasks, habits, and focus fit together.`,
+  `Guided techniques from chat: when you share how you feel, Anto can suggest specific exercises and open them with helpful details already filled in.`,
+  `Psychoeducation library: short modules on anxiety, stress, sleep, and more, ready when you want to read.`,
+  `ABC record: note the situation, thought, and consequence in a simple step-by-step flow.`,
+  `Exposure hierarchy: build steps from easier to harder and log your anxiety (SUDS) as you practice.`,
+  `Behavioral activation: pick a small activity and log how you felt before and after.`,
+  `Automatic thought record: identify difficult thoughts and common patterns in clear, accessible language.`,
 ];
 
 const CLOSING_LINE_VARIANTS_EN = [

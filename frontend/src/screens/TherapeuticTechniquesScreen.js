@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FloatingNavBar from '../components/FloatingNavBar';
 import Header from '../components/Header';
 import ParticleBackground from '../components/ParticleBackground';
+import TccProtocolsQuickCard from '../components/TccProtocolsQuickCard';
 import TechniqueCard from '../components/therapeutic/TechniqueCard';
 import { useTheme } from '../context/ThemeContext';
 import {
@@ -97,13 +98,30 @@ const TherapeuticTechniquesScreen = () => {
     [setSelectedEmotion]
   );
 
+  const DIRECT_PROTOCOL_SCREENS = useMemo(
+    () =>
+      new Set([
+        'BehavioralActivation',
+        'AbcRecord',
+        'ExposureHierarchy',
+        'AutomaticThoughtRecord',
+      ]),
+    [],
+  );
+
   const handleTechniquePress = useCallback(
     (technique) => {
       if (technique == null || typeof technique !== 'object') return;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      const linkedScreen =
+        typeof technique.linkedScreen === 'string' ? technique.linkedScreen.trim() : '';
+      if (linkedScreen && DIRECT_PROTOCOL_SCREENS.has(linkedScreen)) {
+        therapeuticSafeNavigate(navigation, linkedScreen);
+        return;
+      }
       therapeuticSafeNavigate(navigation, 'TechniqueDetail', { technique });
     },
-    [navigation]
+    [navigation, DIRECT_PROTOCOL_SCREENS],
   );
 
   const toggleSection = useCallback((categoryKey) => {
@@ -273,6 +291,23 @@ const TherapeuticTechniquesScreen = () => {
             </View>
             <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textSecondary} />
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.psychoedCard, { marginTop: 12, width: '100%' }]}
+            testID="microguide-entry-library"
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+              therapeuticSafeNavigate(navigation, 'MicroGuideLibrary');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={TEXTS.MICRO_GUIDE_LIBRARY}
+          >
+            <MaterialCommunityIcons name="compass-outline" size={22} color={colors.primary} />
+            <View style={styles.psychoedCardText}>
+              <Text style={styles.psychoedCardTitle}>{TEXTS.MICRO_GUIDE_LIBRARY}</Text>
+              <Text style={styles.psychoedCardHint}>{TEXTS.MICRO_GUIDE_LIBRARY_HINT}</Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textSecondary} />
+          </TouchableOpacity>
         </ScrollView>
       );
     }
@@ -296,6 +331,7 @@ const TherapeuticTechniquesScreen = () => {
           <MaterialCommunityIcons name="hand-pointing-right" size={18} color={colors.primary} />
           <Text style={styles.listIntroText}>{TEXTS.HOW_IT_WORKS}</Text>
         </View>
+        <TccProtocolsQuickCard />
         <TouchableOpacity
           style={styles.psychoedCard}
           testID="psychoed-entry-library"
@@ -312,6 +348,25 @@ const TherapeuticTechniquesScreen = () => {
           <View style={styles.psychoedCardText}>
             <Text style={styles.psychoedCardTitle}>{TEXTS.PSYCHOED_LIBRARY}</Text>
             <Text style={styles.psychoedCardHint}>{TEXTS.PSYCHOED_LIBRARY_HINT}</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textSecondary} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.psychoedCard}
+          testID="microguide-entry-library"
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+            therapeuticSafeNavigate(navigation, 'MicroGuideLibrary');
+          }}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={TEXTS.MICRO_GUIDE_LIBRARY}
+          accessibilityHint={TEXTS.MICRO_GUIDE_LIBRARY_HINT}
+        >
+          <MaterialCommunityIcons name="compass-outline" size={22} color={colors.primary} />
+          <View style={styles.psychoedCardText}>
+            <Text style={styles.psychoedCardTitle}>{TEXTS.MICRO_GUIDE_LIBRARY}</Text>
+            <Text style={styles.psychoedCardHint}>{TEXTS.MICRO_GUIDE_LIBRARY_HINT}</Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textSecondary} />
         </TouchableOpacity>

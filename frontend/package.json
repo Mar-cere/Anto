@@ -1,6 +1,6 @@
 {
   "name": "frontend",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
@@ -15,7 +15,7 @@
     "check:safe-area": "node scripts/check-safe-area-provider.js",
     "check": "npm run check:imports && npm run check:safe-area",
     "test:e2e:maestro": "maestro test e2e/maestro/chat-roundtrip-from-tabs.yaml",
-    "test:e2e:maestro:psychoed": "maestro test e2e/maestro/psychoeducation-seven-modules.yaml",
+    "test:e2e:maestro:psychoed": "maestro test e2e/maestro/psychoeducation-nine-modules.yaml",
     "postinstall": "node -e \"try { const pkg = require('./node_modules/@react-native/normalize-colors/package.json'); if (!pkg.main) { pkg.main = 'index.js'; require('fs').writeFileSync('./node_modules/@react-native/normalize-colors/package.json', JSON.stringify(pkg, null, 2)); } } catch(e) {}\""
   },
   "dependencies": {

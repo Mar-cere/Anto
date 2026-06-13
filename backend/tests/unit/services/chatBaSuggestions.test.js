@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import actionSuggestionService, {
   applyBaSuggestionPolicy,
   shouldBoostBaSuggestion,
@@ -5,6 +6,7 @@ import actionSuggestionService, {
 import emotionalAnalyzer from '../../../services/emotionalAnalyzer.js';
 import { getInterventionCatalogEntry } from '../../../constants/interventionCatalog.js';
 import { planChatActionSuggestions } from '../../../services/psychoeducationPromptSnippetService.js';
+import chatInterventionGraphService from '../../../services/chatInterventionGraphService.js';
 import {
   CHAT_BA_SMOKE_CASES,
   CHAT_BA_SMOKE_CASES_EN,
@@ -51,6 +53,9 @@ describe('chatBaSuggestions (#88)', () => {
   });
 
   it('planChatActionSuggestions incluye prefill en behavioral_activation', async () => {
+    const hasShownSpy = jest
+      .spyOn(chatInterventionGraphService, 'hasShownSuggestionsInActiveSession')
+      .mockResolvedValue(false);
     const analysis = await emotionalAnalyzer.analyzeEmotion(CANONICAL_APATHY);
     const plan = await planChatActionSuggestions({
       emotionalAnalysis: analysis,
@@ -65,6 +70,7 @@ describe('chatBaSuggestions (#88)', () => {
     expect(ba?.params?.fromChat).toBe(true);
     expect(ba?.params?.prefillMoodBefore).toBe(6);
     expect(ba?.params?.prefillActivityDescription).toMatch(/paseo/i);
+    hasShownSpy.mockRestore();
   });
 
   it('applyBaSuggestionPolicy no desplaza ABC si ya es primero', () => {

@@ -54,10 +54,13 @@ import ConnectionExerciseScreen from '../screens/techniques/ConnectionExerciseSc
 import SocialActivityScreen from '../screens/techniques/SocialActivityScreen';
 import PsychoeducationLibraryScreen from '../screens/techniques/PsychoeducationLibraryScreen';
 import PsychoeducationModuleScreen from '../screens/techniques/PsychoeducationModuleScreen';
+import MicroGuideScreen from '../screens/techniques/MicroGuideScreen';
+import MicroGuideLibraryScreen from '../screens/techniques/MicroGuideLibraryScreen';
 import AboutScreen from '../screens/AboutScreen';
 import AIPrivacyScreen from '../screens/AIPrivacyScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import SummaryScreen from '../screens/SummaryScreen';
+import SessionInsightScreen from '../screens/SessionInsightScreen';
 import { useTheme } from '../context/ThemeContext';
 import TabNavigator from './TabNavigator';
 
@@ -86,6 +89,7 @@ const ROUTE_NAMES = {
   ABOUT: 'About',
   AI_PRIVACY: 'AIPrivacy',
   ACTIVITY_SUMMARY: 'ActivitySummary',
+  SESSION_INSIGHT: 'SessionInsight',
   CHANGE_PASSWORD: 'ChangePassword',
 };
 
@@ -200,6 +204,11 @@ const StackNavigator = () => {
       <Stack.Screen
         name={ROUTE_NAMES.ACTIVITY_SUMMARY}
         component={SummaryScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name={ROUTE_NAMES.SESSION_INSIGHT}
+        component={SessionInsightScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen 
@@ -353,6 +362,16 @@ const StackNavigator = () => {
       <Stack.Screen
         name="PsychoeducationModule"
         component={PsychoeducationModuleScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="MicroGuideLibrary"
+        component={MicroGuideLibraryScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="MicroGuide"
+        component={MicroGuideScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

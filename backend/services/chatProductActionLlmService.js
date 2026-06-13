@@ -4,7 +4,11 @@
  * Modelo dedicado (opcional): OPENAI_PRODUCT_ACTION_MODEL
  */
 import openaiService from './openaiService.js';
-import { mergeProductActionDraftFromLlm } from './chatProductActionProposalService.js';
+import {
+  mergeProductActionDraftFromLlm,
+  alignProductActionsWithPsychoeducation,
+  getPsychoeducationProductActionContext,
+} from './chatProductActionProposalService.js';
 import { OPENAI_MODEL } from '../constants/openai.js';
 import { withTimeout } from '../utils/withTimeout.js';
 
@@ -95,7 +99,7 @@ function baselineDraftForPrompt(draft) {
   }
 }
 
-async function extractDraftWithLlm(action, userContent, assistantContent) {
+async function extractDraftWithLlm(action, userContent, assistantContent, ctx = {}) {
   if (!process.env.OPENAI_API_KEY) return null;
 
   const model = (process.env.OPENAI_PRODUCT_ACTION_MODEL || '').trim() || OPENAI_MODEL;
@@ -120,13 +124,15 @@ Si proposalType es "propose_habit", usa:
 - reminderTime (string ISO 8601; no anterior al inicio de hoy)
 - priority: "low" | "medium" | "high"
 
-Reglas: prioriza el mensaje del usuario; el mensaje del asistente es solo contexto. Si falta detalle, reutiliza valores razonables del baselineDraft. No anides otro objeto "draft".`;
+Reglas: prioriza el mensaje del usuario; el mensaje del asistente es solo contexto. Si falta detalle, reutiliza valores razonables del baselineDraft. No anides otro objeto "draft".
+Si el payload incluye psychoeducationContext (topicTitle, microSteps), el title debe pertenecer al mismo tema general. Puedes adaptarlo a lo que el usuario dijo (p. ej. si habla de no poder dormir por rumiar, una tarea de anotar preocupaciones antes de acostarse encaja con el módulo de sueño). Solo evita saltar a temas ajenos (p. ej. ordenar la cocina si el módulo es sueño).`;
 
   const userPayload = {
     proposalType,
     userMessage: trimContent(userContent, MAX_USER_CHARS),
     assistantMessage: trimContent(assistantContent, MAX_ASSISTANT_CHARS),
-    baselineDraft: baselineDraftForPrompt(action.draft)
+    baselineDraft: baselineDraftForPrompt(action.draft),
+    ...(ctx?.psychoeducationContext ? { psychoeducationContext: ctx.psychoeducationContext } : {}),
   };
 
   const bodyBase = {
@@ -200,10 +206,20 @@ function cloneProductAction(action) {
 
 export async function enrichProposedProductActionsWithLlm(actions, ctx) {
   if (!Array.isArray(actions) || actions.length === 0) return actions;
-  if (process.env.CHAT_PRODUCT_ACTION_LLM === 'false') return actions;
+  if (process.env.CHAT_PRODUCT_ACTION_LLM === 'false') {
+    return alignProductActionsWithPsychoeducation(actions, {
+      primaryPsychoeducationId: ctx?.primaryPsychoeducationId,
+      language: ctx?.language,
+      userContent: ctx?.userContent,
+    });
+  }
 
   const userContent = ctx?.userContent ?? '';
   const assistantContent = ctx?.assistantContent ?? '';
+  const psychoeducationContext =
+    ctx?.psychoeducationContext ||
+    getPsychoeducationProductActionContext(ctx?.primaryPsychoeducationId, ctx?.language);
+  const llmCtx = psychoeducationContext ? { psychoeducationContext } : {};
 
   const out = [];
   for (let i = 0; i < actions.length; i += 1) {
@@ -217,7 +233,7 @@ export async function enrichProposedProductActionsWithLlm(actions, ctx) {
       continue;
     }
     try {
-      const payload = await extractDraftWithLlm(action, userContent, assistantContent);
+      const payload = await extractDraftWithLlm(action, userContent, assistantContent, llmCtx);
       if (payload && Object.keys(payload).length > 0) {
         out.push(mergeProductActionDraftFromLlm(action, payload));
       } else {
@@ -228,7 +244,11 @@ export async function enrichProposedProductActionsWithLlm(actions, ctx) {
       out.push(cloneProductAction(action));
     }
   }
-  return out;
+  return alignProductActionsWithPsychoeducation(out, {
+    primaryPsychoeducationId: ctx?.primaryPsychoeducationId,
+    language: ctx?.language,
+    userContent: ctx?.userContent,
+  });
 }
 
 export default {

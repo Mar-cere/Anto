@@ -22,6 +22,8 @@ export const TEXTS = {
   STATS_HINT: 'Ver tu uso y progreso',
   PSYCHOED_LIBRARY: 'Módulos de psicoeducación',
   PSYCHOED_LIBRARY_HINT: 'Temas breves con fuentes y lenguaje no diagnóstico',
+  MICRO_GUIDE_LIBRARY: 'Micro-guías',
+  MICRO_GUIDE_LIBRARY_HINT: 'Prácticas breves paso a paso para el momento',
   CLEAR_EMOTION_FILTER: 'Ver todas',
   /** Cabeceras cortas en acordeón (nombre largo en accesibilidad). */
   CATEGORY_IMMEDIATE_SHORT: 'Inmediatas',
@@ -77,6 +79,11 @@ export function useTherapeuticTechniquesTexts() {
       PSYCHOED_LIBRARY_HINT:
         translated?.THERAPEUTIC_TECHNIQUES_PSYCHOED_LIBRARY_HINT ||
         TEXTS.PSYCHOED_LIBRARY_HINT,
+      MICRO_GUIDE_LIBRARY:
+        translated?.THERAPEUTIC_TECHNIQUES_MICRO_GUIDE_LIBRARY || TEXTS.MICRO_GUIDE_LIBRARY,
+      MICRO_GUIDE_LIBRARY_HINT:
+        translated?.THERAPEUTIC_TECHNIQUES_MICRO_GUIDE_LIBRARY_HINT ||
+        TEXTS.MICRO_GUIDE_LIBRARY_HINT,
       CLEAR_EMOTION_FILTER:
         translated?.THERAPEUTIC_TECHNIQUES_CLEAR_EMOTION_FILTER ||
         TEXTS.CLEAR_EMOTION_FILTER,

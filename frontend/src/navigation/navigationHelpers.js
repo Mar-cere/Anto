@@ -27,7 +27,7 @@ export const CHAT_BACK_TARGET = {
  *   — `startGuest`: modo invitado. `chatBackTarget`: solo `home` se persiste en params (dash es el default).
  */
 export function getResetToMainTabsWithChatState(options = {}) {
-  const { startGuest, chatBackTarget } = options;
+  const { startGuest, chatBackTarget, resumeTccLite } = options;
   return {
     index: 0,
     routes: [
@@ -40,6 +40,9 @@ export function getResetToMainTabsWithChatState(options = {}) {
             if (startGuest) params.startGuest = true;
             if (chatBackTarget === CHAT_BACK_TARGET.HOME) {
               params.chatBackTarget = CHAT_BACK_TARGET.HOME;
+            }
+            if (resumeTccLite && typeof resumeTccLite === 'object') {
+              params.resumeTccLite = resumeTccLite;
             }
             return Object.keys(params).length ? { name: 'Chat', params } : { name: 'Chat' };
           }),

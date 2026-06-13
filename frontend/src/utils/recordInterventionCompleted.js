@@ -36,6 +36,24 @@ export function recordInterventionDismissed(interventionId) {
 }
 
 /**
+ * Sugerencias sin wizard propio: el tap en chat cierra el bucle (#127).
+ * @param {{ id?: string, interventionType?: string, screen?: string|null }} suggestion
+ */
+export function shouldRecordInterventionCompletedOnSuggestionPress(suggestion) {
+  if (!suggestion?.id) return false;
+  const type = String(suggestion.interventionType || '').trim();
+  if (type === 'micro_guide') return true;
+  if (type === 'support' && suggestion.screen) return true;
+  return false;
+}
+
+export function recordInterventionCompletedIfInlineSuggestion(suggestion) {
+  if (shouldRecordInterventionCompletedOnSuggestionPress(suggestion)) {
+    recordInterventionCompleted(suggestion.id);
+  }
+}
+
+/**
  * Igual que recordInterventionCompleted pero solo una vez por montaje de pantalla.
  */
 export function createInterventionCompletedRecorder() {

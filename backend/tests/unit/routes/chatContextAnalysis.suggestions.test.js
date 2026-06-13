@@ -15,12 +15,23 @@ await jest.unstable_mockModule('../../../services/chatInterventionGraphService.j
 const {
   shouldShowChatActionSuggestions,
   isActionSuggestionException,
+  shouldSuppressLowRelevanceSuggestions,
+  passesActionSuggestionCadence,
 } = await import('../../../routes/chat/chatContextAnalysis.js');
 
 const baseHistory = [
   { role: 'user', content: 'hola' },
   { role: 'user', content: 'sigo mal' },
   { role: 'user', content: 'otro mensaje' },
+];
+
+const cadenceHistory = [
+  { role: 'user', content: '1' },
+  { role: 'user', content: '2' },
+  { role: 'user', content: '3' },
+  { role: 'user', content: '4' },
+  { role: 'user', content: '5' },
+  { role: 'user', content: '6' },
 ];
 
 describe('shouldShowChatActionSuggestions', () => {
@@ -60,7 +71,7 @@ describe('shouldShowChatActionSuggestions', () => {
     const result = await shouldShowChatActionSuggestions({
       emotionalAnalysis: { intensity: 9, mainEmotion: 'ansiedad' },
       contextualAnalysis: {},
-      conversationHistory: baseHistory,
+      conversationHistory: cadenceHistory,
       userId: 'u1',
       conversationId: 'c1',
     });
@@ -71,9 +82,9 @@ describe('shouldShowChatActionSuggestions', () => {
   it('no muestra si ya hubo sugerencias en la sesión activa', async () => {
     mockHasShown.mockResolvedValue(true);
     const result = await shouldShowChatActionSuggestions({
-      emotionalAnalysis: { intensity: 5, mainEmotion: 'ansiedad' },
+      emotionalAnalysis: { intensity: 7, mainEmotion: 'ansiedad' },
       contextualAnalysis: {},
-      conversationHistory: baseHistory,
+      conversationHistory: cadenceHistory,
       userId: 'u1',
       conversationId: 'c1',
     });
@@ -81,15 +92,31 @@ describe('shouldShowChatActionSuggestions', () => {
     expect(mockHasShown).toHaveBeenCalled();
   });
 
-  it('muestra en cadencia si no hubo shown en sesión', async () => {
+  it('muestra en cadencia (cada 6 mensajes) si no hubo shown en sesión', async () => {
+    expect(passesActionSuggestionCadence(baseHistory)).toBe(false);
+    expect(passesActionSuggestionCadence(cadenceHistory)).toBe(true);
+
     const result = await shouldShowChatActionSuggestions({
       emotionalAnalysis: { intensity: 5, mainEmotion: 'ansiedad' },
       contextualAnalysis: {},
-      conversationHistory: baseHistory,
+      conversationHistory: cadenceHistory,
       userId: 'u1',
       conversationId: 'c1',
     });
     expect(result).toBe(true);
+  });
+
+  it('no muestra en contexto de salud banal (resfriado)', async () => {
+    const result = await shouldShowChatActionSuggestions({
+      emotionalAnalysis: { intensity: 6, mainEmotion: 'tristeza' },
+      contextualAnalysis: {},
+      conversationHistory: cadenceHistory,
+      userId: 'u1',
+      conversationId: 'c1',
+      userContent: 'Solo un resfriado común, nada grave.',
+    });
+    expect(result).toBe(false);
+    expect(shouldSuppressLowRelevanceSuggestions('Solo un resfriado común')).toBe(true);
   });
 
   it('muestra en 1.er turno con señal TCC (evitación) aunque intensidad sea 6 (#87)', async () => {

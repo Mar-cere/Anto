@@ -34,6 +34,8 @@ import { recordInterventionCompleted } from '../../utils/recordInterventionCompl
 import { confirmDestructiveAction } from '../../utils/confirmDestructiveAction';
 import { parseExposurePlanRouteParams } from '../../utils/exposurePlanPrefill';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
+import IntensityBeforeAfterMarker from '../../components/techniques/IntensityBeforeAfterMarker';
+import IntensityScalePicker from '../../components/techniques/IntensityScalePicker';
 
 const SUDS_LEVELS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 const MAX_STEPS = 15;
@@ -102,6 +104,7 @@ const DEFAULT_TEXTS = {
   STEP_OF: 'Paso',
   OF: 'de',
   ATTEMPTS: 'intentos',
+  RECENT_ATTEMPTS: 'Últimos intentos',
 };
 
 function formatPlanDate(iso) {
@@ -188,6 +191,7 @@ const ExposureHierarchyScreen = () => {
       STEP_OF: translated?.EXPOSURE_STEP_OF || DEFAULT_TEXTS.STEP_OF,
       OF: translated?.EXPOSURE_OF || DEFAULT_TEXTS.OF,
       ATTEMPTS: translated?.EXPOSURE_ATTEMPTS || DEFAULT_TEXTS.ATTEMPTS,
+      RECENT_ATTEMPTS: translated?.EXPOSURE_RECENT_ATTEMPTS || DEFAULT_TEXTS.RECENT_ATTEMPTS,
     }),
     [translated],
   );
@@ -264,6 +268,15 @@ const ExposureHierarchyScreen = () => {
   useEffect(() => {
     loadPlans();
   }, [loadPlans]);
+
+  useEffect(() => {
+    const openPlanId = route.params?.openPlanId ? String(route.params.openPlanId) : '';
+    if (!openPlanId || loadingPlans || !plans.length) return;
+    if (plans.some((p) => String(p._id) === openPlanId)) {
+      setActivePlanId(openPlanId);
+      setMode(route.params?.mode === 'create' ? 'create' : 'practice');
+    }
+  }, [route.params?.openPlanId, route.params?.mode, plans, loadingPlans]);
 
   useEffect(() => {
     setPeakSuds(50);
@@ -525,42 +538,17 @@ const ExposureHierarchyScreen = () => {
     }
   };
 
-  const renderSudsPicker = (label, value, onChange) => (
-    <View style={styles.sudsBlock}>
-      <Text style={techniqueScreenStyles.formSectionHeading}>{label}</Text>
-      <View style={styles.sudsRow}>
-        {SUDS_LEVELS.map((level) => {
-          const selected = value === level;
-          return (
-            <TouchableOpacity
-              key={`${label}-${level}`}
-              style={[
-                styles.sudsChip,
-                {
-                  backgroundColor: selected ? colors.accentLineSoft : colors.chromeInput,
-                  borderColor: selected ? colors.primary : colors.accentLineSoft,
-                },
-              ]}
-              onPress={() => {
-                Haptics.selectionAsync().catch(() => {});
-                onChange(level);
-              }}
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-            >
-              <Text
-                style={[
-                  styles.sudsChipText,
-                  { color: selected ? colors.primary : colors.textSecondary },
-                ]}
-              >
-                {level}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
+  const renderSudsPicker = (label, value, onChange, pickerStyle) => (
+    <IntensityScalePicker
+      label={label}
+      values={SUDS_LEVELS}
+      value={value}
+      onChange={onChange}
+      lowLabel="0"
+      highLabel="100"
+      accessibilityLabelPrefix={label}
+      style={pickerStyle}
+    />
   );
 
   const renderStepProgress = (plan) => {
@@ -775,9 +763,37 @@ const ExposureHierarchyScreen = () => {
             <Text style={techniqueScreenStyles.formHint}>
               {(currentStep.attempts?.length || 0)} {TEXTS.ATTEMPTS}
             </Text>
-            {renderSudsPicker(TEXTS.PEAK_SUDS, peakSuds, setPeakSuds)}
-            {renderSudsPicker(TEXTS.END_SUDS, endSuds, setEndSuds)}
-            <Text style={techniqueScreenStyles.formSectionHeading}>{TEXTS.NOTES_LABEL}</Text>
+            {renderSudsPicker(TEXTS.PEAK_SUDS, peakSuds, setPeakSuds, styles.sudsPickerFirst)}
+            {renderSudsPicker(TEXTS.END_SUDS, endSuds, setEndSuds, styles.sudsPickerSecond)}
+            {currentStep?.attempts?.length > 0 ? (
+              <View style={styles.recentAttemptsBlock}>
+                <Text style={[techniqueScreenStyles.formSectionHeading, styles.recentAttemptsTitle]}>
+                  {TEXTS.RECENT_ATTEMPTS}
+                </Text>
+                {[...(currentStep.attempts || [])]
+                  .slice(-3)
+                  .reverse()
+                  .map((attempt) => (
+                    <View key={String(attempt._id || attempt.attemptDate)} style={styles.attemptRow}>
+                      <Text style={techniqueScreenStyles.formHint}>
+                        {formatPlanDate(attempt.attemptDate)}
+                      </Text>
+                      <IntensityBeforeAfterMarker
+                        beforeValue={attempt.peakSuds}
+                        afterValue={attempt.endSuds}
+                        min={0}
+                        max={100}
+                        deltaMode="lower-is-better"
+                        compact
+                        style={{ marginTop: SPACING.xs }}
+                      />
+                    </View>
+                  ))}
+              </View>
+            ) : null}
+            <Text style={[techniqueScreenStyles.formSectionHeading, styles.notesHeading]}>
+              {TEXTS.NOTES_LABEL}
+            </Text>
             <TextInput
               style={[techniqueScreenStyles.textInput, styles.notesInput]}
               placeholder={TEXTS.NOTES_PLACEHOLDER}
@@ -1053,22 +1069,6 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
   },
   validationText: { marginTop: SPACING.sm, fontSize: 14 },
-  sudsBlock: { marginTop: SPACING.sm },
-  sudsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: SPACING.xs,
-  },
-  sudsChip: {
-    minWidth: 40,
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-  },
-  sudsChipText: { fontSize: 12, fontWeight: '600' },
   progressBlock: { marginBottom: SPACING.sm },
   progressTrack: {
     height: 6,
@@ -1079,6 +1079,28 @@ const styles = StyleSheet.create({
   progressFill: {
     height: '100%',
     borderRadius: 3,
+  },
+  sudsPickerFirst: {
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.sm,
+  },
+  sudsPickerSecond: {
+    marginTop: 0,
+    marginBottom: SPACING.lg,
+  },
+  recentAttemptsBlock: {
+    marginBottom: SPACING.sm,
+  },
+  recentAttemptsTitle: {
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.xs,
+  },
+  attemptRow: {
+    marginBottom: SPACING.sm,
+  },
+  notesHeading: {
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
   notesInput: { minHeight: 72, marginTop: SPACING.xs },
   practiceAction: { alignSelf: 'stretch', marginTop: SPACING.sm },

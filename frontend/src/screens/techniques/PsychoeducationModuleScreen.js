@@ -44,6 +44,8 @@ const TOPIC_TO_INTERVENTION_ID = {
   sleep: 'psychoeducation_sleep',
   emotionRegulation: 'psychoeducation_emotion_regulation',
   trauma: 'psychoeducation_trauma',
+  grief: 'psychoeducation_grief',
+  burnout: 'psychoeducation_burnout',
 };
 
 const PsychoeducationModuleScreen = () => {

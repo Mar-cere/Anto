@@ -70,7 +70,7 @@ describe('Therapeutic Techniques Routes i18n', () => {
     expect(Array.isArray(response.body.data)).toBe(true);
     expect(response.body.data.some((m) => m.topic === 'anxiety')).toBe(true);
     expect(response.body.topics).toContain('anxiety');
-    expect(response.body.data.length).toBe(7);
+    expect(response.body.data.length).toBe(9);
     response.body.data.forEach((item) => {
       expect(item.topic).toBeTruthy();
       expect(item.title).toBeTruthy();
@@ -99,7 +99,45 @@ describe('Therapeutic Techniques Routes i18n', () => {
     'sleep',
     'emotionRegulation',
     'trauma',
+    'grief',
+    'burnout',
   ];
+
+  it('GET /micro-guides lista guías en español', async () => {
+    const response = await request(app)
+      .get('/api/therapeutic-techniques/micro-guides')
+      .set('X-App-Language', 'es');
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(Array.isArray(response.body.data)).toBe(true);
+    expect(response.body.data.length).toBeGreaterThan(10);
+    expect(response.body.data[0]).toMatchObject({
+      guideId: expect.any(String),
+      title: expect.any(String),
+      stepCount: expect.any(Number),
+    });
+  });
+
+  it('GET /micro-guides/:guideId devuelve módulo en inglés', async () => {
+    const response = await request(app)
+      .get('/api/therapeutic-techniques/micro-guides/dbt_stop_skill')
+      .set('X-App-Language', 'en');
+
+    expect(response.status).toBe(200);
+    expect(response.body.guideId).toBe('dbt_stop_skill');
+    expect(response.body.data.title).toMatch(/STOP/i);
+    expect(response.body.data.steps.length).toBeGreaterThan(1);
+  });
+
+  it('GET /micro-guides/:guideId responde 404 si no existe', async () => {
+    const response = await request(app)
+      .get('/api/therapeutic-techniques/micro-guides/no_existe_xyz')
+      .set('X-App-Language', 'es');
+
+    expect(response.status).toBe(404);
+    expect(response.body.success).toBe(false);
+  });
 
   it.each(allTopics)('GET /psychoeducation/%s responde 200 en es', async (topic) => {
     const response = await request(app)

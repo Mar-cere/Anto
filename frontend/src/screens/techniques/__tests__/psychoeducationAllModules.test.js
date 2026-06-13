@@ -9,6 +9,8 @@ const TOPICS = [
   'sleep',
   'emotionRegulation',
   'trauma',
+  'grief',
+  'burnout',
 ];
 
 function apiModuleEnvelope(topic, language = 'es') {
@@ -21,6 +23,8 @@ function apiModuleEnvelope(topic, language = 'es') {
       sleep: 'Sueño',
       emotionRegulation: 'Regulación emocional',
       trauma: 'Experiencias difíciles',
+      grief: 'Duelo y pérdida',
+      burnout: 'Agotamiento y burnout',
     },
     en: {
       anxiety: 'Anxiety',
@@ -30,6 +34,8 @@ function apiModuleEnvelope(topic, language = 'es') {
       sleep: 'Sleep',
       emotionRegulation: 'Emotion regulation',
       trauma: 'Difficult experiences',
+      grief: 'Grief and loss',
+      burnout: 'Exhaustion and burnout',
     },
   };
   const lang = language === 'en' ? 'en' : 'es';

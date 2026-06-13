@@ -55,6 +55,7 @@ import {
     writingStyleDetector
 } from '../services/index.js';
 import { scheduleLastSessionSummary } from '../services/lastSessionSummaryService.js';
+import { buildSessionInsight } from '../services/sessionInsightService.js';
 import metricsService from '../services/metricsService.js';
 import { buildHistoryForPromptFromMessages } from '../services/openai/openaiPromptBuilder.js';
 import paymentAuditService from '../services/paymentAuditService.js';
@@ -67,7 +68,19 @@ import {
   isValidInterventionId,
 } from '../constants/interventionCatalog.js';
 import chatInterventionGraphService from '../services/chatInterventionGraphService.js';
-import { planChatActionSuggestions } from '../services/psychoeducationPromptSnippetService.js';
+import { buildChatTccContinuity } from '../services/chatTccContinuityService.js';
+import {
+  planChatTurnEnhancements,
+  buildOpenaiEnhancementSnippets,
+  buildAssistantMetadataWithEnhancements,
+  finalizeChatTurnEnhancements,
+  buildClientTurnPayload,
+} from '../services/chatTurnEnhancementsService.js';
+import { toTccLiteClientPayload } from '../services/chatTccLiteService.js';
+import { normalizeTccLiteState } from '../services/tccLiteConversationStateService.js';
+import { tccLiteStepIndex, tccLiteStepOrder } from '../utils/tccLiteCopy.js';
+import { getAutomaticThoughtDistortionLabel } from '../constants/automaticThoughtDistortionPicker.js';
+import { resetConversationSessionState } from '../services/conversationClearService.js';
 import { cursorPaginate } from '../utils/pagination.js';
 import {
     HISTORIAL_LIMITE,
@@ -137,7 +150,7 @@ router.get('/conversations/:conversationId', protect, validarConversationId, val
         .limit(parseInt(limit))
         .lean(),
       Message.countDocuments(query),
-      Conversation.findById(convId).select('sessionIntention').lean()
+      Conversation.findById(convId).select('sessionIntention tccLiteState').lean()
     ]);
 
     // Asegurar que el primer mensaje del historial sea del asistente (y quede persistido).
@@ -234,9 +247,32 @@ router.get('/conversations/:conversationId', protect, validarConversationId, val
       page: parseInt(page, 10) || 1
     });
 
+    const appLanguage = req.appLanguage || resolveRequestLanguage(req);
+    const persistedTcc = normalizeTccLiteState(convMeta?.tccLiteState);
+    let tccLite = null;
+    if (persistedTcc && !persistedTcc.completed && persistedTcc.step) {
+      const dtype = persistedTcc.distortionType;
+      tccLite = toTccLiteClientPayload(
+        {
+          active: true,
+          step: persistedTcc.step,
+          stepIndex: tccLiteStepIndex(persistedTcc.step),
+          stepTotal: tccLiteStepOrder().length,
+          distortionType: dtype,
+          distortionLabel: dtype
+            ? getAutomaticThoughtDistortionLabel(dtype, appLanguage) || null
+            : null,
+          completed: false,
+          atHandoff: null,
+        },
+        appLanguage,
+      );
+    }
+
     res.json({
       messages: uniqueMessages.reverse(),
       sessionIntention: sanitizeSessionIntentionForClient(convMeta?.sessionIntention),
+      tccLite,
       pagination: {
         total,
         page: parseInt(page),
@@ -437,6 +473,36 @@ router.get('/interventions/graph', protect, requireActiveSubscription(true), asy
   }
 });
 
+/**
+ * GET /api/chat/tcc-continuity
+ * Ítems accionables para retomar protocolos TCC (BA, exposición) en el chat.
+ */
+router.get('/tcc-continuity', protect, requireActiveSubscription(true), async (req, res) => {
+  try {
+    const language = req.appLanguage || resolveRequestLanguage(req);
+    const data = await buildChatTccContinuity({ userId: req.user._id, language });
+    const conversationId = String(req.query?.conversationId || '').trim();
+    if (
+      conversationId &&
+      mongoose.Types.ObjectId.isValid(conversationId) &&
+      Array.isArray(data?.items) &&
+      data.items.length > 0
+    ) {
+      chatInterventionGraphService
+        .recordContinuityItemsShown({
+          userId: req.user._id,
+          conversationId: new mongoose.Types.ObjectId(conversationId),
+          items: data.items,
+        })
+        .catch(() => {});
+    }
+    return res.json({ success: true, data, language });
+  } catch (error) {
+    console.error('[ChatRoutes] GET /tcc-continuity:', error);
+    return res.status(500).json({ success: false, message: req.apiCopy?.serverError || 'Error del servidor' });
+  }
+});
+
 // Crear nueva conversación con mensaje de bienvenida
 // Optimizado: saludo sin cargar perfil en la ruta crítica para reducir latencia (<1s)
 router.post('/conversations', protect, requireActiveSubscription(true), async (req, res) => {
@@ -556,6 +622,35 @@ router.post(
   }
 );
 
+/**
+ * GET /api/chat/conversations/:conversationId/session-insight
+ * Insight inmediato al cerrar el chat (emoción, patrón, paso sugerido).
+ */
+router.get(
+  '/conversations/:conversationId/session-insight',
+  protect,
+  requireActiveSubscription(true),
+  validarConversationId,
+  validarConversacion,
+  async (req, res) => {
+    try {
+      const language = req.appLanguage || resolveRequestLanguage(req);
+      const insight = await buildSessionInsight({
+        userId: req.user._id,
+        conversationId: req.params.conversationId,
+        language,
+      });
+      return res.json({ success: true, data: insight });
+    } catch (error) {
+      console.error('[chatRoutes] session-insight:', error);
+      return res.status(500).json({
+        success: false,
+        message: req.apiCopy.sessionInsightError,
+      });
+    }
+  },
+);
+
 // Crear nuevo mensaje
 router.post('/messages', protect, requireActiveSubscription(true), sendMessageLimiter, async (req, res) => {
   const startTime = Date.now();
@@ -564,7 +659,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
   let assistantMessage = null;
   
   try {
-    const { conversationId, content, role = 'user' } = req.body;
+    const { conversationId, content, role = 'user', resumeTccLite = null } = req.body;
 
     // SEGURIDAD: Validar formato de conversationId
     if (!conversationId) {
@@ -1254,16 +1349,22 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         const forceFactualMode = detectFactualModeFromMessage({ currentMessage: content });
 
         const appLanguageForChat = req.appLanguage || resolveRequestLanguage(req);
-        const suggestionPlan = await planChatActionSuggestions({
-          emotionalAnalysis,
-          contextualAnalysis,
-          userContent: content,
+        const turnEnhancements = await planChatTurnEnhancements({
           userId: req.user._id,
           conversationId,
+          userContent: content,
           conversationHistory,
+          emotionalAnalysis,
+          contextualAnalysis,
+          riskLevel,
+          sessionIntention: sessionIntentionSafe,
           language: appLanguageForChat,
+          resumeTccLite:
+            resumeTccLite && typeof resumeTccLite === 'object' ? resumeTccLite : null,
         });
-        
+        const { suggestionPlan, tccLitePlan } = turnEnhancements;
+        const promptSnippets = buildOpenaiEnhancementSnippets(turnEnhancements);
+
         const openaiContext = {
           rollingSummary: conversation?.rollingSummary || null,
           sessionPhase,
@@ -1302,7 +1403,9 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           sessionIntention: sessionIntentionSafe,
           responseStrategyHint,
           conversationPattern,
-          psychoeducationPromptSnippet: suggestionPlan.psychoeducationPromptSnippet,
+          psychoeducationPromptSnippet: promptSnippets.psychoeducationPromptSnippet,
+          activeTccProtocolsPromptSnippet: promptSnippets.activeTccProtocolsPromptSnippet,
+          tccLitePromptSnippet: promptSnippets.tccLitePromptSnippet,
         };
 
         metricsService
@@ -1380,7 +1483,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                     content: response.content,
                     role: 'assistant',
                     conversationId,
-                    metadata: {
+                    metadata: buildAssistantMetadataWithEnhancements({
                       status: 'sent',
                       crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
                       context: {
@@ -1389,7 +1492,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                         response: JSON.stringify(response.context),
                         ...(therapeutic && { therapeutic: { technique: therapeutic.technique, type: therapeutic.type } })
                       }
-                    }
+                    }, tccLitePlan, appLanguageForChat),
                   });
                   await assistantMessage.save();
                 } catch (saveError) {
@@ -1399,7 +1502,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                       content: response.content,
                       role: 'assistant',
                       conversationId,
-                      metadata: {
+                      metadata: buildAssistantMetadataWithEnhancements({
                         status: 'sent',
                         crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
                         context: {
@@ -1408,7 +1511,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                           response: JSON.stringify(response.context),
                           ...(therapeutic && { therapeutic: { technique: therapeutic.technique, type: therapeutic.type } })
                         }
-                      }
+                      }, tccLitePlan, appLanguageForChat),
                     });
                     await assistantMessage.save();
                   } else throw saveError;
@@ -1468,6 +1571,18 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   }).catch(() => {})] : [])
                 ]).catch(() => {});
 
+                await finalizeChatTurnEnhancements({
+                  conversationId,
+                  userId: req.user._id,
+                  assistantMessageId: assistantMessage._id,
+                  tccLitePlan,
+                  suggestionPlan,
+                  emotionalAnalysis,
+                  contextualAnalysis,
+                  userContent: content,
+                  riskLevel,
+                }).catch(() => {});
+
                 scheduleRollingSummaryRefresh({
                   conversationId,
                   userId: req.user._id,
@@ -1482,8 +1597,12 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                 const cognitiveDistortions = contextualAnalysis?.cognitiveDistortions || null;
                 const primaryDistortion = contextualAnalysis?.primaryDistortion || null;
                 const distortionIntervention = contextualAnalysis?.distortionIntervention || null;
-                const formattedSuggestions = suggestionPlan.formatted;
-                if (suggestionPlan.actionIds.length > 0) {
+                const clientTurn = buildClientTurnPayload({
+                  tccLitePlan,
+                  suggestionPlan,
+                  language: appLanguageForChat,
+                });
+                if (suggestionPlan.actionIds?.length > 0) {
                   suggestionPlan.actionIds.forEach((suggestionType) => {
                     metricsService
                       .recordMetric(
@@ -1493,20 +1612,6 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                       )
                       .catch(() => {});
                   });
-                }
-                if (formattedSuggestions.length > 0) {
-                  chatInterventionGraphService
-                    .recordSuggestionEventsShown({
-                      userId: req.user._id,
-                      conversationId: new mongoose.Types.ObjectId(conversationId),
-                      assistantMessageId: assistantMessage?._id || null,
-                      suggestions: formattedSuggestions,
-                      emotionalAnalysis,
-                      contextualAnalysis,
-                      riskLevel,
-                      source: 'chat_suggestions_v1'
-                    })
-                    .catch(() => {});
                 }
 
                 let proposedProductActions = [];
@@ -1544,7 +1649,12 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                     proposedProductActions =
                       await chatProductActionLlmService.enrichProposedProductActionsWithLlm(
                         proposedProductActions,
-                        { userContent: content, assistantContent: response.content }
+                        {
+                          userContent: content,
+                          assistantContent: response.content,
+                          primaryPsychoeducationId: suggestionPlan.primaryPsychoeducationId,
+                          language: appLanguageForChat,
+                        }
                       );
                   } catch (llmPropErr) {
                     console.warn('[ChatRoutes] proposedProductActions LLM (stream):', llmPropErr?.message || llmPropErr);
@@ -1577,11 +1687,13 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   messageId: assistantMessage._id?.toString(),
                   content: response.content,
                   context: { emotional: emotionalAnalysis, contextual: contextualAnalysis },
-                  suggestions: formattedSuggestions,
+                  suggestions: clientTurn.suggestions,
+                  suggestionsPersonalized: clientTurn.suggestionsPersonalized,
                   proposedProductActions,
                   productActionStatus,
                   clinicalScale: scaleSuggestion ? { ...scaleSuggestion, suggestion: clinicalScalesService.generateScaleSuggestion(scaleSuggestion.scale, scaleSuggestion.reason), automaticResult: null } : null,
                   cognitiveDistortions: cognitiveDistortions?.length > 0 ? { detected: cognitiveDistortions, primary: primaryDistortion, intervention: distortionIntervention } : null,
+                  tccLite: clientTurn.tccLite,
                   processingTime: responseTime
                 }) + '\n\n');
 
@@ -1675,7 +1787,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             content: response.content,
             role: 'assistant',
             conversationId,
-            metadata: {
+            metadata: buildAssistantMetadataWithEnhancements({
               status: 'sent',
               crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
               context: {
@@ -1684,7 +1796,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                 response: JSON.stringify(response.context),
                 ...(therapeutic && { therapeutic: { technique: therapeutic.technique, type: therapeutic.type } })
               }
-            }
+            }, tccLitePlan, appLanguageForChat),
           });
           await assistantMessage.save();
         } catch (saveError) {
@@ -1697,7 +1809,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               content: response.content,
               role: 'assistant',
               conversationId,
-              metadata: {
+              metadata: buildAssistantMetadataWithEnhancements({
                 status: 'sent',
                 crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
                 context: {
@@ -1709,7 +1821,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   response: JSON.stringify(response.context),
                   ...(therapeutic && { therapeutic: { technique: therapeutic.technique, type: therapeutic.type } })
                 }
-              }
+              }, tccLitePlan, appLanguageForChat),
             });
             await assistantMessage.save();
           } else {
@@ -1787,6 +1899,18 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             responseStyle: engagement?.preferredResponseLength === 'SHORT' ? 'brief' : engagement?.preferredResponseLength === 'LONG' ? 'deep' : undefined
           }).catch(() => {})] : [])
         ]).catch(() => {}); // Ignorar errores en operaciones no críticas
+
+        await finalizeChatTurnEnhancements({
+          conversationId,
+          userId: req.user._id,
+          assistantMessageId: assistantMessage._id,
+          tccLitePlan,
+          suggestionPlan,
+          emotionalAnalysis,
+          contextualAnalysis,
+          userContent: content,
+          riskLevel,
+        }).catch(() => {});
 
         scheduleRollingSummaryRefresh({
           conversationId,
@@ -1914,8 +2038,12 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           }
         }
         
-        const formattedSuggestions = suggestionPlan.formatted;
-        if (suggestionPlan.actionIds.length > 0) {
+        const clientTurn = buildClientTurnPayload({
+          tccLitePlan,
+          suggestionPlan,
+          language: appLanguageForChat,
+        });
+        if (suggestionPlan.actionIds?.length > 0) {
           suggestionPlan.actionIds.forEach((suggestionType) => {
             metricsService
               .recordMetric(
@@ -1925,20 +2053,6 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               )
               .catch(() => {});
           });
-        }
-        if (formattedSuggestions.length > 0) {
-          chatInterventionGraphService
-            .recordSuggestionEventsShown({
-              userId: req.user._id,
-              conversationId: new mongoose.Types.ObjectId(conversationId),
-              assistantMessageId: assistantMessage?._id || null,
-              suggestions: formattedSuggestions,
-              emotionalAnalysis,
-              contextualAnalysis,
-              riskLevel,
-              source: 'chat_suggestions_v1',
-            })
-            .catch(() => {});
         }
 
         let proposedProductActions = [];
@@ -1976,7 +2090,12 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             proposedProductActions =
               await chatProductActionLlmService.enrichProposedProductActionsWithLlm(
                 proposedProductActions,
-                { userContent: content, assistantContent: response.content }
+                {
+                  userContent: content,
+                  assistantContent: response.content,
+                  primaryPsychoeducationId: suggestionPlan.primaryPsychoeducationId,
+                  language: appLanguageForChat,
+                }
               );
           } catch (llmPropErr) {
             console.warn('[ChatRoutes] proposedProductActions LLM (non-stream):', llmPropErr?.message || llmPropErr);
@@ -2019,7 +2138,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             emotional: emotionalAnalysis,
             contextual: contextualAnalysis
           },
-          suggestions: formattedSuggestions, // Solo se incluyen si es apropiado
+          suggestions: clientTurn.suggestions,
+          suggestionsPersonalized: clientTurn.suggestionsPersonalized,
           proposedProductActions,
           productActionStatus,
           // NUEVO: Información de escalas clínicas y distorsiones cognitivas
@@ -2033,6 +2153,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             primary: primaryDistortion,
             intervention: distortionIntervention
           } : null,
+          tccLite: clientTurn.tccLite,
           processingTime: responseTime
         });
 
@@ -2443,6 +2564,10 @@ router.delete('/conversations/:conversationId', protect, validarConversationId, 
     };
 
     const result = await Message.deleteMany(query);
+
+    if (!role) {
+      await resetConversationSessionState(conversationId, { full: true });
+    }
 
     res.json({
       message: req.apiCopy.messagesDeletedSuccess,
