@@ -1492,7 +1492,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                         response: JSON.stringify(response.context),
                         ...(therapeutic && { therapeutic: { technique: therapeutic.technique, type: therapeutic.type } })
                       }
-                    }, tccLitePlan),
+                    }, tccLitePlan, appLanguageForChat),
                   });
                   await assistantMessage.save();
                 } catch (saveError) {
@@ -1511,7 +1511,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                           response: JSON.stringify(response.context),
                           ...(therapeutic && { therapeutic: { technique: therapeutic.technique, type: therapeutic.type } })
                         }
-                      }, tccLitePlan),
+                      }, tccLitePlan, appLanguageForChat),
                     });
                     await assistantMessage.save();
                   } else throw saveError;
@@ -1796,7 +1796,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                 response: JSON.stringify(response.context),
                 ...(therapeutic && { therapeutic: { technique: therapeutic.technique, type: therapeutic.type } })
               }
-            }, tccLitePlan),
+            }, tccLitePlan, appLanguageForChat),
           });
           await assistantMessage.save();
         } catch (saveError) {
@@ -1821,7 +1821,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   response: JSON.stringify(response.context),
                   ...(therapeutic && { therapeutic: { technique: therapeutic.technique, type: therapeutic.type } })
                 }
-              }, tccLitePlan),
+              }, tccLitePlan, appLanguageForChat),
             });
             await assistantMessage.save();
           } else {

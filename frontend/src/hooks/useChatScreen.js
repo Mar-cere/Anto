@@ -109,6 +109,8 @@ function extractTccLiteFromMessages(messages) {
 
 function applyTccLiteAtHandoff(payload) {
   if (!payload?.tccLite?.atHandoff?.screen) return null;
+  if (payload.tccLite.active) return null;
+  if (!payload.tccLite.completed) return null;
   return payload.tccLite.atHandoff;
 }
 

@@ -94,13 +94,34 @@ describe('chatTccLiteService', () => {
     const client = toTccLiteClientPayload(plan, 'es');
     expect(client.active).toBe(true);
     expect(client.stepLabel).toBe('Pensamiento');
-    expect(client.kicker).toBe('Marco TCC');
+    expect(client.kicker).toBe('Explorando tu pensamiento');
   });
 
-  it('attachTccLiteToAssistantMetadata añade tccLite al metadata', () => {
+  it('attachTccLiteToAssistantMetadata añade tccLite enriquecido al metadata', () => {
     const plan = planChatTccLite(baseContext);
-    const meta = attachTccLiteToAssistantMetadata({ status: 'sent' }, plan);
+    const meta = attachTccLiteToAssistantMetadata({ status: 'sent' }, plan, 'es');
     expect(meta.tccLite.step).toBe('capture_thought');
+    expect(meta.tccLite.stepIndex).toBe(0);
+    expect(meta.tccLite.stepTotal).toBe(4);
+    expect(meta.tccLite.frameLabel).toBe('Explorando tu pensamiento');
+    expect(meta.tccLite.stepShort).toBe('Nombrar la idea');
+  });
+
+  it('no ofrece atHandoff mientras el paso wrap_up está activo', () => {
+    const history = [
+      {
+        role: 'assistant',
+        metadata: { tccLite: { step: 'build_alternative', distortionType: 'catastrophizing' } },
+      },
+    ];
+    const plan = planChatTccLite({
+      ...baseContext,
+      userContent: 'Una lectura más equilibrada sería ir paso a paso sin exigirme perfección',
+      conversationHistory: history,
+    });
+    expect(plan.active).toBe(true);
+    expect(plan.step).toBe('wrap_up');
+    expect(plan.atHandoff).toBeNull();
   });
 
   it('genera prompt en inglés', () => {

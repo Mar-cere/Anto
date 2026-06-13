@@ -107,8 +107,8 @@ export function buildOpenaiEnhancementSnippets(enhancements) {
   };
 }
 
-export function buildAssistantMetadataWithEnhancements(baseMetadata, tccLitePlan) {
-  return attachTccLiteToAssistantMetadata(baseMetadata, tccLitePlan);
+export function buildAssistantMetadataWithEnhancements(baseMetadata, tccLitePlan, language = 'es') {
+  return attachTccLiteToAssistantMetadata(baseMetadata, tccLitePlan, language);
 }
 
 /**

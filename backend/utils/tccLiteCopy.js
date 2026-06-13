@@ -13,7 +13,8 @@ const COPY = {
       build_alternative: { label: 'Alternativa', short: 'Otra lectura posible' },
       wrap_up: { label: 'Cierre', short: 'Qué te llevas' },
     },
-    kicker: 'Marco TCC',
+    kicker: 'Explorando tu pensamiento',
+    promptKicker: 'Marco TCC',
     distortionPrefix: 'Patrón detectado',
     disclaimer:
       'Esto es apoyo basado en TCC, no sustituye terapia profesional. Puedes parar cuando quieras.',
@@ -47,7 +48,8 @@ const COPY = {
       build_alternative: { label: 'Alternative', short: 'Another reading' },
       wrap_up: { label: 'Wrap-up', short: 'What you take away' },
     },
-    kicker: 'CBT frame',
+    kicker: 'Working through this thought',
+    promptKicker: 'CBT frame',
     distortionPrefix: 'Pattern detected',
     disclaimer:
       'This is CBT-informed support, not a substitute for professional care. You can stop anytime.',

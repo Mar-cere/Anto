@@ -99,7 +99,7 @@ export function buildTccLiteUiFromPersistedStep(lite, language = 'es', extras = 
     stepTotal: TCC_LITE_STEPS.length,
     stepLabel: lite.stepLabel || stepCopy.label,
     stepShort: lite.stepShort || stepCopy.short,
-    kicker: lite.kicker || (lang === 'en' ? 'CBT frame' : 'Marco TCC'),
+    kicker: lite.kicker || (lang === 'en' ? 'Working through this thought' : 'Explorando tu pensamiento'),
     distortionType: lite.distortionType || null,
     distortionLabel: lite.distortionLabel || null,
     ...extras,

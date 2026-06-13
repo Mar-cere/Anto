@@ -9,7 +9,7 @@ describe('chatTccLiteResume i18n', () => {
       { distortionType: 'all_or_nothing', distortionLabel: 'All-or-nothing' },
       'en',
     );
-    expect(ui.kicker).toBe('CBT frame');
+    expect(ui.kicker).toBe('Working through this thought');
     expect(ui.stepLabel).toBe('Thought');
     expect(ui.stepShort).toBe('Name the idea');
   });

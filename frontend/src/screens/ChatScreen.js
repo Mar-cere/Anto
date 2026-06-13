@@ -30,7 +30,6 @@ import ChatInput from '../components/chat/ChatInput';
 import ChatMessageItem from '../components/chat/ChatMessageItem';
 import SessionIntentionBanner from '../components/chat/SessionIntentionBanner';
 import TccContinuityStrip from '../components/chat/TccContinuityStrip';
-import TccLiteProgressStrip from '../components/chat/TccLiteProgressStrip';
 import TccLiteAtHandoffStrip from '../components/chat/TccLiteAtHandoffStrip';
 import ChatTypingIndicator from '../components/chat/ChatTypingIndicator';
 import ChatOptionsSheet from '../components/chat/ChatOptionsSheet';
@@ -310,7 +309,6 @@ const ChatScreen = () => {
     visibleTccContinuityItems,
     handleOpenTccContinuityItem,
     handleDismissTccContinuityItem,
-    tccLiteState,
     tccLiteAtHandoff,
     handleOpenTccLiteAtHandoff,
     handleDismissTccLiteAtHandoff,
@@ -319,6 +317,8 @@ const ChatScreen = () => {
     () => getFeedbackTargetMessageId(messages, chatFeedbackEnabled),
     [messages, chatFeedbackEnabled]
   );
+  const hasTccContinuity = visibleTccContinuityItems.length > 0;
+  const showTccLiteHandoff = Boolean(tccLiteAtHandoff?.screen) && !hasTccContinuity;
   const [showAIDisclosure, setShowAIDisclosure] = React.useState(false);
   const [showChatOptions, setShowChatOptions] = React.useState(false);
 
@@ -612,10 +612,8 @@ const ChatScreen = () => {
         onSkip={skipSessionIntention}
       />
 
-      <TccLiteProgressStrip tccLite={tccLiteState} />
-
       <TccLiteAtHandoffStrip
-        atHandoff={tccLiteAtHandoff}
+        atHandoff={showTccLiteHandoff ? tccLiteAtHandoff : null}
         onOpen={handleOpenTccLiteAtHandoff}
         onDismiss={handleDismissTccLiteAtHandoff}
       />

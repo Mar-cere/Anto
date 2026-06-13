@@ -10,6 +10,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { hydrateInterventionSuggestion } from '../../utils/psychoeducationTopic';
 import PsychoeducationSuggestionCard from '../PsychoeducationSuggestionCard';
 import MarkdownText from '../MarkdownText';
+import TccLiteMessageFooter from './TccLiteMessageFooter';
 import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
 import {
@@ -568,6 +569,9 @@ function ChatMessageItem({
           {message.content}
         </MarkdownText>
       )}
+      {!isUser && message.metadata?.tccLite ? (
+        <TccLiteMessageFooter tccLite={message.metadata.tccLite} />
+      ) : null}
     </View>
   );
 

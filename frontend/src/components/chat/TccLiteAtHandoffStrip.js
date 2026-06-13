@@ -1,5 +1,6 @@
 /**
- * CTA post marco TCC lite: guardar en registro de pensamiento automático.
+ * CTA compacto post marco TCC lite: guardar en registro de pensamiento automático.
+ * Solo visible al completar el marco (paso 4).
  */
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -8,12 +9,10 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
-import { getFocusTheme } from '../../styles/focusCardTheme';
 
 export default function TccLiteAtHandoffStrip({ atHandoff, onOpen, onDismiss, style }) {
-  const { colors, resolvedScheme } = useTheme();
+  const { colors } = useTheme();
   const translated = useSectionTranslations('CHAT');
-  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
 
   const styles = useMemo(
     () =>
@@ -22,52 +21,41 @@ export default function TccLiteAtHandoffStrip({ atHandoff, onOpen, onDismiss, st
           marginHorizontal: SPACING.SCREEN_EDGE_INSET,
           marginBottom: SPACING.sm,
         },
-        panel: {
-          ...t.FOCUS_PANEL,
-          padding: SPACING.md,
-          gap: SPACING.sm,
-        },
-        kicker: {
-          fontSize: 11,
-          fontWeight: '700',
-          letterSpacing: 1.2,
-          textTransform: 'uppercase',
-          color: t.FOCUS_KICKER_COLOR,
-        },
-        body: {
-          fontSize: 13,
-          lineHeight: 18,
-          color: t.FOCUS_META,
-        },
         row: {
           flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: 'space-between',
           gap: SPACING.sm,
-        },
-        openBtn: {
-          flex: 1,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 6,
-          paddingVertical: 10,
+          paddingVertical: 8,
           paddingHorizontal: 12,
           borderRadius: 12,
           backgroundColor: colors.accentLineSoft,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.borderSubtle || 'rgba(0,0,0,0.06)',
+        },
+        body: {
+          flex: 1,
+          fontSize: 13,
+          lineHeight: 18,
+          color: colors.textSecondary,
+        },
+        openBtn: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 4,
+          paddingVertical: 4,
+          paddingHorizontal: 2,
         },
         openText: {
-          fontSize: 14,
+          fontSize: 13,
           fontWeight: '700',
           color: colors.primary,
         },
       }),
-    [colors, t],
+    [colors],
   );
 
   if (!atHandoff?.screen) return null;
 
-  const kicker = translated?.TCC_LITE_HANDOFF_KICKER || 'Guarda tu avance';
   const title =
     translated?.TCC_LITE_HANDOFF_TITLE ||
     'Puedes registrar lo que exploraste en el pensamiento automático.';
@@ -75,36 +63,35 @@ export default function TccLiteAtHandoffStrip({ atHandoff, onOpen, onDismiss, st
 
   return (
     <View style={[styles.wrap, style]}>
-      <View style={styles.panel}>
-        <Text style={styles.kicker}>{kicker}</Text>
-        <Text style={styles.body}>{title}</Text>
-        <View style={styles.row}>
+      <View style={styles.row}>
+        <Text style={styles.body} numberOfLines={2}>
+          {title}
+        </Text>
+        <TouchableOpacity
+          style={styles.openBtn}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+            onOpen?.(atHandoff);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={openLabel}
+        >
+          <Text style={styles.openText}>{openLabel}</Text>
+          <Ionicons name="arrow-forward" size={14} color={colors.primary} />
+        </TouchableOpacity>
+        {onDismiss ? (
           <TouchableOpacity
-            style={styles.openBtn}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-              onOpen?.(atHandoff);
+              Haptics.selectionAsync().catch(() => {});
+              onDismiss();
             }}
             accessibilityRole="button"
-            accessibilityLabel={openLabel}
+            accessibilityLabel={translated?.TCC_LITE_HANDOFF_DISMISS_A11Y || 'Ocultar'}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={styles.openText}>{openLabel}</Text>
-            <Ionicons name="arrow-forward" size={16} color={colors.primary} />
+            <Ionicons name="close" size={16} color={colors.textSecondary} />
           </TouchableOpacity>
-          {onDismiss ? (
-            <TouchableOpacity
-              onPress={() => {
-                Haptics.selectionAsync().catch(() => {});
-                onDismiss();
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={translated?.TCC_LITE_HANDOFF_DISMISS_A11Y || 'Ocultar'}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons name="close" size={18} color={colors.textSecondary} />
-            </TouchableOpacity>
-          ) : null}
-        </View>
+        ) : null}
       </View>
     </View>
   );

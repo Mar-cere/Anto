@@ -358,6 +358,7 @@ export const setupSocketIO = (server) => {
               }
             },
             turnEnhancements.tccLitePlan,
+            socketLanguage,
           ),
         });
         await assistantMessage.save();

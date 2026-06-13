@@ -186,7 +186,8 @@ function buildPromptSnippet({ step, distortionType, language }) {
     (distortionType ? distortionType.replace(/_/g, ' ') : lang === 'en' ? 'rigid thinking' : 'pensamiento rígido');
 
   const body = template.replace(/\{distortionLabel\}/g, distortionLabel);
-  return `\n\n### ${copy.kicker} (interno — prioridad alta)\n${copy.disclaimer}\n\n${body}\n`;
+  const promptKicker = copy.promptKicker || copy.kicker;
+  return `\n\n### ${promptKicker} (interno — prioridad alta)\n${copy.disclaimer}\n\n${body}\n`;
 }
 
 /**
@@ -295,18 +296,6 @@ export function planChatTccLite({
     ? getAutomaticThoughtDistortionLabel(distortionType, lang) || null
     : null;
 
-  const atHandoff =
-    step === 'wrap_up'
-      ? buildAtHandoffFromTccLiteSession({
-          conversationHistory: [
-            ...(conversationHistory || []),
-            { role: 'user', content: text },
-          ],
-          distortionType,
-          language: lang,
-        })
-      : null;
-
   return {
     active: true,
     step,
@@ -316,17 +305,26 @@ export function planChatTccLite({
     distortionLabel,
     promptSnippet: buildPromptSnippet({ step, distortionType, language: lang }),
     completed: false,
-    atHandoff,
+    atHandoff: null,
   };
 }
 
-export function attachTccLiteToAssistantMetadata(metadata, tccLitePlan) {
+export function attachTccLiteToAssistantMetadata(metadata, tccLitePlan, language = 'es') {
   if (!metadata || !tccLitePlan?.active || !tccLitePlan?.step) return metadata;
+  const lang = normalizeApiLanguage(language);
+  const copy = tccLiteCopy(lang);
+  const stepCopy = copy.steps[tccLitePlan.step] || copy.steps.capture_thought;
   return {
     ...metadata,
     tccLite: {
       step: tccLitePlan.step,
+      stepIndex: tccLitePlan.stepIndex,
+      stepTotal: tccLitePlan.stepTotal,
+      stepLabel: stepCopy.label,
+      stepShort: stepCopy.short,
+      frameLabel: copy.kicker,
       distortionType: tccLitePlan.distortionType || null,
+      distortionLabel: tccLitePlan.distortionLabel || null,
       completed: tccLitePlan.completed === true,
     },
   };
