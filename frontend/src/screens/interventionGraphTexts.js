@@ -30,6 +30,9 @@ const DEFAULTS = {
   INSIGHT_TOPIC_MOOD_DIP: 'En días de {topic}, tu ánimo tras BA baja ~{delta}',
   LIST_A11Y: 'Detalle de conexiones del grafo',
   MAP_A11Y: 'Mapa de conexiones entre temas e intervenciones',
+  MAP_SOURCE_COL: 'Tus ideas en el chat',
+  MAP_TARGET_COL: 'Técnicas',
+  MAP_TAP_HINT: 'Toca una conexión o un nodo para ver el detalle.',
 };
 
 const KEY_MAP = {
@@ -59,6 +62,9 @@ const KEY_MAP = {
   INSIGHT_TOPIC_MOOD_DIP: 'INTERVENTION_GRAPH_INSIGHT_TOPIC_MOOD_DIP',
   LIST_A11Y: 'INTERVENTION_GRAPH_LIST_A11Y',
   MAP_A11Y: 'INTERVENTION_GRAPH_MAP_A11Y',
+  MAP_SOURCE_COL: 'INTERVENTION_GRAPH_MAP_SOURCE_COL',
+  MAP_TARGET_COL: 'INTERVENTION_GRAPH_MAP_TARGET_COL',
+  MAP_TAP_HINT: 'INTERVENTION_GRAPH_MAP_TAP_HINT',
 };
 
 export function useInterventionGraphTexts() {

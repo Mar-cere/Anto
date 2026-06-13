@@ -1,12 +1,17 @@
 /**
  * Panel de consentimiento granular (#215 / #216 / #208).
  */
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Switch, Text, View } from 'react-native';
+import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import signalsService from '../../services/signalsService';
+
+const ICON_SIZE = 24;
+const ICON_GAP = 16;
 
 const DEFAULTS_ES = {
   TITLE: 'Señales opcionales',
@@ -41,7 +46,41 @@ const KEY_MAP = {
   SAVING: 'SIGNAL_CONSENT_SAVING',
 };
 
-export default function SignalConsentPanel({ compact = false }) {
+const ROWS = [
+  {
+    key: 'typing',
+    icon: 'keyboard-outline',
+    labelKey: 'TYPING',
+    hintKey: 'TYPING_HINT',
+    getValue: (consent) => consent.typingTelemetry?.enabled === true,
+    buildPatch: (enabled) => ({ typingTelemetry: { enabled } }),
+  },
+  {
+    key: 'health',
+    icon: 'heart-pulse',
+    labelKey: 'HEALTH',
+    hintKey: 'HEALTH_HINT',
+    getValue: (consent) => consent.digitalHealth?.enabled === true,
+    buildPatch: (enabled) => ({
+      digitalHealth: {
+        enabled,
+        steps: enabled,
+        sleep: enabled,
+        screenTime: enabled,
+      },
+    }),
+  },
+  {
+    key: 'weekly',
+    icon: 'chart-bell-curve',
+    labelKey: 'WEEKLY',
+    hintKey: 'WEEKLY_HINT',
+    getValue: (consent) => consent.weeklyInsights?.enabled !== false,
+    buildPatch: (enabled) => ({ weeklyInsights: { enabled } }),
+  },
+];
+
+export default function SignalConsentPanel({ compact = false, embedded = false }) {
   const { colors } = useTheme();
   const { language } = useLanguage();
   const translated = useSectionTranslations('TECHNIQUES');
@@ -90,39 +129,78 @@ export default function SignalConsentPanel({ compact = false }) {
   const styles = useMemo(
     () =>
       StyleSheet.create({
-        wrap: {
-          borderRadius: 14,
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: colors.border,
-          padding: compact ? 12 : 14,
-          marginBottom: 14,
-          backgroundColor: colors.cardBackground || colors.surface || colors.background,
+        wrap: embedded
+          ? {}
+          : {
+              borderRadius: 14,
+              borderWidth: StyleSheet.hairlineWidth,
+              borderColor: colors.border,
+              padding: compact ? SPACING.SCREEN_EDGE_INSET : 14,
+              marginBottom: 14,
+              backgroundColor: colors.cardBackground || colors.surface || colors.background,
+            },
+        embeddedHeader: {
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingTop: 12,
+          paddingBottom: 8,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: colors.border,
         },
         title: {
-          fontSize: compact ? 14 : 15,
+          fontSize: embedded ? 13 : compact ? 14 : 15,
           fontWeight: '700',
+          color: embedded ? colors.textSecondary : colors.text,
+          letterSpacing: embedded ? 0.2 : 0,
+          marginBottom: embedded ? 0 : 10,
+        },
+        row: embedded
+          ? {
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingVertical: 12,
+              paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+              borderBottomWidth: StyleSheet.hairlineWidth,
+              borderBottomColor: colors.border,
+            }
+          : {
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              marginBottom: 10,
+            },
+        rowLast: {
+          borderBottomWidth: 0,
+        },
+        copy: embedded ? { flex: 1, marginLeft: ICON_GAP, minWidth: 0 } : { flex: 1 },
+        label: {
+          fontSize: 14,
+          fontWeight: embedded ? '500' : '600',
           color: colors.text,
-          marginBottom: 10,
+          marginBottom: embedded ? 2 : 2,
         },
-        row: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-          marginBottom: 10,
-        },
-        copy: { flex: 1 },
-        label: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 2 },
         hint: { fontSize: 12, lineHeight: 17, color: colors.textSecondary },
-        saving: { fontSize: 12, color: colors.textSecondary, marginTop: 4 },
+        saving: {
+          fontSize: 12,
+          color: colors.textSecondary,
+          marginTop: 4,
+          paddingHorizontal: embedded ? SPACING.SCREEN_EDGE_INSET : 0,
+          paddingBottom: embedded ? 10 : 0,
+        },
+        loadingRow: {
+          paddingVertical: 20,
+          alignItems: 'center',
+        },
       }),
-    [colors, compact],
+    [colors, compact, embedded],
   );
 
   if (loading) {
     return (
       <View style={styles.wrap}>
-        <ActivityIndicator color={colors.primary} />
+        <View style={styles.loadingRow}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
       </View>
     );
   }
@@ -131,55 +209,34 @@ export default function SignalConsentPanel({ compact = false }) {
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.title}>{TEXTS.TITLE}</Text>
-      <View style={styles.row}>
-        <View style={styles.copy}>
-          <Text style={styles.label}>{TEXTS.TYPING}</Text>
-          <Text style={styles.hint}>{TEXTS.TYPING_HINT}</Text>
+      {embedded ? (
+        <View style={styles.embeddedHeader}>
+          <Text style={styles.title}>{TEXTS.TITLE}</Text>
         </View>
-        <Switch
-          value={consent.typingTelemetry?.enabled === true}
-          onValueChange={(enabled) => patchConsent({ typingTelemetry: { enabled } })}
-          trackColor={{ true: colors.primary, false: colors.border }}
-          accessibilityLabel={TEXTS.TYPING}
-          accessibilityHint={TEXTS.TYPING_HINT}
-        />
-      </View>
-      <View style={styles.row}>
-        <View style={styles.copy}>
-          <Text style={styles.label}>{TEXTS.HEALTH}</Text>
-          <Text style={styles.hint}>{TEXTS.HEALTH_HINT}</Text>
+      ) : (
+        <Text style={styles.title}>{TEXTS.TITLE}</Text>
+      )}
+      {ROWS.map((row, index) => (
+        <View
+          key={row.key}
+          style={[styles.row, embedded && index === ROWS.length - 1 && !saving ? styles.rowLast : null]}
+        >
+          {embedded ? (
+            <MaterialCommunityIcons name={row.icon} size={ICON_SIZE} color={colors.primary} />
+          ) : null}
+          <View style={styles.copy}>
+            <Text style={styles.label}>{TEXTS[row.labelKey]}</Text>
+            <Text style={styles.hint}>{TEXTS[row.hintKey]}</Text>
+          </View>
+          <Switch
+            value={row.getValue(consent)}
+            onValueChange={(enabled) => patchConsent(row.buildPatch(enabled))}
+            trackColor={{ true: colors.primary, false: colors.border }}
+            accessibilityLabel={TEXTS[row.labelKey]}
+            accessibilityHint={TEXTS[row.hintKey]}
+          />
         </View>
-        <Switch
-          value={consent.digitalHealth?.enabled === true}
-          onValueChange={(enabled) =>
-            patchConsent({
-              digitalHealth: {
-                enabled,
-                steps: enabled,
-                sleep: enabled,
-                screenTime: enabled,
-              },
-            })
-          }
-          trackColor={{ true: colors.primary, false: colors.border }}
-          accessibilityLabel={TEXTS.HEALTH}
-          accessibilityHint={TEXTS.HEALTH_HINT}
-        />
-      </View>
-      <View style={styles.row}>
-        <View style={styles.copy}>
-          <Text style={styles.label}>{TEXTS.WEEKLY}</Text>
-          <Text style={styles.hint}>{TEXTS.WEEKLY_HINT}</Text>
-        </View>
-        <Switch
-          value={consent.weeklyInsights?.enabled !== false}
-          onValueChange={(enabled) => patchConsent({ weeklyInsights: { enabled } })}
-          trackColor={{ true: colors.primary, false: colors.border }}
-          accessibilityLabel={TEXTS.WEEKLY}
-          accessibilityHint={TEXTS.WEEKLY_HINT}
-        />
-      </View>
+      ))}
       {saving ? <Text style={styles.saving}>{TEXTS.SAVING}</Text> : null}
     </View>
   );

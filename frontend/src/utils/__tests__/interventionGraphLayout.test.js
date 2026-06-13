@@ -6,6 +6,7 @@ import {
   computeEdgeWeight,
   formatTopicTagLabel,
   localizeGraphModel,
+  measureLabelLines,
   normalizeStrokeWidth,
 } from '../interventionGraphLayout';
 
@@ -51,6 +52,33 @@ describe('interventionGraphLayout', () => {
 
   it('normalizeStrokeWidth escala entre min y max', () => {
     expect(normalizeStrokeWidth(0, 10)).toBeLessThan(normalizeStrokeWidth(10, 10));
+  });
+
+  it('measureLabelLines envuelve texto largo en varias líneas', () => {
+    const { lines, height } = measureLabelLines(
+      'No sé, solo me siento muy abrumado con todo lo que tengo encima',
+      22,
+      3,
+    );
+    expect(lines.length).toBeGreaterThan(1);
+    expect(height).toBeGreaterThan(40);
+  });
+
+  it('buildInterventionGraphModel produce nodos con líneas legibles', () => {
+    const longTopicFree = [
+      {
+        topicFree: 'No sé, solo me siento muy abrumado con todo lo que tengo encima',
+        interventionId: 'psychoeducation_depression',
+        interventionLabel: 'Entender la Depresión (psicoeducación)',
+        shown: 1,
+        clicked: 1,
+        completed: 1,
+      },
+    ];
+    const model = buildTopicFreeGraphModel(longTopicFree, { canvasWidth: 340 });
+    expect(model.topicFreeNodes[0].lines.length).toBeGreaterThan(1);
+    expect(model.topicFreeNodes[0].width).toBeGreaterThan(0);
+    expect(model.links[0].x1).toBeLessThan(model.links[0].x2);
   });
 
   it('buildInterventionGraphModel produce nodos y enlaces', () => {

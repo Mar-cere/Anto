@@ -399,7 +399,7 @@ export default function SettingsContent({
           paddingBottom: SCROLL_PADDING_BOTTOM,
         },
         settingsBlock: {
-          padding: 14,
+          padding: SPACING.SCREEN_EDGE_INSET,
           marginBottom: 18,
           borderRadius: 18,
           borderWidth: StyleSheet.hairlineWidth,
@@ -475,7 +475,8 @@ export default function SettingsContent({
           alignItems: 'center',
           backgroundColor: COLORS.ITEM_BACKGROUND,
           borderRadius: 12,
-          padding: 12,
+          paddingVertical: 12,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
           marginBottom: 10,
           borderWidth: 1,
           borderColor: COLORS.ITEM_BORDER,
@@ -522,7 +523,7 @@ export default function SettingsContent({
           flexDirection: 'row',
           alignItems: 'center',
           paddingVertical: 12,
-          paddingHorizontal: 12,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
           borderBottomWidth: StyleSheet.hairlineWidth,
           borderBottomColor: COLORS.ITEM_BORDER,
         },
@@ -606,7 +607,8 @@ export default function SettingsContent({
         chatTonePanel: {
           marginTop: 4,
           marginBottom: 8,
-          padding: 12,
+          paddingVertical: 12,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
           borderRadius: 12,
           borderWidth: 1,
           borderColor: COLORS.ITEM_BORDER,
@@ -1263,7 +1265,9 @@ export default function SettingsContent({
               <MaterialCommunityIcons name='chevron-right' size={22} color={COLORS.ACCENT} />
             </TouchableOpacity>
           </View>
-          <SignalConsentPanel compact />
+          <View style={[styles.settingsLinkGroup, styles.settingsLinkGroupSpaced]}>
+            <SignalConsentPanel embedded />
+          </View>
         </View>
 
         <View style={styles.settingsBlock}>

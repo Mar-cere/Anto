@@ -10,6 +10,8 @@ const COPY = {
     weeklyInsightsDisabled: 'Los informes semanales están desactivados.',
     invalidPayload: 'Payload de señales inválido.',
     invalidWeekKey: 'Semana inválida.',
+    invalidMonthKey: 'Mes inválido.',
+    monthlyInsightsDisabled: 'Los informes mensuales están desactivados.',
     rateLimit: 'Demasiadas solicitudes. Intenta más tarde.',
   },
   en: {
@@ -18,6 +20,8 @@ const COPY = {
     weeklyInsightsDisabled: 'Weekly insight reports are disabled.',
     invalidPayload: 'Invalid signal payload.',
     invalidWeekKey: 'Invalid week key.',
+    invalidMonthKey: 'Invalid month key.',
+    monthlyInsightsDisabled: 'Monthly insight reports are disabled.',
     rateLimit: 'Too many requests. Try again later.',
   },
 };

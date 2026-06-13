@@ -12,6 +12,8 @@ import UserProgress from '../models/UserProgress.js';
 import TherapeuticTechniqueUsage from '../models/TherapeuticTechniqueUsage.js';
 import cacheService from './cacheService.js';
 import openaiService from './openaiService.js';
+import { getIsoWeekKey } from '../utils/weekKeys.js';
+import { formatMonthKey } from '../utils/monthKeys.js';
 
 /** Ventana de un bloque "semana" del modelo Hábito (desde 1 ene, + week * 7 días). */
 function habitWeekWindow(week, year) {
@@ -110,6 +112,8 @@ export function isWithinWeeklyNarrativeLlmWindow(lastWeeklyTipsEmailAt, now = ne
 }
 
 export function buildDeterministicNarrative(summary, language = 'es') {
+  const periodType = summary?.period?.type === 'month' ? 'month' : 'week';
+  const isMonth = periodType === 'month';
   const topTopic = summary?.emotions?.progressTopicsTop?.[0]?.topic || (language === 'en' ? 'your personal process' : 'tu proceso personal');
   const topEmotion = summary?.emotions?.insightsEmotionsTop?.[0]?.emotion || null;
   const tasksDone = summary?.tasks?.completedInPeriod ?? 0;
@@ -133,11 +137,17 @@ export function buildDeterministicNarrative(summary, language = 'es') {
       microWins = `You were active ${activeDays} day${activeDays === 1 ? '' : 's'} and sent ${userMessages} message${userMessages === 1 ? '' : 's'} in the chat.`;
     }
 
-    nextQuestion = 'What small realistic step would you like to prioritize this week to take better care of yourself?';
+    nextQuestion = isMonth
+      ? 'What small realistic step would you like to prioritize this month to take better care of yourself?'
+      : 'What small realistic step would you like to prioritize this week to take better care of yourself?';
     if (tasksDone >= 3 || habitCompletions >= 4) {
-      nextQuestion = 'What helped you sustain these advances and how can you repeat it this week?';
+      nextQuestion = isMonth
+        ? 'What helped you sustain these advances and how can you repeat it this month?'
+        : 'What helped you sustain these advances and how can you repeat it this week?';
     } else if (activeDays <= 1) {
-      nextQuestion = 'What 2-minute micro-habit could you pick up first to get back into rhythm?';
+      nextQuestion = isMonth
+        ? 'What 2-minute micro-habit could you pick up first to get back into rhythm this month?'
+        : 'What 2-minute micro-habit could you pick up first to get back into rhythm?';
     }
   } else {
     themes = topEmotion
@@ -151,11 +161,17 @@ export function buildDeterministicNarrative(summary, language = 'es') {
       microWins = `Tuviste actividad ${activeDays} día${activeDays === 1 ? '' : 's'} y enviaste ${userMessages} mensaje${userMessages === 1 ? '' : 's'} en el chat.`;
     }
 
-    nextQuestion = '¿Qué pequeño paso realista te gustaría priorizar esta semana para cuidarte mejor?';
+    nextQuestion = isMonth
+      ? '¿Qué pequeño paso realista te gustaría priorizar este mes para cuidarte mejor?'
+      : '¿Qué pequeño paso realista te gustaría priorizar esta semana para cuidarte mejor?';
     if (tasksDone >= 3 || habitCompletions >= 4) {
-      nextQuestion = '¿Qué condición te ayudó a sostener estos avances y cómo la puedes repetir esta semana?';
+      nextQuestion = isMonth
+        ? '¿Qué condición te ayudó a sostener estos avances y cómo la puedes repetir este mes?'
+        : '¿Qué condición te ayudó a sostener estos avances y cómo la puedes repetir esta semana?';
     } else if (activeDays <= 1) {
-      nextQuestion = '¿Qué micro-hábito de 2 minutos podrías retomar primero para volver a tomar ritmo?';
+      nextQuestion = isMonth
+        ? '¿Qué micro-hábito de 2 minutos podrías retomar primero para volver a tomar ritmo este mes?'
+        : '¿Qué micro-hábito de 2 minutos podrías retomar primero para volver a tomar ritmo?';
     }
   }
 
@@ -466,7 +482,10 @@ export async function buildUserSummary(userId, opts) {
       type: period,
       start: start.toISOString(),
       end: end.toISOString(),
-      label
+      label,
+      ...(period === 'week'
+        ? { weekKey: getIsoWeekKey(start) }
+        : { monthKey: formatMonthKey(start.getFullYear(), start.getMonth() + 1) }),
     },
     chat,
     emotions: {

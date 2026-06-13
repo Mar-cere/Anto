@@ -64,6 +64,15 @@ describe('userSummaryService i18n helpers', () => {
     expect(narrative.nextQuestion).toMatch(/micro-habit/i);
   });
 
+  it('buildDeterministicNarrative: usa copy mensual cuando period.type es month', () => {
+    const monthly = { ...sampleSummary, period: { type: 'month' } };
+    const es = buildDeterministicNarrative(monthly, 'es');
+    const en = buildDeterministicNarrative(monthly, 'en');
+    expect(es.nextQuestion).toMatch(/este mes/i);
+    expect(en.nextQuestion).toMatch(/this month/i);
+    expect(es.nextQuestion).not.toMatch(/esta semana/i);
+  });
+
   it('formatPeriodLabel: usa locale según idioma', () => {
     const start = new Date(2026, 3, 27);
     const end = new Date(2026, 4, 3);

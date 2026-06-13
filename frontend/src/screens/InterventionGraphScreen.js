@@ -60,7 +60,7 @@ const InterventionGraphScreen = ({ navigation }) => {
   const { width: windowWidth } = useWindowDimensions();
 
   const graphWidth = useMemo(
-    () => Math.min(windowWidth - SPACING.SCREEN_EDGE_INSET * 2, 400),
+    () => Math.max(windowWidth - SPACING.SCREEN_EDGE_INSET * 2, 280),
     [windowWidth],
   );
 
@@ -324,15 +324,20 @@ const InterventionGraphScreen = ({ navigation }) => {
               width={graphWidth}
               selectedKey={selectedKey}
               mapAccessibilityLabel={TEXTS.MAP_A11Y}
+              sourceColumnLabel={TEXTS.MAP_SOURCE_COL}
+              targetColumnLabel={TEXTS.MAP_TARGET_COL}
               onSelectLink={(link) =>
                 setSelectedKey((prev) => (prev === link.key ? null : link.key))
               }
             />
+            <Text style={[styles.legend, { marginTop: -4, marginBottom: 12 }]}>
+              {TEXTS.MAP_TAP_HINT}
+            </Text>
             {selectedEdge ? (
               <View style={styles.detail}>
                 <Text style={styles.detailTitle}>
                   {selectedEdge.conceptLabel || selectedEdge.topicFree
-                    ? `"${String(selectedEdge.conceptLabel || selectedEdge.topicFree).slice(0, 64)}" → `
+                    ? `"${String(selectedEdge.conceptLabel || selectedEdge.topicFree)}" → `
                     : `${formatTopicTagLabel(selectedEdge.topicTag, language)} → `}
                   {selectedEdge.interventionLabel || selectedEdge.interventionId}
                 </Text>
@@ -352,15 +357,16 @@ const InterventionGraphScreen = ({ navigation }) => {
               </>
             ) : null}
             {edges.length > 0 ? edges.map((edge) => renderEdgeRow(edge)) : null}
+            {conceptEdges.length > 0 && topicFreeEdges.length === 0 && edges.length === 0
+              ? conceptEdges.map((edge) => {
+                  const concept = conceptNodes.find((n) => n.id === edge.conceptId);
+                  return renderEdgeRow(
+                    { ...edge, topicFree: concept?.label || edge.conceptId },
+                    { topicFree: true },
+                  );
+                })
+              : null}
           </>
-        ) : null}
-
-        {!error && (edges.length > 0 || topicFreeEdges.length > 0) && viewMode === 'graph' ? (
-          <View accessibilityRole="list" accessibilityLabel={TEXTS.LIST_A11Y}>
-            {(topicFreeEdges.length > 0 ? topicFreeEdges.slice(0, 6) : hasVisualGraph ? edges.slice(0, 8) : edges).map(
-              (edge) => renderEdgeRow(edge, { topicFree: topicFreeEdges.length > 0 }),
-            )}
-          </View>
         ) : null}
       </ScrollView>
     </SafeAreaView>

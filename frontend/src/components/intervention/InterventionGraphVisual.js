@@ -1,15 +1,92 @@
 /**
- * Grafo bipartito tema → intervención (#218).
+ * Grafo bipartito tema → intervención (#218) con nodos legibles y conexiones curvas.
  */
 import React, { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
-import Svg, { Circle, Line, Text as SvgText } from 'react-native-svg';
+import { StyleSheet, Text, View } from 'react-native';
+import Svg, { Circle, Path, Rect, Text as SvgText, TSpan } from 'react-native-svg';
 import { useTheme } from '../../context/ThemeContext';
 import {
   buildInterventionGraphViewModel,
   localizeGraphModel,
   normalizeStrokeWidth,
 } from '../../utils/interventionGraphLayout';
+
+function bezierPath(x1, y1, x2, y2) {
+  const bend = Math.max(28, Math.abs(x2 - x1) * 0.38);
+  return `M ${x1} ${y1} C ${x1 + bend} ${y1}, ${x2 - bend} ${y2}, ${x2} ${y2}`;
+}
+
+function nodeIsSelected(node, selectedKey, links) {
+  if (!selectedKey || !node?.id) return false;
+  const link = links.find((l) => l.key === selectedKey);
+  if (!link) return false;
+  return link.sourceId === node.id || link.targetId === node.id;
+}
+
+function GraphNodePill({
+  node,
+  colors,
+  resolvedScheme,
+  selected,
+  variant,
+  onPress,
+}) {
+  const isSource = variant === 'source';
+  const fill =
+    selected
+      ? resolvedScheme === 'dark'
+        ? 'rgba(59, 130, 246, 0.28)'
+        : 'rgba(30, 131, 211, 0.18)'
+      : isSource
+        ? resolvedScheme === 'dark'
+          ? 'rgba(255,255,255,0.08)'
+          : 'rgba(255,255,255,0.92)'
+        : resolvedScheme === 'dark'
+          ? 'rgba(59, 130, 246, 0.12)'
+          : 'rgba(30, 131, 211, 0.08)';
+  const stroke = selected ? colors.primary : colors.border ?? 'rgba(128,128,128,0.3)';
+  const strokeWidth = selected ? 2 : 1;
+  const textColor = colors.text;
+  const textX = node.x + 12;
+  const lineStartY = node.y + 18;
+
+  return (
+    <>
+      <Rect
+        x={node.x}
+        y={node.y}
+        width={node.width}
+        height={node.height}
+        rx={12}
+        ry={12}
+        fill={fill}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+        onPress={onPress}
+      />
+      <SvgText fill={textColor} fontSize={12} fontWeight="600">
+        {(node.lines || [node.label]).map((line, index) => (
+          <TSpan
+            key={`${node.id}-${index}`}
+            x={textX}
+            y={lineStartY}
+            dy={index === 0 ? 0 : 15}
+          >
+            {line}
+          </TSpan>
+        ))}
+      </SvgText>
+      <Circle
+        cx={isSource ? node.x + node.width : node.x}
+        cy={node.anchorY}
+        r={4}
+        fill={colors.primary}
+        stroke={colors.cardBackground ?? colors.background}
+        strokeWidth={1.5}
+      />
+    </>
+  );
+}
 
 export default function InterventionGraphVisual({
   edges,
@@ -22,6 +99,8 @@ export default function InterventionGraphVisual({
   onSelectLink,
   accessibilityHidden = false,
   mapAccessibilityLabel = '',
+  sourceColumnLabel = '',
+  targetColumnLabel = '',
 }) {
   const { colors, resolvedScheme } = useTheme();
 
@@ -37,23 +116,53 @@ export default function InterventionGraphVisual({
     return base;
   }, [edges, topicFreeEdges, conceptNodes, conceptEdges, language, width]);
 
+  const sourceNodes = useMemo(() => {
+    if (model.mode === 'concept') return model.conceptNodes || [];
+    if (model.mode === 'topicFree') return model.topicFreeNodes || [];
+    return model.topics || [];
+  }, [model]);
+
   const styles = useMemo(
     () =>
       StyleSheet.create({
         wrap: {
           width: '100%',
-          alignItems: 'center',
           marginBottom: 12,
         },
+        headerRow: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          paddingHorizontal: 4,
+          marginBottom: 8,
+        },
+        colLabel: {
+          fontSize: 11,
+          fontWeight: '700',
+          letterSpacing: 0.4,
+          textTransform: 'uppercase',
+          color: colors.textSecondary,
+          maxWidth: '46%',
+        },
+        colLabelRight: {
+          textAlign: 'right',
+        },
         panel: {
-          borderRadius: 16,
+          borderRadius: 18,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border ?? 'rgba(128,128,128,0.25)',
-          backgroundColor: colors.cardBackground ?? colors.card,
+          backgroundColor:
+            resolvedScheme === 'dark'
+              ? 'rgba(255,255,255,0.03)'
+              : 'rgba(248, 251, 255, 0.95)',
           overflow: 'hidden',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: resolvedScheme === 'dark' ? 0.18 : 0.06,
+          shadowRadius: 8,
+          elevation: 2,
         },
       }),
-    [colors],
+    [colors, resolvedScheme],
   );
 
   if (accessibilityHidden || model.links.length === 0) {
@@ -61,13 +170,19 @@ export default function InterventionGraphVisual({
   }
 
   const edgeColor =
-    resolvedScheme === 'dark' ? 'rgba(147, 197, 253, 0.55)' : 'rgba(30, 131, 211, 0.45)';
+    resolvedScheme === 'dark' ? 'rgba(147, 197, 253, 0.5)' : 'rgba(30, 131, 211, 0.38)';
   const edgeHighlight = colors.primary;
-  const nodeFill = colors.accentLineSoft ?? 'rgba(30, 131, 211, 0.15)';
-  const nodeStroke = colors.primary;
 
   return (
     <View style={styles.wrap} accessibilityElementsHidden={accessibilityHidden}>
+      <View style={styles.headerRow}>
+        <Text style={styles.colLabel} numberOfLines={1}>
+          {sourceColumnLabel}
+        </Text>
+        <Text style={[styles.colLabel, styles.colLabelRight]} numberOfLines={1}>
+          {targetColumnLabel}
+        </Text>
+      </View>
       <View style={styles.panel}>
         <Svg
           width={model.width}
@@ -77,111 +192,58 @@ export default function InterventionGraphVisual({
         >
           {model.links.map((link) => {
             const isSelected = selectedKey === link.key;
-            const strokeW = normalizeStrokeWidth(link.weight, model.maxWeight);
+            const strokeW = normalizeStrokeWidth(link.weight, model.maxWeight, 1.4, 4.5);
             const isTopicFreeLink = link.linkKind === 'topicFree';
             const isConceptLink = link.linkKind === 'concept';
             return (
-              <Line
+              <Path
                 key={link.key}
-                x1={link.x1}
-                y1={link.y1}
-                x2={link.x2}
-                y2={link.y2}
+                d={bezierPath(link.x1, link.y1, link.x2, link.y2)}
                 stroke={isSelected ? edgeHighlight : edgeColor}
-                strokeWidth={isSelected ? strokeW + 1 : strokeW}
-                strokeOpacity={isSelected ? 0.95 : isTopicFreeLink ? 0.85 : isConceptLink ? 0.9 : 0.7}
-                strokeDasharray={isTopicFreeLink ? '4 3' : isConceptLink ? '2 2' : undefined}
+                strokeWidth={isSelected ? strokeW + 0.8 : strokeW}
+                strokeOpacity={isSelected ? 0.95 : isTopicFreeLink ? 0.82 : isConceptLink ? 0.88 : 0.72}
+                fill="none"
+                strokeDasharray={isTopicFreeLink ? '5 4' : isConceptLink ? '3 3' : undefined}
+                strokeLinecap="round"
                 onPress={() => onSelectLink?.(link)}
               />
             );
           })}
-          {model.topics.map((node) => (
-            <React.Fragment key={`t-${node.id}`}>
-              <Circle
-                cx={node.x}
-                cy={node.y}
-                r={7}
-                fill={nodeFill}
-                stroke={nodeStroke}
-                strokeWidth={1.5}
-              />
-              <SvgText
-                x={node.x - 12}
-                y={node.y + 4}
-                fontSize={11}
-                fontWeight="600"
-                fill={colors.text}
-                textAnchor="end"
-              >
-                {node.label}
-              </SvgText>
-            </React.Fragment>
+
+          {sourceNodes.map((node) => (
+            <GraphNodePill
+              key={`s-${node.id}`}
+              node={node}
+              colors={colors}
+              resolvedScheme={resolvedScheme}
+              selected={nodeIsSelected(node, selectedKey, model.links)}
+              variant="source"
+              onPress={() => {
+                const first = model.links.find(
+                  (l) =>
+                    l.sourceId === node.id ||
+                    l.topicFree === node.id ||
+                    l.conceptId === node.id ||
+                    l.topicTag === node.id,
+                );
+                if (first) onSelectLink?.(first);
+              }}
+            />
           ))}
-          {(model.conceptNodes || []).map((node) => (
-            <React.Fragment key={`c-${node.id}`}>
-              <Circle
-                cx={node.x}
-                cy={node.y}
-                r={8}
-                fill={nodeFill}
-                stroke={nodeStroke}
-                strokeWidth={2}
-              />
-              <SvgText
-                x={node.x}
-                y={node.y - 12}
-                fontSize={10}
-                fontWeight="600"
-                fill={colors.text}
-                textAnchor="middle"
-              >
-                {node.label}
-              </SvgText>
-            </React.Fragment>
-          ))}
-          {(model.topicFreeNodes || []).map((node) => (
-            <React.Fragment key={`tf-${node.id}`}>
-              <Circle
-                cx={node.x}
-                cy={node.y}
-                r={6}
-                fill={nodeFill}
-                stroke={nodeStroke}
-                strokeWidth={1.5}
-              />
-              <SvgText
-                x={node.x}
-                y={node.y - 10}
-                fontSize={10}
-                fontWeight="500"
-                fill={colors.textSecondary}
-                textAnchor="middle"
-              >
-                {node.label}
-              </SvgText>
-            </React.Fragment>
-          ))}
+
           {model.interventions.map((node) => (
-            <React.Fragment key={`i-${node.id}`}>
-              <Circle
-                cx={node.x}
-                cy={node.y}
-                r={6}
-                fill={nodeFill}
-                stroke={nodeStroke}
-                strokeWidth={1.5}
-              />
-              <SvgText
-                x={node.x + 12}
-                y={node.y + 4}
-                fontSize={11}
-                fontWeight="600"
-                fill={colors.text}
-                textAnchor="start"
-              >
-                {node.label}
-              </SvgText>
-            </React.Fragment>
+            <GraphNodePill
+              key={`t-${node.id}`}
+              node={node}
+              colors={colors}
+              resolvedScheme={resolvedScheme}
+              selected={nodeIsSelected(node, selectedKey, model.links)}
+              variant="target"
+              onPress={() => {
+                const first = model.links.find((l) => l.targetId === node.id);
+                if (first) onSelectLink?.(first);
+              }}
+            />
           ))}
         </Svg>
       </View>

@@ -19,9 +19,11 @@ import {
 } from '../services/signalConsentService.js';
 import {
   getWeeklyPatternInsight,
+  getMonthlyPatternInsight,
   scheduleWeeklyPatternInsightJob,
   getPreviousIsoWeekKey,
 } from '../services/weeklyPatternInsightService.js';
+import { normalizeMonthKey } from '../utils/monthKeys.js';
 import { signalsApiCopy } from '../utils/signalsApiCopy.js';
 import {
   extractTypingMetricsPayload,
@@ -238,6 +240,50 @@ router.post(
       res.json({ success: true, jobId: job._id, weekKey, status: job.status });
     } catch (error) {
       console.error('[SignalsRoutes] POST /weekly-insight/schedule:', error);
+      res.status(500).json({ success: false, message: req.apiCopy?.serverError });
+    }
+  },
+);
+
+router.get(
+  '/monthly-insight',
+  protect,
+  requireActiveSubscription(true),
+  weeklyInsightLimiter,
+  async (req, res) => {
+    try {
+      const consent = await getSignalConsentForUser(req.user._id);
+      if (!isWeeklyInsightsAllowed(consent)) {
+        return res.status(403).json({ success: false, message: req.apiCopy?.monthlyInsightsDisabled });
+      }
+
+      const language = req.appLanguage || resolveRequestLanguage(req);
+      const monthKey = normalizeMonthKey(String(req.query?.monthKey || '').trim(), null);
+      if (!monthKey) {
+        return res.status(400).json({ success: false, message: req.apiCopy?.invalidMonthKey });
+      }
+
+      const insight = await getMonthlyPatternInsight({
+        userId: req.user._id,
+        monthKey,
+        language,
+      });
+
+      res.json({
+        success: true,
+        monthKey,
+        insight: {
+          status: insight?.status || 'pending',
+          headline: insight?.headline || '',
+          body: insight?.body || '',
+          insights: insight?.insights || [],
+          correlations: insight?.correlations || [],
+          sourceSummary: insight?.sourceSummary || {},
+          generatedAt: insight?.generatedAt || null,
+        },
+      });
+    } catch (error) {
+      console.error('[SignalsRoutes] GET /monthly-insight:', error);
       res.status(500).json({ success: false, message: req.apiCopy?.serverError });
     }
   },

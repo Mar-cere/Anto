@@ -58,6 +58,9 @@ const DEFAULT_TEXTS = {
   NARRATIVE_MICRO_WINS: 'Micro-logros',
   WEEKLY_INSIGHT_CTA: 'Ver patrones de la semana',
   WEEKLY_INSIGHT_CTA_HINT: 'Informe observacional, no diagnóstico.',
+  MONTHLY_INSIGHT_CTA: 'Ver patrones del mes',
+  MONTHLY_INSIGHT_CTA_HINT: 'Informe observacional del mes, no diagnóstico.',
+  EMPTY_TITLE_MONTH: 'Mes tranquilo en la app',
   PERIOD_FALLBACK: '…',
   TIMES_SINGULAR: 'vez',
   TIMES_PLURAL: 'veces',
@@ -97,6 +100,9 @@ const SUMMARY_TEXT_MAP = {
   NARRATIVE_MICRO_WINS: 'SUMMARY_NARRATIVE_MICRO_WINS',
   WEEKLY_INSIGHT_CTA: 'SUMMARY_WEEKLY_INSIGHT_CTA',
   WEEKLY_INSIGHT_CTA_HINT: 'SUMMARY_WEEKLY_INSIGHT_CTA_HINT',
+  MONTHLY_INSIGHT_CTA: 'SUMMARY_MONTHLY_INSIGHT_CTA',
+  MONTHLY_INSIGHT_CTA_HINT: 'SUMMARY_MONTHLY_INSIGHT_CTA_HINT',
+  EMPTY_TITLE_MONTH: 'SUMMARY_EMPTY_TITLE_MONTH',
   PERIOD_FALLBACK: 'SUMMARY_PERIOD_FALLBACK',
   TIMES_SINGULAR: 'SUMMARY_TIMES_SINGULAR',
   TIMES_PLURAL: 'SUMMARY_TIMES_PLURAL',
@@ -755,6 +761,38 @@ export default function SummaryScreen() {
           language === 'en' ? 'en-US' : 'es-ES',
         );
 
+  const insightCta = useMemo(
+    () =>
+      granularity === 'month'
+        ? {
+            title: TEXTS.MONTHLY_INSIGHT_CTA,
+            hint: TEXTS.MONTHLY_INSIGHT_CTA_HINT,
+            params: {
+              period: 'month',
+              monthKey:
+                payload?.period?.monthKey ||
+                `${monthYear.year}-${String(monthYear.month).padStart(2, '0')}`,
+            },
+          }
+        : {
+            title: TEXTS.WEEKLY_INSIGHT_CTA,
+            hint: TEXTS.WEEKLY_INSIGHT_CTA_HINT,
+            params: {
+              period: 'week',
+              ...(payload?.period?.weekKey ? { weekKey: payload.period.weekKey } : {}),
+            },
+          },
+    [granularity, TEXTS, payload?.period, monthYear],
+  );
+
+  const emptyTexts = useMemo(
+    () =>
+      granularity === 'month'
+        ? { ...TEXTS, EMPTY_TITLE: TEXTS.EMPTY_TITLE_MONTH || TEXTS.EMPTY_TITLE }
+        : TEXTS,
+    [granularity, TEXTS],
+  );
+
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <StatusBar barStyle={statusBarStyle} />
@@ -835,20 +873,20 @@ export default function SummaryScreen() {
           <View style={styles.sheetWrap}>
             <View style={[styles.sheet, dataStale && styles.sheetDimmed]}>
               {periodEmpty ? (
-                <EmptyState navigation={navigation} colors={colors} sx={styles} texts={TEXTS} />
+                <EmptyState navigation={navigation} colors={colors} sx={styles} texts={emptyTexts} />
               ) : (
                 <View>
                   <NarrativeCard narrative={payload?.narrative} sx={styles} texts={TEXTS} />
                   <TouchableOpacity
                     style={styles.weeklyInsightBtn}
-                    onPress={() => navigation.navigate('WeeklyInsight')}
+                    onPress={() => navigation.navigate('WeeklyInsight', insightCta.params)}
                     activeOpacity={0.85}
                     accessibilityRole="button"
-                    accessibilityLabel={TEXTS.WEEKLY_INSIGHT_CTA}
-                    accessibilityHint={TEXTS.WEEKLY_INSIGHT_CTA_HINT}
+                    accessibilityLabel={insightCta.title}
+                    accessibilityHint={insightCta.hint}
                   >
-                    <Text style={styles.weeklyInsightBtnTitle}>{TEXTS.WEEKLY_INSIGHT_CTA}</Text>
-                    <Text style={styles.weeklyInsightBtnHint}>{TEXTS.WEEKLY_INSIGHT_CTA_HINT}</Text>
+                    <Text style={styles.weeklyInsightBtnTitle}>{insightCta.title}</Text>
+                    <Text style={styles.weeklyInsightBtnHint}>{insightCta.hint}</Text>
                   </TouchableOpacity>
                   <View style={styles.grid}>
                     <MetricTile

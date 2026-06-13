@@ -102,6 +102,7 @@ export const ENDPOINTS = {
   SIGNALS_DIGITAL_PHENOTYPE_SYNC: '/api/signals/digital-phenotype/sync',
   SIGNALS_WEEKLY_INSIGHT: '/api/signals/weekly-insight',
   SIGNALS_WEEKLY_INSIGHT_SCHEDULE: '/api/signals/weekly-insight/schedule',
+  SIGNALS_MONTHLY_INSIGHT: '/api/signals/monthly-insight',
   CHAT_TCC_CONTINUITY: '/api/chat/tcc-continuity',
   CHAT: '/api/chat',
   CHAT_MESSAGES: '/api/chat/messages',

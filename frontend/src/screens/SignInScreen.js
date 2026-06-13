@@ -38,7 +38,6 @@ import {
 import chatService from '../services/chatService';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { useToast } from '../context/ToastContext';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useSectionTranslations } from '../hooks/useTranslations';
 
@@ -80,7 +79,13 @@ const DEFAULT_ERROR_MESSAGES = {
   INVALID_CREDENTIALS: 'Correo o contraseña incorrectos',
   ACCOUNT_DISABLED: 'Tu cuenta ha sido desactivada. Contacta al soporte.',
   TOO_MANY_ATTEMPTS: 'Demasiados intentos. Por favor, espera un momento',
-  CONNECTION_ERROR: 'Error de conexión. Verifica tu internet'
+  CONNECTION_ERROR: 'Error de conexión. Verifica tu internet',
+  LOGIN_ERROR_TITLE: 'No se pudo iniciar sesión',
+};
+
+const notifySignInFailure = (message, { title, okLabel = 'OK' } = {}) => {
+  Keyboard.dismiss();
+  Alert.alert(title || DEFAULT_ERROR_MESSAGES.LOGIN_ERROR_TITLE, message, [{ text: okLabel }]);
 };
 
 // Constantes de textos
@@ -110,6 +115,8 @@ const DEFAULT_TEXTS = {
     'Por favor verifica tu email antes de iniciar sesión.',
   VERIFY_NOW: 'Verificar ahora',
   CANCEL: 'Cancelar',
+  LOGIN_ERROR_TITLE: 'No se pudo iniciar sesión',
+  OK: 'OK',
 };
 
 // Constantes de estilos
@@ -247,7 +254,6 @@ const SignInScreen = () => {
   );
   const navigation = useNavigation();
   const { refreshSession } = useAuth();
-  const { showToast } = useToast();
   const { colors, globalStyles: gs, statusBarStyle } = useTheme();
 
   const styles = useMemo(
@@ -474,9 +480,9 @@ const SignInScreen = () => {
 
       // Verificar si está offline antes de intentar login
       if (isOffline) {
-        showToast({
-          message: TEXTS.OFFLINE_WARNING,
-          type: 'warning',
+        notifySignInFailure(TEXTS.OFFLINE_WARNING, {
+          title: TEXTS.LOGIN_ERROR_TITLE,
+          okLabel: TEXTS.OK,
         });
         setIsSubmitting(false);
         return;
@@ -547,17 +553,20 @@ const SignInScreen = () => {
           });
         }
       } else {
-        showToast({
-          message: ERROR_MESSAGES.LOGIN_FAILED,
-          type: 'error',
+        notifySignInFailure(ERROR_MESSAGES.LOGIN_FAILED, {
+          title: TEXTS.LOGIN_ERROR_TITLE,
+          okLabel: TEXTS.OK,
         });
       }
     } catch (error) {
       console.error('Error en login:', error);
       const errorMessage = resolveSignInErrorMessage(error, ERROR_MESSAGES);
-      showToast({
-        message: errorMessage,
-        type: 'error',
+      if (error?.response?.status === 401 && error?.response?.data?.code !== 'EMAIL_NOT_VERIFIED') {
+        setErrors((prev) => ({ ...prev, password: errorMessage }));
+      }
+      notifySignInFailure(errorMessage, {
+        title: TEXTS.LOGIN_ERROR_TITLE,
+        okLabel: TEXTS.OK,
       });
     } finally {
       setIsSubmitting(false);

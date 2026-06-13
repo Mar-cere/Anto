@@ -5,11 +5,13 @@
 const DEFAULT_MAX_TOPICS = 7;
 const DEFAULT_MAX_INTERVENTIONS = 10;
 const DEFAULT_MAX_TOPIC_FREE = 8;
-const ROW_HEIGHT = 52;
-const PADDING_Y = 36;
-const LEFT_X = 88;
-const RIGHT_X_OFFSET = 88;
-const TOPIC_FREE_X_RATIO = 0.42;
+const ROW_GAP = 14;
+const PADDING_X = 14;
+const PADDING_Y = 44;
+const NODE_MIN_HEIGHT = 40;
+const LINE_HEIGHT = 15;
+const SOURCE_COL_RATIO = 0.44;
+const TARGET_COL_RATIO = 0.44;
 
 export function computeEdgeWeight(edge) {
   if (!edge || typeof edge !== 'object') return 0;
@@ -57,6 +59,137 @@ function truncateLabel(text, max = 22) {
   return `${s.slice(0, max - 1)}…`;
 }
 
+export function measureLabelLines(text, maxCharsPerLine = 26, maxLines = 3) {
+  const s = String(text || '').trim();
+  if (!s) {
+    return { lines: [''], height: NODE_MIN_HEIGHT };
+  }
+
+  const words = s.split(/\s+/).filter(Boolean);
+  const lines = [];
+  let current = '';
+
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (candidate.length <= maxCharsPerLine) {
+      current = candidate;
+      continue;
+    }
+    if (current) {
+      lines.push(current);
+      current = '';
+    }
+    if (word.length > maxCharsPerLine) {
+      lines.push(`${word.slice(0, maxCharsPerLine - 1)}…`);
+      current = '';
+    } else {
+      current = word;
+    }
+    if (lines.length >= maxLines) break;
+  }
+
+  if (lines.length < maxLines && current) {
+    lines.push(current);
+  }
+
+  if (lines.length > maxLines) {
+    lines.length = maxLines;
+    const last = lines[maxLines - 1];
+    lines[maxLines - 1] =
+      last.length > maxCharsPerLine ? `${last.slice(0, maxCharsPerLine - 1)}…` : last;
+  }
+
+  const height = Math.max(NODE_MIN_HEIGHT, lines.length * LINE_HEIGHT + 18);
+  return { lines, height };
+}
+
+function layoutBipartiteGraph({
+  sourceItems,
+  targetItems,
+  linkRows,
+  canvasWidth,
+  sourceKind = 'source',
+}) {
+  const innerWidth = Math.max(canvasWidth - PADDING_X * 2, 200);
+  const sourceColW = Math.floor(innerWidth * SOURCE_COL_RATIO);
+  const targetColW = Math.floor(innerWidth * TARGET_COL_RATIO);
+  const targetX = canvasWidth - PADDING_X - targetColW;
+  const charsSource = Math.max(14, Math.floor(sourceColW / 6.5));
+  const charsTarget = Math.max(12, Math.floor(targetColW / 6.5));
+
+  let sourceY = PADDING_Y;
+  const sourceById = new Map();
+  const sources = sourceItems.map((item) => {
+    const { lines, height } = measureLabelLines(item.label, charsSource, 3);
+    const node = {
+      id: item.id,
+      label: lines[0] || truncateLabel(item.label),
+      fullLabel: item.label,
+      lines,
+      x: PADDING_X,
+      y: sourceY,
+      width: sourceColW,
+      height,
+      anchorX: PADDING_X + sourceColW,
+      anchorY: sourceY + height / 2,
+      weight: item.weight,
+      kind: 'source',
+      nodeKind: sourceKind,
+    };
+    sourceById.set(item.id, node);
+    sourceY += height + ROW_GAP;
+    return node;
+  });
+
+  let targetY = PADDING_Y;
+  const targetById = new Map();
+  const targets = targetItems.map((item) => {
+    const { lines, height } = measureLabelLines(item.label, charsTarget, 2);
+    const node = {
+      id: item.id,
+      label: lines[0] || truncateLabel(item.label),
+      fullLabel: item.label,
+      lines,
+      x: targetX,
+      y: targetY,
+      width: targetColW,
+      height,
+      anchorX: targetX,
+      anchorY: targetY + height / 2,
+      weight: item.weight,
+      kind: 'target',
+      nodeKind: 'intervention',
+    };
+    targetById.set(item.id, node);
+    targetY += height + ROW_GAP;
+    return node;
+  });
+
+  const links = (linkRows || [])
+    .map((row) => {
+      const source = sourceById.get(row.sourceId);
+      const target = targetById.get(row.targetId);
+      if (!source || !target) return null;
+      return {
+        ...row.payload,
+        key: row.key,
+        weight: row.weight,
+        x1: source.anchorX,
+        y1: source.anchorY,
+        x2: target.anchorX,
+        y2: target.anchorY,
+        sourceId: row.sourceId,
+        targetId: row.targetId,
+      };
+    })
+    .filter(Boolean);
+
+  const height = Math.max(sourceY, targetY, PADDING_Y + NODE_MIN_HEIGHT) + PADDING_Y;
+  const maxWeight = Math.max(...links.map((l) => l.weight), 0.001);
+
+  return { sources, targets, links, height, maxWeight };
+}
+
 /**
  * @param {Array} edges — filas del API /interventions/graph
  * @param {object} options
@@ -98,53 +231,44 @@ export function buildInterventionGraphModel(
       interventionSet.has(String(e.interventionLabel || e.interventionId)),
   );
 
-  const topics = topicKeys.map((topicTag, index) => ({
+  const sourceItems = topicKeys.map((topicTag) => ({
     id: topicTag,
-    label: truncateLabel(topicTag),
-    x: LEFT_X,
-    y: PADDING_Y + index * ROW_HEIGHT,
+    label: topicTag,
     weight: topicWeights.get(topicTag) || 0,
   }));
-
-  const interventions = interventionKeys.map((label, index) => ({
+  const targetItems = interventionKeys.map((label) => ({
     id: label,
-    label: truncateLabel(label),
-    x: Math.max(canvasWidth - RIGHT_X_OFFSET, LEFT_X + 120),
-    y: PADDING_Y + index * ROW_HEIGHT,
+    label,
     weight: interventionWeights.get(label) || 0,
   }));
 
-  const topicIndex = new Map(topics.map((t, i) => [t.id, i]));
-  const interventionIndex = new Map(interventions.map((t, i) => [t.id, i]));
-
-  const links = filtered.map((edge) => {
-    const topicTag = String(edge.topicTag);
-    const interventionLabel = String(edge.interventionLabel || edge.interventionId);
-    const weight = computeEdgeWeight(edge);
-    const topic = topics[topicIndex.get(topicTag)];
-    const intervention = interventions[interventionIndex.get(interventionLabel)];
-    if (!topic || !intervention) return null;
-    return {
-      key: `${topicTag}:${edge.interventionId}`,
-      topicTag,
-      interventionId: edge.interventionId,
-      interventionLabel,
-      weight,
-      x1: topic.x,
-      y1: topic.y,
-      x2: intervention.x,
-      y2: intervention.y,
-      edge,
-    };
-  }).filter(Boolean);
-
-  const rowCount = Math.max(topics.length, interventions.length, 1);
-  const height = PADDING_Y * 2 + (rowCount - 1) * ROW_HEIGHT;
-  const maxWeight = Math.max(...links.map((l) => l.weight), 0.001);
+  const { sources, targets, links, height, maxWeight } = layoutBipartiteGraph({
+    sourceItems,
+    targetItems,
+    linkRows: filtered.map((edge) => {
+      const topicTag = String(edge.topicTag);
+      const interventionLabel = String(edge.interventionLabel || edge.interventionId);
+      return {
+        key: `${topicTag}:${edge.interventionId}`,
+        sourceId: topicTag,
+        targetId: interventionLabel,
+        weight: computeEdgeWeight(edge),
+        payload: {
+          topicTag,
+          interventionId: edge.interventionId,
+          interventionLabel,
+          edge,
+          linkKind: 'topicTag',
+        },
+      };
+    }),
+    canvasWidth,
+    sourceKind: 'topic',
+  });
 
   return {
-    topics,
-    interventions,
+    topics: sources,
+    interventions: targets,
     links,
     width: canvasWidth,
     height,
@@ -196,61 +320,46 @@ export function buildTopicFreeGraphModel(
       interventionSet.has(String(e.interventionLabel || e.interventionId)),
   );
 
-  const centerX = Math.max(LEFT_X + 40, Math.floor(canvasWidth * TOPIC_FREE_X_RATIO));
-  const rightX = Math.max(canvasWidth - RIGHT_X_OFFSET, centerX + 100);
-
-  const topicFreeNodes = topicFreeKeys.map((topicFree, index) => ({
+  const sourceItems = topicFreeKeys.map((topicFree) => ({
     id: topicFree,
-    label: truncateLabel(topicFree, 26),
-    x: centerX,
-    y: PADDING_Y + index * ROW_HEIGHT,
+    label: topicFree,
     weight: topicFreeWeights.get(topicFree) || 0,
   }));
-
-  const interventions = interventionKeys.map((label, index) => ({
+  const targetItems = interventionKeys.map((label) => ({
     id: label,
-    label: truncateLabel(label),
-    x: rightX,
-    y: PADDING_Y + index * ROW_HEIGHT,
+    label,
     weight: interventionWeights.get(label) || 0,
   }));
 
-  const topicFreeIndex = new Map(topicFreeNodes.map((n, i) => [n.id, i]));
-  const interventionIndex = new Map(interventions.map((n, i) => [n.id, i]));
-
-  const links = filtered
-    .map((edge) => {
+  const { sources, targets, links, height, maxWeight } = layoutBipartiteGraph({
+    sourceItems,
+    targetItems,
+    linkRows: filtered.map((edge) => {
       const topicFree = String(edge.topicFree);
       const interventionLabel = String(edge.interventionLabel || edge.interventionId);
-      const weight = computeEdgeWeight(edge);
-      const tfNode = topicFreeNodes[topicFreeIndex.get(topicFree)];
-      const intervention = interventions[interventionIndex.get(interventionLabel)];
-      if (!tfNode || !intervention) return null;
       return {
         key: `tf:${topicFree}:${edge.interventionId}`,
-        topicFree,
-        topicTag: edge.topicTag,
-        interventionId: edge.interventionId,
-        interventionLabel,
-        weight,
-        x1: tfNode.x,
-        y1: tfNode.y,
-        x2: intervention.x,
-        y2: intervention.y,
-        edge,
-        linkKind: 'topicFree',
+        sourceId: topicFree,
+        targetId: interventionLabel,
+        weight: computeEdgeWeight(edge),
+        payload: {
+          topicFree,
+          topicTag: edge.topicTag,
+          interventionId: edge.interventionId,
+          interventionLabel,
+          edge,
+          linkKind: 'topicFree',
+        },
       };
-    })
-    .filter(Boolean);
-
-  const rowCount = Math.max(topicFreeNodes.length, interventions.length, 1);
-  const height = PADDING_Y * 2 + (rowCount - 1) * ROW_HEIGHT;
-  const maxWeight = Math.max(...links.map((l) => l.weight), 0.001);
+    }),
+    canvasWidth,
+    sourceKind: 'topicFree',
+  });
 
   return {
     topics: [],
-    topicFreeNodes,
-    interventions,
+    topicFreeNodes: sources,
+    interventions: targets,
     links,
     width: canvasWidth,
     height,
@@ -304,67 +413,55 @@ export function buildConceptGraphModel(
       interventionSet.has(String(e.interventionLabel || e.interventionId)),
   );
 
-  const centerX = Math.max(LEFT_X + 40, Math.floor(canvasWidth * TOPIC_FREE_X_RATIO));
-  const rightX = Math.max(canvasWidth - RIGHT_X_OFFSET, centerX + 100);
-
-  const conceptNodeModels = conceptKeys
-    .map((conceptId, index) => {
-      const raw = nodeById.get(conceptId);
-      return {
-        id: conceptId,
-        label: truncateLabel(raw?.label || conceptId, 24),
-        x: centerX,
-        y: PADDING_Y + index * ROW_HEIGHT,
-        weight: conceptWeights.get(conceptId) || 0,
-        memberCount: raw?.memberCount || 1,
-      };
-    })
-    .filter(Boolean);
-
-  const interventions = interventionKeys.map((label, index) => ({
+  const sourceItems = conceptKeys.map((conceptId) => {
+    const raw = nodeById.get(conceptId);
+    return {
+      id: conceptId,
+      label: raw?.label || conceptId,
+      weight: conceptWeights.get(conceptId) || 0,
+      memberCount: raw?.memberCount || 1,
+    };
+  });
+  const targetItems = interventionKeys.map((label) => ({
     id: label,
-    label: truncateLabel(label),
-    x: rightX,
-    y: PADDING_Y + index * ROW_HEIGHT,
+    label,
     weight: interventionWeights.get(label) || 0,
   }));
 
-  const conceptIndex = new Map(conceptNodeModels.map((n, i) => [n.id, i]));
-  const interventionIndex = new Map(interventions.map((n, i) => [n.id, i]));
-
-  const links = filtered
-    .map((edge) => {
+  const { sources, targets, links, height, maxWeight } = layoutBipartiteGraph({
+    sourceItems,
+    targetItems,
+    linkRows: filtered.map((edge) => {
       const conceptId = String(edge.conceptId);
       const interventionLabel = String(edge.interventionLabel || edge.interventionId);
-      const weight = Number(edge.weight) || computeEdgeWeight(edge);
-      const concept = conceptNodeModels[conceptIndex.get(conceptId)];
-      const intervention = interventions[interventionIndex.get(interventionLabel)];
-      if (!concept || !intervention) return null;
       return {
         key: `c:${conceptId}:${edge.interventionId}`,
-        conceptId,
-        interventionId: edge.interventionId,
-        interventionLabel,
-        weight,
-        x1: concept.x,
-        y1: concept.y,
-        x2: intervention.x,
-        y2: intervention.y,
-        edge,
-        linkKind: 'concept',
+        sourceId: conceptId,
+        targetId: interventionLabel,
+        weight: Number(edge.weight) || computeEdgeWeight(edge),
+        payload: {
+          conceptId,
+          interventionId: edge.interventionId,
+          interventionLabel,
+          edge,
+          linkKind: 'concept',
+        },
       };
-    })
-    .filter(Boolean);
+    }),
+    canvasWidth,
+    sourceKind: 'concept',
+  });
 
-  const rowCount = Math.max(conceptNodeModels.length, interventions.length, 1);
-  const height = PADDING_Y * 2 + (rowCount - 1) * ROW_HEIGHT;
-  const maxWeight = Math.max(...links.map((l) => l.weight), 0.001);
+  const conceptNodeModels = sources.map((node) => ({
+    ...node,
+    memberCount: sourceItems.find((s) => s.id === node.id)?.memberCount || 1,
+  }));
 
   return {
     topics: [],
     topicFreeNodes: [],
     conceptNodes: conceptNodeModels,
-    interventions,
+    interventions: targets,
     links,
     width: canvasWidth,
     height,
@@ -435,12 +532,36 @@ export function formatTopicTagLabel(topicTag, language = 'es') {
  * Enriquece labels de temas para la UI.
  */
 export function localizeGraphModel(model, language = 'es') {
-  if (!model?.topics) return model;
+  if (!model?.topics?.length) return model;
+  const topics = model.topics.map((t) => {
+    const localized = formatTopicTagLabel(t.id, language);
+    const { lines, height } = measureLabelLines(
+      localized,
+      Math.max(14, Math.floor((t.width || 120) / 6.5)),
+      3,
+    );
+    return {
+      ...t,
+      label: lines[0] || localized,
+      fullLabel: localized,
+      lines,
+      height,
+      anchorY: t.y + height / 2,
+    };
+  });
+  const topicById = new Map(topics.map((topic) => [topic.id, topic]));
+  const links = (model.links || []).map((link) => {
+    const topic = topicById.get(link.topicTag || link.sourceId);
+    if (!topic) return link;
+    return {
+      ...link,
+      x1: topic.anchorX,
+      y1: topic.anchorY,
+    };
+  });
   return {
     ...model,
-    topics: model.topics.map((t) => ({
-      ...t,
-      label: truncateLabel(formatTopicTagLabel(t.id, language)),
-    })),
+    topics,
+    links,
   };
 }

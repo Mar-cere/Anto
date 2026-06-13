@@ -11,7 +11,14 @@ import { buildMultimodalCorrelations } from './multimodalCorrelationService.js';
 import { getInterventionCatalogLabel, getInterventionCatalogEntry } from '../constants/interventionCatalog.js';
 import WeeklyPatternInsight from '../models/WeeklyPatternInsight.js';
 import WeeklyPatternInsightJob from '../models/WeeklyPatternInsightJob.js';
+import MonthlyPatternInsight from '../models/MonthlyPatternInsight.js';
 import { getIsoWeekKey, getPreviousIsoWeekKey, getWeekWindowFromKey } from '../utils/weekKeys.js';
+import {
+  formatMonthKey,
+  getMonthWindowFromKey,
+  getPreviousMonthKey,
+  normalizeMonthKey,
+} from '../utils/monthKeys.js';
 import { isValidIsoWeekKey, normalizeIsoWeekKey } from '../utils/signalValidators.js';
 
 const GENERATION_COOLDOWN_MS = 60_000;
@@ -41,7 +48,8 @@ function insightLabelFromCorrelation(row, language = 'es') {
   return map[row?.type] || row?.type || '';
 }
 
-function buildInsightSentence(row, language = 'es') {
+function buildInsightSentence(row, language = 'es', periodKind = 'week') {
+  const isMonth = periodKind === 'month';
   const topic = row?.sourceLabel || row?.sourceId || '';
   const intervention = row?.interventionLabel || row?.targetId || '';
   if (row?.type === 'concept_intervention') {
@@ -89,18 +97,33 @@ function buildInsightSentence(row, language = 'es') {
   }
   if (row?.type === 'phenotype_screen_social') {
     return language === 'en'
-      ? 'Social screen time was high relative to your week.'
-      : 'El tiempo en pantallas sociales fue alto respecto a tu semana.';
+      ? isMonth
+        ? 'Social screen time was high relative to your month.'
+        : 'Social screen time was high relative to your week.'
+      : isMonth
+        ? 'El tiempo en pantallas sociales fue alto respecto a tu mes.'
+        : 'El tiempo en pantallas sociales fue alto respecto a tu semana.';
   }
-  return language === 'en' ? 'We noticed a recurring pattern in your week.' : 'Notamos un patrón recurrente en tu semana.';
+  return language === 'en'
+    ? isMonth
+      ? 'We noticed a recurring pattern in your month.'
+      : 'We noticed a recurring pattern in your week.'
+    : isMonth
+      ? 'Notamos un patrón recurrente en tu mes.'
+      : 'Notamos un patrón recurrente en tu semana.';
 }
 
-function buildHeadline(correlations, language = 'es') {
+function buildHeadline(correlations, language = 'es', periodKind = 'week') {
+  const isMonth = periodKind === 'month';
   const top = correlations?.[0];
   if (!top) {
     return language === 'en'
-      ? 'A calm week — patterns will emerge with more data'
-      : 'Semana tranquila: los patrones aparecerán con más datos';
+      ? isMonth
+        ? 'A calm month — patterns will emerge with more data'
+        : 'A calm week — patterns will emerge with more data'
+      : isMonth
+        ? 'Mes tranquilo: los patrones aparecerán con más datos'
+        : 'Semana tranquila: los patrones aparecerán con más datos';
   }
   if (top.type === 'phenotype_sleep_prodrome') {
     return language === 'en' ? 'Your sleep rhythm shifted' : 'Tu ritmo de sueño cambió';
@@ -109,9 +132,21 @@ function buildHeadline(correlations, language = 'es') {
     return language === 'en' ? 'How you wrote tells a story too' : 'Cómo escribiste también cuenta una historia';
   }
   if (top.type === 'concept_intervention' || top.type === 'topic_intervention') {
-    return language === 'en' ? 'What helped you this week' : 'Qué te acompañó esta semana';
+    return language === 'en'
+      ? isMonth
+        ? 'What helped you this month'
+        : 'What helped you this week'
+      : isMonth
+        ? 'Qué te acompañó este mes'
+        : 'Qué te acompañó esta semana';
   }
-  return language === 'en' ? 'Patterns from your week' : 'Patrones de tu semana';
+  return language === 'en'
+    ? isMonth
+      ? 'Patterns from your month'
+      : 'Patterns from your week'
+    : isMonth
+      ? 'Patrones de tu mes'
+      : 'Patrones de tu semana';
 }
 
 async function countActiveChatDays(userId, since, until) {
@@ -133,21 +168,7 @@ async function countActiveChatDays(userId, since, until) {
   return rows.length;
 }
 
-export async function generateWeeklyPatternInsight({
-  userId,
-  weekKey = null,
-  language = 'es',
-}) {
-  const key = normalizeIsoWeekKey(weekKey, getPreviousIsoWeekKey());
-  if (!key) {
-    throw new Error('invalid_week_key');
-  }
-  const window = getWeekWindowFromKey(key);
-  if (!userId || !window) {
-    throw new Error('invalid_week_or_user');
-  }
-
-  const { since, until } = window;
+async function buildPatternInsightPayload({ userId, since, until, language = 'es', periodKind = 'week' }) {
   const topicTagRaw = await chatInterventionGraphService.aggregateInterventionGraph({
     userId,
     since,
@@ -187,9 +208,10 @@ export async function generateWeeklyPatternInsight({
     topicFreeEdges: mappedTopicFreeEdges,
   });
 
+  const phenotypeLimit = periodKind === 'month' ? 31 : 14;
   const [typingAggregate, phenotypeSeries, chatDaysActive] = await Promise.all([
     aggregateTypingTelemetry({ userId, since, until }),
-    fetchDigitalPhenotypeSeries({ userId, since, until, limit: 14 }),
+    fetchDigitalPhenotypeSeries({ userId, since, until, limit: phenotypeLimit }),
     countActiveChatDays(userId, since, until),
   ]);
 
@@ -209,11 +231,11 @@ export async function generateWeeklyPatternInsight({
     type: row.type,
     label: insightLabelFromCorrelation(row, language),
     strength: row.strength,
-    detail: buildInsightSentence(row, language),
+    detail: buildInsightSentence(row, language, periodKind),
     disclaimer: row.disclaimer || 'pattern_observed',
   }));
 
-  const headline = buildHeadline(correlations, language);
+  const headline = buildHeadline(correlations, language, periodKind);
   const body =
     insights.length > 0
       ? ''
@@ -221,17 +243,45 @@ export async function generateWeeklyPatternInsight({
         ? 'There is not enough signal yet for a strong pattern. Keep using suggestions and techniques when you want.'
         : 'Aún no hay señal suficiente para un patrón sólido. Sigue usando sugerencias y técnicas cuando quieras.';
 
+  return {
+    headline,
+    body: body.slice(0, 2000),
+    insights,
+    correlations: correlations.slice(0, 12),
+    sourceSummary: { ...summary, chatDaysActive, typingCount: typingAggregate?.count || 0 },
+  };
+}
+
+export async function generateWeeklyPatternInsight({
+  userId,
+  weekKey = null,
+  language = 'es',
+}) {
+  const key = normalizeIsoWeekKey(weekKey, getPreviousIsoWeekKey());
+  if (!key) {
+    throw new Error('invalid_week_key');
+  }
+  const window = getWeekWindowFromKey(key);
+  if (!userId || !window) {
+    throw new Error('invalid_week_or_user');
+  }
+
+  const { since, until } = window;
+  const payload = await buildPatternInsightPayload({
+    userId,
+    since,
+    until,
+    language,
+    periodKind: 'week',
+  });
+
   const doc = await WeeklyPatternInsight.findOneAndUpdate(
     { userId, weekKey: key },
     {
       $set: {
         language,
         status: 'ready',
-        headline,
-        body: body.slice(0, 2000),
-        insights,
-        correlations: correlations.slice(0, 12),
-        sourceSummary: { ...summary, chatDaysActive, typingCount: typingAggregate?.count || 0 },
+        ...payload,
         generatedAt: new Date(),
         lastError: null,
       },
@@ -239,6 +289,81 @@ export async function generateWeeklyPatternInsight({
     { upsert: true, new: true },
   );
 
+  return doc;
+}
+
+export async function generateMonthlyPatternInsight({
+  userId,
+  monthKey = null,
+  language = 'es',
+}) {
+  const key = normalizeMonthKey(monthKey, getPreviousMonthKey());
+  if (!key) {
+    throw new Error('invalid_month_key');
+  }
+  const window = getMonthWindowFromKey(key);
+  if (!userId || !window) {
+    throw new Error('invalid_month_or_user');
+  }
+
+  const { since, until } = window;
+  const payload = await buildPatternInsightPayload({
+    userId,
+    since,
+    until,
+    language,
+    periodKind: 'month',
+  });
+
+  const doc = await MonthlyPatternInsight.findOneAndUpdate(
+    { userId, monthKey: key },
+    {
+      $set: {
+        language,
+        status: 'ready',
+        ...payload,
+        generatedAt: new Date(),
+        lastError: null,
+      },
+    },
+    { upsert: true, new: true },
+  );
+
+  return doc;
+}
+
+export async function getMonthlyPatternInsight({ userId, monthKey = null, language = 'es' }) {
+  const key = normalizeMonthKey(monthKey, getPreviousMonthKey());
+  if (!key) {
+    throw new Error('invalid_month_key');
+  }
+
+  const lang = language === 'en' ? 'en' : 'es';
+
+  let doc = await MonthlyPatternInsight.findOne({ userId, monthKey: key }).lean();
+  if (doc?.status === 'ready' && doc.language === lang) return doc;
+
+  if (doc?.status === 'ready' && doc.language !== lang) {
+    return generateMonthlyPatternInsight({ userId, monthKey: key, language: lang });
+  }
+
+  const updatedAtMs = doc?.updatedAt ? new Date(doc.updatedAt).getTime() : 0;
+  if (updatedAtMs && Date.now() - updatedAtMs < GENERATION_COOLDOWN_MS) {
+    return (
+      doc || {
+        userId,
+        monthKey: key,
+        status: 'pending',
+        headline: '',
+        body: '',
+        insights: [],
+        correlations: [],
+        sourceSummary: {},
+      }
+    );
+  }
+
+  doc = await generateMonthlyPatternInsight({ userId, monthKey: key, language: lang });
   return doc;
 }
 
@@ -347,7 +472,9 @@ export { getIsoWeekKey, getPreviousIsoWeekKey };
 
 export default {
   generateWeeklyPatternInsight,
+  generateMonthlyPatternInsight,
   getWeeklyPatternInsight,
+  getMonthlyPatternInsight,
   scheduleWeeklyPatternInsightJob,
   processWeeklyPatternInsightJobs,
   startWeeklyPatternInsightWorker,

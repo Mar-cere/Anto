@@ -48,11 +48,22 @@ export async function scheduleWeeklyInsight({ weekKey = null } = {}) {
   return res?.data ?? res;
 }
 
+export async function fetchMonthlyInsight({ monthKey = null } = {}) {
+  if (!monthKey) {
+    throw new Error('monthKey_required');
+  }
+  const res = await api.get(ENDPOINTS.SIGNALS_MONTHLY_INSIGHT, {
+    params: { monthKey },
+  });
+  return res?.data ?? res;
+}
+
 export default {
   getSignalConsent,
   updateSignalConsent,
   submitTypingTelemetry,
   syncDigitalPhenotype,
   fetchWeeklyInsight,
+  fetchMonthlyInsight,
   scheduleWeeklyInsight,
 };

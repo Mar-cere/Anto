@@ -1,9 +1,9 @@
 /**
  * Pantalla principal del dashboard
  * 
- * Muestra el panel principal con saludo, avatar, citas motivacionales,
- * tareas, hábitos y temporizador Pomodoro. Incluye funcionalidad de
- * actualización pull-to-refresh y manejo de errores.
+ * Muestra el panel principal con saludo, foco del día, tareas, hábitos,
+ * herramientas TCC, diario y accesos a patrones. Incluye pull-to-refresh
+ * y manejo de errores.
  * 
  * @author AntoApp Team
  */
@@ -35,7 +35,6 @@ import TutorialHighlight from '../components/TutorialHighlight';
 import HabitCard from '../components/HabitCard';
 import Header from '../components/Header';
 import ParticleBackground from '../components/ParticleBackground';
-import PomodoroCard from '../components/PomodoroCard';
 import JournalCard from '../components/JournalCard';
 import QuoteSection from '../components/QuoteSection';
 import DashboardFocusCard from '../components/DashboardFocusCard';
@@ -867,7 +866,6 @@ const DashScreen = () => {
             onOpenBehavioralActivation={openBehavioralActivationFromFocus}
             onOpenExposureHierarchy={openExposureFromFocus}
           />
-          <InsightsQuickCard accessibilityLabel={DASH.INSIGHTS_CARD_A11Y} />
           {error && (
             <ErrorMessage
               message={error}
@@ -896,10 +894,10 @@ const DashScreen = () => {
             />
           </Animated.View>
           <TccProtocolsQuickCard accessibilityLabel={DASH.TCC_TOOLS_LABEL} />
-          <PomodoroCard accessibilityLabel={DASH.POMODORO_LABEL} collapsible defaultExpanded={false} />
           <Animated.View style={refreshAnimationStyle}>
             <JournalCard />
           </Animated.View>
+          <InsightsQuickCard accessibilityLabel={DASH.INSIGHTS_CARD_A11Y} />
           <QuoteSection />
         </DashboardScroll>
         </SafeAreaView>

@@ -1,7 +1,7 @@
 /**
  * Pantalla de revelación semanal (#213 / #208).
  */
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRoute } from '@react-navigation/native';
 import {
   ActivityIndicator,
   Platform,
@@ -24,6 +24,10 @@ import { useSectionTranslations } from '../hooks/useTranslations';
 import signalsService from '../services/signalsService';
 
 export default function WeeklyInsightScreen({ navigation }) {
+  const route = useRoute();
+  const period = route?.params?.period === 'month' ? 'month' : 'week';
+  const weekKeyParam = typeof route?.params?.weekKey === 'string' ? route.params.weekKey : null;
+  const monthKeyParam = typeof route?.params?.monthKey === 'string' ? route.params.monthKey : null;
   const insets = useSafeAreaInsets();
   const { language } = useLanguage();
   const { colors, statusBarStyle } = useTheme();
@@ -32,7 +36,7 @@ export default function WeeklyInsightScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [insight, setInsight] = useState(null);
-  const [weekKey, setWeekKey] = useState(null);
+  const [periodKey, setPeriodKey] = useState(null);
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -45,45 +49,87 @@ export default function WeeklyInsightScreen({ navigation }) {
   const copy = useMemo(
     () => {
       const en = language === 'en';
+      const isMonth = period === 'month';
       return {
-        kicker: TEXTS.WEEKLY_INSIGHT_KICKER || (en ? 'Observational report' : 'Informe observacional'),
+        kicker:
+          (isMonth ? TEXTS.MONTHLY_INSIGHT_KICKER : TEXTS.WEEKLY_INSIGHT_KICKER) ||
+          (en
+            ? isMonth
+              ? 'Monthly observational report'
+              : 'Observational report'
+            : isMonth
+              ? 'Informe observacional mensual'
+              : 'Informe observacional'),
         disclaimer:
           TEXTS.WEEKLY_INSIGHT_DISCLAIMER ||
           (en
             ? 'Correlations, not causes. Not a substitute for professional care.'
             : 'Correlaciones, no causas. No sustituye orientación profesional.'),
         empty:
+          (isMonth ? TEXTS.MONTHLY_INSIGHT_EMPTY : TEXTS.WEEKLY_INSIGHT_EMPTY) ||
           TEXTS.WEEKLY_INSIGHT_EMPTY ||
           (en
-            ? 'Not enough signal yet for a report. Turn on the options below and keep using the app.'
-            : 'Aún no hay suficientes señales para un informe. Activa las opciones de abajo y sigue usando la app.'),
+            ? isMonth
+              ? 'Not enough signal yet for a monthly report. Turn on the options below and keep using the app.'
+              : 'Not enough signal yet for a report. Turn on the options below and keep using the app.'
+            : isMonth
+              ? 'Aún no hay suficientes señales para un informe mensual. Activa las opciones de abajo y sigue usando la app.'
+              : 'Aún no hay suficientes señales para un informe. Activa las opciones de abajo y sigue usando la app.'),
         retry: TEXTS.WEEKLY_INSIGHT_RETRY || (en ? 'Retry' : 'Reintentar'),
         error:
+          (isMonth ? TEXTS.MONTHLY_INSIGHT_ERROR : TEXTS.WEEKLY_INSIGHT_ERROR) ||
           TEXTS.WEEKLY_INSIGHT_ERROR ||
-          (en ? 'Could not load the weekly report.' : 'No se pudo cargar el informe semanal.'),
+          (en
+            ? isMonth
+              ? 'Could not load the monthly report.'
+              : 'Could not load the weekly report.'
+            : isMonth
+              ? 'No se pudo cargar el informe mensual.'
+              : 'No se pudo cargar el informe semanal.'),
       };
     },
-    [TEXTS, language],
+    [TEXTS, language, period],
   );
 
   const load = useCallback(async () => {
     try {
-      if (mountedRef.current) setError(null);
-      const res = await signalsService.fetchWeeklyInsight();
+      if (mountedRef.current) {
+        setError(null);
+        setLoading(true);
+      }
+      if (period === 'month' && !monthKeyParam) {
+        if (!mountedRef.current) return;
+        setError(copy.error);
+        setInsight(null);
+        setPeriodKey(null);
+        return;
+      }
+      const res =
+        period === 'month'
+          ? await signalsService.fetchMonthlyInsight({ monthKey: monthKeyParam })
+          : await signalsService.fetchWeeklyInsight({ weekKey: weekKeyParam });
       if (!mountedRef.current) return;
-      setWeekKey(typeof res?.weekKey === 'string' ? res.weekKey : null);
+      const key =
+        period === 'month'
+          ? typeof res?.monthKey === 'string'
+            ? res.monthKey
+            : monthKeyParam
+          : typeof res?.weekKey === 'string'
+            ? res.weekKey
+            : weekKeyParam;
+      setPeriodKey(key);
       setInsight(res?.insight && typeof res.insight === 'object' ? res.insight : null);
     } catch {
       if (!mountedRef.current) return;
       setError(copy.error);
       setInsight(null);
-      setWeekKey(null);
+      setPeriodKey(null);
     } finally {
       if (!mountedRef.current) return;
       setLoading(false);
       setRefreshing(false);
     }
-  }, [copy.error]);
+  }, [copy.error, period, weekKeyParam, monthKeyParam]);
 
   useEffect(() => {
     load();
@@ -228,7 +274,7 @@ export default function WeeklyInsightScreen({ navigation }) {
         {!loading && !error ? (
           <>
             <View style={styles.hero}>
-              {weekKey ? <Text style={styles.meta}>{weekKey}</Text> : null}
+              {periodKey ? <Text style={styles.meta}>{periodKey}</Text> : null}
               <Text style={styles.headline}>{insight?.headline || copy.empty}</Text>
               {showBody ? <Text style={styles.body}>{insight.body}</Text> : null}
             </View>
