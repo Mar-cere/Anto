@@ -319,10 +319,12 @@ export default function SessionInsightScreen() {
     let nav = navigation;
     while (nav?.getParent?.()) nav = nav.getParent();
     nav.dispatch(
-      getResetToMainTabsWithChatState({
-        chatBackTarget: backTarget === CHAT_BACK_TARGET.HOME ? CHAT_BACK_TARGET.HOME : CHAT_BACK_TARGET.DASH,
-        resumeTccLite: resume,
-      }),
+      CommonActions.reset(
+        getResetToMainTabsWithChatState({
+          chatBackTarget: backTarget === CHAT_BACK_TARGET.HOME ? CHAT_BACK_TARGET.HOME : CHAT_BACK_TARGET.DASH,
+          resumeTccLite: resume,
+        }),
+      ),
     );
   }, [insight, navigation, finish, backTarget]);
 

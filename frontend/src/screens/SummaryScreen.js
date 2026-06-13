@@ -835,7 +835,7 @@ export default function SummaryScreen() {
               ) : (
                 <View>
                   <NarrativeCard narrative={payload?.narrative} sx={styles} texts={TEXTS} />
-                  {period === 'week' ? (
+                  {granularity === 'week' ? (
                     <TouchableOpacity
                       style={styles.weeklyInsightBtn}
                       onPress={() => navigation.navigate('WeeklyInsight')}

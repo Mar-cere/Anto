@@ -26,6 +26,10 @@ import {
   buildRecentThreadSummarySnippet,
   getSessionPhaseSystemSnippet
 } from '../chat/sessionPhaseHints.js';
+import {
+  buildAntiRepeatTriageSnippet,
+  shouldSuppressRepeatTriage
+} from '../chat/chatTriageLoopHints.js';
 import { getSessionIntentionSystemSnippet } from '../chat/sessionIntentionHints.js';
 import { buildSensitiveVnpSystemSnippet } from '../chat/sensitiveResponseTemplate.js';
 import { buildUnderstandingPipelineSnippet } from '../chat/understandingPipeline.js';
@@ -369,16 +373,20 @@ export function buildMedicationSafetySnippet(contexto) {
 - Evita tono de regaño o bloqueo; mantén apertura para seguir conversando.`;
 }
 
-function buildTurnPolicySnippet(conversationPattern = {}, contextual = {}) {
+function buildTurnPolicySnippet(conversationPattern = {}, contextual = {}, opts = {}) {
   const questionStreak = Number(conversationPattern?.questionStreakCount || 0);
   const shortReplyStreak = Number(conversationPattern?.shortReplyStreak || 0);
   const load = conversationPattern?.cognitiveLoadSignal || 'none';
   const disclosureStyle = contextual?.disclosureStyle || contextual?.resistance?.disclosureStyle || 'open';
   const maxConsecutiveQuestions = CHAT_TURN_POLICY.MAX_CONSECUTIVE_QUESTIONS;
+  const suppressTriageMenu = Boolean(opts.suppressTriageMenu);
+  const lowLoadLine = suppressTriageMenu
+    ? '- Respuesta totalizadora tras triage: valida el conjunto y usa **una pregunta abierta**; no vuelvas a menú A/B/C.'
+    : `- Si hay respuestas cortas (racha: ${shortReplyStreak}) o carga cognitiva (${load}), usa baja carga: A/B, escala 0-10 o “una frase”.`;
 
   return `\n\n### Política de turno (core, prioridad alta)
 - Evita interrogatorio: máximo ${maxConsecutiveQuestions} preguntas seguidas; si llegas al límite, el siguiente turno debe traer avance concreto.
-- Si hay respuestas cortas (racha: ${shortReplyStreak}) o carga cognitiva (${load}), usa baja carga: A/B, escala 0-10 o “una frase”.
+${lowLoadLine}
 - Estilo de apertura detectado: ${disclosureStyle}. Si hay límite saludable, no presiones por detalles.
 - No indiques microtécnicas corporales automáticas; solo si el usuario las pide explícitamente.
 - Señal actual de preguntas previas del asistente: ${questionStreak}.`;
@@ -951,9 +959,22 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   if (threadSnippet) systemMessage += threadSnippet;
   systemMessage += getSessionPhaseSystemSnippet(contexto.sessionPhase || 'default');
 
+  const userMessageForTriage =
+    contexto.userMessage ??
+    (typeof contexto.currentMessage === 'string'
+      ? contexto.currentMessage
+      : contexto.currentMessage?.content);
+  const suppressTriageMenu = shouldSuppressRepeatTriage({
+    userMessage: userMessageForTriage,
+    safetyHistory: contexto.safetyHistory || []
+  });
+  systemMessage += buildAntiRepeatTriageSnippet(contexto, language);
+
   const intentionSnippet = getSessionIntentionSystemSnippet(sessionIntention);
   if (intentionSnippet) systemMessage += intentionSnippet;
-  systemMessage += buildTurnPolicySnippet(conversationPattern, contexto.contextual || {});
+  systemMessage += buildTurnPolicySnippet(conversationPattern, contexto.contextual || {}, {
+    suppressTriageMenu
+  });
   systemMessage += buildProgressiveClosureSnippet(
     conversationPattern,
     sessionIntention,
