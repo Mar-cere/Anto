@@ -24,6 +24,7 @@ describe('monthKeys', () => {
 
   it('normalizeMonthKey rechaza valores inválidos', () => {
     expect(normalizeMonthKey('2025-06')).toBe('2025-06');
+    expect(normalizeMonthKey('2025-6')).toBe('2025-06');
     expect(normalizeMonthKey('2025-13', '2025-01')).toBe('2025-01');
     expect(normalizeMonthKey('bad', '2025-01')).toBe('2025-01');
   });

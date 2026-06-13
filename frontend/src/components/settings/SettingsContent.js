@@ -1221,7 +1221,7 @@ export default function SettingsContent({
               style={styles.settingsLinkRow}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                navigation.navigate('WeeklyInsight');
+                navigation.navigate('WeeklyInsight', { period: 'week' });
               }}
               accessibilityRole='button'
               accessibilityLabel={TEXTS.PATTERNS_OPEN_WEEKLY}

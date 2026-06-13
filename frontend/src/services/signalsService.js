@@ -3,6 +3,7 @@
  */
 import { api, ENDPOINTS } from '../config/api';
 import { collectDailyPhenotypeSnapshot } from './digitalHealthBridge';
+import { normalizeMonthKey, getPreviousMonthKey } from '../utils/monthKeys';
 
 export async function getSignalConsent() {
   const res = await api.get(ENDPOINTS.SIGNALS_CONSENT);
@@ -49,11 +50,12 @@ export async function scheduleWeeklyInsight({ weekKey = null } = {}) {
 }
 
 export async function fetchMonthlyInsight({ monthKey = null } = {}) {
-  if (!monthKey) {
+  const key = normalizeMonthKey(monthKey, getPreviousMonthKey());
+  if (!key) {
     throw new Error('monthKey_required');
   }
   const res = await api.get(ENDPOINTS.SIGNALS_MONTHLY_INSIGHT, {
-    params: { monthKey },
+    params: { monthKey: key },
   });
   return res?.data ?? res;
 }

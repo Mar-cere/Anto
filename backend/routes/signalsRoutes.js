@@ -23,7 +23,7 @@ import {
   scheduleWeeklyPatternInsightJob,
   getPreviousIsoWeekKey,
 } from '../services/weeklyPatternInsightService.js';
-import { normalizeMonthKey } from '../utils/monthKeys.js';
+import { normalizeMonthKey, getPreviousMonthKey } from '../utils/monthKeys.js';
 import { signalsApiCopy } from '../utils/signalsApiCopy.js';
 import {
   extractTypingMetricsPayload,
@@ -258,7 +258,10 @@ router.get(
       }
 
       const language = req.appLanguage || resolveRequestLanguage(req);
-      const monthKey = normalizeMonthKey(String(req.query?.monthKey || '').trim(), null);
+      const monthKey = normalizeMonthKey(
+        String(req.query?.monthKey || '').trim(),
+        getPreviousMonthKey(),
+      );
       if (!monthKey) {
         return res.status(400).json({ success: false, message: req.apiCopy?.invalidMonthKey });
       }

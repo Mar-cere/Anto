@@ -1,5 +1,5 @@
 /**
- * Claves de mes calendario (YYYY-MM) para informes mensuales de patrones.
+ * Claves de mes calendario (YYYY-MM) para informes mensuales.
  */
 
 export function formatMonthKey(year, month1to12) {
@@ -11,17 +11,6 @@ export function formatMonthKey(year, month1to12) {
   return `${y}-${String(m).padStart(2, '0')}`;
 }
 
-export function getMonthWindowFromKey(monthKey) {
-  const match = String(monthKey || '').match(/^(\d{4})-(\d{2})$/);
-  if (!match) return null;
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  if (month < 1 || month > 12) return null;
-  const since = new Date(year, month - 1, 1, 0, 0, 0, 0);
-  const until = new Date(year, month, 1, 0, 0, 0, 0);
-  return { since, until, monthKey: formatMonthKey(year, month) };
-}
-
 export function getPreviousMonthKey(date = new Date()) {
   const d = date instanceof Date ? new Date(date.getTime()) : new Date(date);
   if (Number.isNaN(d.getTime())) return null;
@@ -31,7 +20,7 @@ export function getPreviousMonthKey(date = new Date()) {
 }
 
 export function normalizeMonthKey(input, fallback = null) {
-  const raw = String(input || '').trim();
+  const raw = String(input ?? '').trim();
   if (/^\d{4}-\d{2}$/.test(raw)) {
     const month = Number(raw.slice(5, 7));
     if (month >= 1 && month <= 12) return raw;
@@ -42,4 +31,12 @@ export function normalizeMonthKey(input, fallback = null) {
     if (normalized) return normalized;
   }
   return fallback;
+}
+
+export function resolveMonthlyInsightKey(rawMonthKey, { year, month } = {}) {
+  const fromParam = normalizeMonthKey(rawMonthKey, null);
+  if (fromParam) return fromParam;
+  const fromParts = formatMonthKey(year, month);
+  if (fromParts) return fromParts;
+  return getPreviousMonthKey();
 }

@@ -24,6 +24,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { useMappedSectionTexts } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
+import { formatMonthKey } from '../utils/monthKeys';
 
 const DEFAULT_TEXTS = {
   TITLE: 'Tu resumen',
@@ -769,9 +770,9 @@ export default function SummaryScreen() {
             hint: TEXTS.MONTHLY_INSIGHT_CTA_HINT,
             params: {
               period: 'month',
-              monthKey:
-                payload?.period?.monthKey ||
-                `${monthYear.year}-${String(monthYear.month).padStart(2, '0')}`,
+              monthKey: formatMonthKey(monthYear.year, monthYear.month),
+              year: monthYear.year,
+              month: monthYear.month,
             },
           }
         : {
@@ -782,7 +783,7 @@ export default function SummaryScreen() {
               ...(payload?.period?.weekKey ? { weekKey: payload.period.weekKey } : {}),
             },
           },
-    [granularity, TEXTS, payload?.period, monthYear],
+    [granularity, TEXTS, payload?.period?.weekKey, monthYear],
   );
 
   const emptyTexts = useMemo(

@@ -24,7 +24,7 @@ export function ProfileOptions({ navigation }) {
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.optionButton}
-        onPress={() => navigation.navigate('WeeklyInsight')}
+        onPress={() => navigation.navigate('WeeklyInsight', { period: 'week' })}
         accessibilityRole="button"
         accessibilityLabel={TEXTS.WEEKLY_INSIGHT_NAV_LABEL}
       >

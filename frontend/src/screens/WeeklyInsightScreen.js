@@ -23,12 +23,22 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import signalsService from '../services/signalsService';
+import { resolveMonthlyInsightKey } from '../utils/monthKeys';
 
 export default function WeeklyInsightScreen({ navigation }) {
   const route = useRoute();
   const period = route?.params?.period === 'month' ? 'month' : 'week';
-  const weekKeyParam = typeof route?.params?.weekKey === 'string' ? route.params.weekKey : null;
-  const monthKeyParam = typeof route?.params?.monthKey === 'string' ? route.params.monthKey : null;
+  const weekKeyParam = typeof route?.params?.weekKey === 'string' ? route.params.weekKey.trim() : null;
+  const monthKeyParam = useMemo(
+    () =>
+      period === 'month'
+        ? resolveMonthlyInsightKey(route?.params?.monthKey, {
+            year: route?.params?.year,
+            month: route?.params?.month,
+          })
+        : null,
+    [period, route?.params?.monthKey, route?.params?.year, route?.params?.month],
+  );
   const insets = useSafeAreaInsets();
   const { language } = useLanguage();
   const { colors, statusBarStyle } = useTheme();

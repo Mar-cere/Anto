@@ -160,7 +160,7 @@ export default function InsightsQuickCard({ accessibilityLabel }) {
           activeOpacity={0.78}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            navigation.navigate(row.screen);
+            navigation.navigate(row.screen, row.key === 'weekly' ? { period: 'week' } : undefined);
           }}
           accessibilityRole="button"
           accessibilityLabel={TEXTS[row.labelKey]}
