@@ -1,7 +1,6 @@
 /**
  * Pantalla de revelación semanal (#213 / #208).
  */
-import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,7 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../components/Header';
 import ParticleBackground from '../components/ParticleBackground';
 import SignalConsentPanel from '../components/signals/SignalConsentPanel';
@@ -35,7 +34,6 @@ export default function WeeklyInsightScreen({ navigation }) {
 
   const copy = useMemo(
     () => ({
-      title: TEXTS.WEEKLY_INSIGHT_TITLE || 'Tu semana en patrones',
       kicker: TEXTS.WEEKLY_INSIGHT_KICKER || 'Informe observacional',
       disclaimer:
         TEXTS.WEEKLY_INSIGHT_DISCLAIMER ||
@@ -71,37 +69,32 @@ export default function WeeklyInsightScreen({ navigation }) {
   const styles = useMemo(
     () =>
       StyleSheet.create({
-        root: { flex: 1, backgroundColor: colors.background },
+        root: {
+          flex: 1,
+          backgroundColor: colors.background,
+          paddingTop: Platform.OS === 'ios' ? insets.top : StatusBar.currentHeight || 0,
+        },
         content: {
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingTop: 4,
           paddingBottom: insets.bottom + 32,
         },
         hero: {
-          alignItems: 'center',
-          paddingTop: 8,
-          paddingBottom: 24,
-        },
-        kicker: {
-          fontSize: 11,
-          fontWeight: '700',
-          letterSpacing: 1.3,
-          textTransform: 'uppercase',
-          color: colors.primary,
-          marginBottom: 10,
+          width: '100%',
+          paddingTop: 4,
+          paddingBottom: 20,
         },
         headline: {
-          fontSize: 30,
-          lineHeight: 36,
+          fontSize: 24,
+          lineHeight: 30,
           fontWeight: '700',
           color: colors.text,
-          textAlign: 'center',
-          marginBottom: 12,
+          marginBottom: 8,
         },
         body: {
-          fontSize: 16,
-          lineHeight: 24,
+          fontSize: 15,
+          lineHeight: 22,
           color: colors.textSecondary,
-          textAlign: 'center',
         },
         card: {
           borderRadius: 16,
@@ -128,19 +121,24 @@ export default function WeeklyInsightScreen({ navigation }) {
           fontSize: 12,
           lineHeight: 18,
           color: colors.textSecondary,
-          textAlign: 'center',
-          marginTop: 8,
+          marginTop: 4,
           marginBottom: 16,
         },
         meta: {
+          alignSelf: 'flex-start',
           fontSize: 12,
+          fontWeight: '600',
           color: colors.textSecondary,
-          textAlign: 'center',
+          backgroundColor: colors.glassFill || colors.surface,
+          borderRadius: 999,
+          paddingHorizontal: 10,
+          paddingVertical: 4,
           marginBottom: 12,
+          overflow: 'hidden',
         },
-        error: { color: colors.error, textAlign: 'center', marginBottom: 12 },
+        error: { color: colors.error, marginBottom: 12 },
         retry: {
-          alignSelf: 'center',
+          alignSelf: 'flex-start',
           paddingHorizontal: 16,
           paddingVertical: 10,
           borderRadius: 10,
@@ -150,18 +148,20 @@ export default function WeeklyInsightScreen({ navigation }) {
         retryText: { color: colors.white, fontWeight: '600' },
         center: { paddingVertical: 48, alignItems: 'center' },
       }),
-    [colors, insets.bottom],
+    [colors, insets.top, insets.bottom],
   );
 
   const rows = Array.isArray(insight?.insights) ? insight.insights : [];
+  const showBody = Boolean(insight?.body) && rows.length === 0;
 
   return (
-    <SafeAreaView style={styles.root} edges={['left', 'right']}>
+    <View style={styles.root}>
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <ParticleBackground />
-      <Header title={copy.title} showBackButton onBackPress={() => navigation.goBack()} />
+      <Header title={copy.kicker} showBackButton onBackPress={() => navigation.goBack()} />
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: Platform.OS === 'android' ? 8 : 0 }]}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -191,12 +191,10 @@ export default function WeeklyInsightScreen({ navigation }) {
         {!loading && !error ? (
           <>
             <View style={styles.hero}>
-              <Text style={styles.kicker}>{copy.kicker}</Text>
+              {weekKey ? <Text style={styles.meta}>{weekKey}</Text> : null}
               <Text style={styles.headline}>{insight?.headline || copy.empty}</Text>
-              {insight?.body ? <Text style={styles.body}>{insight.body}</Text> : null}
+              {showBody ? <Text style={styles.body}>{insight.body}</Text> : null}
             </View>
-
-            {weekKey ? <Text style={styles.meta}>{weekKey}</Text> : null}
 
             {rows.map((row, index) => (
               <View key={`${row.type}-${index}`} style={styles.card}>
@@ -210,6 +208,6 @@ export default function WeeklyInsightScreen({ navigation }) {
           </>
         ) : null}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

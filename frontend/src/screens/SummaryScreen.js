@@ -57,7 +57,7 @@ const DEFAULT_TEXTS = {
   NARRATIVE_THEMES: 'Temas',
   NARRATIVE_MICRO_WINS: 'Micro-logros',
   WEEKLY_INSIGHT_CTA: 'Ver patrones de la semana',
-  WEEKLY_INSIGHT_CTA_HINT: 'Informe observacional (#208), no diagnóstico.',
+  WEEKLY_INSIGHT_CTA_HINT: 'Informe observacional, no diagnóstico.',
   PERIOD_FALLBACK: '…',
   TIMES_SINGULAR: 'vez',
   TIMES_PLURAL: 'veces',
