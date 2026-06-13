@@ -1847,6 +1847,18 @@ export const TECHNIQUES = {
     'Dashed lines: what you wrote in chat → technique you used. Thickness ≈ frequency.',
   INTERVENTION_GRAPH_TOPIC_FREE_SECTION: 'Your chat messages',
   INTERVENTION_GRAPH_EMBEDDINGS_ON: 'Semantic ranking active (topicFree embeddings).',
+  INTERVENTION_GRAPH_VECTOR_ATLAS_ON: 'Atlas vector search active for semantic affinity.',
+  INTERVENTION_GRAPH_VECTOR_SCAN_ON: 'Semantic affinity active (local scan mode).',
+  INTERVENTION_GRAPH_LEGEND_CONCEPT:
+    'Grouped nodes: similar ideas from your messages → technique. Fine lines ≈ observed correlation.',
+  INTERVENTION_GRAPH_INSIGHTS_TITLE: 'Observed patterns',
+  INTERVENTION_GRAPH_INSIGHTS_DISCLAIMER:
+    'Correlations, not causes. More data needed for reliability.',
+  INTERVENTION_GRAPH_INSIGHT_TOPIC_INTERVENTION: 'With {topic}, {intervention} often helps you',
+  INTERVENTION_GRAPH_INSIGHT_CONCEPT_INTERVENTION:
+    'When you talk about “{concept}”, you often use {intervention}',
+  INTERVENTION_GRAPH_INSIGHT_TOPIC_MOOD_LIFT: 'On {topic} days, your mood after BA rises ~{delta}',
+  INTERVENTION_GRAPH_INSIGHT_TOPIC_MOOD_DIP: 'On {topic} days, your mood after BA drops ~{delta}',
   INTERVENTION_GRAPH_LIST_A11Y: 'Graph connection details',
   INTERVENTION_GRAPH_MAP_A11Y: 'Topics and interventions connection map',
   PSYCHOED_LOADING: 'Loading modules…',

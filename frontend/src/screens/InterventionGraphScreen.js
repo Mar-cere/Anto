@@ -31,6 +31,7 @@ import {
   formatGraphMeta,
   formatGraphMetrics,
   formatGraphRates,
+  formatCorrelationInsight,
   useInterventionGraphTexts,
 } from './interventionGraphTexts';
 
@@ -48,6 +49,10 @@ const InterventionGraphScreen = ({ navigation }) => {
   const [error, setError] = useState(null);
   const [edges, setEdges] = useState([]);
   const [topicFreeEdges, setTopicFreeEdges] = useState([]);
+  const [conceptNodes, setConceptNodes] = useState([]);
+  const [conceptEdges, setConceptEdges] = useState([]);
+  const [correlations, setCorrelations] = useState([]);
+  const [vectorSearchMode, setVectorSearchMode] = useState('off');
   const [embeddingsEnabled, setEmbeddingsEnabled] = useState(false);
   const [windowDays, setWindowDays] = useState(30);
   const [viewMode, setViewMode] = useState('graph');
@@ -60,19 +65,33 @@ const InterventionGraphScreen = ({ navigation }) => {
   );
 
   const hasVisualGraph = useMemo(() => {
-    if (!edges.length && !topicFreeEdges.length) return false;
-    return buildInterventionGraphViewModel(edges, topicFreeEdges, { canvasWidth: graphWidth }).links
-      .length > 0;
-  }, [edges, topicFreeEdges, graphWidth]);
+    if (!edges.length && !topicFreeEdges.length && !conceptEdges.length) return false;
+    return buildInterventionGraphViewModel(edges, topicFreeEdges, {
+      canvasWidth: graphWidth,
+      conceptNodes,
+      conceptEdges,
+    }).links.length > 0;
+  }, [edges, topicFreeEdges, conceptNodes, conceptEdges, graphWidth]);
 
   const selectedEdge = useMemo(() => {
     if (!selectedKey) return null;
+    const fromConcept = conceptEdges.find(
+      (e) => `c:${e.conceptId}:${e.interventionId}` === selectedKey,
+    );
+    if (fromConcept) {
+      const concept = conceptNodes.find((n) => n.id === fromConcept.conceptId);
+      return {
+        ...fromConcept,
+        topicFree: concept?.label,
+        conceptLabel: concept?.label,
+      };
+    }
     const fromTopicFree = topicFreeEdges.find(
       (e) => `tf:${e.topicFree}:${e.interventionId}` === selectedKey,
     );
     if (fromTopicFree) return fromTopicFree;
     return edges.find((e) => `${e.topicTag}:${e.interventionId}` === selectedKey) || null;
-  }, [edges, topicFreeEdges, selectedKey]);
+  }, [edges, topicFreeEdges, conceptEdges, conceptNodes, selectedKey]);
 
   const styles = useMemo(
     () =>
@@ -127,6 +146,16 @@ const InterventionGraphScreen = ({ navigation }) => {
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.primary,
         },
+        insight: {
+          borderRadius: 12,
+          padding: 12,
+          marginBottom: 12,
+          backgroundColor: colors.cardBackground || colors.surface || colors.background,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+        },
+        insightTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 8 },
+        insightRow: { fontSize: 13, color: colors.textSecondary, lineHeight: 18, marginBottom: 4 },
         detailTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 6 },
         error: { color: colors.error, fontSize: 14, marginBottom: 12 },
         retry: {
@@ -151,12 +180,19 @@ const InterventionGraphScreen = ({ navigation }) => {
       setWindowDays(data?.windowDays ?? 30);
       setEdges(Array.isArray(data?.edges) ? data.edges : []);
       setTopicFreeEdges(Array.isArray(data?.topicFreeEdges) ? data.topicFreeEdges : []);
+      setConceptNodes(Array.isArray(data?.conceptNodes) ? data.conceptNodes : []);
+      setConceptEdges(Array.isArray(data?.conceptEdges) ? data.conceptEdges : []);
+      setCorrelations(Array.isArray(data?.correlations) ? data.correlations : []);
+      setVectorSearchMode(String(data?.vectorSearchMode || data?.features?.vectorSearch?.mode || 'off'));
       setEmbeddingsEnabled(data?.embeddingsEnabled === true);
       setSelectedKey(null);
     } catch {
       setError(TEXTS.ERROR);
       setEdges([]);
       setTopicFreeEdges([]);
+      setConceptNodes([]);
+      setConceptEdges([]);
+      setCorrelations([]);
     } finally {
       setLoading(false);
     }
@@ -207,7 +243,25 @@ const InterventionGraphScreen = ({ navigation }) => {
       >
         <Text style={styles.meta}>{formatGraphMeta(TEXTS, windowDays)}</Text>
         {embeddingsEnabled ? (
-          <Text style={[styles.legend, { marginTop: -8 }]}>{TEXTS.EMBEDDINGS_ON}</Text>
+          <Text style={[styles.legend, { marginTop: -8 }]}>
+            {vectorSearchMode === 'atlas'
+              ? TEXTS.VECTOR_ATLAS_ON
+              : vectorSearchMode === 'scan'
+                ? TEXTS.VECTOR_SCAN_ON
+                : TEXTS.EMBEDDINGS_ON}
+          </Text>
+        ) : null}
+
+        {correlations.length > 0 ? (
+          <View style={styles.insight}>
+            <Text style={styles.insightTitle}>{TEXTS.INSIGHTS_TITLE}</Text>
+            {correlations.slice(0, 4).map((row, index) => (
+              <Text key={`${row.type}-${row.sourceId}-${row.targetId}-${index}`} style={styles.insightRow}>
+                {formatCorrelationInsight(TEXTS, row, language)}
+              </Text>
+            ))}
+            <Text style={[styles.legend, { marginBottom: 0, marginTop: 6 }]}>{TEXTS.INSIGHTS_DISCLAIMER}</Text>
+          </View>
         ) : null}
 
         <View style={styles.toggleRow}>
@@ -255,11 +309,17 @@ const InterventionGraphScreen = ({ navigation }) => {
         {!error && (edges.length > 0 || topicFreeEdges.length > 0) && viewMode === 'graph' && hasVisualGraph ? (
           <>
             <Text style={styles.legend}>
-              {topicFreeEdges.length > 0 ? TEXTS.LEGEND_TOPIC_FREE : TEXTS.LEGEND}
+              {conceptEdges.length > 0
+                ? TEXTS.LEGEND_CONCEPT
+                : topicFreeEdges.length > 0
+                  ? TEXTS.LEGEND_TOPIC_FREE
+                  : TEXTS.LEGEND}
             </Text>
             <InterventionGraphVisual
               edges={edges}
               topicFreeEdges={topicFreeEdges}
+              conceptNodes={conceptNodes}
+              conceptEdges={conceptEdges}
               language={language}
               width={graphWidth}
               selectedKey={selectedKey}
@@ -271,8 +331,8 @@ const InterventionGraphScreen = ({ navigation }) => {
             {selectedEdge ? (
               <View style={styles.detail}>
                 <Text style={styles.detailTitle}>
-                  {selectedEdge.topicFree
-                    ? `"${String(selectedEdge.topicFree).slice(0, 64)}" → `
+                  {selectedEdge.conceptLabel || selectedEdge.topicFree
+                    ? `"${String(selectedEdge.conceptLabel || selectedEdge.topicFree).slice(0, 64)}" → `
                     : `${formatTopicTagLabel(selectedEdge.topicTag, language)} → `}
                   {selectedEdge.interventionLabel || selectedEdge.interventionId}
                 </Text>

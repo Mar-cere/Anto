@@ -1853,6 +1853,18 @@ export const TECHNIQUES = {
     'Líneas punteadas: lo que escribiste en el chat → técnica que usaste. Grosor ≈ frecuencia.',
   INTERVENTION_GRAPH_TOPIC_FREE_SECTION: 'Tus mensajes en el chat',
   INTERVENTION_GRAPH_EMBEDDINGS_ON: 'Ranking semántico activo (embeddings topicFree).',
+  INTERVENTION_GRAPH_VECTOR_ATLAS_ON: 'Búsqueda vectorial Atlas activa para afinidad semántica.',
+  INTERVENTION_GRAPH_VECTOR_SCAN_ON: 'Afinidad semántica activa (modo scan local).',
+  INTERVENTION_GRAPH_LEGEND_CONCEPT:
+    'Nodos agrupados: ideas similares de tus mensajes → técnica. Líneas finas ≈ correlación observada.',
+  INTERVENTION_GRAPH_INSIGHTS_TITLE: 'Patrones observados',
+  INTERVENTION_GRAPH_INSIGHTS_DISCLAIMER:
+    'Correlaciones, no causas. Requiere más datos para ser fiables.',
+  INTERVENTION_GRAPH_INSIGHT_TOPIC_INTERVENTION: 'Con {topic} suele ayudarte {intervention}',
+  INTERVENTION_GRAPH_INSIGHT_CONCEPT_INTERVENTION:
+    'Cuando hablas de «{concept}», a menudo usas {intervention}',
+  INTERVENTION_GRAPH_INSIGHT_TOPIC_MOOD_LIFT: 'En días de {topic}, tu ánimo tras BA sube ~{delta}',
+  INTERVENTION_GRAPH_INSIGHT_TOPIC_MOOD_DIP: 'En días de {topic}, tu ánimo tras BA baja ~{delta}',
   INTERVENTION_GRAPH_LIST_A11Y: 'Detalle de conexiones del grafo',
   INTERVENTION_GRAPH_MAP_A11Y: 'Mapa de conexiones entre temas e intervenciones',
   PSYCHOED_LOADING: 'Cargando módulos…',

@@ -8,6 +8,7 @@ import {
   getTopicFreeEmbeddingMinSimilarity,
   isTopicFreeEmbeddingsEnabled,
 } from './topicFreeEmbeddingService.js';
+import { findSimilarTopicFreeEvents } from './topicFreeVectorSearchService.js';
 import { buildTopicFreeFromUserContent } from '../utils/interventionTopicFree.js';
 import { cosineSimilarity } from '../utils/vectorMath.js';
 
@@ -198,6 +199,20 @@ export function mergeRankingScoreMaps(baseMap, boostMap, factor = 0.4) {
   return merged;
 }
 
+async function mergeAffinityEvents(baseEvents, vectorEvents) {
+  const merged = [...(baseEvents || [])];
+  const seen = new Set(
+    merged.map((ev) => `${ev?.interventionId}:${ev?.topicFree}:${ev?.eventType}`),
+  );
+  for (const ev of vectorEvents || []) {
+    const key = `${ev?.interventionId}:${ev?.topicFree}:${ev?.eventType}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(ev);
+  }
+  return merged;
+}
+
 async function fetchTopicFreeAffinityScores({ userId, userContent, days = DEFAULT_RANKING_DAYS }) {
   if (!userId || !userContent) return new Map();
   const since = new Date(Date.now() - Math.max(1, days) * 24 * 60 * 60 * 1000);
@@ -210,6 +225,16 @@ async function fetchTopicFreeAffinityScores({ userId, userContent, days = DEFAUL
   if (snippet && isTopicFreeEmbeddingsEnabled()) {
     events = await enrichTopicFreeEventsWithEmbeddings(events);
     queryEmbedding = await embedTopicFreeText(snippet);
+    if (queryEmbedding?.length) {
+      const vectorHits = await findSimilarTopicFreeEvents({
+        userId,
+        queryVector: queryEmbedding,
+        since,
+        limit: 40,
+      }).catch(() => []);
+      events = await mergeAffinityEvents(events, vectorHits);
+      events = await enrichTopicFreeEventsWithEmbeddings(events);
+    }
   }
 
   return buildTopicFreeAffinityBoost(events, userContent, { queryEmbedding });

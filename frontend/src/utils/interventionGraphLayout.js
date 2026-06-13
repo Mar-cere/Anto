@@ -262,18 +262,139 @@ export function buildTopicFreeGraphModel(
 /**
  * Elige el mejor modelo visual según datos disponibles.
  */
+export function buildConceptGraphModel(
+  conceptNodes,
+  conceptEdges,
+  {
+    maxConcepts = 8,
+    maxInterventions = DEFAULT_MAX_INTERVENTIONS,
+    canvasWidth = 340,
+  } = {},
+) {
+  const nodes = Array.isArray(conceptNodes) ? conceptNodes : [];
+  const edges = Array.isArray(conceptEdges) ? conceptEdges : [];
+  if (nodes.length === 0 || edges.length === 0) {
+    return {
+      topics: [],
+      topicFreeNodes: [],
+      conceptNodes: [],
+      interventions: [],
+      links: [],
+      width: canvasWidth,
+      height: 120,
+      maxWeight: 0,
+      mode: 'concept',
+    };
+  }
+
+  const conceptWeights = aggregateByKey(edges, (e) => String(e.conceptId));
+  const interventionWeights = aggregateByKey(edges, (e) =>
+    String(e.interventionLabel || e.interventionId),
+  );
+
+  const conceptKeys = topKeys(conceptWeights, maxConcepts);
+  const interventionKeys = topKeys(interventionWeights, maxInterventions);
+  const conceptSet = new Set(conceptKeys);
+  const interventionSet = new Set(interventionKeys);
+
+  const nodeById = new Map(nodes.map((n) => [n.id, n]));
+  const filtered = edges.filter(
+    (e) =>
+      conceptSet.has(String(e.conceptId)) &&
+      interventionSet.has(String(e.interventionLabel || e.interventionId)),
+  );
+
+  const centerX = Math.max(LEFT_X + 40, Math.floor(canvasWidth * TOPIC_FREE_X_RATIO));
+  const rightX = Math.max(canvasWidth - RIGHT_X_OFFSET, centerX + 100);
+
+  const conceptNodeModels = conceptKeys
+    .map((conceptId, index) => {
+      const raw = nodeById.get(conceptId);
+      return {
+        id: conceptId,
+        label: truncateLabel(raw?.label || conceptId, 24),
+        x: centerX,
+        y: PADDING_Y + index * ROW_HEIGHT,
+        weight: conceptWeights.get(conceptId) || 0,
+        memberCount: raw?.memberCount || 1,
+      };
+    })
+    .filter(Boolean);
+
+  const interventions = interventionKeys.map((label, index) => ({
+    id: label,
+    label: truncateLabel(label),
+    x: rightX,
+    y: PADDING_Y + index * ROW_HEIGHT,
+    weight: interventionWeights.get(label) || 0,
+  }));
+
+  const conceptIndex = new Map(conceptNodeModels.map((n, i) => [n.id, i]));
+  const interventionIndex = new Map(interventions.map((n, i) => [n.id, i]));
+
+  const links = filtered
+    .map((edge) => {
+      const conceptId = String(edge.conceptId);
+      const interventionLabel = String(edge.interventionLabel || edge.interventionId);
+      const weight = Number(edge.weight) || computeEdgeWeight(edge);
+      const concept = conceptNodeModels[conceptIndex.get(conceptId)];
+      const intervention = interventions[interventionIndex.get(interventionLabel)];
+      if (!concept || !intervention) return null;
+      return {
+        key: `c:${conceptId}:${edge.interventionId}`,
+        conceptId,
+        interventionId: edge.interventionId,
+        interventionLabel,
+        weight,
+        x1: concept.x,
+        y1: concept.y,
+        x2: intervention.x,
+        y2: intervention.y,
+        edge,
+        linkKind: 'concept',
+      };
+    })
+    .filter(Boolean);
+
+  const rowCount = Math.max(conceptNodeModels.length, interventions.length, 1);
+  const height = PADDING_Y * 2 + (rowCount - 1) * ROW_HEIGHT;
+  const maxWeight = Math.max(...links.map((l) => l.weight), 0.001);
+
+  return {
+    topics: [],
+    topicFreeNodes: [],
+    conceptNodes: conceptNodeModels,
+    interventions,
+    links,
+    width: canvasWidth,
+    height,
+    maxWeight,
+    mode: 'concept',
+  };
+}
+
+/**
+ * Elige el mejor modelo visual según datos disponibles.
+ */
 export function buildInterventionGraphViewModel(
   edges,
   topicFreeEdges,
   options = {},
 ) {
+  const conceptNodes = options?.conceptNodes;
+  const conceptEdges = options?.conceptEdges;
+  if (Array.isArray(conceptNodes) && conceptNodes.length > 0 && Array.isArray(conceptEdges)) {
+    const conceptModel = buildConceptGraphModel(conceptNodes, conceptEdges, options);
+    if (conceptModel.links.length > 0) return conceptModel;
+  }
+
   const tfList = Array.isArray(topicFreeEdges) ? topicFreeEdges : [];
   if (tfList.length > 0) {
     const model = buildTopicFreeGraphModel(tfList, options);
     if (model.links.length > 0) return model;
   }
   const base = buildInterventionGraphModel(edges, options);
-  return { ...base, topicFreeNodes: [], mode: 'topicTag' };
+  return { ...base, topicFreeNodes: [], conceptNodes: [], mode: 'topicTag' };
 }
 
 export function formatTopicTagLabel(topicTag, language = 'es') {

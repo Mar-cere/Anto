@@ -11,7 +11,7 @@ Oleada 1.4.3 **completa en `main`**: marco TCC lite inline, continuidad, psicoed
 - **Psicoed (#85):** 9 temas (duelo, burnout); tarjetas chat (#78); sello clínico #111.
 - **Sugerencias (#127):** ranking histórico + boost topicFree híbrido (léxico + embeddings OpenAI).
 - **Embeddings topicFree:** activos en prod/Render por defecto si hay `OPENAI_API_KEY` (opt-out: `TOPIC_FREE_EMBEDDINGS_ENABLED=false`). Backfill: `npm run backfill:topic-free-embeddings`.
-- **Grafo visual (#218 fase 1+2):** tema→intervención + **nodos topicFree** (mensajes del chat → técnica), líneas punteadas, toggle lista.
+- **Grafo visual (#218 fase 1+2+3):** tema→intervención + nodos topicFree + **conceptos semánticos agrupados**, correlaciones multimodales MVP (#217), búsqueda vectorial Atlas (#126) con fallback scan.
 - **BA (#88):** plan semanal, ánimo, sync tarea/hábito, refresh al volver.
 - **Micro-guías (#90–#99):** 19 guías, biblioteca, pantalla timeline única.
 - **Session insight:** duración ventana activa (fix minutos inflados).
@@ -31,10 +31,19 @@ Oleada 1.4.3 **completa en `main`**: marco TCC lite inline, continuidad, psicoed
 10. Error de red con resume TCC → reintento conserva payload.
 11. Biblioteca 19 micro-guías + sello editorial.
 12. BA: volver desde Tareas/Hábitos → plan actualizado.
-13. Estadísticas → mapa visual; si hay mensajes en chat, **nodos topicFree** y líneas punteadas.
+13. Estadísticas → mapa visual; si hay mensajes en chat, **nodos concepto** (ideas agrupadas) o topicFree, y tarjeta «Patrones observados».
+
+## Atlas vector search (#126)
+
+1. Backfill embeddings: `npm run backfill:topic-free-embeddings -- --limit=1000`
+2. Imprimir definición índice: `npm run print:atlas-topic-free-index`
+3. Crear índice en Atlas Search (JSON Editor) sobre colección `chatinterventionevents`
+4. En Render: `ATLAS_VECTOR_SEARCH_ENABLED=true` (+ opcional `ATLAS_TOPIC_FREE_VECTOR_INDEX=topic_free_embedding_index`)
+
+Sin Atlas, el ranking y el grafo usan **modo scan** (cosine local).
 
 ## Pendiente post-1.4.3
 
 - Deploy Render + build tiendas 1.4.3.
 - Backfill inicial en prod: `TOPIC_FREE_EMBEDDINGS_ENABLED=true npm run backfill:topic-free-embeddings -- --limit=1000`.
-- Grafo #218 fase 3: topicFree como nodos en Atlas vector index (#126), correlación multimodal (#217).
+- #217 completo: telemetría tecleo (#215), HealthKit (#216), jobs async de insights semanales (#208/#213).

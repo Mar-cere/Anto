@@ -69,6 +69,8 @@ import {
 } from '../constants/interventionCatalog.js';
 import chatInterventionGraphService from '../services/chatInterventionGraphService.js';
 import { isTopicFreeEmbeddingsEnabled } from '../services/topicFreeEmbeddingService.js';
+import { buildInterventionGraphPhase3Payload } from '../services/interventionGraphPhase3Service.js';
+import { getVectorSearchMode } from '../services/topicFreeVectorSearchService.js';
 import { buildChatTccContinuity } from '../services/chatTccContinuityService.js';
 import {
   planChatTurnEnhancements,
@@ -472,6 +474,16 @@ router.get('/interventions/graph', protect, requireActiveSubscription(true), asy
       };
     };
 
+    const mappedEdges = edges.map((e) => mapEdge(e, false));
+    const mappedTopicFreeEdges = topicFreeRaw.map((e) => mapEdge(e, true));
+
+    const phase3 = await buildInterventionGraphPhase3Payload({
+      userId: req.user._id,
+      since,
+      topicTagEdges: mappedEdges,
+      topicFreeEdges: mappedTopicFreeEdges,
+    });
+
     res.json({
       success: true,
       aggregationMode: 'session',
@@ -480,9 +492,18 @@ router.get('/interventions/graph', protect, requireActiveSubscription(true), asy
       count: edges.length,
       topicFreeCount: topicFreeRaw.length,
       embeddingsEnabled: isTopicFreeEmbeddingsEnabled(),
+      vectorSearchMode: getVectorSearchMode(),
       language,
-      edges: edges.map((e) => mapEdge(e, false)),
-      topicFreeEdges: topicFreeRaw.map((e) => mapEdge(e, true)),
+      edges: mappedEdges,
+      topicFreeEdges: mappedTopicFreeEdges,
+      conceptNodes: phase3.conceptNodes,
+      conceptEdges: phase3.conceptEdges,
+      correlations: phase3.correlations,
+      correlationSummary: phase3.correlationSummary,
+      features: {
+        phase: 3,
+        vectorSearch: phase3.vectorSearch,
+      },
     });
   } catch (error) {
     console.error('[ChatRoutes] GET /interventions/graph:', error);

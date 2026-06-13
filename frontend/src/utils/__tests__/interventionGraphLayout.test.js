@@ -1,4 +1,5 @@
 import {
+  buildConceptGraphModel,
   buildInterventionGraphModel,
   buildInterventionGraphViewModel,
   buildTopicFreeGraphModel,
@@ -148,5 +149,56 @@ describe('interventionGraphLayout', () => {
     );
     expect(model.mode).toBe('topicFree');
     expect(model.links.length).toBeGreaterThan(0);
+  });
+
+  it('buildConceptGraphModel agrupa conceptos con intervenciones', () => {
+    const conceptNodes = [{ id: 'c1', label: 'Ansiedad laboral', memberCount: 2 }];
+    const conceptEdges = [
+      {
+        conceptId: 'c1',
+        interventionId: 'breathing_exercise',
+        interventionLabel: 'Respiración',
+        shown: 2,
+        clicked: 2,
+        completed: 1,
+        weight: 2.5,
+      },
+    ];
+    const model = buildConceptGraphModel(conceptNodes, conceptEdges, { canvasWidth: 320 });
+    expect(model.mode).toBe('concept');
+    expect(model.conceptNodes.length).toBe(1);
+    expect(model.links[0].linkKind).toBe('concept');
+  });
+
+  it('buildInterventionGraphViewModel prefiere conceptos sobre topicFree', () => {
+    const model = buildInterventionGraphViewModel(
+      sampleEdges,
+      [
+        {
+          topicFree: 'snippet suelto',
+          interventionId: 'grounding',
+          interventionLabel: 'Grounding',
+          shown: 1,
+          clicked: 1,
+          completed: 0,
+        },
+      ],
+      {
+        canvasWidth: 320,
+        conceptNodes: [{ id: 'c1', label: 'Idea agrupada', memberCount: 3 }],
+        conceptEdges: [
+          {
+            conceptId: 'c1',
+            interventionId: 'grounding',
+            interventionLabel: 'Grounding',
+            shown: 3,
+            clicked: 2,
+            completed: 1,
+            weight: 3,
+          },
+        ],
+      },
+    );
+    expect(model.mode).toBe('concept');
   });
 });
