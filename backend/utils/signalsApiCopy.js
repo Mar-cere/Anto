@@ -1,4 +1,9 @@
-export const signalsApiCopy = {
+/**
+ * Mensajes de API de señales multimodales (#215–#217).
+ */
+import { normalizeApiLanguage } from './apiLanguage.js';
+
+const COPY = {
   es: {
     serverError: 'No se pudieron procesar las señales.',
     consentRequired: 'Activa el consentimiento correspondiente en ajustes.',
@@ -16,5 +21,9 @@ export const signalsApiCopy = {
     rateLimit: 'Too many requests. Try again later.',
   },
 };
+
+export function signalsApiCopy(language) {
+  return COPY[normalizeApiLanguage(language)];
+}
 
 export default signalsApiCopy;

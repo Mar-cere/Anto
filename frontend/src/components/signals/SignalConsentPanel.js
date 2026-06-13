@@ -3,9 +3,9 @@
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Switch, Text, View } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
-import { useSectionTranslations } from '../hooks/useTranslations';
-import signalsService from '../services/signalsService';
+import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
+import signalsService from '../../services/signalsService';
 
 const DEFAULTS = {
   TITLE: 'Señales opcionales',
