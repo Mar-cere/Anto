@@ -36,4 +36,15 @@ describe('chatTccLiteDisplay', () => {
     expect(shouldShowTccLiteBubbleFooter({ step: 'wrap_up', completed: true })).toBe(false);
     expect(resolveTccLiteBubbleDisplay({ step: 'wrap_up', completed: true }, 'es')).toBeNull();
   });
+
+  it('ignora metadata con paso inválido (histórico corrupto)', () => {
+    expect(shouldShowTccLiteBubbleFooter({ step: 'invalid_step' })).toBe(false);
+    expect(resolveTccLiteBubbleDisplay({ step: 'invalid_step' }, 'es')).toBeNull();
+  });
+
+  it('resuelve paso legacy sin stepIndex', () => {
+    const display = resolveTccLiteBubbleDisplay({ step: 'build_alternative' }, 'es');
+    expect(display.current).toBe(3);
+    expect(display.stepShort).toBe('Otra lectura posible');
+  });
 });

@@ -45,13 +45,16 @@ function resolveLang(language) {
 export function resolveTccLiteBubbleDisplay(tccLite, language = 'es', translations = null) {
   if (!tccLite?.step || tccLite.completed === true) return null;
 
+  const stepKey = String(tccLite.step).trim();
+  const orderIndex = TCC_LITE_STEP_ORDER.indexOf(stepKey);
+  if (orderIndex < 0) return null;
+
   const lang = resolveLang(language);
   const defaults = DEFAULTS_BY_LANG[lang];
-  const stepKey = tccLite.step;
   const stepIndex =
-    typeof tccLite.stepIndex === 'number'
+    typeof tccLite.stepIndex === 'number' && tccLite.stepIndex >= 0
       ? tccLite.stepIndex
-      : Math.max(0, TCC_LITE_STEP_ORDER.indexOf(stepKey));
+      : orderIndex;
   const stepTotal = tccLite.stepTotal || TCC_LITE_STEP_ORDER.length;
   const current = stepIndex + 1;
 
@@ -89,5 +92,6 @@ export function resolveTccLiteBubbleDisplay(tccLite, language = 'es', translatio
 }
 
 export function shouldShowTccLiteBubbleFooter(tccLite) {
-  return Boolean(tccLite?.step && tccLite.completed !== true);
+  if (!tccLite?.step || tccLite.completed === true) return false;
+  return TCC_LITE_STEP_ORDER.includes(String(tccLite.step).trim());
 }

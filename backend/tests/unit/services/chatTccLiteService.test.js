@@ -124,6 +124,41 @@ describe('chatTccLiteService', () => {
     expect(plan.atHandoff).toBeNull();
   });
 
+  it('toTccLiteClientPayload incluye atHandoff solo al completar', () => {
+    const completed = {
+      active: false,
+      completed: true,
+      atHandoff: { screen: 'AutomaticThoughtRecord', params: {} },
+    };
+    const client = toTccLiteClientPayload(completed, 'es');
+    expect(client.active).toBe(false);
+    expect(client.completed).toBe(true);
+    expect(client.atHandoff?.screen).toBe('AutomaticThoughtRecord');
+
+    const activeWrap = toTccLiteClientPayload(
+      {
+        active: true,
+        step: 'wrap_up',
+        stepIndex: 3,
+        stepTotal: 4,
+        completed: false,
+        atHandoff: { screen: 'AutomaticThoughtRecord', params: {} },
+      },
+      'es',
+    );
+    expect(activeWrap.active).toBe(true);
+    expect(activeWrap.atHandoff).toBeNull();
+  });
+
+  it('attachTccLiteToAssistantMetadata ignora pasos inválidos', () => {
+    const meta = attachTccLiteToAssistantMetadata(
+      { status: 'sent' },
+      { active: true, step: 'invalid', stepIndex: 0, stepTotal: 4 },
+      'es',
+    );
+    expect(meta.tccLite).toBeUndefined();
+  });
+
   it('genera prompt en inglés', () => {
     const plan = planChatTccLite({ ...baseContext, language: 'en' });
     expect(plan.promptSnippet).toContain('TCC LITE FRAME');

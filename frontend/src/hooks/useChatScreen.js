@@ -51,12 +51,14 @@ import {
 } from '../utils/chatWelcomeGreeting';
 import { getAppLanguage } from '../config/api';
 import {
-  buildTccLiteUiFromPersistedStep,
-  buildTccLiteUiFromResume,
   clearPendingTccLiteResume,
   peekPendingTccLiteResume,
   setPendingTccLiteResume,
 } from '../utils/chatTccLiteResume';
+import {
+  resolveTccLiteAtHandoffFromPayload,
+  shouldClearTccLiteHandoff,
+} from '../utils/chatTccLiteClient';
 
 /** Retroalimentación al recibir respuesta del asistente (háptica + vibración corta en Android). */
 function hapticAssistantMessageReceived() {
@@ -93,34 +95,6 @@ function extractErrorCode(errorLike) {
   return '';
 }
 
-function extractTccLiteFromMessages(messages) {
-  if (!Array.isArray(messages)) return null;
-  for (let i = messages.length - 1; i >= 0; i -= 1) {
-    const lite = messages[i]?.metadata?.tccLite;
-    if (!lite?.step || lite.completed === true) continue;
-    return {
-      active: true,
-      step: lite.step,
-      distortionType: lite.distortionType || null,
-    };
-  }
-  return null;
-}
-
-function applyTccLiteAtHandoff(payload) {
-  if (!payload?.tccLite?.atHandoff?.screen) return null;
-  if (payload.tccLite.active) return null;
-  if (!payload.tccLite.completed) return null;
-  return payload.tccLite.atHandoff;
-}
-
-function applyTccLiteStateFromPayload(payload) {
-  if (!payload?.tccLite) return null;
-  if (payload.tccLite.active) return payload.tccLite;
-  if (payload.tccLite.completed) return null;
-  return null;
-}
-
 export function useChatScreen() {
   const TEXTS = useChatTexts();
   const textsRef = useRef(TEXTS);
@@ -155,7 +129,6 @@ export function useChatScreen() {
   const [tccContinuityItems, setTccContinuityItems] = useState([]);
   const [dismissedContinuityIds, setDismissedContinuityIds] = useState([]);
   const dismissedContinuityIdsRef = useRef([]);
-  const [tccLiteState, setTccLiteState] = useState(null);
   const [tccLiteAtHandoff, setTccLiteAtHandoff] = useState(null);
   const pendingTccLiteResumeRef = useRef(null);
   /** Evita doble envío y permite deshabilitar botones mientras viaja la petición */
@@ -288,14 +261,7 @@ export function useChatScreen() {
   const initializeConversation = useCallback(async () => {
     const texts = textsRef.current;
     const appLanguage = await getAppLanguage();
-    const resolveTccLiteOnLoad = (serverTccLite, serverMessages) => {
-      if (serverTccLite?.active) return serverTccLite;
-      const fromMessages = extractTccLiteFromMessages(serverMessages);
-      if (!fromMessages?.step) return null;
-      return buildTccLiteUiFromPersistedStep(fromMessages, appLanguage);
-    };
-
-    const dedupeAndSetMessages = (serverMessages, sessionIntentionMeta, flags, serverTccLite) => {
+    const dedupeAndSetMessages = (serverMessages, sessionIntentionMeta, flags) => {
       const isRegistered = flags?.isRegistered === true;
       if (!serverMessages || serverMessages.length === 0) return false;
       const uniqueMessages = serverMessages.reduce((acc, message) => {
@@ -314,12 +280,6 @@ export function useChatScreen() {
         return timeA - timeB;
       });
       setMessages(finalizeLoadedChatMessages(uniqueMessages, appLanguage));
-      const pendingResume = pendingTccLiteResumeRef.current;
-      if (pendingResume?.distortionType) {
-        setTccLiteState(buildTccLiteUiFromResume(pendingResume, appLanguage));
-      } else {
-        setTccLiteState(resolveTccLiteOnLoad(serverTccLite, uniqueMessages));
-      }
       if (isRegistered) {
         const userCount = uniqueMessages.filter((m) => m.type !== 'quickReplies' && m.role === MESSAGE_ROLES.USER).length;
         setShowSessionIntentionPrompt(userCount === 0 && !sessionIntentionMeta);
@@ -352,7 +312,7 @@ export function useChatScreen() {
         if (conversationId) {
           const pack = await chatService.getMessages(conversationId);
           if (
-            dedupeAndSetMessages(pack.messages, pack.sessionIntention, { isRegistered: true }, pack.tccLite)
+            dedupeAndSetMessages(pack.messages, pack.sessionIntention, { isRegistered: true })
           )
             return;
         }
@@ -367,7 +327,6 @@ export function useChatScreen() {
                 retryPack.messages,
                 retryPack.sessionIntention,
                 { isRegistered: true },
-                retryPack.tccLite,
               )
             )
               return;
@@ -855,11 +814,9 @@ export function useChatScreen() {
                 metadata: { timestamp: new Date().toISOString() }
               });
             }
-            const nextTccLite = applyTccLiteStateFromPayload(payload);
-            setTccLiteState(nextTccLite);
-            const handoff = applyTccLiteAtHandoff(payload);
+            const handoff = resolveTccLiteAtHandoffFromPayload(payload);
             if (handoff) setTccLiteAtHandoff(handoff);
-            else if (nextTccLite?.active) setTccLiteAtHandoff(null);
+            else if (shouldClearTccLiteHandoff(payload)) setTccLiteAtHandoff(null);
             return next;
           });
           pendingTccLiteResumeRef.current = null;
@@ -1189,9 +1146,9 @@ export function useChatScreen() {
       setOfflinePendingMessage(null);
       dismissedContinuityIdsRef.current = [];
       setDismissedContinuityIds([]);
-      setTccLiteState(null);
       setTccLiteAtHandoff(null);
       pendingTccLiteResumeRef.current = null;
+      void clearPendingTccLiteResume();
       await chatService.clearMessages();
       await initializeConversation();
       setShowClearModal(false);
@@ -1544,12 +1501,10 @@ export function useChatScreen() {
   useFocusEffect(
     useCallback(() => {
       (async () => {
-        const appLanguage = await getAppLanguage();
         const routeResume = route.params?.resumeTccLite;
         if (routeResume?.distortionType) {
           pendingTccLiteResumeRef.current = routeResume;
           await setPendingTccLiteResume(routeResume);
-          setTccLiteState(buildTccLiteUiFromResume(routeResume, appLanguage));
           try {
             navigation.setParams({ resumeTccLite: undefined });
           } catch (_) {}
@@ -1557,7 +1512,6 @@ export function useChatScreen() {
           const peek = await peekPendingTccLiteResume();
           if (peek?.distortionType) {
             pendingTccLiteResumeRef.current = peek;
-            setTccLiteState(buildTccLiteUiFromResume(peek, appLanguage));
           }
         }
       })();
@@ -1646,7 +1600,6 @@ export function useChatScreen() {
     visibleTccContinuityItems,
     handleOpenTccContinuityItem,
     handleDismissTccContinuityItem,
-    tccLiteState,
     tccLiteAtHandoff,
     handleOpenTccLiteAtHandoff,
     handleDismissTccLiteAtHandoff,

@@ -311,13 +311,15 @@ export function planChatTccLite({
 
 export function attachTccLiteToAssistantMetadata(metadata, tccLitePlan, language = 'es') {
   if (!metadata || !tccLitePlan?.active || !tccLitePlan?.step) return metadata;
+  const step = String(tccLitePlan.step).trim();
+  if (!tccLiteStepOrder().includes(step)) return metadata;
   const lang = normalizeApiLanguage(language);
   const copy = tccLiteCopy(lang);
   const stepCopy = copy.steps[tccLitePlan.step] || copy.steps.capture_thought;
   return {
     ...metadata,
     tccLite: {
-      step: tccLitePlan.step,
+      step,
       stepIndex: tccLitePlan.stepIndex,
       stepTotal: tccLitePlan.stepTotal,
       stepLabel: stepCopy.label,
@@ -352,7 +354,7 @@ export function toTccLiteClientPayload(tccLitePlan, language = 'es') {
     kicker: copy.kicker,
     distortionType: tccLitePlan.distortionType,
     distortionLabel: tccLitePlan.distortionLabel,
-    atHandoff: tccLitePlan.atHandoff || null,
+    atHandoff: null,
     resumedFromInsight: tccLitePlan.resumedFromInsight === true,
   };
 }
