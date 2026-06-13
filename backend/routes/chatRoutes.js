@@ -111,8 +111,17 @@ import {
 import { resolveRequestLanguage } from '../utils/apiLanguage.js';
 import { chatApiCopy } from '../utils/chatApiCopy.js';
 import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
+import {
+  clampInt,
+  escapeRegexForMongo,
+  safeErrorMessage,
+} from '../utils/safeApiError.js';
 
 const router = express.Router();
+const MAX_USER_MESSAGE_LENGTH = 12_000;
+const MAX_CONVERSATION_LIST_LIMIT = 50;
+const MAX_MESSAGE_STATUS_BATCH = 100;
+const MAX_SEARCH_QUERY_LENGTH = 200;
 
 router.use((req, res, next) => {
   const language = resolveRequestLanguage(req);
@@ -291,7 +300,7 @@ router.get('/conversations/:conversationId', protect, validarConversationId, val
     });
     res.status(500).json({
       message: req.apiCopy.historyError,
-      error: error.message
+      error: safeErrorMessage(error)
     });
   }
 });
@@ -345,7 +354,7 @@ router.patch(
       console.error('Error al actualizar intención de sesión:', error);
       res.status(500).json({
         message: req.apiCopy.sessionIntentionSaveError,
-        error: error.message
+        error: safeErrorMessage(error)
       });
     }
   }
@@ -613,7 +622,7 @@ router.post('/conversations', protect, requireActiveSubscription(true), async (r
     });
     res.status(500).json({
       message: req.apiCopy.createConversationError,
-      error: error.message
+      error: safeErrorMessage(error)
     });
   }
 });
@@ -705,7 +714,16 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
   let assistantMessage = null;
   
   try {
-    const { conversationId, content, role = 'user', resumeTccLite = null } = req.body;
+    const { conversationId, content, resumeTccLite = null } = req.body;
+
+    if (req.body?.role != null && req.body.role !== 'user') {
+      metricsService.bumpChatFriction('message_invalid_role', {
+        httpStatus: 400,
+        surface: 'registered',
+      });
+      return res.status(400).json({ message: req.apiCopy.contentRequired });
+    }
+    const role = 'user';
 
     // SEGURIDAD: Validar formato de conversationId
     if (!conversationId) {
@@ -805,6 +823,18 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
       });
     }
 
+    const trimmedContent = content.trim();
+    if (trimmedContent.length > MAX_USER_MESSAGE_LENGTH) {
+      metricsService.bumpChatFriction('message_content_too_long', {
+        httpStatus: 400,
+        surface: 'registered',
+      });
+      return res.status(400).json({
+        message: req.apiCopy.contentRequired,
+        maxLength: MAX_USER_MESSAGE_LENGTH,
+      });
+    }
+
     // Validar límite de mensajes (permitir crear el mensaje si estamos justo en el límite)
     // El límite se aplica ANTES de crear el nuevo mensaje, así que si hay LIMITE_MENSAJES o más, no permitimos crear más
     const messageCount = await Message.countDocuments({ conversationId });
@@ -821,8 +851,6 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
     }
 
     logs.push(`[${Date.now() - startTime}ms] Iniciando procesamiento de mensaje`);
-
-    const trimmedContent = content.trim();
 
     // Idempotencia: evita doble POST (doble tap / reintentos) duplicando user+assistant en BD
     if (role === 'user') {
@@ -2209,7 +2237,6 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           error,
           logs,
           userId: req.user._id,
-          messageContent: content
         });
 
         metricsService
@@ -2240,7 +2267,6 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             metadata: {
               status: 'sent',
               crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
-              error: error.message
             }
           });
 
@@ -2249,16 +2275,10 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
 
         return res.status(500).json({
           message: req.apiCopy.processMessageError,
-          error: error.message,
           userMessage: userMessage._id ? userMessage : null,
           errorMessage: assistantMessage,
-          logs
         });
       }
-    } else {
-      // Para mensajes que no son del usuario
-      const savedMessage = await userMessage.save();
-      return res.status(201).json({ message: savedMessage });
     }
 
   } catch (error) {
@@ -2289,8 +2309,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
 
     return res.status(500).json({
       message: req.apiCopy.criticalProcessError,
-      error: error.message,
-      logs
+      error: safeErrorMessage(error),
     });
   }
 });
@@ -2392,6 +2411,7 @@ router.patch('/messages/:messageId/feedback', protect, messageFeedbackLimiter, a
 router.get('/conversations', protect, async (req, res) => {
   try {
     const { page = 1, limit = 10, cursor, paginationType = 'offset' } = req.query;
+    const listLimit = clampInt(limit, { min: 1, max: MAX_CONVERSATION_LIST_LIMIT, fallback: 10 });
     
     // Usar cursor-based pagination si se especifica o si hay muchos resultados
     if (paginationType === 'cursor' || cursor) {
@@ -2399,7 +2419,7 @@ router.get('/conversations', protect, async (req, res) => {
         query: { userId: new mongoose.Types.ObjectId(req.user._id) },
         model: Message,
         cursor: cursor || null,
-        limit: parseInt(limit),
+        limit: listLimit,
         sort: { createdAt: -1 },
         select: 'conversationId content role metadata.context.emotional createdAt'
       });
@@ -2447,7 +2467,7 @@ router.get('/conversations', protect, async (req, res) => {
     }
     
     // Paginación tradicional (offset-based)
-    const skip = (page - 1) * limit;
+    const skip = (clampInt(page, { min: 1, max: 10_000, fallback: 1 }) - 1) * listLimit;
     
     // Optimización: Usar índices existentes (userId, createdAt) y proyección
     const conversations = await Message.aggregate([
@@ -2484,7 +2504,7 @@ router.get('/conversations', protect, async (req, res) => {
       },
       { $sort: { updatedAt: -1 } },
       { $skip: skip },
-      { $limit: parseInt(limit) }
+      { $limit: listLimit }
     ]);
 
     // Calcular estadísticas básicas
@@ -2510,7 +2530,7 @@ router.get('/conversations', protect, async (req, res) => {
     });
     res.status(500).json({
       message: req.apiCopy.listConversationsError,
-      error: error.message
+      error: safeErrorMessage(error)
     });
   }
 });
@@ -2527,6 +2547,17 @@ router.patch('/messages/status', protect, patchMessageLimiter, async (req, res) 
       });
       return res.status(400).json({
         message: req.apiCopy.messageIdsRequired
+      });
+    }
+
+    if (messageIds.length > MAX_MESSAGE_STATUS_BATCH) {
+      metricsService.bumpChatFriction('message_status_batch_too_large', {
+        httpStatus: 400,
+        surface: 'registered',
+      });
+      return res.status(400).json({
+        message: req.apiCopy.messageIdsInvalid,
+        maxBatch: MAX_MESSAGE_STATUS_BATCH,
       });
     }
 
@@ -2592,7 +2623,7 @@ router.patch('/messages/status', protect, patchMessageLimiter, async (req, res) 
     console.error('Error al actualizar estado de mensajes:', error);
     res.status(500).json({
       message: req.apiCopy.updateStatusError,
-      error: error.message
+      error: safeErrorMessage(error)
     });
   }
 });
@@ -2623,7 +2654,7 @@ router.delete('/conversations/:conversationId', protect, validarConversationId, 
     console.error('Error al eliminar mensajes:', error);
     res.status(500).json({
       message: req.apiCopy.deleteMessagesError,
-      error: error.message
+      error: safeErrorMessage(error)
     });
   }
 });
@@ -2643,7 +2674,12 @@ router.get('/messages/search', protect, async (req, res) => {
 
     const searchQuery = {
       userId: req.user._id,
-      ...(searchText && { content: { $regex: searchText, $options: 'i' } }),
+      ...(searchText && {
+        content: {
+          $regex: escapeRegexForMongo(String(searchText).trim().slice(0, MAX_SEARCH_QUERY_LENGTH)),
+          $options: 'i',
+        },
+      }),
       ...(role && { role }),
       ...(status && { 'metadata.status': status }),
       ...(emotion && { 'metadata.context.emotional.mainEmotion': emotion }),
@@ -2674,7 +2710,7 @@ router.get('/messages/search', protect, async (req, res) => {
     console.error('Error en búsqueda de mensajes:', error);
     res.status(500).json({
       message: req.apiCopy.searchMessagesError,
-      error: error.message
+      error: safeErrorMessage(error)
     });
   }
 });

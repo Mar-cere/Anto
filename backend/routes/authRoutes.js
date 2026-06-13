@@ -89,6 +89,14 @@ const changePasswordLimiter = createRateLimiter({
   skipSuccessfulRequests: true,
 });
 
+const refreshLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: (req) => authApiCopy(resolveRequestLanguage(req)).rateLimitLogin,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Funciones helper
 const generateTokens = async (userId, role = 'user') => {
   // Asegurar que userId sea un string válido
@@ -225,7 +233,7 @@ router.post('/register', registerLimiter, async (req, res) => {
       await mailer.sendEmailVerificationCode(email, verificationCode, username, {
         language: initialLanguage,
       });
-      console.log(`✅ Código de verificación enviado a: ${email}`);
+      console.log('✅ Código de verificación enviado');
     } catch (err) {
       console.error('❌ Error enviando código de verificación:', err.message);
       // No bloqueamos el registro si falla el envío del email
@@ -441,7 +449,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 });
 
 // Refresh token: genera nuevo access token
-router.post('/refresh', async (req, res) => {
+router.post('/refresh', refreshLimiter, async (req, res) => {
   const copy = req.apiCopy;
   try {
     const { refreshToken } = req.body;

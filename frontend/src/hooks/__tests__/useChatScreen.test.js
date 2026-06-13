@@ -6,6 +6,7 @@
 /* global beforeAll, beforeEach, describe, expect, it, jest */
 
 jest.mock('react-native', () => ({
+  Platform: { OS: 'ios' },
   Alert: { alert: jest.fn() },
   AppState: {
     currentState: 'active',

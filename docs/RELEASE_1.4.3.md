@@ -4,7 +4,7 @@
 
 Oleada 1.4.3 **completa en `main`**: marco TCC lite inline, continuidad, psicoeducación, ranking semántico topicFree, grafo visual (fases 2–3), micro-guías timeline, patrones mensuales, mapa del grafo rediseñado y etiquetas de ideas legibles.
 
-**Build tiendas:** `1.4.3` · iOS `buildNumber` **33** · Android `versionCode` **19**
+**Build tiendas:** `1.4.3` · iOS `buildNumber` **34** · Android `versionCode` **20**
 
 ## Incluye
 
@@ -57,6 +57,16 @@ Oleada 1.4.3 **completa en `main`**: marco TCC lite inline, continuidad, psicoed
 4. En Render: `ATLAS_VECTOR_SEARCH_ENABLED=true` (+ opcional `ATLAS_TOPIC_FREE_VECTOR_INDEX=topic_free_embedding_index`)
 
 Sin Atlas, el ranking y el grafo usan **modo scan** (cosine local).
+
+## Checklist producción (Render + tiendas)
+
+- [ ] `NODE_ENV=production` en Render
+- [ ] `JWT_REFRESH_SECRET` distinto de `JWT_SECRET`
+- [ ] `FRONTEND_URL` apunta al dominio real (CORS)
+- [ ] `ENABLE_SWAGGER` sin definir o `false`
+- [ ] Deploy backend `main` + smoke `/health`
+- [ ] `eas build --profile production` (iOS 34 / Android 20)
+- [ ] Smoke: login, chat, resumen mensual, informe semanal, mapa grafo
 
 ## Pendiente post-1.4.3
 

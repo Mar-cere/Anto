@@ -62,6 +62,8 @@ export const features = Object.freeze({
   swagger: resolveSwaggerEnabled(),
   /** Worker informe semanal de patrones (#208 / #217). Default activo salvo `false`. */
   weeklyPatternInsightWorker: envIsNotFalse(process.env.ENABLE_WEEKLY_PATTERN_INSIGHT),
+  /** Worker continuidad último chat (#4+#47). Default activo salvo `false`. */
+  lastSessionSummaryWorker: envIsNotFalse(process.env.ENABLE_LAST_SESSION_SUMMARY),
 });
 
 export default features;

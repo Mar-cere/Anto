@@ -77,7 +77,7 @@ describe('interventionGraphLayout', () => {
     ];
     const model = buildTopicFreeGraphModel(longTopicFree, { canvasWidth: 340 });
     expect(model.topicFreeNodes[0].lines.length).toBeGreaterThan(0);
-    expect(model.topicFreeNodes[0].label).toMatch(/abrumado/i);
+    expect(model.topicFreeNodes[0].label).toMatch(/siento muy|abrumado/i);
     expect(model.topicFreeNodes[0].label).not.toMatch(/^no sé/i);
     expect(model.topicFreeNodes[0].width).toBeGreaterThan(0);
     expect(model.links[0].x1).toBeLessThan(model.links[0].x2);

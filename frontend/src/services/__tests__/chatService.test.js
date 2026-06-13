@@ -269,7 +269,7 @@ describe('chatService', () => {
       
       const result = await getMessages('conv-123');
       
-      expect(result).toEqual({ messages, sessionIntention: null });
+      expect(result).toEqual({ messages, sessionIntention: null, tccLite: null });
       if (apiMock) {
         expect(apiMock.get).toHaveBeenCalledWith('/api/chat/conversations/conv-123');
       }
@@ -293,7 +293,7 @@ describe('chatService', () => {
       
       const result = await getMessages('conv-123');
       
-      expect(result).toEqual({ messages: [], sessionIntention: null });
+      expect(result).toEqual({ messages: [], sessionIntention: null, tccLite: null });
     });
 
     it('debe retornar mensajes vacíos en caso de error', async () => {
@@ -303,7 +303,7 @@ describe('chatService', () => {
         mockApi.get.mockRejectedValue(new Error('Network error'));
       }
       const result = await getMessages('conv-123');
-      expect(result).toEqual({ messages: [], sessionIntention: null });
+      expect(result).toEqual({ messages: [], sessionIntention: null, tccLite: null });
     });
   });
 

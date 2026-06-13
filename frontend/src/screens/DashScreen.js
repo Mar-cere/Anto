@@ -733,7 +733,9 @@ const DashScreen = () => {
   useEffect(() => {
     // Listener para alertas de emergencia
     const unsubscribeAlert = websocketService.on('emergency:alert:sent', (data) => {
-      console.log('[DashScreen] Alerta de emergencia recibida en tiempo real:', data);
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.log('[DashScreen] Alerta de emergencia recibida en tiempo real');
+      }
       setEmergencyAlertNotification(data);
       
       // Mostrar notificación local

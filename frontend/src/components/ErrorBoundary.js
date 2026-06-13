@@ -236,7 +236,7 @@ function ErrorBoundaryView({ boundaryProps }) {
           </TouchableOpacity>
         </View>
 
-        {state.error ? (
+        {state.error && (typeof __DEV__ !== 'undefined' && __DEV__) ? (
           <View style={styles.detailsContainer}>
             <TouchableOpacity style={styles.detailsToggle} onPress={toggleDetails}>
               <Text style={styles.detailsToggleText}>

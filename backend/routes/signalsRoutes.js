@@ -57,11 +57,19 @@ const weeklyInsightLimiter = createRateLimiter({
   message: (req) => req.apiCopy?.rateLimit || 'Too many requests',
 });
 
+const consentLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: (req) => req.apiCopy?.rateLimit || 'Too many requests',
+});
+
 function isValidObjectId(value) {
   return mongoose.Types.ObjectId.isValid(String(value));
 }
 
-router.get('/consent', protect, async (req, res) => {
+router.get('/consent', protect, consentLimiter, async (req, res) => {
   try {
     const consent = await getSignalConsentForUser(req.user._id);
     res.json({ success: true, consent });
@@ -71,7 +79,7 @@ router.get('/consent', protect, async (req, res) => {
   }
 });
 
-router.patch('/consent', protect, async (req, res) => {
+router.patch('/consent', protect, consentLimiter, async (req, res) => {
   try {
     const body = req.body && typeof req.body === 'object' ? req.body : {};
     const patch = {};
@@ -91,6 +99,9 @@ router.patch('/consent', protect, async (req, res) => {
     }
     if (body.weeklyInsights && typeof body.weeklyInsights.enabled === 'boolean') {
       patch.weeklyInsights = { enabled: body.weeklyInsights.enabled };
+    }
+    if (!Object.keys(patch).length) {
+      return res.status(400).json({ success: false, message: req.apiCopy?.invalidPayload });
     }
     const consent = await updateSignalConsentForUser(req.user._id, patch);
     res.json({ success: true, consent });

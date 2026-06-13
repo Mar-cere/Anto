@@ -210,9 +210,9 @@ const corsOptions = {
     const allowedOrigins = [
       config.app.frontendUrl,
       'https://anto-ion2.onrender.com',
-      'http://localhost:3000',
-      'http://localhost:19006', // Expo dev server
-      /^https:\/\/.*\.onrender\.com$/, // Cualquier subdominio de Render
+      ...(config.app.environment === 'development'
+        ? ['http://localhost:3000', 'http://localhost:19006', /^https:\/\/.*\.onrender\.com$/]
+        : []),
     ];
     
     // Verificar si el origen está permitido

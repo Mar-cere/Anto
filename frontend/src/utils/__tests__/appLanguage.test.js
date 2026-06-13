@@ -1,4 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+jest.mock('react-native', () => ({
+  Platform: { OS: 'web' },
+  NativeModules: {},
+}));
+
+jest.unmock('../appLanguage');
+
 import {
   APP_LANGUAGE_MANUAL_KEY,
   APP_LANGUAGE_STORAGE_KEY,

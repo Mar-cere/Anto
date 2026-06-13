@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { sanitizeProposedProductActions } from '../utils/sanitizeProposedProductActions';
+import { devLog, devWarn } from '../utils/devLog';
 import { parseChatMessagesArrayFromStorage } from '../utils/safeStorageJson';
 import apiClient, { API_URL, getAppLanguage } from '../config/api';
 import { getChatCopy } from '../utils/serviceCopy';
@@ -21,11 +21,11 @@ const handleError = (error) => {
 // Inicializar el servicio
 export const initializeSocket = async () => {
   try {
-    console.log('Inicializando servicio de chat');
+    devLog('Inicializando servicio de chat');
     
     const token = await AsyncStorage.getItem('userToken');
     if (!token) {
-      console.warn('No hay token de autenticación al inicializar chat');
+      devWarn('No hay token de autenticación al inicializar chat');
       return false;
     }
 
@@ -34,7 +34,7 @@ export const initializeSocket = async () => {
     if (!conversationId) {
       try {
       conversationId = await createConversation();
-        console.log('Conversación creada durante inicialización:', conversationId);
+        devLog('Conversación creada durante inicialización:', conversationId);
       } catch (createError) {
         console.error('Error al crear conversación durante inicialización:', createError);
         // No lanzar error aquí, permitir que sendMessage lo maneje
@@ -42,7 +42,7 @@ export const initializeSocket = async () => {
       }
     }
     
-    console.log('Chat inicializado:', { conversationId });
+    devLog('Chat inicializado:', { conversationId: conversationId ? 'ok' : null });
     return true;
   } catch (error) {
     console.error('Error al inicializar chat:', error);
@@ -53,16 +53,16 @@ export const initializeSocket = async () => {
 // Enviar un mensaje y obtener respuesta
 export const sendMessage = async (text) => {
   try {
-    console.log('Enviando mensaje:', text);
+    devLog('Enviando mensaje al chat');
     
     let conversationId = await AsyncStorage.getItem('currentConversationId');
     
     // Si no hay conversación activa, intentar crear una
     if (!conversationId) {
-      console.log('No hay conversación activa, creando una nueva...');
+      devLog('No hay conversación activa, creando una nueva...');
       try {
         conversationId = await createConversation();
-        console.log('Conversación creada:', conversationId);
+        devLog('Conversación creada');
       } catch (createError) {
         console.error('Error al crear conversación:', createError);
         // Preservar el error original si es de suscripción
@@ -92,7 +92,7 @@ export const sendMessage = async (text) => {
     };
 
     const response = await apiClient.post('/api/chat/messages', userMessage);
-    console.log('Respuesta del servidor:', response);
+    devLog('Mensaje enviado correctamente');
 
     // La respuesta ya incluye userMessage y assistantMessage
     return response;

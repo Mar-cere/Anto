@@ -9,6 +9,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import signalsService from '../../services/signalsService';
+import { getDigitalHealthAvailability } from '../../services/digitalHealthBridge';
 
 const ICON_SIZE = 24;
 const ICON_GAP = 16;
@@ -96,6 +97,7 @@ export default function SignalConsentPanel({ compact = false, embedded = false }
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [consent, setConsent] = useState(null);
+  const [healthAvailable, setHealthAvailable] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -111,6 +113,9 @@ export default function SignalConsentPanel({ compact = false, embedded = false }
 
   useEffect(() => {
     load();
+    void getDigitalHealthAvailability()
+      .then((info) => setHealthAvailable(info?.available === true))
+      .catch(() => setHealthAvailable(false));
   }, [load]);
 
   const patchConsent = useCallback(async (patch) => {
@@ -226,7 +231,13 @@ export default function SignalConsentPanel({ compact = false, embedded = false }
           ) : null}
           <View style={styles.copy}>
             <Text style={styles.label}>{TEXTS[row.labelKey]}</Text>
-            <Text style={styles.hint}>{TEXTS[row.hintKey]}</Text>
+            <Text style={styles.hint}>
+              {row.key === 'health' && !healthAvailable
+                ? language === 'en'
+                  ? 'Coming soon on this device. Writing pace and weekly reports are available now.'
+                  : 'Próximamente en este dispositivo. Ritmo al escribir e informes semanales sí están disponibles.'
+                : TEXTS[row.hintKey]}
+            </Text>
           </View>
           <Switch
             value={row.getValue(consent)}
@@ -234,6 +245,7 @@ export default function SignalConsentPanel({ compact = false, embedded = false }
             trackColor={{ true: colors.primary, false: colors.border }}
             accessibilityLabel={TEXTS[row.labelKey]}
             accessibilityHint={TEXTS[row.hintKey]}
+            disabled={saving || (row.key === 'health' && !healthAvailable)}
           />
         </View>
       ))}
