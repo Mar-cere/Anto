@@ -1,10 +1,11 @@
 /**
- * Motor correlación multimodal MVP (#217): topicTag × intervención × ánimo BA.
- * Sin telemetría de tecleo ni HealthKit en esta fase.
+ * Motor correlación multimodal (#217): chat, BA, tecleo (#215), fenotipo (#216).
  */
 import mongoose from 'mongoose';
 import BehavioralActivationLog from '../models/BehavioralActivationLog.js';
 import ChatInterventionEvent from '../models/ChatInterventionEvent.js';
+import { aggregateTypingTelemetry } from './chatTypingTelemetryService.js';
+import { analyzePhenotypeTrends } from './digitalPhenotypeService.js';
 
 const MIN_EDGE_SAMPLES = 2;
 const MIN_COMPLETION_SIGNAL = 0.25;
@@ -208,14 +209,113 @@ export async function computeTopicTagMoodCorrelations(userId, since) {
 }
 
 /**
- * Agrega correlaciones para API grafo (#218 fase 3).
+ * Correlación tecleo (#215): carga cognitiva elevada en ventana.
+ */
+export function computeTypingLoadCorrelations(typingAggregate) {
+  const agg = typingAggregate || {};
+  const count = Number(agg.count) || 0;
+  const avgLoad = Number(agg.avgCognitiveLoad) || 0;
+  const avgBackspace = Number(agg.avgBackspaceRate) || 0;
+  if (count < 3 || avgLoad < 0.45) return [];
+
+  const rows = [];
+  if (avgLoad >= 0.55) {
+    rows.push({
+      type: 'typing_cognitive_load',
+      sourceKind: 'typing',
+      sourceId: 'draft_metrics',
+      targetKind: 'signal',
+      targetId: 'high_cognitive_load',
+      strength: Math.min(1, avgLoad),
+      metrics: { count, avgCognitiveLoad: Number(avgLoad.toFixed(2)), avgBackspaceRate: Number(avgBackspace.toFixed(2)) },
+      direction: avgBackspace >= 0.25 ? 'inhibition' : 'deliberation',
+      disclaimer: 'pattern_observed',
+    });
+  }
+  if (avgBackspace >= 0.3 && count >= 4) {
+    rows.push({
+      type: 'typing_revision',
+      sourceKind: 'typing',
+      sourceId: 'backspace_rate',
+      targetKind: 'signal',
+      targetId: 'revision_heavy',
+      strength: Math.min(1, avgBackspace),
+      metrics: { count, avgBackspaceRate: Number(avgBackspace.toFixed(2)) },
+      direction: 'inhibition',
+      disclaimer: 'pattern_observed',
+    });
+  }
+  return rows;
+}
+
+/**
+ * Correlación fenotipado (#216): sueño, pasos, pantalla.
+ */
+export function computePhenotypeCorrelations(phenotypeSeries, chatDaysActive = 0) {
+  const trends = analyzePhenotypeTrends(phenotypeSeries);
+  const rows = [];
+  const latest = phenotypeSeries?.[0];
+
+  if (trends.prodromeSleepDelay) {
+    rows.push({
+      type: 'phenotype_sleep_prodrome',
+      sourceKind: 'digital_health',
+      sourceId: 'sleep_hours',
+      targetKind: 'signal',
+      targetId: 'sleep_delay_trend',
+      strength: 0.72,
+      metrics: { daysObserved: phenotypeSeries?.length || 0 },
+      direction: 'dip',
+      disclaimer: 'correlation_not_causation',
+    });
+  }
+
+  if (Number.isFinite(trends.stepsTrend) && trends.stepsTrend < -800 && chatDaysActive >= 2) {
+    rows.push({
+      type: 'phenotype_isolation',
+      sourceKind: 'digital_health',
+      sourceId: 'steps',
+      targetKind: 'chat_activity',
+      targetId: 'low_steps_high_chat',
+      strength: Math.min(1, Math.abs(trends.stepsTrend) / 3000),
+      metrics: { stepsTrend: Math.round(trends.stepsTrend), chatDaysActive },
+      direction: 'dip',
+      disclaimer: 'correlation_not_causation',
+    });
+  }
+
+  if (latest?.screenTimeMinutes >= 240 && Number(latest?.socialScreenRatio) >= 0.55) {
+    rows.push({
+      type: 'phenotype_screen_social',
+      sourceKind: 'digital_health',
+      sourceId: 'screen_time',
+      targetKind: 'signal',
+      targetId: 'high_social_screen',
+      strength: Math.min(1, Number(latest.socialScreenRatio)),
+      metrics: {
+        screenTimeMinutes: latest.screenTimeMinutes,
+        socialScreenRatio: latest.socialScreenRatio,
+      },
+      disclaimer: 'pattern_observed',
+    });
+  }
+
+  return rows.slice(0, 4);
+}
+
+/**
+ * Agrega correlaciones para API grafo (#218 fase 3) e informe #208.
  */
 export async function buildMultimodalCorrelations({
   userId,
   since,
+  until = null,
   topicTagEdges = [],
   conceptEdges = [],
   conceptNodes = [],
+  typingAggregate = null,
+  phenotypeSeries = [],
+  chatDaysActive = 0,
 }) {
   const topicCorrelations = computeTopicInterventionCorrelations(topicTagEdges);
   const conceptCorrelations = computeConceptInterventionCorrelations(conceptEdges, conceptNodes);
@@ -223,9 +323,25 @@ export async function buildMultimodalCorrelations({
     ? await computeTopicTagMoodCorrelations(userId, since).catch(() => [])
     : [];
 
-  const correlations = [...conceptCorrelations, ...topicCorrelations, ...moodCorrelations]
+  let typingCorrelations = [];
+  if (typingAggregate) {
+    typingCorrelations = computeTypingLoadCorrelations(typingAggregate);
+  } else if (userId && since instanceof Date) {
+    const agg = await aggregateTypingTelemetry({ userId, since, until }).catch(() => null);
+    typingCorrelations = computeTypingLoadCorrelations(agg);
+  }
+
+  const phenotypeCorrelations = computePhenotypeCorrelations(phenotypeSeries, chatDaysActive);
+
+  const correlations = [
+    ...conceptCorrelations,
+    ...topicCorrelations,
+    ...moodCorrelations,
+    ...typingCorrelations,
+    ...phenotypeCorrelations,
+  ]
     .sort((a, b) => b.strength - a.strength)
-    .slice(0, 12);
+    .slice(0, 16);
 
   return {
     correlations,
@@ -233,6 +349,8 @@ export async function buildMultimodalCorrelations({
       topicIntervention: topicCorrelations.length,
       conceptIntervention: conceptCorrelations.length,
       topicMoodBa: moodCorrelations.length,
+      typing: typingCorrelations.length,
+      phenotype: phenotypeCorrelations.length,
     },
   };
 }
@@ -241,5 +359,7 @@ export default {
   computeTopicInterventionCorrelations,
   computeConceptInterventionCorrelations,
   computeTopicTagMoodCorrelations,
+  computeTypingLoadCorrelations,
+  computePhenotypeCorrelations,
   buildMultimodalCorrelations,
 };

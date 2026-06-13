@@ -56,6 +56,8 @@ const DEFAULT_TEXTS = {
   NARRATIVE_TITLE: 'Resumen',
   NARRATIVE_THEMES: 'Temas',
   NARRATIVE_MICRO_WINS: 'Micro-logros',
+  WEEKLY_INSIGHT_CTA: 'Ver patrones de la semana',
+  WEEKLY_INSIGHT_CTA_HINT: 'Informe observacional (#208), no diagnóstico.',
   PERIOD_FALLBACK: '…',
   TIMES_SINGULAR: 'vez',
   TIMES_PLURAL: 'veces',
@@ -93,6 +95,8 @@ const SUMMARY_TEXT_MAP = {
   NARRATIVE_TITLE: 'SUMMARY_NARRATIVE_TITLE',
   NARRATIVE_THEMES: 'SUMMARY_NARRATIVE_THEMES',
   NARRATIVE_MICRO_WINS: 'SUMMARY_NARRATIVE_MICRO_WINS',
+  WEEKLY_INSIGHT_CTA: 'SUMMARY_WEEKLY_INSIGHT_CTA',
+  WEEKLY_INSIGHT_CTA_HINT: 'SUMMARY_WEEKLY_INSIGHT_CTA_HINT',
   PERIOD_FALLBACK: 'SUMMARY_PERIOD_FALLBACK',
   TIMES_SINGULAR: 'SUMMARY_TIMES_SINGULAR',
   TIMES_PLURAL: 'SUMMARY_TIMES_PLURAL',
@@ -397,6 +401,26 @@ export default function SummaryScreen() {
           lineHeight: 21,
           color: colors.text,
           fontWeight: '500',
+        },
+        weeklyInsightBtn: {
+          marginHorizontal: 12,
+          marginBottom: 10,
+          padding: 14,
+          borderRadius: 14,
+          borderWidth: 1,
+          borderColor: colors.primary,
+          backgroundColor: colors.cardBackground || colors.background,
+        },
+        weeklyInsightBtnTitle: {
+          fontSize: 15,
+          fontWeight: '700',
+          color: colors.text,
+          marginBottom: 4,
+        },
+        weeklyInsightBtnHint: {
+          fontSize: 12,
+          lineHeight: 17,
+          color: colors.textSecondary,
         },
         tile: {
           width: '48%',
@@ -811,6 +835,17 @@ export default function SummaryScreen() {
               ) : (
                 <View>
                   <NarrativeCard narrative={payload?.narrative} sx={styles} texts={TEXTS} />
+                  {period === 'week' ? (
+                    <TouchableOpacity
+                      style={styles.weeklyInsightBtn}
+                      onPress={() => navigation.navigate('WeeklyInsight')}
+                      activeOpacity={0.85}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.weeklyInsightBtnTitle}>{TEXTS.WEEKLY_INSIGHT_CTA}</Text>
+                      <Text style={styles.weeklyInsightBtnHint}>{TEXTS.WEEKLY_INSIGHT_CTA_HINT}</Text>
+                    </TouchableOpacity>
+                  ) : null}
                   <View style={styles.grid}>
                     <MetricTile
                       icon="message-text-outline"

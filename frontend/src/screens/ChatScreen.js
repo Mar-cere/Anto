@@ -269,6 +269,7 @@ const ChatScreen = () => {
     setMessages,
     inputText,
     setInputText,
+    handleInputChange,
     isLoading,
     isTyping,
     showScrollButton,
@@ -626,7 +627,7 @@ const ChatScreen = () => {
 
       <ChatInput
         value={inputText}
-        onChangeText={setInputText}
+        onChangeText={handleInputChange}
         onSend={handleSend}
         inputRef={inputRef}
         sendDisabled={

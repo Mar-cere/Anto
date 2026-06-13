@@ -61,6 +61,7 @@ import AIPrivacyScreen from '../screens/AIPrivacyScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import SummaryScreen from '../screens/SummaryScreen';
 import SessionInsightScreen from '../screens/SessionInsightScreen';
+import WeeklyInsightScreen from '../screens/WeeklyInsightScreen';
 import { useTheme } from '../context/ThemeContext';
 import TabNavigator from './TabNavigator';
 
@@ -90,6 +91,7 @@ const ROUTE_NAMES = {
   AI_PRIVACY: 'AIPrivacy',
   ACTIVITY_SUMMARY: 'ActivitySummary',
   SESSION_INSIGHT: 'SessionInsight',
+  WEEKLY_INSIGHT: 'WeeklyInsight',
   CHANGE_PASSWORD: 'ChangePassword',
 };
 
@@ -209,6 +211,11 @@ const StackNavigator = () => {
       <Stack.Screen
         name={ROUTE_NAMES.SESSION_INSIGHT}
         component={SessionInsightScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name={ROUTE_NAMES.WEEKLY_INSIGHT}
+        component={WeeklyInsightScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen 

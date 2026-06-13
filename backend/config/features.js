@@ -60,8 +60,8 @@ export const features = Object.freeze({
     process.env.ENABLE_WEEKLY_SUMMARY_EMAIL === 'true' ||
     process.env.ENABLE_WEEKLY_TIPS_EMAIL === 'true',
   swagger: resolveSwaggerEnabled(),
-  /** Worker que procesa jobs de continuidad del último chat (#4 + #47). Default activo salvo `false`. */
-  lastSessionSummaryWorker: envIsNotFalse(process.env.ENABLE_LAST_SESSION_SUMMARY),
+  /** Worker informe semanal de patrones (#208 / #217). Default activo salvo `false`. */
+  weeklyPatternInsightWorker: envIsNotFalse(process.env.ENABLE_WEEKLY_PATTERN_INSIGHT),
 });
 
 export default features;

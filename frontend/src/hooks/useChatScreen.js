@@ -45,6 +45,8 @@ import {
   parseGuestHandoffPendingFromStorage,
   parseUserIdFromUserDataStorage,
 } from '../utils/safeStorageJson';
+import signalsService from '../services/signalsService';
+import useChatTypingTelemetry from './useChatTypingTelemetry';
 import {
   finalizeLoadedChatMessages,
   pickChatWelcomeGreeting,
@@ -106,6 +108,8 @@ export function useChatScreen() {
 
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
+  const [typingTelemetryEnabled, setTypingTelemetryEnabled] = useState(false);
+  const typingTelemetry = useChatTypingTelemetry();
   const [isLoading, setIsLoading] = useState(true);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [showClearModal, setShowClearModal] = useState(false);
@@ -615,6 +619,32 @@ export function useChatScreen() {
     }
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        if (await chatService.isGuestChatMode()) return;
+        const consent = await signalsService.getSignalConsent();
+        if (!cancelled) {
+          setTypingTelemetryEnabled(consent?.typingTelemetry?.enabled === true);
+        }
+      } catch (_) {
+        /* consent opcional */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleInputChange = useCallback(
+    (text) => {
+      if (typingTelemetryEnabled) typingTelemetry.trackChange(text);
+      setInputText(text);
+    },
+    [typingTelemetryEnabled, typingTelemetry],
+  );
+
   const handleSend = useCallback(async (presetText) => {
     const texts = textsRef.current;
     const messageText =
@@ -623,6 +653,24 @@ export function useChatScreen() {
         : inputText.trim();
     if (messageText === '') return;
     setShowSessionIntentionPrompt(false);
+
+    if (typingTelemetryEnabled) {
+      const metrics = typingTelemetry.buildPayload();
+      typingTelemetry.resetDraft();
+      if (metrics) {
+        void (async () => {
+          try {
+            const convId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+            await signalsService.submitTypingTelemetry({
+              conversationId: convId,
+              metrics,
+            });
+          } catch (_) {
+            /* best-effort */
+          }
+        })();
+      }
+    }
 
     if (isOffline) {
       try {
@@ -1085,7 +1133,7 @@ export function useChatScreen() {
     } finally {
       sendRequestInFlightRef.current = false;
     }
-  }, [inputText, scrollToBottom, isConnected, isOffline, navigation, guestQuota, showToast]);
+  }, [inputText, scrollToBottom, isConnected, isOffline, navigation, guestQuota, showToast, typingTelemetryEnabled, typingTelemetry]);
 
   handleSendRef.current = handleSend;
 
@@ -1557,6 +1605,7 @@ export function useChatScreen() {
     setMessages,
     inputText,
     setInputText,
+    handleInputChange,
     isLoading,
     error,
     isTyping,

@@ -15,6 +15,8 @@ const {
   computeTopicInterventionCorrelations,
   computeConceptInterventionCorrelations,
   computeTopicTagMoodCorrelations,
+  computeTypingLoadCorrelations,
+  computePhenotypeCorrelations,
   buildMultimodalCorrelations,
 } = await import('../../../services/multimodalCorrelationService.js');
 
@@ -57,6 +59,29 @@ describe('multimodalCorrelationService', () => {
       [{ id: 'c1', label: 'Ansiedad social', memberCount: 3 }],
     );
     expect(rows[0].sourceLabel).toBe('Ansiedad social');
+  });
+
+  it('computeTypingLoadCorrelations detecta carga elevada', () => {
+    const rows = computeTypingLoadCorrelations({
+      count: 5,
+      avgCognitiveLoad: 0.68,
+      avgBackspaceRate: 0.32,
+    });
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows[0].type).toMatch(/^typing_/);
+  });
+
+  it('computePhenotypeCorrelations detecta pródomo de sueño', () => {
+    const rows = computePhenotypeCorrelations(
+      [
+        { dayKey: '2026-06-01', sleepHours: 7.5 },
+        { dayKey: '2026-06-02', sleepHours: 6.8 },
+        { dayKey: '2026-06-03', sleepHours: 5.9 },
+        { dayKey: '2026-06-04', sleepHours: 5.2 },
+      ],
+      3,
+    );
+    expect(rows.some((r) => r.type === 'phenotype_sleep_prodrome')).toBe(true);
   });
 
   it('computeTopicTagMoodCorrelations cruza BA y eventos por día', async () => {
@@ -109,9 +134,13 @@ describe('multimodalCorrelationService', () => {
       ],
       conceptEdges: [],
       conceptNodes: [],
+      typingAggregate: { count: 4, avgCognitiveLoad: 0.6, avgBackspaceRate: 0.2 },
+      phenotypeSeries: [],
+      chatDaysActive: 2,
     });
 
     expect(result.correlations.length).toBeGreaterThan(0);
     expect(result.summary.topicIntervention).toBeGreaterThan(0);
+    expect(result.summary.typing).toBeGreaterThan(0);
   });
 });

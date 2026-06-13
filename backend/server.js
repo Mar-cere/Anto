@@ -58,6 +58,7 @@ import exposurePlanRoutes from './routes/exposurePlanRoutes.js';
 import behavioralActivationRoutes from './routes/behavioralActivationRoutes.js';
 import automaticThoughtRoutes from './routes/automaticThoughtRoutes.js';
 import summaryRoutes from './routes/summaryRoutes.js';
+import signalsRoutes from './routes/signalsRoutes.js';
 
 // Constantes de configuración
 const APP_VERSION = '1.4.2';
@@ -359,6 +360,7 @@ app.use('/api/exposure-plans', exposurePlanRoutes);
 app.use('/api/behavioral-activation-logs', behavioralActivationRoutes);
 app.use('/api/automatic-thought-logs', automaticThoughtRoutes);
 app.use('/api/summary', summaryRoutes);
+app.use('/api/signals', signalsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/chat/guest', guestChatRoutes);
@@ -599,6 +601,20 @@ if (process.env.NODE_ENV !== 'test') {
         logger.error('❌ Error iniciando worker continuidad del chat', { error: error.message });
       }
     }, 60000);
+  }
+
+  if (features.weeklyPatternInsightWorker && process.env.NODE_ENV !== 'test') {
+    setTimeout(async () => {
+      try {
+        const { startWeeklyPatternInsightWorker } = await import(
+          './services/weeklyPatternInsightService.js'
+        );
+        startWeeklyPatternInsightWorker();
+        logger.info('📊 Worker informe semanal de patrones (#208) iniciado');
+      } catch (error) {
+        logger.error('❌ Error iniciando worker informe semanal', { error: error.message });
+      }
+    }, 90000);
   }
 
   // Informe diario de uso OpenAI por correo (NO en test)

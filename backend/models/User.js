@@ -131,6 +131,28 @@ const userSchema = new mongoose.Schema({
       maxlength: [64, 'La zona horaria no puede exceder 64 caracteres']
     }
   },
+  /** Consentimiento granular señales #215 / #216 / #208. */
+  signalConsent: {
+    typingTelemetry: {
+      enabled: { type: Boolean, default: false },
+      enabledAt: { type: Date, default: null },
+    },
+    digitalHealth: {
+      enabled: { type: Boolean, default: false },
+      enabledAt: { type: Date, default: null },
+      steps: { type: Boolean, default: false },
+      sleep: { type: Boolean, default: false },
+      screenTime: { type: Boolean, default: false },
+    },
+    weeklyInsights: {
+      enabled: { type: Boolean, default: true },
+      enabledAt: { type: Date, default: null },
+    },
+  },
+  lastDigitalPhenotypeSyncAt: {
+    type: Date,
+    default: null,
+  },
   // Estadísticas del usuario
   stats: {
     tasksCompleted: {

@@ -16,6 +16,7 @@ Oleada 1.4.3 **completa en `main`**: marco TCC lite inline, continuidad, psicoed
 - **Micro-guías (#90–#99):** 19 guías, biblioteca, pantalla timeline única.
 - **Session insight:** duración ventana activa (fix minutos inflados).
 - **Transporte chat:** HTTP/SSE alineado con `chatTurnEnhancementsService`.
+- **Motor multimodal (#217):** telemetría tecleo (#215), fenotipado digital (#216), informe semanal (#208) con UI revelación (#213), consentimiento granular en `/api/signals`.
 
 ## QA en dispositivo (checklist)
 
@@ -32,6 +33,15 @@ Oleada 1.4.3 **completa en `main`**: marco TCC lite inline, continuidad, psicoed
 11. Biblioteca 19 micro-guías + sello editorial.
 12. BA: volver desde Tareas/Hábitos → plan actualizado.
 13. Estadísticas → mapa visual; si hay mensajes en chat, **nodos concepto** (ideas agrupadas) o topicFree, y tarjeta «Patrones observados».
+14. Resumen semanal → «Ver patrones de la semana» → pantalla **WeeklyInsight** (#213).
+15. Activar consentimiento tecleo → escribir en chat → métricas agregadas (sin texto extra).
+16. Activar salud digital → sync stub/API listo para HealthKit nativo (dev client).
+
+## Señales multimodales (#215–#217 / #208 / #213)
+
+- API: `GET/PATCH /api/signals/consent`, `POST /api/signals/typing-telemetry`, `POST /api/signals/digital-phenotype/sync`, `GET /api/signals/weekly-insight`
+- Worker: `ENABLE_WEEKLY_PATTERN_INSIGHT` (default on) — tick `WEEKLY_PATTERN_INSIGHT_TICK_MS` (120s)
+- HealthKit / Health Connect: puente frontend `digitalHealthBridge.js` (requiere módulo nativo en dev client)
 
 ## Atlas vector search (#126)
 
@@ -46,4 +56,5 @@ Sin Atlas, el ranking y el grafo usan **modo scan** (cosine local).
 
 - Deploy Render + build tiendas 1.4.3.
 - Backfill inicial en prod: `TOPIC_FREE_EMBEDDINGS_ENABLED=true npm run backfill:topic-free-embeddings -- --limit=1000`.
-- #217 completo: telemetría tecleo (#215), HealthKit (#216), jobs async de insights semanales (#208/#213).
+- Integración nativa HealthKit (#216) en dev client iOS + Health Connect Android.
+- #203 RAG patrones, #210 esquemas, narrativa LLM en informe #208 (opcional).

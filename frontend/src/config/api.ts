@@ -97,6 +97,11 @@ export const ENDPOINTS = {
   SUMMARY_FOCUS: '/api/summary/focus',
   /** Continuidad del último chat (#4 + #47). Ruta `/last-session` por compatibilidad; no es el resumen semanal/mensual. */
   SUMMARY_LAST_SESSION: '/api/summary/last-session',
+  SIGNALS_CONSENT: '/api/signals/consent',
+  SIGNALS_TYPING_TELEMETRY: '/api/signals/typing-telemetry',
+  SIGNALS_DIGITAL_PHENOTYPE_SYNC: '/api/signals/digital-phenotype/sync',
+  SIGNALS_WEEKLY_INSIGHT: '/api/signals/weekly-insight',
+  SIGNALS_WEEKLY_INSIGHT_SCHEDULE: '/api/signals/weekly-insight/schedule',
   CHAT_TCC_CONTINUITY: '/api/chat/tcc-continuity',
   CHAT: '/api/chat',
   CHAT_MESSAGES: '/api/chat/messages',
