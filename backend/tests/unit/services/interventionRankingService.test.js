@@ -1,6 +1,8 @@
 import {
   buildRankingScoreMap,
   buildTopicFreeAffinityBoost,
+  buildTopicFreeLexicalBoost,
+  buildTopicFreeSemanticBoost,
   mergeRankingScoreMaps,
   rankInterventionIds,
   scoreInterventionEdge,
@@ -64,8 +66,73 @@ describe('interventionRankingService', () => {
     expect(map.get('task_break')).toBeGreaterThan(map.get('breathing_exercise'));
   });
 
-  it('buildTopicFreeAffinityBoost prioriza intervenciones con mensaje similar', () => {
+  it('buildTopicFreeSemanticBoost ignora vectores de distinta dimensión', () => {
+    const boost = buildTopicFreeSemanticBoost(
+      [
+        {
+          interventionId: 'behavioral_activation',
+          topicFreeEmbedding: [1, 0],
+          eventType: 'completed',
+        },
+      ],
+      [1, 0, 0],
+      { minSimilarity: 0.1 },
+    );
+    expect(boost.size).toBe(0);
+  });
+
+  it('buildTopicFreeSemanticBoost prioriza vectores cercanos', () => {
+    const query = [1, 0, 0];
+    const boost = buildTopicFreeSemanticBoost(
+      [
+        {
+          interventionId: 'behavioral_activation',
+          topicFreeEmbedding: [0.99, 0.1, 0],
+          eventType: 'completed',
+        },
+        {
+          interventionId: 'self_care',
+          topicFreeEmbedding: [0, 1, 0],
+          eventType: 'clicked',
+        },
+      ],
+      query,
+      { minSimilarity: 0.5 },
+    );
+    expect(boost.get('behavioral_activation') ?? 0).toBeGreaterThan(boost.get('self_care') ?? 0);
+  });
+
+  it('buildTopicFreeAffinityBoost híbrido toma máximo léxico/semántico', () => {
+    const query = [1, 0, 0];
     const boost = buildTopicFreeAffinityBoost(
+      [
+        {
+          interventionId: 'behavioral_activation',
+          topicFree: 'No tengo ganas de nada y me cuesta levantarme cada mañana',
+          topicFreeEmbedding: [0.99, 0.1, 0],
+          eventType: 'completed',
+        },
+      ],
+      'No tengo ganas de levantarme y siento que nada tiene sentido',
+      { queryEmbedding: query, minSimilarity: 0.5 },
+    );
+    const lexicalOnly = buildTopicFreeLexicalBoost(
+      [
+        {
+          interventionId: 'behavioral_activation',
+          topicFree: 'No tengo ganas de nada y me cuesta levantarme cada mañana',
+          eventType: 'completed',
+        },
+      ],
+      'No tengo ganas de levantarme y siento que nada tiene sentido',
+    );
+    expect(boost.get('behavioral_activation') ?? 0).toBeGreaterThanOrEqual(
+      lexicalOnly.get('behavioral_activation') ?? 0,
+    );
+  });
+
+  it('buildTopicFreeLexicalBoost prioriza intervenciones con mensaje similar', () => {
+    const boost = buildTopicFreeLexicalBoost(
       [
         {
           interventionId: 'behavioral_activation',

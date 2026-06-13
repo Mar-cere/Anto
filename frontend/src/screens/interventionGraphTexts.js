@@ -10,6 +10,12 @@ const DEFAULTS = {
   METRICS: 'mostradas {shown} · clic {clicked} · descartadas {dismissed} · hechas {completed}',
   RATES: 'CTR {ctr} · completación {completion}',
   DEV_LINK: 'Grafo de sugerencias del chat (interno)',
+  ENTRY_LINK: 'Tu mapa de temas e intervenciones',
+  VIEW_GRAPH: 'Mapa visual',
+  VIEW_LIST: 'Lista',
+  LEGEND: 'Grosor de la línea ≈ frecuencia y completación. Toca una conexión para ver detalle.',
+  LIST_A11Y: 'Detalle de conexiones del grafo',
+  MAP_A11Y: 'Mapa de conexiones entre temas e intervenciones',
 };
 
 const KEY_MAP = {
@@ -21,6 +27,12 @@ const KEY_MAP = {
   METRICS: 'INTERVENTION_GRAPH_METRICS',
   RATES: 'INTERVENTION_GRAPH_RATES',
   DEV_LINK: 'INTERVENTION_GRAPH_DEV_LINK',
+  ENTRY_LINK: 'INTERVENTION_GRAPH_ENTRY_LINK',
+  VIEW_GRAPH: 'INTERVENTION_GRAPH_VIEW_GRAPH',
+  VIEW_LIST: 'INTERVENTION_GRAPH_VIEW_LIST',
+  LEGEND: 'INTERVENTION_GRAPH_LEGEND',
+  LIST_A11Y: 'INTERVENTION_GRAPH_LIST_A11Y',
+  MAP_A11Y: 'INTERVENTION_GRAPH_MAP_A11Y',
 };
 
 export function useInterventionGraphTexts() {

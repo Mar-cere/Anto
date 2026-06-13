@@ -28,9 +28,11 @@ const KEY_MAP = {
 };
 
 export function parseMicroGuideBrowseResponse(res) {
-  if (Array.isArray(res?.data)) return res.data;
-  if (Array.isArray(res)) return res;
-  return [];
+  const raw = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+  return raw.filter((item) => {
+    const guideId = String(item?.guideId || item?.interventionId || '').trim();
+    return guideId.length > 0 && typeof item?.title === 'string' && item.title.trim().length > 0;
+  });
 }
 
 export function useMicroGuideTexts() {

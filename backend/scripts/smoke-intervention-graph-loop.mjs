@@ -6,6 +6,7 @@ import actionSuggestionService from '../services/actionSuggestionService.js';
 import { planChatActionSuggestions } from '../services/psychoeducationPromptSnippetService.js';
 import {
   buildRankingScoreMap,
+  buildTopicFreeLexicalBoost,
   scoreInterventionEdge,
 } from '../services/interventionRankingService.js';
 import { buildTopicFreeFromUserContent } from '../utils/interventionTopicFree.js';
@@ -81,6 +82,26 @@ async function main() {
   assert(
     (scores.get('behavioral_activation') ?? -1) > (scores.get('self_care') ?? -1),
     'buildRankingScoreMap prioriza BA completada sobre self_care descartada',
+  );
+
+  const affinity = buildTopicFreeLexicalBoost(
+    [
+      {
+        interventionId: 'behavioral_activation',
+        topicFree: USER_MSG,
+        eventType: 'completed',
+      },
+      {
+        interventionId: 'self_care',
+        topicFree: 'Me duele la cabeza desde ayer por la tarde',
+        eventType: 'clicked',
+      },
+    ],
+    USER_MSG,
+  );
+  assert(
+    (affinity.get('behavioral_activation') ?? 0) > (affinity.get('self_care') ?? 0),
+    'topicFree léxico prioriza intervención con mensaje similar',
   );
 
   const smokeCase = CHAT_BA_SMOKE_CASES[0];

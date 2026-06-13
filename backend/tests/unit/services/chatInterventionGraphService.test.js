@@ -62,6 +62,7 @@ describe('chatInterventionGraphService', () => {
           sessionId: 'sess-inherited',
           topicTag: 'trabajo',
           topicFree: 'Me siento ansioso por la reunión con mi jefe',
+          topicFreeEmbedding: [0.1, 0.9, 0.2],
           riskLevel: 'low',
           assistantMessageId: 'msg-1',
         }),
@@ -80,6 +81,7 @@ describe('chatInterventionGraphService', () => {
     expect(doc.sessionId).toBe('sess-inherited');
     expect(doc.topicTag).toBe('trabajo');
     expect(doc.topicFree).toBe('Me siento ansioso por la reunión con mi jefe');
+    expect(doc.topicFreeEmbedding).toEqual([0.1, 0.9, 0.2]);
     expect(doc.assistantMessageId).toBe('msg-1');
     expect(doc.riskLevel).toBe('low');
   });

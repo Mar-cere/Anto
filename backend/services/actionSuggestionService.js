@@ -30,7 +30,7 @@ export const CONTEXTUAL_PSYCHOEDUCATION_RULES = [
   {
     id: 'psychoeducation_grief',
     pattern:
-      /(?:duelo|luto|falleci[oó]|murió|perd[ií]\s+a|extra[ñn]o\s+(?:mucho|a)|grief|bereavement|passed away|lo\s+extra[ñn]o)/i,
+      /(?:duelo|luto|falleci[oó]|murió|perd[ií]\s+a|extra[ñn]o\s+(?:mucho|a)|grief|bereavement|passed away|lo\s+extra[ñn]o|lost\s+(?:my|a|someone)|i\s+miss\s+(?:him|her|them|you|(?:him|her)\s+so\s+much))/i,
   },
   {
     id: 'psychoeducation_trauma',
@@ -57,7 +57,7 @@ export const CONTEXTUAL_PROTOCOL_RULES = [
   {
     id: 'grief_roadmap',
     pattern:
-      /(?:duelo|falleci[oó]|murió|perd[ií]|luto|extra[ñn]ar(?:lo|la)?|grief|bereavement|passed away|lo\s+extra[ñn]o)/i,
+      /(?:duelo|falleci[oó]|murió|perd[ií]|luto|extra[ñn]ar(?:lo|la)?|grief|bereavement|passed away|lo\s+extra[ñn]o|lost\s+(?:my|a)|i\s+miss\s+)/i,
   },
   {
     id: 'relapse_prevention',
@@ -142,6 +142,9 @@ const PSYCHO_MESSAGE_PRIORITY = [
 function pickPreferredRequiredPsycho(psychoRequired, list, { emotion, userContent } = {}) {
   const candidates = psychoRequired.filter((id) => list.includes(id));
   const text = String(userContent || '');
+  for (const { id, pattern } of CONTEXTUAL_PSYCHOEDUCATION_RULES) {
+    if (candidates.includes(id) && pattern.test(text)) return id;
+  }
   for (const { id, pattern } of PSYCHO_MESSAGE_PRIORITY) {
     if (candidates.includes(id) && pattern.test(text)) return id;
   }
@@ -171,6 +174,26 @@ function prioritizeSuggestionBlock(
     if (psychoId && !list.includes(psychoId)) list.push(psychoId);
   });
   if (list.length <= max) return list;
+
+  const text = String(userContent || '');
+  const contextualMatches = CONTEXTUAL_PSYCHOEDUCATION_RULES.filter(
+    ({ id, pattern }) => list.includes(id) && pattern.test(text),
+  ).map(({ id }) => id);
+  const emotionPsychos = psychoRequired.filter(
+    (id) =>
+      String(id).startsWith('psychoeducation_') &&
+      list.includes(id) &&
+      !contextualMatches.includes(id),
+  );
+  if (contextualMatches.length + emotionPsychos.length >= 2) {
+    const psychoPair = [
+      ...contextualMatches,
+      ...emotionPsychos.filter((id) => !contextualMatches.includes(id)),
+    ];
+    if (psychoPair.length >= 2) {
+      return psychoPair.slice(0, max);
+    }
+  }
 
   const requiredPsycho = pickPreferredRequiredPsycho(psychoRequired, list, {
     emotion,
@@ -204,7 +227,7 @@ export function shouldAttachEmotionPsychoeducation(emotion, userContent = '', in
   if (intensity >= 8) return true;
   if (emotion === 'tristeza' && shouldBoostBaSuggestion(userContent)) return true;
   if (emotion === 'ansiedad' && shouldBoostExposureSuggestion(userContent)) return true;
-  if (emotion === 'enojo' && intensity >= 7) return true;
+  if (emotion === 'enojo' && intensity >= 6) return true;
   return false;
 }
 
@@ -410,7 +433,14 @@ export function resolveSuggestionEmotion(mainEmotion, userContent = '') {
     return 'enojo';
   }
   if (
-    /(?:estrés|estres|agotad|insomnio|duermo\s+mal|durmiendo\s+mal|despierto.*(?:noche|dormir)|sobrecarga|demasiadas\s+responsabilidades|\bstress(?:ed)?\b|burned?\s+out|insomnia|can'?t\s+sleep)/i.test(
+    /(?:insomnio|insomnia|can'?t\s+sleep|wake\s+up\s+(?:at\s+)?night|trouble\s+falling\s+asleep|duermo\s+mal|durmiendo\s+mal|despierto.*(?:noche|dormir))/i.test(
+      text,
+    )
+  ) {
+    return mainEmotion;
+  }
+  if (
+    /(?:estrés|estres|agotad|sobrecarga|demasiadas\s+responsabilidades|\bstress(?:ed)?\b|burned?\s+out)/i.test(
       text,
     )
   ) {

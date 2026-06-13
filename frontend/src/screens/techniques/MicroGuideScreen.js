@@ -110,7 +110,7 @@ export default function MicroGuideScreen() {
     return () => {
       cancelled = true;
     };
-  }, [guideId, TEXTS.ERROR]);
+  }, [guideId, language, TEXTS.ERROR]);
 
   const steps = useMemo(() => (Array.isArray(guide?.steps) ? guide.steps : []), [guide]);
   const totalSteps = steps.length;

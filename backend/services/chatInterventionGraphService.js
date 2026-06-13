@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { isValidInterventionId } from '../constants/interventionCatalog.js';
 import ChatInterventionEvent from '../models/ChatInterventionEvent.js';
+import { persistTopicFreeEmbeddingsForDocs } from './topicFreeEmbeddingService.js';
 import { buildTopicFreeFromUserContent } from '../utils/interventionTopicFree.js';
 
 const DEFAULT_SESSION_GAP_MINUTES = 45;
@@ -55,7 +56,7 @@ async function findRecentShownContext({ userId, conversationId, interventionId, 
   })
     .sort({ createdAt: -1 })
     .select(
-      'sessionId topicTag topicFree riskLevel assistantMessageId interventionType createdAt',
+      '+topicFreeEmbedding sessionId topicTag topicFree riskLevel assistantMessageId interventionType createdAt',
     )
     .lean();
 
@@ -122,7 +123,10 @@ async function recordSuggestionEventsShown({
     .filter(Boolean);
 
   if (docs.length === 0) return;
-  await ChatInterventionEvent.insertMany(docs, { ordered: false });
+  const inserted = await ChatInterventionEvent.insertMany(docs, { ordered: false });
+  void persistTopicFreeEmbeddingsForDocs(inserted, { updateModel: ChatInterventionEvent }).catch(
+    () => {},
+  );
 }
 
 async function hasShownSuggestionsInActiveSession({ userId, conversationId, now = new Date() }) {
@@ -210,7 +214,7 @@ async function findTopicFreeAffinityEvents({ userId, since, limit = 100 }) {
     topicFree: { $exists: true, $nin: [null, ''] },
     eventType: { $in: ['clicked', 'completed'] },
   })
-    .select('interventionId topicFree eventType')
+    .select('+topicFreeEmbedding interventionId topicFree eventType')
     .sort({ createdAt: -1 })
     .limit(Math.max(1, Math.min(limit, 200)))
     .lean();
@@ -317,6 +321,7 @@ async function recordInterventionEvent({
         : shownCtx?.interventionType || 'technique',
     topicTag,
     topicFree: shownCtx?.topicFree ?? null,
+    topicFreeEmbedding: shownCtx?.topicFreeEmbedding ?? null,
     eventType: ev,
     source,
     riskLevel: riskLevel ? String(riskLevel) : inheritedRiskLevel,

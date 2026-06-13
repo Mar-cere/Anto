@@ -1833,6 +1833,13 @@ export const TECHNIQUES = {
   INTERVENTION_GRAPH_METRICS:
     'shown {shown} · click {clicked} · dismissed {dismissed} · done {completed}',
   INTERVENTION_GRAPH_RATES: 'CTR {ctr} · completion {completion}',
+  INTERVENTION_GRAPH_ENTRY_LINK: 'Your topics and interventions map',
+  INTERVENTION_GRAPH_VIEW_GRAPH: 'Visual map',
+  INTERVENTION_GRAPH_VIEW_LIST: 'List',
+  INTERVENTION_GRAPH_LEGEND:
+    'Line thickness ≈ frequency and completion. Tap a connection for details.',
+  INTERVENTION_GRAPH_LIST_A11Y: 'Graph connection details',
+  INTERVENTION_GRAPH_MAP_A11Y: 'Topics and interventions connection map',
   PSYCHOED_LOADING: 'Loading modules…',
   PSYCHOED_ERROR: 'Could not load modules.',
   PSYCHOED_RETRY: 'Retry',

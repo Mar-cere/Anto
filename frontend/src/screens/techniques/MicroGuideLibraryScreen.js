@@ -81,7 +81,11 @@ const MicroGuideLibraryScreen = () => {
       const id = String(guideId || '').trim();
       if (!id) return;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-      navigation.navigate('MicroGuide', { guideId: id });
+      try {
+        navigation.navigate('MicroGuide', { guideId: id });
+      } catch (e) {
+        if (__DEV__) console.warn('[MicroGuideLibrary] navigate failed', e);
+      }
     },
     [navigation],
   );

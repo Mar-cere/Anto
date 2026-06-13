@@ -6,6 +6,7 @@ import actionSuggestionService, {
   CONTEXTUAL_PSYCHOEDUCATION_RULES,
   resolveContextualPsychoeducationIds,
   resolveSuggestionEmotion,
+  shouldAttachEmotionPsychoeducation,
 } from '../../../services/actionSuggestionService.js';
 import {
   applyPsychoeducationCardTiers,
@@ -63,6 +64,26 @@ describe('chatPsychoeducationSuggestions (#85)', () => {
           'Me desborda el estrés y exploto sin querer',
         ),
       ).toBe('enojo');
+    });
+
+    it('resolveSuggestionEmotion no fuerza ansiedad con insomnio (EN)', () => {
+      expect(
+        resolveSuggestionEmotion('neutral', "I can't sleep and wake up at night"),
+      ).toBe('neutral');
+    });
+
+    it('resolveContextualPsychoeducationIds detecta duelo en inglés', () => {
+      const ids = resolveContextualPsychoeducationIds('I lost my dad last month');
+      expect(ids).toContain('psychoeducation_grief');
+    });
+
+    it('shouldAttachEmotionPsychoeducation enojo desde intensidad 6', () => {
+      expect(shouldAttachEmotionPsychoeducation('enojo', 'Hoy me molestó algo', 6)).toBe(
+        true,
+      );
+      expect(shouldAttachEmotionPsychoeducation('enojo', 'Hoy me molestó algo', 5)).toBe(
+        false,
+      );
     });
 
     it('CONTEXTUAL_PSYCHOEDUCATION_RULES solo referencia ids válidos', () => {

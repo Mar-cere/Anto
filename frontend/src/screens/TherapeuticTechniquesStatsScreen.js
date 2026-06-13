@@ -60,6 +60,7 @@ const DEFAULT_TEXTS = {
   USE_SINGULAR: 'uso',
   USE_PLURAL: 'usos',
   DEV_GRAPH_LINK: 'Grafo de sugerencias del chat (interno)',
+  GRAPH_ENTRY_LINK: 'Tu mapa de temas e intervenciones',
 };
 
 const THERAPEUTIC_STATS_TEXT_MAP = {
@@ -86,6 +87,7 @@ const THERAPEUTIC_STATS_TEXT_MAP = {
   USE_SINGULAR: 'THERAPEUTIC_STATS_USE_SINGULAR',
   USE_PLURAL: 'THERAPEUTIC_STATS_USE_PLURAL',
   DEV_GRAPH_LINK: 'INTERVENTION_GRAPH_DEV_LINK',
+  GRAPH_ENTRY_LINK: 'INTERVENTION_GRAPH_ENTRY_LINK',
 };
 
 const TherapeuticTechniquesStatsScreen = () => {
@@ -221,7 +223,9 @@ const TherapeuticTechniquesStatsScreen = () => {
           borderRadius: 10,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
+          flexDirection: 'row',
           alignItems: 'center',
+          justifyContent: 'center',
         },
         devLinkText: {
           fontSize: 14,
@@ -502,15 +506,22 @@ const TherapeuticTechniquesStatsScreen = () => {
     );
   };
 
-  const renderDevGraphLink = () =>
-    typeof __DEV__ !== 'undefined' && __DEV__ ? (
-      <TouchableOpacity
-        style={styles.devLink}
-        onPress={() => navigation.navigate('InterventionGraph')}
-      >
-        <Text style={styles.devLinkText}>{TEXTS.DEV_GRAPH_LINK}</Text>
-      </TouchableOpacity>
-    ) : null;
+  const renderGraphEntryLink = () => (
+    <TouchableOpacity
+      style={styles.devLink}
+      onPress={() => navigation.navigate('InterventionGraph')}
+      accessibilityRole="button"
+      testID="intervention-graph-entry"
+    >
+      <MaterialCommunityIcons
+        name="graph-outline"
+        size={20}
+        color={colors.primary}
+        style={{ marginRight: 8 }}
+      />
+      <Text style={styles.devLinkText}>{TEXTS.GRAPH_ENTRY_LINK}</Text>
+    </TouchableOpacity>
+  );
 
   // Renderizar contenido
   const renderContent = () => {
@@ -556,7 +567,7 @@ const TherapeuticTechniquesStatsScreen = () => {
             <MaterialCommunityIcons name="chart-line" size={48} color={colors.accent} />
             <Text style={styles.emptyText}>{TEXTS.NO_DATA}</Text>
           </View>
-          {renderDevGraphLink()}
+          {renderGraphEntryLink()}
         </ScrollView>
       );
     }
@@ -581,7 +592,7 @@ const TherapeuticTechniquesStatsScreen = () => {
         {renderByEmotion()}
         {renderByType()}
         {renderUsageTrend()}
-        {renderDevGraphLink()}
+        {renderGraphEntryLink()}
       </ScrollView>
     );
   };
