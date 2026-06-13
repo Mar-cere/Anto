@@ -43,15 +43,19 @@ export async function getSignalConsentForUser(userId) {
 
 export async function updateSignalConsentForUser(userId, patch = {}) {
   const current = await getSignalConsentForUser(userId);
+  const next = normalizeSignalConsent(current);
   const now = new Date();
-  const next = { ...current };
 
   if (patch.typingTelemetry && typeof patch.typingTelemetry.enabled === 'boolean') {
-    next.typingTelemetry.enabled = patch.typingTelemetry.enabled;
-    next.typingTelemetry.enabledAt = patch.typingTelemetry.enabled ? now : null;
+    next.typingTelemetry = {
+      ...next.typingTelemetry,
+      enabled: patch.typingTelemetry.enabled,
+      enabledAt: patch.typingTelemetry.enabled ? now : null,
+    };
   }
 
   if (patch.digitalHealth && typeof patch.digitalHealth === 'object') {
+    next.digitalHealth = { ...next.digitalHealth };
     if (typeof patch.digitalHealth.enabled === 'boolean') {
       next.digitalHealth.enabled = patch.digitalHealth.enabled;
       next.digitalHealth.enabledAt = patch.digitalHealth.enabled ? now : null;
@@ -63,14 +67,21 @@ export async function updateSignalConsentForUser(userId, patch = {}) {
     }
     ['steps', 'sleep', 'screenTime'].forEach((key) => {
       if (typeof patch.digitalHealth[key] === 'boolean') {
+        if (patch.digitalHealth[key] && !next.digitalHealth.enabled) {
+          next.digitalHealth.enabled = true;
+          next.digitalHealth.enabledAt = now;
+        }
         next.digitalHealth[key] = patch.digitalHealth[key];
       }
     });
   }
 
   if (patch.weeklyInsights && typeof patch.weeklyInsights.enabled === 'boolean') {
-    next.weeklyInsights.enabled = patch.weeklyInsights.enabled;
-    next.weeklyInsights.enabledAt = patch.weeklyInsights.enabled ? now : null;
+    next.weeklyInsights = {
+      ...next.weeklyInsights,
+      enabled: patch.weeklyInsights.enabled,
+      enabledAt: patch.weeklyInsights.enabled ? now : null,
+    };
   }
 
   await User.findByIdAndUpdate(userId, { $set: { signalConsent: next } });

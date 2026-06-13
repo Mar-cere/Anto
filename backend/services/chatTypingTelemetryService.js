@@ -1,9 +1,12 @@
 /**
  * Telemetría de tecleo agregada (#215).
  */
+import mongoose from 'mongoose';
 import ChatTypingTelemetryEvent from '../models/ChatTypingTelemetryEvent.js';
+import Conversation from '../models/Conversation.js';
 
 const MIN_DRAFT_MS = 400;
+const DEDUPE_WINDOW_MS = 5000;
 
 export function computeCognitiveLoadScore({
   draftDurationMs = 0,
@@ -27,6 +30,10 @@ export function sanitizeTypingTelemetryPayload(payload = {}) {
   const backspaceRate = Math.max(0, Math.min(Number(payload.backspaceRate) || 0, 1));
   const revisionCount = Math.max(0, Math.min(Number(payload.revisionCount) || 0, 50));
   const charCountFinal = Math.max(0, Math.min(Number(payload.charCountFinal) || 0, 4000));
+  const hasSignal =
+    draftDurationMs >= MIN_DRAFT_MS &&
+    (charCountFinal > 0 || revisionCount > 0 || backspaceRate > 0);
+  if (!hasSignal) return null;
   return {
     draftDurationMs,
     avgFlightTimeMs,
@@ -42,6 +49,31 @@ export function sanitizeTypingTelemetryPayload(payload = {}) {
   };
 }
 
+async function assertConversationOwnedByUser(userId, conversationId) {
+  if (!conversationId) return true;
+  if (!mongoose.Types.ObjectId.isValid(String(conversationId))) return false;
+  const conv = await Conversation.findOne({
+    _id: conversationId,
+    userId,
+  })
+    .select('_id')
+    .lean();
+  return Boolean(conv?._id);
+}
+
+async function findRecentDuplicate({ userId, conversationId, charCountFinal }) {
+  const since = new Date(Date.now() - DEDUPE_WINDOW_MS);
+  const query = {
+    userId,
+    submittedAt: { $gte: since },
+    charCountFinal,
+  };
+  if (conversationId) query.conversationId = conversationId;
+  else query.conversationId = null;
+
+  return ChatTypingTelemetryEvent.findOne(query).select('_id').lean();
+}
+
 export async function recordTypingTelemetryEvent({
   userId,
   conversationId = null,
@@ -50,12 +82,24 @@ export async function recordTypingTelemetryEvent({
 }) {
   if (!userId) return null;
   const sanitized = sanitizeTypingTelemetryPayload(payload);
-  if (sanitized.draftDurationMs < MIN_DRAFT_MS) return null;
+  if (!sanitized) return null;
+
+  if (conversationId) {
+    const owned = await assertConversationOwnedByUser(userId, conversationId);
+    if (!owned) return null;
+  }
+
+  const dup = await findRecentDuplicate({
+    userId,
+    conversationId,
+    charCountFinal: sanitized.charCountFinal,
+  });
+  if (dup?._id) return dup;
 
   return ChatTypingTelemetryEvent.create({
     userId,
     conversationId,
-    sessionId,
+    sessionId: sessionId ? String(sessionId).slice(0, 64) : null,
     ...sanitized,
     submittedAt: new Date(),
   });

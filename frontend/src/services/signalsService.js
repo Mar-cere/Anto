@@ -15,13 +15,18 @@ export async function updateSignalConsent(patch) {
 }
 
 export async function submitTypingTelemetry({ conversationId = null, sessionId = null, metrics }) {
-  if (!metrics) return null;
-  const res = await api.post(ENDPOINTS.SIGNALS_TYPING_TELEMETRY, {
-    conversationId,
-    sessionId,
-    metrics,
-  });
-  return res?.data ?? res;
+  if (!metrics || Number(metrics.draftDurationMs) < 400) return null;
+  try {
+    const res = await api.post(ENDPOINTS.SIGNALS_TYPING_TELEMETRY, {
+      conversationId,
+      sessionId,
+      metrics,
+    });
+    return res?.data ?? res;
+  } catch (error) {
+    if (error?.response?.status === 403) return null;
+    throw error;
+  }
 }
 
 export async function syncDigitalPhenotype(payload = null) {

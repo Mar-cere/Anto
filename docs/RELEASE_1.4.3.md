@@ -42,6 +42,7 @@ Oleada 1.4.3 **completa en `main`**: marco TCC lite inline, continuidad, psicoed
 - API: `GET/PATCH /api/signals/consent`, `POST /api/signals/typing-telemetry`, `POST /api/signals/digital-phenotype/sync`, `GET /api/signals/weekly-insight`
 - Worker: `ENABLE_WEEKLY_PATTERN_INSIGHT` (default on) — tick `WEEKLY_PATTERN_INSIGHT_TICK_MS` (120s)
 - HealthKit / Health Connect: puente frontend `digitalHealthBridge.js` (requiere módulo nativo en dev client)
+- **Blindaje:** rate limits en `/api/signals`, validación weekKey/dayKey, rechazo de payload con texto, source health spoof bloqueado en cliente, dedupe tecleo 5s, cooldown generación informe 60s, verificación ownership conversación
 
 ## Atlas vector search (#126)
 

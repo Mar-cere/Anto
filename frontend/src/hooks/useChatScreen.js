@@ -637,6 +637,27 @@ export function useChatScreen() {
     };
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      (async () => {
+        try {
+          if (await chatService.isGuestChatMode()) {
+            if (!cancelled) setTypingTelemetryEnabled(false);
+            return;
+          }
+          const consent = await signalsService.getSignalConsent();
+          if (!cancelled) {
+            setTypingTelemetryEnabled(consent?.typingTelemetry?.enabled === true);
+          }
+        } catch (_) {}
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, []),
+  );
+
   const handleInputChange = useCallback(
     (text) => {
       if (typingTelemetryEnabled) typingTelemetry.trackChange(text);
@@ -654,10 +675,13 @@ export function useChatScreen() {
     if (messageText === '') return;
     setShowSessionIntentionPrompt(false);
 
-    if (typingTelemetryEnabled) {
+    const isPresetMessage =
+      typeof presetText === 'string' && presetText.trim() !== '' && presetText.trim() !== inputText.trim();
+
+    if (typingTelemetryEnabled && !isPresetMessage) {
       const metrics = typingTelemetry.buildPayload();
       typingTelemetry.resetDraft();
-      if (metrics) {
+      if (metrics && metrics.draftDurationMs >= 400) {
         void (async () => {
           try {
             const convId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
@@ -670,6 +694,8 @@ export function useChatScreen() {
           }
         })();
       }
+    } else if (isPresetMessage) {
+      typingTelemetry.resetDraft();
     }
 
     if (isOffline) {

@@ -12,6 +12,9 @@ import { getInterventionCatalogLabel, getInterventionCatalogEntry } from '../con
 import WeeklyPatternInsight from '../models/WeeklyPatternInsight.js';
 import WeeklyPatternInsightJob from '../models/WeeklyPatternInsightJob.js';
 import { getIsoWeekKey, getPreviousIsoWeekKey, getWeekWindowFromKey } from '../utils/weekKeys.js';
+import { isValidIsoWeekKey, normalizeIsoWeekKey } from '../utils/signalValidators.js';
+
+const GENERATION_COOLDOWN_MS = 60_000;
 
 function insightLabelFromCorrelation(row, language = 'es') {
   const es = {
@@ -135,7 +138,10 @@ export async function generateWeeklyPatternInsight({
   weekKey = null,
   language = 'es',
 }) {
-  const key = weekKey || getPreviousIsoWeekKey();
+  const key = normalizeIsoWeekKey(weekKey, getPreviousIsoWeekKey());
+  if (!key) {
+    throw new Error('invalid_week_key');
+  }
   const window = getWeekWindowFromKey(key);
   if (!userId || !window) {
     throw new Error('invalid_week_or_user');
@@ -237,7 +243,8 @@ export async function generateWeeklyPatternInsight({
 }
 
 export async function scheduleWeeklyPatternInsightJob({ userId, weekKey = null, runAt = null }) {
-  const key = weekKey || getPreviousIsoWeekKey();
+  const key = normalizeIsoWeekKey(weekKey, getPreviousIsoWeekKey());
+  if (!key) return null;
   const when = runAt instanceof Date ? runAt : new Date();
   return WeeklyPatternInsightJob.findOneAndUpdate(
     { userId, weekKey: key },
@@ -250,11 +257,31 @@ export async function scheduleWeeklyPatternInsightJob({ userId, weekKey = null, 
 }
 
 export async function getWeeklyPatternInsight({ userId, weekKey = null, language = 'es' }) {
-  const key = weekKey || getPreviousIsoWeekKey();
-  let doc = await WeeklyPatternInsight.findOne({ userId, weekKey: key }).lean();
-  if (!doc || doc.status !== 'ready') {
-    doc = await generateWeeklyPatternInsight({ userId, weekKey: key, language });
+  const key = normalizeIsoWeekKey(weekKey, getPreviousIsoWeekKey());
+  if (!key) {
+    throw new Error('invalid_week_key');
   }
+
+  let doc = await WeeklyPatternInsight.findOne({ userId, weekKey: key }).lean();
+  if (doc?.status === 'ready') return doc;
+
+  const updatedAtMs = doc?.updatedAt ? new Date(doc.updatedAt).getTime() : 0;
+  if (updatedAtMs && Date.now() - updatedAtMs < GENERATION_COOLDOWN_MS) {
+    return (
+      doc || {
+        userId,
+        weekKey: key,
+        status: 'pending',
+        headline: '',
+        body: '',
+        insights: [],
+        correlations: [],
+        sourceSummary: {},
+      }
+    );
+  }
+
+  doc = await generateWeeklyPatternInsight({ userId, weekKey: key, language });
   return doc;
 }
 

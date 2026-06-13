@@ -2,6 +2,11 @@
  * Fenotipado digital: sync y agregación (#216).
  */
 import DigitalPhenotypeDailySnapshot from '../models/DigitalPhenotypeDailySnapshot.js';
+import {
+  isTrustedPhenotypeSource,
+  isValidDayKey,
+  resolveClientPhenotypeSource,
+} from '../utils/signalValidators.js';
 
 function dayKeyFromDate(date = new Date()) {
   const d = date instanceof Date ? date : new Date(date);
@@ -9,18 +14,22 @@ function dayKeyFromDate(date = new Date()) {
   return d.toISOString().slice(0, 10);
 }
 
-export function sanitizeDigitalPhenotypePayload(payload = {}) {
+export function sanitizeDigitalPhenotypePayload(payload = {}, { fromClient = true } = {}) {
   const dayKey = String(payload.dayKey || dayKeyFromDate() || '').slice(0, 10);
+  if (!isValidDayKey(dayKey)) return null;
+
   const clamp = (value, min, max) => {
     const n = Number(value);
     if (!Number.isFinite(n)) return null;
     return Math.max(min, Math.min(max, n));
   };
-  const source = ['healthkit', 'health_connect', 'google_fit', 'manual', 'stub'].includes(
-    payload.source,
-  )
-    ? payload.source
-    : 'stub';
+
+  let source = String(payload.source || 'stub').trim().toLowerCase();
+  if (fromClient) {
+    source = resolveClientPhenotypeSource(source);
+  } else if (!isTrustedPhenotypeSource(source) && source !== 'manual' && source !== 'stub') {
+    source = 'stub';
+  }
 
   return {
     dayKey,
@@ -33,10 +42,10 @@ export function sanitizeDigitalPhenotypePayload(payload = {}) {
   };
 }
 
-export async function upsertDigitalPhenotypeSnapshot({ userId, payload = {} }) {
+export async function upsertDigitalPhenotypeSnapshot({ userId, payload = {}, fromClient = true } = {}) {
   if (!userId) return null;
-  const sanitized = sanitizeDigitalPhenotypePayload(payload);
-  if (!sanitized.dayKey) return null;
+  const sanitized = sanitizeDigitalPhenotypePayload(payload, { fromClient });
+  if (!sanitized) return null;
 
   const hasSignal =
     sanitized.steps != null ||
