@@ -89,6 +89,17 @@ jest.mock('react-native-health-connect', () => ({
   readRecords: jest.fn(() => Promise.resolve({ records: [] })),
 }));
 
+jest.mock('@sentry/react-native', () => ({
+  init: jest.fn(),
+  captureException: jest.fn(),
+  captureMessage: jest.fn(),
+  addBreadcrumb: jest.fn(),
+  setUser: jest.fn(),
+  setTag: jest.fn(),
+  setContext: jest.fn(),
+  withScope: jest.fn((callback) => callback({ setTag: jest.fn(), setContext: jest.fn() })),
+}));
+
 // Mock axios para userService
 global.mockApiClient = {
   get: jest.fn(),
