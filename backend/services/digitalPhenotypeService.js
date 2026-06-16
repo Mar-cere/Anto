@@ -37,6 +37,7 @@ export function sanitizeDigitalPhenotypePayload(payload = {}, { fromClient = tru
     sleepHours: clamp(payload.sleepHours, 0, 24),
     screenTimeMinutes: clamp(payload.screenTimeMinutes, 0, 1440),
     socialScreenRatio: clamp(payload.socialScreenRatio, 0, 1),
+    activeMinutes: clamp(payload.activeMinutes, 0, 1440),
     inactivityHours: clamp(payload.inactivityHours, 0, 24),
     source,
   };
@@ -51,6 +52,7 @@ export async function upsertDigitalPhenotypeSnapshot({ userId, payload = {}, fro
     sanitized.steps != null ||
     sanitized.sleepHours != null ||
     sanitized.screenTimeMinutes != null ||
+    sanitized.activeMinutes != null ||
     sanitized.inactivityHours != null;
   if (!hasSignal) return null;
 

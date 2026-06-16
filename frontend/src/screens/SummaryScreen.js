@@ -25,6 +25,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useMappedSectionTexts } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
 import { formatMonthKey } from '../utils/monthKeys';
+import AbcMacroPatternsCard from '../components/abc/AbcMacroPatternsCard';
 
 const DEFAULT_TEXTS = {
   TITLE: 'Tu resumen',
@@ -878,6 +879,11 @@ export default function SummaryScreen() {
               ) : (
                 <View>
                   <NarrativeCard narrative={payload?.narrative} sx={styles} texts={TEXTS} />
+                  <AbcMacroPatternsCard
+                    startDate={payload?.period?.start}
+                    endDate={payload?.period?.end}
+                    compact
+                  />
                   <TouchableOpacity
                     style={styles.weeklyInsightBtn}
                     onPress={() => navigation.navigate('WeeklyInsight', insightCta.params)}

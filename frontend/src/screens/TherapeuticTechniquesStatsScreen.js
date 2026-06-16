@@ -32,6 +32,7 @@ import { api, ENDPOINTS } from '../config/api';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING } from '../constants/ui';
 import { useMappedSectionTexts } from '../hooks/useTranslations';
+import AbcMacroPatternsCard from '../components/abc/AbcMacroPatternsCard';
 
 const { width } = Dimensions.get('window');
 
@@ -95,6 +96,16 @@ const TherapeuticTechniquesStatsScreen = () => {
   const TEXTS = useMappedSectionTexts('TECHNIQUES', DEFAULT_TEXTS, THERAPEUTIC_STATS_TEXT_MAP);
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle, resolvedScheme } = useTheme();
+  const abcDateRange = useMemo(() => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 30);
+    return {
+      startDate: start.toISOString().slice(0, 10),
+      endDate: end.toISOString().slice(0, 10),
+    };
+  }, []);
+
   const styles = useMemo(
     () =>
       StyleSheet.create({
@@ -567,6 +578,10 @@ const TherapeuticTechniquesStatsScreen = () => {
             <MaterialCommunityIcons name="chart-line" size={48} color={colors.accent} />
             <Text style={styles.emptyText}>{TEXTS.NO_DATA}</Text>
           </View>
+          <AbcMacroPatternsCard
+            startDate={abcDateRange.startDate}
+            endDate={abcDateRange.endDate}
+          />
           {renderGraphEntryLink()}
         </ScrollView>
       );
@@ -592,6 +607,10 @@ const TherapeuticTechniquesStatsScreen = () => {
         {renderByEmotion()}
         {renderByType()}
         {renderUsageTrend()}
+        <AbcMacroPatternsCard
+          startDate={abcDateRange.startDate}
+          endDate={abcDateRange.endDate}
+        />
         {renderGraphEntryLink()}
       </ScrollView>
     );

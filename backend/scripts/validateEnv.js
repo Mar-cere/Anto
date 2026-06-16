@@ -46,7 +46,16 @@ const OPTIONAL_VARS = {
   'SENTRY_DSN': 'DSN de Sentry (opcional, para error tracking)',
 };
 
+// Variables opcionales 1.4.4 (release Bloque A)
+const RELEASE_1_4_4_VARS = {
+  WEEKLY_INSIGHT_LLM_ENABLED: 'Narrativa LLM en informes semanal/mensual',
+  ATLAS_VECTOR_SEARCH_ENABLED: 'Búsqueda vectorial topicFree en Atlas',
+  ATLAS_TOPIC_FREE_VECTOR_INDEX: 'Nombre del índice vectorial en Atlas',
+  TOPIC_FREE_EMBEDDINGS_ENABLED: 'Embeddings topicFree para grafo semántico',
+};
+
 let hasErrors = false;
+let hasReleaseHints = false;
 let hasWarnings = false;
 
 console.log('🔍 Validando variables de entorno...\n');
@@ -94,6 +103,18 @@ if (optionalCount === 0) {
   console.log('  ℹ️  Ninguna variable opcional configurada');
 }
 
+if (process.env.NODE_ENV === 'production') {
+  console.log('\n📋 Release 1.4.4 (recomendado en producción):');
+  for (const [key, description] of Object.entries(RELEASE_1_4_4_VARS)) {
+    if (process.env[key]) {
+      console.log(`  ✅ ${key} (${description})`);
+    } else {
+      console.log(`  ⚠️  ${key}: NO CONFIGURADA (${description})`);
+      hasReleaseHints = true;
+    }
+  }
+}
+
 // Validaciones adicionales
 console.log('\n🔍 Validaciones Adicionales:');
 
@@ -130,9 +151,13 @@ console.log('\n📊 Resumen:');
 if (hasErrors) {
   console.log('  ❌ Hay errores críticos. Por favor, configura las variables requeridas.');
   process.exit(1);
-} else if (hasWarnings) {
+} else if (hasWarnings || hasReleaseHints) {
   console.log('  ⚠️  Hay advertencias. Algunas funcionalidades pueden no estar disponibles.');
-  console.log('  💡 Revisa las variables recomendadas para habilitar todas las funcionalidades.');
+  if (hasReleaseHints) {
+    console.log('  💡 Revisa variables de Release 1.4.4 para el despliegue completo.');
+  } else {
+    console.log('  💡 Revisa las variables recomendadas para habilitar todas las funcionalidades.');
+  }
   process.exit(0);
 } else {
   console.log('  ✅ Todas las validaciones pasaron correctamente.');

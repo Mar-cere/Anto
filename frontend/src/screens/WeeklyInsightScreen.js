@@ -18,6 +18,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../components/Header';
 import ParticleBackground from '../components/ParticleBackground';
 import SignalConsentPanel from '../components/signals/SignalConsentPanel';
+import DigitalHealthStatusCard from '../components/signals/DigitalHealthStatusCard';
+import AbcMacroPatternsCard from '../components/abc/AbcMacroPatternsCard';
 import { SPACING } from '../constants/ui';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -231,18 +233,30 @@ export default function WeeklyInsightScreen({ navigation }) {
     [colors, insets.top, insets.bottom],
   );
 
+  const abcPatterns = useMemo(() => {
+    const raw = Array.isArray(insight?.abcPatterns) ? insight.abcPatterns : [];
+    return raw.filter((row) => row && (row.summary || row.situationSample));
+  }, [insight?.abcPatterns]);
+
   const rows = useMemo(() => {
     const raw = Array.isArray(insight?.insights) ? insight.insights : [];
+    const skipAbcInsight = abcPatterns.length > 0;
     return raw
       .filter((row) => row && typeof row === 'object')
+      .filter((row) => !(skipAbcInsight && row.type === 'abc_macro_pattern'))
       .map((row) => ({
         type: String(row.type || 'insight'),
         label: String(row.label || '').trim(),
         detail: String(row.detail || '').trim(),
       }))
       .filter((row) => row.label || row.detail);
-  }, [insight?.insights]);
+  }, [insight?.insights, abcPatterns.length]);
   const showBody = Boolean(String(insight?.body || '').trim()) && rows.length === 0;
+  const conductSuggestion = String(insight?.conductSuggestion || '').trim();
+  const extraDisclaimers = useMemo(() => {
+    const raw = Array.isArray(insight?.disclaimers) ? insight.disclaimers : [];
+    return raw.map((d) => String(d || '').trim()).filter(Boolean);
+  }, [insight?.disclaimers]);
 
   return (
     <View style={styles.root}>
@@ -302,7 +316,23 @@ export default function WeeklyInsightScreen({ navigation }) {
               </View>
             ))}
 
-            <Text style={styles.disclaimer}>{copy.disclaimer}</Text>
+            {abcPatterns.length > 0 ? (
+              <AbcMacroPatternsCard patterns={abcPatterns} compact showCta />
+            ) : null}
+
+            {conductSuggestion ? (
+              <View style={styles.card} accessibilityRole="text">
+                <Text style={styles.cardTitle}>
+                  {language === 'en' ? 'Small step to try' : 'Pequeño paso a probar'}
+                </Text>
+                <Text style={styles.cardText}>{conductSuggestion}</Text>
+              </View>
+            ) : null}
+
+            <Text style={styles.disclaimer}>
+              {[copy.disclaimer, ...extraDisclaimers].filter(Boolean).join(' ')}
+            </Text>
+            <DigitalHealthStatusCard compact sourceSummary={insight?.sourceSummary} />
             <SignalConsentPanel compact />
           </>
         ) : null}

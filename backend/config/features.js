@@ -62,6 +62,8 @@ export const features = Object.freeze({
   swagger: resolveSwaggerEnabled(),
   /** Worker informe semanal de patrones (#208 / #217). Default activo salvo `false`. */
   weeklyPatternInsightWorker: envIsNotFalse(process.env.ENABLE_WEEKLY_PATTERN_INSIGHT),
+  /** Narrativa LLM en informes (#208). Opt-in: `WEEKLY_INSIGHT_LLM_ENABLED=true` + OPENAI_API_KEY. */
+  weeklyInsightLlm: process.env.WEEKLY_INSIGHT_LLM_ENABLED === 'true',
   /** Worker continuidad último chat (#4+#47). Default activo salvo `false`. */
   lastSessionSummaryWorker: envIsNotFalse(process.env.ENABLE_LAST_SESSION_SUMMARY),
 });

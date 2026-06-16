@@ -1058,6 +1058,16 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     systemMessage += tccLiteSnippet;
   }
 
+  const phenotypeSnippet = String(contexto.digitalPhenotypePromptSnippet || '').trim();
+  if (phenotypeSnippet) {
+    systemMessage += phenotypeSnippet;
+  }
+
+  const recentAbcSnippet = String(contexto.recentAbcPromptSnippet || '').trim();
+  if (recentAbcSnippet) {
+    systemMessage += recentAbcSnippet;
+  }
+
   if (contexto.crisis?.riskLevel && shouldAttachCrisisContextToPrompt(contexto.crisis.riskLevel)) {
     const crisisPrompt = generateCrisisSystemPrompt(contexto.crisis.riskLevel, contexto.crisis.country || 'GENERAL');
     systemMessage = `${crisisPrompt}\n\n---\n\n${systemMessage}`;

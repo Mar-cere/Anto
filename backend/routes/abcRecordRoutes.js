@@ -10,7 +10,7 @@ import AbcRecord from '../models/AbcRecord.js';
 import { resolveRequestLanguage } from '../utils/apiLanguage.js';
 import { validateBody } from '../utils/apiValidation.js';
 import { abcRecordApiCopy } from '../utils/abcRecordApiCopy.js';
-import { getCreateAbcRecordSchema } from '../utils/abcRecordSchemas.js';
+import { fetchAbcMacroPatterns, toClientAbcPatterns } from '../services/abcMacroPatternService.js';
 import { createRateLimiter } from '../utils/createRateLimiter.js';
 
 const router = express.Router();
@@ -33,6 +33,14 @@ const deleteAbcRecordLimiter = createRateLimiter({
   legacyHeaders: false,
 });
 
+const macroPatternsLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: (req) => abcRecordApiCopy(resolveRequestLanguage(req)).rateLimitCreate,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 router.use(authenticateToken);
 
 const ALLOWED_SORT_FIELDS = new Set(['entryDate', 'createdAt', 'updatedAt']);
@@ -41,6 +49,22 @@ function clampQueryInt(value, { fallback = 0, min = 0, max = 50 } = {}) {
   const parsed = parseInt(value, 10);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.max(min, Math.min(parsed, max));
+}
+
+const MAX_MACRO_WINDOW_MS = 366 * 24 * 60 * 60 * 1000;
+
+function parseBoundedDateRange(startDate, endDate) {
+  const since = startDate ? new Date(startDate) : null;
+  const until = endDate ? new Date(endDate) : null;
+  const safeSince = since && !Number.isNaN(since.getTime()) ? since : undefined;
+  const safeUntil = until && !Number.isNaN(until.getTime()) ? until : undefined;
+  if (safeSince && safeUntil && safeUntil.getTime() < safeSince.getTime()) {
+    return { since: undefined, until: undefined, invalid: true };
+  }
+  if (safeSince && safeUntil && safeUntil.getTime() - safeSince.getTime() > MAX_MACRO_WINDOW_MS) {
+    return { since: undefined, until: undefined, invalid: true };
+  }
+  return { since: safeSince, until: safeUntil, invalid: false };
 }
 
 const findAbcRecordById = async (recordId, userId) => {
@@ -148,6 +172,39 @@ router.get('/', async (req, res) => {
     res.status(500).json({
       success: false,
       error: copy.listError,
+    });
+  }
+});
+
+router.get('/macro-patterns', macroPatternsLimiter, async (req, res) => {
+  const copy = req.apiCopy;
+  try {
+    const userId = req.user.userId;
+    const { startDate, endDate, limit = 80 } = req.query;
+    const { since, until, invalid } = parseBoundedDateRange(startDate, endDate);
+    if (invalid) {
+      return res.status(400).json({ success: false, error: copy.macroPatternsInvalidRange });
+    }
+    const language = resolveRequestLanguage(req);
+
+    const result = await fetchAbcMacroPatterns({
+      userId,
+      since,
+      until,
+      language,
+      limit: clampQueryInt(limit, { fallback: 80, min: 1, max: 100 }),
+    });
+
+    res.json({
+      success: true,
+      recordCount: result.recordCount,
+      patterns: toClientAbcPatterns(result.patterns),
+    });
+  } catch (error) {
+    console.error('Error obteniendo patrones macro ABC:', error);
+    res.status(500).json({
+      success: false,
+      error: copy.macroPatternsError,
     });
   }
 });

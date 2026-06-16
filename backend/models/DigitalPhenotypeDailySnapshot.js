@@ -16,6 +16,7 @@ const digitalPhenotypeDailySnapshotSchema = new mongoose.Schema(
     sleepHours: { type: Number, min: 0, max: 24, default: null },
     screenTimeMinutes: { type: Number, min: 0, default: null },
     socialScreenRatio: { type: Number, min: 0, max: 1, default: null },
+    activeMinutes: { type: Number, min: 0, max: 1440, default: null },
     inactivityHours: { type: Number, min: 0, max: 24, default: null },
     source: {
       type: String,

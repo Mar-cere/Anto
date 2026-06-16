@@ -20,6 +20,8 @@ import {
   normalizeMonthKey,
 } from '../utils/monthKeys.js';
 import { isValidIsoWeekKey, normalizeIsoWeekKey } from '../utils/signalValidators.js';
+import { enrichPatternInsightWithLlm } from './weeklyInsightLlmService.js';
+import { fetchAbcMacroPatterns, toClientAbcPatterns } from './abcMacroPatternService.js';
 
 const GENERATION_COOLDOWN_MS = 60_000;
 
@@ -33,6 +35,7 @@ function insightLabelFromCorrelation(row, language = 'es') {
     phenotype_sleep_prodrome: 'Sueño',
     phenotype_isolation: 'Movimiento y chat',
     phenotype_screen_social: 'Pantalla social',
+    abc_macro_pattern: 'Autorregistro ABC',
   };
   const en = {
     topic_intervention: 'Topic and intervention',
@@ -43,6 +46,7 @@ function insightLabelFromCorrelation(row, language = 'es') {
     phenotype_sleep_prodrome: 'Sleep',
     phenotype_isolation: 'Movement and chat',
     phenotype_screen_social: 'Social screen time',
+    abc_macro_pattern: 'ABC self-monitoring',
   };
   const map = language === 'en' ? en : es;
   return map[row?.type] || row?.type || '';
@@ -235,6 +239,26 @@ async function buildPatternInsightPayload({ userId, since, until, language = 'es
     disclaimer: row.disclaimer || 'pattern_observed',
   }));
 
+  const abcMacro = await fetchAbcMacroPatterns({
+    userId,
+    since,
+    until,
+    language,
+    limit: 80,
+  });
+  const abcPatterns = toClientAbcPatterns(abcMacro.patterns);
+  const topAbc = abcPatterns[0];
+  if (topAbc && insights.length < 6) {
+    insights.unshift({
+      type: 'abc_macro_pattern',
+      label: insightLabelFromCorrelation({ type: 'abc_macro_pattern' }, language),
+      strength: Math.min(1, topAbc.count / 5),
+      detail: topAbc.summary,
+      disclaimer: 'pattern_observed',
+    });
+    if (insights.length > 6) insights.length = 6;
+  }
+
   const headline = buildHeadline(correlations, language, periodKind);
   const body =
     insights.length > 0
@@ -243,12 +267,53 @@ async function buildPatternInsightPayload({ userId, since, until, language = 'es
         ? 'There is not enough signal yet for a strong pattern. Keep using suggestions and techniques when you want.'
         : 'Aún no hay señal suficiente para un patrón sólido. Sigue usando sugerencias y técnicas cuando quieras.';
 
-  return {
+  const phenotypeStats = summarizePhenotypeSeries(phenotypeSeries);
+
+  const basePayload = {
     headline,
     body: body.slice(0, 2000),
     insights,
+    abcPatterns,
     correlations: correlations.slice(0, 12),
-    sourceSummary: { ...summary, chatDaysActive, typingCount: typingAggregate?.count || 0 },
+    sourceSummary: {
+      ...summary,
+      chatDaysActive,
+      typingCount: typingAggregate?.count || 0,
+      ...phenotypeStats,
+    },
+  };
+
+  return await enrichPatternInsightWithLlm({
+    basePayload,
+    correlations,
+    language,
+    periodKind,
+  });
+}
+
+function summarizePhenotypeSeries(series = []) {
+  const rows = Array.isArray(series) ? series : [];
+  const withData = rows.filter(
+    (r) =>
+      r?.steps != null ||
+      r?.sleepHours != null ||
+      r?.screenTimeMinutes != null ||
+      r?.activeMinutes != null,
+  );
+  if (withData.length === 0) {
+    return { phenotypeDaysWithData: 0 };
+  }
+  const avg = (key) => {
+    const vals = withData.map((r) => Number(r[key])).filter(Number.isFinite);
+    if (vals.length === 0) return null;
+    return Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 10) / 10;
+  };
+  return {
+    phenotypeDaysWithData: withData.length,
+    avgSleepHours: avg('sleepHours'),
+    avgSteps: avg('steps'),
+    avgScreenMinutes: avg('screenTimeMinutes'),
+    avgActiveMinutes: avg('activeMinutes'),
   };
 }
 

@@ -44,6 +44,14 @@ describe('sanitizeDigitalPhenotypePayload', () => {
     );
     expect(row.source).toBe('stub');
   });
+
+  it('acepta activeMinutes acotados', () => {
+    const row = sanitizeDigitalPhenotypePayload(
+      { dayKey: '2026-06-02', activeMinutes: 90, source: 'manual' },
+      { fromClient: true },
+    );
+    expect(row.activeMinutes).toBe(90);
+  });
 });
 
 describe('normalizeSignalConsent', () => {

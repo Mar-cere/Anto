@@ -35,6 +35,20 @@ const monthlyPatternInsightSchema = new mongoose.Schema(
     },
     correlations: { type: Array, default: [] },
     sourceSummary: { type: Object, default: {} },
+    abcPatterns: {
+      type: [
+        {
+          situationSample: { type: String, maxlength: 120 },
+          count: { type: Number, min: 0 },
+          summary: { type: String, maxlength: 280 },
+          disclaimer: { type: String, maxlength: 64 },
+        },
+      ],
+      default: [],
+    },
+    conductSuggestion: { type: String, maxlength: 300, default: null },
+    disclaimers: { type: [String], default: [] },
+    llmEnriched: { type: Boolean, default: false },
     generatedAt: { type: Date, default: null },
     lastError: { type: String, maxlength: 500, default: null },
   },

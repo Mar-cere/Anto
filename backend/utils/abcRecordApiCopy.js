@@ -37,6 +37,8 @@ const COPY = {
     joiIntensityMin: 'La intensidad mínima es 1',
     joiIntensityMax: 'La intensidad máxima es 10',
     joiConsequenceMax: 'La consecuencia no puede exceder 1000 caracteres',
+    macroPatternsError: 'Error al obtener patrones ABC',
+    macroPatternsInvalidRange: 'Rango de fechas inválido para patrones ABC',
   },
   en: {
     rateLimitCreate: 'Too many ABC records created. Please try again later.',
@@ -69,6 +71,8 @@ const COPY = {
     joiIntensityMin: 'Minimum intensity is 1',
     joiIntensityMax: 'Maximum intensity is 10',
     joiConsequenceMax: 'Consequence cannot exceed 1000 characters',
+    macroPatternsError: 'Could not load ABC patterns',
+    macroPatternsInvalidRange: 'Invalid date range for ABC patterns',
   },
 };
 

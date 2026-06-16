@@ -13,7 +13,26 @@ import {
   loadTccLiteStateFromConversation,
   saveTccLiteStateToConversation,
 } from './tccLiteConversationStateService.js';
+import { buildDigitalPhenotypeChatSnippet } from './digitalPhenotypeChatContextService.js';
+import { buildRecentAbcChatSnippet } from './recentAbcChatContextService.js';
+import { isChatObservationalContextBlocked } from '../utils/chatObservationalContext.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
+
+const CHAT_CONTEXT_SNIPPET_TIMEOUT_MS = 2500;
+
+async function withTimeout(promise, ms) {
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('phenotype_snippet_timeout')), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 /**
  * Planifica sugerencias, TCC lite y snippets de prompt para un turno.
@@ -31,6 +50,7 @@ export async function planChatTurnEnhancements({
   resumeTccLite = null,
 }) {
   const lang = normalizeApiLanguage(language);
+  const blockObservationalSnippets = isChatObservationalContextBlocked(riskLevel);
   let persistedTccLiteState = null;
   try {
     persistedTccLiteState = await loadTccLiteStateFromConversation(conversationId);
@@ -91,11 +111,45 @@ export async function planChatTurnEnhancements({
     tccLitePlan = { active: false };
   }
 
+  let digitalPhenotypePromptSnippet = null;
+  if (!blockObservationalSnippets) {
+    try {
+      digitalPhenotypePromptSnippet = await withTimeout(
+        buildDigitalPhenotypeChatSnippet({
+          userId,
+          language: lang,
+        }),
+        CHAT_CONTEXT_SNIPPET_TIMEOUT_MS,
+      );
+    } catch {
+      digitalPhenotypePromptSnippet = null;
+    }
+  }
+
+  let recentAbcPromptSnippet = null;
+  if (!blockObservationalSnippets) {
+    try {
+      recentAbcPromptSnippet = await withTimeout(
+        buildRecentAbcChatSnippet({
+          userId,
+          userContent: String(userContent || '').trim(),
+          language: lang,
+          riskLevel,
+        }),
+        CHAT_CONTEXT_SNIPPET_TIMEOUT_MS,
+      );
+    } catch {
+      recentAbcPromptSnippet = null;
+    }
+  }
+
   return {
     suggestionPlan,
     tccLitePlan,
     activeTccProtocolsPromptSnippet,
     persistedTccLiteState,
+    digitalPhenotypePromptSnippet,
+    recentAbcPromptSnippet,
   };
 }
 
@@ -104,6 +158,8 @@ export function buildOpenaiEnhancementSnippets(enhancements) {
     psychoeducationPromptSnippet: enhancements.suggestionPlan?.psychoeducationPromptSnippet || null,
     activeTccProtocolsPromptSnippet: enhancements.activeTccProtocolsPromptSnippet || null,
     tccLitePromptSnippet: enhancements.tccLitePlan?.promptSnippet || null,
+    digitalPhenotypePromptSnippet: enhancements.digitalPhenotypePromptSnippet || null,
+    recentAbcPromptSnippet: enhancements.recentAbcPromptSnippet || null,
   };
 }
 

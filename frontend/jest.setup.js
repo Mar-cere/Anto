@@ -60,6 +60,35 @@ jest.mock('expo-device', () => ({
   osVersion: '15.0',
 }));
 
+jest.mock('react-native-health', () => ({
+  __esModule: true,
+  default: {
+    Constants: {
+      Permissions: {
+        StepCount: 'StepCount',
+        SleepAnalysis: 'SleepAnalysis',
+        AppleExerciseTime: 'AppleExerciseTime',
+      },
+    },
+    initHealthKit: jest.fn((_permissions, callback) => callback(null)),
+    isAvailable: jest.fn((callback) => callback(null, true)),
+    getDailyStepCountSamples: jest.fn((_options, callback) => callback(null, [])),
+    getSleepSamples: jest.fn((_options, callback) => callback(null, [])),
+    getAppleExerciseTime: jest.fn((_options, callback) => callback(null, [])),
+  },
+}));
+
+jest.mock('react-native-health-connect', () => ({
+  SdkAvailabilityStatus: {
+    SDK_AVAILABLE: 3,
+    SDK_AVAILABLE_PROVIDER_UPDATE_REQUIRED: 2,
+  },
+  getSdkStatus: jest.fn(() => Promise.resolve(3)),
+  initialize: jest.fn(() => Promise.resolve(true)),
+  requestPermission: jest.fn(() => Promise.resolve([{ recordType: 'Steps' }])),
+  readRecords: jest.fn(() => Promise.resolve({ records: [] })),
+}));
+
 // Mock axios para userService
 global.mockApiClient = {
   get: jest.fn(),

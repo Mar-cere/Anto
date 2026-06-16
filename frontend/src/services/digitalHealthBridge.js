@@ -1,8 +1,12 @@
 /**
  * Puente de fenotipado digital (#216).
- * MVP: interfaz lista para HealthKit / Health Connect; sync manual/stub hasta módulo nativo.
+ * Delega en módulo nativo por plataforma cuando react-native-health / Health Connect están instalados.
  */
 import { Platform } from 'react-native';
+import {
+  getNativeHealthAvailability,
+  collectNativeDailySnapshot,
+} from './digitalHealthNative';
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -12,7 +16,8 @@ function todayKey() {
  * @returns {Promise<{ available: boolean, platform: string }>}
  */
 export async function getDigitalHealthAvailability() {
-  // Punto de extensión: react-native-health / Health Connect en dev client.
+  const native = await getNativeHealthAvailability();
+  if (native?.available) return native;
   return { available: false, platform: Platform.OS };
 }
 
@@ -22,9 +27,7 @@ export async function getDigitalHealthAvailability() {
 export async function collectDailyPhenotypeSnapshot() {
   const availability = await getDigitalHealthAvailability();
   if (!availability.available) return null;
-
-  // Reservado para integración nativa.
-  return null;
+  return collectNativeDailySnapshot();
 }
 
 /**
@@ -37,6 +40,7 @@ export function buildStubPhenotypeSnapshot(overrides = {}) {
     sleepHours: overrides.sleepHours ?? null,
     screenTimeMinutes: overrides.screenTimeMinutes ?? null,
     socialScreenRatio: overrides.socialScreenRatio ?? null,
+    activeMinutes: overrides.activeMinutes ?? null,
     inactivityHours: overrides.inactivityHours ?? null,
     source: 'stub',
   };

@@ -31,6 +31,14 @@ await jest.unstable_mockModule('../../../services/chatInterventionGraphService.j
   default: { recordSuggestionEventsShown: mockRecordShown },
 }));
 
+await jest.unstable_mockModule('../../../services/digitalPhenotypeChatContextService.js', () => ({
+  buildDigitalPhenotypeChatSnippet: jest.fn().mockResolvedValue(null),
+}));
+
+await jest.unstable_mockModule('../../../services/recentAbcChatContextService.js', () => ({
+  buildRecentAbcChatSnippet: jest.fn().mockResolvedValue(null),
+}));
+
 const {
   planChatTurnEnhancements,
   buildClientTurnPayload,

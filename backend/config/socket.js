@@ -332,6 +332,8 @@ export const setupSocketIO = (server) => {
             psychoeducationPromptSnippet: promptSnippets.psychoeducationPromptSnippet,
             activeTccProtocolsPromptSnippet: promptSnippets.activeTccProtocolsPromptSnippet,
             tccLitePromptSnippet: promptSnippets.tccLitePromptSnippet,
+            digitalPhenotypePromptSnippet: promptSnippets.digitalPhenotypePromptSnippet,
+            recentAbcPromptSnippet: promptSnippets.recentAbcPromptSnippet,
             _promptTelemetry: {
               userId,
               conversationId: conversation._id,

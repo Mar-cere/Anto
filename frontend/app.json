@@ -2,7 +2,7 @@
   "expo": {
     "name": "Anto",
     "slug": "anto",
-    "version": "1.4.3",
+    "version": "1.4.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "anto",
@@ -16,10 +16,12 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anto.app",
-      "buildNumber": "34",
+      "buildNumber": "35",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Necesitamos acceso a tus fotos para que puedas subir imágenes en tu perfil.",
         "NSCameraUsageDescription": "Necesitamos acceso a la cámara para que puedas tomar fotos para tu perfil.",
+        "NSHealthShareUsageDescription": "Anto usa datos agregados de sueño, pasos y actividad para mostrarte patrones observacionales relacionados con tu proceso — solo si lo activas.",
+        "NSHealthUpdateUsageDescription": "Anto no escribe datos de salud; solo lee agregados con tu permiso.",
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDevelopmentRegion": "es",
         "CFBundleLocalizations": ["es", "en"]
@@ -31,18 +33,16 @@
         "backgroundColor": "#E8EDF8"
       },
       "package": "com.anto.app",
-      "versionCode": 20,
+      "versionCode": 21,
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE"
+        "android.permission.health.READ_STEPS",
+        "android.permission.health.READ_SLEEP",
+        "android.permission.health.READ_ACTIVE_CALORIES_BURNED"
       ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
@@ -66,7 +66,15 @@
             "deploymentTarget": "16.0"
           }
         }
-      ]
+      ],
+      [
+        "react-native-health",
+        {
+          "healthSharePermission": "Anto usa datos agregados de sueño, pasos y actividad para mostrarte patrones observacionales relacionados con tu proceso — solo si lo activas.",
+          "healthUpdatePermission": "Anto no escribe datos de salud; solo lee agregados con tu permiso."
+        }
+      ],
+      "expo-health-connect"
     ],
     "runtimeVersion": {
       "policy": "appVersion"
