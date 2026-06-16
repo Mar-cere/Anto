@@ -28,6 +28,8 @@ import { SPACING } from '../constants/ui';
 import { recordInterventionClicked } from '../utils/recordInterventionCompleted';
 import { setPendingTccLiteResume } from '../utils/chatTccLiteResume';
 import chatService from '../services/chatService';
+import { createSessionCommitment } from '../services/sessionCommitmentsService';
+import { useToast } from '../context/ToastContext';
 
 function IntensityBar({ value, colors, sx }) {
   const pct = Math.min(100, Math.max(0, (Number(value) || 0) * 10));
@@ -44,6 +46,7 @@ export default function SessionInsightScreen() {
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle } = useTheme();
   const TEXTS = useSectionTranslations('SESSION_INSIGHT');
+  const { showToast } = useToast();
 
   const routeInsight = route.params?.insight;
   const conversationId = route.params?.conversationId;
@@ -52,6 +55,8 @@ export default function SessionInsightScreen() {
   const [loading, setLoading] = useState(
     route.params?.loading === true && !routeInsight?.eligible,
   );
+  const [commitmentSaving, setCommitmentSaving] = useState(false);
+  const [commitmentSaved, setCommitmentSaved] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -308,6 +313,37 @@ export default function SessionInsightScreen() {
     navigation.navigate(step.screen, step.params || {});
   }, [insight, navigation, finish]);
 
+  const saveCommitment = useCallback(async () => {
+    const step = insight?.suggestedStep;
+    const label = String(step?.label || insight?.headline || '').trim();
+    if (!label || commitmentSaving || commitmentSaved) return;
+    setCommitmentSaving(true);
+    try {
+      const saved = await createSessionCommitment({
+        label,
+        conversationId: conversationId || insight?.conversationId || null,
+        source: 'session_insight',
+        sourceMeta: step?.id ? { interventionId: step.id } : null,
+      });
+      if (saved) {
+        setCommitmentSaved(true);
+        showToast({ message: TEXTS.CTA_COMMITMENT_SAVED, type: 'success' });
+      }
+    } catch (_) {
+      showToast({ message: TEXTS.CTA_SKIP_STEP, type: 'warning' });
+    } finally {
+      setCommitmentSaving(false);
+    }
+  }, [
+    insight,
+    conversationId,
+    commitmentSaving,
+    commitmentSaved,
+    showToast,
+    TEXTS.CTA_COMMITMENT_SAVED,
+    TEXTS.CTA_SKIP_STEP,
+  ]);
+
   const openTccLiteInChat = useCallback(async () => {
     const resume = insight?.tccLiteResume;
     if (!resume?.eligible || !resume.distortionType) {
@@ -456,6 +492,23 @@ export default function SessionInsightScreen() {
               <MaterialCommunityIcons name="chevron-right" size={22} color={colors.primary} />
             </TouchableOpacity>
           </View>
+        ) : null}
+
+        {step ? (
+          <TouchableOpacity
+            style={[styles.ctaSecondary, commitmentSaved && { opacity: 0.6 }]}
+            onPress={saveCommitment}
+            disabled={commitmentSaving || commitmentSaved}
+            accessibilityRole="button"
+          >
+            <Text style={styles.ctaSecondaryText}>
+              {commitmentSaved
+                ? TEXTS.CTA_COMMITMENT_SAVED
+                : commitmentSaving
+                  ? TEXTS.LOADING
+                  : TEXTS.CTA_SAVE_COMMITMENT}
+            </Text>
+          </TouchableOpacity>
         ) : null}
 
         <TouchableOpacity style={styles.ctaPrimary} onPress={finish} accessibilityRole="button">

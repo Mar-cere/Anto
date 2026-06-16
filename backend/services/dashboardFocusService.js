@@ -16,6 +16,7 @@ import cacheService from './cacheService.js';
 import openaiService from './openaiService.js';
 import { computeNextRoutinePushSlot } from './notificationScheduler.js';
 import { getLastSessionSummaryForUser } from './lastSessionSummaryService.js';
+import { listSessionCommitments } from './sessionCommitmentService.js';
 import { buildUserSummary } from './userSummaryService.js';
 import {
   focusCopy,
@@ -86,15 +87,24 @@ async function loadUpcomingTasks(userId, limit = 5) {
 }
 
 async function loadCommitments(userId) {
-  const doc = await UserInsight.findOne({
-    userId: new mongoose.Types.ObjectId(userId)
-  })
-    .select('activeGoals recurringPatterns')
-    .lean();
-  const goals = (doc?.activeGoals || []).map((g) => String(g).trim()).filter(Boolean);
-  const patterns = (doc?.recurringPatterns || []).map((p) => String(p).trim()).filter(Boolean);
-  const merged = [...goals, ...patterns].slice(0, 8);
-  return { goals, patterns, list: merged };
+  const uid = new mongoose.Types.ObjectId(userId);
+  const [sessionItems, insightDoc] = await Promise.all([
+    listSessionCommitments(userId, { status: 'active', limit: 8 }).catch(() => []),
+    UserInsight.findOne({ userId: uid })
+      .select('activeGoals recurringPatterns')
+      .lean(),
+  ]);
+  const goals = (insightDoc?.activeGoals || []).map((g) => String(g).trim()).filter(Boolean);
+  const patterns = (insightDoc?.recurringPatterns || []).map((p) => String(p).trim()).filter(Boolean);
+  const sessionLabels = (sessionItems || []).map((c) => String(c?.label || '').trim()).filter(Boolean);
+  const legacy = [...goals, ...patterns].filter((t) => !sessionLabels.includes(t));
+  const merged = [...sessionLabels, ...legacy].slice(0, 8);
+  return {
+    goals,
+    patterns,
+    list: merged,
+    items: sessionItems || [],
+  };
 }
 
 async function loadLatestScales(userId) {
@@ -591,6 +601,14 @@ export async function buildDashboardFocus(userId, opts = {}) {
           title: firstTask.title,
           dueDate: firstTask.dueDate
         }
-      : null
+      : null,
+    commitments: (commitments.items || []).slice(0, 5).map((c) => ({
+      id: c.id,
+      label: c.label,
+      status: c.status,
+      followUpAt: c.followUpAt,
+      followUpAnswer: c.followUpAnswer,
+      createdAt: c.createdAt,
+    })),
   };
 }

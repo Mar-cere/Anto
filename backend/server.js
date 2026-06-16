@@ -54,6 +54,7 @@ import therapeuticTechniquesRoutes from './routes/therapeuticTechniquesRoutes.js
 import userRoutes from './routes/userRoutes.js';
 import journalRoutes from './routes/journalRoutes.js';
 import abcRecordRoutes from './routes/abcRecordRoutes.js';
+import sessionCommitmentRoutes from './routes/sessionCommitmentRoutes.js';
 import exposurePlanRoutes from './routes/exposurePlanRoutes.js';
 import behavioralActivationRoutes from './routes/behavioralActivationRoutes.js';
 import automaticThoughtRoutes from './routes/automaticThoughtRoutes.js';
@@ -61,7 +62,7 @@ import summaryRoutes from './routes/summaryRoutes.js';
 import signalsRoutes from './routes/signalsRoutes.js';
 
 // Constantes de configuración
-const APP_VERSION = '1.4.4';
+const APP_VERSION = '1.4.5';
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutos
 const RATE_LIMIT_MAX_REQUESTS = 100;
 const ALLOWED_HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
@@ -356,6 +357,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/habits', habitRoutes);
 app.use('/api/journals', journalRoutes);
 app.use('/api/abc-records', abcRecordRoutes);
+app.use('/api/session-commitments', sessionCommitmentRoutes);
 app.use('/api/exposure-plans', exposurePlanRoutes);
 app.use('/api/behavioral-activation-logs', behavioralActivationRoutes);
 app.use('/api/automatic-thought-logs', automaticThoughtRoutes);

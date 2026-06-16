@@ -112,7 +112,7 @@ describe('chatScreenConstants', () => {
       expect(LAYOUT.HEADER_AVATAR_SIZE).toBe(30);
       expect(LAYOUT.MESSAGE_BUBBLE_PADDING).toBe(12);
       expect(LAYOUT.INPUT_MAX_HEIGHT).toBe(100);
-      expect(LAYOUT.MAX_MESSAGE_LENGTH).toBe(500);
+      expect(LAYOUT.MAX_MESSAGE_LENGTH).toBe(12000);
       expect(LAYOUT.FLATLIST_INITIAL_NUM_TO_RENDER).toBe(15);
     });
     it('debe tener constantes de FlatList', () => {

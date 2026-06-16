@@ -34,6 +34,8 @@ export default function ChatOptionsSheet({
   onOpenPrivacy,
   onOpenAiInfo,
   onRequestClearConversation,
+  immersiveMode = false,
+  onToggleImmersiveMode,
 }) {
   const TEXTS = useChatTexts();
   const insets = useSafeAreaInsets();
@@ -167,6 +169,29 @@ export default function ChatOptionsSheet({
               </View>
               <Text style={styles.rowLabel}>{TEXTS.CHAT_OPTIONS_CUSTOMIZE}</Text>
             </TouchableOpacity>
+
+            {onToggleImmersiveMode ? (
+              <TouchableOpacity
+                style={styles.row}
+                onPress={wrap(onToggleImmersiveMode)}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  immersiveMode ? TEXTS.CHAT_OPTIONS_IMMERSIVE_OFF : TEXTS.CHAT_OPTIONS_IMMERSIVE_ON
+                }
+              >
+                <View style={styles.rowIcon}>
+                  <MaterialCommunityIcons
+                    name={immersiveMode ? 'eye-outline' : 'eye-off-outline'}
+                    size={22}
+                    color={chatColors.PRIMARY}
+                  />
+                </View>
+                <Text style={styles.rowLabel}>
+                  {immersiveMode ? TEXTS.CHAT_OPTIONS_IMMERSIVE_OFF : TEXTS.CHAT_OPTIONS_IMMERSIVE_ON}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
 
             <TouchableOpacity
               style={styles.row}

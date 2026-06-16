@@ -252,6 +252,21 @@ function createChatScreenStyles(c, themeColors) {
     textAlign: 'center',
     lineHeight: 18,
   },
+  loadOlderButton: {
+    alignSelf: 'center',
+    marginVertical: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.SCROLL_BUTTON_BORDER,
+    backgroundColor: c.SCROLL_BUTTON_BACKGROUND,
+  },
+  loadOlderText: {
+    color: c.PRIMARY,
+    fontSize: 13,
+    fontWeight: '600',
+  },
   });
 }
 
@@ -313,6 +328,11 @@ const ChatScreen = () => {
     tccLiteAtHandoff,
     handleOpenTccLiteAtHandoff,
     handleDismissTccLiteAtHandoff,
+    historyHasMore,
+    loadingOlderMessages,
+    loadOlderMessages,
+    immersiveMode,
+    toggleImmersiveMode,
   } = useChatScreen();
   const feedbackTargetId = useMemo(
     () => getFeedbackTargetMessageId(messages, chatFeedbackEnabled),
@@ -493,6 +513,23 @@ const ChatScreen = () => {
     [chatColors.PRIMARY, styles, TEXTS.EMPTY, TEXTS.EMPTY_KICKER, TEXTS.EMPTY_SUBTITLE],
   );
 
+  const listHeaderComponent = useCallback(() => {
+    if (!historyHasMore) return null;
+    return (
+      <TouchableOpacity
+        style={styles.loadOlderButton}
+        onPress={loadOlderMessages}
+        disabled={loadingOlderMessages}
+        accessibilityRole="button"
+        accessibilityLabel={TEXTS.LOAD_OLDER_MESSAGES}
+      >
+        <Text style={styles.loadOlderText}>
+          {loadingOlderMessages ? TEXTS.LOAD_OLDER_LOADING : TEXTS.LOAD_OLDER_MESSAGES}
+        </Text>
+      </TouchableOpacity>
+    );
+  }, [historyHasMore, loadingOlderMessages, loadOlderMessages, styles, TEXTS]);
+
   return (
     <View style={styles.container}>
       <Image
@@ -500,12 +537,8 @@ const ChatScreen = () => {
         style={styles.backgroundImage}
         resizeMode="cover"
       />
-      <ParticleBackground />
-      <StatusBar
-        translucent
-        backgroundColor="transparent"
-        barStyle={statusBarStyle}
-      />
+      {immersiveMode ? null : <ParticleBackground />}
+      <StatusBar translucent backgroundColor="transparent" barStyle={statusBarStyle} />
 
       <ChatHeader onBack={handleBack} onOpenMenu={() => setShowChatOptions(true)} />
 
@@ -517,6 +550,8 @@ const ChatScreen = () => {
         onOpenPrivacy={handleOpenAIDetails}
         onOpenAiInfo={() => setShowAIDisclosure(true)}
         onRequestClearConversation={() => setShowClearModal(true)}
+        immersiveMode={immersiveMode}
+        onToggleImmersiveMode={toggleImmersiveMode}
       />
 
       <OfflineBanner />
@@ -529,7 +564,7 @@ const ChatScreen = () => {
         retryLabel={TEXTS.OFFLINE_PENDING_RETRY}
       />
 
-      {trialInfo?.isInTrial && !trialBannerDismissed && (
+      {trialInfo?.isInTrial && !trialBannerDismissed && !immersiveMode && (
         <TrialBanner
           daysRemaining={trialInfo.daysRemaining}
           hoursRemaining={trialInfo.hoursRemaining}
@@ -596,6 +631,7 @@ const ChatScreen = () => {
             windowSize={LAYOUT.FLATLIST_WINDOW_SIZE}
             maxToRenderPerBatch={LAYOUT.FLATLIST_MAX_TO_RENDER_PER_BATCH}
             ListEmptyComponent={listEmptyComponent}
+            ListHeaderComponent={listHeaderComponent}
             ListFooterComponent={
               isTyping && !messages.some((m) => (m.metadata?.streaming && m.role === 'assistant'))
                 ? ChatTypingIndicator
@@ -613,17 +649,21 @@ const ChatScreen = () => {
         onSkip={skipSessionIntention}
       />
 
-      <TccLiteAtHandoffStrip
-        atHandoff={showTccLiteHandoff ? tccLiteAtHandoff : null}
-        onOpen={handleOpenTccLiteAtHandoff}
-        onDismiss={handleDismissTccLiteAtHandoff}
-      />
+      {!immersiveMode ? (
+        <TccLiteAtHandoffStrip
+          atHandoff={showTccLiteHandoff ? tccLiteAtHandoff : null}
+          onOpen={handleOpenTccLiteAtHandoff}
+          onDismiss={handleDismissTccLiteAtHandoff}
+        />
+      ) : null}
 
-      <TccContinuityStrip
-        items={visibleTccContinuityItems}
-        onOpen={handleOpenTccContinuityItem}
-        onDismiss={handleDismissTccContinuityItem}
-      />
+      {!immersiveMode ? (
+        <TccContinuityStrip
+          items={visibleTccContinuityItems}
+          onOpen={handleOpenTccContinuityItem}
+          onDismiss={handleDismissTccContinuityItem}
+        />
+      ) : null}
 
       <ChatInput
         value={inputText}

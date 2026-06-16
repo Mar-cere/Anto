@@ -143,6 +143,12 @@ export function useChatScreen() {
   const sendRequestInFlightRef = useRef(false);
   const flushingOfflineRef = useRef(false);
   const prevIsOfflineRef = useRef(null);
+  const historyPageRef = useRef(1);
+  const activeStreamAbortRef = useRef(null);
+  const streamAbortControllerRef = useRef(null);
+  const [historyHasMore, setHistoryHasMore] = useState(false);
+  const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
+  const [immersiveMode, setImmersiveMode] = useState(false);
   /** Evita bucles de reintento silencioso ante STREAM_INCOMPLETE. */
   const streamIncompleteRetryStateRef = useRef({
     key: null,
@@ -165,6 +171,43 @@ export function useChatScreen() {
   useEffect(() => {
     textsRef.current = TEXTS;
   }, [TEXTS]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(STORAGE_KEYS.CHAT_IMMERSIVE_MODE);
+        setImmersiveMode(raw === 'true');
+      } catch (_) {
+        setImmersiveMode(false);
+      }
+    })();
+  }, []);
+
+  const cancelActiveStream = useCallback(() => {
+    activeStreamAbortRef.current?.();
+    activeStreamAbortRef.current = null;
+    streamAbortControllerRef.current?.abort();
+    streamAbortControllerRef.current = null;
+  }, []);
+
+  const applyMessagePagination = useCallback((pagination) => {
+    if (!pagination || typeof pagination.page !== 'number' || typeof pagination.pages !== 'number') {
+      setHistoryHasMore(false);
+      return;
+    }
+    historyPageRef.current = pagination.page;
+    setHistoryHasMore(pagination.page < pagination.pages);
+  }, []);
+
+  const toggleImmersiveMode = useCallback(async () => {
+    const next = !immersiveMode;
+    setImmersiveMode(next);
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.CHAT_IMMERSIVE_MODE, next ? 'true' : 'false');
+    } catch (_) {
+      /* noop */
+    }
+  }, [immersiveMode]);
 
   const scrollToBottom = useCallback((animated = true, options = {}) => {
     const force = options.force === true;
@@ -284,6 +327,7 @@ export function useChatScreen() {
         return timeA - timeB;
       });
       setMessages(finalizeLoadedChatMessages(uniqueMessages, appLanguage));
+      if (flags?.pagination) applyMessagePagination(flags.pagination);
       if (isRegistered) {
         const userCount = uniqueMessages.filter((m) => m.type !== 'quickReplies' && m.role === MESSAGE_ROLES.USER).length;
         setShowSessionIntentionPrompt(userCount === 0 && !sessionIntentionMeta);
@@ -316,7 +360,10 @@ export function useChatScreen() {
         if (conversationId) {
           const pack = await chatService.getMessages(conversationId);
           if (
-            dedupeAndSetMessages(pack.messages, pack.sessionIntention, { isRegistered: true })
+            dedupeAndSetMessages(pack.messages, pack.sessionIntention, {
+              isRegistered: true,
+              pagination: pack.pagination,
+            })
           )
             return;
         }
@@ -330,7 +377,7 @@ export function useChatScreen() {
               dedupeAndSetMessages(
                 retryPack.messages,
                 retryPack.sessionIntention,
-                { isRegistered: true },
+                { isRegistered: true, pagination: retryPack.pagination },
               )
             )
               return;
@@ -442,7 +489,47 @@ export function useChatScreen() {
         scrollToBottomStableRef.current?.(false, { force: true });
       });
     }
-  }, [navigation, route.params?.startGuest, route.params?.openConversationId]);
+  }, [navigation, route.params?.startGuest, route.params?.openConversationId, applyMessagePagination]);
+
+  const loadOlderMessages = useCallback(async () => {
+    if (loadingOlderMessages || !historyHasMore) return;
+    if (await chatService.isGuestChatMode()) return;
+    const cid = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+    if (!cid || !isValidMongoObjectId24(cid)) return;
+    const nextPage = historyPageRef.current + 1;
+    setLoadingOlderMessages(true);
+    try {
+      const appLanguage = await getAppLanguage();
+      const pack = await chatService.getMessages(cid, { page: nextPage });
+      const older = Array.isArray(pack.messages) ? pack.messages : [];
+      if (!older.length) {
+        setHistoryHasMore(false);
+        return;
+      }
+      applyMessagePagination(pack.pagination);
+      setMessages((prev) => {
+        const merged = [...older, ...prev];
+        const unique = merged.reduce((acc, message) => {
+          const messageId = message._id || message.id;
+          if (!messageId) return acc;
+          const exists = acc.some((msg) => msg._id === messageId || msg.id === messageId);
+          if (!exists) acc.push(message);
+          return acc;
+        }, []);
+        unique.sort((a, b) => {
+          const timeA = new Date(a.createdAt || a.metadata?.timestamp || 0).getTime();
+          const timeB = new Date(b.createdAt || b.metadata?.timestamp || 0).getTime();
+          return timeA - timeB;
+        });
+        return finalizeLoadedChatMessages(unique, appLanguage);
+      });
+      stickToBottomRef.current = false;
+    } catch (_) {
+      /* silencioso */
+    } finally {
+      setLoadingOlderMessages(false);
+    }
+  }, [loadingOlderMessages, historyHasMore, applyMessagePagination]);
 
   const skipSessionIntention = useCallback(() => {
     setShowSessionIntentionPrompt(false);
@@ -806,8 +893,16 @@ export function useChatScreen() {
         pendingTccLiteResumeRef.current = resumePayload;
       }
 
+      cancelActiveStream();
+      const streamController = new AbortController();
+      streamAbortControllerRef.current = streamController;
+
       await chatService.sendMessageStream(messageText, {
         resumeTccLite: resumePayload,
+        signal: streamController.signal,
+        registerAbort: (fn) => {
+          activeStreamAbortRef.current = fn;
+        },
         onChunk(content) {
           pendingChunk += content;
           if (!flushTimer) {
@@ -902,6 +997,9 @@ export function useChatScreen() {
         },
       });
     } catch (err) {
+      if (extractErrorCode(err) === 'ABORTED' || err?.name === 'AbortError') {
+        return;
+      }
       console.error('Error al enviar mensaje:', err);
 
       // Limpiar flush pendiente si hubo error.
@@ -1155,11 +1253,13 @@ export function useChatScreen() {
       scrollToBottom(true, { force: true });
     } finally {
       setIsTyping(false);
+      activeStreamAbortRef.current = null;
+      streamAbortControllerRef.current = null;
     }
     } finally {
       sendRequestInFlightRef.current = false;
     }
-  }, [inputText, scrollToBottom, isConnected, isOffline, navigation, guestQuota, showToast, typingTelemetryEnabled, typingTelemetry]);
+  }, [inputText, scrollToBottom, isConnected, isOffline, navigation, guestQuota, showToast, typingTelemetryEnabled, typingTelemetry, cancelActiveStream]);
 
   handleSendRef.current = handleSend;
 
@@ -1603,6 +1703,7 @@ export function useChatScreen() {
           clearTimeout(contentSizeScrollTimerRef.current);
           contentSizeScrollTimerRef.current = null;
         }
+        cancelActiveStream();
         void scheduleLastSessionSummaryDeferred();
         setShowSessionIntentionPrompt(false);
       };
@@ -1612,6 +1713,7 @@ export function useChatScreen() {
       initializeConversation,
       offerGuestHandoffIfPending,
       scheduleLastSessionSummaryDeferred,
+      cancelActiveStream,
     ])
   );
 
@@ -1667,5 +1769,10 @@ export function useChatScreen() {
     tccLiteAtHandoff,
     handleOpenTccLiteAtHandoff,
     handleDismissTccLiteAtHandoff,
+    historyHasMore,
+    loadingOlderMessages,
+    loadOlderMessages,
+    immersiveMode,
+    toggleImmersiveMode,
   };
 }

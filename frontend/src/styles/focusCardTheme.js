@@ -198,6 +198,51 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
       fontSize: 13,
       color: t.FOCUS_META_SOFT,
     },
+    commitmentsBlock: {
+      marginBottom: 18,
+      paddingTop: 12,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: t.FOCUS_BORDER_SUBTLE,
+    },
+    commitmentRow: {
+      marginBottom: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderRadius: 12,
+      backgroundColor: rowBg,
+    },
+    commitmentLabel: {
+      color: colors.text,
+      fontSize: 14,
+      lineHeight: 20,
+      fontWeight: '500',
+    },
+    commitmentActions: {
+      marginTop: 8,
+    },
+    commitmentPrompt: {
+      fontSize: 12,
+      color: t.FOCUS_META,
+      marginBottom: 8,
+    },
+    commitmentButtons: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    commitmentChip: {
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+      borderRadius: 16,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.FOCUS_ACCENT_BORDER,
+      backgroundColor: colors.accentLineSoft,
+    },
+    commitmentChipText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.primary,
+    },
     cta: {
       flexDirection: 'row',
       alignItems: 'center',

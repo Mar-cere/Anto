@@ -9,6 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import { createDashboardFocusStyles } from '../styles/focusCardTheme';
+import { updateSessionCommitment } from '../services/sessionCommitmentsService';
 
 const COMPACT_WIDTH = 400;
 
@@ -127,7 +128,14 @@ function normalizePreloadedChatCopy(reminder, language, DASH) {
   return reminder;
 }
 
-const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation, onOpenBehavioralActivation, onOpenExposureHierarchy }) => {
+const DashboardFocusCard = ({
+  data,
+  onOpenChat,
+  onOpenConversation,
+  onOpenBehavioralActivation,
+  onOpenExposureHierarchy,
+  onCommitmentsChanged,
+}) => {
   const DASH = useSectionTranslations('DASH');
   const { language } = useLanguage();
   const { width } = useWindowDimensions();
@@ -152,6 +160,20 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation, onOpenBehavi
   const nextTask = data?.nextTask;
   const baWeekNext = data?.baWeekNext;
   const exposureNext = data?.exposureNext;
+  const commitments = Array.isArray(data?.commitments) ? data.commitments : [];
+
+  const handleCommitmentAnswer = useCallback(
+    async (id, answer) => {
+      if (!id) return;
+      try {
+        await updateSessionCommitment(id, { followUpAnswer: answer });
+        onCommitmentsChanged?.();
+      } catch (_) {
+        /* silencioso */
+      }
+    },
+    [onCommitmentsChanged],
+  );
 
   const baWeekCopy = useMemo(() => {
     if (!baWeekNext) return null;
@@ -405,6 +427,47 @@ const DashboardFocusCard = ({ data, onOpenChat, onOpenConversation, onOpenBehavi
           {nextTask.dueDate ? (
             <Text style={styles.nextTaskDue}>{formatDue(nextTask.dueDate, language)}</Text>
           ) : null}
+        </View>
+      ) : null}
+
+      {commitments.length > 0 ? (
+        <View style={styles.commitmentsBlock}>
+          <Text style={styles.nextTaskLabel}>{DASH.FOCUS_COMMITMENTS}</Text>
+          {commitments.map((item) => (
+            <View key={item.id} style={styles.commitmentRow}>
+              <Text style={styles.commitmentLabel} numberOfLines={2}>
+                {item.label}
+              </Text>
+              {item.followUpAnswer === 'pending' ? (
+                <View style={styles.commitmentActions}>
+                  <Text style={styles.commitmentPrompt}>{DASH.FOCUS_COMMITMENT_FOLLOW_UP}</Text>
+                  <View style={styles.commitmentButtons}>
+                    <TouchableOpacity
+                      onPress={() => handleCommitmentAnswer(item.id, 'yes')}
+                      style={styles.commitmentChip}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.commitmentChipText}>{DASH.FOCUS_COMMITMENT_YES}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => handleCommitmentAnswer(item.id, 'partial')}
+                      style={styles.commitmentChip}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.commitmentChipText}>{DASH.FOCUS_COMMITMENT_PARTIAL}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => handleCommitmentAnswer(item.id, 'no')}
+                      style={styles.commitmentChip}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.commitmentChipText}>{DASH.FOCUS_COMMITMENT_NO}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : null}
+            </View>
+          ))}
         </View>
       ) : null}
 

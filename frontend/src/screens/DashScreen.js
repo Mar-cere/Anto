@@ -867,6 +867,7 @@ const DashScreen = () => {
             onOpenConversation={openConversationFromFocus}
             onOpenBehavioralActivation={openBehavioralActivationFromFocus}
             onOpenExposureHierarchy={openExposureFromFocus}
+            onCommitmentsChanged={refreshHomeDataOnFocus}
           />
           {error && (
             <ErrorMessage

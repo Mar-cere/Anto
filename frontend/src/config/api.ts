@@ -75,6 +75,8 @@ export const ENDPOINTS = {
   ABC_RECORD_BY_ID: (id: string) => `/api/abc-records/${id}`,
   ABC_RECORDS_EXPORT: '/api/abc-records/export',
   ABC_RECORDS_MACRO_PATTERNS: '/api/abc-records/macro-patterns',
+  SESSION_COMMITMENTS: '/api/session-commitments',
+  SESSION_COMMITMENT_BY_ID: (id: string) => `/api/session-commitments/${id}`,
   EXPOSURE_PLANS: '/api/exposure-plans',
   EXPOSURE_PLAN_BY_ID: (id: string) => `/api/exposure-plans/${id}`,
   EXPOSURE_PLAN_ATTEMPTS: (id: string) => `/api/exposure-plans/${id}/attempts`,

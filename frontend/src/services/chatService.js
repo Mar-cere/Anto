@@ -277,7 +277,7 @@ async function postGuestMessage(text, conversationId, token, language) {
   return data;
 }
 
-export const sendMessageStream = async (text, { onChunk, onDone, resumeTccLite } = {}) => {
+export const sendMessageStream = async (text, { onChunk, onDone, resumeTccLite, signal, registerAbort } = {}) => {
   if (await isGuestChatMode()) {
     const guestLang = await getAppLanguage();
     const conversationId = await AsyncStorage.getItem(GUEST_KEYS.GUEST_CONVERSATION_ID);
@@ -341,11 +341,11 @@ export const sendMessageStream = async (text, { onChunk, onDone, resumeTccLite }
   // Web: fetch + getReader o parseo del cuerpo completo.
   const isNative = Platform.OS === 'ios' || Platform.OS === 'android';
   if (isNative) {
-    await postChatSseWithXHR({ url, headers, body, onChunk, onDone });
+    await postChatSseWithXHR({ url, headers, body, onChunk, onDone, signal, registerAbort });
     return;
   }
 
-  await streamChatSseWithFetch({ url, headers, body, onChunk, onDone });
+  await streamChatSseWithFetch({ url, headers, body, onChunk, onDone, signal, registerAbort });
 };
 
 // Registrar callbacks (mantener para compatibilidad)
@@ -712,15 +712,19 @@ export const scheduleLastSessionSummary = async (conversationId, options = {}) =
   }
 };
 
-/** Obtiene mensajes y meta de conversación. */
-export const getMessages = async (conversationId) => {
+/** Obtiene mensajes y meta de conversación (paginado: page 1 = más recientes). */
+export const getMessages = async (conversationId, { page = 1, limit = 50 } = {}) => {
   try {
-    const response = await apiClient.get(`/api/chat/conversations/${conversationId}`);
+    const response = await apiClient.get(`/api/chat/conversations/${conversationId}`, {
+      page: String(page),
+      limit: String(limit),
+    });
     const rawIntention = response.sessionIntention ?? null;
     return {
       messages: response.messages ?? [],
       sessionIntention: isValidSessionIntentionId(rawIntention) ? String(rawIntention).trim() : null,
       tccLite: response.tccLite ?? null,
+      pagination: response.pagination ?? null,
     };
   } catch (error) {
     const status = error?.response?.status;
@@ -729,7 +733,7 @@ export const getMessages = async (conversationId) => {
       await clearPersistedChatSession();
     }
     console.error('Error al obtener mensajes:', error);
-    return { messages: [], sessionIntention: null, tccLite: null };
+    return { messages: [], sessionIntention: null, tccLite: null, pagination: null };
   }
 };
 

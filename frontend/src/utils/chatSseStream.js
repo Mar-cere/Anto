@@ -106,6 +106,8 @@ export function postChatSseWithXHR({
   onChunk,
   onDone,
   timeoutMs = DEFAULT_STREAM_TIMEOUT_MS,
+  signal,
+  registerAbort,
 }) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -114,6 +116,24 @@ export function postChatSseWithXHR({
     let finished = false;
     let sawDone = false;
     let accumulated = '';
+
+    const abortRequest = () => {
+      if (finished) return;
+      try {
+        xhr.abort();
+      } catch (_) {
+        /* noop */
+      }
+    };
+
+    if (registerAbort) registerAbort(abortRequest);
+    if (signal) {
+      if (signal.aborted) {
+        abortRequest();
+        return;
+      }
+      signal.addEventListener('abort', abortRequest, { once: true });
+    }
 
     const wrapChunk =
       onChunk != null
@@ -131,6 +151,10 @@ export function postChatSseWithXHR({
     const fail = (err) => {
       if (finished) return;
       finished = true;
+      if (err?.code === 'ABORTED') {
+        resolve();
+        return;
+      }
       reject(err);
     };
 
@@ -251,9 +275,26 @@ export async function streamChatSseWithFetch({
   onChunk,
   onDone,
   timeoutMs = DEFAULT_STREAM_TIMEOUT_MS,
+  signal,
+  registerAbort,
 }) {
   const controller = new AbortController();
   const tid = setTimeout(() => controller.abort(), timeoutMs);
+  const abortRequest = () => {
+    try {
+      controller.abort();
+    } catch (_) {
+      /* noop */
+    }
+  };
+  if (registerAbort) registerAbort(abortRequest);
+  if (signal) {
+    if (signal.aborted) {
+      clearTimeout(tid);
+      return;
+    }
+    signal.addEventListener('abort', abortRequest, { once: true });
+  }
   let response;
   try {
     response = await fetch(url, {
@@ -264,6 +305,7 @@ export async function streamChatSseWithFetch({
     });
   } catch (e) {
     if (e?.name === 'AbortError') {
+      if (signal?.aborted) return;
       const err = new Error('Tiempo de espera agotado (stream)');
       err.code = 'ETIMEDOUT';
       throw err;

@@ -177,6 +177,7 @@ export function useSessionIntentionOptions() {
 export const STORAGE_KEYS = {
   CONVERSATION_ID: 'currentConversationId',
   TRIAL_BANNER_DISMISSED: 'trialBannerDismissed',
+  CHAT_IMMERSIVE_MODE: 'chatImmersiveModeV1',
   /** Bump si cambia el texto legal/transparencia del modal (vuelve a mostrarse una vez). */
   AI_DISCLOSURE_ACK: 'aiDisclosureAcceptedV3',
   ...GUEST_CHAT_STORAGE_KEYS,
@@ -260,7 +261,7 @@ export const LAYOUT = {
   TYPING_DOT_MARGIN_HORIZONTAL: 2,
   KEYBOARD_VERTICAL_OFFSET_IOS: 10,
   KEYBOARD_VERTICAL_OFFSET_ANDROID: 0,
-  MAX_MESSAGE_LENGTH: 500,
+  MAX_MESSAGE_LENGTH: 12000,
   SCROLL_EVENT_THROTTLE: 16,
   FLATLIST_INITIAL_NUM_TO_RENDER: 15,
   FLATLIST_WINDOW_SIZE: 10,
