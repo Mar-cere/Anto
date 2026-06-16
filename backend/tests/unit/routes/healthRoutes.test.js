@@ -19,7 +19,6 @@ describe('Health Routes', () => {
       const response = await request(app)
         .get('/api/health');
 
-      // Puede ser 200 o 503 dependiendo del estado de MongoDB
       expect([200, 503]).toContain(response.status);
       expect(response.body).toHaveProperty('status');
       expect(response.body).toHaveProperty('timestamp');
@@ -27,6 +26,10 @@ describe('Health Routes', () => {
       expect(response.body).toHaveProperty('database');
       expect(response.body).toHaveProperty('environment');
       expect(response.body).toHaveProperty('version');
+      expect(response.body).toHaveProperty('dependencies');
+      expect(response.body.dependencies).toHaveProperty('openai');
+      expect(response.body.dependencies).toHaveProperty('atlas');
+      expect(response.body).toHaveProperty('workers');
     });
 
     it('debe retornar información de salud con estado de base de datos', async () => {

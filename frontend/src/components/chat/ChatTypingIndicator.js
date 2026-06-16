@@ -94,7 +94,7 @@ export default function ChatTypingIndicator() {
   );
 
   return (
-    <View style={styles.typingContainer}>
+    <View style={styles.typingContainer} testID="chat-typing-indicator">
       <View style={styles.typingBubble}>
         <View style={styles.typingDotsContainer}>
           {TYPING_ANIMATION_DELAYS.map((delay, index) => (

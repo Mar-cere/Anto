@@ -34,6 +34,7 @@ import {
   getOfflinePendingMessage,
   setOfflinePendingMessage as setOfflinePendingMessageStorage,
 } from '../services/chatOfflinePending';
+import { captureChatError } from '../utils/sentry';
 import { useToast } from '../context/ToastContext';
 import { isValidSessionIntentionId } from '../constants/sessionIntention';
 import { recordInterventionClicked, recordInterventionDismissed } from '../utils/recordInterventionCompleted';
@@ -1241,6 +1242,11 @@ export function useChatScreen() {
         setIsTyping(false);
         return;
       }
+
+      captureChatError(err, {
+        code: backendCode || err?.name,
+        phase: 'send_message_stream',
+      });
 
       setMessages((prev) => [
         ...prev,

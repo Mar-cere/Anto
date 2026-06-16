@@ -19,6 +19,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
+import { captureBoundaryError } from '../utils/sentry';
 
 // Constantes
 const DEFAULT_TEXTS = {
@@ -58,10 +59,7 @@ class ErrorBoundary extends React.Component {
       errorInfo,
     });
 
-    // Aquí podrías enviar el error a un servicio de logging como Sentry
-    // if (Sentry) {
-    //   Sentry.captureException(error, { extra: errorInfo });
-    // }
+    captureBoundaryError(error, errorInfo);
   }
 
   handleRetry = () => {

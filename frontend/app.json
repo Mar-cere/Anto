@@ -2,7 +2,7 @@
   "expo": {
     "name": "Anto",
     "slug": "anto",
-    "version": "1.4.5",
+    "version": "1.4.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "anto",
@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anto.app",
-      "buildNumber": "36",
+      "buildNumber": "37",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Necesitamos acceso a tus fotos para que puedas subir imágenes en tu perfil.",
         "NSCameraUsageDescription": "Necesitamos acceso a la cámara para que puedas tomar fotos para tu perfil.",
@@ -24,7 +24,10 @@
         "NSHealthUpdateUsageDescription": "Anto no escribe datos de salud; solo lee agregados con tu permiso.",
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDevelopmentRegion": "es",
-        "CFBundleLocalizations": ["es", "en"]
+        "CFBundleLocalizations": [
+          "es",
+          "en"
+        ]
       }
     },
     "android": {
@@ -33,7 +36,7 @@
         "backgroundColor": "#E8EDF8"
       },
       "package": "com.anto.app",
-      "versionCode": 22,
+      "versionCode": 23,
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
@@ -74,7 +77,8 @@
           "healthUpdatePermission": "Anto no escribe datos de salud; solo lee agregados con tu permiso."
         }
       ],
-      "expo-health-connect"
+      "expo-health-connect",
+      "@sentry/react-native"
     ],
     "runtimeVersion": {
       "policy": "appVersion"

@@ -26,6 +26,10 @@ import { performanceMiddleware } from './middleware/performance.js';
 import { ensureIndexes } from './middleware/queryOptimizer.js';
 import logger from './utils/logger.js';
 import { initializeSentry } from './utils/sentry.js';
+import {
+  buildPublicHealthSnapshot,
+  getHealthHttpStatus,
+} from './services/healthProbeService.js';
 import { enqueueEmail } from './services/emailQueueService.js';
 import { notifyFatalError } from './services/errorAlertService.js';
 
@@ -62,7 +66,7 @@ import summaryRoutes from './routes/summaryRoutes.js';
 import signalsRoutes from './routes/signalsRoutes.js';
 
 // Constantes de configuración
-const APP_VERSION = '1.4.5';
+const APP_VERSION = '1.4.6';
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutos
 const RATE_LIMIT_MAX_REQUESTS = 100;
 const ALLOWED_HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
@@ -141,31 +145,16 @@ app.get('/', (req, res) => {
 // Esta ruta debe estar disponible siempre, incluso si otros servicios fallan
 app.get('/health', (req, res) => {
   try {
-    const mongoStatus = getMongoDBStatus();
-    const response = { 
-      status: 'ok', 
-      timestamp: new Date().toISOString(),
-      mongodb: mongoStatus,
-      services: {
-        [SERVICES.TASKS]: 'active',
-        [SERVICES.HABITS]: 'active',
-        [SERVICES.USERS]: 'active',
-        [SERVICES.AUTH]: 'active',
-        [SERVICES.CHAT]: 'active',
-        [SERVICES.CLOUDINARY]: 'active'
-      },
-      version: APP_VERSION
-    };
-    const statusCode = mongoStatus === 'connected' ? 200 : 503;
-    res.status(statusCode).json(response);
+    const health = buildPublicHealthSnapshot({ version: APP_VERSION });
+    res.status(getHealthHttpStatus(health)).json(health);
   } catch (error) {
     logger.error('❌ Error en health check', { error: error.message });
-    res.status(503).json({ 
-      status: 'error', 
+    res.status(503).json({
+      status: 'unavailable',
       timestamp: new Date().toISOString(),
-      mongodb: 'error',
+      database: 'error',
       error: error.message,
-      version: APP_VERSION
+      version: APP_VERSION,
     });
   }
 });

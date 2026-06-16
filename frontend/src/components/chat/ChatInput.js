@@ -89,6 +89,7 @@ export default function ChatInput({
       style={styles.inputContainer}
     >
       <TextInput
+        testID="chat-message-input"
         ref={inputRef}
         style={styles.input}
         placeholder={placeholder || TEXTS.PLACEHOLDER}
@@ -101,6 +102,7 @@ export default function ChatInput({
         accessibilityHint={TEXTS.INPUT_A11Y_HINT}
       />
       <TouchableOpacity
+        testID="chat-send-button"
         style={[styles.sendButton, cannotSend && styles.sendButtonDisabled]}
         onPress={onSend}
         disabled={cannotSend}

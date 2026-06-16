@@ -15,6 +15,12 @@ Desde la raíz del repo:
 maestro test frontend/e2e/maestro/chat-roundtrip-from-tabs.yaml
 ```
 
+Login + envío en chat (requiere `E2E_EMAIL` y `E2E_PASSWORD`):
+
+```bash
+E2E_EMAIL=tu@cuenta.test E2E_PASSWORD=*** maestro test frontend/e2e/maestro/login-chat-send.yaml
+```
+
 Flujo opcional (solo si la app arranca en la pantalla Home sin sesión o con prerequisitos documentados en el YAML):
 
 ```bash
@@ -25,6 +31,7 @@ maestro test frontend/e2e/maestro/emergency-chat-home-back.yaml
 
 | Archivo | Descripción |
 |--------|-------------|
+| `maestro/login-chat-send.yaml` | Home → login → chat → enviar mensaje. Requiere `E2E_EMAIL` / `E2E_PASSWORD`. |
 | `maestro/chat-roundtrip-from-tabs.yaml` | MainTabs → abrir Chat (FAB) → atrás → Home. Requiere usuario ya en tabs. |
 | `maestro/emergency-chat-home-back.yaml` | Home → banner emergencia → Chat → atrás → Home. Suele requerir no estar logueado o estado concreto. |
 

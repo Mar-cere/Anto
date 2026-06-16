@@ -644,6 +644,7 @@ const SignInScreen = () => {
                         style={gs.inputIcon} 
                       />
                       <TextInput
+                        testID="sign-in-email-input"
                         style={gs.input}
                         placeholder={TEXTS.EMAIL_PLACEHOLDER}
                         placeholderTextColor={errors.email ? colors.error : colors.accent}
@@ -674,6 +675,7 @@ const SignInScreen = () => {
                         style={gs.inputIcon} 
                       />
                       <TextInput
+                        testID="sign-in-password-input"
                         style={gs.input}
                         placeholder={TEXTS.PASSWORD_PLACEHOLDER}
                         placeholderTextColor={colors.accent}
@@ -715,6 +717,7 @@ const SignInScreen = () => {
 
                   <View style={styles.buttonContainer}>
                     <TouchableOpacity
+                      testID="sign-in-submit-button"
                       onPressIn={handlePressIn}
                       onPress={handleLogin}
                       disabled={isButtonDisabled}

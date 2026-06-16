@@ -20,6 +20,7 @@ const AnimatedButton = ({
   accessibilityLabel,
   accessibilityHint,
   isPrimary = true,
+  testID,
 }) => {
   const { colors } = useTheme();
   const styles = useMemo(
@@ -95,6 +96,7 @@ const AnimatedButton = ({
 
   return (
     <TouchableOpacity
+      testID={testID}
       accessible={true}
       accessibilityLabel={accessibilityLabel || title}
       accessibilityHint={accessibilityHint || `Toca para ${title}`}

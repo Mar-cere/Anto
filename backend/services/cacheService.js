@@ -59,6 +59,23 @@ class CacheService {
   }
 
   /**
+   * Estado para health checks (sin credenciales).
+   */
+  getHealthStatus() {
+    const configured = Boolean(
+      String(process.env.REDIS_URL || process.env.REDISCLOUD_URL || '').trim(),
+    );
+    if (!configured) {
+      return { configured: false, connected: null, mode: 'memory_only' };
+    }
+    return {
+      configured: true,
+      connected: Boolean(this.useRedis),
+      mode: this.useRedis ? 'connected' : 'memory_fallback',
+    };
+  }
+
+  /**
    * Genera una clave de caché
    * @param {string} prefix - Prefijo de la clave
    * @param {string|Object} key - Clave o objeto para generar clave

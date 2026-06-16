@@ -1,0 +1,65 @@
+# Flujo E2E: Home → login → chat → enviar mensaje (#33 / Bloque C)
+# Requiere: build com.anto.app, API de staging accesible, credenciales E2E.
+#
+# Variables de entorno (Maestro):
+#   E2E_EMAIL    — correo de cuenta de prueba
+#   E2E_PASSWORD — contraseña
+#
+# Ejecutar desde la raíz del repo:
+#   E2E_EMAIL=... E2E_PASSWORD=... maestro test frontend/e2e/maestro/login-chat-send.yaml
+
+appId: com.anto.app
+
+---
+- launchApp
+
+- extendedWaitUntil:
+    visible:
+      id: home-welcome-title
+    timeout: 20000
+
+- tapOn:
+    id: home-sign-in-button
+
+- extendedWaitUntil:
+    visible:
+      id: sign-in-email-input
+    timeout: 15000
+
+- tapOn:
+    id: sign-in-email-input
+- inputText: ${E2E_EMAIL}
+
+- tapOn:
+    id: sign-in-password-input
+- inputText: ${E2E_PASSWORD}
+
+- hideKeyboard
+
+- tapOn:
+    id: sign-in-submit-button
+
+- extendedWaitUntil:
+    visible:
+      id: floating-nav-open-chat
+    timeout: 30000
+
+- tapOn:
+    id: floating-nav-open-chat
+
+- extendedWaitUntil:
+    visible:
+      id: chat-message-input
+    timeout: 20000
+
+- tapOn:
+    id: chat-message-input
+- inputText: "Hola, esto es una prueba E2E"
+
+- tapOn:
+    id: chat-send-button
+
+- extendedWaitUntil:
+    visible:
+      id: chat-typing-indicator
+    timeout: 25000

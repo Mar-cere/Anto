@@ -269,6 +269,7 @@ const HomeScreen = () => {
                 ]}
               >
                 <AnimatedButton
+                  testID="home-sign-in-button"
                   title={TEXTS.SIGN_IN}
                   onPress={() => handleNavigation(ROUTES.SIGN_IN)}
                   buttonScale={buttonScale}

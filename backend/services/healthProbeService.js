@@ -1,0 +1,133 @@
+/**
+ * Snapshot de salud para balanceadores y alertas (#25 / Bloque C).
+ * Sin secretos ni contenido clínico.
+ */
+import mongoose from 'mongoose';
+import { features } from '../config/features.js';
+import cacheService from './cacheService.js';
+import { isTopicFreeEmbeddingsEnabled } from './topicFreeEmbeddingService.js';
+import {
+  getAtlasVectorIndexName,
+  getVectorSearchMode,
+  isAtlasVectorSearchEnabled,
+} from './topicFreeVectorSearchService.js';
+
+export function getMongoDBStatus() {
+  const state = mongoose.connection.readyState;
+  const states = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting',
+  };
+  return states[state] || 'unknown';
+}
+
+function buildRedisSnapshot() {
+  const status = cacheService.getHealthStatus?.() || {
+    configured: false,
+    connected: null,
+    mode: 'memory_only',
+  };
+  return status;
+}
+
+function buildOpenAiSnapshot() {
+  const configured = Boolean(String(process.env.OPENAI_API_KEY || '').trim());
+  return { configured };
+}
+
+function buildAtlasSnapshot() {
+  return {
+    embeddingsEnabled: isTopicFreeEmbeddingsEnabled(),
+    vectorSearchEnabled: isAtlasVectorSearchEnabled(),
+    searchMode: getVectorSearchMode(),
+    indexName: getAtlasVectorIndexName(),
+  };
+}
+
+function buildWorkersSnapshot() {
+  return {
+    crisisFollowUp: features.crisisFollowUp,
+    intenseChatCheckIn: features.intenseChatCheckIn,
+    notificationScheduler: features.notificationScheduler,
+    weeklyPatternInsight: features.weeklyPatternInsightWorker,
+    weeklyInsightLlm: features.weeklyInsightLlm,
+    lastSessionSummary: features.lastSessionSummaryWorker,
+    chatLatencySloMonitor: features.chatLatencySloMonitor,
+  };
+}
+
+function resolveOverallStatus({ database, openai, redis }) {
+  if (database !== 'connected') return 'unavailable';
+  if (!openai.configured) return 'degraded';
+  if (redis.configured && redis.connected === false) return 'degraded';
+  return 'ok';
+}
+
+/**
+ * @param {{ version?: string }} [options]
+ */
+export function buildPublicHealthSnapshot(options = {}) {
+  const database = getMongoDBStatus();
+  const redis = buildRedisSnapshot();
+  const openai = buildOpenAiSnapshot();
+  const atlas = buildAtlasSnapshot();
+  const workers = buildWorkersSnapshot();
+  const status = resolveOverallStatus({ database, openai, redis });
+
+  return {
+    status,
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    database,
+    environment: process.env.NODE_ENV || 'development',
+    version: options.version || process.env.APP_VERSION || '1.0.0',
+    dependencies: {
+      redis,
+      openai,
+      atlas,
+    },
+    workers,
+  };
+}
+
+export function buildDetailedHealthSnapshot(options = {}) {
+  const base = buildPublicHealthSnapshot(options);
+  const allDepsOk =
+    base.database === 'connected' &&
+    base.dependencies.openai.configured &&
+    (!base.dependencies.redis.configured || base.dependencies.redis.connected !== false);
+
+  return {
+    ...base,
+    status: allDepsOk ? base.status : 'degraded',
+    memory: {
+      used: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB`,
+      total: `${Math.round(process.memoryUsage().heapTotal / 1024 / 1024)} MB`,
+      rss: `${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB`,
+    },
+    node: {
+      version: process.version,
+      platform: process.platform,
+    },
+    services: {
+      mongodb: base.database === 'connected',
+      redis: !base.dependencies.redis.configured || base.dependencies.redis.connected === true,
+      openai: base.dependencies.openai.configured,
+      atlasVectorSearch: base.dependencies.atlas.vectorSearchEnabled,
+    },
+  };
+}
+
+export function getHealthHttpStatus(snapshot) {
+  if (snapshot.status === 'unavailable') return 503;
+  return 200;
+}
+
+export default {
+  getMongoDBStatus,
+  buildPublicHealthSnapshot,
+  buildDetailedHealthSnapshot,
+  getHealthHttpStatus,
+};
