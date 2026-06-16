@@ -3,6 +3,12 @@
  */
 import Joi from 'joi';
 import { ALL_ONBOARDING_FOCUS_LABELS } from '../constants/onboardingFocusLabels.js';
+import {
+  isValidCountryPreference,
+  isValidRegionCountryPreference,
+  sanitizeCountryPreference,
+  sanitizeRegionCountryPreference,
+} from './countryPreferences.js';
 
 export function getUpdateProfileSchema(copy) {
   return Joi.object({
@@ -40,6 +46,31 @@ export function getUpdateProfileSchema(copy) {
       notifications: Joi.boolean(),
       language: Joi.string().valid('es', 'en'),
       timezone: Joi.string().trim().max(64),
+      /** País explícito (ISO, legacy o prefijo telefónico) para números de emergencia */
+      country: Joi.string()
+        .trim()
+        .max(16)
+        .allow(null, '')
+        .optional()
+        .custom((value, helpers) => {
+          if (value == null || value === '') return null;
+          if (!isValidCountryPreference(value)) {
+            return helpers.error('any.invalid');
+          }
+          return sanitizeCountryPreference(value);
+        }),
+      regionCountry: Joi.string()
+        .trim()
+        .max(2)
+        .allow(null, '')
+        .optional()
+        .custom((value, helpers) => {
+          if (value == null || value === '') return null;
+          if (!isValidRegionCountryPreference(value)) {
+            return helpers.error('any.invalid');
+          }
+          return sanitizeRegionCountryPreference(value);
+        }),
       responseStyle: Joi.string().valid(
         'brief',
         'balanced',

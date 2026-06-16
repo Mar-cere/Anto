@@ -41,6 +41,22 @@ describe('openaiPromptBuilder — guardrails de brevedad/factual/identidad clín
     expect(systemMessage).not.toContain('PREFERENCIA DE SESIÓN');
   });
 
+  it('crisis prompt incluye números locales vía preferences.regionCountry', async () => {
+    const { systemMessage } = await buildContextualizedPrompt(
+      { content: 'quiero morir' },
+      {
+        ...baseContext,
+        crisis: {
+          riskLevel: 'HIGH',
+          preferences: { regionCountry: 'CL' },
+          phone: null,
+        },
+      }
+    );
+    expect(systemMessage).toContain('133');
+    expect(systemMessage).toMatch(/600\s*360\s*7777/);
+  });
+
   it('mantiene prioridad clínica al activar modo factual con carga emocional alta', async () => {
     const { systemMessage } = await buildContextualizedPrompt(
       { content: 'quién es Tina Turner' },

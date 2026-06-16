@@ -15,6 +15,7 @@ import UserProfile from '../models/UserProfile.js';
 import cacheService from '../services/cacheService.js';
 import userProfileService from '../services/userProfileService.js';
 import { resolveRequestLanguage } from '../utils/apiLanguage.js';
+import { normalizeCountryPreferences } from '../utils/countryPreferences.js';
 import { validationErrorBody, validateBody } from '../utils/apiValidation.js';
 import logger from '../utils/logger.js';
 import { userApiCopy } from '../utils/userApiCopy.js';
@@ -267,6 +268,10 @@ router.put('/me', authenticateToken, validateUserObjectId, updateProfileLimiter,
     const { error, value } = validateBody(getUpdateProfileSchema(req.apiCopy), req.body);
     if (error) {
       return res.status(400).json(validationErrorBody(req.apiCopy, error));
+    }
+
+    if (value.preferences) {
+      value.preferences = normalizeCountryPreferences(value.preferences);
     }
 
     const user = await findUserById(userId);

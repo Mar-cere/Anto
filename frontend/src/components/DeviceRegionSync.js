@@ -22,9 +22,8 @@ export default function DeviceRegionSync() {
   useEffect(() => {
     if (!user || syncedRef.current) return;
 
-    const explicitCountry = user?.preferences?.country;
     const currentRegion = user?.preferences?.regionCountry;
-    if (explicitCountry || currentRegion) {
+    if (currentRegion != null && String(currentRegion).trim()) {
       syncedRef.current = true;
       return;
     }

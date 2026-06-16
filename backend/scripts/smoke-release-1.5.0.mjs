@@ -14,6 +14,7 @@ import {
 import { buildPersonalPatternRagSnippet, isPersonalPatternRagEnabled } from '../services/personalPatternRagService.js';
 import { buildAtlasVectorSearchPipeline } from '../services/topicFreeVectorSearchService.js';
 import { buildCrisisSessionInsightCopy } from '../utils/sessionInsightCopy.js';
+import { getEmergencyLines } from '../constants/emergencyNumbers.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '../..');
@@ -56,6 +57,13 @@ if (hardStop && hardStop.length > 80 && hardStop.includes('112') && !/plan de se
   pass('buildHardStopCrisisAssistantContent');
 } else {
   fail('buildHardStopCrisisAssistantContent');
+}
+
+const chileLines = getEmergencyLines({ preferences: { regionCountry: 'CL' } });
+if (chileLines?.EMERGENCY === '133' && chileLines?.SUICIDE_PREVENTION?.includes('600')) {
+  pass('getEmergencyLines unificado (regionCountry CL)');
+} else {
+  fail('getEmergencyLines unificado (regionCountry CL)');
 }
 
 const memoryPipeline = buildAtlasVectorSearchPipeline({
