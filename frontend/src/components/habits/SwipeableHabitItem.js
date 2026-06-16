@@ -41,7 +41,7 @@ import {
   DELETE_ANIMATION_DURATION,
   DELETE_DISTANCE,
   FREQUENCY_TYPES,
-  HABIT_ICONS,
+  resolveHabitMaterialIcon,
   HIT_SLOP_SIZE,
   ICON_CONTAINER_BORDER_RADIUS,
   ICON_CONTAINER_SIZE,
@@ -438,7 +438,7 @@ export default function SwipeableHabitItem({
                     ]}
                   >
                     <MaterialCommunityIcons
-                      name={HABIT_ICONS[item.icon] || 'circle'}
+                      name={resolveHabitMaterialIcon(item.icon)}
                       size={ICON_SIZE}
                       color={item.status?.archived ? COLORS.ACCENT : COLORS.PRIMARY}
                     />

@@ -32,7 +32,7 @@ function parseHeadlineJson(raw) {
 
 function shouldSkipLlmForRisk(riskTier) {
   const t = String(riskTier || 'low').toLowerCase();
-  return t === 'high' || t === 'medium';
+  return t === 'high' || t === 'medium' || t === 'warning';
 }
 
 function normalizeHeadlineOutput(raw, fallback = '') {

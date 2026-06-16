@@ -21,17 +21,9 @@ import { useTheme } from '../../context/ThemeContext';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
+import { HABIT_ICON_PICKER_OPTIONS } from '../../screens/habits/habitsScreenConstants';
 
-const HABIT_ICONS = [
-  { key: 'exercise', icon: 'run' },
-  { key: 'meditation', icon: 'meditation' },
-  { key: 'reading', icon: 'book-open-variant' },
-  { key: 'water', icon: 'water' },
-  { key: 'sleep', icon: 'sleep' },
-  { key: 'study', icon: 'book-education' },
-  { key: 'diet', icon: 'food-apple' },
-  { key: 'coding', icon: 'code-tags' },
-];
+const HABIT_ICONS = HABIT_ICON_PICKER_OPTIONS;
 
 const DEFAULT_TEXTS = {
   TITLE: 'Nuevo Hábito',

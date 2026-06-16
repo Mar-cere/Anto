@@ -243,7 +243,28 @@ export const HABIT_ICONS = {
   study: 'book-education',
   diet: 'food-apple',
   coding: 'code-tags',
+  workout: 'dumbbell',
+  yoga: 'yoga',
+  journal: 'notebook-edit-outline',
+  music: 'music',
+  art: 'palette',
+  language: 'translate',
 };
+
+/** Claves alineadas con `Habit.icon` en backend (enum). */
+export const HABIT_ICON_KEYS = Object.keys(HABIT_ICONS);
+
+export const HABIT_ICON_PICKER_OPTIONS = HABIT_ICON_KEYS.map((key) => ({
+  key,
+  icon: HABIT_ICONS[key],
+}));
+
+/** Resuelve clave de hábito → nombre válido de MaterialCommunityIcons. */
+export function resolveHabitMaterialIcon(iconKey, fallback = 'circle-outline') {
+  const key = String(iconKey || '').trim();
+  if (!key) return fallback;
+  return HABIT_ICONS[key] || fallback;
+}
 
 export const getDefaultFormData = () => ({
   title: '',

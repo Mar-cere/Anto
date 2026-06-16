@@ -13,6 +13,8 @@ import {
   getDefaultFormData,
   SWIPE_THRESHOLD,
   localizeHabitDisplayText,
+  resolveHabitMaterialIcon,
+  HABIT_ICON_KEYS,
 } from '../habitsScreenConstants';
 
 describe('habitsScreenConstants', () => {
@@ -69,6 +71,26 @@ describe('habitsScreenConstants', () => {
       expect(localizeHabitDisplayText('Tomar agua', texts)).toBe('Tomar agua');
       expect(localizeHabitDisplayText('  Hábito acordado en el chat  ', texts)).toBe(
         'Habit agreed in chat',
+      );
+    });
+  });
+
+  describe('resolveHabitMaterialIcon', () => {
+    it('mapea claves de backend a iconos MaterialCommunity válidos', () => {
+      expect(resolveHabitMaterialIcon('diet')).toBe('food-apple');
+      expect(resolveHabitMaterialIcon('journal')).toBe('notebook-edit-outline');
+      expect(resolveHabitMaterialIcon('workout')).toBe('dumbbell');
+    });
+
+    it('usa fallback para claves desconocidas', () => {
+      expect(resolveHabitMaterialIcon('invalid-key', 'help-circle')).toBe('help-circle');
+    });
+  });
+
+  describe('HABIT_ICON_KEYS', () => {
+    it('incluye todas las claves del enum de hábitos', () => {
+      expect(HABIT_ICON_KEYS).toEqual(
+        expect.arrayContaining(['diet', 'journal', 'workout', 'yoga', 'music', 'art', 'language']),
       );
     });
   });

@@ -8,6 +8,7 @@ import ChatInterventionEvent from '../models/ChatInterventionEvent.js';
 import cognitiveDistortionDetector from './cognitiveDistortionDetector.js';
 import {
   buildInsightCopy,
+  buildCrisisSessionInsightCopy,
   buildSuggestedStepFromCatalog,
   getEmotionInsightMeta,
   localizeDistortion,
@@ -15,6 +16,10 @@ import {
   localizeTopic,
   normalizeInsightLanguage,
 } from '../utils/sessionInsightCopy.js';
+import {
+  collectRiskLevelsFromMessages,
+  maxRiskTierFromLevels,
+} from './lastSessionSummaryService.js';
 import {
   generateSessionInsightHeadline,
   isSessionInsightHeadlineLlmEnabled,
@@ -87,15 +92,49 @@ function countUserStats(msgs) {
   return { userTurns: turns, userChars: chars };
 }
 
-function aggregateDominantEmotion(userMsgs) {
+function resolveEmotionalForMessage(msgs, index) {
+  const m = msgs[index];
+  if (!m) return null;
+
+  let emotional = m?.metadata?.context?.emotional;
+  if (m.role === 'user') {
+    if (!emotional?.mainEmotion) {
+      const next = msgs[index + 1];
+      if (next?.role === 'assistant') {
+        emotional = next?.metadata?.context?.emotional;
+      }
+    }
+    const risk = String(m?.metadata?.crisis?.riskLevel || '').toUpperCase();
+    if (risk === 'HIGH' || risk === 'MEDIUM' || risk === 'WARNING') {
+      const baseIntensity = Number(emotional?.intensity) || 5;
+      const floor = risk === 'HIGH' ? 8 : risk === 'MEDIUM' ? 7 : 6;
+      return {
+        ...(emotional || {}),
+        mainEmotion: emotional?.mainEmotion && emotional.mainEmotion !== 'neutral'
+          ? emotional.mainEmotion
+          : risk === 'HIGH' ? 'miedo' : 'tristeza',
+        intensity: Math.max(baseIntensity, floor),
+        topic: emotional?.topic || 'salud',
+      };
+    }
+  }
+  return emotional;
+}
+
+function aggregateDominantEmotion(msgs) {
+  const userMsgs = msgs.filter((m) => m.role === 'user');
   const scores = { ...EMOTION_WEIGHTS };
   let totalIntensity = 0;
   let intensityCount = 0;
 
-  userMsgs.forEach((msg, index) => {
-    const emotion = String(msg?.metadata?.context?.emotional?.mainEmotion || 'neutral').toLowerCase();
-    const intensity = Number(msg?.metadata?.context?.emotional?.intensity) || 5;
-    const weight = 1 + index * 0.15;
+  msgs.forEach((msg, index) => {
+    if (msg.role !== 'user') return;
+    const emotional = resolveEmotionalForMessage(msgs, index);
+    const emotion = String(emotional?.mainEmotion || 'neutral').toLowerCase();
+    const intensity = Number(emotional?.intensity) || 5;
+    const userIndex = userMsgs.indexOf(msg);
+    const recencyBoost = userIndex >= userMsgs.length - 3 ? 1.8 : 1;
+    const weight = (1 + userIndex * 0.2) * recencyBoost;
     scores[emotion] = (scores[emotion] || 0) + weight;
     totalIntensity += intensity;
     intensityCount += 1;
@@ -109,10 +148,13 @@ function aggregateDominantEmotion(userMsgs) {
   return { dominantEmotion, avgIntensity };
 }
 
-function collectThemes(userMsgs, language) {
+function collectThemes(msgs, language) {
   const counts = new Map();
-  for (const msg of userMsgs) {
-    const topic = String(msg?.metadata?.context?.emotional?.topic || 'general').toLowerCase();
+  for (let i = 0; i < msgs.length; i += 1) {
+    const msg = msgs[i];
+    if (msg.role !== 'user') continue;
+    const emotional = resolveEmotionalForMessage(msgs, i);
+    const topic = String(emotional?.topic || 'general').toLowerCase();
     counts.set(topic, (counts.get(topic) || 0) + 1);
   }
   return [...counts.entries()]
@@ -120,6 +162,11 @@ function collectThemes(userMsgs, language) {
     .slice(0, 3)
     .map(([topic]) => localizeTopic(topic, language))
     .filter(Boolean);
+}
+
+function isElevatedCrisisTier(riskTier) {
+  const t = String(riskTier || 'low').toLowerCase();
+  return t === 'high' || t === 'medium' || t === 'warning';
 }
 
 function aggregateThoughtPattern(userMsgs, assistantMsgs, language) {
@@ -229,33 +276,47 @@ export async function buildSessionInsight({ userId, conversationId, language = '
     return { ...empty, userTurns, userChars };
   }
 
-  const { dominantEmotion, avgIntensity } = aggregateDominantEmotion(userMsgs);
+  const { dominantEmotion, avgIntensity } = aggregateDominantEmotion(msgs);
+  const riskTier = maxRiskTierFromLevels(collectRiskLevelsFromMessages(msgs));
+  const crisisSession = isElevatedCrisisTier(riskTier);
   const emotionMeta = getEmotionInsightMeta(dominantEmotion, lang);
-  const themes = collectThemes(userMsgs, lang);
+  let themes = collectThemes(msgs, lang);
+  if (crisisSession && !themes.some((t) => /seguridad|safety/i.test(t))) {
+    themes = [localizeTopic('salud', lang), ...themes].slice(0, 3);
+  }
   const thoughtPattern = aggregateThoughtPattern(userMsgs, assistantMsgs, lang);
   const threadStartedAt = msgs[0]?.createdAt ? new Date(msgs[0].createdAt) : null;
-  const suggestedStep = await findSuggestedStep({
-    userId,
-    conversationId: convOid,
-    language: lang,
-    threadStartedAt,
-  });
+  const suggestedStep = crisisSession
+    ? null
+    : await findSuggestedStep({
+        userId,
+        conversationId: convOid,
+        language: lang,
+        threadStartedAt,
+      });
   const sessionIntentionLabel = localizeSessionIntention(
     conversation.sessionIntention,
     lang,
   );
-  const copy = buildInsightCopy({
-    language: lang,
-    dominantEmotion,
-    intensity: avgIntensity,
-    themes,
-    hasPattern: !!thoughtPattern,
-    sessionIntention: sessionIntentionLabel,
-  });
+  const copy = crisisSession
+    ? buildCrisisSessionInsightCopy({
+        language: lang,
+        riskTier,
+        intensity: avgIntensity,
+        sessionIntention: sessionIntentionLabel,
+      })
+    : buildInsightCopy({
+        language: lang,
+        dominantEmotion,
+        intensity: avgIntensity,
+        themes,
+        hasPattern: !!thoughtPattern,
+        sessionIntention: sessionIntentionLabel,
+      });
 
   let headline = copy.headline;
-  let headlineSource = 'rules';
-  if (isSessionInsightHeadlineLlmEnabled()) {
+  let headlineSource = crisisSession ? 'crisis_rules' : 'rules';
+  if (!crisisSession && isSessionInsightHeadlineLlmEnabled()) {
     const llmHeadline = await generateSessionInsightHeadline({
       userMsgs,
       allMsgs: msgs,
@@ -289,7 +350,8 @@ export async function buildSessionInsight({ userId, conversationId, language = '
     themes,
     suggestedStep,
     sessionIntention: conversation.sessionIntention || null,
-    tccLiteResume: thoughtPattern?.type
+    crisisTier: isElevatedCrisisTier(riskTier) ? riskTier : null,
+    tccLiteResume: thoughtPattern?.type && !crisisSession
       ? {
           eligible: true,
           distortionType: thoughtPattern.type,

@@ -288,5 +288,69 @@ describe('buildSessionInsight', () => {
     expect(insight.durationMinutes).toBeLessThanOrEqual(15);
     expect(insight.userTurns).toBe(2);
   });
+
+  it('prioriza crisis y emoción del asistente en sesiones de riesgo', async () => {
+    const now = Date.now();
+    mockMessageFind.mockReturnValue(
+      chainLean([
+        {
+          role: 'user',
+          content: 'Estuve nervioso en la entrevista',
+          metadata: { crisis: { riskLevel: 'LOW' } },
+          createdAt: new Date(now - 300000),
+        },
+        {
+          role: 'assistant',
+          content: 'Te escucho',
+          metadata: {
+            context: { emotional: { mainEmotion: 'ansiedad', intensity: 5, topic: 'trabajo' } },
+          },
+          createdAt: new Date(now - 280000),
+        },
+        {
+          role: 'user',
+          content: 'Quiero morir y no aguanto más',
+          metadata: { crisis: { riskLevel: 'HIGH' } },
+          createdAt: new Date(now - 120000),
+        },
+        {
+          role: 'assistant',
+          content: 'Gracias por decírmelo. Tu seguridad es lo primero.',
+          metadata: {
+            context: { emotional: { mainEmotion: 'miedo', intensity: 9, topic: 'salud' } },
+            crisis: { riskLevel: 'HIGH' },
+          },
+          createdAt: new Date(now - 100000),
+        },
+        {
+          role: 'user',
+          content: 'Estoy solo',
+          metadata: { crisis: { riskLevel: 'HIGH' } },
+          createdAt: new Date(now - 60000),
+        },
+        {
+          role: 'assistant',
+          content: 'Lo más importante ahora es tu seguridad',
+          metadata: {
+            context: { emotional: { mainEmotion: 'miedo', intensity: 9, topic: 'salud' } },
+            crisis: { riskLevel: 'HIGH' },
+          },
+          createdAt: new Date(now - 30000),
+        },
+      ]),
+    );
+
+    const insight = await buildSessionInsight({ userId, conversationId, language: 'es' });
+    expect(insight.eligible).toBe(true);
+    expect(insight.crisisTier).toBe('high');
+    expect(insight.headlineSource).toBe('crisis_rules');
+    expect(insight.headline).toMatch(/seguridad/i);
+    expect(insight.dominantEmotion.key).not.toBe('neutral');
+    expect(insight.dominantEmotion.intensity).toBeGreaterThanOrEqual(7);
+    expect(insight.suggestedStep).toBeNull();
+    expect(insight.tccLiteResume).toBeNull();
+    expect(insight.themes.some((t) => /salud|seguridad/i.test(t))).toBe(true);
+    expect(mockGenerateHeadline).not.toHaveBeenCalled();
+  });
 });
 

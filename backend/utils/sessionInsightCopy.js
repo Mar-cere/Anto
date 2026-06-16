@@ -219,3 +219,45 @@ export function buildInsightCopy({
     : null;
   return { headline, reflection, intentionLine };
 }
+
+/**
+ * Copy seguro cuando la sesión incluye crisis (WARNING/MEDIUM/HIGH).
+ */
+export function buildCrisisSessionInsightCopy({
+  language,
+  riskTier = 'medium',
+  intensity = 7,
+  sessionIntention = null,
+}) {
+  const lang = normalizeInsightLanguage(language);
+  const tier = String(riskTier || 'medium').toLowerCase();
+  const intensityRounded = Math.round(Number(intensity) || 7);
+
+  if (lang === 'en') {
+    const headline =
+      tier === 'high'
+        ? 'What you shared matters — your safety comes first'
+        : 'You went through a difficult moment — you are not alone';
+    const reflection =
+      tier === 'high'
+        ? `This conversation included intense distress (around ${intensityRounded}/10). Reaching out was a brave step.`
+        : `This conversation touched on emotional safety with notable intensity (${intensityRounded}/10).`;
+    const intentionLine = sessionIntention
+      ? `You started wanting to ${String(sessionIntention).toLowerCase()}.`
+      : null;
+    return { headline, reflection, intentionLine };
+  }
+
+  const headline =
+    tier === 'high'
+      ? 'Lo que compartiste importa: tu seguridad es lo primero'
+      : 'Pasaste por un momento difícil — no estás solo/a';
+  const reflection =
+    tier === 'high'
+      ? `Esta conversación incluyó mucho malestar (alrededor de ${intensityRounded}/10). Pedir ayuda fue un paso valiente.`
+      : `Esta conversación tocó tu seguridad emocional con intensidad notable (${intensityRounded}/10).`;
+  const intentionLine = sessionIntention
+    ? `Empezaste buscando ${String(sessionIntention).toLowerCase()}.`
+    : null;
+  return { headline, reflection, intentionLine };
+}

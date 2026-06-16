@@ -4,6 +4,7 @@
  * @author AntoApp Team
  */
 
+import { jest } from '@jest/globals';
 import therapeuticTemplateService from '../../../services/therapeuticTemplateService.js';
 
 describe('TherapeuticTemplateService', () => {
@@ -126,12 +127,20 @@ describe('TherapeuticTemplateService', () => {
 
   describe('idioma en', () => {
     it('buildTherapeuticBase devuelve texto en inglés', () => {
-      const response = therapeuticTemplateService.buildTherapeuticBase('tristeza', 'soledad', {
-        style: 'deep',
-        language: 'en',
-      });
-      expect(response).toMatch(/loneliness|alone|connection/i);
-      expect(response).not.toMatch(/La soledad puede ser muy dolorosa/);
+      const selectSpy = jest
+        .spyOn(therapeuticTemplateService, 'selectPhrase')
+        .mockImplementation((phrases) => phrases?.[0] || '');
+
+      try {
+        const response = therapeuticTemplateService.buildTherapeuticBase('tristeza', 'soledad', {
+          style: 'deep',
+          language: 'en',
+        });
+        expect(response).toMatch(/loneliness|alone|connection/i);
+        expect(response).not.toMatch(/La soledad puede ser muy dolorosa/);
+      } finally {
+        selectSpy.mockRestore();
+      }
     });
 
     it('getTemplate en devuelve arrays en inglés', () => {

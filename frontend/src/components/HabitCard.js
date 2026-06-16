@@ -13,6 +13,7 @@ import { isAuthError } from '../utils/apiErrorHandler';
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
+import { resolveHabitMaterialIcon } from '../screens/habits/habitsScreenConstants';
 
 const DEFAULT_TEXTS = {
   STREAK_LABEL: 'Racha',
@@ -82,7 +83,7 @@ const HabitItem = memo(({ habit, onPress, styles, commonStyles, texts }) => {
           <View style={styles.habitHeader}>
             <View style={[styles.habitIcon, { backgroundColor: accentColor }]}>
               <MaterialCommunityIcons 
-                name={habit.icon || 'lightning-bolt'} 
+                name={resolveHabitMaterialIcon(habit.icon, 'lightning-bolt')} 
                 size={20} 
                 color={colors.textOnPrimary} 
               />
