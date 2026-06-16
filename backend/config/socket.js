@@ -19,7 +19,7 @@ import {
   userProfileService
 } from '../services/index.js';
 import { sanitizeSessionIntentionForClient } from '../constants/sessionIntention.js';
-import { evaluateSuicideRisk, normalizeStoredCrisisRiskLevel } from '../constants/crisis.js';
+import { evaluateSuicideRisk, normalizeStoredCrisisRiskLevel, shouldAttachCrisisContextToPrompt } from '../constants/crisis.js';
 import chatProductActionProposalService from '../services/chatProductActionProposalService.js';
 import chatProductActionLlmService from '../services/chatProductActionLlmService.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
@@ -219,7 +219,7 @@ export const setupSocketIO = (server) => {
         const conversationPattern = analyzeConversationPattern(conversationHistory, messageText);
 
         // 4. Análisis emocional y contextual (en paralelo)
-        const [emotionalAnalysis, contextualAnalysis, userProfile] = await Promise.all([
+        const [emotionalAnalysis, contextualAnalysis, userProfile, socketUser] = await Promise.all([
           emotionalAnalyzer.analyzeEmotion(messageText).catch(err => {
             console.error('[SocketIO] Error en análisis emocional:', err);
             return null;
@@ -231,7 +231,8 @@ export const setupSocketIO = (server) => {
           userProfileService.getOrCreateProfile(userId).catch(err => {
             console.error('[SocketIO] Error obteniendo perfil:', err);
             return null;
-          })
+          }),
+          User.findById(userId).select('preferences phone').lean().catch(() => null),
         ]);
 
         const riskLevel = evaluateSuicideRisk(
@@ -328,8 +329,12 @@ export const setupSocketIO = (server) => {
         })
           ? buildHardStopCrisisAssistantContent({
               riskLevel,
-              country: userProfile?.preferences?.country || 'GENERAL',
               language: socketLanguage,
+              preferences: {
+                ...(userProfile?.preferences || {}),
+                ...(socketUser?.preferences || {}),
+              },
+              phone: socketUser?.phone || null,
             })
           : null;
 
@@ -413,6 +418,17 @@ export const setupSocketIO = (server) => {
             digitalPhenotypePromptSnippet: promptSnippets.digitalPhenotypePromptSnippet,
             recentAbcPromptSnippet: promptSnippets.recentAbcPromptSnippet,
             personalPatternRagPromptSnippet: promptSnippets.personalPatternRagPromptSnippet,
+            crisis:
+              isCrisis && shouldAttachCrisisContextToPrompt(riskLevel)
+                ? {
+                    riskLevel,
+                    preferences: {
+                      ...(userProfile?.preferences || {}),
+                      ...(socketUser?.preferences || {}),
+                    },
+                    phone: socketUser?.phone || null,
+                  }
+                : undefined,
             _promptTelemetry: {
               userId,
               conversationId: conversation._id,

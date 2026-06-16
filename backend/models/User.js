@@ -129,6 +129,21 @@ const userSchema = new mongoose.Schema({
       default: null,
       trim: true,
       maxlength: [64, 'La zona horaria no puede exceder 64 caracteres']
+    },
+    /** País explícito (ISO alpha-2, prefijo telefónico o legacy ESPANA, MEXICO, …) */
+    country: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: [16, 'El país no puede exceder 16 caracteres']
+    },
+    /** ISO alpha-2 inferido del locale del dispositivo (sin GPS) */
+    regionCountry: {
+      type: String,
+      default: null,
+      trim: true,
+      uppercase: true,
+      maxlength: [2, 'regionCountry debe ser ISO alpha-2']
     }
   },
   /** Consentimiento granular señales #215 / #216 / #208. */

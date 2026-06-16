@@ -260,7 +260,7 @@ export const SETTINGS = {
   BACK: 'Back',
   PREFERENCES: 'Preferences',
   SECTION_SYSTEM: 'System',
-  SECTION_SYSTEM_INTRO: 'Theme and notifications.',
+  SECTION_SYSTEM_INTRO: 'Theme, country, and notifications.',
   SECTION_CHAT: 'Chat',
   SECTION_CHAT_INTRO: 'Style and tone. Expand the row to adjust.',
   SECTION_PATTERNS: 'Patterns and signals',
@@ -431,6 +431,18 @@ export const SETTINGS = {
   LANGUAGE_CHANGED_OK: 'Language updated',
   LANGUAGE_CHANGED_SYNC_WARNING:
     'Language was applied on this device, but it could not sync with the account.',
+  COUNTRY: 'Country or region',
+  COUNTRY_ROW_SUB: 'Emergency numbers in crisis situations',
+  COUNTRY_MODAL_TITLE: 'Country or region',
+  COUNTRY_HINT:
+    'We do not use GPS. If you choose Automatic, we use your device language or time zone.',
+  COUNTRY_AUTO_LABEL: 'Automatic',
+  COUNTRY_AUTO_DESC: 'Based on device language or time zone',
+  COUNTRY_DETECTED_SUFFIX: '(detected)',
+  COUNTRY_CHANGED_OK: 'Country updated',
+  COUNTRY_CHANGED_SYNC_WARNING:
+    'Country was applied on this device, but it could not sync with the account.',
+  COUNTRY_SAVING_A11Y: 'Saving country',
   THEME_MODAL_TITLE: 'Interface theme',
   THEME_LIGHT: 'Light',
   THEME_DARK: 'Dark',

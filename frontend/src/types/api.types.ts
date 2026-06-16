@@ -25,6 +25,10 @@ export interface UserPreferences {
   language?: 'es' | 'en';
   /** IANA time zone, p. ej. "America/Argentina/Buenos_Aires" */
   timezone?: string;
+  /** ISO alpha-2 inferido del locale del dispositivo (sin GPS) */
+  regionCountry?: string;
+  /** País explícito (ISO, prefijo telefónico o legacy) */
+  country?: string;
   privacy?: {
     profileVisibility?: 'public' | 'private' | 'friends';
   };

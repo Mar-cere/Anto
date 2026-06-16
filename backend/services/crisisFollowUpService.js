@@ -188,11 +188,13 @@ class CrisisFollowUpService {
   async sendFollowUpMessage(crisisEvent) {
     try {
       const userId = crisisEvent.userId._id || crisisEvent.userId;
-      const message = generateFollowUpMessage(crisisEvent);
-      
-      // Obtener usuario con token push
-      const user = await User.findById(userId).select('+pushToken');
-      
+      const user = await User.findById(userId).select('+pushToken preferences phone');
+      const message = generateFollowUpMessage(crisisEvent, {
+        preferences: user?.preferences,
+        phone: user?.phone || null,
+        language: user?.preferences?.language || 'es',
+      });
+
       if (!user || !user.pushToken) {
         console.log(`[CrisisFollowUpService] ⚠️ Usuario ${userId} no tiene token push registrado`);
         return false;

@@ -24,6 +24,7 @@ import ErrorBoundary from './src/components/ErrorBoundary';
 import Toast from './src/components/Toast';
 import ConnectionRestoredListener from './src/components/ConnectionRestoredListener';
 import LanguageAuthSync from './src/components/LanguageAuthSync';
+import DeviceRegionSync from './src/components/DeviceRegionSync';
 import AppConfigPreload from './src/components/AppConfigPreload';
 
 // Fallback cuando initialWindowMetrics es null (web, SSR, o módulo nativo no listo)
@@ -68,6 +69,7 @@ export default function App() {
           <ErrorBoundary>
             <AuthProvider>
               <LanguageAuthSync />
+              <DeviceRegionSync />
               <ThemePreferenceSync />
               <ToastProvider>
                 <AppContent />

@@ -1480,8 +1480,9 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             isCrisis && shouldAttachCrisisContextToPrompt(riskLevel)
               ? {
                   riskLevel,
-                  country: userProfile?.preferences?.country || 'GENERAL',
-                  detectedAt: new Date()
+                  preferences: combinedProfile?.preferences || user?.preferences || null,
+                  phone: user?.phone || null,
+                  detectedAt: new Date(),
                 }
               : undefined,
           ...(memoriaParaOpenAI ? { memory: memoriaParaOpenAI } : {}),
@@ -1503,8 +1504,9 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         })
           ? buildHardStopCrisisAssistantContent({
               riskLevel,
-              country: userProfile?.preferences?.country || user?.country || 'GENERAL',
               language: appLanguageForChat,
+              preferences: combinedProfile?.preferences,
+              phone: user?.phone || null,
             })
           : null;
 

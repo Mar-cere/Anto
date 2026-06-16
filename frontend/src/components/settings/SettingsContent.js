@@ -45,7 +45,12 @@ import {
   useSettingsTexts,
 } from '../../screens/settings/settingsScreenConstants';
 import SettingsResponseStyleModal from './SettingsResponseStyleModal';
+import SettingsCountryModal from './SettingsCountryModal';
 import SignalConsentPanel from '../signals/SignalConsentPanel';
+import {
+  formatCountryPreferenceRowLabel,
+  resolveStoredCountryPreference,
+} from '../../constants/emergencyCountries';
 
 const DEFAULT_CHAT_PREFS = {
   reduceStockEmpathy: false,
@@ -78,6 +83,7 @@ export default function SettingsContent({
   onSetThemePreference,
   language = 'es',
   onSetLanguagePreference,
+  onSetCountryPreference,
 }) {
   const TEXTS = useSettingsTexts();
   const insets = useSafeAreaInsets();
@@ -108,6 +114,7 @@ export default function SettingsContent({
     useState(false);
   const [themePickerVisible, setThemePickerVisible] = useState(false);
   const [languagePickerVisible, setLanguagePickerVisible] = useState(false);
+  const [countryPickerVisible, setCountryPickerVisible] = useState(false);
   const [pickerTarget, setPickerTarget] = useState(null); // 'morning' | 'evening' | null
   const [notificationPrefsSaving, setNotificationPrefsSaving] = useState(false);
   const [notificationPrefsSavedFlash, setNotificationPrefsSavedFlash] =
@@ -280,6 +287,25 @@ export default function SettingsContent({
 
   const closeLanguagePicker = useCallback(() => {
     setLanguagePickerVisible(false);
+  }, []);
+
+  const currentCountryLabel = useMemo(
+    () => formatCountryPreferenceRowLabel(user?.preferences, language, TEXTS),
+    [user?.preferences, language, TEXTS],
+  );
+
+  const storedCountryIso = useMemo(
+    () => resolveStoredCountryPreference(user?.preferences),
+    [user?.preferences],
+  );
+
+  const openCountryPicker = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCountryPickerVisible(true);
+  }, []);
+
+  const closeCountryPicker = useCallback(() => {
+    setCountryPickerVisible(false);
   }, []);
 
   const selectLanguagePreference = useCallback(
@@ -832,6 +858,37 @@ export default function SettingsContent({
             </View>
             <View style={styles.rowTrailing}>
               <Text style={styles.languageText}>{currentLanguageLabel}</Text>
+              <MaterialCommunityIcons
+                name='chevron-right'
+                size={22}
+                color={COLORS.ACCENT}
+              />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={LIST_PRESS_OPACITY}
+            style={styles.item}
+            onPress={openCountryPicker}
+            accessibilityRole='button'
+            accessibilityLabel={`${TEXTS.COUNTRY}, ${currentCountryLabel}`}
+            accessibilityHint={TEXTS.COUNTRY_HINT}
+          >
+            <MaterialCommunityIcons
+              name='earth'
+              size={ICON_SIZE}
+              color={COLORS.PRIMARY}
+            />
+            <View style={styles.itemTextContainer}>
+              <Text style={styles.itemTextNested}>{TEXTS.COUNTRY}</Text>
+              <Text style={styles.itemSubtext} numberOfLines={1}>
+                {TEXTS.COUNTRY_ROW_SUB}
+              </Text>
+            </View>
+            <View style={styles.rowTrailing}>
+              <Text style={styles.languageText} numberOfLines={1}>
+                {currentCountryLabel}
+              </Text>
               <MaterialCommunityIcons
                 name='chevron-right'
                 size={22}
@@ -1816,6 +1873,13 @@ export default function SettingsContent({
           </View>
         </View>
       </Modal>
+      <SettingsCountryModal
+        visible={countryPickerVisible}
+        currentIso={storedCountryIso}
+        language={language}
+        onClose={closeCountryPicker}
+        onApply={onSetCountryPreference ?? (async () => false)}
+      />
       <SettingsResponseStyleModal
         visible={responseStyleModalVisible}
         currentStyle={currentResponseStyle}

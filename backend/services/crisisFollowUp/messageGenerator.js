@@ -3,16 +3,23 @@
  * Extraído de crisisFollowUpService para separar lógica de presentación.
  */
 import { APP_NAME } from '../../constants/app.js';
-import { getEmergencyLines } from '../../constants/crisis.js';
+import {
+  formatCrisisEmergencyResources,
+  resolveEmergencyInfoFromPreferences,
+} from '../../constants/emergencyNumbers.js';
 
 /**
  * Genera el contenido del mensaje de seguimiento
  * @param {Object} crisisEvent - Evento de crisis
- * @param {string} country - País del usuario
+ * @param {Object} [options]
+ * @param {Object|null} [options.preferences] - Preferencias del usuario
+ * @param {string|null} [options.phone] - Teléfono del usuario
+ * @param {'es'|'en'} [options.language='es']
  * @returns {string} Contenido del mensaje
  */
-export function generateFollowUpMessage(crisisEvent, country = 'GENERAL') {
-  const lines = getEmergencyLines(country);
+export function generateFollowUpMessage(crisisEvent, options = {}) {
+  const { preferences = null, phone = null, language = 'es' } = options;
+  const emergencyInfo = resolveEmergencyInfoFromPreferences(preferences, phone);
   const riskLevel = crisisEvent.riskLevel;
   const daysSinceCrisis = Math.floor(
     (Date.now() - new Date(crisisEvent.detectedAt).getTime()) / (1000 * 60 * 60 * 24)
@@ -31,11 +38,7 @@ export function generateFollowUpMessage(crisisEvent, country = 'GENERAL') {
 
   if (riskLevel === 'HIGH' || riskLevel === 'MEDIUM') {
     message += `\n\nRecuerda que si necesitas hablar con alguien, estas líneas están disponibles 24/7:\n`;
-    message += `- Línea de Prevención del Suicidio: ${lines.SUICIDE_PREVENTION}\n`;
-    message += `- Emergencias: ${lines.EMERGENCY}\n`;
-    if (lines.MENTAL_HEALTH) {
-      message += `- Salud Mental: ${lines.MENTAL_HEALTH}\n`;
-    }
+    message += formatCrisisEmergencyResources(emergencyInfo, language);
   }
 
   message += `\nEstoy aquí para escucharte cuando lo necesites.`;

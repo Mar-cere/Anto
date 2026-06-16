@@ -1110,7 +1110,8 @@ class OpenAIService {
     );
     if ((riskLevel === 'MEDIUM' || riskLevel === 'HIGH') && !skipHeavyPhones && !hasEmergencyResources) {
       const emergencyInfo = resolveEmergencyInfoFromPreferences(profile?.preferences, profile?.phone || null);
-      const emergencyLines = formatEmergencyNumbers(emergencyInfo);
+      const language = profile?.preferences?.language || 'es';
+      const emergencyLines = formatEmergencyNumbers(emergencyInfo, language);
       additions.push(`Recursos de ayuda inmediata:\n${emergencyLines}`);
     }
 
@@ -1970,7 +1971,8 @@ class OpenAIService {
     const skipHeavyPhones = shouldSkipEmergencyPhoneNumbersInSafetyAppend(userMessageContent);
     const compact = shouldUseCompactCrisisSafetyAppend(userMessageContent, conversationHistory);
     const emergencyInfo = resolveEmergencyInfoFromPreferences(profile?.preferences, profile?.phone || null);
-    const emergencyLines = formatEmergencyNumbers(emergencyInfo);
+    const lang = options.language || profile?.preferences?.language || 'es';
+    const emergencyLines = formatEmergencyNumbers(emergencyInfo, lang);
 
     // Si la intensidad es >= 8, aclarar límites del asistente (reduce miedo a "¿llamaste a mis contactos?")
     if (intensity >= 8) {

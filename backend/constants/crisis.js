@@ -2,60 +2,18 @@
  * Constantes y Funciones de Crisis - Recursos de emergencia y protocolo de intervención en crisis
  * 
  * Este módulo proporciona:
- * - Líneas de emergencia por país
  * - Mensajes estructurados de crisis
  * - Protocolo de intervención en crisis
  * - Función de evaluación de riesgo suicida
+ *
+ * Líneas de emergencia por país: ver `emergencyNumbers.js` (`getEmergencyLines`).
  */
+import {
+  getEmergencyLines,
+  resolveCrisisEmergencySource,
+} from './emergencyNumbers.js';
 
-// ========== LÍNEAS DE EMERGENCIA POR PAÍS ==========
-// La app es solo en español; audiencia principal: Latinoamérica y España (no usar 988/741741 como defecto).
-export const EMERGENCY_LINES = {
-  ARGENTINA: {
-    SUICIDE_PREVENTION: '135',
-    MENTAL_HEALTH: '0800-222-5462',
-    EMERGENCY: '911',
-    CRISIS_TEXT: null
-  },
-  MEXICO: {
-    SUICIDE_PREVENTION: '800-911-2000',
-    MENTAL_HEALTH: '800-911-2000',
-    EMERGENCY: '911',
-    CRISIS_TEXT: null
-  },
-  ESPANA: {
-    SUICIDE_PREVENTION: '024',
-    MENTAL_HEALTH: '024',
-    EMERGENCY: '112',
-    CRISIS_TEXT: null
-  },
-  COLOMBIA: {
-    SUICIDE_PREVENTION: '106',
-    MENTAL_HEALTH: '106',
-    EMERGENCY: '123',
-    CRISIS_TEXT: null
-  },
-  CHILE: {
-    SUICIDE_PREVENTION: '600-360-7777',
-    MENTAL_HEALTH: '600-360-7777',
-    EMERGENCY: '133',
-    CRISIS_TEXT: null
-  },
-  PERU: {
-    SUICIDE_PREVENTION: '113',
-    MENTAL_HEALTH: '113',
-    EMERGENCY: '105',
-    CRISIS_TEXT: null
-  },
-  /** País desconocido: orientación España + LATAM sin asumir EE. UU. */
-  GENERAL: {
-    EMERGENCY: 'el número oficial de tu país (112 en España; 911 en varios países de América Latina; 133 en Chile; 123 en Colombia)',
-    SUICIDE_PREVENTION:
-      'la línea pública de tu país (024 en España; 135 en Argentina; 800 911 2000 en México; 106 en Colombia; 600 360 7777 en Chile)',
-    MENTAL_HEALTH: 'urgencias o salud mental del país donde te encuentres',
-    CRISIS_TEXT: null
-  }
-};
+export { getEmergencyLines, resolveCrisisEmergencySource };
 
 // ========== MENSAJES DE CRISIS ESTRUCTURADOS ==========
 export const CRISIS_MESSAGES = {
@@ -767,22 +725,13 @@ export const buildCrisisActionDecision = ({
 // ========== FUNCIONES HELPER ==========
 
 /**
- * Obtiene las líneas de emergencia para un país específico
- * @param {string} country - Código del país (ARGENTINA, MEXICO, etc.) o 'GENERAL'
- * @returns {Object} Objeto con líneas de emergencia
- */
-export const getEmergencyLines = (country = 'GENERAL') => {
-  return EMERGENCY_LINES[country] || EMERGENCY_LINES.GENERAL;
-};
-
-/**
  * Genera un mensaje de crisis personalizado con recursos de emergencia
  * @param {string} riskLevel - Nivel de riesgo: 'LOW', 'MEDIUM', 'HIGH'
- * @param {string} country - País del usuario (opcional)
+ * @param {string|Object} [countryOrSource='GENERAL'] - Legacy, ISO, o `{ preferences, phone }`
  * @returns {string} Mensaje de crisis con recursos
  */
-export const generateCrisisMessage = (riskLevel, country = 'GENERAL') => {
-  const lines = getEmergencyLines(country);
+export const generateCrisisMessage = (riskLevel, countryOrSource = 'GENERAL') => {
+  const lines = getEmergencyLines(countryOrSource);
   const messages = [];
   
   // Mensaje base de seguridad
@@ -823,11 +772,11 @@ export const generateCrisisMessage = (riskLevel, country = 'GENERAL') => {
 /**
  * Genera un prompt del sistema para situaciones de crisis
  * @param {string} riskLevel - Nivel de riesgo: 'LOW', 'MEDIUM', 'HIGH'
- * @param {string} country - País del usuario (opcional)
+ * @param {string|Object} [countryOrSource='GENERAL'] - Legacy, ISO, o `{ preferences, phone }`
  * @returns {string} Prompt del sistema para crisis
  */
-export const generateCrisisSystemPrompt = (riskLevel, country = 'GENERAL') => {
-  const lines = getEmergencyLines(country);
+export const generateCrisisSystemPrompt = (riskLevel, countryOrSource = 'GENERAL') => {
+  const lines = getEmergencyLines(countryOrSource);
   const protocol = CRISIS_PROTOCOL.RISK_LEVELS[riskLevel];
   
   let prompt = `🚨 SITUACIÓN DE CRISIS DETECTADA - NIVEL DE RIESGO: ${riskLevel}\n\n`;

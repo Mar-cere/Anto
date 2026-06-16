@@ -39,6 +39,11 @@ if (
     enabled: true,
     riskLevel: 'HIGH',
     messageContent: 'quiero morir',
+  }) &&
+  shouldHardStopCrisisLlm({
+    enabled: true,
+    riskLevel: 'WARNING',
+    messageContent: 'quiero morir',
   })
 ) {
   pass('crisis hard-stop HIGH + léxico explícito');
@@ -46,8 +51,8 @@ if (
   fail('crisis hard-stop HIGH + léxico explícito');
 }
 
-const hardStop = buildHardStopCrisisAssistantContent({ riskLevel: 'HIGH' });
-if (hardStop && hardStop.length > 50) {
+const hardStop = buildHardStopCrisisAssistantContent({ riskLevel: 'HIGH', country: 'ESPANA' });
+if (hardStop && hardStop.length > 80 && hardStop.includes('112') && !/plan de seguridad/i.test(hardStop)) {
   pass('buildHardStopCrisisAssistantContent');
 } else {
   fail('buildHardStopCrisisAssistantContent');

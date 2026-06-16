@@ -7,6 +7,7 @@ import Message from '../../models/Message.js';
 import {
   generateCrisisMessage,
   generateCrisisSystemPrompt,
+  resolveCrisisEmergencySource,
   shouldAttachCrisisContextToPrompt
 } from '../../constants/crisis.js';
 import {
@@ -683,8 +684,8 @@ export function generarMensajesContexto(contexto) {
   // Evitamos disparar recursos por señales blandas o palabras ambiguas (reduce falsos positivos).
   if (contexto.crisis?.riskLevel && shouldAttachCrisisContextToPrompt(contexto.crisis.riskLevel)) {
     const riskLevel = contexto.crisis.riskLevel;
-    const country = contexto.crisis?.country || 'GENERAL';
-    const crisisMessage = generateCrisisMessage(riskLevel, country);
+    const crisisSource = resolveCrisisEmergencySource(contexto.crisis);
+    const crisisMessage = generateCrisisMessage(riskLevel, crisisSource);
     messages.push({
       role: 'system',
       content:
@@ -1074,7 +1075,10 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   }
 
   if (contexto.crisis?.riskLevel && shouldAttachCrisisContextToPrompt(contexto.crisis.riskLevel)) {
-    const crisisPrompt = generateCrisisSystemPrompt(contexto.crisis.riskLevel, contexto.crisis.country || 'GENERAL');
+    const crisisPrompt = generateCrisisSystemPrompt(
+      contexto.crisis.riskLevel,
+      resolveCrisisEmergencySource(contexto.crisis),
+    );
     systemMessage = `${crisisPrompt}\n\n---\n\n${systemMessage}`;
   }
 

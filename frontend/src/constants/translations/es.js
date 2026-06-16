@@ -261,7 +261,7 @@ export const SETTINGS = {
   BACK: 'Volver',
   PREFERENCES: 'Preferencias',
   SECTION_SYSTEM: 'Sistema',
-  SECTION_SYSTEM_INTRO: 'Tema y notificaciones.',
+  SECTION_SYSTEM_INTRO: 'Tema, país y notificaciones.',
   SECTION_CHAT: 'Chat',
   SECTION_CHAT_INTRO: 'Estilo y tono. Amplía la fila para ajustar.',
   SECTION_PATTERNS: 'Patrones y señales',
@@ -429,6 +429,18 @@ export const SETTINGS = {
   LANGUAGE_CHANGED_OK: 'Idioma actualizado',
   LANGUAGE_CHANGED_SYNC_WARNING:
     'Idioma aplicado en este dispositivo, pero no se pudo sincronizar con la cuenta.',
+  COUNTRY: 'País o región',
+  COUNTRY_ROW_SUB: 'Números de emergencia en situaciones de crisis',
+  COUNTRY_MODAL_TITLE: 'País o región',
+  COUNTRY_HINT:
+    'No usamos GPS. Si eliges Automático, usamos el idioma o la hora de tu dispositivo.',
+  COUNTRY_AUTO_LABEL: 'Automático',
+  COUNTRY_AUTO_DESC: 'Según idioma u hora del dispositivo',
+  COUNTRY_DETECTED_SUFFIX: '(detectado)',
+  COUNTRY_CHANGED_OK: 'País actualizado',
+  COUNTRY_CHANGED_SYNC_WARNING:
+    'País aplicado en este dispositivo, pero no se pudo sincronizar con la cuenta.',
+  COUNTRY_SAVING_A11Y: 'Guardando país',
   THEME_MODAL_TITLE: 'Tema de la interfaz',
   THEME_LIGHT: 'Claro',
   THEME_DARK: 'Oscuro',
