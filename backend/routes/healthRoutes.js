@@ -9,6 +9,7 @@
 
 import express from 'express';
 import { getAppTrialPublicConfig } from '../constants/subscription.js';
+import { createRateLimiter } from '../utils/createRateLimiter.js';
 import {
   buildDetailedHealthSnapshot,
   buildPublicHealthSnapshot,
@@ -17,19 +18,14 @@ import {
 
 const router = express.Router();
 
-/**
- * @swagger
- * /health:
- *   get:
- *     summary: Health check del servidor
- *     tags: [Health]
- *     description: Verifica el estado de salud del servidor y sus dependencias
- *     responses:
- *       200:
- *         description: Servidor funcionando correctamente
- *       503:
- *         description: Servidor con problemas
- */
+const detailedLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: 'Demasiadas solicitudes de health detallado. Intenta de nuevo en unos minutos.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 /**
  * GET /api/health/app-config
  * Config pública de la app (sin auth). Usada por FAQ y copy de trial.
@@ -50,7 +46,7 @@ router.get('/', async (req, res) => {
  * GET /api/health/detailed
  * Health check detallado (solo en desarrollo o con autenticación)
  */
-router.get('/detailed', async (req, res) => {
+router.get('/detailed', detailedLimiter, async (req, res) => {
   if (process.env.NODE_ENV === 'production' && !req.user) {
     return res.status(401).json({ error: 'Unauthorized' });
   }

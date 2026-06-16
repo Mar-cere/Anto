@@ -1246,6 +1246,7 @@ export function useChatScreen() {
       captureChatError(err, {
         code: backendCode || err?.name,
         phase: 'send_message_stream',
+        guest: guestQuota !== null,
       });
 
       setMessages((prev) => [

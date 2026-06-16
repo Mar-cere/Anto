@@ -31,10 +31,12 @@ const {
   buildPublicHealthSnapshot,
   buildDetailedHealthSnapshot,
   getHealthHttpStatus,
+  resolveOverallStatus,
 } = await import('../../../services/healthProbeService.js');
 
 describe('healthProbeService', () => {
   const savedOpenAi = process.env.OPENAI_API_KEY;
+  const savedSentry = process.env.SENTRY_DSN;
   let readyStateDescriptor;
 
   beforeEach(() => {
@@ -42,6 +44,11 @@ describe('healthProbeService', () => {
     Object.defineProperty(mongoose.connection, 'readyState', {
       value: 1,
       configurable: true,
+    });
+    mockGetHealthStatus.mockReturnValue({
+      configured: false,
+      connected: null,
+      mode: 'memory_only',
     });
   });
 
@@ -51,6 +58,8 @@ describe('healthProbeService', () => {
     }
     if (savedOpenAi === undefined) delete process.env.OPENAI_API_KEY;
     else process.env.OPENAI_API_KEY = savedOpenAi;
+    if (savedSentry === undefined) delete process.env.SENTRY_DSN;
+    else process.env.SENTRY_DSN = savedSentry;
   });
 
   it('marca degraded si falta OpenAI con Mongo conectado', () => {
@@ -62,18 +71,51 @@ describe('healthProbeService', () => {
     expect(getHealthHttpStatus(snap)).toBe(200);
   });
 
-  it('incluye atlas y workers sin secretos', () => {
+  it('marca unavailable si Mongo no está conectado', () => {
     process.env.OPENAI_API_KEY = 'sk-test';
+    Object.defineProperty(mongoose.connection, 'readyState', { value: 0, configurable: true });
     const snap = buildPublicHealthSnapshot();
-    expect(snap.dependencies.atlas.vectorSearchEnabled).toBe(true);
-    expect(snap.workers.weeklyPatternInsight).toBeDefined();
-    expect(snap).not.toHaveProperty('OPENAI_API_KEY');
+    expect(snap.status).toBe('unavailable');
+    expect(getHealthHttpStatus(snap)).toBe(503);
   });
 
-  it('detailed agrega memoria y services', () => {
+  it('health público no expone workers ni indexName', () => {
+    process.env.OPENAI_API_KEY = 'sk-test';
+    const snap = buildPublicHealthSnapshot();
+    expect(snap).not.toHaveProperty('workers');
+    expect(snap.dependencies.atlas).not.toHaveProperty('indexName');
+    expect(snap.observability).toHaveProperty('sentryConfigured');
+  });
+
+  it('health detallado incluye workers e indexName', () => {
     process.env.OPENAI_API_KEY = 'sk-test';
     const snap = buildDetailedHealthSnapshot();
+    expect(snap.workers.weeklyPatternInsight).toBeDefined();
+    expect(snap.dependencies.atlas.indexName).toBe('topic_free_embedding_index');
     expect(snap.memory).toHaveProperty('used');
-    expect(snap.services.openai).toBe(true);
+  });
+
+  it('degraded si Redis configurado pero no conectado', () => {
+    process.env.OPENAI_API_KEY = 'sk-test';
+    mockGetHealthStatus.mockReturnValue({
+      configured: true,
+      connected: false,
+      mode: 'memory_fallback',
+    });
+    const status = resolveOverallStatus({
+      database: 'connected',
+      openai: { configured: true },
+      redis: { configured: true, connected: false },
+    });
+    expect(status).toBe('degraded');
+  });
+
+  it('no filtra secretos en JSON serializado', () => {
+    process.env.OPENAI_API_KEY = 'sk-super-secret-key';
+    process.env.SENTRY_DSN = 'https://abc@o123.ingest.sentry.io/1';
+    const json = JSON.stringify(buildPublicHealthSnapshot());
+    expect(json).not.toContain('sk-super-secret');
+    expect(json).not.toContain('ingest.sentry.io');
+    expect(json).toContain('"sentryConfigured":true');
   });
 });

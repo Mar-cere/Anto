@@ -8,7 +8,11 @@ jest.mock('@sentry/react-native', () => ({
 }));
 
 import * as Sentry from '@sentry/react-native';
-import { captureChatError, initializeClientSentry } from '../sentry';
+import {
+  captureChatError,
+  initializeClientSentry,
+  scrubSentryEvent,
+} from '../sentry';
 
 describe('client sentry util', () => {
   const savedDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
@@ -24,6 +28,28 @@ describe('client sentry util', () => {
     delete process.env.EXPO_PUBLIC_SENTRY_DSN;
     expect(initializeClientSentry()).toBe(false);
     expect(Sentry.init).not.toHaveBeenCalled();
+  });
+
+  it('rechaza DSN con formato inválido', () => {
+    process.env.EXPO_PUBLIC_SENTRY_DSN = 'not-a-valid-dsn';
+    expect(initializeClientSentry()).toBe(false);
+    expect(Sentry.init).not.toHaveBeenCalled();
+  });
+});
+
+describe('scrubSentryEvent', () => {
+  it('redacta breadcrumbs con content y mensajes largos', () => {
+    const event = scrubSentryEvent({
+      breadcrumbs: [
+        { data: { content: 'texto sensible del chat', note: 'x'.repeat(200) } },
+      ],
+      exception: { values: [{ value: 'a'.repeat(150) }] },
+      extra: { message: 'hola' },
+    });
+    expect(event.breadcrumbs[0].data.content).toBe('[redacted]');
+    expect(event.breadcrumbs[0].data.note).toBe('[redacted]');
+    expect(event.exception.values[0].value).toBe('[redacted]');
+    expect(event.extra.message).toBe('[redacted]');
   });
 });
 

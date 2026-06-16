@@ -29,7 +29,8 @@ describe('Health Routes', () => {
       expect(response.body).toHaveProperty('dependencies');
       expect(response.body.dependencies).toHaveProperty('openai');
       expect(response.body.dependencies).toHaveProperty('atlas');
-      expect(response.body).toHaveProperty('workers');
+      expect(response.body).toHaveProperty('observability');
+      expect(response.body).not.toHaveProperty('workers');
     });
 
     it('debe retornar información de salud con estado de base de datos', async () => {

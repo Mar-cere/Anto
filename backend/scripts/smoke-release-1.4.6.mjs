@@ -7,6 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import {
   buildPublicHealthSnapshot,
+  buildDetailedHealthSnapshot,
   getHealthHttpStatus,
 } from '../services/healthProbeService.js';
 
@@ -23,11 +24,23 @@ function fail(name, detail) {
   checks.push({ name, ok: false, detail });
 }
 
-const snap = buildPublicHealthSnapshot({ version: '1.4.6' });
-if (snap.dependencies?.atlas && snap.workers?.weeklyPatternInsight !== undefined) {
-  pass('health probe snapshot público');
+const publicSnap = buildPublicHealthSnapshot({ version: '1.4.6' });
+if (
+  publicSnap.dependencies?.atlas &&
+  publicSnap.observability &&
+  !publicSnap.workers &&
+  !publicSnap.dependencies.atlas.indexName
+) {
+  pass('health público sin workers ni indexName');
 } else {
-  fail('health probe snapshot público', JSON.stringify(snap));
+  fail('health público sin workers ni indexName', JSON.stringify(publicSnap));
+}
+
+const detailedSnap = buildDetailedHealthSnapshot({ version: '1.4.6' });
+if (detailedSnap.workers?.weeklyPatternInsight !== undefined && detailedSnap.dependencies?.atlas?.indexName) {
+  pass('health detallado con workers e indexName');
+} else {
+  fail('health detallado con workers e indexName');
 }
 
 if (getHealthHttpStatus({ status: 'degraded' }) === 200) {
@@ -50,10 +63,11 @@ if (fs.existsSync(envDoc) && fs.readFileSync(envDoc, 'utf8').includes('ATLAS_VEC
 }
 
 const sentryClient = path.join(root, 'frontend/src/utils/sentry.js');
-if (fs.existsSync(sentryClient) && fs.readFileSync(sentryClient, 'utf8').includes('captureChatError')) {
-  pass('sentry cliente util');
+const sentrySrc = fs.existsSync(sentryClient) ? fs.readFileSync(sentryClient, 'utf8') : '';
+if (sentrySrc.includes('scrubSentryEvent') && sentrySrc.includes('SKIP_CHAT_CAPTURE_CODES')) {
+  pass('sentry cliente con scrub y skip codes');
 } else {
-  fail('sentry cliente util');
+  fail('sentry cliente con scrub y skip codes');
 }
 
 const maestroE2e = path.join(root, 'frontend/e2e/maestro/login-chat-send.yaml');
@@ -61,6 +75,13 @@ if (fs.existsSync(maestroE2e) && fs.readFileSync(maestroE2e, 'utf8').includes('c
   pass('e2e maestro login-chat-send');
 } else {
   fail('e2e maestro login-chat-send');
+}
+
+const healthRoutes = path.join(root, 'backend/routes/healthRoutes.js');
+if (fs.existsSync(healthRoutes) && fs.readFileSync(healthRoutes, 'utf8').includes('detailedLimiter')) {
+  pass('rate limit en health detallado');
+} else {
+  fail('rate limit en health detallado');
 }
 
 const failed = checks.filter((c) => !c.ok);

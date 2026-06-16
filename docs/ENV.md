@@ -75,7 +75,7 @@ Ver también `backend/config/features.js`.
 
 ## Health check
 
-- `GET /health` y `GET /api/health` — snapshot público: MongoDB, Redis, OpenAI configurado, Atlas, workers.
-- `GET /api/health/detailed` — memoria y nodos; en producción requiere usuario autenticado.
+- `GET /health` y `GET /api/health` — snapshot público: MongoDB, Redis, OpenAI configurado, Atlas (sin nombre de índice ni workers).
+- `GET /api/health/detailed` — workers, índice Atlas, memoria; en producción requiere usuario autenticado y tiene rate limit.
 
 Códigos: `200` si el servicio responde (incluso `degraded`); `503` solo si MongoDB no está disponible (`unavailable`).

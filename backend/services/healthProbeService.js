@@ -24,12 +24,13 @@ export function getMongoDBStatus() {
 }
 
 function buildRedisSnapshot() {
-  const status = cacheService.getHealthStatus?.() || {
-    configured: false,
-    connected: null,
-    mode: 'memory_only',
-  };
-  return status;
+  return (
+    cacheService.getHealthStatus?.() || {
+      configured: false,
+      connected: null,
+      mode: 'memory_only',
+    }
+  );
 }
 
 function buildOpenAiSnapshot() {
@@ -37,13 +38,16 @@ function buildOpenAiSnapshot() {
   return { configured };
 }
 
-function buildAtlasSnapshot() {
-  return {
+function buildAtlasSnapshot({ includeIndexName = false } = {}) {
+  const snapshot = {
     embeddingsEnabled: isTopicFreeEmbeddingsEnabled(),
     vectorSearchEnabled: isAtlasVectorSearchEnabled(),
     searchMode: getVectorSearchMode(),
-    indexName: getAtlasVectorIndexName(),
   };
+  if (includeIndexName) {
+    snapshot.indexName = getAtlasVectorIndexName();
+  }
+  return snapshot;
 }
 
 function buildWorkersSnapshot() {
@@ -58,7 +62,13 @@ function buildWorkersSnapshot() {
   };
 }
 
-function resolveOverallStatus({ database, openai, redis }) {
+function buildObservabilitySnapshot() {
+  return {
+    sentryConfigured: Boolean(String(process.env.SENTRY_DSN || '').trim()),
+  };
+}
+
+export function resolveOverallStatus({ database, openai, redis }) {
   if (database !== 'connected') return 'unavailable';
   if (!openai.configured) return 'degraded';
   if (redis.configured && redis.connected === false) return 'degraded';
@@ -72,8 +82,7 @@ export function buildPublicHealthSnapshot(options = {}) {
   const database = getMongoDBStatus();
   const redis = buildRedisSnapshot();
   const openai = buildOpenAiSnapshot();
-  const atlas = buildAtlasSnapshot();
-  const workers = buildWorkersSnapshot();
+  const atlas = buildAtlasSnapshot({ includeIndexName: false });
   const status = resolveOverallStatus({ database, openai, redis });
 
   return {
@@ -88,12 +97,13 @@ export function buildPublicHealthSnapshot(options = {}) {
       openai,
       atlas,
     },
-    workers,
+    observability: buildObservabilitySnapshot(),
   };
 }
 
 export function buildDetailedHealthSnapshot(options = {}) {
   const base = buildPublicHealthSnapshot(options);
+  const atlas = buildAtlasSnapshot({ includeIndexName: true });
   const allDepsOk =
     base.database === 'connected' &&
     base.dependencies.openai.configured &&
@@ -102,6 +112,11 @@ export function buildDetailedHealthSnapshot(options = {}) {
   return {
     ...base,
     status: allDepsOk ? base.status : 'degraded',
+    dependencies: {
+      ...base.dependencies,
+      atlas,
+    },
+    workers: buildWorkersSnapshot(),
     memory: {
       used: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB`,
       total: `${Math.round(process.memoryUsage().heapTotal / 1024 / 1024)} MB`,
@@ -115,7 +130,7 @@ export function buildDetailedHealthSnapshot(options = {}) {
       mongodb: base.database === 'connected',
       redis: !base.dependencies.redis.configured || base.dependencies.redis.connected === true,
       openai: base.dependencies.openai.configured,
-      atlasVectorSearch: base.dependencies.atlas.vectorSearchEnabled,
+      atlasVectorSearch: atlas.vectorSearchEnabled,
     },
   };
 }
@@ -127,6 +142,7 @@ export function getHealthHttpStatus(snapshot) {
 
 export default {
   getMongoDBStatus,
+  resolveOverallStatus,
   buildPublicHealthSnapshot,
   buildDetailedHealthSnapshot,
   getHealthHttpStatus,
