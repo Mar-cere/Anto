@@ -15,6 +15,8 @@
  * | trialRetentionEmail        | ENABLE_TRIAL_RETENTION_EMAIL   | activo | correo ~12 h tras inicio de trial corto (1 día) |
  * | weeklySummaryEmail         | ENABLE_WEEKLY_SUMMARY_EMAIL o ENABLE_WEEKLY_TIPS_EMAIL | off | aviso resumen semanal (neutro); slot `WEEKLY_TIPS_EMAIL_SLOT`; regalo trial +N días tras envío: `WEEKLY_SUMMARY_TRIAL_GIFT_DAYS` (default: 1 si APP_TRIAL_DAYS≤1, si no min(2, APP_TRIAL_DAYS)), desactivar con `WEEKLY_SUMMARY_TRIAL_GIFT_ENABLED=false` |
  * | lastSessionSummaryWorker   | ENABLE_LAST_SESSION_SUMMARY    | activo salvo `false` | worker continuidad último chat (#4+#47); tick `LAST_SESSION_SUMMARY_TICK_MS`; reencola `processing` viejos con `LAST_SESSION_SUMMARY_STALE_MS` (default 15 min); reintentos LLM `LAST_SESSION_SUMMARY_MAX_ATTEMPTS` (default 2, máx 5) |
+ * | personalPatternRag         | PERSONAL_PATTERN_RAG_ENABLED   | off     | RAG patrones personales cross-sesión (#203); requiere embeddings |
+ * | crisisHardStop             | ENABLE_CRISIS_HARD_STOP        | activo  | hard-stop sin LLM en HIGH + léxico explícito (#205) |
  * | swagger                    | ENABLE_SWAGGER + NODE_ENV      | ver abajo | en prod solo si `ENABLE_SWAGGER=true` |
  *
  * Para los cuatro primeros, cualquier valor distinto de la cadena `'false'`
@@ -66,6 +68,10 @@ export const features = Object.freeze({
   weeklyInsightLlm: process.env.WEEKLY_INSIGHT_LLM_ENABLED === 'true',
   /** Worker continuidad último chat (#4+#47). Default activo salvo `false`. */
   lastSessionSummaryWorker: envIsNotFalse(process.env.ENABLE_LAST_SESSION_SUMMARY),
+  /** RAG patrones personales (#203). Opt-in: `PERSONAL_PATTERN_RAG_ENABLED=true` + embeddings. */
+  personalPatternRag: process.env.PERSONAL_PATTERN_RAG_ENABLED === 'true',
+  /** Hard-stop crisis sin LLM (#205). Default activo salvo `ENABLE_CRISIS_HARD_STOP=false`. */
+  crisisHardStop: envIsNotFalse(process.env.ENABLE_CRISIS_HARD_STOP),
 });
 
 export default features;

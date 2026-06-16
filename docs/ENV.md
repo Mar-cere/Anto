@@ -7,7 +7,7 @@ Referencia de variables críticas para despliegue y onboarding. **No incluye val
 | Variable | Requerida | Descripción |
 |----------|-----------|-------------|
 | `NODE_ENV` | Sí | `development`, `test`, `production` |
-| `APP_VERSION` | No | Versión expuesta en `/health` (p. ej. `1.4.6`) |
+| `APP_VERSION` | No | Versión expuesta en `/health` (p. ej. `1.5.0`) |
 | `PORT` | No | Puerto HTTP (Render usa `PORT` automáticamente) |
 | `MONGO_URI` / `MONGODB_URI` | Sí (prod) | Cadena de conexión MongoDB Atlas |
 | `JWT_SECRET` | Sí (prod) | Firma de access tokens (mín. 32 caracteres) |
@@ -57,6 +57,8 @@ Ver también `backend/config/features.js`.
 | `ENABLE_REMINDERS` | off | Recordatorios contactos emergencia |
 | `ENABLE_WEEKLY_SUMMARY_EMAIL` | off | Correo aviso resumen semanal |
 | `ENABLE_SWAGGER` | off en prod | Documentación `/api-docs` |
+| `PERSONAL_PATTERN_RAG_ENABLED` | off | RAG patrones personales cross-sesión (#203); requiere embeddings |
+| `ENABLE_CRISIS_HARD_STOP` | activo | Hard-stop sin LLM en HIGH + léxico explícito (#205) |
 
 ## Cliente móvil (Expo)
 

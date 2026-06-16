@@ -66,7 +66,7 @@ import summaryRoutes from './routes/summaryRoutes.js';
 import signalsRoutes from './routes/signalsRoutes.js';
 
 // Constantes de configuración
-const APP_VERSION = '1.4.6';
+const APP_VERSION = '1.5.0';
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutos
 const RATE_LIMIT_MAX_REQUESTS = 100;
 const ALLOWED_HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];

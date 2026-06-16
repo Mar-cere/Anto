@@ -39,6 +39,10 @@ await jest.unstable_mockModule('../../../services/recentAbcChatContextService.js
   buildRecentAbcChatSnippet: jest.fn().mockResolvedValue(null),
 }));
 
+await jest.unstable_mockModule('../../../services/personalPatternRagService.js', () => ({
+  buildPersonalPatternRagSnippet: jest.fn().mockResolvedValue(null),
+}));
+
 const {
   planChatTurnEnhancements,
   buildClientTurnPayload,

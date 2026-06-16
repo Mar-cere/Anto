@@ -20,6 +20,7 @@ const {
   getVectorSearchMode,
   isAtlasVectorSearchEnabled,
   findSimilarTopicFreeEvents,
+  findSimilarMemoryIndexEvents,
 } = await import('../../../services/topicFreeVectorSearchService.js');
 
 describe('topicFreeVectorSearchService', () => {
@@ -87,6 +88,45 @@ describe('topicFreeVectorSearchService', () => {
     expect(mockFind).toHaveBeenCalled();
     expect(hits).toHaveLength(1);
     expect(hits[0].interventionId).toBe('breathing_exercise');
+  });
+
+  it('buildAtlasVectorSearchPipeline filtra eventType e interventionId', () => {
+    const pipeline = buildAtlasVectorSearchPipeline({
+      userId: '507f1f77bcf86cd799439011',
+      queryVector: [0.1],
+      eventTypes: ['memory_index'],
+      interventionId: 'personal-pattern',
+    });
+    expect(pipeline[0].$vectorSearch.filter.eventType.$in).toEqual(['memory_index']);
+    expect(pipeline[0].$vectorSearch.filter.interventionId).toBe('personal-pattern');
+  });
+
+  it('findSimilarMemoryIndexEvents usa scan con memory_index', async () => {
+    const chain = {
+      select: jest.fn().mockReturnThis(),
+      sort: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      lean: jest.fn().mockResolvedValue([
+        {
+          interventionId: 'personal-pattern',
+          topicFree: 'reunión difícil',
+          eventType: 'memory_index',
+          conversationId: '507f1f77bcf86cd799439099',
+          topicFreeEmbedding: [1, 0],
+        },
+      ]),
+    };
+    mockFind.mockReturnValue(chain);
+
+    const hits = await findSimilarMemoryIndexEvents({
+      userId: '507f1f77bcf86cd799439011',
+      queryVector: [0.99, 0.01],
+      limit: 3,
+    });
+
+    expect(mockFind).toHaveBeenCalled();
+    expect(hits[0].eventType).toBe('memory_index');
+    expect(hits[0].interventionId).toBe('personal-pattern');
   });
 
   it('findSimilarTopicFreeEvents usa Atlas cuando está activo', async () => {

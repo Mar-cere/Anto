@@ -1068,6 +1068,11 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     systemMessage += recentAbcSnippet;
   }
 
+  const personalPatternRagSnippet = String(contexto.personalPatternRagPromptSnippet || '').trim();
+  if (personalPatternRagSnippet) {
+    systemMessage += personalPatternRagSnippet;
+  }
+
   if (contexto.crisis?.riskLevel && shouldAttachCrisisContextToPrompt(contexto.crisis.riskLevel)) {
     const crisisPrompt = generateCrisisSystemPrompt(contexto.crisis.riskLevel, contexto.crisis.country || 'GENERAL');
     systemMessage = `${crisisPrompt}\n\n---\n\n${systemMessage}`;

@@ -54,8 +54,15 @@ const RELEASE_1_4_4_VARS = {
   TOPIC_FREE_EMBEDDINGS_ENABLED: 'Embeddings topicFree para grafo semántico',
 };
 
+// Variables opcionales 1.5.0 (Bloque D)
+const RELEASE_1_5_0_VARS = {
+  PERSONAL_PATTERN_RAG_ENABLED: 'RAG patrones personales cross-sesión (requiere embeddings + Atlas)',
+  ENABLE_CRISIS_HARD_STOP: 'Hard-stop sin LLM en crisis HIGH explícita',
+};
+
 let hasErrors = false;
 let hasReleaseHints = false;
+let hasRelease15Hints = false;
 let hasWarnings = false;
 
 console.log('🔍 Validando variables de entorno...\n');
@@ -113,6 +120,30 @@ if (process.env.NODE_ENV === 'production') {
       hasReleaseHints = true;
     }
   }
+
+  console.log('\n📋 Release 1.5.0 (Bloque D — chat):');
+  for (const [key, description] of Object.entries(RELEASE_1_5_0_VARS)) {
+    if (process.env[key]) {
+      console.log(`  ✅ ${key} (${description})`);
+    } else if (key === 'ENABLE_CRISIS_HARD_STOP') {
+      console.log(`  ℹ️  ${key}: default activo si no se define`);
+    } else {
+      console.log(`  ⚠️  ${key}: NO CONFIGURADA (${description})`);
+      hasRelease15Hints = true;
+    }
+  }
+
+  if (process.env.PERSONAL_PATTERN_RAG_ENABLED === 'true') {
+    const embeddingsOn =
+      process.env.TOPIC_FREE_EMBEDDINGS_ENABLED !== 'false' && Boolean(process.env.OPENAI_API_KEY);
+    if (!embeddingsOn) {
+      console.log('  ⚠️  PERSONAL_PATTERN_RAG_ENABLED=true pero embeddings no disponibles');
+      hasRelease15Hints = true;
+    }
+    if (process.env.ATLAS_VECTOR_SEARCH_ENABLED !== 'true') {
+      console.log('  ℹ️  PERSONAL_PATTERN_RAG usará fallback scan (sin ATLAS_VECTOR_SEARCH_ENABLED=true)');
+    }
+  }
 }
 
 // Validaciones adicionales
@@ -151,11 +182,14 @@ console.log('\n📊 Resumen:');
 if (hasErrors) {
   console.log('  ❌ Hay errores críticos. Por favor, configura las variables requeridas.');
   process.exit(1);
-} else if (hasWarnings || hasReleaseHints) {
+} else if (hasWarnings || hasReleaseHints || hasRelease15Hints) {
   console.log('  ⚠️  Hay advertencias. Algunas funcionalidades pueden no estar disponibles.');
   if (hasReleaseHints) {
     console.log('  💡 Revisa variables de Release 1.4.4 para el despliegue completo.');
-  } else {
+  }
+  if (hasRelease15Hints) {
+    console.log('  💡 Revisa variables de Release 1.5.0 (Bloque D).');
+  } else if (!hasReleaseHints) {
     console.log('  💡 Revisa las variables recomendadas para habilitar todas las funcionalidades.');
   }
   process.exit(0);

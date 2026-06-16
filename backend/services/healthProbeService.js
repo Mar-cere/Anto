@@ -11,6 +11,7 @@ import {
   getVectorSearchMode,
   isAtlasVectorSearchEnabled,
 } from './topicFreeVectorSearchService.js';
+import { isPersonalPatternRagEnabled } from './personalPatternRagService.js';
 
 export function getMongoDBStatus() {
   const state = mongoose.connection.readyState;
@@ -48,6 +49,13 @@ function buildAtlasSnapshot({ includeIndexName = false } = {}) {
     snapshot.indexName = getAtlasVectorIndexName();
   }
   return snapshot;
+}
+
+function buildChatFeaturesSnapshot() {
+  return {
+    personalPatternRag: isPersonalPatternRagEnabled(),
+    crisisHardStop: features.crisisHardStop === true,
+  };
 }
 
 function buildWorkersSnapshot() {
@@ -117,6 +125,7 @@ export function buildDetailedHealthSnapshot(options = {}) {
       atlas,
     },
     workers: buildWorkersSnapshot(),
+    chatFeatures: buildChatFeaturesSnapshot(),
     memory: {
       used: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB`,
       total: `${Math.round(process.memoryUsage().heapTotal / 1024 / 1024)} MB`,

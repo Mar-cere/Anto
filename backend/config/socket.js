@@ -32,6 +32,12 @@ import {
   finalizeChatTurnEnhancements,
   buildClientTurnPayload,
 } from '../services/chatTurnEnhancementsService.js';
+import {
+  shouldHardStopCrisisLlm,
+  buildHardStopCrisisAssistantContent,
+  buildCrisisHardStopClientPayload,
+} from '../services/crisisHardStopService.js';
+import { indexPersonalPatternFromUserMessage } from '../services/personalPatternRagService.js';
 
 // Constantes de configuración
 const DEFAULT_FRONTEND_URLS = ['http://localhost:3000', 'http://localhost:19006'];
@@ -248,6 +254,12 @@ export const setupSocketIO = (server) => {
         } catch (persistRiskMetaErr) {
           console.warn('[SocketIO] metadata.crisis en mensaje usuario:', persistRiskMetaErr?.message);
         }
+        indexPersonalPatternFromUserMessage({
+          userId,
+          conversationId: conversation._id,
+          content: messageText,
+          riskLevel,
+        }).catch(() => {});
         const isCrisis =
           riskLevel === 'MEDIUM' ||
           riskLevel === 'HIGH' ||
@@ -310,6 +322,72 @@ export const setupSocketIO = (server) => {
         });
         const promptSnippets = buildOpenaiEnhancementSnippets(turnEnhancements);
 
+        const crisisHardStopContent = shouldHardStopCrisisLlm({
+          riskLevel,
+          messageContent: messageText,
+        })
+          ? buildHardStopCrisisAssistantContent({
+              riskLevel,
+              country: userProfile?.preferences?.country || 'GENERAL',
+              language: socketLanguage,
+            })
+          : null;
+
+        if (crisisHardStopContent) {
+          metricsService
+            .recordMetric(
+              'crisis_hard_stop',
+              { riskLevel, transport: 'socket' },
+              userId.toString(),
+              { conversationId: String(conversation._id) }
+            )
+            .catch(() => {});
+
+          const assistantMessage = new Message({
+            userId,
+            content: crisisHardStopContent,
+            role: 'assistant',
+            conversationId: conversation._id,
+            metadata: buildAssistantMetadataWithEnhancements(
+              {
+                status: 'sent',
+                crisis: {
+                  riskLevel: normalizeStoredCrisisRiskLevel(riskLevel),
+                  hardStop: true,
+                },
+                context: {
+                  emotional: emotionalAnalysis,
+                  contextual: contextualAnalysis,
+                  response: JSON.stringify({ crisisHardStop: true }),
+                },
+              },
+              { active: false },
+              socketLanguage,
+            ),
+          });
+          await assistantMessage.save();
+          await Conversation.findByIdAndUpdate(conversation._id, {
+            lastMessage: assistantMessage._id,
+          });
+
+          const clientTurn = buildCrisisHardStopClientPayload(socketLanguage);
+
+          socket.emit(SOCKET_EVENTS.AI_TYPING, false);
+          socket.emit(SOCKET_EVENTS.MESSAGE_RECEIVED, {
+            id: assistantMessage._id.toString(),
+            text: crisisHardStopContent,
+            userId: currentUserId,
+            timestamp: new Date(),
+            crisisHardStop: true,
+            proposedProductActions: [],
+            productActionStatus: { paused: false, reason: null, askFirst: false },
+            suggestions: clientTurn.suggestions,
+            suggestionsPersonalized: clientTurn.suggestionsPersonalized,
+            tccLite: clientTurn.tccLite,
+          });
+          return;
+        }
+
         const responseStrategyHint =
           sessionIntentionSafe === 'vent'
             ? 'validate_first_then_action'
@@ -334,6 +412,7 @@ export const setupSocketIO = (server) => {
             tccLitePromptSnippet: promptSnippets.tccLitePromptSnippet,
             digitalPhenotypePromptSnippet: promptSnippets.digitalPhenotypePromptSnippet,
             recentAbcPromptSnippet: promptSnippets.recentAbcPromptSnippet,
+            personalPatternRagPromptSnippet: promptSnippets.personalPatternRagPromptSnippet,
             _promptTelemetry: {
               userId,
               conversationId: conversation._id,

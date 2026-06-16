@@ -27,6 +27,11 @@ await jest.unstable_mockModule('../../../services/topicFreeVectorSearchService.j
   getAtlasVectorIndexName: () => 'topic_free_embedding_index',
 }));
 
+await jest.unstable_mockModule('../../../services/personalPatternRagService.js', () => ({
+  __esModule: true,
+  isPersonalPatternRagEnabled: () => false,
+}));
+
 const {
   buildPublicHealthSnapshot,
   buildDetailedHealthSnapshot,
@@ -92,7 +97,18 @@ describe('healthProbeService', () => {
     const snap = buildDetailedHealthSnapshot();
     expect(snap.workers.weeklyPatternInsight).toBeDefined();
     expect(snap.dependencies.atlas.indexName).toBe('topic_free_embedding_index');
+    expect(snap.chatFeatures).toEqual({
+      personalPatternRag: false,
+      crisisHardStop: true,
+    });
     expect(snap.memory).toHaveProperty('used');
+  });
+
+  it('health público no expone chatFeatures ni workers', () => {
+    process.env.OPENAI_API_KEY = 'sk-test';
+    const snap = buildPublicHealthSnapshot();
+    expect(snap).not.toHaveProperty('chatFeatures');
+    expect(snap).not.toHaveProperty('workers');
   });
 
   it('degraded si Redis configurado pero no conectado', () => {

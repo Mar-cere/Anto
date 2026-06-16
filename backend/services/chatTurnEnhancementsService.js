@@ -15,6 +15,7 @@ import {
 } from './tccLiteConversationStateService.js';
 import { buildDigitalPhenotypeChatSnippet } from './digitalPhenotypeChatContextService.js';
 import { buildRecentAbcChatSnippet } from './recentAbcChatContextService.js';
+import { buildPersonalPatternRagSnippet } from './personalPatternRagService.js';
 import { isChatObservationalContextBlocked } from '../utils/chatObservationalContext.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 
@@ -143,6 +144,24 @@ export async function planChatTurnEnhancements({
     }
   }
 
+  let personalPatternRagPromptSnippet = null;
+  if (!blockObservationalSnippets) {
+    try {
+      personalPatternRagPromptSnippet = await withTimeout(
+        buildPersonalPatternRagSnippet({
+          userId,
+          userContent: String(userContent || '').trim(),
+          conversationId,
+          language: lang,
+          riskLevel,
+        }),
+        CHAT_CONTEXT_SNIPPET_TIMEOUT_MS,
+      );
+    } catch {
+      personalPatternRagPromptSnippet = null;
+    }
+  }
+
   return {
     suggestionPlan,
     tccLitePlan,
@@ -150,6 +169,7 @@ export async function planChatTurnEnhancements({
     persistedTccLiteState,
     digitalPhenotypePromptSnippet,
     recentAbcPromptSnippet,
+    personalPatternRagPromptSnippet,
   };
 }
 
@@ -160,6 +180,7 @@ export function buildOpenaiEnhancementSnippets(enhancements) {
     tccLitePromptSnippet: enhancements.tccLitePlan?.promptSnippet || null,
     digitalPhenotypePromptSnippet: enhancements.digitalPhenotypePromptSnippet || null,
     recentAbcPromptSnippet: enhancements.recentAbcPromptSnippet || null,
+    personalPatternRagPromptSnippet: enhancements.personalPatternRagPromptSnippet || null,
   };
 }
 

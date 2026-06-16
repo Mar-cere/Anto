@@ -74,6 +74,12 @@ import { enrichInterventionGraphLabels } from '../services/graphSourceLabelServi
 import { getVectorSearchMode } from '../services/topicFreeVectorSearchService.js';
 import { buildChatTccContinuity } from '../services/chatTccContinuityService.js';
 import {
+  shouldHardStopCrisisLlm,
+  buildHardStopCrisisAssistantContent,
+  buildCrisisHardStopClientPayload,
+} from '../services/crisisHardStopService.js';
+import { indexPersonalPatternFromUserMessage } from '../services/personalPatternRagService.js';
+import {
   planChatTurnEnhancements,
   buildOpenaiEnhancementSnippets,
   buildAssistantMetadataWithEnhancements,
@@ -1098,6 +1104,12 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         } catch (persistRiskMetaErr) {
           console.warn('[ChatRoutes] metadata.crisis en mensaje usuario:', persistRiskMetaErr?.message);
         }
+        indexPersonalPatternFromUserMessage({
+          userId: req.user._id,
+          conversationId,
+          content: content.trim(),
+          riskLevel,
+        }).catch(() => {});
         // Solo crear evento de crisis si el nivel es MEDIUM o HIGH
         // WARNING no crea evento de crisis ni envía alertas, solo se registra para monitoreo
         // Solo considerar intención CRISIS si la confianza es muy alta (>= 0.9) Y el score es alto
@@ -1482,7 +1494,127 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           tccLitePromptSnippet: promptSnippets.tccLitePromptSnippet,
           digitalPhenotypePromptSnippet: promptSnippets.digitalPhenotypePromptSnippet,
           recentAbcPromptSnippet: promptSnippets.recentAbcPromptSnippet,
+          personalPatternRagPromptSnippet: promptSnippets.personalPatternRagPromptSnippet,
         };
+
+        const crisisHardStopContent = shouldHardStopCrisisLlm({
+          riskLevel,
+          messageContent: content.trim(),
+        })
+          ? buildHardStopCrisisAssistantContent({
+              riskLevel,
+              country: userProfile?.preferences?.country || user?.country || 'GENERAL',
+              language: appLanguageForChat,
+            })
+          : null;
+
+        if (crisisHardStopContent) {
+          logs.push(`[${Date.now() - startTime}ms] Crisis hard-stop (#205): respuesta estructurada sin LLM`);
+          metricsService
+            .recordMetric(
+              'crisis_hard_stop',
+              { riskLevel, transport: req.query.stream === 'true' ? 'sse' : 'http' },
+              req.user._id.toString(),
+              { conversationId: String(conversationId) }
+            )
+            .catch(() => {});
+
+          const emocionalHardStop = openaiService.normalizarAnalisisEmocional(emotionalAnalysis);
+          assistantMessage = new Message({
+            userId: req.user._id,
+            content: crisisHardStopContent,
+            role: 'assistant',
+            conversationId,
+            metadata: buildAssistantMetadataWithEnhancements(
+              {
+                status: 'sent',
+                crisis: {
+                  riskLevel: normalizeStoredCrisisRiskLevel(riskLevel),
+                  hardStop: true,
+                },
+                context: {
+                  emotional: emocionalHardStop,
+                  contextual: contextualAnalysis,
+                  response: JSON.stringify({ crisisHardStop: true }),
+                },
+              },
+              { active: false },
+              appLanguageForChat,
+            ),
+          });
+          await assistantMessage.save();
+          await Conversation.findByIdAndUpdate(conversationId, {
+            lastMessage: assistantMessage._id,
+          }).catch(() => {});
+
+          intenseChatCheckInService
+            .maybeSchedule({
+              userId: req.user._id,
+              conversationId,
+              assistantMessageId: assistantMessage._id,
+              emotionalAnalysis,
+              riskLevel,
+              isCrisis: true,
+            })
+            .catch(() => {});
+
+          scheduleRollingSummaryRefresh({
+            conversationId,
+            userId: req.user._id,
+            isGuest: false,
+          });
+
+          const clientTurnHardStop = buildCrisisHardStopClientPayload(appLanguageForChat);
+          const responseTimeHardStop = Date.now() - startTime;
+
+          if (req.query.stream === 'true') {
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Connection', 'keep-alive');
+            res.setHeader('X-Accel-Buffering', 'no');
+            res.flushHeaders();
+            res.write('data: ' + JSON.stringify({ content: crisisHardStopContent }) + '\n\n');
+            res.write(
+              'data: ' +
+                JSON.stringify({
+                  done: true,
+                  messageId: assistantMessage._id?.toString(),
+                  content: crisisHardStopContent,
+                  crisisHardStop: true,
+                  context: { emotional: emotionalAnalysis, contextual: contextualAnalysis },
+                  suggestions: clientTurnHardStop.suggestions,
+                  suggestionsPersonalized: clientTurnHardStop.suggestionsPersonalized,
+                  proposedProductActions: [],
+                  productActionStatus: { paused: false, reason: null, askFirst: false },
+                  clinicalScale: null,
+                  cognitiveDistortions: null,
+                  tccLite: clientTurnHardStop.tccLite,
+                  processingTime: responseTimeHardStop,
+                }) +
+                '\n\n',
+            );
+            res.end();
+            return;
+          }
+
+          return res.status(201).json({
+            userMessage,
+            assistantMessage,
+            crisisHardStop: true,
+            context: {
+              emotional: emotionalAnalysis,
+              contextual: contextualAnalysis,
+            },
+            suggestions: clientTurnHardStop.suggestions,
+            suggestionsPersonalized: clientTurnHardStop.suggestionsPersonalized,
+            proposedProductActions: [],
+            productActionStatus: { paused: false, reason: null, askFirst: false },
+            clinicalScale: null,
+            cognitiveDistortions: null,
+            tccLite: clientTurnHardStop.tccLite,
+            processingTime: responseTimeHardStop,
+          });
+        }
 
         metricsService
           .recordMetric(
