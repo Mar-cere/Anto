@@ -2,18 +2,40 @@
  * Compromisos entre sesiones (#202).
  */
 import mongoose from 'mongoose';
+import Conversation from '../models/Conversation.js';
 import SessionCommitment from '../models/SessionCommitment.js';
+import {
+  failsClinicalGuardrails,
+  sanitizeObservationalText,
+} from '../utils/clinicalContentGuardrails.js';
 
 const MAX_LABEL = 240;
+const MAX_ACTIVE_COMMITMENTS = 12;
 const DEFAULT_FOLLOW_UP_HOURS = 48;
 const ACTIVE_STATUSES = ['active'];
 const LIST_STATUSES = ['active', 'completed'];
+const ALLOWED_SOURCES = new Set(['session_insight', 'manual', 'chat_action']);
+
+export function sanitizeCommitmentSourceMeta(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const interventionId = String(raw.interventionId || '').trim().slice(0, 64);
+  if (!interventionId) return null;
+  return { interventionId };
+}
 
 function normalizeLabel(raw) {
   const label = String(raw || '').trim().replace(/\s+/g, ' ');
   if (label.length < 2) return { error: 'labelRequired' };
   if (label.length > MAX_LABEL) return { error: 'labelTooLong' };
-  return { label };
+  if (failsClinicalGuardrails(label)) return { error: 'labelClinical' };
+  const safe = sanitizeObservationalText(label, MAX_LABEL);
+  if (!safe) return { error: 'labelClinical' };
+  return { label: safe };
+}
+
+function normalizeListStatus(status) {
+  const s = String(status || 'active').trim().toLowerCase();
+  return s === 'all' ? 'all' : 'active';
 }
 
 function toClientCommitment(doc) {
@@ -32,10 +54,21 @@ function toClientCommitment(doc) {
   };
 }
 
+async function resolveOwnedConversationId(userId, conversationId) {
+  if (!conversationId || !mongoose.Types.ObjectId.isValid(String(conversationId))) {
+    return null;
+  }
+  const uid = new mongoose.Types.ObjectId(String(userId));
+  const convOid = new mongoose.Types.ObjectId(String(conversationId));
+  const conv = await Conversation.findOne({ _id: convOid, userId: uid }).select('_id').lean();
+  return conv?._id ? convOid : null;
+}
+
 export async function listSessionCommitments(userId, { status = 'active', limit = 8 } = {}) {
   const uid = new mongoose.Types.ObjectId(String(userId));
   const safeLimit = Math.max(1, Math.min(Number(limit) || 8, 20));
-  const statusFilter = status === 'all' ? LIST_STATUSES : ACTIVE_STATUSES;
+  const statusKey = normalizeListStatus(status);
+  const statusFilter = statusKey === 'all' ? LIST_STATUSES : ACTIVE_STATUSES;
   const docs = await SessionCommitment.find({
     userId: uid,
     status: { $in: statusFilter },
@@ -51,10 +84,12 @@ export async function createSessionCommitment(userId, payload = {}) {
   if (error) return { error };
 
   const uid = new mongoose.Types.ObjectId(String(userId));
-  let conversationId = null;
-  if (payload.conversationId && mongoose.Types.ObjectId.isValid(String(payload.conversationId))) {
-    conversationId = new mongoose.Types.ObjectId(String(payload.conversationId));
+  const activeCount = await SessionCommitment.countDocuments({ userId: uid, status: 'active' });
+  if (activeCount >= MAX_ACTIVE_COMMITMENTS) {
+    return { error: 'tooManyActive' };
   }
+
+  const conversationId = await resolveOwnedConversationId(userId, payload.conversationId);
 
   const followUpHours = Number(payload.followUpHours);
   const hours = Number.isFinite(followUpHours) && followUpHours > 0
@@ -62,9 +97,7 @@ export async function createSessionCommitment(userId, payload = {}) {
     : DEFAULT_FOLLOW_UP_HOURS;
   const followUpAt = new Date(Date.now() + hours * 60 * 60 * 1000);
 
-  const source = ['session_insight', 'manual', 'chat_action'].includes(payload.source)
-    ? payload.source
-    : 'session_insight';
+  const source = ALLOWED_SOURCES.has(payload.source) ? payload.source : 'session_insight';
 
   const doc = await SessionCommitment.create({
     userId: uid,
@@ -74,7 +107,7 @@ export async function createSessionCommitment(userId, payload = {}) {
     status: 'active',
     followUpAt,
     followUpAnswer: 'pending',
-    sourceMeta: payload.sourceMeta && typeof payload.sourceMeta === 'object' ? payload.sourceMeta : null,
+    sourceMeta: sanitizeCommitmentSourceMeta(payload.sourceMeta),
   });
 
   return { commitment: toClientCommitment(doc.toObject()) };
@@ -103,6 +136,9 @@ export async function updateSessionCommitment(userId, commitmentId, patch = {}) 
     if (patch.followUpAnswer === 'yes' || patch.followUpAnswer === 'partial') {
       update.status = 'completed';
       update.completedAt = new Date();
+    }
+    if (patch.followUpAnswer === 'no') {
+      update.status = 'active';
     }
   }
 

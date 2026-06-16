@@ -4,6 +4,7 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
+import { validateObjectId } from '../middleware/validation.js';
 import { createRateLimiter } from '../utils/createRateLimiter.js';
 import { resolveRequestLanguage } from '../utils/apiLanguage.js';
 import { sessionCommitmentApiCopy } from '../utils/sessionCommitmentApiCopy.js';
@@ -17,6 +18,14 @@ const router = express.Router();
 
 router.use(attachApiCopy(sessionCommitmentApiCopy));
 
+const listLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  message: (req) => sessionCommitmentApiCopy(resolveRequestLanguage(req)).rateLimit,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 const writeLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 40,
@@ -27,7 +36,7 @@ const writeLimiter = createRateLimiter({
 
 router.use(authenticateToken);
 
-router.get('/', async (req, res) => {
+router.get('/', listLimiter, async (req, res) => {
   try {
     const status = String(req.query.status || 'active').trim();
     const limit = parseInt(req.query.limit, 10);
@@ -44,7 +53,8 @@ router.post('/', writeLimiter, async (req, res) => {
     const result = await createSessionCommitment(req.user._id, req.body || {});
     if (result.error) {
       const msg = req.apiCopy[result.error] || req.apiCopy.createError;
-      const status = result.error.startsWith('label') ? 400 : 400;
+      const status =
+        result.error === 'tooManyActive' ? 409 : 400;
       return res.status(status).json({ success: false, message: msg, code: result.error });
     }
     return res.status(201).json({ success: true, commitment: result.commitment });
@@ -54,7 +64,7 @@ router.post('/', writeLimiter, async (req, res) => {
   }
 });
 
-router.patch('/:id', writeLimiter, async (req, res) => {
+router.patch('/:id', validateObjectId, writeLimiter, async (req, res) => {
   try {
     const result = await updateSessionCommitment(req.user._id, req.params.id, req.body || {});
     if (result.error) {

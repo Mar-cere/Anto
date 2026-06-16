@@ -2689,6 +2689,7 @@ export const SESSION_INSIGHT = {
   CTA_SKIP_STEP: 'Lo haré después',
   CTA_SAVE_COMMITMENT: 'Guardar como compromiso',
   CTA_COMMITMENT_SAVED: 'Compromiso guardado',
+  CTA_COMMITMENT_ERROR: 'No se pudo guardar el compromiso. Prueba con una acción concreta.',
   CTA_TCC_LITE_CHAT: 'Explorar en el chat',
   CTA_TCC_LITE_CHAT_HINT: 'Marco TCC paso a paso con Anto, sin salir de la conversación.',
   MESSAGES_COUNT: '{n} mensajes tuyos',

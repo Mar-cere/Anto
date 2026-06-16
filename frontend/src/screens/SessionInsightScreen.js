@@ -329,8 +329,12 @@ export default function SessionInsightScreen() {
         setCommitmentSaved(true);
         showToast({ message: TEXTS.CTA_COMMITMENT_SAVED, type: 'success' });
       }
-    } catch (_) {
-      showToast({ message: TEXTS.CTA_SKIP_STEP, type: 'warning' });
+    } catch (err) {
+      const apiMsg = String(err?.response?.data?.message || err?.message || '').trim();
+      showToast({
+        message: apiMsg || TEXTS.CTA_COMMITMENT_ERROR,
+        type: 'warning',
+      });
     } finally {
       setCommitmentSaving(false);
     }
@@ -341,7 +345,7 @@ export default function SessionInsightScreen() {
     commitmentSaved,
     showToast,
     TEXTS.CTA_COMMITMENT_SAVED,
-    TEXTS.CTA_SKIP_STEP,
+    TEXTS.CTA_COMMITMENT_ERROR,
   ]);
 
   const openTccLiteInChat = useCallback(async () => {

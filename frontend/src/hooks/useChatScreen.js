@@ -341,6 +341,8 @@ export function useChatScreen() {
       const silentReload = messagesRef.current.length > 0;
       if (!silentReload) {
         setIsLoading(true);
+        historyPageRef.current = 1;
+        setHistoryHasMore(false);
       }
       const userToken = await AsyncStorage.getItem('userToken');
       setChatFeedbackEnabled(!!userToken);
@@ -1316,6 +1318,9 @@ export function useChatScreen() {
   const clearConversation = useCallback(async () => {
     const texts = textsRef.current;
     try {
+      cancelActiveStream();
+      historyPageRef.current = 1;
+      setHistoryHasMore(false);
       await clearOfflinePendingMessage();
       setOfflinePendingMessage(null);
       dismissedContinuityIdsRef.current = [];
@@ -1333,7 +1338,7 @@ export function useChatScreen() {
       console.error('Error al borrar la conversación:', err);
       setError(texts.ERROR_CLEAR);
     }
-  }, [initializeConversation]);
+  }, [initializeConversation, cancelActiveStream]);
 
   const refreshMessages = useCallback(async () => {
     try {

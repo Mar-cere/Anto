@@ -2674,6 +2674,7 @@ export const SESSION_INSIGHT = {
   CTA_SKIP_STEP: 'I will do it later',
   CTA_SAVE_COMMITMENT: 'Save as commitment',
   CTA_COMMITMENT_SAVED: 'Commitment saved',
+  CTA_COMMITMENT_ERROR: 'Could not save the commitment. Try a concrete action.',
   CTA_TCC_LITE_CHAT: 'Explore in chat',
   CTA_TCC_LITE_CHAT_HINT: 'A step-by-step CBT frame with Anto, without leaving the conversation.',
   MESSAGES_COUNT: '{n} messages from you',
