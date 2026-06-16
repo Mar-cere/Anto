@@ -2681,6 +2681,11 @@ export const SESSION_INSIGHT = {
   DURATION_MIN: '{n} min',
   DISCLAIMER:
     'This is wellbeing guidance, not a diagnosis. If you feel at risk, seek professional support.',
+  CRISIS_TITLE: 'Your wellbeing matters',
+  CRISIS_SUPPORT_HINT:
+    'If you still feel you cannot cope, reach out now: your local crisis line or emergency services.',
+  CRISIS_DISCLAIMER:
+    'This does not replace emergency or professional mental health care. If there is immediate risk, contact emergency services.',
 };
 
 export const API_ERRORS = {

@@ -92,6 +92,23 @@ function countUserStats(msgs) {
   return { userTurns: turns, userChars: chars };
 }
 
+function resolveCrisisRiskForUserTurn(msgs, index) {
+  const m = msgs[index];
+  if (!m || m.role !== 'user') return '';
+
+  const fromUser = String(m?.metadata?.crisis?.riskLevel || '').toUpperCase();
+  if (fromUser && fromUser !== 'LOW') return fromUser;
+
+  const next = msgs[index + 1];
+  if (next?.role === 'assistant') {
+    const fromAssistant = String(next?.metadata?.crisis?.riskLevel || '').toUpperCase();
+    if (fromAssistant && fromAssistant !== 'LOW') return fromAssistant;
+    const fromContext = String(next?.metadata?.context?.crisis?.riskLevel || '').toUpperCase();
+    if (fromContext && fromContext !== 'LOW') return fromContext;
+  }
+  return fromUser || '';
+}
+
 function resolveEmotionalForMessage(msgs, index) {
   const m = msgs[index];
   if (!m) return null;
@@ -104,7 +121,7 @@ function resolveEmotionalForMessage(msgs, index) {
         emotional = next?.metadata?.context?.emotional;
       }
     }
-    const risk = String(m?.metadata?.crisis?.riskLevel || '').toUpperCase();
+    const risk = resolveCrisisRiskForUserTurn(msgs, index);
     if (risk === 'HIGH' || risk === 'MEDIUM' || risk === 'WARNING') {
       const baseIntensity = Number(emotional?.intensity) || 5;
       const floor = risk === 'HIGH' ? 8 : risk === 'MEDIUM' ? 7 : 6;
@@ -284,7 +301,9 @@ export async function buildSessionInsight({ userId, conversationId, language = '
   if (crisisSession && !themes.some((t) => /seguridad|safety/i.test(t))) {
     themes = [localizeTopic('salud', lang), ...themes].slice(0, 3);
   }
-  const thoughtPattern = aggregateThoughtPattern(userMsgs, assistantMsgs, lang);
+  const thoughtPattern = crisisSession
+    ? null
+    : aggregateThoughtPattern(userMsgs, assistantMsgs, lang);
   const threadStartedAt = msgs[0]?.createdAt ? new Date(msgs[0].createdAt) : null;
   const suggestedStep = crisisSession
     ? null

@@ -2696,6 +2696,11 @@ export const SESSION_INSIGHT = {
   DURATION_MIN: '{n} min',
   DISCLAIMER:
     'Esto es orientación de bienestar, no un diagnóstico. Si te sientes en riesgo, busca apoyo profesional.',
+  CRISIS_TITLE: 'Tu bienestar importa',
+  CRISIS_SUPPORT_HINT:
+    'Si sigues sintiendo que no puedes más, busca apoyo ahora: línea de crisis de tu país o servicios de emergencia locales.',
+  CRISIS_DISCLAIMER:
+    'Esto no sustituye atención de urgencias ni salud mental profesional. Si hay riesgo inmediato, contacta servicios de emergencia.',
 };
 
 export const API_ERRORS = {

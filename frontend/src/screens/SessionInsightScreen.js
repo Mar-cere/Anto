@@ -381,11 +381,12 @@ export default function SessionInsightScreen() {
 
   if (!insight?.eligible) return null;
 
+  const isCrisisInsight = Boolean(insight.crisisTier);
   const emotion = insight.dominantEmotion;
-  const pattern = insight.thoughtPattern;
+  const pattern = isCrisisInsight ? null : insight.thoughtPattern;
   const themes = Array.isArray(insight.themes) ? insight.themes : [];
-  const step = insight.suggestedStep;
-  const tccLiteResume = insight.tccLiteResume;
+  const step = isCrisisInsight ? null : insight.suggestedStep;
+  const tccLiteResume = isCrisisInsight ? null : insight.tccLiteResume;
 
   return (
     <View style={styles.root}>
@@ -452,6 +453,13 @@ export default function SessionInsightScreen() {
                 </View>
               ))}
             </View>
+          </View>
+        ) : null}
+
+        {isCrisisInsight ? (
+          <View style={styles.card}>
+            <Text style={styles.cardKicker}>{TEXTS.CRISIS_TITLE}</Text>
+            <Text style={styles.patternBody}>{TEXTS.CRISIS_SUPPORT_HINT}</Text>
           </View>
         ) : null}
 
@@ -525,7 +533,9 @@ export default function SessionInsightScreen() {
           </TouchableOpacity>
         ) : null}
 
-        <Text style={styles.disclaimer}>{TEXTS.DISCLAIMER}</Text>
+        <Text style={styles.disclaimer}>
+          {isCrisisInsight ? TEXTS.CRISIS_DISCLAIMER : TEXTS.DISCLAIMER}
+        </Text>
       </ScrollView>
     </View>
   );

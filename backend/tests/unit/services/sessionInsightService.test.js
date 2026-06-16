@@ -348,8 +348,54 @@ describe('buildSessionInsight', () => {
     expect(insight.dominantEmotion.key).not.toBe('neutral');
     expect(insight.dominantEmotion.intensity).toBeGreaterThanOrEqual(7);
     expect(insight.suggestedStep).toBeNull();
+    expect(insight.thoughtPattern).toBeNull();
     expect(insight.tccLiteResume).toBeNull();
     expect(insight.themes.some((t) => /salud|seguridad/i.test(t))).toBe(true);
+    expect(mockGenerateHeadline).not.toHaveBeenCalled();
+  });
+
+  it('detecta crisis WARNING desde metadata del asistente', async () => {
+    const now = Date.now();
+    mockMessageFind.mockReturnValue(
+      chainLean([
+        {
+          role: 'user',
+          content: 'A veces me dan ganas de morir y no sé qué hacer',
+          metadata: {},
+          createdAt: new Date(now - 120000),
+        },
+        {
+          role: 'assistant',
+          content: 'Gracias por compartirlo',
+          metadata: {
+            crisis: { riskLevel: 'WARNING' },
+            context: { emotional: { mainEmotion: 'tristeza', intensity: 7, topic: 'salud' } },
+          },
+          createdAt: new Date(now - 100000),
+        },
+        {
+          role: 'user',
+          content: 'Sigo pensando en eso todo el día',
+          metadata: {},
+          createdAt: new Date(now - 60000),
+        },
+        {
+          role: 'assistant',
+          content: 'Estoy aquí contigo',
+          metadata: {
+            context: { emotional: { mainEmotion: 'tristeza', intensity: 7, topic: 'salud' } },
+          },
+          createdAt: new Date(now - 30000),
+        },
+      ]),
+    );
+
+    const insight = await buildSessionInsight({ userId, conversationId, language: 'es' });
+    expect(insight.eligible).toBe(true);
+    expect(insight.crisisTier).toBe('warning');
+    expect(insight.headlineSource).toBe('crisis_rules');
+    expect(insight.dominantEmotion.intensity).toBeGreaterThanOrEqual(6);
+    expect(insight.thoughtPattern).toBeNull();
     expect(mockGenerateHeadline).not.toHaveBeenCalled();
   });
 });

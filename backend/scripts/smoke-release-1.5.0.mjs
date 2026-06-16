@@ -13,6 +13,7 @@ import {
 } from '../services/crisisHardStopService.js';
 import { buildPersonalPatternRagSnippet, isPersonalPatternRagEnabled } from '../services/personalPatternRagService.js';
 import { buildAtlasVectorSearchPipeline } from '../services/topicFreeVectorSearchService.js';
+import { buildCrisisSessionInsightCopy } from '../utils/sessionInsightCopy.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '../..');
@@ -130,6 +131,32 @@ if (isPersonalPatternRagEnabled() === false) {
   pass('personalPatternRag opt-in (off sin env)');
 } else {
   fail('personalPatternRag opt-in (off sin env)', 'debería estar off en smoke sin env');
+}
+
+const crisisInsightCopy = buildCrisisSessionInsightCopy({
+  language: 'es',
+  riskTier: 'high',
+  intensity: 8,
+});
+if (crisisInsightCopy?.headline?.includes('seguridad')) {
+  pass('session insight copy crisis HIGH');
+} else {
+  fail('session insight copy crisis HIGH');
+}
+
+const sessionInsightSrc = fs.readFileSync(
+  path.join(root, 'backend/services/sessionInsightService.js'),
+  'utf8',
+);
+if (
+  sessionInsightSrc.includes('buildCrisisSessionInsightCopy') &&
+  sessionInsightSrc.includes('resolveCrisisRiskForUserTurn') &&
+  sessionInsightSrc.includes('thoughtPattern = crisisSession') &&
+  sessionInsightSrc.includes('crisisTier:')
+) {
+  pass('session insight blindaje crisis en servicio');
+} else {
+  fail('session insight blindaje crisis en servicio');
 }
 
 const failed = checks.filter((c) => !c.ok);

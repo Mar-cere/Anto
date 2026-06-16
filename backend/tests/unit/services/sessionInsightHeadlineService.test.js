@@ -91,6 +91,26 @@ describe('sessionInsightHeadlineService', () => {
     expect(mockCreateChatCompletionResilient).not.toHaveBeenCalled();
   });
 
+  it('omite LLM con riesgo warning', async () => {
+    const out = await generateSessionInsightHeadline({
+      userMsgs: [
+        { content: 'Me siento muy mal y no veo salida en este momento difícil' },
+        { content: 'Sigo pensando que todo está perdido y no aguanto más' },
+      ],
+      allMsgs: [
+        {
+          role: 'user',
+          content: 'test',
+          metadata: { crisis: { riskLevel: 'WARNING' } },
+        },
+      ],
+      language: 'es',
+      fallbackHeadline: 'Titular base',
+    });
+    expect(out).toBeNull();
+    expect(mockCreateChatCompletionResilient).not.toHaveBeenCalled();
+  });
+
   it('rechaza titular idéntico al fallback o demasiado corto', async () => {
     mockCreateChatCompletionResilient.mockResolvedValue({
       choices: [{ message: { content: '{"headline":"Titular base"}' } }],
