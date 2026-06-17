@@ -23,4 +23,12 @@ describe('psychoeducationTopics meta (#78)', () => {
     expect(en.microSteps).toHaveLength(2);
     expect(es.microSteps[0]).not.toBe(en.microSteps[0]);
   });
+
+  it('getPsychoeducationCardFields incluye contrato #78 y sello #111', () => {
+    const card = getPsychoeducationCardFields('anxiety', 'es');
+    expect(card.cardSchemaVersion).toBe('psychoeducation_card_v1');
+    expect(card.clinicalReview?.status).toBe('editorial_review');
+    expect(card.clinicalReview?.statusLabel).toBeTruthy();
+    expect(card.mechanismLine).toBeTruthy();
+  });
 });

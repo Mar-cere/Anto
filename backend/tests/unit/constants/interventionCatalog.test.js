@@ -123,4 +123,25 @@ describe('interventionCatalog', () => {
     );
     expect(getPsychoeducationInterventionId('grief')).toBe('psychoeducation_grief');
   });
+
+  it('formatSuggestions incluye contrato psicoed #85/#78 en los 9 temas', () => {
+    const ids = [
+      'psychoeducation_anxiety',
+      'psychoeducation_depression',
+      'psychoeducation_stress',
+      'psychoeducation_anger',
+      'psychoeducation_sleep',
+      'psychoeducation_emotion_regulation',
+      'psychoeducation_trauma',
+      'psychoeducation_grief',
+      'psychoeducation_burnout',
+    ];
+    const formatted = actionSuggestionService.formatSuggestions(ids, 'es');
+    formatted.forEach((card) => {
+      expect(card.cardSchemaVersion).toBe('psychoeducation_card_v1');
+      expect(card.clinicalReview?.status).toBe('editorial_review');
+      expect(card.microSteps?.length).toBe(2);
+      expect(card.mechanismLine).toBeTruthy();
+    });
+  });
 });

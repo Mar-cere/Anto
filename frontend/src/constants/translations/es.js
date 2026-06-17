@@ -1960,6 +1960,8 @@ export const TECHNIQUES = {
   PSYCHOED_CARD_CTA_READ: 'Leer módulo',
   PSYCHOED_CARD_CTA_COMPACT: 'Abrir',
   PSYCHOED_CARD_MINUTES: '~{n} min',
+  PSYCHOED_CARD_MICROSTEP_PROGRESS: '{done}/{total} pasos probados',
+  PSYCHOED_CARD_MICROSTEP_A11Y: 'Marcar paso {n} como probado',
   MICRO_GUIDE_LOADING: 'Cargando guía…',
   MICRO_GUIDE_ERROR: 'No se pudo cargar la guía.',
   MICRO_GUIDE_BACK: 'Atrás',

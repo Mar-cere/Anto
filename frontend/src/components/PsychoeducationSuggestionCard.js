@@ -3,13 +3,15 @@
  */
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import PsychoeducationClinicalReviewSeal from './PsychoeducationClinicalReviewSeal';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import { usePsychoeducationTexts } from '../screens/techniques/psychoeducationTexts';
 import { getTopicVisual } from '../screens/techniques/psychoeducationTopicVisuals';
+import { recordInterventionCompleted } from '../utils/recordInterventionCompleted';
+import { toggleMicroStepCompletion } from '../utils/psychoeducationMicroSteps';
 import { topicFromInterventionId } from '../utils/psychoeducationTopic';
 import { getFocusTheme } from '../styles/focusCardTheme';
 
@@ -25,6 +27,8 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
+  const [doneSteps, setDoneSteps] = useState(() => new Set());
+  const inlineCompleteRecordedRef = useRef(false);
 
   const topic =
     suggestion?.params?.topic || topicFromInterventionId(suggestion?.id);
@@ -82,6 +86,7 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
           color: colors.text,
           marginBottom: isCompact ? 0 : 6,
         },
+        titlePress: { marginBottom: isCompact ? 0 : 6 },
         compactRow: {
           flexDirection: 'row',
           alignItems: 'center',
@@ -106,8 +111,24 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
           fontStyle: 'italic',
           marginBottom: 8,
         },
-        steps: { marginBottom: 12, gap: 4 },
-        stepText: { fontSize: 12, lineHeight: 17, color: colors.textSecondary },
+        steps: { marginBottom: 12, gap: 2 },
+        stepProgress: {
+          fontSize: 11,
+          fontWeight: '600',
+          color: colors.textSecondary,
+          marginBottom: 6,
+        },
+        stepRow: {
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          gap: 8,
+          paddingVertical: 6,
+          paddingHorizontal: 4,
+          borderRadius: 10,
+        },
+        stepRowDone: { opacity: 0.82 },
+        stepText: { flex: 1, fontSize: 12, lineHeight: 17, color: colors.textSecondary },
+        stepTextDone: { textDecorationLine: 'line-through' },
         footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
         cta: {
           flexDirection: 'row',
@@ -158,17 +179,39 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
   const title = suggestion.previewTitle || suggestion.label;
   const summary = suggestion.previewSummary || suggestion.description;
   const minutes = suggestion.estimatedMinutes || 2;
-  const microSteps =
-    isCompact
-      ? []
-      : Array.isArray(suggestion.microSteps)
-        ? suggestion.microSteps.filter((s) => typeof s === 'string' && s.trim()).slice(0, 2)
-        : [];
+  const microSteps = isCompact
+    ? []
+    : Array.isArray(suggestion.microSteps)
+      ? suggestion.microSteps.filter((s) => typeof s === 'string' && s.trim()).slice(0, 2)
+      : [];
 
-  const handlePress = () => {
+  const handleOpen = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onPress?.(suggestion);
-  };
+  }, [onPress, suggestion]);
+
+  const handleToggleStep = useCallback(
+    (index) => {
+      Haptics.selectionAsync().catch(() => {});
+      setDoneSteps((prev) => {
+        const { doneSteps: next, allDone } = toggleMicroStepCompletion(prev, index, microSteps.length);
+        if (allDone && suggestion?.id && !inlineCompleteRecordedRef.current) {
+          inlineCompleteRecordedRef.current = true;
+          recordInterventionCompleted(suggestion.id);
+        }
+        return next;
+      });
+    },
+    [microSteps.length, suggestion?.id],
+  );
+
+  const stepProgressLabel =
+    microSteps.length > 0
+      ? texts.CARD_MICROSTEP_PROGRESS.replace('{done}', String(doneSteps.size)).replace(
+          '{total}',
+          String(microSteps.length),
+        )
+      : null;
 
   if (!suggestion?.id) return null;
 
@@ -177,11 +220,7 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
       style={[styles.container, { opacity: Animated.multiply(fadeAnim, opacity), transform: [{ translateX }] }]}
       {...panResponder.panHandlers}
     >
-      <TouchableOpacity
-        style={[styles.card, { borderLeftColor: visual.borderLeft }]}
-        onPress={handlePress}
-        activeOpacity={0.85}
-      >
+      <View style={[styles.card, { borderLeftColor: visual.borderLeft }]}>
         <View style={styles.badgeRow}>
           <View
             style={{
@@ -204,15 +243,27 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
             <Text style={[styles.badge, { color: visual.accent }]}>{badgeLabel}</Text>
           ) : null}
         </View>
-        <Text style={styles.title}>{title}</Text>
+
+        <TouchableOpacity onPress={handleOpen} activeOpacity={0.85} style={styles.titlePress}>
+          <Text style={styles.title}>{title}</Text>
+        </TouchableOpacity>
+
         {isCompact ? (
           <View style={styles.compactRow}>
-            <View style={styles.compactCta}>
+            {suggestion.clinicalReview ? (
+              <PsychoeducationClinicalReviewSeal
+                clinicalReview={suggestion.clinicalReview}
+                texts={texts}
+                variant="compact"
+                accentColor={visual.accent}
+              />
+            ) : null}
+            <TouchableOpacity style={styles.compactCta} onPress={handleOpen} activeOpacity={0.85}>
               <Text style={styles.compactCtaText}>
                 {isMicroGuide ? ctaReadLabel : texts.CARD_CTA_COMPACT || 'Abrir'}
               </Text>
               <Ionicons name="chevron-forward" size={14} color={colors.primary} />
-            </View>
+            </TouchableOpacity>
           </View>
         ) : (
           <>
@@ -230,25 +281,46 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
             ) : null}
             {microSteps.length > 0 ? (
               <View style={styles.steps}>
-                {microSteps.map((step, index) => (
-                  <Text key={`${suggestion.id}-step-${index}`} style={styles.stepText}>
-                    {index + 1}. {step}
-                  </Text>
-                ))}
+                {stepProgressLabel ? (
+                  <Text style={styles.stepProgress}>{stepProgressLabel}</Text>
+                ) : null}
+                {microSteps.map((step, index) => {
+                  const done = doneSteps.has(index);
+                  return (
+                    <TouchableOpacity
+                      key={`${suggestion.id}-step-${index}`}
+                      style={[styles.stepRow, done ? styles.stepRowDone : null]}
+                      onPress={() => handleToggleStep(index)}
+                      activeOpacity={0.75}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: done }}
+                      accessibilityLabel={texts.CARD_MICROSTEP_A11Y.replace('{n}', String(index + 1))}
+                    >
+                      <MaterialCommunityIcons
+                        name={done ? 'checkbox-marked-circle' : 'checkbox-blank-circle-outline'}
+                        size={18}
+                        color={done ? visual.accent : colors.textSecondary}
+                      />
+                      <Text style={[styles.stepText, done ? styles.stepTextDone : null]}>
+                        {step}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             ) : null}
             <View style={styles.footer}>
-              <View style={styles.cta}>
+              <TouchableOpacity style={styles.cta} onPress={handleOpen} activeOpacity={0.85}>
                 <Text style={styles.ctaText}>{ctaReadLabel}</Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.textOnPrimary} />
-              </View>
+              </TouchableOpacity>
               <Text style={styles.minutes}>
                 {texts.CARD_MINUTES.replace('{n}', String(minutes))}
               </Text>
             </View>
           </>
         )}
-      </TouchableOpacity>
+      </View>
     </Animated.View>
   );
 };

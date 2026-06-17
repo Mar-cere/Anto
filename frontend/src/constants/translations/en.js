@@ -1954,6 +1954,8 @@ export const TECHNIQUES = {
   PSYCHOED_CARD_CTA_READ: 'Read module',
   PSYCHOED_CARD_CTA_COMPACT: 'Open',
   PSYCHOED_CARD_MINUTES: '~{n} min',
+  PSYCHOED_CARD_MICROSTEP_PROGRESS: '{done}/{total} steps tried',
+  PSYCHOED_CARD_MICROSTEP_A11Y: 'Mark step {n} as tried',
   MICRO_GUIDE_LOADING: 'Loading guide…',
   MICRO_GUIDE_ERROR: 'Could not load the guide.',
   MICRO_GUIDE_BACK: 'Back',

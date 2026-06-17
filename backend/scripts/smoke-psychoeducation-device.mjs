@@ -274,7 +274,10 @@ for (const topic of topics) {
   const es = getPsychoeducationCardFields(topic, 'es');
   const en = getPsychoeducationCardFields(topic, 'en');
   const ok =
-    es?.microSteps?.length === 2 && en?.microSteps?.length === 2;
+    es?.microSteps?.length === 2 &&
+    en?.microSteps?.length === 2 &&
+    es?.cardSchemaVersion === 'psychoeducation_card_v1' &&
+    es?.clinicalReview?.status === 'editorial_review';
   console.log(`  [${ok ? 'OK' : 'FAIL'}] ${topic} microSteps es/en`);
   if (!ok) metaFailed += 1;
 }

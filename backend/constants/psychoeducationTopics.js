@@ -203,6 +203,7 @@ export function getPsychoeducationCardFields(topic, language = 'es') {
     estimatedMinutes: PSYCHOEDUCATION_ESTIMATED_MINUTES,
     clinicalReview: normalizeClinicalReview(lang),
     cardVariant: 'psychoeducation_native',
+    cardSchemaVersion: 'psychoeducation_card_v1',
   };
 }
 

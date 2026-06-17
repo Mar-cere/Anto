@@ -2,6 +2,7 @@
  * Normalización de topic, hidratación de sugerencias de chat (#85 / #78 / i18n).
  */
 import { INTERVENTION_LABELS_EN } from '../constants/interventionCatalogLabels.en';
+import { getDefaultClinicalReview } from './psychoeducationClinicalReview';
 
 const TOPIC_BY_KEY = {
   anxiety: 'anxiety',
@@ -223,6 +224,8 @@ function applyPsychoeducationCardFields(suggestion, language) {
     cardVariant: 'psychoeducation_native',
     estimatedMinutes: suggestion.estimatedMinutes || 2,
     description: suggestion.description || copy.previewSummary,
+    mechanismLine: suggestion.mechanismLine || copy.mechanismLine,
+    clinicalReview: suggestion.clinicalReview || getDefaultClinicalReview(lang),
     microSteps:
       Array.isArray(suggestion.microSteps) && suggestion.microSteps.length > 0
         ? suggestion.microSteps

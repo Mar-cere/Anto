@@ -92,12 +92,12 @@ const PsychoeducationClinicalReviewSeal = ({
   const iconName = isClinical ? 'shield-check' : 'shield-edit-outline';
   const showNote = variant === 'module' && Boolean(seal.note);
 
-  if (variant === 'library') {
+  if (variant === 'library' || variant === 'compact') {
     return (
       <View style={styles.libraryPill}>
         <MaterialCommunityIcons name={iconName} size={12} color={tint} style={{ marginRight: 4 }} />
         <Text style={styles.libraryText} numberOfLines={1}>
-          {seal.shortLabel}
+          {variant === 'compact' ? seal.statusLabel : seal.shortLabel}
         </Text>
       </View>
     );

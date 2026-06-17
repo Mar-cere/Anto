@@ -142,6 +142,16 @@ describe('psychoeducationTopic', () => {
     });
   });
 
+  it('hidrata clinicalReview por defecto en tarjetas psicoed (#111)', () => {
+    const out = hydrateInterventionSuggestion(
+      { id: 'psychoeducation_anxiety', interventionType: 'psychoeducation' },
+      'es',
+    );
+    expect(out.clinicalReview?.status).toBe('editorial_review');
+    expect(out.clinicalReview?.version).toBe('1.0.0');
+    expect(out.clinicalReview?.note).toMatch(/editorial/i);
+  });
+
   it('hydrateInterventionSuggestion conserva params de abc_record', () => {
     const out = hydrateInterventionSuggestion(
       {
