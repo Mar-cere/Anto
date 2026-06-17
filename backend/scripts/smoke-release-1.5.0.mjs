@@ -15,6 +15,11 @@ import { buildPersonalPatternRagSnippet, isPersonalPatternRagEnabled } from '../
 import { buildAtlasVectorSearchPipeline } from '../services/topicFreeVectorSearchService.js';
 import { buildCrisisSessionInsightCopy } from '../utils/sessionInsightCopy.js';
 import { getEmergencyLines } from '../constants/emergencyNumbers.js';
+import {
+  buildOpenaiCrisisContext,
+  shouldIncludeCrisisInOpenaiContext,
+} from '../constants/crisis.js';
+import { buildOpenaiEnhancementSnippets } from '../services/chatTurnEnhancementsService.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '../..');
@@ -114,6 +119,34 @@ if (hardStopPayload.suggestions.length === 0 && hardStopPayload.tccLite.active =
   pass('hard-stop sin sugerencias ni TCC');
 } else {
   fail('hard-stop sin sugerencias ni TCC');
+}
+
+if (
+  shouldIncludeCrisisInOpenaiContext('WARNING', { isCrisis: false }) &&
+  buildOpenaiCrisisContext({ riskLevel: 'WARNING', userMessage: 'no aguanto' })?.riskLevel ===
+    'WARNING'
+) {
+  pass('crisis WARNING llega al contexto OpenAI');
+} else {
+  fail('crisis WARNING llega al contexto OpenAI');
+}
+
+const blockedSnippets = buildOpenaiEnhancementSnippets(
+  {
+    suggestionPlan: { psychoeducationPromptSnippet: 'x' },
+    activeTccProtocolsPromptSnippet: 'y',
+    tccLitePlan: { promptSnippet: 'z' },
+  },
+  { blockCrisisExtras: true },
+);
+if (
+  !blockedSnippets.psychoeducationPromptSnippet &&
+  !blockedSnippets.activeTccProtocolsPromptSnippet &&
+  !blockedSnippets.tccLitePromptSnippet
+) {
+  pass('snippets terapéuticos bloqueados en crisis');
+} else {
+  fail('snippets terapéuticos bloqueados en crisis');
 }
 
 const snippetSample = await buildPersonalPatternRagSnippet({

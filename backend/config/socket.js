@@ -19,7 +19,8 @@ import {
   userProfileService
 } from '../services/index.js';
 import { sanitizeSessionIntentionForClient } from '../constants/sessionIntention.js';
-import { evaluateSuicideRisk, normalizeStoredCrisisRiskLevel, shouldAttachCrisisContextToPrompt } from '../constants/crisis.js';
+import { evaluateSuicideRisk, normalizeStoredCrisisRiskLevel, buildOpenaiCrisisContext } from '../constants/crisis.js';
+import { isLlmCrisisTherapeuticExtrasBlocked } from '../utils/chatObservationalContext.js';
 import chatProductActionProposalService from '../services/chatProductActionProposalService.js';
 import chatProductActionLlmService from '../services/chatProductActionLlmService.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
@@ -321,7 +322,12 @@ export const setupSocketIO = (server) => {
               ? data.resumeTccLite
               : null,
         });
-        const promptSnippets = buildOpenaiEnhancementSnippets(turnEnhancements);
+        const promptSnippets = buildOpenaiEnhancementSnippets(turnEnhancements, {
+          blockCrisisExtras: isLlmCrisisTherapeuticExtrasBlocked({
+            riskLevel,
+            userMessage: messageText,
+          }),
+        });
 
         const crisisHardStopContent = shouldHardStopCrisisLlm({
           riskLevel,
@@ -432,17 +438,16 @@ export const setupSocketIO = (server) => {
             digitalPhenotypePromptSnippet: promptSnippets.digitalPhenotypePromptSnippet,
             recentAbcPromptSnippet: promptSnippets.recentAbcPromptSnippet,
             personalPatternRagPromptSnippet: promptSnippets.personalPatternRagPromptSnippet,
-            crisis:
-              isCrisis && shouldAttachCrisisContextToPrompt(riskLevel)
-                ? {
-                    riskLevel,
-                    preferences: {
-                      ...(userProfile?.preferences || {}),
-                      ...(socketUser?.preferences || {}),
-                    },
-                    phone: socketUser?.phone || null,
-                  }
-                : undefined,
+            crisis: buildOpenaiCrisisContext({
+              riskLevel,
+              isCrisis,
+              userMessage: messageText,
+              preferences: {
+                ...(userProfile?.preferences || {}),
+                ...(socketUser?.preferences || {}),
+              },
+              phone: socketUser?.phone || null,
+            }),
             _promptTelemetry: {
               userId,
               conversationId: conversation._id,
@@ -563,6 +568,7 @@ export const setupSocketIO = (server) => {
           suggestionPlan: turnEnhancements.suggestionPlan,
           language: socketLanguage,
           riskLevel,
+          userMessage: messageText,
         });
 
         // 9. Emitir respuesta al cliente

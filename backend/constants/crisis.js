@@ -229,6 +229,45 @@ export const shouldAttachCrisisContextToPrompt = (riskLevel) =>
   riskLevel === 'MEDIUM' || riskLevel === 'HIGH';
 
 /**
+ * ¿Incluir objeto `crisis` en el contexto OpenAI (post-proceso + prompts por nivel)?
+ * Distinto de shouldAttachCrisisContextToPrompt (bloque completo solo MEDIUM/HIGH).
+ */
+export function shouldIncludeCrisisInOpenaiContext(
+  riskLevel,
+  { isCrisis = false, userMessage } = {},
+) {
+  const level = String(riskLevel || 'LOW').trim().toUpperCase();
+  if (['WARNING', 'MEDIUM', 'HIGH'].includes(level)) return true;
+  if (hasExplicitSuicidalOrSelfHarmLexicon(userMessage)) return true;
+  if (isCrisis && level !== 'LOW') return true;
+  return false;
+}
+
+/**
+ * Construye el objeto crisis para openaiService / prompt builder.
+ */
+export function buildOpenaiCrisisContext({
+  riskLevel,
+  isCrisis = false,
+  userMessage,
+  preferences = null,
+  phone = null,
+  country = null,
+} = {}) {
+  if (!shouldIncludeCrisisInOpenaiContext(riskLevel, { isCrisis, userMessage })) {
+    return undefined;
+  }
+  const ctx = {
+    riskLevel: normalizeStoredCrisisRiskLevel(riskLevel),
+    preferences,
+    phone,
+    detectedAt: new Date(),
+  };
+  if (country) ctx.country = country;
+  return ctx;
+}
+
+/**
  * Prompt ligero para WARNING con malestar alto (sin léxico explícito de ideación).
  */
 export function shouldAttachCrisisWarningContextToPrompt(

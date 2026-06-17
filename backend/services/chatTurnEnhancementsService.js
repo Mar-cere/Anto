@@ -90,13 +90,15 @@ export async function planChatTurnEnhancements({
   }
 
   let activeTccProtocolsPromptSnippet = null;
-  try {
-    activeTccProtocolsPromptSnippet = await buildActiveTccProtocolsPromptSnippet({
-      userId,
-      language: lang,
-    });
-  } catch {
-    activeTccProtocolsPromptSnippet = null;
+  if (!blockCrisisExtras) {
+    try {
+      activeTccProtocolsPromptSnippet = await buildActiveTccProtocolsPromptSnippet({
+        userId,
+        language: lang,
+      });
+    } catch {
+      activeTccProtocolsPromptSnippet = null;
+    }
   }
 
   let tccLitePlan = { active: false };
@@ -185,11 +187,18 @@ export async function planChatTurnEnhancements({
   };
 }
 
-export function buildOpenaiEnhancementSnippets(enhancements) {
+export function buildOpenaiEnhancementSnippets(enhancements, options = {}) {
+  const blockTherapeutic = options.blockCrisisExtras === true;
   return {
-    psychoeducationPromptSnippet: enhancements.suggestionPlan?.psychoeducationPromptSnippet || null,
-    activeTccProtocolsPromptSnippet: enhancements.activeTccProtocolsPromptSnippet || null,
-    tccLitePromptSnippet: enhancements.tccLitePlan?.promptSnippet || null,
+    psychoeducationPromptSnippet: blockTherapeutic
+      ? null
+      : enhancements.suggestionPlan?.psychoeducationPromptSnippet || null,
+    activeTccProtocolsPromptSnippet: blockTherapeutic
+      ? null
+      : enhancements.activeTccProtocolsPromptSnippet || null,
+    tccLitePromptSnippet: blockTherapeutic
+      ? null
+      : enhancements.tccLitePlan?.promptSnippet || null,
     digitalPhenotypePromptSnippet: enhancements.digitalPhenotypePromptSnippet || null,
     recentAbcPromptSnippet: enhancements.recentAbcPromptSnippet || null,
     personalPatternRagPromptSnippet: enhancements.personalPatternRagPromptSnippet || null,
@@ -245,9 +254,10 @@ export function buildClientTurnPayload({
   suggestionPlan,
   language = 'es',
   riskLevel = 'LOW',
+  userMessage = '',
 }) {
   const lang = normalizeApiLanguage(language);
-  if (isLlmCrisisTherapeuticExtrasBlocked({ riskLevel })) {
+  if (isLlmCrisisTherapeuticExtrasBlocked({ riskLevel, userMessage })) {
     return {
       suggestions: [],
       suggestionsPersonalized: false,

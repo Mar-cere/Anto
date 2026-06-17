@@ -27,6 +27,10 @@ describe('chatProductActionProposalService', () => {
     expect(shouldOfferProductActions({ riskLevel: 'HIGH', isCrisis: false })).toBe(false);
   });
 
+  it('shouldOfferProductActions false si WARNING', () => {
+    expect(shouldOfferProductActions({ riskLevel: 'WARNING', isCrisis: false })).toBe(false);
+  });
+
   it('shouldOfferProductActions true si LOW sin crisis', () => {
     expect(shouldOfferProductActions({ riskLevel: 'LOW', isCrisis: false })).toBe(true);
   });

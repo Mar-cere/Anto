@@ -5,10 +5,12 @@ import express from 'express';
 import mongoose from 'mongoose';
 import {
     buildCrisisActionDecision,
+    buildOpenaiCrisisContext,
     evaluateSuicideRisk,
     normalizeStoredCrisisRiskLevel,
     shouldAttachCrisisContextToPrompt
 } from '../constants/crisis.js';
+import { isLlmCrisisTherapeuticExtrasBlocked } from '../utils/chatObservationalContext.js';
 import {
     normalizeSessionIntention,
     sanitizeSessionIntentionForClient,
@@ -1449,7 +1451,11 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             resumeTccLite && typeof resumeTccLite === 'object' ? resumeTccLite : null,
         });
         const { suggestionPlan, tccLitePlan } = turnEnhancements;
-        const promptSnippets = buildOpenaiEnhancementSnippets(turnEnhancements);
+        const blockCrisisExtras = isLlmCrisisTherapeuticExtrasBlocked({
+          riskLevel,
+          userMessage: content.trim(),
+        });
+        const promptSnippets = buildOpenaiEnhancementSnippets(turnEnhancements, { blockCrisisExtras });
 
         const openaiContext = {
           rollingSummary: conversation?.rollingSummary || null,
@@ -1476,15 +1482,13 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             source: 'http',
             callSite: 'buildHistoryForPromptFromMessages'
           },
-          crisis:
-            isCrisis && shouldAttachCrisisContextToPrompt(riskLevel)
-              ? {
-                  riskLevel,
-                  preferences: combinedProfile?.preferences || user?.preferences || null,
-                  phone: user?.phone || null,
-                  detectedAt: new Date(),
-                }
-              : undefined,
+          crisis: buildOpenaiCrisisContext({
+            riskLevel,
+            isCrisis,
+            userMessage: content.trim(),
+            preferences: combinedProfile?.preferences || user?.preferences || null,
+            phone: user?.phone || null,
+          }),
           ...(memoriaParaOpenAI ? { memory: memoriaParaOpenAI } : {}),
           sessionRetention,
           sessionIntention: sessionIntentionSafe,
@@ -1829,6 +1833,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   suggestionPlan,
                   language: appLanguageForChat,
                   riskLevel,
+                  userMessage: content.trim(),
                 });
                 if (suggestionPlan.actionIds?.length > 0) {
                   suggestionPlan.actionIds.forEach((suggestionType) => {
@@ -2271,6 +2276,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           suggestionPlan,
           language: appLanguageForChat,
           riskLevel,
+          userMessage: content.trim(),
         });
         if (suggestionPlan.actionIds?.length > 0) {
           suggestionPlan.actionIds.forEach((suggestionType) => {

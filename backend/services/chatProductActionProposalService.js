@@ -463,7 +463,8 @@ export function mergeProductActionDraftFromLlm(action, llmPayload) {
  */
 export function shouldOfferProductActions({ riskLevel, isCrisis }) {
   if (isCrisis) return false;
-  if (riskLevel === 'HIGH' || riskLevel === 'MEDIUM') return false;
+  const level = String(riskLevel || 'LOW').trim().toUpperCase();
+  if (level === 'HIGH' || level === 'MEDIUM' || level === 'WARNING') return false;
   return true;
 }
 

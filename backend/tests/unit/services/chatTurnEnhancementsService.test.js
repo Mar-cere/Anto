@@ -46,6 +46,7 @@ await jest.unstable_mockModule('../../../services/personalPatternRagService.js',
 const {
   planChatTurnEnhancements,
   buildClientTurnPayload,
+  buildOpenaiEnhancementSnippets,
   finalizeChatTurnEnhancements,
 } = await import('../../../services/chatTurnEnhancementsService.js');
 
@@ -114,6 +115,20 @@ describe('chatTurnEnhancementsService', () => {
     expect(payload.suggestions).toEqual([]);
   });
 
+  it('buildOpenaiEnhancementSnippets oculta snippets terapéuticos en crisis', () => {
+    const snippets = buildOpenaiEnhancementSnippets(
+      {
+        suggestionPlan: { psychoeducationPromptSnippet: 'PSICO' },
+        activeTccProtocolsPromptSnippet: 'TCC PROTO',
+        tccLitePlan: { promptSnippet: 'TCC LITE' },
+      },
+      { blockCrisisExtras: true },
+    );
+    expect(snippets.psychoeducationPromptSnippet).toBeNull();
+    expect(snippets.activeTccProtocolsPromptSnippet).toBeNull();
+    expect(snippets.tccLitePromptSnippet).toBeNull();
+  });
+
   it('planChatTurnEnhancements omite sugerencias y TCC en crisis MEDIUM', async () => {
     const result = await planChatTurnEnhancements({
       userId: '507f1f77bcf86cd799439011',
@@ -129,6 +144,7 @@ describe('chatTurnEnhancementsService', () => {
 
     expect(mockPlanChatActionSuggestions).not.toHaveBeenCalled();
     expect(mockPlanChatTccLite).not.toHaveBeenCalled();
+    expect(mockBuildActiveTccProtocolsPromptSnippet).not.toHaveBeenCalled();
     expect(result.suggestionPlan.shouldShow).toBe(false);
     expect(result.tccLitePlan.active).toBe(false);
   });
@@ -147,6 +163,17 @@ describe('chatTurnEnhancementsService', () => {
     expect(payload.suggestions).toEqual([]);
     expect(payload.suggestionsPersonalized).toBe(false);
     expect(mockToTccLiteClientPayload).toHaveBeenCalledWith({ active: false }, 'es');
+  });
+
+  it('buildClientTurnPayload vacía extras con léxico explícito aunque riskLevel sea LOW', () => {
+    const payload = buildClientTurnPayload({
+      tccLitePlan: { active: true },
+      suggestionPlan: { shouldShow: true, formatted: [{ id: 'a' }] },
+      language: 'es',
+      riskLevel: 'LOW',
+      userMessage: 'quiero hacerme daño',
+    });
+    expect(payload.suggestions).toEqual([]);
   });
 
   it('finalizeChatTurnEnhancements no registra sugerencias en crisis', async () => {

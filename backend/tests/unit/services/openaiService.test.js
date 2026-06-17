@@ -58,6 +58,18 @@ describe('OpenAIService', () => {
       ).toBe(true);
     });
 
+    it('applyCrisisResponseSafety aplica post-proceso en WARNING con crisis en contexto', () => {
+      const result = openaiService.applyCrisisResponseSafety('Gracias por contarme.', {
+        crisis: { riskLevel: 'WARNING' },
+        emotional: { intensity: 8 },
+        contextual: { intencion: { tipo: 'CRISIS' } },
+        userMessage: 'no aguanto más',
+        profile: { preferences: { language: 'es' } },
+        conversationHistory: [],
+      });
+      expect(result).toMatch(/seguridad|salvo/i);
+    });
+
     it('applyCrisisResponseSafety quita lenguaje conductual en MEDIUM', () => {
       const result = openaiService.applyCrisisResponseSafety(
         'Te escucho. Mañana podemos planificar una rutina de hábitos.',

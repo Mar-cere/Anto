@@ -9,10 +9,14 @@ import {
   GUEST_SESSION_HOURS
 } from '../constants/guestChat.js';
 import {
+  buildOpenaiCrisisContext,
   evaluateSuicideRisk,
   normalizeStoredCrisisRiskLevel,
-  shouldAttachCrisisContextToPrompt
 } from '../constants/crisis.js';
+import {
+  buildHardStopCrisisAssistantContent,
+  shouldHardStopCrisisLlm,
+} from './crisisHardStopService.js';
 import { sanitizeSessionIntentionForClient } from '../constants/sessionIntention.js';
 import { buildHistoryForPromptFromMessages } from './openai/openaiPromptBuilder.js';
 import { Conversation, Message } from '../models/index.js';
@@ -417,47 +421,78 @@ export async function sendGuestMessage(guestSession, contentRaw) {
     isGuest: true,
     sessionRetention,
     conversationPattern,
-    crisis:
-      isCrisis && shouldAttachCrisisContextToPrompt(riskLevel)
-        ? {
-            riskLevel,
-            country: 'GENERAL',
-            detectedAt: new Date()
-          }
-        : undefined
+    crisis: buildOpenaiCrisisContext({
+      riskLevel,
+      isCrisis,
+      userMessage: content.trim(),
+      country: 'GENERAL',
+    }),
   };
+
+  const crisisHardStopContent = shouldHardStopCrisisLlm({
+    riskLevel,
+    messageContent: content.trim(),
+  })
+    ? buildHardStopCrisisAssistantContent({
+        riskLevel,
+        language: 'es',
+        preferences: null,
+        phone: null,
+        country: 'GENERAL',
+      })
+    : null;
 
   const syntheticUserId = guestSession._id;
 
-  const response = await openaiService.generarRespuesta(
-    {
-      _id: userMessage._id,
-      content,
-      userId: syntheticUserId,
-      conversationId,
-      role: 'user'
-    },
-    openaiContext
-  );
+  let responseContent;
+  let responseContext = {};
+  if (crisisHardStopContent) {
+    responseContent = crisisHardStopContent;
+    responseContext = { crisisHardStop: true };
+    metricsService
+      .recordMetric(
+        'crisis_hard_stop',
+        { riskLevel, transport: 'guest' },
+        null,
+        { guestSessionId: String(guestSession._id), conversationId: String(conversationId) },
+      )
+      .catch(() => {});
+  } else {
+    const response = await openaiService.generarRespuesta(
+      {
+        _id: userMessage._id,
+        content,
+        userId: syntheticUserId,
+        conversationId,
+        role: 'user'
+      },
+      openaiContext
+    );
+    responseContent = response.content;
+    responseContext = response.context || {};
+  }
 
   const emocionalNormalizado = openaiService.normalizarAnalisisEmocional(emotionalAnalysis);
 
   const assistantMessage = new Message({
     userId: null,
     guestSessionId: guestSession._id,
-    content: response.content,
+    content: responseContent,
     role: 'assistant',
     conversationId,
     metadata: {
       status: 'sent',
       guest: true,
-      crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
+      crisis: {
+        riskLevel: normalizeStoredCrisisRiskLevel(riskLevel),
+        ...(crisisHardStopContent ? { hardStop: true } : {}),
+      },
       context: {
         emotional: emocionalNormalizado,
         contextual: contextualAnalysis,
-        response: JSON.stringify(response.context || {})
-      }
-    }
+        response: JSON.stringify(responseContext || {}),
+      },
+    },
   });
   await assistantMessage.save();
   await Conversation.findByIdAndUpdate(conversationId, { lastMessage: assistantMessage._id });
@@ -471,7 +506,7 @@ export async function sendGuestMessage(guestSession, contentRaw) {
   metricsService
     .recordMetric(
       'chat_usage',
-      { action: 'assistant_message_saved', isGuest: true, chars: (response.content || '').length },
+      { action: 'assistant_message_saved', isGuest: true, chars: (responseContent || '').length },
       null,
       { guestSessionId: String(guestSession._id), conversationId: String(conversationId) }
     )

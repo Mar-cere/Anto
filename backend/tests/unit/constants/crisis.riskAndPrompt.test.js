@@ -1,12 +1,14 @@
 import { describe, expect, it } from '@jest/globals';
 import {
   buildCrisisActionDecision,
+  buildOpenaiCrisisContext,
   evaluateSuicideRisk,
   generateCrisisWarningContextMessage,
   hasExplicitSuicidalOrSelfHarmLexicon,
   normalizeStoredCrisisRiskLevel,
   shouldAttachCrisisContextToPrompt,
   shouldAttachCrisisWarningContextToPrompt,
+  shouldIncludeCrisisInOpenaiContext,
   shouldSkipEmergencyPhoneNumbersInSafetyAppend,
   shouldUseCompactCrisisSafetyAppend,
 } from '../../../constants/crisis.js';
@@ -26,6 +28,25 @@ describe('shouldAttachCrisisContextToPrompt', () => {
     expect(shouldAttachCrisisContextToPrompt('MEDIUM')).toBe(true);
     expect(shouldAttachCrisisContextToPrompt('WARNING')).toBe(false);
     expect(shouldAttachCrisisContextToPrompt('LOW')).toBe(false);
+  });
+});
+
+describe('shouldIncludeCrisisInOpenaiContext', () => {
+  it('incluye WARNING aunque no haya prompt completo MEDIUM/HIGH', () => {
+    expect(shouldIncludeCrisisInOpenaiContext('WARNING', { isCrisis: false })).toBe(true);
+    expect(shouldIncludeCrisisInOpenaiContext('LOW', { isCrisis: false })).toBe(false);
+    expect(
+      shouldIncludeCrisisInOpenaiContext('LOW', { userMessage: 'quiero morir' }),
+    ).toBe(true);
+  });
+
+  it('buildOpenaiCrisisContext devuelve objeto en WARNING', () => {
+    const ctx = buildOpenaiCrisisContext({
+      riskLevel: 'WARNING',
+      userMessage: 'no aguanto más',
+      country: 'GENERAL',
+    });
+    expect(ctx?.riskLevel).toBe('WARNING');
   });
 });
 
