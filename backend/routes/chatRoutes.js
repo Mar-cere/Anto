@@ -4,7 +4,6 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import {
-    buildCrisisActionDecision,
     buildOpenaiCrisisContext,
     evaluateSuicideRisk,
     normalizeStoredCrisisRiskLevel,
@@ -21,7 +20,6 @@ import { authenticateToken as protect } from '../middleware/auth.js';
 import { requireActiveSubscription } from '../middleware/checkSubscription.js';
 import ClinicalScaleResult from '../models/ClinicalScaleResult.js';
 import CognitiveDistortionReport from '../models/CognitiveDistortionReport.js';
-import CrisisEvent from '../models/CrisisEvent.js';
 import {
     Conversation,
     Message,
@@ -42,9 +40,8 @@ import chatProductActionProposalService from '../services/chatProductActionPropo
 import clinicalScalesService from '../services/clinicalScalesService.js';
 import conversationProductProposalCapService from '../services/conversationProductProposalCapService.js';
 import { scheduleRollingSummaryRefresh } from '../services/conversationRollingSummaryService.js';
-import crisisFollowUpService from '../services/crisisFollowUpService.js';
+import crisisBackgroundActionsService from '../services/crisisBackgroundActionsService.js';
 import crisisTrendAnalyzer from '../services/crisisTrendAnalyzer.js';
-import emergencyAlertService from '../services/emergencyAlertService.js';
 import {
     contextAnalyzer,
     conversationDepthAnalyzer,
@@ -62,7 +59,6 @@ import { buildSessionInsight } from '../services/sessionInsightService.js';
 import metricsService from '../services/metricsService.js';
 import { buildHistoryForPromptFromMessages } from '../services/openai/openaiPromptBuilder.js';
 import paymentAuditService from '../services/paymentAuditService.js';
-import pushNotificationService from '../services/pushNotificationService.js';
 import sessionEmotionalMemory from '../services/sessionEmotionalMemory.js';
 import { buildSessionRetentionPayload, withThematicMicroClosureRetention } from '../services/sessionRetentionHints.js';
 import {
@@ -99,14 +95,11 @@ import {
     HISTORIAL_LIMITE,
     LIMITE_MENSAJES,
     analyzeMessageFrequency,
-    calculateRiskScore,
     deleteConversationLimiter,
     detectAbruptToneChange,
     detectEmotionalEscalation,
     detectHelpRejection,
     detectSilenceAfterNegative,
-    extractProtectiveFactors,
-    extractRiskFactors,
     isValidObjectId,
     messageFeedbackLimiter,
     patchMessageLimiter,
@@ -1089,14 +1082,6 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             conversationContext
           }
         );
-        const crisisDecision = buildCrisisActionDecision({
-          riskLevel,
-          messageContent: content,
-          contextualAnalysis,
-          trendAnalysis,
-          crisisHistory,
-          conversationContext
-        });
         try {
           userMessage.metadata = {
             ...(userMessage.metadata?.toObject?.() || userMessage.metadata || {}),
@@ -1113,271 +1098,37 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           content: content.trim(),
           riskLevel,
         }).catch(() => {});
-        // Solo crear evento de crisis si el nivel es MEDIUM o HIGH
-        // WARNING no crea evento de crisis ni envía alertas, solo se registra para monitoreo
-        // Solo considerar intención CRISIS si la confianza es muy alta (>= 0.9) Y el score es alto
-        const isCrisis = (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') || 
-                        (contextualAnalysis?.intencion?.tipo === 'CRISIS' && 
-                         contextualAnalysis?.intencion?.confianza >= 0.9 && 
-                         riskLevel !== 'LOW');
-        
+        const isCrisis =
+          riskLevel === 'MEDIUM' ||
+          riskLevel === 'HIGH' ||
+          (contextualAnalysis?.intencion?.tipo === 'CRISIS' &&
+            contextualAnalysis?.intencion?.confianza >= 0.9 &&
+            riskLevel !== 'LOW');
+
         if (isCrisis) {
           logs.push(`[${Date.now() - startTime}ms] ⚠️ Crisis detectada - Nivel de riesgo: ${riskLevel}`);
-          
-          // Log de advertencias de tendencias si existen
           if (trendAnalysis?.warnings?.length > 0) {
-            logs.push(`[${Date.now() - startTime}ms] 📊 Advertencias de tendencias: ${trendAnalysis.warnings.join('; ')}`);
-          }
-          
-          // OPTIMIZACIÓN: Solo HIGH bloquea la respuesta, MEDIUM/WARNING se manejan después
-          let alertResult = null;
-          
-          if (riskLevel === 'HIGH') {
-            // HIGH es crítico, debe manejarse antes de responder
-            try {
-              if (crisisDecision.shouldAlertContacts) {
-                const alertOptions = {
-                  trendAnalysis,
-                  metadata: {
-                    riskScore: calculateRiskScore(emotionalAnalysis, contextualAnalysis, content, {
-                      trendAnalysis,
-                      crisisHistory,
-                      conversationContext
-                    }),
-                    factors: extractRiskFactors(emotionalAnalysis, contextualAnalysis, content, {
-                      trendAnalysis,
-                      crisisHistory,
-                      conversationContext
-                    }),
-                    decision: {
-                      actionLevel: crisisDecision.actionLevel,
-                      confidence: crisisDecision.confidence,
-                      reasons: crisisDecision.reasons
-                    }
-                  }
-                };
-
-                alertResult = await emergencyAlertService.sendEmergencyAlerts(
-                  req.user._id,
-                  riskLevel,
-                  content,
-                  alertOptions
-                );
-
-                if (alertResult.sent) {
-                  logs.push(`[${Date.now() - startTime}ms] 📧 Alertas HIGH enviadas a ${alertResult.successfulSends}/${alertResult.totalContacts} contactos`);
-                }
-              } else {
-                logs.push(
-                  `[${Date.now() - startTime}ms] 🧭 HIGH sin alerta a contactos (evidencia insuficiente, confidence=${crisisDecision.confidence.toFixed(2)})`
-                );
-              }
-              
-              // Notificación push para HIGH
-              try {
-                const user = await User.findById(req.user._id).select('+pushToken');
-                if (user && user.pushToken) {
-                  await pushNotificationService.sendCrisisHigh(user.pushToken);
-                  logs.push(`[${Date.now() - startTime}ms] 📱 Notificación push HIGH enviada`);
-                }
-              } catch (error) {
-                console.error('[ChatRoutes] Error enviando notificación push HIGH:', error);
-              }
-            } catch (error) {
-              console.error('[ChatRoutes] Error enviando alertas HIGH:', error);
-              logs.push(`[${Date.now() - startTime}ms] ❌ Error enviando alertas HIGH: ${error.message}`);
-            }
-          }
-          
-          // MEDIUM y WARNING se manejan de forma asíncrona después de responder
-          // (se define la función pero se ejecuta después)
-          const handleNonCriticalCrisis = async () => {
-            if (riskLevel === 'MEDIUM') {
-              try {
-                let mediumAlertResult = null;
-                if (crisisDecision.shouldAlertContacts) {
-                  const alertOptions = {
-                    trendAnalysis,
-                    metadata: {
-                      riskScore: calculateRiskScore(emotionalAnalysis, contextualAnalysis, content, {
-                        trendAnalysis,
-                        crisisHistory,
-                        conversationContext
-                      }),
-                      factors: extractRiskFactors(emotionalAnalysis, contextualAnalysis, content, {
-                        trendAnalysis,
-                        crisisHistory,
-                        conversationContext
-                      }),
-                      decision: {
-                        actionLevel: crisisDecision.actionLevel,
-                        confidence: crisisDecision.confidence,
-                        reasons: crisisDecision.reasons
-                      }
-                    }
-                  };
-
-                  mediumAlertResult = await emergencyAlertService.sendEmergencyAlerts(
-                    req.user._id,
-                    riskLevel,
-                    content,
-                    alertOptions
-                  );
-                }
-                
-                const user = await User.findById(req.user._id).select('+pushToken');
-                if (user && user.pushToken) {
-                  await pushNotificationService.sendCrisisMedium(user.pushToken);
-                }
-                
-                // Crear evento de crisis
-                const crisisEvent = await CrisisEvent.create({
-                  userId: req.user._id,
-                  riskLevel,
-                  triggerMessage: {
-                    messageId: userMessage._id,
-                    contentPreview: content.substring(0, 200),
-                    emotionalAnalysis: {
-                      mainEmotion: emotionalAnalysis?.mainEmotion,
-                      intensity: emotionalAnalysis?.intensity
-                    }
-                  },
-                  trendAnalysis: trendAnalysis ? {
-                    rapidDecline: trendAnalysis.trends?.rapidDecline || false,
-                    sustainedLow: trendAnalysis.trends?.sustainedLow || false,
-                    isolation: trendAnalysis.trends?.isolation || false,
-                    escalation: trendAnalysis.trends?.escalation || false,
-                    warnings: trendAnalysis.warnings || []
-                  } : undefined,
-                  crisisHistory: crisisHistory ? {
-                    totalCrises: crisisHistory.totalCrises || 0,
-                    recentCrises: crisisHistory.recentCrises || 0
-                  } : undefined,
-                  alerts: mediumAlertResult ? {
-                    sent: mediumAlertResult.sent || false,
-                    sentAt: mediumAlertResult.sent ? new Date() : undefined,
-                    contactsNotified: mediumAlertResult.successfulSends || 0,
-                    channels: {
-                      email: mediumAlertResult.successfulEmails > 0 || false,
-                      whatsapp: mediumAlertResult.successfulWhatsApp > 0 || false
-                    }
-                  } : undefined,
-                  metadata: {
-                    riskScore: calculateRiskScore(emotionalAnalysis, contextualAnalysis, content, {
-                      trendAnalysis,
-                      crisisHistory,
-                      conversationContext
-                    }),
-                    factors: extractRiskFactors(emotionalAnalysis, contextualAnalysis, content, {
-                      trendAnalysis,
-                      crisisHistory,
-                      conversationContext
-                    }),
-                    protectiveFactors: extractProtectiveFactors(emotionalAnalysis, content),
-                    decision: {
-                      actionLevel: crisisDecision.actionLevel,
-                      confidence: crisisDecision.confidence,
-                      shouldAlertContacts: crisisDecision.shouldAlertContacts,
-                      reasons: crisisDecision.reasons
-                    }
-                  }
-                });
-                
-                if (crisisEvent && mediumAlertResult?.sent) {
-                  await crisisFollowUpService.scheduleFollowUps(crisisEvent._id, riskLevel);
-                }
-              } catch (error) {
-                console.error('[ChatRoutes] Error manejando crisis MEDIUM:', error);
-              }
-            } else if (riskLevel === 'WARNING') {
-              try {
-                const user = await User.findById(req.user._id).select('+pushToken');
-                if (user && user.pushToken) {
-                  await pushNotificationService.sendCrisisWarning(
-                    user.pushToken,
-                    {
-                      emotion: emotionalAnalysis?.mainEmotion,
-                      intensity: emotionalAnalysis?.intensity
-                    }
-                  );
-                }
-              } catch (error) {
-                console.error('[ChatRoutes] Error manejando crisis WARNING:', error);
-              }
-            }
-          };
-          
-          // Crear evento de crisis para HIGH (síncrono porque es crítico)
-          let crisisEvent = null;
-          if (riskLevel === 'HIGH') {
-            try {
-              crisisEvent = await CrisisEvent.create({
-                userId: req.user._id,
-                riskLevel,
-                triggerMessage: {
-                  messageId: userMessage._id,
-                  contentPreview: content.substring(0, 200),
-                  emotionalAnalysis: {
-                    mainEmotion: emotionalAnalysis?.mainEmotion,
-                    intensity: emotionalAnalysis?.intensity
-                  }
-                },
-                trendAnalysis: trendAnalysis ? {
-                  rapidDecline: trendAnalysis.trends?.rapidDecline || false,
-                  sustainedLow: trendAnalysis.trends?.sustainedLow || false,
-                  isolation: trendAnalysis.trends?.isolation || false,
-                  escalation: trendAnalysis.trends?.escalation || false,
-                  warnings: trendAnalysis.warnings || []
-                } : undefined,
-                crisisHistory: crisisHistory ? {
-                  totalCrises: crisisHistory.totalCrises || 0,
-                  recentCrises: crisisHistory.recentCrises || 0
-                } : undefined,
-                alerts: alertResult ? {
-                  sent: alertResult.sent || false,
-                  sentAt: alertResult.sent ? new Date() : undefined,
-                  contactsNotified: alertResult.successfulSends || 0,
-                  channels: {
-                    email: alertResult.successfulEmails > 0 || false,
-                    whatsapp: alertResult.successfulWhatsApp > 0 || false
-                  }
-                } : undefined,
-                metadata: {
-                  riskScore: calculateRiskScore(emotionalAnalysis, contextualAnalysis, content, {
-                    trendAnalysis,
-                    crisisHistory,
-                    conversationContext
-                  }),
-                  factors: extractRiskFactors(emotionalAnalysis, contextualAnalysis, content, {
-                    trendAnalysis,
-                    crisisHistory,
-                    conversationContext
-                  }),
-                  protectiveFactors: extractProtectiveFactors(emotionalAnalysis, content),
-                  decision: {
-                    actionLevel: crisisDecision.actionLevel,
-                    confidence: crisisDecision.confidence,
-                    shouldAlertContacts: crisisDecision.shouldAlertContacts,
-                    reasons: crisisDecision.reasons
-                  }
-                }
-              });
-              
-              if (crisisEvent && alertResult?.sent) {
-                await crisisFollowUpService.scheduleFollowUps(crisisEvent._id, riskLevel);
-              }
-            } catch (error) {
-              console.error('[ChatRoutes] Error registrando evento de crisis HIGH:', error);
-            }
-          }
-          
-          // Ejecutar manejo de crisis no críticas después de responder (asíncrono)
-          if (riskLevel === 'MEDIUM' || riskLevel === 'WARNING') {
-            handleNonCriticalCrisis().catch(err => {
-              console.error('[ChatRoutes] Error en manejo asíncrono de crisis:', err);
-            });
+            logs.push(
+              `[${Date.now() - startTime}ms] 📊 Advertencias de tendencias: ${trendAnalysis.warnings.join('; ')}`,
+            );
           }
         }
+
+        const crisisTransport = req.query.stream === 'true' ? 'sse' : 'http';
+        await crisisBackgroundActionsService.runCrisisBackgroundActions({
+          userId: req.user._id,
+          messageId: userMessage._id,
+          messageContent: content,
+          riskLevel,
+          emotionalAnalysis,
+          contextualAnalysis,
+          trendAnalysis,
+          crisisHistory,
+          conversationContext,
+          transport: crisisTransport,
+          isCrisis,
+          log: (msg) => logs.push(`[${Date.now() - startTime}ms] ${msg}`),
+        });
 
         // 4. Generar respuesta usando el análisis ya realizado (mensaje ya guardado arriba)
         // Preparar historial de conversación en formato para el prompt

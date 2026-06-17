@@ -26,6 +26,7 @@ import chatProductActionLlmService from '../services/chatProductActionLlmService
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 import conversationProductProposalCapService from '../services/conversationProductProposalCapService.js';
 import metricsService from '../services/metricsService.js';
+import crisisBackgroundActionsService from '../services/crisisBackgroundActionsService.js';
 import {
   planChatTurnEnhancements,
   buildOpenaiEnhancementSnippets,
@@ -268,6 +269,20 @@ export const setupSocketIO = (server) => {
           (contextualAnalysis?.intencion?.tipo === 'CRISIS' &&
             contextualAnalysis?.intencion?.confianza >= 0.9 &&
             riskLevel !== 'LOW');
+
+        await crisisBackgroundActionsService.runCrisisBackgroundActions({
+          userId,
+          messageId: userMessage._id,
+          messageContent: messageText,
+          riskLevel,
+          emotionalAnalysis,
+          contextualAnalysis,
+          trendAnalysis: null,
+          crisisHistory: null,
+          conversationContext: {},
+          transport: 'socket',
+          isCrisis,
+        });
 
         const sessionPhase = inferChatSessionPhase({
           riskLevel,

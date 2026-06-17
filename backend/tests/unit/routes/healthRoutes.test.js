@@ -107,6 +107,43 @@ describe('Health Routes', () => {
       }
     });
 
+    it('debe exponer crisis-routing en desarrollo', async () => {
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'development';
+
+      try {
+        const response = await request(app).get('/api/health/crisis-routing');
+
+        expect(response.status).toBe(200);
+        expect(response.body.success).toBe(true);
+        expect(response.body.routing).toEqual(
+          expect.objectContaining({
+            hardStop: expect.any(Number),
+            llmPath: expect.any(Number),
+            hardStopByRiskLevel: expect.any(Object),
+            llmPathByRiskLevel: expect.any(Object),
+          }),
+        );
+        expect(response.body.sanitization).toBeDefined();
+        expect(response.body.backgroundActions).toBeDefined();
+        expect(response.body.scope).toBe('process_memory');
+      } finally {
+        process.env.NODE_ENV = originalEnv;
+      }
+    });
+
+    it('crisis-routing retorna 401 en producción sin auth', async () => {
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+
+      try {
+        const response = await request(app).get('/api/health/crisis-routing').expect(401);
+        expect(response.body.error).toBe('Unauthorized');
+      } finally {
+        process.env.NODE_ENV = originalEnv;
+      }
+    });
+
     it('debe retornar información detallada con usuario autenticado en producción', async () => {
       const originalEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'production';

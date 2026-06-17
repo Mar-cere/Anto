@@ -185,11 +185,23 @@ if (
   routingSnap &&
   typeof routingSnap.hardStop === 'number' &&
   typeof routingSnap.llmPath === 'number' &&
-  typeof routingSnap.sanitizedResponses === 'number'
+  typeof routingSnap.sanitizedResponses === 'number' &&
+  routingSnap.hardStopByRiskLevel &&
+  routingSnap.llmPathByTransport
 ) {
   pass('métricas crisisRouting en memoria');
 } else {
   fail('métricas crisisRouting en memoria');
+}
+
+const opsSnap = metricsService.getCrisisRoutingOpsSnapshot();
+if (
+  opsSnap?.routing?.hardStopSharePct != null ||
+  (opsSnap.routing.hardStop === 0 && opsSnap.routing.llmPath === 0)
+) {
+  pass('métricas crisisRouting ops snapshot');
+} else {
+  fail('métricas crisisRouting ops snapshot');
 }
 
 const snippetSample = await buildPersonalPatternRagSnippet({
@@ -209,11 +221,27 @@ if (
   healthProbe.includes('buildChatFeaturesSnapshot') &&
   healthProbe.includes('crisisRouting') &&
   metricsServiceSrc.includes('sanitizedByTransport') &&
-  metricsServiceSrc.includes('sanitizedByRiskLevel')
+  metricsServiceSrc.includes('sanitizedByRiskLevel') &&
+  metricsServiceSrc.includes('getCrisisRoutingOpsSnapshot')
 ) {
   pass('health detallado expone chatFeatures');
 } else {
   fail('health detallado expone chatFeatures');
+}
+
+const healthRoutesSrc = fs.readFileSync(path.join(root, 'backend/routes/healthRoutes.js'), 'utf8');
+const crisisBgSrc = fs.readFileSync(
+  path.join(root, 'backend/services/crisisBackgroundActionsService.js'),
+  'utf8',
+);
+if (
+  healthRoutesSrc.includes('/crisis-routing') &&
+  crisisBgSrc.includes('runCrisisBackgroundActions') &&
+  crisisBgSrc.includes('shouldRunCrisisBackgroundActions')
+) {
+  pass('acciones segundo plano crisis + endpoint ops');
+} else {
+  fail('acciones segundo plano crisis + endpoint ops');
 }
 
 const ragService = fs.readFileSync(path.join(root, 'backend/services/personalPatternRagService.js'), 'utf8');

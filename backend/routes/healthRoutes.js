@@ -15,6 +15,7 @@ import {
   buildPublicHealthSnapshot,
   getHealthHttpStatus,
 } from '../services/healthProbeService.js';
+import metricsService from '../services/metricsService.js';
 
 const router = express.Router();
 
@@ -53,6 +54,21 @@ router.get('/detailed', detailedLimiter, async (req, res) => {
 
   const health = buildDetailedHealthSnapshot();
   res.status(getHealthHttpStatus(health)).json(health);
+});
+
+/**
+ * GET /api/health/crisis-routing
+ * Métricas ops de enrutamiento crisis (camino A vs B) y acciones en segundo plano.
+ */
+router.get('/crisis-routing', detailedLimiter, async (req, res) => {
+  if (process.env.NODE_ENV === 'production' && !req.user) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  res.json({
+    success: true,
+    ...metricsService.getCrisisRoutingOpsSnapshot(),
+  });
 });
 
 export default router;

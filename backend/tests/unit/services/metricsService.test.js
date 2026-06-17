@@ -50,6 +50,10 @@ describe('MetricsService', () => {
       expect(snap.llmPath).toBe(before.llmPath + 1);
       expect(snap.byRiskLevel.HIGH).toBeGreaterThanOrEqual(1);
       expect(snap.byRiskLevel.MEDIUM).toBeGreaterThanOrEqual(1);
+      expect(snap.hardStopByRiskLevel.HIGH).toBeGreaterThanOrEqual(1);
+      expect(snap.llmPathByRiskLevel.MEDIUM).toBeGreaterThanOrEqual(1);
+      expect(snap.hardStopByTransport.http).toBeGreaterThanOrEqual(1);
+      expect(snap.llmPathByTransport.socket).toBeGreaterThanOrEqual(1);
     });
 
     it('crisis_llm_sanitized incrementa sanitizedResponses y sanitizeHits', async () => {
@@ -71,9 +75,66 @@ describe('MetricsService', () => {
       const snap = metricsService.getCrisisRoutingSnapshot();
       snap.sanitizedByTransport.test = 99;
       snap.byRiskLevel.TEST = 99;
+      snap.hardStopByRiskLevel.TEST = 99;
       const snap2 = metricsService.getCrisisRoutingSnapshot();
       expect(snap2.sanitizedByTransport.test).toBeUndefined();
       expect(snap2.byRiskLevel.TEST).toBeUndefined();
+      expect(snap2.hardStopByRiskLevel.TEST).toBeUndefined();
+    });
+
+    it('getCrisisRoutingOpsSnapshot expone ratios y desglose A/B', async () => {
+      await metricsService.recordMetric('crisis_hard_stop', {
+        riskLevel: 'HIGH',
+        transport: 'http',
+      });
+      await metricsService.recordMetric('crisis_llm_path', {
+        riskLevel: 'HIGH',
+        transport: 'http',
+      });
+      await metricsService.recordMetric('crisis_llm_sanitized', {
+        riskLevel: 'HIGH',
+        transport: 'http',
+        hits: ['grounding_invite'],
+      });
+      await metricsService.recordMetric('crisis_background_action', {
+        riskLevel: 'HIGH',
+        transport: 'http',
+        phase: 'sync',
+        action: 'crisis_event_high',
+      });
+
+      const ops = metricsService.getCrisisRoutingOpsSnapshot();
+      expect(ops.routing).toEqual(
+        expect.objectContaining({
+          hardStop: expect.any(Number),
+          llmPath: expect.any(Number),
+          hardStopSharePct: expect.any(Number),
+          llmPathSharePct: expect.any(Number),
+          hardStopByRiskLevel: expect.any(Object),
+          llmPathByRiskLevel: expect.any(Object),
+        }),
+      );
+      expect(ops.sanitization).toEqual(
+        expect.objectContaining({
+          sanitizedResponses: expect.any(Number),
+          sanitizeRatePct: expect.any(Number),
+        }),
+      );
+      expect(ops.backgroundActions.total).toBeGreaterThanOrEqual(1);
+      expect(ops.scope).toBe('process_memory');
+    });
+
+    it('crisis_background_action incrementa contadores', async () => {
+      await metricsService.recordMetric('crisis_background_action', {
+        riskLevel: 'WARNING',
+        transport: 'socket',
+        phase: 'async',
+        action: 'push_warning',
+      });
+      const ops = metricsService.getCrisisRoutingOpsSnapshot();
+      expect(ops.backgroundActions.byRiskLevel.WARNING).toBeGreaterThanOrEqual(1);
+      expect(ops.backgroundActions.byTransport.socket).toBeGreaterThanOrEqual(1);
+      expect(ops.backgroundActions.byPhase.async).toBeGreaterThanOrEqual(1);
     });
   });
 });

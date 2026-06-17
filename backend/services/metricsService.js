@@ -165,10 +165,23 @@ class MetricsService {
         sanitizedResponses: 0,
         byRiskLevel: {},
         byTransport: {},
+        hardStopByRiskLevel: {},
+        llmPathByRiskLevel: {},
+        hardStopByTransport: {},
+        llmPathByTransport: {},
         sanitizeHits: {},
         sanitizedByTransport: {},
         sanitizedByRiskLevel: {},
-      }
+      },
+      /** Acciones en segundo plano §3 (push, CrisisEvent, alertas). */
+      crisisBackgroundActions: {
+        total: 0,
+        errors: 0,
+        byRiskLevel: {},
+        byTransport: {},
+        byPhase: { sync: 0, async: 0 },
+        byAction: {},
+      },
     };
 
     // Historial de métricas (últimas 1000 entradas)
@@ -472,6 +485,21 @@ class MetricsService {
         break;
       }
 
+      case 'crisis_background_action': {
+        const bg = this.inMemoryMetrics.crisisBackgroundActions;
+        bg.total++;
+        const rl = String(data?.riskLevel || 'UNKNOWN').toUpperCase();
+        bg.byRiskLevel[rl] = (bg.byRiskLevel[rl] || 0) + 1;
+        const transport = String(data?.transport || 'unknown');
+        bg.byTransport[transport] = (bg.byTransport[transport] || 0) + 1;
+        const phase = data?.phase === 'sync' ? 'sync' : 'async';
+        bg.byPhase[phase] = (bg.byPhase[phase] || 0) + 1;
+        const action = String(data?.action || 'unknown');
+        bg.byAction[action] = (bg.byAction[action] || 0) + 1;
+        if (action === 'error') bg.errors++;
+        break;
+      }
+
       case 'chat_usage': {
         const cu = this.inMemoryMetrics.chatUsage;
         const action = data?.action;
@@ -647,9 +675,61 @@ class MetricsService {
       sanitizedResponses: cr.sanitizedResponses,
       byRiskLevel: { ...cr.byRiskLevel },
       byTransport: { ...cr.byTransport },
+      hardStopByRiskLevel: { ...cr.hardStopByRiskLevel },
+      llmPathByRiskLevel: { ...cr.llmPathByRiskLevel },
+      hardStopByTransport: { ...cr.hardStopByTransport },
+      llmPathByTransport: { ...cr.llmPathByTransport },
       sanitizeHits: { ...cr.sanitizeHits },
       sanitizedByTransport: { ...cr.sanitizedByTransport },
       sanitizedByRiskLevel: { ...cr.sanitizedByRiskLevel },
+    };
+  }
+
+  /**
+   * Vista ops: desglose A/B por dimensión + ratios derivados.
+   * Deuda técnica: agregación multi-instancia, ventanas temporales, persistencia Mongo.
+   */
+  getCrisisRoutingOpsSnapshot() {
+    const cr = this.inMemoryMetrics.crisisRouting;
+    const bg = this.inMemoryMetrics.crisisBackgroundActions;
+    const routingTotal = cr.hardStop + cr.llmPath;
+    const sanitizeDenom = cr.llmPath > 0 ? cr.llmPath : 0;
+
+    const pct = (num, den) =>
+      den > 0 ? Number(((num / den) * 100).toFixed(2)) : null;
+
+    return {
+      scope: 'process_memory',
+      note: 'Contadores por proceso; se reinician al redeploy. Agregación multi-instancia pendiente.',
+      routing: {
+        hardStop: cr.hardStop,
+        llmPath: cr.llmPath,
+        total: routingTotal,
+        hardStopSharePct: pct(cr.hardStop, routingTotal),
+        llmPathSharePct: pct(cr.llmPath, routingTotal),
+        hardStopByRiskLevel: { ...cr.hardStopByRiskLevel },
+        llmPathByRiskLevel: { ...cr.llmPathByRiskLevel },
+        hardStopByTransport: { ...cr.hardStopByTransport },
+        llmPathByTransport: { ...cr.llmPathByTransport },
+        byRiskLevel: { ...cr.byRiskLevel },
+        byTransport: { ...cr.byTransport },
+      },
+      sanitization: {
+        sanitizedResponses: cr.sanitizedResponses,
+        sanitizeRatePct: pct(cr.sanitizedResponses, sanitizeDenom),
+        sanitizeHits: { ...cr.sanitizeHits },
+        sanitizedByTransport: { ...cr.sanitizedByTransport },
+        sanitizedByRiskLevel: { ...cr.sanitizedByRiskLevel },
+      },
+      backgroundActions: {
+        total: bg.total,
+        errors: bg.errors,
+        byRiskLevel: { ...bg.byRiskLevel },
+        byTransport: { ...bg.byTransport },
+        byPhase: { ...bg.byPhase },
+        byAction: { ...bg.byAction },
+      },
+      capturedAt: new Date().toISOString(),
     };
   }
 
@@ -658,9 +738,17 @@ class MetricsService {
     if (counterKey === 'hardStop') cr.hardStop++;
     if (counterKey === 'llmPath') cr.llmPath++;
     const rl = String(data?.riskLevel || 'UNKNOWN').toUpperCase();
-    cr.byRiskLevel[rl] = (cr.byRiskLevel[rl] || 0) + 1;
     const transport = String(data?.transport || 'unknown');
+    cr.byRiskLevel[rl] = (cr.byRiskLevel[rl] || 0) + 1;
     cr.byTransport[transport] = (cr.byTransport[transport] || 0) + 1;
+    if (counterKey === 'hardStop') {
+      cr.hardStopByRiskLevel[rl] = (cr.hardStopByRiskLevel[rl] || 0) + 1;
+      cr.hardStopByTransport[transport] = (cr.hardStopByTransport[transport] || 0) + 1;
+    }
+    if (counterKey === 'llmPath') {
+      cr.llmPathByRiskLevel[rl] = (cr.llmPathByRiskLevel[rl] || 0) + 1;
+      cr.llmPathByTransport[transport] = (cr.llmPathByTransport[transport] || 0) + 1;
+    }
   }
 
   /**
