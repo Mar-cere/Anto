@@ -18,8 +18,15 @@ import { getEmergencyLines } from '../constants/emergencyNumbers.js';
 import {
   buildOpenaiCrisisContext,
   shouldIncludeCrisisInOpenaiContext,
+  generateCrisisSystemPrompt,
+  generateCrisisMediumResponseConstraints,
 } from '../constants/crisis.js';
 import { buildOpenaiEnhancementSnippets } from '../services/chatTurnEnhancementsService.js';
+import {
+  sanitizeCrisisLlmResponse,
+  detectInappropriateCrisisContent,
+} from '../utils/crisisResponseSafety.js';
+import metricsService from '../services/metricsService.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '../..');
@@ -149,6 +156,42 @@ if (
   fail('snippets terapéuticos bloqueados en crisis');
 }
 
+const mediumPrompt = generateCrisisSystemPrompt('MEDIUM', 'GENERAL');
+const mediumConstraints = generateCrisisMediumResponseConstraints('es');
+if (
+  mediumPrompt.includes('FORMATO DE RESPUESTA OBLIGATORIO (MEDIUM)') &&
+  mediumConstraints.includes('PROHIBIDO') &&
+  !generateCrisisSystemPrompt('HIGH', 'GENERAL').includes('FORMATO DE RESPUESTA OBLIGATORIO')
+) {
+  pass('constraints MEDIUM en prompt de crisis');
+} else {
+  fail('constraints MEDIUM en prompt de crisis');
+}
+
+const sanitizeSample = sanitizeCrisisLlmResponse(
+  'Te escucho. Hagamos grounding juntos. ¿Estás a salvo?',
+);
+if (
+  sanitizeSample.wasSanitized &&
+  detectInappropriateCrisisContent('Hagamos grounding juntos').includes('grounding_invite')
+) {
+  pass('sanitizer post-LLM crisis');
+} else {
+  fail('sanitizer post-LLM crisis');
+}
+
+const routingSnap = metricsService.getCrisisRoutingSnapshot();
+if (
+  routingSnap &&
+  typeof routingSnap.hardStop === 'number' &&
+  typeof routingSnap.llmPath === 'number' &&
+  typeof routingSnap.sanitizedResponses === 'number'
+) {
+  pass('métricas crisisRouting en memoria');
+} else {
+  fail('métricas crisisRouting en memoria');
+}
+
 const snippetSample = await buildPersonalPatternRagSnippet({
   userId: null,
   userContent: 'x',
@@ -160,7 +203,11 @@ if (snippetSample === null) {
 }
 
 const healthProbe = fs.readFileSync(path.join(root, 'backend/services/healthProbeService.js'), 'utf8');
-if (healthProbe.includes('chatFeatures') && healthProbe.includes('buildChatFeaturesSnapshot')) {
+if (
+  healthProbe.includes('chatFeatures') &&
+  healthProbe.includes('buildChatFeaturesSnapshot') &&
+  healthProbe.includes('crisisRouting')
+) {
   pass('health detallado expone chatFeatures');
 } else {
   fail('health detallado expone chatFeatures');

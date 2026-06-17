@@ -844,7 +844,7 @@ export const generateCrisisMessage = (riskLevel, countryOrSource = 'GENERAL') =>
  * @param {string|Object} [countryOrSource='GENERAL'] - Legacy, ISO, o `{ preferences, phone }`
  * @returns {string} Prompt del sistema para crisis
  */
-export const generateCrisisSystemPrompt = (riskLevel, countryOrSource = 'GENERAL') => {
+export const generateCrisisSystemPrompt = (riskLevel, countryOrSource = 'GENERAL', language = 'es') => {
   const lines = getEmergencyLines(countryOrSource);
   const protocol = CRISIS_PROTOCOL.RISK_LEVELS[riskLevel];
   
@@ -872,7 +872,37 @@ export const generateCrisisSystemPrompt = (riskLevel, countryOrSource = 'GENERAL
   if (riskLevel === 'HIGH') {
     prompt += `6. URGENTE: Insta al usuario a contactar servicios de emergencia si está en peligro inmediato\n`;
   }
-  
+  if (riskLevel === 'MEDIUM') {
+    prompt += `\n${generateCrisisMediumResponseConstraints(language)}\n`;
+  }
+
   return prompt;
 };
+
+/**
+ * Plantilla casi fija para respuestas LLM en crisis MEDIUM (camino B fase 3).
+ */
+export function generateCrisisMediumResponseConstraints(language = 'es') {
+  const lang = String(language || 'es').trim().toLowerCase() === 'en' ? 'en' : 'es';
+  if (lang === 'en') {
+    return [
+      'MANDATORY RESPONSE FORMAT (MEDIUM):',
+      '1. At most 2 empathetic validation sentences tied to the user message.',
+      '2. One direct safety question: Are you safe right now?',
+      '3. Brief local crisis lines (max 3 bullets).',
+      '4. One sentence inviting contact with someone trusted now.',
+      'FORBIDDEN: techniques, habits, tasks, future plans, A/B choices, co-created safety plans.',
+      'Target length: about 120–280 words.',
+    ].join('\n');
+  }
+  return [
+    'FORMATO DE RESPUESTA OBLIGATORIO (MEDIUM):',
+    '1. Máximo 2 frases de validación empática ligadas al mensaje del usuario.',
+    '2. Una pregunta directa de seguridad: ¿Te sientes a salvo en este momento?',
+    '3. Líneas de ayuda locales en lista breve (máx. 3 viñetas).',
+    '4. Una frase invitando a contactar a alguien de confianza ahora.',
+    'PROHIBIDO: técnicas, hábitos, tareas, planes a futuro, opciones A/B, plan de seguridad co-creado.',
+    'Longitud orientativa: 120–280 palabras.',
+  ].join('\n');
+}
 

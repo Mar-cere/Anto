@@ -12,6 +12,7 @@ import {
   buildOpenaiCrisisContext,
   evaluateSuicideRisk,
   normalizeStoredCrisisRiskLevel,
+  shouldIncludeCrisisInOpenaiContext,
 } from '../constants/crisis.js';
 import {
   buildHardStopCrisisAssistantContent,
@@ -470,6 +471,21 @@ export async function sendGuestMessage(guestSession, contentRaw) {
     );
     responseContent = response.content;
     responseContext = response.context || {};
+    if (
+      shouldIncludeCrisisInOpenaiContext(riskLevel, {
+        isCrisis,
+        userMessage: content.trim(),
+      })
+    ) {
+      metricsService
+        .recordMetric(
+          'crisis_llm_path',
+          { riskLevel, transport: 'guest' },
+          null,
+          { guestSessionId: String(guestSession._id), conversationId: String(conversationId) },
+        )
+        .catch(() => {});
+    }
   }
 
   const emocionalNormalizado = openaiService.normalizarAnalisisEmocional(emotionalAnalysis);

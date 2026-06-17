@@ -1096,6 +1096,7 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     const crisisPrompt = generateCrisisSystemPrompt(
       contexto.crisis.riskLevel,
       resolveCrisisEmergencySource(contexto.crisis),
+      language,
     );
     systemMessage = `${crisisPrompt}\n\n---\n\n${systemMessage}`;
   } else if (

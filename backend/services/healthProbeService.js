@@ -12,6 +12,7 @@ import {
   isAtlasVectorSearchEnabled,
 } from './topicFreeVectorSearchService.js';
 import { isPersonalPatternRagEnabled } from './personalPatternRagService.js';
+import metricsService from './metricsService.js';
 
 export function getMongoDBStatus() {
   const state = mongoose.connection.readyState;
@@ -55,6 +56,7 @@ function buildChatFeaturesSnapshot() {
   return {
     personalPatternRag: isPersonalPatternRagEnabled(),
     crisisHardStop: features.crisisHardStop === true,
+    crisisRouting: metricsService.getCrisisRoutingSnapshot(),
   };
 }
 

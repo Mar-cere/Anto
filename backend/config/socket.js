@@ -19,7 +19,7 @@ import {
   userProfileService
 } from '../services/index.js';
 import { sanitizeSessionIntentionForClient } from '../constants/sessionIntention.js';
-import { evaluateSuicideRisk, normalizeStoredCrisisRiskLevel, buildOpenaiCrisisContext } from '../constants/crisis.js';
+import { evaluateSuicideRisk, normalizeStoredCrisisRiskLevel, buildOpenaiCrisisContext, shouldIncludeCrisisInOpenaiContext } from '../constants/crisis.js';
 import { isLlmCrisisTherapeuticExtrasBlocked } from '../utils/chatObservationalContext.js';
 import chatProductActionProposalService from '../services/chatProductActionProposalService.js';
 import chatProductActionLlmService from '../services/chatProductActionLlmService.js';
@@ -400,8 +400,10 @@ export const setupSocketIO = (server) => {
         }
 
         if (
-          isCrisis &&
-          ['WARNING', 'MEDIUM', 'HIGH'].includes(String(riskLevel || '').toUpperCase())
+          shouldIncludeCrisisInOpenaiContext(riskLevel, {
+            isCrisis,
+            userMessage: messageText,
+          })
         ) {
           metricsService
             .recordMetric(
@@ -422,6 +424,12 @@ export const setupSocketIO = (server) => {
         const response = await openaiService.generarRespuesta(
           userMessage,
           {
+            rollingSummary: conversation?.rollingSummary || null,
+            sessionPhase,
+            safetyHistory: conversationHistory.map((m) => ({
+              role: m.role,
+              content: m.content || '',
+            })),
             history: historialParaPrompt,
             emotional: emotionalAnalysis,
             contextual: contextualAnalysis,

@@ -85,6 +85,21 @@ describe('OpenAIService', () => {
       expect(result).not.toMatch(/hábitos/i);
       expect(result).toMatch(/seguridad|salvo/i);
     });
+
+    it('applyCrisisResponseSafety sanitiza en LOW con intención CRISIS e intensidad alta', () => {
+      const result = openaiService.applyCrisisResponseSafety(
+        'Te escucho. Mañana podemos planificar una activación conductual.',
+        {
+          crisis: { riskLevel: 'LOW' },
+          emotional: { intensity: 8 },
+          contextual: { intencion: { tipo: 'CRISIS' } },
+          userMessage: 'estoy mal',
+          profile: { preferences: { language: 'es' } },
+          conversationHistory: [],
+        },
+      );
+      expect(result).not.toMatch(/activación conductual/i);
+    });
   });
 });
 

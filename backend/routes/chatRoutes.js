@@ -8,7 +8,8 @@ import {
     buildOpenaiCrisisContext,
     evaluateSuicideRisk,
     normalizeStoredCrisisRiskLevel,
-    shouldAttachCrisisContextToPrompt
+    shouldAttachCrisisContextToPrompt,
+    shouldIncludeCrisisInOpenaiContext,
 } from '../constants/crisis.js';
 import { isLlmCrisisTherapeuticExtrasBlocked } from '../utils/chatObservationalContext.js';
 import {
@@ -1623,8 +1624,10 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         }
 
         if (
-          isCrisis &&
-          ['WARNING', 'MEDIUM', 'HIGH'].includes(String(riskLevel || '').toUpperCase())
+          shouldIncludeCrisisInOpenaiContext(riskLevel, {
+            isCrisis,
+            userMessage: content.trim(),
+          })
         ) {
           metricsService
             .recordMetric(
@@ -1821,11 +1824,19 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                 });
 
                 const responseTime = Date.now() - startTime;
+                const blockClinicalExtras = isLlmCrisisTherapeuticExtrasBlocked({
+                  riskLevel,
+                  userMessage: content.trim(),
+                });
                 let scaleSuggestion = null;
                 try {
-                  scaleSuggestion = await clinicalScalesService.shouldAdministerScale(emotionalAnalysis, contextualAnalysis, req.user._id);
+                  if (!blockClinicalExtras) {
+                    scaleSuggestion = await clinicalScalesService.shouldAdministerScale(emotionalAnalysis, contextualAnalysis, req.user._id);
+                  }
                 } catch (_) {}
-                const cognitiveDistortions = contextualAnalysis?.cognitiveDistortions || null;
+                const cognitiveDistortions = blockClinicalExtras
+                  ? null
+                  : contextualAnalysis?.cognitiveDistortions || null;
                 const primaryDistortion = contextualAnalysis?.primaryDistortion || null;
                 const distortionIntervention = contextualAnalysis?.distortionIntervention || null;
                 const clientTurn = buildClientTurnPayload({
@@ -2153,21 +2164,29 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
 
         // OPTIMIZACIÓN: Generar sugerencias solo cuando sea apropiado (no en cada mensaje)
         const responseTime = Date.now() - startTime;
+        const blockClinicalExtras = isLlmCrisisTherapeuticExtrasBlocked({
+          riskLevel,
+          userMessage: content.trim(),
+        });
         
         // NUEVO: Verificar si se debe administrar una escala clínica
         let scaleSuggestion = null;
         try {
-          scaleSuggestion = await clinicalScalesService.shouldAdministerScale(
-            emotionalAnalysis,
-            contextualAnalysis,
-            req.user._id
-          );
+          if (!blockClinicalExtras) {
+            scaleSuggestion = await clinicalScalesService.shouldAdministerScale(
+              emotionalAnalysis,
+              contextualAnalysis,
+              req.user._id
+            );
+          }
         } catch (error) {
           console.error('[ChatRoutes] Error verificando escalas clínicas:', error);
         }
         
         // NUEVO: Detectar distorsiones cognitivas (ya integrado en contextualAnalysis)
-        const cognitiveDistortions = contextualAnalysis?.cognitiveDistortions || null;
+        const cognitiveDistortions = blockClinicalExtras
+          ? null
+          : contextualAnalysis?.cognitiveDistortions || null;
         const primaryDistortion = contextualAnalysis?.primaryDistortion || null;
         const distortionIntervention = contextualAnalysis?.distortionIntervention || null;
         

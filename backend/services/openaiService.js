@@ -38,8 +38,8 @@ import {
 import { isLlmCrisisTherapeuticExtrasBlocked } from '../utils/chatObservationalContext.js';
 import {
   shouldApplyCrisisResponseSafety,
-  shouldStripCrisisConductualLanguage,
-  stripInappropriateCrisisConductualLanguage,
+  sanitizeCrisisLlmResponse,
+  getCrisisSanitizeFallback,
 } from '../utils/crisisResponseSafety.js';
 import {
   formatEmergencyNumbers,
@@ -356,11 +356,17 @@ class OpenAIService {
         crisis: contexto?.crisis
       });
 
-      // MEJORA: Intentar obtener respuesta del caché si existe (módulo openaiResponseCache) — no en modo invitado
+      const skipResponseCacheForCrisis = shouldApplyCrisisResponseSafety({
+        crisis: contexto?.crisis,
+        contextual: analisisContextual,
+        emotional: analisisEmocional,
+      });
+
+      // MEJORA: Intentar obtener respuesta del caché si existe (módulo openaiResponseCache) — no en modo invitado ni crisis
       let cachedResponse = null;
       /** Misma clave para get/set; debe vivir en este ámbito (antes estaba solo dentro del `if` y rompía el `set`). */
       let responseCacheKey = null;
-      if (!isGuest) {
+      if (!isGuest && !skipResponseCacheForCrisis) {
         responseCacheKey = generateResponseCacheKey(
           contenidoNormalizado,
           analisisEmocional,
@@ -517,7 +523,12 @@ class OpenAIService {
       let activeProtocol = therapeuticProtocolService.getActiveProtocol(mensaje.userId);
       let currentIntervention = null;
       
-      if (!activeProtocol) {
+      const crisisTherapeuticExtrasBlocked = isLlmCrisisTherapeuticExtrasBlocked({
+        riskLevel: contexto?.crisis?.riskLevel,
+        userMessage: contenidoNormalizado,
+      });
+
+      if (!activeProtocol && !crisisTherapeuticExtrasBlocked) {
         // Verificar si se debe iniciar un protocolo
         const protocolToStart = therapeuticProtocolService.shouldStartProtocol(
           analisisEmocional,
@@ -533,7 +544,7 @@ class OpenAIService {
             protocolType: protocolToStart
           }, mensaje.userId);
         }
-      } else {
+      } else if (activeProtocol) {
         // Obtener la intervención del paso actual
         currentIntervention = therapeuticProtocolService.getCurrentIntervention(mensaje.userId);
       }
@@ -650,7 +661,7 @@ class OpenAIService {
         userMessage: contenidoNormalizado,
       })) {
         // Calcular espacio disponible para la técnica
-        const espacioDisponible = THRESHOLDS.MAX_CHARACTERS_RESPONSE - respuestaValidada.length;
+        const espacioDisponible = THRESHOLDS.MAX_CHARACTERS_RESPONSE - respuestaConElecciones.length;
         const necesitaFormatoCompacto = espacioDisponible < 300; // Menos de 300 caracteres disponibles
         
         // Formatear técnica (compacta si hay poco espacio)
@@ -659,8 +670,8 @@ class OpenAIService {
           maxSteps: necesitaFormatoCompacto ? 2 : 4
         });
         
-        // Agregar técnica al final de la respuesta
-        respuestaFinal = `${respuestaValidada}${techniqueText}`;
+        // Agregar técnica al final de la respuesta (sobre texto ya saneado en crisis)
+        respuestaFinal = `${respuestaConElecciones}${techniqueText}`;
         
         // Si aún es demasiado larga, usar formato muy compacto
         if (respuestaFinal.length > THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
@@ -669,11 +680,11 @@ class OpenAIService {
             maxSteps: 1,
             language: appLanguage,
           });
-          respuestaFinal = `${respuestaValidada}${veryCompactText}`;
+          respuestaFinal = `${respuestaConElecciones}${veryCompactText}`;
           
           // Si aún es muy larga, solo nombre y descripción breve
           if (respuestaFinal.length > THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
-            respuestaFinal = respuestaValidada + 
+            respuestaFinal = respuestaConElecciones + 
               `\n\n💡 ${selectedTechnique.name}\n` +
               `${selectedTechnique.description ? selectedTechnique.description.substring(0, 150) + '...' : ''}\n\n` +
               `Puedes preguntarme más sobre esta técnica si te interesa.`;
@@ -681,8 +692,8 @@ class OpenAIService {
         }
       }
 
-      // MEJORA: Guardar respuesta en caché para futuras consultas similares
-      if (responseCacheKey) {
+      // MEJORA: Guardar respuesta en caché para futuras consultas similares (nunca en crisis)
+      if (responseCacheKey && !skipResponseCacheForCrisis) {
         try {
           await cacheService.set(responseCacheKey, {
             response: respuestaFinal,
@@ -934,13 +945,18 @@ class OpenAIService {
     let activeProtocol = therapeuticProtocolService.getActiveProtocol(mensaje.userId);
     let currentIntervention = null;
 
-    if (!activeProtocol) {
+    const crisisTherapeuticExtrasBlocked = isLlmCrisisTherapeuticExtrasBlocked({
+      riskLevel: crisis?.riskLevel,
+      userMessage: contenidoNormalizado,
+    });
+
+    if (!activeProtocol && !crisisTherapeuticExtrasBlocked) {
       const protocolToStart = therapeuticProtocolService.shouldStartProtocol(analisisEmocional, analisisContextual);
       if (protocolToStart) {
         activeProtocol = therapeuticProtocolService.startProtocol(mensaje.userId, protocolToStart);
         currentIntervention = therapeuticProtocolService.getCurrentIntervention(mensaje.userId);
       }
-    } else {
+    } else if (activeProtocol) {
       currentIntervention = therapeuticProtocolService.getCurrentIntervention(mensaje.userId);
     }
 
@@ -1017,20 +1033,20 @@ class OpenAIService {
       crisis,
       userMessage: contenidoNormalizado,
     })) {
-      const espacioDisponible = THRESHOLDS.MAX_CHARACTERS_RESPONSE - respuestaValidada.length;
+      const espacioDisponible = THRESHOLDS.MAX_CHARACTERS_RESPONSE - respuestaConElecciones.length;
       const techniqueText = formatTechniqueForResponse(selectedTechnique, {
         compact: espacioDisponible < 300,
         maxSteps: espacioDisponible < 300 ? 2 : 4,
         language: appLanguage,
       });
-      respuestaFinal = `${respuestaValidada}${techniqueText}`;
+      respuestaFinal = `${respuestaConElecciones}${techniqueText}`;
       if (respuestaFinal.length > THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
         const veryCompact = formatTechniqueForResponse(selectedTechnique, {
           compact: true,
           maxSteps: 1,
           language: appLanguage,
         });
-        respuestaFinal = `${respuestaValidada}${veryCompact}`;
+        respuestaFinal = `${respuestaConElecciones}${veryCompact}`;
       }
     }
 
@@ -1100,8 +1116,18 @@ class OpenAIService {
       conversationHistory,
     });
 
-    if (shouldStripCrisisConductualLanguage({ riskLevel, userMessage })) {
-      result = stripInappropriateCrisisConductualLanguage(result);
+    const sanitized = sanitizeCrisisLlmResponse(result);
+    if (sanitized.wasSanitized) {
+      metricsService
+        .recordMetric('crisis_llm_sanitized', {
+          riskLevel,
+          hits: sanitized.hits,
+        })
+        .catch(() => {});
+    }
+    result = sanitized.text;
+    if (!result || result.trim().length < 20) {
+      result = getCrisisSanitizeFallback(profile?.preferences?.language);
     }
 
     return result;

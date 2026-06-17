@@ -32,6 +32,20 @@ await jest.unstable_mockModule('../../../services/personalPatternRagService.js',
   isPersonalPatternRagEnabled: () => false,
 }));
 
+await jest.unstable_mockModule('../../../services/metricsService.js', () => ({
+  __esModule: true,
+  default: {
+    getCrisisRoutingSnapshot: () => ({
+      hardStop: 2,
+      llmPath: 5,
+      sanitizedResponses: 1,
+      byRiskLevel: { HIGH: 2, MEDIUM: 3 },
+      byTransport: { http: 4 },
+      sanitizeHits: { grounding_invite: 1 },
+    }),
+  },
+}));
+
 const {
   buildPublicHealthSnapshot,
   buildDetailedHealthSnapshot,
@@ -100,6 +114,14 @@ describe('healthProbeService', () => {
     expect(snap.chatFeatures).toEqual({
       personalPatternRag: false,
       crisisHardStop: true,
+      crisisRouting: {
+        hardStop: 2,
+        llmPath: 5,
+        sanitizedResponses: 1,
+        byRiskLevel: { HIGH: 2, MEDIUM: 3 },
+        byTransport: { http: 4 },
+        sanitizeHits: { grounding_invite: 1 },
+      },
     });
     expect(snap.memory).toHaveProperty('used');
   });

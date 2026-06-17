@@ -3,6 +3,8 @@ import {
   buildCrisisActionDecision,
   buildOpenaiCrisisContext,
   evaluateSuicideRisk,
+  generateCrisisSystemPrompt,
+  generateCrisisMediumResponseConstraints,
   generateCrisisWarningContextMessage,
   hasExplicitSuicidalOrSelfHarmLexicon,
   normalizeStoredCrisisRiskLevel,
@@ -79,6 +81,29 @@ describe('shouldAttachCrisisWarningContextToPrompt', () => {
     const msg = generateCrisisWarningContextMessage('GENERAL');
     expect(msg).toContain('¿Te sientes a salvo');
     expect(msg).not.toMatch(/plan de seguridad/i);
+  });
+});
+
+describe('generateCrisisMediumResponseConstraints', () => {
+  it('define formato obligatorio y prohibiciones para MEDIUM', () => {
+    const constraints = generateCrisisMediumResponseConstraints('es');
+    expect(constraints).toMatch(/FORMATO DE RESPUESTA OBLIGATORIO \(MEDIUM\)/);
+    expect(constraints).toMatch(/¿Te sientes a salvo en este momento\?/);
+    expect(constraints).toMatch(/PROHIBIDO/);
+    expect(constraints).toMatch(/plan de seguridad co-creado/i);
+  });
+
+  it('generateCrisisSystemPrompt anexa constraints solo en MEDIUM', () => {
+    const medium = generateCrisisSystemPrompt('MEDIUM', 'GENERAL');
+    const high = generateCrisisSystemPrompt('HIGH', 'GENERAL');
+    expect(medium).toMatch(/FORMATO DE RESPUESTA OBLIGATORIO \(MEDIUM\)/);
+    expect(high).not.toMatch(/FORMATO DE RESPUESTA OBLIGATORIO \(MEDIUM\)/);
+  });
+
+  it('generateCrisisSystemPrompt MEDIUM respeta idioma EN', () => {
+    const mediumEn = generateCrisisSystemPrompt('MEDIUM', 'GENERAL', 'en');
+    expect(mediumEn).toMatch(/MANDATORY RESPONSE FORMAT \(MEDIUM\)/);
+    expect(mediumEn).not.toMatch(/FORMATO DE RESPUESTA OBLIGATORIO/);
   });
 });
 

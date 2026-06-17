@@ -157,6 +157,15 @@ class MetricsService {
         shortReplyStreakOver2: 0,
         closureRiskSignals: 0,
         cognitiveLoadByType: {}
+      },
+      /** Camino A vs B en crisis (#205 / camino B fase 3). */
+      crisisRouting: {
+        hardStop: 0,
+        llmPath: 0,
+        sanitizedResponses: 0,
+        byRiskLevel: {},
+        byTransport: {},
+        sanitizeHits: {}
       }
     };
 
@@ -439,6 +448,24 @@ class MetricsService {
         break;
       }
 
+      case 'crisis_hard_stop':
+        this._bumpCrisisRouting('hardStop', data);
+        break;
+
+      case 'crisis_llm_path':
+        this._bumpCrisisRouting('llmPath', data);
+        break;
+
+      case 'crisis_llm_sanitized': {
+        const cr = this.inMemoryMetrics.crisisRouting;
+        cr.sanitizedResponses++;
+        const hits = Array.isArray(data?.hits) ? data.hits : [];
+        for (const hit of hits) {
+          cr.sanitizeHits[hit] = (cr.sanitizeHits[hit] || 0) + 1;
+        }
+        break;
+      }
+
       case 'chat_usage': {
         const cu = this.inMemoryMetrics.chatUsage;
         const action = data?.action;
@@ -601,6 +628,23 @@ class MetricsService {
     if (this.metricsHistory.length > this.MAX_HISTORY_SIZE) {
       this.metricsHistory.shift(); // Eliminar la más antigua
     }
+  }
+
+  /**
+   * Contadores en memoria del enrutamiento de crisis (hard-stop vs LLM).
+   */
+  getCrisisRoutingSnapshot() {
+    return { ...this.inMemoryMetrics.crisisRouting };
+  }
+
+  _bumpCrisisRouting(counterKey, data = {}) {
+    const cr = this.inMemoryMetrics.crisisRouting;
+    if (counterKey === 'hardStop') cr.hardStop++;
+    if (counterKey === 'llmPath') cr.llmPath++;
+    const rl = String(data?.riskLevel || 'UNKNOWN').toUpperCase();
+    cr.byRiskLevel[rl] = (cr.byRiskLevel[rl] || 0) + 1;
+    const transport = String(data?.transport || 'unknown');
+    cr.byTransport[transport] = (cr.byTransport[transport] || 0) + 1;
   }
 
   /**

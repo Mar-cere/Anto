@@ -34,5 +34,34 @@ describe('MetricsService', () => {
       expect(m.productActionOutcomes.confirmDismissed).toBeGreaterThanOrEqual(1);
       expect(m.productActionOutcomes.bySurface.task_modal).toBeGreaterThanOrEqual(1);
     });
+
+    it('crisis_hard_stop y crisis_llm_path actualizan crisisRouting', async () => {
+      const before = metricsService.getCrisisRoutingSnapshot();
+      await metricsService.recordMetric('crisis_hard_stop', {
+        riskLevel: 'HIGH',
+        transport: 'http',
+      });
+      await metricsService.recordMetric('crisis_llm_path', {
+        riskLevel: 'MEDIUM',
+        transport: 'socket',
+      });
+      const snap = metricsService.getCrisisRoutingSnapshot();
+      expect(snap.hardStop).toBe(before.hardStop + 1);
+      expect(snap.llmPath).toBe(before.llmPath + 1);
+      expect(snap.byRiskLevel.HIGH).toBeGreaterThanOrEqual(1);
+      expect(snap.byRiskLevel.MEDIUM).toBeGreaterThanOrEqual(1);
+    });
+
+    it('crisis_llm_sanitized incrementa sanitizedResponses y sanitizeHits', async () => {
+      const before = metricsService.getCrisisRoutingSnapshot();
+      await metricsService.recordMetric('crisis_llm_sanitized', {
+        riskLevel: 'MEDIUM',
+        hits: ['grounding_invite', 'habit_invite'],
+      });
+      const snap = metricsService.getCrisisRoutingSnapshot();
+      expect(snap.sanitizedResponses).toBe(before.sanitizedResponses + 1);
+      expect(snap.sanitizeHits.grounding_invite).toBeGreaterThanOrEqual(1);
+      expect(snap.sanitizeHits.habit_invite).toBeGreaterThanOrEqual(1);
+    });
   });
 });
