@@ -474,3 +474,40 @@ export function getInterventionCatalogLabel(entry, language = 'es') {
   return String(entry.label || '').trim();
 }
 
+const SCREEN_TO_INTERVENTION_ID = Object.freeze(
+  Object.values(INTERVENTION_CATALOG).reduce((acc, entry) => {
+    if (typeof entry?.screen === 'string' && entry.screen.trim() && entry.id) {
+      acc[entry.screen.trim()] = entry.id;
+    }
+    return acc;
+  }, {}),
+);
+
+const PSYCHOEDUCATION_TOPIC_TO_ID = Object.freeze({
+  anxiety: 'psychoeducation_anxiety',
+  depression: 'psychoeducation_depression',
+  stress: 'psychoeducation_stress',
+  anger: 'psychoeducation_anger',
+  sleep: 'psychoeducation_sleep',
+  emotionregulation: 'psychoeducation_emotion_regulation',
+  emotion_regulation: 'psychoeducation_emotion_regulation',
+  trauma: 'psychoeducation_trauma',
+  grief: 'psychoeducation_grief',
+  burnout: 'psychoeducation_burnout',
+});
+
+export function getInterventionIdByScreen(screen) {
+  const key = String(screen || '').trim();
+  if (!key) return null;
+  const id = SCREEN_TO_INTERVENTION_ID[key];
+  return id && isValidInterventionId(id) ? id : null;
+}
+
+export function getPsychoeducationInterventionId(topic) {
+  const raw = String(topic || '').trim();
+  if (!raw) return null;
+  const slug = raw.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
+  const id = PSYCHOEDUCATION_TOPIC_TO_ID[slug] || `psychoeducation_${slug}`;
+  return isValidInterventionId(id) ? id : null;
+}
+

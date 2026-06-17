@@ -68,6 +68,12 @@ import {
   isValidInterventionId,
 } from '../constants/interventionCatalog.js';
 import chatInterventionGraphService from '../services/chatInterventionGraphService.js';
+import {
+  sanitizeInterventionEventMeta,
+  sanitizeInterventionSource,
+  sanitizeInterventionTopicFree,
+  sanitizeInterventionTopicTag,
+} from '../utils/interventionEventGuards.js';
 import { isTopicFreeEmbeddingsEnabled } from '../services/topicFreeEmbeddingService.js';
 import { buildInterventionGraphPhase3Payload } from '../services/interventionGraphPhase3Service.js';
 import { enrichInterventionGraphLabels } from '../services/graphSourceLabelService.js';
@@ -396,6 +402,46 @@ router.post(
       return res.status(500).json({ message: req.apiCopy.proposalFeedbackError });
     }
   }
+);
+
+// Eventos del grafo tema–intervención (#127): biblioteca / sin conversación activa en cliente.
+router.post(
+  '/interventions/events',
+  protect,
+  requireActiveSubscription(true),
+  async (req, res) => {
+    try {
+      const interventionId = String(req.body?.interventionId || '').trim();
+      const eventType = String(req.body?.eventType || '').trim();
+      if (!interventionId || !isValidInterventionId(interventionId)) {
+        return res.status(400).json({ message: req.apiCopy?.invalidRequest || 'Solicitud inválida' });
+      }
+      const allowed = ['opened', 'shown', 'clicked', 'dismissed', 'completed'];
+      if (!allowed.includes(eventType)) {
+        return res.status(400).json({ message: req.apiCopy?.invalidRequest || 'Solicitud inválida' });
+      }
+      const topicTag = sanitizeInterventionTopicTag(req.body?.topicTag, 'library');
+      const topicFree = sanitizeInterventionTopicFree(req.body?.topicFree);
+      const source = sanitizeInterventionSource(req.body?.source, 'library_v1');
+      const meta = sanitizeInterventionEventMeta(req.body?.meta);
+
+      chatInterventionGraphService
+        .recordUserInterventionEvent({
+          userId: req.user._id,
+          interventionId,
+          eventType,
+          topicTag,
+          topicFree,
+          source,
+          meta,
+        })
+        .catch(() => {});
+      return res.status(204).end();
+    } catch (error) {
+      console.error('[ChatRoutes] POST /interventions/events:', error);
+      return res.status(500).json({ message: req.apiCopy?.serverError || 'Error del servidor' });
+    }
+  },
 );
 
 // Eventos del grafo tema–intervención (#127): clicked/dismissed/completed.

@@ -10,7 +10,10 @@ await jest.unstable_mockModule('openai', () => ({
 }));
 
 const {
+  backfillTopicFreeEmbeddings,
+  buildTopicFreeEmbeddingBackfillQuery,
   clearTopicFreeEmbeddingCache,
+  countTopicFreeEmbeddingsPending,
   embedTopicFreeText,
   enrichTopicFreeEventsWithEmbeddings,
   getTopicFreeEmbeddingMinSimilarity,
@@ -110,5 +113,43 @@ describe('topicFreeEmbeddingService', () => {
     expect(updateMany.mock.calls[0][1]).toEqual({
       $set: { topicFreeEmbedding: [0.3, 0.7] },
     });
+  });
+
+  it('buildTopicFreeEmbeddingBackfillQuery filtra docs sin vector', () => {
+    const q = buildTopicFreeEmbeddingBackfillQuery();
+    expect(q.topicFree).toEqual({ $exists: true, $nin: [null, ''] });
+    expect(q.$or).toHaveLength(3);
+  });
+
+  it('countTopicFreeEmbeddingsPending agrega docs y textos únicos', async () => {
+    const updateModel = {
+      countDocuments: jest.fn().mockResolvedValue(4),
+      distinct: jest.fn().mockResolvedValue(['texto a', 'texto b', '']),
+    };
+    const out = await countTopicFreeEmbeddingsPending({ updateModel });
+    expect(out).toEqual({ pendingDocs: 4, pendingUniqueTexts: 2 });
+  });
+
+  it('backfillTopicFreeEmbeddings dry-run cuenta sin llamar updateMany', async () => {
+    const find = jest.fn().mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      sort: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      lean: jest.fn().mockResolvedValue([
+        { _id: '1', topicFree: 'Sin ganas de levantarme por la mañana' },
+        { _id: '2', topicFree: 'Sin ganas de levantarme por la mañana' },
+      ]),
+    });
+    const updateMany = jest.fn();
+    const result = await backfillTopicFreeEmbeddings({
+      updateModel: { find, updateMany },
+      limit: 10,
+      dryRun: true,
+    });
+    expect(result.scanned).toBe(2);
+    expect(result.embedded).toBe(2);
+    expect(result.uniqueTexts).toBe(1);
+    expect(updateMany).not.toHaveBeenCalled();
+    expect(mockEmbeddingsCreate).not.toHaveBeenCalled();
   });
 });

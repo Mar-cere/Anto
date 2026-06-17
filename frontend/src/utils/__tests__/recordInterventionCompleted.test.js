@@ -7,6 +7,7 @@ import {
   createInterventionCompletedRecorder,
   recordInterventionCompleted,
   recordInterventionCompletedIfInlineSuggestion,
+  recordLibraryInterventionOpened,
   shouldRecordInterventionCompletedOnSuggestionPress,
 } from '../recordInterventionCompleted';
 import { CHAT_SESSION_KEYS } from '../chatSessionStorage';
@@ -15,6 +16,7 @@ jest.mock('../../services/chatService', () => ({
   __esModule: true,
   default: {
     submitInterventionEvent: jest.fn(() => Promise.resolve()),
+    submitUserInterventionEvent: jest.fn(() => Promise.resolve()),
   },
 }));
 
@@ -44,6 +46,35 @@ describe('recordInterventionCompleted', () => {
     expect(chatService.submitInterventionEvent).toHaveBeenCalledWith(convId, {
       interventionId: 'breathing_exercise',
       eventType: 'completed',
+    });
+    expect(chatService.submitUserInterventionEvent).not.toHaveBeenCalled();
+  });
+
+  it('usa fallback de usuario sin conversationId', async () => {
+    recordInterventionCompleted('breathing_exercise');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(chatService.submitInterventionEvent).not.toHaveBeenCalled();
+    expect(chatService.submitUserInterventionEvent).toHaveBeenCalledWith({
+      interventionId: 'breathing_exercise',
+      eventType: 'completed',
+    });
+  });
+});
+
+describe('recordLibraryInterventionOpened', () => {
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    await AsyncStorage.clear();
+  });
+
+  it('envía opened vía API de usuario', async () => {
+    recordLibraryInterventionOpened('abc_record', { topicTag: 'patrones' });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(chatService.submitUserInterventionEvent).toHaveBeenCalledWith({
+      interventionId: 'abc_record',
+      eventType: 'opened',
+      source: 'library_v1',
+      topicTag: 'patrones',
     });
   });
 });

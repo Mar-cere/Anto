@@ -37,7 +37,16 @@ Referencia de variables críticas para despliegue y onboarding. **No incluye val
 | `TOPIC_FREE_EMBEDDING_DIMENSIONS` | No | Dimensiones del vector (default `1536`) |
 | `OPENAI_EMBEDDING_MODEL` | No | Modelo embeddings (default `text-embedding-3-small`) |
 
-## Caché / Redis
+**Backfill histórico (#127):** desde `backend/`
+
+```bash
+npm run backfill:topic-free-embeddings -- --stats-only
+TOPIC_FREE_EMBEDDINGS_ENABLED=true npm run backfill:topic-free-embeddings -- --loop --limit=500
+```
+
+Flags: `--dry-run`, `--stats-only`, `--loop`, `--limit=N`, `--max-batches=N`, `--userId=<mongoId>`, `--delay-ms=80`.
+
+Los eventos nuevos reciben embedding en background vía `persistTopicFreeEmbeddingsForDocs` al insertar `shown`.
 
 | Variable | Requerida | Descripción |
 |----------|-----------|-------------|

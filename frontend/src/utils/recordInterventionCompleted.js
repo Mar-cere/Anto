@@ -1,5 +1,5 @@
 /**
- * Registra evento `completed` del grafo tema–intervención (#127), best-effort.
+ * Registra eventos del grafo tema–intervención (#127), best-effort.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import chatService from '../services/chatService';
@@ -7,32 +7,64 @@ import { CHAT_SESSION_KEYS } from './chatSessionStorage';
 
 const INTERVENTION_ID_PATTERN = /^[a-z][a-z0-9_]{0,79}$/;
 
-function submitInterventionEventBestEffort(interventionId, eventType) {
+function normalizeInterventionId(interventionId) {
   const id = String(interventionId || '').trim().toLowerCase();
+  if (!id || !INTERVENTION_ID_PATTERN.test(id)) return null;
+  return id;
+}
+
+function submitInterventionEventBestEffort(interventionId, eventType, options = {}) {
+  const id = normalizeInterventionId(interventionId);
   const ev = String(eventType || '').trim();
-  if (!id || !INTERVENTION_ID_PATTERN.test(id)) return;
-  if (!['clicked', 'dismissed', 'completed'].includes(ev)) return;
+  if (!id) return;
+  if (!['clicked', 'dismissed', 'completed', 'opened', 'shown'].includes(ev)) return;
+
+  const payload = {
+    interventionId: id,
+    eventType: ev,
+    ...(options.topicTag ? { topicTag: options.topicTag } : {}),
+    ...(options.topicFree ? { topicFree: options.topicFree } : {}),
+    ...(options.source ? { source: options.source } : {}),
+  };
+
   AsyncStorage.getItem(CHAT_SESSION_KEYS.CONVERSATION_ID)
     .then((convId) => {
-      if (!convId || !/^[\da-f]{24}$/i.test(String(convId).trim())) return null;
-      return chatService.submitInterventionEvent(convId, {
-        interventionId: id,
-        eventType: ev,
-      });
+      const cid = String(convId || '').trim();
+      if (/^[\da-f]{24}$/i.test(cid)) {
+        if (ev === 'opened' || ev === 'shown') {
+          return chatService.submitUserInterventionEvent(payload);
+        }
+        return chatService.submitInterventionEvent(cid, {
+          interventionId: id,
+          eventType: ev,
+        });
+      }
+      return chatService.submitUserInterventionEvent(payload);
     })
     .catch(() => {});
 }
 
-export function recordInterventionCompleted(interventionId) {
-  submitInterventionEventBestEffort(interventionId, 'completed');
+export function recordInterventionCompleted(interventionId, options) {
+  submitInterventionEventBestEffort(interventionId, 'completed', options);
 }
 
-export function recordInterventionClicked(interventionId) {
-  submitInterventionEventBestEffort(interventionId, 'clicked');
+export function recordInterventionClicked(interventionId, options) {
+  submitInterventionEventBestEffort(interventionId, 'clicked', options);
 }
 
-export function recordInterventionDismissed(interventionId) {
-  submitInterventionEventBestEffort(interventionId, 'dismissed');
+export function recordInterventionDismissed(interventionId, options) {
+  submitInterventionEventBestEffort(interventionId, 'dismissed', options);
+}
+
+/**
+ * Biblioteca / técnicas: registra shown + clicked aunque no haya chat activo (#127).
+ */
+export function recordLibraryInterventionOpened(interventionId, options = {}) {
+  submitInterventionEventBestEffort(interventionId, 'opened', {
+    source: 'library_v1',
+    topicTag: 'library',
+    ...options,
+  });
 }
 
 /**
@@ -58,9 +90,9 @@ export function recordInterventionCompletedIfInlineSuggestion(suggestion) {
  */
 export function createInterventionCompletedRecorder() {
   let recorded = false;
-  return (interventionId) => {
+  return (interventionId, options) => {
     if (recorded) return;
     recorded = true;
-    recordInterventionCompleted(interventionId);
+    recordInterventionCompleted(interventionId, options);
   };
 }

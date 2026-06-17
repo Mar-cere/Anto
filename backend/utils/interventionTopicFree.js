@@ -21,3 +21,18 @@ export function buildTopicFreeFromUserContent(raw, options = {}) {
   }
   return `${slice.trim()}…`;
 }
+
+/**
+ * Extrae topicFree de un ítem de continuidad TCC (subtítulo con contenido del usuario).
+ * @param {{ subtitle?: string, title?: string }|null|undefined} item
+ */
+export function buildTopicFreeFromContinuityItem(item) {
+  if (!item || typeof item !== 'object') return null;
+  const subtitle = String(item.subtitle || '').trim();
+  if (subtitle) {
+    const fromSubtitle = buildTopicFreeFromUserContent(subtitle, { minLength: 6 });
+    if (fromSubtitle) return fromSubtitle;
+  }
+  const title = String(item.title || '').trim();
+  return buildTopicFreeFromUserContent(title, { minLength: 6 });
+}

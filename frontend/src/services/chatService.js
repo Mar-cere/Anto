@@ -626,6 +626,42 @@ export const submitInterventionEvent = async (conversationId, payload) => {
 };
 
 /**
+ * Eventos del grafo #127 sin conversación activa en cliente (biblioteca, fallback).
+ * @param {{ interventionId: string, eventType: string, topicTag?: string, topicFree?: string, source?: string }} payload
+ */
+export const submitUserInterventionEvent = async (payload) => {
+  const lang = await getAppLanguage();
+  const token = await AsyncStorage.getItem('userToken');
+  if (!token) {
+    const e = new Error(getChatCopy('SERVICE_SESSION_REQUIRED', lang));
+    e.code = 'NO_AUTH';
+    throw e;
+  }
+  const interventionId = String(payload?.interventionId ?? '').trim();
+  const eventType = String(payload?.eventType ?? '').trim();
+  if (!interventionId) {
+    const e = new Error(getChatCopy('SERVICE_INVALID_ACTION', lang));
+    e.code = 'INVALID_INTERVENTION_ID';
+    throw e;
+  }
+  const allowed = ['opened', 'shown', 'clicked', 'dismissed', 'completed'];
+  if (!allowed.includes(eventType)) {
+    const e = new Error(getChatCopy('SERVICE_INVALID_ACTION', lang));
+    e.code = 'INVALID_EVENT_TYPE';
+    throw e;
+  }
+  return apiClient
+    .post('/api/chat/interventions/events', {
+      interventionId,
+      eventType,
+      ...(payload?.topicTag ? { topicTag: payload.topicTag } : {}),
+      ...(payload?.topicFree ? { topicFree: payload.topicFree } : {}),
+      ...(payload?.source ? { source: payload.source } : {}),
+    })
+    .catch(() => null);
+};
+
+/**
  * Agregado del grafo tema–intervención (#127) para el usuario autenticado.
  * @param {{ days?: number, limit?: number }} [params]
  */
@@ -749,6 +785,7 @@ export default {
   submitMessageFeedback,
   submitProductProposalFeedback,
   submitInterventionEvent,
+  submitUserInterventionEvent,
   getInterventionGraph,
   onMessage,
   onError,

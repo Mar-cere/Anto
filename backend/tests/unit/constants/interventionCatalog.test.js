@@ -4,6 +4,8 @@
 import actionSuggestionService from '../../../services/actionSuggestionService.js';
 import {
   getInterventionCatalogEntry,
+  getInterventionIdByScreen,
+  getPsychoeducationInterventionId,
   isValidInterventionId,
   listCatalogInterventionIds,
 } from '../../../constants/interventionCatalog.js';
@@ -111,5 +113,14 @@ describe('interventionCatalog', () => {
     const keys = listCatalogInterventionIds();
     expect(new Set(keys).size).toBe(keys.length);
     keys.forEach((k) => expect(isValidInterventionId(k)).toBe(true));
+  });
+
+  it('resuelve interventionId por pantalla y tema psychoed', () => {
+    expect(getInterventionIdByScreen('AbcRecord')).toBe('abc_record');
+    expect(getInterventionIdByScreen('')).toBeNull();
+    expect(getPsychoeducationInterventionId('emotionRegulation')).toBe(
+      'psychoeducation_emotion_regulation',
+    );
+    expect(getPsychoeducationInterventionId('grief')).toBe('psychoeducation_grief');
   });
 });

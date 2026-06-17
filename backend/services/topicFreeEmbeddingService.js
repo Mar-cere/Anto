@@ -165,21 +165,9 @@ export async function persistTopicFreeEmbeddingsForDocs(docs, { updateModel } = 
 }
 
 /**
- * Backfill masivo de embeddings históricos (#126 lite / #218 fase 2).
- * @returns {{ scanned: number, embedded: number, skipped: number, failed: number }}
+ * Query de eventos sin embedding persistido (#127 / #126).
  */
-export async function backfillTopicFreeEmbeddings({
-  updateModel,
-  userId = null,
-  limit = 200,
-  dryRun = false,
-} = {}) {
-  const ChatInterventionEvent = updateModel;
-  if (!isTopicFreeEmbeddingsEnabled() || !ChatInterventionEvent?.find) {
-    return { scanned: 0, embedded: 0, skipped: 0, failed: 0 };
-  }
-
-  const safeLimit = Math.max(1, Math.min(Number(limit) || 200, 2000));
+export function buildTopicFreeEmbeddingBackfillQuery(userId = null) {
   const query = {
     topicFree: { $exists: true, $nin: [null, ''] },
     $or: [
@@ -189,6 +177,42 @@ export async function backfillTopicFreeEmbeddings({
     ],
   };
   if (userId) query.userId = userId;
+  return query;
+}
+
+/**
+ * @returns {Promise<{ pendingDocs: number, pendingUniqueTexts: number }>}
+ */
+export async function countTopicFreeEmbeddingsPending({ updateModel, userId = null } = {}) {
+  const ChatInterventionEvent = updateModel;
+  if (!ChatInterventionEvent?.countDocuments || !ChatInterventionEvent?.distinct) {
+    return { pendingDocs: 0, pendingUniqueTexts: 0 };
+  }
+  const query = buildTopicFreeEmbeddingBackfillQuery(userId);
+  const pendingDocs = await ChatInterventionEvent.countDocuments(query);
+  const texts = await ChatInterventionEvent.distinct('topicFree', query);
+  const pendingUniqueTexts = (texts || []).filter((t) => String(t || '').trim()).length;
+  return { pendingDocs, pendingUniqueTexts };
+}
+
+/**
+ * Backfill masivo de embeddings históricos (#126 lite / #218 fase 2).
+ * @returns {{ scanned: number, embedded: number, skipped: number, failed: number, uniqueTexts: number }}
+ */
+export async function backfillTopicFreeEmbeddings({
+  updateModel,
+  userId = null,
+  limit = 200,
+  dryRun = false,
+  delayMs = 0,
+} = {}) {
+  const ChatInterventionEvent = updateModel;
+  if (!isTopicFreeEmbeddingsEnabled() || !ChatInterventionEvent?.find) {
+    return { scanned: 0, embedded: 0, skipped: 0, failed: 0, uniqueTexts: 0 };
+  }
+
+  const safeLimit = Math.max(1, Math.min(Number(limit) || 200, 2000));
+  const query = buildTopicFreeEmbeddingBackfillQuery(userId);
 
   const docs = await ChatInterventionEvent.find(query)
     .select('_id topicFree')
@@ -204,9 +228,20 @@ export async function backfillTopicFreeEmbeddings({
     byText.get(text).push(doc._id);
   }
 
+  const sleep = (ms) =>
+    new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
+
   let embedded = 0;
   let failed = 0;
+  let textIndex = 0;
   for (const [text, ids] of byText.entries()) {
+    if (delayMs > 0 && textIndex > 0) {
+      await sleep(delayMs);
+    }
+    textIndex += 1;
+
     if (dryRun) {
       embedded += ids.length;
       continue;
@@ -243,6 +278,8 @@ export default {
   enrichTopicFreeEventsWithEmbeddings,
   persistTopicFreeEmbeddingsForDocs,
   clearTopicFreeEmbeddingCache,
+  buildTopicFreeEmbeddingBackfillQuery,
+  countTopicFreeEmbeddingsPending,
   backfillTopicFreeEmbeddings,
   cosineSimilarity,
 };

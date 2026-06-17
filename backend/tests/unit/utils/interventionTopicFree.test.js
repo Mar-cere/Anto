@@ -1,7 +1,10 @@
 /**
  * Tests — buildTopicFreeFromUserContent (#127 fase 2)
  */
-import { buildTopicFreeFromUserContent } from '../../../utils/interventionTopicFree.js';
+import {
+  buildTopicFreeFromContinuityItem,
+  buildTopicFreeFromUserContent,
+} from '../../../utils/interventionTopicFree.js';
 
 describe('buildTopicFreeFromUserContent', () => {
   it('devuelve null si el texto es demasiado corto', () => {
@@ -28,5 +31,19 @@ describe('buildTopicFreeFromUserContent', () => {
     expect(
       buildTopicFreeFromUserContent('Me siento\n\nansioso\tpor\tmañana'),
     ).toBe('Me siento ansioso por mañana');
+  });
+});
+
+describe('buildTopicFreeFromContinuityItem', () => {
+  it('prioriza el subtítulo del ítem de continuidad', () => {
+    const out = buildTopicFreeFromContinuityItem({
+      title: 'Retomar activación',
+      subtitle: 'Llamar a un amigo para salir a caminar un rato',
+    });
+    expect(out).toBe('Llamar a un amigo para salir a caminar un rato');
+  });
+
+  it('devuelve null si no hay texto útil', () => {
+    expect(buildTopicFreeFromContinuityItem({ title: 'BA', subtitle: 'Hoy' })).toBeNull();
   });
 });

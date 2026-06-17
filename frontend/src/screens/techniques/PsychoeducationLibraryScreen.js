@@ -27,6 +27,8 @@ import { createPsychoeducationLibraryStyles } from './psychoeducationScreenStyle
 import { getTopicVisual } from './psychoeducationTopicVisuals';
 import { usePsychoeducationTexts } from './psychoeducationTexts';
 import { normalizePsychoeducationTopic, parsePsychoeducationBrowseResponse } from '../../utils/psychoeducationTopic';
+import { getPsychoeducationInterventionId } from '../../utils/interventionCatalogResolve';
+import { recordLibraryInterventionOpened } from '../../utils/recordInterventionCompleted';
 
 const READ_MINUTES = 2;
 
@@ -87,8 +89,12 @@ const PsychoeducationLibraryScreen = () => {
       const topic = normalizePsychoeducationTopic(rawTopic);
       if (!topic) return;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      const interventionId = getPsychoeducationInterventionId(topic);
+      if (interventionId) {
+        recordLibraryInterventionOpened(interventionId, { topicTag: topic });
+      }
       try {
-        navigation.navigate('PsychoeducationModule', { topic });
+        navigation.navigate('PsychoeducationModule', { topic, graphTracked: true });
       } catch (e) {
         if (__DEV__) console.warn('[PsychoeducationLibrary] navigate failed', e);
       }

@@ -64,5 +64,23 @@ describe('Chat Routes', () => {
       expect([401, 400, 403, 404]).toContain(response.status);
     });
   });
+
+  describe('POST /api/chat/interventions/events', () => {
+    it('rechaza evento sin autenticación', async () => {
+      const response = await request(app)
+        .post('/api/chat/interventions/events')
+        .send({ interventionId: 'abc_record', eventType: 'opened' });
+
+      expect([401, 403]).toContain(response.status);
+    });
+
+    it('rechaza interventionId inválido', async () => {
+      const response = await request(app)
+        .post('/api/chat/interventions/events')
+        .send({ interventionId: 'INVALID!', eventType: 'opened' });
+
+      expect([400, 401, 403]).toContain(response.status);
+    });
+  });
 });
 

@@ -6,6 +6,8 @@ import { jest } from '@jest/globals';
 const mockFindOne = jest.fn();
 const mockInsertMany = jest.fn().mockResolvedValue([]);
 const mockCreate = jest.fn().mockResolvedValue({});
+const mockConversationFindOne = jest.fn();
+const mockConversationCreate = jest.fn().mockResolvedValue({ _id: 'conv-lib-1' });
 
 await jest.unstable_mockModule('../../../models/ChatInterventionEvent.js', () => ({
   __esModule: true,
@@ -14,6 +16,19 @@ await jest.unstable_mockModule('../../../models/ChatInterventionEvent.js', () =>
     insertMany: mockInsertMany,
     create: mockCreate,
   },
+}));
+
+await jest.unstable_mockModule('../../../models/Conversation.js', () => ({
+  __esModule: true,
+  default: {
+    findOne: mockConversationFindOne,
+    create: mockConversationCreate,
+  },
+}));
+
+await jest.unstable_mockModule('../../../services/topicFreeEmbeddingService.js', () => ({
+  persistTopicFreeEmbeddingsForDocs: jest.fn().mockResolvedValue(undefined),
+  isTopicFreeEmbeddingsEnabled: jest.fn(() => false),
 }));
 
 const { default: chatInterventionGraphService } = await import(
@@ -284,5 +299,94 @@ describe('chatInterventionGraphService', () => {
     expect(mockCreate.mock.calls[0][0].eventType).toBe('clicked');
     expect(mockCreate.mock.calls[1][0].topicFree).toBe(topicFree);
     expect(mockCreate.mock.calls[1][0].eventType).toBe('completed');
+  });
+
+  it('recordInterventionEvent hereda topicFree de shown en otra conversación', async () => {
+    const topicFree = 'Ir al parque con mi perro unos veinte minutos';
+
+    mockFindOne
+      .mockReturnValueOnce(chainFindOne(null))
+      .mockReturnValueOnce(
+        chainFindOne({
+          sessionId: 'sess-x',
+          topicTag: 'library',
+          topicFree,
+          conversationId: 'conv-other',
+        }),
+      )
+      .mockReturnValueOnce(chainFindOne(null));
+
+    await chatInterventionGraphService.recordInterventionEvent({
+      userId: 'user-1',
+      conversationId: 'conv-chat',
+      interventionId: 'behavioral_activation',
+      eventType: 'completed',
+    });
+
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        conversationId: 'conv-chat',
+        topicFree,
+        eventType: 'completed',
+      }),
+    );
+  });
+
+  it('recordContinuityItemsShown guarda topicFree desde subtítulo', async () => {
+    mockFindOne
+      .mockReturnValueOnce(chainFindOne({ sessionId: 'sess-cont', createdAt: new Date() }))
+      .mockReturnValueOnce(chainFindOne(null));
+
+    await chatInterventionGraphService.recordContinuityItemsShown({
+      userId: 'user-1',
+      conversationId: 'conv-1',
+      items: [
+        {
+          interventionId: 'behavioral_activation',
+          kind: 'behavioral_activation',
+          id: 'ba:slot1',
+          subtitle: 'Ir al parque con mi perro unos veinte minutos',
+        },
+      ],
+    });
+
+    expect(mockInsertMany).toHaveBeenCalled();
+    const docs = mockInsertMany.mock.calls.at(-1)[0];
+    expect(docs[0].topicFree).toContain('parque');
+    expect(docs[0].topicTag).toBe('continuity');
+  });
+
+  it('recordLibraryInterventionOpened registra shown y clicked', async () => {
+    mockConversationFindOne.mockReturnValue({
+      sort: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      lean: jest.fn().mockResolvedValue({ _id: 'conv-lib-1' }),
+    });
+    mockFindOne
+      .mockReturnValueOnce(chainFindOne({ sessionId: 'sess-lib', createdAt: new Date() }))
+      .mockReturnValueOnce(chainFindOne(null))
+      .mockReturnValueOnce(chainFindOne(null))
+      .mockReturnValueOnce(
+        chainFindOne({
+          sessionId: 'sess-lib',
+          topicTag: 'library',
+          topicFree: null,
+        }),
+      )
+      .mockReturnValueOnce(chainFindOne(null));
+
+    await chatInterventionGraphService.recordLibraryInterventionOpened({
+      userId: 'user-1',
+      interventionId: 'abc_record',
+    });
+
+    expect(mockInsertMany).toHaveBeenCalled();
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        interventionId: 'abc_record',
+        eventType: 'clicked',
+        source: 'library_v1',
+      }),
+    );
   });
 });

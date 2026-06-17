@@ -4,7 +4,7 @@
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Linking,
@@ -21,7 +21,7 @@ import ParticleBackground from '../../components/ParticleBackground';
 import { api } from '../../config/api';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
-import { createInterventionCompletedRecorder } from '../../utils/recordInterventionCompleted';
+import { createInterventionCompletedRecorder, recordLibraryInterventionOpened } from '../../utils/recordInterventionCompleted';
 import { isSafeHttpsUrl, normalizePsychoeducationTopic } from '../../utils/psychoeducationTopic';
 import { buildModuleSections, getModuleLeadText } from './psychoeducationContentLayout';
 import {
@@ -62,6 +62,8 @@ const PsychoeducationModuleScreen = () => {
   );
 
   const topic = normalizePsychoeducationTopic(route?.params?.topic);
+  const graphTrackedFromLibrary = route?.params?.graphTracked === true;
+  const libraryGraphTrackedRef = useRef(false);
   const visual = useMemo(() => getTopicVisual(topic, colors), [topic, colors]);
   const recordCompletedOnce = useMemo(() => createInterventionCompletedRecorder(), []);
   const [loading, setLoading] = useState(true);
@@ -96,6 +98,14 @@ const PsychoeducationModuleScreen = () => {
     }),
     [styles, visual, colors],
   );
+
+  useEffect(() => {
+    if (!topic || graphTrackedFromLibrary || libraryGraphTrackedRef.current) return;
+    const interventionId = TOPIC_TO_INTERVENTION_ID[topic];
+    if (!interventionId) return;
+    libraryGraphTrackedRef.current = true;
+    recordLibraryInterventionOpened(interventionId, { topicTag: topic });
+  }, [topic, graphTrackedFromLibrary]);
 
   useEffect(() => {
     let mounted = true;

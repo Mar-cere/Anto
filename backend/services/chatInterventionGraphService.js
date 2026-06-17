@@ -1,9 +1,19 @@
 import crypto from 'crypto';
 import mongoose from 'mongoose';
-import { isValidInterventionId } from '../constants/interventionCatalog.js';
+import { getInterventionCatalogEntry, isValidInterventionId } from '../constants/interventionCatalog.js';
 import ChatInterventionEvent from '../models/ChatInterventionEvent.js';
+import Conversation from '../models/Conversation.js';
 import { persistTopicFreeEmbeddingsForDocs } from './topicFreeEmbeddingService.js';
-import { buildTopicFreeFromUserContent } from '../utils/interventionTopicFree.js';
+import {
+  buildTopicFreeFromContinuityItem,
+  buildTopicFreeFromUserContent,
+} from '../utils/interventionTopicFree.js';
+import {
+  sanitizeInterventionEventMeta,
+  sanitizeInterventionSource,
+  sanitizeInterventionTopicFree,
+  sanitizeInterventionTopicTag,
+} from '../utils/interventionEventGuards.js';
 
 const DEFAULT_SESSION_GAP_MINUTES = 45;
 const DEFAULT_EVENT_DEDUPE_SECONDS = 8;
@@ -28,6 +38,18 @@ function toObjectId(value) {
   return value;
 }
 
+async function resolveGraphConversationId(userId) {
+  const uid = toObjectId(userId);
+  const latest = await Conversation.findOne({ userId: uid, isGuest: { $ne: true } })
+    .sort({ updatedAt: -1 })
+    .select('_id')
+    .lean();
+  if (latest?._id) return latest._id;
+
+  const conversation = await Conversation.create({ userId: uid });
+  return conversation._id;
+}
+
 async function resolveSessionId({ userId, conversationId, now = new Date() }) {
   const last = await ChatInterventionEvent.findOne({
     userId,
@@ -47,18 +69,30 @@ async function resolveSessionId({ userId, conversationId, now = new Date() }) {
 
 async function findRecentShownContext({ userId, conversationId, interventionId, now }) {
   const since = new Date(now.getTime() - DEFAULT_SHOWN_CONTEXT_LOOKBACK_HOURS * 60 * 60 * 1000);
-  const lastShown = await ChatInterventionEvent.findOne({
-    userId,
-    conversationId,
+  const select =
+    '+topicFreeEmbedding sessionId topicTag topicFree riskLevel assistantMessageId interventionType createdAt conversationId';
+  const queryBase = {
+    userId: toObjectId(userId),
     interventionId: String(interventionId),
     eventType: 'shown',
     createdAt: { $gte: since },
+  };
+
+  let lastShown = await ChatInterventionEvent.findOne({
+    ...queryBase,
+    conversationId: toObjectId(conversationId),
   })
     .sort({ createdAt: -1 })
-    .select(
-      '+topicFreeEmbedding sessionId topicTag topicFree riskLevel assistantMessageId interventionType createdAt',
-    )
+    .select(select)
     .lean();
+
+  // Biblioteca vs chat activo: heredar shown aunque esté en otra conversación del mismo usuario.
+  if (!lastShown) {
+    lastShown = await ChatInterventionEvent.findOne(queryBase)
+      .sort({ createdAt: -1 })
+      .select(select)
+      .lean();
+  }
 
   return lastShown || null;
 }
@@ -294,6 +328,7 @@ async function recordContinuityItemsShown({
 
   const now = new Date();
   const sessionId = await resolveSessionId({ userId, conversationId, now });
+  const docs = [];
 
   for (const item of items) {
     const interventionId = String(item?.interventionId || '').trim();
@@ -309,7 +344,8 @@ async function recordContinuityItemsShown({
     }).catch(() => false);
     if (dup) continue;
 
-    await ChatInterventionEvent.create({
+    const topicFree = buildTopicFreeFromContinuityItem(item);
+    docs.push({
       userId,
       conversationId,
       sessionId,
@@ -317,7 +353,7 @@ async function recordContinuityItemsShown({
       interventionId,
       interventionType: String(item?.kind || item?.interventionType || 'technique'),
       topicTag: 'continuity',
-      topicFree: null,
+      topicFree,
       eventType: 'shown',
       source,
       riskLevel: null,
@@ -325,6 +361,156 @@ async function recordContinuityItemsShown({
       createdAt: now,
     });
   }
+
+  if (docs.length === 0) return;
+  const inserted = await ChatInterventionEvent.insertMany(docs, { ordered: false });
+  void persistTopicFreeEmbeddingsForDocs(inserted, { updateModel: ChatInterventionEvent }).catch(
+    () => {},
+  );
+}
+
+async function recordLibraryInterventionShown({
+  userId,
+  conversationId,
+  interventionId,
+  topicTag = 'library',
+  topicFree = null,
+  source = 'library_v1',
+}) {
+  const id = String(interventionId || '').trim();
+  if (!userId || !conversationId || !isValidInterventionId(id)) return;
+
+  const now = new Date();
+  const sessionId = await resolveSessionId({ userId, conversationId, now });
+  const entry = getInterventionCatalogEntry(id);
+  const safeTopicTag = sanitizeInterventionTopicTag(topicTag, 'library');
+  const safeTopicFree = sanitizeInterventionTopicFree(topicFree);
+  const safeSource = sanitizeInterventionSource(source, 'library_v1');
+
+  const dup = await isDuplicateEvent({
+    userId,
+    conversationId,
+    sessionId,
+    interventionId: id,
+    eventType: 'shown',
+    now,
+  }).catch(() => false);
+  if (dup) return;
+
+  const inserted = await ChatInterventionEvent.insertMany(
+    [
+      {
+        userId,
+        conversationId,
+        sessionId,
+        assistantMessageId: null,
+        interventionId: id,
+        interventionType: entry?.type || 'technique',
+        topicTag: safeTopicTag,
+        topicFree: safeTopicFree,
+        eventType: 'shown',
+        source: safeSource,
+        riskLevel: null,
+        meta: { surface: 'library' },
+        createdAt: now,
+      },
+    ],
+    { ordered: false },
+  );
+  void persistTopicFreeEmbeddingsForDocs(inserted, { updateModel: ChatInterventionEvent }).catch(
+    () => {},
+  );
+}
+
+/**
+ * Apertura desde biblioteca/técnicas: shown + clicked en el grafo (#127).
+ */
+async function recordLibraryInterventionOpened({
+  userId,
+  interventionId,
+  topicTag = 'library',
+  topicFree = null,
+  source = 'library_v1',
+}) {
+  const id = String(interventionId || '').trim();
+  if (!userId || !isValidInterventionId(id)) return;
+
+  const conversationId = await resolveGraphConversationId(userId).catch(() => null);
+  if (!conversationId) return;
+
+  await recordLibraryInterventionShown({
+    userId,
+    conversationId,
+    interventionId: id,
+    topicTag,
+    topicFree,
+    source,
+  }).catch(() => {});
+
+  await recordInterventionEvent({
+    userId,
+    conversationId,
+    interventionId: id,
+    eventType: 'clicked',
+    source,
+    meta: { surface: 'library' },
+  }).catch(() => {});
+}
+
+async function recordUserInterventionEvent({
+  userId,
+  interventionId,
+  eventType,
+  source = 'library_v1',
+  topicTag = 'library',
+  topicFree = null,
+  meta = {},
+}) {
+  const ev = String(eventType || '').trim();
+  const id = String(interventionId || '').trim();
+  if (!userId || !isValidInterventionId(id)) return;
+
+  const safeTopicTag = sanitizeInterventionTopicTag(topicTag, 'library');
+  const safeTopicFree = sanitizeInterventionTopicFree(topicFree);
+  const safeSource = sanitizeInterventionSource(source, 'library_v1');
+  const safeMeta = sanitizeInterventionEventMeta(meta);
+
+  if (ev === 'opened') {
+    await recordLibraryInterventionOpened({
+      userId,
+      interventionId: id,
+      topicTag: safeTopicTag,
+      topicFree: safeTopicFree,
+      source: safeSource,
+    });
+    return;
+  }
+
+  const conversationId = await resolveGraphConversationId(userId).catch(() => null);
+  if (!conversationId) return;
+
+  if (ev === 'shown') {
+    await recordLibraryInterventionShown({
+      userId,
+      conversationId,
+      interventionId: id,
+      topicTag: safeTopicTag,
+      topicFree: safeTopicFree,
+      source: safeSource,
+    });
+    return;
+  }
+
+  if (!['clicked', 'dismissed', 'completed'].includes(ev)) return;
+
+  await recordInterventionEvent({
+    userId,
+    conversationId,
+    interventionId: id,
+    eventType: ev,
+    source: safeSource,
+    meta: safeMeta,
+  });
 }
 
 async function recordInterventionEvent({
@@ -389,7 +575,7 @@ async function recordInterventionEvent({
     eventType: ev,
     source,
     riskLevel: riskLevel ? String(riskLevel) : inheritedRiskLevel,
-    meta: meta && typeof meta === 'object' ? meta : {},
+    meta: sanitizeInterventionEventMeta(meta && typeof meta === 'object' ? meta : {}),
     createdAt: now,
   });
 }
@@ -398,6 +584,9 @@ export default {
   recordSuggestionEventsShown,
   recordContinuityItemsShown,
   recordInterventionEvent,
+  recordLibraryInterventionOpened,
+  recordUserInterventionEvent,
+  resolveGraphConversationId,
   hasShownSuggestionsInActiveSession,
   aggregateInterventionGraph,
   aggregateTopicFreeGraph,

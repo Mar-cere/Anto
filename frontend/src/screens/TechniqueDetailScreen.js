@@ -6,7 +6,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -28,7 +28,14 @@ import { useSectionTranslations } from '../hooks/useTranslations';
 import { getFocusTheme } from '../styles/focusCardTheme';
 import { SPACING } from '../constants/ui';
 import { resolveInteractiveExerciseType } from './therapeuticTechniques/therapeuticTechniquesUtils';
-import { recordInterventionCompleted } from '../utils/recordInterventionCompleted';
+import {
+  recordInterventionCompleted,
+  recordLibraryInterventionOpened,
+} from '../utils/recordInterventionCompleted';
+import {
+  getInterventionIdByScreen,
+  resolveInterventionIdFromTechnique,
+} from '../utils/interventionCatalogResolve';
 
 // Constantes de textos
 const DEFAULT_TEXTS = {
@@ -257,6 +264,17 @@ const TechniqueDetailScreen = () => {
 
   const [showExercise, setShowExercise] = useState(false);
   const [exerciseCompleted, setExerciseCompleted] = useState(false);
+  const libraryGraphTrackedRef = useRef(false);
+  const libraryGraphInterventionIdRef = useRef(null);
+
+  useEffect(() => {
+    if (!technique || libraryGraphTrackedRef.current) return;
+    const interventionId = resolveInterventionIdFromTechnique(technique);
+    if (!interventionId) return;
+    libraryGraphTrackedRef.current = true;
+    libraryGraphInterventionIdRef.current = interventionId;
+    recordLibraryInterventionOpened(interventionId);
+  }, [technique]);
 
   if (!technique) {
     return (
@@ -287,6 +305,10 @@ const TechniqueDetailScreen = () => {
   const handleOpenLinkedTool = () => {
     if (!hasLinkedScreen) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    const interventionId = getInterventionIdByScreen(linkedScreen);
+    if (interventionId && interventionId !== libraryGraphInterventionIdRef.current) {
+      recordLibraryInterventionOpened(interventionId);
+    }
     try {
       navigation.navigate({
         name: linkedScreen,

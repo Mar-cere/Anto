@@ -9,7 +9,7 @@ import {
   buildTopicFreeLexicalBoost,
   scoreInterventionEdge,
 } from '../services/interventionRankingService.js';
-import { buildTopicFreeFromUserContent } from '../utils/interventionTopicFree.js';
+import { buildTopicFreeFromContinuityItem, buildTopicFreeFromUserContent } from '../utils/interventionTopicFree.js';
 import { CHAT_BA_SMOKE_CASES } from '../tests/fixtures/chatBaSmokeMessages.js';
 
 const USER_MSG =
@@ -102,6 +102,14 @@ async function main() {
   assert(
     (affinity.get('behavioral_activation') ?? 0) > (affinity.get('self_care') ?? 0),
     'topicFree léxico prioriza intervención con mensaje similar',
+  );
+
+  const continuityTopic = buildTopicFreeFromContinuityItem({
+    subtitle: 'Llamar a un amigo para salir a caminar un rato',
+  });
+  assert(
+    continuityTopic?.includes('caminar'),
+    'continuidad: topicFree desde subtítulo de strip',
   );
 
   const smokeCase = CHAT_BA_SMOKE_CASES[0];
