@@ -19,7 +19,7 @@ import {
   userProfileService
 } from '../services/index.js';
 import { sanitizeSessionIntentionForClient } from '../constants/sessionIntention.js';
-import { evaluateSuicideRisk, normalizeStoredCrisisRiskLevel, buildOpenaiCrisisContext, shouldIncludeCrisisInOpenaiContext } from '../constants/crisis.js';
+import { normalizeStoredCrisisRiskLevel, buildOpenaiCrisisContext, shouldIncludeCrisisInOpenaiContext } from '../constants/crisis.js';
 import { isLlmCrisisTherapeuticExtrasBlocked } from '../utils/chatObservationalContext.js';
 import chatProductActionProposalService from '../services/chatProductActionProposalService.js';
 import chatProductActionLlmService from '../services/chatProductActionLlmService.js';
@@ -27,6 +27,9 @@ import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 import conversationProductProposalCapService from '../services/conversationProductProposalCapService.js';
 import metricsService from '../services/metricsService.js';
 import crisisBackgroundActionsService from '../services/crisisBackgroundActionsService.js';
+import { resolveCrisisRiskAndContext } from '../services/crisisBackgroundContextService.js';
+import intenseChatCheckInService from '../services/intenseChatCheckInService.js';
+import { scheduleRollingSummaryRefresh } from '../services/conversationRollingSummaryService.js';
 import {
   planChatTurnEnhancements,
   buildOpenaiEnhancementSnippets,
@@ -237,16 +240,18 @@ export const setupSocketIO = (server) => {
           User.findById(userId).select('preferences phone').lean().catch(() => null),
         ]);
 
-        const riskLevel = evaluateSuicideRisk(
-          emotionalAnalysis || {},
-          contextualAnalysis || {},
-          messageText,
-          {
-            trendAnalysis: null,
-            crisisHistory: null,
-            conversationContext: {}
-          }
-        );
+        const {
+          riskLevel,
+          trendAnalysis,
+          crisisHistory,
+          conversationContext,
+        } = await resolveCrisisRiskAndContext({
+          userId,
+          emotionalAnalysis: emotionalAnalysis || {},
+          contextualAnalysis: contextualAnalysis || {},
+          messageContent: messageText,
+          conversationHistory,
+        });
         try {
           userMessage.metadata = {
             ...(userMessage.metadata?.toObject?.() || userMessage.metadata || {}),
@@ -270,19 +275,23 @@ export const setupSocketIO = (server) => {
             contextualAnalysis?.intencion?.confianza >= 0.9 &&
             riskLevel !== 'LOW');
 
-        await crisisBackgroundActionsService.runCrisisBackgroundActions({
-          userId,
-          messageId: userMessage._id,
-          messageContent: messageText,
-          riskLevel,
-          emotionalAnalysis,
-          contextualAnalysis,
-          trendAnalysis: null,
-          crisisHistory: null,
-          conversationContext: {},
-          transport: 'socket',
-          isCrisis,
-        });
+        try {
+          await crisisBackgroundActionsService.runCrisisBackgroundActions({
+            userId,
+            messageId: userMessage._id,
+            messageContent: messageText,
+            riskLevel,
+            emotionalAnalysis,
+            contextualAnalysis,
+            trendAnalysis,
+            crisisHistory,
+            conversationContext,
+            transport: 'socket',
+            isCrisis,
+          });
+        } catch (bgErr) {
+          console.error('[SocketIO] Error en acciones de crisis en segundo plano:', bgErr);
+        }
 
         const sessionPhase = inferChatSessionPhase({
           riskLevel,
@@ -396,6 +405,23 @@ export const setupSocketIO = (server) => {
             lastMessage: assistantMessage._id,
           });
 
+          intenseChatCheckInService
+            .maybeSchedule({
+              userId,
+              conversationId: conversation._id,
+              assistantMessageId: assistantMessage._id,
+              emotionalAnalysis,
+              riskLevel,
+              isCrisis: true,
+            })
+            .catch(() => {});
+
+          scheduleRollingSummaryRefresh({
+            conversationId: conversation._id,
+            userId,
+            isGuest: false,
+          }).catch(() => {});
+
           const clientTurn = buildCrisisHardStopClientPayload(socketLanguage);
 
           socket.emit(SOCKET_EVENTS.AI_TYPING, false);
@@ -502,6 +528,17 @@ export const setupSocketIO = (server) => {
           ),
         });
         await assistantMessage.save();
+
+        intenseChatCheckInService
+          .maybeSchedule({
+            userId,
+            conversationId: conversation._id,
+            assistantMessageId: assistantMessage._id,
+            emotionalAnalysis,
+            riskLevel,
+            isCrisis,
+          })
+          .catch(() => {});
 
         await finalizeChatTurnEnhancements({
           conversationId: conversation._id,

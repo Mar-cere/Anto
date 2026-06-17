@@ -51,3 +51,4 @@ if (failed.length > 0) {
 }
 
 console.log('\nSmoke 1.4.5: OK');
+process.exit(0);

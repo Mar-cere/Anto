@@ -7,8 +7,10 @@
  * | MEDIUM  | Sí (async)  | Push medium       | Solo evidencia fuerte   |
  * | HIGH    | Sí (sync)   | Push high         | Solo confidence ≥ 0.9   |
  */
+import mongoose from 'mongoose';
 import CrisisEvent from '../models/CrisisEvent.js';
 import User from '../models/User.js';
+import { features } from '../config/features.js';
 import { buildCrisisActionDecision } from '../constants/crisis.js';
 import {
   calculateRiskScore,
@@ -22,12 +24,27 @@ import pushNotificationService from './pushNotificationService.js';
 
 const BACKGROUND_LEVELS = new Set(['WARNING', 'MEDIUM', 'HIGH']);
 
+function normalizeRiskLevel(riskLevel) {
+  return String(riskLevel || 'LOW').trim().toUpperCase();
+}
+
+function isValidObjectId(value) {
+  if (!value) return false;
+  return mongoose.Types.ObjectId.isValid(String(value));
+}
+
+async function maybeScheduleFollowUps(crisisEventId, riskLevel) {
+  if (!features.crisisFollowUp || !crisisEventId) return;
+  await crisisFollowUpService.scheduleFollowUps(crisisEventId, riskLevel);
+}
+
 /**
  * @param {{ riskLevel?: string, isCrisis?: boolean }} params
  */
 export function shouldRunCrisisBackgroundActions({ riskLevel, isCrisis = false }) {
-  if (BACKGROUND_LEVELS.has(riskLevel)) return true;
-  return isCrisis === true && riskLevel !== 'LOW';
+  const level = normalizeRiskLevel(riskLevel);
+  if (BACKGROUND_LEVELS.has(level)) return true;
+  return isCrisis === true && level !== 'LOW';
 }
 
 function buildRiskMetadata({
@@ -170,6 +187,7 @@ async function sendHighAlerts({
     const user = await User.findById(userId).select('+pushToken');
     if (user?.pushToken) {
       await pushNotificationService.sendCrisisHigh(user.pushToken);
+      bumpBackgroundMetric({ riskLevel, transport: 'sync', action: 'push_high' });
       log?.('Notificación push HIGH enviada');
     }
   } catch (error) {
@@ -177,6 +195,40 @@ async function sendHighAlerts({
   }
 
   return alertResult;
+}
+
+async function createCrisisEventIfPossible({
+  messageId,
+  userId,
+  riskLevel,
+  messageContent,
+  emotionalAnalysis,
+  trendAnalysis,
+  crisisHistory,
+  alertResult,
+  metadata,
+  log,
+}) {
+  if (!isValidObjectId(messageId)) {
+    console.warn(`[CrisisBackgroundActions] messageId inválido; CrisisEvent ${riskLevel} omitido`);
+    return null;
+  }
+
+  const crisisEvent = await CrisisEvent.create(
+    buildCrisisEventPayload({
+      userId,
+      riskLevel,
+      messageId,
+      messageContent,
+      emotionalAnalysis,
+      trendAnalysis,
+      crisisHistory,
+      alertResult,
+      metadata,
+    }),
+  );
+  log?.(`CrisisEvent ${riskLevel} registrado`);
+  return crisisEvent;
 }
 
 async function handleMediumAsync({
@@ -233,26 +285,24 @@ async function handleMediumAsync({
     crisisDecision,
   });
 
-  const crisisEvent = await CrisisEvent.create(
-    buildCrisisEventPayload({
-      userId,
-      riskLevel,
-      messageId,
-      messageContent,
-      emotionalAnalysis,
-      trendAnalysis,
-      crisisHistory,
-      alertResult: mediumAlertResult,
-      metadata,
-    }),
-  );
+  const crisisEvent = await createCrisisEventIfPossible({
+    messageId,
+    userId,
+    riskLevel,
+    messageContent,
+    emotionalAnalysis,
+    trendAnalysis,
+    crisisHistory,
+    alertResult: mediumAlertResult,
+    metadata,
+    log,
+  });
 
   if (crisisEvent && mediumAlertResult?.sent) {
-    await crisisFollowUpService.scheduleFollowUps(crisisEvent._id, riskLevel);
+    await maybeScheduleFollowUps(crisisEvent._id, riskLevel);
   }
 
   bumpBackgroundMetric({ riskLevel, transport, phase: 'async', action: 'crisis_event_medium' });
-  log?.('CrisisEvent MEDIUM registrado (async)');
 }
 
 async function handleWarningAsync({ userId, emotionalAnalysis, riskLevel, transport, log }) {
@@ -285,12 +335,18 @@ export async function runCrisisBackgroundActions({
   isCrisis = false,
   log,
 }) {
-  if (!shouldRunCrisisBackgroundActions({ riskLevel, isCrisis })) {
+  const normalizedRiskLevel = normalizeRiskLevel(riskLevel);
+
+  if (!isValidObjectId(userId)) {
+    return { skipped: true, reason: 'invalid_user_id' };
+  }
+
+  if (!shouldRunCrisisBackgroundActions({ riskLevel: normalizedRiskLevel, isCrisis })) {
     return { skipped: true, reason: 'no_background_actions' };
   }
 
   const crisisDecision = buildCrisisActionDecision({
-    riskLevel,
+    riskLevel: normalizedRiskLevel,
     messageContent,
     contextualAnalysis,
     trendAnalysis,
@@ -298,12 +354,17 @@ export async function runCrisisBackgroundActions({
     conversationContext,
   });
 
-  if (riskLevel === 'HIGH') {
-    bumpBackgroundMetric({ riskLevel, transport, phase: 'sync', action: 'high_start' });
+  if (normalizedRiskLevel === 'HIGH') {
+    bumpBackgroundMetric({
+      riskLevel: normalizedRiskLevel,
+      transport,
+      phase: 'sync',
+      action: 'high_start',
+    });
     try {
       const alertResult = await sendHighAlerts({
         userId,
-        riskLevel,
+        riskLevel: normalizedRiskLevel,
         messageContent,
         crisisDecision,
         trendAnalysis,
@@ -324,43 +385,56 @@ export async function runCrisisBackgroundActions({
         crisisDecision,
       });
 
-      const crisisEvent = await CrisisEvent.create(
-        buildCrisisEventPayload({
-          userId,
-          riskLevel,
-          messageId,
-          messageContent,
-          emotionalAnalysis,
-          trendAnalysis,
-          crisisHistory,
-          alertResult,
-          metadata,
-        }),
-      );
+      const crisisEvent = await createCrisisEventIfPossible({
+        messageId,
+        userId,
+        riskLevel: normalizedRiskLevel,
+        messageContent,
+        emotionalAnalysis,
+        trendAnalysis,
+        crisisHistory,
+        alertResult,
+        metadata,
+        log,
+      });
 
       if (crisisEvent && alertResult?.sent) {
-        await crisisFollowUpService.scheduleFollowUps(crisisEvent._id, riskLevel);
+        await maybeScheduleFollowUps(crisisEvent._id, normalizedRiskLevel);
       }
 
-      bumpBackgroundMetric({ riskLevel, transport, phase: 'sync', action: 'crisis_event_high' });
-      log?.('CrisisEvent HIGH registrado (sync)');
-      return { skipped: false, riskLevel, phase: 'sync', crisisEventId: crisisEvent?._id?.toString() };
+      bumpBackgroundMetric({
+        riskLevel: normalizedRiskLevel,
+        transport,
+        phase: 'sync',
+        action: 'crisis_event_high',
+      });
+      return {
+        skipped: false,
+        riskLevel: normalizedRiskLevel,
+        phase: 'sync',
+        crisisEventId: crisisEvent?._id?.toString(),
+      };
     } catch (error) {
       console.error('[CrisisBackgroundActions] Error manejando crisis HIGH:', error);
       metricsService
-        .recordMetric('crisis_background_action', { riskLevel, transport, phase: 'sync', action: 'error' })
+        .recordMetric('crisis_background_action', {
+          riskLevel: normalizedRiskLevel,
+          transport,
+          phase: 'sync',
+          action: 'error',
+        })
         .catch(() => {});
-      return { skipped: false, riskLevel, phase: 'sync', error: error.message };
+      return { skipped: false, riskLevel: normalizedRiskLevel, phase: 'sync', error: error.message };
     }
   }
 
-  if (riskLevel === 'MEDIUM' || riskLevel === 'WARNING') {
+  if (normalizedRiskLevel === 'MEDIUM' || normalizedRiskLevel === 'WARNING') {
     const runAsync = async () => {
       try {
-        if (riskLevel === 'MEDIUM') {
+        if (normalizedRiskLevel === 'MEDIUM') {
           await handleMediumAsync({
             userId,
-            riskLevel,
+            riskLevel: normalizedRiskLevel,
             messageId,
             messageContent,
             emotionalAnalysis,
@@ -373,18 +447,32 @@ export async function runCrisisBackgroundActions({
             log,
           });
         } else {
-          await handleWarningAsync({ userId, emotionalAnalysis, riskLevel, transport, log });
+          await handleWarningAsync({
+            userId,
+            emotionalAnalysis,
+            riskLevel: normalizedRiskLevel,
+            transport,
+            log,
+          });
         }
       } catch (error) {
-        console.error(`[CrisisBackgroundActions] Error manejando crisis ${riskLevel}:`, error);
+        console.error(
+          `[CrisisBackgroundActions] Error manejando crisis ${normalizedRiskLevel}:`,
+          error,
+        );
         metricsService
-          .recordMetric('crisis_background_action', { riskLevel, transport, phase: 'async', action: 'error' })
+          .recordMetric('crisis_background_action', {
+            riskLevel: normalizedRiskLevel,
+            transport,
+            phase: 'async',
+            action: 'error',
+          })
           .catch(() => {});
       }
     };
 
     runAsync().catch(() => {});
-    return { skipped: false, riskLevel, phase: 'async' };
+    return { skipped: false, riskLevel: normalizedRiskLevel, phase: 'async' };
   }
 
   return { skipped: true, reason: 'unsupported_level' };

@@ -234,10 +234,15 @@ const crisisBgSrc = fs.readFileSync(
   path.join(root, 'backend/services/crisisBackgroundActionsService.js'),
   'utf8',
 );
+const crisisBgCtxSrc = fs.readFileSync(
+  path.join(root, 'backend/services/crisisBackgroundContextService.js'),
+  'utf8',
+);
 if (
   healthRoutesSrc.includes('/crisis-routing') &&
   crisisBgSrc.includes('runCrisisBackgroundActions') &&
-  crisisBgSrc.includes('shouldRunCrisisBackgroundActions')
+  crisisBgSrc.includes('shouldRunCrisisBackgroundActions') &&
+  crisisBgCtxSrc.includes('resolveCrisisRiskAndContext')
 ) {
   pass('acciones segundo plano crisis + endpoint ops');
 } else {
@@ -293,3 +298,4 @@ if (failed.length > 0) {
   process.exit(1);
 }
 console.log('\nSmoke 1.5.0: OK');
+process.exit(0);

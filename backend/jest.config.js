@@ -56,6 +56,7 @@ export default {
   
   // Variables de entorno para tests
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
+  globalTeardown: '<rootDir>/tests/globalTeardown.js',
   
   // Timeout para tests
   testTimeout: 30000,

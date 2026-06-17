@@ -392,11 +392,12 @@ class CacheService {
 // Inicializar limpieza periódica de entradas expiradas (solo para memoria)
 const cacheService = new CacheService();
 
-// Limpiar entradas expiradas cada 5 minutos
-if (!cacheService.useRedis) {
-  setInterval(() => {
+// Limpiar entradas expiradas cada 5 minutos (no bloquear salida de scripts/smokes/tests)
+if (!cacheService.useRedis && process.env.NODE_ENV !== 'test') {
+  const expiryTimer = setInterval(() => {
     cacheService.cleanExpired();
   }, 5 * 60 * 1000);
+  expiryTimer.unref?.();
 }
 
 export default cacheService;

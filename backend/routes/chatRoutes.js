@@ -1115,20 +1115,25 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         }
 
         const crisisTransport = req.query.stream === 'true' ? 'sse' : 'http';
-        await crisisBackgroundActionsService.runCrisisBackgroundActions({
-          userId: req.user._id,
-          messageId: userMessage._id,
-          messageContent: content,
-          riskLevel,
-          emotionalAnalysis,
-          contextualAnalysis,
-          trendAnalysis,
-          crisisHistory,
-          conversationContext,
-          transport: crisisTransport,
-          isCrisis,
-          log: (msg) => logs.push(`[${Date.now() - startTime}ms] ${msg}`),
-        });
+        try {
+          await crisisBackgroundActionsService.runCrisisBackgroundActions({
+            userId: req.user._id,
+            messageId: userMessage._id,
+            messageContent: content,
+            riskLevel,
+            emotionalAnalysis,
+            contextualAnalysis,
+            trendAnalysis,
+            crisisHistory,
+            conversationContext,
+            transport: crisisTransport,
+            isCrisis,
+            log: (msg) => logs.push(`[${Date.now() - startTime}ms] ${msg}`),
+          });
+        } catch (bgErr) {
+          console.error('[ChatRoutes] Error en acciones de crisis en segundo plano:', bgErr);
+          logs.push(`[${Date.now() - startTime}ms] ❌ Error acciones crisis: ${bgErr.message}`);
+        }
 
         // 4. Generar respuesta usando el análisis ya realizado (mensaje ya guardado arriba)
         // Preparar historial de conversación en formato para el prompt

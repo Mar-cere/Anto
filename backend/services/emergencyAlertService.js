@@ -325,10 +325,13 @@ class EmergencyAlertService {
 // Singleton instance
 const emergencyAlertService = new EmergencyAlertService();
 
-// Limpiar cache cada hora
-setInterval(() => {
-  emergencyAlertService.cleanupOldAlerts();
-}, 60 * 60 * 1000);
+// Limpiar cache cada hora (no bloquear salida de scripts/smokes/tests)
+if (process.env.NODE_ENV !== 'test') {
+  const cleanupTimer = setInterval(() => {
+    emergencyAlertService.cleanupOldAlerts();
+  }, 60 * 60 * 1000);
+  cleanupTimer.unref?.();
+}
 
 export default emergencyAlertService;
 
