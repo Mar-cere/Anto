@@ -20,7 +20,8 @@ export const CRISIS_MESSAGES = {
   IMMEDIATE_SAFETY: 'Tu seguridad es lo más importante. Si estás en peligro inmediato, llama al {EMERGENCY} ahora.',
   SUICIDE_PREVENTION: 'No estás solo. Llama a la línea de prevención del suicidio: {SUICIDE_LINE}. Están disponibles 24/7.',
   MENTAL_HEALTH_SUPPORT: 'Para apoyo profesional inmediato, contacta: {MENTAL_HEALTH_LINE}',
-  SAFETY_PLAN: '¿Tienes un plan de seguridad? Si no, podemos crear uno juntos ahora mismo.',
+  SAFETY_PLAN: '¿Hay alguien de confianza con quien puedas hablar o escribir ahora?',
+  CRISIS_SAFETY_CHECK: '¿Te sientes a salvo en este momento?',
   CRISIS_TEXT_LINE: 'También puedes enviar un mensaje de texto a {CRISIS_TEXT} para apoyo inmediato.',
   YOU_ARE_NOT_ALONE: 'Recuerda: no estás solo/a. Hay personas que pueden ayudarte en este momento.',
   PROFESSIONAL_HELP: 'Es importante que hables con un profesional de salud mental. Puedo ayudarte a encontrar recursos en tu área.'
@@ -198,7 +199,7 @@ export const CRISIS_PROTOCOL = {
       description: 'Recursos de emergencia + seguimiento en 24h',
       actions: [
         'Proporcionar líneas de ayuda',
-        'Crear plan de seguridad básico',
+        'Preguntar por seguridad inmediata y apoyo cercano',
         'Ofrecer seguimiento en 24 horas',
         'Documentar para monitoreo',
         'Considerar alerta a contactos de emergencia'
@@ -209,7 +210,7 @@ export const CRISIS_PROTOCOL = {
       actions: [
         'Proporcionar recursos de emergencia inmediatamente',
         'Instar a contactar servicios de emergencia',
-        'Crear plan de seguridad detallado',
+        'Preguntar por seguridad inmediata y medios de daño cercanos',
         'Documentar para seguimiento profesional urgente',
         'Enviar alerta a contactos de emergencia'
       ]
@@ -226,6 +227,35 @@ export const CRISIS_PROTOCOL = {
  */
 export const shouldAttachCrisisContextToPrompt = (riskLevel) =>
   riskLevel === 'MEDIUM' || riskLevel === 'HIGH';
+
+/**
+ * Prompt ligero para WARNING con malestar alto (sin léxico explícito de ideación).
+ */
+export function shouldAttachCrisisWarningContextToPrompt(
+  riskLevel,
+  { emotional, contextual, userMessage } = {},
+) {
+  if (String(riskLevel || '').toUpperCase() !== 'WARNING') return false;
+  if (hasExplicitSuicidalOrSelfHarmLexicon(userMessage)) return false;
+  const intensity = Number(emotional?.intensity || 0);
+  if (intensity >= 7) return true;
+  if (contextual?.intencion?.tipo === 'CRISIS' && intensity >= 6) return true;
+  return false;
+}
+
+/**
+ * Contexto de sistema breve para WARNING (validación + seguridad presente, sin tono 911).
+ */
+export function generateCrisisWarningContextMessage(countryOrSource = 'GENERAL') {
+  const lines = getEmergencyLines(countryOrSource);
+  return [
+    'Señales de malestar elevado (nivel WARNING, sin ideación explícita en el mensaje).',
+    'Prioriza validación breve y comprobar cómo está ahora.',
+    CRISIS_MESSAGES.CRISIS_SAFETY_CHECK,
+    'Escucha sin presionar técnicas, hábitos ni planes a futuro.',
+    `Si el malestar sube, puede usar la línea de prevención: ${lines.SUICIDE_PREVENTION}.`,
+  ].join(' ');
+}
 
 /**
  * Léxico explícito de ideación suicida / autolesión en el mensaje (no depende del clasificador).
@@ -752,6 +782,7 @@ export const generateCrisisMessage = (riskLevel, countryOrSource = 'GENERAL') =>
     if (lines.MENTAL_HEALTH) {
       messages.push(CRISIS_MESSAGES.MENTAL_HEALTH_SUPPORT.replace('{MENTAL_HEALTH_LINE}', lines.MENTAL_HEALTH));
     }
+    messages.push(CRISIS_MESSAGES.CRISIS_SAFETY_CHECK);
     messages.push(CRISIS_MESSAGES.SAFETY_PLAN);
   } else if (riskLevel === 'WARNING') {
     // WARNING - Intervención preventiva
@@ -759,11 +790,10 @@ export const generateCrisisMessage = (riskLevel, countryOrSource = 'GENERAL') =>
     messages.push(CRISIS_MESSAGES.PROFESSIONAL_HELP);
     messages.push('Si en algún momento sientes que necesitas hablar con alguien, estas líneas están disponibles 24/7:');
     messages.push(CRISIS_MESSAGES.SUICIDE_PREVENTION.replace('{SUICIDE_LINE}', lines.SUICIDE_PREVENTION));
-    messages.push(CRISIS_MESSAGES.SAFETY_PLAN);
+    messages.push(CRISIS_MESSAGES.CRISIS_SAFETY_CHECK);
   } else {
     // LOW risk - mensaje de apoyo general
     messages.push(CRISIS_MESSAGES.PROFESSIONAL_HELP);
-    messages.push(CRISIS_MESSAGES.SAFETY_PLAN);
   }
   
   return messages.join(' ');
@@ -798,8 +828,8 @@ export const generateCrisisSystemPrompt = (riskLevel, countryOrSource = 'GENERAL
   prompt += `1. Prioriza la seguridad del usuario sobre todo\n`;
   prompt += `2. Valida sus emociones sin minimizar\n`;
   prompt += `3. Proporciona recursos de emergencia de forma clara y directa\n`;
-  prompt += `4. Crea sensación de conexión y apoyo\n`;
-  prompt += `5. Ofrece seguimiento inmediato\n`;
+  prompt += `4. Mantén tono humano y presente; evita planes terapéuticos, hábitos o técnicas\n`;
+  prompt += `5. Pregunta por seguridad inmediata y apoyo cercano si falta en la conversación\n`;
   if (riskLevel === 'HIGH') {
     prompt += `6. URGENTE: Insta al usuario a contactar servicios de emergencia si está en peligro inmediato\n`;
   }

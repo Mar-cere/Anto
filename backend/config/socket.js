@@ -393,6 +393,20 @@ export const setupSocketIO = (server) => {
           return;
         }
 
+        if (
+          isCrisis &&
+          ['WARNING', 'MEDIUM', 'HIGH'].includes(String(riskLevel || '').toUpperCase())
+        ) {
+          metricsService
+            .recordMetric(
+              'crisis_llm_path',
+              { riskLevel, transport: 'socket' },
+              userId.toString(),
+              { conversationId: String(conversation._id) },
+            )
+            .catch(() => {});
+        }
+
         const responseStrategyHint =
           sessionIntentionSafe === 'vent'
             ? 'validate_first_then_action'
@@ -548,6 +562,7 @@ export const setupSocketIO = (server) => {
           tccLitePlan: turnEnhancements.tccLitePlan,
           suggestionPlan: turnEnhancements.suggestionPlan,
           language: socketLanguage,
+          riskLevel,
         });
 
         // 9. Emitir respuesta al cliente

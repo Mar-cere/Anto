@@ -24,7 +24,7 @@ function stripControlChars(text) {
 
 function isHighRisk(riskLevel) {
   const r = String(riskLevel || '').trim().toUpperCase();
-  return r === 'HIGH' || r === 'CRITICAL';
+  return r === 'HIGH' || r === 'MEDIUM' || r === 'WARNING' || r === 'CRITICAL';
 }
 
 export function readPersistedTccLiteState(persistedState) {

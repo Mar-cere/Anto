@@ -38,6 +38,11 @@ describe('chatTccLiteService', () => {
     expect(plan.active).toBe(false);
   });
 
+  it('no activa en riesgo MEDIUM ni WARNING', () => {
+    expect(planChatTccLite({ ...baseContext, riskLevel: 'MEDIUM' }).active).toBe(false);
+    expect(planChatTccLite({ ...baseContext, riskLevel: 'WARNING' }).active).toBe(false);
+  });
+
   it('no activa si el usuario pide parar', () => {
     const plan = planChatTccLite({
       ...baseContext,

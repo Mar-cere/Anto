@@ -167,6 +167,7 @@ export async function planChatActionSuggestions({
   conversationId,
   conversationHistory,
   language = 'es',
+  riskLevel = 'LOW',
 }) {
   const empty = {
     shouldShow: false,
@@ -183,6 +184,7 @@ export async function planChatActionSuggestions({
     userId,
     conversationId,
     userContent,
+    riskLevel,
   });
   if (!shouldShow) return empty;
 

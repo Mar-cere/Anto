@@ -53,17 +53,42 @@ describe('shouldShowChatActionSuggestions', () => {
     expect(mockHasShown).not.toHaveBeenCalled();
   });
 
-  it('muestra en excepción de seguridad aunque ya hubo shown en la sesión', async () => {
+  it('muestra en excepción de urgencia alta aunque ya hubo shown en la sesión', async () => {
     mockHasShown.mockResolvedValue(true);
     const result = await shouldShowChatActionSuggestions({
       emotionalAnalysis: { intensity: 8, mainEmotion: 'ansiedad' },
-      contextualAnalysis: { intencion: { tipo: 'CRISIS' } },
+      contextualAnalysis: { urgencia: 'alta' },
       conversationHistory: baseHistory,
       userId: 'u1',
       conversationId: 'c1',
     });
     expect(result).toBe(true);
     expect(mockHasShown).not.toHaveBeenCalled();
+  });
+
+  it('no muestra sugerencias en crisis MEDIUM', async () => {
+    const result = await shouldShowChatActionSuggestions({
+      emotionalAnalysis: { intensity: 9, mainEmotion: 'tristeza' },
+      contextualAnalysis: { intencion: { tipo: 'CRISIS' } },
+      conversationHistory: cadenceHistory,
+      userId: 'u1',
+      conversationId: 'c1',
+      userContent: 'no quiero seguir',
+      riskLevel: 'MEDIUM',
+    });
+    expect(result).toBe(false);
+  });
+
+  it('no muestra con intención CRISIS aunque riskLevel sea LOW', async () => {
+    const result = await shouldShowChatActionSuggestions({
+      emotionalAnalysis: { intensity: 8, mainEmotion: 'ansiedad' },
+      contextualAnalysis: { intencion: { tipo: 'CRISIS' } },
+      conversationHistory: cadenceHistory,
+      userId: 'u1',
+      conversationId: 'c1',
+      riskLevel: 'LOW',
+    });
+    expect(result).toBe(false);
   });
 
   it('no muestra de nuevo solo por intensidad alta si ya hubo shown', async () => {
@@ -163,7 +188,7 @@ describe('shouldShowChatActionSuggestions', () => {
 });
 
 describe('isActionSuggestionSafetyException', () => {
-  it('detecta crisis', async () => {
+  it('detecta urgencia alta sin tratar CRISIS como excepción de sugerencias', async () => {
     const { isActionSuggestionSafetyException } = await import(
       '../../../routes/chat/chatContextAnalysis.js'
     );
@@ -171,6 +196,13 @@ describe('isActionSuggestionSafetyException', () => {
       isActionSuggestionSafetyException(
         { intensity: 4 },
         { intencion: { tipo: 'CRISIS' } },
+        [],
+      ),
+    ).toBe(false);
+    expect(
+      isActionSuggestionSafetyException(
+        { intensity: 4, requiresAttention: true },
+        {},
         [],
       ),
     ).toBe(true);

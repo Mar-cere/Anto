@@ -1618,6 +1618,23 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           });
         }
 
+        if (
+          isCrisis &&
+          ['WARNING', 'MEDIUM', 'HIGH'].includes(String(riskLevel || '').toUpperCase())
+        ) {
+          metricsService
+            .recordMetric(
+              'crisis_llm_path',
+              {
+                riskLevel,
+                transport: req.query.stream === 'true' ? 'sse' : 'http',
+              },
+              req.user._id.toString(),
+              { conversationId: String(conversationId) },
+            )
+            .catch(() => {});
+        }
+
         metricsService
           .recordMetric(
             'chat_turn_policy',
@@ -1811,6 +1828,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   tccLitePlan,
                   suggestionPlan,
                   language: appLanguageForChat,
+                  riskLevel,
                 });
                 if (suggestionPlan.actionIds?.length > 0) {
                   suggestionPlan.actionIds.forEach((suggestionType) => {
@@ -2252,6 +2270,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           tccLitePlan,
           suggestionPlan,
           language: appLanguageForChat,
+          riskLevel,
         });
         if (suggestionPlan.actionIds?.length > 0) {
           suggestionPlan.actionIds.forEach((suggestionType) => {

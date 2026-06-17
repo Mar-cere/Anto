@@ -16,7 +16,10 @@ import {
 import { buildDigitalPhenotypeChatSnippet } from './digitalPhenotypeChatContextService.js';
 import { buildRecentAbcChatSnippet } from './recentAbcChatContextService.js';
 import { buildPersonalPatternRagSnippet } from './personalPatternRagService.js';
-import { isChatObservationalContextBlocked } from '../utils/chatObservationalContext.js';
+import {
+  isChatObservationalContextBlocked,
+  isLlmCrisisTherapeuticExtrasBlocked,
+} from '../utils/chatObservationalContext.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 
 const CHAT_CONTEXT_SNIPPET_TIMEOUT_MS = 2500;
@@ -52,6 +55,10 @@ export async function planChatTurnEnhancements({
 }) {
   const lang = normalizeApiLanguage(language);
   const blockObservationalSnippets = isChatObservationalContextBlocked(riskLevel);
+  const blockCrisisExtras = isLlmCrisisTherapeuticExtrasBlocked({
+    riskLevel,
+    userMessage: userContent,
+  });
   let persistedTccLiteState = null;
   try {
     persistedTccLiteState = await loadTccLiteStateFromConversation(conversationId);
@@ -65,18 +72,21 @@ export async function planChatTurnEnhancements({
     rankingPersonalized: false,
     psychoeducationPromptSnippet: null,
   };
-  try {
-    suggestionPlan = await planChatActionSuggestions({
-      emotionalAnalysis,
-      contextualAnalysis,
-      userContent,
-      userId,
-      conversationId,
-      conversationHistory,
-      language: lang,
-    });
-  } catch {
-    // best-effort
+  if (!blockCrisisExtras) {
+    try {
+      suggestionPlan = await planChatActionSuggestions({
+        emotionalAnalysis,
+        contextualAnalysis,
+        userContent,
+        userId,
+        conversationId,
+        conversationHistory,
+        language: lang,
+        riskLevel,
+      });
+    } catch {
+      // best-effort
+    }
   }
 
   let activeTccProtocolsPromptSnippet = null;
@@ -90,26 +100,28 @@ export async function planChatTurnEnhancements({
   }
 
   let tccLitePlan = { active: false };
-  try {
-    tccLitePlan = planChatTccLite({
-      userContent: String(userContent || '').trim(),
-      contextualAnalysis,
-      emotionalAnalysis,
-      conversationHistory,
-      riskLevel,
-      sessionIntention,
-      language: lang,
-      persistedState: persistedTccLiteState,
-      resumeFromInsight:
-        resumeTccLite && typeof resumeTccLite === 'object'
-          ? {
-              distortionType: resumeTccLite.distortionType,
-              distortionLabel: resumeTccLite.distortionLabel,
-            }
-          : null,
-    });
-  } catch {
-    tccLitePlan = { active: false };
+  if (!blockCrisisExtras) {
+    try {
+      tccLitePlan = planChatTccLite({
+        userContent: String(userContent || '').trim(),
+        contextualAnalysis,
+        emotionalAnalysis,
+        conversationHistory,
+        riskLevel,
+        sessionIntention,
+        language: lang,
+        persistedState: persistedTccLiteState,
+        resumeFromInsight:
+          resumeTccLite && typeof resumeTccLite === 'object'
+            ? {
+                distortionType: resumeTccLite.distortionType,
+                distortionLabel: resumeTccLite.distortionLabel,
+              }
+            : null,
+      });
+    } catch {
+      tccLitePlan = { active: false };
+    }
   }
 
   let digitalPhenotypePromptSnippet = null;
@@ -205,7 +217,13 @@ export async function finalizeChatTurnEnhancements({
   await saveTccLiteStateToConversation(conversationId, tccLitePlan).catch(() => {});
 
   const formatted = suggestionPlan?.formatted;
-  if (Array.isArray(formatted) && formatted.length > 0 && userId && conversationId) {
+  if (
+    !isLlmCrisisTherapeuticExtrasBlocked({ riskLevel, userMessage: userContent }) &&
+    Array.isArray(formatted) &&
+    formatted.length > 0 &&
+    userId &&
+    conversationId
+  ) {
     await chatInterventionGraphService
       .recordSuggestionEventsShown({
         userId,
@@ -226,8 +244,16 @@ export function buildClientTurnPayload({
   tccLitePlan,
   suggestionPlan,
   language = 'es',
+  riskLevel = 'LOW',
 }) {
   const lang = normalizeApiLanguage(language);
+  if (isLlmCrisisTherapeuticExtrasBlocked({ riskLevel })) {
+    return {
+      suggestions: [],
+      suggestionsPersonalized: false,
+      tccLite: toTccLiteClientPayload({ active: false }, lang),
+    };
+  }
   const formatted = suggestionPlan?.shouldShow ? suggestionPlan.formatted || [] : [];
   return {
     suggestions: formatted,

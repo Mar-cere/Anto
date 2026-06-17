@@ -35,6 +35,12 @@ import {
   shouldSkipEmergencyPhoneNumbersInSafetyAppend,
   shouldUseCompactCrisisSafetyAppend
 } from '../constants/crisis.js';
+import { isLlmCrisisTherapeuticExtrasBlocked } from '../utils/chatObservationalContext.js';
+import {
+  shouldApplyCrisisResponseSafety,
+  shouldStripCrisisConductualLanguage,
+  stripInappropriateCrisisConductualLanguage,
+} from '../utils/crisisResponseSafety.js';
 import {
   formatEmergencyNumbers,
   resolveEmergencyInfoFromPreferences
@@ -577,7 +583,9 @@ class OpenAIService {
         }, {
           emotional: analisisEmocional,
           contextual: analisisContextual,
-          history: contexto.history || []
+          history: contexto.history || [],
+          crisis: contexto.crisis,
+          userMessage: contenidoNormalizado,
         });
       }
 
@@ -607,32 +615,22 @@ class OpenAIService {
         }
       );
 
-      // 11. NUEVO: Agregar chequeos de seguridad si la intensidad es alta
-      let respuestaConSeguridad = respuestaValidada;
-      if (analisisEmocional?.intensity >= 8 || analisisEmocional?.requiresAttention) {
-        respuestaConSeguridad = this.addSafetyChecks(
-          respuestaValidada,
-          analisisEmocional,
-          analisisContextual,
-          contenidoNormalizado,
-          {
-            profile: perfilUsuario,
-            conversationHistory: contexto.safetyHistory || []
-          }
-        );
-      }
-      respuestaConSeguridad = this.enforceStructuredCrisisProtocol(respuestaConSeguridad, {
+      // 11. Post-procesado unificado de crisis (seguridad + protocolo + saneamiento)
+      const respuestaConSeguridad = this.applyCrisisResponseSafety(respuestaValidada, {
         crisis: contexto.crisis,
         emotional: analisisEmocional,
         contextual: analisisContextual,
         profile: perfilUsuario,
         userMessage: contenidoNormalizado,
-        conversationHistory: contexto.safetyHistory || []
+        conversationHistory: contexto.safetyHistory || [],
       });
 
       // 12. NUEVO: Agregar elecciones al final de la respuesta si es apropiado
       let respuestaConElecciones = respuestaConSeguridad;
-      if (this.shouldAddChoices(analisisEmocional, analisisContextual, activeProtocol)) {
+      if (this.shouldAddChoices(analisisEmocional, analisisContextual, activeProtocol, {
+        crisis: contexto.crisis,
+        userMessage: contenidoNormalizado,
+      })) {
         respuestaConElecciones = this.addResponseChoices(
           respuestaConSeguridad,
           analisisEmocional,
@@ -647,7 +645,10 @@ class OpenAIService {
 
       // 13. Agregar técnica terapéutica a la respuesta SOLO si el usuario la solicita explícitamente (y no hay protocolo)
       let respuestaFinal = respuestaConElecciones;
-      if (selectedTechnique && !activeProtocol && this.shouldIncludeTechnique(analisisEmocional, analisisContextual, mensaje)) {
+      if (selectedTechnique && !activeProtocol && this.shouldIncludeTechnique(analisisEmocional, analisisContextual, mensaje, {
+        crisis: contexto.crisis,
+        userMessage: contenidoNormalizado,
+      })) {
         // Calcular espacio disponible para la técnica
         const espacioDisponible = THRESHOLDS.MAX_CHARACTERS_RESPONSE - respuestaValidada.length;
         const necesitaFormatoCompacto = espacioDisponible < 300; // Menos de 300 caracteres disponibles
@@ -973,7 +974,9 @@ class OpenAIService {
         hint: therapeuticHint
       }, {
         emotional: analisisEmocional,
-        contextual: analisisContextual
+        contextual: analisisContextual,
+        crisis,
+        userMessage: contenidoNormalizado,
       });
     }
     if (activeProtocol && currentIntervention) {
@@ -992,35 +995,28 @@ class OpenAIService {
       conversationPattern
     });
 
-    let respuestaConSeguridad = respuestaValidada;
-    if (analisisEmocional?.intensity >= 8 || analisisEmocional?.requiresAttention) {
-      respuestaConSeguridad = this.addSafetyChecks(
-        respuestaValidada,
-        analisisEmocional,
-        analisisContextual,
-        contenidoNormalizado,
-        {
-          profile: perfilUsuario,
-          conversationHistory
-        }
-      );
-    }
-    respuestaConSeguridad = this.enforceStructuredCrisisProtocol(respuestaConSeguridad, {
+    const respuestaConSeguridad = this.applyCrisisResponseSafety(respuestaValidada, {
       crisis,
       emotional: analisisEmocional,
       contextual: analisisContextual,
       profile: perfilUsuario,
       userMessage: contenidoNormalizado,
-      conversationHistory
+      conversationHistory,
     });
 
     let respuestaConElecciones = respuestaConSeguridad;
-    if (this.shouldAddChoices(analisisEmocional, analisisContextual, activeProtocol)) {
+    if (this.shouldAddChoices(analisisEmocional, analisisContextual, activeProtocol, {
+      crisis,
+      userMessage: contenidoNormalizado,
+    })) {
       respuestaConElecciones = this.addResponseChoices(respuestaConSeguridad, analisisEmocional, analisisContextual, activeProtocol);
     }
 
     let respuestaFinal = respuestaConElecciones;
-    if (selectedTechnique && !activeProtocol && this.shouldIncludeTechnique(analisisEmocional, analisisContextual, mensaje)) {
+    if (selectedTechnique && !activeProtocol && this.shouldIncludeTechnique(analisisEmocional, analisisContextual, mensaje, {
+      crisis,
+      userMessage: contenidoNormalizado,
+    })) {
       const espacioDisponible = THRESHOLDS.MAX_CHARACTERS_RESPONSE - respuestaValidada.length;
       const techniqueText = formatTechniqueForResponse(selectedTechnique, {
         compact: espacioDisponible < 300,
@@ -1055,9 +1051,60 @@ class OpenAIService {
   shouldRequireStructuredCrisisProtocol({ crisis, contextual, emotional }) {
     const riskLevel = String(crisis?.riskLevel || '').toUpperCase();
     if (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') return true;
+    if (riskLevel === 'WARNING') {
+      const intensity = Number(emotional?.intensity || 0);
+      if (intensity >= 7) return true;
+      if (contextual?.intencion?.tipo === MESSAGE_INTENTS.CRISIS && intensity >= 6) return true;
+    }
     const intent = contextual?.intencion?.tipo;
     const intensity = Number(emotional?.intensity || 0);
     return intent === MESSAGE_INTENTS.CRISIS && intensity >= 8;
+  }
+
+  applyCrisisResponseSafety(
+    respuesta,
+    {
+      crisis = null,
+      emotional = null,
+      contextual = null,
+      profile = null,
+      userMessage = '',
+      conversationHistory = [],
+    } = {},
+  ) {
+    if (!shouldApplyCrisisResponseSafety({ crisis, contextual, emotional })) {
+      return respuesta;
+    }
+
+    let result = respuesta;
+    const intent = contextual?.intencion?.tipo;
+    const riskLevel = String(crisis?.riskLevel || 'LOW').toUpperCase();
+    const shouldAppendSafetyChecks =
+      intent === MESSAGE_INTENTS.CRISIS ||
+      ['WARNING', 'MEDIUM', 'HIGH'].includes(riskLevel);
+
+    if (shouldAppendSafetyChecks) {
+      result = this.addSafetyChecks(result, emotional, contextual, userMessage, {
+        profile,
+        conversationHistory,
+        language: profile?.preferences?.language,
+      });
+    }
+
+    result = this.enforceStructuredCrisisProtocol(result, {
+      crisis,
+      emotional,
+      contextual,
+      profile,
+      userMessage,
+      conversationHistory,
+    });
+
+    if (shouldStripCrisisConductualLanguage({ riskLevel, userMessage })) {
+      result = stripInappropriateCrisisConductualLanguage(result);
+    }
+
+    return result;
   }
 
   hasCrisisElement(text, regex) {
@@ -1095,11 +1142,17 @@ class OpenAIService {
       additions.push('¿Tienes cerca algo con lo que podrías hacerte daño ahora?');
     }
 
-    if (!this.hasCrisisElement(response, /(?:alguien\s+de\s+confianza|no\s+te\s+quedes\s+sol[ao]|contacta\s+a\s+alguien)/i)) {
+    if (
+      !this.hasCrisisElement(response, /(?:alguien\s+de\s+confianza|no\s+te\s+quedes\s+sol[ao]|contacta\s+a\s+alguien)/i)
+    ) {
       additions.push('Si puedes, contacta ahora mismo a alguien de confianza para no quedarte sola/o.');
     }
 
-    if (!this.hasCrisisElement(response, /(?:pr[oó]ximos?\s+5\s+minutos|ahora\s+mismo|paso\s+inmediato|de\s+inmediato)/i)) {
+    const isWarning = riskLevel === 'WARNING';
+    if (
+      !isWarning &&
+      !this.hasCrisisElement(response, /(?:pr[oó]ximos?\s+5\s+minutos|ahora\s+mismo|paso\s+inmediato|de\s+inmediato)/i)
+    ) {
       additions.push('Paso inmediato (5 minutos): aléjate de cualquier medio de daño, toma agua y avisa por mensaje a tu contacto de apoyo.');
     }
 
@@ -1117,7 +1170,12 @@ class OpenAIService {
 
     if (additions.length === 0) return response;
 
-    const blockTitle = riskLevel === 'HIGH' ? '🛟 Protocolo de seguridad urgente' : '🛟 Protocolo de seguridad';
+    const blockTitle =
+      riskLevel === 'HIGH'
+        ? '🛟 Protocolo de seguridad urgente'
+        : isWarning
+          ? '🛟 Chequeo de seguridad'
+          : '🛟 Protocolo de seguridad';
     const block = `${blockTitle}:\n- ${additions.join('\n- ')}`;
     return response ? `${response}\n\n${block}` : block;
   }
@@ -1144,6 +1202,15 @@ class OpenAIService {
    * - En alta intensidad, permitimos una guía un poco más completa.
    */
   integrateTherapeuticBase(modelResponse, templateInput, context = {}) {
+    if (
+      isLlmCrisisTherapeuticExtrasBlocked({
+        riskLevel: context?.crisis?.riskLevel,
+        userMessage: context?.userMessage,
+      })
+    ) {
+      return modelResponse;
+    }
+
     const therapeuticBase =
       typeof templateInput === 'string' ? templateInput : templateInput?.base || templateInput?.hint || '';
     const therapeuticHint = typeof templateInput === 'object' ? templateInput?.hint : '';
@@ -1915,7 +1982,16 @@ class OpenAIService {
    * @param {Object} activeProtocol - Protocolo activo (opcional)
    * @returns {boolean} true si se deben agregar elecciones
    */
-  shouldAddChoices(analisisEmocional, analisisContextual, activeProtocol) {
+  shouldAddChoices(analisisEmocional, analisisContextual, activeProtocol, extras = {}) {
+    if (
+      isLlmCrisisTherapeuticExtrasBlocked({
+        riskLevel: extras.crisis?.riskLevel,
+        userMessage: extras.userMessage,
+      })
+    ) {
+      return false;
+    }
+
     // No agregar elecciones si hay un protocolo activo
     if (activeProtocol) {
       return false;
@@ -2240,7 +2316,16 @@ class OpenAIService {
     console.log('📊 [TOKEN STATS] Estadísticas reseteadas');
   }
 
-  shouldIncludeTechnique(analisisEmocional, analisisContextual, mensaje) {
+  shouldIncludeTechnique(analisisEmocional, analisisContextual, mensaje, extras = {}) {
+    if (
+      isLlmCrisisTherapeuticExtrasBlocked({
+        riskLevel: extras.crisis?.riskLevel,
+        userMessage: extras.userMessage ?? mensaje?.content,
+      })
+    ) {
+      return false;
+    }
+
     const contenido = (mensaje?.content || '').toLowerCase();
     const intent = analisisContextual?.intencion?.tipo;
     const topicCategory = analisisContextual?.tema?.categoria;

@@ -7,8 +7,10 @@ import Message from '../../models/Message.js';
 import {
   generateCrisisMessage,
   generateCrisisSystemPrompt,
+  generateCrisisWarningContextMessage,
   resolveCrisisEmergencySource,
-  shouldAttachCrisisContextToPrompt
+  shouldAttachCrisisContextToPrompt,
+  shouldAttachCrisisWarningContextToPrompt,
 } from '../../constants/crisis.js';
 import {
   buildPersonalizedPrompt,
@@ -692,6 +694,22 @@ export function generarMensajesContexto(contexto) {
         `🚨 SITUACIÓN DE CRISIS DETECTADA (Nivel: ${riskLevel})\n\n${crisisMessage}\n\n` +
         `IMPORTANTE: Prioriza la seguridad del usuario. Proporciona recursos de emergencia de forma clara y directa.`
     });
+  } else if (
+    contexto.crisis?.riskLevel &&
+    shouldAttachCrisisWarningContextToPrompt(contexto.crisis.riskLevel, {
+      emotional: contexto.emotional,
+      contextual: contexto.contextual,
+      userMessage: contexto.currentMessage,
+    })
+  ) {
+    const crisisSource = resolveCrisisEmergencySource(contexto.crisis);
+    const warningMessage = generateCrisisWarningContextMessage(crisisSource);
+    messages.push({
+      role: 'system',
+      content:
+        `⚠️ MALESTAR ELEVADO (Nivel: WARNING)\n\n${warningMessage}\n\n` +
+        `IMPORTANTE: Contención y seguridad presente; sin técnicas ni planes conductuales.`
+    });
   }
   return messages;
 }
@@ -1080,6 +1098,19 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
       resolveCrisisEmergencySource(contexto.crisis),
     );
     systemMessage = `${crisisPrompt}\n\n---\n\n${systemMessage}`;
+  } else if (
+    contexto.crisis?.riskLevel &&
+    shouldAttachCrisisWarningContextToPrompt(contexto.crisis.riskLevel, {
+      emotional: contexto.emotional,
+      contextual: contexto.contextual,
+      userMessage: contexto.currentMessage,
+    })
+  ) {
+    const warningMessage = generateCrisisWarningContextMessage(
+      resolveCrisisEmergencySource(contexto.crisis),
+    );
+    systemMessage =
+      `⚠️ MALESTAR ELEVADO (WARNING)\n${warningMessage}\n\n---\n\n${systemMessage}`;
   }
 
   return { systemMessage, contextMessages };

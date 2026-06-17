@@ -114,6 +114,58 @@ describe('chatTurnEnhancementsService', () => {
     expect(payload.suggestions).toEqual([]);
   });
 
+  it('planChatTurnEnhancements omite sugerencias y TCC en crisis MEDIUM', async () => {
+    const result = await planChatTurnEnhancements({
+      userId: '507f1f77bcf86cd799439011',
+      conversationId: '507f1f77bcf86cd799439012',
+      userContent: 'no quiero seguir',
+      conversationHistory: [],
+      emotionalAnalysis: { mainEmotion: 'tristeza', intensity: 9 },
+      contextualAnalysis: { intencion: { tipo: 'CRISIS' } },
+      riskLevel: 'MEDIUM',
+      sessionIntention: null,
+      language: 'es',
+    });
+
+    expect(mockPlanChatActionSuggestions).not.toHaveBeenCalled();
+    expect(mockPlanChatTccLite).not.toHaveBeenCalled();
+    expect(result.suggestionPlan.shouldShow).toBe(false);
+    expect(result.tccLitePlan.active).toBe(false);
+  });
+
+  it('buildClientTurnPayload vacía extras en crisis', () => {
+    const payload = buildClientTurnPayload({
+      tccLitePlan: { active: true, step: 'capture_thought' },
+      suggestionPlan: {
+        shouldShow: true,
+        formatted: [{ id: 'a' }],
+        rankingPersonalized: true,
+      },
+      language: 'es',
+      riskLevel: 'MEDIUM',
+    });
+    expect(payload.suggestions).toEqual([]);
+    expect(payload.suggestionsPersonalized).toBe(false);
+    expect(mockToTccLiteClientPayload).toHaveBeenCalledWith({ active: false }, 'es');
+  });
+
+  it('finalizeChatTurnEnhancements no registra sugerencias en crisis', async () => {
+    await finalizeChatTurnEnhancements({
+      conversationId: '507f1f77bcf86cd799439012',
+      userId: '507f1f77bcf86cd799439011',
+      assistantMessageId: '507f1f77bcf86cd799439013',
+      tccLitePlan: { active: false },
+      suggestionPlan: { formatted: [{ id: 'grief_roadmap' }] },
+      emotionalAnalysis: {},
+      contextualAnalysis: {},
+      userContent: 'no aguanto más',
+      riskLevel: 'HIGH',
+    });
+
+    expect(mockSaveTccLiteState).toHaveBeenCalled();
+    expect(mockRecordShown).not.toHaveBeenCalled();
+  });
+
   it('finalizeChatTurnEnhancements persiste TCC y telemetría', async () => {
     await finalizeChatTurnEnhancements({
       conversationId: '507f1f77bcf86cd799439012',

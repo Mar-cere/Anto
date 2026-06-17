@@ -2,11 +2,13 @@ import { describe, expect, it } from '@jest/globals';
 import {
   buildCrisisActionDecision,
   evaluateSuicideRisk,
+  generateCrisisWarningContextMessage,
   hasExplicitSuicidalOrSelfHarmLexicon,
   normalizeStoredCrisisRiskLevel,
   shouldAttachCrisisContextToPrompt,
+  shouldAttachCrisisWarningContextToPrompt,
   shouldSkipEmergencyPhoneNumbersInSafetyAppend,
-  shouldUseCompactCrisisSafetyAppend
+  shouldUseCompactCrisisSafetyAppend,
 } from '../../../constants/crisis.js';
 
 describe('normalizeStoredCrisisRiskLevel', () => {
@@ -24,6 +26,38 @@ describe('shouldAttachCrisisContextToPrompt', () => {
     expect(shouldAttachCrisisContextToPrompt('MEDIUM')).toBe(true);
     expect(shouldAttachCrisisContextToPrompt('WARNING')).toBe(false);
     expect(shouldAttachCrisisContextToPrompt('LOW')).toBe(false);
+  });
+});
+
+describe('shouldAttachCrisisWarningContextToPrompt', () => {
+  it('activa en WARNING con malestar alto sin léxico explícito', () => {
+    expect(
+      shouldAttachCrisisWarningContextToPrompt('WARNING', {
+        emotional: { intensity: 8 },
+        contextual: { intencion: { tipo: 'CRISIS' } },
+        userMessage: 'no aguanto más',
+      }),
+    ).toBe(true);
+    expect(
+      shouldAttachCrisisWarningContextToPrompt('WARNING', {
+        emotional: { intensity: 4 },
+        contextual: {},
+        userMessage: 'estoy cansado',
+      }),
+    ).toBe(false);
+    expect(
+      shouldAttachCrisisWarningContextToPrompt('WARNING', {
+        emotional: { intensity: 8 },
+        contextual: {},
+        userMessage: 'quiero morir',
+      }),
+    ).toBe(false);
+  });
+
+  it('generateCrisisWarningContextMessage no menciona plan de seguridad', () => {
+    const msg = generateCrisisWarningContextMessage('GENERAL');
+    expect(msg).toContain('¿Te sientes a salvo');
+    expect(msg).not.toMatch(/plan de seguridad/i);
   });
 });
 

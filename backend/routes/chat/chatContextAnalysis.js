@@ -5,6 +5,7 @@
 
 import chatInterventionGraphService from '../../services/chatInterventionGraphService.js';
 import { shouldBypassTccSuggestionCadence } from '../../services/actionSuggestionService.js';
+import { isLlmCrisisTherapeuticExtrasBlocked } from '../../utils/chatObservationalContext.js';
 
 export function detectEmotionalEscalation(conversationHistory, currentEmotionalAnalysis) {
   if (!conversationHistory || conversationHistory.length < 2) return false;
@@ -117,10 +118,9 @@ export function detectSilenceAfterNegative(conversationHistory) {
   return false;
 }
 
-/** Crisis / urgencia / giro emocional: puede mostrar otro bloque en la misma sesión. */
+/** Crisis / urgencia / giro emocional: puede mostrar otro bloque en la misma sesión (no en crisis elevada). */
 export function isActionSuggestionSafetyException(emotionalAnalysis, contextualAnalysis, conversationHistory) {
   if (
-    contextualAnalysis?.intencion?.tipo === 'CRISIS' ||
     contextualAnalysis?.urgencia === 'alta' ||
     emotionalAnalysis?.requiresAttention
   ) {
@@ -226,7 +226,14 @@ export async function shouldShowChatActionSuggestions({
   userId,
   conversationId,
   userContent = '',
+  riskLevel = 'LOW',
 }) {
+  if (isLlmCrisisTherapeuticExtrasBlocked({ riskLevel, userMessage: userContent })) {
+    return false;
+  }
+  if (contextualAnalysis?.intencion?.tipo === 'CRISIS') {
+    return false;
+  }
   if (hasActionSuggestionRejection(conversationHistory)) return false;
   if (shouldSuppressLowRelevanceSuggestions(userContent)) return false;
 
