@@ -84,3 +84,4 @@ if (failed > 0) {
   process.exit(1);
 }
 console.log('✅ Smoke TCC lite OK — listo para prueba en dispositivo\n');
+process.exit(0);
