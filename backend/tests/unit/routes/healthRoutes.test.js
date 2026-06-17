@@ -68,6 +68,19 @@ describe('Health Routes', () => {
         expect(response.body).toHaveProperty('memory');
         expect(response.body).toHaveProperty('node');
         expect(response.body).toHaveProperty('services');
+        expect(response.body).toHaveProperty('chatFeatures');
+        expect(response.body.chatFeatures.crisisRouting).toEqual(
+          expect.objectContaining({
+            hardStop: expect.any(Number),
+            llmPath: expect.any(Number),
+            sanitizedResponses: expect.any(Number),
+            byRiskLevel: expect.any(Object),
+            byTransport: expect.any(Object),
+            sanitizeHits: expect.any(Object),
+            sanitizedByTransport: expect.any(Object),
+            sanitizedByRiskLevel: expect.any(Object),
+          }),
+        );
         expect(response.body.memory).toHaveProperty('used');
         expect(response.body.memory).toHaveProperty('total');
         expect(response.body.memory).toHaveProperty('rss');

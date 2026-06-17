@@ -285,8 +285,18 @@ export function shouldAttachCrisisWarningContextToPrompt(
 /**
  * Contexto de sistema breve para WARNING (validación + seguridad presente, sin tono 911).
  */
-export function generateCrisisWarningContextMessage(countryOrSource = 'GENERAL') {
+export function generateCrisisWarningContextMessage(countryOrSource = 'GENERAL', language = 'es') {
   const lines = getEmergencyLines(countryOrSource);
+  const lang = resolveCrisisProtocolLanguage(language);
+  if (lang === 'en') {
+    return [
+      'Elevated distress signals (WARNING level, no explicit ideation in this message).',
+      'Prioritize brief validation and check how they are right now.',
+      'Are you safe right now?',
+      'Listen without pushing techniques, habits, or future plans.',
+      `If distress rises, they can use the prevention line: ${lines.SUICIDE_PREVENTION}.`,
+    ].join(' ');
+  }
   return [
     'Señales de malestar elevado (nivel WARNING, sin ideación explícita en el mensaje).',
     'Prioriza validación breve y comprobar cómo está ahora.',
@@ -294,6 +304,18 @@ export function generateCrisisWarningContextMessage(countryOrSource = 'GENERAL')
     'Escucha sin presionar técnicas, hábitos ni planes a futuro.',
     `Si el malestar sube, puede usar la línea de prevención: ${lines.SUICIDE_PREVENTION}.`,
   ].join(' ');
+}
+
+export function getCrisisWarningPromptHeader(language = 'es') {
+  return resolveCrisisProtocolLanguage(language) === 'en'
+    ? '⚠️ ELEVATED DISTRESS (WARNING)'
+    : '⚠️ MALESTAR ELEVADO (WARNING)';
+}
+
+export function getCrisisWarningPromptFooter(language = 'es') {
+  return resolveCrisisProtocolLanguage(language) === 'en'
+    ? 'IMPORTANT: Containment and present-moment safety; no techniques or behavioral plans.'
+    : 'IMPORTANTE: Contención y seguridad presente; sin técnicas ni planes conductuales.';
 }
 
 /**
@@ -904,5 +926,163 @@ export function generateCrisisMediumResponseConstraints(language = 'es') {
     'PROHIBIDO: técnicas, hábitos, tareas, planes a futuro, opciones A/B, plan de seguridad co-creado.',
     'Longitud orientativa: 120–280 palabras.',
   ].join('\n');
+}
+
+function resolveCrisisProtocolLanguage(language = 'es') {
+  return String(language || 'es').trim().toLowerCase() === 'en' ? 'en' : 'es';
+}
+
+const STRUCTURED_CRISIS_PROTOCOL_COPY = {
+  es: {
+    safetyQuestion: '¿Estás a salvo en este momento?',
+    meansOfHarmQuestion: '¿Tienes cerca algo con lo que podrías hacerte daño ahora?',
+    trustedContact:
+      'Si puedes, contacta ahora mismo a alguien de confianza para no quedarte sola/o.',
+    immediateStep:
+      'Paso inmediato (5 minutos): aléjate de cualquier medio de daño, toma agua y avisa por mensaje a tu contacto de apoyo.',
+    emergencyResourcesHeader: 'Recursos de ayuda inmediata:',
+    blockTitle: {
+      high: '🛟 Protocolo de seguridad urgente',
+      warning: '🛟 Chequeo de seguridad',
+      default: '🛟 Protocolo de seguridad',
+    },
+    presence: {
+      safety: /(?:a salvo|segur[oa]\s+en\s+este\s+momento|peligro\s+inmediato)/i,
+      meansOfHarm:
+        /(?:hacerte daño|lastimarte|medio[s]?\s+de\s+daño|algo\s+cerca\s+con\s+lo\s+que)/i,
+      trustedContact:
+        /(?:alguien\s+de\s+confianza|no\s+te\s+quedes\s+sol[ao]|contacta\s+a\s+alguien)/i,
+      immediateStep:
+        /(?:pr[oó]ximos?\s+5\s+minutos|ahora\s+mismo|paso\s+inmediato|de\s+inmediato)/i,
+      emergencyResources:
+        /(?:recursos?\s+de\s+emergencia|l[ií]nea\s+de\s+ayuda|linea\s+de\s+ayuda|988|911|112|emergencias)/i,
+    },
+  },
+  en: {
+    safetyQuestion: 'Are you safe right now?',
+    meansOfHarmQuestion:
+      'Do you have access to anything you could use to hurt yourself right now?',
+    trustedContact:
+      'If you can, reach out right now to someone you trust so you are not alone.',
+    immediateStep:
+      'Immediate step (5 minutes): move away from anything you could use to hurt yourself, take water, and text your support contact.',
+    emergencyResourcesHeader: 'Immediate help resources:',
+    blockTitle: {
+      high: '🛟 Urgent safety protocol',
+      warning: '🛟 Safety check',
+      default: '🛟 Safety protocol',
+    },
+    presence: {
+      safety: /(?:safe\s+right\s+now|in\s+immediate\s+danger|are\s+you\s+safe)/i,
+      meansOfHarm:
+        /(?:hurt\s+yourself|harm\s+yourself|means?\s+of\s+harm|something\s+(?:nearby|close).{0,24}use)/i,
+      trustedContact:
+        /(?:someone\s+you\s+trust|not\s+alone|reach\s+out\s+to\s+someone)/i,
+      immediateStep:
+        /(?:next\s+5\s+minutes|right\s+now|immediate\s+step|immediately)/i,
+      emergencyResources:
+        /(?:emergency\s+(?:line|services|resources|number)|crisis\s+line|helpline|988|911|112)/i,
+    },
+  },
+};
+
+/** Copy localizado para el append estructurado post-LLM en crisis. */
+export function getStructuredCrisisProtocolCopy(language = 'es') {
+  const lang = resolveCrisisProtocolLanguage(language);
+  return STRUCTURED_CRISIS_PROTOCOL_COPY[lang];
+}
+
+/** Detecta si la respuesta ya incluye un elemento del protocolo (ES o EN). */
+export function hasStructuredCrisisProtocolElement(text, elementKey) {
+  if (!text || typeof text !== 'string') return false;
+  for (const lang of ['es', 'en']) {
+    const pattern = STRUCTURED_CRISIS_PROTOCOL_COPY[lang]?.presence?.[elementKey];
+    if (pattern?.test(text)) return true;
+  }
+  return false;
+}
+
+const CRISIS_SAFETY_APPEND_COPY = {
+  es: {
+    chatLimits:
+      '\n\n📱 **Sobre este chat:** No puedo hacer llamadas ni enviar mensajes por ti. Si tienes contactos de emergencia en la app, solo reciben avisos cuando esa función se activa desde la aplicación.',
+    compactHeader: '\n\n💙 **Comprobemos cómo estás ahora:**\n',
+    compactQuestions: [
+      '• ¿Te sientes a salvo en este momento?\n',
+      '• ¿Hay algo cerca con lo que te podrías hacer daño ahora mismo?\n',
+    ],
+    fullHeader: '\n\n💙 **Preguntas de seguridad:**\n',
+    fullQuestions: [
+      '• ¿Estás a salvo en este momento?\n',
+      '• ¿Hay alguien contigo o puedes contactar a alguien de confianza?\n',
+      '• ¿Has pensado en hacerte daño a ti mismo o a otros?\n',
+    ],
+    emergencyCompact: (lines) =>
+      `\n\n🚨 **Recursos si necesitas ayuda humana:**\n${lines}\n• **Contactos en la app:** solo si tú los activas desde la configuración.`,
+    emergencyFull: (lines) =>
+      `\n\n🚨 **Recursos de emergencia disponibles:**\n${lines}\n• **Contactos de emergencia:** puedes activarlos desde la app si los configuraste.`,
+    notAlone: '\n\nRecuerda que no estás solo/a. Hay personas que pueden ayudarte.',
+    skipHeavyPhones:
+      '\n\nSi en algún momento sientes que no puedes seguir solo/a con esto, busca apoyo profesional o una línea de crisis en tu país. También puedes usar los contactos de emergencia de la app si los tienes configurados.',
+    professionalReminder:
+      '\n\n💚 **Recuerda:** Es importante que busques apoyo profesional si estos sentimientos persisten o empeoran.',
+  },
+  en: {
+    chatLimits:
+      '\n\n📱 **About this chat:** I cannot make calls or send messages for you. If you have emergency contacts in the app, they only receive alerts when you activate that feature in settings.',
+    compactHeader: '\n\n💙 **Let us check how you are right now:**\n',
+    compactQuestions: [
+      '• Do you feel safe right now?\n',
+      '• Is there anything nearby you could use to hurt yourself right now?\n',
+    ],
+    fullHeader: '\n\n💙 **Safety questions:**\n',
+    fullQuestions: [
+      '• Are you safe right now?\n',
+      '• Is someone with you or can you contact someone you trust?\n',
+      '• Have you thought about hurting yourself or others?\n',
+    ],
+    emergencyCompact: (lines) =>
+      `\n\n🚨 **Resources if you need human help:**\n${lines}\n• **In-app contacts:** only if you activate them in settings.`,
+    emergencyFull: (lines) =>
+      `\n\n🚨 **Emergency resources available:**\n${lines}\n• **Emergency contacts:** you can activate them from the app if you configured them.`,
+    notAlone: '\n\nRemember you are not alone. People can help you.',
+    skipHeavyPhones:
+      '\n\nIf at any point you feel you cannot cope alone, seek professional support or a crisis line in your country. You can also use in-app emergency contacts if configured.',
+    professionalReminder:
+      '\n\n💚 **Remember:** It is important to seek professional support if these feelings persist or worsen.',
+  },
+};
+
+/** Bloque de seguridad post-LLM (addSafetyChecks) localizado. */
+export function buildCrisisSafetyAppendText({
+  language = 'es',
+  intensity = 0,
+  compact = false,
+  skipHeavyPhones = false,
+  emergencyLines = '',
+} = {}) {
+  const copy = CRISIS_SAFETY_APPEND_COPY[resolveCrisisProtocolLanguage(language)];
+  let safetyText = '';
+
+  if (intensity >= 8) {
+    safetyText += copy.chatLimits;
+    safetyText += compact ? copy.compactHeader : copy.fullHeader;
+    safetyText += (compact ? copy.compactQuestions : copy.fullQuestions).join('');
+  }
+
+  if (intensity >= 9 && !skipHeavyPhones) {
+    safetyText += compact
+      ? copy.emergencyCompact(emergencyLines)
+      : copy.emergencyFull(emergencyLines);
+    safetyText += copy.notAlone;
+  } else if (intensity >= 9 && skipHeavyPhones) {
+    safetyText += copy.skipHeavyPhones;
+  }
+
+  if (intensity >= 8) {
+    safetyText += copy.professionalReminder;
+  }
+
+  return safetyText;
 }
 

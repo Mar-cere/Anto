@@ -165,7 +165,9 @@ class MetricsService {
         sanitizedResponses: 0,
         byRiskLevel: {},
         byTransport: {},
-        sanitizeHits: {}
+        sanitizeHits: {},
+        sanitizedByTransport: {},
+        sanitizedByRiskLevel: {},
       }
     };
 
@@ -459,6 +461,10 @@ class MetricsService {
       case 'crisis_llm_sanitized': {
         const cr = this.inMemoryMetrics.crisisRouting;
         cr.sanitizedResponses++;
+        const transport = String(data?.transport || 'unknown');
+        cr.sanitizedByTransport[transport] = (cr.sanitizedByTransport[transport] || 0) + 1;
+        const rl = String(data?.riskLevel || 'UNKNOWN').toUpperCase();
+        cr.sanitizedByRiskLevel[rl] = (cr.sanitizedByRiskLevel[rl] || 0) + 1;
         const hits = Array.isArray(data?.hits) ? data.hits : [];
         for (const hit of hits) {
           cr.sanitizeHits[hit] = (cr.sanitizeHits[hit] || 0) + 1;
@@ -634,7 +640,17 @@ class MetricsService {
    * Contadores en memoria del enrutamiento de crisis (hard-stop vs LLM).
    */
   getCrisisRoutingSnapshot() {
-    return { ...this.inMemoryMetrics.crisisRouting };
+    const cr = this.inMemoryMetrics.crisisRouting;
+    return {
+      hardStop: cr.hardStop,
+      llmPath: cr.llmPath,
+      sanitizedResponses: cr.sanitizedResponses,
+      byRiskLevel: { ...cr.byRiskLevel },
+      byTransport: { ...cr.byTransport },
+      sanitizeHits: { ...cr.sanitizeHits },
+      sanitizedByTransport: { ...cr.sanitizedByTransport },
+      sanitizedByRiskLevel: { ...cr.sanitizedByRiskLevel },
+    };
   }
 
   _bumpCrisisRouting(counterKey, data = {}) {

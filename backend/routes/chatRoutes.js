@@ -1501,6 +1501,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           digitalPhenotypePromptSnippet: promptSnippets.digitalPhenotypePromptSnippet,
           recentAbcPromptSnippet: promptSnippets.recentAbcPromptSnippet,
           personalPatternRagPromptSnippet: promptSnippets.personalPatternRagPromptSnippet,
+          crisisMetricTransport: req.query.stream === 'true' ? 'sse' : 'http',
         };
 
         const crisisHardStopContent = shouldHardStopCrisisLlm({

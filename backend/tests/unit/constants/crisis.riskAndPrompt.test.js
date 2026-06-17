@@ -6,6 +6,10 @@ import {
   generateCrisisSystemPrompt,
   generateCrisisMediumResponseConstraints,
   generateCrisisWarningContextMessage,
+  getStructuredCrisisProtocolCopy,
+  hasStructuredCrisisProtocolElement,
+  buildCrisisSafetyAppendText,
+  getCrisisWarningPromptHeader,
   hasExplicitSuicidalOrSelfHarmLexicon,
   normalizeStoredCrisisRiskLevel,
   shouldAttachCrisisContextToPrompt,
@@ -82,6 +86,13 @@ describe('shouldAttachCrisisWarningContextToPrompt', () => {
     expect(msg).toContain('¿Te sientes a salvo');
     expect(msg).not.toMatch(/plan de seguridad/i);
   });
+
+  it('generateCrisisWarningContextMessage respeta idioma EN', () => {
+    const msg = generateCrisisWarningContextMessage('GENERAL', 'en');
+    expect(msg).toMatch(/Are you safe right now/i);
+    expect(msg).not.toMatch(/¿Te sientes a salvo/);
+    expect(getCrisisWarningPromptHeader('en')).toMatch(/ELEVATED DISTRESS/);
+  });
 });
 
 describe('generateCrisisMediumResponseConstraints', () => {
@@ -104,6 +115,34 @@ describe('generateCrisisMediumResponseConstraints', () => {
     const mediumEn = generateCrisisSystemPrompt('MEDIUM', 'GENERAL', 'en');
     expect(mediumEn).toMatch(/MANDATORY RESPONSE FORMAT \(MEDIUM\)/);
     expect(mediumEn).not.toMatch(/FORMATO DE RESPUESTA OBLIGATORIO/);
+  });
+});
+
+describe('getStructuredCrisisProtocolCopy', () => {
+  it('devuelve copy en español e inglés', () => {
+    expect(getStructuredCrisisProtocolCopy('es').safetyQuestion).toMatch(/¿Estás a salvo/);
+    expect(getStructuredCrisisProtocolCopy('en').safetyQuestion).toMatch(/Are you safe/i);
+  });
+
+  it('hasStructuredCrisisProtocolElement detecta en ambos idiomas', () => {
+    expect(hasStructuredCrisisProtocolElement('Are you safe right now?', 'safety')).toBe(true);
+    expect(hasStructuredCrisisProtocolElement('¿Estás a salvo en este momento?', 'safety')).toBe(
+      true,
+    );
+    expect(hasStructuredCrisisProtocolElement('Cuéntame más', 'safety')).toBe(false);
+  });
+
+  it('buildCrisisSafetyAppendText genera bloque en inglés', () => {
+    const text = buildCrisisSafetyAppendText({
+      language: 'en',
+      intensity: 8,
+      compact: false,
+      skipHeavyPhones: true,
+      emergencyLines: '',
+    });
+    expect(text).toMatch(/About this chat/i);
+    expect(text).toMatch(/Are you safe right now/i);
+    expect(text).not.toMatch(/¿Estás a salvo/);
   });
 });
 

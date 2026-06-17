@@ -42,6 +42,8 @@ await jest.unstable_mockModule('../../../services/metricsService.js', () => ({
       byRiskLevel: { HIGH: 2, MEDIUM: 3 },
       byTransport: { http: 4 },
       sanitizeHits: { grounding_invite: 1 },
+      sanitizedByTransport: { http: 1 },
+      sanitizedByRiskLevel: { MEDIUM: 1 },
     }),
   },
 }));
@@ -121,6 +123,8 @@ describe('healthProbeService', () => {
         byRiskLevel: { HIGH: 2, MEDIUM: 3 },
         byTransport: { http: 4 },
         sanitizeHits: { grounding_invite: 1 },
+        sanitizedByTransport: { http: 1 },
+        sanitizedByRiskLevel: { MEDIUM: 1 },
       },
     });
     expect(snap.memory).toHaveProperty('used');

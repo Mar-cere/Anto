@@ -8,6 +8,8 @@ import {
   generateCrisisMessage,
   generateCrisisSystemPrompt,
   generateCrisisWarningContextMessage,
+  getCrisisWarningPromptHeader,
+  getCrisisWarningPromptFooter,
   resolveCrisisEmergencySource,
   shouldAttachCrisisContextToPrompt,
   shouldAttachCrisisWarningContextToPrompt,
@@ -703,12 +705,13 @@ export function generarMensajesContexto(contexto) {
     })
   ) {
     const crisisSource = resolveCrisisEmergencySource(contexto.crisis);
-    const warningMessage = generateCrisisWarningContextMessage(crisisSource);
+    const warningLang = resolveChatLanguage(contexto);
+    const warningMessage = generateCrisisWarningContextMessage(crisisSource, warningLang);
     messages.push({
       role: 'system',
       content:
-        `⚠️ MALESTAR ELEVADO (Nivel: WARNING)\n\n${warningMessage}\n\n` +
-        `IMPORTANTE: Contención y seguridad presente; sin técnicas ni planes conductuales.`
+        `${getCrisisWarningPromptHeader(warningLang)} (Nivel: WARNING)\n\n${warningMessage}\n\n` +
+        getCrisisWarningPromptFooter(warningLang),
     });
   }
   return messages;
@@ -1109,9 +1112,10 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   ) {
     const warningMessage = generateCrisisWarningContextMessage(
       resolveCrisisEmergencySource(contexto.crisis),
+      language,
     );
     systemMessage =
-      `⚠️ MALESTAR ELEVADO (WARNING)\n${warningMessage}\n\n---\n\n${systemMessage}`;
+      `${getCrisisWarningPromptHeader(language)}\n${warningMessage}\n\n---\n\n${systemMessage}`;
   }
 
   return { systemMessage, contextMessages };

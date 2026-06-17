@@ -428,6 +428,7 @@ export async function sendGuestMessage(guestSession, contentRaw) {
       userMessage: content.trim(),
       country: 'GENERAL',
     }),
+    crisisMetricTransport: 'guest',
   };
 
   const crisisHardStopContent = shouldHardStopCrisisLlm({

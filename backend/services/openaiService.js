@@ -33,7 +33,10 @@ import {
 } from '../constants/therapeuticTechniques.js';
 import {
   shouldSkipEmergencyPhoneNumbersInSafetyAppend,
-  shouldUseCompactCrisisSafetyAppend
+  shouldUseCompactCrisisSafetyAppend,
+  getStructuredCrisisProtocolCopy,
+  hasStructuredCrisisProtocolElement,
+  buildCrisisSafetyAppendText,
 } from '../constants/crisis.js';
 import { isLlmCrisisTherapeuticExtrasBlocked } from '../utils/chatObservationalContext.js';
 import {
@@ -634,6 +637,7 @@ class OpenAIService {
         profile: perfilUsuario,
         userMessage: contenidoNormalizado,
         conversationHistory: contexto.safetyHistory || [],
+        transport: this.resolveCrisisMetricTransport(contexto),
       });
 
       // 12. NUEVO: Agregar elecciones al final de la respuesta si es apropiado
@@ -846,7 +850,8 @@ class OpenAIService {
           forceShortMode: contexto.forceShortMode,
           forceFactualMode: contexto.forceFactualMode,
           sessionRetention: contexto.sessionRetention,
-          conversationPattern: contexto.conversationPattern
+          conversationPattern: contexto.conversationPattern,
+          crisisMetricTransport: this.resolveCrisisMetricTransport(contexto),
         });
         yield {
           type: 'done',
@@ -901,7 +906,8 @@ class OpenAIService {
         forceShortMode: contexto.forceShortMode,
         forceFactualMode: contexto.forceFactualMode,
         sessionRetention: contexto.sessionRetention,
-        conversationPattern: contexto.conversationPattern
+        conversationPattern: contexto.conversationPattern,
+        crisisMetricTransport: this.resolveCrisisMetricTransport(contexto),
       });
       yield { type: 'done', content: result.content, context: { ...result.context, modelRouting } };
       return;
@@ -919,7 +925,8 @@ class OpenAIService {
       forceShortMode: contexto.forceShortMode,
       forceFactualMode: contexto.forceFactualMode,
       sessionRetention: contexto.sessionRetention,
-      conversationPattern: contexto.conversationPattern
+      conversationPattern: contexto.conversationPattern,
+      crisisMetricTransport: this.resolveCrisisMetricTransport(contexto),
     });
     yield { type: 'done', content: result.content, context: { ...result.context, modelRouting } };
   }
@@ -940,7 +947,8 @@ class OpenAIService {
     forceShortMode = false,
     forceFactualMode = false,
     sessionRetention = null,
-    conversationPattern = null
+    conversationPattern = null,
+    crisisMetricTransport = 'unknown',
   }) {
     let activeProtocol = therapeuticProtocolService.getActiveProtocol(mensaje.userId);
     let currentIntervention = null;
@@ -1018,6 +1026,7 @@ class OpenAIService {
       profile: perfilUsuario,
       userMessage: contenidoNormalizado,
       conversationHistory,
+      transport: crisisMetricTransport,
     });
 
     let respuestaConElecciones = respuestaConSeguridad;
@@ -1077,6 +1086,17 @@ class OpenAIService {
     return intent === MESSAGE_INTENTS.CRISIS && intensity >= 8;
   }
 
+  resolveCrisisMetricTransport(contexto = {}) {
+    if (typeof contexto.crisisMetricTransport === 'string' && contexto.crisisMetricTransport.trim()) {
+      return contexto.crisisMetricTransport.trim();
+    }
+    const source = String(contexto._promptTelemetry?.source || '').toLowerCase();
+    if (source === 'socket') return 'socket';
+    if (source === 'guest') return 'guest';
+    if (source === 'http') return 'http';
+    return 'unknown';
+  }
+
   applyCrisisResponseSafety(
     respuesta,
     {
@@ -1086,6 +1106,7 @@ class OpenAIService {
       profile = null,
       userMessage = '',
       conversationHistory = [],
+      transport = 'unknown',
     } = {},
   ) {
     if (!shouldApplyCrisisResponseSafety({ crisis, contextual, emotional })) {
@@ -1122,6 +1143,7 @@ class OpenAIService {
         .recordMetric('crisis_llm_sanitized', {
           riskLevel,
           hits: sanitized.hits,
+          transport,
         })
         .catch(() => {});
     }
@@ -1155,53 +1177,49 @@ class OpenAIService {
 
     const riskLevel = String(crisis?.riskLevel || '').toUpperCase();
     const response = String(respuesta || '').trim();
+    const language = profile?.preferences?.language || 'es';
+    const copy = getStructuredCrisisProtocolCopy(language);
     const additions = [];
 
-    if (!this.hasCrisisElement(response, /(?:a salvo|segur[oa]\s+en\s+este\s+momento|peligro\s+inmediato)/i)) {
-      additions.push('¿Estás a salvo en este momento?');
+    if (!hasStructuredCrisisProtocolElement(response, 'safety')) {
+      additions.push(copy.safetyQuestion);
     }
 
     if (
       riskLevel === 'HIGH' &&
-      !this.hasCrisisElement(response, /(?:hacerte daño|lastimarte|medio[s]?\s+de\s+daño|algo\s+cerca\s+con\s+lo\s+que)/i)
+      !hasStructuredCrisisProtocolElement(response, 'meansOfHarm')
     ) {
-      additions.push('¿Tienes cerca algo con lo que podrías hacerte daño ahora?');
+      additions.push(copy.meansOfHarmQuestion);
     }
 
-    if (
-      !this.hasCrisisElement(response, /(?:alguien\s+de\s+confianza|no\s+te\s+quedes\s+sol[ao]|contacta\s+a\s+alguien)/i)
-    ) {
-      additions.push('Si puedes, contacta ahora mismo a alguien de confianza para no quedarte sola/o.');
+    if (!hasStructuredCrisisProtocolElement(response, 'trustedContact')) {
+      additions.push(copy.trustedContact);
     }
 
     const isWarning = riskLevel === 'WARNING';
-    if (
-      !isWarning &&
-      !this.hasCrisisElement(response, /(?:pr[oó]ximos?\s+5\s+minutos|ahora\s+mismo|paso\s+inmediato|de\s+inmediato)/i)
-    ) {
-      additions.push('Paso inmediato (5 minutos): aléjate de cualquier medio de daño, toma agua y avisa por mensaje a tu contacto de apoyo.');
+    if (!isWarning && !hasStructuredCrisisProtocolElement(response, 'immediateStep')) {
+      additions.push(copy.immediateStep);
     }
 
     const skipHeavyPhones = shouldSkipEmergencyPhoneNumbersInSafetyAppend(userMessage);
-    const hasEmergencyResources = this.hasCrisisElement(
-      response,
-      /(?:recursos?\s+de\s+emergencia|l[ií]nea\s+de\s+ayuda|linea\s+de\s+ayuda|988|911|112|emergencias)/i
-    );
-    if ((riskLevel === 'MEDIUM' || riskLevel === 'HIGH') && !skipHeavyPhones && !hasEmergencyResources) {
+    if (
+      (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') &&
+      !skipHeavyPhones &&
+      !hasStructuredCrisisProtocolElement(response, 'emergencyResources')
+    ) {
       const emergencyInfo = resolveEmergencyInfoFromPreferences(profile?.preferences, profile?.phone || null);
-      const language = profile?.preferences?.language || 'es';
       const emergencyLines = formatEmergencyNumbers(emergencyInfo, language);
-      additions.push(`Recursos de ayuda inmediata:\n${emergencyLines}`);
+      additions.push(`${copy.emergencyResourcesHeader}\n${emergencyLines}`);
     }
 
     if (additions.length === 0) return response;
 
     const blockTitle =
       riskLevel === 'HIGH'
-        ? '🛟 Protocolo de seguridad urgente'
+        ? copy.blockTitle.high
         : isWarning
-          ? '🛟 Chequeo de seguridad'
-          : '🛟 Protocolo de seguridad';
+          ? copy.blockTitle.warning
+          : copy.blockTitle.default;
     const block = `${blockTitle}:\n- ${additions.join('\n- ')}`;
     return response ? `${response}\n\n${block}` : block;
   }
@@ -2059,7 +2077,6 @@ class OpenAIService {
     options = {}
   ) {
     const intensity = analisisEmocional?.intensity || DEFAULT_VALUES.INTENSITY;
-    let safetyText = '';
     const profile = options.profile || null;
     const conversationHistory = options.conversationHistory || [];
 
@@ -2076,39 +2093,13 @@ class OpenAIService {
     const lang = options.language || profile?.preferences?.language || 'es';
     const emergencyLines = formatEmergencyNumbers(emergencyInfo, lang);
 
-    // Si la intensidad es >= 8, aclarar límites del asistente (reduce miedo a "¿llamaste a mis contactos?")
-    if (intensity >= 8) {
-      safetyText +=
-        '\n\n📱 **Sobre este chat:** No puedo hacer llamadas ni enviar mensajes por ti. Si tienes contactos de emergencia en la app, solo reciben avisos cuando esa función se activa desde la aplicación.';
-    }
-
-    // Preguntas de seguridad (versión breve si el usuario ya se calmó y habla de un patrón histórico)
-    if (intensity >= 8) {
-      if (compact) {
-        safetyText += '\n\n💙 **Comprobemos cómo estás ahora:**\n';
-        safetyText += '• ¿Te sientes a salvo en este momento?\n';
-        safetyText += '• ¿Hay algo cerca con lo que te podrías hacer daño ahora mismo?\n';
-      } else {
-        safetyText += '\n\n💙 **Preguntas de seguridad:**\n';
-        safetyText += '• ¿Estás a salvo en este momento?\n';
-        safetyText += '• ¿Hay alguien contigo o puedes contactar a alguien de confianza?\n';
-        safetyText += '• ¿Has pensado en hacerte daño a ti mismo o a otros?\n';
-      }
-    }
-
-    if (intensity >= 9 && !skipHeavyPhones) {
-      safetyText += compact
-        ? `\n\n🚨 **Recursos si necesitas ayuda humana:**\n${emergencyLines}\n• **Contactos en la app:** solo si tú los activas desde la configuración.`
-        : `\n\n🚨 **Recursos de emergencia disponibles:**\n${emergencyLines}\n• **Contactos de emergencia:** puedes activarlos desde la app si los configuraste.`;
-      safetyText += '\n\nRecuerda que no estás solo/a. Hay personas que pueden ayudarte.';
-    } else if (intensity >= 9 && skipHeavyPhones) {
-      safetyText +=
-        '\n\nSi en algún momento sientes que no puedes seguir solo/a con esto, busca apoyo profesional o una línea de crisis en tu país. También puedes usar los contactos de emergencia de la app si los tienes configurados.';
-    }
-
-    if (intensity >= 8) {
-      safetyText += '\n\n💚 **Recuerda:** Es importante que busques apoyo profesional si estos sentimientos persisten o empeoran.';
-    }
+    const safetyText = buildCrisisSafetyAppendText({
+      language: lang,
+      intensity,
+      compact,
+      skipHeavyPhones,
+      emergencyLines,
+    });
 
     return respuesta + safetyText;
   }

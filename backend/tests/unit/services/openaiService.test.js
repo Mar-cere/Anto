@@ -100,6 +100,33 @@ describe('OpenAIService', () => {
       );
       expect(result).not.toMatch(/activación conductual/i);
     });
+
+    it('resolveCrisisMetricTransport prioriza crisisMetricTransport', () => {
+      expect(
+        openaiService.resolveCrisisMetricTransport({
+          crisisMetricTransport: 'sse',
+          _promptTelemetry: { source: 'http' },
+        }),
+      ).toBe('sse');
+      expect(
+        openaiService.resolveCrisisMetricTransport({
+          _promptTelemetry: { source: 'guest' },
+        }),
+      ).toBe('guest');
+    });
+
+    it('applyCrisisResponseSafety usa copy EN en addSafetyChecks', () => {
+      const result = openaiService.applyCrisisResponseSafety('I hear you.', {
+        crisis: { riskLevel: 'HIGH' },
+        emotional: { intensity: 9 },
+        contextual: { intencion: { tipo: 'CRISIS' } },
+        userMessage: 'I feel awful',
+        profile: { preferences: { language: 'en' } },
+        conversationHistory: [],
+      });
+      expect(result).toMatch(/About this chat/i);
+      expect(result).toMatch(/Urgent safety protocol|Are you safe/i);
+    });
   });
 });
 

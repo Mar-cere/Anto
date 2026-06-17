@@ -40,46 +40,61 @@ describe('Health Check Routes', () => {
       const response = await request(app)
         .get('/health');
 
-      // Aceptar tanto 200 como 503 dependiendo del estado de MongoDB
       expect([200, 503]).toContain(response.status);
       expect(response.body).toHaveProperty('status');
       expect(response.body).toHaveProperty('timestamp');
-      expect(response.body).toHaveProperty('mongodb');
-      expect(response.body).toHaveProperty('services');
+      expect(response.body).toHaveProperty('database');
+      expect(response.body).toHaveProperty('dependencies');
       expect(response.body).toHaveProperty('version');
     });
 
-    it('debe incluir información de servicios', async () => {
+    it('debe incluir dependencias principales', async () => {
       const response = await request(app)
         .get('/health');
 
       expect([200, 503]).toContain(response.status);
-      expect(response.body.services).toHaveProperty('tasks');
-      expect(response.body.services).toHaveProperty('habits');
-      expect(response.body.services).toHaveProperty('users');
-      expect(response.body.services).toHaveProperty('auth');
-      expect(response.body.services).toHaveProperty('chat');
-      expect(response.body.services).toHaveProperty('cloudinary');
+      expect(response.body.dependencies).toHaveProperty('openai');
+      expect(response.body.dependencies).toHaveProperty('atlas');
+      expect(response.body.dependencies).toHaveProperty('redis');
     });
 
     it('debe retornar status 200 si MongoDB está conectado', async () => {
-      // Esperar un poco más para asegurar que la conexión esté lista
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Verificar que MongoDB esté conectado
       if (mongoose.connection.readyState === 1) {
         const response = await request(app)
           .get('/health')
           .expect(200);
 
-        expect(response.body.mongodb).toBe('connected');
+        expect(response.body.database).toBe('connected');
         expect(response.body.status).toBe('ok');
       } else {
-        // Si no está conectado, el test pasa pero con un skip
         console.log('⚠️ MongoDB no está conectado, saltando verificación de status 200');
-        // Aún verificamos que la respuesta tenga la estructura correcta
         const response = await request(app).get('/health');
-        expect(response.body).toHaveProperty('mongodb');
+        expect(response.body).toHaveProperty('database');
+      }
+    });
+  });
+
+  describe('GET /api/health/detailed', () => {
+    it('expone chatFeatures.crisisRouting en desarrollo', async () => {
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'development';
+
+      try {
+        const response = await request(app).get('/api/health/detailed');
+        expect([200, 503]).toContain(response.status);
+        expect(response.body.chatFeatures?.crisisRouting).toEqual(
+          expect.objectContaining({
+            hardStop: expect.any(Number),
+            llmPath: expect.any(Number),
+            sanitizedResponses: expect.any(Number),
+            sanitizedByTransport: expect.any(Object),
+            sanitizedByRiskLevel: expect.any(Object),
+          }),
+        );
+      } finally {
+        process.env.NODE_ENV = originalEnv;
       }
     });
   });

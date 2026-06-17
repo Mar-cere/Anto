@@ -57,11 +57,23 @@ describe('MetricsService', () => {
       await metricsService.recordMetric('crisis_llm_sanitized', {
         riskLevel: 'MEDIUM',
         hits: ['grounding_invite', 'habit_invite'],
+        transport: 'sse',
       });
       const snap = metricsService.getCrisisRoutingSnapshot();
       expect(snap.sanitizedResponses).toBe(before.sanitizedResponses + 1);
       expect(snap.sanitizeHits.grounding_invite).toBeGreaterThanOrEqual(1);
       expect(snap.sanitizeHits.habit_invite).toBeGreaterThanOrEqual(1);
+      expect(snap.sanitizedByTransport.sse).toBeGreaterThanOrEqual(1);
+      expect(snap.sanitizedByRiskLevel.MEDIUM).toBeGreaterThanOrEqual(1);
+    });
+
+    it('getCrisisRoutingSnapshot devuelve copia profunda', () => {
+      const snap = metricsService.getCrisisRoutingSnapshot();
+      snap.sanitizedByTransport.test = 99;
+      snap.byRiskLevel.TEST = 99;
+      const snap2 = metricsService.getCrisisRoutingSnapshot();
+      expect(snap2.sanitizedByTransport.test).toBeUndefined();
+      expect(snap2.byRiskLevel.TEST).toBeUndefined();
     });
   });
 });

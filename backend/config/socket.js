@@ -456,6 +456,7 @@ export const setupSocketIO = (server) => {
               },
               phone: socketUser?.phone || null,
             }),
+            crisisMetricTransport: 'socket',
             _promptTelemetry: {
               userId,
               conversationId: conversation._id,

@@ -203,10 +203,13 @@ if (snippetSample === null) {
 }
 
 const healthProbe = fs.readFileSync(path.join(root, 'backend/services/healthProbeService.js'), 'utf8');
+const metricsServiceSrc = fs.readFileSync(path.join(root, 'backend/services/metricsService.js'), 'utf8');
 if (
   healthProbe.includes('chatFeatures') &&
   healthProbe.includes('buildChatFeaturesSnapshot') &&
-  healthProbe.includes('crisisRouting')
+  healthProbe.includes('crisisRouting') &&
+  metricsServiceSrc.includes('sanitizedByTransport') &&
+  metricsServiceSrc.includes('sanitizedByRiskLevel')
 ) {
   pass('health detallado expone chatFeatures');
 } else {
