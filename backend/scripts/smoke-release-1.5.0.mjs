@@ -204,6 +204,19 @@ if (
   fail('métricas crisisRouting ops snapshot');
 }
 
+const crisisOpsSrc = fs.readFileSync(
+  path.join(root, 'backend/services/crisisRoutingOpsService.js'),
+  'utf8',
+);
+if (
+  crisisOpsSrc.includes('aggregateCrisisRoutingFromMongo') &&
+  crisisOpsSrc.includes('getCrisisRoutingOpsSnapshot')
+) {
+  pass('crisisRoutingOpsService agrega Mongo');
+} else {
+  fail('crisisRoutingOpsService agrega Mongo');
+}
+
 const snippetSample = await buildPersonalPatternRagSnippet({
   userId: null,
   userContent: 'x',
@@ -229,6 +242,29 @@ if (
   fail('health detallado expone chatFeatures');
 }
 
+const crisisSloSrc = fs.readFileSync(
+  path.join(root, 'backend/services/crisisRoutingSloMonitorService.js'),
+  'utf8',
+);
+if (crisisSloSrc.includes('evaluateCrisisRoutingSlo') && crisisSloSrc.includes('startCrisisRoutingSloMonitor')) {
+  pass('monitor SLO crisis routing');
+} else {
+  fail('monitor SLO crisis routing');
+}
+
+const crisisResourcesSrc = fs.readFileSync(
+  path.join(root, 'backend/services/crisisResourcesService.js'),
+  'utf8',
+);
+if (
+  crisisResourcesSrc.includes('buildCrisisResourcesClientPayload') &&
+  crisisResourcesSrc.includes('crisisResourcesForTurn')
+) {
+  pass('crisisResourcesService payload cliente');
+} else {
+  fail('crisisResourcesService payload cliente');
+}
+
 const healthRoutesSrc = fs.readFileSync(path.join(root, 'backend/routes/healthRoutes.js'), 'utf8');
 const crisisBgSrc = fs.readFileSync(
   path.join(root, 'backend/services/crisisBackgroundActionsService.js'),
@@ -240,6 +276,7 @@ const crisisBgCtxSrc = fs.readFileSync(
 );
 if (
   healthRoutesSrc.includes('/crisis-routing') &&
+  healthRoutesSrc.includes('/crisis-resources') &&
   crisisBgSrc.includes('runCrisisBackgroundActions') &&
   crisisBgSrc.includes('shouldRunCrisisBackgroundActions') &&
   crisisBgCtxSrc.includes('resolveCrisisRiskAndContext')

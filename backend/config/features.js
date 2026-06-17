@@ -17,6 +17,7 @@
  * | lastSessionSummaryWorker   | ENABLE_LAST_SESSION_SUMMARY    | activo salvo `false` | worker continuidad último chat (#4+#47); tick `LAST_SESSION_SUMMARY_TICK_MS`; reencola `processing` viejos con `LAST_SESSION_SUMMARY_STALE_MS` (default 15 min); reintentos LLM `LAST_SESSION_SUMMARY_MAX_ATTEMPTS` (default 2, máx 5) |
  * | personalPatternRag         | PERSONAL_PATTERN_RAG_ENABLED   | off     | RAG patrones personales cross-sesión (#203); requiere embeddings |
  * | crisisHardStop             | ENABLE_CRISIS_HARD_STOP        | activo  | hard-stop sin LLM en HIGH + léxico explícito (#205) |
+ * | crisisRoutingSloMonitor    | ENABLE_CRISIS_ROUTING_SLO_MONITOR | activo | SLO camino A/B crisis (Mongo + Sentry) |
  * | swagger                    | ENABLE_SWAGGER + NODE_ENV      | ver abajo | en prod solo si `ENABLE_SWAGGER=true` |
  *
  * Para los cuatro primeros, cualquier valor distinto de la cadena `'false'`
@@ -54,6 +55,8 @@ export const features = Object.freeze({
   trialRetentionEmail: envIsNotFalse(process.env.ENABLE_TRIAL_RETENTION_EMAIL),
   /** Monitor SLO p95 de chat (Sentry + logs). Default: activo salvo 'false'. */
   chatLatencySloMonitor: envIsNotFalse(process.env.ENABLE_CHAT_LATENCY_SLO_MONITOR),
+  /** Monitor SLO enrutamiento crisis (Mongo + Sentry). Default: activo salvo 'false'. */
+  crisisRoutingSloMonitor: envIsNotFalse(process.env.ENABLE_CRISIS_ROUTING_SLO_MONITOR),
   /**
    * Correo semanal de aviso de resumen (plantilla neutra). Opt-in:
    * `ENABLE_WEEKLY_SUMMARY_EMAIL=true` o, por compatibilidad, `ENABLE_WEEKLY_TIPS_EMAIL=true`.

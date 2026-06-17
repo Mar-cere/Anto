@@ -191,6 +191,7 @@ router.post('/messages', guestMessagePostLimiter, authenticateGuest, async (req,
       context: result.context,
       guest: result.guest,
       language: req.appLanguage,
+      ...(result.crisisResources ? { crisisResources: result.crisisResources } : {}),
     });
   } catch (error) {
     if (error.status === 403 && error.code === 'GUEST_LIMIT_REACHED') {

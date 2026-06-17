@@ -26,6 +26,7 @@ import chatProductActionLlmService from '../services/chatProductActionLlmService
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 import conversationProductProposalCapService from '../services/conversationProductProposalCapService.js';
 import metricsService from '../services/metricsService.js';
+import { buildCrisisRoutingMetricData } from '../utils/crisisRoutingMetricPayload.js';
 import crisisBackgroundActionsService from '../services/crisisBackgroundActionsService.js';
 import { resolveCrisisRiskAndContext } from '../services/crisisBackgroundContextService.js';
 import intenseChatCheckInService from '../services/intenseChatCheckInService.js';
@@ -42,6 +43,7 @@ import {
   buildHardStopCrisisAssistantContent,
   buildCrisisHardStopClientPayload,
 } from '../services/crisisHardStopService.js';
+import { crisisResourcesForTurn } from '../services/crisisResourcesService.js';
 import { indexPersonalPatternFromUserMessage } from '../services/personalPatternRagService.js';
 
 // Constantes de configuración
@@ -372,7 +374,11 @@ export const setupSocketIO = (server) => {
           metricsService
             .recordMetric(
               'crisis_hard_stop',
-              { riskLevel, transport: 'socket' },
+              buildCrisisRoutingMetricData({
+                riskLevel,
+                transport: 'socket',
+                messageContent: messageText,
+              }),
               userId.toString(),
               { conversationId: String(conversation._id) }
             )
@@ -423,6 +429,18 @@ export const setupSocketIO = (server) => {
           }).catch(() => {});
 
           const clientTurn = buildCrisisHardStopClientPayload(socketLanguage);
+          const socketPreferences = {
+            ...(userProfile?.preferences || {}),
+            ...(socketUser?.preferences || {}),
+          };
+          const crisisResources = crisisResourcesForTurn({
+            riskLevel,
+            hardStop: true,
+            isCrisis,
+            preferences: socketPreferences,
+            phone: socketUser?.phone || null,
+            language: socketLanguage,
+          });
 
           socket.emit(SOCKET_EVENTS.AI_TYPING, false);
           socket.emit(SOCKET_EVENTS.MESSAGE_RECEIVED, {
@@ -436,6 +454,7 @@ export const setupSocketIO = (server) => {
             suggestions: clientTurn.suggestions,
             suggestionsPersonalized: clientTurn.suggestionsPersonalized,
             tccLite: clientTurn.tccLite,
+            ...(crisisResources ? { crisisResources } : {}),
           });
           return;
         }
@@ -449,7 +468,11 @@ export const setupSocketIO = (server) => {
           metricsService
             .recordMetric(
               'crisis_llm_path',
-              { riskLevel, transport: 'socket' },
+              buildCrisisRoutingMetricData({
+                riskLevel,
+                transport: 'socket',
+                messageContent: messageText,
+              }),
               userId.toString(),
               { conversationId: String(conversation._id) },
             )
@@ -631,6 +654,18 @@ export const setupSocketIO = (server) => {
           riskLevel,
           userMessage: messageText,
         });
+        const socketPreferences = {
+          ...(userProfile?.preferences || {}),
+          ...(socketUser?.preferences || {}),
+        };
+        const crisisResources = crisisResourcesForTurn({
+          riskLevel,
+          hardStop: false,
+          isCrisis,
+          preferences: socketPreferences,
+          phone: socketUser?.phone || null,
+          language: socketLanguage,
+        });
 
         // 9. Emitir respuesta al cliente
         socket.emit(SOCKET_EVENTS.AI_TYPING, false);
@@ -644,6 +679,7 @@ export const setupSocketIO = (server) => {
           suggestions: clientTurn.suggestions,
           suggestionsPersonalized: clientTurn.suggestionsPersonalized,
           tccLite: clientTurn.tccLite,
+          ...(crisisResources ? { crisisResources } : {}),
         });
         
         console.log(`[SocketIO] Mensaje procesado para usuario ${currentUserId}`);

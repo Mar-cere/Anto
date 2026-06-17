@@ -54,6 +54,11 @@ import {
 } from '../utils/chatWelcomeGreeting';
 import { getAppLanguage } from '../config/api';
 import {
+  findLatestCrisisContextFromMessages,
+  normalizeCrisisResourcesPayload,
+} from '../utils/crisisResources';
+import { fetchCrisisResources } from '../services/crisisResourcesService';
+import {
   clearPendingTccLiteResume,
   peekPendingTccLiteResume,
   setPendingTccLiteResume,
@@ -135,6 +140,8 @@ export function useChatScreen() {
   const [dismissedContinuityIds, setDismissedContinuityIds] = useState([]);
   const dismissedContinuityIdsRef = useRef([]);
   const [tccLiteAtHandoff, setTccLiteAtHandoff] = useState(null);
+  const [crisisResourcesPanel, setCrisisResourcesPanel] = useState(null);
+  const crisisResourcesDismissedRef = useRef(false);
   const pendingTccLiteResumeRef = useRef(null);
   /** Evita doble envío y permite deshabilitar botones mientras viaja la petición */
   const [feedbackSubmittingId, setFeedbackSubmittingId] = useState(null);
@@ -306,6 +313,52 @@ export function useChatScreen() {
     setTrialBannerDismissed(true);
   }, []);
 
+  const applyCrisisResourcesFromTurn = useCallback((payload) => {
+    const normalized = normalizeCrisisResourcesPayload(payload?.crisisResources);
+    if (!normalized) return;
+    crisisResourcesDismissedRef.current = false;
+    setCrisisResourcesPanel(normalized);
+  }, []);
+
+  const hydrateCrisisResourcesFromMessages = useCallback(async (messageList) => {
+    if (crisisResourcesDismissedRef.current) return;
+    const ctx = findLatestCrisisContextFromMessages(messageList);
+    if (!ctx) {
+      setCrisisResourcesPanel(null);
+      return;
+    }
+    try {
+      const fetched = await fetchCrisisResources();
+      if (!fetched) return;
+      setCrisisResourcesPanel({
+        ...fetched,
+        riskLevel: ctx.riskLevel || fetched.riskLevel,
+        hardStop: ctx.hardStop === true,
+      });
+    } catch (_) {
+      /* sin panel si falla la red */
+    }
+  }, []);
+
+  const openCrisisResourcesPanel = useCallback(async () => {
+    crisisResourcesDismissedRef.current = false;
+    try {
+      const fetched = await fetchCrisisResources();
+      if (fetched) setCrisisResourcesPanel(fetched);
+    } catch (_) {
+      /* el usuario puede reintentar desde el menú */
+    }
+  }, []);
+
+  const dismissCrisisResourcesPanel = useCallback(() => {
+    crisisResourcesDismissedRef.current = true;
+    setCrisisResourcesPanel(null);
+  }, []);
+
+  const openEmergencyContactsFromChat = useCallback(() => {
+    navigation.navigate('MainTabs', { screen: 'Perfil' });
+  }, [navigation]);
+
   const initializeConversation = useCallback(async () => {
     const texts = textsRef.current;
     const appLanguage = await getAppLanguage();
@@ -329,6 +382,7 @@ export function useChatScreen() {
       });
       setMessages(finalizeLoadedChatMessages(uniqueMessages, appLanguage));
       if (flags?.pagination) applyMessagePagination(flags.pagination);
+      void hydrateCrisisResourcesFromMessages(uniqueMessages);
       if (isRegistered) {
         const userCount = uniqueMessages.filter((m) => m.type !== 'quickReplies' && m.role === MESSAGE_ROLES.USER).length;
         setShowSessionIntentionPrompt(userCount === 0 && !sessionIntentionMeta);
@@ -492,7 +546,7 @@ export function useChatScreen() {
         scrollToBottomStableRef.current?.(false, { force: true });
       });
     }
-  }, [navigation, route.params?.startGuest, route.params?.openConversationId, applyMessagePagination]);
+  }, [navigation, route.params?.startGuest, route.params?.openConversationId, applyMessagePagination, hydrateCrisisResourcesFromMessages]);
 
   const loadOlderMessages = useCallback(async () => {
     if (loadingOlderMessages || !historyHasMore) return;
@@ -913,6 +967,7 @@ export function useChatScreen() {
           }
         },
         onDone(payload) {
+          applyCrisisResourcesFromTurn(payload);
           // Asegurar que no se pierdan chunks pendientes.
           if (flushTimer) {
             clearTimeout(flushTimer);
@@ -1333,6 +1388,8 @@ export function useChatScreen() {
       dismissedContinuityIdsRef.current = [];
       setDismissedContinuityIds([]);
       setTccLiteAtHandoff(null);
+      crisisResourcesDismissedRef.current = false;
+      setCrisisResourcesPanel(null);
       pendingTccLiteResumeRef.current = null;
       void clearPendingTccLiteResume();
       await chatService.clearMessages();
@@ -1374,6 +1431,7 @@ export function useChatScreen() {
               return timeA - timeB;
             });
             setMessages(finalizeLoadedChatMessages(uniqueMessages, refreshLang));
+            void hydrateCrisisResourcesFromMessages(uniqueMessages);
           }
         }
         return;
@@ -1396,6 +1454,7 @@ export function useChatScreen() {
             return timeA - timeB;
           });
           setMessages(finalizeLoadedChatMessages(uniqueMessages, refreshLang));
+          void hydrateCrisisResourcesFromMessages(uniqueMessages);
           const uc = uniqueMessages.filter((m) => m.role === 'user').length;
           setShowSessionIntentionPrompt(uc === 0 && !pack.sessionIntention);
         }
@@ -1405,7 +1464,7 @@ export function useChatScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [hydrateCrisisResourcesFromMessages]);
 
   const handleBack = useCallback(async () => {
     try {
@@ -1781,6 +1840,10 @@ export function useChatScreen() {
     tccLiteAtHandoff,
     handleOpenTccLiteAtHandoff,
     handleDismissTccLiteAtHandoff,
+    crisisResourcesPanel,
+    dismissCrisisResourcesPanel,
+    openCrisisResourcesPanel,
+    openEmergencyContactsFromChat,
     historyHasMore,
     loadingOlderMessages,
     loadOlderMessages,

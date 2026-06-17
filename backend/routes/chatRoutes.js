@@ -40,6 +40,7 @@ import chatProductActionProposalService from '../services/chatProductActionPropo
 import clinicalScalesService from '../services/clinicalScalesService.js';
 import conversationProductProposalCapService from '../services/conversationProductProposalCapService.js';
 import { scheduleRollingSummaryRefresh } from '../services/conversationRollingSummaryService.js';
+import { buildCrisisRoutingMetricData } from '../utils/crisisRoutingMetricPayload.js';
 import crisisBackgroundActionsService from '../services/crisisBackgroundActionsService.js';
 import crisisTrendAnalyzer from '../services/crisisTrendAnalyzer.js';
 import {
@@ -77,6 +78,7 @@ import {
   buildHardStopCrisisAssistantContent,
   buildCrisisHardStopClientPayload,
 } from '../services/crisisHardStopService.js';
+import { crisisResourcesForTurn } from '../services/crisisResourcesService.js';
 import { indexPersonalPatternFromUserMessage } from '../services/personalPatternRagService.js';
 import {
   planChatTurnEnhancements,
@@ -1164,6 +1166,20 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           }
         };
 
+        const appLanguageForChat = req.appLanguage || resolveRequestLanguage(req);
+
+        const attachTurnCrisisResources = (payload, { hardStop = false } = {}) => {
+          const crisisResources = crisisResourcesForTurn({
+            riskLevel,
+            hardStop,
+            isCrisis,
+            preferences: combinedProfile?.preferences,
+            phone: combinedProfile?.phone,
+            language: appLanguageForChat,
+          });
+          return crisisResources ? { ...payload, crisisResources } : payload;
+        };
+
         const sessionPhase = inferChatSessionPhase({
           riskLevel,
           contextualAnalysis,
@@ -1193,7 +1209,6 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         });
         const forceFactualMode = detectFactualModeFromMessage({ currentMessage: content });
 
-        const appLanguageForChat = req.appLanguage || resolveRequestLanguage(req);
         const turnEnhancements = await planChatTurnEnhancements({
           userId: req.user._id,
           conversationId,
@@ -1277,7 +1292,11 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           metricsService
             .recordMetric(
               'crisis_hard_stop',
-              { riskLevel, transport: req.query.stream === 'true' ? 'sse' : 'http' },
+              buildCrisisRoutingMetricData({
+                riskLevel,
+                transport: req.query.stream === 'true' ? 'sse' : 'http',
+                messageContent: content.trim(),
+              }),
               req.user._id.toString(),
               { conversationId: String(conversationId) }
             )
@@ -1340,44 +1359,54 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             res.write('data: ' + JSON.stringify({ content: crisisHardStopContent }) + '\n\n');
             res.write(
               'data: ' +
-                JSON.stringify({
-                  done: true,
-                  messageId: assistantMessage._id?.toString(),
-                  content: crisisHardStopContent,
-                  crisisHardStop: true,
-                  context: { emotional: emotionalAnalysis, contextual: contextualAnalysis },
-                  suggestions: clientTurnHardStop.suggestions,
-                  suggestionsPersonalized: clientTurnHardStop.suggestionsPersonalized,
-                  proposedProductActions: [],
-                  productActionStatus: { paused: false, reason: null, askFirst: false },
-                  clinicalScale: null,
-                  cognitiveDistortions: null,
-                  tccLite: clientTurnHardStop.tccLite,
-                  processingTime: responseTimeHardStop,
-                }) +
+                JSON.stringify(
+                  attachTurnCrisisResources(
+                    {
+                      done: true,
+                      messageId: assistantMessage._id?.toString(),
+                      content: crisisHardStopContent,
+                      crisisHardStop: true,
+                      context: { emotional: emotionalAnalysis, contextual: contextualAnalysis },
+                      suggestions: clientTurnHardStop.suggestions,
+                      suggestionsPersonalized: clientTurnHardStop.suggestionsPersonalized,
+                      proposedProductActions: [],
+                      productActionStatus: { paused: false, reason: null, askFirst: false },
+                      clinicalScale: null,
+                      cognitiveDistortions: null,
+                      tccLite: clientTurnHardStop.tccLite,
+                      processingTime: responseTimeHardStop,
+                    },
+                    { hardStop: true },
+                  ),
+                ) +
                 '\n\n',
             );
             res.end();
             return;
           }
 
-          return res.status(201).json({
-            userMessage,
-            assistantMessage,
-            crisisHardStop: true,
-            context: {
-              emotional: emotionalAnalysis,
-              contextual: contextualAnalysis,
-            },
-            suggestions: clientTurnHardStop.suggestions,
-            suggestionsPersonalized: clientTurnHardStop.suggestionsPersonalized,
-            proposedProductActions: [],
-            productActionStatus: { paused: false, reason: null, askFirst: false },
-            clinicalScale: null,
-            cognitiveDistortions: null,
-            tccLite: clientTurnHardStop.tccLite,
-            processingTime: responseTimeHardStop,
-          });
+          return res.status(201).json(
+            attachTurnCrisisResources(
+              {
+                userMessage,
+                assistantMessage,
+                crisisHardStop: true,
+                context: {
+                  emotional: emotionalAnalysis,
+                  contextual: contextualAnalysis,
+                },
+                suggestions: clientTurnHardStop.suggestions,
+                suggestionsPersonalized: clientTurnHardStop.suggestionsPersonalized,
+                proposedProductActions: [],
+                productActionStatus: { paused: false, reason: null, askFirst: false },
+                clinicalScale: null,
+                cognitiveDistortions: null,
+                tccLite: clientTurnHardStop.tccLite,
+                processingTime: responseTimeHardStop,
+              },
+              { hardStop: true },
+            ),
+          );
         }
 
         if (
@@ -1389,10 +1418,11 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           metricsService
             .recordMetric(
               'crisis_llm_path',
-              {
+              buildCrisisRoutingMetricData({
                 riskLevel,
                 transport: req.query.stream === 'true' ? 'sse' : 'http',
-              },
+                messageContent: content.trim(),
+              }),
               req.user._id.toString(),
               { conversationId: String(conversationId) },
             )
@@ -1683,7 +1713,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                     );
                 }
 
-                res.write('data: ' + JSON.stringify({
+                res.write('data: ' + JSON.stringify(attachTurnCrisisResources({
                   done: true,
                   messageId: assistantMessage._id?.toString(),
                   content: response.content,
@@ -1696,7 +1726,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   cognitiveDistortions: cognitiveDistortions?.length > 0 ? { detected: cognitiveDistortions, primary: primaryDistortion, intervention: distortionIntervention } : null,
                   tccLite: clientTurn.tccLite,
                   processingTime: responseTime
-                }) + '\n\n');
+                })) + '\n\n');
 
                 metricsService
                   .recordMetric(
@@ -2142,7 +2172,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         
         logs.push(`[${Date.now() - startTime}ms] Proceso completado exitosamente`);
         
-        return res.status(201).json({
+        return res.status(201).json(attachTurnCrisisResources({
           userMessage,
           assistantMessage,
           context: {
@@ -2166,7 +2196,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           } : null,
           tccLite: clientTurn.tccLite,
           processingTime: responseTime
-        });
+        }));
 
       } catch (error) {
         logs.push(`[${Date.now() - startTime}ms] Error: ${error.message}`);

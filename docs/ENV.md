@@ -59,6 +59,21 @@ Ver también `backend/config/features.js`.
 | `ENABLE_SWAGGER` | off en prod | Documentación `/api-docs` |
 | `PERSONAL_PATTERN_RAG_ENABLED` | off | RAG patrones personales cross-sesión (#203); requiere embeddings |
 | `ENABLE_CRISIS_HARD_STOP` | activo | Hard-stop sin LLM en HIGH + léxico explícito (#205) |
+| `ENABLE_CRISIS_ROUTING_SLO_MONITOR` | activo | Monitor SLO camino A/B crisis (agrega Mongo + alerta Sentry) |
+
+### SLO crisis routing (`ENABLE_CRISIS_ROUTING_SLO_MONITOR`)
+
+| Variable | Default | Descripción |
+|----------|---------|-------------|
+| `CRISIS_ROUTING_SLO_CHECK_INTERVAL_MS` | `900000` (15 min) | Intervalo del monitor |
+| `CRISIS_ROUTING_SLO_WINDOW_HOURS` | `24` | Ventana de agregación Mongo |
+| `CRISIS_ROUTING_SLO_ALERT_COOLDOWN_MS` | `1800000` (30 min) | Cooldown entre alertas |
+| `CRISIS_ROUTING_SLO_MIN_ROUTING_EVENTS` | `10` | Mín. eventos hard-stop + llm para evaluar |
+| `CRISIS_ROUTING_SLO_MIN_ELIGIBLE_EVENTS` | `3` | Mín. elegibles para alerta de captura |
+| `CRISIS_ROUTING_SLO_MAX_SANITIZE_RATE_PCT` | `35` | Alerta si % respuestas LLM saneadas supera umbral |
+| `CRISIS_ROUTING_SLO_MIN_HARD_STOP_CAPTURE_PCT` | `80` | Alerta si captura entre elegibles cae bajo umbral |
+
+Endpoint ops: `GET /api/health/crisis-routing?windowHours=24&source=merged` (`memory` | `mongo` | `merged`). En producción requiere auth (igual que `/detailed`).
 
 ## Cliente móvil (Expo)
 
@@ -79,5 +94,6 @@ Ver también `backend/config/features.js`.
 
 - `GET /health` y `GET /api/health` — snapshot público: MongoDB, Redis, OpenAI configurado, Atlas (sin nombre de índice ni workers).
 - `GET /api/health/detailed` — workers, índice Atlas, memoria; en producción requiere usuario autenticado y tiene rate limit.
+- `GET /api/health/crisis-routing` — métricas ops camino A/B crisis (memoria + ventana Mongo); query `windowHours`, `source`.
 
 Códigos: `200` si el servicio responde (incluso `degraded`); `503` solo si MongoDB no está disponible (`unavailable`).

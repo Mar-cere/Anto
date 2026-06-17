@@ -53,6 +53,27 @@ describe('Health Routes', () => {
     });
   });
 
+  describe('GET /api/health/crisis-resources', () => {
+    it('expone recursos sin autenticación', async () => {
+      const response = await request(app)
+        .get('/api/health/crisis-resources?country=CL&language=es')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.crisisResources.items.length).toBeGreaterThan(0);
+      expect(response.body.crisisResources.items.some((i) => i.dial === '133')).toBe(true);
+    });
+
+    it('ignora país ISO desconocido y devuelve fallback regional', async () => {
+      const response = await request(app)
+        .get('/api/health/crisis-resources?country=ZZ')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.crisisResources.items.length).toBeGreaterThan(0);
+    });
+  });
+
   describe('GET /api/health/detailed', () => {
     it('debe retornar información detallada en desarrollo', async () => {
       const originalEnv = process.env.NODE_ENV;
@@ -116,17 +137,33 @@ describe('Health Routes', () => {
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
-        expect(response.body.routing).toEqual(
+        expect(response.body.source).toBe('merged');
+        expect(response.body.process).toEqual(
           expect.objectContaining({
-            hardStop: expect.any(Number),
-            llmPath: expect.any(Number),
-            hardStopByRiskLevel: expect.any(Object),
-            llmPathByRiskLevel: expect.any(Object),
+            scope: 'process_memory',
+            routing: expect.objectContaining({
+              hardStop: expect.any(Number),
+              llmPath: expect.any(Number),
+            }),
           }),
         );
-        expect(response.body.sanitization).toBeDefined();
-        expect(response.body.backgroundActions).toBeDefined();
-        expect(response.body.scope).toBe('process_memory');
+        expect(response.body.merged).toBeDefined();
+        expect(response.body.crisisHardStopEnabled).toBe(true);
+      } finally {
+        process.env.NODE_ENV = originalEnv;
+      }
+    });
+
+    it('crisis-routing acepta source=memory', async () => {
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'development';
+
+      try {
+        const response = await request(app).get('/api/health/crisis-routing?source=memory');
+        expect(response.status).toBe(200);
+        expect(response.body.source).toBe('memory');
+        expect(response.body.process).toBeDefined();
+        expect(response.body.merged).toBeUndefined();
       } finally {
         process.env.NODE_ENV = originalEnv;
       }

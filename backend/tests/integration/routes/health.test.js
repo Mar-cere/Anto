@@ -35,6 +35,33 @@ describe('Health Check Routes', () => {
     });
   });
 
+  describe('GET /api/health/crisis-resources', () => {
+    it('expone recursos estructurados sin autenticación', async () => {
+      const response = await request(app)
+        .get('/api/health/crisis-resources?country=CL&language=es')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.crisisResources).toEqual(
+        expect.objectContaining({
+          countryIso: 'CL',
+          items: expect.arrayContaining([
+            expect.objectContaining({ id: 'emergency', dial: '133' }),
+          ]),
+        }),
+      );
+    });
+
+    it('país inválido usa fallback sin error', async () => {
+      const response = await request(app)
+        .get('/api/health/crisis-resources?country=INVALID')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.crisisResources.items.length).toBeGreaterThan(0);
+    });
+  });
+
   describe('GET /health', () => {
     it('debe retornar información de salud (puede ser 200 o 503 dependiendo de MongoDB)', async () => {
       const response = await request(app)

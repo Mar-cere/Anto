@@ -15,7 +15,11 @@ import {
   buildPublicHealthSnapshot,
   getHealthHttpStatus,
 } from '../services/healthProbeService.js';
-import metricsService from '../services/metricsService.js';
+import { getCrisisRoutingOpsSnapshot } from '../services/crisisRoutingOpsService.js';
+import {
+  buildCrisisResourcesClientPayload,
+  parseCrisisResourcesCountryQuery,
+} from '../services/crisisResourcesService.js';
 
 const router = express.Router();
 
@@ -23,6 +27,14 @@ const detailedLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 30,
   message: 'Demasiadas solicitudes de health detallado. Intenta de nuevo en unos minutos.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const crisisResourcesLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 120,
+  message: 'Demasiadas solicitudes de recursos de crisis. Intenta de nuevo en unos minutos.',
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -65,9 +77,31 @@ router.get('/crisis-routing', detailedLimiter, async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
+  const snapshot = await getCrisisRoutingOpsSnapshot({
+    windowHours: req.query.windowHours,
+    source: req.query.source,
+  });
+  res.json(snapshot);
+});
+
+/**
+ * GET /api/health/crisis-resources
+ * Recursos de emergencia estructurados (público; opcional ?country=ISO).
+ */
+router.get('/crisis-resources', crisisResourcesLimiter, (req, res) => {
+  const countryIso = parseCrisisResourcesCountryQuery(req.query.country);
+  const preferences = countryIso ? { country: countryIso } : null;
+  const language = req.query.language || req.appLanguage || 'es';
+
   res.json({
     success: true,
-    ...metricsService.getCrisisRoutingOpsSnapshot(),
+    crisisResources: buildCrisisResourcesClientPayload({
+      preferences,
+      phone: null,
+      language,
+      riskLevel: null,
+      hardStop: false,
+    }),
   });
 });
 

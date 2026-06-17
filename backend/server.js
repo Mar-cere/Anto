@@ -581,6 +581,19 @@ if (process.env.NODE_ENV !== 'test') {
     }, 135000);
   }
 
+  if (features.crisisRoutingSloMonitor && process.env.NODE_ENV !== 'test') {
+    setTimeout(async () => {
+      try {
+        const { startCrisisRoutingSloMonitor } = await import(
+          './services/crisisRoutingSloMonitorService.js'
+        );
+        startCrisisRoutingSloMonitor();
+      } catch (error) {
+        logger.error('❌ Error iniciando monitor SLO crisis routing', { error: error.message });
+      }
+    }, 150000);
+  }
+
   if (features.lastSessionSummaryWorker && process.env.NODE_ENV !== 'test') {
     setTimeout(async () => {
       try {

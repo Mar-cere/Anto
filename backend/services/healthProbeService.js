@@ -69,6 +69,7 @@ function buildWorkersSnapshot() {
     weeklyInsightLlm: features.weeklyInsightLlm,
     lastSessionSummary: features.lastSessionSummaryWorker,
     chatLatencySloMonitor: features.chatLatencySloMonitor,
+    crisisRoutingSloMonitor: features.crisisRoutingSloMonitor,
   };
 }
 

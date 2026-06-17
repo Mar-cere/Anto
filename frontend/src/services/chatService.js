@@ -299,6 +299,7 @@ export const sendMessageStream = async (text, { onChunk, onDone, resumeTccLite, 
         productActionStatus: data?.productActionStatus || null,
         context: data?.context,
         guest: data?.guest,
+        crisisResources: data?.crisisResources,
       });
     }
     return;

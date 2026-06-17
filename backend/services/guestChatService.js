@@ -18,6 +18,7 @@ import {
   buildHardStopCrisisAssistantContent,
   shouldHardStopCrisisLlm,
 } from './crisisHardStopService.js';
+import { crisisResourcesForTurn } from './crisisResourcesService.js';
 import { sanitizeSessionIntentionForClient } from '../constants/sessionIntention.js';
 import { buildHistoryForPromptFromMessages } from './openai/openaiPromptBuilder.js';
 import { Conversation, Message } from '../models/index.js';
@@ -29,6 +30,7 @@ import engagementTracker from './engagementTracker.js';
 import openaiService from './openaiService.js';
 import writingStyleDetector from './writingStyleDetector.js';
 import metricsService from './metricsService.js';
+import { buildCrisisRoutingMetricData } from '../utils/crisisRoutingMetricPayload.js';
 import {
   detectAbruptToneChange,
   detectEmotionalEscalation,
@@ -454,7 +456,11 @@ export async function sendGuestMessage(guestSession, contentRaw) {
     metricsService
       .recordMetric(
         'crisis_hard_stop',
-        { riskLevel, transport: 'guest' },
+        buildCrisisRoutingMetricData({
+          riskLevel,
+          transport: 'guest',
+          messageContent: content.trim(),
+        }),
         null,
         { guestSessionId: String(guestSession._id), conversationId: String(conversationId) },
       )
@@ -481,7 +487,11 @@ export async function sendGuestMessage(guestSession, contentRaw) {
       metricsService
         .recordMetric(
           'crisis_llm_path',
-          { riskLevel, transport: 'guest' },
+          buildCrisisRoutingMetricData({
+            riskLevel,
+            transport: 'guest',
+            messageContent: content.trim(),
+          }),
           null,
           { guestSessionId: String(guestSession._id), conversationId: String(conversationId) },
         )
@@ -532,6 +542,15 @@ export async function sendGuestMessage(guestSession, contentRaw) {
   const newCount = userCount + 1;
   const remaining = Math.max(0, GUEST_MAX_USER_MESSAGES - newCount);
 
+  const crisisResources = crisisResourcesForTurn({
+    riskLevel,
+    hardStop: Boolean(crisisHardStopContent),
+    isCrisis,
+    preferences: null,
+    phone: null,
+    language: 'es',
+  });
+
   return {
     userMessage,
     assistantMessage,
@@ -544,7 +563,8 @@ export async function sendGuestMessage(guestSession, contentRaw) {
       maxUserMessages: GUEST_MAX_USER_MESSAGES,
       remainingAfterThis: remaining,
       limitReached: remaining === 0
-    }
+    },
+    ...(crisisResources ? { crisisResources } : {}),
   };
 }
 
