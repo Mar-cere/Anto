@@ -64,6 +64,7 @@ import {
   setPendingTccLiteResume,
 } from '../utils/chatTccLiteResume';
 import {
+  buildAssistantMetadataFromTurnPayload,
   resolveTccLiteAtHandoffFromPayload,
   shouldClearTccLiteHandoff,
 } from '../utils/chatTccLiteClient';
@@ -993,7 +994,9 @@ export function useChatScreen() {
               content: payload.content ?? '',
               role: MESSAGE_ROLES.ASSISTANT,
               type: MESSAGE_TYPES.TEXT,
-              metadata: { timestamp: new Date().toISOString() },
+              metadata: buildAssistantMetadataFromTurnPayload(payload, {
+                timestamp: new Date().toISOString(),
+              }),
             };
             const next = [...filtered, finalAssistant];
             const hasServerSuggestions =

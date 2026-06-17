@@ -152,6 +152,19 @@ describe('psychoeducationTopic', () => {
     expect(out.clinicalReview?.note).toMatch(/editorial/i);
   });
 
+  it('hidrata cardSchemaVersion en tarjetas ya nativas (#85)', () => {
+    const out = hydrateInterventionSuggestion(
+      {
+        id: 'psychoeducation_stress',
+        interventionType: 'psychoeducation',
+        cardVariant: 'psychoeducation_native',
+      },
+      'es',
+    );
+    expect(out.cardSchemaVersion).toBe('psychoeducation_card_v1');
+    expect(out.clinicalReview?.status).toBe('editorial_review');
+  });
+
   it('hydrateInterventionSuggestion conserva params de abc_record', () => {
     const out = hydrateInterventionSuggestion(
       {

@@ -3,9 +3,9 @@ import actionSuggestionService, {
   applyBaSuggestionPolicy,
   shouldBoostAutomaticThoughtSuggestion,
 } from '../../../services/actionSuggestionService.js';
+import { enrichSuggestionsWithAtPrefill } from '../../../services/atRecordPrefillService.js';
 import emotionalAnalyzer from '../../../services/emotionalAnalyzer.js';
 import { getInterventionCatalogEntry } from '../../../constants/interventionCatalog.js';
-import { planChatActionSuggestions } from '../../../services/psychoeducationPromptSnippetService.js';
 import {
   CHAT_AT_SMOKE_CASES,
   CHAT_AT_SMOKE_CASES_EN,
@@ -51,6 +51,21 @@ describe('chatAtSuggestions (#89)', () => {
     expect(out[0]).toBe('automatic_thought_record');
   });
 
+  it('applyAutomaticThoughtSuggestionPolicy inserta AT tras ABC con señal cognitiva', () => {
+    const msg =
+      'Me siento enojado, 6/10. Noto que reaccioné mal y no paro de darle vueltas a lo que dije.';
+    const out = applyAutomaticThoughtSuggestionPolicy(
+      ['abc_record', 'psychoeducation_anger'],
+      {
+        emotion: 'enojo',
+        intensityLevel: 'medium',
+        userContent: msg,
+      },
+    );
+    expect(out[0]).toBe('abc_record');
+    expect(out[1]).toBe('automatic_thought_record');
+  });
+
   it('applyAutomaticThoughtSuggestionPolicy no desplaza BA con apatía pura (#88)', () => {
     const apathy =
       'Me siento apagado y sin ganas de hacer nada, 6/10. Llevo días sin salir de casa.';
@@ -73,18 +88,18 @@ describe('chatAtSuggestions (#89)', () => {
     expect(out).not.toContain('automatic_thought_record');
   });
 
-  it('planChatActionSuggestions incluye prefill en automatic_thought_record', async () => {
+  it('prefill AT en sugerencias formateadas desde mensaje con distorsión', async () => {
     const analysis = await emotionalAnalyzer.analyzeEmotion(CANONICAL_DISTORTION);
-    const plan = await planChatActionSuggestions({
-      emotionalAnalysis: analysis,
-      contextualAnalysis: {},
+    const actionIds = actionSuggestionService.generateSuggestions(analysis, {}, {
       userContent: CANONICAL_DISTORTION,
-      userId: 'u1',
-      conversationId: 'c1',
-      conversationHistory: [{ role: 'assistant', content: 'Hola' }],
-      language: 'es',
     });
-    const at = plan.formatted.find((s) => s.id === 'automatic_thought_record');
+    expect(actionIds).toContain('automatic_thought_record');
+    const formatted = enrichSuggestionsWithAtPrefill(
+      actionSuggestionService.formatSuggestions(actionIds, 'es'),
+      CANONICAL_DISTORTION,
+      'es',
+    );
+    const at = formatted.find((s) => s.id === 'automatic_thought_record');
     expect(at?.params?.fromChat).toBe(true);
     expect(at?.params?.prefillDistortionType).toBeTruthy();
     expect(at?.params?.prefillEmotionIntensity).toBe(6);

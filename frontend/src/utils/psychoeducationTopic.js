@@ -226,6 +226,7 @@ function applyPsychoeducationCardFields(suggestion, language) {
     description: suggestion.description || copy.previewSummary,
     mechanismLine: suggestion.mechanismLine || copy.mechanismLine,
     clinicalReview: suggestion.clinicalReview || getDefaultClinicalReview(lang),
+    cardSchemaVersion: suggestion.cardSchemaVersion || 'psychoeducation_card_v1',
     microSteps:
       Array.isArray(suggestion.microSteps) && suggestion.microSteps.length > 0
         ? suggestion.microSteps
@@ -244,14 +245,18 @@ export function hydrateInterventionSuggestion(suggestion, language = 'es') {
   if (lang === 'en') {
     next = applyEnglishCatalogLabel(next);
   }
-  if (
-    next.cardVariant !== 'psychoeducation_native' &&
-    (next.interventionType === 'psychoeducation' ||
-      String(next.id || '').startsWith('psychoeducation_'))
-  ) {
-    next = applyPsychoeducationCardFields(next, lang);
-  } else if (lang === 'en' && next.cardVariant === 'psychoeducation_native') {
-    next = applyPsychoeducationCardFields(next, lang);
+  const isPsychoed =
+    next.interventionType === 'psychoeducation' ||
+    String(next.id || '').startsWith('psychoeducation_');
+  if (isPsychoed) {
+    const needsHydration =
+      next.cardVariant !== 'psychoeducation_native' ||
+      lang === 'en' ||
+      !next.clinicalReview?.status ||
+      !next.cardSchemaVersion;
+    if (needsHydration) {
+      next = applyPsychoeducationCardFields(next, lang);
+    }
   }
   if (next.cardVariant !== 'micro_guide_native' && isMicroGuideSuggestion(next)) {
     next = applyMicroGuideCardFields(next);

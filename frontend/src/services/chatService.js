@@ -295,11 +295,13 @@ export const sendMessageStream = async (text, { onChunk, onDone, resumeTccLite, 
         messageId: data?.assistantMessage?._id?.toString?.() || data?.assistantMessage?._id,
         content: data?.assistantMessage?.content ?? '',
         suggestions: data?.suggestions,
+        suggestionsPersonalized: data?.suggestionsPersonalized,
         proposedProductActions: sanitizeProposedProductActions(data?.proposedProductActions),
         productActionStatus: data?.productActionStatus || null,
         context: data?.context,
         guest: data?.guest,
         crisisResources: data?.crisisResources,
+        tccLite: data?.tccLite ?? null,
       });
     }
     return;

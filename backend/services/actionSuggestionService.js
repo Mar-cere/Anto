@@ -121,6 +121,13 @@ const EXPOSURE_HIERARCHY_ID = 'exposure_hierarchy';
 const BEHAVIORAL_ACTIVATION_ID = 'behavioral_activation';
 const AUTOMATIC_THOUGHT_RECORD_ID = 'automatic_thought_record';
 
+const TCC_TECHNIQUE_IDS = new Set([
+  ABC_RECORD_ID,
+  AUTOMATIC_THOUGHT_RECORD_ID,
+  BEHAVIORAL_ACTIVATION_ID,
+  EXPOSURE_HIERARCHY_ID,
+]);
+
 /** Máximo de sugerencias por bloque en el chat (técnicas + psicoed). */
 export const MAX_CHAT_ACTION_SUGGESTIONS = 2;
 
@@ -203,13 +210,24 @@ function prioritizeSuggestionBlock(
   const psychos = list.filter((id) => String(id).startsWith('psychoeducation_'));
   const out = [];
 
-  if (techniques.length > 0) out.push(techniques[0]);
-  if (requiredPsycho && out.length < max) {
+  const tccTechniques = techniques.filter((id) => TCC_TECHNIQUE_IDS.has(id));
+  if (tccTechniques.length > 0) {
+    tccTechniques.forEach((id) => {
+      if (out.length < max && !out.includes(id)) out.push(id);
+    });
+  } else if (techniques.length > 0) {
+    out.push(techniques[0]);
+  }
+
+  if (requiredPsycho && out.length < max && !out.includes(requiredPsycho)) {
     out.push(requiredPsycho);
   } else if (psychos.length > 0 && out.length < max) {
-    out.push(psychos[0]);
-  } else if (techniques.length > 1 && out.length < max) {
-    out.push(techniques[1]);
+    const psycho = psychos.find((id) => !out.includes(id));
+    if (psycho) out.push(psycho);
+  } else {
+    techniques.forEach((id) => {
+      if (out.length < max && !out.includes(id)) out.push(id);
+    });
   }
   return out.slice(0, max);
 }
@@ -391,6 +409,14 @@ export function applyAutomaticThoughtSuggestionPolicy(
   }
 
   if (list[0] === ABC_RECORD_ID) {
+    if (hasCognitiveSignal) {
+      const withoutAt = list.filter((id) => id !== AUTOMATIC_THOUGHT_RECORD_ID);
+      const abcIndex = withoutAt.indexOf(ABC_RECORD_ID);
+      if (abcIndex >= 0 && !withoutAt.includes(AUTOMATIC_THOUGHT_RECORD_ID)) {
+        withoutAt.splice(abcIndex + 1, 0, AUTOMATIC_THOUGHT_RECORD_ID);
+      }
+      return withoutAt.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
+    }
     return list.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
   }
 

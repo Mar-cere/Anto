@@ -34,4 +34,13 @@ describe('Automatic thought routes i18n (#89)', () => {
 
     expect(response.status).toBe(401);
   });
+
+  it('POST tcc-lite-draft sin auth rechaza (401)', async () => {
+    const response = await request(app)
+      .post('/api/automatic-thought-logs/tcc-lite-draft')
+      .set('X-App-Language', 'es')
+      .send({ conversationHistory: [] });
+
+    expect(response.status).toBe(401);
+  });
 });
