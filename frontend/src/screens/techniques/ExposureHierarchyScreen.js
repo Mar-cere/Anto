@@ -33,6 +33,11 @@ import { getFocusTheme } from '../../styles/focusCardTheme';
 import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
 import { confirmDestructiveAction } from '../../utils/confirmDestructiveAction';
 import { parseExposurePlanRouteParams } from '../../utils/exposurePlanPrefill';
+import {
+  buildExposureAdvanceConfirmCopy,
+  canMarkExposureStepComplete,
+} from '../../utils/exposurePlanAdvance';
+import { resolveExposurePlanErrorMessage } from '../../utils/exposurePlanApiErrors';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 import IntensityBeforeAfterMarker from '../../components/techniques/IntensityBeforeAfterMarker';
 import IntensityScalePicker from '../../components/techniques/IntensityScalePicker';
@@ -80,6 +85,8 @@ const DEFAULT_TEXTS = {
   LOG_ATTEMPT: 'Registrar intento',
   COMPLETE_STEP: 'Marcar paso como completado',
   COMPLETE_NEEDS_ATTEMPT: 'Registra al menos un intento antes de marcar el paso como completado.',
+  STEP_LOCKED: 'Completa el paso actual antes de intentar avanzar.',
+  STEP_ALREADY_COMPLETED: 'Este paso ya está completado.',
   CONFIRM_COMPLETE_TITLE: '¿Listo para avanzar?',
   CONFIRM_COMPLETE_BODY:
     'Completaste «{step}» con al menos un intento registrado. Pasarás al siguiente paso, que suele ser más difícil.\n\nSiguiente: «{next}»\n\nSolo avanza si te sientes preparado.',
@@ -164,6 +171,9 @@ const ExposureHierarchyScreen = () => {
       COMPLETE_STEP: translated?.EXPOSURE_COMPLETE_STEP || DEFAULT_TEXTS.COMPLETE_STEP,
       COMPLETE_NEEDS_ATTEMPT:
         translated?.EXPOSURE_COMPLETE_NEEDS_ATTEMPT || DEFAULT_TEXTS.COMPLETE_NEEDS_ATTEMPT,
+      STEP_LOCKED: translated?.EXPOSURE_STEP_LOCKED || DEFAULT_TEXTS.STEP_LOCKED,
+      STEP_ALREADY_COMPLETED:
+        translated?.EXPOSURE_STEP_ALREADY_COMPLETED || DEFAULT_TEXTS.STEP_ALREADY_COMPLETED,
       CONFIRM_COMPLETE_TITLE:
         translated?.EXPOSURE_CONFIRM_COMPLETE_TITLE || DEFAULT_TEXTS.CONFIRM_COMPLETE_TITLE,
       CONFIRM_COMPLETE_BODY:
@@ -237,7 +247,7 @@ const ExposureHierarchyScreen = () => {
   }, [activePlan]);
 
   const currentStepAttemptCount = currentStep?.attempts?.length || 0;
-  const canCompleteStep = currentStepAttemptCount > 0;
+  const canCompleteStep = canMarkExposureStepComplete(currentStepAttemptCount);
 
   const allStepsCompleted = useMemo(() => {
     if (!activePlan?.steps?.length) return false;
@@ -406,7 +416,14 @@ const ExposureHierarchyScreen = () => {
           prev.map((p) => (p._id === response.plan._id ? response.plan : p)),
         );
       } else {
-        showToast(response?.error || TEXTS.TOAST_ERROR);
+        showToast(
+          resolveExposurePlanErrorMessage(response, {
+            toastError: TEXTS.TOAST_ERROR,
+            stepLocked: TEXTS.STEP_LOCKED,
+            completeNeedsAttempt: TEXTS.COMPLETE_NEEDS_ATTEMPT,
+            stepAlreadyCompleted: TEXTS.STEP_ALREADY_COMPLETED,
+          }),
+        );
       }
     } catch (err) {
       console.error('Error registrando intento:', err);
@@ -415,6 +432,21 @@ const ExposureHierarchyScreen = () => {
       setLoggingAttempt(false);
     }
   };
+
+  const exposureErrorTexts = useMemo(
+    () => ({
+      toastError: TEXTS.TOAST_ERROR,
+      stepLocked: TEXTS.STEP_LOCKED,
+      completeNeedsAttempt: TEXTS.COMPLETE_NEEDS_ATTEMPT,
+      stepAlreadyCompleted: TEXTS.STEP_ALREADY_COMPLETED,
+    }),
+    [
+      TEXTS.TOAST_ERROR,
+      TEXTS.STEP_LOCKED,
+      TEXTS.COMPLETE_NEEDS_ATTEMPT,
+      TEXTS.STEP_ALREADY_COMPLETED,
+    ],
+  );
 
   const performCompleteStep = useCallback(async () => {
     if (!activePlan?._id || completingStep) return;
@@ -435,7 +467,7 @@ const ExposureHierarchyScreen = () => {
           prev.map((p) => (p._id === response.plan._id ? response.plan : p)),
         );
       } else {
-        showToast(response?.error || TEXTS.TOAST_ERROR);
+        showToast(resolveExposurePlanErrorMessage(response, exposureErrorTexts));
       }
     } catch (err) {
       console.error('Error completando paso:', err);
@@ -443,7 +475,7 @@ const ExposureHierarchyScreen = () => {
     } finally {
       setCompletingStep(false);
     }
-  }, [activePlan, completingStep, TEXTS.TOAST_STEP_DONE, TEXTS.TOAST_ERROR, showToast]);
+  }, [activePlan, completingStep, TEXTS.TOAST_STEP_DONE, TEXTS.TOAST_ERROR, exposureErrorTexts, showToast]);
 
   const handleCompleteStep = useCallback(() => {
     if (!activePlan?._id || !canCompleteStep || !currentStep || completingStep || loggingAttempt) {
@@ -455,13 +487,18 @@ const ExposureHierarchyScreen = () => {
     const nextStep = !isLastStep ? activePlan.steps[stepIndex + 1] : null;
     const stepLabel = currentStep.description?.trim() || TEXTS.CURRENT_STEP;
 
-    const title = isLastStep ? TEXTS.CONFIRM_COMPLETE_LAST_TITLE : TEXTS.CONFIRM_COMPLETE_TITLE;
-    const message = isLastStep
-      ? TEXTS.CONFIRM_COMPLETE_LAST_BODY.replace('{step}', stepLabel)
-      : TEXTS.CONFIRM_COMPLETE_BODY.replace('{step}', stepLabel).replace(
-          '{next}',
-          nextStep?.description?.trim() || '—',
-        );
+    const { title, message } = buildExposureAdvanceConfirmCopy({
+      stepLabel,
+      nextStepLabel: nextStep?.description,
+      isLastStep,
+      texts: {
+        currentStepFallback: TEXTS.CURRENT_STEP,
+        confirmCompleteTitle: TEXTS.CONFIRM_COMPLETE_TITLE,
+        confirmCompleteBody: TEXTS.CONFIRM_COMPLETE_BODY,
+        confirmCompleteLastTitle: TEXTS.CONFIRM_COMPLETE_LAST_TITLE,
+        confirmCompleteLastBody: TEXTS.CONFIRM_COMPLETE_LAST_BODY,
+      },
+    });
 
     Alert.alert(title, message, [
       { text: TEXTS.CONFIRM_CANCEL, style: 'cancel' },
@@ -474,10 +511,6 @@ const ExposureHierarchyScreen = () => {
     performCompleteStep,
     TEXTS.CONFIRM_ADVANCE,
     TEXTS.CONFIRM_CANCEL,
-    TEXTS.CONFIRM_COMPLETE_BODY,
-    TEXTS.CONFIRM_COMPLETE_LAST_BODY,
-    TEXTS.CONFIRM_COMPLETE_LAST_TITLE,
-    TEXTS.CONFIRM_COMPLETE_TITLE,
     TEXTS.CURRENT_STEP,
     completingStep,
     loggingAttempt,

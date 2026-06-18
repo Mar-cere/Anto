@@ -1351,6 +1351,8 @@ export const TECHNIQUES = {
   EXPOSURE_COMPLETE_STEP: 'Mark step complete',
   EXPOSURE_COMPLETE_NEEDS_ATTEMPT:
     'Log at least one attempt before marking the step complete.',
+  EXPOSURE_STEP_LOCKED: 'Complete the current step before trying to move ahead.',
+  EXPOSURE_STEP_ALREADY_COMPLETED: 'This step is already completed.',
   EXPOSURE_CONFIRM_COMPLETE_TITLE: 'Ready to move on?',
   EXPOSURE_CONFIRM_COMPLETE_BODY:
     'You completed «{step}» with at least one logged attempt. You will move to the next step, which is usually harder.\n\nNext: «{next}»\n\nOnly advance if you feel ready.',

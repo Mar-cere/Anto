@@ -1356,6 +1356,8 @@ export const TECHNIQUES = {
   EXPOSURE_COMPLETE_STEP: 'Marcar paso como completado',
   EXPOSURE_COMPLETE_NEEDS_ATTEMPT:
     'Registra al menos un intento antes de marcar el paso como completado.',
+  EXPOSURE_STEP_LOCKED: 'Completa el paso actual antes de intentar avanzar.',
+  EXPOSURE_STEP_ALREADY_COMPLETED: 'Este paso ya está completado.',
   EXPOSURE_CONFIRM_COMPLETE_TITLE: '¿Listo para avanzar?',
   EXPOSURE_CONFIRM_COMPLETE_BODY:
     'Completaste «{step}» con al menos un intento registrado. Pasarás al siguiente paso, que suele ser más difícil.\n\nSiguiente: «{next}»\n\nSolo avanza si te sientes preparado.',

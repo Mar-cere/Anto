@@ -63,4 +63,27 @@ describe('exposurePlanGuards (#87 / #190)', () => {
     expect(result.ok).toBe(true);
     expect(result.stepIndex).toBe(0);
   });
+
+  it('evaluateLogExposureAttempt rechaza paso ya completado', () => {
+    const plan = planFixture({
+      steps: [{ status: 'completed', attempts: [{ peakSuds: 40, endSuds: 20 }] }, { status: 'pending', attempts: [] }],
+      currentStepIndex: 1,
+    });
+    const result = evaluateLogExposureAttempt(plan, 0);
+    expect(result.ok).toBe(false);
+    expect(result.errorKey).toBe('stepAlreadyCompleted');
+  });
+
+  it('evaluateCompleteExposureStep rechaza paso ya completado', () => {
+    const plan = planFixture({
+      currentStepIndex: 0,
+      steps: [
+        { status: 'completed', attempts: [{ peakSuds: 50, endSuds: 30 }] },
+        { status: 'pending', attempts: [] },
+      ],
+    });
+    const result = evaluateCompleteExposureStep(plan, 0);
+    expect(result.ok).toBe(false);
+    expect(result.errorKey).toBe('stepAlreadyCompleted');
+  });
 });

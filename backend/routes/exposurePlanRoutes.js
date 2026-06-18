@@ -19,6 +19,7 @@ import {
   evaluateCompleteExposureStep,
   evaluateLogExposureAttempt,
 } from '../utils/exposurePlanGuards.js';
+import { buildExposureGuardErrorBody } from '../utils/exposurePlanGuardResponse.js';
 
 const router = express.Router();
 
@@ -240,15 +241,7 @@ router.post('/:id/attempts', validateObjectId, attemptLimiter, async (req, res) 
 
     const attemptEval = evaluateLogExposureAttempt(plan, value.stepIndex);
     if (!attemptEval.ok) {
-      const errMap = {
-        stepIndexInvalid: copy.stepIndexInvalid,
-        stepLocked: copy.stepLocked,
-        stepAlreadyCompleted: copy.stepAlreadyCompleted,
-      };
-      return res.status(400).json({
-        success: false,
-        error: errMap[attemptEval.errorKey] || copy.stepIndexInvalid,
-      });
+      return res.status(400).json(buildExposureGuardErrorBody(attemptEval.errorKey, copy));
     }
     const stepIndex = attemptEval.stepIndex;
     const step = plan.steps[stepIndex];
@@ -295,16 +288,7 @@ router.post('/:id/steps/:stepIndex/complete', validateObjectId, attemptLimiter, 
 
     const completeEval = evaluateCompleteExposureStep(plan, stepIndex);
     if (!completeEval.ok) {
-      const errMap = {
-        stepIndexInvalid: copy.stepIndexInvalid,
-        stepLocked: copy.stepLocked,
-        stepAlreadyCompleted: copy.stepAlreadyCompleted,
-        stepNeedsAttempt: copy.stepNeedsAttempt,
-      };
-      return res.status(400).json({
-        success: false,
-        error: errMap[completeEval.errorKey] || copy.stepIndexInvalid,
-      });
+      return res.status(400).json(buildExposureGuardErrorBody(completeEval.errorKey, copy));
     }
     const resolvedStepIndex = completeEval.stepIndex;
     const step = plan.steps[resolvedStepIndex];
