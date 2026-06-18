@@ -1,48 +1,95 @@
 /**
- * Visual de ciclo A→B→C para patrones macro (#212).
+ * Lienzo interactivo de ciclo A→B→C para patrones macro (#212).
  */
-import React, { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+import {
+  ABC_MACRO_CYCLE_COPY,
+  getAbcMacroCycleInterventionHint,
+  getAbcMacroCycleLegSamples,
+  normalizeAbcMacroCycleLanguage,
+} from './abcMacroCycleCopy';
 
-const COPY = {
-  es: {
-    legA: 'Situación',
-    legB: 'Pensamiento',
-    legC: 'Consecuencia',
-    avgIntensity: (n) => `Intensidad media ${n}/10`,
-  },
-  en: {
-    legA: 'Situation',
-    legB: 'Thought',
-    legC: 'Consequence',
-    avgIntensity: (n) => `Average intensity ${n}/10`,
-  },
-};
+function LegNode({
+  legKey,
+  label,
+  samples,
+  letter,
+  colors,
+  styles,
+  interactive,
+  expanded,
+  onToggle,
+  language,
+}) {
+  const text = samples.filter(Boolean).join(' · ');
+  const hint = expanded ? getAbcMacroCycleInterventionHint(legKey, language) : '';
+  const copy = ABC_MACRO_CYCLE_COPY[language];
+  const a11yLabel = copy.a11yLeg(letter, label, expanded);
 
-function LegNode({ label, samples, letter, colors, styles }) {
-  const text = Array.isArray(samples) ? samples.filter(Boolean).join(' · ') : '';
-  return (
-    <View style={styles.leg} accessibilityRole="text">
-      <View style={[styles.legBadge, { borderColor: colors.primary }]}>
+  const body = (
+    <>
+      <View
+        style={[
+          styles.legBadge,
+          { borderColor: colors.primary },
+          expanded && styles.legBadgeExpanded,
+        ]}
+      >
         <Text style={[styles.legLetter, { color: colors.primary }]}>{letter}</Text>
       </View>
       <Text style={styles.legLabel}>{label}</Text>
       {text ? (
-        <Text style={styles.legSample} numberOfLines={3}>
+        <Text style={styles.legSample} numberOfLines={expanded ? undefined : 3}>
           {text}
         </Text>
       ) : null}
-    </View>
+      {expanded && hint ? <Text style={styles.interventionHint}>{hint}</Text> : null}
+    </>
+  );
+
+  if (!interactive) {
+    return (
+      <View style={styles.leg} accessibilityRole="text">
+        {body}
+      </View>
+    );
+  }
+
+  return (
+    <Pressable
+      style={[styles.leg, expanded && styles.legExpanded]}
+      onPress={() => onToggle(legKey)}
+      accessibilityRole="button"
+      accessibilityLabel={a11yLabel}
+      accessibilityState={{ expanded }}
+    >
+      {body}
+    </Pressable>
   );
 }
 
-export default function AbcMacroCycleVisual({ cycle, avgEmotionIntensity = null, compact = false }) {
+export default function AbcMacroCycleVisual({
+  cycle,
+  avgEmotionIntensity = null,
+  compact = false,
+  interactive: interactiveProp,
+}) {
   const { colors } = useTheme();
-  const { language } = useLanguage();
-  const text = COPY[language === 'en' ? 'en' : 'es'];
+  const { language: appLanguage } = useLanguage();
+  const language = normalizeAbcMacroCycleLanguage(appLanguage);
+  const text = ABC_MACRO_CYCLE_COPY[language];
+  const interactive = interactiveProp ?? !compact;
+  const [expandedLeg, setExpandedLeg] = useState(null);
+
+  const onToggle = useCallback((legKey) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    setExpandedLeg((prev) => (prev === legKey ? null : legKey));
+  }, []);
 
   const styles = useMemo(
     () =>
@@ -53,6 +100,12 @@ export default function AbcMacroCycleVisual({ cycle, avgEmotionIntensity = null,
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: colors.border,
         },
+        exploreHint: {
+          fontSize: 11,
+          lineHeight: 16,
+          color: colors.textSecondary,
+          marginBottom: 8,
+        },
         row: {
           flexDirection: 'row',
           alignItems: 'flex-start',
@@ -61,6 +114,11 @@ export default function AbcMacroCycleVisual({ cycle, avgEmotionIntensity = null,
         leg: {
           flex: 1,
           minWidth: 0,
+          borderRadius: 10,
+          padding: interactive ? 4 : 0,
+        },
+        legExpanded: {
+          backgroundColor: colors.glassFill ?? colors.surface ?? 'rgba(127,127,127,0.08)',
         },
         legBadge: {
           width: 22,
@@ -70,6 +128,9 @@ export default function AbcMacroCycleVisual({ cycle, avgEmotionIntensity = null,
           alignItems: 'center',
           justifyContent: 'center',
           marginBottom: 4,
+        },
+        legBadgeExpanded: {
+          backgroundColor: colors.primarySoft ?? 'rgba(127,127,127,0.12)',
         },
         legLetter: {
           fontSize: 11,
@@ -88,6 +149,13 @@ export default function AbcMacroCycleVisual({ cycle, avgEmotionIntensity = null,
           lineHeight: 17,
           color: colors.text,
         },
+        interventionHint: {
+          marginTop: 6,
+          fontSize: 11,
+          lineHeight: 16,
+          color: colors.textSecondary,
+          fontStyle: 'italic',
+        },
         arrow: {
           paddingTop: 2,
           opacity: 0.7,
@@ -98,47 +166,45 @@ export default function AbcMacroCycleVisual({ cycle, avgEmotionIntensity = null,
           color: colors.textSecondary,
         },
       }),
-    [colors, compact],
+    [colors, compact, interactive],
   );
 
   if (!cycle || typeof cycle !== 'object') return null;
 
+  const legs = [
+    { key: 'A', letter: 'A', label: text.legA },
+    { key: 'B', letter: 'B', label: text.legB },
+    { key: 'C', letter: 'C', label: text.legC },
+  ];
+
   return (
-    <View style={styles.wrap}>
+    <View style={styles.wrap} accessibilityRole="summary">
+      {interactive ? <Text style={styles.exploreHint}>{text.exploreHint}</Text> : null}
       <View style={styles.row}>
-        <LegNode
-          letter="A"
-          label={text.legA}
-          samples={[cycle.trigger]}
-          colors={colors}
-          styles={styles}
-        />
-        <MaterialCommunityIcons
-          name="arrow-right"
-          size={16}
-          color={colors.textSecondary}
-          style={styles.arrow}
-        />
-        <LegNode
-          letter="B"
-          label={text.legB}
-          samples={cycle.thoughts}
-          colors={colors}
-          styles={styles}
-        />
-        <MaterialCommunityIcons
-          name="arrow-right"
-          size={16}
-          color={colors.textSecondary}
-          style={styles.arrow}
-        />
-        <LegNode
-          letter="C"
-          label={text.legC}
-          samples={[...(cycle.emotions || []), ...(cycle.consequences || [])]}
-          colors={colors}
-          styles={styles}
-        />
+        {legs.map((leg, index) => (
+          <React.Fragment key={leg.key}>
+            {index > 0 ? (
+              <MaterialCommunityIcons
+                name="arrow-right"
+                size={16}
+                color={colors.textSecondary}
+                style={styles.arrow}
+              />
+            ) : null}
+            <LegNode
+              legKey={leg.key}
+              letter={leg.letter}
+              label={leg.label}
+              samples={getAbcMacroCycleLegSamples(cycle, leg.key)}
+              colors={colors}
+              styles={styles}
+              interactive={interactive}
+              expanded={expandedLeg === leg.key}
+              onToggle={onToggle}
+              language={language}
+            />
+          </React.Fragment>
+        ))}
       </View>
       {avgEmotionIntensity != null ? (
         <Text style={styles.intensity}>{text.avgIntensity(avgEmotionIntensity)}</Text>

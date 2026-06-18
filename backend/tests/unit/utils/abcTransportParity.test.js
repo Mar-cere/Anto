@@ -31,7 +31,16 @@ describe('ABC transport parity (#86 / #212)', () => {
   it('tarjeta macro soporta visual de ciclo', () => {
     expect(cardSrc).toMatch(/AbcMacroCycleVisual/);
     expect(cardSrc).toMatch(/detail.*cycle|showCycleVisual/);
+    expect(cardSrc).toMatch(/interactive/);
     expect(cardSrc).toMatch(/resolveAbcApiErrorMessage/);
+  });
+
+  it('lienzo interactivo #212 con patas expandibles', () => {
+    const visualSrc = readSource('../frontend/src/components/abc/AbcMacroCycleVisual.js');
+    const copySrc = readSource('../frontend/src/components/abc/abcMacroCycleCopy.js');
+    expect(visualSrc).toMatch(/Pressable/);
+    expect(visualSrc).toMatch(/getAbcMacroCycleInterventionHint/);
+    expect(copySrc).toMatch(/interventionB/);
   });
 
   it('chat usa continuidad ABC reciente (#212)', () => {

@@ -20,6 +20,11 @@ import {
   CHAT_ABC_SMOKE_CASES,
   CHAT_ABC_SMOKE_CASES_EN,
 } from '../tests/fixtures/chatAbcSmokeMessages.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const smokeRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 let failed = 0;
 
@@ -71,6 +76,12 @@ ok(
   cycleClient[0]?.cycle?.trigger && cycleClient[0].cycle.thoughts?.length > 0,
 );
 
+const cycleVisualSrc = fs.readFileSync(
+  path.join(smokeRoot, '../frontend/src/components/abc/AbcMacroCycleVisual.js'),
+  'utf8',
+);
+ok('lienzo interactivo #212 (patas expandibles)', /Pressable/.test(cycleVisualSrc) && /interventionHint/.test(cycleVisualSrc));
+
 const guardBody = buildAbcGuardErrorBody('macroInvalidRange', 'rango inválido');
 ok(
   'buildAbcGuardErrorBody código estable',
@@ -107,7 +118,7 @@ for (const { lang, cases } of [
 }
 
 console.log('\nRuta manual en dispositivo: Técnicas → Autorregistro ABC');
-console.log('Validar: prefill desde chat, ciclo macro A→B→C, export y registros recientes\n');
+console.log('Validar: prefill desde chat, ciclo macro A→B→C interactivo, export y registros recientes\n');
 
 if (failed > 0) {
   console.error(`❌ Smoke ABC falló (${failed} checks)\n`);

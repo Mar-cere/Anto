@@ -198,6 +198,7 @@ export default function AbcMacroPatternsCard({
               cycle={row.cycle}
               avgEmotionIntensity={row.avgEmotionIntensity}
               compact={compact}
+              interactive={!compact}
             />
           ) : null}
         </View>
