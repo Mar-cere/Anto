@@ -5,8 +5,9 @@ import { View, Text, Pressable } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { createDashboardStyles } from '../../styles/dashboardTheme';
+import { buildStreakHeroCopy } from '../../utils/dashboardHomeUtils';
 
-const DashboardStreakHero = memo(({ streakDays, onOpenChat }) => {
+const DashboardStreakHero = memo(({ streakDays, displayName, dailyMood, onOpenChat }) => {
   const DASH = useSectionTranslations('DASH');
   const { colors, resolvedScheme } = useTheme();
   const styles = useMemo(
@@ -14,24 +15,16 @@ const DashboardStreakHero = memo(({ streakDays, onOpenChat }) => {
     [colors, resolvedScheme],
   );
 
-  const copy = useMemo(() => {
-    if (streakDays >= 2) {
-      return {
-        title: DASH.STREAK_HERO_TITLE.replace('{days}', String(streakDays)),
-        subtitle: DASH.STREAK_HERO_SUBTITLE_ACTIVE,
-      };
-    }
-    if (streakDays === 1) {
-      return {
-        title: DASH.STREAK_HERO_TITLE_ONE,
-        subtitle: DASH.STREAK_HERO_SUBTITLE_START,
-      };
-    }
-    return {
-      title: DASH.STREAK_HERO_TITLE_ZERO,
-      subtitle: DASH.STREAK_HERO_SUBTITLE_ZERO,
-    };
-  }, [streakDays, DASH]);
+  const copy = useMemo(
+    () =>
+      buildStreakHeroCopy({
+        streakDays,
+        displayName,
+        dailyMood,
+        texts: DASH,
+      }),
+    [streakDays, displayName, dailyMood, DASH],
+  );
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});

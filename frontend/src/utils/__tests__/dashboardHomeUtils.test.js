@@ -4,10 +4,29 @@ import {
   getDashboardEyebrow,
   getDashboardDisplayName,
   getProfileInitial,
-  pickAntoPromptFromFocus,
+  buildStreakHeroCopy,
+  pickStableVariantIndex,
   formatHabitRowMeta,
   getActiveHabitsForDashboard,
+  resolveDashboardStreakDays,
 } from '../dashboardHomeUtils';
+
+const HERO_TEXTS_ES = {
+  STREAK_HERO_ZERO_TITLE_0: 'Hola, {name}.',
+  STREAK_HERO_ZERO_SUBTITLE_0: 'Estoy aquí cuando quieras hablar de cómo te sientes.',
+  STREAK_HERO_ZERO_TITLE_1: '{name}, ¿cómo amaneció el día?',
+  STREAK_HERO_ZERO_SUBTITLE_1: 'Si quieres, lo vemos juntos en el chat.',
+  STREAK_HERO_ZERO_TITLE_2: '{name}, me dio gusto verte por aquí.',
+  STREAK_HERO_ZERO_SUBTITLE_2: 'Cuéntame cómo te encuentras, sin apuro.',
+  STREAK_HERO_MOOD_GOOD_TITLE_0: '{name}, me alegra que estés bien.',
+  STREAK_HERO_MOOD_GOOD_SUBTITLE_0: '¿Quieres contarme qué está ayudando hoy?',
+  STREAK_HERO_MOOD_GOOD_TITLE_1: '{name}, qué bueno leerte así.',
+  STREAK_HERO_MOOD_GOOD_SUBTITLE_1: '¿Hay algo que quieras celebrar o sostener?',
+  STREAK_HERO_MOOD_GOOD_TITLE_2: '{name}, hoy suena con buena energía.',
+  STREAK_HERO_MOOD_GOOD_SUBTITLE_2: 'Podemos aprovechar ese impulso si te apetece.',
+  STREAK_HERO_MOOD_GOOD_TITLE_3: '{name}, me gusta cómo llegas.',
+  STREAK_HERO_MOOD_GOOD_SUBTITLE_3: '¿Qué te gustaría hacer con ese ánimo hoy?',
+};
 
 describe('dashboardHomeUtils', () => {
   it('formatea el eyebrow del header en español', () => {
@@ -44,27 +63,9 @@ describe('dashboardHomeUtils', () => {
     expect(getActiveHabitsForDashboard(habits)).toHaveLength(2);
   });
 
-  it('prioriza dailyMood para el prompt de Anto', () => {
-    const prompt = pickAntoPromptFromFocus({
-      dailyMood: {
-        mood: 'anxious',
-        antoSnippet: 'Puedo acompañarte ahora.',
-        suggestChat: true,
-      },
-      reminder: { candidates: [{ title: 'Otro', subtitle: 'x', kind: 'chat' }] },
-    });
-    expect(prompt?.snippet).toBe('Puedo acompañarte ahora.');
-    expect(prompt?.kind).toBe('daily_mood');
-  });
-
-  it('extrae prompt de Anto desde foco', () => {
-    const prompt = pickAntoPromptFromFocus({
-      reminder: {
-        candidates: [{ title: 'Retoma', subtitle: 'Última charla', kind: 'chat', conversationId: 'abc' }],
-      },
-    });
-    expect(prompt?.snippet).toBe('Última charla');
-    expect(prompt?.conversationId).toBe('abc');
+  it('resolveDashboardStreakDays prioriza engagementStreak del foco', () => {
+    expect(resolveDashboardStreakDays({ engagementStreak: { current: 4 } }, [])).toBe(4);
+    expect(resolveDashboardStreakDays(null, [{ status: {}, progress: { streak: 2 } }])).toBe(2);
   });
 
   it('formatea meta de hábito pendiente', () => {
@@ -73,5 +74,46 @@ describe('dashboardHomeUtils', () => {
       { HABIT_META_PENDING: 'Sin completar hoy', HABIT_META_COMPLETED_TODAY: 'x', HABIT_META_COMPLETED_STREAK: 'y' },
     );
     expect(meta).toBe('Sin completar hoy');
+  });
+
+  it('personaliza el héroe con nombre y ánimo del día', () => {
+    const copy = buildStreakHeroCopy({
+      streakDays: 0,
+      displayName: 'Marcelo Ull',
+      dailyMood: { mood: 'good', dateKey: '2026-06-18' },
+      texts: HERO_TEXTS_ES,
+    });
+    expect(copy.title).toContain('Marcelo');
+    expect(copy.subtitle.length).toBeGreaterThan(10);
+  });
+
+  it('rota variantes del héroe según fecha y ánimo', () => {
+    const seedA = buildStreakHeroCopy({
+      streakDays: 0,
+      displayName: 'Ana',
+      dailyMood: { mood: 'good', dateKey: '2026-06-18' },
+      texts: HERO_TEXTS_ES,
+    });
+    const seedB = buildStreakHeroCopy({
+      streakDays: 0,
+      displayName: 'Ana',
+      dailyMood: { mood: 'good', dateKey: '2026-06-19' },
+      texts: HERO_TEXTS_ES,
+    });
+    expect(pickStableVariantIndex('2026-06-18:good:0', 4)).not.toBe(
+      pickStableVariantIndex('2026-06-19:good:0', 4),
+    );
+    expect([seedA.title, seedA.subtitle].join(' ')).not.toEqual([seedB.title, seedB.subtitle].join(' '));
+  });
+
+  it('usa saludo personal sin racha cuando no hay ánimo', () => {
+    const copy = buildStreakHeroCopy({
+      streakDays: 0,
+      displayName: 'Marcelo',
+      dailyMood: null,
+      texts: HERO_TEXTS_ES,
+    });
+    expect(copy.title).toMatch(/Marcelo|Hola/);
+    expect(copy.subtitle.length).toBeGreaterThan(10);
   });
 });

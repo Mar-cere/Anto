@@ -243,6 +243,10 @@ const TaskCard = memo(() => {
 
   const visibleItems = items.slice(0, MAX_VISIBLE_ITEMS);
 
+  if (!loading && !error && items.length === 0) {
+    return null;
+  }
+
   const renderBody = () => {
     if (loading && !refreshing) {
       return (
@@ -269,20 +273,7 @@ const TaskCard = memo(() => {
     }
 
     if (items.length === 0) {
-      return (
-        <View style={[styles.surfaceCard, styles.inlineState]}>
-          <Text style={listStyles.emptyText}>{TEXTS.EMPTY_TASK}</Text>
-          <Pressable
-            style={({ pressed }) => [listStyles.addButton, pressed && { opacity: 0.88 }]}
-            onPress={() => navigation.navigate('Tasks', { mode: 'create', openModal: true })}
-            accessibilityRole="button"
-            accessibilityLabel={TEXTS.ADD_TASK}
-          >
-            <MaterialCommunityIcons name="plus" size={16} color={colors.primary} />
-            <Text style={listStyles.addButtonText}>{TEXTS.ADD_TASK}</Text>
-          </Pressable>
-        </View>
-      );
+      return null;
     }
 
     return (

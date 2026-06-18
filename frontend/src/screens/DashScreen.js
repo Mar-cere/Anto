@@ -31,7 +31,6 @@ import OnboardingTutorial, { isTutorialCompleted } from '../components/Onboardin
 import TutorialHighlight from '../components/TutorialHighlight';
 import DashboardHomeHeader from '../components/dashboard/DashboardHomeHeader';
 import MoodCheckInCard from '../components/dashboard/MoodCheckInCard';
-import DashboardAntoPromptCard from '../components/dashboard/DashboardAntoPromptCard';
 import DashboardStreakHero from '../components/dashboard/DashboardStreakHero';
 import DashboardStatsRow from '../components/dashboard/DashboardStatsRow';
 import DashboardHabitsSection from '../components/dashboard/DashboardHabitsSection';
@@ -46,8 +45,10 @@ import { api, ENDPOINTS } from '../config/api';
 import { BORDERS, SPACING, STATUS_BAR } from '../constants/ui';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  computeDashboardStreakDays,
   computeHabitsActiveThisWeek,
+  getActiveHabitsForDashboard,
+  getDashboardDisplayName,
+  resolveDashboardStreakDays,
 } from '../utils/dashboardHomeUtils';
 import { areNotificationsEnabled, registerForPushNotifications, requestNotificationPermissions } from '../services/pushNotificationService';
 import paymentService from '../services/paymentService';
@@ -576,8 +577,16 @@ const DashScreen = () => {
     await checkEmergencyContacts();
   }, [checkEmergencyContacts]);
 
-  const handleMoodSaved = useCallback((saved) => {
+  const handleMoodSaved = useCallback(async (saved) => {
     setFocusPayload((prev) => (prev ? { ...prev, dailyMood: saved } : prev));
+    try {
+      const focusRes = await api.get(ENDPOINTS.SUMMARY_FOCUS);
+      if (focusRes?.success && focusRes?.data) {
+        setFocusPayload(focusRes.data);
+      }
+    } catch (_) {
+      /* noop */
+    }
   }, []);
 
   const goToChatFromOnboarding = useCallback(async () => {
@@ -751,9 +760,14 @@ const DashScreen = () => {
 
   const dashboardStats = useMemo(
     () => ({
-      streakDays: computeDashboardStreakDays(habits),
+      streakDays: resolveDashboardStreakDays(focusPayload, habits),
       habitsThisWeek: computeHabitsActiveThisWeek(habits),
     }),
+    [habits, focusPayload],
+  );
+
+  const hasActiveHabits = useMemo(
+    () => getActiveHabitsForDashboard(habits).length > 0,
     [habits],
   );
 
@@ -818,28 +832,26 @@ const DashScreen = () => {
             onDismiss={handleNotificationsPromptDismiss}
             enabling={enablingNotifications}
           />
-          <MoodCheckInCard
-            onOpenChat={goToChatFromOnboarding}
-            onMoodSaved={handleMoodSaved}
-          />
-          <DashboardAntoPromptCard
-            focusPayload={focusPayload}
-            onOpenChat={goToChatFromOnboarding}
-            onOpenConversation={openConversationFromFocus}
-          />
+          <MoodCheckInCard onMoodSaved={handleMoodSaved} />
           <DashboardStreakHero
             streakDays={dashboardStats.streakDays}
+            displayName={getDashboardDisplayName(userData)}
+            dailyMood={focusPayload?.dailyMood}
             onOpenChat={goToChatFromOnboarding}
           />
           <DashboardStatsRow
             streakDays={dashboardStats.streakDays}
             habitsThisWeek={dashboardStats.habitsThisWeek}
+            showHabitsStat={hasActiveHabits}
           />
-          <DashboardHabitsSection
-            habits={habits}
-            togglingId={togglingHabitId}
-            onUpdate={handleHabitToggleUpdate}
-          />
+          {hasActiveHabits ? (
+            <DashboardHabitsSection
+              habits={habits}
+              togglingId={togglingHabitId}
+              onUpdate={handleHabitToggleUpdate}
+            />
+          ) : null}
+          <TaskCard />
           {error && (
             <ErrorMessage
               message={error}
@@ -855,7 +867,6 @@ const DashScreen = () => {
             onOpenExposureHierarchy={openExposureFromFocus}
             onCommitmentsChanged={refreshHomeDataOnFocus}
           />
-          <TaskCard />
           <TccProtocolsQuickCard accessibilityLabel={DASH.TCC_TOOLS_LABEL} />
           <JournalCard />
           <InsightsQuickCard accessibilityLabel={DASH.INSIGHTS_CARD_A11Y} />

@@ -4,7 +4,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { createDashboardStyles } from '../../styles/dashboardTheme';
 
-const DashboardStatsRow = memo(({ streakDays, habitsThisWeek }) => {
+const DashboardStatsRow = memo(({ streakDays, habitsThisWeek, showHabitsStat = true }) => {
   const DASH = useSectionTranslations('DASH');
   const { colors, resolvedScheme } = useTheme();
   const styles = useMemo(
@@ -19,11 +19,13 @@ const DashboardStatsRow = memo(({ streakDays, habitsThisWeek }) => {
         <Text style={styles.statLabel}>{DASH.STAT_STREAK_DAYS}</Text>
         <View style={styles.statAccent} />
       </View>
-      <View style={styles.statCard}>
-        <Text style={styles.statValue}>{habitsThisWeek}</Text>
-        <Text style={styles.statLabel}>{DASH.STAT_HABITS_WEEK}</Text>
-        <View style={[styles.statAccent, { backgroundColor: colors.accentWarm }]} />
-      </View>
+      {showHabitsStat ? (
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>{habitsThisWeek}</Text>
+          <Text style={styles.statLabel}>{DASH.STAT_HABITS_WEEK}</Text>
+          <View style={[styles.statAccent, { backgroundColor: colors.accentWarm }]} />
+        </View>
+      ) : null}
     </View>
   );
 });

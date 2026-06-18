@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
@@ -12,7 +11,7 @@ import {
 import { createDashboardStyles } from '../../styles/dashboardTheme';
 import { cacheTodayMoodPayload } from '../../utils/dailyMoodStorage';
 
-const MoodCheckInCard = memo(({ onOpenChat, onMoodSaved }) => {
+const MoodCheckInCard = memo(({ onMoodSaved }) => {
   const DASH = useSectionTranslations('DASH');
   const { colors, resolvedScheme } = useTheme();
   const styles = useMemo(
@@ -68,16 +67,6 @@ const MoodCheckInCard = memo(({ onOpenChat, onMoodSaved }) => {
     [onMoodSaved, saving],
   );
 
-  const handleOpenChat = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    onOpenChat?.(checkIn);
-  }, [checkIn, onOpenChat]);
-
-  const selected = checkIn?.mood ?? null;
-  const acknowledgment =
-    checkIn?.acknowledgment ||
-    (selected === 'anxious' || selected === 'tired' ? DASH.MOOD_ACK_CHAT_HINT : '');
-
   return (
     <View style={[styles.section, styles.surfaceCard]} accessibilityRole="summary">
       <Text style={styles.eyebrow}>{DASH.MOOD_SECTION_LABEL}</Text>
@@ -88,7 +77,7 @@ const MoodCheckInCard = memo(({ onOpenChat, onMoodSaved }) => {
       ) : (
         <View style={styles.moodRow}>
           {MOOD_OPTIONS.map((key) => {
-            const isSelected = selected === key;
+            const isSelected = checkIn?.mood === key;
             return (
               <Pressable
                 key={key}
@@ -113,41 +102,6 @@ const MoodCheckInCard = memo(({ onOpenChat, onMoodSaved }) => {
           })}
         </View>
       )}
-
-      {acknowledgment ? (
-        <Text
-          style={{
-            marginTop: 14,
-            fontSize: 14,
-            lineHeight: 20,
-            color: colors.textSecondary,
-          }}
-        >
-          {acknowledgment}
-        </Text>
-      ) : null}
-
-      {checkIn?.suggestChat ? (
-        <Pressable
-          onPress={handleOpenChat}
-          style={({ pressed }) => [
-            styles.heroCta,
-            {
-              marginTop: 14,
-              backgroundColor: colors.accentLineSoft,
-              borderColor: colors.accentLine,
-            },
-            pressed && { opacity: 0.9 },
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={DASH.MOOD_OPEN_CHAT_CTA}
-        >
-          <Ionicons name="chatbubble-outline" size={16} color={colors.primary} style={{ marginRight: 8 }} />
-          <Text style={[styles.heroCtaText, { color: colors.primary }]}>
-            {DASH.MOOD_OPEN_CHAT_CTA}
-          </Text>
-        </Pressable>
-      ) : null}
     </View>
   );
 });

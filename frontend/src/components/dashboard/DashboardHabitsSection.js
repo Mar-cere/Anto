@@ -55,16 +55,7 @@ const DashboardHabitsSection = memo(({ habits, onUpdate, togglingId }) => {
   );
 
   if (!todayHabits.length) {
-    return (
-      <View style={styles.section}>
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>{DASH.HABITS_TODAY_TITLE}</Text>
-        </View>
-        <View style={[styles.groupedCard, styles.groupedRow]}>
-          <Text style={styles.rowMeta}>{HABITS.EMPTY_ACTIVE}</Text>
-        </View>
-      </View>
-    );
+    return null;
   }
 
   return (
