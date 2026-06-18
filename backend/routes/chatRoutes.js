@@ -56,6 +56,7 @@ import {
     writingStyleDetector
 } from '../services/index.js';
 import { scheduleLastSessionSummary } from '../services/lastSessionSummaryService.js';
+import { getTodayDailyMoodCheckIn } from '../services/dailyMoodCheckInService.js';
 import { buildSessionInsight } from '../services/sessionInsightService.js';
 import metricsService from '../services/metricsService.js';
 import { buildHistoryForPromptFromMessages } from '../services/openai/openaiPromptBuilder.js';
@@ -994,7 +995,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         // 2. Obtener contexto e historial (en paralelo)
         logs.push(`[${Date.now() - startTime}ms] Obteniendo contexto e historial`);
         // Optimización: Usar índices compuestos y proyección para reducir datos transferidos
-        const [conversationHistory, userProfile, therapeuticRecord, user, priorConversationCount] = await Promise.all([
+        const [conversationHistory, userProfile, therapeuticRecord, user, priorConversationCount, dailyMoodCheckIn] = await Promise.all([
           Message.find({ conversationId })
           .select('content role metadata.context.emotional createdAt') // Solo campos necesarios
           .sort({ createdAt: -1 })
@@ -1006,6 +1007,9 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           Conversation.countDocuments({
             userId: req.user._id,
             _id: { $ne: conversationId }
+          }).catch(() => null),
+          getTodayDailyMoodCheckIn(req.user._id, {
+            language: resolveRequestLanguage(req),
           }).catch(() => null)
         ]);
 
@@ -1312,6 +1316,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           sessionIntention: sessionIntentionSafe,
           responseStrategyHint,
           conversationPattern,
+          dailyMoodCheckIn: dailyMoodCheckIn || null,
           psychoeducationPromptSnippet: promptSnippets.psychoeducationPromptSnippet,
           activeTccProtocolsPromptSnippet: promptSnippets.activeTccProtocolsPromptSnippet,
           tccLitePromptSnippet: promptSnippets.tccLitePromptSnippet,

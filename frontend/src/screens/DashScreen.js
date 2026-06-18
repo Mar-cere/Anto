@@ -16,7 +16,6 @@ import {
   Alert,
   Animated,
   Easing,
-  ImageBackground,
   Linking,
   StatusBar,
   StyleSheet,
@@ -32,9 +31,12 @@ import FirstSessionHint, { isFirstSessionHintDismissed } from '../components/Fir
 import OnboardingQuestions from '../components/OnboardingQuestions';
 import OnboardingTutorial, { isTutorialCompleted } from '../components/OnboardingTutorial';
 import TutorialHighlight from '../components/TutorialHighlight';
-import HabitCard from '../components/HabitCard';
-import Header from '../components/Header';
-import ParticleBackground from '../components/ParticleBackground';
+import DashboardHomeHeader from '../components/dashboard/DashboardHomeHeader';
+import MoodCheckInCard from '../components/dashboard/MoodCheckInCard';
+import DashboardAntoPromptCard from '../components/dashboard/DashboardAntoPromptCard';
+import DashboardStreakHero from '../components/dashboard/DashboardStreakHero';
+import DashboardStatsRow from '../components/dashboard/DashboardStatsRow';
+import DashboardHabitsSection from '../components/dashboard/DashboardHabitsSection';
 import JournalCard from '../components/JournalCard';
 import QuoteSection from '../components/QuoteSection';
 import DashboardFocusCard from '../components/DashboardFocusCard';
@@ -44,16 +46,18 @@ import TaskCard from '../components/TaskCard';
 import { SkeletonBlock, SkeletonCard } from '../components/Skeleton';
 import { api, ENDPOINTS } from '../config/api';
 import { ANIMATION_DURATIONS, ANIMATION_OPACITIES, ANIMATION_SCALES } from '../constants/animations';
-import { BORDERS, OPACITIES, SPACING, STATUS_BAR } from '../constants/ui';
+import { BORDERS, SPACING, STATUS_BAR } from '../constants/ui';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getGreetingByHourAndDayAndName } from '../utils/greetings';
+import {
+  computeDashboardStreakDays,
+  computeHabitsActiveThisWeek,
+} from '../utils/dashboardHomeUtils';
 import { areNotificationsEnabled, registerForPushNotifications, requestNotificationPermissions } from '../services/pushNotificationService';
 import paymentService from '../services/paymentService';
 import TrialBanner from '../components/TrialBanner';
 import OfflineBanner from '../components/OfflineBanner';
 import NotificationsPromptBanner from '../components/NotificationsPromptBanner';
 import { useTheme } from '../context/ThemeContext';
-import { useLanguage } from '../context/LanguageContext';
 import {
   computeNextPromptAt,
   getNotificationsPromptNextAtKey,
@@ -77,7 +81,6 @@ const DashScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { colors, statusBarStyle } = useTheme();
-  const { language } = useLanguage();
   const styles = useMemo(
     () =>
       StyleSheet.create({
@@ -114,23 +117,22 @@ const DashScreen = () => {
         skeletonCard: {
           marginBottom: 20,
         },
-        background: {
-          flex: 1,
-          width: '100%',
-          /** Base uniforme bajo la imagen (opacidad baja): evita franja distinta si el header es transparente. */
-          backgroundColor: colors.background,
+        backgroundTint: {
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor: colors.gradientTop,
+          opacity: 0.45,
         },
-        imageStyle: {
-          opacity: OPACITIES.IMAGE_BACKGROUND,
+        moreSectionHeader: {
+          marginTop: 8,
+          marginBottom: 14,
+          paddingHorizontal: 2,
         },
-        /**
-         * Transparente: la misma capa ImageBackground + partículas se ve detrás del saludo
-         * que bajo el scroll. Un color sólido aquí tapaba la textura y marcaba una división.
-         */
-        headerFixed: {
-          backgroundColor: 'transparent',
-          borderBottomWidth: 0,
-          zIndex: 2,
+        moreSectionTitle: {
+          fontSize: 13,
+          fontWeight: '600',
+          letterSpacing: 1.2,
+          textTransform: 'uppercase',
+          color: colors.textMuted,
         },
         errorContainer: {
           alignSelf: 'stretch',
@@ -198,7 +200,7 @@ const DashScreen = () => {
   const [userData, setUserData] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [habits, setHabits] = useState([]);
-  const [greeting, setGreeting] = useState('');
+  const [togglingHabitId, setTogglingHabitId] = useState(null);
   const [refreshAnim] = useState(new Animated.Value(0));
   const [showEmergencyContactsModal, setShowEmergencyContactsModal] = useState(false);
   const [emergencyContacts, setEmergencyContacts] = useState([]);
@@ -293,15 +295,6 @@ const DashScreen = () => {
         await websocketService.connect(userId);
       }
 
-      // Generar saludo
-      const now = new Date();
-      setGreeting(getGreetingByHourAndDayAndName({
-        hour: now.getHours(),
-        dayIndex: now.getDay(),
-        userName: userData?.username || "",
-        language,
-      }));
-
       // Verificar si debe mostrarse el tutorial (solo una vez)
       if (!hasCheckedTutorial) {
         // Obtener userId para hacer el tutorial específico por usuario
@@ -384,7 +377,7 @@ const DashScreen = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [navigation, refreshing, hasCheckedEmergencyContacts, hasCheckedTutorial, checkEmergencyContacts, DASH, language]);
+  }, [navigation, refreshing, hasCheckedEmergencyContacts, hasCheckedTutorial, checkEmergencyContacts, DASH]);
 
   const getNotificationsPromptKey = useCallback(() => {
     const userId = userData?._id || userData?.id || 'anon';
@@ -599,6 +592,10 @@ const DashScreen = () => {
     await checkEmergencyContacts();
   }, [checkEmergencyContacts]);
 
+  const handleMoodSaved = useCallback((saved) => {
+    setFocusPayload((prev) => (prev ? { ...prev, dailyMood: saved } : prev));
+  }, []);
+
   const goToChatFromOnboarding = useCallback(async () => {
     await setChatEntryBackTarget('dash');
     const state = navigation.getState?.();
@@ -768,7 +765,26 @@ const DashScreen = () => {
     };
   }, []);
 
-  // Animación al refrescar
+  const dashboardStats = useMemo(
+    () => ({
+      streakDays: computeDashboardStreakDays(habits),
+      habitsThisWeek: computeHabitsActiveThisWeek(habits),
+    }),
+    [habits],
+  );
+
+  const handleHabitToggleUpdate = useCallback(
+    async (habitId) => {
+      setTogglingHabitId(habitId);
+      try {
+        await refreshHomeDataOnFocus();
+      } finally {
+        setTogglingHabitId(null);
+      }
+    },
+    [refreshHomeDataOnFocus],
+  );
+
   const triggerRefreshAnim = useCallback(() => {
     Animated.sequence([
       Animated.timing(refreshAnim, {
@@ -821,20 +837,11 @@ const DashScreen = () => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle={statusBarStyle ?? STATUS_BAR.STYLE} backgroundColor={colors.background} />
-      <ImageBackground
-        source={require('../images/back.png')}
-        style={styles.background}
-        imageStyle={styles.imageStyle}
-      >
-        <ParticleBackground />
-        <SafeAreaView style={styles.safeAreaMain} edges={['top', 'left', 'right']}>
+      <View style={styles.backgroundTint} pointerEvents="none" />
+      <SafeAreaView style={styles.safeAreaMain} edges={['top', 'left', 'right']}>
         <OfflineBanner />
-        <View style={styles.headerFixed}>
-          <Header 
-            greeting={greeting}
-          />
-        </View>
-        <DashboardScroll 
+        <DashboardHomeHeader userData={userData} />
+        <DashboardScroll
           refreshing={refreshing}
           onRefresh={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -846,9 +853,9 @@ const DashScreen = () => {
             paddingBottom: insets.bottom + SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA,
           }}
         >
-          {/* Trial Banner */}
           {trialInfo && trialInfo.isInTrial && !trialBannerDismissed && (
             <TrialBanner
+              variant="compact"
               daysRemaining={trialInfo.daysRemaining}
               hoursRemaining={trialInfo.hoursRemaining}
               onDismiss={handleTrialBannerDismiss}
@@ -861,13 +868,27 @@ const DashScreen = () => {
             onDismiss={handleNotificationsPromptDismiss}
             enabling={enablingNotifications}
           />
-          <DashboardFocusCard
-            data={focusPayload}
+          <MoodCheckInCard
+            onOpenChat={goToChatFromOnboarding}
+            onMoodSaved={handleMoodSaved}
+          />
+          <DashboardAntoPromptCard
+            focusPayload={focusPayload}
             onOpenChat={goToChatFromOnboarding}
             onOpenConversation={openConversationFromFocus}
-            onOpenBehavioralActivation={openBehavioralActivationFromFocus}
-            onOpenExposureHierarchy={openExposureFromFocus}
-            onCommitmentsChanged={refreshHomeDataOnFocus}
+          />
+          <DashboardStreakHero
+            streakDays={dashboardStats.streakDays}
+            onOpenChat={goToChatFromOnboarding}
+          />
+          <DashboardStatsRow
+            streakDays={dashboardStats.streakDays}
+            habitsThisWeek={dashboardStats.habitsThisWeek}
+          />
+          <DashboardHabitsSection
+            habits={habits}
+            togglingId={togglingHabitId}
+            onUpdate={handleHabitToggleUpdate}
           />
           {error && (
             <ErrorMessage
@@ -876,24 +897,25 @@ const DashScreen = () => {
               onDismiss={() => setError(null)}
             />
           )}
+          <DashboardFocusCard
+            data={focusPayload}
+            onOpenChat={goToChatFromOnboarding}
+            onOpenConversation={openConversationFromFocus}
+            onOpenBehavioralActivation={openBehavioralActivationFromFocus}
+            onOpenExposureHierarchy={openExposureFromFocus}
+            onCommitmentsChanged={refreshHomeDataOnFocus}
+          />
+          <View style={styles.moreSectionHeader}>
+            <Text style={styles.moreSectionTitle}>{DASH.DASH_MORE_SECTION}</Text>
+          </View>
           <Animated.View style={refreshAnimationStyle}>
-            <TaskCard 
+            <TaskCard
               tasks={tasks}
-              onComplete={async (taskId) => {
+              onComplete={async () => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 loadData(true);
               }}
               accessibilityLabel={DASH.TASKS_LABEL}
-            />
-          </Animated.View>
-          <Animated.View style={refreshAnimationStyle}>
-            <HabitCard 
-              habits={habits}
-              onUpdate={async (habitId) => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                loadData(true);
-              }}
-              accessibilityLabel={DASH.HABITS_LABEL}
             />
           </Animated.View>
           <TccProtocolsQuickCard accessibilityLabel={DASH.TCC_TOOLS_LABEL} />
@@ -903,8 +925,7 @@ const DashScreen = () => {
           <InsightsQuickCard accessibilityLabel={DASH.INSIGHTS_CARD_A11Y} />
           <QuoteSection />
         </DashboardScroll>
-        </SafeAreaView>
-      </ImageBackground>
+      </SafeAreaView>
       <FloatingNavBar activeTab="home" accessibilityLabel={DASH.NAVBAR_LABEL} />
       
       {/* Overlay de resaltado para el tutorial */}

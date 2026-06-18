@@ -3,7 +3,7 @@
  */
 import { StyleSheet } from 'react-native';
 import { lightColors } from './themePalettes';
-import { SPACING } from '../constants/ui';
+import { getDashboardTheme } from './dashboardTheme';
 
 /**
  * @param {typeof lightColors} colors
@@ -11,11 +11,12 @@ import { SPACING } from '../constants/ui';
  */
 export function getFocusTheme(colors, resolvedScheme = 'light') {
   const dark = resolvedScheme === 'dark';
+  const dash = getDashboardTheme(colors, resolvedScheme);
+
   return {
     FOCUS_CHEVRON_MUTED: dark ? 'rgba(245, 247, 255, 0.36)' : 'rgba(36, 35, 79, 0.28)',
-    /** Misma familia cromática que el resto del dashboard (primary / acentos). */
-    FOCUS_KICKER_COLOR: colors.primary,
-    FOCUS_KICKER_SOFT: dark ? colors.primaryBright : colors.primary,
+    FOCUS_KICKER_COLOR: colors.textMuted,
+    FOCUS_KICKER_SOFT: colors.textMuted,
     FOCUS_META: dark ? 'rgba(245, 247, 255, 0.58)' : 'rgba(36, 35, 79, 0.52)',
     FOCUS_META_SOFT: dark ? 'rgba(245, 247, 255, 0.46)' : 'rgba(36, 35, 79, 0.42)',
     FOCUS_BODY_SOFT: dark ? 'rgba(245, 247, 255, 0.9)' : 'rgba(36, 35, 79, 0.82)',
@@ -23,25 +24,21 @@ export function getFocusTheme(colors, resolvedScheme = 'light') {
     FOCUS_ACCENT_BORDER: colors.accentLine,
     FOCUS_PANEL: {
       alignSelf: 'stretch',
-      marginBottom: 20,
-      paddingVertical: 22,
-      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-      borderRadius: 22,
-      backgroundColor: colors.cardBackground,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.glassOutline,
+      marginBottom: dash.SECTION_GAP,
+      ...dash.SURFACE,
+      paddingVertical: 18,
+      paddingHorizontal: 18,
     },
     FOCUS_INNER_ROW: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 12,
-      paddingHorizontal: 12,
-      borderRadius: 14,
-      backgroundColor: dark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(36, 35, 79, 0.035)',
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      minHeight: 68,
     },
     FOCUS_ICON_WRAP: {
-      width: 40,
-      height: 40,
+      width: 44,
+      height: 44,
       borderRadius: 12,
       backgroundColor: colors.accentLineSoft,
       alignItems: 'center',
@@ -56,62 +53,54 @@ export function getFocusTheme(colors, resolvedScheme = 'light') {
  */
 export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
   const t = getFocusTheme(colors, resolvedScheme);
-  const rowBg = t.FOCUS_INNER_ROW.backgroundColor;
+  const dash = getDashboardTheme(colors, resolvedScheme);
   const badgeBg = resolvedScheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(36, 35, 79, 0.06)';
 
   return StyleSheet.create({
+    section: {
+      marginBottom: dash.SECTION_GAP,
+    },
     card: {
       ...t.FOCUS_PANEL,
-      paddingVertical: 12,
-      paddingHorizontal: 12,
     },
-    kicker: {
-      fontSize: 11,
-      fontWeight: '600',
-      letterSpacing: 2,
-      textTransform: 'uppercase',
-      color: t.FOCUS_KICKER_COLOR,
-      marginBottom: 14,
+    groupLabel: {
+      ...dash.SECTION_TITLE,
+      marginBottom: 10,
     },
-    reminderRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
+    groupedList: {
+      ...dash.GROUPED_SURFACE,
       marginBottom: 16,
-      paddingVertical: 12,
-      paddingHorizontal: 12,
-      borderRadius: 14,
-      backgroundColor: rowBg,
     },
-    reminderRowPressable: {
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: t.FOCUS_ACCENT_BORDER,
+    actionRow: {
+      ...t.FOCUS_INNER_ROW,
     },
-    reminderIconWrap: {
+    actionRowBorder: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    actionIconWrap: {
       ...t.FOCUS_ICON_WRAP,
       marginRight: 12,
     },
-    reminderCopy: {
+    actionCopy: {
       flex: 1,
       minWidth: 0,
     },
-    reminderTitle: {
+    actionTitle: {
       color: colors.text,
-      fontSize: 15,
-      fontWeight: '500',
-      lineHeight: 20,
+      fontSize: 16,
+      fontWeight: '600',
+      lineHeight: 21,
     },
-    reminderMeta: {
-      marginTop: 4,
+    actionMeta: {
+      marginTop: 3,
       color: t.FOCUS_META,
       fontSize: 13,
       lineHeight: 18,
       fontWeight: '400',
     },
-    reminderChevron: {
+    actionChevron: {
       marginLeft: 6,
-    },
-    lastSessionRow: {
-      marginBottom: 16,
     },
     lastSessionTitleRow: {
       flexDirection: 'row',
@@ -138,7 +127,7 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
       flexDirection: 'row',
       alignItems: 'flex-start',
       marginBottom: 16,
-      paddingRight: 4,
+      paddingHorizontal: 2,
     },
     protocolDot: {
       width: 6,
@@ -160,56 +149,47 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
       color: colors.text,
       fontSize: 17,
       lineHeight: 26,
-      fontWeight: '400',
+      fontWeight: '600',
       letterSpacing: -0.2,
-      marginBottom: 18,
+      marginBottom: 16,
     },
     sparseLink: {
       alignSelf: 'flex-start',
-      marginTop: -10,
       marginBottom: 14,
     },
     sparseLinkText: {
       color: colors.primary,
       fontSize: 14,
-      fontWeight: '500',
+      fontWeight: '600',
     },
-    nextTask: {
-      marginBottom: 18,
-      paddingTop: 12,
+    insetSection: {
+      marginBottom: 16,
+      paddingTop: 14,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: t.FOCUS_BORDER_SUBTLE,
     },
-    nextTaskLabel: {
-      fontSize: 11,
-      fontWeight: '600',
-      letterSpacing: 1.2,
-      textTransform: 'uppercase',
-      color: t.FOCUS_KICKER_SOFT,
-      marginBottom: 6,
+    insetLabel: {
+      ...dash.SECTION_TITLE,
+      marginBottom: 8,
     },
-    nextTaskTitle: {
+    insetTitle: {
       color: colors.text,
-      fontSize: 15,
-      fontWeight: '400',
+      fontSize: 16,
+      fontWeight: '500',
+      lineHeight: 22,
     },
-    nextTaskDue: {
+    insetMeta: {
       marginTop: 4,
       fontSize: 13,
       color: t.FOCUS_META_SOFT,
-    },
-    commitmentsBlock: {
-      marginBottom: 18,
-      paddingTop: 12,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: t.FOCUS_BORDER_SUBTLE,
+      lineHeight: 18,
     },
     commitmentRow: {
       marginBottom: 12,
-      paddingVertical: 10,
-      paddingHorizontal: 12,
-      borderRadius: 12,
-      backgroundColor: rowBg,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      borderRadius: 14,
+      backgroundColor: resolvedScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(36, 35, 79, 0.035)',
     },
     commitmentLabel: {
       color: colors.text,
@@ -242,6 +222,105 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
       fontSize: 12,
       fontWeight: '600',
       color: colors.primary,
+    },
+    ctaSecondary: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      alignSelf: 'stretch',
+      paddingVertical: 11,
+      paddingHorizontal: 16,
+      borderRadius: 999,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.accentLine,
+      backgroundColor: resolvedScheme === 'dark' ? 'rgba(255, 255, 255, 0.06)' : colors.surface,
+    },
+    ctaSecondaryText: {
+      color: colors.primary,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    ctaSecondaryIcon: {
+      marginLeft: 8,
+    },
+    /** @deprecated filas sueltas con fondo — mantener por compat de imports */
+    kicker: {
+      fontSize: 11,
+      fontWeight: '600',
+      letterSpacing: 1.6,
+      textTransform: 'uppercase',
+      color: t.FOCUS_KICKER_COLOR,
+      marginBottom: 14,
+    },
+    reminderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 16,
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+      borderRadius: 14,
+      backgroundColor: resolvedScheme === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(36, 35, 79, 0.035)',
+    },
+    reminderRowPressable: {
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.FOCUS_ACCENT_BORDER,
+    },
+    reminderIconWrap: {
+      ...t.FOCUS_ICON_WRAP,
+      marginRight: 12,
+    },
+    reminderCopy: {
+      flex: 1,
+      minWidth: 0,
+    },
+    reminderTitle: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: '500',
+      lineHeight: 20,
+    },
+    reminderMeta: {
+      marginTop: 4,
+      color: t.FOCUS_META,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: '400',
+    },
+    reminderChevron: {
+      marginLeft: 6,
+    },
+    lastSessionRow: {
+      marginBottom: 16,
+    },
+    nextTask: {
+      marginBottom: 18,
+      paddingTop: 12,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: t.FOCUS_BORDER_SUBTLE,
+    },
+    nextTaskLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
+      color: t.FOCUS_KICKER_SOFT,
+      marginBottom: 6,
+    },
+    nextTaskTitle: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: '400',
+    },
+    nextTaskDue: {
+      marginTop: 4,
+      fontSize: 13,
+      color: t.FOCUS_META_SOFT,
+    },
+    commitmentsBlock: {
+      marginBottom: 18,
+      paddingTop: 12,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: t.FOCUS_BORDER_SUBTLE,
     },
     cta: {
       flexDirection: 'row',

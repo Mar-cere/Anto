@@ -2,7 +2,7 @@
  * Construcción del prompt contextualizado para OpenAI (system + context messages).
  * Extraído de openaiService para reducir su tamaño y separar responsabilidades.
  */
-import Conversation from '../../models/Conversation.js';
+import { buildDailyMoodPromptSnippet } from '../../utils/dailyMoodCopy.js';
 import Message from '../../models/Message.js';
 import {
   generateCrisisMessage,
@@ -991,6 +991,7 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
 
   const intentionSnippet = getSessionIntentionSystemSnippet(sessionIntention);
   if (intentionSnippet) systemMessage += intentionSnippet;
+  systemMessage += buildDailyMoodPromptSnippet(contexto.dailyMoodCheckIn, language);
   systemMessage += buildTurnPolicySnippet(conversationPattern, contexto.contextual || {}, {
     suppressTriageMenu
   });

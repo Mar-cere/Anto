@@ -4,10 +4,11 @@
  */
 import { Ionicons } from '@expo/vector-icons';
 import React, { memo, useCallback, useMemo } from 'react';
-import { Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Text, Pressable, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
+import { createDashboardStyles } from '../styles/dashboardTheme';
 import { createDashboardFocusStyles } from '../styles/focusCardTheme';
 import { updateSessionCommitment } from '../services/sessionCommitmentsService';
 
@@ -128,6 +129,46 @@ function normalizePreloadedChatCopy(reminder, language, DASH) {
   return reminder;
 }
 
+const FocusActionRow = memo(({ icon, title, subtitle, badge, onPress, a11yLabel, styles, iconColor, chevronColor, showChevron }) => (
+  <Pressable
+    onPress={onPress}
+    disabled={!onPress}
+    style={({ pressed }) => [
+      styles.actionRow,
+      pressed && onPress && { opacity: 0.88 },
+    ]}
+    accessibilityRole={onPress ? 'button' : 'text'}
+    accessibilityLabel={a11yLabel}
+  >
+    <View style={styles.actionIconWrap}>
+      <Ionicons name={icon} size={22} color={iconColor} />
+    </View>
+    <View style={styles.actionCopy}>
+      {badge ? (
+        <View style={styles.lastSessionTitleRow}>
+          <Text style={[styles.actionTitle, styles.lastSessionHeadline]} numberOfLines={1}>
+            {title}
+          </Text>
+          <Text style={styles.lastSessionBadge}>{badge}</Text>
+        </View>
+      ) : (
+        <Text style={styles.actionTitle} numberOfLines={2}>
+          {title}
+        </Text>
+      )}
+      {subtitle ? (
+        <Text style={styles.actionMeta} numberOfLines={badge ? 3 : 2}>
+          {subtitle}
+        </Text>
+      ) : null}
+    </View>
+    {showChevron ? (
+      <Ionicons name="chevron-forward" size={18} color={chevronColor} style={styles.actionChevron} />
+    ) : null}
+  </Pressable>
+));
+FocusActionRow.displayName = 'FocusActionRow';
+
 const DashboardFocusCard = ({
   data,
   onOpenChat,
@@ -142,6 +183,10 @@ const DashboardFocusCard = ({
   const { colors, resolvedScheme } = useTheme();
   const styles = useMemo(
     () => createDashboardFocusStyles(colors, resolvedScheme),
+    [colors, resolvedScheme],
+  );
+  const dashStyles = useMemo(
+    () => createDashboardStyles(colors, resolvedScheme),
     [colors, resolvedScheme],
   );
 
@@ -270,8 +315,6 @@ const DashboardFocusCard = ({
     );
   }, [onOpenExposureHierarchy, exposureNext?.planId]);
 
-  if (!data) return null;
-
   const showLastSessionRow =
     Boolean(lastSessionText) && !lastSessionDuplicatesChatReminder;
 
@@ -286,200 +329,203 @@ const DashboardFocusCard = ({
   const chevronMuted =
     resolvedScheme === 'dark' ? 'rgba(245, 247, 255, 0.35)' : 'rgba(36, 35, 79, 0.28)';
 
-  return (
-    <View style={styles.card} accessibilityRole="summary">
-      <Text style={styles.kicker}>{DASH.FOCUS_CARD_LABEL}</Text>
+  const actionRows = useMemo(() => {
+    const rows = [];
+    if (displayedReminder) {
+      rows.push({
+        key: `reminder-${displayedReminder.kind}`,
+        icon: reminderIcon(displayedReminder.kind),
+        title: displayedReminder.title,
+        subtitle: displayedReminder.subtitle || null,
+        onPress: reminderIsPressable ? onReminderPress : null,
+        showChevron: reminderIsPressable,
+        a11yLabel: `${displayedReminder.title}. ${displayedReminder.subtitle || ''}`,
+      });
+    }
+    if (baWeekCopy) {
+      rows.push({
+        key: 'ba-week',
+        icon: 'footsteps-outline',
+        title: baWeekCopy.title,
+        subtitle: baWeekCopy.subtitle,
+        onPress: onBaWeekPress,
+        showChevron: true,
+        a11yLabel: `${baWeekCopy.title}. ${baWeekCopy.subtitle}. ${DASH.FOCUS_BA_OPEN_A11Y}`,
+      });
+    }
+    if (exposureCopy) {
+      rows.push({
+        key: 'exposure',
+        icon: 'trail-sign-outline',
+        title: exposureCopy.title,
+        subtitle: exposureCopy.subtitle,
+        onPress: onExposurePress,
+        showChevron: true,
+        a11yLabel: `${exposureCopy.title}. ${exposureCopy.subtitle}. ${DASH.FOCUS_EXPOSURE_OPEN_A11Y}`,
+      });
+    }
+    if (showLastSessionRow) {
+      rows.push({
+        key: 'last-session',
+        icon: 'reader-outline',
+        title: lastSession?.headline || DASH.FOCUS_CHAT_CONTINUITY_HEADLINE,
+        subtitle: lastSessionText,
+        badge: lastSession?.placeholder ? DASH.FOCUS_CHAT_CONTINUITY_BADGE : null,
+        onPress: onLastSessionPress,
+        showChevron: true,
+        a11yLabel: `${lastSession?.headline || DASH.FOCUS_CHAT_CONTINUITY_HEADLINE}. ${lastSessionText}`,
+      });
+    }
+    return rows;
+  }, [
+    displayedReminder,
+    baWeekCopy,
+    exposureCopy,
+    showLastSessionRow,
+    lastSession,
+    lastSessionText,
+    reminderIsPressable,
+    onReminderPress,
+    onBaWeekPress,
+    onExposurePress,
+    onLastSessionPress,
+    DASH,
+  ]);
 
-      {displayedReminder ? (
-        <TouchableOpacity
-          style={[styles.reminderRow, reminderIsPressable && styles.reminderRowPressable]}
-          onPress={reminderIsPressable ? onReminderPress : undefined}
-          disabled={!reminderIsPressable}
-          activeOpacity={reminderIsPressable ? 0.7 : 1}
-          accessibilityRole={reminderIsPressable ? 'button' : 'text'}
-          accessibilityLabel={`${displayedReminder.title}. ${displayedReminder.subtitle || ''}`}
-        >
-          <View style={styles.reminderIconWrap}>
-            <Ionicons name={reminderIcon(displayedReminder.kind)} size={20} color={colors.primary} />
-          </View>
-          <View style={styles.reminderCopy}>
-            <Text style={styles.reminderTitle} numberOfLines={2}>
-              {displayedReminder.title}
+  const showChatCta = Boolean(onOpenChat);
+
+  if (!data) return null;
+
+  return (
+    <View style={styles.section} accessibilityRole="summary">
+      <View style={dashStyles.sectionHeaderRow}>
+        <Text style={dashStyles.sectionTitle}>{DASH.FOCUS_TITLE}</Text>
+      </View>
+
+      <View style={styles.card}>
+        {focus?.line ? (
+          <Text style={styles.focusHero} accessibilityRole="text">
+            {focus.line}
+          </Text>
+        ) : null}
+
+        {actionRows.length > 0 ? (
+          <>
+            <Text style={styles.groupLabel}>{DASH.FOCUS_REMINDER_SECTION}</Text>
+            <View style={styles.groupedList}>
+              {actionRows.map((row, index) => (
+                <View
+                  key={row.key}
+                  style={index < actionRows.length - 1 ? styles.actionRowBorder : undefined}
+                >
+                  <FocusActionRow
+                    icon={row.icon}
+                    title={row.title}
+                    subtitle={row.subtitle}
+                    badge={row.badge}
+                    onPress={row.onPress}
+                    a11yLabel={row.a11yLabel}
+                    showChevron={row.showChevron}
+                    styles={styles}
+                    iconColor={colors.primary}
+                    chevronColor={chevronMuted}
+                  />
+                </View>
+              ))}
+            </View>
+          </>
+        ) : null}
+
+        {showTherapeuticProtocol ? (
+          <View style={styles.protocolRow}>
+            <View style={styles.protocolDot} />
+            <Text style={styles.protocolText} numberOfLines={3}>
+              {protocolNext.line}
             </Text>
-            {displayedReminder.subtitle ? (
-              <Text style={styles.reminderMeta} numberOfLines={2}>
-                {displayedReminder.subtitle}
-              </Text>
+          </View>
+        ) : null}
+
+        {focus?.isSparseActivity ? (
+          <Pressable
+            style={({ pressed }) => [styles.sparseLink, pressed && { opacity: 0.85 }]}
+            onPress={onOpenChat}
+            accessibilityRole="button"
+            accessibilityLabel={DASH.FOCUS_START_CHAT}
+          >
+            <Text style={styles.sparseLinkText}>{DASH.FOCUS_START_CHAT}</Text>
+          </Pressable>
+        ) : null}
+
+        {showNextTaskRow ? (
+          <View style={styles.insetSection}>
+            <Text style={styles.insetLabel}>{DASH.FOCUS_NEXT_TASK}</Text>
+            <Text style={styles.insetTitle} numberOfLines={1}>
+              {nextTask.title}
+            </Text>
+            {nextTask.dueDate ? (
+              <Text style={styles.insetMeta}>{formatDue(nextTask.dueDate, language)}</Text>
             ) : null}
           </View>
-          {reminderIsPressable ? (
-            <Ionicons name="chevron-forward" size={18} color={chevronMuted} style={styles.reminderChevron} />
-          ) : null}
-        </TouchableOpacity>
-      ) : null}
+        ) : null}
 
-      {baWeekCopy ? (
-        <TouchableOpacity
-          style={[styles.reminderRow, styles.reminderRowPressable]}
-          onPress={onBaWeekPress}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel={`${baWeekCopy.title}. ${baWeekCopy.subtitle}. ${DASH.FOCUS_BA_OPEN_A11Y}`}
-        >
-          <View style={styles.reminderIconWrap}>
-            <Ionicons name="footsteps-outline" size={20} color={colors.primary} />
-          </View>
-          <View style={styles.reminderCopy}>
-            <Text style={styles.reminderTitle} numberOfLines={2}>
-              {baWeekCopy.title}
-            </Text>
-            <Text style={styles.reminderMeta} numberOfLines={2}>
-              {baWeekCopy.subtitle}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={chevronMuted} style={styles.reminderChevron} />
-        </TouchableOpacity>
-      ) : null}
-
-      {exposureCopy ? (
-        <TouchableOpacity
-          style={[styles.reminderRow, styles.reminderRowPressable]}
-          onPress={onExposurePress}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel={`${exposureCopy.title}. ${exposureCopy.subtitle}. ${DASH.FOCUS_EXPOSURE_OPEN_A11Y}`}
-        >
-          <View style={styles.reminderIconWrap}>
-            <Ionicons name="trail-sign-outline" size={20} color={colors.primary} />
-          </View>
-          <View style={styles.reminderCopy}>
-            <Text style={styles.reminderTitle} numberOfLines={2}>
-              {exposureCopy.title}
-            </Text>
-            <Text style={styles.reminderMeta} numberOfLines={2}>
-              {exposureCopy.subtitle}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={chevronMuted} style={styles.reminderChevron} />
-        </TouchableOpacity>
-      ) : null}
-
-      {showLastSessionRow ? (
-        <TouchableOpacity
-          style={[styles.reminderRow, styles.reminderRowPressable, styles.lastSessionRow]}
-          onPress={onLastSessionPress}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel={`${lastSession?.headline || DASH.FOCUS_CHAT_CONTINUITY_HEADLINE}. ${lastSessionText}`}
-        >
-          <View style={styles.reminderIconWrap}>
-            <Ionicons name="reader-outline" size={20} color={colors.primary} />
-          </View>
-          <View style={styles.reminderCopy}>
-            <View style={styles.lastSessionTitleRow}>
-              <Text style={[styles.reminderTitle, styles.lastSessionHeadline]} numberOfLines={1}>
-                {lastSession?.headline || DASH.FOCUS_CHAT_CONTINUITY_HEADLINE}
-              </Text>
-              {lastSession?.placeholder ? (
-                <Text style={styles.lastSessionBadge}>{DASH.FOCUS_CHAT_CONTINUITY_BADGE}</Text>
-              ) : null}
-            </View>
-            <Text style={styles.reminderMeta} numberOfLines={3}>
-              {lastSessionText}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={chevronMuted} style={styles.reminderChevron} />
-        </TouchableOpacity>
-      ) : null}
-
-      {showTherapeuticProtocol ? (
-        <View style={styles.protocolRow}>
-          <View style={styles.protocolDot} />
-          <Text style={styles.protocolText} numberOfLines={3}>
-            {protocolNext.line}
-          </Text>
-        </View>
-      ) : null}
-
-      {focus?.line ? (
-        <Text style={styles.focusHero} accessibilityRole="text">
-          {focus.line}
-        </Text>
-      ) : null}
-
-      {focus?.isSparseActivity ? (
-        <TouchableOpacity
-          style={styles.sparseLink}
-          onPress={onOpenChat}
-          accessibilityRole="button"
-          accessibilityLabel={DASH.FOCUS_START_CHAT}
-        >
-          <Text style={styles.sparseLinkText}>{DASH.FOCUS_START_CHAT}</Text>
-        </TouchableOpacity>
-      ) : null}
-
-      {showNextTaskRow ? (
-        <View style={styles.nextTask}>
-          <Text style={styles.nextTaskLabel}>{DASH.FOCUS_NEXT_TASK}</Text>
-          <Text style={styles.nextTaskTitle} numberOfLines={1}>
-            {nextTask.title}
-          </Text>
-          {nextTask.dueDate ? (
-            <Text style={styles.nextTaskDue}>{formatDue(nextTask.dueDate, language)}</Text>
-          ) : null}
-        </View>
-      ) : null}
-
-      {commitments.length > 0 ? (
-        <View style={styles.commitmentsBlock}>
-          <Text style={styles.nextTaskLabel}>{DASH.FOCUS_COMMITMENTS}</Text>
-          {commitments.map((item) => (
-            <View key={item.id} style={styles.commitmentRow}>
-              <Text style={styles.commitmentLabel} numberOfLines={2}>
-                {item.label}
-              </Text>
-              {item.followUpAnswer === 'pending' ? (
-                <View style={styles.commitmentActions}>
-                  <Text style={styles.commitmentPrompt}>{DASH.FOCUS_COMMITMENT_FOLLOW_UP}</Text>
-                  <View style={styles.commitmentButtons}>
-                    <TouchableOpacity
-                      onPress={() => handleCommitmentAnswer(item.id, 'yes')}
-                      style={styles.commitmentChip}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.commitmentChipText}>{DASH.FOCUS_COMMITMENT_YES}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => handleCommitmentAnswer(item.id, 'partial')}
-                      style={styles.commitmentChip}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.commitmentChipText}>{DASH.FOCUS_COMMITMENT_PARTIAL}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => handleCommitmentAnswer(item.id, 'no')}
-                      style={styles.commitmentChip}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.commitmentChipText}>{DASH.FOCUS_COMMITMENT_NO}</Text>
-                    </TouchableOpacity>
+        {commitments.length > 0 ? (
+          <View style={styles.insetSection}>
+            <Text style={styles.insetLabel}>{DASH.FOCUS_COMMITMENTS}</Text>
+            {commitments.map((item) => (
+              <View key={item.id} style={styles.commitmentRow}>
+                <Text style={styles.commitmentLabel} numberOfLines={2}>
+                  {item.label}
+                </Text>
+                {item.followUpAnswer === 'pending' ? (
+                  <View style={styles.commitmentActions}>
+                    <Text style={styles.commitmentPrompt}>{DASH.FOCUS_COMMITMENT_FOLLOW_UP}</Text>
+                    <View style={styles.commitmentButtons}>
+                      <Pressable
+                        onPress={() => handleCommitmentAnswer(item.id, 'yes')}
+                        style={({ pressed }) => [styles.commitmentChip, pressed && { opacity: 0.88 }]}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.commitmentChipText}>{DASH.FOCUS_COMMITMENT_YES}</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => handleCommitmentAnswer(item.id, 'partial')}
+                        style={({ pressed }) => [styles.commitmentChip, pressed && { opacity: 0.88 }]}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.commitmentChipText}>{DASH.FOCUS_COMMITMENT_PARTIAL}</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => handleCommitmentAnswer(item.id, 'no')}
+                        style={({ pressed }) => [styles.commitmentChip, pressed && { opacity: 0.88 }]}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.commitmentChipText}>{DASH.FOCUS_COMMITMENT_NO}</Text>
+                      </Pressable>
+                    </View>
                   </View>
-                </View>
-              ) : null}
-            </View>
-          ))}
-        </View>
-      ) : null}
+                ) : null}
+              </View>
+            ))}
+          </View>
+        ) : null}
 
-      <TouchableOpacity
-        style={styles.cta}
-        onPress={onOpenChat}
-        accessibilityRole="button"
-        accessibilityLabel={DASH.FOCUS_CHAT_CTA}
-      >
-        <Text style={styles.ctaText}>{DASH.FOCUS_CHAT_CTA}</Text>
-        <Ionicons name="arrow-forward" size={18} color={colors.textOnPrimary} style={styles.ctaArrow} />
-      </TouchableOpacity>
+        {showChatCta ? (
+          <Pressable
+            style={({ pressed }) => [styles.ctaSecondary, pressed && { opacity: 0.9 }]}
+            onPress={onOpenChat}
+            accessibilityRole="button"
+            accessibilityLabel={DASH.FOCUS_CHAT_CTA}
+          >
+            <Text style={styles.ctaSecondaryText}>{DASH.FOCUS_CHAT_CTA}</Text>
+            <Ionicons
+              name="arrow-forward"
+              size={17}
+              color={colors.primary}
+              style={styles.ctaSecondaryIcon}
+            />
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 };

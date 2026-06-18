@@ -98,6 +98,8 @@ export const ENDPOINTS = {
   SUMMARY: '/api/summary',
   /** Foco del panel (dashboard #34): agrega semana, tareas, chats, compromisos, línea de prioridad */
   SUMMARY_FOCUS: '/api/summary/focus',
+  /** Check-in emocional diario (dashboard) */
+  DAILY_MOOD_TODAY: '/api/daily-mood/today',
   /** Continuidad del último chat (#4 + #47). Ruta `/last-session` por compatibilidad; no es el resumen semanal/mensual. */
   SUMMARY_LAST_SESSION: '/api/summary/last-session',
   SIGNALS_CONSENT: '/api/signals/consent',

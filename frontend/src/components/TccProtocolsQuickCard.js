@@ -5,11 +5,12 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import React, { useMemo } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
-import { getFocusTheme } from '../styles/focusCardTheme';
-import { SPACING } from '../constants/ui';
+import { createDashboardStyles } from '../styles/dashboardTheme';
+import DashboardGroupedRow from './dashboard/DashboardGroupedRow';
+import DashboardSection from './dashboard/DashboardSection';
 
 const DEFAULT_TEXTS = {
   TITLE: 'Herramientas de seguimiento',
@@ -38,6 +39,10 @@ const TOOL_ITEMS = [
 export default function TccProtocolsQuickCard({ accessibilityLabel }) {
   const navigation = useNavigation();
   const { colors, resolvedScheme } = useTheme();
+  const styles = useMemo(
+    () => createDashboardStyles(colors, resolvedScheme),
+    [colors, resolvedScheme],
+  );
   const translated = useSectionTranslations('DASH');
   const TEXTS = useMemo(
     () => ({
@@ -54,103 +59,33 @@ export default function TccProtocolsQuickCard({ accessibilityLabel }) {
     [translated],
   );
 
-  const focus = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
-
-  const styles = useMemo(
-    () =>
-      StyleSheet.create({
-        card: {
-          ...focus.FOCUS_PANEL,
-          marginBottom: 16,
-        },
-        header: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 10,
-          marginBottom: 6,
-        },
-        title: {
-          fontSize: 16,
-          fontWeight: '700',
-          color: colors.text,
-          flex: 1,
-        },
-        hint: {
-          fontSize: 13,
-          color: focus.FOCUS_META,
-          lineHeight: 19,
-          marginBottom: 12,
-        },
-        toolRow: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 12,
-          paddingVertical: 11,
-          borderTopWidth: StyleSheet.hairlineWidth,
-          borderTopColor: focus.FOCUS_BORDER_SUBTLE,
-        },
-        toolIcon: {
-          width: 40,
-          height: 40,
-          borderRadius: 12,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: colors.glassFill,
-        },
-        toolBody: { flex: 1 },
-        toolTitle: { fontSize: 15, fontWeight: '600', color: colors.text },
-        toolHint: { fontSize: 12, color: focus.FOCUS_META, marginTop: 2 },
-        allLink: {
-          marginTop: 4,
-          paddingVertical: 10,
-          alignItems: 'center',
-        },
-        allLinkText: {
-          fontSize: 14,
-          fontWeight: '600',
-          color: colors.primary,
-        },
-      }),
-    [colors, focus],
-  );
-
   const openScreen = (screen) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     navigation.navigate(screen);
   };
 
   return (
-    <View style={styles.card} accessibilityRole="summary" accessibilityLabel={accessibilityLabel}>
-      <View style={styles.header}>
-        <MaterialCommunityIcons name="heart-pulse" size={22} color={colors.primary} />
-        <Text style={styles.title}>{TEXTS.TITLE}</Text>
+    <DashboardSection
+      title={TEXTS.TITLE}
+      hint={TEXTS.HINT}
+      footerLabel={TEXTS.ALL}
+      onFooterPress={() => openScreen('TherapeuticTechniques')}
+      accessibilityLabel={accessibilityLabel}
+    >
+      <View style={styles.groupedList}>
+        {TOOL_ITEMS.map((item, index) => (
+          <DashboardGroupedRow
+            key={item.key}
+            iconNode={(
+              <MaterialCommunityIcons name={item.icon} size={22} color={colors.primary} />
+            )}
+            title={TEXTS[item.labelKey]}
+            subtitle={TEXTS[item.hintKey]}
+            onPress={() => openScreen(item.screen)}
+            isLast={index === TOOL_ITEMS.length - 1}
+          />
+        ))}
       </View>
-      <Text style={styles.hint}>{TEXTS.HINT}</Text>
-      {TOOL_ITEMS.map((item) => (
-        <TouchableOpacity
-          key={item.key}
-          style={styles.toolRow}
-          onPress={() => openScreen(item.screen)}
-          accessibilityRole="button"
-          accessibilityLabel={TEXTS[item.labelKey]}
-        >
-          <View style={styles.toolIcon}>
-            <MaterialCommunityIcons name={item.icon} size={20} color={colors.primary} />
-          </View>
-          <View style={styles.toolBody}>
-            <Text style={styles.toolTitle}>{TEXTS[item.labelKey]}</Text>
-            <Text style={styles.toolHint}>{TEXTS[item.hintKey]}</Text>
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textSecondary} />
-        </TouchableOpacity>
-      ))}
-      <TouchableOpacity
-        style={styles.allLink}
-        onPress={() => openScreen('TherapeuticTechniques')}
-        accessibilityRole="button"
-      >
-        <Text style={styles.allLinkText}>{TEXTS.ALL}</Text>
-      </TouchableOpacity>
-    </View>
+    </DashboardSection>
   );
 }

@@ -33,7 +33,13 @@ const DEFAULT_TEXTS = {
   TRIAL_BANNER_CLOSE_A11Y: 'Cerrar aviso de trial',
 };
 
-const TrialBanner = ({ daysRemaining, hoursRemaining, onDismiss, dismissed = false }) => {
+const TrialBanner = ({
+  daysRemaining,
+  hoursRemaining,
+  onDismiss,
+  dismissed = false,
+  variant = 'default',
+}) => {
   const translated = useSectionTranslations('SETTINGS');
   const TEXTS = useMemo(
     () => ({
@@ -53,6 +59,10 @@ const TrialBanner = ({ daysRemaining, hoursRemaining, onDismiss, dismissed = fal
         translated?.TRIAL_BANNER_HOURS_REMAINING || DEFAULT_TEXTS.TRIAL_HOURS_REMAINING,
       CLOSE_A11Y:
         translated?.TRIAL_BANNER_CLOSE_A11Y || DEFAULT_TEXTS.TRIAL_BANNER_CLOSE_A11Y,
+      VIEW_PLANS: translated?.TRIAL_BANNER_VIEW_PLANS || 'Ver planes',
+      COMPACT_ENDS_TODAY: translated?.TRIAL_BANNER_COMPACT_ENDS_TODAY || 'termina hoy',
+      COMPACT_DAYS:
+        translated?.TRIAL_BANNER_COMPACT_DAYS || 'quedan {days} días',
     }),
     [translated],
   );
@@ -136,6 +146,45 @@ const TrialBanner = ({ daysRemaining, hoursRemaining, onDismiss, dismissed = fal
           borderRadius: 12,
           backgroundColor: colors.glassFill,
         },
+        compactContainer: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingVertical: 11,
+          paddingHorizontal: 14,
+          marginBottom: 12,
+          borderRadius: 999,
+          borderWidth: StyleSheet.hairlineWidth,
+          backgroundColor: colors.accentLineSoft,
+          borderColor: colors.accentLine,
+        },
+        compactLeft: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          flex: 1,
+          minWidth: 0,
+          gap: 8,
+        },
+        compactDot: {
+          width: 7,
+          height: 7,
+          borderRadius: 4,
+          backgroundColor: colors.primaryBright,
+        },
+        compactText: {
+          flex: 1,
+          fontSize: 13,
+          fontWeight: '500',
+          color: colors.text,
+          lineHeight: 18,
+        },
+        compactLink: {
+          fontSize: 13,
+          fontWeight: '600',
+          color: colors.primary,
+          marginLeft: 10,
+          flexShrink: 0,
+        },
       }),
     [colors],
   );
@@ -177,6 +226,35 @@ const TrialBanner = ({ daysRemaining, hoursRemaining, onDismiss, dismissed = fal
   const borderColor = isExpiringSoon ? hexToRgba(colors.warning, 0.4) : colors.accentLine;
   const daysLabel =
     daysRemaining === 1 ? TEXTS.TRIAL_DAY_REMAINING : TEXTS.TRIAL_DAYS_REMAINING;
+
+  if (variant === 'compact') {
+    const endsCopy =
+      daysRemaining <= 1
+        ? TEXTS.COMPACT_ENDS_TODAY
+        : TEXTS.COMPACT_DAYS.replace('{days}', String(daysRemaining));
+
+    return (
+      <Animated.View style={{ opacity: fadeAnim }}>
+        <TouchableOpacity
+          style={styles.compactContainer}
+          onPress={handleSubscribe}
+          onLongPress={handleDismiss}
+          activeOpacity={0.88}
+          accessibilityRole="button"
+          accessibilityLabel={`${TEXTS.TRIAL_ACTIVE}. ${endsCopy}. ${TEXTS.VIEW_PLANS}`}
+          accessibilityHint={TEXTS.CLOSE_A11Y}
+        >
+          <View style={styles.compactLeft}>
+            <View style={styles.compactDot} />
+            <Text style={styles.compactText} numberOfLines={1}>
+              {TEXTS.TRIAL_ACTIVE} · {endsCopy}
+            </Text>
+          </View>
+          <Text style={styles.compactLink}>{TEXTS.VIEW_PLANS} →</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  }
 
   return (
     <Animated.View

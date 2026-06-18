@@ -16,7 +16,7 @@ import cacheService from './cacheService.js';
 import openaiService from './openaiService.js';
 import { computeNextRoutinePushSlot } from './notificationScheduler.js';
 import { getLastSessionSummaryForUser } from './lastSessionSummaryService.js';
-import { listSessionCommitments } from './sessionCommitmentService.js';
+import { getTodayDailyMoodCheckIn } from './dailyMoodCheckInService.js';
 import { buildUserSummary } from './userSummaryService.js';
 import {
   focusCopy,
@@ -494,6 +494,10 @@ export async function buildDashboardFocus(userId, opts = {}) {
 
   const notificationPreferences = userFocusPrefs?.notificationPreferences || null;
   const userTimezone = userFocusPrefs?.timezone || null;
+  const dailyMood = await getTodayDailyMoodCheckIn(userId, {
+    language,
+    timezone: userTimezone,
+  });
   const nextPushSlot = computeNextRoutinePushSlot(notificationPreferences, new Date(), language);
 
   const reminderCandidates = buildReminderCandidates({
@@ -610,5 +614,6 @@ export async function buildDashboardFocus(userId, opts = {}) {
       followUpAnswer: c.followUpAnswer,
       createdAt: c.createdAt,
     })),
+    dailyMood: dailyMood || null,
   };
 }
