@@ -23,6 +23,8 @@ import {
   getPsychoeducationBrowseItems,
   normalizePsychoeducationTopic,
 } from '../constants/psychoeducation.js';
+import { recordEngagementSignal } from '../services/engagementStreakService.js';
+import { ENGAGEMENT_SIGNAL } from '../utils/engagementStreakWeights.js';
 import {
   getMicroGuideBrowseItems,
   getMicroGuideModule,
@@ -276,6 +278,10 @@ router.post('/use', authenticateToken, async (req, res) => {
     });
 
     await usage.save();
+
+    if (completed) {
+      recordEngagementSignal(userId, ENGAGEMENT_SIGNAL.TECHNIQUE_COMPLETED).catch(() => {});
+    }
 
     // Registrar en UserProfile.copingStrategies para personalizar futuras respuestas
     userProfileService.registerCopingStrategy(userId.toString(), {

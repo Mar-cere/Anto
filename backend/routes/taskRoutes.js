@@ -23,6 +23,8 @@ import { resolveRequestLanguage } from '../utils/apiLanguage.js';
 import { taskApiCopy } from '../utils/taskApiCopy.js';
 import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
 import { syncBaSlotFromProductCompletion } from '../services/behavioralActivationProductBridgeService.js';
+import { recordEngagementSignal } from '../services/engagementStreakService.js';
+import { ENGAGEMENT_SIGNAL } from '../utils/engagementStreakWeights.js';
 
 const router = express.Router();
 
@@ -41,6 +43,7 @@ async function bumpUserTasksCompletedIfNewlyCompleted(userId, previousStatus, do
   if (previousStatus === 'completed' || doc.status !== 'completed') return;
   if (!isCountableTaskItem(doc.itemType)) return;
   await User.updateOne({ _id: userId }, { $inc: { 'stats.tasksCompleted': 1 } });
+  recordEngagementSignal(userId, ENGAGEMENT_SIGNAL.TASK_COMPLETED).catch(() => {});
 }
 
 // Constantes de configuración

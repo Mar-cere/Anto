@@ -11,6 +11,8 @@ import {
   getTodayDailyMoodCheckIn,
   upsertTodayDailyMoodCheckIn,
 } from '../services/dailyMoodCheckInService.js';
+import { recordEngagementSignal } from '../services/engagementStreakService.js';
+import { ENGAGEMENT_SIGNAL } from '../utils/engagementStreakWeights.js';
 
 const router = express.Router();
 
@@ -68,6 +70,7 @@ router.put('/today', writeLimiter, async (req, res) => {
         code: result.error,
       });
     }
+    recordEngagementSignal(req.user._id, ENGAGEMENT_SIGNAL.MOOD_CHECKIN).catch(() => {});
     return res.json({ success: true, checkIn: result.checkIn });
   } catch (error) {
     console.error('[dailyMoodRoutes] PUT /today:', error);

@@ -17,6 +17,8 @@ import {
 import { resolveRequestLanguage } from '../utils/apiLanguage.js';
 import { habitApiCopy } from '../utils/habitApiCopy.js';
 import { syncBaSlotFromProductCompletion } from '../services/behavioralActivationProductBridgeService.js';
+import { recordEngagementSignal } from '../services/engagementStreakService.js';
+import { ENGAGEMENT_SIGNAL } from '../utils/engagementStreakWeights.js';
 import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
 
 const router = express.Router();
@@ -769,6 +771,7 @@ router.patch('/:id/toggle', validateObjectId, patchHabitLimiter, async (req, res
 
     if (habit.status?.completedToday) {
       syncBaSlotFromProductCompletion({ userId: req.user._id, habitId: habit._id }).catch(() => {});
+      recordEngagementSignal(req.user._id, ENGAGEMENT_SIGNAL.HABIT_COMPLETED).catch(() => {});
     }
 
     if (streakAfter > streakBefore) {

@@ -17,6 +17,7 @@ import openaiService from './openaiService.js';
 import { computeNextRoutinePushSlot } from './notificationScheduler.js';
 import { getLastSessionSummaryForUser } from './lastSessionSummaryService.js';
 import { getTodayDailyMoodCheckIn } from './dailyMoodCheckInService.js';
+import { getEngagementStreak } from './engagementStreakService.js';
 import { buildUserSummary } from './userSummaryService.js';
 import {
   focusCopy,
@@ -499,6 +500,14 @@ export async function buildDashboardFocus(userId, opts = {}) {
     language,
     timezone: userTimezone,
   });
+  const engagementStreak = await getEngagementStreak(userId, { syncToday: true }).catch(() => ({
+    current: 0,
+    best: 0,
+    todayPoints: 0,
+    todayQualified: false,
+    todaySignals: [],
+    lastQualifiedDateKey: null,
+  }));
   const nextPushSlot = computeNextRoutinePushSlot(notificationPreferences, new Date(), language);
 
   const reminderCandidates = buildReminderCandidates({
@@ -616,5 +625,6 @@ export async function buildDashboardFocus(userId, opts = {}) {
       createdAt: c.createdAt,
     })),
     dailyMood: dailyMood || null,
+    engagementStreak,
   };
 }

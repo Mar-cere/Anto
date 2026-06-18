@@ -180,6 +180,14 @@ const userSchema = new mongoose.Schema({
       default: 0,
       min: [0, 'La racha de hábitos no puede ser negativa']
     },
+    engagementStreak: {
+      current: { type: Number, default: 0, min: 0 },
+      best: { type: Number, default: 0, min: 0 },
+      lastQualifiedDateKey: { type: String, default: null, trim: true },
+      todayDateKey: { type: String, default: null, trim: true },
+      todayPoints: { type: Number, default: 0, min: 0 },
+      todaySignals: { type: [String], default: [] },
+    },
     totalSessions: {
       type: Number,
       default: 0,

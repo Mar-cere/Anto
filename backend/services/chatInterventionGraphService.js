@@ -14,6 +14,10 @@ import {
   sanitizeInterventionTopicFree,
   sanitizeInterventionTopicTag,
 } from '../utils/interventionEventGuards.js';
+import {
+  mapInterventionIdToEngagementSignal,
+  recordEngagementSignal,
+} from './engagementStreakService.js';
 
 const DEFAULT_SESSION_GAP_MINUTES = 45;
 const DEFAULT_EVENT_DEDUPE_SECONDS = 8;
@@ -578,6 +582,13 @@ async function recordInterventionEvent({
     meta: sanitizeInterventionEventMeta(meta && typeof meta === 'object' ? meta : {}),
     createdAt: now,
   });
+
+  if (ev === 'completed') {
+    const signal = mapInterventionIdToEngagementSignal(id);
+    if (signal) {
+      recordEngagementSignal(userId, signal).catch(() => {});
+    }
+  }
 }
 
 export default {

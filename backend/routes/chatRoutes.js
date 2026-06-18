@@ -57,6 +57,7 @@ import {
 } from '../services/index.js';
 import { scheduleLastSessionSummary } from '../services/lastSessionSummaryService.js';
 import { getTodayDailyMoodCheckIn } from '../services/dailyMoodCheckInService.js';
+import { recordEngagementSignal } from '../services/engagementStreakService.js';
 import { buildSessionInsight } from '../services/sessionInsightService.js';
 import metricsService from '../services/metricsService.js';
 import { buildHistoryForPromptFromMessages } from '../services/openai/openaiPromptBuilder.js';
@@ -121,6 +122,7 @@ import {
 
 import { resolveRequestLanguage } from '../utils/apiLanguage.js';
 import { chatApiCopy } from '../utils/chatApiCopy.js';
+import { ENGAGEMENT_SIGNAL } from '../utils/engagementStreakWeights.js';
 import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
 import {
   clampInt,
@@ -989,6 +991,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
       .catch(() => {});
 
     if (role === 'user') {
+      recordEngagementSignal(req.user._id, ENGAGEMENT_SIGNAL.CHAT_USER_MESSAGE).catch(() => {});
       /** Persistido en mensajes para continuidad post-chat / SLO (collectRiskLevelsFromMessages). */
       let riskLevel = 'LOW';
       try {

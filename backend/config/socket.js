@@ -22,6 +22,8 @@ import { sanitizeSessionIntentionForClient } from '../constants/sessionIntention
 import { normalizeStoredCrisisRiskLevel, buildOpenaiCrisisContext, shouldIncludeCrisisInOpenaiContext } from '../constants/crisis.js';
 import { isLlmCrisisTherapeuticExtrasBlocked } from '../utils/chatObservationalContext.js';
 import chatProductActionProposalService from '../services/chatProductActionProposalService.js';
+import { recordEngagementSignal } from '../services/engagementStreakService.js';
+import { ENGAGEMENT_SIGNAL } from '../utils/engagementStreakWeights.js';
 import chatProductActionLlmService from '../services/chatProductActionLlmService.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 import conversationProductProposalCapService from '../services/conversationProductProposalCapService.js';
@@ -188,8 +190,9 @@ export const setupSocketIO = (server) => {
           }
         });
         await userMessage.save();
+        recordEngagementSignal(userId, ENGAGEMENT_SIGNAL.CHAT_USER_MESSAGE).catch(() => {});
         
-        // Emitir confirmación de mensaje enviado (el frontend ya lo mostró, esto es solo confirmación)
+        // Emitir confirmación de mensaje enviado
         socket.emit(SOCKET_EVENTS.MESSAGE_SENT, {
           id: userMessage._id.toString(),
           text: messageText,
