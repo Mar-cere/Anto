@@ -19,6 +19,15 @@ describe('dashboardHomeUtils', () => {
     expect(eyebrow).toContain('·');
   });
 
+  it('formatea el eyebrow del header en inglés', () => {
+    const eyebrow = getDashboardEyebrow({
+      language: 'en',
+      date: new Date('2026-06-17T10:00:00'),
+    });
+    expect(eyebrow).toMatch(/WEDNESDAY/i);
+    expect(eyebrow).toContain('·');
+  });
+
   it('obtiene nombre e inicial de perfil', () => {
     expect(getDashboardDisplayName({ name: 'Marcelo' })).toBe('Marcelo');
     expect(getProfileInitial({ name: 'Marcelo' })).toBe('M');

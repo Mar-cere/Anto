@@ -7,12 +7,13 @@ import * as Haptics from 'expo-haptics';
 import React, { useMemo } from 'react';
 import { View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import { createDashboardStyles } from '../styles/dashboardTheme';
 import DashboardGroupedRow from './dashboard/DashboardGroupedRow';
 import DashboardSection from './dashboard/DashboardSection';
 
-const DEFAULT_TEXTS = {
+const DEFAULT_TEXTS_ES = {
   TITLE: 'Herramientas de seguimiento',
   HINT: 'Protocolos guiados para practicar entre conversaciones con Anto.',
   BA: 'Activación conductual',
@@ -22,6 +23,18 @@ const DEFAULT_TEXTS = {
   EXPOSURE: 'Exposición gradual',
   EXPOSURE_HINT: 'Jerarquía de pasos',
   ALL: 'Ver todas las técnicas',
+};
+
+const DEFAULT_TEXTS_EN = {
+  TITLE: 'Follow-up tools',
+  HINT: 'Guided protocols to practice between chats with Anto.',
+  BA: 'Behavioral activation',
+  BA_HINT: 'Weekly plan and mood logging',
+  ABC: 'ABC self-monitoring',
+  ABC_HINT: 'Situation → thought → consequence',
+  EXPOSURE: 'Gradual exposure',
+  EXPOSURE_HINT: 'Step hierarchy',
+  ALL: 'Browse all techniques',
 };
 
 const TOOL_ITEMS = [
@@ -43,20 +56,22 @@ export default function TccProtocolsQuickCard({ accessibilityLabel }) {
     () => createDashboardStyles(colors, resolvedScheme),
     [colors, resolvedScheme],
   );
+  const { language } = useLanguage();
   const translated = useSectionTranslations('DASH');
+  const defaults = language === 'en' ? DEFAULT_TEXTS_EN : DEFAULT_TEXTS_ES;
   const TEXTS = useMemo(
     () => ({
-      TITLE: translated?.TCC_TOOLS_TITLE || DEFAULT_TEXTS.TITLE,
-      HINT: translated?.TCC_TOOLS_HINT || DEFAULT_TEXTS.HINT,
-      BA: translated?.TCC_TOOLS_BA || DEFAULT_TEXTS.BA,
-      BA_HINT: translated?.TCC_TOOLS_BA_HINT || DEFAULT_TEXTS.BA_HINT,
-      ABC: translated?.TCC_TOOLS_ABC || DEFAULT_TEXTS.ABC,
-      ABC_HINT: translated?.TCC_TOOLS_ABC_HINT || DEFAULT_TEXTS.ABC_HINT,
-      EXPOSURE: translated?.TCC_TOOLS_EXPOSURE || DEFAULT_TEXTS.EXPOSURE,
-      EXPOSURE_HINT: translated?.TCC_TOOLS_EXPOSURE_HINT || DEFAULT_TEXTS.EXPOSURE_HINT,
-      ALL: translated?.TCC_TOOLS_ALL || DEFAULT_TEXTS.ALL,
+      TITLE: translated?.TCC_TOOLS_TITLE || defaults.TITLE,
+      HINT: translated?.TCC_TOOLS_HINT || defaults.HINT,
+      BA: translated?.TCC_TOOLS_BA || defaults.BA,
+      BA_HINT: translated?.TCC_TOOLS_BA_HINT || defaults.BA_HINT,
+      ABC: translated?.TCC_TOOLS_ABC || defaults.ABC,
+      ABC_HINT: translated?.TCC_TOOLS_ABC_HINT || defaults.ABC_HINT,
+      EXPOSURE: translated?.TCC_TOOLS_EXPOSURE || defaults.EXPOSURE,
+      EXPOSURE_HINT: translated?.TCC_TOOLS_EXPOSURE_HINT || defaults.EXPOSURE_HINT,
+      ALL: translated?.TCC_TOOLS_ALL || defaults.ALL,
     }),
-    [translated],
+    [translated, defaults],
   );
 
   const openScreen = (screen) => {

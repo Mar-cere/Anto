@@ -7,14 +7,14 @@ const COPY = {
   es: {
     calm: {
       label: 'Tranquilo',
-      acknowledgment: 'Qué bueno. Si querés, podemos mantener ese ritmo hoy.',
-      antoSnippet: '¿Querés contarme qué te ayuda a sentirte así de tranquilo?',
+      acknowledgment: 'Qué bueno. Si quieres, podemos mantener ese ritmo hoy.',
+      antoSnippet: '¿Quieres contarme qué te ayuda a sentirte así de tranquilo?',
       suggestChat: false,
       chatEmotion: 'tranquilidad',
     },
     anxious: {
       label: 'Ansioso',
-      acknowledgment: 'Gracias por contarlo. No tenés que afrontarlo solo.',
+      acknowledgment: 'Gracias por contarlo. No tienes que afrontarlo solo.',
       antoSnippet: 'Puedo acompañarte ahora con calma, sin apuro.',
       suggestChat: true,
       chatEmotion: 'ansiedad',
@@ -22,14 +22,14 @@ const COPY = {
     tired: {
       label: 'Cansado',
       acknowledgment: 'Tiene sentido. Hoy podemos ir despacio.',
-      antoSnippet: 'Si querés, vemos juntos qué te está pesando.',
+      antoSnippet: 'Si quieres, vemos juntos qué te está pesando.',
       suggestChat: true,
       chatEmotion: 'cansancio',
     },
     good: {
       label: 'Bien',
-      acknowledgment: 'Me alegra leer eso. ¿Querés aprovechar ese impulso?',
-      antoSnippet: '¿Querés contarme qué está ayudando hoy?',
+      acknowledgment: 'Me alegra leer eso. ¿Quieres aprovechar ese impulso?',
+      antoSnippet: '¿Quieres contarme qué está ayudando hoy?',
       suggestChat: false,
       chatEmotion: 'bienestar',
     },

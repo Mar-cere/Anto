@@ -249,7 +249,7 @@ export const DASH = {
   VIEW_ALL: 'View all',
   HOME_GREETING_NAME: 'Hi, {name}.',
   HOME_GREETING_FALLBACK: 'Hi.',
-  MOOD_SECTION_LABEL: 'How you arrive today',
+  MOOD_SECTION_LABEL: 'How you are feeling today',
   MOOD_QUESTION: 'How do you feel right now?',
   MOOD_CALM: 'Calm',
   MOOD_ANXIOUS: 'Anxious',

@@ -4,7 +4,7 @@
 
 /** Voseo y formas no neutras en español de producto. */
 export const ES_VOSEO_RE =
-  /\b(podés|querés|tenés|sabés|andá|dejá|contame|seguí|abrí|mirá|vení|decí|sentí|recordá)\b/i;
+  /\b(podés|querés|tenés|sabés|andá|dejá|contame|seguí|abrí|mirá|vení|decí|sentí|recordá|llegás|sentís)\b/i;
 
 export function hasSpanishVoseo(text) {
   return typeof text === 'string' && ES_VOSEO_RE.test(text);

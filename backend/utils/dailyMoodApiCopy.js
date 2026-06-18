@@ -2,7 +2,7 @@ const COPY = {
   es: {
     rateLimit: 'Demasiados intentos. Espera un momento.',
     todayError: 'No se pudo cargar el check-in de hoy.',
-    saveError: 'No se pudo guardar cómo te sentís hoy.',
+    saveError: 'No se pudo guardar cómo te sientes hoy.',
     invalidMood: 'Estado de ánimo no válido.',
   },
   en: {

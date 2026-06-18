@@ -21,13 +21,13 @@ function flattenStrings(source, prefix = '', output = []) {
 
 /** Solo formas con marca de voseo (acento en la vocal final), no imperativos neutros "mira/deja". */
 const ES_VOSEO =
-  /\b(podés|querés|tenés|sabés|andá|dejá|contame|seguí|abrí|mirá|vení|decí|sentí|recordá)\b/i;
+  /\b(podés|querés|tenés|sabés|andá|dejá|contame|seguí|abrí|mirá|vení|decí|sentí|recordá|llegás|sentís)\b/i;
 
 const EN_AWKWARD = [
   { re: /\bToday streak\b/, label: 'use "Today\'s streak"' },
   { re: /task tracked time/i, label: 'awkward phrasing' },
   { re: /\bshall we\b/i, label: 'overly formal' },
-  { re: /\byou are arriving\b/i, label: 'unnatural phrasing' },
+  { re: /\bHow you arrive today\b/i, label: 'prefer "How you are feeling today"' },
   { re: /\brecover password\b/i, label: 'prefer "reset password"' },
   { re: /the other person feelings/i, label: 'grammar: other person\'s feelings' },
   { re: /^Error (loading|sending|creating|updating|deleting|fetching)/i, label: 'prefer "Could not …"' },

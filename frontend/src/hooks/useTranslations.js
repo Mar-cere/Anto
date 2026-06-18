@@ -36,7 +36,7 @@ export function buildMappedSectionTexts(translated, defaults, keyMap) {
       result[localKey] = value;
       return;
     }
-    if (typeof value === 'string' && value.length > 0) {
+    if (typeof value === 'string' && value.trim().length > 0) {
       result[localKey] = value;
     }
   });

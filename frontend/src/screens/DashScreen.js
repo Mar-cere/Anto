@@ -14,8 +14,6 @@ import * as Haptics from 'expo-haptics';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
-  Animated,
-  Easing,
   Linking,
   StatusBar,
   StyleSheet,
@@ -45,7 +43,6 @@ import TccProtocolsQuickCard from '../components/TccProtocolsQuickCard';
 import TaskCard from '../components/TaskCard';
 import { SkeletonBlock, SkeletonCard } from '../components/Skeleton';
 import { api, ENDPOINTS } from '../config/api';
-import { ANIMATION_DURATIONS, ANIMATION_OPACITIES, ANIMATION_SCALES } from '../constants/animations';
 import { BORDERS, SPACING, STATUS_BAR } from '../constants/ui';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -122,18 +119,6 @@ const DashScreen = () => {
           backgroundColor: colors.gradientTop,
           opacity: 0.45,
         },
-        moreSectionHeader: {
-          marginTop: 8,
-          marginBottom: 14,
-          paddingHorizontal: 2,
-        },
-        moreSectionTitle: {
-          fontSize: 13,
-          fontWeight: '600',
-          letterSpacing: 1.2,
-          textTransform: 'uppercase',
-          color: colors.textMuted,
-        },
         errorContainer: {
           alignSelf: 'stretch',
           backgroundColor: colors.dangerSoft ?? 'rgba(255, 107, 107, 0.12)',
@@ -201,7 +186,6 @@ const DashScreen = () => {
   const [tasks, setTasks] = useState([]);
   const [habits, setHabits] = useState([]);
   const [togglingHabitId, setTogglingHabitId] = useState(null);
-  const [refreshAnim] = useState(new Animated.Value(0));
   const [showEmergencyContactsModal, setShowEmergencyContactsModal] = useState(false);
   const [emergencyContacts, setEmergencyContacts] = useState([]);
   const [hasCheckedEmergencyContacts, setHasCheckedEmergencyContacts] = useState(false);
@@ -785,39 +769,6 @@ const DashScreen = () => {
     [refreshHomeDataOnFocus],
   );
 
-  const triggerRefreshAnim = useCallback(() => {
-    Animated.sequence([
-      Animated.timing(refreshAnim, {
-        toValue: 1,
-        duration: ANIMATION_DURATIONS.FAST,
-        useNativeDriver: true,
-        easing: Easing.out(Easing.ease)
-      }),
-      Animated.timing(refreshAnim, {
-        toValue: 0,
-        duration: ANIMATION_DURATIONS.FAST,
-        useNativeDriver: true,
-        easing: Easing.in(Easing.ease)
-      })
-    ]).start();
-  }, [refreshAnim]);
-
-  // Estilos de animación para refresh (debe estar antes de cualquier return condicional)
-  const refreshAnimationStyle = useMemo(() => ({
-    transform: [{ 
-      scale: refreshAnim.interpolate({ 
-        inputRange: [0, 1], 
-        outputRange: [ANIMATION_SCALES.REFRESH_MIN, ANIMATION_SCALES.REFRESH_MAX] 
-      }) 
-    }],
-    opacity: refreshAnim.interpolate({ 
-      inputRange: [0, 1], 
-      outputRange: [ANIMATION_OPACITIES.REFRESH_MIN, ANIMATION_OPACITIES.REFRESH_MAX] 
-    })
-  }), [refreshAnim]);
-
-
-  // Componente de carga
   if (loading) {
     return (
       <SafeAreaView style={styles.safeAreaRoot} edges={['top', 'left', 'right']}>
@@ -846,7 +797,6 @@ const DashScreen = () => {
           onRefresh={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setRefreshing(true);
-            triggerRefreshAnim();
             loadData(true);
           }}
           contentContainerStyle={{
@@ -905,23 +855,9 @@ const DashScreen = () => {
             onOpenExposureHierarchy={openExposureFromFocus}
             onCommitmentsChanged={refreshHomeDataOnFocus}
           />
-          <View style={styles.moreSectionHeader}>
-            <Text style={styles.moreSectionTitle}>{DASH.DASH_MORE_SECTION}</Text>
-          </View>
-          <Animated.View style={refreshAnimationStyle}>
-            <TaskCard
-              tasks={tasks}
-              onComplete={async () => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                loadData(true);
-              }}
-              accessibilityLabel={DASH.TASKS_LABEL}
-            />
-          </Animated.View>
+          <TaskCard />
           <TccProtocolsQuickCard accessibilityLabel={DASH.TCC_TOOLS_LABEL} />
-          <Animated.View style={refreshAnimationStyle}>
-            <JournalCard />
-          </Animated.View>
+          <JournalCard />
           <InsightsQuickCard accessibilityLabel={DASH.INSIGHTS_CARD_A11Y} />
           <QuoteSection />
         </DashboardScroll>

@@ -5,11 +5,13 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import React, { useMemo } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { View } from 'react-native';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
-import { getFocusTheme } from '../styles/focusCardTheme';
+import { createDashboardStyles } from '../styles/dashboardTheme';
+import DashboardGroupedRow from './dashboard/DashboardGroupedRow';
+import DashboardSection from './dashboard/DashboardSection';
 
 const DEFAULTS_ES = {
   TITLE: 'Tu actividad y patrones',
@@ -63,6 +65,10 @@ export default function InsightsQuickCard({ accessibilityLabel }) {
   const navigation = useNavigation();
   const { language } = useLanguage();
   const { colors, resolvedScheme } = useTheme();
+  const styles = useMemo(
+    () => createDashboardStyles(colors, resolvedScheme),
+    [colors, resolvedScheme],
+  );
   const translated = useSectionTranslations('DASH');
   const defaults = language === 'en' ? DEFAULTS_EN : DEFAULTS_ES;
 
@@ -81,103 +87,32 @@ export default function InsightsQuickCard({ accessibilityLabel }) {
     [translated, defaults],
   );
 
-  const focus = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
-
-  const styles = useMemo(
-    () =>
-      StyleSheet.create({
-        card: {
-          ...focus.FOCUS_PANEL,
-          marginBottom: 16,
-        },
-        header: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 10,
-          marginBottom: 6,
-        },
-        title: {
-          fontSize: 16,
-          fontWeight: '700',
-          color: colors.text,
-          flex: 1,
-        },
-        hint: {
-          fontSize: 13,
-          color: focus.FOCUS_META,
-          lineHeight: 19,
-          marginBottom: 4,
-        },
-        row: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 12,
-          paddingVertical: 11,
-          borderTopWidth: StyleSheet.hairlineWidth,
-          borderTopColor: focus.FOCUS_BORDER_SUBTLE,
-        },
-        rowIcon: {
-          width: 40,
-          height: 40,
-          borderRadius: 12,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: colors.glassFill,
-        },
-        rowBody: { flex: 1, minWidth: 0 },
-        rowLabel: {
-          fontSize: 15,
-          fontWeight: '600',
-          color: colors.text,
-        },
-        rowHint: {
-          fontSize: 12,
-          color: focus.FOCUS_META,
-          marginTop: 2,
-          lineHeight: 17,
-        },
-      }),
-    [colors, focus],
-  );
+  const openRow = (row) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    navigation.navigate(row.screen, row.key === 'weekly' ? { period: 'week' } : undefined);
+  };
 
   return (
-    <View
-      style={styles.card}
-      accessibilityRole="summary"
+    <DashboardSection
+      title={TEXTS.TITLE}
+      hint={TEXTS.HINT}
       accessibilityLabel={accessibilityLabel || TEXTS.CARD_A11Y}
     >
-      <View style={styles.header}>
-        <MaterialCommunityIcons name="chart-arc" size={22} color={colors.primary} />
-        <Text style={styles.title} accessibilityRole="header">
-          {TEXTS.TITLE}
-        </Text>
+      <View style={styles.groupedList}>
+        {ROWS.map((row, index) => (
+          <DashboardGroupedRow
+            key={row.key}
+            iconNode={(
+              <MaterialCommunityIcons name={row.icon} size={22} color={colors.primary} />
+            )}
+            title={TEXTS[row.labelKey]}
+            subtitle={TEXTS[row.hintKey]}
+            onPress={() => openRow(row)}
+            accessibilityHint={TEXTS[row.hintKey]}
+            isLast={index === ROWS.length - 1}
+          />
+        ))}
       </View>
-      <Text style={styles.hint}>{TEXTS.HINT}</Text>
-      {ROWS.map((row) => (
-        <TouchableOpacity
-          key={row.key}
-          style={styles.row}
-          activeOpacity={0.78}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            navigation.navigate(row.screen, row.key === 'weekly' ? { period: 'week' } : undefined);
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={TEXTS[row.labelKey]}
-          accessibilityHint={TEXTS[row.hintKey]}
-        >
-          <View style={styles.rowIcon}>
-            <MaterialCommunityIcons name={row.icon} size={22} color={colors.primary} />
-          </View>
-          <View style={styles.rowBody}>
-            <Text style={styles.rowLabel}>{TEXTS[row.labelKey]}</Text>
-            <Text style={styles.rowHint} numberOfLines={2}>
-              {TEXTS[row.hintKey]}
-            </Text>
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={22} color={focus.FOCUS_META} />
-        </TouchableOpacity>
-      ))}
-    </View>
+    </DashboardSection>
   );
 }
