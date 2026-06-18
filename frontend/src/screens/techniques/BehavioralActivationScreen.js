@@ -31,6 +31,7 @@ import { SPACING } from '../../constants/ui';
 import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
 import { confirmDestructiveAction } from '../../utils/confirmDestructiveAction';
 import { parseBaRecordRouteParams } from '../../utils/baRecordPrefill';
+import { resolveBaApiErrorMessage } from '../../utils/baApiErrors';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 import BehavioralActivationWeekPanel from './BehavioralActivationWeekPanel';
 import { computeBaMoodTrend } from '../../utils/baMoodTrend';
@@ -108,6 +109,7 @@ const DEFAULT_TEXTS = {
   LINK_PRODUCT_TOAST_TASK: 'También añadida a Tareas',
   LINK_PRODUCT_TOAST_HABIT: 'También añadida a Hábitos',
   LINK_PRODUCT_TOAST_ERROR: 'No se pudo vincular con Tareas/Hábitos',
+  LINK_PRODUCT_TOAST_CONFLICT: 'Ese hueco del plan ya está vinculado a otra tarea o hábito',
   WEEK_LINKED_TASK: 'En Tareas',
   WEEK_LINKED_HABIT: 'En Hábitos',
 };
@@ -200,6 +202,8 @@ const BehavioralActivationScreen = () => {
         translated?.BA_LINK_PRODUCT_TOAST_HABIT || DEFAULT_TEXTS.LINK_PRODUCT_TOAST_HABIT,
       LINK_PRODUCT_TOAST_ERROR:
         translated?.BA_LINK_PRODUCT_TOAST_ERROR || DEFAULT_TEXTS.LINK_PRODUCT_TOAST_ERROR,
+      LINK_PRODUCT_TOAST_CONFLICT:
+        translated?.BA_LINK_PRODUCT_TOAST_CONFLICT || DEFAULT_TEXTS.LINK_PRODUCT_TOAST_CONFLICT,
       WEEK_LINKED_TASK: translated?.BA_WEEK_LINKED_TASK || DEFAULT_TEXTS.WEEK_LINKED_TASK,
       WEEK_LINKED_HABIT: translated?.BA_WEEK_LINKED_HABIT || DEFAULT_TEXTS.WEEK_LINKED_HABIT,
     }),
@@ -710,10 +714,12 @@ const BehavioralActivationScreen = () => {
                     ? TEXTS.LINK_PRODUCT_TOAST_TASK
                     : TEXTS.LINK_PRODUCT_TOAST_HABIT,
                 );
+              } else if (linkRes) {
+                showToast(resolveBaApiErrorMessage(linkRes, TEXTS));
               }
             } catch (linkErr) {
               console.error('Error vinculando BA con producto:', linkErr);
-              showToast(TEXTS.LINK_PRODUCT_TOAST_ERROR);
+              showToast(resolveBaApiErrorMessage(linkErr, TEXTS));
             }
           } else if (hasExistingLink) {
             try {

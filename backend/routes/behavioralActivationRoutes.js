@@ -26,6 +26,7 @@ import {
   getLinkBaProductSchema,
   getSyncBaFromLogSchema,
 } from '../utils/behavioralActivationLinkProductSchemas.js';
+import { buildBaBridgeErrorBody } from '../utils/baBridgeErrorResponse.js';
 
 const router = express.Router();
 
@@ -161,18 +162,23 @@ router.post('/week-plan/link-product', weekPlanLimiter, async (req, res) => {
     });
   } catch (err) {
     if (err?.code === 'PLAN_NOT_FOUND') {
-      return res.status(404).json({ success: false, error: copy.linkProductPlanNotFound });
+      return res
+        .status(404)
+        .json(buildBaBridgeErrorBody('PLAN_NOT_FOUND', copy.linkProductPlanNotFound));
     }
     if (err?.code === 'SLOT_NOT_FOUND') {
-      return res.status(404).json({ success: false, error: copy.linkProductSlotNotFound });
+      return res
+        .status(404)
+        .json(buildBaBridgeErrorBody('SLOT_NOT_FOUND', copy.linkProductSlotNotFound));
     }
     if (err?.code === 'SLOT_LINK_CONFLICT') {
-      return res.status(409).json({ success: false, error: copy.linkProductConflict });
+      return res
+        .status(409)
+        .json(buildBaBridgeErrorBody('SLOT_LINK_CONFLICT', copy.linkProductConflict));
     }
     if (err?.code === 'PRODUCT_VALIDATION') {
       return res.status(400).json({
-        success: false,
-        error: copy.linkProductValidationError,
+        ...buildBaBridgeErrorBody('PRODUCT_VALIDATION', copy.linkProductValidationError),
         details: err.message,
       });
     }
@@ -200,7 +206,9 @@ router.post('/week-plan/sync-from-log', weekPlanLimiter, async (req, res) => {
     });
 
     if (!result) {
-      return res.status(404).json({ success: false, error: copy.linkProductSlotNotFound });
+      return res
+        .status(404)
+        .json(buildBaBridgeErrorBody('SLOT_NOT_FOUND', copy.linkProductSlotNotFound));
     }
 
     res.json({
