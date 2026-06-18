@@ -1,13 +1,28 @@
 /**
  * Tests unitarios para línea de foco determinística del dashboard (#34).
  */
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import {
   buildDeterministicFocusCaption,
   buildReminderCandidates,
   pickDisplayedReminder
 } from '../../../services/dashboardFocusService.js';
 
+const servicePath = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../../services/dashboardFocusService.js',
+);
+
 describe('dashboardFocusService', () => {
+  it('importa listSessionCommitments (regresión /api/summary/focus)', () => {
+    const src = fs.readFileSync(servicePath, 'utf8');
+    expect(src).toMatch(
+      /import\s*\{[^}]*\blistSessionCommitments\b[^}]*\}\s*from\s*['"]\.\/sessionCommitmentService\.js['"]/,
+    );
+  });
+
   describe('buildDeterministicFocusCaption', () => {
     it('prioriza retorno al chat si no hay mensajes en la semana', () => {
       const text = buildDeterministicFocusCaption({

@@ -121,7 +121,6 @@ const TaskCard = memo(() => {
   const navigation = useNavigation();
   const { colors, resolvedScheme } = useTheme();
   const { language } = useLanguage();
-  const { language } = useLanguage();
   const translated = useSectionTranslations('TASKS');
   const dashTexts = useSectionTranslations('DASH');
   const fallbackTexts = language === 'en' ? DEFAULT_TEXTS_EN : DEFAULT_TEXTS_ES;

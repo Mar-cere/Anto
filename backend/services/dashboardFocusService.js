@@ -27,6 +27,7 @@ import {
 import { findWeekPlanForUser } from './behavioralActivationWeekPlanService.js';
 import { loadExposureFocus } from './chatTccContinuityService.js';
 import { pickBaFocusSlot } from './activeTccProtocolsContextService.js';
+import { listSessionCommitments } from './sessionCommitmentService.js';
 
 function cacheTtlSecondsUntilUtcEndOfDay() {
   const now = Date.now();
