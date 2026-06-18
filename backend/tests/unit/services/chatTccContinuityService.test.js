@@ -190,4 +190,27 @@ describe('chatTccContinuityService', () => {
     expect(result.items[0].kind).toBe('automatic_thought_record');
     expect(result.items[0].screen).toBe('AutomaticThoughtRecord');
   });
+
+  it('añade ABC reciente si no hay otros ítems', async () => {
+    mockAbcFindByUser.mockResolvedValue([
+      {
+        _id: '507f1f77bcf86cd799439088',
+        activatingEvent: 'Reunión tensa',
+        beliefs: 'No voy a poder',
+        emotions: 'ansiedad',
+        consequence: 'Me callé',
+        emotionIntensity: 7,
+      },
+    ]);
+
+    const result = await buildChatTccContinuity({
+      userId: '507f1f77bcf86cd799439011',
+      language: 'es',
+    });
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].kind).toBe('abc_record');
+    expect(result.items[0].screen).toBe('AbcRecord');
+    expect(result.items[0].params.prefillActivatingEvent).toContain('Reunión');
+  });
 });

@@ -39,6 +39,10 @@ import { useToast } from '../context/ToastContext';
 import { isValidSessionIntentionId } from '../constants/sessionIntention';
 import { recordInterventionClicked, recordInterventionDismissed } from '../utils/recordInterventionCompleted';
 import { CHAT_SESSION_KEYS } from '../utils/chatSessionStorage';
+import {
+  loadDismissedContinuityIds,
+  persistDismissedContinuityId,
+} from '../utils/tccContinuityDismissStorage';
 import { newClientRequestId } from '../utils/clientRequestId';
 import { isValidMongoObjectId24 } from '../utils/mongoId';
 import { sanitizeProposedProductActions } from '../utils/sanitizeProposedProductActions';
@@ -1670,6 +1674,13 @@ export function useChatScreen() {
 
   const loadTccContinuity = useCallback(async () => {
     try {
+      if (dismissedContinuityIdsRef.current.length === 0) {
+        const stored = await loadDismissedContinuityIds();
+        if (stored.length > 0) {
+          dismissedContinuityIdsRef.current = stored;
+          setDismissedContinuityIds(stored);
+        }
+      }
       const convId = await AsyncStorage.getItem(CHAT_SESSION_KEYS.CONVERSATION_ID);
       const items = await chatService.fetchTccContinuity(convId);
       setTccContinuityItems(Array.isArray(items) ? items : []);
@@ -1706,6 +1717,7 @@ export function useChatScreen() {
       ? dismissedContinuityIdsRef.current
       : [...dismissedContinuityIdsRef.current, item.id];
     setDismissedContinuityIds(dismissedContinuityIdsRef.current);
+    void persistDismissedContinuityId(item.id);
   }, []);
 
   const handleOpenTccLiteAtHandoff = useCallback(

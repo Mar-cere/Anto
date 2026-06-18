@@ -72,7 +72,7 @@ Criterio para **eliminar** del backlog activo (no son un quinto cuadrante de pri
 | **Pensamientos automáticos (#89)** | **Sí* (jun 2026):** wizard 3 pasos, picker 8 distorsiones es/en, prefill chat, borrador AT (`POST /tcc-lite-draft`), handoff desde TCC lite (#201), `test:tcc-lite-suite`. |
 | **Ciclo ABC macro (#212)** | **Parcial (jun 2026):** agregación situación→pensamiento→consecuencia, API `macro-patterns?detail=cycle`, visual A→B→C en `AbcRecord` + tarjetas Resumen/Estadísticas/informe, continuidad chat factual. **Pendiente:** lienzo interactivo completo (#207/#218). |
 | **TCC lite in-chat (#201)** | **Sí* (jun 2026):** 4 pasos, pie progreso en burbuja (SSE metadata), estado `tccLiteState`, handoff AT, resume session insight, paridad socket↔SSE (`chatTransportTccLiteParity`), **socket como transporte principal del chat** (SSE respaldo), smoke `test:tcc-lite-suite`. |
-| **Continuidad chat↔ejercicios** | **Parcial (~90% jun 2026):** strip BA/exposición/AT/ABC, telemetría `shown` (#127), dismiss persistente, fix lectura API `data.items`. |
+| **Continuidad chat↔ejercicios** | **Sí* (jun 2026):** strip BA/exposición/AT/ABC, telemetría `shown` (#127), dismiss persistente (AsyncStorage + grafo), fix query `conversationId`, `test:tcc-continuity-suite` + smoke. |
 | **Saludo inicial chat (i18n)** | **Parcial (jun 2026):** `GREETING_VARIATIONS_EN`, `X-App-Language` en creación de conversación/welcome/invitado; frontend `chatWelcomeGreeting` localiza welcome persistido. |
 
 ### Nuevas propuestas (input producto, mayo 2026)

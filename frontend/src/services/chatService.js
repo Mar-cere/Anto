@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { devLog, devWarn } from '../utils/devLog';
 import { parseChatMessagesArrayFromStorage } from '../utils/safeStorageJson';
-import apiClient, { API_URL, getAppLanguage } from '../config/api';
+import apiClient, { API_URL, ENDPOINTS, getAppLanguage } from '../config/api';
 import { getChatCopy } from '../utils/serviceCopy';
 import { isValidSessionIntentionId } from '../constants/sessionIntention';
 import { clearPersistedChatSession } from '../utils/chatSessionStorage';
@@ -753,7 +753,10 @@ export const getInterventionGraph = async (params = {}) => {
   }
   const days = Math.max(1, Math.min(180, Number(params?.days ?? 14) || 14));
   const limit = Math.max(1, Math.min(300, Number(params?.limit ?? 60) || 60));
-  return apiClient.get('/api/chat/interventions/graph', { params: { days, limit } });
+  return apiClient.get('/api/chat/interventions/graph', {
+    days: String(days),
+    limit: String(limit),
+  });
 };
 
 /**
@@ -773,8 +776,8 @@ export const fetchTccContinuity = async (conversationId) => {
     const token = await AsyncStorage.getItem('userToken');
     if (!token) return [];
     const cid = String(conversationId ?? '').trim();
-    const params = /^[\da-f]{24}$/i.test(cid) ? { conversationId: cid } : undefined;
-    const response = await apiClient.get('/api/chat/tcc-continuity', { params });
+    const query = /^[\da-f]{24}$/i.test(cid) ? { conversationId: cid } : {};
+    const response = await apiClient.get(ENDPOINTS.CHAT_TCC_CONTINUITY, query);
     return response?.data?.data?.items || response?.data?.items || [];
   } catch (e) {
     if (typeof __DEV__ !== 'undefined' && __DEV__) {
