@@ -33,6 +33,8 @@ import { confirmDestructiveAction } from '../../utils/confirmDestructiveAction';
 import { parseAbcRecordRouteParams } from '../../utils/abcRecordPrefill';
 import IntensityScalePicker from '../../components/techniques/IntensityScalePicker';
 import IntensityScaleValueChip from '../../components/techniques/IntensityScaleValueChip';
+import AbcMacroPatternsCard from '../../components/abc/AbcMacroPatternsCard';
+import { getDefaultAbcMacroDateRange } from '../../utils/abcMacroDateRange';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
 const STEPS = ['A', 'B', 'C'];
@@ -176,6 +178,7 @@ const AbcRecordScreen = () => {
   const [fromChatPrefillB, setFromChatPrefillB] = useState(false);
   const handledResetAtRef = useRef(null);
   const handledChatPrefillKeyRef = useRef('');
+  const macroDateRange = useMemo(() => getDefaultAbcMacroDateRange(), []);
 
   const styles = useMemo(
     () =>
@@ -571,6 +574,14 @@ const AbcRecordScreen = () => {
             <Text style={techniqueScreenStyles.introTitle}>{TEXTS.INTRO_TITLE}</Text>
             <Text style={techniqueScreenStyles.introText}>{TEXTS.INTRO_BODY}</Text>
           </View>
+
+          <AbcMacroPatternsCard
+            startDate={macroDateRange.startDate}
+            endDate={macroDateRange.endDate}
+            showCycleVisual
+            showCta={false}
+            compact
+          />
 
           <View style={techniqueScreenStyles.card}>
             <Text style={techniqueScreenStyles.cardMeta}>

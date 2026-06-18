@@ -3,7 +3,7 @@ import {
   validateLlmInsightPayload,
   enrichPatternInsightWithLlm,
 } from '../../../services/weeklyInsightLlmService.js';
-import { buildAbcMacroPatterns, toClientAbcPatterns } from '../../../services/abcMacroPatternService.js';
+import { buildAbcMacroPatterns, toClientAbcPatterns, toClientAbcCyclePatterns } from '../../../services/abcMacroPatternService.js';
 
 describe('weeklyInsightLlmService', () => {
   const originalEnv = process.env;
@@ -117,6 +117,24 @@ describe('abcMacroPatternService', () => {
     ]);
     expect(client[0].summary).toBe('Patrón observado');
     expect(client[0].beliefSamples).toBeUndefined();
+  });
+
+  it('toClientAbcCyclePatterns expone ciclo sanitizado', () => {
+    const client = toClientAbcCyclePatterns([
+      {
+        situationSample: 'Reunión',
+        count: 2,
+        summary: 'Patrón',
+        beliefSamples: ['no voy a poder'],
+        emotionSamples: ['ansiedad'],
+        consequenceSamples: ['evité hablar'],
+        avgEmotionIntensity: 7.5,
+        disclaimer: 'pattern_observed',
+      },
+    ]);
+    expect(client[0].cycle.trigger).toBe('Reunión');
+    expect(client[0].cycle.thoughts).toContain('no voy a poder');
+    expect(client[0].avgEmotionIntensity).toBe(7.5);
   });
 
   it('toClientAbcPatterns filtra texto clínico', () => {

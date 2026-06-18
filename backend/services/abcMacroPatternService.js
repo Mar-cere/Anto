@@ -149,8 +149,44 @@ export function toClientAbcPatterns(patterns = []) {
     .filter(Boolean);
 }
 
+/**
+ * Vista de ciclo A→B→C para pantalla ABC (#212) — muestras sanitizadas del propio usuario.
+ */
+export function toClientAbcCyclePatterns(patterns = []) {
+  return (Array.isArray(patterns) ? patterns : [])
+    .slice(0, 3)
+    .map((p) => {
+      const base = toClientAbcPatterns([p])[0];
+      if (!base) return null;
+
+      const thoughts = sanitizeObservationalSamples(p?.beliefSamples, 2, 80);
+      const emotions = sanitizeObservationalSamples(p?.emotionSamples, 2, 60);
+      const consequences = sanitizeObservationalSamples(p?.consequenceSamples, 2, 80);
+      const hasCycleLeg =
+        thoughts.length > 0 || emotions.length > 0 || consequences.length > 0;
+      if (!hasCycleLeg) return null;
+
+      const avgIntensity = Number(p?.avgEmotionIntensity);
+      return {
+        ...base,
+        avgEmotionIntensity:
+          Number.isFinite(avgIntensity) && avgIntensity >= 1 && avgIntensity <= 10
+            ? avgIntensity
+            : null,
+        cycle: {
+          trigger: base.situationSample,
+          thoughts,
+          emotions,
+          consequences,
+        },
+      };
+    })
+    .filter(Boolean);
+}
+
 export default {
   buildAbcMacroPatterns,
   fetchAbcMacroPatterns,
   toClientAbcPatterns,
+  toClientAbcCyclePatterns,
 };

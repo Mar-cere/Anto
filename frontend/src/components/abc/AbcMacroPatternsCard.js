@@ -8,6 +8,8 @@ import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import abcRecordsService from '../../services/abcRecordsService';
+import { resolveAbcApiErrorMessage } from '../../utils/abcApiErrors';
+import AbcMacroCycleVisual from './AbcMacroCycleVisual';
 
 const COPY = {
   es: {
@@ -16,6 +18,8 @@ const COPY = {
     openAbc: 'Abrir autorregistro ABC',
     count: (n) => `${n}× en este periodo`,
     empty: null,
+    loadError: 'No se pudieron cargar los ciclos recurrentes.',
+    rangeError: 'El periodo seleccionado no es válido.',
   },
   en: {
     title: 'Recurring ABC cycles',
@@ -23,6 +27,8 @@ const COPY = {
     openAbc: 'Open ABC self-monitoring',
     count: (n) => `${n}× in this period`,
     empty: null,
+    loadError: 'Could not load recurring cycles.',
+    rangeError: 'The selected period is not valid.',
   },
 };
 
@@ -32,6 +38,8 @@ export default function AbcMacroPatternsCard({
   patterns: patternsProp = null,
   compact = false,
   showCta = true,
+  showCycleVisual = false,
+  detail = 'summary',
 }) {
   const { colors } = useTheme();
   const { language } = useLanguage();
@@ -41,30 +49,42 @@ export default function AbcMacroPatternsCard({
   const needsFetch = !Array.isArray(patternsProp) && Boolean(startDate && endDate);
   const [loading, setLoading] = useState(needsFetch);
   const [patterns, setPatterns] = useState(Array.isArray(patternsProp) ? patternsProp : []);
+  const [loadError, setLoadError] = useState('');
 
   const load = useCallback(async () => {
     if (Array.isArray(patternsProp)) {
       setPatterns(patternsProp);
+      setLoadError('');
       return;
     }
     if (!startDate || !endDate) {
       setPatterns([]);
+      setLoadError('');
       return;
     }
     try {
       setLoading(true);
+      setLoadError('');
       const result = await abcRecordsService.fetchAbcMacroPatterns({
         startDate,
         endDate,
         limit: 80,
+        detail: showCycleVisual ? 'cycle' : detail,
       });
       setPatterns(result.patterns || []);
-    } catch {
+    } catch (err) {
+      console.error('Error cargando patrones macro ABC:', err);
       setPatterns([]);
+      setLoadError(
+        resolveAbcApiErrorMessage(err, {
+          MACRO_PATTERNS_ERROR: text.loadError,
+          MACRO_PATTERNS_RANGE_ERROR: text.rangeError,
+        }),
+      );
     } finally {
       setLoading(false);
     }
-  }, [endDate, patternsProp, startDate]);
+  }, [endDate, patternsProp, showCycleVisual, detail, startDate, text.loadError, text.rangeError]);
 
   useEffect(() => {
     void load();
@@ -127,6 +147,11 @@ export default function AbcMacroPatternsCard({
           color: colors.primary,
         },
         loading: { paddingVertical: 12, alignItems: 'center' },
+        errorText: {
+          fontSize: 12,
+          lineHeight: 17,
+          color: colors.error || colors.textSecondary,
+        },
       }),
     [colors, compact],
   );
@@ -137,6 +162,15 @@ export default function AbcMacroPatternsCard({
         <View style={styles.loading}>
           <ActivityIndicator size="small" color={colors.primary} />
         </View>
+      </View>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <View style={styles.wrap} accessibilityRole="alert">
+        <Text style={styles.title}>{text.title}</Text>
+        <Text style={styles.errorText}>{loadError}</Text>
       </View>
     );
   }
@@ -158,6 +192,13 @@ export default function AbcMacroPatternsCard({
           <Text style={styles.summary}>{row.summary}</Text>
           {row.count >= 2 ? (
             <Text style={styles.meta}>{text.count(row.count)}</Text>
+          ) : null}
+          {showCycleVisual && row.cycle ? (
+            <AbcMacroCycleVisual
+              cycle={row.cycle}
+              avgEmotionIntensity={row.avgEmotionIntensity}
+              compact={compact}
+            />
           ) : null}
         </View>
       ))}

@@ -26,4 +26,12 @@ describe('ABC record routes i18n', () => {
 
     expect(response.status).toBe(401);
   });
+
+  it('GET macro-patterns sin auth rechaza (401)', async () => {
+    const response = await request(app)
+      .get('/api/abc-records/macro-patterns')
+      .set('X-App-Language', 'en');
+
+    expect(response.status).toBe(401);
+  });
 });

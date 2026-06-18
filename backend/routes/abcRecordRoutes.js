@@ -10,7 +10,9 @@ import AbcRecord from '../models/AbcRecord.js';
 import { resolveRequestLanguage } from '../utils/apiLanguage.js';
 import { validateBody } from '../utils/apiValidation.js';
 import { abcRecordApiCopy } from '../utils/abcRecordApiCopy.js';
-import { fetchAbcMacroPatterns, toClientAbcPatterns } from '../services/abcMacroPatternService.js';
+import { getCreateAbcRecordSchema } from '../utils/abcRecordSchemas.js';
+import { fetchAbcMacroPatterns, toClientAbcPatterns, toClientAbcCyclePatterns } from '../services/abcMacroPatternService.js';
+import { buildAbcGuardErrorBody } from '../utils/abcGuardErrorResponse.js';
 import { createRateLimiter } from '../utils/createRateLimiter.js';
 
 const router = express.Router();
@@ -183,9 +185,14 @@ router.get('/macro-patterns', macroPatternsLimiter, async (req, res) => {
     const { startDate, endDate, limit = 80 } = req.query;
     const { since, until, invalid } = parseBoundedDateRange(startDate, endDate);
     if (invalid) {
-      return res.status(400).json({ success: false, error: copy.macroPatternsInvalidRange });
+      return res
+        .status(400)
+        .json(buildAbcGuardErrorBody('macroInvalidRange', copy.macroPatternsInvalidRange));
     }
     const language = resolveRequestLanguage(req);
+    const detail = String(req.query?.detail || '')
+      .trim()
+      .toLowerCase();
 
     const result = await fetchAbcMacroPatterns({
       userId,
@@ -195,10 +202,16 @@ router.get('/macro-patterns', macroPatternsLimiter, async (req, res) => {
       limit: clampQueryInt(limit, { fallback: 80, min: 1, max: 100 }),
     });
 
+    const patterns =
+      detail === 'cycle'
+        ? toClientAbcCyclePatterns(result.patterns)
+        : toClientAbcPatterns(result.patterns);
+
     res.json({
       success: true,
       recordCount: result.recordCount,
-      patterns: toClientAbcPatterns(result.patterns),
+      patterns,
+      detail: detail === 'cycle' ? 'cycle' : 'summary',
     });
   } catch (error) {
     console.error('Error obteniendo patrones macro ABC:', error);
