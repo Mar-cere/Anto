@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   initializeSocket,
   sendMessage,
+  sendMessageStream,
   onMessage,
   onError,
   saveMessages,
@@ -49,6 +50,29 @@ jest.mock('../../config/api', () => {
   };
 }, { virtual: false });
 
+const mockSendChatMessage = jest.fn();
+const mockCancelChatResponse = jest.fn();
+const mockConnect = jest.fn(() => Promise.resolve(true));
+const mockGetConnected = jest.fn(() => true);
+
+jest.mock('../websocketService', () => ({
+  __esModule: true,
+  default: {
+    connect: (...args) => mockConnect(...args),
+    getConnected: () => mockGetConnected(),
+    sendChatMessage: (...args) => mockSendChatMessage(...args),
+    cancelChatResponse: (...args) => mockCancelChatResponse(...args),
+  },
+}));
+
+const mockPostChatSseWithXHR = jest.fn(() => Promise.resolve());
+const mockStreamChatSseWithFetch = jest.fn(() => Promise.resolve());
+
+jest.mock('../../utils/chatSseStream', () => ({
+  postChatSseWithXHR: (...args) => mockPostChatSseWithXHR(...args),
+  streamChatSseWithFetch: (...args) => mockStreamChatSseWithFetch(...args),
+}));
+
 // Necesitamos obtener el mock después de que se haya configurado
 let apiMock;
 
@@ -56,6 +80,11 @@ describe('chatService', () => {
   beforeEach(() => {
     AsyncStorage.clear();
     jest.clearAllMocks();
+    mockConnect.mockResolvedValue(true);
+    mockGetConnected.mockReturnValue(true);
+    mockSendChatMessage.mockReset();
+    mockPostChatSseWithXHR.mockReset();
+    mockStreamChatSseWithFetch.mockReset();
     
     // Obtener el mock de api después de que se haya importado
     const apiModule = require('../../config/api');
@@ -403,6 +432,70 @@ describe('chatService', () => {
       mockApi.post.mockRejectedValue(new Error('Network error'));
       
       await expect(createConversation()).rejects.toThrow();
+    });
+  });
+
+  describe('sendMessageStream', () => {
+    beforeEach(async () => {
+      await AsyncStorage.setItem('userToken', 'test-token');
+      await AsyncStorage.setItem('currentConversationId', 'conv-123');
+      await AsyncStorage.setItem('userData', JSON.stringify({ id: 'user-1' }));
+    });
+
+    it('usa socket cuando está disponible', async () => {
+      mockSendChatMessage.mockResolvedValue({
+        id: 'msg-1',
+        text: 'Respuesta socket',
+        conversationId: 'conv-123',
+      });
+      const onDone = jest.fn();
+
+      await sendMessageStream('Hola', { onDone });
+
+      expect(mockSendChatMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: 'Hola',
+          conversationId: 'conv-123',
+        }),
+      );
+      expect(onDone).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: 'Respuesta socket',
+          transport: 'socket',
+        }),
+      );
+      expect(mockPostChatSseWithXHR).not.toHaveBeenCalled();
+    });
+
+    it('hace fallback a SSE si el socket no está disponible', async () => {
+      mockConnect.mockResolvedValue(false);
+      mockGetConnected.mockReturnValue(false);
+
+      await sendMessageStream('Hola', {});
+
+      expect(mockSendChatMessage).not.toHaveBeenCalled();
+      expect(mockPostChatSseWithXHR).toHaveBeenCalled();
+    });
+
+    it('no hace fallback a SSE ante error de negocio del socket', async () => {
+      const forbidden = new Error('Conversación no autorizada');
+      forbidden.code = 'CONVERSATION_FORBIDDEN';
+      mockSendChatMessage.mockRejectedValue(forbidden);
+
+      await expect(sendMessageStream('Hola', {})).rejects.toMatchObject({
+        code: 'CONVERSATION_FORBIDDEN',
+      });
+      expect(mockPostChatSseWithXHR).not.toHaveBeenCalled();
+    });
+
+    it('hace fallback a SSE ante timeout de socket', async () => {
+      const timeoutErr = new Error('Tiempo de espera agotado (socket)');
+      timeoutErr.code = 'SOCKET_TIMEOUT';
+      mockSendChatMessage.mockRejectedValue(timeoutErr);
+
+      await sendMessageStream('Hola', {});
+
+      expect(mockPostChatSseWithXHR).toHaveBeenCalled();
     });
   });
 

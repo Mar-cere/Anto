@@ -25,6 +25,9 @@ describe('chat transport TCC lite parity (#201)', () => {
       expect(src).toMatch(/finalizeChatTurnEnhancements/);
       expect(src).toMatch(/resumeTccLite/);
     }
+    expect(socketSrc).toMatch(/resolveChatConversationForSocket/);
+    expect(socketSrc).toMatch(/buildSocketChatErrorPayload/);
+    expect(socketSrc).toMatch(/conversationId: conversation\._id\.toString\(\)/);
   });
 
   it('buildClientTurnPayload expone tccLite y sugerencias con forma estable', () => {

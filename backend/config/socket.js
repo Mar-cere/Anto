@@ -45,6 +45,8 @@ import {
 } from '../services/crisisHardStopService.js';
 import { crisisResourcesForTurn } from '../services/crisisResourcesService.js';
 import { indexPersonalPatternFromUserMessage } from '../services/personalPatternRagService.js';
+import { resolveChatConversationForSocket } from '../utils/resolveChatConversationForSocket.js';
+import { buildSocketChatErrorPayload } from '../utils/socketChatErrorPayload.js';
 
 // Constantes de configuración
 const DEFAULT_FRONTEND_URLS = ['http://localhost:3000', 'http://localhost:19006'];
@@ -169,24 +171,11 @@ export const setupSocketIO = (server) => {
         // Emitir estado de escritura de la IA
         socket.emit(SOCKET_EVENTS.AI_TYPING, true);
         
-        // 1. Obtener o crear conversación para el usuario
-        let conversation = await Conversation.findOne({
-          userId: userId,
-          status: 'active'
-        })
-          .select('_id sessionIntention tccLiteState')
-          .sort({ updatedAt: -1 })
-          .lean();
-
-        if (!conversation) {
-          const created = new Conversation({ userId });
-          await created.save();
-          conversation = {
-            _id: created._id,
-            sessionIntention: created.sessionIntention ?? null
-          };
-          console.log(`[SocketIO] Nueva conversación creada: ${conversation._id}`);
-        }
+        // 1. Conversación del cliente (misma regla que HTTP/SSE)
+        const conversation = await resolveChatConversationForSocket({
+          userId,
+          conversationId: data?.conversationId,
+        });
         
         // 2. Guardar mensaje del usuario
         const userMessage = new Message({
@@ -205,6 +194,7 @@ export const setupSocketIO = (server) => {
           id: userMessage._id.toString(),
           text: messageText,
           userId: currentUserId,
+          conversationId: conversation._id.toString(),
           timestamp: new Date()
         });
         
@@ -447,6 +437,7 @@ export const setupSocketIO = (server) => {
             id: assistantMessage._id.toString(),
             text: crisisHardStopContent,
             userId: currentUserId,
+            conversationId: conversation._id.toString(),
             timestamp: new Date(),
             crisisHardStop: true,
             proposedProductActions: [],
@@ -673,6 +664,7 @@ export const setupSocketIO = (server) => {
           id: assistantMessage._id.toString(),
           text: response.content,
           userId: currentUserId,
+          conversationId: conversation._id.toString(),
           timestamp: new Date(),
           proposedProductActions,
           productActionStatus,
@@ -687,9 +679,7 @@ export const setupSocketIO = (server) => {
       } catch (error) {
         console.error('[SocketIO] Error en el manejo del mensaje:', error);
         socket.emit(SOCKET_EVENTS.AI_TYPING, false);
-        socket.emit(SOCKET_EVENTS.ERROR, { 
-          message: error.message || 'Error al procesar el mensaje' 
-        });
+        socket.emit(SOCKET_EVENTS.ERROR, buildSocketChatErrorPayload(error));
       }
     });
     

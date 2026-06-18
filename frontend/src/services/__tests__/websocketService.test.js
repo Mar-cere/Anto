@@ -27,14 +27,21 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import websocketService from '../websocketService';
 
 describe('WebSocketService', () => {
+  const fireSocketConnect = () => {
+    mockSocket.connected = true;
+    mockSocket.on.mock.calls
+      .filter(([event]) => event === 'connect')
+      .forEach(([, handler]) => handler());
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockSocket.connected = false;
     AsyncStorage.clear();
-    // Resetear el servicio
     websocketService.socket = null;
     websocketService.isConnected = false;
     websocketService.listeners.clear();
+    websocketService.chatTurnCleanup = null;
   });
 
   describe('Constructor', () => {
@@ -55,24 +62,27 @@ describe('WebSocketService', () => {
 
     it('debe conectar si hay token', async () => {
       await AsyncStorage.setItem('userToken', 'test-token');
-      mockSocket.connected = true;
-      
-      const result = await websocketService.connect('user-id');
-      
-      expect(result).toBeDefined();
+
+      const connectPromise = websocketService.connect('user-id');
+      await Promise.resolve();
+      fireSocketConnect();
+      const result = await connectPromise;
+
+      expect(result).toBe(true);
       expect(mockSocket.on).toHaveBeenCalled();
     });
 
-    it('debe desconectar conexión existente antes de conectar nueva', async () => {
+    it('debe desconectar socket existente antes de crear uno nuevo', async () => {
       await AsyncStorage.setItem('userToken', 'test-token');
-      websocketService.socket = { ...mockSocket, connected: true, disconnect: jest.fn() };
-      const originalDisconnect = websocketService.disconnect;
-      websocketService.disconnect = jest.fn();
+      const disconnect = jest.fn();
+      websocketService.socket = { ...mockSocket, connected: false, disconnect };
 
-      await websocketService.connect('user-id');
+      const connectPromise = websocketService.connect('user-id');
+      await Promise.resolve();
+      fireSocketConnect();
+      await connectPromise;
 
-      expect(websocketService.disconnect).toHaveBeenCalled();
-      websocketService.disconnect = originalDisconnect;
+      expect(disconnect).toHaveBeenCalled();
     });
   });
 

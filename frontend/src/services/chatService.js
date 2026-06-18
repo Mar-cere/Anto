@@ -6,6 +6,11 @@ import { getChatCopy } from '../utils/serviceCopy';
 import { isValidSessionIntentionId } from '../constants/sessionIntention';
 import { clearPersistedChatSession } from '../utils/chatSessionStorage';
 import { postChatSseWithXHR, streamChatSseWithFetch } from '../utils/chatSseStream';
+import { normalizeChatSocketTurnPayload } from '../utils/chatSocketTurnPayload';
+import { shouldFallbackChatTransportToSse } from '../utils/chatSocketTransport';
+import { parseUserIdFromUserDataStorage } from '../utils/safeStorageJson';
+import { sanitizeProposedProductActions } from '../utils/sanitizeProposedProductActions';
+import websocketService from './websocketService';
 import { Platform } from 'react-native';
 import { GUEST_CHAT_STORAGE_KEYS as GUEST_KEYS } from '../constants/guestChatStorageKeys';
 
@@ -18,7 +23,7 @@ const handleError = (error) => {
   errorCallbacks.forEach(callback => callback(error));
 };
 
-// Inicializar el servicio
+// Inicializar el servicio (conversación + socket de chat)
 export const initializeSocket = async () => {
   try {
     devLog('Inicializando servicio de chat');
@@ -37,18 +42,78 @@ export const initializeSocket = async () => {
         devLog('Conversación creada durante inicialización:', conversationId);
       } catch (createError) {
         console.error('Error al crear conversación durante inicialización:', createError);
-        // No lanzar error aquí, permitir que sendMessage lo maneje
         return false;
       }
     }
+
+    const userData = await AsyncStorage.getItem('userData');
+    const userId = parseUserIdFromUserDataStorage(userData);
+    if (userId) {
+      await websocketService.connect(userId);
+    }
     
-    devLog('Chat inicializado:', { conversationId: conversationId ? 'ok' : null });
+    devLog('Chat inicializado:', {
+      conversationId: conversationId ? 'ok' : null,
+      socket: websocketService.getConnected(),
+    });
     return true;
   } catch (error) {
     console.error('Error al inicializar chat:', error);
     return false;
   }
 };
+
+async function ensureChatSocketTransport() {
+  if (await isGuestChatMode()) return false;
+  const token = await AsyncStorage.getItem('userToken');
+  if (!token) return false;
+  const userData = await AsyncStorage.getItem('userData');
+  const userId = parseUserIdFromUserDataStorage(userData);
+  if (!userId) return false;
+  const connected = await websocketService.connect(userId);
+  return connected && websocketService.getConnected();
+}
+
+async function sendMessageViaSocket(text, { onChunk, onDone, resumeTccLite, signal, registerAbort } = {}) {
+  const trimmed = String(text || '').trim();
+  if (!trimmed) {
+    const err = new Error('El mensaje no puede estar vacío');
+    err.code = 'EMPTY_MESSAGE';
+    throw err;
+  }
+
+  const ready = await ensureChatSocketTransport();
+  if (!ready) {
+    const err = new Error('Socket de chat no disponible');
+    err.code = 'SOCKET_UNAVAILABLE';
+    throw err;
+  }
+
+  let conversationId = await AsyncStorage.getItem('currentConversationId');
+  if (!conversationId) {
+    conversationId = await createConversation();
+  }
+  const appLanguage = await getAppLanguage();
+
+  registerAbort?.(() => websocketService.cancelChatResponse());
+
+  const raw = await websocketService.sendChatMessage({
+    text: trimmed,
+    conversationId,
+    language: appLanguage,
+    resumeTccLite,
+    signal,
+  });
+
+  const payload = normalizeChatSocketTurnPayload(raw);
+  if (payload.conversationId) {
+    await AsyncStorage.setItem('currentConversationId', String(payload.conversationId));
+  }
+
+  const content = payload.content ?? '';
+  if (content && onChunk) onChunk(content);
+  if (onDone) onDone(payload);
+}
 
 // Enviar un mensaje y obtener respuesta
 export const sendMessage = async (text) => {
@@ -307,11 +372,6 @@ export const sendMessageStream = async (text, { onChunk, onDone, resumeTccLite, 
     return;
   }
 
-  let conversationId = await AsyncStorage.getItem('currentConversationId');
-  if (!conversationId) {
-    conversationId = await createConversation();
-  }
-
   const appLanguage = await getAppLanguage();
   const token = await AsyncStorage.getItem('userToken');
   if (!token) {
@@ -319,6 +379,22 @@ export const sendMessageStream = async (text, { onChunk, onDone, resumeTccLite, 
     e.code = 'NO_AUTH';
     throw e;
   }
+
+  try {
+    await sendMessageViaSocket(text, { onChunk, onDone, resumeTccLite, signal, registerAbort });
+    return;
+  } catch (socketErr) {
+    if (!shouldFallbackChatTransportToSse(socketErr)) {
+      throw socketErr;
+    }
+    devWarn('[chatService] Socket no disponible, usando SSE como respaldo');
+  }
+
+  let conversationId = await AsyncStorage.getItem('currentConversationId');
+  if (!conversationId) {
+    conversationId = await createConversation();
+  }
+
   const url = `${API_URL}/api/chat/messages?stream=true`;
   const headers = {
     'Content-Type': 'application/json',

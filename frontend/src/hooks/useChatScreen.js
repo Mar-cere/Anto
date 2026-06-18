@@ -1609,10 +1609,12 @@ export function useChatScreen() {
     };
   }, [fadeAnim]);
 
-  // WebSocket: alertas de emergencia
+  // WebSocket: chat (typing), alertas de emergencia y errores de conexión
   useEffect(() => {
     const connectWebSocket = async () => {
       try {
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token) return;
         const userData = await AsyncStorage.getItem('userData');
         const userId = parseUserIdFromUserDataStorage(userData);
         if (userId) await websocketService.connect(userId);
@@ -1621,6 +1623,11 @@ export function useChatScreen() {
       }
     };
     connectWebSocket();
+
+    const unsubscribeTyping = websocketService.on('chat:typing', (typing) => {
+      if (!typing && sendRequestInFlightRef.current) return;
+      setIsTyping(Boolean(typing));
+    });
     const unsubscribeAlert = websocketService.on('emergency:alert:sent', (data) => {
       const texts = textsRef.current;
       if (data && !data.isTest) {
@@ -1637,6 +1644,7 @@ export function useChatScreen() {
       console.error('[ChatScreen] Error en WebSocket:', err);
     });
     return () => {
+      unsubscribeTyping();
       unsubscribeAlert();
       unsubscribeError();
       websocketService.disconnect();
