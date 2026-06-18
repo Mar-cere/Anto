@@ -1,6 +1,6 @@
 import { focusCopy } from '../../../utils/focusDashboardCopy.js';
 import { getMailerStrings } from '../../../constants/emailMailerStrings.js';
-import { hasSpanishVoseo } from '../../../utils/copyToneGuards.mjs';
+import { hasSpanishVoseo, neutralizeSpanishVoseo } from '../../../utils/copyToneGuards.mjs';
 import { getDailyMoodCopy } from '../../../utils/dailyMoodCopy.js';
 import { dailyMoodApiCopy } from '../../../utils/dailyMoodApiCopy.js';
 import { DAILY_MOOD_VALUES } from '../../../models/DailyMoodCheckIn.js';
@@ -36,5 +36,12 @@ describe('copyToneGuards', () => {
       }
     }
     expect(hits).toEqual([]);
+  });
+
+  it('neutralizeSpanishVoseo convierte formas frecuentes a tú estándar', () => {
+    expect(neutralizeSpanishVoseo('Gracias por decírmelo, podés contarme más.')).toBe(
+      'Gracias por contármelo, puedes contarme más.',
+    );
+    expect(hasSpanishVoseo(neutralizeSpanishVoseo('querés que andá y dejá eso'))).toBe(false);
   });
 });

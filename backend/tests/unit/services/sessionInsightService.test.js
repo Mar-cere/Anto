@@ -398,5 +398,22 @@ describe('buildSessionInsight', () => {
     expect(insight.thoughtPattern).toBeNull();
     expect(mockGenerateHeadline).not.toHaveBeenCalled();
   });
+
+  it('usa insight de recuperación cuando hubo crisis y el cierre es tranquilo', async () => {
+    const { buildCrisisRecoverySessionMessages } = await import(
+      '../../fixtures/crisisRecoverySessionInsightMessages.js'
+    );
+    const now = Date.now();
+    mockMessageFind.mockReturnValue(chainLean(buildCrisisRecoverySessionMessages(now)));
+
+    const insight = await buildSessionInsight({ userId, conversationId, language: 'es' });
+    expect(insight.eligible).toBe(true);
+    expect(insight.crisisTier).toBeNull();
+    expect(insight.sessionPhase).toBe('crisis_recovered');
+    expect(insight.headlineSource).toBe('crisis_recovered_rules');
+    expect(insight.headline).toMatch(/tranquilo|calma/i);
+    expect(insight.suggestedStep).toBeNull();
+    expect(mockGenerateHeadline).not.toHaveBeenCalled();
+  });
 });
 

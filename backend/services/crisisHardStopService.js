@@ -92,7 +92,7 @@ export function buildHardStopCrisisAssistantContent({
   const opening =
     lang === 'en'
       ? 'Thank you for telling me. What you feel matters, and your safety comes first.'
-      : 'Gracias por decírmelo. Lo que sientes importa, y tu seguridad es lo primero.';
+      : 'Gracias por contármelo. Lo que sientes importa, y tu seguridad es lo primero.';
 
   const body = buildHardStopCrisisBody({
     language: lang,

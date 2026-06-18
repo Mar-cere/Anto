@@ -3,6 +3,7 @@
  */
 import { MESSAGE_INTENTS } from '../constants/openai.js';
 import { isLlmCrisisTherapeuticExtrasBlocked } from './chatObservationalContext.js';
+import { neutralizeSpanishVoseo } from './copyToneGuards.mjs';
 
 const SANITIZE_RULES = [
   {
@@ -129,8 +130,10 @@ export function sanitizeCrisisLlmResponse(text) {
     .replace(/\n{3,}/g, '\n\n')
     .replace(/^\s*[-•]\s*$/gm, '')
     .trim();
-  const wasSanitized = hits.length > 0 || result.length < before.length;
-  return { text: result, wasSanitized, hits };
+  const toneNeutralized = neutralizeSpanishVoseo(result);
+  const wasSanitized =
+    hits.length > 0 || result.length < before.length || toneNeutralized !== result;
+  return { text: toneNeutralized, wasSanitized, hits };
 }
 
 /** @deprecated Usar sanitizeCrisisLlmResponse */

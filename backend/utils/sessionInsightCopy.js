@@ -261,3 +261,45 @@ export function buildCrisisSessionInsightCopy({
     : null;
   return { headline, reflection, intentionLine };
 }
+
+/**
+ * Copy cuando hubo crisis en la sesión pero el cierre es más tranquilo (fase settled).
+ */
+export function buildCrisisRecoverySessionInsightCopy({
+  language,
+  peakRiskTier = 'medium',
+  intensity = 6,
+  sessionIntention = null,
+}) {
+  const lang = normalizeInsightLanguage(language);
+  const tier = String(peakRiskTier || 'medium').toLowerCase();
+  const intensityRounded = Math.round(Number(intensity) || 6);
+
+  if (lang === 'en') {
+    const headline =
+      tier === 'high'
+        ? 'You went through a hard moment and ended a bit steadier'
+        : 'A difficult stretch — and you found a calmer close';
+    const reflection =
+      tier === 'high'
+        ? `There was intense distress in this chat (around ${intensityRounded}/10), and you also signaled relief toward the end. Both matter.`
+        : `This chat touched emotional safety (${intensityRounded}/10) and you closed on a steadier note.`;
+    const intentionLine = sessionIntention
+      ? `You started wanting to ${String(sessionIntention).toLowerCase()}.`
+      : null;
+    return { headline, reflection, intentionLine };
+  }
+
+  const headline =
+    tier === 'high'
+      ? 'Pasaste por un momento difícil y terminaste más tranquilo/a'
+      : 'Hubo un tramo difícil y cerraste con más calma';
+  const reflection =
+    tier === 'high'
+      ? `En esta conversación hubo mucho malestar (alrededor de ${intensityRounded}/10) y también señales de alivio al final. Las dos cosas cuentan.`
+      : `Esta conversación tocó tu seguridad emocional (${intensityRounded}/10) y cerraste en un tono más estable.`;
+  const intentionLine = sessionIntention
+    ? `Empezaste buscando ${String(sessionIntention).toLowerCase()}.`
+    : null;
+  return { headline, reflection, intentionLine };
+}

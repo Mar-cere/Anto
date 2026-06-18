@@ -55,6 +55,7 @@ describe('crisisHardStopService', () => {
   it('buildHardStopCrisisAssistantContent es legible y sin plan de seguridad engañoso', () => {
     const out = buildHardStopCrisisAssistantContent({ riskLevel: 'HIGH', country: 'GENERAL' });
     expect(out).toMatch(/seguridad/i);
+    expect(out).not.toMatch(/decírmelo|podés|querés/i);
     expect(out).toMatch(/¿Te sientes a salvo/i);
     expect(out).toMatch(/112|España|emergencias/i);
     expect(out).toMatch(/no puedo llamar/i);

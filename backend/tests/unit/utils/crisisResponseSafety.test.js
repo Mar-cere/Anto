@@ -70,6 +70,14 @@ describe('crisisResponseSafety', () => {
     expect(result.text.length).toBeLessThan(input.length);
   });
 
+  it('sanitizeCrisisLlmResponse neutraliza voseo en español', () => {
+    const input = 'Gracias por decírmelo. ¿Podés decirme si estás a salvo?';
+    const result = sanitizeCrisisLlmResponse(input);
+    expect(result.text).toMatch(/contármelo/i);
+    expect(result.text).toMatch(/puedes/i);
+    expect(result.text).not.toMatch(/decírmelo|podés/i);
+  });
+
   it('shouldStripCrisisConductualLanguage en crisis elevada', () => {
     expect(shouldStripCrisisConductualLanguage({ riskLevel: 'MEDIUM' })).toBe(true);
     expect(shouldStripCrisisConductualLanguage({ riskLevel: 'LOW' })).toBe(false);

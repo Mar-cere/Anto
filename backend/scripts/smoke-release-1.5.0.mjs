@@ -13,7 +13,8 @@ import {
 } from '../services/crisisHardStopService.js';
 import { buildPersonalPatternRagSnippet, isPersonalPatternRagEnabled } from '../services/personalPatternRagService.js';
 import { buildAtlasVectorSearchPipeline } from '../services/topicFreeVectorSearchService.js';
-import { buildCrisisSessionInsightCopy } from '../utils/sessionInsightCopy.js';
+import { buildCrisisSessionInsightCopy, buildCrisisRecoverySessionInsightCopy } from '../utils/sessionInsightCopy.js';
+import { hasSpanishVoseo, neutralizeSpanishVoseo } from '../utils/copyToneGuards.mjs';
 import { getEmergencyLines } from '../constants/emergencyNumbers.js';
 import {
   buildOpenaiCrisisContext,
@@ -310,19 +311,66 @@ if (crisisInsightCopy?.headline?.includes('seguridad')) {
   fail('session insight copy crisis HIGH');
 }
 
+const recoveryInsightCopy = buildCrisisRecoverySessionInsightCopy({
+  language: 'es',
+  peakRiskTier: 'high',
+  intensity: 8,
+});
+if (recoveryInsightCopy?.headline?.match(/tranquilo|calma/i)) {
+  pass('session insight copy crisis recuperada');
+} else {
+  fail('session insight copy crisis recuperada');
+}
+
+const hardStopEs = buildHardStopCrisisAssistantContent({ riskLevel: 'HIGH', country: 'GENERAL' });
+if (!hasSpanishVoseo(hardStopEs)) {
+  pass('hard-stop crisis es sin voseo');
+} else {
+  fail('hard-stop crisis es sin voseo');
+}
+
+const voseoSanitized = sanitizeCrisisLlmResponse('Gracias por decírmelo. ¿Podés decirme si estás a salvo?');
+if (!hasSpanishVoseo(voseoSanitized.text) && voseoSanitized.text.includes('puedes')) {
+  pass('sanitizer crisis neutraliza voseo');
+} else {
+  fail('sanitizer crisis neutraliza voseo');
+}
+
+if (neutralizeSpanishVoseo('decírmelo') === 'contármelo') {
+  pass('neutralizeSpanishVoseo decírmelo');
+} else {
+  fail('neutralizeSpanishVoseo decírmelo');
+}
+
 const sessionInsightSrc = fs.readFileSync(
   path.join(root, 'backend/services/sessionInsightService.js'),
   'utf8',
 );
 if (
   sessionInsightSrc.includes('buildCrisisSessionInsightCopy') &&
+  sessionInsightSrc.includes('buildCrisisRecoverySessionInsightCopy') &&
   sessionInsightSrc.includes('resolveCrisisRiskForUserTurn') &&
-  sessionInsightSrc.includes('thoughtPattern = crisisSession') &&
+  sessionInsightSrc.includes('crisisRecovered') &&
   sessionInsightSrc.includes('crisisTier:')
 ) {
-  pass('session insight blindaje crisis en servicio');
+  pass('session insight blindaje crisis + recuperación en servicio');
 } else {
-  fail('session insight blindaje crisis en servicio');
+  fail('session insight blindaje crisis + recuperación en servicio');
+}
+
+const crisisRecoveryFixture = path.join(
+  root,
+  'backend/tests/fixtures/crisisRecoverySessionInsightMessages.js',
+);
+if (
+  fs.existsSync(crisisRecoveryFixture) &&
+  fs.readFileSync(crisisRecoveryFixture, 'utf8').includes('crisis_recovered_rules')
+) {
+  pass('fixture QA crisis→calma→insight documentado');
+} else if (fs.existsSync(crisisRecoveryFixture)) {
+  pass('fixture QA crisis→calma→insight');
+} else {
+  fail('fixture QA crisis→calma→insight');
 }
 
 const failed = checks.filter((c) => !c.ok);

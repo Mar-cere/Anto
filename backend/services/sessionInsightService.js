@@ -9,6 +9,7 @@ import cognitiveDistortionDetector from './cognitiveDistortionDetector.js';
 import {
   buildInsightCopy,
   buildCrisisSessionInsightCopy,
+  buildCrisisRecoverySessionInsightCopy,
   buildSuggestedStepFromCatalog,
   getEmotionInsightMeta,
   localizeDistortion,
@@ -24,6 +25,7 @@ import {
   generateSessionInsightHeadline,
   isSessionInsightHeadlineLlmEnabled,
 } from './sessionInsightHeadlineService.js';
+import { inferChatSessionPhase } from './chat/sessionPhaseHints.js';
 
 const MIN_USER_TURNS = 2;
 const MIN_USER_CHARS = 40;
@@ -186,6 +188,36 @@ function isElevatedCrisisTier(riskTier) {
   return t === 'high' || t === 'medium' || t === 'warning';
 }
 
+function resolveInsightTerminalRiskLevel(msgs) {
+  const lastUserIdx = msgs.map((m, i) => (m.role === 'user' ? i : -1)).filter((i) => i >= 0).pop();
+  if (lastUserIdx == null) return 'LOW';
+  const fromTurn = resolveCrisisRiskForUserTurn(msgs, lastUserIdx);
+  if (fromTurn && fromTurn !== 'LOW') return fromTurn.toUpperCase();
+  return 'LOW';
+}
+
+function inferInsightSessionPhase(msgs) {
+  const userMsgs = msgs.filter((m) => m.role === 'user');
+  const lastUser = userMsgs[userMsgs.length - 1];
+  const historyNewestFirst = [...msgs]
+    .reverse()
+    .map((m) => ({ role: m.role, content: m.content }));
+
+  return inferChatSessionPhase({
+    riskLevel: resolveInsightTerminalRiskLevel(msgs),
+    userContent: lastUser?.content || '',
+    conversationHistoryNewestFirst: historyNewestFirst,
+  });
+}
+
+function aggregateThoughtPatternRecent(userMsgs, assistantMsgs, language, maxUserMsgs = 4) {
+  return aggregateThoughtPattern(
+    userMsgs.slice(-maxUserMsgs),
+    assistantMsgs.slice(-maxUserMsgs),
+    language,
+  );
+}
+
 function aggregateThoughtPattern(userMsgs, assistantMsgs, language) {
   const typeScores = new Map();
 
@@ -294,8 +326,11 @@ export async function buildSessionInsight({ userId, conversationId, language = '
   }
 
   const { dominantEmotion, avgIntensity } = aggregateDominantEmotion(msgs);
-  const riskTier = maxRiskTierFromLevels(collectRiskLevelsFromMessages(msgs));
-  const crisisSession = isElevatedCrisisTier(riskTier);
+  const peakRiskTier = maxRiskTierFromLevels(collectRiskLevelsFromMessages(msgs));
+  const hadCrisisInSession = isElevatedCrisisTier(peakRiskTier);
+  const sessionPhase = inferInsightSessionPhase(msgs);
+  const crisisRecovered = hadCrisisInSession && sessionPhase === 'settled';
+  const crisisSession = hadCrisisInSession && !crisisRecovered;
   const emotionMeta = getEmotionInsightMeta(dominantEmotion, lang);
   let themes = collectThemes(msgs, lang);
   if (crisisSession && !themes.some((t) => /seguridad|safety/i.test(t))) {
@@ -303,7 +338,9 @@ export async function buildSessionInsight({ userId, conversationId, language = '
   }
   const thoughtPattern = crisisSession
     ? null
-    : aggregateThoughtPattern(userMsgs, assistantMsgs, lang);
+    : crisisRecovered
+      ? aggregateThoughtPatternRecent(userMsgs, assistantMsgs, lang)
+      : aggregateThoughtPattern(userMsgs, assistantMsgs, lang);
   const threadStartedAt = msgs[0]?.createdAt ? new Date(msgs[0].createdAt) : null;
   const suggestedStep = crisisSession
     ? null
@@ -317,25 +354,36 @@ export async function buildSessionInsight({ userId, conversationId, language = '
     conversation.sessionIntention,
     lang,
   );
-  const copy = crisisSession
-    ? buildCrisisSessionInsightCopy({
+  const copy = crisisRecovered
+    ? buildCrisisRecoverySessionInsightCopy({
         language: lang,
-        riskTier,
+        peakRiskTier,
         intensity: avgIntensity,
         sessionIntention: sessionIntentionLabel,
       })
-    : buildInsightCopy({
-        language: lang,
-        dominantEmotion,
-        intensity: avgIntensity,
-        themes,
-        hasPattern: !!thoughtPattern,
-        sessionIntention: sessionIntentionLabel,
-      });
+    : crisisSession
+      ? buildCrisisSessionInsightCopy({
+          language: lang,
+          riskTier: peakRiskTier,
+          intensity: avgIntensity,
+          sessionIntention: sessionIntentionLabel,
+        })
+      : buildInsightCopy({
+          language: lang,
+          dominantEmotion,
+          intensity: avgIntensity,
+          themes,
+          hasPattern: !!thoughtPattern,
+          sessionIntention: sessionIntentionLabel,
+        });
 
   let headline = copy.headline;
-  let headlineSource = crisisSession ? 'crisis_rules' : 'rules';
-  if (!crisisSession && isSessionInsightHeadlineLlmEnabled()) {
+  let headlineSource = crisisRecovered
+    ? 'crisis_recovered_rules'
+    : crisisSession
+      ? 'crisis_rules'
+      : 'rules';
+  if (!crisisSession && !crisisRecovered && isSessionInsightHeadlineLlmEnabled()) {
     const llmHeadline = await generateSessionInsightHeadline({
       userMsgs,
       allMsgs: msgs,
@@ -369,7 +417,8 @@ export async function buildSessionInsight({ userId, conversationId, language = '
     themes,
     suggestedStep,
     sessionIntention: conversation.sessionIntention || null,
-    crisisTier: isElevatedCrisisTier(riskTier) ? riskTier : null,
+    crisisTier: crisisSession ? peakRiskTier : null,
+    sessionPhase: crisisRecovered ? 'crisis_recovered' : sessionPhase,
     tccLiteResume: thoughtPattern?.type && !crisisSession
       ? {
           eligible: true,
