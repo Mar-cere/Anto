@@ -157,17 +157,6 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
       shadowRadius: 16,
       elevation: 6,
     },
-    heroGradientBase: {
-      ...StyleSheet.absoluteFillObject,
-    },
-    heroGradientFade: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      bottom: 0,
-      height: '62%',
-      opacity: 0.92,
-    },
     heroStreakDynamicRow: {
       flexDirection: 'row',
       alignItems: 'center',

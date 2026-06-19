@@ -27,6 +27,7 @@ import {
   focusModalTextInput,
   MODAL_SHEET_MAX_HEIGHT,
   runModalScrollHint,
+  syncModalKeyboardWithVisibility,
 } from '../../utils/modalKeyboardUtils';
 
 const HABIT_ICONS = HABIT_ICON_PICKER_OPTIONS;
@@ -347,6 +348,7 @@ const CreateHabitModal = ({
   }, [visible, initialReminderIso]);
 
   useEffect(() => {
+    syncModalKeyboardWithVisibility(visible);
     if (!visible) {
       scrollHintTimeouts.current.forEach(clearTimeout);
       scrollHintTimeouts.current = [];

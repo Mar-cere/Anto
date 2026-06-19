@@ -29,6 +29,7 @@ import {
   focusModalTextInput,
   MODAL_SHEET_MAX_HEIGHT,
   runModalScrollHint,
+  syncModalKeyboardWithVisibility,
 } from '../../utils/modalKeyboardUtils';
 
 const DEFAULT_TEXTS = {
@@ -511,8 +512,8 @@ const CreateTaskModal = ({
   }, [visible, isTask]);
 
   useEffect(() => {
+    syncModalKeyboardWithVisibility(visible);
     if (visible) {
-      setKeyboardVisible(false);
       setNotificationEnabled(true);
       setSuggestStepsOnCreate(true);
       setErrors({});
@@ -524,7 +525,6 @@ const CreateTaskModal = ({
         friction: 7,
       }).start();
     } else {
-      setKeyboardVisible(false);
       setIsSubmitting(false);
       setPickerMode(null);
       Animated.timing(slideAnim, {

@@ -3,10 +3,12 @@ import {
   MODAL_KEYBOARD_EXTRA_HEIGHT,
   MODAL_KEYBOARD_EXTRA_SCROLL,
   MODAL_SHEET_MAX_HEIGHT,
+  dismissModalKeyboard,
   focusModalTextInput,
   getModalKeyboardScrollProps,
   runModalScrollHint,
   subscribeModalKeyboardVisibility,
+  syncModalKeyboardWithVisibility,
 } from '../modalKeyboardUtils';
 
 describe('modalKeyboardUtils', () => {
@@ -64,5 +66,19 @@ describe('modalKeyboardUtils', () => {
 
   it('sheet max height acotado para no taparse con teclado', () => {
     expect(MODAL_SHEET_MAX_HEIGHT).toBe('92%');
+  });
+
+  it('dismissModalKeyboard y syncModalKeyboardWithVisibility cierran teclado', () => {
+    if (typeof Keyboard?.dismiss !== 'function') {
+      expect(typeof dismissModalKeyboard).toBe('function');
+      expect(typeof syncModalKeyboardWithVisibility).toBe('function');
+      return;
+    }
+    const dismiss = jest.spyOn(Keyboard, 'dismiss').mockImplementation(() => {});
+    dismissModalKeyboard();
+    syncModalKeyboardWithVisibility(false);
+    syncModalKeyboardWithVisibility(true);
+    expect(dismiss).toHaveBeenCalledTimes(3);
+    dismiss.mockRestore();
   });
 });

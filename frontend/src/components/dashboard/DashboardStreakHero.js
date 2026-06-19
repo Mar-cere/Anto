@@ -11,6 +11,7 @@ import {
   resolveStreakUnitLabel,
 } from '../../utils/dashboardStreakCardUtils';
 import { getStreakVisual } from '../../utils/streakVisualUtils';
+import SheetBrandGradient from '../common/SheetBrandGradient';
 
 const DashboardStreakHero = memo(({ streakDays, displayName, dailyMood, onOpenChat, streakOnly = false }) => {
   const DASH = useSectionTranslations('DASH');
@@ -85,16 +86,9 @@ const DashboardStreakHero = memo(({ streakDays, displayName, dailyMood, onOpenCh
 
   const gradientLayers = (
     <>
-      <View
-        style={[styles.heroGradientBase, { backgroundColor: streakVisual.heroGradientTop }]}
-        pointerEvents="none"
-      />
-      <View
-        style={[
-          styles.heroGradientFade,
-          { backgroundColor: streakVisual.heroGradientBottom },
-        ]}
-        pointerEvents="none"
+      <SheetBrandGradient
+        topColor={streakVisual.heroGradientTop}
+        bottomColor={streakVisual.heroGradientBottom}
       />
       <Animated.View
         style={[

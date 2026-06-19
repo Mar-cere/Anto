@@ -92,3 +92,20 @@ export function runModalScrollHint(scrollRef, { peekY = 20, delayMs = 420 } = {}
 
   return () => clearTimeout(timer);
 }
+
+/**
+ * Cierra el teclado de forma segura al abrir/cerrar un modal sheet.
+ */
+export function dismissModalKeyboard() {
+  if (typeof Keyboard?.dismiss === 'function') {
+    Keyboard.dismiss();
+  }
+}
+
+/**
+ * Al cambiar visibilidad del modal, el teclado debe cerrarse (el hook solo escucha eventos).
+ * @param {boolean} _visible
+ */
+export function syncModalKeyboardWithVisibility(_visible) {
+  dismissModalKeyboard();
+}
