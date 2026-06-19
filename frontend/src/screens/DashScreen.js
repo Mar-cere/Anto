@@ -599,7 +599,10 @@ const DashScreen = () => {
 
   const openNextTaskFromFocus = useCallback((nextTask) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    navigation.navigate('Tasks', buildFocusNextTaskNavParams(nextTask));
+    navigation.navigate('Tasks', {
+      ...buildFocusNextTaskNavParams(nextTask),
+      focusOpenToken: Date.now(),
+    });
   }, [navigation]);
 
   const openNextHabitFromFocus = useCallback((nextHabit) => {

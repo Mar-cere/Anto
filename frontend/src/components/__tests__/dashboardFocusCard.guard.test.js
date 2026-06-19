@@ -16,6 +16,8 @@ describe('dashboardFocusCard guard', () => {
     expect(src).toMatch(/onOpenNextTask/);
     expect(src).toMatch(/key: 'next-task'/);
     expect(src).toMatch(/showChevron: true/);
+    expect(src).toMatch(/displayedReminder\?\.kind === 'task'/);
+    expect(src).toMatch(/buildFocusTaskOpenPayload/);
     expect(src).not.toMatch(/styles\.insetLabel\}>\{DASH\.FOCUS_NEXT_TASK\}/);
   });
 
@@ -48,5 +50,19 @@ describe('dashboardFocusCard guard', () => {
     expect(src).toMatch(/resolveFocusNextHabit/);
     expect(src).toMatch(/reminder\?\.candidates/);
     expect(src).toMatch(/resolveFocusHabitId/);
+  });
+
+  it('focusNextTaskNavigation resuelve fallback desde candidatos', () => {
+    const src = readSrc('utils/focusNextTaskNavigation.js');
+    expect(src).toMatch(/resolveFocusNextTask/);
+    expect(src).toMatch(/reminder\?\.candidates/);
+    expect(src).toMatch(/resolveFocusTaskId/);
+    expect(src).toMatch(/stripFocusTaskTitlePrefix/);
+  });
+
+  it('DashboardFocusCard resuelve próxima tarea con useMemo', () => {
+    const src = readSrc('components/DashboardFocusCard.js');
+    expect(src).toMatch(/resolveFocusNextTask\(data\)/);
+    expect(src).toMatch(/useMemo\(\(\) => resolveFocusNextTask/);
   });
 });

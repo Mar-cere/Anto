@@ -492,6 +492,12 @@ const TaskScreen = ({
         selectedItem: found || task,
         detailModalVisible: true,
       }));
+      navigation.setParams({
+        mode: undefined,
+        task: undefined,
+        taskId: undefined,
+        focusOpenToken: undefined,
+      });
     } else if (mode === 'create' && initialTaskDraft) {
       const due = initialTaskDraft.dueDate ? new Date(initialTaskDraft.dueDate) : new Date();
       pendingChatOriginRef.current = taskChatOrigin || null;
@@ -516,6 +522,16 @@ const TaskScreen = ({
       setState(prev => ({ ...prev, modalVisible: true }));
     }
   }, [route.params, navigation, state.items]);
+
+  useEffect(() => {
+    setState((prev) => {
+      if (!prev.detailModalVisible || !prev.selectedItem?._id) return prev;
+      const found = state.items.find((item) => item._id === prev.selectedItem._id);
+      if (!found) return prev;
+      if (found === prev.selectedItem) return prev;
+      return { ...prev, selectedItem: found };
+    });
+  }, [state.items]);
 
   const handleTaskModalClose = useCallback(() => {
     const hadChatFlow = Boolean(
@@ -797,7 +813,8 @@ const TaskScreen = ({
   // Renderizar item individual
   const closeDetailModal = useCallback(() => {
     setState((prev) => ({ ...prev, detailModalVisible: false, selectedItem: null }));
-  }, []);
+    navigation.setParams({ mode: undefined, task: undefined, taskId: undefined });
+  }, [navigation]);
 
   const handleTaskUpdatedFromDetail = useCallback((updated) => {
     if (!updated?._id) return;

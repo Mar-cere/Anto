@@ -12,7 +12,9 @@ import { createDashboardFocusStyles } from '../styles/focusCardTheme';
 import { updateSessionCommitment } from '../services/sessionCommitmentsService';
 import { getLastSessionDisplayText } from '../utils/dashboardHomeUtils';
 import {
+  buildFocusTaskOpenPayload,
   formatFocusNextTaskDue,
+  resolveFocusNextTask,
 } from '../utils/focusNextTaskNavigation';
 import {
   buildFocusHabitOpenPayload,
@@ -208,7 +210,7 @@ const DashboardFocusCard = ({
   const lastSession = data?.lastSessionSummary;
   const focus = data?.focus;
   const protocolNext = data?.protocolNext;
-  const nextTask = data?.nextTask;
+  const nextTask = useMemo(() => resolveFocusNextTask(data), [data]);
   const nextHabit = useMemo(() => resolveFocusNextHabit(data), [data]);
   const baWeekNext = data?.baWeekNext;
   const exposureNext = data?.exposureNext;
@@ -299,8 +301,13 @@ const DashboardFocusCard = ({
     if (displayedReminder.kind === 'habit' && onOpenNextHabit) {
       const payload = buildFocusHabitOpenPayload(displayedReminder, nextHabit);
       if (payload) onOpenNextHabit(payload);
+      return;
     }
-  }, [displayedReminder, handleConv, onOpenChat, onOpenNextHabit, nextHabit]);
+    if (displayedReminder.kind === 'task' && onOpenNextTask) {
+      const payload = buildFocusTaskOpenPayload(displayedReminder, nextTask);
+      if (payload) onOpenNextTask(payload);
+    }
+  }, [displayedReminder, handleConv, onOpenChat, onOpenNextHabit, nextHabit, onOpenNextTask, nextTask]);
 
   const onLastSessionPress = useCallback(() => {
     if (lastSessionConvId && onOpenConversation) {
@@ -339,7 +346,8 @@ const DashboardFocusCard = ({
 
   const reminderIsPressable =
     displayedReminder?.kind === 'chat' ||
-    (displayedReminder?.kind === 'habit' && Boolean(onOpenNextHabit));
+    (displayedReminder?.kind === 'habit' && Boolean(onOpenNextHabit)) ||
+    (displayedReminder?.kind === 'task' && Boolean(onOpenNextTask));
 
   const showNextTaskRow =
     nextTask?.title && displayedReminder?.kind !== 'task';
@@ -356,7 +364,7 @@ const DashboardFocusCard = ({
     const dueFormatted = nextTask.dueDate ? formatDue(nextTask.dueDate, language) : '';
     const subtitle = dueFormatted
       ? formatFocusNextTaskDue(dueFormatted, DASH)
-      : null;
+      : (nextTask.dueSubtitle || null);
     return { title, subtitle };
   }, [showNextTaskRow, nextTask, DASH, language]);
 
@@ -392,10 +400,12 @@ const DashboardFocusCard = ({
       });
     }
     if (showChatReminder) {
-      const habitReminderA11y =
+      const reminderOpenA11y =
         displayedReminder.kind === 'habit' && reminderIsPressable
           ? `. ${DASH.FOCUS_NEXT_HABIT_OPEN_A11Y}`
-          : '';
+          : displayedReminder.kind === 'task' && reminderIsPressable
+            ? `. ${DASH.FOCUS_NEXT_TASK_OPEN_A11Y}`
+            : '';
       rows.push({
         key: `reminder-${displayedReminder.kind}`,
         icon: reminderIcon(displayedReminder.kind),
@@ -403,7 +413,7 @@ const DashboardFocusCard = ({
         subtitle: displayedReminder.subtitle || null,
         onPress: reminderIsPressable ? onReminderPress : null,
         showChevron: reminderIsPressable,
-        a11yLabel: `${displayedReminder.title}. ${displayedReminder.subtitle || ''}${habitReminderA11y}`,
+        a11yLabel: `${displayedReminder.title}. ${displayedReminder.subtitle || ''}${reminderOpenA11y}`,
       });
     }
     if (baWeekCopy) {
