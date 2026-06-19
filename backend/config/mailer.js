@@ -11,7 +11,7 @@ import { google } from 'googleapis';
 import nodemailer from 'nodemailer';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { APP_NAME, APP_NAME_FULL, EMAIL_FROM_NAME, INSTAGRAM_URL, LOGO_URL } from '../constants/app.js';
+import { APP_NAME, APP_NAME_FULL, EMAIL_FROM_NAME, LOGO_URL, resolveInstagramUrl } from '../constants/app.js';
 import {
   CODE_EXPIRATION_MINUTES,
   EMAIL_COLORS,
@@ -282,6 +282,7 @@ const createTransporter = () => {
 const getEmailFooter = (options = {}) => {
   const language = normalizeEmailLanguage(options.language);
   const s = getMailerStrings(language).footer;
+  const instagramUrl = resolveInstagramUrl(language);
   const currentYear = new Date().getFullYear();
   const weeklyReply = options.weeklySummaryAllowReply === true;
   const replyHtml = weeklyReply ? s.weeklyReply : s.noReply;
@@ -289,7 +290,7 @@ const getEmailFooter = (options = {}) => {
     <div style="text-align: center; margin: 0 24px 24px 24px;">
       <div style="margin: 10px 0 14px 0;">
         <a
-          href="${INSTAGRAM_URL}"
+          href="${instagramUrl}"
           target="_blank"
           rel="noopener noreferrer"
           style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); color: ${EMAIL_COLORS.TEXT_WHITE}; padding: 10px 16px; text-decoration: none; border-radius: 10px; display: inline-block; font-weight: 700; font-size: 0.95rem;"
@@ -1731,7 +1732,7 @@ const mailer = {
   <li><strong>Servicio / URL:</strong> <code>${String(host)}</code></li>
 </ul>
 <p style="margin:18px 0 8px 0;">
-  <a href="${INSTAGRAM_URL}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:linear-gradient(135deg,#1D2B5F 0%,#1ADDDB 100%);color:#fff;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700;">
+  <a href="${resolveInstagramUrl('es')}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:linear-gradient(135deg,#1D2B5F 0%,#1ADDDB 100%);color:#fff;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700;">
     ${
       INSTAGRAM_ICON_DATA_URI
         ? `<img src="${INSTAGRAM_ICON_DATA_URI}" alt="Instagram" width="20" height="20" style="vertical-align:-4px;margin-right:8px;border-radius:5px;" />`

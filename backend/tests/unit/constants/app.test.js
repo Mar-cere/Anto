@@ -4,7 +4,7 @@
  * @author AntoApp Team
  */
 
-import { APP_NAME, APP_NAME_FULL, LOGO_URL, EMAIL_FROM_NAME, NOTIFICATION_ICON_URL } from '../../../constants/app.js';
+import { APP_NAME, APP_NAME_FULL, LOGO_URL, EMAIL_FROM_NAME, NOTIFICATION_ICON_URL, resolveInstagramUrl } from '../../../constants/app.js';
 
 describe('App Constants', () => {
   it('debe exportar APP_NAME', () => {
@@ -38,6 +38,12 @@ describe('App Constants', () => {
     if (!process.env.NOTIFICATION_ICON_URL) {
       expect(NOTIFICATION_ICON_URL).toBe(LOGO_URL);
     }
+  });
+
+  it('resolveInstagramUrl devuelve la cuenta según idioma', () => {
+    expect(resolveInstagramUrl('es')).toContain('antoapp.es');
+    expect(resolveInstagramUrl('en')).toContain('antoapp.en');
+    expect(resolveInstagramUrl('en-US')).toContain('antoapp.en');
   });
 });
 

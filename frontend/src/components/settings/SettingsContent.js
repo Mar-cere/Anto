@@ -50,6 +50,7 @@ import {
   formatCountryPreferenceRowLabel,
   resolveStoredCountryPreference,
 } from '../../constants/emergencyCountries';
+import { resolveInstagramUrl } from '../../constants/socialLinks';
 
 const DEFAULT_CHAT_PREFS = {
   reduceStockEmpathy: false,
@@ -89,8 +90,7 @@ export default function SettingsContent({
   const { showToast } = useToast();
   const { colors: themePalette, preference, resolvedScheme } = useTheme();
   const COLORS = useMemo(() => buildSettingsCOLORS(themePalette), [themePalette]);
-  const INSTAGRAM_URL =
-    'https://www.instagram.com/antoapp.es?igsh=YjU3MDB5bTkycjAz&utm_source=qr';
+  const instagramUrl = useMemo(() => resolveInstagramUrl(language), [language]);
   const currentResponseStyle = normalizeResponseStyle(
     user?.preferences?.responseStyle,
   );
@@ -397,7 +397,7 @@ export default function SettingsContent({
   const handleOpenInstagram = async () => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      const canOpen = await Linking.canOpenURL(INSTAGRAM_URL);
+      const canOpen = await Linking.canOpenURL(instagramUrl);
       if (!canOpen) {
         showToast({
           message: TEXTS.INSTAGRAM_OPEN_ERROR,
@@ -405,7 +405,7 @@ export default function SettingsContent({
         });
         return;
       }
-      await Linking.openURL(INSTAGRAM_URL);
+      await Linking.openURL(instagramUrl);
     } catch (_error) {
       showToast({ message: TEXTS.LINK_OPEN_ERROR, type: 'default' });
     }
