@@ -1,107 +1,123 @@
 import * as Haptics from 'expo-haptics';
-import React, { memo, useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
-import { useSectionTranslations } from '../hooks/useTranslations';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Text, TouchableOpacity, View } from 'react-native';
+import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 
 const AXIS_KEYS = ['heard', 'safe', 'useful', 'noPressure'];
 const SCORES = [1, 2, 3, 4, 5];
+const ADVANCE_MS = 280;
 
 function SessionWaiCard({ onSubmit, onSkip, submitting = false }) {
   const WAI = useSectionTranslations('SESSION_WAI');
   const { colors, resolvedScheme } = useTheme();
   const [scores, setScores] = useState({});
+  const [step, setStep] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  const axisKey = AXIS_KEYS[step];
+  const isLastStep = step === AXIS_KEYS.length - 1;
 
   const styles = useMemo(
     () => ({
       card: {
-        backgroundColor: colors.card,
+        backgroundColor: resolvedScheme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(36,35,79,0.03)',
         borderRadius: 16,
         padding: 16,
         marginBottom: 14,
         borderWidth: 1,
         borderColor: colors.border,
       },
-      kicker: {
-        fontSize: 12,
-        fontWeight: '600',
-        letterSpacing: 0.6,
-        textTransform: 'uppercase',
+      headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 10,
+      },
+      progressDots: {
+        flexDirection: 'row',
+        gap: 6,
+      },
+      dot: (active, done) => ({
+        width: done ? 18 : 7,
+        height: 7,
+        borderRadius: 4,
+        backgroundColor: done || active ? colors.primary : colors.border,
+        opacity: active ? 1 : done ? 0.55 : 0.35,
+      }),
+      skipTop: {
+        paddingVertical: 4,
+        paddingHorizontal: 2,
+      },
+      skipTopText: {
+        fontSize: 13,
         color: colors.textSecondary,
-        marginBottom: 6,
       },
       title: {
-        fontSize: 17,
+        fontSize: 16,
         fontWeight: '600',
         color: colors.text,
         marginBottom: 4,
+        lineHeight: 22,
       },
       subtitle: {
-        fontSize: 14,
-        lineHeight: 20,
+        fontSize: 13,
+        lineHeight: 19,
         color: colors.textSecondary,
-        marginBottom: 14,
+        marginBottom: 16,
       },
-      axisBlock: { marginBottom: 14 },
       axisLabel: {
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: '500',
         color: colors.text,
-        marginBottom: 8,
+        marginBottom: 12,
+        lineHeight: 21,
       },
       scaleRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        gap: 6,
+        gap: 8,
       },
       scaleBtn: (selected) => ({
         flex: 1,
-        minHeight: 40,
-        borderRadius: 10,
-        borderWidth: 1,
+        minHeight: 44,
+        borderRadius: 999,
+        borderWidth: selected ? 1.5 : 1,
         borderColor: selected ? colors.primary : colors.border,
         backgroundColor: selected
           ? resolvedScheme === 'dark'
-            ? `${colors.primary}33`
-            : `${colors.primary}18`
-          : colors.background,
+            ? `${colors.primary}28`
+            : `${colors.primary}12`
+          : 'transparent',
         alignItems: 'center',
         justifyContent: 'center',
       }),
       scaleBtnText: (selected) => ({
         fontSize: 15,
-        fontWeight: selected ? '700' : '500',
+        fontWeight: selected ? '600' : '400',
         color: selected ? colors.primary : colors.textSecondary,
       }),
       scaleLegend: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: 4,
+        marginTop: 8,
       },
       legendText: {
         fontSize: 11,
         color: colors.textSecondary,
       },
-      actions: { marginTop: 4, gap: 10 },
+      actions: { marginTop: 16 },
       primary: {
         backgroundColor: colors.primary,
         borderRadius: 12,
-        paddingVertical: 14,
+        paddingVertical: 12,
         alignItems: 'center',
         opacity: submitting ? 0.7 : 1,
       },
       primaryText: {
         color: colors.onPrimary || '#fff',
-        fontSize: 16,
-        fontWeight: '600',
-      },
-      secondary: {
-        paddingVertical: 10,
-        alignItems: 'center',
-      },
-      secondaryText: {
-        color: colors.textSecondary,
         fontSize: 15,
+        fontWeight: '600',
       },
     }),
     [colors, resolvedScheme],
@@ -122,10 +138,31 @@ function SessionWaiCard({ onSubmit, onSkip, submitting = false }) {
     return Number.isFinite(n) && n >= 1 && n <= 5;
   });
 
-  const pickScore = useCallback((axis, value) => {
-    Haptics.selectionAsync().catch(() => {});
-    setScores((prev) => ({ ...prev, [axis]: value }));
-  }, []);
+  const animateStep = useCallback(() => {
+    fadeAnim.setValue(0);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
+  }, [fadeAnim]);
+
+  useEffect(() => {
+    animateStep();
+  }, [step, animateStep]);
+
+  const pickScore = useCallback(
+    (value) => {
+      if (submitting) return;
+      Haptics.selectionAsync().catch(() => {});
+      setScores((prev) => ({ ...prev, [axisKey]: value }));
+
+      if (!isLastStep) {
+        setTimeout(() => setStep((s) => Math.min(s + 1, AXIS_KEYS.length - 1)), ADVANCE_MS);
+      }
+    },
+    [axisKey, isLastStep, submitting],
+  );
 
   const handleSubmit = useCallback(() => {
     if (!allFilled || submitting) return;
@@ -137,62 +174,74 @@ function SessionWaiCard({ onSubmit, onSkip, submitting = false }) {
     onSkip?.();
   }, [onSkip, submitting]);
 
+  const currentScore = scores[axisKey];
+
   return (
     <View style={styles.card} accessibilityRole="summary">
-      <Text style={styles.kicker}>{WAI.KICKER}</Text>
-      <Text style={styles.title}>{WAI.TITLE}</Text>
-      <Text style={styles.subtitle}>{WAI.SUBTITLE}</Text>
-
-      {AXIS_KEYS.map((axis) => (
-        <View key={axis} style={styles.axisBlock}>
-          <Text style={styles.axisLabel}>{axisLabels[axis]}</Text>
-          <View style={styles.scaleRow}>
-            {SCORES.map((value) => {
-              const selected = scores[axis] === value;
-              return (
-                <TouchableOpacity
-                  key={`${axis}-${value}`}
-                  style={styles.scaleBtn(selected)}
-                  onPress={() => pickScore(axis, value)}
-                  disabled={submitting}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${axisLabels[axis]} ${value}`}
-                  accessibilityState={{ selected }}
-                >
-                  <Text style={styles.scaleBtnText(selected)}>{value}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <View style={styles.scaleLegend}>
-            <Text style={styles.legendText}>{WAI.SCALE_LOW}</Text>
-            <Text style={styles.legendText}>{WAI.SCALE_HIGH}</Text>
-          </View>
+      <View style={styles.headerRow}>
+        <View style={styles.progressDots}>
+          {AXIS_KEYS.map((key, index) => {
+            const done = Number.isFinite(Number(scores[key]));
+            const active = index === step;
+            return <View key={key} style={styles.dot(active, done)} />;
+          })}
         </View>
-      ))}
-
-      <View style={styles.actions}>
         <TouchableOpacity
-          style={styles.primary}
-          onPress={handleSubmit}
-          disabled={!allFilled || submitting}
-          accessibilityRole="button"
-        >
-          {submitting ? (
-            <ActivityIndicator color={colors.onPrimary || '#fff'} />
-          ) : (
-            <Text style={styles.primaryText}>{WAI.CTA_SUBMIT}</Text>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.secondary}
+          style={styles.skipTop}
           onPress={handleSkip}
           disabled={submitting}
           accessibilityRole="button"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text style={styles.secondaryText}>{WAI.CTA_SKIP}</Text>
+          <Text style={styles.skipTopText}>{WAI.CTA_SKIP}</Text>
         </TouchableOpacity>
       </View>
+
+      <Text style={styles.title}>{WAI.TITLE}</Text>
+      <Text style={styles.subtitle}>{WAI.SUBTITLE}</Text>
+
+      <Animated.View style={{ opacity: fadeAnim }}>
+        <Text style={styles.axisLabel}>{axisLabels[axisKey]}</Text>
+        <View style={styles.scaleRow}>
+          {SCORES.map((value) => {
+            const selected = currentScore === value;
+            return (
+              <TouchableOpacity
+                key={`${axisKey}-${value}`}
+                style={styles.scaleBtn(selected)}
+                onPress={() => pickScore(value)}
+                disabled={submitting}
+                accessibilityRole="button"
+                accessibilityLabel={`${axisLabels[axisKey]} ${value}`}
+                accessibilityState={{ selected }}
+              >
+                <Text style={styles.scaleBtnText(selected)}>{value}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <View style={styles.scaleLegend}>
+          <Text style={styles.legendText}>{WAI.SCALE_LOW}</Text>
+          <Text style={styles.legendText}>{WAI.SCALE_HIGH}</Text>
+        </View>
+      </Animated.View>
+
+      {isLastStep && allFilled ? (
+        <View style={styles.actions}>
+          <TouchableOpacity
+            style={styles.primary}
+            onPress={handleSubmit}
+            disabled={submitting}
+            accessibilityRole="button"
+          >
+            {submitting ? (
+              <ActivityIndicator color={colors.onPrimary || '#fff'} />
+            ) : (
+              <Text style={styles.primaryText}>{WAI.CTA_SUBMIT}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      ) : null}
     </View>
   );
 }

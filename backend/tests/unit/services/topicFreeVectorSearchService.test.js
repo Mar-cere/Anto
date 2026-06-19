@@ -60,6 +60,9 @@ describe('topicFreeVectorSearchService', () => {
     const def = getAtlasTopicFreeVectorIndexDefinition();
     expect(def.type).toBe('vectorSearch');
     expect(def.definition.fields.some((f) => f.path === 'topicFreeEmbedding')).toBe(true);
+    expect(def.definition.fields.some((f) => f.path === 'interventionId' && f.type === 'filter')).toBe(
+      true
+    );
   });
 
   it('findSimilarTopicFreeEvents usa scan cuando Atlas desactivado', async () => {

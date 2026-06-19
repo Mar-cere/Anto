@@ -143,6 +143,23 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
       marginBottom: t.SECTION_GAP,
     },
     heroOrb: t.HERO_ORB,
+    heroBadgeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      gap: 6,
+      marginBottom: 8,
+      paddingVertical: 5,
+      paddingHorizontal: 10,
+      borderRadius: 999,
+      backgroundColor: 'rgba(255, 255, 255, 0.14)',
+    },
+    heroBadgeText: {
+      color: colors.white,
+      fontSize: 12,
+      fontWeight: '600',
+      letterSpacing: 0.3,
+    },
     heroTitle: {
       color: colors.white,
       fontSize: 22,
@@ -199,6 +216,13 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
       lineHeight: 18,
       color: colors.textSecondary,
       fontWeight: '400',
+    },
+    statTierLabel: {
+      marginTop: 2,
+      fontSize: 12,
+      lineHeight: 16,
+      fontWeight: '600',
+      letterSpacing: 0.2,
     },
     statAccent: {
       marginTop: 14,

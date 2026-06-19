@@ -117,6 +117,10 @@ export function getAtlasTopicFreeVectorIndexDefinition() {
           type: 'filter',
           path: 'eventType',
         },
+        {
+          type: 'filter',
+          path: 'interventionId',
+        },
       ],
     },
   };
