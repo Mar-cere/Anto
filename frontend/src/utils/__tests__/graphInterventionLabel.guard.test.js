@@ -38,10 +38,11 @@ describe('graphInterventionLabel guard', () => {
     expect(src).toMatch(/resolveGraphInterventionLabel/);
   });
 
-  it('interventionGraphTexts oculta correlaciones con IDs internos', () => {
-    const src = readSrc('screens/interventionGraphTexts.js');
-    expect(src).toMatch(/isInternalGraphIntervention/);
-    expect(src).toMatch(/resolveGraphInterventionLabel/);
-    expect(src).toMatch(/formatCorrelationInsight/);
+  it('InterventionGraphScreen usa panel de estado en lugar de error plano', () => {
+    const src = readSrc('screens/InterventionGraphScreen.js');
+    expect(src).toMatch(/InterventionGraphStatePanel/);
+    expect(src).toMatch(/showStatePanel/);
+    expect(src).not.toMatch(/styles\.error/);
+    expect(src).not.toMatch(/styles\.retry/);
   });
 });

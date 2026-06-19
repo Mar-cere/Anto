@@ -2023,9 +2023,18 @@ export const TECHNIQUES = {
   INTERVENTION_GRAPH_TITLE: 'What helps you',
   INTERVENTION_GRAPH_META: 'Based on your activity over the last {days} days',
   INTERVENTION_GRAPH_ERROR: 'We could not load this view. Please try again.',
+  INTERVENTION_GRAPH_ERROR_TITLE: 'We could not load the map',
+  INTERVENTION_GRAPH_ERROR_HINT:
+    'This may be a temporary connection issue. You can try again.',
   INTERVENTION_GRAPH_RETRY: 'Retry',
   INTERVENTION_GRAPH_EMPTY:
     'Not enough activity yet. Chat with Anto and try a technique when it is suggested.',
+  INTERVENTION_GRAPH_EMPTY_TITLE: 'No visible connections yet',
+  INTERVENTION_GRAPH_EMPTY_HINT:
+    'As you chat with Anto and try techniques, you will see which themes connect with what helps you.',
+  INTERVENTION_GRAPH_CTA_CHAT: 'Go to chat',
+  INTERVENTION_GRAPH_CTA_TECHNIQUES: 'Explore techniques',
+  INTERVENTION_GRAPH_LOADING: 'Loading your map…',
   INTERVENTION_GRAPH_DEV_LINK: 'Chat suggestion graph (internal)',
   INTERVENTION_GRAPH_METRICS:
     'shown {shown} · click {clicked} · dismissed {dismissed} · done {completed}',

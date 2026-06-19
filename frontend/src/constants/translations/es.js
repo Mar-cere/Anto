@@ -2029,9 +2029,18 @@ export const TECHNIQUES = {
   INTERVENTION_GRAPH_TITLE: 'Lo que te ayuda',
   INTERVENTION_GRAPH_META: 'Basado en tu actividad de los últimos {days} días',
   INTERVENTION_GRAPH_ERROR: 'No pudimos cargar esta vista. Inténtalo de nuevo.',
+  INTERVENTION_GRAPH_ERROR_TITLE: 'No pudimos cargar el mapa',
+  INTERVENTION_GRAPH_ERROR_HINT:
+    'Puede ser un problema temporal de conexión. Puedes intentarlo de nuevo.',
   INTERVENTION_GRAPH_RETRY: 'Reintentar',
   INTERVENTION_GRAPH_EMPTY:
     'Aún no hay suficiente actividad. Chatea con Anto y prueba una técnica cuando te la sugiera.',
+  INTERVENTION_GRAPH_EMPTY_TITLE: 'Aún no hay conexiones visibles',
+  INTERVENTION_GRAPH_EMPTY_HINT:
+    'Cuando charlas con Anto y pruebas técnicas, aquí verás qué temas conectan con qué te ayuda.',
+  INTERVENTION_GRAPH_CTA_CHAT: 'Ir al chat',
+  INTERVENTION_GRAPH_CTA_TECHNIQUES: 'Explorar técnicas',
+  INTERVENTION_GRAPH_LOADING: 'Cargando tu mapa…',
   INTERVENTION_GRAPH_DEV_LINK: 'Grafo de sugerencias del chat (interno)',
   INTERVENTION_GRAPH_METRICS:
     'mostradas {shown} · clic {clicked} · descartadas {dismissed} · hechas {completed}',

@@ -24,6 +24,16 @@ const TECHNIQUES_WEEKLY_KEYS = [
   'WEEKLY_INSIGHT_SOURCE_PHENOTYPE',
 ];
 
+const TECHNIQUES_GRAPH_STATE_KEYS = [
+  'INTERVENTION_GRAPH_ERROR_TITLE',
+  'INTERVENTION_GRAPH_ERROR_HINT',
+  'INTERVENTION_GRAPH_EMPTY_TITLE',
+  'INTERVENTION_GRAPH_EMPTY_HINT',
+  'INTERVENTION_GRAPH_CTA_CHAT',
+  'INTERVENTION_GRAPH_CTA_TECHNIQUES',
+  'INTERVENTION_GRAPH_LOADING',
+];
+
 describe('insights i18n parity', () => {
   it('PROFILE incluye claves del resumen rediseñado en ES y EN', () => {
     PROFILE_SUMMARY_KEYS.forEach((key) => {
@@ -34,6 +44,13 @@ describe('insights i18n parity', () => {
 
   it('TECHNIQUES incluye claves del informe observacional en ES y EN', () => {
     TECHNIQUES_WEEKLY_KEYS.forEach((key) => {
+      expect(es.TECHNIQUES[key]).toBeTruthy();
+      expect(en.TECHNIQUES[key]).toBeTruthy();
+    });
+  });
+
+  it('TECHNIQUES incluye claves del panel de estado del grafo en ES y EN', () => {
+    TECHNIQUES_GRAPH_STATE_KEYS.forEach((key) => {
       expect(es.TECHNIQUES[key]).toBeTruthy();
       expect(en.TECHNIQUES[key]).toBeTruthy();
     });

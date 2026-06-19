@@ -4,7 +4,6 @@
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   RefreshControl,
   SafeAreaView,
   ScrollView,
@@ -17,8 +16,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../components/Header';
+import InterventionGraphStatePanel from '../components/intervention/InterventionGraphStatePanel';
 import InterventionGraphVisual from '../components/intervention/InterventionGraphVisual';
-import ParticleBackground from '../components/ParticleBackground';
+import DashboardBrandBackdrop from '../components/dashboard/DashboardBrandBackdrop';
 import { SPACING } from '../constants/ui';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
@@ -69,14 +69,27 @@ const InterventionGraphScreen = ({ navigation }) => {
     [windowWidth],
   );
 
+  const hasListData = useMemo(
+    () => edges.length > 0 || topicFreeEdges.length > 0 || conceptEdges.length > 0,
+    [edges.length, topicFreeEdges.length, conceptEdges.length],
+  );
+
   const hasVisualGraph = useMemo(() => {
-    if (!edges.length && !topicFreeEdges.length && !conceptEdges.length) return false;
     return buildInterventionGraphViewModel(edges, topicFreeEdges, {
       canvasWidth: graphWidth,
       conceptNodes,
       conceptEdges,
     }).links.length > 0;
   }, [edges, topicFreeEdges, conceptNodes, conceptEdges, graphWidth]);
+
+  const showStatePanel =
+    loading && !hasListData
+      ? 'loading'
+      : error && !hasListData
+        ? 'error'
+        : !loading && !hasListData
+          ? 'empty'
+          : null;
 
   const selectedEdge = useMemo(() => {
     if (!selectedKey) return null;
@@ -162,16 +175,6 @@ const InterventionGraphScreen = ({ navigation }) => {
         insightTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 8 },
         insightRow: { fontSize: 13, color: colors.textSecondary, lineHeight: 18, marginBottom: 4 },
         detailTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 6 },
-        error: { color: colors.error, fontSize: 14, marginBottom: 12 },
-        retry: {
-          alignSelf: 'flex-start',
-          paddingVertical: 8,
-          paddingHorizontal: 14,
-          borderRadius: 8,
-          backgroundColor: colors.primary,
-        },
-        retryText: { color: colors.white, fontWeight: '600' },
-        center: { paddingVertical: 40, alignItems: 'center' },
       }),
     [colors],
   );
@@ -247,7 +250,7 @@ const InterventionGraphScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]} testID="intervention-graph-screen">
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
-      <ParticleBackground />
+      <DashboardBrandBackdrop />
       <Header title={TEXTS.TITLE} showBackButton onBackPress={() => navigation.goBack()} />
       <ScrollView
         contentContainerStyle={styles.content}
@@ -266,7 +269,7 @@ const InterventionGraphScreen = ({ navigation }) => {
           </Text>
         ) : null}
 
-        {correlations.length > 0 ? (
+        {correlations.length > 0 && showStatePanel !== 'error' ? (
           <View style={styles.insight}>
             <Text style={styles.insightTitle}>{TEXTS.INSIGHTS_TITLE}</Text>
             {correlations.slice(0, 4).map((row, index) => {
@@ -285,6 +288,46 @@ const InterventionGraphScreen = ({ navigation }) => {
           </View>
         ) : null}
 
+        {showStatePanel ? (
+          <InterventionGraphStatePanel
+            variant={showStatePanel}
+            title={
+              showStatePanel === 'loading'
+                ? TEXTS.LOADING
+                : showStatePanel === 'error'
+                  ? TEXTS.ERROR_TITLE
+                  : TEXTS.EMPTY_TITLE
+            }
+            body={
+              showStatePanel === 'loading'
+                ? null
+                : showStatePanel === 'error'
+                  ? TEXTS.ERROR_HINT || TEXTS.ERROR
+                  : TEXTS.EMPTY_HINT || TEXTS.EMPTY
+            }
+            primaryLabel={
+              showStatePanel === 'error'
+                ? TEXTS.RETRY
+                : showStatePanel === 'empty'
+                  ? TEXTS.CTA_CHAT
+                  : null
+            }
+            onPrimary={
+              showStatePanel === 'error'
+                ? load
+                : showStatePanel === 'empty'
+                  ? () => navigation.navigate('MainTabs', { screen: 'Chat' })
+                  : null
+            }
+            secondaryLabel={showStatePanel === 'empty' ? TEXTS.CTA_TECHNIQUES : null}
+            onSecondary={
+              showStatePanel === 'empty'
+                ? () => navigation.navigate('TherapeuticTechniques')
+                : null
+            }
+          />
+        ) : (
+          <>
         <View style={styles.toggleRow}>
           <TouchableOpacity
             style={[styles.toggleBtn, viewMode === 'graph' && styles.toggleBtnActive]}
@@ -307,25 +350,6 @@ const InterventionGraphScreen = ({ navigation }) => {
             </Text>
           </TouchableOpacity>
         </View>
-
-        {error ? (
-          <>
-            <Text style={styles.error}>{error}</Text>
-            <TouchableOpacity style={styles.retry} onPress={load}>
-              <Text style={styles.retryText}>{TEXTS.RETRY}</Text>
-            </TouchableOpacity>
-          </>
-        ) : null}
-
-        {loading && edges.length === 0 ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        ) : null}
-
-        {!loading && !error && edges.length === 0 && topicFreeEdges.length === 0 ? (
-          <Text style={styles.meta}>{TEXTS.EMPTY}</Text>
-        ) : null}
 
         {!error && (edges.length > 0 || topicFreeEdges.length > 0) && viewMode === 'graph' && hasVisualGraph ? (
           <>
@@ -412,6 +436,8 @@ const InterventionGraphScreen = ({ navigation }) => {
               : null}
           </>
         ) : null}
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
