@@ -6,6 +6,7 @@ import { Pressable, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { createDashboardStyles } from '../../styles/dashboardTheme';
+import { CHAT_BACK_TARGET } from '../../navigation/navigationHelpers';
 import { mapServerHomeInsight } from '../../utils/mapServerHomeInsight';
 
 const DashboardRotatingInsightCard = memo(({ insight: serverInsight = null }) => {
@@ -25,10 +26,18 @@ const DashboardRotatingInsightCard = memo(({ insight: serverInsight = null }) =>
   const onPress = () => {
     if (!insight?.screen) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    if (insight.screen === 'Chat') {
+      navigation.navigate('Chat', { chatBackTarget: CHAT_BACK_TARGET.DASH });
+      return;
+    }
     navigation.navigate(insight.screen);
   };
 
   if (!insight?.text) return null;
+
+  const isWelcome = insight.variant === 'welcome';
+  const sectionTitle = insight.sectionLabel || DASH.HOME_INSIGHT_SECTION;
+  const iconName = isWelcome ? 'hand-heart' : 'chart-line';
 
   return (
     <Pressable
@@ -40,12 +49,12 @@ const DashboardRotatingInsightCard = memo(({ insight: serverInsight = null }) =>
         pressed && { opacity: 0.92 },
       ]}
       accessibilityRole="button"
-      accessibilityLabel={`${DASH.HOME_INSIGHT_SECTION}. ${insight.text}. ${insight.ctaLabel}`}
+      accessibilityLabel={`${sectionTitle}. ${insight.text}. ${insight.ctaLabel}`}
     >
-      <Text style={styles.eyebrow}>{DASH.HOME_INSIGHT_SECTION}</Text>
+      <Text style={styles.eyebrow}>{sectionTitle}</Text>
       <View style={styles.homeInsightRow}>
         <View style={styles.homeInsightIconWrap}>
-          <MaterialCommunityIcons name="chart-line" size={20} color={colors.primary} />
+          <MaterialCommunityIcons name={iconName} size={20} color={colors.primary} />
         </View>
         <View style={styles.homeInsightCopy}>
           <Text style={styles.homeInsightText}>{insight.text}</Text>

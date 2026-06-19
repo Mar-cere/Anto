@@ -127,4 +127,25 @@ describe('homeRotatingInsightService', () => {
     );
     await expect(buildHomeRotatingInsightForUser(null)).resolves.toBeNull();
   });
+
+  it('devuelve bienvenida sin señal de actividad', async () => {
+    const { buildHomeRotatingInsightForUser } = await import(
+      '../../../services/homeRotatingInsightService.js'
+    );
+    const result = await buildHomeRotatingInsightForUser('welcome-user', {
+      language: 'es',
+      summary: {
+        chat: { userMessages: 0, distinctActiveDays: 0 },
+        habits: { completionsInPeriod: 0, bestCurrentStreakAmongActive: 0 },
+        tasks: { completedInPeriod: 0 },
+        journal: { entriesCount: 0 },
+        techniques: { totalUses: 0 },
+      },
+    });
+    expect(result?.variant).toBe('welcome');
+    expect(result?.source).toBe('welcome');
+    expect(result?.ctaKey).toBe('HOME_INSIGHT_CTA_CHAT');
+    expect(result?.destination).toBe('Chat');
+    expect(result?.text).toMatch(/bienestar|descargado|salud mental/i);
+  });
 });

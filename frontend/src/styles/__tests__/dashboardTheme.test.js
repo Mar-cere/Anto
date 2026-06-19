@@ -6,7 +6,7 @@ describe('dashboardTheme', () => {
     const light = getDashboardTheme(lightColors, 'light');
     const dark = getDashboardTheme(darkColors, 'dark');
 
-    expect(light.SURFACE.backgroundColor).toBe(lightColors.chromeCard);
+    expect(light.SURFACE.backgroundColor).toBe(lightColors.surface);
     expect(dark.SURFACE.backgroundColor).toBe(darkColors.chromeCard);
     expect(light.SURFACE.backgroundColor).not.toBe(dark.SURFACE.backgroundColor);
     expect(light.HERO_SURFACE.backgroundColor).not.toBe(dark.HERO_SURFACE.backgroundColor);

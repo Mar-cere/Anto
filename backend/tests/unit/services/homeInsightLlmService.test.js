@@ -1,5 +1,7 @@
 import {
   buildWarmDeterministicHomeInsight,
+  buildWelcomeHomeInsight,
+  hasMeaningfulHomeInsightSignal,
   isDemotivatingHomeInsightText,
   validateHomeInsightLlmText,
 } from '../../../services/homeInsightLlmService.js';
@@ -36,6 +38,43 @@ describe('homeInsightLlmService', () => {
     );
     expect(text).toMatch(/hábitos/i);
     expect(text).not.toMatch(/0 tarea/i);
+  });
+
+  it('hasMeaningfulHomeInsightSignal es false sin actividad real', () => {
+    expect(
+      hasMeaningfulHomeInsightSignal({
+        summary: {
+          chat: { userMessages: 0 },
+          habits: { completionsInPeriod: 0, bestCurrentStreakAmongActive: 0 },
+          tasks: { completedInPeriod: 0 },
+        },
+        weeklyInsight: { status: 'pending' },
+        graphCorrelations: [],
+      }),
+    ).toBe(false);
+  });
+
+  it('hasMeaningfulHomeInsightSignal detecta chat o hábitos', () => {
+    expect(
+      hasMeaningfulHomeInsightSignal({
+        summary: { chat: { userMessages: 1 } },
+      }),
+    ).toBe(true);
+    expect(
+      hasMeaningfulHomeInsightSignal({
+        summary: { habits: { completionsInPeriod: 1 } },
+      }),
+    ).toBe(true);
+  });
+
+  it('buildWelcomeHomeInsight rota mensajes sin fingir patrón', () => {
+    const welcome = buildWelcomeHomeInsight('es', 'seed-a');
+    expect(welcome.variant).toBe('welcome');
+    expect(welcome.sectionKey).toBe('HOME_INSIGHT_WELCOME_SECTION');
+    expect(welcome.ctaKey).toBe('HOME_INSIGHT_CTA_CHAT');
+    expect(welcome.text).toMatch(/bienestar|descargado|salud mental/i);
+    expect(buildWelcomeHomeInsight('es', 'seed-a').text).toBe(welcome.text);
+    expect(buildWelcomeHomeInsight('es', 'seed-b').text).not.toBe(welcome.text);
   });
 });
 

@@ -12,7 +12,7 @@ import { createDashboardStyles } from '../../styles/dashboardTheme';
 import { cacheTodayMoodPayload } from '../../utils/dailyMoodStorage';
 import { buildMoodAckCopy } from '../../utils/dashboardHomeUtils';
 
-const MoodCheckInCard = memo(({ onMoodSaved, displayName = '', syncedMood = null }) => {
+const MoodCheckInCard = memo(({ onMoodSaved, displayName = '', syncedMood = null, focusFetchDone = false }) => {
   const DASH = useSectionTranslations('DASH');
   const { colors, resolvedScheme } = useTheme();
   const styles = useMemo(
@@ -26,6 +26,16 @@ const MoodCheckInCard = memo(({ onMoodSaved, displayName = '', syncedMood = null
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      if (!focusFetchDone) return;
+
+      if (syncedMood !== undefined) {
+        if (!cancelled) {
+          setCheckIn(syncedMood);
+          setLoading(false);
+        }
+        return;
+      }
+
       setLoading(true);
       const remote = await fetchTodayMoodCheckIn();
       if (!cancelled) {
@@ -36,7 +46,7 @@ const MoodCheckInCard = memo(({ onMoodSaved, displayName = '', syncedMood = null
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [focusFetchDone, syncedMood]);
 
   useEffect(() => {
     if (syncedMood?.mood && !checkIn?.mood) {

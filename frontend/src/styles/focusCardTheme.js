@@ -24,7 +24,6 @@ export function getFocusTheme(colors, resolvedScheme = 'light') {
     FOCUS_ACCENT_BORDER: colors.accentLine,
     FOCUS_PANEL: {
       alignSelf: 'stretch',
-      marginBottom: dash.SECTION_GAP,
       ...dash.SURFACE,
       paddingVertical: 18,
       paddingHorizontal: 18,
@@ -69,7 +68,7 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
     },
     groupedList: {
       ...dash.GROUPED_SURFACE,
-      marginBottom: 16,
+      marginBottom: 0,
     },
     actionRow: {
       ...t.FOCUS_INNER_ROW,

@@ -24,6 +24,7 @@ const readLimiter = createRateLimiter({
   message: (req) => dailyMoodApiCopy(resolveRequestLanguage(req)).rateLimit,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'development',
 });
 
 const writeLimiter = createRateLimiter({
@@ -32,6 +33,7 @@ const writeLimiter = createRateLimiter({
   message: (req) => dailyMoodApiCopy(resolveRequestLanguage(req)).rateLimit,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'development',
 });
 
 router.use(authenticateToken);

@@ -69,7 +69,7 @@ import signalsRoutes from './routes/signalsRoutes.js';
 // Constantes de configuración
 const APP_VERSION = '1.5.0';
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutos
-const RATE_LIMIT_MAX_REQUESTS = 100;
+const RATE_LIMIT_MAX_REQUESTS = Number(process.env.RATE_LIMIT_MAX_REQUESTS) || 400;
 const ALLOWED_HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
 const ALLOWED_HEADERS = ['Content-Type', 'Authorization'];
 const MONGODB_CONNECTION_STATES = {
@@ -268,7 +268,10 @@ if (config.app.environment === 'development') {
 const limiter = createRateLimiter({
   windowMs: RATE_LIMIT_WINDOW_MS,
   max: RATE_LIMIT_MAX_REQUESTS,
-  skip: (req) => req.path === '/health' || req.path.startsWith('/api/health')
+  skip: (req) =>
+    config.app.environment === 'development' ||
+    req.path === '/health' ||
+    req.path.startsWith('/api/health'),
 });
 app.use(limiter);
 

@@ -41,4 +41,25 @@ describe('mapServerHomeInsight', () => {
       ),
     ).toBeNull();
   });
+
+  it('mapea insight de bienvenida al chat', () => {
+    const mapped = mapServerHomeInsight(
+      {
+        text: 'Cuando quieras, aquí verás patrones de tu bienestar.',
+        variant: 'welcome',
+        sectionKey: 'HOME_INSIGHT_WELCOME_SECTION',
+        ctaKey: 'HOME_INSIGHT_CTA_CHAT',
+        destination: 'Chat',
+        source: 'welcome',
+      },
+      {
+        HOME_INSIGHT_WELCOME_SECTION: 'Un espacio para ti',
+        HOME_INSIGHT_CTA_CHAT: 'Hablar con Anto',
+      },
+    );
+    expect(mapped.variant).toBe('welcome');
+    expect(mapped.sectionLabel).toBe('Un espacio para ti');
+    expect(mapped.screen).toBe('Chat');
+    expect(mapped.ctaLabel).toBe('Hablar con Anto');
+  });
 });

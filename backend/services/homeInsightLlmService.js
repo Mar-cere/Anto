@@ -178,6 +178,76 @@ export async function generateHomeInsightWithLlm(userId, input = {}) {
   }
 }
 
+/**
+ * Señal mínima para mostrar un insight real (no copy de bienvenida).
+ */
+export function hasMeaningfulHomeInsightSignal({
+  summary = null,
+  weeklyInsight = null,
+  graphCorrelations = [],
+} = {}) {
+  if (weeklyInsight?.status === 'ready') {
+    const hasWeekly =
+      Boolean(weeklyInsight.headline) ||
+      (Array.isArray(weeklyInsight.insights) && weeklyInsight.insights.length > 0);
+    if (hasWeekly) return true;
+  }
+  if (Array.isArray(graphCorrelations) && graphCorrelations.length > 0) return true;
+  if (!summary || typeof summary !== 'object') return false;
+
+  const chat = summary.chat || {};
+  const habits = summary.habits || {};
+  const tasks = summary.tasks || {};
+  const journal = summary.journal || {};
+  const techniques = summary.techniques || {};
+
+  if ((chat.userMessages ?? 0) >= 1) return true;
+  if ((habits.completionsInPeriod ?? 0) > 0) return true;
+  if ((tasks.completedInPeriod ?? 0) > 0) return true;
+  if ((journal.entriesCount ?? 0) > 0) return true;
+  if ((techniques.totalUses ?? 0) > 0) return true;
+  if ((habits.bestCurrentStreakAmongActive ?? 0) >= 1) return true;
+
+  return false;
+}
+
+const WELCOME_HOME_INSIGHT_MESSAGES = {
+  es: [
+    'Cuando quieras, aquí verás patrones de tu bienestar.',
+    'Que hayas descargado la app ya es un gesto de cuidado.',
+    'Preocuparte por tu salud mental ya es un paso importante.',
+  ],
+  en: [
+    "Whenever you're ready, you'll see your wellbeing patterns here.",
+    'Downloading the app is already an act of care.',
+    'Caring about your mental health is already an important step.',
+  ],
+};
+
+/**
+ * Copy de primer contacto — sin fingir que Anto «notó» un patrón.
+ */
+export function buildWelcomeHomeInsight(language = 'es', seed = '') {
+  const lang = normalizeFocusLanguage(language);
+  const messages = WELCOME_HOME_INSIGHT_MESSAGES[lang] || WELCOME_HOME_INSIGHT_MESSAGES.es;
+  let hash = 0;
+  const s = String(seed || 'welcome');
+  for (let i = 0; i < s.length; i += 1) {
+    hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+  }
+  const index = messages.length > 0 ? hash % messages.length : 0;
+  const text = messages[index];
+
+  return {
+    text,
+    variant: 'welcome',
+    sectionKey: 'HOME_INSIGHT_WELCOME_SECTION',
+    ctaKey: 'HOME_INSIGHT_CTA_CHAT',
+    destination: 'Chat',
+    source: 'welcome',
+  };
+}
+
 export function buildWarmDeterministicHomeInsight(summary, language = 'es') {
   const lang = normalizeFocusLanguage(language);
   const tasksDone = summary?.tasks?.completedInPeriod ?? 0;

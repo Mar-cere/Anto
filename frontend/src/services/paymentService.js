@@ -16,6 +16,17 @@ import {
 } from '../utils/appleReceiptNormalize';
 import storeKitService from './storeKitService';
 
+const TRIAL_INFO_CLIENT_CACHE_MS = 60 * 1000;
+let trialInfoClientCache = null;
+let trialInfoClientCacheExpiresAt = 0;
+let trialInfoInFlight = null;
+
+export function clearTrialInfoClientCache() {
+  trialInfoClientCache = null;
+  trialInfoClientCacheExpiresAt = 0;
+  trialInfoInFlight = null;
+}
+
 function classifyStoreKitError(result) {
   if (!result || typeof result !== 'object') return 'GENERIC_ERROR';
   if (result.cancelled) return 'PURCHASE_CANCELLED';
@@ -557,25 +568,57 @@ class PaymentService {
 
   /**
    * Obtener información del trial
+   * @param {{ forceRefresh?: boolean }} [opts]
    * @returns {Promise<Object>} - Información del trial
    */
-  async getTrialInfo() {
-    try {
-      const response = await api.get(ENDPOINTS.PAYMENT_TRIAL_INFO);
-      return {
-        success: true,
-        ...response,
-      };
-    } catch (error) {
-      console.error('Error obteniendo info de trial:', error);
-      return {
-        success: false,
-        error: error.message || 'Error al obtener información del trial',
-        errorCode: resolveServiceErrorCode(error, 'TRIAL_INFO_ERROR'),
-        isInTrial: false,
-        daysRemaining: 0,
-      };
+  async getTrialInfo(opts = {}) {
+    const forceRefresh = opts.forceRefresh === true;
+    const now = Date.now();
+
+    if (
+      !forceRefresh &&
+      trialInfoClientCache &&
+      now < trialInfoClientCacheExpiresAt
+    ) {
+      return trialInfoClientCache;
     }
+
+    if (!forceRefresh && trialInfoInFlight) {
+      return trialInfoInFlight;
+    }
+
+    const request = (async () => {
+      try {
+        const response = await api.get(ENDPOINTS.PAYMENT_TRIAL_INFO);
+        const result = {
+          success: true,
+          ...response,
+        };
+        trialInfoClientCache = result;
+        trialInfoClientCacheExpiresAt = Date.now() + TRIAL_INFO_CLIENT_CACHE_MS;
+        return result;
+      } catch (error) {
+        const isRateLimit = error?.response?.status === 429;
+        if (isRateLimit && trialInfoClientCache) {
+          return trialInfoClientCache;
+        }
+        if (!isRateLimit) {
+          console.error('Error obteniendo info de trial:', error);
+        }
+        return {
+          success: false,
+          error: error.message || 'Error al obtener información del trial',
+          errorCode: resolveServiceErrorCode(error, 'TRIAL_INFO_ERROR'),
+          isInTrial: false,
+          daysRemaining: 0,
+        };
+      } finally {
+        trialInfoInFlight = null;
+      }
+    })();
+
+    trialInfoInFlight = request;
+    return request;
   }
 
   /**

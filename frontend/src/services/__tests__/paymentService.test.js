@@ -51,7 +51,7 @@ jest.mock('react-native', () => ({
 }));
 
 // Importar después de mocks
-import paymentService from '../paymentService';
+import paymentService, { clearTrialInfoClientCache } from '../paymentService';
 import { Linking, Platform } from 'react-native';
 import storeKitService from '../storeKitService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -212,6 +212,10 @@ describe('PaymentService', () => {
   });
 
   describe('getTrialInfo', () => {
+    beforeEach(() => {
+      clearTrialInfoClientCache();
+    });
+
     it('debe obtener información del trial', async () => {
       const mockResponse = {
         hasTrial: true,

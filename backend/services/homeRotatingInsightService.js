@@ -19,7 +19,9 @@ import {
 } from './homeRotatingInsightCache.js';
 import {
   buildWarmDeterministicHomeInsight,
+  buildWelcomeHomeInsight,
   generateHomeInsightWithLlm,
+  hasMeaningfulHomeInsightSignal,
   isDemotivatingHomeInsightText,
 } from './homeInsightLlmService.js';
 
@@ -218,6 +220,20 @@ async function computeHomeRotatingInsightUncached(userId, opts = {}) {
     loadGraphCorrelations(userId, language).catch(() => []),
   ]);
 
+  const rotationSeed = homeInsightRotationSeed();
+  const hasSignal = hasMeaningfulHomeInsightSignal({
+    summary: opts.summary,
+    weeklyInsight: weeklyDoc,
+    graphCorrelations,
+  });
+
+  if (!hasSignal) {
+    return sanitizeHomeInsightForClient({
+      ...buildWelcomeHomeInsight(language, rotationSeed),
+      rotationSeed,
+    });
+  }
+
   const llmText = await generateHomeInsightWithLlm(userId, {
     summary: opts.summary,
     weeklyInsight: weeklyDoc,
@@ -231,7 +247,7 @@ async function computeHomeRotatingInsightUncached(userId, opts = {}) {
       source: 'llm',
       ctaKey: 'HOME_INSIGHT_CTA_PROGRESS',
       destination: 'ActivitySummary',
-      rotationSeed: homeInsightRotationSeed(),
+      rotationSeed,
     });
   }
 
@@ -242,14 +258,14 @@ async function computeHomeRotatingInsightUncached(userId, opts = {}) {
     language,
   });
 
-  const picked = pickHomeRotatingInsight(candidates, homeInsightRotationSeed());
+  const picked = pickHomeRotatingInsight(candidates, rotationSeed);
   if (picked) {
     return sanitizeHomeInsightForClient({
       text: picked.text,
       source: picked.source,
       ctaKey: picked.ctaKey,
       destination: 'ActivitySummary',
-      rotationSeed: homeInsightRotationSeed(),
+      rotationSeed,
     });
   }
 
@@ -261,7 +277,7 @@ async function computeHomeRotatingInsightUncached(userId, opts = {}) {
     source: 'summary',
     ctaKey: 'HOME_INSIGHT_CTA_PROGRESS',
     destination: 'ActivitySummary',
-    rotationSeed: homeInsightRotationSeed(),
+    rotationSeed,
   });
 }
 

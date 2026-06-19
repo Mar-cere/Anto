@@ -40,7 +40,9 @@ import {
   FLATLIST_MAX_TO_RENDER_PER_BATCH,
   FLATLIST_WINDOW_SIZE,
   LIST_PADDING_BOTTOM,
+  FAB_BORDER_RADIUS,
   FAB_BOTTOM,
+  FAB_SIZE,
   ICON_SIZE,
 } from './habits/habitsScreenConstants';
 import {

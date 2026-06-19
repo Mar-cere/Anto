@@ -52,6 +52,21 @@ describe('homeRotatingInsightCache', () => {
     expect(fp1).not.toBe(fp2);
   });
 
+  it('sanitiza insight de bienvenida con destino Chat', () => {
+    const out = sanitizeHomeInsightForClient({
+      text: 'Cuando quieras, aquí verás patrones de tu bienestar.',
+      variant: 'welcome',
+      sectionKey: 'HOME_INSIGHT_WELCOME_SECTION',
+      ctaKey: 'HOME_INSIGHT_CTA_CHAT',
+      destination: 'Chat',
+      source: 'welcome',
+    });
+    expect(out.variant).toBe('welcome');
+    expect(out.sectionKey).toBe('HOME_INSIGHT_WELCOME_SECTION');
+    expect(out.destination).toBe('Chat');
+    expect(out.source).toBe('welcome');
+  });
+
   it('no genera clave sin userId', () => {
     expect(buildHomeInsightCacheKey(null)).toBeNull();
   });

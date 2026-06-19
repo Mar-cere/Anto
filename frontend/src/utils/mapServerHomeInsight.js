@@ -6,9 +6,10 @@ const ALLOWED_CTA_KEYS = new Set([
   'HOME_INSIGHT_CTA_WEEKLY',
   'HOME_INSIGHT_CTA_GRAPH',
   'HOME_INSIGHT_CTA_SUMMARY',
+  'HOME_INSIGHT_CTA_CHAT',
 ]);
 
-const ALLOWED_SCREENS = new Set(['ActivitySummary', 'WeeklyInsight', 'InterventionGraph']);
+const ALLOWED_SCREENS = new Set(['ActivitySummary', 'WeeklyInsight', 'InterventionGraph', 'Chat']);
 
 const MAX_INSIGHT_TEXT = 500;
 
@@ -28,9 +29,16 @@ export function mapServerHomeInsight(homeInsight, texts = {}) {
   const ctaLabel = String(texts[ctaKey] || texts.HOME_INSIGHT_CTA_PROGRESS || '').trim();
   if (!ctaLabel) return null;
 
+  const sectionKey = String(homeInsight.sectionKey || '').trim();
+  const sectionLabel = sectionKey
+    ? String(texts[sectionKey] || texts.HOME_INSIGHT_SECTION || '').trim()
+    : String(texts.HOME_INSIGHT_SECTION || '').trim();
+
   return {
     text,
     source: homeInsight.source || null,
+    variant: homeInsight.variant || null,
+    sectionLabel: sectionLabel || texts.HOME_INSIGHT_SECTION,
     ctaLabel,
     screen,
   };

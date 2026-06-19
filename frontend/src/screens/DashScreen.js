@@ -36,7 +36,6 @@ import DashboardStreakHero from '../components/dashboard/DashboardStreakHero';
 import DashboardStatsRow from '../components/dashboard/DashboardStatsRow';
 import DashboardHabitsSection from '../components/dashboard/DashboardHabitsSection';
 import DashboardFocusCard from '../components/DashboardFocusCard';
-import TaskCard from '../components/TaskCard';
 import { SkeletonBlock, SkeletonCard } from '../components/Skeleton';
 import { api, ENDPOINTS } from '../config/api';
 import { BORDERS, SPACING, STATUS_BAR } from '../constants/ui';
@@ -75,7 +74,7 @@ const DashScreen = () => {
   const DASH = useSectionTranslations('DASH');
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { colors, statusBarStyle } = useTheme();
+  const { colors, statusBarStyle, resolvedScheme } = useTheme();
   const styles = useMemo(
     () =>
       StyleSheet.create({
@@ -115,7 +114,7 @@ const DashScreen = () => {
         backgroundTint: {
           ...StyleSheet.absoluteFillObject,
           backgroundColor: colors.gradientTop,
-          opacity: 0.45,
+          opacity: resolvedScheme === 'dark' ? 0.45 : 0.2,
         },
         errorContainer: {
           alignSelf: 'stretch',
@@ -150,7 +149,7 @@ const DashScreen = () => {
           borderColor: colors.glassOutline ?? colors.border ?? 'rgba(255,255,255,0.14)',
         },
       }),
-    [colors],
+    [colors, resolvedScheme],
   );
 
   const ErrorMessage = useCallback(
@@ -809,7 +808,8 @@ const DashScreen = () => {
           <MoodCheckInCard
             onMoodSaved={handleMoodSaved}
             displayName={getDashboardDisplayName(userData)}
-            syncedMood={focusPayload?.dailyMood}
+            syncedMood={focusPayload ? focusPayload.dailyMood : undefined}
+            focusFetchDone={!loading}
           />
           <DashboardFocusCard
             data={focusPayload}
@@ -842,7 +842,6 @@ const DashScreen = () => {
               onUpdate={handleHabitToggleUpdate}
             />
           ) : null}
-          <TaskCard />
           {error && (
             <ErrorMessage
               message={error}

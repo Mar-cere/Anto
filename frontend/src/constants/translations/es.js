@@ -206,10 +206,12 @@ export const DASH = {
   INSIGHTS_CARD_GRAPH_HINT: 'Qué temas del chat conectan con qué técnicas',
   INSIGHTS_CARD_A11Y: 'Tu actividad y patrones',
   HOME_INSIGHT_SECTION: 'Anto notó algo',
+  HOME_INSIGHT_WELCOME_SECTION: 'Un espacio para ti',
   HOME_INSIGHT_CTA_PROGRESS: 'Ver tu progreso',
   HOME_INSIGHT_CTA_WEEKLY: 'Ver tus patrones',
   HOME_INSIGHT_CTA_GRAPH: 'Ver el mapa',
   HOME_INSIGHT_CTA_SUMMARY: 'Ver tu resumen',
+  HOME_INSIGHT_CTA_CHAT: 'Hablar con Anto',
   FOCUS_START_CHAT: 'Empezar en el chat',
   FIRST_SESSION_HINT_TITLE: 'Tu objetivo por ahora',
   FIRST_SESSION_HINT_MESSAGE:

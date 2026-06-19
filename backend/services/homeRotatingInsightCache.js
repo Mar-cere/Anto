@@ -13,9 +13,19 @@ export const ALLOWED_HOME_INSIGHT_CTA_KEYS = new Set([
   'HOME_INSIGHT_CTA_WEEKLY',
   'HOME_INSIGHT_CTA_GRAPH',
   'HOME_INSIGHT_CTA_SUMMARY',
+  'HOME_INSIGHT_CTA_CHAT',
 ]);
 
-export const ALLOWED_HOME_INSIGHT_SOURCES = new Set(['weekly', 'summary', 'graph', 'llm']);
+export const ALLOWED_HOME_INSIGHT_SOURCES = new Set(['weekly', 'summary', 'graph', 'llm', 'welcome']);
+
+export const ALLOWED_HOME_INSIGHT_DESTINATIONS = new Set([
+  'ActivitySummary',
+  'WeeklyInsight',
+  'InterventionGraph',
+  'Chat',
+]);
+
+export const ALLOWED_HOME_INSIGHT_VARIANTS = new Set(['welcome']);
 
 export function cacheTtlSecondsUntilUtcEndOfDay() {
   const now = Date.now();
@@ -68,10 +78,17 @@ export function sanitizeHomeInsightForClient(insight) {
     ? insight.ctaKey
     : 'HOME_INSIGHT_CTA_PROGRESS';
   const source = ALLOWED_HOME_INSIGHT_SOURCES.has(insight.source) ? insight.source : null;
-  const destination = 'ActivitySummary';
+  const destination = ALLOWED_HOME_INSIGHT_DESTINATIONS.has(insight.destination)
+    ? insight.destination
+    : 'ActivitySummary';
   const rotationSeed =
     typeof insight.rotationSeed === 'string'
       ? insight.rotationSeed.trim().slice(0, 48)
+      : undefined;
+  const variant = ALLOWED_HOME_INSIGHT_VARIANTS.has(insight.variant) ? insight.variant : undefined;
+  const sectionKey =
+    typeof insight.sectionKey === 'string' && insight.sectionKey.trim()
+      ? insight.sectionKey.trim().slice(0, 64)
       : undefined;
 
   return {
@@ -79,6 +96,8 @@ export function sanitizeHomeInsightForClient(insight) {
     source,
     ctaKey,
     destination,
+    ...(variant ? { variant } : {}),
+    ...(sectionKey ? { sectionKey } : {}),
     ...(rotationSeed ? { rotationSeed } : {}),
   };
 }
