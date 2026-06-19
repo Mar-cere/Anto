@@ -131,8 +131,12 @@ export function buildDeterministicNarrative(summary, language = 'es') {
       : `Recurring themes around ${topTopic}, focused on sustaining your process step by step.`;
 
     microWins = 'You stayed present in the app, even in micro-moments.';
-    if (tasksDone > 0 || habitCompletions > 0) {
+    if (tasksDone > 0 && habitCompletions > 0) {
       microWins = `You completed ${tasksDone} task${tasksDone === 1 ? '' : 's'} and logged ${habitCompletions} habit advance${habitCompletions === 1 ? '' : 's'}.`;
+    } else if (tasksDone > 0) {
+      microWins = `You completed ${tasksDone} task${tasksDone === 1 ? '' : 's'} this period.`;
+    } else if (habitCompletions > 0) {
+      microWins = `You logged ${habitCompletions} habit advance${habitCompletions === 1 ? '' : 's'} — each check-in counts.`;
     } else if (activeDays > 0 || userMessages > 0) {
       microWins = `You were active ${activeDays} day${activeDays === 1 ? '' : 's'} and sent ${userMessages} message${userMessages === 1 ? '' : 's'} in the chat.`;
     }
@@ -155,8 +159,12 @@ export function buildDeterministicNarrative(summary, language = 'es') {
       : `Se repitieron temas ligados a ${topTopic}, con foco en sostener tu proceso paso a paso.`;
 
     microWins = 'Sostuviste presencia en la app, aunque fuera en micro-momentos.';
-    if (tasksDone > 0 || habitCompletions > 0) {
+    if (tasksDone > 0 && habitCompletions > 0) {
       microWins = `Completaste ${tasksDone} tarea${tasksDone === 1 ? '' : 's'} y registraste ${habitCompletions} avance${habitCompletions === 1 ? '' : 's'} en hábitos.`;
+    } else if (tasksDone > 0) {
+      microWins = `Completaste ${tasksDone} tarea${tasksDone === 1 ? '' : 's'} en este periodo.`;
+    } else if (habitCompletions > 0) {
+      microWins = `Registraste ${habitCompletions} avance${habitCompletions === 1 ? '' : 's'} en hábitos — cada marca cuenta.`;
     } else if (activeDays > 0 || userMessages > 0) {
       microWins = `Tuviste actividad ${activeDays} día${activeDays === 1 ? '' : 's'} y enviaste ${userMessages} mensaje${userMessages === 1 ? '' : 's'} en el chat.`;
     }

@@ -1213,6 +1213,33 @@ export const HABITS = {
   SUMMARY_COMPLETED_TODAY: 'Completados hoy',
 };
 
+export const TASKS_AND_HABITS = {
+  SCREEN_TITLE: 'Tareas y hábitos',
+  TAB_TASKS: 'Tareas',
+  TAB_HABITS: 'Hábitos',
+  SEARCH_PLACEHOLDER: 'Buscar...',
+  SEARCH_TOGGLE_A11Y: 'Buscar',
+  SECTION_TODAY: 'Hoy',
+  SECTION_ATTENTION: 'Requieren atención',
+  SECTION_TO_COMPLETE: 'Por completar',
+  SUMMARY_TODAY: 'para hoy',
+  SUMMARY_UPCOMING: 'próximas',
+  SUMMARY_ATTENTION: 'requieren atención',
+  SOURCE_ANTO: 'Anto',
+  FILTER_DAILY: 'Diarios',
+  FILTER_WEEKLY: 'Semanales',
+  FILTER_ALL: 'Todos',
+  PACE_GOOD: 'Buen ritmo hoy',
+  PACE_START: 'Un paso a la vez',
+  PACE_DONE: 'Todo listo por hoy',
+  PENDING_ONE: '{count} pendiente',
+  PENDING_MANY: '{count} pendientes',
+  STREAK: 'racha de {days} días',
+  GRATITUDE_TITLE: 'Diario de Gratitud',
+  GRATITUDE_SUBTITLE: 'Escribe sobre lo que agradeces hoy',
+  OPEN_GRATITUDE_A11Y: 'Abrir diario de gratitud',
+};
+
 export const POMODORO = {
   TITLE: 'Pomodoro',
   MODAL_TITLE: 'Timer Personalizado',
@@ -2880,6 +2907,7 @@ export default {
   NAV,
   TASKS,
   HABITS,
+  TASKS_AND_HABITS,
   POMODORO,
   TECHNIQUES,
   PROFILE,

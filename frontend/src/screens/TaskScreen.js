@@ -37,7 +37,13 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { isAuthError } from '../utils/apiErrorHandler';
 import { isValidClientRequestId } from '../utils/clientRequestId';
 import { postProductActionTelemetry } from '../utils/productActionTelemetry';
+import BrandGradientFab from '../components/tasksAndHabits/BrandGradientFab';
+import TasksSummaryStrip from '../components/tasksAndHabits/TasksSummaryStrip';
 import { buildTaskSections } from '../utils/taskDateSections';
+import {
+  buildUnifiedTaskSections,
+  computeTasksSummaryCounts,
+} from '../utils/tasksAndHabitsUtils';
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
@@ -187,7 +193,13 @@ const INITIAL_STATE = {
   error: null
 };
 
-const TaskScreen = ({ route }) => {
+const TaskScreen = ({
+  route,
+  embedded = false,
+  unifiedView = false,
+  externalSearchQuery,
+  contentBottomInset,
+}) => {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { isConnected, isInternetReachable } = useNetworkStatus();
@@ -200,11 +212,18 @@ const TaskScreen = ({ route }) => {
   const pendingClientRequestIdRef = useRef(null);
   const { showToast } = useToast();
   const translated = useSectionTranslations('TASKS');
+  const unifiedTexts = useSectionTranslations('TASKS_AND_HABITS');
   const TEXTS = useMemo(
     () => ({ ...DEFAULT_TEXTS, ...(translated || {}) }),
     [translated]
   );
-  const [searchQuery, setSearchQuery] = useState('');
+  const [internalSearchQuery, setInternalSearchQuery] = useState('');
+  const searchQuery = embedded && externalSearchQuery !== undefined
+    ? externalSearchQuery
+    : internalSearchQuery;
+  const setSearchQuery = embedded && externalSearchQuery !== undefined
+    ? () => {}
+    : setInternalSearchQuery;
   const itemsRef = useRef([]);
   const pendingCompleteRef = useRef({ timeoutId: null, itemId: null });
 
@@ -267,6 +286,13 @@ const TaskScreen = ({ route }) => {
           letterSpacing: 1.2,
           textTransform: 'uppercase',
           color: colors.text,
+        },
+        sectionHeaderAttention: {
+          borderColor: 'rgba(251, 146, 60, 0.35)',
+          backgroundColor: 'rgba(251, 146, 60, 0.08)',
+        },
+        sectionHeaderTextAttention: {
+          color: colors.warning,
         },
         sectionCountPill: {
           minWidth: 24,
@@ -708,8 +734,19 @@ const TaskScreen = ({ route }) => {
     if (showSkeleton) {
       return [{ key: 'skeleton', title: '', data: skeletonData, skeleton: true }];
     }
+    if (unifiedView) {
+      return buildUnifiedTaskSections(displayItems, {
+        today: unifiedTexts.SECTION_TODAY,
+        attention: unifiedTexts.SECTION_ATTENTION,
+      });
+    }
     return buildTaskSections(displayItems);
-  }, [showSkeleton, skeletonData, displayItems]);
+  }, [showSkeleton, skeletonData, displayItems, unifiedView, unifiedTexts]);
+
+  const tasksSummaryCounts = useMemo(
+    () => computeTasksSummaryCounts(displayItems),
+    [displayItems],
+  );
 
   const pendingCount = useMemo(
     () => displayItems.filter((i) => !i.completed).length,
@@ -762,15 +799,23 @@ const TaskScreen = ({ route }) => {
 
   const renderSectionHeader = useCallback(({ section }) => {
     if (!section.title) return null;
+    const attention = section.tone === 'attention';
     return (
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionHeaderText}>{section.title}</Text>
+      <View style={[styles.sectionHeader, attention && styles.sectionHeaderAttention]}>
+        <Text
+          style={[
+            styles.sectionHeaderText,
+            attention && styles.sectionHeaderTextAttention,
+          ]}
+        >
+          {section.title}
+        </Text>
         <View style={styles.sectionCountPill}>
           <Text style={styles.sectionCountText}>{section.data.length}</Text>
         </View>
       </View>
     );
-  }, [styles.sectionCountPill, styles.sectionCountText, styles.sectionHeader, styles.sectionHeaderText]);
+  }, [styles]);
 
   const renderDefaultEmpty = useCallback(() => {
     const getEmptyText = () => {
@@ -871,7 +916,14 @@ const TaskScreen = ({ route }) => {
   const renderListHeader = useCallback(() => {
     return (
       <View>
-        {!showSkeleton && pendingCount > 0 ? (
+        {unifiedView && !showSkeleton ? (
+          <TasksSummaryStrip
+            todayCount={tasksSummaryCounts.todayCount}
+            upcomingCount={tasksSummaryCounts.upcomingCount}
+            attentionCount={tasksSummaryCounts.attentionCount}
+          />
+        ) : null}
+        {!unifiedView && !showSkeleton && pendingCount > 0 ? (
           <View style={styles.countRow}>
             <Text style={styles.countText}>
               {pendingCount}{' '}
@@ -882,7 +934,15 @@ const TaskScreen = ({ route }) => {
         {renderErrorBanner()}
       </View>
     );
-  }, [showSkeleton, pendingCount, renderErrorBanner, TEXTS, styles]);
+  }, [
+    unifiedView,
+    showSkeleton,
+    tasksSummaryCounts,
+    pendingCount,
+    renderErrorBanner,
+    TEXTS,
+    styles,
+  ]);
 
   // Key extractor optimizado
   const keyExtractor = useCallback((item) => item._id, []);
@@ -890,14 +950,19 @@ const TaskScreen = ({ route }) => {
   return (
     <GestureHandlerRootView style={styles.gestureRoot}>
     <View style={styles.container}>
-      <SafeAreaView style={styles.safeAreaContent} edges={['top', 'left', 'right']}>
-      <TaskHeader 
-        filterType={state.filterType}
-        onFilterChange={(type) => setState((prev) => ({ ...prev, filterType: type }))}
-        searchQuery={searchQuery}
-        onSearch={setSearchQuery}
-        counts={filterCounts}
-      />
+      <SafeAreaView
+        style={styles.safeAreaContent}
+        edges={embedded ? ['left', 'right'] : ['top', 'left', 'right']}
+      >
+      {!embedded ? (
+        <TaskHeader
+          filterType={state.filterType}
+          onFilterChange={(type) => setState((prev) => ({ ...prev, filterType: type }))}
+          searchQuery={searchQuery}
+          onSearch={setSearchQuery}
+          counts={filterCounts}
+        />
+      ) : null}
       <SectionList
         ref={sectionListRef}
         style={styles.listFlex}
@@ -908,7 +973,11 @@ const TaskScreen = ({ route }) => {
         stickySectionHeadersEnabled
         contentContainerStyle={[
           styles.listContainer,
-          { paddingBottom: insets.bottom + SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA },
+          {
+            paddingBottom:
+              contentBottomInset ??
+              insets.bottom + SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA,
+          },
         ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -927,25 +996,33 @@ const TaskScreen = ({ route }) => {
         initialNumToRender={FLATLIST_INITIAL_NUM_TO_RENDER}
       />
       </SafeAreaView>
-      <TouchableOpacity
-        style={[styles.fab, { bottom: insets.bottom + FAB_BOTTOM_OFFSET }]}
-        onPress={() => setState(prev => ({ ...prev, modalVisible: true }))}
-        activeOpacity={FAB_ACTIVE_OPACITY}
-        accessibilityRole="button"
-        accessibilityLabel={
-          state.filterType === FILTER_TYPES.REMINDER
-            ? TEXTS.ADD_REMINDER
-            : state.filterType === FILTER_TYPES.TASK
-              ? TEXTS.ADD_TASK
-              : TEXTS.ADD_ITEM
-        }
-      >
-        <Ionicons 
-          name={FILTER_META[state.filterType]?.icon || 'add'} 
-          size={FAB_ICON_SIZE} 
-          color={colors.white} 
+      {embedded ? (
+        <BrandGradientFab
+          bottom={insets.bottom + FAB_BOTTOM_OFFSET}
+          onPress={() => setState((prev) => ({ ...prev, modalVisible: true }))}
+          accessibilityLabel={TEXTS.ADD_TASK}
         />
-      </TouchableOpacity>
+      ) : (
+        <TouchableOpacity
+          style={[styles.fab, { bottom: insets.bottom + FAB_BOTTOM_OFFSET }]}
+          onPress={() => setState((prev) => ({ ...prev, modalVisible: true }))}
+          activeOpacity={FAB_ACTIVE_OPACITY}
+          accessibilityRole="button"
+          accessibilityLabel={
+            state.filterType === FILTER_TYPES.REMINDER
+              ? TEXTS.ADD_REMINDER
+              : state.filterType === FILTER_TYPES.TASK
+                ? TEXTS.ADD_TASK
+                : TEXTS.ADD_ITEM
+          }
+        >
+          <Ionicons
+            name={FILTER_META[state.filterType]?.icon || 'add'}
+            size={FAB_ICON_SIZE}
+            color={colors.white}
+          />
+        </TouchableOpacity>
+      )}
       <CreateTaskModal
         visible={state.modalVisible}
         onClose={handleTaskModalClose}
@@ -962,7 +1039,7 @@ const TaskScreen = ({ route }) => {
         onTaskUpdated={handleTaskUpdatedFromDetail}
         isOffline={isOffline}
       />
-      <FloatingNavBar activeTab="calendar" />
+      {!embedded ? <FloatingNavBar activeTab="calendar" /> : null}
     </View>
     </GestureHandlerRootView>
   );

@@ -15,7 +15,7 @@ export const ALLOWED_HOME_INSIGHT_CTA_KEYS = new Set([
   'HOME_INSIGHT_CTA_SUMMARY',
 ]);
 
-export const ALLOWED_HOME_INSIGHT_SOURCES = new Set(['weekly', 'summary', 'graph']);
+export const ALLOWED_HOME_INSIGHT_SOURCES = new Set(['weekly', 'summary', 'graph', 'llm']);
 
 export function cacheTtlSecondsUntilUtcEndOfDay() {
   const now = Date.now();

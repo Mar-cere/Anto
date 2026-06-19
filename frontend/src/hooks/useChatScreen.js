@@ -655,7 +655,8 @@ export function useChatScreen() {
             taskClientRequestId: newClientRequestId(),
           });
         } else if (action?.type === 'propose_habit' && action.draft) {
-          navigation.navigate('Habits', {
+          navigation.navigate('Tasks', {
+            tab: 'habits',
             chatHabitDraft: action.draft,
             habitChatOrigin: origin,
             habitClientRequestId: newClientRequestId(),

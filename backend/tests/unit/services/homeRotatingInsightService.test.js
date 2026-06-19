@@ -22,7 +22,7 @@ describe('homeRotatingInsightService', () => {
       },
       summary: {
         narrative: {
-          microWins: 'Solés sentirte mejor después de hablar de tu día.',
+          microWins: 'Completaste 0 tareas y registraste 1 avance en hábitos.',
           themes: 'Temas recurrentes alrededor del trabajo.',
         },
       },
@@ -36,10 +36,11 @@ describe('homeRotatingInsightService', () => {
       language: 'es',
     });
 
-    expect(candidates.length).toBeGreaterThanOrEqual(3);
+    expect(candidates.length).toBeGreaterThanOrEqual(2);
     expect(candidates.some((c) => c.source === 'weekly')).toBe(true);
     expect(candidates.some((c) => c.source === 'summary')).toBe(true);
     expect(candidates.some((c) => c.source === 'graph')).toBe(true);
+    expect(candidates.some((c) => c.text.includes('0 tareas'))).toBe(false);
   });
 
   it('rota de forma estable con la misma semilla', () => {

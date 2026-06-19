@@ -137,9 +137,10 @@ export function useHabitsScreen({ route, navigation }) {
 
   const handleHabitPress = useCallback(
     (habit) => {
-      navigation.navigate('Habits', {
-        screen: 'HabitDetails',
-        params: { habitId: habit._id, habit },
+      navigation.navigate('Tasks', {
+        tab: 'habits',
+        habitId: habit._id,
+        habit,
       });
     },
     [navigation]

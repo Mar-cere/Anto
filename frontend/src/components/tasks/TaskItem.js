@@ -6,6 +6,8 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
+import AntoSourceChip from '../tasksAndHabits/AntoSourceChip';
+import { hasAntoOrigin } from '../../utils/tasksAndHabitsUtils';
 
 const DEFAULT_TEXTS = {
   TYPE_TASK_UPPER: 'TAREA',
@@ -193,6 +195,9 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
           gap: 6,
           marginBottom: 3,
           flexWrap: 'wrap',
+        },
+        originRow: {
+          marginBottom: 4,
         },
         typePill: {
           paddingHorizontal: 8,
@@ -652,6 +657,11 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
                   </Text>
                 </View>
               </View>
+              {hasAntoOrigin(item) ? (
+                <View style={styles.originRow}>
+                  <AntoSourceChip compact />
+                </View>
+              ) : null}
               <Text style={[
                 styles.itemTitle,
                 density === 'compact' && styles.itemTitleCompact,

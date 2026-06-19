@@ -240,7 +240,7 @@ const HabitCard = memo(() => {
         <EmptyState 
           icon="lightning-bolt"
           message={TEXTS.EMPTY_ACTIVE}
-          onAdd={() => navigation.navigate('Habits', { openModal: true })}
+          onAdd={() => navigation.navigate('Tasks', { tab: 'habits', openModal: true })}
           addButtonText={TEXTS.CREATE_BUTTON}
           compact
           showIcon={false}
@@ -265,7 +265,7 @@ const HabitCard = memo(() => {
             <HabitItem
               key={habit._id}
               habit={habit}
-              onPress={() => navigation.navigate('Habits', { habitId: habit._id })}
+              onPress={() => navigation.navigate('Tasks', { tab: 'habits', habitId: habit._id })}
               styles={styles}
               commonStyles={commonStyles}
               texts={TEXTS}
@@ -273,7 +273,7 @@ const HabitCard = memo(() => {
           ))}
           <TouchableOpacity 
             style={styles.addHabitButton}
-            onPress={() => navigation.navigate('Habits', { openModal: true })}
+            onPress={() => navigation.navigate('Tasks', { tab: 'habits', openModal: true })}
           >
             <MaterialCommunityIcons 
               name="plus" 
@@ -292,7 +292,7 @@ const HabitCard = memo(() => {
       <CardHeader 
         icon="lightning-bolt"
         title={TEXTS.CARD_TITLE}
-        onViewAll={() => navigation.navigate('Habits')}
+        onViewAll={() => navigation.navigate('Tasks', { tab: 'habits' })}
       />
 
       {renderContent()}

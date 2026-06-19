@@ -63,7 +63,7 @@ const DashboardHabitsSection = memo(({ habits, onUpdate, togglingId }) => {
       <View style={styles.sectionHeaderRow}>
         <Text style={styles.sectionTitle}>{DASH.HABITS_TODAY_TITLE}</Text>
         <Pressable
-          onPress={() => navigation.navigate('Habits')}
+          onPress={() => navigation.navigate('Tasks', { tab: 'habits' })}
           accessibilityRole="button"
           accessibilityLabel={DASH.HABITS_VIEW_ALL}
         >
@@ -90,7 +90,7 @@ const DashboardHabitsSection = memo(({ habits, onUpdate, togglingId }) => {
               </View>
               <Pressable
                 style={styles.rowCopy}
-                onPress={() => navigation.navigate('Habits', { habitId: habit._id })}
+                onPress={() => navigation.navigate('Tasks', { tab: 'habits', habitId: habit._id })}
                 accessibilityRole="button"
                 accessibilityLabel={habit.title}
               >

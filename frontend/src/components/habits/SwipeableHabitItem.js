@@ -15,7 +15,6 @@ import {
   View,
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
-import { useTheme } from '../../context/ThemeContext';
 import {
   ACTION_BUTTON_BORDER_RADIUS,
   ACTION_BUTTON_GAP,
@@ -64,6 +63,9 @@ import {
   createHabitsColors,
   localizeHabitDisplayText,
 } from '../../screens/habits/habitsScreenConstants';
+import { hasAntoOrigin } from '../../utils/tasksAndHabitsUtils';
+import AntoSourceChip from '../tasksAndHabits/AntoSourceChip';
+import { useTheme } from '../../context/ThemeContext';
 
 const ACTIVE_OPACITY = 0.7;
 
@@ -212,6 +214,9 @@ export default function SwipeableHabitItem({
           backgroundColor: COLORS.ICON_ARCHIVED_BACKGROUND,
         },
         habitInfo: { flex: 1, gap: 4 },
+        originRow: {
+          marginTop: 2,
+        },
         habitTitle: {
           fontSize: 16,
           fontWeight: '600',
@@ -449,6 +454,11 @@ export default function SwipeableHabitItem({
                       <Text style={styles.habitDescription} numberOfLines={2}>
                         {habitDescription}
                       </Text>
+                    ) : null}
+                    {hasAntoOrigin(item) ? (
+                      <View style={styles.originRow}>
+                        <AntoSourceChip compact />
+                      </View>
                     ) : null}
                   </View>
                 </View>

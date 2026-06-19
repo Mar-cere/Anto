@@ -23,6 +23,10 @@ import HabitsEmptyView from '../components/habits/HabitsEmptyView';
 import HabitsErrorView from '../components/habits/HabitsErrorView';
 import HabitsScreenHeader from '../components/habits/HabitsScreenHeader';
 import SwipeableHabitItem from '../components/habits/SwipeableHabitItem';
+import BrandGradientFab from '../components/tasksAndHabits/BrandGradientFab';
+import GratitudeJournalPromoCard from '../components/tasksAndHabits/GratitudeJournalPromoCard';
+import HabitsFrequencyFilters from '../components/tasksAndHabits/HabitsFrequencyFilters';
+import HabitsProgressSummaryCard from '../components/tasksAndHabits/HabitsProgressSummaryCard';
 import FloatingNavBar from '../components/FloatingNavBar';
 import { SkeletonCard } from '../components/Skeleton';
 import { useTheme } from '../context/ThemeContext';
@@ -36,16 +40,19 @@ import {
   FLATLIST_MAX_TO_RENDER_PER_BATCH,
   FLATLIST_WINDOW_SIZE,
   LIST_PADDING_BOTTOM,
-  FAB_BORDER_RADIUS,
   FAB_BOTTOM,
-  FAB_SIZE,
   ICON_SIZE,
 } from './habits/habitsScreenConstants';
+import {
+  computeHabitsTodayProgress,
+  filterHabitsByFrequency,
+} from '../utils/tasksAndHabitsUtils';
 
 let lastHabitsSearchQuery = '';
 let lastHabitsFilterType = 'active';
 const DEFAULT_TEXTS = {
   SECTION_PENDING: 'Pendientes',
+  SECTION_TO_COMPLETE: 'Por completar',
   SECTION_COMPLETED_TODAY: 'Completados hoy',
   SECTION_ARCHIVED: 'Archivados',
   SEARCH_EMPTY_TITLE: 'Sin resultados',
@@ -56,13 +63,22 @@ const DEFAULT_TEXTS = {
   SUMMARY_COMPLETED_TODAY: 'Completados hoy',
 };
 
-export default function HabitsScreen({ route, navigation }) {
+export default function HabitsScreen({
+  route,
+  navigation,
+  embedded = false,
+  externalSearchQuery,
+  contentBottomInset,
+}) {
   const insets = useSafeAreaInsets();
   const { colors, resolvedScheme } = useTheme();
   const translated = useSectionTranslations('HABITS');
+  const unifiedTexts = useSectionTranslations('TASKS_AND_HABITS');
   const T = useMemo(
     () => ({
       SECTION_PENDING: translated?.SECTION_PENDING || DEFAULT_TEXTS.SECTION_PENDING,
+      SECTION_TO_COMPLETE:
+        unifiedTexts.SECTION_TO_COMPLETE || DEFAULT_TEXTS.SECTION_TO_COMPLETE,
       SECTION_COMPLETED_TODAY:
         translated?.SECTION_COMPLETED_TODAY || DEFAULT_TEXTS.SECTION_COMPLETED_TODAY,
       SECTION_ARCHIVED: translated?.ARCHIVED || DEFAULT_TEXTS.SECTION_ARCHIVED,
@@ -78,12 +94,15 @@ export default function HabitsScreen({ route, navigation }) {
       SUMMARY_COMPLETED_TODAY:
         translated?.SUMMARY_COMPLETED_TODAY || DEFAULT_TEXTS.SUMMARY_COMPLETED_TODAY,
     }),
-    [translated],
+    [translated, unifiedTexts],
   );
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
   const HC = useMemo(() => createHabitsColors(colors), [colors]);
   const styles = useMemo(() => createHabitsScreenStyles(colors, t, HC), [colors, t, HC]);
   const [searchQuery, setSearchQuery] = useState(lastHabitsSearchQuery);
+  const [frequencyFilter, setFrequencyFilter] = useState('daily');
+  const effectiveSearchQuery =
+    embedded && externalSearchQuery !== undefined ? externalSearchQuery : searchQuery;
   const {
     habits,
     modalVisible,
@@ -112,14 +131,22 @@ export default function HabitsScreen({ route, navigation }) {
     lastHabitsSearchQuery = value;
   };
   const filteredHabits = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return habits;
-    return habits.filter((h) => {
+    const base = embedded
+      ? filterHabitsByFrequency(habits, frequencyFilter)
+      : habits;
+    const q = effectiveSearchQuery.trim().toLowerCase();
+    if (!q) return base;
+    return base.filter((h) => {
       const title = (h.title || '').toLowerCase();
       const description = (h.description || '').toLowerCase();
       return title.includes(q) || description.includes(q);
     });
-  }, [habits, searchQuery]);
+  }, [habits, effectiveSearchQuery, embedded, frequencyFilter]);
+
+  const habitsProgress = useMemo(
+    () => computeHabitsTodayProgress(filteredHabits),
+    [filteredHabits],
+  );
 
   const habitSections = useMemo(() => {
     if (showSkeleton) {
@@ -133,8 +160,9 @@ export default function HabitsScreen({ route, navigation }) {
     if (filterType === 'active') {
       const pending = filteredHabits.filter((h) => !h?.status?.completedToday);
       const completed = filteredHabits.filter((h) => h?.status?.completedToday);
+      const pendingTitle = embedded ? T.SECTION_TO_COMPLETE : T.SECTION_PENDING;
       return [
-        { key: 'pending', title: T.SECTION_PENDING, data: pending },
+        { key: 'pending', title: pendingTitle, data: pending },
         { key: 'completed', title: T.SECTION_COMPLETED_TODAY, data: completed },
       ].filter((s) => s.data.length > 0);
     }
@@ -197,7 +225,14 @@ export default function HabitsScreen({ route, navigation }) {
       renderItem={renderItem}
       renderSectionHeader={renderSectionHeader}
       keyExtractor={(item) => item._id}
-      contentContainerStyle={styles.listContainer}
+      contentContainerStyle={[
+        styles.listContainer,
+        {
+          paddingBottom:
+            contentBottomInset ??
+            LIST_PADDING_BOTTOM,
+        },
+      ]}
       showsVerticalScrollIndicator={false}
       initialNumToRender={FLATLIST_INITIAL_NUM_TO_RENDER}
       windowSize={FLATLIST_WINDOW_SIZE}
@@ -211,7 +246,7 @@ export default function HabitsScreen({ route, navigation }) {
         />
       }
       ListEmptyComponent={
-        !loading && searchQuery.trim() ? (
+        !loading && effectiveSearchQuery.trim() ? (
           <View style={styles.searchEmpty}>
             <MaterialCommunityIcons name="magnify-close" size={36} color={HC.ACCENT} />
             <Text style={styles.searchEmptyTitle}>{T.SEARCH_EMPTY_TITLE}</Text>
@@ -224,25 +259,43 @@ export default function HabitsScreen({ route, navigation }) {
       ListHeaderComponent={
         !showSkeleton ? (
           <View style={styles.listHeaderWrap}>
-            <View style={styles.countRow}>
-              <Text style={styles.countText}>
-                {filterType === 'active'
-                  ? `${habitsCount.active} ${T.COUNT_ACTIVE_SUFFIX}`
-                  : `${habitsCount.archived} ${T.COUNT_ARCHIVED_SUFFIX}`}
-              </Text>
-            </View>
-            {filterType === 'active' ? (
-              <View style={styles.summaryRow}>
-                <View style={styles.summaryPill}>
-                  <Text style={styles.summaryPillLabel}>{T.SUMMARY_PENDING}</Text>
-                  <Text style={styles.summaryPillValue}>{pendingTodayCount}</Text>
+            {embedded ? (
+              <>
+                <HabitsProgressSummaryCard
+                  completed={habitsProgress.completed}
+                  total={habitsProgress.total}
+                  pending={habitsProgress.pending}
+                  maxStreak={habitsProgress.maxStreak}
+                />
+                <GratitudeJournalPromoCard />
+                <HabitsFrequencyFilters
+                  value={frequencyFilter}
+                  onChange={setFrequencyFilter}
+                />
+              </>
+            ) : (
+              <>
+                <View style={styles.countRow}>
+                  <Text style={styles.countText}>
+                    {filterType === 'active'
+                      ? `${habitsCount.active} ${T.COUNT_ACTIVE_SUFFIX}`
+                      : `${habitsCount.archived} ${T.COUNT_ARCHIVED_SUFFIX}`}
+                  </Text>
                 </View>
-                <View style={styles.summaryPill}>
-                  <Text style={styles.summaryPillLabel}>{T.SUMMARY_COMPLETED_TODAY}</Text>
-                  <Text style={styles.summaryPillValue}>{completedTodayCount}</Text>
-                </View>
-              </View>
-            ) : null}
+                {filterType === 'active' ? (
+                  <View style={styles.summaryRow}>
+                    <View style={styles.summaryPill}>
+                      <Text style={styles.summaryPillLabel}>{T.SUMMARY_PENDING}</Text>
+                      <Text style={styles.summaryPillValue}>{pendingTodayCount}</Text>
+                    </View>
+                    <View style={styles.summaryPill}>
+                      <Text style={styles.summaryPillLabel}>{T.SUMMARY_COMPLETED_TODAY}</Text>
+                      <Text style={styles.summaryPillValue}>{completedTodayCount}</Text>
+                    </View>
+                  </View>
+                ) : null}
+              </>
+            )}
           </View>
         ) : null
       }
@@ -251,23 +304,39 @@ export default function HabitsScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <SafeAreaView style={styles.safeAreaContent} edges={['top', 'left', 'right']}>
-        <HabitsScreenHeader
-          filterType={filterType}
-          onFilterChange={handleFilterChange}
-          counts={habitsCount}
-          searchQuery={searchQuery}
-          onSearch={handleSearchChange}
-        />
+      <SafeAreaView
+        style={styles.safeAreaContent}
+        edges={embedded ? ['left', 'right'] : ['top', 'left', 'right']}
+      >
+        {!embedded ? (
+          <HabitsScreenHeader
+            filterType={filterType}
+            onFilterChange={handleFilterChange}
+            counts={habitsCount}
+            searchQuery={searchQuery}
+            onSearch={handleSearchChange}
+          />
+        ) : null}
         {error ? (
           <HabitsErrorView errorMessage={error} onRetry={() => loadHabits()} />
         ) : (
           listContent
         )}
       </SafeAreaView>
-      <TouchableOpacity style={[styles.fab, { bottom: insets.bottom + FAB_BOTTOM }]} onPress={openModal}>
-        <MaterialCommunityIcons name="plus" size={ICON_SIZE} color={colors.textOnPrimary} />
-      </TouchableOpacity>
+      {embedded ? (
+        <BrandGradientFab
+          bottom={insets.bottom + FAB_BOTTOM}
+          onPress={openModal}
+          accessibilityLabel={translated?.CREATE_BUTTON || 'Crear hábito'}
+        />
+      ) : (
+        <TouchableOpacity
+          style={[styles.fab, { bottom: insets.bottom + FAB_BOTTOM }]}
+          onPress={openModal}
+        >
+          <MaterialCommunityIcons name="plus" size={ICON_SIZE} color={colors.textOnPrimary} />
+        </TouchableOpacity>
+      )}
       <CreateHabitModal
         visible={modalVisible}
         onClose={handleHabitModalClose}
@@ -276,7 +345,7 @@ export default function HabitsScreen({ route, navigation }) {
         setFormData={setFormData}
         initialReminderIso={habitModalReminderIso}
       />
-      <FloatingNavBar />
+      {!embedded ? <FloatingNavBar /> : null}
     </View>
   );
 }

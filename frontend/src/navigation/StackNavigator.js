@@ -14,14 +14,13 @@ import { ROUTES } from '../constants/routes';
 import DashScreen from '../screens/DashScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import FaQScreen from '../screens/FaQScreen';
-import HabitsScreen from '../screens/HabitsScreen';
 import HomeScreen from '../screens/HomeScreen';
 import NewPasswordScreen from '../screens/NewPasswordScreen';
 import PomodoroScreen from '../screens/PomodoroScreen';
 import RecoverPasswordScreen from '../screens/RecoverPasswordScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import SignInScreen from '../screens/SignInScreen';
-import TaskScreen from '../screens/TaskScreen';
+import TasksAndHabitsScreen from '../screens/TasksAndHabitsScreen';
 import VerifyCodeScreen from '../screens/VerifyCodeScreen';
 import VerifyEmailScreen from '../screens/VerifyEmailScreen';
 import SystemHealthScreen from '../screens/SystemHealthScreen';
@@ -180,12 +179,13 @@ const StackNavigator = () => {
       />
       <Stack.Screen 
         name={ROUTE_NAMES.TASKS} 
-        component={TaskScreen}
+        component={TasksAndHabitsScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen 
         name={ROUTE_NAMES.HABITS} 
-        component={HabitsScreen}
+        component={TasksAndHabitsScreen}
+        initialParams={{ tab: 'habits' }}
         options={{ headerShown: false }}
       />
       <Stack.Screen 
