@@ -308,7 +308,7 @@ const PomodoroCard = memo(({ collapsible = false, defaultExpanded = false }) => 
       <CardHeader 
         icon={modes[mode].icon}
         title={modes[mode].label}
-        onViewAll={() => navigation.navigate('Pomodoro')}
+        onViewAll={() => navigation.navigate('Techniques')}
       />
 
       {collapsible && !expanded ? (

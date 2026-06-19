@@ -20,7 +20,7 @@ const CENTER_NAV_ICON = {
 };
 
 /**
- * @param {string} activeTab - 'home' | 'calendar' | 'chat' | 'pomodoro' | 'settings'
+ * @param {string} activeTab - 'home' | 'calendar' | 'chat' | 'techniques' | 'settings'
  * @param {function} onTabPress - (screen, tab) => void
  * @param {object} animValues - { translateY, opacity } Animated.Values
  * @param {string} [accessibilityLabel] - etiqueta del tablist (p. ej. desde Dash)
@@ -199,6 +199,7 @@ const FloatingNavBar = ({
           Calendar: 'Tasks',
           Tasks: 'Tasks',
           Pomodoro: 'Pomodoro',
+          Techniques: 'Techniques',
         };
 
         const routeName = routeMap[screen] || screen;
@@ -330,12 +331,12 @@ const FloatingNavBar = ({
           </View>
 
           <NavTab
-            active={activeTab === 'pomodoro'}
-            onPress={() => onNavPress('Pomodoro', 'pomodoro')}
-            accessibilityLabel={NAV.TAB_POMODORO_LABEL}
-            accessibilityHint={NAV.TAB_POMODORO_HINT}
-            iconOutline="timer-outline"
-            iconFilled="timer"
+            active={activeTab === 'techniques'}
+            onPress={() => onNavPress('Techniques', 'techniques')}
+            accessibilityLabel={NAV.TAB_TECHNIQUES_LABEL}
+            accessibilityHint={NAV.TAB_TECHNIQUES_HINT}
+            iconOutline="diamond-outline"
+            iconFilled="diamond"
             styles={styles}
             colors={colors}
             rippleColor={rippleColor}

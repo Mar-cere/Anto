@@ -17,6 +17,7 @@ import FaQScreen from '../screens/FaQScreen';
 import HomeScreen from '../screens/HomeScreen';
 import NewPasswordScreen from '../screens/NewPasswordScreen';
 import PomodoroScreen from '../screens/PomodoroScreen';
+import TechniquesHubScreen from '../screens/TechniquesHubScreen';
 import RecoverPasswordScreen from '../screens/RecoverPasswordScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import SignInScreen from '../screens/SignInScreen';
@@ -77,6 +78,7 @@ const ROUTE_NAMES = {
   HABITS: 'Habits',
   EDIT_PROFILE: 'EditProfile',
   POMODORO: 'Pomodoro',
+  TECHNIQUES: 'Techniques',
   SYSTEM_HEALTH: 'SystemHealth',
   CRISIS_DASHBOARD: 'CrisisDashboard',
   EMERGENCY_ALERTS_HISTORY: 'EmergencyAlertsHistory',
@@ -186,6 +188,11 @@ const StackNavigator = () => {
         name={ROUTE_NAMES.HABITS} 
         component={TasksAndHabitsScreen}
         initialParams={{ tab: 'habits' }}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen 
+        name={ROUTE_NAMES.TECHNIQUES} 
+        component={TechniquesHubScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen 

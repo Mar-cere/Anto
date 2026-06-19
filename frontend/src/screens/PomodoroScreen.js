@@ -30,8 +30,8 @@ import PomodoroControls from '../components/pomodoro/PomodoroControls';
 import PomodoroScreenHeader from '../components/pomodoro/PomodoroScreenHeader';
 import PomodoroPendingTasksSection from '../components/pomodoro/PomodoroPendingTasksSection';
 import PomodoroTimerSection from '../components/pomodoro/PomodoroTimerSection';
-import FloatingNavBar from '../components/FloatingNavBar';
 import { usePomodoroScreen } from '../hooks/usePomodoroScreen';
+import { SPACING } from '../constants/ui';
 import {
   CONTAINER_PADDING_BOTTOM,
   CONTENT_PADDING,
@@ -295,7 +295,6 @@ export default function PomodoroScreen() {
     buttonsScale,
     mainControlsPosition,
     isMeditating,
-    navBarAnim,
     fadeAnim,
     handleCustomTimerConfirm,
     dailyGoal,
@@ -441,11 +440,12 @@ export default function PomodoroScreen() {
         isActive={isActive}
         focusTaskTitle={focusTask?.title || ''}
         pendingTasksCount={pendingTasks.length}
+        showBack
       />
       <View style={styles.container}>
         <ScrollView
           style={styles.content}
-          contentContainerStyle={{ paddingBottom: insets.bottom + CONTAINER_PADDING_BOTTOM }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + SPACING.SCREEN_EDGE_INSET + 24 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -642,7 +642,6 @@ export default function PomodoroScreen() {
           </View>
         </Modal>
       </View>
-      <FloatingNavBar activeTab="pomodoro" animValues={navBarAnim} />
     </SafeAreaView>
   );
 }

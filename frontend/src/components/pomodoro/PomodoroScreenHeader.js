@@ -4,8 +4,9 @@
  */
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import React, { useMemo } from 'react';
-import { StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 import {
   HEADER_GAP,
   HEADER_ICON_SIZE,
@@ -14,6 +15,8 @@ import {
 } from '../../screens/pomodoro/pomodoroScreenConstants';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
+import { useNavigationTexts } from '../../hooks/useNavigationTexts';
+import { resolvePomodoroBackHandler } from '../../utils/techniquesHubNavigation';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 
 const DEFAULT_POMODORO_TEXTS = {
@@ -39,7 +42,11 @@ export default function PomodoroScreenHeader({
   isActive,
   focusTaskTitle = '',
   pendingTasksCount = 0,
+  showBack = false,
+  onBack,
 }) {
+  const navigation = useNavigation();
+  const NAV = useNavigationTexts();
   const { colors, resolvedScheme, statusBarStyle } = useTheme();
   const TEXTS = usePomodoroTexts();
   const translated = useSectionTranslations('POMODORO');
@@ -62,6 +69,11 @@ export default function PomodoroScreenHeader({
           paddingHorizontal: HEADER_PADDING,
           paddingBottom: HEADER_PADDING,
           paddingTop: 8,
+        },
+        backButton: {
+          marginRight: 4,
+          marginTop: 2,
+          padding: 4,
         },
         headerLeft: {
           flexDirection: 'row',
@@ -114,6 +126,7 @@ export default function PomodoroScreenHeader({
     custom: I18N.MODE_CUSTOM,
   };
   const modeLine = `${isActive ? I18N.STATUS_ACTIVE : I18N.STATUS_PAUSED} · ${modeLabelMap[mode] || I18N.MODE_WORK}`;
+  const handleBack = resolvePomodoroBackHandler(navigation, onBack);
   const focusLine = focusTaskTitle
     ? `${I18N.FOCUS_PREFIX} · ${shorten(focusTaskTitle, 34)}`
     : `${pendingTasksCount} ${pendingTasksCount === 1 ? I18N.PENDING_SINGULAR : I18N.PENDING_PLURAL}`;
@@ -122,6 +135,22 @@ export default function PomodoroScreenHeader({
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <View style={styles.header}>
         <View style={styles.headerLeft}>
+          {showBack ? (
+            <Pressable
+              onPress={handleBack}
+              style={styles.backButton}
+              accessibilityRole="button"
+              accessibilityLabel={NAV.HEADER_BACK_LABEL}
+              accessibilityHint={NAV.HEADER_BACK_HINT}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <MaterialCommunityIcons
+                name="chevron-left"
+                size={28}
+                color={colors.primary}
+              />
+            </Pressable>
+          ) : null}
           <MaterialCommunityIcons
             name="timer-outline"
             size={HEADER_ICON_SIZE}

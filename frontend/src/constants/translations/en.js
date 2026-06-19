@@ -1016,8 +1016,8 @@ export const NAV = {
   TAB_TASKS_HINT: 'View tasks and reminders',
   TAB_CHAT_LABEL: 'Chat',
   TAB_CHAT_HINT: 'Open chat',
-  TAB_POMODORO_LABEL: 'Pomodoro',
-  TAB_POMODORO_HINT: 'Open Pomodoro timer',
+  TAB_TECHNIQUES_LABEL: 'Techniques',
+  TAB_TECHNIQUES_HINT: 'Open techniques and tools',
   TAB_SETTINGS_LABEL: 'Settings',
   TAB_SETTINGS_HINT: 'Open settings',
   HEADER_BACK_LABEL: 'Go back',
@@ -1025,6 +1025,21 @@ export const NAV = {
   HEADER_PROFILE_LABEL: 'Go to profile',
   HEADER_PROFILE_HINT: 'Double tap to open your profile',
   HEADER_DEFAULT_GREETING: 'Welcome',
+};
+
+export const TECHNIQUES_HUB = {
+  TITLE: 'Techniques',
+  FOCUS_SECTION: 'Focus tools',
+  GUIDED_SECTION: 'Guided techniques',
+  POMODORO: 'Pomodoro',
+  POMODORO_HINT: 'Focus on one task, step by step',
+  BA: 'Behavioral activation',
+  BA_HINT: 'Weekly plan and mood logging',
+  ABC: 'ABC self-monitoring',
+  ABC_HINT: 'Situation → thought → consequence',
+  EXPOSURE: 'Gradual exposure',
+  EXPOSURE_HINT: 'Step hierarchy',
+  ALL_TECHNIQUES: 'Browse all techniques',
 };
 
 export const TASKS = {
@@ -2909,6 +2924,7 @@ export default {
   HABITS,
   TASKS_AND_HABITS,
   POMODORO,
+  TECHNIQUES_HUB,
   TECHNIQUES,
   PROFILE,
   SUBSCRIPTION,
