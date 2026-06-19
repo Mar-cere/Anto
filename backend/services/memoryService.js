@@ -101,6 +101,10 @@ class MemoryService {
       ]);
 
       return {
+        // Campos planos que consume el prompt (openaiPromptBuilder/buildPersonalizedPrompt).
+        // Antes vivían solo anidados, por lo que el prompt los leía siempre vacíos.
+        recurringThemes: this.deriveRecurringThemes(commonPatterns, recentTopics),
+        lastInteraction: this.describeLastInteraction(recentInteractions[0]),
         patterns: {
           timing: interactionContext.timing || {},
           frequency: interactionContext.frequency || {},
@@ -344,8 +348,48 @@ class MemoryService {
     return emotions;
   }
 
+  /**
+   * Deriva los temas recurrentes (planos) a partir de los patrones de tema y los temas recientes.
+   * @param {Object} commonPatterns - { topicPatterns: { tema: frecuencia } }
+   * @param {Array<string>} recentTopics - Temas recientes ya extraídos
+   * @param {number} limit - Máximo de temas a devolver
+   * @returns {Array<string>} Temas recurrentes ordenados por frecuencia, sin duplicados
+   */
+  deriveRecurringThemes(commonPatterns = {}, recentTopics = [], limit = 5) {
+    const topicCounts = commonPatterns?.topicPatterns || {};
+    const rankedTopics = Object.entries(topicCounts)
+      .filter(([topic]) => this.isValidString(topic))
+      .sort((a, b) => (b[1] || 0) - (a[1] || 0))
+      .map(([topic]) => topic);
+    const recents = Array.isArray(recentTopics)
+      ? recentTopics.filter((topic) => this.isValidString(topic))
+      : [];
+    return Array.from(new Set([...rankedTopics, ...recents])).slice(0, limit);
+  }
+
+  /**
+   * Resume la última interacción como cadena breve para el prompt.
+   * @param {Object|null} interaction - Interacción más reciente (UserInsight.interactions[i])
+   * @returns {string} Descripción relativa o 'ninguna'
+   */
+  describeLastInteraction(interaction) {
+    if (!interaction || !interaction.timestamp) {
+      return 'ninguna';
+    }
+    const when = new Date(interaction.timestamp);
+    if (Number.isNaN(when.getTime())) {
+      return 'ninguna';
+    }
+    const days = Math.floor((Date.now() - when.getTime()) / (1000 * 60 * 60 * 24));
+    if (days <= 0) return 'hoy';
+    if (days === 1) return 'ayer';
+    return `hace ${days} días`;
+  }
+
   getDefaultContext() {
     return {
+      recurringThemes: [],
+      lastInteraction: 'ninguna',
       patterns: {
         timing: {},
         frequency: {

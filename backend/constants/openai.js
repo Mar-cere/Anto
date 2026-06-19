@@ -1232,6 +1232,12 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
     }
   }
   
+  // Memoria de temas recurrentes (memoryService). Solo se inyecta si hay señal real,
+  // para no añadir ruido ni alterar prompts sin contexto de memoria.
+  if (Array.isArray(recurringThemes) && recurringThemes.length > 0) {
+    prompt += `Temas recurrentes del usuario: ${recurringThemes.slice(0, 4).join(', ')}. Haz referencia con naturalidad solo si encaja con el mensaje actual.\n\n`;
+  }
+
   // Omitir información menos crítica para reducir reasoning y mejorar velocidad
   // (tendencias, fortalezas, autoeficacia, apoyo social, tema, estilo solo si es crítico)
   
