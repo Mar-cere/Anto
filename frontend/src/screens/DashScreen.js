@@ -25,6 +25,10 @@ import DashboardScroll from '../components/DashboardScroll';
 import EmergencyContactsModal from '../components/EmergencyContactsModal';
 import FloatingNavBar from '../components/FloatingNavBar';
 import websocketService from '../services/websocketService';
+import {
+  mergeFocusResponse,
+  shouldRefreshHomeOnFocus,
+} from '../utils/dashboardHomeRefresh';
 import FirstSessionHint, { isFirstSessionHintDismissed } from '../components/FirstSessionHint';
 import OnboardingQuestions from '../components/OnboardingQuestions';
 import OnboardingTutorial, { isTutorialCompleted } from '../components/OnboardingTutorial';
@@ -199,6 +203,8 @@ const DashScreen = () => {
   const [dashVisitsCount, setDashVisitsCount] = useState(0);
   const [focusPayload, setFocusPayload] = useState(null);
   const dashFirstFocusRef = useRef(true);
+  const lastHomeRefreshAtRef = useRef(0);
+  const homeRefreshInFlightRef = useRef(false);
   const hasCountedDashVisitRef = useRef(false);
   const tutorialShouldOpenChatRef = useRef(false);
   const onboardingOverlayStateRef = useRef({
@@ -323,11 +329,15 @@ const DashScreen = () => {
       setUserData(userData || {});
       setTasks(Array.isArray(tasks) ? tasks : []);
       setHabits(Array.isArray(habits) ? habits : []);
+      lastHomeRefreshAtRef.current = Date.now();
 
-      // Conectar WebSocket para notificaciones en tiempo real
+      setLoading(false);
+      setRefreshing(false);
+      setError(null);
+
       const userId = userData?._id || userData?.id;
       if (userId) {
-        await websocketService.connect(userId);
+        websocketService.connect(userId).catch(() => {});
       }
 
       // Verificar si debe mostrarse el tutorial (solo una vez)
@@ -383,28 +393,20 @@ const DashScreen = () => {
         checkEmergencyContacts(userData);
       }
 
-      // Registrar token push para notificaciones
-      try {
-        await registerForPushNotifications();
-      } catch (error) {
+      registerForPushNotifications().catch((error) => {
         console.error('Error registrando notificaciones push:', error);
-        // No bloquear la carga si falla
-      }
+      });
 
-      // Cargar información del trial
-      try {
-        const trialInfoResult = await paymentService.getTrialInfo();
-        if (trialInfoResult.success && trialInfoResult.isInTrial) {
-          setTrialInfo(trialInfoResult);
-        }
-      } catch (error) {
-        console.error('Error cargando info de trial:', error);
-        // No bloquear la carga si falla
-      }
-
-      setLoading(false);
-      setRefreshing(false);
-      setError(null);
+      paymentService
+        .getTrialInfo()
+        .then((trialInfoResult) => {
+          if (trialInfoResult.success && trialInfoResult.isInTrial) {
+            setTrialInfo(trialInfoResult);
+          }
+        })
+        .catch((error) => {
+          console.error('Error cargando info de trial:', error);
+        });
     } catch (error) {
       console.error('Error en loadData:', error);
       setError(DASH.ERROR_GENERIC);
@@ -610,26 +612,27 @@ const DashScreen = () => {
     navigation.navigate('Tasks', buildFocusNextHabitNavParams(nextHabit));
   }, [navigation]);
 
-  const refreshHomeDataOnFocus = useCallback(async () => {
+  const refreshHomeDataOnFocus = useCallback(async ({ force = false } = {}) => {
+    if (homeRefreshInFlightRef.current) return;
+    if (!force && !shouldRefreshHomeOnFocus(lastHomeRefreshAtRef.current)) return;
+
+    homeRefreshInFlightRef.current = true;
     try {
       const token = await AsyncStorage.getItem('userToken');
       if (!token) return;
-      const [userDataRes, tasksRes, habitsRes, focusRes] = await Promise.all([
-        api.get(ENDPOINTS.ME).catch(() => null),
+      const [tasksRes, habitsRes, focusRes] = await Promise.all([
         api.get(ENDPOINTS.TASKS).catch(() => null),
         api.get(ENDPOINTS.HABITS).catch(() => null),
         api.get(ENDPOINTS.SUMMARY_FOCUS).catch(() => null),
       ]);
-      if (userDataRes && typeof userDataRes === 'object') {
-        setUserData(userDataRes);
-      }
       if (Array.isArray(tasksRes)) setTasks(tasksRes);
       if (Array.isArray(habitsRes)) setHabits(habitsRes);
-      if (focusRes?.success && focusRes?.data) {
-        setFocusPayload(focusRes.data);
-      }
+      setFocusPayload((prev) => mergeFocusResponse(focusRes, prev));
+      lastHomeRefreshAtRef.current = Date.now();
     } catch (_) {
       /* pull-to-refresh sigue disponible */
+    } finally {
+      homeRefreshInFlightRef.current = false;
     }
   }, []);
 
@@ -759,7 +762,7 @@ const DashScreen = () => {
     async (habitId) => {
       setTogglingHabitId(habitId);
       try {
-        await refreshHomeDataOnFocus();
+        await refreshHomeDataOnFocus({ force: true });
       } finally {
         setTogglingHabitId(null);
       }
@@ -833,7 +836,7 @@ const DashScreen = () => {
             onOpenExposureHierarchy={openExposureFromFocus}
             onOpenNextTask={openNextTaskFromFocus}
             onOpenNextHabit={openNextHabitFromFocus}
-            onCommitmentsChanged={refreshHomeDataOnFocus}
+            onCommitmentsChanged={() => refreshHomeDataOnFocus({ force: true })}
           />
           <DashboardStreakHero
             streakDays={dashboardStats.streakDays}

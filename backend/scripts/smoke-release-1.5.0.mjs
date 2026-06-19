@@ -108,6 +108,57 @@ if (pkg.version === '1.5.0' && pkg.scripts['smoke:release-1.5.0']) {
   fail('backend package 1.5.0 + smoke script');
 }
 
+const frontendApp = JSON.parse(fs.readFileSync(path.join(root, 'frontend/app.json'), 'utf8'));
+const frontendPkg = JSON.parse(fs.readFileSync(path.join(root, 'frontend/package.json'), 'utf8'));
+const iosBuild = Number.parseInt(frontendApp.expo?.ios?.buildNumber, 10);
+const androidCode = frontendApp.expo?.android?.versionCode;
+if (
+  frontendApp.expo?.version === '1.5.0' &&
+  frontendPkg.version === '1.5.0' &&
+  iosBuild >= 39 &&
+  androidCode >= 25
+) {
+  pass('frontend app 1.5.0 + builds tienda (iOS ≥39, Android ≥25)');
+} else {
+  fail('frontend app 1.5.0 + builds tienda', `version=${frontendApp.expo?.version} ios=${iosBuild} android=${androidCode}`);
+}
+
+const authRoutes = fs.readFileSync(path.join(root, 'backend/routes/authRoutes.js'), 'utf8');
+const swagger = fs.readFileSync(path.join(root, 'backend/config/swagger.js'), 'utf8');
+if (authRoutes.includes("version: '1.5.0'") && swagger.includes("version: '1.5.0'")) {
+  pass('authRoutes y swagger en 1.5.0');
+} else {
+  fail('authRoutes y swagger en 1.5.0');
+}
+
+const appConstants = fs.readFileSync(path.join(root, 'backend/constants/app.js'), 'utf8');
+if (appConstants.includes('resolveInstagramUrl') && appConstants.includes('antoapp.es')) {
+  pass('resolveInstagramUrl en backend/constants/app.js');
+} else {
+  fail('resolveInstagramUrl en backend/constants/app.js');
+}
+
+const capService = fs.readFileSync(
+  path.join(root, 'backend/services/conversationProductProposalCapService.js'),
+  'utf8',
+);
+if (capService.includes('askFirst: false') && !capService.includes('askFirst: true')) {
+  pass('product actions sin askFirst activo');
+} else {
+  fail('product actions sin askFirst activo');
+}
+
+const dashScreen = fs.readFileSync(path.join(root, 'frontend/src/screens/DashScreen.js'), 'utf8');
+if (
+  dashScreen.includes('shouldRefreshHomeOnFocus') &&
+  !dashScreen.includes('await websocketService.connect') &&
+  dashScreen.includes('refreshHomeDataOnFocus({ force: true })')
+) {
+  pass('DashScreen refresh throttle + websocket en background');
+} else {
+  fail('DashScreen refresh throttle + websocket en background');
+}
+
 const requiredFiles = [
   'backend/services/personalPatternRagService.js',
   'backend/services/crisisHardStopService.js',

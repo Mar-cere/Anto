@@ -4,7 +4,7 @@
  * Este archivo configura y ejecuta el servidor Express, estableciendo
  * middlewares, rutas y conexión a la base de datos.
  * 
- * @version 1.4.3
+ * @version 1.5.0
  * @author AntoApp Team
  */
 

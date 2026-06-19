@@ -95,6 +95,25 @@ const Header = memo(({ greeting, userName, title, showBackButton, onBackPress })
     }
   };
 
+  if (showBackButton && !title) {
+    return (
+      <View style={styles.headerContainer} accessibilityRole="header">
+        <View style={styles.headerLeft}>
+          <TouchableOpacity
+            onPress={handleBackPress}
+            style={styles.backButton}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={NAV.HEADER_BACK_LABEL}
+            accessibilityHint={NAV.HEADER_BACK_HINT}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   if (title && showBackButton) {
     return (
       <View style={styles.headerContainer} accessibilityRole="header">
@@ -117,12 +136,19 @@ const Header = memo(({ greeting, userName, title, showBackButton, onBackPress })
     );
   }
 
+  const resolvedGreeting =
+    greeting !== undefined && greeting !== null
+      ? greeting
+      : NAV.HEADER_DEFAULT_GREETING;
+
   return (
     <View style={styles.headerContainer} accessibilityRole="header">
       <View style={styles.headerLeft}>
-        <Text style={styles.greeting} accessibilityRole="header">
-          {greeting || NAV.HEADER_DEFAULT_GREETING}
-        </Text>
+        {resolvedGreeting ? (
+          <Text style={styles.greeting} accessibilityRole="header">
+            {resolvedGreeting}
+          </Text>
+        ) : null}
       </View>
 
       <View style={styles.headerRight}>

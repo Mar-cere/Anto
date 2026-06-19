@@ -86,6 +86,7 @@ describe('subscriptionPaywall guard', () => {
   it('SubscriptionScreen no duplica título en header (hero lleva el mensaje)', () => {
     const src = readSrc('screens/SubscriptionScreen.js');
     expect(src).toMatch(/title=""/);
+    expect(src).toMatch(/showBackButton/);
     expect(src).not.toMatch(/title=\{TEXTS\.TITLE\}/);
   });
 });
