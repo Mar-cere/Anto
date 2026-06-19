@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   Keyboard,
-  KeyboardAvoidingView,
   InteractionManager,
   Modal,
   Platform,
@@ -16,12 +15,19 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import ModalKeyboardScroll from '../common/ModalKeyboardScroll';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 import { useSectionTranslations } from '../../hooks/useTranslations';
+import { useModalKeyboardVisible } from '../../hooks/useModalKeyboardVisible';
 import { SPACING } from '../../constants/ui';
 import { HABIT_ICON_PICKER_OPTIONS } from '../../screens/habits/habitsScreenConstants';
+import {
+  focusModalTextInput,
+  MODAL_SHEET_MAX_HEIGHT,
+  runModalScrollHint,
+} from '../../utils/modalKeyboardUtils';
 
 const HABIT_ICONS = HABIT_ICON_PICKER_OPTIONS;
 
@@ -111,8 +117,9 @@ const CreateHabitModal = ({
           borderTopRightRadius: 22,
           borderTopWidth: StyleSheet.hairlineWidth,
           borderColor: t.FOCUS_BORDER_SUBTLE,
-          maxHeight: '92%',
+          maxHeight: MODAL_SHEET_MAX_HEIGHT,
           minHeight: '48%',
+          flexShrink: 1,
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
         },
         sheetGrabber: {
@@ -326,7 +333,7 @@ const CreateHabitModal = ({
   );
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [reminderTime, setReminderTime] = useState(new Date());
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const keyboardVisible = useModalKeyboardVisible();
   const scrollRef = useRef(null);
   const scrollHintTimeouts = useRef([]);
 
@@ -340,34 +347,17 @@ const CreateHabitModal = ({
   }, [visible, initialReminderIso]);
 
   useEffect(() => {
-    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const subShow = Keyboard.addListener(showEvt, () => setKeyboardVisible(true));
-    const subHide = Keyboard.addListener(hideEvt, () => setKeyboardVisible(false));
-    return () => {
-      subShow.remove();
-      subHide.remove();
-    };
-  }, []);
-
-  useEffect(() => {
     if (!visible) {
       scrollHintTimeouts.current.forEach(clearTimeout);
       scrollHintTimeouts.current = [];
       return undefined;
     }
     const interaction = InteractionManager.runAfterInteractions(() => {
-      const tOpen = setTimeout(() => {
-        AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
-          if (reduce) return;
-          scrollRef.current?.scrollTo({ y: 18, animated: true });
-          const tBack = setTimeout(() => {
-            scrollRef.current?.scrollTo({ y: 0, animated: true });
-          }, 340);
-          scrollHintTimeouts.current.push(tBack);
-        });
-      }, 420);
-      scrollHintTimeouts.current.push(tOpen);
+      AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
+        if (reduce) return;
+        const clearHint = runModalScrollHint(scrollRef, { peekY: 18, delayMs: 420 });
+        if (clearHint) scrollHintTimeouts.current.push(clearHint);
+      });
     });
     return () => {
       interaction.cancel?.();
@@ -439,12 +429,7 @@ const CreateHabitModal = ({
             </View>
           </View>
 
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.keyboardContainer}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-          >
-          <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <ModalKeyboardScroll ref={scrollRef}>
             <Text style={styles.inputLabel}>{T.TITLE_LABEL}</Text>
             <TextInput
               style={styles.input}
@@ -453,6 +438,7 @@ const CreateHabitModal = ({
               value={formData.title}
               onChangeText={(text) => setFormData({...formData, title: text})}
               maxLength={50}
+              onFocus={(event) => focusModalTextInput(scrollRef, event)}
             />
 
             <Text style={styles.inputLabel}>{T.DESCRIPTION_LABEL}</Text>
@@ -465,6 +451,7 @@ const CreateHabitModal = ({
               multiline
               numberOfLines={3}
               maxLength={200}
+              onFocus={(event) => focusModalTextInput(scrollRef, event)}
             />
 
             <View style={styles.sectionContainer}>
@@ -564,8 +551,7 @@ const CreateHabitModal = ({
             >
               <Text style={styles.submitButtonText}>{T.CREATE_BUTTON}</Text>
             </TouchableOpacity>
-          </ScrollView>
-          </KeyboardAvoidingView>
+          </ModalKeyboardScroll>
         </View>
       </View>
 

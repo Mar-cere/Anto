@@ -8,6 +8,10 @@ import { useSectionTranslations } from '../../hooks/useTranslations';
 import { createDashboardStyles } from '../../styles/dashboardTheme';
 import { CHAT_BACK_TARGET } from '../../navigation/navigationHelpers';
 import { mapServerHomeInsight } from '../../utils/mapServerHomeInsight';
+import {
+  resolveHomeInsightIcon,
+  resolveHomeInsightIconColor,
+} from '../../utils/dashboardInsightVisual';
 
 const DashboardRotatingInsightCard = memo(({ insight: serverInsight = null }) => {
   const navigation = useNavigation();
@@ -35,9 +39,9 @@ const DashboardRotatingInsightCard = memo(({ insight: serverInsight = null }) =>
 
   if (!insight?.text) return null;
 
-  const isWelcome = insight.variant === 'welcome';
   const sectionTitle = insight.sectionLabel || DASH.HOME_INSIGHT_SECTION;
-  const iconName = isWelcome ? 'hand-heart' : 'chart-line';
+  const iconName = resolveHomeInsightIcon(insight.variant);
+  const iconColor = resolveHomeInsightIconColor(insight.variant, colors);
 
   return (
     <Pressable
@@ -54,7 +58,11 @@ const DashboardRotatingInsightCard = memo(({ insight: serverInsight = null }) =>
       <Text style={styles.eyebrow}>{sectionTitle}</Text>
       <View style={styles.homeInsightRow}>
         <View style={styles.homeInsightIconWrap}>
-          <MaterialCommunityIcons name={iconName} size={20} color={colors.primary} />
+          <MaterialCommunityIcons
+            name={iconName}
+            size={20}
+            color={iconColor}
+          />
         </View>
         <View style={styles.homeInsightCopy}>
           <Text style={styles.homeInsightText}>{insight.text}</Text>

@@ -30,6 +30,7 @@ import OnboardingQuestions from '../components/OnboardingQuestions';
 import OnboardingTutorial, { isTutorialCompleted } from '../components/OnboardingTutorial';
 import TutorialHighlight from '../components/TutorialHighlight';
 import DashboardHomeHeader from '../components/dashboard/DashboardHomeHeader';
+import DashboardBrandBackdrop from '../components/dashboard/DashboardBrandBackdrop';
 import MoodCheckInCard from '../components/dashboard/MoodCheckInCard';
 import DashboardRotatingInsightCard from '../components/dashboard/DashboardRotatingInsightCard';
 import DashboardStreakHero from '../components/dashboard/DashboardStreakHero';
@@ -111,11 +112,6 @@ const DashScreen = () => {
         skeletonCard: {
           marginBottom: 20,
         },
-        backgroundTint: {
-          ...StyleSheet.absoluteFillObject,
-          backgroundColor: colors.gradientTop,
-          opacity: resolvedScheme === 'dark' ? 0.45 : 0.2,
-        },
         errorContainer: {
           alignSelf: 'stretch',
           backgroundColor: colors.dangerSoft ?? 'rgba(255, 107, 107, 0.12)',
@@ -149,7 +145,7 @@ const DashScreen = () => {
           borderColor: colors.glassOutline ?? colors.border ?? 'rgba(255,255,255,0.14)',
         },
       }),
-    [colors, resolvedScheme],
+    [colors],
   );
 
   const ErrorMessage = useCallback(
@@ -758,8 +754,10 @@ const DashScreen = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeAreaRoot} edges={['top', 'left', 'right']}>
-        <View style={[styles.container, styles.skeletonScreen]}>
+      <View style={styles.container}>
+        <DashboardBrandBackdrop />
+        <SafeAreaView style={styles.safeAreaRoot} edges={['top', 'left', 'right']}>
+        <View style={[styles.skeletonScreen, { flex: 1 }]}>
         <View style={styles.skeletonHeader}>
           <SkeletonBlock width="70%" height={18} radius={10} />
           <SkeletonBlock width="45%" height={14} radius={10} style={styles.skeletonHeaderLine} />
@@ -768,14 +766,15 @@ const DashScreen = () => {
         <SkeletonCard style={styles.skeletonCard} />
         <SkeletonCard style={styles.skeletonCard} />
         </View>
-      </SafeAreaView>
+        </SafeAreaView>
+      </View>
     );
   }
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle={statusBarStyle ?? STATUS_BAR.STYLE} backgroundColor={colors.background} />
-      <View style={styles.backgroundTint} pointerEvents="none" />
+      <DashboardBrandBackdrop />
       <SafeAreaView style={styles.safeAreaMain} edges={['top', 'left', 'right']}>
         <OfflineBanner />
         <DashboardHomeHeader userData={userData} />

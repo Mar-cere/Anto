@@ -41,6 +41,7 @@ import BrandGradientFab from '../components/tasksAndHabits/BrandGradientFab';
 import TasksSummaryStrip from '../components/tasksAndHabits/TasksSummaryStrip';
 import { buildTaskSections } from '../utils/taskDateSections';
 import { resolveCreatedTaskFromApi } from '../utils/taskApiPayload';
+import { SOFT_ATTENTION_PALETTE } from '../utils/taskPriorityPalette';
 import {
   buildUnifiedTaskSections,
   computeTasksSummaryCounts,
@@ -289,11 +290,11 @@ const TaskScreen = ({
           color: colors.text,
         },
         sectionHeaderAttention: {
-          borderColor: 'rgba(184, 134, 74, 0.28)',
-          backgroundColor: 'rgba(184, 134, 74, 0.07)',
+          borderColor: SOFT_ATTENTION_PALETTE.border,
+          backgroundColor: SOFT_ATTENTION_PALETTE.bg,
         },
         sectionHeaderTextAttention: {
-          color: '#B8864A',
+          color: SOFT_ATTENTION_PALETTE.color,
         },
         sectionCountPill: {
           minWidth: 24,

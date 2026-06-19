@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
+import { SOFT_ATTENTION_PALETTE } from '../../utils/taskPriorityPalette';
 
 export default function TasksSummaryStrip({
   todayCount = 0,
@@ -54,8 +55,8 @@ export default function TasksSummaryStrip({
           alignItems: 'center',
         },
         tileAttention: {
-          borderColor: 'rgba(251, 146, 60, 0.45)',
-          backgroundColor: 'rgba(251, 146, 60, 0.08)',
+          borderColor: SOFT_ATTENTION_PALETTE.border,
+          backgroundColor: SOFT_ATTENTION_PALETTE.bg,
         },
         value: {
           fontSize: 22,
@@ -64,7 +65,7 @@ export default function TasksSummaryStrip({
           letterSpacing: -0.4,
         },
         valueAttention: {
-          color: colors.warning,
+          color: SOFT_ATTENTION_PALETTE.color,
         },
         label: {
           marginTop: 2,
@@ -74,11 +75,8 @@ export default function TasksSummaryStrip({
           color: colors.textSecondary,
           fontWeight: '500',
         },
-        labelAttention: {
-          color: colors.warning,
-        },
       }),
-    [colors],
+    [colors.text, colors.textSecondary, colors.chromeCard, colors.chromeCardBorder],
   );
 
   return (
@@ -93,7 +91,7 @@ export default function TasksSummaryStrip({
             <Text style={[styles.value, attention && styles.valueAttention]}>
               {tile.value}
             </Text>
-            <Text style={[styles.label, attention && styles.labelAttention]}>
+            <Text style={[styles.label]}>
               {tile.label}
             </Text>
           </View>

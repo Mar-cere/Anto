@@ -97,11 +97,49 @@ export function getStreakVisual(streakDays = 0, colors = {}, resolvedScheme = 'l
     legend: dark ? '#3D3210' : '#B8860B',
   };
 
+  const heroGradients = {
+    none: {
+      top: dark ? '#0A1E45' : '#1D1B70',
+      bottom: dark ? '#1A5F96' : colors.primary || '#1E83D3',
+      sparkle: '#E8ECF4',
+    },
+    ember: {
+      top: dark ? '#0A1E45' : '#1D1B70',
+      bottom: dark ? '#1A6BA8' : '#2B8FD4',
+      sparkle: '#F5D76E',
+    },
+    warm: {
+      top: dark ? '#1A2848' : '#24356E',
+      bottom: dark ? '#2E7AB0' : '#3A9AD4',
+      sparkle: '#FFCC80',
+    },
+    blaze: {
+      top: dark ? '#2A1838' : '#2E2258',
+      bottom: dark ? '#3A88B8' : '#4A9FD4',
+      sparkle: '#FFB88C',
+    },
+    stellar: {
+      top: dark ? '#1E1848' : '#2A2068',
+      bottom: dark ? '#4A68C8' : '#6B7FD4',
+      sparkle: '#D4B8FF',
+    },
+    legend: {
+      top: dark ? '#281E10' : '#3A2E18',
+      bottom: dark ? '#5A7A28' : '#8A9A38',
+      sparkle: '#FFE08A',
+    },
+  };
+
+  const gradient = heroGradients[tier];
+
   return {
     tier,
     days,
     ...palettes[tier],
     heroBackground: heroSurfaces[tier],
+    heroGradientTop: gradient.top,
+    heroGradientBottom: gradient.bottom,
+    sparkleColor: gradient.sparkle,
     orbColor:
       tier === 'legend'
         ? 'rgba(245, 197, 66, 0.35)'

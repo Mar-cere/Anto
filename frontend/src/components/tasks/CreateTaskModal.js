@@ -5,12 +5,10 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  KeyboardAvoidingView,
   Keyboard,
   Platform,
   StyleSheet,
   Switch,
-  ScrollView,
   Animated,
   InteractionManager,
   AccessibilityInfo,
@@ -18,13 +16,20 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
+import ModalKeyboardScroll from '../common/ModalKeyboardScroll';
 import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
+import { useModalKeyboardVisible } from '../../hooks/useModalKeyboardVisible';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 import { SPACING } from '../../constants/ui';
 import { getSoftPriorityStyle } from '../../utils/taskPriorityPalette';
+import {
+  focusModalTextInput,
+  MODAL_SHEET_MAX_HEIGHT,
+  runModalScrollHint,
+} from '../../utils/modalKeyboardUtils';
 
 const DEFAULT_TEXTS = {
   NEW_TASK_TITLE: 'Nueva tarea',
@@ -125,8 +130,9 @@ const CreateTaskModal = ({
           borderTopRightRadius: 22,
           borderTopWidth: StyleSheet.hairlineWidth,
           borderColor: t.FOCUS_BORDER_SUBTLE,
-          maxHeight: '92%',
+          maxHeight: MODAL_SHEET_MAX_HEIGHT,
           minHeight: '48%',
+          flexShrink: 1,
         },
         sheetGrabber: {
           alignSelf: 'center',
@@ -474,25 +480,13 @@ const CreateTaskModal = ({
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [suggestStepsOnCreate, setSuggestStepsOnCreate] = useState(true);
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const keyboardVisible = useModalKeyboardVisible();
   const slideAnim = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef(null);
   const scrollHintTimeouts = useRef([]);
 
   const isTask = formData.itemType === 'task';
 
-  useEffect(() => {
-    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const subShow = Keyboard.addListener(showEvt, () => setKeyboardVisible(true));
-    const subHide = Keyboard.addListener(hideEvt, () => setKeyboardVisible(false));
-    return () => {
-      subShow.remove();
-      subHide.remove();
-    };
-  }, []);
-
-  /** Pequeño desplazamiento y vuelta al abrir: sugiere que hay más contenido al hacer scroll. */
   useEffect(() => {
     if (!visible) {
       scrollHintTimeouts.current.forEach(clearTimeout);
@@ -504,17 +498,11 @@ const CreateTaskModal = ({
       scrollHintTimeouts.current = [];
     };
     const interaction = InteractionManager.runAfterInteractions(() => {
-      const tOpen = setTimeout(() => {
-        AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
-          if (reduce) return;
-          scrollRef.current?.scrollTo({ y: 20, animated: true });
-          const tBack = setTimeout(() => {
-            scrollRef.current?.scrollTo({ y: 0, animated: true });
-          }, 360);
-          scrollHintTimeouts.current.push(tBack);
-        });
-      }, 480);
-      scrollHintTimeouts.current.push(tOpen);
+      AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
+        if (reduce) return;
+        const clearHint = runModalScrollHint(scrollRef, { peekY: 20, delayMs: 480 });
+        if (clearHint) scrollHintTimeouts.current.push(clearHint);
+      });
     });
     return () => {
       interaction.cancel?.();
@@ -736,19 +724,10 @@ const CreateTaskModal = ({
             </View>
           </View>
           
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.keyboardContainer}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+          <ModalKeyboardScroll
+            ref={scrollRef}
+            contentContainerStyle={styles.scrollContent}
           >
-            <ScrollView
-              ref={scrollRef}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.scrollContent}
-              keyboardShouldPersistTaps="handled"
-              bounces={Platform.OS === 'ios'}
-              overScrollMode={Platform.OS === 'android' ? 'auto' : 'never'}
-            >
             <View style={styles.typeSelector}>
               <TouchableOpacity
                 style={[
@@ -805,6 +784,7 @@ const CreateTaskModal = ({
                   if (errors.title) setErrors(prev => ({ ...prev, title: null }));
                 }}
                 maxLength={100}
+                onFocus={(event) => focusModalTextInput(scrollRef, event)}
               />
               {errors.title && (
                 <Text style={styles.errorText}>{errors.title}</Text>
@@ -830,6 +810,7 @@ const CreateTaskModal = ({
                   multiline
                   numberOfLines={4}
                   maxLength={500}
+                  onFocus={(event) => focusModalTextInput(scrollRef, event)}
                 />
                 {errors.description && (
                   <Text style={styles.errorText}>{errors.description}</Text>
@@ -1007,8 +988,7 @@ const CreateTaskModal = ({
                 )}
               </TouchableOpacity>
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
+          </ModalKeyboardScroll>
         </View>
       </View>
     </Modal>

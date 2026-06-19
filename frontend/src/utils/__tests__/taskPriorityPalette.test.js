@@ -14,8 +14,9 @@ describe('taskPriorityPalette', () => {
     expect(getSoftPriorityStyle('unknown').color).toBe(SOFT_PRIORITY_PALETTE.medium.color);
   });
 
-  it('paleta de atención evita rojo error puro', () => {
+  it('paleta de atención evita rojo error puro y amarillo warning', () => {
     expect(SOFT_ATTENTION_PALETTE.color.toLowerCase()).not.toBe('#ff0000');
+    expect(SOFT_ATTENTION_PALETTE.color.toLowerCase()).not.toBe('#ffd93d');
     expect(SOFT_ATTENTION_PALETTE.border).toMatch(/rgba/i);
   });
 });

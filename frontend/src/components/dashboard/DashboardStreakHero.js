@@ -6,6 +6,10 @@ import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { createDashboardStyles } from '../../styles/dashboardTheme';
 import { buildStreakHeroCopy } from '../../utils/dashboardHomeUtils';
+import {
+  buildStreakCardMetaLine,
+  resolveStreakUnitLabel,
+} from '../../utils/dashboardStreakCardUtils';
 import { getStreakVisual } from '../../utils/streakVisualUtils';
 
 const DashboardStreakHero = memo(({ streakDays, displayName, dailyMood, onOpenChat, streakOnly = false }) => {
@@ -71,41 +75,62 @@ const DashboardStreakHero = memo(({ streakDays, displayName, dailyMood, onOpenCh
           .replace('{days}', String(streakDays))
           .replace('{label}', DASH.STAT_STREAK_DAYS || '');
 
-  if (streakOnly) {
-    if (streakDays <= 0) return null;
-    const stripLabel = tierBadge
-      ? `${streakChipLabel} · ${tierBadge}`
-      : streakChipLabel;
-    return (
+  const streakUnitLabel = resolveStreakUnitLabel(streakDays, DASH);
+
+  const streakMetaLine = buildStreakCardMetaLine({
+    tierBadge,
+    nudge: DASH.STREAK_CARD_NUDGE,
+    fallbackSubtitle: copy.subtitle,
+  });
+
+  const gradientLayers = (
+    <>
+      <View
+        style={[styles.heroGradientBase, { backgroundColor: streakVisual.heroGradientTop }]}
+        pointerEvents="none"
+      />
       <View
         style={[
-          styles.heroCard,
-          styles.heroCardStreakOnly,
-          { backgroundColor: streakVisual.heroBackground },
+          styles.heroGradientFade,
+          { backgroundColor: streakVisual.heroGradientBottom },
         ]}
+        pointerEvents="none"
+      />
+      <Animated.View
+        style={[
+          styles.heroOrb,
+          {
+            backgroundColor: streakVisual.orbColor,
+            transform: [{ scale: orbPulse }],
+          },
+        ]}
+        pointerEvents="none"
+      />
+    </>
+  );
+
+  if (streakOnly) {
+    if (streakDays <= 0) return null;
+
+    return (
+      <View
+        style={[styles.heroCard, styles.heroCardStreakOnly]}
         accessibilityRole="text"
-        accessibilityLabel={stripLabel}
+        accessibilityLabel={streakChipLabel}
       >
-        <Animated.View
-          style={[
-            styles.heroOrb,
-            {
-              backgroundColor: streakVisual.orbColor,
-              transform: [{ scale: orbPulse }],
-            },
-          ]}
-          pointerEvents="none"
-        />
-        <View style={styles.heroStreakOnlyRow}>
-          <View style={[styles.heroStreakChip, styles.heroStreakChipStreakOnly]}>
-            <Ionicons name={streakVisual.icon} size={17} color={colors.white} />
-            <Text style={styles.heroStreakChipTextLarge}>{streakChipLabel}</Text>
-            {tierBadge ? (
-              <>
-                <Text style={styles.heroStreakChipSepLarge}>·</Text>
-                <Text style={styles.heroStreakChipTierLarge}>{tierBadge}</Text>
-              </>
-            ) : null}
+        {gradientLayers}
+        <View style={styles.heroStreakDynamicRow}>
+          <View style={styles.heroStreakIconWrap}>
+            <Ionicons name="sparkles" size={22} color={streakVisual.sparkleColor} />
+          </View>
+          <View style={styles.heroStreakCopy}>
+            <View style={styles.heroStreakMainLine}>
+              <Text style={styles.heroStreakNumber}>{streakDays}</Text>
+              <Text style={styles.heroStreakUnit}>{streakUnitLabel}</Text>
+            </View>
+            <Text style={styles.heroStreakMeta} numberOfLines={2}>
+              {streakMetaLine}
+            </Text>
           </View>
         </View>
       </View>

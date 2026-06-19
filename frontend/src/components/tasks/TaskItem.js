@@ -11,6 +11,7 @@ import { hasAntoOrigin } from '../../utils/tasksAndHabitsUtils';
 import {
   getSoftPriorityStyle,
   SOFT_ATTENTION_PALETTE,
+  SOFT_PRIORITY_PALETTE,
 } from '../../utils/taskPriorityPalette';
 
 const DEFAULT_TEXTS = {
@@ -163,7 +164,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
           backgroundColor: SOFT_ATTENTION_PALETTE.color,
         },
         priorityAccentReminder: {
-          backgroundColor: colors.warning,
+          backgroundColor: SOFT_PRIORITY_PALETTE.high.color,
         },
         itemTitleContainer: {
           flexDirection: 'row',

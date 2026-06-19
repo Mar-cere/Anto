@@ -31,6 +31,10 @@ describe('dashboardTheme', () => {
       'groupedRow',
       'sectionTitle',
       'heroCard',
+      'heroCardStreakOnly',
+      'heroStreakDynamicRow',
+      'heroStreakNumber',
+      'homeInsightIconWrap',
       'moodPill',
       'rowTitle',
     ]) {
@@ -40,5 +44,7 @@ describe('dashboardTheme', () => {
 
     expect(lightStyles.rowTitle.color).toBe(lightColors.text);
     expect(darkStyles.rowTitle.color).toBe(darkColors.text);
+    expect(lightStyles.heroCardStreakOnly.backgroundColor).toBe('transparent');
+    expect(lightStyles.homeInsightIconWrap.backgroundColor).toMatch(/232,\s*155,\s*184/i);
   });
 });
