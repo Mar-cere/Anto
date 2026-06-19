@@ -26,11 +26,33 @@ export const CHAT_PSYCHOEDUCATION_SMOKE_CASES_EN = [
   {
     id: 'en_work_stress',
     message: 'Work stress has me overwhelmed, too many responsibilities. 6/10',
-    expectedPsycho: ['psychoeducation_stress'],
+    expectedPsycho: ['psychoeducation_work_stress'],
     allowedEmotions: ['ansiedad', 'neutral'],
     minIntensity: 5,
     minSuggestions: 2,
-    primaryPsycho: 'psychoeducation_stress',
+    primaryPsycho: 'psychoeducation_work_stress',
+    language: 'en',
+  },
+  {
+    id: 'en_depression_advanced',
+    message:
+      'I keep ruminating with harsh self-criticism and feel nothing will get better. 7/10',
+    expectedPsycho: ['psychoeducation_depression_advanced'],
+    allowedEmotions: ['tristeza', 'neutral'],
+    minIntensity: 6,
+    minSuggestions: 2,
+    primaryPsycho: 'psychoeducation_depression_advanced',
+    language: 'en',
+  },
+  {
+    id: 'en_anxiety_advanced',
+    message:
+      'I have constant worry, cannot stop thinking, and keep seeking reassurance. 7/10',
+    expectedPsycho: ['psychoeducation_anxiety_advanced'],
+    allowedEmotions: ['ansiedad', 'neutral'],
+    minIntensity: 6,
+    minSuggestions: 2,
+    primaryPsycho: 'psychoeducation_anxiety_advanced',
     language: 'en',
   },
   {

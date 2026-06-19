@@ -28,7 +28,7 @@ describe('interventionCatalog', () => {
 
   it('cada entrada psychoeducation_* tiene topic válido en params', () => {
     const psycho = listCatalogInterventionIds().filter((id) => id.startsWith('psychoeducation_'));
-    expect(psycho.length).toBe(9);
+    expect(psycho.length).toBe(12);
     psycho.forEach((id) => {
       const entry = getInterventionCatalogEntry(id);
       expect(normalizePsychoeducationTopic(entry.params?.topic)).toBeTruthy();
@@ -124,11 +124,14 @@ describe('interventionCatalog', () => {
     expect(getPsychoeducationInterventionId('grief')).toBe('psychoeducation_grief');
   });
 
-  it('formatSuggestions incluye contrato psicoed #85/#78 en los 9 temas', () => {
+  it('formatSuggestions incluye contrato psicoed #85/#78 en los 12 temas', () => {
     const ids = [
       'psychoeducation_anxiety',
+      'psychoeducation_anxiety_advanced',
       'psychoeducation_depression',
+      'psychoeducation_depression_advanced',
       'psychoeducation_stress',
+      'psychoeducation_work_stress',
       'psychoeducation_anger',
       'psychoeducation_sleep',
       'psychoeducation_emotion_regulation',

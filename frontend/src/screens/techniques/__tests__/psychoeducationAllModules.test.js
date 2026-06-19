@@ -3,8 +3,11 @@ import { moduleContentEntries, PSYCHOEDUCATION_META_KEYS } from '../psychoeducat
 
 const TOPICS = [
   'anxiety',
+  'anxietyAdvanced',
   'depression',
+  'depressionAdvanced',
   'stress',
+  'workStress',
   'anger',
   'sleep',
   'emotionRegulation',
@@ -13,12 +16,30 @@ const TOPICS = [
   'burnout',
 ];
 
+const INTERVENTION_ID_BY_TOPIC = {
+  anxiety: 'psychoeducation_anxiety',
+  anxietyAdvanced: 'psychoeducation_anxiety_advanced',
+  depression: 'psychoeducation_depression',
+  depressionAdvanced: 'psychoeducation_depression_advanced',
+  stress: 'psychoeducation_stress',
+  workStress: 'psychoeducation_work_stress',
+  anger: 'psychoeducation_anger',
+  sleep: 'psychoeducation_sleep',
+  emotionRegulation: 'psychoeducation_emotion_regulation',
+  trauma: 'psychoeducation_trauma',
+  grief: 'psychoeducation_grief',
+  burnout: 'psychoeducation_burnout',
+};
+
 function apiModuleEnvelope(topic, language = 'es') {
   const titles = {
     es: {
       anxiety: 'Ansiedad',
+      anxietyAdvanced: 'Ansiedad avanzada',
       depression: 'Bajo ánimo',
+      depressionAdvanced: 'Bajo ánimo avanzado',
       stress: 'Estrés',
+      workStress: 'Estrés laboral',
       anger: 'Enojo e ira',
       sleep: 'Sueño',
       emotionRegulation: 'Regulación emocional',
@@ -28,8 +49,11 @@ function apiModuleEnvelope(topic, language = 'es') {
     },
     en: {
       anxiety: 'Anxiety',
+      anxietyAdvanced: 'Anxiety — deeper skills',
       depression: 'Low mood',
+      depressionAdvanced: 'Low mood — deeper skills',
       stress: 'Stress',
+      workStress: 'Work stress',
       anger: 'Anger',
       sleep: 'Sleep',
       emotionRegulation: 'Emotion regulation',
@@ -43,7 +67,7 @@ function apiModuleEnvelope(topic, language = 'es') {
     topic,
     title: titles[lang][topic],
     version: '1.0.0',
-    interventionId: `psychoeducation_${topic === 'emotionRegulation' ? 'emotion_regulation' : topic}`,
+    interventionId: INTERVENTION_ID_BY_TOPIC[topic],
     disclaimer: 'Aviso educativo.',
     mechanismLine: 'Línea mecanismo.',
     clinicalReview: { version: '1.0.0', note: 'Nota editorial.' },

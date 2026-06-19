@@ -11,6 +11,13 @@ describe('psychoeducationTopicNormalize', () => {
     expect(normalizePsychoeducationTopic('emotionregulation')).toBe('emotionRegulation');
   });
 
+  it('normaliza variantes de módulos avanzados (#90–#92)', () => {
+    expect(normalizePsychoeducationTopic('depression-advanced')).toBe('depressionAdvanced');
+    expect(normalizePsychoeducationTopic('anxietyAdvanced')).toBe('anxietyAdvanced');
+    expect(normalizePsychoeducationTopic('estres-laboral')).toBe('workStress');
+    expect(normalizePsychoeducationTopic('work_stress')).toBe('workStress');
+  });
+
   it('rechaza topics desconocidos', () => {
     expect(normalizePsychoeducationTopic('')).toBeNull();
     expect(normalizePsychoeducationTopic('bipolar')).toBeNull();

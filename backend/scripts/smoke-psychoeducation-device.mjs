@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Smoke #85: valida los 9 módulos listos para prueba en dispositivo.
+ * Smoke #85: valida los 12 módulos listos para prueba en dispositivo.
  * Uso: node scripts/smoke-psychoeducation-device.mjs
  */
 import {
@@ -156,7 +156,7 @@ function checkModule(topic, language) {
 const topics = getAvailableTopics('es');
 let failed = 0;
 
-console.log('\n=== Smoke psicoeducación (#85) — 9 módulos ===\n');
+console.log('\n=== Smoke psicoeducación (#85) — 12 módulos ===\n');
 
 for (const language of LANGUAGES) {
   console.log(`--- ${language.toUpperCase()} ---`);
@@ -279,6 +279,22 @@ for (const topic of topics) {
     es?.cardSchemaVersion === 'psychoeducation_card_v1' &&
     es?.clinicalReview?.status === 'editorial_review';
   console.log(`  [${ok ? 'OK' : 'FAIL'}] ${topic} microSteps es/en`);
+  if (!ok) metaFailed += 1;
+}
+console.log('--- #90–#92: catálogo psicoed avanzada ---');
+const ADVANCED_MODULES = [
+  { ref: 90, topic: 'depressionAdvanced', id: 'psychoeducation_depression_advanced' },
+  { ref: 91, topic: 'anxietyAdvanced', id: 'psychoeducation_anxiety_advanced' },
+  { ref: 92, topic: 'workStress', id: 'psychoeducation_work_stress' },
+];
+for (const { ref, topic, id } of ADVANCED_MODULES) {
+  const mod = getPsychoeducationModule(topic, 'es');
+  const ok =
+    mod?.topic === topic &&
+    mod?.interventionId === id &&
+    mod?.mechanismLine &&
+    mod?.whenToSeekHelp;
+  console.log(`  [${ok ? 'OK' : 'FAIL'}] #${ref} ${topic} → ${id}`);
   if (!ok) metaFailed += 1;
 }
 console.log('');

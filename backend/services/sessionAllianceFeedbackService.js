@@ -13,6 +13,7 @@ import {
   SESSION_WAI_STATUS,
 } from '../constants/sessionAllianceFeedback.js';
 import metricsService from './metricsService.js';
+import chatInterventionGraphService from './chatInterventionGraphService.js';
 
 function normalizeLanguage(language) {
   return String(language || 'es').trim().toLowerCase() === 'en' ? 'en' : 'es';
@@ -202,6 +203,15 @@ export async function submitSessionAllianceFeedback(userId, conversationId, payl
     )
     .catch(() => {});
 
+  chatInterventionGraphService
+    .recordSessionWaiGraphEvent({
+      userId,
+      conversationId: cid,
+      eventType: 'completed',
+      avgScore: avg,
+    })
+    .catch(() => {});
+
   return { ok: true, feedback: doc.toObject() };
 }
 
@@ -249,6 +259,14 @@ export async function skipSessionAllianceFeedback(userId, conversationId, payloa
       { conversationId: String(conversationId), language: lang },
       String(userId),
     )
+    .catch(() => {});
+
+  chatInterventionGraphService
+    .recordSessionWaiGraphEvent({
+      userId,
+      conversationId: cid,
+      eventType: 'dismissed',
+    })
     .catch(() => {});
 
   return { ok: true, feedback: doc.toObject() };

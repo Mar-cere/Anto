@@ -25,10 +25,30 @@ export const CHAT_PSYCHOEDUCATION_SMOKE_CASES = [
     id: 'stress_work',
     message:
       'El estrés del trabajo me tiene agotada, con demasiadas responsabilidades. 6/10',
-    expectedPsycho: ['psychoeducation_stress'],
+    expectedPsycho: ['psychoeducation_work_stress'],
     allowedEmotions: ['ansiedad', 'neutral'],
     minIntensity: 5,
     minSuggestions: 2,
+  },
+  {
+    id: 'depression_advanced_rumination',
+    message:
+      'Me siento muy triste. Rumio todo el día con autocrítica constante, siento que nada va a mejorar. 7/10',
+    expectedPsycho: ['psychoeducation_depression_advanced'],
+    allowedEmotions: ['tristeza', 'neutral'],
+    minIntensity: 6,
+    minSuggestions: 2,
+    primaryPsycho: 'psychoeducation_depression_advanced',
+  },
+  {
+    id: 'anxiety_advanced_worry',
+    message:
+      'Tengo preocupación constante, no paro de pensar y busco confirmación todo el tiempo. 7/10',
+    expectedPsycho: ['psychoeducation_anxiety_advanced'],
+    allowedEmotions: ['ansiedad', 'neutral'],
+    minIntensity: 6,
+    minSuggestions: 2,
+    primaryPsycho: 'psychoeducation_anxiety_advanced',
   },
   {
     id: 'emotion_regulation_overflow',

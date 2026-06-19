@@ -104,6 +104,117 @@ export const PSYCHOEDUCATION_MODULES = {
     ],
   },
 
+  depressionAdvanced: {
+    whatIs:
+      'Este módulo profundiza el de bajo ánimo (#85): cuando la tristeza se mantiene y alimenta pensamientos negativos sobre ti, el mundo y el futuro. No es un diagnóstico; es un mapa para entender ciclos que a veces se repiten.',
+    symptoms: [
+      'Autocrítica dura (“soy un fracaso”, “no valgo”)',
+      'Pérdida de interés que dura semanas, no solo un mal día',
+      'Rumiación: dar vueltas a lo mismo sin encontrar salida',
+      'Retirada social o abandono de rutinas básicas',
+      'Sensación de que “nada va a mejorar”',
+    ],
+    causes: [
+      'Ciclo inercia → culpa → menos actividad → más bajo ánimo',
+      'Filtro negativo: solo registras lo que salió mal',
+      'Eventos difíciles sin espacio de recuperación',
+      'Expectativas muy altas hacia ti mismo/a',
+    ],
+    whatHelps: [
+      'Activación conductual en pasos mínimos (5–10 min, no “productividad perfecta”)',
+      'Separar hechos de interpretaciones (“pasó X” vs “significa que soy…”)',
+      'Autocompasión breve: ¿qué dirías a un amigo en tu lugar?',
+      'Reenganche social gradual (un mensaje, una salida corta)',
+      'Terapia TCC o interpersonal si el patrón persiste',
+    ],
+    whenToSeekHelp:
+      'Si el bajo ánimo dura más de dos semanas, empeora o aparecen pensamientos de autolesión, busca apoyo profesional cuanto antes.',
+    sources: [
+      {
+        label: 'NIMH — Depresión (información general)',
+        url: 'https://www.nimh.nih.gov/health/topics/depression',
+      },
+      {
+        label: 'OMS — Salud mental',
+        url: 'https://www.who.int/es/health-topics/mental-health',
+      },
+    ],
+  },
+
+  anxietyAdvanced: {
+    whatIs:
+      'Este módulo amplía el de ansiedad (#85): cuando la preocupación ocupa mucho espacio mental, buscas certeza constante o evitas situaciones “por si acaso”. La ansiedad puede volverse el problema principal, no solo la situación.',
+    symptoms: [
+      'Preocupación difícil de frenar, incluso sin problema claro',
+      'Tensión corporal sostenida (mandíbula, hombros, estómago)',
+      'Buscar reassurance repetida (preguntar, googlear, comprobar)',
+      'Evitar planes o decisiones por miedo a equivocarte',
+      'Intolerancia a la incertidumbre (“necesito saber ya”)',
+    ],
+    causes: [
+      'Sobreestimar amenazas y subestimar tu capacidad de afrontar',
+      'Conductas de seguridad que alivian al momento pero mantienen la ansiedad',
+      'Estrés prolongado sin descanso',
+      'Historial de experiencias donde “prevenir” pareció protegerte',
+    ],
+    whatHelps: [
+      'Ventana de preocupación: 15 min al día, fuera de ese tiempo posponer',
+      'Exposición gradual a lo que evitas (con pasos pequeños y medibles)',
+      'Reducir comprobaciones y reassurance poco a poco',
+      'Tolerar “no saber” unos minutos antes de actuar',
+      'TCC o terapia de exposición si la ansiedad limita tu vida',
+    ],
+    whenToSeekHelp:
+      'Si la preocupación domina tu día, evitas actividades importantes o tienes ataques de pánico frecuentes, conviene hablar con un profesional.',
+    sources: [
+      {
+        label: 'NIMH — Trastornos de ansiedad (información general)',
+        url: 'https://www.nimh.nih.gov/health/topics/anxiety-disorders',
+      },
+      {
+        label: 'OMS — Salud mental',
+        url: 'https://www.who.int/es/health-topics/mental-health',
+      },
+    ],
+  },
+
+  workStress: {
+    whatIs:
+      'Este módulo enfoca el estrés en el ámbito laboral o académico: plazos, roles poco claros, cultura de disponibilidad constante y dificultad para desconectar. Complementa el módulo general de estrés (#85).',
+    symptoms: [
+      'Ansiedad dominical o antes de entrar al trabajo/estudio',
+      'Dificultad para “apagar” al terminar la jornada',
+      'Irritabilidad con compañeros o familia por cansancio acumulado',
+      'Culpa por no ser “suficientemente productivo/a”',
+      'Síntomas físicos: tensión cervical, dolores de cabeza, insomnio',
+    ],
+    causes: [
+      'Demandas altas sin margen de recuperación',
+      'Límites difusos (correos fuera de horario, reuniones encadenadas)',
+      'Poco control sobre prioridades o recursos',
+      'Miedo a decepcionar o perder oportunidades',
+    ],
+    management: [
+      'Ritual de cierre: 5 min para anotar pendientes y “cerrar” la jornada',
+      'Micro-pausas cada 60–90 min (agua, estiramiento, mirar lejos)',
+      'Triaje de tareas: urgente vs importante vs delegable',
+      'Un límite concreto esta semana (un “no”, un horario, silenciar notificaciones)',
+      'Conversación con supervisor/a o apoyo profesional si la carga es crónica',
+    ],
+    whenToSeekHelp:
+      'Si el estrés laboral afecta tu sueño, salud o relaciones durante semanas, o sientes agotamiento que no mejora con descanso, busca apoyo médico o psicológico.',
+    sources: [
+      {
+        label: 'OMS — Estrés en el lugar de trabajo',
+        url: 'https://www.who.int/news-room/questions-and-answers/item/stress-at-the-workplace',
+      },
+      {
+        label: 'APA — Estrés en el trabajo',
+        url: 'https://www.apa.org/topics/healthy-workplaces/workplace-stress',
+      },
+    ],
+  },
+
   emotionRegulation: {
     whatIs:
       'Regular emociones no es reprimirlas: es reconocerlas, entender para qué sirven y elegir respuestas que te cuiden a ti y a tus vínculos.',

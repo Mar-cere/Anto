@@ -389,4 +389,32 @@ describe('chatInterventionGraphService', () => {
       }),
     );
   });
+
+  it('recordSessionWaiGraphEvent registra completed con source session_wai_v1', async () => {
+    mockFindOne
+      .mockReturnValueOnce(chainFindOne(null))
+      .mockReturnValueOnce(chainFindOne(null))
+      .mockReturnValueOnce(chainFindOne(null))
+      .mockReturnValueOnce(chainFindOne(null));
+
+    await chatInterventionGraphService.recordSessionWaiGraphEvent({
+      userId: 'user-1',
+      conversationId: 'conv-wai-1',
+      eventType: 'completed',
+      avgScore: 4.25,
+    });
+
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        interventionId: 'session_wai_feedback',
+        eventType: 'completed',
+        source: 'session_wai_v1',
+        meta: expect.objectContaining({
+          surface: 'session_insight',
+          interventionType: 'feedback',
+          tags: expect.arrayContaining(['wai_submitted', 'avg_4.3']),
+        }),
+      }),
+    );
+  });
 });

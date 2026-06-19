@@ -351,6 +351,17 @@ export const INTERVENTION_CATALOG = {
     tags: ['ansiedad'],
     params: { topic: 'anxiety' },
   },
+  psychoeducation_anxiety_advanced: {
+    id: 'psychoeducation_anxiety_advanced',
+    label: 'Ansiedad avanzada (psicoeducación)',
+    labelEn: 'Anxiety — deeper skills (psychoeducation)',
+    icon: '📚',
+    screen: 'PsychoeducationModule',
+    type: 'psychoeducation',
+    tags: ['ansiedad', 'preocupacion'],
+    params: { topic: 'anxietyAdvanced' },
+    moduleRef: 91,
+  },
   psychoeducation_depression: {
     id: 'psychoeducation_depression',
     label: 'Entender la Depresión (psicoeducación)',
@@ -361,6 +372,17 @@ export const INTERVENTION_CATALOG = {
     tags: ['tristeza'],
     params: { topic: 'depression' },
   },
+  psychoeducation_depression_advanced: {
+    id: 'psychoeducation_depression_advanced',
+    label: 'Bajo ánimo avanzado (psicoeducación)',
+    labelEn: 'Low mood — deeper skills (psychoeducation)',
+    icon: '📚',
+    screen: 'PsychoeducationModule',
+    type: 'psychoeducation',
+    tags: ['tristeza', 'depresion'],
+    params: { topic: 'depressionAdvanced' },
+    moduleRef: 90,
+  },
   psychoeducation_stress: {
     id: 'psychoeducation_stress',
     label: 'Entender el Estrés (psicoeducación)',
@@ -370,6 +392,17 @@ export const INTERVENTION_CATALOG = {
     type: 'psychoeducation',
     tags: ['estres'],
     params: { topic: 'stress' },
+  },
+  psychoeducation_work_stress: {
+    id: 'psychoeducation_work_stress',
+    label: 'Estrés laboral (psicoeducación)',
+    labelEn: 'Work stress (psychoeducation)',
+    icon: '📚',
+    screen: 'PsychoeducationModule',
+    type: 'psychoeducation',
+    tags: ['estres', 'trabajo'],
+    params: { topic: 'workStress' },
+    moduleRef: 92,
   },
   psychoeducation_anger: {
     id: 'psychoeducation_anger',
@@ -431,6 +464,16 @@ export const INTERVENTION_CATALOG = {
     tags: ['agotamiento', 'trabajo'],
     params: { topic: 'burnout' },
   },
+  session_wai_feedback: {
+    id: 'session_wai_feedback',
+    label: 'Feedback de alianza post-sesión (WAI)',
+    labelEn: 'Post-session alliance feedback (WAI)',
+    icon: '🤝',
+    screen: 'SessionInsight',
+    type: 'feedback',
+    tags: ['alianza', 'wai', 'sesion'],
+    moduleRef: 98,
+  },
 };
 
 /** IDs estables: snake_case, máx. 80 caracteres. */
@@ -485,8 +528,14 @@ const SCREEN_TO_INTERVENTION_ID = Object.freeze(
 
 const PSYCHOEDUCATION_TOPIC_TO_ID = Object.freeze({
   anxiety: 'psychoeducation_anxiety',
+  anxiety_advanced: 'psychoeducation_anxiety_advanced',
+  anxietyadvanced: 'psychoeducation_anxiety_advanced',
   depression: 'psychoeducation_depression',
+  depression_advanced: 'psychoeducation_depression_advanced',
+  depressionadvanced: 'psychoeducation_depression_advanced',
   stress: 'psychoeducation_stress',
+  work_stress: 'psychoeducation_work_stress',
+  workstress: 'psychoeducation_work_stress',
   anger: 'psychoeducation_anger',
   sleep: 'psychoeducation_sleep',
   emotionregulation: 'psychoeducation_emotion_regulation',

@@ -65,6 +65,108 @@ export const PSYCHOEDUCATION_MODULES_EN = {
       }
     ]
   },
+  "depressionAdvanced": {
+    "whatIs": "This module builds on low mood (#85): when sadness persists and feeds negative thoughts about yourself, the world, and the future. It is not a diagnosis; it is a map for understanding cycles that sometimes repeat.",
+    "symptoms": [
+      "Harsh self-criticism (“I am a failure”, “I am worthless”)",
+      "Loss of interest lasting weeks, not just a bad day",
+      "Rumination: going over the same thing without finding a way out",
+      "Social withdrawal or dropping basic routines",
+      "Feeling that “nothing will get better”"
+    ],
+    "causes": [
+      "Inertia → guilt → less activity → lower mood cycle",
+      "Negative filter: only noticing what went wrong",
+      "Difficult events without recovery space",
+      "Very high expectations toward yourself"
+    ],
+    "whatHelps": [
+      "Behavioral activation in minimal steps (5–10 min, not “perfect productivity”)",
+      "Separate facts from interpretations (“X happened” vs “it means I am…”)",
+      "Brief self-compassion: what would you say to a friend in your place?",
+      "Gradual social re-engagement (one message, one short outing)",
+      "CBT or interpersonal therapy if the pattern persists"
+    ],
+    "whenToSeekHelp": "If low mood lasts more than two weeks, worsens, or thoughts of self-harm appear, seek professional support as soon as possible.",
+    "sources": [
+      {
+        "label": "NIMH — Depression",
+        "url": "https://www.nimh.nih.gov/health/topics/depression"
+      },
+      {
+        "label": "WHO — Mental health",
+        "url": "https://www.who.int/es/health-topics/mental-health"
+      }
+    ]
+  },
+  "anxietyAdvanced": {
+    "whatIs": "This module extends anxiety (#85): when worry takes up a lot of mental space, you seek constant certainty, or avoid situations “just in case”. Anxiety can become the main problem, not just the situation.",
+    "symptoms": [
+      "Worry that is hard to stop, even without a clear problem",
+      "Sustained body tension (jaw, shoulders, stomach)",
+      "Repeated reassurance seeking (asking, googling, checking)",
+      "Avoiding plans or decisions for fear of being wrong",
+      "Intolerance of uncertainty (“I need to know now”)"
+    ],
+    "causes": [
+      "Overestimating threats and underestimating your ability to cope",
+      "Safety behaviors that relieve in the moment but maintain anxiety",
+      "Prolonged stress without rest",
+      "History of experiences where “preventing” seemed to protect you"
+    ],
+    "whatHelps": [
+      "Worry window: 15 minutes a day; outside that time, postpone worry",
+      "Gradual exposure to what you avoid (small, measurable steps)",
+      "Reduce checking and reassurance little by little",
+      "Tolerate “not knowing” for a few minutes before acting",
+      "CBT or exposure therapy if anxiety limits your life"
+    ],
+    "whenToSeekHelp": "If worry dominates your day, you avoid important activities, or you have frequent panic attacks, talk to a professional.",
+    "sources": [
+      {
+        "label": "NIMH — Anxiety disorders (overview)",
+        "url": "https://www.nimh.nih.gov/health/topics/anxiety-disorders"
+      },
+      {
+        "label": "WHO — Mental health",
+        "url": "https://www.who.int/es/health-topics/mental-health"
+      }
+    ]
+  },
+  "workStress": {
+    "whatIs": "This module focuses on stress at work or study: deadlines, unclear roles, always-on culture, and difficulty disconnecting. It complements the general stress module (#85).",
+    "symptoms": [
+      "Sunday anxiety or dread before work or classes",
+      "Difficulty “switching off” after the workday",
+      "Irritability with colleagues or family from accumulated fatigue",
+      "Guilt about not being “productive enough”",
+      "Physical signs: neck tension, headaches, insomnia"
+    ],
+    "causes": [
+      "High demands without recovery margin",
+      "Blurry boundaries (email after hours, back-to-back meetings)",
+      "Little control over priorities or resources",
+      "Fear of disappointing others or missing opportunities"
+    ],
+    "management": [
+      "Closing ritual: 5 minutes to note pending tasks and “close” the workday",
+      "Micro-breaks every 60–90 minutes (water, stretch, look away)",
+      "Task triage: urgent vs important vs delegable",
+      "One concrete boundary this week (one “no”, one schedule, mute notifications)",
+      "Talk with a supervisor or seek professional support if the load is chronic"
+    ],
+    "whenToSeekHelp": "If work stress affects sleep, health, or relationships for weeks, or exhaustion does not improve with rest, seek medical or psychological support.",
+    "sources": [
+      {
+        "label": "WHO — Stress at the workplace",
+        "url": "https://www.who.int/news-room/questions-and-answers/item/stress-at-the-workplace"
+      },
+      {
+        "label": "APA — Workplace stress",
+        "url": "https://www.apa.org/topics/healthy-workplaces/workplace-stress"
+      }
+    ]
+  },
   "emotionRegulation": {
     "whatIs": "Regulating emotions is not repressing them: it is recognizing them, understanding what they are for and choosing responses that take care of you and your relationships.",
     "skills": [

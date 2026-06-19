@@ -13,6 +13,21 @@ import { hasActionableDistortionInMessage } from '../utils/automaticThoughtGuard
 /** Psicoed por señales en el mensaje (#85 / #127). */
 export const CONTEXTUAL_PSYCHOEDUCATION_RULES = [
   {
+    id: 'psychoeducation_work_stress',
+    pattern:
+      /(?:estr[eé]s\s+(?:laboral|del?\s+trabajo|en\s+el\s+trabajo)|presi[oó]n\s+(?:en\s+el\s+)?trabajo|jefe\s+(?:me\s+)?(?:presiona|exige)|deadline|reuniones\s+(?:sin\s+parar|encadenadas)|no\s+(?:puedo|logro)\s+desconectar(?:\s+del\s+trabajo)?|ansiedad\s+dominical|work\s+stress|can't\s+switch\s+off|always\s+on|after\s+hours\s+email)/i,
+  },
+  {
+    id: 'psychoeducation_anxiety_advanced',
+    pattern:
+      /(?:preocupaci[oó]n\s+(?:constante|excesiva)|no\s+paro\s+de\s+pensar|busco\s+(?:confirmaci[oó]n|reassurance)|intolerancia\s+a\s+la\s+incertidumbre|constantly\s+worrying|constant\s+worry|can't\s+stop\s+worrying|cannot\s+stop\s+thinking|seeking\s+reassurance|need\s+to\s+know\s+for\s+sure)/i,
+  },
+  {
+    id: 'psychoeducation_depression_advanced',
+    pattern:
+      /(?:rumio\s+(?:sin\s+parar|todo)|ruminating|autocr[ií]tica\s+(?:constante|duro)|no\s+encuentro\s+sentido|nada\s+va\s+a\s+mejorar|me\s+cuesta\s+salir\s+de\s+la\s+cama|espiral\s+negativ|negative\s+spiral|harsh\s+self[\s-]?criticism|nothing\s+will\s+get\s+better)/i,
+  },
+  {
     id: 'psychoeducation_sleep',
     pattern:
       /(?:insomnio|no\s+puedo\s+dormir|duermo\s+mal|durmiendo\s+mal|despierto\s+(?:a\s+(?:las|la)|(?:en\s+)?la\s+noche)|sueño\s+(?:muy\s+)?(?:mal|interrumpido|fragmentado)|me\s+cuesta\s+conciliar|insomnia|can'?t\s+sleep|sleep(?:ing)?\s+badly|wake\s+up\s+(?:at\s+)?night|trouble\s+falling\s+asleep)/i,
@@ -721,8 +736,11 @@ class ActionSuggestionService {
     walk(this.actionMappings);
     walk(this.subtypeAdjustments);
     ids.add('psychoeducation_anxiety');
+    ids.add('psychoeducation_anxiety_advanced');
     ids.add('psychoeducation_depression');
+    ids.add('psychoeducation_depression_advanced');
     ids.add('psychoeducation_stress');
+    ids.add('psychoeducation_work_stress');
     ids.add('psychoeducation_anger');
     ids.add('psychoeducation_sleep');
     ids.add('psychoeducation_emotion_regulation');

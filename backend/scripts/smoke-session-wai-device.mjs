@@ -14,6 +14,7 @@ import {
   isSessionWaiExcludedFromInsight,
   meetsSessionWaiThreshold,
 } from '../services/sessionAllianceFeedbackService.js';
+import { getInterventionCatalogEntry } from '../constants/interventionCatalog.js';
 import { chatApiCopy } from '../utils/chatApiCopy.js';
 import { hasSpanishVoseo } from '../utils/copyToneGuards.mjs';
 
@@ -99,6 +100,29 @@ const chatItem = fs.readFileSync(
   'utf8',
 );
 ok('thumbs eliminados del chat UI', !chatItem.includes('thumbs-up'));
+
+const waiCatalog = getInterventionCatalogEntry('session_wai_feedback');
+ok('catálogo #127 session_wai_feedback', Boolean(waiCatalog?.id === 'session_wai_feedback'));
+
+const graphService = fs.readFileSync(
+  path.join(root, 'backend/services/chatInterventionGraphService.js'),
+  'utf8',
+);
+ok(
+  'grafo recordSessionWaiGraphEvent',
+  graphService.includes('recordSessionWaiGraphEvent') &&
+    graphService.includes("source: 'session_wai_v1'"),
+);
+const waiService = fs.readFileSync(
+  path.join(root, 'backend/services/sessionAllianceFeedbackService.js'),
+  'utf8',
+);
+ok(
+  'WAI service registra grafo en submit/skip',
+  waiService.includes('recordSessionWaiGraphEvent') &&
+    waiService.includes("eventType: 'completed'") &&
+    waiService.includes("eventType: 'dismissed'"),
+);
 
 console.log(failed ? `\nSmoke session WAI: ${failed} fallo(s)\n` : '\nSmoke session WAI: OK\n');
 process.exit(failed ? 1 : 0);

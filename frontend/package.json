@@ -22,7 +22,7 @@
     "check": "npm run check:imports && npm run check:safe-area",
     "test:e2e:maestro": "maestro test e2e/maestro/chat-roundtrip-from-tabs.yaml",
     "test:e2e:maestro:login-chat": "maestro test e2e/maestro/login-chat-send.yaml",
-    "test:e2e:maestro:psychoed": "maestro test e2e/maestro/psychoeducation-nine-modules.yaml",
+    "test:e2e:maestro:psychoed": "maestro test e2e/maestro/psychoeducation-twelve-modules.yaml",
     "postinstall": "node -e \"try { const pkg = require('./node_modules/@react-native/normalize-colors/package.json'); if (!pkg.main) { pkg.main = 'index.js'; require('fs').writeFileSync('./node_modules/@react-native/normalize-colors/package.json', JSON.stringify(pkg, null, 2)); } } catch(e) {}\""
   },
   "dependencies": {

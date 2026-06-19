@@ -5,8 +5,17 @@ import { PSYCHOEDUCATION_TOPIC_ORDER } from './psychoeducationTopics.js';
 
 const TOPIC_BY_KEY = {
   anxiety: 'anxiety',
+  anxietyadvanced: 'anxietyAdvanced',
+  ansiedadavanzada: 'anxietyAdvanced',
   depression: 'depression',
+  depressionadvanced: 'depressionAdvanced',
+  depresionavanzada: 'depressionAdvanced',
+  bajoanimoavanzado: 'depressionAdvanced',
   stress: 'stress',
+  workstress: 'workStress',
+  estreslaboral: 'workStress',
+  trabajo: 'workStress',
+  workplace: 'workStress',
   anger: 'anger',
   sleep: 'sleep',
   emotionregulation: 'emotionRegulation',

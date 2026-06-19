@@ -36,10 +36,28 @@ describe('chatPsychoeducationSuggestions (#85)', () => {
       const ids = resolveContextualPsychoeducationIds(
         'El estrés del trabajo me tiene agotada',
       );
-      expect(ids).toContain('psychoeducation_stress');
+      expect(ids).toContain('psychoeducation_work_stress');
       ids.forEach((id) => {
         expect(getInterventionCatalogEntry(id)).toBeTruthy();
       });
+    });
+
+    it('resolveContextualPsychoeducationIds detecta psicoed avanzada #90–#92', () => {
+      expect(
+        resolveContextualPsychoeducationIds(
+          'Rumio todo con autocrítica constante, nada va a mejorar',
+        ),
+      ).toContain('psychoeducation_depression_advanced');
+      expect(
+        resolveContextualPsychoeducationIds(
+          'Preocupación constante, no paro de pensar y busco confirmación',
+        ),
+      ).toContain('psychoeducation_anxiety_advanced');
+      expect(
+        resolveContextualPsychoeducationIds(
+          'No puedo desconectar del trabajo, ansiedad dominical',
+        ),
+      ).toContain('psychoeducation_work_stress');
     });
 
     it('resolveSuggestionEmotion mapea neutral + estrés a ansiedad', () => {

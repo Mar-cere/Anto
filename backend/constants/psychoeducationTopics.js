@@ -14,8 +14,11 @@ export const PSYCHOEDUCATION_ESTIMATED_MINUTES = 2;
 
 export const PSYCHOEDUCATION_TOPIC_ORDER = [
   'anxiety',
+  'anxietyAdvanced',
   'depression',
+  'depressionAdvanced',
   'stress',
+  'workStress',
   'anger',
   'sleep',
   'emotionRegulation',
@@ -43,6 +46,24 @@ export const PSYCHOEDUCATION_TOPIC_META = {
       'Look at 5 things around you to ground yourself briefly.',
     ],
   },
+  anxietyAdvanced: {
+    interventionId: 'psychoeducation_anxiety_advanced',
+    tags: ['ansiedad', 'preocupacion'],
+    titleEs: 'Ansiedad avanzada',
+    titleEn: 'Anxiety — deeper skills',
+    summaryEs: 'Preocupación persistente, incertidumbre y conductas de seguridad.',
+    summaryEn: 'Persistent worry, uncertainty, and safety behaviors.',
+    mechanismLineEs: 'Reducir comprobaciones libera espacio para tolerar la incertidumbre.',
+    mechanismLineEn: 'Reducing checking makes room to tolerate uncertainty.',
+    chatMicroStepsEs: [
+      'Posponer la preocupación 10 minutos: pon un temporizador.',
+      'Elige una comprobación que puedas hacer una vez menos hoy.',
+    ],
+    chatMicroStepsEn: [
+      'Postpone worry for 10 minutes: set a timer.',
+      'Pick one check you can do one time less today.',
+    ],
+  },
   depression: {
     interventionId: 'psychoeducation_depression',
     tags: ['tristeza'],
@@ -61,6 +82,24 @@ export const PSYCHOEDUCATION_TOPIC_META = {
       'Note one thing that went okay today, however small.',
     ],
   },
+  depressionAdvanced: {
+    interventionId: 'psychoeducation_depression_advanced',
+    tags: ['tristeza', 'depresion'],
+    titleEs: 'Bajo ánimo avanzado',
+    titleEn: 'Low mood — deeper skills',
+    summaryEs: 'Rumiación, autocrítica y ciclos de inercia.',
+    summaryEn: 'Rumination, self-criticism, and inertia cycles.',
+    mechanismLineEs: 'Un paso mínimo de activación rompe el ciclo de retirada.',
+    mechanismLineEn: 'One minimal activation step breaks the withdrawal cycle.',
+    chatMicroStepsEs: [
+      'Escribe un hecho concreto de hoy (no una etiqueta sobre ti).',
+      'Elige una acción de 5 minutos y hazla antes de evaluarte.',
+    ],
+    chatMicroStepsEn: [
+      'Write one concrete fact from today (not a label about you).',
+      'Pick a 5-minute action and do it before judging yourself.',
+    ],
+  },
   stress: {
     interventionId: 'psychoeducation_stress',
     tags: ['estres'],
@@ -77,6 +116,24 @@ export const PSYCHOEDUCATION_TOPIC_META = {
     chatMicroStepsEn: [
       'Split into two columns: what you can influence today and what you cannot.',
       'Take 3 slow breaths before your next task.',
+    ],
+  },
+  workStress: {
+    interventionId: 'psychoeducation_work_stress',
+    tags: ['estres', 'trabajo'],
+    titleEs: 'Estrés laboral',
+    titleEn: 'Work stress',
+    summaryEs: 'Límites, desconexión y cuidado en el ámbito laboral o académico.',
+    summaryEn: 'Boundaries, disconnecting, and care at work or study.',
+    mechanismLineEs: 'Un ritual de cierre ayuda al cerebro a soltar la jornada.',
+    mechanismLineEn: 'A closing ritual helps your brain release the workday.',
+    chatMicroStepsEs: [
+      'Anota 3 pendientes para mañana y cierra la lista.',
+      'Silencia notificaciones laborales 30 min antes de dormir.',
+    ],
+    chatMicroStepsEn: [
+      'Note 3 tasks for tomorrow and close the list.',
+      'Mute work notifications 30 minutes before bed.',
     ],
   },
   anger: {

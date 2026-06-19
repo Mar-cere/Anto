@@ -29,7 +29,7 @@ describe('psychoeducationChatI18n', () => {
     const ids = resolveContextualPsychoeducationIds(
       'Work stress has me burned out',
     );
-    expect(ids).toContain('psychoeducation_stress');
+    expect(ids).toContain('psychoeducation_work_stress');
   });
 
   it('resolveContextualPsychoeducationIds detecta sleep en inglés', () => {

@@ -6,12 +6,24 @@ export const PSYCHOED_TOPIC_VISUALS = {
     icon: 'weather-windy',
     accentKey: 'primary',
   },
+  anxietyAdvanced: {
+    icon: 'weather-windy',
+    accentKey: 'primary',
+  },
   depression: {
+    icon: 'weather-cloudy',
+    accentKey: 'primary',
+  },
+  depressionAdvanced: {
     icon: 'weather-cloudy',
     accentKey: 'primary',
   },
   stress: {
     icon: 'flash',
+    accentKey: 'warning',
+  },
+  workStress: {
+    icon: 'briefcase-outline',
     accentKey: 'warning',
   },
   anger: {

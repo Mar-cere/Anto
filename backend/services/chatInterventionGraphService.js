@@ -591,10 +591,46 @@ async function recordInterventionEvent({
   }
 }
 
+/**
+ * WAI post-sesión (#98): completed (enviado) o dismissed (omitido) en SessionInsight.
+ */
+async function recordSessionWaiGraphEvent({
+  userId,
+  conversationId,
+  eventType,
+  avgScore = null,
+}) {
+  const ev = String(eventType || '').trim();
+  if (!userId || !conversationId) return;
+  if (!['completed', 'dismissed'].includes(ev)) return;
+
+  const id = 'session_wai_feedback';
+  if (!isValidInterventionId(id)) return;
+
+  const tags = ev === 'completed' ? ['wai_submitted'] : ['wai_skipped'];
+  if (ev === 'completed' && Number.isFinite(Number(avgScore))) {
+    tags.push(`avg_${Number(avgScore).toFixed(1)}`);
+  }
+
+  await recordInterventionEvent({
+    userId,
+    conversationId,
+    interventionId: id,
+    eventType: ev,
+    source: 'session_wai_v1',
+    meta: {
+      surface: 'session_insight',
+      interventionType: 'feedback',
+      tags,
+    },
+  }).catch(() => {});
+}
+
 export default {
   recordSuggestionEventsShown,
   recordContinuityItemsShown,
   recordInterventionEvent,
+  recordSessionWaiGraphEvent,
   recordLibraryInterventionOpened,
   recordUserInterventionEvent,
   resolveGraphConversationId,

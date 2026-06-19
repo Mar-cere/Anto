@@ -49,17 +49,20 @@ describe('psychoeducation module structure (all topics)', () => {
   const topics = getAvailableTopics('es');
   const languages = ['es', 'en'];
 
-  it('expone los 9 temas esperados', () => {
+  it('expone los 12 temas esperados', () => {
     expect(topics.sort()).toEqual(
       [
         'anxiety',
+        'anxietyAdvanced',
+        'depression',
+        'depressionAdvanced',
+        'stress',
+        'workStress',
         'anger',
         'burnout',
-        'depression',
         'emotionRegulation',
         'grief',
         'sleep',
-        'stress',
         'trauma',
       ].sort(),
     );

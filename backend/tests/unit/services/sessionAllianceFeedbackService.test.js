@@ -38,6 +38,13 @@ await jest.unstable_mockModule('../../../services/metricsService.js', () => ({
   default: { recordMetric: mockRecordMetric },
 }));
 
+const mockRecordSessionWaiGraphEvent = jest.fn().mockResolvedValue(undefined);
+
+await jest.unstable_mockModule('../../../services/chatInterventionGraphService.js', () => ({
+  __esModule: true,
+  default: { recordSessionWaiGraphEvent: mockRecordSessionWaiGraphEvent },
+}));
+
 const {
   isSessionWaiExcludedFromInsight,
   meetsSessionWaiThreshold,
@@ -144,6 +151,14 @@ describe('sessionAllianceFeedbackService', () => {
       expect.any(Object),
       userId,
     );
+    expect(mockRecordSessionWaiGraphEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId,
+        conversationId: expect.anything(),
+        eventType: 'completed',
+        avgScore: 4.5,
+      }),
+    );
   });
 
   it('skip registra omisión y activa recordatorio', async () => {
@@ -165,6 +180,13 @@ describe('sessionAllianceFeedbackService', () => {
       'session_wai_skipped',
       expect.any(Object),
       userId,
+    );
+    expect(mockRecordSessionWaiGraphEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId,
+        conversationId: expect.anything(),
+        eventType: 'dismissed',
+      }),
     );
   });
 });
