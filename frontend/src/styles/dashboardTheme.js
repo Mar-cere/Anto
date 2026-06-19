@@ -143,22 +143,36 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
       marginBottom: t.SECTION_GAP,
     },
     heroOrb: t.HERO_ORB,
-    heroBadgeRow: {
+    heroStreakChip: {
       flexDirection: 'row',
       alignItems: 'center',
       alignSelf: 'flex-start',
-      gap: 6,
-      marginBottom: 8,
-      paddingVertical: 5,
-      paddingHorizontal: 10,
+      flexWrap: 'wrap',
+      gap: 5,
+      marginBottom: 10,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
       borderRadius: 999,
-      backgroundColor: 'rgba(255, 255, 255, 0.14)',
+      backgroundColor: 'rgba(255, 255, 255, 0.16)',
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: 'rgba(255, 255, 255, 0.22)',
     },
-    heroBadgeText: {
+    heroStreakChipText: {
       color: colors.white,
+      fontSize: 13,
+      fontWeight: '700',
+      letterSpacing: 0.2,
+    },
+    heroStreakChipSep: {
+      color: 'rgba(255, 255, 255, 0.55)',
       fontSize: 12,
       fontWeight: '600',
-      letterSpacing: 0.3,
+    },
+    heroStreakChipTier: {
+      color: 'rgba(255, 255, 255, 0.92)',
+      fontSize: 12,
+      fontWeight: '600',
+      letterSpacing: 0.2,
     },
     heroTitle: {
       color: colors.white,
@@ -202,6 +216,10 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
       ...t.SURFACE,
       paddingVertical: 18,
       paddingHorizontal: 16,
+    },
+    statCardSolo: {
+      flex: 1,
+      maxWidth: '100%',
     },
     statValue: {
       fontSize: 34,

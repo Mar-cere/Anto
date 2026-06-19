@@ -64,6 +64,12 @@ const DashboardStreakHero = memo(({ streakDays, displayName, dailyMood, onOpenCh
   };
 
   const tierBadge = streakVisual.labelKey ? DASH[streakVisual.labelKey] : null;
+  const streakChipLabel =
+    streakDays === 1
+      ? DASH.STREAK_CHIP_ONE || `1 ${DASH.STAT_STREAK_DAYS}`
+      : (DASH.STREAK_CHIP_DAYS || '{days} {label}')
+          .replace('{days}', String(streakDays))
+          .replace('{label}', DASH.STAT_STREAK_DAYS || '');
 
   return (
     <Pressable
@@ -87,9 +93,15 @@ const DashboardStreakHero = memo(({ streakDays, displayName, dailyMood, onOpenCh
         pointerEvents="none"
       />
       {streakDays > 0 ? (
-        <View style={styles.heroBadgeRow}>
-          <Ionicons name={streakVisual.icon} size={16} color={streakVisual.accent} />
-          {tierBadge ? <Text style={styles.heroBadgeText}>{tierBadge}</Text> : null}
+        <View style={styles.heroStreakChip} accessibilityRole="text">
+          <Ionicons name={streakVisual.icon} size={15} color={colors.white} />
+          <Text style={styles.heroStreakChipText}>{streakChipLabel}</Text>
+          {tierBadge ? (
+            <>
+              <Text style={styles.heroStreakChipSep}>·</Text>
+              <Text style={styles.heroStreakChipTier}>{tierBadge}</Text>
+            </>
+          ) : null}
         </View>
       ) : null}
       <Text style={styles.heroTitle}>{copy.title}</Text>

@@ -29,12 +29,8 @@ import {
 } from 'react-native';
 import ParticleBackground from '../components/ParticleBackground';
 import OfflineBanner from '../components/OfflineBanner';
-import { api, ENDPOINTS } from '../config/api';
 import { ROUTES } from '../constants/routes';
-import {
-  NAV_STORAGE_OPEN_CHAT_AFTER_LOGIN,
-  openEmergencyChatFromHome,
-} from '../navigation/navigationHelpers';
+import { api, ENDPOINTS } from '../config/api';
 import chatService from '../services/chatService';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -535,23 +531,10 @@ const SignInScreen = () => {
         }
 
         // Entramos por tabs y limpiamos el stack; si venía del banner de emergencia en Home, abrir Chat
-        try {
-          const openChat = await AsyncStorage.getItem(NAV_STORAGE_OPEN_CHAT_AFTER_LOGIN);
-          if (openChat === '1') {
-            await AsyncStorage.removeItem(NAV_STORAGE_OPEN_CHAT_AFTER_LOGIN);
-            await openEmergencyChatFromHome(navigation);
-          } else {
-            navigation.reset({
-              index: 0,
-              routes: [{ name: ROUTES.MAIN_TABS }],
-            });
-          }
-        } catch (_) {
-          navigation.reset({
-            index: 0,
-            routes: [{ name: ROUTES.MAIN_TABS }],
-          });
-        }
+        navigation.reset({
+          index: 0,
+          routes: [{ name: ROUTES.MAIN_TABS }],
+        });
       } else {
         notifySignInFailure(ERROR_MESSAGES.LOGIN_FAILED, {
           title: TEXTS.LOGIN_ERROR_TITLE,

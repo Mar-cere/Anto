@@ -49,7 +49,7 @@ const TOOL_ITEMS = [
   },
 ];
 
-export default function TccProtocolsQuickCard({ accessibilityLabel }) {
+export default function TccProtocolsQuickCard({ accessibilityLabel, embedded = false }) {
   const navigation = useNavigation();
   const { colors, resolvedScheme } = useTheme();
   const styles = useMemo(
@@ -79,6 +79,27 @@ export default function TccProtocolsQuickCard({ accessibilityLabel }) {
     navigation.navigate(screen);
   };
 
+  const rows = (
+    <>
+      {TOOL_ITEMS.map((item, index) => (
+        <DashboardGroupedRow
+          key={item.key}
+          iconNode={(
+            <MaterialCommunityIcons name={item.icon} size={22} color={colors.primary} />
+          )}
+          title={TEXTS[item.labelKey]}
+          subtitle={TEXTS[item.hintKey]}
+          onPress={() => openScreen(item.screen)}
+          isLast={!embedded && index === TOOL_ITEMS.length - 1}
+        />
+      ))}
+    </>
+  );
+
+  if (embedded) {
+    return rows;
+  }
+
   return (
     <DashboardSection
       title={TEXTS.TITLE}
@@ -87,20 +108,7 @@ export default function TccProtocolsQuickCard({ accessibilityLabel }) {
       onFooterPress={() => openScreen('TherapeuticTechniques')}
       accessibilityLabel={accessibilityLabel}
     >
-      <View style={styles.groupedList}>
-        {TOOL_ITEMS.map((item, index) => (
-          <DashboardGroupedRow
-            key={item.key}
-            iconNode={(
-              <MaterialCommunityIcons name={item.icon} size={22} color={colors.primary} />
-            )}
-            title={TEXTS[item.labelKey]}
-            subtitle={TEXTS[item.hintKey]}
-            onPress={() => openScreen(item.screen)}
-            isLast={index === TOOL_ITEMS.length - 1}
-          />
-        ))}
-      </View>
+      <View style={styles.groupedList}>{rows}</View>
     </DashboardSection>
   );
 }

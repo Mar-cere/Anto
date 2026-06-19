@@ -2,37 +2,44 @@ import { useMemo } from 'react';
 import { useSectionTranslations } from '../hooks/useTranslations';
 
 const DEFAULTS = {
-  TITLE: 'Grafo de intervenciones',
-  META: 'Ventana: últimos {days} días · métricas por sesión (mostradas/clic/hecho)',
-  ERROR: 'No se pudo cargar el grafo de intervenciones.',
+  TITLE: 'Lo que te ayuda',
+  META: 'Basado en tu actividad de los últimos {days} días',
+  ERROR: 'No pudimos cargar esta vista. Inténtalo de nuevo.',
   RETRY: 'Reintentar',
-  EMPTY: 'Sin datos aún. Usa sugerencias del chat y completa técnicas.',
+  EMPTY: 'Aún no hay suficiente actividad. Chatea con Anto y prueba una técnica cuando te la sugiera.',
   METRICS: 'mostradas {shown} · clic {clicked} · descartadas {dismissed} · hechas {completed}',
   RATES: 'CTR {ctr} · completación {completion}',
   DEV_LINK: 'Grafo de sugerencias del chat (interno)',
-  ENTRY_LINK: 'Tu mapa de temas e intervenciones',
-  VIEW_GRAPH: 'Mapa visual',
+  ENTRY_LINK: 'Lo que te ayuda',
+  VIEW_GRAPH: 'Mapa',
   VIEW_LIST: 'Lista',
-  LEGEND: 'Grosor de la línea ≈ frecuencia y completación. Toca una conexión para ver detalle.',
-  LEGEND_TOPIC_FREE:
-    'Líneas punteadas: lo que escribiste en el chat → técnica que usaste. Grosor ≈ frecuencia.',
-  TOPIC_FREE_SECTION: 'Tus mensajes en el chat',
+  LEGEND: 'Las líneas más marcadas son las conexiones que más has usado.',
+  LEGEND_TOPIC_FREE: 'Lo que compartiste en el chat y las técnicas que probaste después.',
+  TOPIC_FREE_SECTION: 'De tus conversaciones',
   EMBEDDINGS_ON: 'Ranking semántico activo (embeddings topicFree).',
   VECTOR_ATLAS_ON: 'Búsqueda vectorial Atlas activa para afinidad semántica.',
   VECTOR_SCAN_ON: 'Afinidad semántica activa (modo scan local).',
-  LEGEND_CONCEPT:
-    'Nodos agrupados: ideas similares de tus mensajes → técnica. Líneas finas ≈ correlación observada.',
-  INSIGHTS_TITLE: 'Patrones observados',
-  INSIGHTS_DISCLAIMER: 'Correlaciones, no causas. Requiere más datos para ser fiables.',
-  INSIGHT_TOPIC_INTERVENTION: 'Con {topic} suele ayudarte {intervention}',
+  LEGEND_CONCEPT: 'Ideas parecidas de tus mensajes agrupadas con las técnicas que más te sirven.',
+  INSIGHTS_TITLE: 'Patrones que vamos notando',
+  INSIGHTS_DISCLAIMER: 'Son tendencias de tu uso en la app, no un diagnóstico.',
+  INSIGHT_TOPIC_INTERVENTION: 'Cuando aparece {topic}, suele ayudarte {intervention}',
   INSIGHT_CONCEPT_INTERVENTION: 'Cuando hablas de «{concept}», a menudo usas {intervention}',
-  INSIGHT_TOPIC_MOOD_LIFT: 'En días de {topic}, tu ánimo tras BA sube ~{delta}',
-  INSIGHT_TOPIC_MOOD_DIP: 'En días de {topic}, tu ánimo tras BA baja ~{delta}',
-  LIST_A11Y: 'Detalle de conexiones del grafo',
-  MAP_A11Y: 'Mapa de conexiones entre temas e intervenciones',
-  MAP_SOURCE_COL: 'Tus ideas en el chat',
+  INSIGHT_TOPIC_MOOD_LIFT:
+    'En días de {topic}, tu ánimo suele mejorar después de activación conductual (~{delta})',
+  INSIGHT_TOPIC_MOOD_DIP:
+    'En días de {topic}, tu ánimo suele bajar un poco tras activación conductual (~{delta})',
+  ROW_CONTEXT: 'Cuando hablas de {topic}',
+  STATUS_COMPLETED: 'Ya lo probaste y lo completaste',
+  STATUS_COMPLETED_REPEAT: 'Lo completaste {n} veces',
+  STATUS_EXPLORED: 'Lo abriste para explorarlo',
+  STATUS_DISMISSED: 'Lo descartaste en su momento',
+  STATUS_SUGGESTED: 'Te lo sugerimos en el chat',
+  LIST_A11Y: 'Conexiones entre tus temas y técnicas',
+  MAP_A11Y: 'Mapa de lo que te ayuda',
+  MAP_SOURCE_COL: 'Lo que compartes',
   MAP_TARGET_COL: 'Técnicas',
-  ORIGINAL_SNIPPET: 'Texto original del chat',
+  ORIGINAL_SNIPPET: 'Tal como lo escribiste',
+  MAP_TAP_HINT: 'Toca una conexión para ver más detalle.',
 };
 
 const KEY_MAP = {
@@ -60,6 +67,12 @@ const KEY_MAP = {
   INSIGHT_CONCEPT_INTERVENTION: 'INTERVENTION_GRAPH_INSIGHT_CONCEPT_INTERVENTION',
   INSIGHT_TOPIC_MOOD_LIFT: 'INTERVENTION_GRAPH_INSIGHT_TOPIC_MOOD_LIFT',
   INSIGHT_TOPIC_MOOD_DIP: 'INTERVENTION_GRAPH_INSIGHT_TOPIC_MOOD_DIP',
+  ROW_CONTEXT: 'INTERVENTION_GRAPH_ROW_CONTEXT',
+  STATUS_COMPLETED: 'INTERVENTION_GRAPH_STATUS_COMPLETED',
+  STATUS_COMPLETED_REPEAT: 'INTERVENTION_GRAPH_STATUS_COMPLETED_REPEAT',
+  STATUS_EXPLORED: 'INTERVENTION_GRAPH_STATUS_EXPLORED',
+  STATUS_DISMISSED: 'INTERVENTION_GRAPH_STATUS_DISMISSED',
+  STATUS_SUGGESTED: 'INTERVENTION_GRAPH_STATUS_SUGGESTED',
   LIST_A11Y: 'INTERVENTION_GRAPH_LIST_A11Y',
   MAP_A11Y: 'INTERVENTION_GRAPH_MAP_A11Y',
   MAP_SOURCE_COL: 'INTERVENTION_GRAPH_MAP_SOURCE_COL',
@@ -83,6 +96,7 @@ export function formatGraphMeta(texts, days) {
   return String(texts.META || DEFAULTS.META).replace('{days}', String(days));
 }
 
+/** @deprecated Solo tests / diagnóstico interno */
 export function formatGraphMetrics(texts, edge) {
   return String(texts.METRICS || '')
     .replace('{shown}', String(edge.shown ?? 0))
@@ -91,10 +105,41 @@ export function formatGraphMetrics(texts, edge) {
     .replace('{completed}', String(edge.completed ?? 0));
 }
 
+/** @deprecated Solo tests / diagnóstico interno */
 export function formatGraphRates(texts, edge, pctFn) {
   return String(texts.RATES || '')
     .replace('{ctr}', pctFn(edge.ctr))
     .replace('{completion}', pctFn(edge.completionRate));
+}
+
+export function stripTechnicalInterventionSuffix(label) {
+  return String(label || '')
+    .replace(/\s*\((psicoeducación|psicoed|micro-guía|micro-guia|tcc|interno)\)\s*$/i, '')
+    .trim();
+}
+
+export function formatGraphRowContext(texts, topicLabel) {
+  const topic = String(topicLabel || '').replace(/^["«]|["»]$/g, '').trim();
+  return String(texts.ROW_CONTEXT || DEFAULTS.ROW_CONTEXT).replace('{topic}', topic);
+}
+
+export function formatGraphHumanStatus(texts, edge) {
+  const completed = Number(edge?.completed) || 0;
+  const clicked = Number(edge?.clicked) || 0;
+  const dismissed = Number(edge?.dismissed) || 0;
+  const shown = Number(edge?.shown) || 0;
+
+  if (completed > 1) {
+    return String(texts.STATUS_COMPLETED_REPEAT || DEFAULTS.STATUS_COMPLETED_REPEAT).replace(
+      '{n}',
+      String(completed),
+    );
+  }
+  if (completed === 1) return texts.STATUS_COMPLETED || DEFAULTS.STATUS_COMPLETED;
+  if (clicked > 0) return texts.STATUS_EXPLORED || DEFAULTS.STATUS_EXPLORED;
+  if (dismissed > 0) return texts.STATUS_DISMISSED || DEFAULTS.STATUS_DISMISSED;
+  if (shown > 0) return texts.STATUS_SUGGESTED || DEFAULTS.STATUS_SUGGESTED;
+  return '';
 }
 
 export function formatCorrelationInsight(texts, row, language = 'es') {
@@ -102,7 +147,9 @@ export function formatCorrelationInsight(texts, row, language = 'es') {
     row?.sourceKind === 'topicTag'
       ? formatTopicTagLabel(row.sourceId, language)
       : row?.sourceLabel || row?.sourceId || '';
-  const intervention = row?.interventionLabel || row?.targetId || '';
+  const intervention = stripTechnicalInterventionSuffix(
+    row?.interventionLabel || row?.targetId || '',
+  );
   const delta = Math.abs(
     Number(row?.metrics?.avgMoodDeltaOnTopicDays || 0) -
       Number(row?.metrics?.avgMoodDeltaOverall || 0),
@@ -129,7 +176,7 @@ function formatTopicTagLabel(topicTag, language) {
   const tag = String(topicTag || 'general').trim().toLowerCase();
   const labels = {
     es: {
-      general: 'temas generales',
+      general: 'temas variados',
       trabajo: 'trabajo',
       ansiedad: 'ansiedad',
       tristeza: 'tristeza',
@@ -141,7 +188,7 @@ function formatTopicTagLabel(topicTag, language) {
       familia: 'familia',
     },
     en: {
-      general: 'general topics',
+      general: 'varied topics',
       trabajo: 'work',
       ansiedad: 'anxiety',
       tristeza: 'low mood',

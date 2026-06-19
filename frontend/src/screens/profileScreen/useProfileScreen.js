@@ -1,5 +1,5 @@
 /**
- * Hook para ProfileScreen: datos de usuario, estadísticas, contactos, suscripción y logout.
+ * Hook para ProfileScreen: datos de usuario, estadísticas, suscripción y logout.
  */
 import { useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -17,7 +17,6 @@ import {
 } from './profileScreenConstants';
 import { STORAGE_KEYS as CHAT_STORAGE_KEYS } from '../chat/chatScreenConstants';
 import { isValidMongoObjectId24 } from '../../utils/mongoId';
-import { normalizeEmergencyContactsList } from '../../utils/emergencyContactUtils';
 
 function resolveSubscriptionStatusErrorMessage(errorCode, texts) {
   const code = String(errorCode || '').toUpperCase();
@@ -60,13 +59,7 @@ export function useProfileScreen(navigation) {
   const [userData, setUserData] = useState(DEFAULT_USER_DATA);
   const [detailedStats, setDetailedStats] = useState(DEFAULT_DETAILED_STATS);
   const [refreshAnim] = useState(new Animated.Value(0));
-  const [emergencyContacts, setEmergencyContacts] = useState([]);
-  const [showEmergencyContactsModal, setShowEmergencyContactsModal] = useState(false);
-  const [showEditContactModal, setShowEditContactModal] = useState(false);
-  const [selectedContact, setSelectedContact] = useState(null);
-  const [loadingContacts, setLoadingContacts] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
-  /** Continuidad del último chat (#4 + #47); null si no hay o error. */
   const [lastSessionSummary, setLastSessionSummary] = useState(null);
 
   const loadUserData = useCallback(async () => {
@@ -103,19 +96,6 @@ export function useProfileScreen(navigation) {
       setRefreshing(false);
     }
   }, [showToast, TEXTS.ERROR_LOAD_MESSAGE]);
-
-  const loadEmergencyContacts = useCallback(async () => {
-    try {
-      setLoadingContacts(true);
-      const response = await api.get(ENDPOINTS.EMERGENCY_CONTACTS);
-      setEmergencyContacts(normalizeEmergencyContactsList(response.contacts || []));
-    } catch (error) {
-      console.error('[ProfileScreen] Error cargando contactos:', error);
-      setEmergencyContacts([]);
-    } finally {
-      setLoadingContacts(false);
-    }
-  }, []);
 
   const loadSubscriptionStatus = useCallback(async () => {
     try {
@@ -179,10 +159,9 @@ export function useProfileScreen(navigation) {
 
   useEffect(() => {
     loadUserData();
-    loadEmergencyContacts();
     loadSubscriptionStatus();
     loadLastSessionSummary();
-  }, [loadUserData, loadEmergencyContacts, loadSubscriptionStatus, loadLastSessionSummary]);
+  }, [loadUserData, loadSubscriptionStatus, loadLastSessionSummary]);
 
   const triggerRefreshAnim = useCallback(() => {
     Animated.sequence([
@@ -205,52 +184,9 @@ export function useProfileScreen(navigation) {
     setRefreshing(true);
     triggerRefreshAnim();
     loadUserData();
-    loadEmergencyContacts();
     loadSubscriptionStatus();
     loadLastSessionSummary();
-  }, [loadUserData, loadEmergencyContacts, loadSubscriptionStatus, loadLastSessionSummary, triggerRefreshAnim]);
-
-  const handleDeleteContact = useCallback(
-    async (contactId) => {
-      Alert.alert(TEXTS.DELETE_CONTACT, TEXTS.DELETE_CONTACT_CONFIRM, [
-        { text: TEXTS.CANCEL, style: 'cancel' },
-        {
-          text: TEXTS.DELETE,
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await api.delete(ENDPOINTS.EMERGENCY_CONTACT_BY_ID(contactId));
-              showToast({
-                message: TEXTS.CONTACT_DELETED,
-                type: 'success',
-              });
-              await loadEmergencyContacts();
-            } catch (error) {
-              console.error('Error eliminando contacto:', error);
-              showToast({
-                message: TEXTS.CONTACT_DELETE_ERROR,
-                type: 'error',
-              });
-            }
-          },
-        },
-      ]);
-    },
-    [
-      loadEmergencyContacts,
-      showToast,
-      TEXTS.DELETE_CONTACT,
-      TEXTS.DELETE_CONTACT_CONFIRM,
-      TEXTS.CANCEL,
-      TEXTS.DELETE,
-      TEXTS.CONTACT_DELETED,
-      TEXTS.CONTACT_DELETE_ERROR,
-    ]
-  );
-
-  const handleEmergencyContactsSaved = useCallback(() => {
-    loadEmergencyContacts();
-  }, [loadEmergencyContacts]);
+  }, [loadUserData, loadSubscriptionStatus, loadLastSessionSummary, triggerRefreshAnim]);
 
   const handleLogout = useCallback(() => {
     Alert.alert(TEXTS.LOGOUT_TITLE, TEXTS.LOGOUT_MESSAGE, [
@@ -291,17 +227,6 @@ export function useProfileScreen(navigation) {
     TEXTS.ERROR_LOGOUT_MESSAGE,
   ]);
 
-  const openEditContact = useCallback((contact) => {
-    setSelectedContact(contact);
-    setShowEditContactModal(true);
-  }, []);
-
-  const closeEditContact = useCallback(() => {
-    setShowEditContactModal(false);
-    setSelectedContact(null);
-  }, []);
-
-  /** Abre el chat; si hay conversación del resumen, la activa (misma lógica que el foco del dashboard). */
   const openChatFromLastSession = useCallback(
     async (conversationId) => {
       try {
@@ -335,22 +260,10 @@ export function useProfileScreen(navigation) {
     refreshing,
     userData,
     detailedStats,
-    emergencyContacts,
-    loadingContacts,
     subscriptionStatus,
     lastSessionSummary,
     openChatFromLastSession,
-    showEmergencyContactsModal,
-    setShowEmergencyContactsModal,
-    showEditContactModal,
-    setShowEditContactModal,
-    selectedContact,
-    loadUserData,
     handleRefresh,
-    handleDeleteContact,
-    handleEmergencyContactsSaved,
     handleLogout,
-    openEditContact,
-    closeEditContact,
   };
 }

@@ -8,18 +8,15 @@
  * @author AntoApp Team
  */
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   ImageBackground,
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View
 } from 'react-native';
 import AnimatedButton from '../components/AnimatedButton';
@@ -30,10 +27,6 @@ import {
 } from '../constants/animations';
 import { ROUTES } from '../constants/routes';
 import { OPACITIES, SCALES, SPACING } from '../constants/ui';
-import {
-  NAV_STORAGE_OPEN_CHAT_AFTER_LOGIN,
-  openEmergencyChatFromHome,
-} from '../navigation/navigationHelpers';
 import { createGlobalStyles } from '../styles/globalStyles';
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
@@ -59,7 +52,6 @@ const LOADING_SCALE = SCALES.LOADING;
 const ROUTE_MAP = {
   [ROUTES.SIGN_IN]: ROUTES.SIGN_IN,
   [ROUTES.REGISTER]: ROUTES.REGISTER,
-  [ROUTES.CHAT]: ROUTES.CHAT,
   'FaQ': 'FaQ'
 };
 const DEFAULT_TEXTS = {
@@ -70,18 +62,6 @@ const DEFAULT_TEXTS = {
   FAQ: 'Preguntas frecuentes',
   SIGN_IN_HINT: 'Toca para ir a la pantalla de inicio de sesión',
   REGISTER_HINT: 'Toca para ir a la pantalla de registro',
-  CONTINUE_WITHOUT_ACCOUNT_HINT:
-    'Abre el chat de forma limitada sin iniciar sesión (útil en una emergencia)',
-  EMERGENCY_CHAT_ENTRY: 'Ingresa al chat de emergencia',
-  EMERGENCY_CHAT_ENTRY_A11Y: 'Abrir chat de emergencia',
-  CHAT_LOGIN_REQUIRED_TITLE: 'Iniciar sesión requerido',
-  CHAT_LOGIN_REQUIRED_MESSAGE:
-    'Necesitas iniciar sesión para acceder al chat. ¿Deseas iniciar sesión ahora?',
-  CANCEL: 'Cancelar',
-  SIGN_IN_CTA: 'Iniciar sesión',
-  ERROR_TITLE: 'Error',
-  CHAT_SESSION_CHECK_ERROR:
-    'Hubo un problema al verificar tu sesión. Por favor, intenta iniciar sesión.',
 };
 
 const HomeScreen = () => {
@@ -90,21 +70,6 @@ const HomeScreen = () => {
     () => ({
       ...DEFAULT_TEXTS,
       ...(translated || {}),
-      EMERGENCY_CHAT_ENTRY:
-        translated?.EMERGENCY_CHAT_ENTRY || DEFAULT_TEXTS.EMERGENCY_CHAT_ENTRY,
-      EMERGENCY_CHAT_ENTRY_A11Y:
-        translated?.EMERGENCY_CHAT_ENTRY_A11Y || DEFAULT_TEXTS.EMERGENCY_CHAT_ENTRY_A11Y,
-      CHAT_LOGIN_REQUIRED_TITLE:
-        translated?.CHAT_LOGIN_REQUIRED_TITLE || DEFAULT_TEXTS.CHAT_LOGIN_REQUIRED_TITLE,
-      CHAT_LOGIN_REQUIRED_MESSAGE:
-        translated?.CHAT_LOGIN_REQUIRED_MESSAGE ||
-        DEFAULT_TEXTS.CHAT_LOGIN_REQUIRED_MESSAGE,
-      CANCEL: translated?.CANCEL || DEFAULT_TEXTS.CANCEL,
-      SIGN_IN_CTA: translated?.SIGN_IN || DEFAULT_TEXTS.SIGN_IN_CTA,
-      ERROR_TITLE: translated?.ERROR_TITLE || DEFAULT_TEXTS.ERROR_TITLE,
-      CHAT_SESSION_CHECK_ERROR:
-        translated?.CHAT_SESSION_CHECK_ERROR ||
-        DEFAULT_TEXTS.CHAT_SESSION_CHECK_ERROR,
     }),
     [translated],
   );
@@ -191,40 +156,9 @@ const HomeScreen = () => {
   }, [fadeAnim, translateYAnim]);
 
   // Función para manejar la navegación
-  const handleNavigation = async (screen) => {
+  const handleNavigation = (screen) => {
     const route = ROUTE_MAP[screen] || screen;
-    
-    // Si intenta navegar al chat, verificar autenticación primero
-    if (route === ROUTES.CHAT || screen === ROUTES.CHAT) {
-      try {
-        const token = await AsyncStorage.getItem('userToken');
-        if (!token) {
-          Alert.alert(
-            TEXTS.CHAT_LOGIN_REQUIRED_TITLE,
-            TEXTS.CHAT_LOGIN_REQUIRED_MESSAGE,
-            [
-              { text: TEXTS.CANCEL, style: 'cancel' },
-              {
-                text: TEXTS.SIGN_IN_CTA,
-                onPress: async () => {
-                  try {
-                    await AsyncStorage.setItem(NAV_STORAGE_OPEN_CHAT_AFTER_LOGIN, '1');
-                  } catch (_) {}
-                  navigation.navigate(ROUTES.SIGN_IN);
-                },
-              },
-            ]
-          );
-          return;
-        }
-        await openEmergencyChatFromHome(navigation);
-      } catch (error) {
-        console.error('Error verificando autenticación:', error);
-        Alert.alert(TEXTS.ERROR_TITLE, TEXTS.CHAT_SESSION_CHECK_ERROR);
-      }
-    } else {
-      navigation.navigate(route);
-    }
+    navigation.navigate(route);
   };
 
   return (
@@ -291,18 +225,8 @@ const HomeScreen = () => {
               </Animated.View>
 
               <View style={styles.footerContainer}>
-                <TouchableOpacity
-                  testID="emergency-chat-entry"
-                  accessibilityLabel={TEXTS.EMERGENCY_CHAT_ENTRY_A11Y}
-                  accessibilityHint={TEXTS.CONTINUE_WITHOUT_ACCOUNT_HINT}
-                  style={styles.emergencyContainer}
-                  onPress={() => handleNavigation(ROUTES.CHAT)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.emergencyText}>{TEXTS.EMERGENCY_CHAT_ENTRY}</Text>
-                </TouchableOpacity>
-                <Text 
-                  style={styles.FQText} 
+                <Text
+                  style={styles.FQText}
                   onPress={() => handleNavigation('FaQ')}
                 >
                   {TEXTS.FAQ}

@@ -520,7 +520,7 @@ const TherapeuticTechniquesStatsScreen = () => {
   const renderGraphEntryLink = () => (
     <TouchableOpacity
       style={styles.devLink}
-      onPress={() => navigation.navigate('InterventionGraph')}
+      onPress={() => navigation.navigate('ActivitySummary')}
       accessibilityRole="button"
       testID="intervention-graph-entry"
     >

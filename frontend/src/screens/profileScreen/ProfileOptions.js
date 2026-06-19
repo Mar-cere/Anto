@@ -24,26 +24,6 @@ export function ProfileOptions({ navigation }) {
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.optionButton}
-        onPress={() => navigation.navigate('WeeklyInsight', { period: 'week' })}
-        accessibilityRole="button"
-        accessibilityLabel={TEXTS.WEEKLY_INSIGHT_NAV_LABEL}
-      >
-        <MaterialCommunityIcons name="chart-bell-curve" size={ICON_SIZE} color={profileColors.PRIMARY} />
-        <Text style={styles.optionText}>{TEXTS.WEEKLY_INSIGHT_NAV}</Text>
-        <MaterialCommunityIcons name="chevron-right" size={ICON_SIZE} color={profileColors.PRIMARY} />
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.optionButton}
-        onPress={() => navigation.navigate('InterventionGraph')}
-        accessibilityRole="button"
-        accessibilityLabel={TEXTS.INTERVENTION_GRAPH_NAV_LABEL}
-      >
-        <MaterialCommunityIcons name="graph-outline" size={ICON_SIZE} color={profileColors.PRIMARY} />
-        <Text style={styles.optionText}>{TEXTS.INTERVENTION_GRAPH_NAV}</Text>
-        <MaterialCommunityIcons name="chevron-right" size={ICON_SIZE} color={profileColors.PRIMARY} />
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.optionButton}
         onPress={() => navigation.navigate('EditProfile')}
         accessibilityLabel={TEXTS.EDIT_PROFILE_LABEL}
       >
@@ -53,10 +33,10 @@ export function ProfileOptions({ navigation }) {
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.optionButton}
-        onPress={() => navigation.navigate('FaQ')}
+        onPress={() => navigation.navigate('FAQ')}
         accessibilityLabel={TEXTS.HELP_LABEL}
       >
-        <MaterialCommunityIcons name="help-circle" size={ICON_SIZE} color={profileColors.PRIMARY} />
+        <MaterialCommunityIcons name="help-circle-outline" size={ICON_SIZE} color={profileColors.PRIMARY} />
         <Text style={styles.optionText}>{TEXTS.HELP}</Text>
         <MaterialCommunityIcons name="chevron-right" size={ICON_SIZE} color={profileColors.PRIMARY} />
       </TouchableOpacity>

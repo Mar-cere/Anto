@@ -25,8 +25,6 @@ import {
   RESPONSE_STYLES,
   useSettingsTexts,
 } from '../screens/settings/settingsScreenConstants';
-import { COUNTRY_PREFERENCE_AUTO } from '../constants/emergencyCountries';
-
 /** Misma clave que AuthContext: sesión persistida tras PUT /api/users/me */
 const STORAGE_USER_DATA = 'userData';
 
@@ -568,53 +566,6 @@ export function useSettingsScreen({ navigation }) {
     ],
   );
 
-  const handleSetCountryPreference = useCallback(
-    async (iso) => {
-      if (!user) return true;
-      const currentPreferences = user?.preferences || {};
-      const nextCountry =
-        !iso || iso === COUNTRY_PREFERENCE_AUTO
-          ? null
-          : String(iso).trim().toUpperCase();
-
-      try {
-        const result = await api.put(ENDPOINTS.UPDATE_PROFILE, {
-          preferences: {
-            ...currentPreferences,
-            country: nextCountry,
-          },
-        });
-        const ok = await persistUserFromMeResponse(result);
-        if (!ok) {
-          showToast({
-            message: TEXTS.COUNTRY_CHANGED_SYNC_WARNING,
-            type: 'warning',
-          });
-        } else {
-          showToast({
-            message: TEXTS.COUNTRY_CHANGED_OK,
-            type: 'success',
-          });
-        }
-        return ok;
-      } catch (error) {
-        showToast({
-          message: resolveSettingsErrorMessage(error, TEXTS.PREFERENCES_ERROR),
-          type: 'error',
-        });
-        return false;
-      }
-    },
-    [
-      user,
-      persistUserFromMeResponse,
-      showToast,
-      TEXTS.COUNTRY_CHANGED_SYNC_WARNING,
-      TEXTS.COUNTRY_CHANGED_OK,
-      TEXTS.PREFERENCES_ERROR,
-    ],
-  );
-
   return {
     user,
     language,
@@ -630,7 +581,6 @@ export function useSettingsScreen({ navigation }) {
     handleSetResponseStyle,
     handleSetThemePreference,
     handleSetLanguagePreference,
-    handleSetCountryPreference,
     handleChatPreferenceChange,
     checkPushNotificationStatus,
     handleTestNotification,

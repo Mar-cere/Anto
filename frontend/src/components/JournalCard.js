@@ -40,7 +40,7 @@ const DEFAULT_TEXTS_EN = {
   EMPTY_BODY: 'Practice gratitude and improve your emotional well-being',
 };
 
-const JournalCard = () => {
+const JournalCard = ({ embedded = false }) => {
   const translated = useSectionTranslations('TECHNIQUES');
   const dashTexts = useSectionTranslations('DASH');
   const { language } = useLanguage();
@@ -106,14 +106,35 @@ const JournalCard = () => {
     navigation.navigate('GratitudeJournal');
   };
 
-  const rowTitle = lastEntryText ? T.LAST_ENTRY : T.EMPTY_TITLE;
+  const rowTitle = embedded ? T.CARD_TITLE : lastEntryText ? T.LAST_ENTRY : T.EMPTY_TITLE;
   const rowBody = lastEntryText || T.EMPTY_BODY;
   const dateLabel = lastDateLabel ? `${T.LAST_PREFIX}: ${lastDateLabel}` : T.TODAY;
-  const subtitleParts = [dateLabel];
-  if (entriesCount > 0) {
+  const subtitleParts = embedded ? [rowBody] : [dateLabel];
+  if (!embedded && entriesCount > 0) {
     subtitleParts.push(`${entriesCount}`);
   }
-  subtitleParts.push(rowBody);
+  if (!embedded) {
+    subtitleParts.push(rowBody);
+  } else if (entriesCount > 0 && lastDateLabel) {
+    subtitleParts.unshift(`${T.LAST_PREFIX}: ${lastDateLabel}`);
+  }
+
+  const row = (
+    <DashboardGroupedRow
+      iconNode={(
+        <MaterialCommunityIcons name="book-heart-outline" size={22} color={colors.primary} />
+      )}
+      title={rowTitle}
+      subtitle={subtitleParts.filter(Boolean).join(' · ')}
+      onPress={openJournal}
+      isLast={!embedded}
+      accessibilityLabel={T.OPEN_A11Y}
+    />
+  );
+
+  if (embedded) {
+    return row;
+  }
 
   return (
     <DashboardSection
@@ -122,18 +143,7 @@ const JournalCard = () => {
       onViewAll={openJournal}
       accessibilityLabel={T.OPEN_A11Y}
     >
-      <View style={styles.groupedList}>
-        <DashboardGroupedRow
-          iconNode={(
-            <MaterialCommunityIcons name="book-heart-outline" size={22} color={colors.primary} />
-          )}
-          title={rowTitle}
-          subtitle={subtitleParts.join(' · ')}
-          onPress={openJournal}
-          isLast
-          accessibilityLabel={T.OPEN_A11Y}
-        />
-      </View>
+      <View style={styles.groupedList}>{row}</View>
     </DashboardSection>
   );
 };

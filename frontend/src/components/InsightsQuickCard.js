@@ -1,5 +1,5 @@
 /**
- * Accesos directos a resumen, patrones semanales y mapa de intervenciones (1 toque desde Inicio).
+ * Acceso único a Tu resumen (actividad, patrones y lo que te ayuda).
  */
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -14,54 +14,22 @@ import DashboardGroupedRow from './dashboard/DashboardGroupedRow';
 import DashboardSection from './dashboard/DashboardSection';
 
 const DEFAULTS_ES = {
-  TITLE: 'Tu actividad y patrones',
-  HINT: 'Resumen, informe semanal y mapa de lo que te ayuda.',
-  SUMMARY: 'Resumen semanal y mensual',
-  SUMMARY_HINT: 'Mensajes, técnicas, hábitos y tono emocional',
-  WEEKLY: 'Patrones de la semana',
-  WEEKLY_HINT: 'Informe observacional de correlaciones',
-  GRAPH: 'Mapa de temas e intervenciones',
-  GRAPH_HINT: 'Qué temas del chat conectan con qué técnicas',
-  CARD_A11Y: 'Tu actividad y patrones',
+  TITLE: 'Tu resumen',
+  HINT: 'Actividad del período, patrones y lo que te ayuda en un solo lugar.',
+  CTA: 'Abrir resumen',
+  CTA_HINT: 'Mensajes, hábitos, patrones y técnicas que te sirven',
+  CARD_A11Y: 'Tu resumen de actividad',
 };
 
 const DEFAULTS_EN = {
-  TITLE: 'Your activity and patterns',
-  HINT: 'Summary, weekly report, and map of what helps you.',
-  SUMMARY: 'Weekly and monthly summary',
-  SUMMARY_HINT: 'Messages, techniques, habits, and emotional tone',
-  WEEKLY: 'Weekly patterns',
-  WEEKLY_HINT: 'Observational correlation report',
-  GRAPH: 'Topics and interventions map',
-  GRAPH_HINT: 'How chat themes connect to techniques you use',
-  CARD_A11Y: 'Your activity and patterns',
+  TITLE: 'Your summary',
+  HINT: 'Period activity, patterns, and what helps you — all in one place.',
+  CTA: 'Open summary',
+  CTA_HINT: 'Messages, habits, patterns, and techniques that help',
+  CARD_A11Y: 'Your activity summary',
 };
 
-const ROWS = [
-  {
-    key: 'summary',
-    screen: 'ActivitySummary',
-    icon: 'chart-timeline-variant',
-    labelKey: 'SUMMARY',
-    hintKey: 'SUMMARY_HINT',
-  },
-  {
-    key: 'weekly',
-    screen: 'WeeklyInsight',
-    icon: 'chart-bell-curve',
-    labelKey: 'WEEKLY',
-    hintKey: 'WEEKLY_HINT',
-  },
-  {
-    key: 'graph',
-    screen: 'InterventionGraph',
-    icon: 'graph-outline',
-    labelKey: 'GRAPH',
-    hintKey: 'GRAPH_HINT',
-  },
-];
-
-export default function InsightsQuickCard({ accessibilityLabel }) {
+export default function InsightsQuickCard({ accessibilityLabel, embedded = false }) {
   const navigation = useNavigation();
   const { language } = useLanguage();
   const { colors, resolvedScheme } = useTheme();
@@ -76,21 +44,34 @@ export default function InsightsQuickCard({ accessibilityLabel }) {
     () => ({
       TITLE: translated?.INSIGHTS_CARD_TITLE || defaults.TITLE,
       HINT: translated?.INSIGHTS_CARD_HINT || defaults.HINT,
-      SUMMARY: translated?.INSIGHTS_CARD_SUMMARY || defaults.SUMMARY,
-      SUMMARY_HINT: translated?.INSIGHTS_CARD_SUMMARY_HINT || defaults.SUMMARY_HINT,
-      WEEKLY: translated?.INSIGHTS_CARD_WEEKLY || defaults.WEEKLY,
-      WEEKLY_HINT: translated?.INSIGHTS_CARD_WEEKLY_HINT || defaults.WEEKLY_HINT,
-      GRAPH: translated?.INSIGHTS_CARD_GRAPH || defaults.GRAPH,
-      GRAPH_HINT: translated?.INSIGHTS_CARD_GRAPH_HINT || defaults.GRAPH_HINT,
+      CTA: translated?.INSIGHTS_CARD_SUMMARY || defaults.CTA,
+      CTA_HINT: translated?.INSIGHTS_CARD_SUMMARY_HINT || defaults.CTA_HINT,
       CARD_A11Y: translated?.INSIGHTS_CARD_A11Y || defaults.CARD_A11Y,
     }),
     [translated, defaults],
   );
 
-  const openRow = (row) => {
+  const openSummary = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    navigation.navigate(row.screen, row.key === 'weekly' ? { period: 'week' } : undefined);
+    navigation.navigate('ActivitySummary');
   };
+
+  const row = (
+    <DashboardGroupedRow
+      iconNode={(
+        <MaterialCommunityIcons name="chart-timeline-variant" size={22} color={colors.primary} />
+      )}
+      title={TEXTS.CTA}
+      subtitle={TEXTS.CTA_HINT}
+      onPress={openSummary}
+      accessibilityHint={TEXTS.CTA_HINT}
+      isLast={embedded}
+    />
+  );
+
+  if (embedded) {
+    return row;
+  }
 
   return (
     <DashboardSection
@@ -98,21 +79,7 @@ export default function InsightsQuickCard({ accessibilityLabel }) {
       hint={TEXTS.HINT}
       accessibilityLabel={accessibilityLabel || TEXTS.CARD_A11Y}
     >
-      <View style={styles.groupedList}>
-        {ROWS.map((row, index) => (
-          <DashboardGroupedRow
-            key={row.key}
-            iconNode={(
-              <MaterialCommunityIcons name={row.icon} size={22} color={colors.primary} />
-            )}
-            title={TEXTS[row.labelKey]}
-            subtitle={TEXTS[row.hintKey]}
-            onPress={() => openRow(row)}
-            accessibilityHint={TEXTS[row.hintKey]}
-            isLast={index === ROWS.length - 1}
-          />
-        ))}
-      </View>
+      <View style={styles.groupedList}>{row}</View>
     </DashboardSection>
   );
 }

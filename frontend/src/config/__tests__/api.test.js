@@ -37,7 +37,7 @@ describe('api config', () => {
       expect(ENDPOINTS.TASK_BY_ID('123')).toBe('/api/tasks/123');
       expect(ENDPOINTS.TASK_SUBTASKS_GENERATE('123')).toBe('/api/tasks/123/subtasks/generate');
       expect(ENDPOINTS.HABIT_BY_ID('456')).toBe('/api/habits/456');
-      expect(ENDPOINTS.EMERGENCY_CONTACT_BY_ID('789')).toBe('/api/users/me/emergency-contacts/789');
+      expect(ENDPOINTS.CHAT_CONVERSATION_BY_ID('abc')).toBe('/api/chat/conversations/abc');
     });
   });
 

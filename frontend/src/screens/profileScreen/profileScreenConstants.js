@@ -41,7 +41,7 @@ export const TEXTS = {
   SETTINGS: 'Ir a configuración',
   EDIT_PROFILE_LABEL: 'Editar perfil',
   HELP_LABEL: 'Ayuda',
-  SUMMARY_NAV: 'Resumen semanal y mensual',
+  SUMMARY_NAV: 'Tu resumen',
   SUMMARY_NAV_LABEL: 'Abrir resumen de actividad',
   WEEKLY_INSIGHT_NAV: 'Patrones de la semana',
   WEEKLY_INSIGHT_NAV_LABEL: 'Abrir informe semanal de patrones',

@@ -1,0 +1,163 @@
+/**
+ * Conexiones tema → técnica (top N), embebido en Tu resumen.
+ */
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useSectionTranslations } from '../../hooks/useTranslations';
+import chatService from '../../services/chatService';
+import {
+  formatGraphHumanStatus,
+  formatGraphRowContext,
+  stripTechnicalInterventionSuffix,
+} from '../../screens/interventionGraphTexts';
+
+const MAX_ITEMS = 4;
+
+function normalizeInterventionLabel(label, id) {
+  const raw = stripTechnicalInterventionSuffix(label || id || '');
+  if (String(id || '').trim() === 'personal-pattern') {
+    return raw === 'personal-pattern' || !raw
+      ? null
+      : raw;
+  }
+  return raw || null;
+}
+
+export default function SummaryWhatHelpsSection() {
+  const { language } = useLanguage();
+  const { colors } = useTheme();
+  const TEXTS = useSectionTranslations('TECHNIQUES');
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState([]);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        block: { marginTop: 20 },
+        kicker: {
+          fontSize: 11,
+          fontWeight: '700',
+          letterSpacing: 1.1,
+          textTransform: 'uppercase',
+          color: colors.primary,
+          marginBottom: 8,
+        },
+        hint: {
+          fontSize: 13,
+          lineHeight: 19,
+          color: colors.textSecondary,
+          marginBottom: 10,
+        },
+        card: {
+          borderRadius: 14,
+          padding: 14,
+          marginBottom: 8,
+          backgroundColor: colors.glassFill || colors.surface,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+        },
+        title: {
+          fontSize: 16,
+          fontWeight: '600',
+          color: colors.text,
+          marginBottom: 4,
+        },
+        context: {
+          fontSize: 14,
+          lineHeight: 20,
+          color: colors.textSecondary,
+        },
+        status: {
+          fontSize: 13,
+          color: colors.primary,
+          marginTop: 6,
+          fontWeight: '500',
+        },
+        loading: { paddingVertical: 12, alignItems: 'center' },
+      }),
+    [colors],
+  );
+
+  const sectionTitle = TEXTS.INTERVENTION_GRAPH_ENTRY_LINK || 'Lo que te ayuda';
+  const sectionHint =
+    language === 'en'
+      ? 'Links between what you share and techniques that help.'
+      : 'Enlaces entre lo que compartes y las técnicas que te sirven.';
+
+  const graphTexts = useMemo(
+    () => ({
+      ROW_CONTEXT: TEXTS.INTERVENTION_GRAPH_ROW_CONTEXT || 'Cuando hablas de {topic}',
+      STATUS_COMPLETED: TEXTS.INTERVENTION_GRAPH_STATUS_COMPLETED,
+      STATUS_COMPLETED_REPEAT: TEXTS.INTERVENTION_GRAPH_STATUS_COMPLETED_REPEAT,
+      STATUS_EXPLORED: TEXTS.INTERVENTION_GRAPH_STATUS_EXPLORED,
+      STATUS_DISMISSED: TEXTS.INTERVENTION_GRAPH_STATUS_DISMISSED,
+      STATUS_SUGGESTED: TEXTS.INTERVENTION_GRAPH_STATUS_SUGGESTED,
+    }),
+    [TEXTS],
+  );
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await chatService.getInterventionGraph({ days: 30, limit: 20 });
+      const data = res?.data ?? res;
+      const topicFreeEdges = Array.isArray(data?.topicFreeEdges) ? data.topicFreeEdges : [];
+      const edges = Array.isArray(data?.edges) ? data.edges : [];
+      const pool = topicFreeEdges.length > 0 ? topicFreeEdges : edges;
+      const ranked = [...pool]
+        .sort((a, b) => (Number(b.completed) || 0) - (Number(a.completed) || 0))
+        .slice(0, MAX_ITEMS)
+        .map((edge) => {
+          const intervention = normalizeInterventionLabel(
+            edge.interventionLabel,
+            edge.interventionId,
+          );
+          if (!intervention) return null;
+          const topic = String(edge.displayLabel || edge.topicFree || edge.topicTag || '').trim();
+          if (!topic) return null;
+          return {
+            key: `${topic}:${edge.interventionId}`,
+            intervention,
+            topic: topic.length > 56 ? `${topic.slice(0, 55)}…` : topic,
+            status: formatGraphHumanStatus(graphTexts, edge),
+          };
+        })
+        .filter(Boolean);
+      setItems(ranked);
+    } catch {
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [graphTexts]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (loading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="small" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (!items.length) return null;
+
+  return (
+    <View style={styles.block} accessibilityRole="summary">
+      <Text style={styles.kicker}>{sectionTitle}</Text>
+      <Text style={styles.hint}>{sectionHint}</Text>
+      {items.map((item) => (
+        <View key={item.key} style={styles.card}>
+          <Text style={styles.title}>{item.intervention}</Text>
+          <Text style={styles.context}>{formatGraphRowContext(graphTexts, item.topic)}</Text>
+          {item.status ? <Text style={styles.status}>{item.status}</Text> : null}
+        </View>
+      ))}
+    </View>
+  );
+}

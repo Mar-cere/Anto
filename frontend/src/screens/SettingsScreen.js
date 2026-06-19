@@ -51,7 +51,6 @@ export default function SettingsScreen() {
     handleTestNotification,
     handleSetThemePreference,
     handleSetLanguagePreference,
-    handleSetCountryPreference,
   } = useSettingsScreen({ navigation });
 
   return (
@@ -74,7 +73,6 @@ export default function SettingsScreen() {
         onSetThemePreference={handleSetThemePreference}
         language={language}
         onSetLanguagePreference={handleSetLanguagePreference}
-        onSetCountryPreference={handleSetCountryPreference}
       />
       <SettingsConfirmModal
         visible={showLogoutModal}

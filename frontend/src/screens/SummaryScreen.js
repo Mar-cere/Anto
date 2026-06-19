@@ -2,7 +2,7 @@
  * Resumen semanal / mensual — minimalista con skeleton al recargar, vacío con CTA e info.
  */
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -26,6 +26,9 @@ import { useMappedSectionTexts } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
 import { formatMonthKey } from '../utils/monthKeys';
 import AbcMacroPatternsCard from '../components/abc/AbcMacroPatternsCard';
+import SummaryPatternsSection from '../components/summary/SummaryPatternsSection';
+import SummaryWhatHelpsSection from '../components/summary/SummaryWhatHelpsSection';
+import { resolveMonthlyInsightKey } from '../utils/monthKeys';
 
 const DEFAULT_TEXTS = {
   TITLE: 'Tu resumen',
@@ -260,6 +263,7 @@ function HowWeCountModal({ visible, onClose, sx, texts }) {
 
 export default function SummaryScreen() {
   const { language } = useLanguage();
+  const route = useRoute();
   const TEXTS = useMappedSectionTexts('PROFILE', DEFAULT_TEXTS, SUMMARY_TEXT_MAP);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
@@ -636,7 +640,9 @@ export default function SummaryScreen() {
     [colors],
   );
 
-  const [granularity, setGranularity] = useState('week');
+  const [granularity, setGranularity] = useState(() =>
+    route.params?.initialPeriod === 'month' ? 'month' : 'week',
+  );
   const [weekAnchor, setWeekAnchor] = useState(() => new Date());
   const [monthYear, setMonthYear] = useState(() => {
     const n = new Date();
@@ -710,6 +716,30 @@ export default function SummaryScreen() {
   );
 
   useEffect(() => {
+    if (route.params?.initialPeriod === 'month') {
+      setGranularity('month');
+    } else if (route.params?.initialPeriod === 'week') {
+      setGranularity('week');
+    }
+  }, [route.params?.initialPeriod]);
+
+  const patternsWeekKey = useMemo(() => {
+    if (typeof route.params?.weekKey === 'string' && route.params.weekKey.trim()) {
+      return route.params.weekKey.trim();
+    }
+    return payload?.period?.weekKey || null;
+  }, [route.params?.weekKey, payload?.period?.weekKey]);
+
+  const patternsMonthKey = useMemo(
+    () =>
+      resolveMonthlyInsightKey(route.params?.monthKey, {
+        year: route.params?.year ?? monthYear.year,
+        month: route.params?.month ?? monthYear.month,
+      }) || formatMonthKey(monthYear.year, monthYear.month),
+    [route.params?.monthKey, route.params?.year, route.params?.month, monthYear],
+  );
+
+  useEffect(() => {
     return () => summaryAbortRef.current?.abort();
   }, []);
 
@@ -762,30 +792,6 @@ export default function SummaryScreen() {
           monthYear.month,
           language === 'en' ? 'en-US' : 'es-ES',
         );
-
-  const insightCta = useMemo(
-    () =>
-      granularity === 'month'
-        ? {
-            title: TEXTS.MONTHLY_INSIGHT_CTA,
-            hint: TEXTS.MONTHLY_INSIGHT_CTA_HINT,
-            params: {
-              period: 'month',
-              monthKey: formatMonthKey(monthYear.year, monthYear.month),
-              year: monthYear.year,
-              month: monthYear.month,
-            },
-          }
-        : {
-            title: TEXTS.WEEKLY_INSIGHT_CTA,
-            hint: TEXTS.WEEKLY_INSIGHT_CTA_HINT,
-            params: {
-              period: 'week',
-              ...(payload?.period?.weekKey ? { weekKey: payload.period.weekKey } : {}),
-            },
-          },
-    [granularity, TEXTS, payload?.period?.weekKey, monthYear],
-  );
 
   const emptyTexts = useMemo(
     () =>
@@ -884,17 +890,6 @@ export default function SummaryScreen() {
                     endDate={payload?.period?.end}
                     compact
                   />
-                  <TouchableOpacity
-                    style={styles.weeklyInsightBtn}
-                    onPress={() => navigation.navigate('WeeklyInsight', insightCta.params)}
-                    activeOpacity={0.85}
-                    accessibilityRole="button"
-                    accessibilityLabel={insightCta.title}
-                    accessibilityHint={insightCta.hint}
-                  >
-                    <Text style={styles.weeklyInsightBtnTitle}>{insightCta.title}</Text>
-                    <Text style={styles.weeklyInsightBtnHint}>{insightCta.hint}</Text>
-                  </TouchableOpacity>
                   <View style={styles.grid}>
                     <MetricTile
                       icon="message-text-outline"
@@ -941,6 +936,13 @@ export default function SummaryScreen() {
                   </View>
                 </View>
               )}
+
+              <SummaryPatternsSection
+                period={granularity}
+                weekKey={granularity === 'week' ? patternsWeekKey : null}
+                monthKey={granularity === 'month' ? patternsMonthKey : null}
+              />
+              <SummaryWhatHelpsSection />
 
               <View style={styles.divider} />
 

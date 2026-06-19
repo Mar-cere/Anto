@@ -24,8 +24,6 @@ import SignInScreen from '../screens/SignInScreen';
 import TaskScreen from '../screens/TaskScreen';
 import VerifyCodeScreen from '../screens/VerifyCodeScreen';
 import VerifyEmailScreen from '../screens/VerifyEmailScreen';
-import CrisisDashboardScreen from '../screens/CrisisDashboardScreen';
-import EmergencyAlertsHistoryScreen from '../screens/EmergencyAlertsHistoryScreen';
 import SystemHealthScreen from '../screens/SystemHealthScreen';
 import InterventionGraphScreen from '../screens/InterventionGraphScreen';
 import TherapeuticTechniquesScreen from '../screens/TherapeuticTechniquesScreen';
@@ -78,8 +76,6 @@ const ROUTE_NAMES = {
   HABITS: 'Habits',
   EDIT_PROFILE: 'EditProfile',
   POMODORO: 'Pomodoro',
-  CRISIS_DASHBOARD: 'CrisisDashboard',
-  EMERGENCY_ALERTS_HISTORY: 'EmergencyAlertsHistory',
   SYSTEM_HEALTH: 'SystemHealth',
   INTERVENTION_GRAPH: 'InterventionGraph',
   THERAPEUTIC_TECHNIQUES: 'TherapeuticTechniques',
@@ -216,16 +212,6 @@ const StackNavigator = () => {
       <Stack.Screen
         name={ROUTE_NAMES.WEEKLY_INSIGHT}
         component={WeeklyInsightScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen 
-        name={ROUTE_NAMES.CRISIS_DASHBOARD} 
-        component={CrisisDashboardScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen 
-        name={ROUTE_NAMES.EMERGENCY_ALERTS_HISTORY} 
-        component={EmergencyAlertsHistoryScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen 

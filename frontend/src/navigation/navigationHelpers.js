@@ -10,7 +10,7 @@ const MAIN_TAB_ROUTE_NAMES = ['Inicio', 'Chat', 'Perfil', 'Ajustes', 'FaQ'];
 const CHAT_TAB_INDEX = MAIN_TAB_ROUTE_NAMES.indexOf('Chat');
 const INICIO_TAB_INDEX = MAIN_TAB_ROUTE_NAMES.indexOf('Inicio');
 
-/** AsyncStorage: usuario llegó desde el banner de emergencia en Home sin sesión */
+/** AsyncStorage legacy key (ya no usado). */
 export const NAV_STORAGE_OPEN_CHAT_AFTER_LOGIN = 'openChatAfterLogin';
 
 /**
@@ -105,15 +105,4 @@ export function dispatchRootReset(navigation, state) {
  */
 export function dispatchResetToMainTabsWithChat(navigation, options = {}) {
   return dispatchRootReset(navigation, getResetToMainTabsWithChatState(options));
-}
-
-/**
- * Entrada “emergencia” desde Home (o login tras banner): persiste destino del atrás
- * y resetea a MainTabs + Chat con params alineados.
- */
-export async function openEmergencyChatFromHome(navigation) {
-  await setChatEntryBackTarget('home');
-  navigation.reset(
-    getResetToMainTabsWithChatState({ chatBackTarget: CHAT_BACK_TARGET.HOME })
-  );
 }

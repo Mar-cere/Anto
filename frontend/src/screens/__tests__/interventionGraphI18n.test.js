@@ -7,8 +7,9 @@ const INTERVENTION_GRAPH_KEYS = [
   'INTERVENTION_GRAPH_ERROR',
   'INTERVENTION_GRAPH_RETRY',
   'INTERVENTION_GRAPH_EMPTY',
-  'INTERVENTION_GRAPH_METRICS',
-  'INTERVENTION_GRAPH_RATES',
+  'INTERVENTION_GRAPH_ROW_CONTEXT',
+  'INTERVENTION_GRAPH_STATUS_COMPLETED',
+  'INTERVENTION_GRAPH_STATUS_SUGGESTED',
   'INTERVENTION_GRAPH_ENTRY_LINK',
   'INTERVENTION_GRAPH_VIEW_GRAPH',
   'INTERVENTION_GRAPH_VIEW_LIST',
@@ -55,8 +56,8 @@ describe('intervention graph i18n', () => {
     assertSectionKeys(techniquesEn, MICRO_GUIDE_LIBRARY_KEYS, 'en');
   });
 
-  it('entrada desde estadísticas comparte INTERVENTION_GRAPH_ENTRY_LINK', () => {
-    expect(techniquesEs.INTERVENTION_GRAPH_ENTRY_LINK).toMatch(/mapa/i);
-    expect(techniquesEn.INTERVENTION_GRAPH_ENTRY_LINK).toMatch(/map/i);
+  it('entrada desde estadísticas usa copy orientado al usuario', () => {
+    expect(techniquesEs.INTERVENTION_GRAPH_ENTRY_LINK).toMatch(/ayuda/i);
+    expect(techniquesEn.INTERVENTION_GRAPH_ENTRY_LINK).toMatch(/help/i);
   });
 });

@@ -22,7 +22,6 @@ import {
   View
 } from 'react-native';
 import DashboardScroll from '../components/DashboardScroll';
-import EmergencyContactsModal from '../components/EmergencyContactsModal';
 import FloatingNavBar from '../components/FloatingNavBar';
 import websocketService from '../services/websocketService';
 import FirstSessionHint, { isFirstSessionHintDismissed } from '../components/FirstSessionHint';
@@ -31,14 +30,12 @@ import OnboardingTutorial, { isTutorialCompleted } from '../components/Onboardin
 import TutorialHighlight from '../components/TutorialHighlight';
 import DashboardHomeHeader from '../components/dashboard/DashboardHomeHeader';
 import MoodCheckInCard from '../components/dashboard/MoodCheckInCard';
+import DashboardExploreSection from '../components/dashboard/DashboardExploreSection';
 import DashboardStreakHero from '../components/dashboard/DashboardStreakHero';
 import DashboardStatsRow from '../components/dashboard/DashboardStatsRow';
 import DashboardHabitsSection from '../components/dashboard/DashboardHabitsSection';
-import JournalCard from '../components/JournalCard';
 import QuoteSection from '../components/QuoteSection';
 import DashboardFocusCard from '../components/DashboardFocusCard';
-import InsightsQuickCard from '../components/InsightsQuickCard';
-import TccProtocolsQuickCard from '../components/TccProtocolsQuickCard';
 import TaskCard from '../components/TaskCard';
 import { SkeletonBlock, SkeletonCard } from '../components/Skeleton';
 import { api, ENDPOINTS } from '../config/api';
@@ -70,7 +67,6 @@ import { useSectionTranslations } from '../hooks/useTranslations';
 
 // Constantes de AsyncStorage
 const STORAGE_KEYS = {
-  EMERGENCY_CONTACTS_SKIPPED: 'emergencyContactsSkipped',
   NOTIFICATIONS_PROMPT_DISMISSED_PREFIX: 'notificationsPromptDismissed:', // legacy (migración)
 };
 
@@ -187,10 +183,6 @@ const DashScreen = () => {
   const [tasks, setTasks] = useState([]);
   const [habits, setHabits] = useState([]);
   const [togglingHabitId, setTogglingHabitId] = useState(null);
-  const [showEmergencyContactsModal, setShowEmergencyContactsModal] = useState(false);
-  const [emergencyContacts, setEmergencyContacts] = useState([]);
-  const [hasCheckedEmergencyContacts, setHasCheckedEmergencyContacts] = useState(false);
-  const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [hasCheckedTutorial, setHasCheckedTutorial] = useState(false);
   const [showFirstSessionHint, setShowFirstSessionHint] = useState(false);
@@ -198,7 +190,6 @@ const DashScreen = () => {
   const [highlightElement, setHighlightElement] = useState(null);
   const [trialInfo, setTrialInfo] = useState(null);
   const [trialBannerDismissed, setTrialBannerDismissed] = useState(false);
-  const [, setEmergencyAlertNotification] = useState(null);
   const [showNotificationsPrompt, setShowNotificationsPrompt] = useState(false);
   const [notificationsPromptSuppressed, setNotificationsPromptSuppressed] = useState(false);
   const [enablingNotifications, setEnablingNotifications] = useState(false);
@@ -329,11 +320,6 @@ const DashScreen = () => {
         setHasCheckedTutorial(true);
       }
 
-      // Verificar contactos de emergencia solo una vez al cargar inicialmente
-      if (!hasCheckedEmergencyContacts) {
-        checkEmergencyContacts(userData);
-      }
-
       // Registrar token push para notificaciones
       try {
         await registerForPushNotifications();
@@ -362,7 +348,7 @@ const DashScreen = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [navigation, refreshing, hasCheckedEmergencyContacts, hasCheckedTutorial, checkEmergencyContacts, DASH]);
+  }, [navigation, refreshing, hasCheckedTutorial, DASH]);
 
   const getNotificationsPromptKey = useCallback(() => {
     const userId = userData?._id || userData?.id || 'anon';
@@ -402,7 +388,7 @@ const DashScreen = () => {
     (async () => {
       // Esperar a tener usuario (y evitar overlays durante onboarding)
       if (!userData) return;
-      if (showTutorial || showOnboardingQuestions || showEmergencyContactsModal) return;
+      if (showTutorial || showOnboardingQuestions) return;
 
       try {
         const userId = getUserId();
@@ -452,7 +438,6 @@ const DashScreen = () => {
     userData,
     showTutorial,
     showOnboardingQuestions,
-    showEmergencyContactsModal,
     dashVisitsCount,
     getNotificationsPromptKey,
     getUserId,
@@ -507,75 +492,6 @@ const DashScreen = () => {
       setEnablingNotifications(false);
     }
   }, [enablingNotifications, DASH]);
-
-  // Verificar contactos de emergencia
-  const checkEmergencyContacts = useCallback(async (currentUserData = null) => {
-    try {
-      // Verificar si el usuario ya omitió el modal anteriormente
-      const skipped = await AsyncStorage.getItem(STORAGE_KEYS.EMERGENCY_CONTACTS_SKIPPED);
-      if (skipped === 'true') {
-        // Si ya lo omitió, no mostrar el modal automáticamente
-        setHasCheckedEmergencyContacts(true);
-        return;
-      }
-
-      const response = await api.get(ENDPOINTS.EMERGENCY_CONTACTS);
-      const contacts = response.contacts || [];
-      setEmergencyContacts(contacts);
-      setHasCheckedEmergencyContacts(true);
-      
-      // Si no hay contactos, mostrar el modal con un pequeño delay
-      // para que el usuario pueda ver el Dashboard primero (mejor UX)
-      if (contacts.length === 0) {
-        // Verificar si es un usuario nuevo (creado recientemente)
-        // Si el usuario fue creado en las últimas 24 horas, considerarlo primer ingreso
-        const userDataToCheck = currentUserData || userData;
-        const userCreatedAt = userDataToCheck?.createdAt ? new Date(userDataToCheck.createdAt) : null;
-        const isNewUser = userCreatedAt && (Date.now() - userCreatedAt.getTime()) < 24 * 60 * 60 * 1000;
-        setIsFirstTimeUser(isNewUser || false);
-        
-        // Delay de 1.5 segundos para que el Dashboard se renderice completamente
-        setTimeout(() => {
-          const blocker = onboardingOverlayStateRef.current;
-          if (blocker.showTutorial || blocker.showOnboardingQuestions || blocker.showFirstSessionHint) {
-            return;
-          }
-          setShowEmergencyContactsModal(true);
-        }, 1500);
-      }
-    } catch (error) {
-      console.error('Error verificando contactos de emergencia:', error);
-      // Si hay error, verificar si ya se omitió antes
-      const skipped = await AsyncStorage.getItem(STORAGE_KEYS.EMERGENCY_CONTACTS_SKIPPED);
-      if (skipped !== 'true') {
-        setEmergencyContacts([]);
-        setHasCheckedEmergencyContacts(true);
-        // Delay también en caso de error
-        setTimeout(() => {
-          const blocker = onboardingOverlayStateRef.current;
-          if (blocker.showTutorial || blocker.showOnboardingQuestions || blocker.showFirstSessionHint) {
-            return;
-          }
-          setShowEmergencyContactsModal(true);
-        }, 1500);
-      } else {
-        setHasCheckedEmergencyContacts(true);
-      }
-    }
-  }, [userData]);
-
-  // Manejar guardado de contactos de emergencia
-  const handleEmergencyContactsSaved = useCallback(async () => {
-    // Limpiar el flag de "omitido" si se guardaron contactos
-    try {
-      await AsyncStorage.removeItem(STORAGE_KEYS.EMERGENCY_CONTACTS_SKIPPED);
-    } catch (error) {
-      console.error('Error limpiando estado de omisión:', error);
-    }
-    
-    // Recargar contactos después de guardar
-    await checkEmergencyContacts();
-  }, [checkEmergencyContacts]);
 
   const handleMoodSaved = useCallback(async (saved) => {
     setFocusPayload((prev) => (prev ? { ...prev, dailyMood: saved } : prev));
@@ -719,38 +635,6 @@ const DashScreen = () => {
     }, [refreshHomeDataOnFocus]),
   );
 
-  // Configurar listeners de WebSocket para alertas de emergencia
-  useEffect(() => {
-    // Listener para alertas de emergencia
-    const unsubscribeAlert = websocketService.on('emergency:alert:sent', (data) => {
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log('[DashScreen] Alerta de emergencia recibida en tiempo real');
-      }
-      setEmergencyAlertNotification(data);
-      
-      // Mostrar notificación local
-      if (data && !data.isTest) {
-        Alert.alert(
-          `🚨 ${DASH.EMERGENCY_ALERT_SENT_TITLE}`,
-          DASH.EMERGENCY_ALERT_SENT_BODY
-            .replace('{successful}', String(data.successfulSends))
-            .replace('{total}', String(data.totalContacts)),
-          [{ text: DASH.EMERGENCY_ALERT_SENT_OK }]
-        );
-      }
-    });
-
-    // Listener para errores
-    const unsubscribeError = websocketService.on('error', (error) => {
-      console.error('[DashScreen] Error en WebSocket:', error);
-    });
-
-    return () => {
-      unsubscribeAlert();
-      unsubscribeError();
-    };
-  }, [DASH]);
-
   // Limpiar conexión al desmontar
   useEffect(() => {
     return () => {
@@ -833,17 +717,28 @@ const DashScreen = () => {
             enabling={enablingNotifications}
           />
           <MoodCheckInCard onMoodSaved={handleMoodSaved} />
+          <DashboardFocusCard
+            data={focusPayload}
+            onOpenChat={goToChatFromOnboarding}
+            onOpenConversation={openConversationFromFocus}
+            onOpenBehavioralActivation={openBehavioralActivationFromFocus}
+            onOpenExposureHierarchy={openExposureFromFocus}
+            onCommitmentsChanged={refreshHomeDataOnFocus}
+          />
           <DashboardStreakHero
             streakDays={dashboardStats.streakDays}
             displayName={getDashboardDisplayName(userData)}
             dailyMood={focusPayload?.dailyMood}
             onOpenChat={goToChatFromOnboarding}
           />
-          <DashboardStatsRow
-            streakDays={dashboardStats.streakDays}
-            habitsThisWeek={dashboardStats.habitsThisWeek}
-            showHabitsStat={hasActiveHabits}
-          />
+          {hasActiveHabits ? (
+            <DashboardStatsRow
+              streakDays={dashboardStats.streakDays}
+              habitsThisWeek={dashboardStats.habitsThisWeek}
+              showHabitsStat
+              showStreakStat={false}
+            />
+          ) : null}
           {hasActiveHabits ? (
             <DashboardHabitsSection
               habits={habits}
@@ -859,17 +754,10 @@ const DashScreen = () => {
               onDismiss={() => setError(null)}
             />
           )}
-          <DashboardFocusCard
-            data={focusPayload}
-            onOpenChat={goToChatFromOnboarding}
-            onOpenConversation={openConversationFromFocus}
-            onOpenBehavioralActivation={openBehavioralActivationFromFocus}
-            onOpenExposureHierarchy={openExposureFromFocus}
-            onCommitmentsChanged={refreshHomeDataOnFocus}
+          <DashboardExploreSection
+            techniquesA11y={DASH.TCC_TOOLS_LABEL}
+            insightsA11y={DASH.INSIGHTS_CARD_A11Y}
           />
-          <TccProtocolsQuickCard accessibilityLabel={DASH.TCC_TOOLS_LABEL} />
-          <JournalCard />
-          <InsightsQuickCard accessibilityLabel={DASH.INSIGHTS_CARD_A11Y} />
           <QuoteSection />
         </DashboardScroll>
       </SafeAreaView>
@@ -904,14 +792,6 @@ const DashScreen = () => {
         userId={userData?._id || userData?.id || null}
       />
 
-      {/* Modal de contactos de emergencia */}
-      <EmergencyContactsModal
-        visible={showEmergencyContactsModal}
-        onClose={() => setShowEmergencyContactsModal(false)}
-        onSave={handleEmergencyContactsSaved}
-        existingContacts={emergencyContacts}
-        isFirstTime={isFirstTimeUser}
-      />
     </View>
   );
 };

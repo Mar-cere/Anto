@@ -20,7 +20,7 @@ export const TEXTS = {
   SECTION_PATTERNS_INTRO:
     'Informes observacionales y datos opcionales del dispositivo. No son diagnóstico.',
   PATTERNS_OPEN_WEEKLY: 'Patrones de la semana',
-  PATTERNS_OPEN_SUMMARY: 'Resumen de actividad',
+  PATTERNS_OPEN_SUMMARY: 'Tu resumen',
   PATTERNS_OPEN_GRAPH: 'Mapa de temas e intervenciones',
   /** Solo visible al expandir «Personalización del chat». */
   CHAT_EXPANDED_DISCLAIMER:
