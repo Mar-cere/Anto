@@ -16,16 +16,25 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../components/Header';
-import ParticleBackground from '../components/ParticleBackground';
-import SignalConsentPanel from '../components/signals/SignalConsentPanel';
-import DigitalHealthStatusCard from '../components/signals/DigitalHealthStatusCard';
+import DashboardBrandBackdrop from '../components/dashboard/DashboardBrandBackdrop';
 import AbcMacroPatternsCard from '../components/abc/AbcMacroPatternsCard';
+import WeeklyInsightCard from '../components/weeklyInsight/WeeklyInsightCard';
+import WeeklyInsightConductCard from '../components/weeklyInsight/WeeklyInsightConductCard';
+import WeeklyInsightHero from '../components/weeklyInsight/WeeklyInsightHero';
+import WeeklyInsightSettingsSection from '../components/weeklyInsight/WeeklyInsightSettingsSection';
+import WeeklyInsightSourceStrip from '../components/weeklyInsight/WeeklyInsightSourceStrip';
 import { SPACING } from '../constants/ui';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import signalsService from '../services/signalsService';
 import { resolveMonthlyInsightKey } from '../utils/monthKeys';
+import {
+  buildInsightRowNavigation,
+  buildInsightSourceChips,
+  enrichInsightRows,
+  formatInsightPeriodLabel,
+} from '../utils/weeklyInsightUtils';
 
 export default function WeeklyInsightScreen({ navigation }) {
   const route = useRoute();
@@ -49,6 +58,7 @@ export default function WeeklyInsightScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [insight, setInsight] = useState(null);
+  const [correlations, setCorrelations] = useState([]);
   const [periodKey, setPeriodKey] = useState(null);
   const mountedRef = useRef(true);
 
@@ -59,50 +69,72 @@ export default function WeeklyInsightScreen({ navigation }) {
     };
   }, []);
 
-  const copy = useMemo(
-    () => {
-      const en = language === 'en';
-      const isMonth = period === 'month';
-      return {
-        kicker:
-          (isMonth ? TEXTS.MONTHLY_INSIGHT_KICKER : TEXTS.WEEKLY_INSIGHT_KICKER) ||
-          (en
-            ? isMonth
-              ? 'Monthly observational report'
-              : 'Observational report'
-            : isMonth
-              ? 'Informe observacional mensual'
-              : 'Informe observacional'),
-        disclaimer:
-          TEXTS.WEEKLY_INSIGHT_DISCLAIMER ||
-          (en
-            ? 'Correlations, not causes. Not a substitute for professional care.'
-            : 'Correlaciones, no causas. No sustituye orientación profesional.'),
-        empty:
-          (isMonth ? TEXTS.MONTHLY_INSIGHT_EMPTY : TEXTS.WEEKLY_INSIGHT_EMPTY) ||
-          TEXTS.WEEKLY_INSIGHT_EMPTY ||
-          (en
-            ? isMonth
-              ? 'Not enough signal yet for a monthly report. Turn on the options below and keep using the app.'
-              : 'Not enough signal yet for a report. Turn on the options below and keep using the app.'
-            : isMonth
-              ? 'Aún no hay suficientes señales para un informe mensual. Activa las opciones de abajo y sigue usando la app.'
-              : 'Aún no hay suficientes señales para un informe. Activa las opciones de abajo y sigue usando la app.'),
-        retry: TEXTS.WEEKLY_INSIGHT_RETRY || (en ? 'Retry' : 'Reintentar'),
-        error:
-          (isMonth ? TEXTS.MONTHLY_INSIGHT_ERROR : TEXTS.WEEKLY_INSIGHT_ERROR) ||
-          TEXTS.WEEKLY_INSIGHT_ERROR ||
-          (en
-            ? isMonth
-              ? 'Could not load the monthly report.'
-              : 'Could not load the weekly report.'
-            : isMonth
-              ? 'No se pudo cargar el informe mensual.'
-              : 'No se pudo cargar el informe semanal.'),
-      };
-    },
-    [TEXTS, language, period],
-  );
+  const copy = useMemo(() => {
+    const en = language === 'en';
+    const isMonth = period === 'month';
+    return {
+      kicker:
+        (isMonth ? TEXTS.MONTHLY_INSIGHT_KICKER : TEXTS.WEEKLY_INSIGHT_KICKER) ||
+        (en
+          ? isMonth
+            ? 'Monthly observational report'
+            : 'Observational report'
+          : isMonth
+            ? 'Informe observacional mensual'
+            : 'Informe observacional'),
+      disclaimer:
+        TEXTS.WEEKLY_INSIGHT_DISCLAIMER ||
+        (en
+          ? 'Correlations, not causes. Not a substitute for professional care.'
+          : 'Correlaciones, no causas. No sustituye orientación profesional.'),
+      empty:
+        (isMonth ? TEXTS.MONTHLY_INSIGHT_EMPTY : TEXTS.WEEKLY_INSIGHT_EMPTY) ||
+        TEXTS.WEEKLY_INSIGHT_EMPTY ||
+        (en
+          ? isMonth
+            ? 'Not enough signal yet for a monthly report. Turn on the options below and keep using the app.'
+            : 'Not enough signal yet for a report. Turn on the options below and keep using the app.'
+          : isMonth
+            ? 'Aún no hay suficientes señales para un informe mensual. Activa las opciones de abajo y sigue usando la app.'
+            : 'Aún no hay suficientes señales para un informe. Activa las opciones de abajo y sigue usando la app.'),
+      retry: TEXTS.WEEKLY_INSIGHT_RETRY || (en ? 'Retry' : 'Reintentar'),
+      error:
+        (isMonth ? TEXTS.MONTHLY_INSIGHT_ERROR : TEXTS.WEEKLY_INSIGHT_ERROR) ||
+        TEXTS.WEEKLY_INSIGHT_ERROR ||
+        (en
+          ? isMonth
+            ? 'Could not load the monthly report.'
+            : 'Could not load the weekly report.'
+          : isMonth
+            ? 'No se pudo cargar el informe mensual.'
+            : 'No se pudo cargar el informe semanal.'),
+      conductTitle:
+        TEXTS.WEEKLY_INSIGHT_CONDUCT_TITLE || (en ? 'Small step to try' : 'Pequeño paso a probar'),
+      conductCta:
+        TEXTS.WEEKLY_INSIGHT_CONDUCT_CTA || (en ? 'Talk with Anto' : 'Hablar con Anto'),
+      rowCtaPsycho:
+        TEXTS.WEEKLY_INSIGHT_ROW_CTA_PSYCHO || (en ? 'Open module' : 'Abrir módulo'),
+      rowCtaTechniques:
+        TEXTS.WEEKLY_INSIGHT_ROW_CTA_TECHNIQUES || (en ? 'See in techniques' : 'Ver en técnicas'),
+      settingsTitle:
+        TEXTS.WEEKLY_INSIGHT_SETTINGS_TITLE || (en ? 'Adjust signals' : 'Ajustar señales'),
+      settingsHint:
+        TEXTS.WEEKLY_INSIGHT_SETTINGS_HINT ||
+        (en
+          ? 'Writing pace, digital health, and reports'
+          : 'Ritmo al escribir, salud digital e informes'),
+      sourceTexts: {
+        SOURCE_CHAT_DAYS:
+          TEXTS.WEEKLY_INSIGHT_SOURCE_CHAT_DAYS || (en ? '{n} chat days' : '{n} días en chat'),
+        SOURCE_TYPING:
+          TEXTS.WEEKLY_INSIGHT_SOURCE_TYPING ||
+          (en ? '{n} drafts analyzed' : '{n} borradores analizados'),
+        SOURCE_PHENOTYPE:
+          TEXTS.WEEKLY_INSIGHT_SOURCE_PHENOTYPE ||
+          (en ? '{n} days of signals' : '{n} días de señales'),
+      },
+    };
+  }, [TEXTS, language, period]);
 
   const load = useCallback(async () => {
     try {
@@ -114,6 +146,7 @@ export default function WeeklyInsightScreen({ navigation }) {
         if (!mountedRef.current) return;
         setError(copy.error);
         setInsight(null);
+        setCorrelations([]);
         setPeriodKey(null);
         return;
       }
@@ -131,11 +164,14 @@ export default function WeeklyInsightScreen({ navigation }) {
             ? res.weekKey
             : weekKeyParam;
       setPeriodKey(key);
-      setInsight(res?.insight && typeof res.insight === 'object' ? res.insight : null);
+      const payload = res?.insight && typeof res.insight === 'object' ? res.insight : null;
+      setInsight(payload);
+      setCorrelations(Array.isArray(payload?.correlations) ? payload.correlations : []);
     } catch {
       if (!mountedRef.current) return;
       setError(copy.error);
       setInsight(null);
+      setCorrelations([]);
       setPeriodKey(null);
     } finally {
       if (!mountedRef.current) return;
@@ -161,62 +197,12 @@ export default function WeeklyInsightScreen({ navigation }) {
           paddingTop: 4,
           paddingBottom: insets.bottom + 32,
         },
-        hero: {
-          width: '100%',
-          paddingTop: 4,
-          paddingBottom: 20,
-        },
-        headline: {
-          fontSize: 24,
-          lineHeight: 30,
-          fontWeight: '700',
-          color: colors.text,
-          marginBottom: 8,
-        },
-        body: {
-          fontSize: 15,
-          lineHeight: 22,
-          color: colors.textSecondary,
-        },
-        card: {
-          borderRadius: 16,
-          padding: 16,
-          marginBottom: 12,
-          backgroundColor: colors.cardBackground || colors.surface || colors.background,
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: colors.border,
-        },
-        cardTitle: {
-          fontSize: 13,
-          fontWeight: '700',
-          color: colors.primary,
-          marginBottom: 6,
-          textTransform: 'uppercase',
-          letterSpacing: 0.6,
-        },
-        cardText: {
-          fontSize: 15,
-          lineHeight: 22,
-          color: colors.text,
-        },
         disclaimer: {
           fontSize: 12,
           lineHeight: 18,
           color: colors.textSecondary,
           marginTop: 4,
           marginBottom: 16,
-        },
-        meta: {
-          alignSelf: 'flex-start',
-          fontSize: 12,
-          fontWeight: '600',
-          color: colors.textSecondary,
-          backgroundColor: colors.glassFill || colors.surface,
-          borderRadius: 999,
-          paddingHorizontal: 10,
-          paddingVertical: 4,
-          marginBottom: 12,
-          overflow: 'hidden',
         },
         error: { color: colors.error, marginBottom: 12 },
         retry: {
@@ -239,18 +225,11 @@ export default function WeeklyInsightScreen({ navigation }) {
   }, [insight?.abcPatterns]);
 
   const rows = useMemo(() => {
-    const raw = Array.isArray(insight?.insights) ? insight.insights : [];
+    const enriched = enrichInsightRows(insight?.insights, correlations);
     const skipAbcInsight = abcPatterns.length > 0;
-    return raw
-      .filter((row) => row && typeof row === 'object')
-      .filter((row) => !(skipAbcInsight && row.type === 'abc_macro_pattern'))
-      .map((row) => ({
-        type: String(row.type || 'insight'),
-        label: String(row.label || '').trim(),
-        detail: String(row.detail || '').trim(),
-      }))
-      .filter((row) => row.label || row.detail);
-  }, [insight?.insights, abcPatterns.length]);
+    return enriched.filter((row) => !(skipAbcInsight && row.type === 'abc_macro_pattern'));
+  }, [insight?.insights, correlations, abcPatterns.length]);
+
   const showBody = Boolean(String(insight?.body || '').trim()) && rows.length === 0;
   const conductSuggestion = String(insight?.conductSuggestion || '').trim();
   const extraDisclaimers = useMemo(() => {
@@ -258,15 +237,46 @@ export default function WeeklyInsightScreen({ navigation }) {
     return raw.map((d) => String(d || '').trim()).filter(Boolean);
   }, [insight?.disclaimers]);
 
+  const periodLabel = useMemo(
+    () =>
+      formatInsightPeriodLabel({
+        periodKey,
+        period,
+        language,
+      }),
+    [periodKey, period, language],
+  );
+
+  const sourceChips = useMemo(
+    () => buildInsightSourceChips(insight?.sourceSummary, copy.sourceTexts),
+    [insight?.sourceSummary, copy.sourceTexts],
+  );
+
+  const hasInsightContent = rows.length > 0 || abcPatterns.length > 0 || Boolean(conductSuggestion);
+
+  const openRowTarget = useCallback(
+    (row) => {
+      const nav = buildInsightRowNavigation(row.targetId);
+      if (!nav) return;
+      navigation?.navigate?.(nav.screen, nav.params);
+    },
+    [navigation],
+  );
+
+  const rowCtaLabel = useCallback(
+    (row) => {
+      const nav = buildInsightRowNavigation(row.targetId);
+      if (!nav) return null;
+      return nav.screen === 'PsychoeducationModule' ? copy.rowCtaPsycho : copy.rowCtaTechniques;
+    },
+    [copy.rowCtaPsycho, copy.rowCtaTechniques],
+  );
+
   return (
     <View style={styles.root}>
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
-      <ParticleBackground />
-      <Header
-        title={copy.kicker}
-        showBackButton
-        onBackPress={() => navigation?.goBack?.()}
-      />
+      <DashboardBrandBackdrop />
+      <Header title={copy.kicker} showBackButton onBackPress={() => navigation?.goBack?.()} />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -298,42 +308,55 @@ export default function WeeklyInsightScreen({ navigation }) {
 
         {!loading && !error ? (
           <>
-            <View style={styles.hero}>
-              {periodKey ? <Text style={styles.meta}>{periodKey}</Text> : null}
-              <Text style={styles.headline}>{insight?.headline || copy.empty}</Text>
-              {showBody ? <Text style={styles.body}>{insight.body}</Text> : null}
-            </View>
+            <WeeklyInsightHero
+              periodLabel={periodLabel}
+              headline={insight?.headline || copy.empty}
+              body={showBody ? insight.body : null}
+            />
 
-            {rows.map((row, index) => (
-              <View
-                key={`${row.type}-${index}`}
-                style={styles.card}
-                accessibilityRole="text"
-                accessibilityLabel={`${row.label}. ${row.detail}`}
-              >
-                <Text style={styles.cardTitle}>{row.label}</Text>
-                <Text style={styles.cardText}>{row.detail}</Text>
-              </View>
-            ))}
+            {hasInsightContent ? (
+              <>
+                <WeeklyInsightSourceStrip chips={sourceChips} />
 
-            {abcPatterns.length > 0 ? (
-              <AbcMacroPatternsCard patterns={abcPatterns} compact showCta />
-            ) : null}
+                {conductSuggestion ? (
+                  <WeeklyInsightConductCard
+                    title={copy.conductTitle}
+                    body={conductSuggestion}
+                    ctaLabel={copy.conductCta}
+                    onPress={() => navigation?.navigate?.('MainTabs', { screen: 'Chat' })}
+                  />
+                ) : null}
 
-            {conductSuggestion ? (
-              <View style={styles.card} accessibilityRole="text">
-                <Text style={styles.cardTitle}>
-                  {language === 'en' ? 'Small step to try' : 'Pequeño paso a probar'}
+                {rows.map((row, index) => {
+                  const ctaLabel = rowCtaLabel(row);
+                  return (
+                    <WeeklyInsightCard
+                      key={`${row.type}-${index}`}
+                      row={row}
+                      ctaLabel={ctaLabel}
+                      onPressCta={
+                        row.targetId && ctaLabel ? () => openRowTarget(row) : null
+                      }
+                    />
+                  );
+                })}
+
+                {abcPatterns.length > 0 ? (
+                  <AbcMacroPatternsCard patterns={abcPatterns} compact showCta />
+                ) : null}
+
+                <Text style={styles.disclaimer}>
+                  {[copy.disclaimer, ...extraDisclaimers].filter(Boolean).join(' ')}
                 </Text>
-                <Text style={styles.cardText}>{conductSuggestion}</Text>
-              </View>
+              </>
             ) : null}
 
-            <Text style={styles.disclaimer}>
-              {[copy.disclaimer, ...extraDisclaimers].filter(Boolean).join(' ')}
-            </Text>
-            <DigitalHealthStatusCard compact sourceSummary={insight?.sourceSummary} />
-            <SignalConsentPanel compact />
+            <WeeklyInsightSettingsSection
+              title={copy.settingsTitle}
+              hint={copy.settingsHint}
+              sourceSummary={insight?.sourceSummary}
+              defaultExpanded={!hasInsightContent}
+            />
           </>
         ) : null}
       </ScrollView>

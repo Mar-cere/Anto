@@ -3,6 +3,7 @@
  */
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -18,14 +19,23 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../components/Header';
-import ParticleBackground from '../components/ParticleBackground';
+import DashboardBrandBackdrop from '../components/dashboard/DashboardBrandBackdrop';
+import AbcMacroPatternsCard from '../components/abc/AbcMacroPatternsCard';
+import SummaryExploreLinks from '../components/summary/SummaryExploreLinks';
+import SummaryMetricGrid from '../components/summary/SummaryMetricGrid';
+import SummaryNarrativeCard from '../components/summary/SummaryNarrativeCard';
+import SummaryPeriodHero from '../components/summary/SummaryPeriodHero';
 import { api, ENDPOINTS } from '../config/api';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { useMappedSectionTexts } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
-import AbcMacroPatternsCard from '../components/abc/AbcMacroPatternsCard';
 import { formatMonthKey } from '../utils/monthKeys';
+import {
+  buildSummaryHeroCopy,
+  formatSummaryPulseLine,
+  isSummaryEmpty,
+} from '../utils/summaryScreenUtils';
 
 const DEFAULT_TEXTS = {
   TITLE: 'Tu resumen',
@@ -41,23 +51,29 @@ const DEFAULT_TEXTS = {
   TOOLTIP_TITLE: 'Cómo contamos',
   TOOLTIP_CLOSE: 'Entendido',
   TOOLTIP_BODY: `• Semana: de lunes a domingo (hora de tu dispositivo).\n• Mes: del día 1 al último día del mes calendario.\n• Mensajes y días activos: solo tu actividad en el chat en ese tramo.\n• Hábitos (vista semana): sumamos días según los bloques de 7 días del calendario de hábitos que se solapan con esa semana. En mes usamos el resumen mensual de cada hábito.\n• Tono emocional: a partir de registros guardados en tus interacciones, no es un diagnóstico.`,
+  HERO_ACTIVE_WEEK: 'Estuviste activo {days} días y enviaste {messages} mensajes. Aquí va lo esencial.',
+  HERO_QUIET_WEEK: 'Una semana más calmada en la app. También cuenta.',
+  HERO_ACTIVE_MONTH: 'En este mes te conectaste {days} días y enviaste {messages} mensajes.',
+  HERO_QUIET_MONTH: 'Un mes más tranquilo. Cuando quieras, retomamos sin presión.',
+  METRICS_SECTION: 'Tu actividad',
+  EXPLORE_SECTION: 'Profundizar',
   TILE_CHAT: 'Mensajes',
   TILE_DAYS: 'Días activos',
   TILE_TECHNIQUES: 'Técnicas',
   TILE_TASKS: 'Tareas hechas',
   TILE_HABITS: 'Hábitos',
   TILE_JOURNAL: 'Gratitud',
-  PULSE: 'Tono emocional',
-  PULSE_EMPTY: 'Sin registros emocionales este período.',
+  PULSE: 'Cómo te sentiste',
+  PULSE_EMPTY: 'Aún no hay registros emocionales en este período.',
   EMPTY_TITLE: 'Semana tranquila en la app',
   EMPTY_SUB:
     'Cuando quieras retomar, aquí tienes un par de pasos sin presión.',
   CTA_CHAT: 'Hablar con Anto',
   CTA_GRATITUDE: 'Escribir gratitud',
   CTA_TECHNIQUES: 'Ver técnicas',
-  NARRATIVE_TITLE: 'Resumen',
-  NARRATIVE_THEMES: 'Temas',
-  NARRATIVE_MICRO_WINS: 'Micro-logros',
+  NARRATIVE_TITLE: 'Lo que vimos juntos',
+  NARRATIVE_THEMES: 'Temas frecuentes',
+  NARRATIVE_MICRO_WINS: 'Pequeños logros',
   WEEKLY_INSIGHT_CTA: 'Ver patrones de la semana',
   WEEKLY_INSIGHT_CTA_HINT: 'Informe observacional, no diagnóstico.',
   MONTHLY_INSIGHT_CTA: 'Ver patrones del mes',
@@ -86,6 +102,12 @@ const SUMMARY_TEXT_MAP = {
   TOOLTIP_TITLE: 'SUMMARY_TOOLTIP_TITLE',
   TOOLTIP_CLOSE: 'COMMON_OK',
   TOOLTIP_BODY: 'SUMMARY_TOOLTIP_BODY',
+  HERO_ACTIVE_WEEK: 'SUMMARY_HERO_ACTIVE_WEEK',
+  HERO_QUIET_WEEK: 'SUMMARY_HERO_QUIET_WEEK',
+  HERO_ACTIVE_MONTH: 'SUMMARY_HERO_ACTIVE_MONTH',
+  HERO_QUIET_MONTH: 'SUMMARY_HERO_QUIET_MONTH',
+  METRICS_SECTION: 'SUMMARY_METRICS_SECTION',
+  EXPLORE_SECTION: 'SUMMARY_EXPLORE_SECTION',
   TILE_CHAT: 'SUMMARY_TILE_CHAT',
   TILE_DAYS: 'SUMMARY_TILE_DAYS',
   TILE_TECHNIQUES: 'SUMMARY_TILE_TECHNIQUES',
@@ -157,47 +179,7 @@ function monthTitle(year, month1to12, locale) {
   return d.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
 }
 
-function isSummaryEmpty(p) {
-  if (!p) return false;
-  const sum =
-    (p.chat?.userMessages ?? 0) +
-    (p.chat?.distinctActiveDays ?? 0) +
-    (p.techniques?.totalUses ?? 0) +
-    (p.tasks?.completedInPeriod ?? 0) +
-    (p.habits?.completionsInPeriod ?? 0) +
-    (p.journal?.entriesCount ?? 0);
-  return sum === 0;
-}
-
 /** `sx`: hoja de estilos del padre (evita el nombre `styles` como prop: conflictos con Hermes / resolución). */
-function MetricTile({ icon, value, label, colors, sx }) {
-  return (
-    <View style={sx.tile}>
-      <MaterialCommunityIcons name={icon} size={20} color={colors.textSecondary} style={sx.tileIcon} />
-      <Text style={sx.tileValue}>{value}</Text>
-      <Text style={sx.tileLabel}>{label}</Text>
-    </View>
-  );
-}
-
-function NarrativeCard({ narrative, sx, texts }) {
-  if (!narrative) return null;
-  return (
-    <View style={sx.narrativeCard}>
-      <Text style={sx.narrativeTitle}>{texts.NARRATIVE_TITLE}</Text>
-      <Text style={sx.narrativeLine}>
-        <Text style={sx.narrativeLabel}>{texts.NARRATIVE_THEMES}: </Text>
-        {narrative.themes}
-      </Text>
-      <Text style={sx.narrativeLine}>
-        <Text style={sx.narrativeLabel}>{texts.NARRATIVE_MICRO_WINS}: </Text>
-        {narrative.microWins}
-      </Text>
-      <Text style={sx.narrativeQuestion}>{narrative.nextQuestion}</Text>
-    </View>
-  );
-}
-
 function SkeletonTile({ sx }) {
   return <View style={sx.skeletonTile} />;
 }
@@ -215,12 +197,15 @@ function SkeletonGrid({ sx }) {
 function EmptyState({ navigation, colors, sx, texts }) {
   return (
     <View style={sx.emptyWrap}>
-      <MaterialCommunityIcons name="sleep" size={40} color={colors.textSecondary} style={sx.emptyIcon} />
+      <MaterialCommunityIcons name="leaf" size={40} color={colors.primary} style={sx.emptyIcon} />
       <Text style={sx.emptyTitle}>{texts.EMPTY_TITLE}</Text>
       <Text style={sx.emptySub}>{texts.EMPTY_SUB}</Text>
       <TouchableOpacity
         style={sx.ctaPrimary}
-        onPress={() => navigation.navigate('MainTabs', { screen: 'Chat' })}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+          navigation.navigate('MainTabs', { screen: 'Chat' });
+        }}
         activeOpacity={0.85}
       >
         <MaterialCommunityIcons name="chat-outline" size={20} color={colors.textOnPrimary} style={sx.ctaIcon} />
@@ -228,7 +213,10 @@ function EmptyState({ navigation, colors, sx, texts }) {
       </TouchableOpacity>
       <TouchableOpacity
         style={sx.ctaSecondary}
-        onPress={() => navigation.navigate('GratitudeJournal')}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+          navigation.navigate('GratitudeJournal');
+        }}
         activeOpacity={0.85}
       >
         <MaterialCommunityIcons name="notebook-outline" size={20} color={colors.primary} style={sx.ctaIcon} />
@@ -236,7 +224,10 @@ function EmptyState({ navigation, colors, sx, texts }) {
       </TouchableOpacity>
       <TouchableOpacity
         style={sx.ctaSecondary}
-        onPress={() => navigation.navigate('TherapeuticTechniques')}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+          navigation.navigate('TherapeuticTechniques');
+        }}
         activeOpacity={0.85}
       >
         <MaterialCommunityIcons name="head-heart-outline" size={20} color={colors.primary} style={sx.ctaIcon} />
@@ -340,8 +331,12 @@ export default function SummaryScreen() {
           backgroundColor: colors.cardBackground,
           borderWidth: 1,
           borderColor: colors.border,
-          paddingVertical: 8,
-          paddingHorizontal: 6,
+          paddingVertical: 12,
+          paddingHorizontal: 8,
+        },
+        contentPad: {
+          paddingHorizontal: 8,
+          paddingBottom: 4,
         },
         sheetDimmed: {
           opacity: 0.48,
@@ -790,13 +785,40 @@ export default function SummaryScreen() {
     });
   };
 
-  const pulseLine = useMemo(() => {
-    const top = payload?.emotions?.insightsEmotionsTop?.[0];
-    if (!top?.emotion) return null;
-    const n = top.count;
-    const name = top.emotion;
-    return `${name} · ${n} ${n === 1 ? TEXTS.TIMES_SINGULAR : TEXTS.TIMES_PLURAL}`;
-  }, [payload, TEXTS]);
+  const pulseLine = useMemo(
+    () => formatSummaryPulseLine(payload, TEXTS),
+    [payload, TEXTS],
+  );
+
+  const heroIntro = useMemo(
+    () =>
+      buildSummaryHeroCopy({
+        payload,
+        granularity,
+        texts: TEXTS,
+      }),
+    [payload, granularity, TEXTS],
+  );
+
+  const exploreLinks = useMemo(
+    () => [
+      {
+        key: 'insight',
+        icon: 'chart-bell-curve',
+        title: insightCta.title,
+        hint: insightCta.hint,
+        onPress: () => navigation.navigate('WeeklyInsight', insightCta.params),
+      },
+      {
+        key: 'graph',
+        icon: 'graph-outline',
+        title: TEXTS.GRAPH_CTA,
+        hint: TEXTS.GRAPH_CTA_HINT,
+        onPress: () => navigation.navigate('InterventionGraph'),
+      },
+    ],
+    [insightCta, navigation, TEXTS],
+  );
 
   const periodEmpty = useMemo(() => isSummaryEmpty(payload), [payload]);
 
@@ -820,7 +842,7 @@ export default function SummaryScreen() {
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <StatusBar barStyle={statusBarStyle} />
-      <ParticleBackground />
+      <DashboardBrandBackdrop />
       <Header title={TEXTS.TITLE} showBackButton />
       <HowWeCountModal
         visible={infoOpen}
@@ -833,7 +855,10 @@ export default function SummaryScreen() {
         <View style={styles.segment}>
           <TouchableOpacity
             style={[styles.segmentItem, granularity === 'week' && styles.segmentItemOn]}
-            onPress={() => setGranularity('week')}
+            onPress={() => {
+              Haptics.selectionAsync().catch(() => {});
+              setGranularity('week');
+            }}
             accessibilityRole="button"
             accessibilityLabel={TEXTS.WEEK}
             accessibilityState={{ selected: granularity === 'week' }}
@@ -842,7 +867,10 @@ export default function SummaryScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.segmentItem, granularity === 'month' && styles.segmentItemOn]}
-            onPress={() => setGranularity('month')}
+            onPress={() => {
+              Haptics.selectionAsync().catch(() => {});
+              setGranularity('month');
+            }}
             accessibilityRole="button"
             accessibilityLabel={TEXTS.MONTH}
             accessibilityState={{ selected: granularity === 'month' }}
@@ -899,88 +927,28 @@ export default function SummaryScreen() {
               {periodEmpty ? (
                 <EmptyState navigation={navigation} colors={colors} sx={styles} texts={emptyTexts} />
               ) : (
-                <View>
-                  <NarrativeCard narrative={payload?.narrative} sx={styles} texts={TEXTS} />
+                <View style={styles.contentPad}>
+                  <SummaryPeriodHero
+                    periodTitle={periodTitle}
+                    intro={heroIntro}
+                    pulseLine={pulseLine}
+                    pulseLabel={TEXTS.PULSE}
+                    pulseEmpty={TEXTS.PULSE_EMPTY}
+                  />
+                  <SummaryMetricGrid
+                    payload={payload}
+                    texts={TEXTS}
+                    sectionTitle={TEXTS.METRICS_SECTION}
+                  />
+                  <SummaryNarrativeCard narrative={payload?.narrative} texts={TEXTS} />
                   <AbcMacroPatternsCard
                     startDate={payload?.period?.start}
                     endDate={payload?.period?.end}
                     compact
                   />
-                  <TouchableOpacity
-                    style={styles.weeklyInsightBtn}
-                    onPress={() => navigation.navigate('WeeklyInsight', insightCta.params)}
-                    activeOpacity={0.85}
-                    accessibilityRole="button"
-                    accessibilityLabel={insightCta.title}
-                    accessibilityHint={insightCta.hint}
-                  >
-                    <Text style={styles.weeklyInsightBtnTitle}>{insightCta.title}</Text>
-                    <Text style={styles.weeklyInsightBtnHint}>{insightCta.hint}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.weeklyInsightBtn}
-                    onPress={() => navigation.navigate('InterventionGraph')}
-                    activeOpacity={0.85}
-                    accessibilityRole="button"
-                    accessibilityLabel={TEXTS.GRAPH_CTA}
-                    accessibilityHint={TEXTS.GRAPH_CTA_HINT}
-                  >
-                    <Text style={styles.weeklyInsightBtnTitle}>{TEXTS.GRAPH_CTA}</Text>
-                    <Text style={styles.weeklyInsightBtnHint}>{TEXTS.GRAPH_CTA_HINT}</Text>
-                  </TouchableOpacity>
-                  <View style={styles.grid}>
-                    <MetricTile
-                      icon="message-text-outline"
-                      value={String(payload?.chat?.userMessages ?? 0)}
-                      label={TEXTS.TILE_CHAT}
-                      colors={colors}
-                      sx={styles}
-                    />
-                    <MetricTile
-                      icon="calendar-blank-outline"
-                      value={String(payload?.chat?.distinctActiveDays ?? 0)}
-                      label={TEXTS.TILE_DAYS}
-                      colors={colors}
-                      sx={styles}
-                    />
-                    <MetricTile
-                      icon="head-heart-outline"
-                      value={String(payload?.techniques?.totalUses ?? 0)}
-                      label={TEXTS.TILE_TECHNIQUES}
-                      colors={colors}
-                      sx={styles}
-                    />
-                    <MetricTile
-                      icon="checkbox-marked-circle-outline"
-                      value={String(payload?.tasks?.completedInPeriod ?? 0)}
-                      label={TEXTS.TILE_TASKS}
-                      colors={colors}
-                      sx={styles}
-                    />
-                    <MetricTile
-                      icon="repeat"
-                      value={String(payload?.habits?.completionsInPeriod ?? 0)}
-                      label={TEXTS.TILE_HABITS}
-                      colors={colors}
-                      sx={styles}
-                    />
-                    <MetricTile
-                      icon="notebook-outline"
-                      value={String(payload?.journal?.entriesCount ?? 0)}
-                      label={TEXTS.TILE_JOURNAL}
-                      colors={colors}
-                      sx={styles}
-                    />
-                  </View>
+                  <SummaryExploreLinks sectionTitle={TEXTS.EXPLORE_SECTION} links={exploreLinks} />
                 </View>
               )}
-
-              <View style={styles.divider} />
-
-              <View style={styles.pulseBlock}>
-                <Text style={styles.pulseTitle}>{TEXTS.PULSE}</Text>
-                <Text style={styles.pulseBody}>{pulseLine || TEXTS.PULSE_EMPTY}</Text>
-              </View>
             </View>
 
             {dataStale ? (
