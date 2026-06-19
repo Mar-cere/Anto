@@ -109,7 +109,7 @@ const ROUTE_NAMES = {
  * 
  * @returns {JSX.Element} Stack Navigator con todas las pantallas configuradas
  */
-const StackNavigator = () => {
+const StackNavigator = ({ initialRouteName = ROUTE_NAMES.HOME }) => {
   const { colors } = useTheme();
   const screenOptions = useMemo(
     () => ({
@@ -124,7 +124,7 @@ const StackNavigator = () => {
 
   return (
     <Stack.Navigator
-      initialRouteName={ROUTE_NAMES.HOME}
+      initialRouteName={initialRouteName}
       screenOptions={screenOptions}
     >
       {/* Pantalla inicial */}
@@ -169,7 +169,7 @@ const StackNavigator = () => {
       <Stack.Screen 
         name="MainTabs" 
         component={TabNavigator}
-        options={{ headerShown: false }}
+        options={{ headerShown: false, animation: 'none' }}
       />
       
       {/* Otras pantallas */}

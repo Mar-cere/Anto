@@ -2,7 +2,6 @@ import en from '../en';
 import es from '../es';
 
 const HOME_WELCOME_KEYS = [
-  'BRAND_PREFIX',
   'BRAND_NAME',
   'BADGE',
   'HEADLINE_PREFIX',
@@ -34,5 +33,10 @@ describe('welcomeAuth i18n parity', () => {
     expect(es.HOME.SUBTITLE).toMatch(/profesional/i);
     expect(es.HOME.HEADLINE_ACCENT).not.toMatch(/diagnóstico/i);
     expect(en.HOME.SUBTITLE).toMatch(/professional/i);
+  });
+
+  it('SETTINGS ya no incluye toast de conexión restaurada', () => {
+    expect(es.SETTINGS.CONNECTION_RESTORED).toBeUndefined();
+    expect(en.SETTINGS.CONNECTION_RESTORED).toBeUndefined();
   });
 });

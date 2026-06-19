@@ -1,23 +1,21 @@
 /**
  * App Navigator
- * 
+ *
  * Configura el contenedor de navegación principal de la aplicación.
- * Utiliza StackNavigator como navegador principal que contiene
- * todas las pantallas, incluyendo TabNavigator para las pantallas principales.
- * 
- * @author AntoApp Team
+ * Retrasa el stack hasta resolver la sesión para evitar parpadeos de bienvenida.
  */
-
 import { NavigationContainer } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import React, { useEffect } from 'react';
 import { Linking } from 'react-native';
+import BrandLoadingView from '../components/common/BrandLoadingView';
+import { ROUTES } from '../constants/routes';
+import { useAuth } from '../context/AuthContext';
 import {
   initializeNotifications,
   removeNotificationListeners,
   setupNotificationListeners,
 } from '../services/pushNotificationService';
-import AuthNavigationSync from './AuthNavigationSync';
 import StackNavigator from './StackNavigator';
 import {
   handleActivitySummaryDeepLink,
@@ -25,15 +23,9 @@ import {
   navigationRef,
 } from './navigationRef';
 
-/**
- * Componente App Navigator
- * 
- * Envuelve el StackNavigator en un NavigationContainer para
- * proporcionar el contexto de navegación a toda la aplicación.
- * 
- * @returns {JSX.Element} NavigationContainer con StackNavigator
- */
 const AppNavigator = () => {
+  const { user, loading } = useAuth();
+
   useEffect(() => {
     initializeNotifications().catch(() => {});
 
@@ -65,10 +57,15 @@ const AppNavigator = () => {
     return () => sub.remove();
   }, []);
 
+  if (loading) {
+    return <BrandLoadingView testID="app-auth-bootstrap" />;
+  }
+
+  const initialRouteName = user ? ROUTES.MAIN_TABS : ROUTES.HOME;
+
   return (
     <NavigationContainer ref={navigationRef}>
-      <AuthNavigationSync />
-      <StackNavigator />
+      <StackNavigator initialRouteName={initialRouteName} />
     </NavigationContainer>
   );
 };

@@ -22,7 +22,6 @@ import { ToastProvider } from './src/context/ToastContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import Toast from './src/components/Toast';
-import ConnectionRestoredListener from './src/components/ConnectionRestoredListener';
 import LanguageAuthSync from './src/components/LanguageAuthSync';
 import DeviceRegionSync from './src/components/DeviceRegionSync';
 import AppConfigPreload from './src/components/AppConfigPreload';
@@ -45,7 +44,6 @@ function AppContent() {
         backgroundColor={STATUS_BAR_BACKGROUND}
         translucent={STATUS_BAR_TRANSLUCENT}
       />
-      <ConnectionRestoredListener />
       <AppConfigPreload />
       <AppNavigator />
       <Toast />

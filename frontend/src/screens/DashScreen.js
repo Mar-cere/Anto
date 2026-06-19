@@ -41,7 +41,7 @@ import DashboardStreakHero from '../components/dashboard/DashboardStreakHero';
 import DashboardStatsRow from '../components/dashboard/DashboardStatsRow';
 import DashboardHabitsSection from '../components/dashboard/DashboardHabitsSection';
 import DashboardFocusCard from '../components/DashboardFocusCard';
-import { SkeletonBlock, SkeletonCard } from '../components/Skeleton';
+import BrandLoadingView from '../components/common/BrandLoadingView';
 import { api, ENDPOINTS } from '../config/api';
 import { BORDERS, SPACING, STATUS_BAR } from '../constants/ui';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -105,18 +105,6 @@ const DashScreen = () => {
           color: colors.textSecondary,
           fontSize: 18,
           marginTop: SPACING.LOADING_TEXT_MARGIN_TOP,
-        },
-        skeletonScreen: {
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-        },
-        skeletonHeader: {
-          marginBottom: 18,
-        },
-        skeletonHeaderLine: {
-          marginTop: 10,
-        },
-        skeletonCard: {
-          marginBottom: 20,
         },
         errorContainer: {
           alignSelf: 'stretch',
@@ -773,18 +761,7 @@ const DashScreen = () => {
   if (loading) {
     return (
       <View style={styles.container}>
-        <DashboardBrandBackdrop />
-        <SafeAreaView style={styles.safeAreaRoot} edges={['top', 'left', 'right']}>
-        <View style={[styles.skeletonScreen, { flex: 1 }]}>
-        <View style={styles.skeletonHeader}>
-          <SkeletonBlock width="70%" height={18} radius={10} />
-          <SkeletonBlock width="45%" height={14} radius={10} style={styles.skeletonHeaderLine} />
-        </View>
-        <SkeletonCard style={styles.skeletonCard} />
-        <SkeletonCard style={styles.skeletonCard} />
-        <SkeletonCard style={styles.skeletonCard} />
-        </View>
-        </SafeAreaView>
+        <BrandLoadingView />
       </View>
     );
   }

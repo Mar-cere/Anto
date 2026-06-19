@@ -5,7 +5,6 @@
  */
 
 export const HOME = {
-  BRAND_PREFIX: 'tu',
   BRAND_NAME: 'Anto',
   BADGE: '1 day free · no card required',
   HEADLINE_PREFIX: 'Your space to',
@@ -406,7 +405,6 @@ export const SETTINGS = {
   NOTIFICATIONS_PROMPT_SUBTITLE: 'For reminders and important alerts.',
   NOTIFICATIONS_PROMPT_ENABLE: 'Enable',
   NOTIFICATIONS_PROMPT_CLOSE_A11Y: 'Close banner',
-  CONNECTION_RESTORED: 'Connection restored',
   TRIAL_BANNER_ACTIVE: 'Trial active',
   TRIAL_BANNER_EXPIRING_SOON: 'Your trial expires soon',
   TRIAL_BANNER_SUBSCRIBE: 'Subscribe',
