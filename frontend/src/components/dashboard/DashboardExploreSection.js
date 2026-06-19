@@ -1,5 +1,5 @@
 /**
- * Sección «Explorar»: herramientas TCC, diario y resumen en una sola lista.
+ * Sección «Explorar»: herramientas TCC y diario.
  */
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
@@ -9,24 +9,23 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { createDashboardStyles } from '../../styles/dashboardTheme';
-import InsightsQuickCard from '../InsightsQuickCard';
 import JournalCard from '../JournalCard';
 import TccProtocolsQuickCard from '../TccProtocolsQuickCard';
 import DashboardSection from './DashboardSection';
 
 const DEFAULTS_ES = {
   TITLE: 'Explorar',
-  HINT: 'Herramientas, diario y tu resumen cuando quieras profundizar.',
+  HINT: 'Herramientas TCC y diario cuando quieras profundizar.',
   ALL_TECHNIQUES: 'Ver todas las técnicas',
 };
 
 const DEFAULTS_EN = {
   TITLE: 'Explore',
-  HINT: 'Tools, journal, and your summary when you want to go deeper.',
+  HINT: 'CBT tools and journal when you want to go deeper.',
   ALL_TECHNIQUES: 'Browse all techniques',
 };
 
-export default function DashboardExploreSection({ techniquesA11y, insightsA11y }) {
+export default function DashboardExploreSection({ techniquesA11y }) {
   const navigation = useNavigation();
   const { language } = useLanguage();
   const { colors, resolvedScheme } = useTheme();
@@ -62,7 +61,6 @@ export default function DashboardExploreSection({ techniquesA11y, insightsA11y }
       <View style={styles.groupedList}>
         <TccProtocolsQuickCard embedded accessibilityLabel={techniquesA11y} />
         <JournalCard embedded />
-        <InsightsQuickCard embedded accessibilityLabel={insightsA11y} />
       </View>
     </DashboardSection>
   );

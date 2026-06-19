@@ -13,7 +13,22 @@ import {
   stripTechnicalInterventionSuffix,
 } from '../../screens/interventionGraphTexts';
 
-const MAX_ITEMS = 4;
+const MAX_ITEMS = 2;
+
+function isActionableEdge(edge) {
+  const completed = Number(edge?.completed) || 0;
+  const dismissed = Number(edge?.dismissed) || 0;
+  const clicked = Number(edge?.clicked) || 0;
+  if (completed > 0) return false;
+  if (dismissed > 0 && clicked === 0) return false;
+  return true;
+}
+
+function actionabilityScore(edge) {
+  if (Number(edge?.clicked) > 0) return 2;
+  if (Number(edge?.shown) > 0) return 3;
+  return 1;
+}
 
 function normalizeInterventionLabel(label, id) {
   const raw = stripTechnicalInterventionSuffix(label || id || '');
@@ -80,11 +95,9 @@ export default function SummaryWhatHelpsSection() {
     [colors],
   );
 
-  const sectionTitle = TEXTS.INTERVENTION_GRAPH_ENTRY_LINK || 'Lo que te ayuda';
-  const sectionHint =
-    language === 'en'
-      ? 'Links between what you share and techniques that help.'
-      : 'Enlaces entre lo que compartes y las técnicas que te sirven.';
+  const sectionTitle =
+    language === 'en' ? 'Worth revisiting' : 'Por si te sirve ahora';
+  const sectionHint = null;
 
   const graphTexts = useMemo(
     () => ({
@@ -106,8 +119,17 @@ export default function SummaryWhatHelpsSection() {
       const topicFreeEdges = Array.isArray(data?.topicFreeEdges) ? data.topicFreeEdges : [];
       const edges = Array.isArray(data?.edges) ? data.edges : [];
       const pool = topicFreeEdges.length > 0 ? topicFreeEdges : edges;
+      const seenInterventions = new Set();
       const ranked = [...pool]
-        .sort((a, b) => (Number(b.completed) || 0) - (Number(a.completed) || 0))
+        .filter(isActionableEdge)
+        .sort((a, b) => actionabilityScore(b) - actionabilityScore(a))
+        .reduce((acc, edge) => {
+          const interventionId = String(edge.interventionId || '').trim();
+          if (interventionId && seenInterventions.has(interventionId)) return acc;
+          if (interventionId) seenInterventions.add(interventionId);
+          acc.push(edge);
+          return acc;
+        }, [])
         .slice(0, MAX_ITEMS)
         .map((edge) => {
           const intervention = normalizeInterventionLabel(
@@ -150,7 +172,7 @@ export default function SummaryWhatHelpsSection() {
   return (
     <View style={styles.block} accessibilityRole="summary">
       <Text style={styles.kicker}>{sectionTitle}</Text>
-      <Text style={styles.hint}>{sectionHint}</Text>
+      {sectionHint ? <Text style={styles.hint}>{sectionHint}</Text> : null}
       {items.map((item) => (
         <View key={item.key} style={styles.card}>
           <Text style={styles.title}>{item.intervention}</Text>

@@ -1393,6 +1393,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           depthPreference: depthAnalysis?.depthPreference,
           inferredWritingStyle: writingStyle?.style,
           preferredResponseLength: engagement?.preferredResponseLength,
+          language: appLanguageForChat,
           forceShortMode,
           forceFactualMode,
           _promptTelemetry: {

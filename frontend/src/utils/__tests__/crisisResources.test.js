@@ -24,15 +24,30 @@ describe('crisisResources utils', () => {
 
   it('shouldShowCrisisResourcesPanel alinea con backend', () => {
     expect(shouldShowCrisisResourcesPanel({ riskLevel: 'MEDIUM' })).toBe(true);
+    expect(shouldShowCrisisResourcesPanel({ riskLevel: 'WARNING' })).toBe(true);
     expect(shouldShowCrisisResourcesPanel({ riskLevel: 'LOW' })).toBe(false);
   });
 
-  it('findLatestCrisisContextFromMessages detecta crisis reciente', () => {
+  it('findLatestCrisisContextFromMessages solo hidrata MEDIUM/HIGH o hard-stop en último assistant', () => {
     const ctx = findLatestCrisisContextFromMessages([
       { role: 'user', content: 'hola' },
       { role: 'assistant', content: '...', metadata: { crisis: { riskLevel: 'HIGH', hardStop: true } } },
     ]);
     expect(ctx).toEqual({ riskLevel: 'HIGH', hardStop: true });
+
+    expect(
+      findLatestCrisisContextFromMessages([
+        { role: 'assistant', content: 'a', metadata: { crisis: { riskLevel: 'WARNING' } } },
+      ]),
+    ).toBeNull();
+
+    expect(
+      findLatestCrisisContextFromMessages([
+        { role: 'assistant', content: 'viejo', metadata: { crisis: { riskLevel: 'HIGH' } } },
+        { role: 'user', content: 'gracias' },
+        { role: 'assistant', content: 'de nada', metadata: { crisis: { riskLevel: 'LOW' } } },
+      ]),
+    ).toBeNull();
   });
 
   it('buildTelUri genera enlace tel', () => {

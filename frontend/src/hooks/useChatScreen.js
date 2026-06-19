@@ -67,6 +67,7 @@ import {
   peekPendingTccLiteResume,
   setPendingTccLiteResume,
 } from '../utils/chatTccLiteResume';
+import { countNonemptyUserTurns } from '../utils/chatTurnUtils';
 import {
   buildAssistantMetadataFromTurnPayload,
   resolveTccLiteAtHandoffFromPayload,
@@ -166,6 +167,9 @@ export function useChatScreen() {
   /** Ref sincronizado con `messages` para programar resumen al salir / background sin cierre obsoleto. */
   const messagesRef = useRef(messages);
   const lastSessionSummaryScheduleAtRef = useRef(0);
+  /** Turnos de usuario al abrir el chat en esta visita (no todo el historial). */
+  const userTurnBaselineRef = useRef(0);
+  const captureVisitBaselineRef = useRef(true);
 
   const flatListRef = useRef(null);
   const inputRef = useRef(null);
@@ -244,17 +248,22 @@ export function useChatScreen() {
     messagesRef.current = messages;
   }, [messages]);
 
+  const captureUserTurnBaseline = useCallback((messageList) => {
+    userTurnBaselineRef.current = countNonemptyUserTurns(messageList);
+    captureVisitBaselineRef.current = false;
+  }, []);
+
   /** Best-effort: programa continuidad del último chat en servidor (#4 + #47). */
   const scheduleLastSessionSummaryDeferred = useCallback(async () => {
     const DEBOUNCE_MS = 20000;
     if (Date.now() - lastSessionSummaryScheduleAtRef.current < DEBOUNCE_MS) return;
     try {
       if (await chatService.isGuestChatMode()) return;
-      const hasUserTurn = messagesRef.current.some(
-        (m) =>
-          m.role === MESSAGE_ROLES.USER && String(m.content || '').trim().length > 0
+      const newUserTurns = Math.max(
+        0,
+        countNonemptyUserTurns(messagesRef.current) - userTurnBaselineRef.current,
       );
-      if (!hasUserTurn) return;
+      if (newUserTurns < 1) return;
       const cid = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
       if (!cid || !isValidMongoObjectId24(cid)) return;
       lastSessionSummaryScheduleAtRef.current = Date.now();
@@ -383,6 +392,9 @@ export function useChatScreen() {
       setMessages(finalizeLoadedChatMessages(uniqueMessages, appLanguage));
       if (flags?.pagination) applyMessagePagination(flags.pagination);
       void hydrateCrisisResourcesFromMessages(uniqueMessages);
+      if (flags?.captureVisitBaseline) {
+        captureUserTurnBaseline(uniqueMessages);
+      }
       if (isRegistered) {
         const userCount = uniqueMessages.filter((m) => m.type !== 'quickReplies' && m.role === MESSAGE_ROLES.USER).length;
         setShowSessionIntentionPrompt(userCount === 0 && !sessionIntentionMeta);
@@ -419,6 +431,7 @@ export function useChatScreen() {
             dedupeAndSetMessages(pack.messages, pack.sessionIntention, {
               isRegistered: true,
               pagination: pack.pagination,
+              captureVisitBaseline: captureVisitBaselineRef.current,
             })
           )
             return;
@@ -433,7 +446,11 @@ export function useChatScreen() {
               dedupeAndSetMessages(
                 retryPack.messages,
                 retryPack.sessionIntention,
-                { isRegistered: true, pagination: retryPack.pagination },
+                {
+                  isRegistered: true,
+                  pagination: retryPack.pagination,
+                  captureVisitBaseline: captureVisitBaselineRef.current,
+                },
               )
             )
               return;
@@ -447,69 +464,14 @@ export function useChatScreen() {
           metadata: { timestamp: new Date().toISOString(), type: MESSAGE_TYPES.WELCOME },
         };
         setMessages([welcomeMessage]);
+        if (captureVisitBaselineRef.current) captureUserTurnBaseline([]);
         setShowSessionIntentionPrompt(true);
         await chatService.saveMessages([welcomeMessage]);
         return;
       }
 
-      const startGuest = route.params?.startGuest === true;
-      let hasGuestToken = await AsyncStorage.getItem(STORAGE_KEYS.GUEST_TOKEN);
-      if (!hasGuestToken && startGuest) {
-        try {
-          const data = await chatService.startGuestChatSession();
-          setGuestQuota({
-            max: data.maxUserMessages ?? GUEST_MAX_USER_MESSAGES,
-            remaining: Math.max(
-              0,
-              (data.maxUserMessages ?? GUEST_MAX_USER_MESSAGES) - (data.userMessagesUsed ?? 0)
-            ),
-          });
-        } catch (e) {
-          if (extractErrorCode(e) === 'RATE_LIMIT') {
-            Alert.alert(texts.GUEST_RATE_LIMIT_TITLE, texts.GUEST_RATE_LIMIT_MESSAGE, [
-              {
-                text: texts.COMMON_OK,
-                onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }),
-              },
-            ]);
-            setGuestQuota(null);
-            setMessages([]);
-            setShowSessionIntentionPrompt(false);
-            return;
-          }
-          throw e;
-        }
-        hasGuestToken = await AsyncStorage.getItem(STORAGE_KEYS.GUEST_TOKEN);
-        navigation.setParams({ startGuest: undefined });
-      }
-
-      if (await chatService.isGuestChatMode()) {
-        const convId = await AsyncStorage.getItem(STORAGE_KEYS.GUEST_CONVERSATION_ID);
-        if (convId) {
-          const serverMessages = await chatService.getGuestMessages(convId);
-          const used = serverMessages.filter((m) => m.role === 'user').length;
-          setGuestQuota({
-            max: GUEST_MAX_USER_MESSAGES,
-            remaining: Math.max(0, GUEST_MAX_USER_MESSAGES - used),
-          });
-          if (dedupeAndSetMessages(serverMessages, null, { isRegistered: false })) return;
-        }
-        setGuestQuota({ max: GUEST_MAX_USER_MESSAGES, remaining: GUEST_MAX_USER_MESSAGES });
-        const welcomeMessage = {
-          id: `${MESSAGE_ID_PREFIXES.WELCOME}-${Date.now()}`,
-          content: pickChatWelcomeGreeting(appLanguage),
-          role: MESSAGE_ROLES.ASSISTANT,
-          type: MESSAGE_TYPES.TEXT,
-          metadata: { timestamp: new Date().toISOString(), type: MESSAGE_TYPES.WELCOME },
-        };
-        setMessages([welcomeMessage]);
-        setShowSessionIntentionPrompt(false);
-        return;
-      }
-
-      setGuestQuota(null);
-      setMessages([]);
-      setShowSessionIntentionPrompt(false);
+      navigation.reset({ index: 0, routes: [{ name: ROUTES.SIGN_IN }] });
+      return;
     } catch (err) {
       if (err.guestAuthFailed) {
         setError(null);
@@ -545,7 +507,13 @@ export function useChatScreen() {
         scrollToBottomStableRef.current?.(false, { force: true });
       });
     }
-  }, [navigation, route.params?.startGuest, route.params?.openConversationId, applyMessagePagination, hydrateCrisisResourcesFromMessages]);
+  }, [
+    navigation,
+    route.params?.openConversationId,
+    applyMessagePagination,
+    hydrateCrisisResourcesFromMessages,
+    captureUserTurnBaseline,
+  ]);
 
   const loadOlderMessages = useCallback(async () => {
     if (loadingOlderMessages || !historyHasMore) return;
@@ -1346,6 +1314,8 @@ export function useChatScreen() {
       setTccLiteAtHandoff(null);
       crisisResourcesDismissedRef.current = false;
       setCrisisResourcesPanel(null);
+      userTurnBaselineRef.current = 0;
+      captureVisitBaselineRef.current = true;
       pendingTccLiteResumeRef.current = null;
       void clearPendingTccLiteResume();
       await chatService.clearMessages();
@@ -1434,11 +1404,12 @@ export function useChatScreen() {
         return;
       }
 
-      const userTurnCount = messagesRef.current.filter(
-        (m) => m.role === MESSAGE_ROLES.USER && String(m.content || '').trim().length > 0,
-      ).length;
+      const newUserTurns = Math.max(
+        0,
+        countNonemptyUserTurns(messagesRef.current) - userTurnBaselineRef.current,
+      );
 
-      if (userTurnCount >= 2 && !(await chatService.isGuestChatMode())) {
+      if (newUserTurns >= 1 && !(await chatService.isGuestChatMode())) {
         const cid = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
         if (cid && isValidMongoObjectId24(cid)) {
           const parentNav = navigation.getParent?.() || navigation;
@@ -1604,14 +1575,15 @@ export function useChatScreen() {
     };
   }, []);
 
-  // Auth: invitado (param o sesión guardada) o usuario con token
+  // Auth: requiere sesión iniciada (sin modo invitado)
   useEffect(() => {
     const checkAuthentication = async () => {
       try {
         const token = await AsyncStorage.getItem('userToken');
         if (token) return;
-        if (route.params?.startGuest === true) return;
-        if (await chatService.isGuestChatMode()) return;
+        if (await chatService.isGuestChatMode()) {
+          await chatService.clearGuestChat();
+        }
         navigation.reset({ index: 0, routes: [{ name: ROUTES.SIGN_IN }] });
       } catch (err) {
         console.error('[ChatScreen] Error verificando autenticación:', err);
@@ -1619,7 +1591,7 @@ export function useChatScreen() {
       }
     };
     checkAuthentication();
-  }, [navigation, route.params?.startGuest]);
+  }, [navigation]);
 
   const loadTccContinuity = useCallback(async () => {
     try {
@@ -1726,6 +1698,7 @@ export function useChatScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      captureVisitBaselineRef.current = true;
       (async () => {
         if (await chatService.isGuestChatMode()) {
           setTrialInfo(null);
@@ -1735,8 +1708,11 @@ export function useChatScreen() {
         }
         const p = await getOfflinePendingMessage();
         setOfflinePendingMessage(p);
+        await initializeConversation();
+        if (captureVisitBaselineRef.current) {
+          captureUserTurnBaseline(messagesRef.current);
+        }
       })();
-      initializeConversation();
       const handoffTimer = setTimeout(() => {
         offerGuestHandoffIfPending();
       }, 650);
@@ -1757,6 +1733,7 @@ export function useChatScreen() {
       offerGuestHandoffIfPending,
       scheduleLastSessionSummaryDeferred,
       cancelActiveStream,
+      captureUserTurnBaseline,
     ])
   );
 

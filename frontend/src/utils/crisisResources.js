@@ -3,6 +3,8 @@
  */
 
 const PANEL_RISK_LEVELS = new Set(['WARNING', 'MEDIUM', 'HIGH']);
+/** Solo MEDIUM/HIGH (o hard-stop) al reabrir chat; WARNING es monitoreo, no panel persistente. */
+const HYDRATE_PANEL_RISK_LEVELS = new Set(['MEDIUM', 'HIGH']);
 const MAX_ITEMS = 8;
 const MAX_LABEL_LEN = 120;
 const MAX_VALUE_LEN = 240;
@@ -54,8 +56,16 @@ export function shouldShowCrisisResourcesPanel({ riskLevel, hardStop = false } =
   return PANEL_RISK_LEVELS.has(level);
 }
 
+/** Si al cargar historial debe mostrarse el panel (más estricto que un turno en vivo). */
+export function shouldHydrateCrisisResourcesFromMessages({ riskLevel, hardStop = false } = {}) {
+  if (hardStop === true) return true;
+  const level = String(riskLevel || 'LOW').toUpperCase();
+  return HYDRATE_PANEL_RISK_LEVELS.has(level);
+}
+
 /**
- * Busca el contexto de crisis más reciente en mensajes cargados.
+ * Busca contexto de crisis solo en el último mensaje del asistente.
+ * Evita re-mostrar el panel por crisis antiguas o por WARNING de monitoreo.
  * @param {Array} messages
  */
 export function findLatestCrisisContextFromMessages(messages) {
@@ -64,12 +74,12 @@ export function findLatestCrisisContextFromMessages(messages) {
     const message = messages[i];
     if (message?.role !== 'assistant') continue;
     const crisis = message?.metadata?.crisis;
-    if (!crisis) continue;
-    const riskLevel = crisis.riskLevel ? String(crisis.riskLevel).toUpperCase() : null;
-    const hardStop = crisis.hardStop === true;
-    if (shouldShowCrisisResourcesPanel({ riskLevel, hardStop })) {
+    const riskLevel = crisis?.riskLevel ? String(crisis.riskLevel).toUpperCase() : null;
+    const hardStop = crisis?.hardStop === true;
+    if (shouldHydrateCrisisResourcesFromMessages({ riskLevel, hardStop })) {
       return { riskLevel, hardStop };
     }
+    return null;
   }
   return null;
 }

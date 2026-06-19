@@ -24,11 +24,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { useMappedSectionTexts } from '../hooks/useTranslations';
 import { SPACING } from '../constants/ui';
-import { formatMonthKey } from '../utils/monthKeys';
 import AbcMacroPatternsCard from '../components/abc/AbcMacroPatternsCard';
-import SummaryPatternsSection from '../components/summary/SummaryPatternsSection';
-import SummaryWhatHelpsSection from '../components/summary/SummaryWhatHelpsSection';
-import { resolveMonthlyInsightKey } from '../utils/monthKeys';
+import { formatMonthKey } from '../utils/monthKeys';
 
 const DEFAULT_TEXTS = {
   TITLE: 'Tu resumen',
@@ -65,6 +62,8 @@ const DEFAULT_TEXTS = {
   WEEKLY_INSIGHT_CTA_HINT: 'Informe observacional, no diagnóstico.',
   MONTHLY_INSIGHT_CTA: 'Ver patrones del mes',
   MONTHLY_INSIGHT_CTA_HINT: 'Informe observacional del mes, no diagnóstico.',
+  GRAPH_CTA: 'Mapa de temas e intervenciones',
+  GRAPH_CTA_HINT: 'Visualiza qué temas del chat conectan con qué técnicas.',
   EMPTY_TITLE_MONTH: 'Mes tranquilo en la app',
   PERIOD_FALLBACK: '…',
   TIMES_SINGULAR: 'vez',
@@ -107,6 +106,8 @@ const SUMMARY_TEXT_MAP = {
   WEEKLY_INSIGHT_CTA_HINT: 'SUMMARY_WEEKLY_INSIGHT_CTA_HINT',
   MONTHLY_INSIGHT_CTA: 'SUMMARY_MONTHLY_INSIGHT_CTA',
   MONTHLY_INSIGHT_CTA_HINT: 'SUMMARY_MONTHLY_INSIGHT_CTA_HINT',
+  GRAPH_CTA: 'SUMMARY_GRAPH_CTA',
+  GRAPH_CTA_HINT: 'SUMMARY_GRAPH_CTA_HINT',
   EMPTY_TITLE_MONTH: 'SUMMARY_EMPTY_TITLE_MONTH',
   PERIOD_FALLBACK: 'SUMMARY_PERIOD_FALLBACK',
   TIMES_SINGULAR: 'SUMMARY_TIMES_SINGULAR',
@@ -730,13 +731,28 @@ export default function SummaryScreen() {
     return payload?.period?.weekKey || null;
   }, [route.params?.weekKey, payload?.period?.weekKey]);
 
-  const patternsMonthKey = useMemo(
+  const insightCta = useMemo(
     () =>
-      resolveMonthlyInsightKey(route.params?.monthKey, {
-        year: route.params?.year ?? monthYear.year,
-        month: route.params?.month ?? monthYear.month,
-      }) || formatMonthKey(monthYear.year, monthYear.month),
-    [route.params?.monthKey, route.params?.year, route.params?.month, monthYear],
+      granularity === 'month'
+        ? {
+            title: TEXTS.MONTHLY_INSIGHT_CTA,
+            hint: TEXTS.MONTHLY_INSIGHT_CTA_HINT,
+            params: {
+              period: 'month',
+              monthKey: formatMonthKey(monthYear.year, monthYear.month),
+              year: monthYear.year,
+              month: monthYear.month,
+            },
+          }
+        : {
+            title: TEXTS.WEEKLY_INSIGHT_CTA,
+            hint: TEXTS.WEEKLY_INSIGHT_CTA_HINT,
+            params: {
+              period: 'week',
+              ...(patternsWeekKey ? { weekKey: patternsWeekKey } : {}),
+            },
+          },
+    [granularity, TEXTS, patternsWeekKey, monthYear],
   );
 
   useEffect(() => {
@@ -890,6 +906,28 @@ export default function SummaryScreen() {
                     endDate={payload?.period?.end}
                     compact
                   />
+                  <TouchableOpacity
+                    style={styles.weeklyInsightBtn}
+                    onPress={() => navigation.navigate('WeeklyInsight', insightCta.params)}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel={insightCta.title}
+                    accessibilityHint={insightCta.hint}
+                  >
+                    <Text style={styles.weeklyInsightBtnTitle}>{insightCta.title}</Text>
+                    <Text style={styles.weeklyInsightBtnHint}>{insightCta.hint}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.weeklyInsightBtn}
+                    onPress={() => navigation.navigate('InterventionGraph')}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel={TEXTS.GRAPH_CTA}
+                    accessibilityHint={TEXTS.GRAPH_CTA_HINT}
+                  >
+                    <Text style={styles.weeklyInsightBtnTitle}>{TEXTS.GRAPH_CTA}</Text>
+                    <Text style={styles.weeklyInsightBtnHint}>{TEXTS.GRAPH_CTA_HINT}</Text>
+                  </TouchableOpacity>
                   <View style={styles.grid}>
                     <MetricTile
                       icon="message-text-outline"
@@ -936,13 +974,6 @@ export default function SummaryScreen() {
                   </View>
                 </View>
               )}
-
-              <SummaryPatternsSection
-                period={granularity}
-                weekKey={granularity === 'week' ? patternsWeekKey : null}
-                monthKey={granularity === 'month' ? patternsMonthKey : null}
-              />
-              <SummaryWhatHelpsSection />
 
               <View style={styles.divider} />
 

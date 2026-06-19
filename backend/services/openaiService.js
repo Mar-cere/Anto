@@ -24,7 +24,10 @@ import {
     TIME_PERIODS,
     VALIDATION_LIMITS
 } from '../constants/openai.js';
-import { buildContextualizedPrompt } from './openai/openaiPromptBuilder.js';
+import {
+  buildContextualizedPrompt,
+  resolveChatLanguage,
+} from './openai/openaiPromptBuilder.js';
 import { adaptCachedResponse, generateResponseCacheKey, isCachedResponseValid } from './openai/openaiResponseCache.js';
 import { normalizeEmotionalAnalysis, validateMessage } from './openai/openaiValidation.js';
 import {
@@ -63,6 +66,11 @@ import progressTracker from './progressTracker.js';
 import sessionEmotionalMemory from './sessionEmotionalMemory.js';
 import therapeuticProtocolService from './therapeuticProtocolService.js';
 import therapeuticTemplateService from './therapeuticTemplateService.js';
+import {
+  buildOffScopeRedirectReply,
+  detectOffScopeUserMessage,
+  sanitizeOffScopeAssistantReply,
+} from './chat/chatScopeGuardrails.js';
 import {
   shouldOrientSessionClosure,
   stripPrematureSessionClosurePhrases,
@@ -246,6 +254,21 @@ class OpenAIService {
     }
   }
 
+  _buildOffScopeRedirectResponse(contenidoNormalizado, contexto = {}) {
+    if (!detectOffScopeUserMessage({ currentMessage: contenidoNormalizado })) {
+      return null;
+    }
+    const language = resolveChatLanguage(contexto);
+    return {
+      content: buildOffScopeRedirectReply(language),
+      context: {
+        emotional: contexto.emotional || { mainEmotion: 'neutral', intensity: 5 },
+        contextual: contexto.contextual || {},
+        offScopeRedirect: true,
+      },
+    };
+  }
+
   /**
    * Genera una respuesta contextualizada usando OpenAI GPT-5 Mini
    * @param {Object} mensaje - Mensaje del usuario con content, userId, conversationId
@@ -262,6 +285,9 @@ class OpenAIService {
       if (!validateApiKey() || !openai) {
         throw new Error('OPENAI_API_KEY no está configurada. Configura esta variable de entorno en Render.');
       }
+
+      const offScopeEarly = this._buildOffScopeRedirectResponse(contenidoNormalizado, contexto);
+      if (offScopeEarly) return offScopeEarly;
 
       // 1. Análisis Completo - Usar análisis del contexto si está disponible, sino hacerlo aquí
       let analisisEmocional = contexto.emotional;
@@ -753,6 +779,13 @@ class OpenAIService {
 
     if (!validateApiKey() || !openai) {
       throw new Error('OPENAI_API_KEY no está configurada.');
+    }
+
+    const offScopeEarly = this._buildOffScopeRedirectResponse(contenidoNormalizado, contexto);
+    if (offScopeEarly) {
+      yield { type: 'chunk', content: offScopeEarly.content };
+      yield { type: 'done', content: offScopeEarly.content, context: offScopeEarly.context };
+      return;
     }
 
     let analisisEmocional = contexto.emotional;
@@ -1539,6 +1572,12 @@ class OpenAIService {
     respuestaMejorada = stripPrematureSessionClosurePhrases(respuestaMejorada, contexto);
     respuestaMejorada = this.enforceSessionClosureBridge(respuestaMejorada, contexto);
 
+    respuestaMejorada = sanitizeOffScopeAssistantReply(
+      respuestaMejorada,
+      contexto.userMessage || '',
+      resolveChatLanguage(contexto),
+    );
+
     // NUNCA reemplazar por mensaje genérico si tenemos contenido válido (evitar pérdida de información)
     if (!respuestaMejorada || respuestaMejorada.trim().length < 5) {
       const truncado = (respuesta || '').trim();
@@ -2136,14 +2175,18 @@ class OpenAIService {
     const intent = analisisContextual?.intencion?.tipo || MESSAGE_INTENTS.EMOTIONAL_SUPPORT;
     const content = (analisisContextual?.content || '').toLowerCase().trim();
 
+    // Fuera de ámbito: redirigir sin LLM ni trivia.
+    if (detectOffScopeUserMessage({ currentMessage: content })) {
+      return buildOffScopeRedirectReply('es');
+    }
+
     // Detectar preguntas sobre el sistema
     const isSystemQuestion = /(?:quien.*eres|qué.*haces|qué.*es|qué.*sos|como.*funciona|para.*qué.*sirve|qué.*puedes.*hacer|qué.*ofreces)/i.test(content);
     if (isSystemQuestion) {
       return 'Soy Anto, tu asistente terapéutico. Estoy aquí para brindarte apoyo emocional, escucharte y ayudarte a navegar tus emociones. ¿En qué puedo ayudarte hoy?';
     }
 
-    // Fuera de ámbito solo en casos claros: preguntas puramente informativas o tecnología.
-    // No ser estricto: si mezcla tema externo con cómo se siente, el modelo ya responde con naturalidad.
+    // Fuera de ámbito solo en casos claros (tecnología, cultura general sin bienestar).
     const offTopicPatterns = [
       /(?:qué|que) es\s+(?:react|react native|un framework)/i,
       /react\s*native|programación|framework\s+de|tecnología\s+(?:de|para)/i,
@@ -2153,7 +2196,7 @@ class OpenAIService {
     const looksLikeOffTopic = offTopicPatterns.some(p => p.test(content));
     const hasWellnessContext = wellnessKeywords.test(content);
     if (looksLikeOffTopic && !hasWellnessContext) {
-      return 'Ese tema no es en lo que mejor te acompaño; mi espacio es cómo te sientes y tu bienestar. ¿Cómo estás hoy o qué te gustaría compartir?';
+      return buildOffScopeRedirectReply('es');
     }
 
     // Detectar saludos

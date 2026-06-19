@@ -121,17 +121,27 @@ export default function SummaryPatternsSection({
   const rows = useMemo(() => {
     const raw = Array.isArray(insight?.insights) ? insight.insights : [];
     const skipAbcInsight = abcPatterns.length > 0;
+    const techniqueTypes = new Set(['topic_intervention', 'concept_intervention']);
     return raw
       .filter((row) => row && typeof row === 'object')
+      .filter((row) => !techniqueTypes.has(row.type))
       .filter((row) => !(skipAbcInsight && row.type === 'abc_macro_pattern'))
       .map((row) => String(row.detail || row.label || '').trim())
       .filter(Boolean)
-      .slice(0, 4);
+      .slice(0, 2);
   }, [insight?.insights, abcPatterns.length]);
 
   const conductSuggestion = String(insight?.conductSuggestion || '').trim();
   const headline = String(insight?.headline || '').trim();
-  const hasContent = rows.length > 0 || abcPatterns.length > 0 || conductSuggestion || headline;
+  const headlineIsTechniqueOnly = /acompañó|helped you/i.test(headline);
+  const showHeadline =
+    Boolean(headline) &&
+    (rows.length > 0 ||
+      abcPatterns.length > 0 ||
+      conductSuggestion ||
+      !headlineIsTechniqueOnly);
+  const hasContent =
+    rows.length > 0 || abcPatterns.length > 0 || conductSuggestion || showHeadline;
 
   if (loading) {
     return (
@@ -148,7 +158,7 @@ export default function SummaryPatternsSection({
   return (
     <View style={styles.block} accessibilityRole="summary">
       <Text style={styles.kicker}>{copy.kicker}</Text>
-      {headline ? <Text style={styles.headline}>{headline}</Text> : null}
+      {showHeadline ? <Text style={styles.headline}>{headline}</Text> : null}
       {rows.map((line, index) => (
         <View key={`pattern-${index}`} style={styles.card}>
           <Text style={styles.cardText}>{line}</Text>

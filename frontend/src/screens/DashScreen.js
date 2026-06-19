@@ -22,6 +22,7 @@ import {
   View
 } from 'react-native';
 import DashboardScroll from '../components/DashboardScroll';
+import EmergencyContactsModal from '../components/EmergencyContactsModal';
 import FloatingNavBar from '../components/FloatingNavBar';
 import websocketService from '../services/websocketService';
 import FirstSessionHint, { isFirstSessionHintDismissed } from '../components/FirstSessionHint';
@@ -31,6 +32,7 @@ import TutorialHighlight from '../components/TutorialHighlight';
 import DashboardHomeHeader from '../components/dashboard/DashboardHomeHeader';
 import MoodCheckInCard from '../components/dashboard/MoodCheckInCard';
 import DashboardExploreSection from '../components/dashboard/DashboardExploreSection';
+import InsightsQuickCard from '../components/InsightsQuickCard';
 import DashboardStreakHero from '../components/dashboard/DashboardStreakHero';
 import DashboardStatsRow from '../components/dashboard/DashboardStatsRow';
 import DashboardHabitsSection from '../components/dashboard/DashboardHabitsSection';
@@ -67,6 +69,7 @@ import { useSectionTranslations } from '../hooks/useTranslations';
 
 // Constantes de AsyncStorage
 const STORAGE_KEYS = {
+  EMERGENCY_CONTACTS_SKIPPED: 'emergencyContactsSkipped',
   NOTIFICATIONS_PROMPT_DISMISSED_PREFIX: 'notificationsPromptDismissed:', // legacy (migración)
 };
 
@@ -183,6 +186,10 @@ const DashScreen = () => {
   const [tasks, setTasks] = useState([]);
   const [habits, setHabits] = useState([]);
   const [togglingHabitId, setTogglingHabitId] = useState(null);
+  const [showEmergencyContactsModal, setShowEmergencyContactsModal] = useState(false);
+  const [emergencyContacts, setEmergencyContacts] = useState([]);
+  const [hasCheckedEmergencyContacts, setHasCheckedEmergencyContacts] = useState(false);
+  const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [hasCheckedTutorial, setHasCheckedTutorial] = useState(false);
   const [showFirstSessionHint, setShowFirstSessionHint] = useState(false);
@@ -190,6 +197,7 @@ const DashScreen = () => {
   const [highlightElement, setHighlightElement] = useState(null);
   const [trialInfo, setTrialInfo] = useState(null);
   const [trialBannerDismissed, setTrialBannerDismissed] = useState(false);
+  const [, setEmergencyAlertNotification] = useState(null);
   const [showNotificationsPrompt, setShowNotificationsPrompt] = useState(false);
   const [notificationsPromptSuppressed, setNotificationsPromptSuppressed] = useState(false);
   const [enablingNotifications, setEnablingNotifications] = useState(false);
@@ -218,6 +226,62 @@ const DashScreen = () => {
       showFirstSessionHint,
     };
   }, [showTutorial, showOnboardingQuestions, showFirstSessionHint]);
+
+  const checkEmergencyContacts = useCallback(async (currentUserData = null) => {
+    try {
+      const skipped = await AsyncStorage.getItem(STORAGE_KEYS.EMERGENCY_CONTACTS_SKIPPED);
+      if (skipped === 'true') {
+        setHasCheckedEmergencyContacts(true);
+        return;
+      }
+
+      const response = await api.get(ENDPOINTS.EMERGENCY_CONTACTS);
+      const contacts = response.contacts || [];
+      setEmergencyContacts(contacts);
+      setHasCheckedEmergencyContacts(true);
+
+      if (contacts.length === 0) {
+        const userDataToCheck = currentUserData || userData;
+        const userCreatedAt = userDataToCheck?.createdAt ? new Date(userDataToCheck.createdAt) : null;
+        const isNewUser =
+          userCreatedAt && Date.now() - userCreatedAt.getTime() < 24 * 60 * 60 * 1000;
+        setIsFirstTimeUser(isNewUser || false);
+
+        setTimeout(() => {
+          const blocker = onboardingOverlayStateRef.current;
+          if (blocker.showTutorial || blocker.showOnboardingQuestions || blocker.showFirstSessionHint) {
+            return;
+          }
+          setShowEmergencyContactsModal(true);
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Error verificando contactos de emergencia:', error);
+      const skipped = await AsyncStorage.getItem(STORAGE_KEYS.EMERGENCY_CONTACTS_SKIPPED);
+      if (skipped !== 'true') {
+        setEmergencyContacts([]);
+        setHasCheckedEmergencyContacts(true);
+        setTimeout(() => {
+          const blocker = onboardingOverlayStateRef.current;
+          if (blocker.showTutorial || blocker.showOnboardingQuestions || blocker.showFirstSessionHint) {
+            return;
+          }
+          setShowEmergencyContactsModal(true);
+        }, 1500);
+      } else {
+        setHasCheckedEmergencyContacts(true);
+      }
+    }
+  }, [userData]);
+
+  const handleEmergencyContactsSaved = useCallback(async () => {
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEYS.EMERGENCY_CONTACTS_SKIPPED);
+    } catch (error) {
+      console.error('Error limpiando estado de omisión:', error);
+    }
+    await checkEmergencyContacts();
+  }, [checkEmergencyContacts]);
 
   // Función para cargar datos
   const loadData = useCallback(async (forceRefresh = false) => {
@@ -320,6 +384,10 @@ const DashScreen = () => {
         setHasCheckedTutorial(true);
       }
 
+      if (!hasCheckedEmergencyContacts) {
+        checkEmergencyContacts(userData);
+      }
+
       // Registrar token push para notificaciones
       try {
         await registerForPushNotifications();
@@ -348,7 +416,7 @@ const DashScreen = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [navigation, refreshing, hasCheckedTutorial, DASH]);
+  }, [navigation, refreshing, hasCheckedEmergencyContacts, hasCheckedTutorial, checkEmergencyContacts, DASH]);
 
   const getNotificationsPromptKey = useCallback(() => {
     const userId = userData?._id || userData?.id || 'anon';
@@ -388,7 +456,7 @@ const DashScreen = () => {
     (async () => {
       // Esperar a tener usuario (y evitar overlays durante onboarding)
       if (!userData) return;
-      if (showTutorial || showOnboardingQuestions) return;
+      if (showTutorial || showOnboardingQuestions || showEmergencyContactsModal) return;
 
       try {
         const userId = getUserId();
@@ -438,6 +506,7 @@ const DashScreen = () => {
     userData,
     showTutorial,
     showOnboardingQuestions,
+    showEmergencyContactsModal,
     dashVisitsCount,
     getNotificationsPromptKey,
     getUserId,
@@ -635,6 +704,29 @@ const DashScreen = () => {
     }, [refreshHomeDataOnFocus]),
   );
 
+  // Alertas de emergencia en tiempo real
+  useEffect(() => {
+    const unsubscribeAlert = websocketService.on('emergency:alert:sent', (data) => {
+      setEmergencyAlertNotification(data);
+      if (data && !data.isTest) {
+        Alert.alert(
+          `🚨 ${DASH.EMERGENCY_ALERT_SENT_TITLE}`,
+          DASH.EMERGENCY_ALERT_SENT_BODY
+            .replace('{successful}', String(data.successfulSends))
+            .replace('{total}', String(data.totalContacts)),
+          [{ text: DASH.EMERGENCY_ALERT_SENT_OK }]
+        );
+      }
+    });
+    const unsubscribeError = websocketService.on('error', (error) => {
+      console.error('[DashScreen] Error en WebSocket:', error);
+    });
+    return () => {
+      unsubscribeAlert();
+      unsubscribeError();
+    };
+  }, [DASH]);
+
   // Limpiar conexión al desmontar
   useEffect(() => {
     return () => {
@@ -754,10 +846,8 @@ const DashScreen = () => {
               onDismiss={() => setError(null)}
             />
           )}
-          <DashboardExploreSection
-            techniquesA11y={DASH.TCC_TOOLS_LABEL}
-            insightsA11y={DASH.INSIGHTS_CARD_A11Y}
-          />
+          <DashboardExploreSection techniquesA11y={DASH.TCC_TOOLS_LABEL} />
+          <InsightsQuickCard accessibilityLabel={DASH.INSIGHTS_CARD_A11Y} />
           <QuoteSection />
         </DashboardScroll>
       </SafeAreaView>
@@ -790,6 +880,14 @@ const DashScreen = () => {
         visible={showFirstSessionHint}
         onDismiss={() => setShowFirstSessionHint(false)}
         userId={userData?._id || userData?.id || null}
+      />
+
+      <EmergencyContactsModal
+        visible={showEmergencyContactsModal}
+        onClose={() => setShowEmergencyContactsModal(false)}
+        onSave={handleEmergencyContactsSaved}
+        existingContacts={emergencyContacts}
+        isFirstTime={isFirstTimeUser}
       />
 
     </View>
