@@ -188,6 +188,12 @@ const userSchema = new mongoose.Schema({
       todayPoints: { type: Number, default: 0, min: 0 },
       todaySignals: { type: [String], default: [] },
     },
+    sessionWai: {
+      pendingReminder: { type: Boolean, default: false },
+      lastSkippedConversationId: { type: String, default: null, trim: true },
+      lastSkippedAt: { type: Date, default: null },
+      lastSubmittedAt: { type: Date, default: null },
+    },
     totalSessions: {
       type: Number,
       default: 0,

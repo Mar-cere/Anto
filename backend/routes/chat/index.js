@@ -13,7 +13,8 @@ export {
   patchMessageLimiter,
   messageFeedbackLimiter,
   sendMessageLimiter,
-  scheduleSessionSummaryLimiter
+  scheduleSessionSummaryLimiter,
+  sessionWaiLimiter,
 } from './chatConstants.js';
 
 export { isValidObjectId, validarConversationId, validarConversacion } from './chatMiddleware.js';

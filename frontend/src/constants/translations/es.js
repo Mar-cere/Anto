@@ -2807,6 +2807,26 @@ export const SESSION_INSIGHT = {
     'Si sigues sintiendo que no puedes más, busca apoyo ahora: línea de crisis de tu país o servicios de emergencia locales.',
   CRISIS_DISCLAIMER:
     'Esto no sustituye atención de urgencias ni salud mental profesional. Si hay riesgo inmediato, contacta servicios de emergencia.',
+  WAI_REMINDER_TITLE: 'Tu opinión nos ayuda a ajustar el tono',
+  WAI_REMINDER_BODY:
+    'La última vez omitiste este paso breve. Si te sirve, tómate un momento: nos da una base importante para mejorar cómo te acompañamos.',
+};
+
+export const SESSION_WAI = {
+  KICKER: 'Cómo te sentiste',
+  TITLE: '¿Cómo fue esta conversación para ti?',
+  SUBTITLE: 'Son cuatro preguntas rápidas (1 = nada, 5 = mucho). Nos ayuda a afinar el tono sin presionarte.',
+  AXIS_HEARD: 'Me sentí escuchado/a',
+  AXIS_SAFE: 'Me sentí a salvo al compartir',
+  AXIS_USEFUL: 'Lo de hoy me sirvió',
+  AXIS_NO_PRESSURE: 'No me sentí presionado/a',
+  SCALE_LOW: 'Nada',
+  SCALE_HIGH: 'Mucho',
+  CTA_SUBMIT: 'Enviar',
+  CTA_SKIP: 'Omitir por ahora',
+  SUBMITTED: 'Gracias, lo tendremos en cuenta.',
+  SKIPPED: 'Sin problema. Podrás hacerlo en otra sesión.',
+  ERROR: 'No se pudo guardar. Puedes continuar igual.',
 };
 
 export const API_ERRORS = {
@@ -2832,6 +2852,7 @@ export default {
   INFO,
   CHAT,
   SESSION_INSIGHT,
+  SESSION_WAI,
   NAV,
   TASKS,
   HABITS,

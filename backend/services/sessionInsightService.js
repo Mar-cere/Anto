@@ -402,6 +402,7 @@ export async function buildSessionInsight({ userId, conversationId, language = '
     eligible: true,
     conversationId: String(conversationId),
     userTurns,
+    userChars,
     durationMinutes: estimateDurationMinutes(msgs),
     headline,
     headlineSource,

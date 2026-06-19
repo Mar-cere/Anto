@@ -315,21 +315,12 @@ const createStyles = (themeColors, c) =>
   },
   });
 
-function isValidMongoMessageId(id) {
-  const s = id != null ? String(id) : '';
-  return /^[a-f0-9]{24}$/i.test(s);
-}
-
 function ChatMessageItem({
   item,
   onSuggestionPress,
   onSuggestionDismiss,
   onProductProposalPress,
   onProductProposalReject,
-  feedbackEnabled,
-  feedbackTargetId,
-  onMessageFeedback,
-  feedbackSubmittingId,
 }) {
   const { language } = useLanguage();
   const TEXTS = useChatTexts();
@@ -341,19 +332,6 @@ function ChatMessageItem({
   const message = item.userMessage || item.assistantMessage || item;
   const isUser = message.role === MESSAGE_ROLES.USER;
   const rawId = message._id || message.id;
-  const isFeedbackAnchor =
-    feedbackTargetId != null && String(rawId) === String(feedbackTargetId);
-  const showFeedback =
-    feedbackEnabled &&
-    isFeedbackAnchor &&
-    !isUser &&
-    !message.metadata?.streaming &&
-    (message.content || '').trim().length > 0 &&
-    isValidMongoMessageId(rawId) &&
-    message.type !== MESSAGE_TYPES.ERROR;
-  const currentVote = message.metadata?.userFeedback?.helpful;
-  const feedbackBusy =
-    Boolean(feedbackSubmittingId) && String(feedbackSubmittingId) === String(rawId);
 
   const parseDateOrNull = (raw) => {
     const s = String(raw || '').trim();
@@ -393,12 +371,6 @@ function ChatMessageItem({
       </View>
     );
   }
-
-  const handleThumb = (dir) => {
-    if (!onMessageFeedback || !showFeedback || feedbackBusy) return;
-    const next = currentVote === dir ? null : dir;
-    onMessageFeedback(String(rawId), next);
-  };
 
   if (message.type === 'product_proposals' && message.proposedProductActions?.length) {
     return (
@@ -585,44 +557,7 @@ function ChatMessageItem({
       {isUser ? (
         bubble
       ) : (
-        <View style={styles.botColumn}>
-          {bubble}
-          {showFeedback ? (
-            <View style={styles.feedbackRow}>
-              <Text style={styles.feedbackHint}>{TEXTS.FEEDBACK_HINT}</Text>
-              <View style={styles.feedbackButtons}>
-                <TouchableOpacity
-                  style={[styles.feedbackButton, { marginRight: 14 }]}
-                  onPress={() => handleThumb('up')}
-                  disabled={feedbackBusy}
-                  accessibilityLabel={TEXTS.FEEDBACK_HELPFUL}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: currentVote === 'up', disabled: feedbackBusy }}
-                >
-                  <Ionicons
-                    name={currentVote === 'up' ? 'thumbs-up' : 'thumbs-up-outline'}
-                    size={20}
-                    color={currentVote === 'up' ? chatColors.PRIMARY : chatColors.ACCENT}
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.feedbackButton}
-                  onPress={() => handleThumb('down')}
-                  disabled={feedbackBusy}
-                  accessibilityLabel={TEXTS.FEEDBACK_NOT_HELPFUL}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: currentVote === 'down', disabled: feedbackBusy }}
-                >
-                  <Ionicons
-                    name={currentVote === 'down' ? 'thumbs-down' : 'thumbs-down-outline'}
-                    size={20}
-                    color={currentVote === 'down' ? chatColors.PRIMARY : chatColors.ACCENT}
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : null}
-        </View>
+        <View style={styles.botColumn}>{bubble}</View>
       )}
     </View>
   );

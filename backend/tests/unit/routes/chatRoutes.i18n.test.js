@@ -37,4 +37,13 @@ describe('chatApiCopy extensiones', () => {
     expect(chatApiCopy('en').assistantProcessingFallback).toMatch(/Sorry/i);
     expect(chatApiCopy('es').assistantProcessingFallback).toMatch(/Lo siento/i);
   });
+
+  it('session WAI copy es/en', () => {
+    const es = chatApiCopy('es');
+    const en = chatApiCopy('en');
+    expect(es.sessionWaiScoresInvalid).toMatch(/1 al 5/i);
+    expect(en.sessionWaiScoresInvalid).toMatch(/1 to 5/i);
+    expect(es.rateLimitSessionWai).toMatch(/feedback de sesión/i);
+    expect(en.rateLimitSessionWai).toMatch(/session feedback/i);
+  });
 });

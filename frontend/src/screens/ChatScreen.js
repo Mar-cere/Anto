@@ -48,7 +48,6 @@ import {
   recordInterventionDismissed,
 } from '../utils/recordInterventionCompleted';
 import { topicFromInterventionId } from '../utils/psychoeducationTopic';
-import { getFeedbackTargetMessageId } from './chat/chatFeedbackAnchor';
 import { SPACING } from '../constants/ui';
 import {
   formatGuestQuotaBanner,
@@ -314,11 +313,8 @@ const ChatScreen = () => {
     isOffline,
     offlinePendingMessage,
     retryOfflinePending,
-    chatFeedbackEnabled,
-    handleMessageFeedback,
     handleProductProposalPress,
     handleProductProposalReject,
-    feedbackSubmittingId,
     showSessionIntentionPrompt,
     sessionIntentionSubmitting,
     selectSessionIntention,
@@ -339,10 +335,6 @@ const ChatScreen = () => {
     immersiveMode,
     toggleImmersiveMode,
   } = useChatScreen();
-  const feedbackTargetId = useMemo(
-    () => getFeedbackTargetMessageId(messages, chatFeedbackEnabled),
-    [messages, chatFeedbackEnabled]
-  );
   const hasTccContinuity = visibleTccContinuityItems.length > 0;
   const showTccLiteHandoff = Boolean(tccLiteAtHandoff?.screen) && !hasTccContinuity;
   const [showAIDisclosure, setShowAIDisclosure] = React.useState(false);
@@ -468,10 +460,6 @@ const ChatScreen = () => {
         onSuggestionDismiss={handleSuggestionDismiss}
         onProductProposalPress={handleProductProposalPress}
         onProductProposalReject={handleProductProposalReject}
-        feedbackEnabled={chatFeedbackEnabled}
-        feedbackTargetId={feedbackTargetId}
-        onMessageFeedback={handleMessageFeedback}
-        feedbackSubmittingId={feedbackSubmittingId}
       />
     ),
     [
@@ -479,10 +467,6 @@ const ChatScreen = () => {
       handleSuggestionDismiss,
       handleProductProposalPress,
       handleProductProposalReject,
-      chatFeedbackEnabled,
-      feedbackTargetId,
-      handleMessageFeedback,
-      feedbackSubmittingId,
     ]
   );
 

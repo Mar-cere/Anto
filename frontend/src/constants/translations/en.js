@@ -2792,6 +2792,26 @@ export const SESSION_INSIGHT = {
     'If you still feel you cannot cope, reach out now: your local crisis line or emergency services.',
   CRISIS_DISCLAIMER:
     'This does not replace emergency or professional mental health care. If there is immediate risk, contact emergency services.',
+  WAI_REMINDER_TITLE: 'Your view helps us adjust the tone',
+  WAI_REMINDER_BODY:
+    'You skipped this brief step last time. If it works for you, take a moment—it gives us an important baseline for how we support you.',
+};
+
+export const SESSION_WAI = {
+  KICKER: 'How you felt',
+  TITLE: 'How was this conversation for you?',
+  SUBTITLE: 'Four quick questions (1 = not at all, 5 = very much). It helps us tune the tone without pressure.',
+  AXIS_HEARD: 'I felt heard',
+  AXIS_SAFE: 'I felt safe sharing',
+  AXIS_USEFUL: 'What we talked about helped',
+  AXIS_NO_PRESSURE: 'I did not feel pushed',
+  SCALE_LOW: 'Not at all',
+  SCALE_HIGH: 'Very much',
+  CTA_SUBMIT: 'Send',
+  CTA_SKIP: 'Skip for now',
+  SUBMITTED: 'Thank you—we will take it into account.',
+  SKIPPED: 'No problem. You can do it in another session.',
+  ERROR: 'Could not save. You can still continue.',
 };
 
 export const API_ERRORS = {
@@ -2816,6 +2836,7 @@ export default {
   INFO,
   CHAT,
   SESSION_INSIGHT,
+  SESSION_WAI,
   NAV,
   TASKS,
   HABITS,

@@ -3,7 +3,7 @@
  */
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -29,6 +29,8 @@ import { recordInterventionClicked } from '../utils/recordInterventionCompleted'
 import { setPendingTccLiteResume } from '../utils/chatTccLiteResume';
 import chatService from '../services/chatService';
 import { createSessionCommitment } from '../services/sessionCommitmentsService';
+import { skipSessionWai, submitSessionWai } from '../services/sessionWaiService';
+import SessionWaiCard from '../components/sessionInsight/SessionWaiCard';
 import { useToast } from '../context/ToastContext';
 
 function IntensityBar({ value, colors, sx }) {
@@ -46,6 +48,7 @@ export default function SessionInsightScreen() {
   const insets = useSafeAreaInsets();
   const { colors, statusBarStyle } = useTheme();
   const TEXTS = useSectionTranslations('SESSION_INSIGHT');
+  const WAI_TEXTS = useSectionTranslations('SESSION_WAI');
   const { showToast } = useToast();
 
   const routeInsight = route.params?.insight;
@@ -57,6 +60,17 @@ export default function SessionInsightScreen() {
   );
   const [commitmentSaving, setCommitmentSaving] = useState(false);
   const [commitmentSaved, setCommitmentSaved] = useState(false);
+  const [waiSubmitting, setWaiSubmitting] = useState(false);
+  const [waiHandled, setWaiHandled] = useState(false);
+  const [waiNotice, setWaiNotice] = useState(null);
+  const waiActionTakenRef = useRef(false);
+
+  useEffect(() => {
+    if (insight?.sessionWai?.alreadyRecorded) {
+      waiActionTakenRef.current = true;
+      setWaiHandled(true);
+    }
+  }, [insight?.sessionWai?.alreadyRecorded]);
 
   useEffect(() => {
     let cancelled = false;
@@ -291,17 +305,57 @@ export default function SessionInsightScreen() {
           marginTop: 16,
           opacity: 0.85,
         },
+        reminderCard: {
+          backgroundColor: colors.card,
+          borderRadius: 14,
+          padding: 14,
+          marginBottom: 14,
+          borderWidth: 1,
+          borderColor: colors.primary,
+        },
+        reminderTitle: {
+          fontSize: 15,
+          fontWeight: '600',
+          color: colors.text,
+          marginBottom: 6,
+        },
+        reminderBody: {
+          fontSize: 14,
+          lineHeight: 20,
+          color: colors.textSecondary,
+        },
+        waiNotice: {
+          fontSize: 14,
+          lineHeight: 20,
+          color: colors.textSecondary,
+          textAlign: 'center',
+          marginBottom: 12,
+        },
       }),
     [colors, insets.top, insets.bottom],
   );
 
-  const finish = useCallback(() => {
+  const finish = useCallback(async () => {
+    const cid = conversationId || insight?.conversationId;
+    const needsImplicitSkip =
+      cid &&
+      insight?.sessionWai?.eligible &&
+      !insight?.sessionWai?.alreadyRecorded &&
+      !waiActionTakenRef.current;
+    if (needsImplicitSkip) {
+      waiActionTakenRef.current = true;
+      try {
+        await skipSessionWai(cid);
+      } catch {
+        /* noop: continuar sin bloquear salida */
+      }
+    }
     if (backTarget === CHAT_BACK_TARGET.HOME) {
       dispatchRootReset(navigation, { index: 0, routes: [{ name: 'Home' }] });
       return;
     }
     dispatchRootReset(navigation, getResetToMainTabsWithInicioState());
-  }, [navigation, backTarget]);
+  }, [navigation, backTarget, conversationId, insight?.conversationId, insight?.sessionWai]);
 
   const openSuggestedStep = useCallback(() => {
     const step = insight?.suggestedStep;
@@ -346,6 +400,72 @@ export default function SessionInsightScreen() {
     showToast,
     TEXTS.CTA_COMMITMENT_SAVED,
     TEXTS.CTA_COMMITMENT_ERROR,
+  ]);
+
+  const sessionWai = insight?.sessionWai;
+  const showWaiCard =
+    Boolean(sessionWai?.eligible) &&
+    !sessionWai?.alreadyRecorded &&
+    !waiHandled;
+  const showWaiReminder = Boolean(sessionWai?.reminder?.show) && showWaiCard;
+
+  const applySessionWaiPayload = useCallback((payload) => {
+    if (payload?.sessionWai) {
+      setInsight((prev) => (prev ? { ...prev, sessionWai: payload.sessionWai } : prev));
+    }
+  }, []);
+
+  const handleWaiSubmit = useCallback(
+    async (scores) => {
+      const cid = conversationId || insight?.conversationId;
+      if (!cid || waiSubmitting) return;
+      waiActionTakenRef.current = true;
+      setWaiSubmitting(true);
+      try {
+        const data = await submitSessionWai(cid, scores);
+        applySessionWaiPayload(data);
+        setWaiHandled(true);
+        setWaiNotice(WAI_TEXTS.SUBMITTED);
+      } catch {
+        showToast({ message: WAI_TEXTS.ERROR, type: 'warning' });
+      } finally {
+        setWaiSubmitting(false);
+      }
+    },
+    [
+      conversationId,
+      insight?.conversationId,
+      waiSubmitting,
+      applySessionWaiPayload,
+      showToast,
+      WAI_TEXTS.SUBMITTED,
+      WAI_TEXTS.ERROR,
+    ],
+  );
+
+  const handleWaiSkip = useCallback(async () => {
+    const cid = conversationId || insight?.conversationId;
+    if (!cid || waiSubmitting) return;
+    waiActionTakenRef.current = true;
+    setWaiSubmitting(true);
+    try {
+      const data = await skipSessionWai(cid);
+      applySessionWaiPayload(data);
+      setWaiHandled(true);
+      setWaiNotice(WAI_TEXTS.SKIPPED);
+    } catch {
+      showToast({ message: WAI_TEXTS.ERROR, type: 'warning' });
+    } finally {
+      setWaiSubmitting(false);
+    }
+  }, [
+    conversationId,
+    insight?.conversationId,
+    waiSubmitting,
+    applySessionWaiPayload,
+    showToast,
+    WAI_TEXTS.SKIPPED,
+    WAI_TEXTS.ERROR,
   ]);
 
   const openTccLiteInChat = useCallback(async () => {
@@ -393,6 +513,12 @@ export default function SessionInsightScreen() {
       <StatusBar barStyle={statusBarStyle} />
       <ParticleBackground />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {showWaiReminder ? (
+          <View style={styles.reminderCard}>
+            <Text style={styles.reminderTitle}>{TEXTS.WAI_REMINDER_TITLE}</Text>
+            <Text style={styles.reminderBody}>{TEXTS.WAI_REMINDER_BODY}</Text>
+          </View>
+        ) : null}
         <View style={styles.hero}>
           <Text style={styles.kicker}>{TEXTS.KICKER}</Text>
           <Text style={styles.heroEmoji}>{emotion?.emoji || '✨'}</Text>
@@ -522,6 +648,16 @@ export default function SessionInsightScreen() {
             </Text>
           </TouchableOpacity>
         ) : null}
+
+        {showWaiCard ? (
+          <SessionWaiCard
+            onSubmit={handleWaiSubmit}
+            onSkip={handleWaiSkip}
+            submitting={waiSubmitting}
+          />
+        ) : null}
+
+        {waiNotice ? <Text style={styles.waiNotice}>{waiNotice}</Text> : null}
 
         <TouchableOpacity style={styles.ctaPrimary} onPress={finish} accessibilityRole="button">
           <Text style={styles.ctaPrimaryText}>{TEXTS.CTA_DONE}</Text>

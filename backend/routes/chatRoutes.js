@@ -59,6 +59,11 @@ import { scheduleLastSessionSummary } from '../services/lastSessionSummaryServic
 import { getTodayDailyMoodCheckIn } from '../services/dailyMoodCheckInService.js';
 import { recordEngagementSignal } from '../services/engagementStreakService.js';
 import { buildSessionInsight } from '../services/sessionInsightService.js';
+import {
+  buildSessionWaiClientPayload,
+  skipSessionAllianceFeedback,
+  submitSessionAllianceFeedback,
+} from '../services/sessionAllianceFeedbackService.js';
 import metricsService from '../services/metricsService.js';
 import { buildHistoryForPromptFromMessages } from '../services/openai/openaiPromptBuilder.js';
 import paymentAuditService from '../services/paymentAuditService.js';
@@ -115,6 +120,7 @@ import {
     patchMessageLimiter,
     scheduleSessionSummaryLimiter,
     sendMessageLimiter,
+    sessionWaiLimiter,
     shouldShowChatActionSuggestions,
     validarConversacion,
     validarConversationId
@@ -748,13 +754,101 @@ router.get(
         conversationId: req.params.conversationId,
         language,
       });
-      return res.json({ success: true, data: insight });
+      const sessionWai = await buildSessionWaiClientPayload({
+        userId: req.user._id,
+        conversationId: req.params.conversationId,
+        insight,
+        language,
+      });
+      return res.json({ success: true, data: { ...insight, sessionWai } });
     } catch (error) {
       console.error('[chatRoutes] session-insight:', error);
       return res.status(500).json({
         success: false,
         message: req.apiCopy.sessionInsightError,
       });
+    }
+  },
+);
+
+router.post(
+  '/conversations/:conversationId/session-wai/submit',
+  protect,
+  requireActiveSubscription(true),
+  sessionWaiLimiter,
+  validarConversationId,
+  validarConversacion,
+  async (req, res) => {
+    try {
+      const language = req.appLanguage || resolveRequestLanguage(req);
+      const insight = await buildSessionInsight({
+        userId: req.user._id,
+        conversationId: req.params.conversationId,
+        language,
+      });
+      const result = await submitSessionAllianceFeedback(req.user._id, req.params.conversationId, {
+        insight,
+        scores: req.body?.scores,
+        language,
+      });
+      if (result.code === 'not_eligible') {
+        return res.status(400).json({ success: false, message: req.apiCopy.sessionWaiNotEligible });
+      }
+      if (result.code === 'invalid_scores') {
+        return res.status(400).json({ success: false, message: req.apiCopy.sessionWaiScoresInvalid });
+      }
+      if (result.code === 'already_recorded') {
+        return res.status(409).json({ success: false, message: req.apiCopy.sessionWaiAlreadyRecorded });
+      }
+      const sessionWai = await buildSessionWaiClientPayload({
+        userId: req.user._id,
+        conversationId: req.params.conversationId,
+        insight,
+        language,
+      });
+      return res.json({ success: true, data: { feedback: result.feedback, sessionWai } });
+    } catch (error) {
+      console.error('[chatRoutes] session-wai submit:', error);
+      return res.status(500).json({ success: false, message: req.apiCopy.sessionWaiSubmitError });
+    }
+  },
+);
+
+router.post(
+  '/conversations/:conversationId/session-wai/skip',
+  protect,
+  requireActiveSubscription(true),
+  sessionWaiLimiter,
+  validarConversationId,
+  validarConversacion,
+  async (req, res) => {
+    try {
+      const language = req.appLanguage || resolveRequestLanguage(req);
+      const insight = await buildSessionInsight({
+        userId: req.user._id,
+        conversationId: req.params.conversationId,
+        language,
+      });
+      const result = await skipSessionAllianceFeedback(req.user._id, req.params.conversationId, {
+        insight,
+        language,
+      });
+      if (result.code === 'not_eligible') {
+        return res.status(400).json({ success: false, message: req.apiCopy.sessionWaiNotEligible });
+      }
+      if (result.code === 'already_recorded') {
+        return res.status(409).json({ success: false, message: req.apiCopy.sessionWaiAlreadyRecorded });
+      }
+      const sessionWai = await buildSessionWaiClientPayload({
+        userId: req.user._id,
+        conversationId: req.params.conversationId,
+        insight,
+        language,
+      });
+      return res.json({ success: true, data: { feedback: result.feedback, sessionWai } });
+    } catch (error) {
+      console.error('[chatRoutes] session-wai skip:', error);
+      return res.status(500).json({ success: false, message: req.apiCopy.sessionWaiSkipError });
     }
   },
 );

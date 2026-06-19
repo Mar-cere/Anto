@@ -81,6 +81,40 @@ describe('buildSessionInsight', () => {
     expect(insight.userTurns).toBe(1);
   });
 
+  it('expone userChars en insight elegible', async () => {
+    const now = Date.now();
+    mockMessageFind.mockReturnValue(
+      chainLean([
+        {
+          role: 'user',
+          content: 'Texto suficientemente largo para contar caracteres en la sesión activa',
+          metadata: {
+            context: { emotional: { mainEmotion: 'ansiedad', intensity: 6, topic: 'trabajo' } },
+          },
+          createdAt: new Date(now - 60000),
+        },
+        {
+          role: 'assistant',
+          content: 'Te escucho',
+          metadata: {},
+          createdAt: new Date(now - 30000),
+        },
+        {
+          role: 'user',
+          content: 'Sigo con más detalle sobre lo que me pasa en el trabajo esta semana',
+          metadata: {
+            context: { emotional: { mainEmotion: 'ansiedad', intensity: 5, topic: 'trabajo' } },
+          },
+          createdAt: new Date(now),
+        },
+      ]),
+    );
+
+    const insight = await buildSessionInsight({ userId, conversationId, language: 'es' });
+    expect(insight.eligible).toBe(true);
+    expect(insight.userChars).toBeGreaterThan(40);
+  });
+
   it('agrega emoción dominante y patrón cognitivo', async () => {
     const now = Date.now();
     mockMessageFind.mockReturnValue(

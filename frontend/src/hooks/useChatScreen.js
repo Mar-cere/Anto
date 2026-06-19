@@ -139,8 +139,6 @@ export function useChatScreen() {
   /** #72: intención de sesión antes del primer mensaje del usuario (solo cuenta registrada) */
   const [showSessionIntentionPrompt, setShowSessionIntentionPrompt] = useState(false);
   const [sessionIntentionSubmitting, setSessionIntentionSubmitting] = useState(false);
-  /** Pulgar en mensajes del asistente (solo usuarios con cuenta) */
-  const [chatFeedbackEnabled, setChatFeedbackEnabled] = useState(false);
   const [tccContinuityItems, setTccContinuityItems] = useState([]);
   const [dismissedContinuityIds, setDismissedContinuityIds] = useState([]);
   const dismissedContinuityIdsRef = useRef([]);
@@ -148,9 +146,6 @@ export function useChatScreen() {
   const [crisisResourcesPanel, setCrisisResourcesPanel] = useState(null);
   const crisisResourcesDismissedRef = useRef(false);
   const pendingTccLiteResumeRef = useRef(null);
-  /** Evita doble envío y permite deshabilitar botones mientras viaja la petición */
-  const [feedbackSubmittingId, setFeedbackSubmittingId] = useState(null);
-  const feedbackRequestLockRef = useRef(false);
   const handleSendRef = useRef(null);
   /** Evita doble POST / doble respuesta del asistente si el usuario envía dos veces muy rápido. */
   const sendRequestInFlightRef = useRef(false);
@@ -405,7 +400,6 @@ export function useChatScreen() {
         setHistoryHasMore(false);
       }
       const userToken = await AsyncStorage.getItem('userToken');
-      setChatFeedbackEnabled(!!userToken);
 
       if (userToken) {
         setGuestQuota(null);
@@ -653,51 +647,6 @@ export function useChatScreen() {
       }
     },
     [isOffline, sessionIntentionSubmitting, showToast]
-  );
-
-  const handleMessageFeedback = useCallback(
-    async (messageId, helpful) => {
-      const texts = textsRef.current;
-      const id = String(messageId ?? '').trim();
-      if (!/^[\da-f]{24}$/i.test(id)) return;
-      if (isOffline) {
-        showToast({
-          message: texts.FEEDBACK_OFFLINE,
-          type: 'warning',
-        });
-        return;
-      }
-      if (feedbackRequestLockRef.current) return;
-      feedbackRequestLockRef.current = true;
-      setFeedbackSubmittingId(id);
-      try {
-        await chatService.submitMessageFeedback(id, helpful);
-        setMessages((prev) =>
-          prev.map((m) => {
-            const mid = m._id || m.id;
-            if (String(mid) !== id) return m;
-            const nextMeta = { ...(m.metadata || {}) };
-            if (helpful === null) {
-              delete nextMeta.userFeedback;
-            } else {
-              nextMeta.userFeedback = { helpful };
-            }
-            return { ...m, metadata: nextMeta };
-          })
-        );
-        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      } catch (e) {
-        console.warn('[useChatScreen] Error enviando feedback:', e?.message || e);
-        showToast({
-          message: texts.FEEDBACK_ERROR,
-          type: 'error',
-        });
-      } finally {
-        feedbackRequestLockRef.current = false;
-        setFeedbackSubmittingId(null);
-      }
-    },
-    [isOffline, showToast]
   );
 
   const handleProductProposalPress = useCallback(
@@ -1848,11 +1797,8 @@ export function useChatScreen() {
     guestHandoffUseSummary,
     offlinePendingMessage,
     retryOfflinePending,
-    chatFeedbackEnabled,
-    handleMessageFeedback,
     handleProductProposalPress,
     handleProductProposalReject,
-    feedbackSubmittingId,
     showSessionIntentionPrompt,
     sessionIntentionSubmitting,
     selectSessionIntention,

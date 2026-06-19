@@ -22,6 +22,11 @@ const COPY = {
     invalidIds: 'Identificadores inválidos',
     scheduleContinuityError: 'No se pudo programar la continuidad del chat',
     sessionInsightError: 'No se pudo generar el insight de sesión',
+    sessionWaiNotEligible: 'Esta sesión no admite feedback de alianza',
+    sessionWaiAlreadyRecorded: 'Ya registraste tu opinión sobre esta sesión',
+    sessionWaiScoresInvalid: 'Cada puntuación debe ser un número del 1 al 5',
+    sessionWaiSubmitError: 'No se pudo guardar tu feedback',
+    sessionWaiSkipError: 'No se pudo registrar la omisión',
     conversationIdRequired: 'ID de conversación requerido',
     conversationIdInvalid: 'ID de conversación inválido',
     conversationForbidden: 'No tienes permiso para acceder a esta conversación',
@@ -64,6 +69,8 @@ const COPY = {
       'Demasiados mensajes enviados. Por favor, espera un momento antes de intentar de nuevo.',
     rateLimitScheduleContinuity:
       'Demasiadas peticiones de programación. Intenta más tarde.',
+    rateLimitSessionWai:
+      'Demasiados envíos de feedback de sesión. Intenta más tarde.',
   },
   en: {
     historyError: 'Could not load message history',
@@ -83,6 +90,11 @@ const COPY = {
     invalidIds: 'Invalid identifiers',
     scheduleContinuityError: 'Could not schedule chat continuity',
     sessionInsightError: 'Could not generate session insight',
+    sessionWaiNotEligible: 'This session does not accept alliance feedback',
+    sessionWaiAlreadyRecorded: 'You already shared feedback for this session',
+    sessionWaiScoresInvalid: 'Each rating must be a number from 1 to 5',
+    sessionWaiSubmitError: 'Could not save your feedback',
+    sessionWaiSkipError: 'Could not record skip',
     conversationIdRequired: 'Conversation ID is required',
     conversationIdInvalid: 'Invalid conversation ID',
     conversationForbidden: 'You do not have permission to access this conversation',
@@ -125,6 +137,8 @@ const COPY = {
       'Too many messages sent. Please wait a moment before trying again.',
     rateLimitScheduleContinuity:
       'Too many scheduling requests. Try again later.',
+    rateLimitSessionWai:
+      'Too many session feedback submissions. Try again later.',
   },
 };
 

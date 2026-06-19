@@ -59,3 +59,13 @@ export const scheduleSessionSummaryLimiter = createRateLimiter({
   legacyHeaders: false,
   keyGenerator: (req) => (req.user?._id ? String(req.user._id) : req.ip ?? 'unknown'),
 });
+
+/** WAI post-sesión (#98): submit/skip por usuario. */
+export const sessionWaiLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 40,
+  message: (req) => chatApiCopy(resolveRequestLanguage(req)).rateLimitSessionWai,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => (req.user?._id ? String(req.user._id) : req.ip ?? 'unknown'),
+});

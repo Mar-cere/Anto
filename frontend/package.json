@@ -8,7 +8,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "test": "jest",
-    "test:i18n": "jest --testPathPattern='translationsParity|translationsTone|dashboardI18n|dashboardTheme|dashboardHomeUtils|useTranslations|registerErrorUtils|registerAuthCopyParity|onboardingFocusParity|OnboardingQuestions' --coverage=false",
+    "test:i18n": "jest --testPathPattern='translationsParity|translationsTone|dashboardI18n|dashboardTheme|dashboardHomeUtils|useTranslations|registerErrorUtils|registerAuthCopyParity|onboardingFocusParity|OnboardingQuestions|sessionWaiI18n' --coverage=false",
     "test:dashboard-suite": "npm run test:i18n",
     "test:exposure": "jest --testPathPattern='exposurePlanPrefill|exposurePlanAdvance|exposurePlanApiErrors' --coverage=false",
     "test:abc": "jest --testPathPattern='abcRecordPrefill|abcMacroDateRange|abcRecordsService|abcApiErrors|abcMacroCycle' --coverage=false",
