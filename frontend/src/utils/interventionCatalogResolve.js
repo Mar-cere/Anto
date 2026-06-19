@@ -41,10 +41,47 @@ const PSYCHOEDUCATION_TOPIC_TO_ID = Object.freeze({
   burnout: 'psychoeducation_burnout',
 });
 
+const INTERVENTION_ID_TO_SCREEN = Object.freeze(
+  Object.entries(SCREEN_TO_INTERVENTION_ID).reduce((acc, [screen, id]) => {
+    if (id && !acc[id]) acc[id] = screen;
+    return acc;
+  }, {}),
+);
+
 function normalizeInterventionId(id) {
   const key = String(id || '').trim().toLowerCase();
   if (!key || !INTERVENTION_ID_PATTERN.test(key)) return null;
   return key;
+}
+
+/**
+ * Resuelve la pantalla destino de una intervención del catálogo (#127) a partir de su id.
+ * Permite que el grafo y los insights abran la técnica concreta, no solo el hub.
+ * @param {string|null} interventionId
+ * @returns {{ screen: string, params: object }|null}
+ */
+export function resolveInterventionScreen(interventionId) {
+  const id = normalizeInterventionId(interventionId);
+  if (!id) return null;
+
+  if (id.startsWith('psychoeducation_')) {
+    const topic = id.replace(/^psychoeducation_/, '');
+    if (!topic) return null;
+    return { screen: 'PsychoeducationModule', params: { topic, graphTracked: true } };
+  }
+
+  if (id.startsWith('micro_guide_')) {
+    const guideId = id.replace(/^micro_guide_/, '');
+    if (!guideId) return null;
+    return { screen: 'MicroGuide', params: { guideId, graphTracked: true } };
+  }
+
+  const screen = INTERVENTION_ID_TO_SCREEN[id];
+  if (screen) {
+    return { screen, params: { graphTracked: true } };
+  }
+
+  return null;
 }
 
 export function getInterventionIdByScreen(screen) {

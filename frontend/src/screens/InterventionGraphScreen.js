@@ -32,6 +32,8 @@ import {
   filterPublicGraphInterventionEdges,
   resolveGraphInterventionLabel,
 } from '../utils/graphInterventionLabel';
+import { resolveInterventionScreen } from '../utils/interventionCatalogResolve';
+import { recordInterventionClicked } from '../utils/recordInterventionCompleted';
 import {
   formatGraphMeta,
   formatGraphMetrics,
@@ -175,6 +177,15 @@ const InterventionGraphScreen = ({ navigation }) => {
         insightTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 8 },
         insightRow: { fontSize: 13, color: colors.textSecondary, lineHeight: 18, marginBottom: 4 },
         detailTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 6 },
+        detailCta: {
+          marginTop: 12,
+          alignSelf: 'flex-start',
+          paddingVertical: 9,
+          paddingHorizontal: 16,
+          borderRadius: 999,
+          backgroundColor: colors.primary,
+        },
+        detailCtaText: { color: colors.textOnPrimary || colors.white, fontWeight: '700', fontSize: 13 },
       }),
     [colors],
   );
@@ -216,6 +227,20 @@ const InterventionGraphScreen = ({ navigation }) => {
     useCallback(() => {
       load();
     }, [load]),
+  );
+
+  const openIntervention = useCallback(
+    (edge) => {
+      if (!edge) return;
+      const target = resolveInterventionScreen(edge.interventionId);
+      if (!target) return;
+      recordInterventionClicked(edge.interventionId, {
+        ...(edge.topicTag ? { topicTag: edge.topicTag } : {}),
+        ...(edge.topicFree ? { topicFree: edge.topicFree } : {}),
+      });
+      navigation.navigate(target.screen, target.params);
+    },
+    [navigation],
   );
 
   const renderEdgeRow = (edge, { topicFree = false } = {}) => {
@@ -411,6 +436,16 @@ const InterventionGraphScreen = ({ navigation }) => {
                 })()}
                 <Text style={styles.rowSub}>{formatGraphMetrics(TEXTS, selectedEdge)}</Text>
                 <Text style={styles.rowSub}>{formatGraphRates(TEXTS, selectedEdge, pct)}</Text>
+                {resolveInterventionScreen(selectedEdge.interventionId) ? (
+                  <TouchableOpacity
+                    style={styles.detailCta}
+                    onPress={() => openIntervention(selectedEdge)}
+                    accessibilityRole="button"
+                    accessibilityLabel={TEXTS.OPEN_TECHNIQUE}
+                  >
+                    <Text style={styles.detailCtaText}>{TEXTS.OPEN_TECHNIQUE}</Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
             ) : null}
           </>

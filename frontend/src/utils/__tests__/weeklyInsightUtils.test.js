@@ -91,8 +91,15 @@ describe('weeklyInsightUtils', () => {
     expect(chips[0].label).toContain('4');
   });
 
-  it('buildInsightRowNavigation cae a técnicas si no hay mapeo psico', () => {
+  it('buildInsightRowNavigation abre la técnica concreta del catálogo', () => {
     expect(buildInsightRowNavigation('breathing_exercise')).toEqual({
+      screen: 'BreathingExercise',
+      params: { graphTracked: true },
+    });
+  });
+
+  it('buildInsightRowNavigation cae al hub solo si el id es desconocido', () => {
+    expect(buildInsightRowNavigation('unknown_intervention_xyz')).toEqual({
       screen: 'TherapeuticTechniques',
       params: {},
     });

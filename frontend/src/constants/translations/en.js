@@ -2023,6 +2023,7 @@ export const TECHNIQUES = {
     'As you chat with Anto and try techniques, you will see which themes connect with what helps you.',
   INTERVENTION_GRAPH_CTA_CHAT: 'Go to chat',
   INTERVENTION_GRAPH_CTA_TECHNIQUES: 'Explore techniques',
+  INTERVENTION_GRAPH_OPEN_TECHNIQUE: 'Open this technique',
   INTERVENTION_GRAPH_LOADING: 'Loading your map…',
   INTERVENTION_GRAPH_DEV_LINK: 'Chat suggestion graph (internal)',
   INTERVENTION_GRAPH_METRICS:

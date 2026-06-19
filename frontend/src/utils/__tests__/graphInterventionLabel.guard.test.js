@@ -45,4 +45,12 @@ describe('graphInterventionLabel guard', () => {
     expect(src).not.toMatch(/styles\.error/);
     expect(src).not.toMatch(/styles\.retry/);
   });
+
+  it('InterventionGraphScreen conecta la arista seleccionada con la técnica concreta', () => {
+    const src = readSrc('screens/InterventionGraphScreen.js');
+    expect(src).toMatch(/resolveInterventionScreen/);
+    expect(src).toMatch(/recordInterventionClicked/);
+    expect(src).toMatch(/openIntervention/);
+    expect(src).toMatch(/OPEN_TECHNIQUE/);
+  });
 });

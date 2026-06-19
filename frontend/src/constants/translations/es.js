@@ -2029,6 +2029,7 @@ export const TECHNIQUES = {
     'Cuando charlas con Anto y pruebas técnicas, aquí verás qué temas conectan con qué te ayuda.',
   INTERVENTION_GRAPH_CTA_CHAT: 'Ir al chat',
   INTERVENTION_GRAPH_CTA_TECHNIQUES: 'Explorar técnicas',
+  INTERVENTION_GRAPH_OPEN_TECHNIQUE: 'Abrir esta técnica',
   INTERVENTION_GRAPH_LOADING: 'Cargando tu mapa…',
   INTERVENTION_GRAPH_DEV_LINK: 'Grafo de sugerencias del chat (interno)',
   INTERVENTION_GRAPH_METRICS:

@@ -1,6 +1,7 @@
 /**
  * Utilidades para informe observacional semanal/mensual.
  */
+import { resolveInterventionScreen } from './interventionCatalogResolve';
 
 const INTERVENTION_TO_PSYCHO_TOPIC = Object.freeze({
   psychoeducation_anxiety: 'anxiety',
@@ -122,6 +123,10 @@ export function buildInsightRowNavigation(interventionId) {
   if (topic) {
     return { screen: 'PsychoeducationModule', params: { topic, graphTracked: true } };
   }
+  // Resolver la técnica concreta cuando el id está en el catálogo (#127);
+  // así el insight lleva a la intervención específica, no al hub genérico.
+  const resolved = resolveInterventionScreen(id);
+  if (resolved) return resolved;
   return { screen: 'TherapeuticTechniques', params: {} };
 }
 
