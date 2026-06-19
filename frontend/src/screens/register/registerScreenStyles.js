@@ -51,6 +51,7 @@ export function createRegisterScreenStyles(colors) {
       flex: 1,
       paddingHorizontal: HORIZONTAL_PADDING,
       paddingVertical: VERTICAL_PADDING,
+      zIndex: 1,
     },
     title: {
       fontSize: 34,

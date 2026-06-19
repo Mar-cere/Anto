@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Platform, View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -9,6 +9,14 @@ import {
   formatTrialPeriodLabel,
 } from '../../constants/subscription';
 import { fetchAppTrialDays } from '../../services/appConfigService';
+import {
+  createAuthTextChangeHandler,
+  getAuthPasswordAutoComplete,
+  getAuthPasswordTextContentType,
+  syncWebTextInputOnBlur,
+  syncWebTextInputOnFocus,
+  withWebAutofillInputStyle,
+} from '../../utils/authFormInputUtils';
 import { useRegisterScreenStyles } from './registerScreenStyles';
 import { EYE_ICON_SIZE, BUTTON_ICON_SIZE, BUTTON_ICON_MARGIN, ACTIVE_OPACITY, BUTTON_ACTIVE_OPACITY, CHECKBOX_ICON_SIZE } from './registerScreenConstants';
 
@@ -36,12 +44,29 @@ export function RegisterForm({
   fadeAnim,
   translateYAnim,
   AnimatedView,
+  passwordRef,
+  confirmPasswordRef,
 }) {
   const TEXTS = useSectionTranslations('REGISTER');
   const { language } = useLanguage();
   const { colors, globalStyles: gs } = useTheme();
   const styles = useRegisterScreenStyles();
   const [trialDays, setTrialDays] = useState(DEFAULT_APP_TRIAL_DAYS);
+  const [focusedField, setFocusedField] = useState(null);
+
+  const passwordInputStyle = useMemo(
+    () => withWebAutofillInputStyle(gs.input, colors),
+    [gs.input, colors],
+  );
+
+  const handlePasswordChange = useMemo(
+    () => createAuthTextChangeHandler((value) => onInputChange('password', value)),
+    [onInputChange],
+  );
+  const handleConfirmPasswordChange = useMemo(
+    () => createAuthTextChangeHandler((value) => onInputChange('confirmPassword', value)),
+    [onInputChange],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -108,6 +133,7 @@ export function RegisterForm({
             placeholder={TEXTS.USERNAME_PLACEHOLDER}
             placeholderTextColor={colors.accent}
             autoCapitalize="none"
+            autoComplete="username"
             onChangeText={(t) => onInputChange('username', t)}
             value={formData.username}
             accessibilityLabel={TEXTS.USERNAME_PLACEHOLDER}
@@ -125,6 +151,8 @@ export function RegisterForm({
             placeholderTextColor={colors.accent}
             keyboardType="email-address"
             autoCapitalize="none"
+            autoComplete="email"
+            textContentType="emailAddress"
             onChangeText={(t) => onInputChange('email', t)}
             value={formData.email}
             accessibilityLabel={TEXTS.EMAIL_PLACEHOLDER}
@@ -134,18 +162,44 @@ export function RegisterForm({
       </View>
 
       <View style={gs.inputWrapper}>
-        <View style={[gs.inputContainer, errors.password && gs.inputError]}>
+        <View style={[
+          gs.inputContainer,
+          errors.password && gs.inputError,
+          focusedField === 'password' && gs.inputContainerFocused,
+        ]}>
           <Ionicons name="lock-closed-outline" size={20} color={colors.primary} style={gs.inputIcon} />
           <TextInput
-            style={gs.input}
+            ref={passwordRef}
+            testID="register-password-input"
+            style={passwordInputStyle}
             placeholder={TEXTS.PASSWORD_PLACEHOLDER}
             placeholderTextColor={colors.accent}
             secureTextEntry={!isPasswordVisible}
-            onChangeText={(t) => onInputChange('password', t)}
+            autoCapitalize="none"
+            autoCorrect={false}
+            spellCheck={false}
+            autoComplete={getAuthPasswordAutoComplete('register-password')}
+            textContentType={getAuthPasswordTextContentType('register-password')}
+            onChangeText={handlePasswordChange}
+            onChange={Platform.OS === 'web' ? handlePasswordChange : undefined}
+            onFocus={(event) => {
+              setFocusedField('password');
+              syncWebTextInputOnFocus(event, formData.password, (value) => onInputChange('password', value));
+            }}
+            onBlur={(event) => {
+              setFocusedField(null);
+              syncWebTextInputOnBlur(event, formData.password, (value) => onInputChange('password', value));
+            }}
             value={formData.password}
             accessibilityLabel={TEXTS.PASSWORD_PLACEHOLDER}
+            accessibilityState={{ invalid: Boolean(errors.password) }}
           />
-          <TouchableOpacity onPress={() => setPasswordVisible(!isPasswordVisible)} style={gs.inputIcon} accessibilityLabel={isPasswordVisible ? TEXTS.HIDE_PASSWORD : TEXTS.SHOW_PASSWORD}>
+          <TouchableOpacity
+            onPress={() => setPasswordVisible(!isPasswordVisible)}
+            style={gs.inputIcon}
+            accessibilityLabel={isPasswordVisible ? TEXTS.HIDE_PASSWORD : TEXTS.SHOW_PASSWORD}
+            accessibilityRole="button"
+          >
             <Ionicons name={isPasswordVisible ? 'eye-off' : 'eye'} size={EYE_ICON_SIZE} color={colors.primary} />
           </TouchableOpacity>
         </View>
@@ -153,18 +207,44 @@ export function RegisterForm({
       </View>
 
       <View style={gs.inputWrapper}>
-        <View style={[gs.inputContainer, errors.confirmPassword && gs.inputError]}>
+        <View style={[
+          gs.inputContainer,
+          errors.confirmPassword && gs.inputError,
+          focusedField === 'confirmPassword' && gs.inputContainerFocused,
+        ]}>
           <Ionicons name="lock-closed-outline" size={20} color={colors.primary} style={gs.inputIcon} />
           <TextInput
-            style={gs.input}
+            ref={confirmPasswordRef}
+            testID="register-confirm-password-input"
+            style={passwordInputStyle}
             placeholder={TEXTS.CONFIRM_PASSWORD_PLACEHOLDER}
             placeholderTextColor={colors.accent}
             secureTextEntry={!isConfirmPasswordVisible}
-            onChangeText={(t) => onInputChange('confirmPassword', t)}
+            autoCapitalize="none"
+            autoCorrect={false}
+            spellCheck={false}
+            autoComplete={getAuthPasswordAutoComplete('register-confirm-password')}
+            textContentType={getAuthPasswordTextContentType('register-confirm-password')}
+            onChangeText={handleConfirmPasswordChange}
+            onChange={Platform.OS === 'web' ? handleConfirmPasswordChange : undefined}
+            onFocus={(event) => {
+              setFocusedField('confirmPassword');
+              syncWebTextInputOnFocus(event, formData.confirmPassword, (value) => onInputChange('confirmPassword', value));
+            }}
+            onBlur={(event) => {
+              setFocusedField(null);
+              syncWebTextInputOnBlur(event, formData.confirmPassword, (value) => onInputChange('confirmPassword', value));
+            }}
             value={formData.confirmPassword}
             accessibilityLabel={TEXTS.CONFIRM_PASSWORD_PLACEHOLDER}
+            accessibilityState={{ invalid: Boolean(errors.confirmPassword) }}
           />
-          <TouchableOpacity onPress={() => setConfirmPasswordVisible(!isConfirmPasswordVisible)} style={gs.inputIcon} accessibilityLabel={isConfirmPasswordVisible ? TEXTS.HIDE_PASSWORD : TEXTS.SHOW_PASSWORD}>
+          <TouchableOpacity
+            onPress={() => setConfirmPasswordVisible(!isConfirmPasswordVisible)}
+            style={gs.inputIcon}
+            accessibilityLabel={isConfirmPasswordVisible ? TEXTS.HIDE_PASSWORD : TEXTS.SHOW_PASSWORD}
+            accessibilityRole="button"
+          >
             <Ionicons name={isConfirmPasswordVisible ? 'eye-off' : 'eye'} size={EYE_ICON_SIZE} color={colors.primary} />
           </TouchableOpacity>
         </View>

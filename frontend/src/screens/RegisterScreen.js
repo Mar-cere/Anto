@@ -19,6 +19,7 @@ import { RegisterForm } from './register/RegisterForm';
 import { NameInfoModal } from './register/NameInfoModal';
 import { TermsModal } from './register/TermsModal';
 import { useRegisterScreenStyles } from './register/registerScreenStyles';
+import { getAuthKeyboardScrollProps } from '../utils/authFormInputUtils';
 const RegisterScreen = () => {
   const navigation = useNavigation();
   const { colors, statusBarStyle } = useTheme();
@@ -49,10 +50,15 @@ const RegisterScreen = () => {
     fadeAnim,
     translateYAnim,
     openPrivacyUrl,
+    passwordRef,
+    confirmPasswordRef,
   } = useRegisterScreen(navigation);
 
   return (
-    <KeyboardAwareScrollView contentContainerStyle={styles.container}>
+    <KeyboardAwareScrollView
+      contentContainerStyle={styles.container}
+      {...getAuthKeyboardScrollProps()}
+    >
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
       <OfflineBanner />
       <ImageBackground source={require('../images/back.png')} style={styles.background} imageStyle={styles.imageStyle}>
@@ -84,6 +90,8 @@ const RegisterScreen = () => {
             fadeAnim={fadeAnim}
             translateYAnim={translateYAnim}
             AnimatedView={Animated.View}
+            passwordRef={passwordRef}
+            confirmPasswordRef={confirmPasswordRef}
           />
         )}
       </ImageBackground>

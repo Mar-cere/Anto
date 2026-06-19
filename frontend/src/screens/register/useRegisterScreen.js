@@ -18,6 +18,10 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
+import {
+  deriveRegisterInputErrors,
+  mergeWebPasswordFields,
+} from '../../utils/authFormInputUtils';
 import { openRegisterPrivacyUrl } from './openPrivacyLink';
 import chatService from '../../services/chatService';
 import { STORAGE_KEYS, SERVER_CHECK_TIMEOUT } from './registerScreenConstants';
@@ -88,6 +92,8 @@ export function useRegisterScreen(navigation) {
 
   const fadeAnim = useRef(new Animated.Value(ANIMATION_VALUES.INITIAL_OPACITY)).current;
   const translateYAnim = useRef(new Animated.Value(ANIMATION_VALUES.INITIAL_TRANSLATE_Y)).current;
+  const passwordRef = useRef(null);
+  const confirmPasswordRef = useRef(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -129,33 +135,29 @@ export function useRegisterScreen(navigation) {
   const handleInputChange = useCallback((field, value) => {
     if (field === 'email') value = value.toLowerCase().trim();
     if (field === 'username') value = value.toLowerCase().replace(/[^a-z0-9_]/g, '');
-    const updated = { ...formData, [field]: value };
-    setFormData(updated);
 
-    const error = validateField(field, value, updated, ERROR_MESSAGES);
-    const nextErrors = { ...errors };
-    if (error) nextErrors[field] = error;
-    else delete nextErrors[field];
-    if (field === 'password' && updated.confirmPassword) {
-      const confirmErr = validateField('confirmPassword', updated.confirmPassword, updated, ERROR_MESSAGES);
-      if (confirmErr) nextErrors.confirmPassword = confirmErr;
-      else delete nextErrors.confirmPassword;
-    }
-    if (field === 'confirmPassword' && updated.password) {
-      const pwdErr = validateField('password', updated.password, updated, ERROR_MESSAGES);
-      if (pwdErr) nextErrors.password = pwdErr;
-      else delete nextErrors.password;
-    }
-    setErrors(nextErrors);
-  }, [formData, errors, ERROR_MESSAGES]);
+    setFormData((prev) => {
+      const updated = { ...prev, [field]: value };
+      setErrors((prevErrors) => deriveRegisterInputErrors(
+        prevErrors,
+        field,
+        value,
+        updated,
+        ERROR_MESSAGES,
+        validateField,
+      ));
+      return updated;
+    });
+  }, [ERROR_MESSAGES]);
 
-  const validateForm = useCallback(() => {
+  const validateForm = useCallback((dataOverride) => {
+    const data = dataOverride ?? formData;
     const newErrors = {
-      name: validateField('name', formData.name, formData, ERROR_MESSAGES),
-      username: validateField('username', formData.username, formData, ERROR_MESSAGES),
-      email: validateField('email', formData.email, formData, ERROR_MESSAGES),
-      password: validateField('password', formData.password, formData, ERROR_MESSAGES),
-      confirmPassword: validateField('confirmPassword', formData.confirmPassword, formData, ERROR_MESSAGES),
+      name: validateField('name', data.name, data, ERROR_MESSAGES),
+      username: validateField('username', data.username, data, ERROR_MESSAGES),
+      email: validateField('email', data.email, data, ERROR_MESSAGES),
+      password: validateField('password', data.password, data, ERROR_MESSAGES),
+      confirmPassword: validateField('confirmPassword', data.confirmPassword, data, ERROR_MESSAGES),
     };
     Object.keys(newErrors).forEach((k) => { if (!newErrors[k]) delete newErrors[k]; });
     if (!isTermsAccepted) newErrors.terms = ERROR_MESSAGES.TERMS_REQUIRED;
@@ -169,7 +171,12 @@ export function useRegisterScreen(navigation) {
   }, [formData, isTermsAccepted, isPrivacyAccepted, ERROR_MESSAGES]);
 
   const handleRegister = useCallback(async () => {
-    if (!validateForm()) return;
+    const submissionData = mergeWebPasswordFields(formData, passwordRef, confirmPasswordRef);
+    if (submissionData.password !== formData.password
+      || submissionData.confirmPassword !== formData.confirmPassword) {
+      setFormData(submissionData);
+    }
+    if (!validateForm(submissionData)) return;
     setIsSubmitting(true);
     try {
       if (isOffline) {
@@ -191,27 +198,27 @@ export function useRegisterScreen(navigation) {
       }
       const appLanguage = await getAppLanguage();
       const userData = {
-        email: formData.email.toLowerCase().trim(),
-        username: formData.username.toLowerCase().trim(),
-        password: formData.password,
+        email: submissionData.email.toLowerCase().trim(),
+        username: submissionData.username.toLowerCase().trim(),
+        password: submissionData.password,
         termsAccepted: isTermsAccepted,
         termsAcceptedAt: new Date().toISOString(),
         privacyAccepted: isPrivacyAccepted,
         privacyAcceptedAt: new Date().toISOString(),
         termsVersion: '1.0',
         language: appLanguage,
-        ...(formData.name?.trim() ? { name: formData.name.trim() } : {}),
+        ...(submissionData.name?.trim() ? { name: submissionData.name.trim() } : {}),
       };
       const response = await api.post(ENDPOINTS.REGISTER, userData);
       if (response.requiresVerification) {
-        navigation.navigate(ROUTES.VERIFY_EMAIL, { email: response.email || formData.email });
+        navigation.navigate(ROUTES.VERIFY_EMAIL, { email: response.email || submissionData.email });
         return;
       }
       if ((response.accessToken || response.token) && response.user) {
         await saveAuthData(
           { accessToken: response.accessToken, token: response.token, refreshToken: response.refreshToken },
           response.user,
-          formData.email
+          submissionData.email
         );
         await refreshSession();
         navigation.reset({ index: 0, routes: [{ name: ROUTES.MAIN_TABS }] });
@@ -282,5 +289,7 @@ export function useRegisterScreen(navigation) {
     fadeAnim,
     translateYAnim,
     openPrivacyUrl,
+    passwordRef,
+    confirmPasswordRef,
   };
 }
