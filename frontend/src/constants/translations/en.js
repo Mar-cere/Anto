@@ -5,27 +5,18 @@
  */
 
 export const HOME = {
-  WELCOME: 'Welcome!',
-  SUBTITLE: 'We are glad to see you here.',
-  SIGN_IN: 'Sign In',
-  REGISTER: 'Create account',
-  CONTINUE_WITHOUT_ACCOUNT: 'Continue without account',
-  EMERGENCY_CHAT_ENTRY: 'Enter emergency chat',
-  EMERGENCY_CHAT_ENTRY_A11Y: 'Open emergency chat',
-  EMERGENCY_CHAT_ENTRY_HINT:
-    'Open chat in limited mode without signing in (useful in an emergency)',
-  CONTINUE_WITHOUT_ACCOUNT_HINT:
-    'Open chat in limited mode without signing in (useful in an emergency)',
-  CHAT_LOGIN_REQUIRED_TITLE: 'Sign in required',
-  CHAT_LOGIN_REQUIRED_MESSAGE:
-    'You need to sign in to access chat. Do you want to sign in now?',
-  CHAT_SESSION_CHECK_ERROR:
-    'There was a problem verifying your session. Please try signing in.',
-  CANCEL: 'Cancel',
-  ERROR_TITLE: 'Error',
-  FAQ: 'Frequently Asked Questions',
-  SIGN_IN_HINT: 'Tap to go to the sign-in screen',
-  REGISTER_HINT: 'Tap to go to the registration screen',
+  BRAND_PREFIX: 'tu',
+  BRAND_NAME: 'Anto',
+  BADGE: '1 day free · no card required',
+  HEADLINE_PREFIX: 'Your space to',
+  HEADLINE_ACCENT: 'feel better.',
+  SUBTITLE:
+    'Anto is here when you need support. Not a replacement for a professional, and never judgmental.',
+  START_FREE: 'Start for free',
+  ALREADY_HAVE_ACCOUNT: 'I already have an account',
+  START_FREE_HINT: 'Create a new account with a free trial',
+  FAQ: 'Frequently asked questions',
+  SIGN_IN_HINT: 'Sign in with your existing account',
 };
 
 export const REGISTER = {

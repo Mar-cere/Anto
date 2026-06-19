@@ -17,6 +17,7 @@ import {
   removeNotificationListeners,
   setupNotificationListeners,
 } from '../services/pushNotificationService';
+import AuthNavigationSync from './AuthNavigationSync';
 import StackNavigator from './StackNavigator';
 import {
   handleActivitySummaryDeepLink,
@@ -66,6 +67,7 @@ const AppNavigator = () => {
 
   return (
     <NavigationContainer ref={navigationRef}>
+      <AuthNavigationSync />
       <StackNavigator />
     </NavigationContainer>
   );

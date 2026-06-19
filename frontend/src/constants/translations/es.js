@@ -8,27 +8,18 @@
  */
 
 export const HOME = {
-  WELCOME: '¡Bienvenido!',
-  SUBTITLE: 'Nos alegra verte aquí.',
-  SIGN_IN: 'Iniciar Sesión',
-  REGISTER: 'Crear cuenta',
-  CONTINUE_WITHOUT_ACCOUNT: 'Continuar sin cuenta',
-  EMERGENCY_CHAT_ENTRY: 'Ingresa al chat de emergencia',
-  EMERGENCY_CHAT_ENTRY_A11Y: 'Abrir chat de emergencia',
-  EMERGENCY_CHAT_ENTRY_HINT:
-    'Abre el chat de forma limitada sin iniciar sesión (útil en una emergencia)',
-  CONTINUE_WITHOUT_ACCOUNT_HINT:
-    'Abre el chat de forma limitada sin iniciar sesión (útil en una emergencia)',
-  CHAT_LOGIN_REQUIRED_TITLE: 'Iniciar sesión requerido',
-  CHAT_LOGIN_REQUIRED_MESSAGE:
-    'Necesitas iniciar sesión para acceder al chat. ¿Deseas iniciar sesión ahora?',
-  CHAT_SESSION_CHECK_ERROR:
-    'Hubo un problema al verificar tu sesión. Por favor, intenta iniciar sesión.',
-  CANCEL: 'Cancelar',
-  ERROR_TITLE: 'Error',
-  FAQ: 'Preguntas Frecuentes',
-  SIGN_IN_HINT: 'Toca para ir a la pantalla de inicio de sesión',
-  REGISTER_HINT: 'Toca para ir a la pantalla de registro',
+  BRAND_PREFIX: 'tu',
+  BRAND_NAME: 'Anto',
+  BADGE: '1 día gratis · sin tarjeta',
+  HEADLINE_PREFIX: 'Tu espacio para',
+  HEADLINE_ACCENT: 'sentirte mejor.',
+  SUBTITLE:
+    'Anto te acompaña cuando lo necesitás. Sin reemplazar a un profesional, sin juzgarte.',
+  START_FREE: 'Empezar gratis',
+  ALREADY_HAVE_ACCOUNT: 'Ya tengo cuenta',
+  START_FREE_HINT: 'Crear una cuenta nueva con prueba gratuita',
+  FAQ: 'Preguntas frecuentes',
+  SIGN_IN_HINT: 'Iniciar sesión con tu cuenta existente',
 };
 
 export const REGISTER = {
