@@ -512,6 +512,7 @@ export default function PomodoroScreen() {
             onSeeAllTasks={handleSeeAllTasks}
             focusTaskId={focusTask?._id}
             focusingTaskId={focusingTaskId}
+            timerActive={isActive}
             density="compact"
           />
         </ScrollView>

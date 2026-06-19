@@ -108,6 +108,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 }));
 
 import { renderHook, act } from '@testing-library/react-native';
+import { api } from '../../config/api';
 import { sortPomodoroPendingTasks, usePomodoroScreen } from '../usePomodoroScreen';
 
 describe('sortPomodoroPendingTasks', () => {
@@ -189,5 +190,33 @@ describe('usePomodoroScreen', () => {
     });
     expect(result.current.mode).toBe('break');
     expect(result.current.timeLeft).toBe(5 * 60);
+  });
+
+  it('startFocusFromPendingTask enlaza tarea e inicia el temporizador', async () => {
+    const { result } = renderHook(() => usePomodoroScreen());
+    await act(async () => {
+      await result.current.startFocusFromPendingTask({ _id: 't1', title: 'estudiar' });
+    });
+    expect(api.put).toHaveBeenCalledWith('/api/tasks/t1', { status: 'in_progress' });
+    expect(result.current.focusTask).toEqual(
+      expect.objectContaining({ _id: 't1', title: 'estudiar', minutesPlanned: 25 }),
+    );
+    expect(result.current.isActive).toBe(true);
+    expect(result.current.timeLeft).toBe(25 * 60);
+  });
+
+  it('startFocusFromPendingTask reanuda si la tarea ya estaba enfocada', async () => {
+    const { result } = renderHook(() => usePomodoroScreen());
+    await act(async () => {
+      await result.current.startFocusFromPendingTask({ _id: 't1', title: 'estudiar' });
+    });
+    act(() => {
+      result.current.toggleTimer();
+    });
+    expect(result.current.isActive).toBe(false);
+    await act(async () => {
+      await result.current.startFocusFromPendingTask({ _id: 't1', title: 'estudiar' });
+    });
+    expect(result.current.isActive).toBe(true);
   });
 });

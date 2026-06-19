@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useSectionTranslations } from '../hooks/useTranslations';
+import { isInternalGraphIntervention, resolveGraphInterventionLabel } from '../utils/graphInterventionLabel';
 
 const DEFAULTS = {
   TITLE: 'Lo que te ayuda',
@@ -143,13 +144,18 @@ export function formatGraphHumanStatus(texts, edge) {
 }
 
 export function formatCorrelationInsight(texts, row, language = 'es') {
+  if (isInternalGraphIntervention(row?.targetId || row?.interventionId)) {
+    return '';
+  }
   const topicLabel =
     row?.sourceKind === 'topicTag'
       ? formatTopicTagLabel(row.sourceId, language)
       : row?.sourceLabel || row?.sourceId || '';
-  const intervention = stripTechnicalInterventionSuffix(
-    row?.interventionLabel || row?.targetId || '',
+  const intervention = resolveGraphInterventionLabel(
+    row?.interventionLabel || row?.targetId,
+    row?.targetId || row?.interventionId,
   );
+  if (!intervention) return '';
   const delta = Math.abs(
     Number(row?.metrics?.avgMoodDeltaOnTopicDays || 0) -
       Number(row?.metrics?.avgMoodDeltaOverall || 0),

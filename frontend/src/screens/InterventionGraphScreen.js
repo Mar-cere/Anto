@@ -28,6 +28,11 @@ import {
   formatTopicTagLabel,
 } from '../utils/interventionGraphLayout';
 import {
+  filterPublicGraphCorrelations,
+  filterPublicGraphInterventionEdges,
+  resolveGraphInterventionLabel,
+} from '../utils/graphInterventionLabel';
+import {
   formatGraphMeta,
   formatGraphMetrics,
   formatGraphRates,
@@ -178,11 +183,17 @@ const InterventionGraphScreen = ({ navigation }) => {
       const res = await chatService.getInterventionGraph({ days: 30, limit: 60 });
       const data = res?.data ?? res;
       setWindowDays(data?.windowDays ?? 30);
-      setEdges(Array.isArray(data?.edges) ? data.edges : []);
-      setTopicFreeEdges(Array.isArray(data?.topicFreeEdges) ? data.topicFreeEdges : []);
+      setEdges(filterPublicGraphInterventionEdges(Array.isArray(data?.edges) ? data.edges : []));
+      setTopicFreeEdges(
+        filterPublicGraphInterventionEdges(Array.isArray(data?.topicFreeEdges) ? data.topicFreeEdges : []),
+      );
       setConceptNodes(Array.isArray(data?.conceptNodes) ? data.conceptNodes : []);
-      setConceptEdges(Array.isArray(data?.conceptEdges) ? data.conceptEdges : []);
-      setCorrelations(Array.isArray(data?.correlations) ? data.correlations : []);
+      setConceptEdges(
+        filterPublicGraphInterventionEdges(Array.isArray(data?.conceptEdges) ? data.conceptEdges : []),
+      );
+      setCorrelations(
+        filterPublicGraphCorrelations(Array.isArray(data?.correlations) ? data.correlations : []),
+      );
       setVectorSearchMode(String(data?.vectorSearchMode || data?.features?.vectorSearch?.mode || 'off'));
       setEmbeddingsEnabled(data?.embeddingsEnabled === true);
       setSelectedKey(null);
@@ -205,10 +216,11 @@ const InterventionGraphScreen = ({ navigation }) => {
   );
 
   const renderEdgeRow = (edge, { topicFree = false } = {}) => {
+    const label = resolveGraphInterventionLabel(edge.interventionLabel, edge.interventionId);
+    if (!label) return null;
     const key = topicFree
       ? `tf:${edge.topicFree}:${edge.interventionId}`
       : `${edge.topicTag}:${edge.interventionId}`;
-    const label = edge.interventionLabel || edge.interventionId;
     const rawTopic = String(edge.topicFree || '').trim();
     const displayTopic = String(edge.displayLabel || rawTopic).trim();
     const topicLabel = topicFree
@@ -257,11 +269,18 @@ const InterventionGraphScreen = ({ navigation }) => {
         {correlations.length > 0 ? (
           <View style={styles.insight}>
             <Text style={styles.insightTitle}>{TEXTS.INSIGHTS_TITLE}</Text>
-            {correlations.slice(0, 4).map((row, index) => (
-              <Text key={`${row.type}-${row.sourceId}-${row.targetId}-${index}`} style={styles.insightRow}>
-                {formatCorrelationInsight(TEXTS, row, language)}
-              </Text>
-            ))}
+            {correlations.slice(0, 4).map((row, index) => {
+              const insight = formatCorrelationInsight(TEXTS, row, language);
+              if (!insight) return null;
+              return (
+                <Text
+                  key={`${row.type}-${row.sourceId}-${row.targetId}-${index}`}
+                  style={styles.insightRow}
+                >
+                  {insight}
+                </Text>
+              );
+            })}
             <Text style={[styles.legend, { marginBottom: 0, marginTop: 6 }]}>{TEXTS.INSIGHTS_DISCLAIMER}</Text>
           </View>
         ) : null}
@@ -352,7 +371,11 @@ const InterventionGraphScreen = ({ navigation }) => {
                   return (
                     <>
                       <Text style={styles.detailTitle}>
-                        {titleLeft} → {selectedEdge.interventionLabel || selectedEdge.interventionId}
+                        {titleLeft} →{' '}
+                        {resolveGraphInterventionLabel(
+                          selectedEdge.interventionLabel,
+                          selectedEdge.interventionId,
+                        ) || selectedEdge.interventionLabel || selectedEdge.interventionId}
                       </Text>
                       {rawSnippet && displaySnippet && rawSnippet !== displaySnippet ? (
                         <Text style={styles.rowSub}>

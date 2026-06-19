@@ -2,6 +2,7 @@
  * Layout bipartito tema → intervención para el grafo visual (#218 / #127).
  */
 import { resolveTopicFreeDisplayLabel } from './graphSourceLabel.js';
+import { filterPublicGraphInterventionEdges } from './graphInterventionLabel.js';
 
 const DEFAULT_MAX_TOPICS = 7;
 const DEFAULT_MAX_INTERVENTIONS = 10;
@@ -204,7 +205,9 @@ export function buildInterventionGraphModel(
     canvasWidth = 340,
   } = {},
 ) {
-  const list = Array.isArray(edges) ? edges.filter((e) => e?.topicTag && e?.interventionId) : [];
+  const list = filterPublicGraphInterventionEdges(
+    Array.isArray(edges) ? edges.filter((e) => e?.topicTag && e?.interventionId) : [],
+  );
   if (list.length === 0) {
     return {
       topics: [],
@@ -290,9 +293,11 @@ export function buildTopicFreeGraphModel(
     language = 'es',
   } = {},
 ) {
-  const list = Array.isArray(topicFreeEdges)
-    ? topicFreeEdges.filter((e) => e?.topicFree && e?.interventionId)
-    : [];
+  const list = filterPublicGraphInterventionEdges(
+    Array.isArray(topicFreeEdges)
+      ? topicFreeEdges.filter((e) => e?.topicFree && e?.interventionId)
+      : [],
+  );
   if (list.length === 0) {
     return {
       topics: [],
@@ -384,7 +389,9 @@ export function buildConceptGraphModel(
   } = {},
 ) {
   const nodes = Array.isArray(conceptNodes) ? conceptNodes : [];
-  const edges = Array.isArray(conceptEdges) ? conceptEdges : [];
+  const edges = filterPublicGraphInterventionEdges(
+    Array.isArray(conceptEdges) ? conceptEdges : [],
+  );
   if (nodes.length === 0 || edges.length === 0) {
     return {
       topics: [],

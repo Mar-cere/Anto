@@ -4,6 +4,7 @@ import {
   formatGraphMetrics,
   formatGraphRates,
   formatGraphRowContext,
+  formatCorrelationInsight,
   stripTechnicalInterventionSuffix,
 } from '../interventionGraphTexts';
 
@@ -67,5 +68,19 @@ describe('interventionGraphTexts', () => {
     expect(stripTechnicalInterventionSuffix('Entender la Depresión (psicoeducación)')).toBe(
       'Entender la Depresión',
     );
+  });
+
+  it('formatCorrelationInsight ignora personal-pattern', () => {
+    expect(
+      formatCorrelationInsight(
+        { INSIGHT_CONCEPT_INTERVENTION: '{concept} → {intervention}' },
+        {
+          type: 'concept_intervention',
+          sourceLabel: 'Calma',
+          targetId: 'personal-pattern',
+          interventionLabel: 'personal-pattern',
+        },
+      ),
+    ).toBe('');
   });
 });

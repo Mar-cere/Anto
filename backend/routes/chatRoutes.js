@@ -85,6 +85,10 @@ import { isTopicFreeEmbeddingsEnabled } from '../services/topicFreeEmbeddingServ
 import { buildInterventionGraphPhase3Payload } from '../services/interventionGraphPhase3Service.js';
 import { enrichInterventionGraphLabels } from '../services/graphSourceLabelService.js';
 import { getVectorSearchMode } from '../services/topicFreeVectorSearchService.js';
+import {
+  filterPublicGraphCorrelations,
+  filterPublicGraphInterventionEdges,
+} from '../utils/internalGraphInterventions.js';
 import { buildChatTccContinuity } from '../services/chatTccContinuityService.js';
 import {
   shouldHardStopCrisisLlm,
@@ -543,8 +547,10 @@ router.get('/interventions/graph', protect, requireActiveSubscription(true), asy
       };
     };
 
-    const mappedEdges = edges.map((e) => mapEdge(e, false));
-    const mappedTopicFreeEdges = topicFreeRaw.map((e) => mapEdge(e, true));
+    const mappedEdges = filterPublicGraphInterventionEdges(edges.map((e) => mapEdge(e, false)));
+    const mappedTopicFreeEdges = filterPublicGraphInterventionEdges(
+      topicFreeRaw.map((e) => mapEdge(e, true)),
+    );
 
     const phase3 = await buildInterventionGraphPhase3Payload({
       userId: req.user._id,
@@ -573,8 +579,8 @@ router.get('/interventions/graph', protect, requireActiveSubscription(true), asy
       edges: mappedEdges,
       topicFreeEdges: labeled.topicFreeEdges,
       conceptNodes: labeled.conceptNodes,
-      conceptEdges: phase3.conceptEdges,
-      correlations: phase3.correlations,
+      conceptEdges: filterPublicGraphInterventionEdges(phase3.conceptEdges),
+      correlations: filterPublicGraphCorrelations(phase3.correlations),
       correlationSummary: phase3.correlationSummary,
       features: {
         phase: 3,

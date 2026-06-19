@@ -47,6 +47,7 @@ export default function PomodoroPendingTasksSection({
   onSeeAllTasks,
   focusTaskId,
   focusingTaskId,
+  timerActive = false,
   density = 'comfortable',
 }) {
   const TEXTS = usePomodoroTexts();
@@ -134,6 +135,10 @@ export default function PomodoroPendingTasksSection({
           const isBusy = focusingTaskId && item._id === focusingTaskId;
           const inProgress = item.status === 'in_progress';
           const dueStr = formatDueShort(item.dueDate, language);
+          const focusBtnLabel = isFocused
+            ? (timerActive ? TEXTS.TASK_FOCUS_ACTIVE : TEXTS.START)
+            : TEXTS.FOCUS_THIS_TASK;
+          const focusBtnDisabled = Boolean(focusingTaskId) || (isFocused && timerActive);
           return (
             <View
               key={item._id}
@@ -188,20 +193,25 @@ export default function PomodoroPendingTasksSection({
               <TouchableOpacity
                 style={[
                   styles.focusBtn,
-                  (isBusy || focusingTaskId) && styles.focusBtnDisabled,
+                  focusBtnDisabled && styles.focusBtnDisabled,
                 ]}
                 onPress={() => onFocusTask(item)}
                 activeOpacity={0.85}
-                disabled={Boolean(focusingTaskId)}
+                disabled={focusBtnDisabled}
                 accessibilityRole="button"
                 accessibilityLabel={`${TEXTS.FOCUS_TASK_A11Y_PREFIX} ${item.title}`}
+                accessibilityState={{ disabled: focusBtnDisabled }}
               >
                 {isBusy ? (
                   <ActivityIndicator color={colors.textOnPrimary} size="small" />
                 ) : (
                   <>
-                    <MaterialCommunityIcons name="play-circle-outline" size={22} color={colors.textOnPrimary} />
-                    <Text style={styles.focusBtnText}>{TEXTS.FOCUS_THIS_TASK}</Text>
+                    <MaterialCommunityIcons
+                      name={focusBtnDisabled ? 'target' : 'play-circle-outline'}
+                      size={22}
+                      color={colors.textOnPrimary}
+                    />
+                    <Text style={styles.focusBtnText}>{focusBtnLabel}</Text>
                   </>
                 )}
               </TouchableOpacity>

@@ -139,9 +139,8 @@ export function usePomodoroScreen() {
   /** Evita doble envío de “completar” antes de re-render. */
   const summaryActionBusyRef = useRef(false);
 
-  const toggleTimer = useCallback(() => {
-    setIsActive((prev) => {
-      const willBeActive = !prev;
+  const runTimerActivationAnimation = useCallback(
+    (willBeActive) => {
       Animated.parallel([
         Animated.timing(buttonsOpacity, {
           toValue: willBeActive ? BUTTONS_OPACITY_ACTIVE : BUTTONS_OPACITY_INACTIVE,
@@ -160,10 +159,27 @@ export function usePomodoroScreen() {
           useNativeDriver: true,
         }),
       ]).start();
+    },
+    [buttonsOpacity, buttonsScale, mainControlsPosition],
+  );
+
+  const activateTimer = useCallback(() => {
+    setIsActive((prev) => {
+      if (prev) return prev;
+      runTimerActivationAnimation(true);
+      return true;
+    });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, [runTimerActivationAnimation]);
+
+  const toggleTimer = useCallback(() => {
+    setIsActive((prev) => {
+      const willBeActive = !prev;
+      runTimerActivationAnimation(willBeActive);
       return willBeActive;
     });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, [buttonsOpacity, buttonsScale, mainControlsPosition]);
+  }, [runTimerActivationAnimation]);
 
   const getCurrentModeTime = useCallback(() => {
     if (mode === 'custom') {
@@ -432,6 +448,15 @@ export function usePomodoroScreen() {
   const startFocusFromPendingTask = useCallback(
     async (task) => {
       if (!task?._id) return;
+
+      if (focusTask?._id === task._id) {
+        if (!isActive) {
+          activateTimer();
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }
+        return;
+      }
+
       const requestToken = ++focusFromTaskTokenRef.current;
       setFocusingTaskId(task._id);
       try {
@@ -470,13 +495,20 @@ export function usePomodoroScreen() {
       });
       setMode('work');
       setIsPreparationPhase(false);
-      setIsActive(false);
       setTimeLeft(seconds);
       progressAnimation.setValue(0);
       setCustomTimeModalVisible(false);
+      activateTimer();
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     },
-    [progressAnimation, TEXTS.ERROR_FOCUS_TITLE, TEXTS.ERROR_FOCUS_MESSAGE]
+    [
+      focusTask,
+      isActive,
+      activateTimer,
+      progressAnimation,
+      TEXTS.ERROR_FOCUS_TITLE,
+      TEXTS.ERROR_FOCUS_MESSAGE,
+    ]
   );
 
   useEffect(() => {

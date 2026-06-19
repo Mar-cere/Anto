@@ -10,8 +10,11 @@ import chatService from '../../services/chatService';
 import {
   formatGraphHumanStatus,
   formatGraphRowContext,
-  stripTechnicalInterventionSuffix,
 } from '../../screens/interventionGraphTexts';
+import {
+  filterPublicGraphInterventionEdges,
+  resolveGraphInterventionLabel,
+} from '../../utils/graphInterventionLabel';
 
 const MAX_ITEMS = 2;
 
@@ -31,13 +34,7 @@ function actionabilityScore(edge) {
 }
 
 function normalizeInterventionLabel(label, id) {
-  const raw = stripTechnicalInterventionSuffix(label || id || '');
-  if (String(id || '').trim() === 'personal-pattern') {
-    return raw === 'personal-pattern' || !raw
-      ? null
-      : raw;
-  }
-  return raw || null;
+  return resolveGraphInterventionLabel(label, id);
 }
 
 export default function SummaryWhatHelpsSection() {
@@ -116,8 +113,12 @@ export default function SummaryWhatHelpsSection() {
       setLoading(true);
       const res = await chatService.getInterventionGraph({ days: 30, limit: 20 });
       const data = res?.data ?? res;
-      const topicFreeEdges = Array.isArray(data?.topicFreeEdges) ? data.topicFreeEdges : [];
-      const edges = Array.isArray(data?.edges) ? data.edges : [];
+      const topicFreeEdges = filterPublicGraphInterventionEdges(
+        Array.isArray(data?.topicFreeEdges) ? data.topicFreeEdges : [],
+      );
+      const edges = filterPublicGraphInterventionEdges(
+        Array.isArray(data?.edges) ? data.edges : [],
+      );
       const pool = topicFreeEdges.length > 0 ? topicFreeEdges : edges;
       const seenInterventions = new Set();
       const ranked = [...pool]
