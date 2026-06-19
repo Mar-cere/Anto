@@ -28,7 +28,6 @@ import SystemHealthScreen from '../screens/SystemHealthScreen';
 import CrisisDashboardScreen from '../screens/CrisisDashboardScreen';
 import EmergencyAlertsHistoryScreen from '../screens/EmergencyAlertsHistoryScreen';
 import InterventionGraphScreen from '../screens/InterventionGraphScreen';
-import TherapeuticTechniquesScreen from '../screens/TherapeuticTechniquesScreen';
 import TechniqueDetailScreen from '../screens/TechniqueDetailScreen';
 import TherapeuticTechniquesStatsScreen from '../screens/TherapeuticTechniquesStatsScreen';
 import SubscriptionScreen from '../screens/SubscriptionScreen';
@@ -247,7 +246,7 @@ const StackNavigator = () => {
       />
       <Stack.Screen 
         name={ROUTE_NAMES.THERAPEUTIC_TECHNIQUES} 
-        component={TherapeuticTechniquesScreen}
+        component={TechniquesHubScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen 

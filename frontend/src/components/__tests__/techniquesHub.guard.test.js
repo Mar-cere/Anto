@@ -22,13 +22,15 @@ describe('techniquesHub guard', () => {
     expect(src).not.toMatch(/TAB_POMODORO_LABEL/);
   });
 
-  it('TechniquesHubScreen usa navegación centralizada', () => {
+  it('TechniquesHubScreen integra catálogo completo sin enlace ver todas', () => {
     const src = readSrc('screens/TechniquesHubScreen.js');
     expect(src).toMatch(/TECHNIQUES_HUB_FOCUS_TOOLS/);
-    expect(src).toMatch(/TECHNIQUES_HUB_GUIDED/);
-    expect(src).toMatch(/openTechniquesHubScreen/);
+    expect(src).toMatch(/TechniquesCatalogPanel/);
+    expect(src).toMatch(/useTherapeuticTechniquesScreen/);
     expect(src).toMatch(/FloatingNavBar activeTab="techniques"/);
-    expect(src).toMatch(/THERAPEUTIC_TECHNIQUES_ROUTE/);
+    expect(src).not.toMatch(/ALL_TECHNIQUES/);
+    expect(src).not.toMatch(/Ver todas las técnicas/);
+    expect(src).not.toMatch(/TECHNIQUES_HUB_GUIDED/);
   });
 
   it('Pomodoro ya no monta la navbar y vuelve al hub sin historial', () => {
@@ -43,7 +45,7 @@ describe('techniquesHub guard', () => {
     const src = readSrc('navigation/StackNavigator.js');
     expect(src).toMatch(/TechniquesHubScreen/);
     expect(src).toMatch(/TECHNIQUES:\s*'Techniques'/);
-    expect(src).toMatch(/POMODORO:\s*'Pomodoro'/);
+    expect(src).toMatch(/THERAPEUTIC_TECHNIQUES:\s*'TherapeuticTechniques'/);
   });
 
   it('PomodoroCard abre el hub de técnicas', () => {
@@ -59,5 +61,6 @@ describe('techniquesHub guard', () => {
     expect(en).toMatch(/TAB_TECHNIQUES_LABEL/);
     expect(es).toMatch(/export const TECHNIQUES_HUB/);
     expect(en).toMatch(/export const TECHNIQUES_HUB/);
+    expect(es).not.toMatch(/ALL_TECHNIQUES/);
   });
 });

@@ -1,7 +1,6 @@
 import {
   getTechniquesHubItems,
   TECHNIQUES_HUB_FOCUS_TOOLS,
-  TECHNIQUES_HUB_GUIDED,
   TECHNIQUES_HUB_ITEM_TEXT_KEYS,
   TECHNIQUES_HUB_TARGET_ROUTES,
   TECHNIQUES_HUB_TEXT_KEYS,
@@ -16,16 +15,12 @@ describe('techniquesHubConfig', () => {
     );
   });
 
-  it('incluye protocolos TCC guiados', () => {
-    const screens = TECHNIQUES_HUB_GUIDED.map((item) => item.screen);
-    expect(screens).toEqual([
-      'BehavioralActivation',
-      'AbcRecord',
-      'ExposureHierarchy',
-    ]);
+  it('solo expone Pomodoro como fila estática del hub', () => {
+    expect(getTechniquesHubItems()).toHaveLength(1);
+    expect(getTechniquesHubItems()[0].screen).toBe('Pomodoro');
   });
 
-  it('cada ítem tiene claves de texto y pantalla destino', () => {
+  it('cada ítem estático tiene claves de texto y pantalla destino', () => {
     getTechniquesHubItems().forEach((item) => {
       expect(item.key).toBeTruthy();
       expect(item.screen).toBeTruthy();
@@ -36,16 +31,10 @@ describe('techniquesHubConfig', () => {
     });
   });
 
-  it('las pantallas destino están en la lista permitida del hub', () => {
+  it('las pantallas estáticas están en la lista permitida', () => {
     const allowed = new Set(TECHNIQUES_HUB_TARGET_ROUTES);
     getTechniquesHubItems().forEach((item) => {
       expect(allowed.has(item.screen)).toBe(true);
     });
-    expect(allowed.has('TherapeuticTechniques')).toBe(true);
-  });
-
-  it('no duplica keys internas', () => {
-    const keys = getTechniquesHubItems().map((item) => item.key);
-    expect(new Set(keys).size).toBe(keys.length);
   });
 });

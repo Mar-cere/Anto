@@ -1033,13 +1033,6 @@ export const TECHNIQUES_HUB = {
   GUIDED_SECTION: 'Guided techniques',
   POMODORO: 'Pomodoro',
   POMODORO_HINT: 'Focus on one task, step by step',
-  BA: 'Behavioral activation',
-  BA_HINT: 'Weekly plan and mood logging',
-  ABC: 'ABC self-monitoring',
-  ABC_HINT: 'Situation → thought → consequence',
-  EXPOSURE: 'Gradual exposure',
-  EXPOSURE_HINT: 'Step hierarchy',
-  ALL_TECHNIQUES: 'Browse all techniques',
 };
 
 export const TASKS = {
