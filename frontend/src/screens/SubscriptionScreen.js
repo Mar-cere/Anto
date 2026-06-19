@@ -92,7 +92,7 @@ export default function SubscriptionScreen() {
   return (
     <SafeAreaView style={[{ flex: 1, backgroundColor: colors.background }, { paddingTop: insets.top }]}>
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.background} />
-      <Header greeting="" userName="" showBackButton title={TEXTS.TITLE} />
+      <Header greeting="" userName="" showBackButton title="" />
       {loading && <SubscriptionLoadingView />}
       {!loading && error && <SubscriptionErrorView error={error} onRetry={loadData} />}
       {!loading && !error && (

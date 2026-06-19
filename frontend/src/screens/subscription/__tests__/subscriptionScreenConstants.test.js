@@ -44,6 +44,12 @@ describe('subscriptionScreenConstants', () => {
       expect(TEXTS.SUBSCRIBE_AGREEMENT_TERMS).toBeDefined();
       expect(TEXTS.SUBSCRIBE_AGREEMENT_PRIVACY).toBeDefined();
     });
+    it('debe tener copy del paywall emocional', () => {
+      expect(TEXTS.PAYWALL_HEADLINE).toContain('Anto');
+      expect(TEXTS.PAYWALL_VS_MONTHLY).toContain('{price}');
+      expect(TEXTS.PAYWALL_CTA).toBeDefined();
+      expect(TEXTS.PAYWALL_BENEFIT_1).toBeDefined();
+    });
   });
 
   describe('HARDCODED_PLANS', () => {
