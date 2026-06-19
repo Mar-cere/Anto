@@ -94,6 +94,21 @@ export function runModalScrollHint(scrollRef, { peekY = 20, delayMs = 420 } = {}
 }
 
 /**
+ * Puente entre ref de forwardRef (objeto) e innerRef callback de KeyboardAwareScrollView.
+ * @param {import('react').Ref<unknown>} ref
+ * @param {unknown} instance
+ */
+export function assignForwardedRef(ref, instance) {
+  if (typeof ref === 'function') {
+    ref(instance);
+    return;
+  }
+  if (ref && typeof ref === 'object' && 'current' in ref) {
+    ref.current = instance;
+  }
+}
+
+/**
  * Cierra el teclado de forma segura al abrir/cerrar un modal sheet.
  */
 export function dismissModalKeyboard() {

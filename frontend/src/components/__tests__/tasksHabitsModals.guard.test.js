@@ -42,4 +42,10 @@ describe('tasksHabitsModals guard', () => {
     expect(src).toMatch(/topColor/);
     expect(src).toMatch(/bottomColor/);
   });
+
+  it('ModalKeyboardScroll puentea innerRef con assignForwardedRef', () => {
+    const src = readSrc('components/common/ModalKeyboardScroll.js');
+    expect(src).toMatch(/assignForwardedRef/);
+    expect(src).not.toMatch(/innerRef=\{ref\}/);
+  });
 });

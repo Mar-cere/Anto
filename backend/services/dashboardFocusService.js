@@ -638,6 +638,14 @@ export async function buildDashboardFocus(userId, opts = {}) {
           dueDate: firstTask.dueDate
         }
       : null,
+    /** Próximo recordatorio de hábito (UI minimal); evita duplicar fila si ya es el recordatorio principal. */
+    nextHabit: habitReminder
+      ? {
+          _id: String(habitReminder.id),
+          title: habitReminder.title,
+          reminderAt: habitReminder.nextAt ? habitReminder.nextAt.toISOString() : null
+        }
+      : null,
     commitments: (commitments.items || []).slice(0, 5).map((c) => ({
       id: c.id,
       label: c.label,

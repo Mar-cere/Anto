@@ -63,6 +63,8 @@ import { setChatEntryBackTarget } from '../utils/chatEntryContext';
 import { STORAGE_KEYS as CHAT_STORAGE_KEYS } from './chat/chatScreenConstants';
 import { setFirstSessionHintDismissed } from '../utils/firstSessionHintStorage';
 import { markTutorialCompleted } from '../utils/tutorialStorage';
+import { buildFocusNextTaskNavParams } from '../utils/focusNextTaskNavigation';
+import { buildFocusNextHabitNavParams } from '../utils/focusNextHabitNavigation';
 import { useSectionTranslations } from '../hooks/useTranslations';
 
 // Constantes de AsyncStorage
@@ -595,6 +597,16 @@ const DashScreen = () => {
     );
   }, [navigation]);
 
+  const openNextTaskFromFocus = useCallback((nextTask) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    navigation.navigate('Tasks', buildFocusNextTaskNavParams(nextTask));
+  }, [navigation]);
+
+  const openNextHabitFromFocus = useCallback((nextHabit) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    navigation.navigate('Tasks', buildFocusNextHabitNavParams(nextHabit));
+  }, [navigation]);
+
   const refreshHomeDataOnFocus = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
@@ -816,6 +828,8 @@ const DashScreen = () => {
             onOpenConversation={openConversationFromFocus}
             onOpenBehavioralActivation={openBehavioralActivationFromFocus}
             onOpenExposureHierarchy={openExposureFromFocus}
+            onOpenNextTask={openNextTaskFromFocus}
+            onOpenNextHabit={openNextHabitFromFocus}
             onCommitmentsChanged={refreshHomeDataOnFocus}
           />
           <DashboardStreakHero

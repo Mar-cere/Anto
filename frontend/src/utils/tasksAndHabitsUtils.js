@@ -37,6 +37,7 @@ export function buildUnifiedTaskSections(items, sectionTitles = {}) {
 
   const pending = items.filter((item) => !item.completed);
   const today = [];
+  const upcoming = [];
   const attention = [];
 
   pending.forEach((item) => {
@@ -47,11 +48,17 @@ export function buildUnifiedTaskSections(items, sectionTitles = {}) {
     }
     if (bucket === 'today') {
       today.push(item);
+      return;
+    }
+    if (bucket === 'tomorrow' || bucket === 'this_week') {
+      upcoming.push(item);
     }
   });
 
-  today.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-  attention.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+  const byDueDate = (a, b) => new Date(a.dueDate) - new Date(b.dueDate);
+  today.sort(byDueDate);
+  upcoming.sort(byDueDate);
+  attention.sort(byDueDate);
 
   const sections = [];
   if (today.length > 0) {
@@ -59,6 +66,14 @@ export function buildUnifiedTaskSections(items, sectionTitles = {}) {
       key: 'today',
       title: sectionTitles.today || 'Hoy',
       data: today,
+      tone: 'default',
+    });
+  }
+  if (upcoming.length > 0) {
+    sections.push({
+      key: 'upcoming',
+      title: sectionTitles.upcoming || 'Próximas',
+      data: upcoming,
       tone: 'default',
     });
   }

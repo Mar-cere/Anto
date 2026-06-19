@@ -57,7 +57,7 @@ describe('tasksAndHabitsUtils', () => {
       jest.useRealTimers();
     });
 
-    it('agrupa hoy y requieren atención', () => {
+    it('agrupa hoy, próximas y requieren atención', () => {
       const items = [
         {
           _id: 'a',
@@ -69,19 +69,36 @@ describe('tasksAndHabitsUtils', () => {
           completed: false,
           dueDate: new Date('2026-06-10T14:00:00').toISOString(),
         },
+        {
+          _id: 'c',
+          completed: false,
+          dueDate: new Date('2026-06-18T14:00:00').toISOString(),
+        },
       ];
       const sections = buildUnifiedTaskSections(items, {
         today: 'Hoy',
+        upcoming: 'Próximas',
         attention: 'Atención',
       });
-      expect(sections.map((s) => s.key)).toEqual(['today', 'attention']);
+      expect(sections.map((s) => s.key)).toEqual(['today', 'upcoming', 'attention']);
       expect(sections[0].data).toHaveLength(1);
       expect(sections[1].data).toHaveLength(1);
-      expect(sections[1].tone).toBe('attention');
+      expect(sections[2].data).toHaveLength(1);
+      expect(sections[2].tone).toBe('attention');
       expect(computeTasksSummaryCounts(items)).toEqual({
         todayCount: 1,
-        upcomingCount: 0,
+        upcomingCount: 1,
         attentionCount: 1,
+      });
+    });
+
+    it('lista vacía si solo hay tareas completadas', () => {
+      const items = [{ _id: 'x', completed: true, dueDate: new Date('2026-06-18').toISOString() }];
+      expect(buildUnifiedTaskSections(items)).toEqual([]);
+      expect(computeTasksSummaryCounts(items)).toEqual({
+        todayCount: 0,
+        upcomingCount: 0,
+        attentionCount: 0,
       });
     });
   });

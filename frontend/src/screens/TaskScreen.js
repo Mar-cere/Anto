@@ -486,7 +486,12 @@ const TaskScreen = ({
     const { mode, task, taskId, initialTaskDraft, taskChatOrigin, taskClientRequestId } =
       route.params || {};
     if (mode === 'view' && taskId) {
-      setState(prev => ({ ...prev, selectedItem: task, detailModalVisible: true }));
+      const found = state.items.find((item) => item._id === taskId);
+      setState((prev) => ({
+        ...prev,
+        selectedItem: found || task,
+        detailModalVisible: true,
+      }));
     } else if (mode === 'create' && initialTaskDraft) {
       const due = initialTaskDraft.dueDate ? new Date(initialTaskDraft.dueDate) : new Date();
       pendingChatOriginRef.current = taskChatOrigin || null;
@@ -510,7 +515,7 @@ const TaskScreen = ({
     } else if (mode === 'create') {
       setState(prev => ({ ...prev, modalVisible: true }));
     }
-  }, [route.params, navigation]);
+  }, [route.params, navigation, state.items]);
 
   const handleTaskModalClose = useCallback(() => {
     const hadChatFlow = Boolean(
@@ -762,6 +767,7 @@ const TaskScreen = ({
     if (unifiedView) {
       return buildUnifiedTaskSections(displayItems, {
         today: unifiedTexts.SECTION_TODAY,
+        upcoming: unifiedTexts.SECTION_UPCOMING,
         attention: unifiedTexts.SECTION_ATTENTION,
       });
     }

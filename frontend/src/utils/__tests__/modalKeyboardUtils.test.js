@@ -3,6 +3,7 @@ import {
   MODAL_KEYBOARD_EXTRA_HEIGHT,
   MODAL_KEYBOARD_EXTRA_SCROLL,
   MODAL_SHEET_MAX_HEIGHT,
+  assignForwardedRef,
   dismissModalKeyboard,
   focusModalTextInput,
   getModalKeyboardScrollProps,
@@ -66,6 +67,18 @@ describe('modalKeyboardUtils', () => {
 
   it('sheet max height acotado para no taparse con teclado', () => {
     expect(MODAL_SHEET_MAX_HEIGHT).toBe('92%');
+  });
+
+  it('assignForwardedRef asigna objeto ref y callback ref', () => {
+    const objRef = { current: null };
+    const cbRef = jest.fn();
+    const instance = { scrollToPosition: jest.fn() };
+
+    assignForwardedRef(objRef, instance);
+    expect(objRef.current).toBe(instance);
+
+    assignForwardedRef(cbRef, instance);
+    expect(cbRef).toHaveBeenCalledWith(instance);
   });
 
   it('dismissModalKeyboard y syncModalKeyboardWithVisibility cierran teclado', () => {

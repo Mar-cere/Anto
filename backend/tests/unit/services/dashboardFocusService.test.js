@@ -186,4 +186,13 @@ describe('dashboardFocusService', () => {
       expect(pickDisplayedReminder(candidates, { compact: true }).kind).toBe('habit');
     });
   });
+
+  describe('buildDashboardFocus payload', () => {
+    it('expone nextHabit paralelo a nextTask cuando hay recordatorio', () => {
+      const src = fs.readFileSync(servicePath, 'utf8');
+      expect(src).toMatch(/nextHabit:\s*habitReminder/);
+      expect(src).toMatch(/nextTask:\s*firstTask/);
+      expect(src).toMatch(/reminderAt:\s*habitReminder\.nextAt/);
+    });
+  });
 });

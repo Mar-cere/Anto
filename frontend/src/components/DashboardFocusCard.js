@@ -11,6 +11,14 @@ import { useSectionTranslations } from '../hooks/useTranslations';
 import { createDashboardFocusStyles } from '../styles/focusCardTheme';
 import { updateSessionCommitment } from '../services/sessionCommitmentsService';
 import { getLastSessionDisplayText } from '../utils/dashboardHomeUtils';
+import {
+  formatFocusNextTaskDue,
+} from '../utils/focusNextTaskNavigation';
+import {
+  buildFocusHabitOpenPayload,
+  resolveFocusNextHabit,
+  resolveFocusNextHabitSubtitle,
+} from '../utils/focusNextHabitNavigation';
 
 const COMPACT_WIDTH = 400;
 
@@ -175,6 +183,8 @@ const DashboardFocusCard = ({
   onOpenConversation,
   onOpenBehavioralActivation,
   onOpenExposureHierarchy,
+  onOpenNextTask,
+  onOpenNextHabit,
   onCommitmentsChanged,
 }) => {
   const DASH = useSectionTranslations('DASH');
@@ -199,6 +209,7 @@ const DashboardFocusCard = ({
   const focus = data?.focus;
   const protocolNext = data?.protocolNext;
   const nextTask = data?.nextTask;
+  const nextHabit = useMemo(() => resolveFocusNextHabit(data), [data]);
   const baWeekNext = data?.baWeekNext;
   const exposureNext = data?.exposureNext;
   const commitments = Array.isArray(data?.commitments) ? data.commitments : [];
@@ -276,13 +287,20 @@ const DashboardFocusCard = ({
     displayedReminder && !(hasChatContinuity && displayedReminder.kind === 'chat');
 
   const onReminderPress = useCallback(() => {
-    if (!displayedReminder || displayedReminder.kind !== 'chat') return;
-    if (displayedReminder.conversationId) {
-      handleConv(displayedReminder.conversationId);
-    } else if (onOpenChat) {
-      onOpenChat();
+    if (!displayedReminder) return;
+    if (displayedReminder.kind === 'chat') {
+      if (displayedReminder.conversationId) {
+        handleConv(displayedReminder.conversationId);
+      } else if (onOpenChat) {
+        onOpenChat();
+      }
+      return;
     }
-  }, [displayedReminder, handleConv, onOpenChat]);
+    if (displayedReminder.kind === 'habit' && onOpenNextHabit) {
+      const payload = buildFocusHabitOpenPayload(displayedReminder, nextHabit);
+      if (payload) onOpenNextHabit(payload);
+    }
+  }, [displayedReminder, handleConv, onOpenChat, onOpenNextHabit, nextHabit]);
 
   const onLastSessionPress = useCallback(() => {
     if (lastSessionConvId && onOpenConversation) {
@@ -304,22 +322,80 @@ const DashboardFocusCard = ({
     );
   }, [onOpenExposureHierarchy, exposureNext?.planId]);
 
+  const onNextTaskPress = useCallback(() => {
+    if (!onOpenNextTask) return;
+    onOpenNextTask(nextTask);
+  }, [onOpenNextTask, nextTask]);
+
+  const onNextHabitPress = useCallback(() => {
+    if (!onOpenNextHabit) return;
+    onOpenNextHabit(nextHabit);
+  }, [onOpenNextHabit, nextHabit]);
+
   const showLastSessionRow = hasChatContinuity;
 
   const showTherapeuticProtocol =
     protocolNext?.line && protocolNext?.source === 'therapeutic_record';
 
-  const reminderIsPressable = displayedReminder?.kind === 'chat';
+  const reminderIsPressable =
+    displayedReminder?.kind === 'chat' ||
+    (displayedReminder?.kind === 'habit' && Boolean(onOpenNextHabit));
 
   const showNextTaskRow =
     nextTask?.title && displayedReminder?.kind !== 'task';
 
+  const showNextHabitRow =
+    nextHabit?.title && displayedReminder?.kind !== 'habit';
+
   const chevronMuted =
     resolvedScheme === 'dark' ? 'rgba(245, 247, 255, 0.35)' : 'rgba(36, 35, 79, 0.28)';
 
+  const nextTaskCopy = useMemo(() => {
+    if (!showNextTaskRow || !nextTask?.title) return null;
+    const title = `${DASH.FOCUS_REMINDER_NEXT_TASK_PREFIX} ${String(nextTask.title).trim()}`;
+    const dueFormatted = nextTask.dueDate ? formatDue(nextTask.dueDate, language) : '';
+    const subtitle = dueFormatted
+      ? formatFocusNextTaskDue(dueFormatted, DASH)
+      : null;
+    return { title, subtitle };
+  }, [showNextTaskRow, nextTask, DASH, language]);
+
+  const nextHabitCopy = useMemo(() => {
+    if (!showNextHabitRow || !nextHabit?.title) return null;
+    const title = `${DASH.FOCUS_REMINDER_HABIT_PREFIX} ${String(nextHabit.title).trim()}`;
+    const subtitle = resolveFocusNextHabitSubtitle(nextHabit, language, DASH);
+    return { title, subtitle };
+  }, [showNextHabitRow, nextHabit, DASH, language]);
+
   const actionRows = useMemo(() => {
     const rows = [];
+    if (nextTaskCopy && onOpenNextTask) {
+      rows.push({
+        key: 'next-task',
+        icon: 'calendar-outline',
+        title: nextTaskCopy.title,
+        subtitle: nextTaskCopy.subtitle,
+        onPress: onNextTaskPress,
+        showChevron: true,
+        a11yLabel: `${nextTaskCopy.title}. ${nextTaskCopy.subtitle || ''}. ${DASH.FOCUS_NEXT_TASK_OPEN_A11Y}`,
+      });
+    }
+    if (nextHabitCopy && onOpenNextHabit) {
+      rows.push({
+        key: 'next-habit',
+        icon: 'leaf-outline',
+        title: nextHabitCopy.title,
+        subtitle: nextHabitCopy.subtitle,
+        onPress: onNextHabitPress,
+        showChevron: true,
+        a11yLabel: `${nextHabitCopy.title}. ${nextHabitCopy.subtitle || ''}. ${DASH.FOCUS_NEXT_HABIT_OPEN_A11Y}`,
+      });
+    }
     if (showChatReminder) {
+      const habitReminderA11y =
+        displayedReminder.kind === 'habit' && reminderIsPressable
+          ? `. ${DASH.FOCUS_NEXT_HABIT_OPEN_A11Y}`
+          : '';
       rows.push({
         key: `reminder-${displayedReminder.kind}`,
         icon: reminderIcon(displayedReminder.kind),
@@ -327,7 +403,7 @@ const DashboardFocusCard = ({
         subtitle: displayedReminder.subtitle || null,
         onPress: reminderIsPressable ? onReminderPress : null,
         showChevron: reminderIsPressable,
-        a11yLabel: `${displayedReminder.title}. ${displayedReminder.subtitle || ''}`,
+        a11yLabel: `${displayedReminder.title}. ${displayedReminder.subtitle || ''}${habitReminderA11y}`,
       });
     }
     if (baWeekCopy) {
@@ -366,6 +442,12 @@ const DashboardFocusCard = ({
     }
     return rows;
   }, [
+    nextTaskCopy,
+    onOpenNextTask,
+    onNextTaskPress,
+    nextHabitCopy,
+    onOpenNextHabit,
+    onNextHabitPress,
     showChatReminder,
     displayedReminder,
     baWeekCopy,
@@ -446,18 +528,6 @@ const DashboardFocusCard = ({
           >
             <Text style={styles.sparseLinkText}>{DASH.FOCUS_START_CHAT}</Text>
           </Pressable>
-        ) : null}
-
-        {showNextTaskRow ? (
-          <View style={styles.insetSection}>
-            <Text style={styles.insetLabel}>{DASH.FOCUS_NEXT_TASK}</Text>
-            <Text style={styles.insetTitle} numberOfLines={1}>
-              {nextTask.title}
-            </Text>
-            {nextTask.dueDate ? (
-              <Text style={styles.insetMeta}>{formatDue(nextTask.dueDate, language)}</Text>
-            ) : null}
-          </View>
         ) : null}
 
         {commitments.length > 0 ? (
