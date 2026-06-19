@@ -53,7 +53,7 @@ import {
 let lastHabitsSearchQuery = '';
 let lastHabitsFilterType = 'active';
 const DEFAULT_TEXTS = {
-  SECTION_PENDING: 'Pendientes',
+  SECTION_PENDING: 'Por completar',
   SECTION_TO_COMPLETE: 'Por completar',
   SECTION_COMPLETED_TODAY: 'Completados hoy',
   SECTION_ARCHIVED: 'Archivados',
@@ -325,20 +325,11 @@ export default function HabitsScreen({
           listContent
         )}
       </SafeAreaView>
-      {embedded ? (
-        <BrandGradientFab
-          bottom={insets.bottom + FAB_BOTTOM}
-          onPress={openModal}
-          accessibilityLabel={translated?.CREATE_BUTTON || 'Crear hábito'}
-        />
-      ) : (
-        <TouchableOpacity
-          style={[styles.fab, { bottom: insets.bottom + FAB_BOTTOM }]}
-          onPress={openModal}
-        >
-          <MaterialCommunityIcons name="plus" size={ICON_SIZE} color={colors.textOnPrimary} />
-        </TouchableOpacity>
-      )}
+      <BrandGradientFab
+        bottom={insets.bottom + FAB_BOTTOM}
+        onPress={openModal}
+        accessibilityLabel={translated?.CREATE_BUTTON || 'Crear hábito'}
+      />
       <CreateHabitModal
         visible={modalVisible}
         onClose={handleHabitModalClose}
@@ -425,11 +416,10 @@ function createHabitsScreenStyles(colors, t, HC) {
       justifyContent: 'space-between',
     },
     sectionHeaderText: {
-      fontSize: 12,
+      fontSize: 14,
       fontWeight: '600',
-      letterSpacing: 1.2,
-      textTransform: 'uppercase',
-      color: colors.textSecondary,
+      letterSpacing: -0.1,
+      color: colors.text,
     },
     sectionCountPill: {
       minWidth: 24,

@@ -8,13 +8,17 @@ import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
 import AntoSourceChip from '../tasksAndHabits/AntoSourceChip';
 import { hasAntoOrigin } from '../../utils/tasksAndHabitsUtils';
+import {
+  getSoftPriorityStyle,
+  SOFT_ATTENTION_PALETTE,
+} from '../../utils/taskPriorityPalette';
 
 const DEFAULT_TEXTS = {
   TYPE_TASK_UPPER: 'TAREA',
   TYPE_GOAL_UPPER: 'META',
   TYPE_REMINDER_UPPER: 'RECORDATORIO',
   STATUS_COMPLETED: 'Completada',
-  STATUS_OVERDUE: 'Atrasada',
+  STATUS_OVERDUE: 'Para retomar',
   STATUS_DUE_TODAY: 'Vence hoy',
   STATUS_TOMORROW: 'Mañana',
   STATUS_IN_DAYS: 'En {days} dias',
@@ -30,9 +34,9 @@ const DEFAULT_TEXTS = {
   PRIORITY_MEDIUM_LABEL: 'Media',
   PRIORITY_LOW_LABEL: 'Baja',
   PRIORITY_NORMAL_LABEL: 'Normal',
-  OVERDUE_TASK: 'Caducada',
-  OVERDUE_GOAL: 'Caducada',
-  OVERDUE_REMINDER: 'Pasado',
+  OVERDUE_TASK: 'Requiere atención',
+  OVERDUE_GOAL: 'Requiere atención',
+  OVERDUE_REMINDER: 'Requiere atención',
   SUBTASKS_PREVIEW: 'Subtareas · {done}/{total}',
   CANCEL: 'Cancelar',
   DELETE: 'Eliminar',
@@ -46,23 +50,12 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
     () => ({ ...DEFAULT_TEXTS, ...(translated || {}) }),
     [translated]
   );
-  const getPriorityColor = useCallback((priority) => {
-    switch (priority) {
-      case 'high': return colors.error;
-      case 'medium': return colors.warning;
-      case 'low': return colors.success;
-      default: return colors.textMuted;
-    }
-  }, [colors]);
+  const getPriorityColor = useCallback((priority) => getSoftPriorityStyle(priority).color, []);
 
-  const getPriorityAccent = useCallback((priority) => {
-    switch (priority) {
-      case 'high': return { backgroundColor: colors.error };
-      case 'medium': return { backgroundColor: colors.warning };
-      case 'low': return { backgroundColor: colors.success };
-      default: return { backgroundColor: colors.textMuted };
-    }
-  }, [colors]);
+  const getPriorityAccent = useCallback(
+    (priority) => ({ backgroundColor: getSoftPriorityStyle(priority).color }),
+    [],
+  );
 
   const isTask = item.itemType === 'task';
   const isGoal = item.itemType === 'goal';
@@ -140,7 +133,8 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
           borderColor: colors.success,
         },
         cardToneOverdue: {
-          borderColor: colors.error,
+          borderColor: SOFT_ATTENTION_PALETTE.border,
+          backgroundColor: SOFT_ATTENTION_PALETTE.bg,
         },
         itemCardCompact: {
           paddingVertical: 10,
@@ -166,7 +160,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
           marginTop: 1,
         },
         priorityAccentOverdue: {
-          backgroundColor: colors.error,
+          backgroundColor: SOFT_ATTENTION_PALETTE.color,
         },
         priorityAccentReminder: {
           backgroundColor: colors.warning,
@@ -233,8 +227,8 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
           borderColor: colors.glassOutline,
         },
         timePillOverdue: {
-          backgroundColor: 'rgba(255,107,107,0.14)',
-          borderColor: 'rgba(255,107,107,0.32)',
+          backgroundColor: SOFT_ATTENTION_PALETTE.pillBg,
+          borderColor: SOFT_ATTENTION_PALETTE.pillBorder,
         },
         timePillCompleted: {
           backgroundColor: 'rgba(76,175,80,0.14)',
@@ -248,7 +242,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
           textTransform: 'uppercase',
         },
         timePillTextOverdue: {
-          color: colors.error,
+          color: SOFT_ATTENTION_PALETTE.color,
         },
         timePillTextCompleted: {
           color: colors.success,
@@ -361,44 +355,23 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
           paddingHorizontal: 10,
           borderRadius: 12,
           borderWidth: StyleSheet.hairlineWidth,
-          borderColor: colors.border,
         },
         priorityText: {
           fontSize: 12,
-          color: colors.textOnPrimary,
           fontWeight: '600',
         },
-        overdueItem: {
-          borderColor: colors.error,
-          backgroundColor: 'rgba(255, 107, 107, 0.06)',
-        },
+        overdueItem: {},
         overdueTitle: {
-          color: colors.error,
-          textDecorationLine: 'line-through',
+          color: colors.text,
         },
         overdueDescription: {
-          color: colors.error,
-          opacity: 0.75,
+          color: colors.textSecondary,
         },
         overdueDateContainer: {
-          backgroundColor: 'rgba(255, 107, 107, 0.1)',
+          backgroundColor: SOFT_ATTENTION_PALETTE.pillBg,
         },
         overdueDate: {
-          color: colors.error,
-        },
-        overdueBadge: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 4,
-          backgroundColor: 'rgba(255, 107, 107, 0.2)',
-          paddingVertical: 6,
-          paddingHorizontal: 10,
-          borderRadius: 12,
-        },
-        overdueText: {
-          color: colors.error,
-          fontSize: 12,
-          fontWeight: '600',
+          color: SOFT_ATTENTION_PALETTE.color,
         },
         badgeContainer: {
           flexDirection: 'row',
@@ -619,17 +592,17 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
             <View style={[
               styles.iconContainer,
               { 
-                backgroundColor: itemState === 'overdue' 
-                  ? 'rgba(255, 107, 107, 0.12)' 
-                  : isTask 
-                    ? 'rgba(30, 131, 211, 0.1)' 
+                backgroundColor: itemState === 'overdue'
+                  ? SOFT_ATTENTION_PALETTE.pillBg
+                  : isTask
+                    ? 'rgba(30, 131, 211, 0.1)'
                     : 'rgba(255, 107, 107, 0.12)'
               }
             ]}>
               <Ionicons 
                 name={isTask ? 'checkbox-outline' : isGoal ? 'flag-outline' : 'alarm-outline'} 
                 size={20} 
-                color={itemState === 'overdue' ? colors.error : isTask || isGoal ? colors.primary : colors.error} 
+                color={itemState === 'overdue' ? SOFT_ATTENTION_PALETTE.color : isTask || isGoal ? colors.primary : colors.error} 
               />
             </View>
             <View style={styles.titleContainer}>
@@ -729,7 +702,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
               <Ionicons 
                 name="calendar-outline" 
                 size={14} 
-                color={itemState === 'overdue' ? colors.error : colors.primary} 
+                color={itemState === 'overdue' ? SOFT_ATTENTION_PALETTE.color : colors.primary} 
               />
               <Text style={[
                 styles.itemDate,
@@ -750,7 +723,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
               <Ionicons 
                 name="time-outline" 
                 size={14} 
-                color={itemState === 'overdue' ? colors.error : colors.primary} 
+                color={itemState === 'overdue' ? SOFT_ATTENTION_PALETTE.color : colors.primary} 
               />
               <Text style={[
                 styles.itemDate,
@@ -769,23 +742,18 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
             {isTask && itemState === 'pending' && (
               <View style={[
                 styles.priorityBadge,
-                { backgroundColor: getPriorityColor(item.priority) }
+                {
+                  backgroundColor: getSoftPriorityStyle(item.priority).bg,
+                  borderColor: getSoftPriorityStyle(item.priority).border,
+                },
               ]}>
                 <Ionicons 
                   name={getPriorityIcon(item.priority)} 
                   size={12} 
-                  color={colors.textOnPrimary} 
+                  color={getPriorityColor(item.priority)} 
                 />
-                <Text style={styles.priorityText}>
+                <Text style={[styles.priorityText, { color: getPriorityColor(item.priority) }]}>
                   {getPriorityText(item.priority, TEXTS)}
-                </Text>
-              </View>
-            )}
-            {itemState === 'overdue' && (
-              <View style={styles.overdueBadge}>
-                <Ionicons name="alert-circle" size={12} color={colors.error} />
-                <Text style={styles.overdueText}>
-                  {isTask ? TEXTS.OVERDUE_TASK : isGoal ? TEXTS.OVERDUE_GOAL : TEXTS.OVERDUE_REMINDER}
                 </Text>
               </View>
             )}

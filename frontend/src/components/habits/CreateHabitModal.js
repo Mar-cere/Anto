@@ -26,18 +26,20 @@ import { HABIT_ICON_PICKER_OPTIONS } from '../../screens/habits/habitsScreenCons
 const HABIT_ICONS = HABIT_ICON_PICKER_OPTIONS;
 
 const DEFAULT_TEXTS = {
-  TITLE: 'Nuevo Hábito',
+  TITLE: 'Nuevo hábito',
   DONE: 'Listo',
-  TITLE_PLACEHOLDER: 'Título del hábito',
-  DESCRIPTION_PLACEHOLDER: 'Descripción (opcional)',
+  TITLE_LABEL: '¿Qué hábito quieres cultivar?',
+  TITLE_PLACEHOLDER: 'Por ejemplo: caminar 10 minutos',
+  DESCRIPTION_LABEL: '¿Algún detalle? (opcional)',
+  DESCRIPTION_PLACEHOLDER: 'Lo que te ayude a recordar por qué importa…',
   ERROR_TITLE: 'Error',
   ERROR_MISSING_TITLE: 'Por favor ingresa un título',
   ERROR_SHORT_TITLE: 'El título debe tener al menos 3 caracteres',
   CREATE_BUTTON: 'Crear Hábito',
   TIME_PICKER_TITLE: 'Seleccionar hora',
-  ICON_SECTION: 'Icono',
-  FREQUENCY_SECTION: 'Frecuencia',
-  REMINDER_SECTION: 'Recordatorio',
+  ICON_SECTION: 'Elige un icono',
+  FREQUENCY_SECTION: '¿Con qué frecuencia?',
+  REMINDER_SECTION: '¿Te recordamos?',
   FREQUENCY_DAILY: 'Diario',
   FREQUENCY_WEEKLY: 'Semanal',
 };
@@ -56,8 +58,12 @@ const CreateHabitModal = ({
     () => ({
       TITLE: translated?.CREATE_MODAL_TITLE || DEFAULT_TEXTS.TITLE,
       DONE: translated?.CREATE_MODAL_DONE || DEFAULT_TEXTS.DONE,
+      TITLE_LABEL:
+        translated?.CREATE_MODAL_TITLE_LABEL || DEFAULT_TEXTS.TITLE_LABEL,
       TITLE_PLACEHOLDER:
         translated?.CREATE_MODAL_TITLE_PLACEHOLDER || DEFAULT_TEXTS.TITLE_PLACEHOLDER,
+      DESCRIPTION_LABEL:
+        translated?.CREATE_MODAL_DESCRIPTION_LABEL || DEFAULT_TEXTS.DESCRIPTION_LABEL,
       DESCRIPTION_PLACEHOLDER:
         translated?.CREATE_MODAL_DESCRIPTION_PLACEHOLDER ||
         DEFAULT_TEXTS.DESCRIPTION_PLACEHOLDER,
@@ -178,13 +184,19 @@ const CreateHabitModal = ({
         sectionContainer: {
           marginBottom: 16,
         },
-        sectionTitle: {
-          fontSize: 13,
+        inputLabel: {
+          fontSize: 15,
           fontWeight: '600',
-          color: t.FOCUS_KICKER_COLOR,
+          color: colors.text,
+          letterSpacing: -0.1,
           marginBottom: 8,
-          letterSpacing: 0.3,
-          textTransform: 'uppercase',
+        },
+        sectionTitle: {
+          fontSize: 15,
+          fontWeight: '600',
+          color: colors.text,
+          marginBottom: 8,
+          letterSpacing: -0.1,
         },
         iconSelector: {
           flexDirection: 'row',
@@ -433,6 +445,7 @@ const CreateHabitModal = ({
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
           >
           <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            <Text style={styles.inputLabel}>{T.TITLE_LABEL}</Text>
             <TextInput
               style={styles.input}
               placeholder={T.TITLE_PLACEHOLDER}
@@ -442,6 +455,7 @@ const CreateHabitModal = ({
               maxLength={50}
             />
 
+            <Text style={styles.inputLabel}>{T.DESCRIPTION_LABEL}</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
               placeholder={T.DESCRIPTION_PLACEHOLDER}

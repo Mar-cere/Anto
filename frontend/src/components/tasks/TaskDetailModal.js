@@ -24,6 +24,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 import { SPACING } from '../../constants/ui';
+import { SOFT_ATTENTION_PALETTE } from '../../utils/taskPriorityPalette';
 
 function taskPayloadFromApi(body) {
   if (!body || typeof body !== 'object') return null;
@@ -38,14 +39,15 @@ const DEFAULT_TEXTS = {
   KICKER_REMINDER: 'Recordatorio',
   META_DATE: 'Fecha',
   META_TIME: 'Hora',
-  OVERDUE_TASK: 'Caducada',
-  OVERDUE_GOAL: 'Caducada',
-  OVERDUE_REMINDER: 'Pasado',
-  SUBTASKS_KICKER: 'Subtareas',
-  SUBTASKS_HINT: 'Hasta cinco pasos sugeridos según el título y la descripción.',
-  SUBTASKS_GENERATE_A11Y: 'Sugerir subtareas con inteligencia artificial',
-  SUBTASKS_GENERATING: 'Generando...',
-  SUBTASKS_SUGGEST_CTA: 'Sugerir pasos (IA)',
+  OVERDUE_TASK: 'Requiere atención',
+  OVERDUE_GOAL: 'Requiere atención',
+  OVERDUE_REMINDER: 'Requiere atención',
+  SUBTASKS_KICKER: 'Pasos pequeños',
+  SUBTASKS_HINT: 'Anto puede dividir esta tarea en pasos pequeños.',
+  SUBTASKS_GENERATE_A11Y: 'Pedir a Anto que sugiera pasos pequeños',
+  SUBTASKS_GENERATING: 'Anto está pensando…',
+  SUBTASKS_SUGGEST_CTA: 'Dividir en pasos',
+  STATUS_ATTENTION_NOTE: 'Sigue abierta — cuando puedas, un paso pequeño cuenta.',
   SUBTASKS_EMPTY: 'Aún no hay subtareas.',
   SUBTASK_DELETE_A11Y_PREFIX: 'Eliminar subtarea:',
   SUBTASKS_CLEAR_A11Y: 'Eliminar todas las subtareas',
@@ -191,7 +193,7 @@ const TaskDetailModal = ({
           color: colors.text,
         },
         titleOverdue: {
-          color: colors.error,
+          color: colors.text,
         },
         description: {
           marginTop: 8,
@@ -259,12 +261,20 @@ const TaskDetailModal = ({
           color: t.FOCUS_META,
           lineHeight: 17,
         },
+        attentionNote: {
+          marginTop: 8,
+          fontSize: 13,
+          lineHeight: 18,
+          color: SOFT_ATTENTION_PALETTE.color,
+        },
         generateSubtasksBtn: {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
           gap: 8,
-          backgroundColor: colors.primary,
+          backgroundColor: colors.accentLineSoft,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_ACCENT_BORDER,
           paddingVertical: 12,
           paddingHorizontal: 14,
           borderRadius: 12,
@@ -273,7 +283,7 @@ const TaskDetailModal = ({
           opacity: 0.85,
         },
         generateSubtasksBtnText: {
-          color: colors.textOnPrimary,
+          color: colors.primary,
           fontSize: 14,
           fontWeight: '600',
         },
@@ -609,7 +619,11 @@ const TaskDetailModal = ({
                   name={isTask || isGoal ? 'checkbox-outline' : 'alarm-outline'}
                   size={20}
                   color={
-                    isOverdue ? colors.error : isTask || isGoal ? colors.primary : colors.error
+                    isOverdue
+                      ? SOFT_ATTENTION_PALETTE.color
+                      : isTask || isGoal
+                        ? colors.primary
+                        : colors.error
                   }
                 />
               </View>
@@ -627,12 +641,7 @@ const TaskDetailModal = ({
               <Text style={styles.metaLabel}>{TEXTS.META_TIME}</Text>
               <Text style={styles.metaValue}>{formatTime(item.dueDate)}</Text>
               {isOverdue ? (
-                <View style={styles.overduePill}>
-                  <Ionicons name="alert-circle" size={14} color={colors.error} />
-                  <Text style={styles.overduePillText}>
-                    {isTask ? TEXTS.OVERDUE_TASK : isGoal ? TEXTS.OVERDUE_GOAL : TEXTS.OVERDUE_REMINDER}
-                  </Text>
-                </View>
+                <Text style={styles.attentionNote}>{TEXTS.STATUS_ATTENTION_NOTE}</Text>
               ) : null}
             </View>
 
@@ -655,9 +664,9 @@ const TaskDetailModal = ({
                     accessibilityLabel={TEXTS.SUBTASKS_GENERATE_A11Y}
                   >
                     {generatingSubtasks ? (
-                      <ActivityIndicator color={colors.background} size="small" />
+                      <ActivityIndicator color={colors.primary} size="small" />
                     ) : (
-                      <Ionicons name="sparkles" size={18} color={colors.background} />
+                      <Ionicons name="sparkles" size={18} color={colors.primary} />
                     )}
                     <Text style={styles.generateSubtasksBtnText}>
                       {generatingSubtasks ? TEXTS.SUBTASKS_GENERATING : TEXTS.SUBTASKS_SUGGEST_CTA}

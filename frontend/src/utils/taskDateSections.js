@@ -34,7 +34,7 @@ export function bucketTaskItem(item, now = new Date()) {
 }
 
 const SECTION_META = [
-  { key: 'overdue', title: 'Vencidas' },
+  { key: 'overdue', title: 'Requieren atención' },
   { key: 'today', title: 'Hoy' },
   { key: 'tomorrow', title: 'Mañana' },
   { key: 'this_week', title: 'Esta semana' },
@@ -42,8 +42,16 @@ const SECTION_META = [
   { key: 'completed', title: 'Completadas' },
 ];
 
-export function buildTaskSections(items) {
+export function buildTaskSections(items, sectionTitles = {}) {
   if (!Array.isArray(items) || items.length === 0) return [];
+  const titles = {
+    overdue: sectionTitles.overdue || 'Requieren atención',
+    today: sectionTitles.today || 'Hoy',
+    tomorrow: sectionTitles.tomorrow || 'Mañana',
+    this_week: sectionTitles.this_week || 'Esta semana',
+    later: sectionTitles.later || 'Más adelante',
+    completed: sectionTitles.completed || 'Completadas',
+  };
   const buckets = {};
   SECTION_META.forEach(({ key }) => {
     buckets[key] = [];
@@ -55,9 +63,10 @@ export function buildTaskSections(items) {
   SECTION_META.forEach(({ key }) => {
     buckets[key].sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
   });
-  return SECTION_META.filter(({ key }) => buckets[key].length > 0).map(({ key, title }) => ({
+  return SECTION_META.filter(({ key }) => buckets[key].length > 0).map(({ key }) => ({
     key,
-    title,
+    title: titles[key] || key,
     data: buckets[key],
+    ...(key === 'overdue' ? { tone: 'attention' } : {}),
   }));
 }

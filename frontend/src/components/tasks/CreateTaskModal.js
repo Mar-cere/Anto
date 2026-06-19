@@ -24,26 +24,31 @@ import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 import { SPACING } from '../../constants/ui';
+import { getSoftPriorityStyle } from '../../utils/taskPriorityPalette';
 
 const DEFAULT_TEXTS = {
-  NEW_TASK_TITLE: 'Nueva Tarea',
-  NEW_REMINDER_TITLE: 'Nuevo Recordatorio',
+  NEW_TASK_TITLE: 'Nueva tarea',
+  NEW_REMINDER_TITLE: 'Nuevo recordatorio',
   KEYBOARD_DONE: 'Listo',
   TYPE_TASK: 'Tarea',
   TYPE_REMINDER: 'Recordatorio',
-  FIELD_TITLE: 'Titulo *',
-  FIELD_TITLE_PLACEHOLDER: 'Ingresa el titulo',
-  FIELD_DESCRIPTION: 'Descripcion (opcional)',
-  FIELD_DESCRIPTION_PLACEHOLDER: 'Describe tu tarea...',
-  FIELD_DATE_TIME: 'Fecha y Hora *',
-  FIELD_PRIORITY: 'Prioridad',
+  FIELD_TITLE: '¿Qué quieres hacer?',
+  FIELD_TITLE_PLACEHOLDER: 'Algo pequeño que quieras avanzar…',
+  FIELD_DESCRIPTION: '¿Algún detalle? (opcional)',
+  FIELD_DESCRIPTION_PLACEHOLDER: 'Notas que te ayuden a empezar…',
+  FIELD_DATE_TIME: '¿Cuándo te gustaría hacerlo?',
+  FIELD_PRIORITY: '¿Qué tan urgente es?',
+  SUBTASKS_CREATE_HINT: 'Anto puede dividir esta tarea en pasos pequeños',
+  SUBTASKS_CREATE_SUBHINT: 'Al crearla, te proponemos hasta cinco pasos manejables.',
+  SUBTASKS_SUGGEST_CTA: 'Dividir en pasos',
+  SUBTASKS_GENERATE_A11Y: 'Pedir a Anto que sugiera pasos pequeños',
   PRIORITY_HIGH: 'Alta',
   PRIORITY_MEDIUM: 'Media',
   PRIORITY_LOW: 'Baja',
-  NOTIFICATION_LABEL: 'Notificacion',
+  NOTIFICATION_LABEL: 'Recordarme',
   CREATING: 'Creando...',
-  CREATE_TASK_CTA: 'Crear Tarea',
-  CREATE_REMINDER_CTA: 'Crear Recordatorio',
+  CREATE_TASK_CTA: 'Crear tarea',
+  CREATE_REMINDER_CTA: 'Crear recordatorio',
   VALIDATION_TITLE_REQUIRED: 'El titulo es requerido',
   VALIDATION_TITLE_MIN: 'El titulo debe tener al menos 3 caracteres',
   VALIDATION_DATE_PAST: 'La fecha no puede ser anterior a la actual',
@@ -220,11 +225,15 @@ const CreateTaskModal = ({
           gap: 8,
         },
         inputLabel: {
-          color: t.FOCUS_KICKER_COLOR,
-          fontSize: 13,
+          color: colors.text,
+          fontSize: 15,
           fontWeight: '600',
-          letterSpacing: 0.3,
-          textTransform: 'uppercase',
+          letterSpacing: -0.1,
+        },
+        fieldHint: {
+          color: colors.textSecondary,
+          fontSize: 13,
+          lineHeight: 18,
         },
         input: {
           backgroundColor: colors.chromeInput,
@@ -313,12 +322,38 @@ const CreateTaskModal = ({
           }),
         },
         sectionTitle: {
-          color: t.FOCUS_KICKER_COLOR,
-          fontSize: 13,
+          color: colors.text,
+          fontSize: 15,
           fontWeight: '600',
-          letterSpacing: 0.3,
-          textTransform: 'uppercase',
+          letterSpacing: -0.1,
           marginBottom: 8,
+        },
+        suggestStepsCard: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          padding: 14,
+          borderRadius: 14,
+          backgroundColor: colors.accentLineSoft,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: t.FOCUS_ACCENT_BORDER,
+        },
+        suggestStepsCopy: {
+          flex: 1,
+          minWidth: 0,
+          gap: 4,
+        },
+        suggestStepsTitle: {
+          color: colors.text,
+          fontSize: 14,
+          fontWeight: '600',
+          lineHeight: 19,
+        },
+        suggestStepsSub: {
+          color: colors.textSecondary,
+          fontSize: 12,
+          lineHeight: 17,
         },
         prioritySelector: {
           gap: 0,
@@ -438,6 +473,7 @@ const CreateTaskModal = ({
   const [notificationEnabled, setNotificationEnabled] = useState(true);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [suggestStepsOnCreate, setSuggestStepsOnCreate] = useState(true);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef(null);
@@ -490,6 +526,7 @@ const CreateTaskModal = ({
     if (visible) {
       setKeyboardVisible(false);
       setNotificationEnabled(true);
+      setSuggestStepsOnCreate(true);
       setErrors({});
       setIsSubmitting(false);
       Animated.spring(slideAnim, {
@@ -614,7 +651,8 @@ const CreateTaskModal = ({
         },
         ...(isTask && {
           description: formData.description?.trim() || '',
-          priority: formData.priority || 'medium'
+          priority: formData.priority || 'medium',
+          suggestStepsOnCreate: suggestStepsOnCreate && formData.title.trim().length >= 3,
         }),
       };
 
@@ -628,7 +666,7 @@ const CreateTaskModal = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateForm, formData, notificationEnabled, isTask, onSubmit, showToast, TEXTS]);
+  }, [validateForm, formData, notificationEnabled, isTask, onSubmit, showToast, TEXTS, suggestStepsOnCreate]);
 
   const handleTypeChange = useCallback((type) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -802,6 +840,25 @@ const CreateTaskModal = ({
               </View>
             )}
 
+            {isTask && formData.title.trim().length >= 3 && (
+              <View style={styles.suggestStepsCard}>
+                <View style={styles.suggestStepsCopy}>
+                  <Text style={styles.suggestStepsTitle}>{TEXTS.SUBTASKS_CREATE_HINT}</Text>
+                  <Text style={styles.suggestStepsSub}>{TEXTS.SUBTASKS_CREATE_SUBHINT}</Text>
+                </View>
+                <Switch
+                  value={suggestStepsOnCreate}
+                  onValueChange={setSuggestStepsOnCreate}
+                  thumbColor={suggestStepsOnCreate ? colors.primary : colors.textSecondary}
+                  trackColor={{
+                    false: 'rgba(255,255,255,0.2)',
+                    true: 'rgba(30, 131, 211, 0.45)',
+                  }}
+                  accessibilityLabel={TEXTS.SUBTASKS_GENERATE_A11Y}
+                />
+              </View>
+            )}
+
             <View style={styles.dateTimeContainer}>
               <Text style={styles.inputLabel}>{TEXTS.FIELD_DATE_TIME}</Text>
               <View style={styles.dateTimeButtons}>
@@ -876,18 +933,19 @@ const CreateTaskModal = ({
                 <Text style={styles.sectionTitle}>{TEXTS.FIELD_PRIORITY}</Text>
                 <View style={styles.priorityButtons}>
                   {[
-                    { value: 'high', label: TEXTS.PRIORITY_HIGH, color: colors.error, icon: 'alert-circle' },
-                    { value: 'medium', label: TEXTS.PRIORITY_MEDIUM, color: colors.warning, icon: 'alert' },
-                    { value: 'low', label: TEXTS.PRIORITY_LOW, color: colors.success, icon: 'checkmark-circle' },
+                    { value: 'high', label: TEXTS.PRIORITY_HIGH, icon: 'alert-circle' },
+                    { value: 'medium', label: TEXTS.PRIORITY_MEDIUM, icon: 'alert' },
+                    { value: 'low', label: TEXTS.PRIORITY_LOW, icon: 'checkmark-circle' },
                   ].map((priority) => {
                     const selected = formData.priority === priority.value;
+                    const tone = getSoftPriorityStyle(priority.value);
                     return (
                     <TouchableOpacity
                       key={priority.value}
                       style={[
                         styles.priorityButton,
                         selected && styles.priorityButtonSelected,
-                        selected && { borderColor: priority.color },
+                        selected && { borderColor: tone.border, backgroundColor: tone.bg },
                       ]}
                       onPress={() => handlePriorityChange(priority.value)}
                       activeOpacity={0.7}
@@ -895,13 +953,13 @@ const CreateTaskModal = ({
                       <Ionicons
                         name={priority.icon}
                         size={16}
-                        color={selected ? priority.color : colors.textSecondary}
+                        color={selected ? tone.color : colors.textSecondary}
                       />
                       <Text
                         style={[
                           styles.priorityButtonText,
                           !selected && styles.priorityButtonTextMuted,
-                          selected && { color: priority.color },
+                          selected && { color: tone.color },
                         ]}
                       >
                         {priority.label}

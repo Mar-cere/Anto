@@ -20,7 +20,7 @@ const DEFAULT_TEXTS = {
   BEST_STREAK_LABEL: 'Mejor',
   DAYS_LABEL: 'días',
   STATUS_COMPLETED: '¡Completado hoy!',
-  STATUS_PENDING: 'Pendiente',
+  STATUS_PENDING: 'Disponible hoy',
   STATUS_COMPLETED_A11Y: 'Completado hoy.',
   STATUS_PENDING_A11Y: 'Pendiente.',
   HABIT_A11Y_PREFIX: 'Hábito',

@@ -40,6 +40,7 @@ import { postProductActionTelemetry } from '../utils/productActionTelemetry';
 import BrandGradientFab from '../components/tasksAndHabits/BrandGradientFab';
 import TasksSummaryStrip from '../components/tasksAndHabits/TasksSummaryStrip';
 import { buildTaskSections } from '../utils/taskDateSections';
+import { resolveCreatedTaskFromApi } from '../utils/taskApiPayload';
 import {
   buildUnifiedTaskSections,
   computeTasksSummaryCounts,
@@ -98,6 +99,7 @@ const DEFAULT_TEXTS = {
   ADD_ITEM: 'Agregar item',
   INVALID_DATA: 'Datos inválidos:',
   ERROR_CREATE_TASK: 'Error al crear la tarea',
+  SUBTASKS_GENERATED_TOAST: 'Listo — Anto sugirió pasos para esta tarea.',
   TASK_COMPLETED: 'Tarea completada',
   UNDO: 'Deshacer',
   RETRY: 'Reintentar',
@@ -281,18 +283,17 @@ const TaskScreen = ({
           borderColor: colors.chromeHeaderBorder,
         },
         sectionHeaderText: {
-          fontSize: 12,
+          fontSize: 14,
           fontWeight: '600',
-          letterSpacing: 1.2,
-          textTransform: 'uppercase',
+          letterSpacing: -0.1,
           color: colors.text,
         },
         sectionHeaderAttention: {
-          borderColor: 'rgba(251, 146, 60, 0.35)',
-          backgroundColor: 'rgba(251, 146, 60, 0.08)',
+          borderColor: 'rgba(184, 134, 74, 0.28)',
+          backgroundColor: 'rgba(184, 134, 74, 0.07)',
         },
         sectionHeaderTextAttention: {
-          color: colors.warning,
+          color: '#B8864A',
         },
         sectionCountPill: {
           minWidth: 24,
@@ -545,13 +546,29 @@ const TaskScreen = ({
       }
 
       const response = await api.post(ENDPOINTS.TASKS, requestData);
+      const createdTask = resolveCreatedTaskFromApi(response);
       setState(prev => ({ ...prev, modalVisible: false }));
       pendingChatOriginRef.current = null;
       pendingClientRequestIdRef.current = null;
 
+      let stepsGenerated = false;
+      if (
+        data.suggestStepsOnCreate &&
+        data.itemType === ITEM_TYPES.TASK &&
+        createdTask?._id &&
+        !response.idempotentReplay
+      ) {
+        try {
+          await api.post(ENDPOINTS.TASK_SUBTASKS_GENERATE(createdTask._id), {});
+          stepsGenerated = true;
+        } catch (subtaskError) {
+          console.warn('No se pudieron generar pasos sugeridos:', subtaskError);
+        }
+      }
+
       // Programar notificación (omitir en replay idempotente: ya programada en el primer 201)
-      if (!response.idempotentReplay) {
-        await scheduleTaskNotification(response.data);
+      if (!response.idempotentReplay && createdTask) {
+        await scheduleTaskNotification(createdTask);
       }
       
       // Recargar lista
@@ -560,8 +577,15 @@ const TaskScreen = ({
       // Feedback háptico
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
+      const creationMessage =
+        stepsGenerated && data.itemType === ITEM_TYPES.TASK
+          ? TEXTS.SUBTASKS_GENERATED_TOAST
+          : data.itemType === ITEM_TYPES.TASK
+            ? TEXTS.TASK_CREATED
+            : TEXTS.REMINDER_CREATED;
+
       showToast({
-        message: data.itemType === ITEM_TYPES.TASK ? TEXTS.TASK_CREATED : TEXTS.REMINDER_CREATED,
+        message: creationMessage,
         type: 'success',
       });
     } catch (error) {
@@ -740,7 +764,10 @@ const TaskScreen = ({
         attention: unifiedTexts.SECTION_ATTENTION,
       });
     }
-    return buildTaskSections(displayItems);
+    return buildTaskSections(displayItems, {
+      overdue: unifiedTexts.SECTION_ATTENTION,
+      today: unifiedTexts.SECTION_TODAY,
+    });
   }, [showSkeleton, skeletonData, displayItems, unifiedView, unifiedTexts]);
 
   const tasksSummaryCounts = useMemo(
@@ -799,7 +826,7 @@ const TaskScreen = ({
 
   const renderSectionHeader = useCallback(({ section }) => {
     if (!section.title) return null;
-    const attention = section.tone === 'attention';
+    const attention = section.tone === 'attention' || section.key === 'overdue';
     return (
       <View style={[styles.sectionHeader, attention && styles.sectionHeaderAttention]}>
         <Text
@@ -996,33 +1023,17 @@ const TaskScreen = ({
         initialNumToRender={FLATLIST_INITIAL_NUM_TO_RENDER}
       />
       </SafeAreaView>
-      {embedded ? (
-        <BrandGradientFab
-          bottom={insets.bottom + FAB_BOTTOM_OFFSET}
-          onPress={() => setState((prev) => ({ ...prev, modalVisible: true }))}
-          accessibilityLabel={TEXTS.ADD_TASK}
-        />
-      ) : (
-        <TouchableOpacity
-          style={[styles.fab, { bottom: insets.bottom + FAB_BOTTOM_OFFSET }]}
-          onPress={() => setState((prev) => ({ ...prev, modalVisible: true }))}
-          activeOpacity={FAB_ACTIVE_OPACITY}
-          accessibilityRole="button"
-          accessibilityLabel={
-            state.filterType === FILTER_TYPES.REMINDER
-              ? TEXTS.ADD_REMINDER
-              : state.filterType === FILTER_TYPES.TASK
-                ? TEXTS.ADD_TASK
-                : TEXTS.ADD_ITEM
-          }
-        >
-          <Ionicons
-            name={FILTER_META[state.filterType]?.icon || 'add'}
-            size={FAB_ICON_SIZE}
-            color={colors.white}
-          />
-        </TouchableOpacity>
-      )}
+      <BrandGradientFab
+        bottom={insets.bottom + FAB_BOTTOM_OFFSET}
+        onPress={() => setState((prev) => ({ ...prev, modalVisible: true }))}
+        accessibilityLabel={
+          state.filterType === FILTER_TYPES.REMINDER
+            ? TEXTS.ADD_REMINDER
+            : state.filterType === FILTER_TYPES.TASK
+              ? TEXTS.ADD_TASK
+              : TEXTS.ADD_ITEM
+        }
+      />
       <CreateTaskModal
         visible={state.modalVisible}
         onClose={handleTaskModalClose}
