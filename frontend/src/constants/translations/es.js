@@ -205,6 +205,11 @@ export const DASH = {
   INSIGHTS_CARD_GRAPH: 'Mapa de temas e intervenciones',
   INSIGHTS_CARD_GRAPH_HINT: 'Qué temas del chat conectan con qué técnicas',
   INSIGHTS_CARD_A11Y: 'Tu actividad y patrones',
+  HOME_INSIGHT_SECTION: 'Anto notó algo',
+  HOME_INSIGHT_CTA_PROGRESS: 'Ver tu progreso',
+  HOME_INSIGHT_CTA_WEEKLY: 'Ver tus patrones',
+  HOME_INSIGHT_CTA_GRAPH: 'Ver el mapa',
+  HOME_INSIGHT_CTA_SUMMARY: 'Ver tu resumen',
   FOCUS_START_CHAT: 'Empezar en el chat',
   FIRST_SESSION_HINT_TITLE: 'Tu objetivo por ahora',
   FIRST_SESSION_HINT_MESSAGE:
@@ -230,10 +235,6 @@ export const DASH = {
   FOCUS_REMINDER_NEXT_TASK_PREFIX: 'Próxima tarea:',
   FOCUS_REMINDER_HABIT_PREFIX: 'Hábito:',
   FOCUS_REMINDER_AROUND_PREFIX: 'Recordatorio hacia las',
-  QUOTE_KICKER: 'Momento para ti',
-  QUOTE_A11Y_LABEL: 'Frase inspiradora',
-  QUOTE_A11Y_HINT: 'Doble toque para mostrar otra frase al azar',
-  QUOTE_ACTION: 'Otra',
   OFFLINE_BANNER_A11Y:
     'Sin conexión a internet. Algunas funciones pueden no estar disponibles. Revisa tu conexión.',
   OFFLINE_BANNER_TEXT:
@@ -1345,6 +1346,10 @@ export const TECHNIQUES = {
   GRATITUDE_EXAMPLE_1: 'Ejemplo: "Hoy agradezco el silencio de la manana."',
   GRATITUDE_EXAMPLE_2: 'Ejemplo: "Me ayudo que alguien me escuchara sin juzgar."',
   GRATITUDE_EXAMPLE_3: 'Ejemplo: "Valoro el descanso que pude tomar hoy."',
+  GRATITUDE_WRITING_PROMPT_KICKER: 'Momento para ti',
+  GRATITUDE_WRITING_PROMPT_ANOTHER: 'Otra frase',
+  GRATITUDE_WRITING_PROMPT_A11Y: 'Frase para inspirar tu escritura',
+  GRATITUDE_WRITING_PROMPT_HINT: 'Toca para mostrar otra frase',
   BOUNDARY_TITLE: 'Establecer Limites',
   BOUNDARY_INTRO_KICKER: 'Limites',
   BOUNDARY_INTRO_TITLE: 'Establece limites saludables',

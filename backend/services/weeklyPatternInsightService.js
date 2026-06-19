@@ -22,6 +22,7 @@ import {
 import { isValidIsoWeekKey, normalizeIsoWeekKey } from '../utils/signalValidators.js';
 import { enrichPatternInsightWithLlm } from './weeklyInsightLlmService.js';
 import { fetchAbcMacroPatterns, toClientAbcPatterns } from './abcMacroPatternService.js';
+import { invalidateHomeRotatingInsightCache } from './homeRotatingInsightCache.js';
 
 const GENERATION_COOLDOWN_MS = 60_000;
 
@@ -353,6 +354,8 @@ export async function generateWeeklyPatternInsight({
     },
     { upsert: true, new: true },
   );
+
+  void invalidateHomeRotatingInsightCache(userId).catch(() => {});
 
   return doc;
 }

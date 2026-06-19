@@ -3,8 +3,11 @@ import {
   calendarDaysBetweenInTz,
   fixContinuationTemporalOpeners,
   focusCopy,
+  getLastSessionDisplayText,
+  hasChatContinuityDisplayText,
   localizeLastSessionSummaryForDisplay,
-  looksLikeSpanishText
+  looksLikeSpanishText,
+  shouldSuppressFocusLineForContinuity,
 } from '../../../utils/focusDashboardCopy.js';
 
 describe('focusDashboardCopy', () => {
@@ -72,5 +75,21 @@ describe('focusDashboardCopy', () => {
     };
     const out = localizeLastSessionSummaryForDisplay(raw, 'en');
     expect(out.snippet).toBe(focusCopy('en').lastSessionPlaceholderSnippet);
+  });
+
+  it('detecta continuidad y suprime líneas genéricas al chat', () => {
+    const session = {
+      snippet: 'Hoy te sentiste bien después de un día difícil.',
+      bridge: '',
+      placeholder: false,
+    };
+    expect(getLastSessionDisplayText(session)).toContain('sentiste bien');
+    expect(hasChatContinuityDisplayText(session)).toBe(true);
+    expect(
+      shouldSuppressFocusLineForContinuity(focusCopy('es').focusResumeOrCheckIn, 'es'),
+    ).toBe(true);
+    expect(
+      shouldSuppressFocusLineForContinuity('Próximo foco práctico: llamar al banco.', 'es'),
+    ).toBe(false);
   });
 });

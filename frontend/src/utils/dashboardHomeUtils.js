@@ -214,6 +214,43 @@ export function buildStreakHeroCopy({
   };
 }
 
+/**
+ * Reacción de Anto tras el check-in de ánimo (solo el copy, sin CTA al chat).
+ */
+export function buildMoodAckCopy({
+  mood,
+  displayName = '',
+  dateKey = null,
+  texts = {},
+} = {}) {
+  if (!mood || !MOOD_HERO_VARIANT_COUNTS[mood]) return null;
+  const firstName = getDashboardFirstName(displayName);
+  const seed = heroSeed({
+    dailyMood: { mood, dateKey: dateKey || new Date().toISOString().slice(0, 10) },
+    streakDays: 0,
+  });
+  const pair = pickMoodHeroPair(texts, mood, seed);
+  if (!pair) return null;
+  const apply = (template) => applyHeroTemplate(template, { firstName });
+  const subtitle = apply(pair.subtitle);
+  const title = apply(pair.title);
+  return { line: subtitle || title, title, subtitle };
+}
+
+/** Texto visible de continuidad del último chat en el foco del dashboard. */
+export function getLastSessionDisplayText(lastSession) {
+  if (!lastSession) return '';
+  const snippet = String(lastSession.snippet || '').trim();
+  const bridge = String(lastSession.bridge || '').trim();
+  if (lastSession.placeholder && bridge) return bridge;
+  if (snippet) return snippet;
+  return bridge;
+}
+
+export function hasDashboardChatContinuity(lastSession) {
+  return Boolean(getLastSessionDisplayText(lastSession));
+}
+
 export function getProfileInitial(userData) {
   const name = getDashboardDisplayName(userData);
   if (!name) return '?';

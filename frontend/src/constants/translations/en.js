@@ -205,6 +205,11 @@ export const DASH = {
   INSIGHTS_CARD_GRAPH: 'Topics and interventions map',
   INSIGHTS_CARD_GRAPH_HINT: 'How chat themes connect to techniques you use',
   INSIGHTS_CARD_A11Y: 'Your activity and patterns',
+  HOME_INSIGHT_SECTION: 'Anto noticed something',
+  HOME_INSIGHT_CTA_PROGRESS: 'See your progress',
+  HOME_INSIGHT_CTA_WEEKLY: 'See your patterns',
+  HOME_INSIGHT_CTA_GRAPH: 'See the map',
+  HOME_INSIGHT_CTA_SUMMARY: 'See your summary',
   FOCUS_START_CHAT: 'Start in chat',
   FIRST_SESSION_HINT_TITLE: 'Your goal for now',
   FIRST_SESSION_HINT_MESSAGE:
@@ -229,10 +234,6 @@ export const DASH = {
   FOCUS_REMINDER_NEXT_TASK_PREFIX: 'Next task:',
   FOCUS_REMINDER_HABIT_PREFIX: 'Habit:',
   FOCUS_REMINDER_AROUND_PREFIX: 'Reminder around',
-  QUOTE_KICKER: 'Moment for you',
-  QUOTE_A11Y_LABEL: 'Inspiring quote',
-  QUOTE_A11Y_HINT: 'Double tap to show another random quote',
-  QUOTE_ACTION: 'Another',
   OFFLINE_BANNER_A11Y:
     'No internet connection. Some features may be unavailable. Check your connection.',
   OFFLINE_BANNER_TEXT:
@@ -1341,6 +1342,10 @@ export const TECHNIQUES = {
   GRATITUDE_EXAMPLE_1: 'Example: "Today I am grateful for the morning silence."',
   GRATITUDE_EXAMPLE_2: 'Example: "It helped that someone listened without judging."',
   GRATITUDE_EXAMPLE_3: 'Example: "I value the rest I could take today."',
+  GRATITUDE_WRITING_PROMPT_KICKER: 'Moment for you',
+  GRATITUDE_WRITING_PROMPT_ANOTHER: 'Another phrase',
+  GRATITUDE_WRITING_PROMPT_A11Y: 'Phrase to inspire your writing',
+  GRATITUDE_WRITING_PROMPT_HINT: 'Tap to show another phrase',
   BOUNDARY_TITLE: 'Set Boundaries',
   BOUNDARY_INTRO_KICKER: 'Boundaries',
   BOUNDARY_INTRO_TITLE: 'Set healthy boundaries',

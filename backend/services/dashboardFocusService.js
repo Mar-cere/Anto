@@ -23,12 +23,15 @@ import {
   focusCopy,
   focusLocale,
   localizeLastSessionSummaryForDisplay,
-  normalizeFocusLanguage
+  normalizeFocusLanguage,
+  hasChatContinuityDisplayText,
+  shouldSuppressFocusLineForContinuity,
 } from '../utils/focusDashboardCopy.js';
 import { findWeekPlanForUser } from './behavioralActivationWeekPlanService.js';
 import { loadExposureFocus } from './chatTccContinuityService.js';
 import { pickBaFocusSlot } from './activeTccProtocolsContextService.js';
 import { listSessionCommitments } from './sessionCommitmentService.js';
+import { buildHomeRotatingInsightForUser } from './homeRotatingInsightService.js';
 
 function cacheTtlSecondsUntilUtcEndOfDay() {
   const now = Date.now();
@@ -510,7 +513,7 @@ export async function buildDashboardFocus(userId, opts = {}) {
   }));
   const nextPushSlot = computeNextRoutinePushSlot(notificationPreferences, new Date(), language);
 
-  const reminderCandidates = buildReminderCandidates({
+  const reminderCandidatesRaw = buildReminderCandidates({
     summary,
     recentConversations,
     upcomingTasks,
@@ -519,6 +522,15 @@ export async function buildDashboardFocus(userId, opts = {}) {
     now: new Date(),
     language
   });
+
+  const lastSessionSummary = localizeLastSessionSummaryForDisplay(lastSessionSummaryRaw, language, {
+    timezone: userTimezone
+  });
+
+  const hasChatContinuity = hasChatContinuityDisplayText(lastSessionSummary);
+  const reminderCandidates = hasChatContinuity
+    ? reminderCandidatesRaw.filter((c) => c.kind !== 'chat')
+    : reminderCandidatesRaw;
 
   const userMsgs = summary?.chat?.userMessages ?? 0;
   const isSparseActivity =
@@ -535,24 +547,32 @@ export async function buildDashboardFocus(userId, opts = {}) {
     language
   });
 
-  const focusLine = await maybeLlmFocusLine(
-    userId,
-    {
+  const [focusLine, homeInsight] = await Promise.all([
+    maybeLlmFocusLine(
+      userId,
+      {
+        summary,
+        upcomingTasks,
+        commitments,
+        recentConversations,
+        scales,
+        deterministicCaption,
+        protocolHintFromRecord: protocolNext.line,
+        isSparseActivity,
+      },
+      language,
+    ),
+    buildHomeRotatingInsightForUser(userId, {
+      language,
       summary,
-      upcomingTasks,
-      commitments,
-      recentConversations,
-      scales,
-      deterministicCaption,
-      protocolHintFromRecord: protocolNext.line,
-      isSparseActivity
-    },
-    language
-  );
+      timezone: userTimezone,
+    }).catch(() => null),
+  ]);
 
-  const lastSessionSummary = localizeLastSessionSummaryForDisplay(lastSessionSummaryRaw, language, {
-    timezone: userTimezone
-  });
+  let focusLineText = String(focusLine?.text || '').trim();
+  if (hasChatContinuity && shouldSuppressFocusLineForContinuity(focusLineText, language)) {
+    focusLineText = '';
+  }
 
   const firstTask = upcomingTasks[0];
   return {
@@ -567,11 +587,13 @@ export async function buildDashboardFocus(userId, opts = {}) {
           headline: lastSessionSummary.headline
         }
       : null,
+    homeInsight,
     focus: {
-      line: focusLine.text,
+      line: focusLineText,
       lineSource: focusLine.mode,
       isSparseActivity,
-      suggestedActions: isSparseActivity ? ['start_chat'] : []
+      suggestedActions: isSparseActivity ? ['start_chat'] : [],
+      suppressForChatContinuity: hasChatContinuity,
     },
     reminder: {
       candidates: reminderCandidates

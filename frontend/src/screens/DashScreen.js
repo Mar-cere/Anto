@@ -31,12 +31,10 @@ import OnboardingTutorial, { isTutorialCompleted } from '../components/Onboardin
 import TutorialHighlight from '../components/TutorialHighlight';
 import DashboardHomeHeader from '../components/dashboard/DashboardHomeHeader';
 import MoodCheckInCard from '../components/dashboard/MoodCheckInCard';
-import DashboardExploreSection from '../components/dashboard/DashboardExploreSection';
-import InsightsQuickCard from '../components/InsightsQuickCard';
+import DashboardRotatingInsightCard from '../components/dashboard/DashboardRotatingInsightCard';
 import DashboardStreakHero from '../components/dashboard/DashboardStreakHero';
 import DashboardStatsRow from '../components/dashboard/DashboardStatsRow';
 import DashboardHabitsSection from '../components/dashboard/DashboardHabitsSection';
-import QuoteSection from '../components/QuoteSection';
 import DashboardFocusCard from '../components/DashboardFocusCard';
 import TaskCard from '../components/TaskCard';
 import { SkeletonBlock, SkeletonCard } from '../components/Skeleton';
@@ -808,7 +806,11 @@ const DashScreen = () => {
             onDismiss={handleNotificationsPromptDismiss}
             enabling={enablingNotifications}
           />
-          <MoodCheckInCard onMoodSaved={handleMoodSaved} />
+          <MoodCheckInCard
+            onMoodSaved={handleMoodSaved}
+            displayName={getDashboardDisplayName(userData)}
+            syncedMood={focusPayload?.dailyMood}
+          />
           <DashboardFocusCard
             data={focusPayload}
             onOpenChat={goToChatFromOnboarding}
@@ -822,7 +824,9 @@ const DashScreen = () => {
             displayName={getDashboardDisplayName(userData)}
             dailyMood={focusPayload?.dailyMood}
             onOpenChat={goToChatFromOnboarding}
+            streakOnly
           />
+          <DashboardRotatingInsightCard insight={focusPayload?.homeInsight} />
           {hasActiveHabits ? (
             <DashboardStatsRow
               streakDays={dashboardStats.streakDays}
@@ -846,9 +850,6 @@ const DashScreen = () => {
               onDismiss={() => setError(null)}
             />
           )}
-          <DashboardExploreSection techniquesA11y={DASH.TCC_TOOLS_LABEL} />
-          <InsightsQuickCard accessibilityLabel={DASH.INSIGHTS_CARD_A11Y} />
-          <QuoteSection />
         </DashboardScroll>
       </SafeAreaView>
       <FloatingNavBar activeTab="home" accessibilityLabel={DASH.NAVBAR_LABEL} />

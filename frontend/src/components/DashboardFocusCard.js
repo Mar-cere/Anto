@@ -8,9 +8,9 @@ import { Text, Pressable, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
-import { createDashboardStyles } from '../styles/dashboardTheme';
 import { createDashboardFocusStyles } from '../styles/focusCardTheme';
 import { updateSessionCommitment } from '../services/sessionCommitmentsService';
+import { getLastSessionDisplayText } from '../utils/dashboardHomeUtils';
 
 const COMPACT_WIDTH = 400;
 
@@ -185,10 +185,6 @@ const DashboardFocusCard = ({
     () => createDashboardFocusStyles(colors, resolvedScheme),
     [colors, resolvedScheme],
   );
-  const dashStyles = useMemo(
-    () => createDashboardStyles(colors, resolvedScheme),
-    [colors, resolvedScheme],
-  );
 
   const handleConv = useCallback(
     (id) => {
@@ -268,23 +264,16 @@ const DashboardFocusCard = ({
     return normalizePreloadedChatCopy(localized, language, DASH);
   }, [reminder?.candidates, isCompact, language, DASH]);
 
-  const lastSessionText = useMemo(() => {
-    if (!lastSession) return '';
-    const s = String(lastSession.snippet || '').trim();
-    const b = String(lastSession.bridge || '').trim();
-    if (lastSession.placeholder && b) return b;
-    if (s) return s;
-    return b;
-  }, [lastSession]);
+  const lastSessionText = useMemo(
+    () => getLastSessionDisplayText(lastSession),
+    [lastSession],
+  );
 
+  const hasChatContinuity = Boolean(lastSessionText);
   const lastSessionConvId = lastSession?.conversationId ? String(lastSession.conversationId) : null;
 
-  const lastSessionDuplicatesChatReminder = useMemo(() => {
-    if (!lastSessionConvId || displayedReminder?.kind !== 'chat') return false;
-    const rid = displayedReminder?.conversationId;
-    if (!rid) return false;
-    return String(rid) === lastSessionConvId;
-  }, [displayedReminder, lastSessionConvId]);
+  const showChatReminder =
+    displayedReminder && !(hasChatContinuity && displayedReminder.kind === 'chat');
 
   const onReminderPress = useCallback(() => {
     if (!displayedReminder || displayedReminder.kind !== 'chat') return;
@@ -315,8 +304,7 @@ const DashboardFocusCard = ({
     );
   }, [onOpenExposureHierarchy, exposureNext?.planId]);
 
-  const showLastSessionRow =
-    Boolean(lastSessionText) && !lastSessionDuplicatesChatReminder;
+  const showLastSessionRow = hasChatContinuity;
 
   const showTherapeuticProtocol =
     protocolNext?.line && protocolNext?.source === 'therapeutic_record';
@@ -331,7 +319,7 @@ const DashboardFocusCard = ({
 
   const actionRows = useMemo(() => {
     const rows = [];
-    if (displayedReminder) {
+    if (showChatReminder) {
       rows.push({
         key: `reminder-${displayedReminder.kind}`,
         icon: reminderIcon(displayedReminder.kind),
@@ -378,6 +366,7 @@ const DashboardFocusCard = ({
     }
     return rows;
   }, [
+    showChatReminder,
     displayedReminder,
     baWeekCopy,
     exposureCopy,
@@ -392,18 +381,21 @@ const DashboardFocusCard = ({
     DASH,
   ]);
 
-  const showChatCta = Boolean(onOpenChat);
+  const showChatCta = Boolean(onOpenChat) && !hasChatContinuity;
+
+  const showFocusHero =
+    Boolean(focus?.line) && !hasChatContinuity && !focus?.suppressForChatContinuity;
 
   if (!data) return null;
 
   return (
-    <View style={styles.section} accessibilityRole="summary">
-      <View style={dashStyles.sectionHeaderRow}>
-        <Text style={dashStyles.sectionTitle}>{DASH.FOCUS_TITLE}</Text>
-      </View>
-
+    <View
+      style={styles.section}
+      accessibilityRole="summary"
+      accessibilityLabel={DASH.FOCUS_REMINDER_SECTION}
+    >
       <View style={styles.card}>
-        {focus?.line ? (
+        {showFocusHero ? (
           <Text style={styles.focusHero} accessibilityRole="text">
             {focus.line}
           </Text>

@@ -5,10 +5,13 @@ import {
   getDashboardDisplayName,
   getProfileInitial,
   buildStreakHeroCopy,
+  buildMoodAckCopy,
   pickStableVariantIndex,
   formatHabitRowMeta,
   getActiveHabitsForDashboard,
   resolveDashboardStreakDays,
+  getLastSessionDisplayText,
+  hasDashboardChatContinuity,
 } from '../dashboardHomeUtils';
 
 const HERO_TEXTS_ES = {
@@ -115,5 +118,31 @@ describe('dashboardHomeUtils', () => {
     });
     expect(copy.title).toMatch(/Marcelo|Hola/);
     expect(copy.subtitle.length).toBeGreaterThan(10);
+  });
+
+  it('prioriza bridge en placeholder para continuidad del chat', () => {
+    const summary = {
+      snippet: 'Resumen largo',
+      bridge: 'Retomemos lo de ayer',
+      placeholder: true,
+    };
+    expect(getLastSessionDisplayText(summary)).toBe('Retomemos lo de ayer');
+    expect(hasDashboardChatContinuity(summary)).toBe(true);
+  });
+
+  it('no marca continuidad sin texto visible', () => {
+    expect(hasDashboardChatContinuity(null)).toBe(false);
+    expect(hasDashboardChatContinuity({ snippet: '  ', bridge: '' })).toBe(false);
+  });
+
+  it('genera reacción de ánimo para el check-in', () => {
+    const ack = buildMoodAckCopy({
+      mood: 'good',
+      displayName: 'Marcelo',
+      dateKey: '2026-06-19',
+      texts: HERO_TEXTS_ES,
+    });
+    expect(ack?.line).toBeTruthy();
+    expect(ack.line.length).toBeGreaterThan(10);
   });
 });

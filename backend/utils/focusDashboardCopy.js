@@ -169,7 +169,6 @@ export function fixContinuationTemporalOpeners(
   return text.replace(/^Hoy\b/i, replacement);
 }
 
-/** Heurística ligera: texto guardado en español cuando el usuario pide inglés. */
 export function looksLikeSpanishText(text) {
   if (!text || typeof text !== 'string') return false;
   if (/[áéíóúñ¿¡]/iu.test(text)) return true;
@@ -216,4 +215,38 @@ export function localizeLastSessionSummaryForDisplay(summary, language = 'es', o
     bridge,
     headline: c.chatContinuityHeadline
   };
+}
+
+export function getLastSessionDisplayText(lastSession) {
+  if (!lastSession) return '';
+  const snippet = String(lastSession.snippet || '').trim();
+  const bridge = String(lastSession.bridge || '').trim();
+  if (lastSession.placeholder && bridge) return bridge;
+  if (snippet) return snippet;
+  return bridge;
+}
+
+export function hasChatContinuityDisplayText(lastSession) {
+  return Boolean(getLastSessionDisplayText(lastSession));
+}
+
+/** Oculta líneas de foco genéricas al chat cuando ya hay continuidad específica. */
+export function shouldSuppressFocusLineForContinuity(line, language = 'es') {
+  const text = String(line || '').trim();
+  if (!text) return false;
+  const c = focusCopy(language);
+  const needles = [
+    c.focusResumeOrCheckIn,
+    c.focusNoChatWeek,
+    c.focusSparseActivity,
+    c.resumeLastChat,
+    c.startConversation,
+  ]
+    .map((s) => String(s || '').trim().toLowerCase())
+    .filter((s) => s.length >= 12);
+  const lower = text.toLowerCase();
+  if (needles.some((n) => lower.includes(n.slice(0, Math.min(24, n.length))))) return true;
+  return /retomar tu [uú]ltima conversaci[oó]n|resume your last conversation|volver al chat|return to chat/i.test(
+    text,
+  );
 }

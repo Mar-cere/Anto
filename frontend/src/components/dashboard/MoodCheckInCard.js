@@ -10,8 +10,9 @@ import {
 } from '../../services/dailyMoodService';
 import { createDashboardStyles } from '../../styles/dashboardTheme';
 import { cacheTodayMoodPayload } from '../../utils/dailyMoodStorage';
+import { buildMoodAckCopy } from '../../utils/dashboardHomeUtils';
 
-const MoodCheckInCard = memo(({ onMoodSaved }) => {
+const MoodCheckInCard = memo(({ onMoodSaved, displayName = '', syncedMood = null }) => {
   const DASH = useSectionTranslations('DASH');
   const { colors, resolvedScheme } = useTheme();
   const styles = useMemo(
@@ -36,6 +37,12 @@ const MoodCheckInCard = memo(({ onMoodSaved }) => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (syncedMood?.mood && !checkIn?.mood) {
+      setCheckIn(syncedMood);
+    }
+  }, [syncedMood?.mood, checkIn?.mood, syncedMood]);
 
   const labels = useMemo(
     () => ({
@@ -66,6 +73,16 @@ const MoodCheckInCard = memo(({ onMoodSaved }) => {
     },
     [onMoodSaved, saving],
   );
+
+  const moodAck = useMemo(() => {
+    if (!checkIn?.mood) return null;
+    return buildMoodAckCopy({
+      mood: checkIn.mood,
+      displayName,
+      dateKey: checkIn.dateKey,
+      texts: DASH,
+    });
+  }, [checkIn?.mood, checkIn?.dateKey, displayName, DASH]);
 
   return (
     <View style={[styles.section, styles.surfaceCard]} accessibilityRole="summary">
@@ -102,6 +119,12 @@ const MoodCheckInCard = memo(({ onMoodSaved }) => {
           })}
         </View>
       )}
+
+      {moodAck?.line ? (
+        <Text style={styles.moodAckText} accessibilityRole="text">
+          {moodAck.line}
+        </Text>
+      ) : null}
     </View>
   );
 });

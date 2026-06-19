@@ -8,7 +8,7 @@ import { createDashboardStyles } from '../../styles/dashboardTheme';
 import { buildStreakHeroCopy } from '../../utils/dashboardHomeUtils';
 import { getStreakVisual } from '../../utils/streakVisualUtils';
 
-const DashboardStreakHero = memo(({ streakDays, displayName, dailyMood, onOpenChat }) => {
+const DashboardStreakHero = memo(({ streakDays, displayName, dailyMood, onOpenChat, streakOnly = false }) => {
   const DASH = useSectionTranslations('DASH');
   const { colors, resolvedScheme } = useTheme();
   const styles = useMemo(
@@ -70,6 +70,47 @@ const DashboardStreakHero = memo(({ streakDays, displayName, dailyMood, onOpenCh
       : (DASH.STREAK_CHIP_DAYS || '{days} {label}')
           .replace('{days}', String(streakDays))
           .replace('{label}', DASH.STAT_STREAK_DAYS || '');
+
+  if (streakOnly) {
+    if (streakDays <= 0) return null;
+    const stripLabel = tierBadge
+      ? `${streakChipLabel} · ${tierBadge}`
+      : streakChipLabel;
+    return (
+      <View
+        style={[
+          styles.heroCard,
+          styles.heroCardStreakOnly,
+          { backgroundColor: streakVisual.heroBackground },
+        ]}
+        accessibilityRole="text"
+        accessibilityLabel={stripLabel}
+      >
+        <Animated.View
+          style={[
+            styles.heroOrb,
+            {
+              backgroundColor: streakVisual.orbColor,
+              transform: [{ scale: orbPulse }],
+            },
+          ]}
+          pointerEvents="none"
+        />
+        <View style={styles.heroStreakOnlyRow}>
+          <View style={[styles.heroStreakChip, styles.heroStreakChipStreakOnly]}>
+            <Ionicons name={streakVisual.icon} size={17} color={colors.white} />
+            <Text style={styles.heroStreakChipTextLarge}>{streakChipLabel}</Text>
+            {tierBadge ? (
+              <>
+                <Text style={styles.heroStreakChipSepLarge}>·</Text>
+                <Text style={styles.heroStreakChipTierLarge}>{tierBadge}</Text>
+              </>
+            ) : null}
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <Pressable

@@ -37,6 +37,7 @@ import {
   sanitizeGratitudeEntriesFromStorage,
 } from '../../utils/gratitudeJournalEntry';
 import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
+import GratitudeWritingPrompt from '../../components/gratitude/GratitudeWritingPrompt';
 
 const GRATITUDE_ENTRIES_KEY = 'gratitudeJournalEntries';
 
@@ -78,6 +79,10 @@ const DEFAULT_TEXTS = {
   EXAMPLE_1: 'Ejemplo: "Hoy agradezco el silencio de la manana."',
   EXAMPLE_2: 'Ejemplo: "Me ayudo que alguien me escuchara sin juzgar."',
   EXAMPLE_3: 'Ejemplo: "Valoro el descanso que pude tomar hoy."',
+  WRITING_PROMPT_KICKER: 'Momento para ti',
+  WRITING_PROMPT_ANOTHER: 'Otra frase',
+  WRITING_PROMPT_A11Y: 'Frase para inspirar tu escritura',
+  WRITING_PROMPT_HINT: 'Toca para mostrar otra frase',
 };
 
 function buildGratitudeTemplateChips(texts) {
@@ -388,6 +393,14 @@ const GratitudeJournalScreen = () => {
       EXAMPLE_1: translated?.GRATITUDE_EXAMPLE_1 ?? DEFAULT_TEXTS.EXAMPLE_1,
       EXAMPLE_2: translated?.GRATITUDE_EXAMPLE_2 ?? DEFAULT_TEXTS.EXAMPLE_2,
       EXAMPLE_3: translated?.GRATITUDE_EXAMPLE_3 ?? DEFAULT_TEXTS.EXAMPLE_3,
+      WRITING_PROMPT_KICKER:
+        translated?.GRATITUDE_WRITING_PROMPT_KICKER ?? DEFAULT_TEXTS.WRITING_PROMPT_KICKER,
+      WRITING_PROMPT_ANOTHER:
+        translated?.GRATITUDE_WRITING_PROMPT_ANOTHER ?? DEFAULT_TEXTS.WRITING_PROMPT_ANOTHER,
+      WRITING_PROMPT_A11Y:
+        translated?.GRATITUDE_WRITING_PROMPT_A11Y ?? DEFAULT_TEXTS.WRITING_PROMPT_A11Y,
+      WRITING_PROMPT_HINT:
+        translated?.GRATITUDE_WRITING_PROMPT_HINT ?? DEFAULT_TEXTS.WRITING_PROMPT_HINT,
     }),
     [translated]
   );
@@ -605,6 +618,12 @@ const GratitudeJournalScreen = () => {
             <Text style={techniqueScreenStyles.introTitle}>{T.INTRO_TITLE}</Text>
             <Text style={styles.todayMeta}>{todayLabel}</Text>
             <Text style={techniqueScreenStyles.introText}>{T.INTRO_BODY}</Text>
+            <GratitudeWritingPrompt
+              kicker={T.WRITING_PROMPT_KICKER}
+              anotherLabel={T.WRITING_PROMPT_ANOTHER}
+              a11yLabel={T.WRITING_PROMPT_A11Y}
+              a11yHint={T.WRITING_PROMPT_HINT}
+            />
           </View>
 
           <View style={styles.composerCard}>
